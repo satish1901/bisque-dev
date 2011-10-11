@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- <module name="NucleiDetector3D"  path="NucleiDetector3D.py" type="shell" > -->
+<module name="NucleiDetector3D"  path="launch3D.py" type="runtime" >
+  
+    <tag name="inputs">
+        <tag name="input-system" value="client_server"  />
+        <tag name="input-system" value="mex_url"  />
+        <tag name="input-formal" value="image_url" type="resource"  />
+        <tag name="input-formal" value="nuclear_size:number='2.4'" >
+            <tag name="value-default" value="2.4" />
+            <tag name="value-min" value="0.0000001" />
+            <tag name="value-units" value="pixels" />
+            <tag name="units" value="microns,pixels" />
+        </tag>
+        <tag name="input-formal" value="nuclear_channel:channel='1'" type="channel">
+            <tag name="value-default" value="1" />        
+        </tag>        
+        <tag name="input-system" value="bisque_token"  />
+    </tag>
+    
+    <tag name="outputs">
+        <tag name="output-formal" value="gobject_url:string" />
+        <tag name="output-formal" value="nuclei_count:number" />
+    </tag>
+    
+    <tag name="execute_options">
+        <tag name="argument_style" value="position" />
+    </tag> 
+
+    <tag name="module_options" >
+        <tag name="version" value="2" />
+    </tag>   
+       
+    <tag name="display_options" >
+        <tag name="group" value="application" />
+    </tag>
+    
+    <tag name="interface" type="file" value="public/index.html" />
+    <tag name="help"      type="file" value="public/help.html" />
+    <tag name="thumbnail" type="file" value="public/thumbnail.png" />   
+    <tag name="description" type="string" value="This module detects nuclei centroids in 3D/4D fluorescence images." />      
+    
+    
+</module>

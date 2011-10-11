@@ -1,0 +1,49 @@
+<html>
+
+
+<head>
+  
+    <!-- ExtJS -->
+    <link rel="stylesheet" type="text/css" href="/extjs/resources/css/ext-all.css" /> 
+    <script type="text/javascript" src="/extjs/ext-all-debug.js"></script>
+
+    <!-- Bisque StyleSheet -->
+    <link rel="stylesheet" type="text/css" href="/css/bisquik_extjs_fix.css" />
+    <link rel="stylesheet" type="text/css" href="/css/bq.css" />
+    <link rel="stylesheet" type="text/css" href="/css/bq_ui_toolbar.css" />  
+    
+    <!-- Bisque JsApi - this needs cleaning and updating -->  
+    <script type="text/javascript" src="/js/globals.js"> </script>
+    <script type="text/javascript" src="/js/utils.js"> </script>
+    <script type="text/javascript" src="/js/XMLHttpRequest.js" ></script>
+    <script type="text/javascript" src="/js/bq_api.js"></script>
+    <script type="text/javascript" src="/js/bq_ui_application.js"></script>
+    <script type="text/javascript" src="/js/bq_ui_toolbar.js"></script>
+    <script type="text/javascript" src="/js/modules/bq_ui_module.js"></script>
+    <script type="text/javascript" src="/js/bq_ui_progress.js" charset="utf-8"></script>
+  
+    <script type="text/javascript" src="js/AbstractModule.js"></script>
+    <script type="text/javascript" src="js/CellProfiler.js"></script>
+    <link rel="stylesheet" type="text/css" href="css/CellProfiler.css" />
+
+    <title>CellProfiler WebApp</title>
+
+    <script type="text/javascript" >
+    
+        Ext.onReady( function() 
+        {
+            var BQApp = Ext.create('BQ.Application');
+            var cellProfiler = Ext.create('Bisque.Module.CellProfiler')
+            
+            BQApp.main.getComponent('centerEl').add(cellProfiler);
+            cellProfiler.relayEvents(BQApp, ['nouser']);
+        });
+    
+    </script>
+
+</head>
+
+<body>
+</body>
+
+</html>

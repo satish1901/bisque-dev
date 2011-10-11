@@ -1,0 +1,13 @@
+<module type="shell" name="ShExample" path="./list_arguments">
+   <tag name="inputs" >
+    <tag name="input-system" value="client_server" index="0" />
+    <tag name="input-system" value="image_url" index="1" />
+    <tag name="input-formal" value="ThresholdValue:number='50'" index="2">
+       <tag name="default" value="50" />
+    </tag>
+  </tag>
+  <tag name="outputs"
+    <tag name="output-formal" value="resources:string" />
+  </tag>
+</module>
+

@@ -1,0 +1,40 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"
+      xmlns:py="http://genshi.edgewall.org/"
+      xmlns:xi="http://www.w3.org/2001/XInclude">
+
+<xi:include href="master.html" />
+
+<link rel="stylesheet" type="text/css" href="/static/admin/css/admin.css" />
+
+<head/>
+
+<body>
+<div py:match="datasets" />
+<div py:match="organizer" />
+<div class="maindiv" >
+<p><a href="/admin">Back to /admin</a></p>
+ 
+<div class="admin_box">
+<h3>Bisque Sessions:</h3> 
+<table border="0" class="admin_table" >
+   <tr align="left" >
+     <th>Created </th>
+     <th>Expires  </th>
+     <th>User     </th>
+   </tr>
+   
+   <tr py:for="v in current_visits"> 
+     <td>${v.created}</td>
+     <td>${v.expiry}</td>
+     <td py:if="v.lookup_user()"> ${v.lookup_user().display_name}</td>
+     </tr>
+</table> 
+
+</div>
+<a href="/admin/visits">Visit Statistics and Managment</a>
+ 
+</div>
+</body>
+</html>

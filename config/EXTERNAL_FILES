@@ -1,0 +1,36 @@
+#  This file contains a list of external binary files to be fetched
+# during system setup.  Each file external file must be in the form 
+# of sha1_filename.ext where sha1 is UPPERCASE SHA1 hex hash of the file contents.
+# 
+# Accessing http://biodev.ece.ucsb.edu/binaries/upload will allow you to place 
+# a file on the binary server and create the correct name.
+# There is also a script bqdev-upload-binary for uploading local files.
+#
+[common]
+#D8C0064469A00894C2B4DAB570CD47CFA6A11A0D-bioformats-bin.zip
+BDFC4632C400B8525BC6F33A64EC66AB697A255C-bisque.jar
+B179D2EFB1174658483E8B41BF4AC9D2EB5DE438-jai_core.jar
+34A67BA62097778E4695C951156BF189C2C8E016-jai_codec.jar
+13890D3C5AE0A209FE566CC854C3B38BCDEA59FA-jai_imageio.jar
+7CA44D2304E2F6591EEF79D0BF61A2B14E9F600A-clibwrapper_jiio.jar
+6597EA734944DB90FFD0C7DF2F3182DB9A5A3629-bio-formats.jar
+520BE2B52957817ED8C4B0C7D2D6F804FF02D2B2-bftools.zip
+6714C7B58E17F59D5B0FDE0C72DCFA736025EE8C-loci_tools.jar
+A1D5C5385E0C18F6FD449658B2BA4DF7A1E59304-mlabwrap-1.0.tar.gz
+#400108E2BA447428B5550D8A962F8F3519682E19-ext-4.0.0-gpl.zip=extjs.zip
+#D9ED3E273A30A1630917E07DFCB181ADAF78CECA-ext-4.0.1-gpl.zip=extjs.zip
+#B9B4A85CEEF1FC103F1F0DF92D5448E52F64E0A4-ext-4.0.2-gpl.zip=extjs.zip
+B607E3504810D63D02298529449F0918826FE072-ext-4.0.2a-gpl.zip=extjs.zip
+
+# PLATFORM dependent files
+# These sections titles use shell like 'glob'ing to match
+# To add a new platform, start up python and do a 
+#   import platform
+#   platform.platform()
+
+[Linux-*-x86_64-*-debian-*]
+511B5E84692B123A89576086201B793C93096A74-libmbgl-linux-64-large.a
+
+[Darwin-10.4.0-*]
+
+

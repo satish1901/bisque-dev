@@ -1,0 +1,22 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"
+      xmlns:py="http://genshi.edgewall.org/"
+      xmlns:xi="http://www.w3.org/2001/XInclude">
+
+<xi:include href="master.html" />
+<head>
+	<script type="text/javascript">
+		$('.error_message').slideDown(1000);
+	</script>
+</head>
+
+<body>
+<div py:match="datasets" />
+<div py:match="organizer" />
+<div class="maindiv" >
+	<div id="error_message" style="text-align:center;background-color: #CCCCFF;border: 4px solid #666699;padding: 10px;margin: 5px 50px">${tg_flash}</div>
+	<p><a href="/admin">Back to /admin</a></p>
+</div>
+</body>
+</html>

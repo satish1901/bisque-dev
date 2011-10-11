@@ -1,0 +1,83 @@
+/* 
+  Slider styles for BQ.slider.Slider
+    
+  Author: Dima Fedorov <dimin@dimin.net> <http://www.dimin.net/>
+  Copyright (C) Center for BioImage Informatics <www.bioimage.ucsb.edu>
+  GNU General Public License Usage
+
+  History:
+    2011-08-17 15:40:08 - first creation
+      
+  Ver: 1 
+*/ 
+
+.slider {
+  position:absolute;  
+  z-index: 30;   
+}
+
+.slider#tslider {
+  right: 150px;
+  bottom: 15px;  
+}
+
+.slider#zslider {
+  right: 15px;
+  bottom: 150px; 
+}
+
+.slider .button {
+  background-size: 23px 23px;
+  background-repeat: no-repeat;
+  background-color: transparent;
+  border: 0 none;
+  background-image: none;
+}
+
+.slider .play {
+  background-image: url('/client_service/public/js/slider/images/32px_play.png');
+}
+
+.slider .play-vertical {
+  background-image: url('/client_service/public/js/slider/images/32px_play_vertical.png');
+}
+
+.slider .x-play-selected, .slider .x-btn-play-selected {
+  background-image: url('/client_service/public/js/slider/images/32px_play_selected.png');
+}
+
+.slider .x-play-vertical-selected, .slider .x-btn-play-vertical-selected {
+  background-image: url('/client_service/public/js/slider/images/32px_play_vertical_selected.png');
+}
+
+.slider .next {
+  background-image: url('/client_service/public/js/slider/images/32px_next.png');
+}
+
+.slider .next-vertical {
+  background-image: url('/client_service/public/js/slider/images/32px_next_vertical.png');
+}
+
+.slider .x-next-selected, .slider .x-btn-next-selected {
+  background-image: url('/client_service/public/js/slider/images/32px_next_selected.png');
+}
+
+.slider .x-next-vertical-selected, .slider .x-btn-next-vertical-selected {
+  background-image: url('/client_service/public/js/slider/images/32px_next_vertical_selected.png');
+}
+
+.slider .prev {
+  background-image: url('/client_service/public/js/slider/images/32px_prev.png');
+}
+
+.slider .prev-vertical {
+  background-image: url('/client_service/public/js/slider/images/32px_prev_vertical.png');
+}
+
+.slider .x-prev-selected, .slider .x-btn-prev-selected {
+  background-image: url('/client_service/public/js/slider/images/32px_prev_selected.png');
+}
+
+.slider .x-prev-vertical-selected, .slider .x-btn-prev-vertical-selected {
+  background-image: url('/client_service/public/js/slider/images/32px_prev_vertical_selected.png');
+}

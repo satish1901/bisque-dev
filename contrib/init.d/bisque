@@ -1,0 +1,26 @@
+#! /bin/sh
+###
+# chkconfig: 235 98 55
+# description: Manages the services you are controlling with the chkconfig command
+###
+BISQUE_USER="bisque"
+BISQUE_HOME="/opt/Bisque"
+
+case "$1" in
+  start)
+        echo -n "Starting Bisque"
+        /bin/su - BISQUE_USER -c "cd $BISQUE_HOME; source bqenv/bin/activate; bq-start-servers"
+        echo "."
+        ;;
+  stop)
+        echo -n "Stopping Bisque"
+        /bin/su - BISQUE_USER -c "cd $BISQUE_HOME; source bqenv/bin/activate; bq-kill-servers"
+        echo "."
+        ;;
+
+  *)
+        echo "Usage: $0 new-service {start|stop}"
+        exit 1
+esac
+
+exit 0

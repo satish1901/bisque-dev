@@ -1,0 +1,397 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html  xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"
+        xmlns:py="http://genshi.edgewall.org/" 
+        xmlns:xi="http://www.w3.org/2001/XInclude"  
+       >
+
+
+<xi:include href="master.html" />
+<head>
+
+<!-- ExtJS -->
+<style type="text/css">
+    .x-grid3-row-over .x-grid3-cell-inner { font-weight: bold; }
+    
+    form label#header {
+      width: 200px;
+      float: left;
+      text-align: right;
+      margin-right: 0.5em;
+      display: block;
+      font-size: 14px;
+      font-family: Tahoma, Geneva, sans-serif;
+      font-weight: bold;
+    }
+    form label {
+      margin-left: 1em;
+      font-size: 14px;
+      font-family: Tahoma, Geneva, sans-serif;
+    } 
+  
+    form div { margin-top: 10px; }
+    form input[type="text"], form select { width: 400px; }
+    form input#plus_button { margin-left: 220px; }
+</style>
+
+<script type="text/javascript" charset="utf-8">
+//<!--
+function presetComboChanged() {
+  var cb = document.getElementById("presets");
+  var cb_xpath = document.getElementById("xpath");
+  var cb_xmap = document.getElementById("xmap");
+  var cb_xreduce = document.getElementById("xreduce");  
+  
+  o = preset_options[cb.value];
+  if (!o) return;
+  cb_xpath.value = o['xpath'];
+  cb_xmap.value = o['xmap'];
+  cb_xreduce.value = o['xreduce'];
+}
+
+function showTip( element, text, opts ) {
+  if (!opts) opts={};
+  if (!('color' in opts)) opts.color = 'red';
+  if (!('timeout' in opts)) opts.timeout = 5000;  
+  var tip = new Ext.ToolTip({
+      target: element,
+      anchor: 'top',
+      bodyStyle: 'font-size: 120%; color: '+opts.color+';',        
+      html: text
+  });
+  tip.show();
+  setTimeout( function () { tip.destroy(); }, opts.timeout );
+}
+
+
+function validate() {
+  if (document.getElementById("url").value == '') {
+    showTip( 'url', 'Resource URL is not specified!' );
+    return false;
+  }
+  if (document.getElementById("xpath").value == '') {
+    showTip( 'xpath', 'Resource XPath is not specified!' );  
+    return false;
+  }  
+  return true;
+}
+
+function doSelect(elem, def) {
+  if (def=='') return;
+  var cb = document.getElementById(elem);
+  cb.value = def;
+}
+
+function getXML() {
+  if (!validate()) return;
+  document.getElementById("stats").action = "/stats/xml";
+  document.getElementById("stats").submit();
+}
+
+function getCSV() {
+  if (!validate()) return;
+  document.getElementById("stats").action = "/stats/csv";
+  document.getElementById("stats").submit();
+}
+
+function getValues(baseid) {
+  var v = [document.getElementById(baseid).value];
+  var i=1;
+  while (document.getElementById(baseid+''+i)) {
+    v.push( document.getElementById(baseid+''+i).value );
+    i++;
+  }
+  return v;
+}
+
+function getHiddenValues(surface) {
+  var surface = document.getElementById(surface);
+  var n = surface.children.length;
+  var d = {};
+  for (var i=0; i<surface.children.length; i++) {
+    if (surface.children[i].type != 'hidden') continue;
+    d[surface.children[i].name] = surface.children[i].value;
+  }
+  return d;
+}
+
+function cloneInput(surface, tocopy) {
+  var surface = document.getElementById(surface);
+  var tocopy  = document.getElementById(tocopy);
+  var n = surface.children.length;
+  var d = tocopy.cloneNode(true);
+  d.children[1].name = d.children[1].name + n;
+  d.children[1].id = d.children[1].id + n;  
+  surface.appendChild (d);
+  return d;
+}
+
+function doPlot() {
+  if (!validate()) return;
+
+  var url = document.getElementById("url").value;
+  var xpath = getValues("xpath");
+  var xmap = document.getElementById("xmap").value;
+  var xreduce = document.getElementById("xreduce").value;
+  var plotter = document.getElementById("plotter"); 
+  var args = getHiddenValues("xargs");
+
+  removeAllChildren(plotter); 
+  this.visualizer = new BQStatisticsVisualizer( plotter, url, xpath, xmap, xreduce, { height:500, args: args } );
+}
+
+function parseUrlArguments() {
+  var a = document.URL.split('?', 2);
+  if (a.length<2) return;
+  a = a[1].split('&');
+  var d = {};
+  for (var i=0; i<a.length; i++) {
+    var e = a[i].split('=', 2);
+    d[unescape(e[0])] = unescape(e[1]);
+  }
+  return d;
+}
+
+function appendInputs(urldict, id, surface, tocopy) {
+  var i=1;
+  while (id+i.toString() in urldict) {
+    cloneInput(surface, tocopy);  
+    var e = document.getElementById(id+i.toString());  
+    e.value = urldict[id+i.toString()];
+    i++; 
+  }
+}
+
+function doBrowse(surface) {
+  if (typeof surface == 'string')
+    surface = document.getElementById(surface);
+
+  var resourceBrowser  = new Bisque.ResourceBrowser.Browser({
+      'layout' : Bisque.ResourceBrowser.LayoutFactory.DEFAULT_LAYOUT,
+      'height' : '85%',
+      'width' :  '85%',
+      'dataset' : '/ds/images', 
+      'offset': 0,
+  });
+  resourceBrowser.on('Select', function(url) { surface.value = url; resourceBrowser.destroy(); }  );    
+}
+
+
+
+
+Ext.onReady(function() {
+//   var myurl = parseUrlArguments();
+//   if (!myurl) return;
+//   if ('xmap' in myurl) doSelect('xmap', myurl['xmap'] );
+//   if ('xreduce' in myurl) doSelect('xreduce', myurl['xreduce'] );
+//   appendInputs(myurl, 'xpath', 'xpaths', 'xpathbox');
+//   appendInputs(myurl, 'xmap', 'xmaps', 'xmapbox');
+//   appendInputs(myurl, 'xreduce', 'xreduces', 'xreducebox');
+//   if ('run' in myurl) doPlot();
+
+
+   var dstore = new Ext.data.Store({
+        // load using HTTP
+        autoSave : false,
+        autoLoad : true,
+        url: '/data_service/datasets?wpublic=1',
+        reader: new Ext.data.XmlReader({
+            record: 'dataset',
+            idPath: 'attribute[name="uri"]',
+        },
+        [// set up the fields mapping into the xml doc
+            // The first needs mapping, the others are very basic
+            {name: 'name', mapping: '@name' },
+            {name: 'uri', mapping: '@uri' },
+        ]),
+        listeners: {
+            load: function(records, options) {
+                clog ('loaded ' + records + ' records');
+            }
+        },
+     });
+
+   var mstore = new Ext.data.Store({
+        // load using HTTP
+        autoSave : false,
+        autoLoad : true,
+        url: '/module_service/',
+        reader: new Ext.data.XmlReader({
+            record: 'module',
+            idPath: 'attribute[name="uri"]',
+        },
+        [// set up the fields mapping into the xml doc
+            // The first needs mapping, the others are very basic
+            {name: 'name', mapping: '@name' },
+            {name: 'uri', mapping: '@uri' },
+        ]),
+        listeners: {
+            load: function(records, options) {
+                clog ('loaded ' + records + ' records');
+            }
+        },
+     });
+
+
+  var dgrid = new Ext.grid.GridPanel ({
+     store : dstore,
+     columns: [
+           {
+                id       :'name',
+                header   : 'Datset Name', 
+                width    : 160, 
+                sortable : true, 
+                dataIndex: 'name',
+            },
+           ],
+        stateful: true,
+        stateId: 'grid'  ,
+        height: 200,
+        width: 400,
+        title: 'Datasets',
+     });
+
+     
+  //dgrid.render ('dgrid');
+
+
+  var mgrid = new Ext.grid.GridPanel ({
+     store : mstore,
+     columns: [
+           {
+                id       :'name',
+                header   : 'Module Name', 
+                width    : 160, 
+                sortable : true, 
+                dataIndex: 'name',
+            },
+           ],
+        stateful: true,
+        stateId: 'grid'  ,
+        height: 200,
+        width: 400,
+        title: 'Modules',
+     });
+
+  mgrid.render('module');
+     
+
+
+ var dataset;
+ var module;
+ var operation;
+
+ var tpanel = new Ext.TabPanel({
+        width:450,
+        activeTab: 0,
+        frame:true,
+     deferredRender: false,
+     defaults:{bodyStyle:'padding:10px'},
+
+     items: [
+         {contentEl:'module', title: 'Run Module',
+          listeners:{activate : function() {operation = 'module'; }}},
+         {contentEl:'tagedit', title: 'Edit Tag',
+          listeners:{activate : function() {operation = 'tagedit'; }}},
+         ]
+    });
+
+
+ function check_result(resource) {
+
+     var msg = "";
+     for (var i=0; i<resource.children.length; i++){
+         var mex = resource.children[i];
+         msg = msg + "mex " + mex.uri + "\n";
+         }
+     alert(msg);
+     }
+ 
+  var form = new Ext.FormPanel({
+    labelAlign: 'top',
+        title: 'Dataset Operations',
+        bodyStyle:'padding:5px',
+        width: 600,
+        items : [dgrid, tpanel],
+        //items : [dgrid],
+        buttons : [{'text': 'Execute',
+                    handler: function () {
+                        if (!dataset) {alert ('choose dataset'); return; }
+                        if (!module)  {alert ('choose module'); return; }
+
+
+                        var url = "/dataset_service/iterate?duri="+dataset+"&operation="+operation + "&module=" + module;
+                        BQFactory.request ({uri:url,
+                                            cb:check_result,
+                                            cache: false});
+                        clog ('dataset : ' + url);
+                        }
+                    },
+                   {'text' : 'Cancel'}],
+
+        });
+
+  dgrid.on ('rowclick',  function (grid, rowindex, e) {
+      var r = grid.store.getAt(rowindex);
+      //alert ('hello from' +  r.get('uri'));
+      dataset = r.get ('uri');
+      } );
+
+  mgrid.on ('rowclick',  function (grid, rowindex, e) {
+      var r = grid.store.getAt(rowindex);
+      //alert ('hello from' +  r.get('uri'));
+      module = r.get ('uri');
+      } );
+
+
+  form.render ('dform');
+});
+
+
+  
+//-->
+</script>
+
+</head>
+<body>
+
+
+
+  <!--<span py:if="tg.identity.anonymous"><p>Please log-in to use this service.</p></span>
+      <span py:if="not tg.identity.anonymous">-->
+  
+  <h1>Datasets service</h1>
+  
+  <p>This service allows you to summarize documents stored in the Bisque system. It operates on textual <strong>tag</strong> and graphical <strong>gobject</strong> documents.</p>
+  
+
+  <div id='dgrid' />
+  
+  
+  
+  
+  <!--
+        <div>
+          <label id="header">Resource URL:</label>
+          <input name="url" type="text" id="url" value="${opts.get('url', '')}" /> 
+          <input name="browse" id="browse" type="button" value="Browse" onclick="doBrowse('url')" />
+          <label>URL pointing to an image, tags, gobjects or to a dataset</label>
+        </div>  
+        -->
+
+  <div>
+    <label id="header">Presets:</label>
+    <select id="operations" style="width: 400px;" onchange="opComboChanged()" >
+      <option py:for="op in operations" value="${op}">${op}</option>
+    </select>
+  </div>  
+  
+
+  <div id='dform' />
+
+  <div  id='module' > </div>
+  
+  <div  id='tagedit'> </div>
+
+</body>
+
+</html>

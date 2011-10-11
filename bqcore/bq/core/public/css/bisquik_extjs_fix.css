@@ -1,0 +1,57 @@
+
+/*
+  Changes to ExtJS styles
+*/
+
+.x-mask { opacity: .8; background: #000000; }
+
+.x-toolbar-text { padding-right: 10px; }
+
+
+/*
+  Fixes to normal HTML style after extjs css import
+*/
+
+h1 {
+  font-size: 2em;
+  margin: 0.67em 0px;  
+}
+
+h2 {
+  font-size: 1.6em;
+  margin: 0.5em 0px;  
+}
+
+h3 {
+  font-size: 1.2em;
+  margin: 0.5em 0px;  
+}
+
+
+p {
+  margin: 1em 0px;
+}
+
+input:not([type]), input[type="text"], input[type="password"] {
+  padding: 1px 0px;
+}
+
+input[type="button"], input[type="submit"], input[type="reset"], input[type="file"]::-webkit-file-upload-button, button {
+  padding: 1px 6px;
+}
+
+ul, ol {
+  padding-left: 2em;
+}
+
+li {
+  list-style: disc;
+}
+
+i, cite, em, var, address {
+  font-style: italic;
+}
+
+strong, b {
+  font-weight: bolder;
+}

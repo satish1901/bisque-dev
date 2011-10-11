@@ -1,0 +1,72 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+    "http://www.w3.org/TR/html4/strict.dtd"
+    >
+<html lang="en">
+<head>
+    
+    <title>Map</title>
+    
+    <!-- ExtJS -->
+    <link rel="stylesheet" type="text/css" href="/extjs/resources/css/ext-all.css" />
+    <!--
+    <link rel="stylesheet" type="text/css" href="/extjs/resources/css/xtheme-gray.css"/>
+    -->
+    <script type="text/javascript" src="/extjs/bootstrap.js"></script>
+    
+    <!-- Bisque styles -->
+    <link rel="stylesheet" type="text/css" href="/css/bisquik_extjs_fix.css" />
+    <link rel="stylesheet" type="text/css" href="/css/bq.css" />
+    <link rel="stylesheet" type="text/css" href="/css/bq_ui_toolbar.css" />
+    
+    <!-- Bisque JsApi - this needs cleaning and updating -->
+    <script type="text/javascript" src="/js/globals.js"></script>
+    <script type="text/javascript" src="/js/utils.js"></script>
+    <script type="text/javascript" src="/js/XMLHttpRequest.js"></script>
+    <script type="text/javascript" src="/js/bq_api.js"></script>
+    <script type="text/javascript" src="/js/bq_ui_application.js"></script>
+    <script type="text/javascript" src="/js/bq_ui_toolbar.js"></script>
+    <link rel="stylesheet" type="text/css" href="/js/bq_ui_misc.css" />
+    <script type="text/javascript" src="/js/bq_ui_misc.js"></script>
+
+
+    <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?sensor=false"></script>
+    
+
+    <script src="bigmapPanel.js"></script>
+    <script src="mappanel.js"></script>
+
+  
+    <!-- Configuration variables   -->
+    <script type="text/javascript">
+        // update the configuration in your template
+        bq = Ext.create('BQ', { title: "Map", root: "/", });
+        Ext.onReady( function(){ BQApp = Ext.create('BQ.Application', bq); });
+        
+        Ext.onReady(function() { 
+
+            var map = Ext.create('BQ.gmap.BigMap',  {
+              imageQuery: '*COPR*',
+            });
+            
+            /*
+            var win = Ext.create('Ext.window.Window',  {
+                width: '80%',
+                height: '80%',
+                layout: 'fit',
+                items: [map],
+            });
+            win.show();
+            */
+            BQApp.main.getComponent('centerEl').add(map);            
+            
+        });   
+    </script>
+ 
+    
+    
+    
+</head>
+<body>
+
+</body>
+</html>

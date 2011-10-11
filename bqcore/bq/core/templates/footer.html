@@ -1,0 +1,32 @@
+<html xmlns:py="http://genshi.edgewall.org/"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      py:strip="">
+<py:def function="footer">
+<div id="footer" >
+<div class="credits" id="credits" style="clear:both;" >
+<img src="/images/bisque_logo_white_170.png" alt="Uploading images" style="float:right; margin: 5px;height:75px" />
+
+<p>
+<a href="/bisquik/termsofuse">Terms of Use</a> | <a href="/bisquik/privacypolicy">Privacy Policy</a> | <a href="/admin"> Website Administration</a>
+</p>
+
+<p>Get more information about <a href="http://www.bioimage.ucsb.edu/downloads/Bisque Database">Bisque</a>.
+For problems or questions regarding this web application: <br />
+1) visit our <a href="http://biodev.ece.ucsb.edu/projects/bisquik">Bisque developers site</a> or 2) submit online <a href="http://biodev.ece.ucsb.edu/projects/bisquik/newticket">bug/suggestion</a> tickets to developers or 3) contact bisque-dev((at))biodev.ece.ucsb.edu. </p>
+<p><a href="http://www.bioimage.ucsb.edu/">Center for Bio-Image Informatics</a>, University of California at Santa Barbara, CA 93106.<br />
+  This work is supported in part by an NSF infrastructure award No. EIA-0080134</p>
+</div> 
+
+<script type="text/javascript" py:if="tg.config.get('server.environment')=='production'">
+var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+</script>
+<script type="text/javascript" py:if="tg.config.get('server.environment')=='production'">
+var pageTracker = _gat._getTracker("${tg.config.get('bq.google_analytics')}");
+pageTracker._initData();
+pageTracker._trackPageview();
+</script>
+</div >
+
+</py:def>    
+</html>

@@ -1,0 +1,155 @@
+h2 {
+  clear: left;
+}
+
+h3 {
+  font-size: 90%; 
+}
+
+.content {
+  margin: 0px 20px 0px 20px;
+}
+
+.content p {
+  text-align: left;
+}
+
+.bordered {
+  /*border-radius: 5px;
+  -moz-border-radius: 5px;*/
+  border: 1px solid #CCCCCC; /* #006699;*/
+}
+
+/*-------------------------------------------------------
+  MAIN
+-------------------------------------------------------*/
+
+.webapp .main {
+  margin-right: 340px;
+}
+
+/*-------------------------------------------------------
+  HELP
+-------------------------------------------------------*/
+
+.webapp .help {
+  float: right;
+  width: 320px;
+  height: 95%;
+  margin: 0px 0px 10px 10px;
+  padding: 10px 10px 10px 10px;
+  background-color: #E1FFE9;
+  border: #CCCCCC solid 1px;
+  border-radius: 5px;
+  -moz-border-radius: 5px;
+}
+
+.webapp .help img {
+  border: solid 1px #999999;
+  width: 250px;
+}
+
+.webapp .help p {
+  text-align: left;
+}
+
+.webapp .box {
+  background-color: #EEEEEE;
+  border-color: #CCCCCC;
+  border-style: solid;
+  border-width: 1px;
+  padding: 10px 10px 10px 10px;
+  margin-bottom: 20px;
+  border-radius: 5px;
+  -moz-border-radius: 5px;  
+}
+
+/*-------------------------------------------------------
+  NOTIFICATION
+-------------------------------------------------------*/
+
+.webapp .notification {
+  padding: 5px 5px 5px 5px;  
+  background-color: #FFCC66;
+  border: #FF6600 solid 2px;
+  border-radius: 5px;
+  -moz-border-radius: 5px;
+}
+
+/*-------------------------------------------------------
+  INPUT
+-------------------------------------------------------*/
+
+.webapp .input {
+}
+
+/*-------------------------------------------------------
+  PARAMETERS
+-------------------------------------------------------*/
+
+.webapp .parameters {
+}
+
+.webapp .parameters form {
+  margin: 0px 0px 0px 0px;
+}
+
+.webapp .parameters label {
+  width: 15em;
+  display: inline-block;
+}
+
+.webapp .parameters p {
+  margin: 0px 0px 0.4em 0px;
+  border-bottom-color: #BBBBBB;
+  border-bottom-width: 1px;
+}
+
+.webapp .parameters em {
+  font-size: 75%;
+}
+
+.webapp .parameters .thumbnail {
+  height: 180px;
+}
+
+.webapp .parameters .viewer {
+  position: relative; top: 0px; left: 0px;  
+}
+
+
+/*-------------------------------------------------------
+  RUN
+-------------------------------------------------------*/
+
+.webapp .run {
+
+}
+
+/*-------------------------------------------------------
+  RESULTS
+-------------------------------------------------------*/
+
+.webapp .results {
+
+}
+
+.webapp .imageviewer {
+  margin-top: 15px;
+  position: relative;
+  top: 0px;
+  left: 0px;  
+  height: 400px;
+  width: 100%;    
+}
+
+.webapp .plotter {
+  margin-top: 15px;
+  position: relative;
+  top: 0px;
+  left: 0px;  
+}
+
+.webapp .plotter>div {
+  margin-top: 15px;
+}
