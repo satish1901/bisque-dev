@@ -45,9 +45,9 @@ function getExtensions(v, record) {
 }
 
 function getSource(v, record) {
-    var expression = "@name";    
-    var r = xpath(record.raw.parentNode, expression);
-    return r.replace(/DIMIN|CODEC/gi, '');
+    var r = xpath(record.raw.parentNode, '@name');
+    var v = xpath(record.raw.parentNode, '@version');
+    return r.replace(/DIMIN|CODEC/gi, '') + ' ' + v;
 }
 
 Ext.define('BQ.is.Formats', {

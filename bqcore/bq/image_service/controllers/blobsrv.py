@@ -127,6 +127,7 @@ class BlobServer(object):
             
         if not src and name:
             src = open(name,'rb')
+        src.seek(0)
             
         trg = open(filepath, 'wb')            
         shutil.copyfileobj(src, trg)
