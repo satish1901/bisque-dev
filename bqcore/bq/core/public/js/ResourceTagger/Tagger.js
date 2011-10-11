@@ -653,6 +653,7 @@ Ext.define('Bisque.ResourceTagger.viewStateManager',
             {
                 // default case: all buttons are visible (hidden='false')
                 setHidden(this.state, false);
+                this.editable = true;
             }
         }
     }
