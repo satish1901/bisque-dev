@@ -27,13 +27,13 @@ def bisque_challenge_decider(environ, status, headers):
 
         
         req = environ.get('pylons.original_request')
-        if req:
+        #if req:
             #log.debug ('challenge_decider request_header=%s' % req.headers)
-            accept = req.headers.get('accept')
+            #accept = req.headers.get('accept')
             #accept = accept and [ 
             #log.debug ('challenge_decider request accept=%s' % accept)
-            if 'text/xml' in accept: # or 'application/xml' in accept:
-                return False
+            #if accept and 'text/xml' in accept: # or 'application/xml' in accept:
+            #    return False
 
         if content_type in ('text/xml', 'application/xml'):
             return False

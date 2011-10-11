@@ -281,7 +281,7 @@ def patch_file (path, mapping, destination=None, **kw):
         f.write (template)
     
    
-def sql(DBURI, statement, verbose = True):
+def sql(DBURI, statement, verbose = False):
 
     from sqlalchemy import create_engine, sql
     try:

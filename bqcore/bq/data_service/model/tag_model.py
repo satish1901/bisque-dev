@@ -399,10 +399,11 @@ class Taggable(object):
     
     def __init__(self, resource_type = None):
         if self.__class__ == Taggable and resource_type:
-            log.debug ("Taggable using " + resource_type);
+            log.info ("Rsource Taggable using " + resource_type);
             self.table = resource_type
         else:
             self.table = str(object_mapper(self).local_table)
+            log.info ("System Taggable %s using %s" %( self.__class__,  self.table));
             #self.table = self.xmltag
         self.ts = datetime.now()
         #log.debug("new taggable user:" + str(session.dough_user.__dict__) )
@@ -444,7 +445,8 @@ class Taggable(object):
             return self.table_name.name
         return self.__class__.xmltag
     def settable(self, v):
-        self.tb_id = UniqueName(v).id
+        self.table_name = UniqueName(v)
+
     table = property(gettable, settable)
     type  = property(gettable, settable)
 
@@ -777,7 +779,7 @@ class BQUser(Taggable):
         super(BQUser, self).__init__()
         if not display_name: display_name = user_name
 
-        if create_tg and tg_user is not None:
+        if create_tg and tg_user is None:
             tg_user = User()
             tg_user.user_name = user_name
             tg_user.email_address = email_address
@@ -1077,6 +1079,7 @@ mapper(BQUser, users, inherits=Taggable,
 def create_bquser (tg_user, **kw):
     u = DBSession.query(BQUser).filter_by(user_name=tg_user.user_name).first()
     if u is None:
+        log.info ('creating BQUSER ')
         BQUser(tg_user=tg_user)
         
 User.create_callbacks.append (create_bquser)
