@@ -47,7 +47,6 @@ is_installed = True # this is updated later
 
 def run_command(command):
     '''returns a string of a successfully executed command, otherwise None'''
-    if not is_installed: return None
     try:
         p = Popen (command, stdout=PIPE, stderr=PIPE)
         o,e = p.communicate()
@@ -80,17 +79,19 @@ def get_version ():
         if len(d)<2: continue
         v[d[0]] = d[1]
     
-    if 'Version' in v and 'SVN revision' in v:
-        v['full'] = '%s.%s'%( v['Version'], v['SVN revision'] )
+    if 'Version' in v:
+        #v['full'] = '%s.%s'%( v['Version'], v['SVN revision'] )
+        v['full'] =  v['Version']
+            
 
     if 'full' in v:
-        d = [int(s) for s in v['full'].split('.', 3)]
-        if len(d)>3:
+        d = [int(s) for s in v['full'].split('.', 2)]
+        if len(d)>2:
             v['numeric']  = d
             v['major']    = d[0]
             v['minor']    = d[1]
             v['build']    = d[2]
-            v['revision'] = d[3]            
+            #v['revision'] = d[3]            
 
     return v
 

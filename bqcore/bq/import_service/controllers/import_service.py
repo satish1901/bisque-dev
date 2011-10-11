@@ -318,6 +318,7 @@ class import_serviceController(ServiceController):
         # extract all the series from the file
         if bioformats.supported(filepath):
             info = bioformats.info(filepath)
+            log.debug ('info = %s' % info)
             if 'number_series' in info:
                 n = info['number_series']
                 for i in range(n):

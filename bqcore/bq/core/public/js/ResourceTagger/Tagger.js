@@ -635,11 +635,12 @@ Ext.define('Bisque.ResourceTagger.viewStateManager',
         
         switch(mode)
         {
+/*
             case 'ViewerOnly':
             {
                 // all the buttons are hidden
                 setHidden(this.state, true);
-                this.editable = false;
+                this.state.editable = false;
                 break;
             }
             case 'Offline':
@@ -649,11 +650,12 @@ Ext.define('Bisque.ResourceTagger.viewStateManager',
                 this.state.btnImport = false;
                 break;
             }
+*/
             default:
             {
                 // default case: all buttons are visible (hidden='false')
                 setHidden(this.state, false);
-                this.editable = true;
+                this.state.editable = true;
             }
         }
     }

@@ -846,8 +846,13 @@ def install_bioformats(params):
     
     if getanswer ("Install bioformats", "Y",
                   "Bioformats can be used as a backup to read many image file types") == "Y":
-        copy_link (os.path.join(BQDEPOT, 'bio-formats.jar'), BQBIN)
-        copy_link (os.path.join(BQDEPOT, 'loci_tools.jar'), BQBIN)
+
+
+        bio_files = [ 'bio-formats.jar', 'loci-common.jar', 'mdbtools-java.jar', 'ome-io.jar',
+                      'poi-loci.jar', 'jai_imageio.jar', 'loci_tools.jar', 'metakit.jar', 'ome-xml.jar' ]
+
+        for bf in bio_files:
+            copy_link (os.path.join(BQDEPOT, bf), BQBIN)
              
         biozip = zipfile.ZipFile (os.path.join(BQDEPOT, 'bftools.zip'))
         for fname in  biozip.namelist():
