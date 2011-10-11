@@ -1,0 +1,257 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+                      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:py="http://genshi.edgewall.org/"
+      xmlns:xi="http://www.w3.org/2001/XInclude">
+
+
+<xi:include href="master.html" />
+
+<head>
+
+    <link rel="stylesheet" type="text/css" href="${tg.url('/client_service/public/css/welcome.css')}" />
+    
+    <script type="text/javascript" src="${tg.url('/client_service/public/js/DataExplore.js')}" ></script>
+
+
+  
+ <!--
+  <link rel="stylesheet" type="text/css" href="${tg.url('/js/Portal/portal.css')}" />
+-->
+
+<script type="text/javascript" >
+  /*
+  Ext.Loader.setConfig({enabled:true});
+  Ext.Loader.setPath('Ext.app', '${tg.url('/js/Portal/classes')}');  
+  Ext.require([
+      'Ext.layout.container.*',
+      'Ext.resizer.Splitter',
+      'Ext.fx.target.Element',
+      'Ext.fx.target.Component',
+      'Ext.window.Window',  
+  
+      'Ext.app.Portlet',
+      'Ext.app.PortalColumn',
+      'Ext.app.PortalPanel',
+      'Ext.app.Portlet',
+      'Ext.app.PortalDropZone',
+      'Ext.app.GridPortlet',
+      'Ext.app.ChartPortlet'
+  ]);
+  */
+
+  Ext.onReady( function() { 
+       
+      var moduleBrowser = new Bisque.ResourceBrowser.Browser({
+          layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.ICON_LIST,
+          //title: 'Bisque applications',
+          viewMode: 'ModuleBrowser',
+          dataset: '/module_service',
+          wpublic: true,
+          border: true,
+          selType: 'SINGLE',
+          height: 500,          
+          renderTo: 'applications',
+          cls: 'welcome',
+          listeners: { 'Select': function(me, resource) { 
+                          window.open(bq.url('/module_service/'+resource.name)); 
+                       }, 
+                       scope: this },          
+          
+      }); 
+
+      var mexBrowser = new Bisque.ResourceBrowser.Browser({
+          layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.LIST,
+          title : 'Analysis',
+          viewMode : 'MexBrowser',
+          dataset : '/data_service/mex',
+          tagOrder: '"@ts":desc',
+          selType: 'SINGLE',          
+          wpublic: ${wpublicjs},
+          border: true,
+          cls: 'welcome',          
+          listeners: { 'Select': function(me, resource) {
+                          me.setLoading(true);
+                          BQFactory.request( {uri: resource.module, cb: function(r) {
+                              me.setLoading(false);
+                              window.open(bq.url('/module_service/'+r.name+'/?mex='+resource.uri), "", 
+                                        "menubar=yes,location=yes,resizable=yes,scrollbars=yes,status=yes"  
+                                         ); 
+                          }});
+                       }, 
+                       scope: this },    
+      });    
+      
+      var imgBrowser = new Bisque.ResourceBrowser.Browser({
+          title : 'Images',
+          tagOrder: '"@ts":desc',          
+          selType: 'SINGLE',          
+          wpublic: false,
+          border: true,
+          cls: 'welcome',          
+          listeners: { 'Select': function(me, resource) { 
+                          window.open(bq.url('/client_service/view?resource='+resource.uri)); 
+                       }, 
+                       scope: this },    
+      });    
+      
+      var setBrowser = new Bisque.ResourceBrowser.Browser({
+          layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.LIST,
+          title: 'Datasets',
+          tagOrder: '"@ts":desc',          
+          dataset: '/data_service/datasets',
+          selType: 'SINGLE',          
+          wpublic: false,
+          border: true,
+          cls: 'welcome',          
+          listeners: { 'Select': function(me, resource) { 
+                          window.open(bq.url('/client_service/view?resource='+resource.uri)); 
+                       }, 
+                       scope: this },    
+      });        
+
+      var tabs = Ext.create('Ext.tab.Panel', {
+          //title : 'My recent activity',
+          region : 'east',
+          activeTab : 0,
+          //border : false,
+          //bodyBorder : 0,
+          //collapsible : true,
+          split : true,
+          //width : 450,
+          height : 500, 
+          plain : true,
+          border: false,
+          renderTo: 'recents',          
+          bodyStyle : 'background-color: #ccc;',
+          items : [mexBrowser, imgBrowser, setBrowser]
+      });       
+              
+              
+      /*       
+      var portal = Ext.create('Ext.tab.Panel', {
+          //title : 'Portal',
+          region : 'east',
+          activeTab : 0,
+          border : false,
+          bodyBorder : 0,
+          collapsible : true,
+          split : true,
+          width : 900,
+          height : 500,          
+          plain : true,
+          renderTo: 'recents',          
+          items : [
+              
+                  {
+                    xtype: 'portalpanel',
+                    region: 'center',
+                    items: [{
+                        id: 'col-1',
+                        items: [{
+                            id: 'portlet-2',
+                            title: 'Portlet 2',
+                            html: '<div class="portlet-content">stufffff stuffff</div>',
+                        }]
+                    },{
+                        id: 'col-2',
+                        items: [{
+                            id: 'portlet-3',
+                            title: 'Portlet 3',
+                            html: '<div class="portlet-content">fhsjkfh fhsdjfhs dfksh fhkjfhskd </div>',
+                        }]
+                    },{
+                        id: 'col-3',
+                        items: [{
+                            id: 'portlet-4',
+                            title: 'Stock Portlet',
+                            html: '<div class="portlet-content">fhsjkfh fhsdjfhs dfksh fhkjfhskd </div>',
+                        }]
+                    }]
+                }              
+              
+          ]
+      });                
+      */        
+           
+      
+  });
+</script>
+
+</head>
+
+<body>
+
+
+<!-- **************************************************************************** -->
+<!-- RIGHT COLUMN -->
+<!-- **************************************************************************** -->
+
+<div class="highlightsbar">
+
+  <dl id="yellow">
+  	<dt><a href="browser">Explore images</a></dt>
+  	<dd><a href="browser"><img src="${tg.url('/client_service/public/images/browse_80.png')}" alt="Enter Public Image Collection!" border="0" /></a></dd>
+  </dl>
+  
+  
+  <dl id="gray" title="Current statistics for this BISQUE database.">
+  	<dt>Usage statistics</dt>
+  	<dd><p>
+      <span py:if="not tg.identity">Public Images: ${item_count}</span>
+      <span py:if="tg.identity">My Images: ${item_count}</span>
+      <br />
+      All Images: ${all_count}<br />
+      2D Planes: ${images2d}<br />
+      Tags: ${tag_count}<br />
+  </p>
+  </dd>
+  </dl>
+
+  <dl id="gray" title="Random image">
+  	<dt>Random image</dt>
+    
+  	<dd><a href="${imageurl}" ><img py:if="thumbnail" id="border" src="${thumbnail}=200,200" alt="Example Image"/></a></dd>
+  </dl>
+
+</div>
+
+<!-- **************************************************************************** -->
+<!-- CENTER -->
+<!-- **************************************************************************** -->
+
+<h2>${welcome_message}</h2>
+
+<p style="color: #FF6600;" py:if="tg.config.get('bisque.environment', None) == 'development'">
+   <b>WARNING: This a test environment DATA MAY BE LOST</b>
+</p>
+
+<div>
+    <div class="widget">
+        <h3>Applications</h3>
+        <div id="applications" class="contents"></div>
+    </div>
+
+    <div class="widget">
+        <span py:if="tg.identity"><h3>My recent activity</h3></span>
+        <span py:if="not tg.identity"><h3>Recent activity</h3></span>        
+        <div id="recents" class="contents"></div>
+    </div>
+</div>
+
+
+<div id="data_explore" class="welcome_main" >
+  <h3>Explore images:</h3>
+
+
+  <script type="text/javascript" >
+        Bisque.onReady (function () {
+          new DataExplore(document.getElementById("data_explore"), "${welcome_tags}" );
+});
+  </script>
+</div>
+
+<div style="height: 50px;"></div>
+
+</body>
+</html>

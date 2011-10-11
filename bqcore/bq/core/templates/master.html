@@ -1,0 +1,115 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"> 
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:py="http://genshi.edgewall.org/"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      py:strip="">
+
+<py:match path="head" once="true">
+<head py:attrs="select('@*')">
+
+    <meta content="text/html; charset=UTF-8" http-equiv="content-type" py:replace="''"/>
+    <title py:with="title = list(select('title/text()'))">
+    Bisque<py:if test="title">: ${title}</py:if>
+    </title>  
+    
+    <!-- ExtJS -->
+    <link rel="stylesheet" type="text/css" href="${tg.url('/extjs/resources/css/ext-all.css')}" />
+    <!--
+    <link2 rel="stylesheet" type="text/css" href="${tg.url('/extjs/resources/css/xtheme-gray.css')}"/>
+    -->
+    
+    <script type="text/javascript" src="${tg.url('/extjs/bootstrap.js')}"></script>
+    <!--<script type="text/javascript" src="${tg.url('/extjs/ext-all-debug.js')}"></script>-->
+    
+    <!-- Bisque styles -->
+    <link rel="stylesheet" type="text/css" href="${tg.url('/css/bisquik_extjs_fix.css')}" />
+    <link rel="stylesheet" type="text/css" href="${tg.url('/css/bq.css')}" />
+    <link rel="stylesheet" type="text/css" href="${tg.url('/css/bq_ui_toolbar.css')}" />  
+    
+    <!-- Bisque JsApi - this needs cleaning and updating -->  
+    <script type="text/javascript" src="${tg.url('/js/globals.js')}" />
+    <script type="text/javascript" src="${tg.url('/js/utils.js')}" />
+    <script type="text/javascript" src="${tg.url('/js/XMLHttpRequest.js')}" />
+    
+    <script type="text/javascript" src="${tg.url('/js/bq_api.js')}" />
+    <script type="text/javascript" src="${tg.url('/js/bq_ui_application.js')}" />
+    <script type="text/javascript" src="${tg.url('/js/bq_ui_toolbar.js')}" />
+    
+    <link rel="stylesheet" type="text/css" href="${tg.url('/js/bq_ui_misc.css')}" />
+    <script type="text/javascript" src="${tg.url('/js/bq_ui_misc.js')}"></script>  
+    
+    <script type="text/javascript" src="${tg.url('/js/date.js')}"></script> 
+    <script type="text/javascript" src="${tg.url('/js/encoder.js')}"></script> 
+ 
+ 
+    <!-- ResourceBrowser code -->
+    <link rel="stylesheet" href="${tg.url('/js/ResourceBrowser/ResourceBrowser.css')}" type="text/css"/>
+    
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/Browser.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/LayoutFactory.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/Organizer.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/ResourceQueue.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/DatasetManager.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/CommandBar.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/viewStateManager.js')}"></script>
+    
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/ResourceFactory/ResourceFactory.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/ResourceFactory/ResourceImage.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/ResourceFactory/ResourceMex.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/ResourceFactory/ResourceModule.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/ResourceFactory/ResourceDataset.js')}"></script>
+    
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/Misc/MessageBus.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/Misc/GestureManager.js')}"></script>
+    <!--<script type="text/javascript" src="${tg.url('/js/ResourceBrowser/Misc/ComponentDataView.js')}"></script>-->    
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/Misc/Slider.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/Misc/DataTip.js')}"></script>
+    
+    <!-- ResourceTagger files -->
+    <link rel="stylesheet" href="${tg.url('/js/ResourceTagger/Tagger.css')}" type="text/css"/>
+
+    <script type="text/javascript" src="${tg.url('/js/ResourceTagger/Tagger.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/ResourceTagger/TaggerOffline.js')}"></script> 
+    <script type="text/javascript" src="${tg.url('/js/ResourceTagger/ResourceRenderers/BaseRenderer.js')}"></script>
+ 
+
+  <!-- Configuration variables   -->  
+  <script type="text/javascript" > 
+    // update the configuration in your template
+    bq = Ext.create('BQ', {
+      title : "${tg.config.get('bisque.title', 'CBI Repository')}",
+      root  : "${tg.url('/')}",
+    });
+  </script>
+
+  <!-- Derived template configuration includes   -->  
+  ${select('*[@id="config" and local-name()="script"]')}
+
+  <!-- Bisque Application instantiation   -->   
+  <script type="text/javascript" > 
+  //<![CDATA[
+  //   var services = ${g.services};
+  //   Bisque.init_services(services);
+  //   clog ("HELP");
+  //Ext.onReady (BQ.Application.init, BQ.Application);
+  Ext.onReady( function(){ BQApp = Ext.create('BQ.Application', bq); });
+ //]]>
+  </script>  
+
+  <!-- Derived template includes   -->  
+  ${select('*[local-name()!="title" and not(@id="config" and local-name()="script")]')}
+  
+</head>
+</py:match>
+
+
+<py:match path="body" once="true">
+
+<body py:attrs="select('@*')">
+	<div id="content" class="content" >	<!-- class="content" -->
+    ${select('*|text()')} 
+  </div> 
+</body>
+</py:match>
+
+</html>

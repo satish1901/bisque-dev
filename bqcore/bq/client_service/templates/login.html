@@ -1,0 +1,49 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+                    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:py="http://genshi.edgewall.org/"
+    xmlns:xi="http://www.w3.org/2001/XInclude">
+
+<xi:include href="master.html" />
+
+<head>
+<meta content="text/html; charset=UTF-8" http-equiv="content-type" py:replace="''"/>
+<title>Login Form</title>
+</head>
+
+<script type="text/javascript">
+function login_cas() {
+    document.location = '/auth_service/login_handler?login_type=cas';
+}
+
+function login_openid(provider) {
+    var providers = {
+        google : 'https://www.google.com/accounts/o8/id',
+    };
+    
+    //var openid_field = document.getElementById('openid_provider');
+    //openid_field.value = providers[provider];
+    document.location = '/auth_service/openid_login_handler?openid_provider=' + providers[provider];
+}
+</script>
+
+
+<body>
+  
+<div id="loginform" class="loginform">
+
+<form action="${tg.url('/auth_service/login_handler', came_from = came_from.encode('utf-8'), __logins = login_counter.encode('utf-8'))}" method="POST" id='login_form' class="loginfields">
+    <h2>Login</h2>
+    <label for="loginusername">Username:<input type="text" id="loginusername" name="login" class="text"></input></label>
+    <label for="loginpassword">Password:<input type="password" id="loginpassword" name="password" class="text"></input></label>
+    <input type="hidden" id="openid_provider" value="google" />
+    <input type="submit" id="submit" value="Login" />
+    <input py:if="tg.config.get('bisque.login.cas')" type="button" id="submit_cas" value="Login with CAS" onclick="login_cas()" />
+    <input py:if="tg.config.get('bisque.login.google')" type="button" id="submit_cas" value="Login with Google" onclick="login_openid('google')" />
+</form>
+
+
+</div>
+
+</body>
+</html>

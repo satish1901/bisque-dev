@@ -1,0 +1,35 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+                      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:py="http://genshi.edgewall.org/"
+      xmlns:xi="http://www.w3.org/2001/XInclude">
+
+  <xi:include href="master.html" />
+
+<head>
+  <meta content="text/html; charset=UTF-8" http-equiv="content-type" py:replace="''"/>
+  <title>Export service</title>
+</head>
+
+<body>
+  <h1>Export service</h1>
+
+  <p>This service allows you to export documents from the Bisque system to other service providers.</p>
+  
+  <h2>Resource</h2>
+  <ul>
+    <li><a href="/export/to_gdocs">to Google Documents</a></li>
+    <li><a myhref="/export/to_tar" onclick="BQ.ui.attention('Currently disabeled...');"
+        >to a Tar file</a> (<a href="http://en.wikipedia.org/wiki/Tar_(file_format)" target="_blank">info</a>)</li>
+  </ul>
+
+  <h2>Query</h2>
+  <ul>
+    <li><a myhref="/export/#" onclick="BQ.ui.attention('Currently disabeled...');"
+        >to a Tar file</a> (<a href="http://en.wikipedia.org/wiki/Tar_(file_format)" target="_blank">info</a>)</li>
+  </ul>  
+
+</body>
+</html>
+
+

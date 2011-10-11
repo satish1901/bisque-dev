@@ -1,0 +1,67 @@
+.msg .x-box-mc {
+    font-size:14px;
+}
+
+#messagepopup {
+    position:absolute;
+    left:35%;
+    top:10px;
+    width:300px;
+    z-index:20000;
+}
+
+#messagepopup .msg {
+    border-radius: 8px;
+    -moz-border-radius: 8px;
+    background: #F6F6F6;
+    border: 2px solid #ccc;
+    margin-top: 2px;
+    padding: 10px 15px;
+    color: #555;
+}
+
+#messagepopup .msg h3 {
+    margin: 0 0 8px;
+    font-weight: bold;
+    font-size: 15px;
+}
+
+#messagepopup .msg p {
+    margin: 0;
+}
+
+#messagepopup .warning {
+    width: 450px;
+    font-size: 18px;    
+    background: #FFFF99;
+    color: #CC0000;
+    border-color: #CC0000;
+}
+
+#messagepopup .warning h3 {
+    font-size: 20px;
+}
+
+#messagepopup .error {
+    width: 450px;
+    font-size: 18px;    
+    background: #CC0000;
+    color: #FFFFFF;
+    border-color: #000000;
+}
+
+#messagepopup .error h3 {
+    font-size: 20px;
+}
+
+#messagepopup .notification {
+    width: 450px;
+    font-size: 18px;    
+    background: #FFFF99;
+    color: #006633;
+    border-color: #006633;
+}
+
+#messagepopup .notification h3 {
+    font-size: 20px;
+}

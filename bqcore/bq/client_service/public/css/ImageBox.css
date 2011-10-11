@@ -1,0 +1,89 @@
+/*-------------------------------------------------------*/
+
+.imagebox_divMain {
+        height: 130px;
+    margin: 5px 5px 5px 5px;
+        padding: 2px 2px 2px 2px;
+        font-family: Verdana;
+        font-size: 0.8em;
+        border:1px solid #717171;
+        background-color: #F0F0F0;
+    float: left;
+    -moz-user-select: none;
+    
+}
+/*-------------------------------------------------------*/
+.imagebox_divImg {
+        width: 130px;
+        height: 100%;
+    margin: 2px 2px 2px 2px;
+        padding: 0px 0px 0px 0px;
+        /*background-color: #CCFFFF;*/
+    float: left;
+        vertical-align:middle;
+/*      horizontal-align:middle; */
+        margin-left:auto;
+    margin-right:auto;
+    -moz-user-select: none;
+    
+}
+/*-------------------------------------------------------*/
+.imagebox_divTags {
+    width: 170px;
+        height: 100%;
+    margin: 2px 2px 2px 5px;
+        padding: 0px 0px 0px 0px;
+    float: left;
+    text-overflow: ellipsis;
+    overflow: hidden
+}
+/*-------------------------------------------------------*/
+.imagebox_divImg a {
+        display: table-cell;
+        width: 130px;
+        height: 130px;
+        text-align: center;
+        vertical-align: middle;
+}
+.imagebox_divImg img{
+    border-style: none;
+        vertical-align: middle;
+}
+/*-------------------------------------------------------*/
+.imagebox_divTags p{
+    margin: 0px 0px 0px 0px;
+        padding: 0px 0px 0px 0px;
+}
+.imagebox_divTags p.tagHeader{
+    margin: 0px 0px 0px 0px;
+        padding: 0px 0px 0px 0px;
+    text-align: right;
+}
+/*-------------------------------------------------------*/
+.imagebox_divTags div{
+    text-overflow: ellipsis;
+    overflow: hidden;
+        white-space: nowrap;
+}
+.imagebox_moreLikeThis {
+   float: bottom;
+   font-family: Verdana;
+   font-size: 0.9em;
+   color: red;
+}
+
+.thumbs {
+border:0px solid black;
+}
+/*-------------------------------------------------------*/
+/*-------------------------------------------------------*/
+/*-------------------------------------------------------*/
+/*-------------------------------------------------------*/
+/*-------------------------------------------------------*/
+.clearfix:after {
+    content: ".";
+    display: block;
+    height: 0px;
+    clear: both;
+    visibility: hidden;
+}

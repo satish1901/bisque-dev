@@ -1,0 +1,32 @@
+import os
+from tg import config
+
+def bisque_path(*names):
+    'return a path constructed from the installation path'
+    root = config.get('bisque.paths.root')
+    return os.path.join(root, *names)
+    
+def data_path(*names):
+    'return a path constructed from the data directory path'
+    data = config.get('bisque.paths.data', None)
+    data = data or os.path.join(config.get('bisque.paths.root'), 'data')
+    return os.path.join(data, *names)
+    
+
+def config_path(*names):
+    'return a path constructed from the config directory path'
+    conf = config.get('bisque.paths.config', None)
+    conf = conf or os.path.join(config.get('bisque.paths.root'), 'config')
+    return os.path.join(conf, *names)
+
+
+def site_cfg_path():
+    'find a site.cfg from the usual places: locally, config, or /etc'
+    paths = ['.', 'config', '/etc/']
+    for d in paths:
+        site_cfg = os.path.join(d, 'site.cfg')
+        if os.path.exists(site_cfg):
+            return site_cfg
+    return None
+        
+                              

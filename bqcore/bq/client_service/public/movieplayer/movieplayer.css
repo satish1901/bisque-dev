@@ -1,0 +1,22 @@
+.videocontorls {
+	padding: 5px;
+	background-color: #CCC;
+	border-color: #999;
+	border-style: solid;
+	border-width: 1px;
+	margin-bottom: 5px;
+	width: 600px;
+}
+
+.navigationcontorls {
+	font-size: 90%;
+	font-family: Tahoma, Geneva, sans-serif;
+}
+
+.navigationcontorls a {
+	color: #333;
+}
+
+.navigationcontorls a:hover {
+	color: #F60;
+}

@@ -1,0 +1,115 @@
+/*---------------------------------------------------------
+	styles for Error Box
+---------------------------------------------------------*/
+/*-------------------------------------------------------*/
+.error_divMain{
+	
+	width: 500px;
+    margin: 0px 0px 0px 0px;
+	padding: 0px 0px 0px 0px;
+	font-family: Verdana;
+  	border: 1px solid black;
+	position: absolute;
+	background-color: #ffdddd;
+	z-index: 5;
+	opacity: 0.9;
+	display: block;
+}
+.error_divForm{
+    height: 120px;
+  	width: 100%;
+    margin: 0px 0px 0px 0px;
+	padding: 0px 0px 0px 0px;
+    overflow: auto;
+    overflow-x: hidden;
+    display: block;
+}
+.error_divMessage{
+  	width: 100%;
+    margin: 0px 0px 0px 0px;
+	padding: 0px 0px 0px 0px;
+    display: block;
+    border-top: 1px solid black;
+}
+.error_divTop{
+   	height: 20px;
+  	width: 100%;
+	background-color: #FF0000;
+  	border-bottom: 1px solid black;
+  	color: #FFFF00;
+  	display: block;
+}
+.error_divClose{
+  	float: right;
+}
+.error_divTitle{
+    font-size: 85%;
+    width: 300px;
+  	float: left;
+  	margin: 0px 0px 0px 10px;
+	padding: 0px 0px 0px 0px;
+}
+.error_divFormEmail{
+    width: 200px;
+  	float: left;
+  	margin: 0px 0px 0px 10px;
+	padding: 0px 0px 0px 0px;
+}
+.error_divFormEmail p{
+    font-size: 80%;
+    text-align: justify;
+}
+.error_inputEmail{
+  	width: 200px;
+	background-color: #FFFFFF;
+}
+.error_divFormSend{
+    width: 250px;
+  	float: right;
+  	display: block;
+  	margin: 5px 5px 0px 0px;
+	padding: 0px 0px 0px 0px;
+}
+.error_inputSend{
+   	height: 30px;
+  	width: 100px;
+    margin: 5px 3px 0px 0px;
+  	float: right;
+}
+.error_divFormSend textarea{
+    width: 240px;
+    height: 70px;
+    float: right;
+    maxlength: 5;
+	background-color: #FFFFFF;
+}
+.error_divMessageShowError{
+  	float: right;
+  	font-size: 80%;
+}
+.error_divMessageError{
+    overflow: auto;
+    overflow-x: hidden;
+    font-size: 70%;
+    margin: 20px 3px 3px 3px;
+    text-align: justify;
+}
+/*-------------------------------------------------------*/
+/*-------------------------------------------------------*/
+/*-------------------------------------------------------*/
+/*-------------------------------------------------------*/
+
+.clearfix:after {
+    content: "."; 
+    display: block; 
+    height: 2px; 
+    clear: both; 
+    visibility: hidden;
+}
+
+/*-------------------------------------------------------*/
+/*-------------------------------------------------------*/
+/*-------------------------------------------------------*/
+/*-------------------------------------------------------*/
+/*-------------------------------------------------------*/
+/*-------------------------------------------------------*/

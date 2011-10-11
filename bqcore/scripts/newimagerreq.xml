@@ -1,0 +1,9 @@
+R='
+<request>
+   <image src="qqqq" x="100" y="100" >
+</request>
+'
+
+echo "Sending $R"
+
+echo $R | curl -X POST -H 'Content-type: text/xml' -d @- http://localhost:8080/ds/images

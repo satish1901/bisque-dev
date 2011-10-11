@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<module name="SeedSize" path="./launch.py" type="runtime" >
+
+    <tag name="inputs">
+        <tag name="input-system" value="image_url"  />
+        <tag name="input-system" value="mex_url" />
+        <tag name="input-system" value="bisque_token" />
+    </tag>
+
+    <tag name="execute_options">
+        <tag name="argument_style" value="named" />
+    </tag>
+    
+    <tag name="module_options" >
+        <tag name="version" value="2" />
+    </tag>    
+    
+    <tag name="display_options" >
+        <tag name="group" value="application" />
+    </tag>
+   
+    <tag name="interface" type="file" value="public/html/seedsize.html" />
+    <tag name="help"      type="file" value="public/html/help.html" />
+    <tag name="thumbnail" type="file" value="public/images/thumbnail.png" /> 
+
+    <tag name="description" type="string" value="This algorithm analyses images produced by a flat-bed scanner with seeds layed over the glass surface. Analysis outlines detected seeds and computes their geometrical properties." />  
+    <tag name="title" type="string" value="Seed size analyzer" />    
+    <tag name="authors" type="string" value="Nathan Miller, Logan Johnson, Kris Kvilekval and Dmitry Fedorov" />
+
+</module>

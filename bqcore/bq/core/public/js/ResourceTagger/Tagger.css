@@ -1,0 +1,73 @@
+/* CSS settings for resource tagger */
+.icon-tag {
+	background-image: url('../ResourceTagger/Images/tag.png') !important;
+}
+
+.icon-folder {
+	background-image: url('../ResourceTagger/Images/folder.gif') !important;
+}
+
+.icon-grid {
+	background-image: url('../ResourceTagger/Images/grid.png') !important;
+}
+
+.icon-add {
+	background-image: url('../ResourceTagger/Images/add.png') !important;
+}
+
+.icon-delete {
+	background-image: url('../ResourceTagger/Images/delete.gif') !important;
+}
+
+.icon-save {
+	background-image: url('../ResourceTagger/Images/save.png') !important;
+}
+
+.icon-import {
+    background-image: url('../ResourceTagger/Images/import.png') !important;
+}
+
+.icon-export {
+    background-image: url('../ResourceTagger/Images/export.png') !important;
+}
+
+.editGrid {
+	color: #444;
+	font-size: 11px;
+}
+
+.x-grid-row-checker {
+	margin-left: 5px;
+	margin-top: 2px;
+}
+
+
+/* Examples.css */
+
+.msg .x-box-mc {
+    font-size:14px;
+}
+#msg-div {
+    position:absolute;
+    left:35%;
+    top:10px;
+    width:300px;
+    z-index:20000;
+}
+#msg-div .msg {
+    border-radius: 8px;
+    -moz-border-radius: 8px;
+    background: #F6F6F6;
+    border: 2px solid #ccc;
+    margin-top: 2px;
+    padding: 10px 15px;
+    color: #555;
+}
+#msg-div .msg h3 {
+    margin: 0 0 8px;
+    font-weight: bold;
+    font-size: 15px;
+}
+#msg-div .msg p {
+    margin: 0;
+}

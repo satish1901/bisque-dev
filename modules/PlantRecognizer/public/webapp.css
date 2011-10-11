@@ -1,0 +1,13 @@
+.x-panel-body {
+    background: url('images/background.jpg');
+    background-size: 100% 100%;
+    background-repeat:no-repeat;
+}  
+
+.webapp .help {
+    background-color: rgba(225, 255, 233, 0.7);
+}
+
+.webapp .box {
+    background-color: rgba(238, 238, 238, 0.5);
+}

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<module name="MetaData" path="./MetaData" type="python">
+
+   <!-- Comments are OK -->  
+    <tag name="inputs">
+        <tag name="input-formal" value="image_url" type="image" />
+        <tag name="input-system" value="mex_url"  />
+        <tag name="input-system" value="bisque_token"  />
+    </tag>
+    
+    <tag name="outputs">
+         <tag name="output-formal" value="MetaData" type="tag" />
+    </tag>
+    
+    <tag name="module_options" >
+        <tag name="version" value="2" />
+    </tag>
+    
+    <tag name="display_options" >
+       <tag name="group" value="Generic" />
+    </tag>
+    
+    <tag name="help" type="file" value="public/help.html" /> 
+    <tag name="thumbnail" type="file" value="public/thumbnail.png" />   
+
+    <tag name="title" type="string" value="MetaData" /> 
+    <tag name="authors" type="string" value="The Bisque team" /> 
+    <tag name="description" type="string" value="This module annotates an image with its embedded metadata." /> 
+</module>

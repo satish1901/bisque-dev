@@ -1,0 +1,95 @@
+.tag_viewer { 
+  margin: 0px 20px 0px 10px;  
+}
+.tag_viewer_display { 
+  width: 80%;
+  min-width: 500px;
+}
+/***********************************************************/
+
+.tagview_button {
+	border-color: #333333;
+	border-width:0px;
+	font-size: 14px;
+    color: #CCCCCC;
+	background-color: #666666;
+    font-weight: bold;
+	padding: 2px 2px 2px 2px;
+    margin: 10px 0px 0px 5px;
+}
+.tagview_scroller {
+	overflow: auto;
+	/*vertical-align: middle;
+	text-align: center;
+	background-color: #EEEEEE;*/
+	/*width: 100%;*/
+	width:auto;
+	/*max-width: 90%;	*/
+	max-height: 600px;
+}
+
+.buttonbar select, .imgview_opdiv input {
+	clear:none;
+	background-color:#333333;
+	color:#FFFFFF;
+	font-weight: bold;	
+	font-size:12px;	
+}
+
+
+/***********************************************************/
+.tagelement { 
+  background: #ffffff;
+  clear: both;	
+}
+.tagelement input{ 
+	font: 0.9em verdana,sans-serif;
+	background:#fcfc99;
+	border: solid thin #ccc;
+	margin-right:10px;
+	margin-bottom:3px;
+	margin-top:2px;
+	padding-left:3px;
+  width:35%;
+}
+.tagelement_children { 
+/*  display:inline; */
+  clear: both;
+  margin-left: 20px;
+}
+
+.tagview_command {
+  /*margin-left: 4px;*/
+	padding: 2px 4px 2px 4px;
+}
+
+.tagview_command:hover {
+  background-color:#FF6600;
+	color:#FFFFFF;
+}
+
+.tagview_speedbutton {
+
+}
+
+.tagelement_view { 
+}
+
+.tagelement_lcommand { 
+  float:left;
+  margin: 10px 0px 0px 0px
+  padding: 2px 5px 2px 5px;
+  font-size:  12px;
+}  
+.tagelement_rcommand { 
+  float: right;
+  margin: 10px 0px 0px 0px
+  padding: 2px 5px 2px 5px;
+  font-size:  14px;
+
+}
+.tagelement_querydb { 
+  position: absolute;
+  opacity: 0.8;
+  visibility: visible;
+}

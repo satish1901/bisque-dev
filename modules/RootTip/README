@@ -1,0 +1,24 @@
+
+packages needed
+ aptitude install liblog-log4perl-perl
+ aptitude install libxml-libxml-perl
+ aptitude install libtext-csv-perl
+
+
+
+
+Module starter 
+
+   module-starter --module=BQPhytomorph::Condor --author=CBI --email=bisque-dev@biodev.ece.ucsb.edu
+   cd BQPhytomorph-Condor
+
+   perl Makefile.PL INSTALL_BASE=~/bqenv
+   make test
+   make install 
+   make clean
+
+   using the modules
+   export PERL5LIB=~/bqenv/lib/perl5
+
+
+

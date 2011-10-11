@@ -1,0 +1,133 @@
+.upload {
+    background-image: url('images/drop_background.png');
+    /*background-image: url(flower.png), url(ball.png), url(grass.png);*/
+    background-position: center center;   
+    background-repeat: no-repeat; 
+    background-color: white;    
+}
+
+.header {
+    background-color: white;    
+    padding: 0px 15px 15px 30px;
+}
+
+.tools {
+    /*background-color: white;*/
+    padding: 10px 10px 10px 15px;   
+}
+
+.tools .x-btn-default-large {
+    border-color: #CCCCCC;    
+    padding: 6px;
+}
+
+.tools .x-btn-inner {
+    font-size: 14px;    
+}
+
+.tools .browse {
+    background-image: url('images/browse.png');
+    background-color: transparent;
+}
+
+.tools .annotate {
+    background-image: url('images/annotations.png');
+    background-color: transparent;
+}
+
+.tools .formats {
+    background-image: url('images/formats.png');
+    background-color: transparent;
+}
+
+.tools .help {
+    background-image: url('images/help.png');
+    background-color: transparent;
+}
+
+.tools .x-toolbar-text h1 {
+   font-size: 30px; 
+   margin: 0px;
+}
+
+
+.footer {
+    padding: 10px 10px 10px 15px;    
+}
+
+.footer .x-btn-default-large {
+    border-color: #CCCCCC;
+    padding: 6px;
+}
+
+.footer .x-btn-inner {
+    font-size: 14px;    
+}
+
+.footer .upload {
+    background-image: url('images/upload.png');
+    background-color: transparent;
+}
+
+.footer .cancel {
+    background-image: url('images/cancel.png');
+    background-color: transparent;
+}
+
+.dragging {
+   border-radius: 5px;
+   border: dashed 3px red;
+   /*-moz-box-shadow: inset 0 0 15px #FF6600, 0 0 15px #FF6600;
+   -webkit-box-shadow: inset 0 0 15px #FF6600, 0 0 15px #FF6600;
+   box-shadow: inset 0 0 15px #FF6600, 0 0 15px #FF6600;*/
+   background-color: #FFFFCC;
+   z-index: 1000;
+   overflow:hidden;
+}
+
+.uploaditem {
+    /*margin-bottom: 10px;*/
+}
+
+.uploaditem h4 {
+    margin-bottom: 6px;
+    font-size: 14px;
+    font-weight: normal;
+}
+
+.error, .error>.x-progress-text-back {
+    color: red !important;
+    border-color: red !important;
+}
+
+.error>.x-progress-bar {
+    background-color: red !important;
+    background-image: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #ffc7c7), color-stop(50%, #e58888), color-stop(51%, #e07373), color-stop(100%, #ff3535));
+    background-image: -moz-linear-gradient(top, #ffc7c7,#e58888 50%,#e07373 51%,#ff3535);
+    background-image: linear-gradient(top, #ffc7c7,#e58888 50%,#e07373 51%,#ff3535);
+}
+
+.done, .done>.x-progress-text-back {
+    color: green !important;
+    border-color: green !important;
+}
+
+.done>.x-progress-bar {
+    background-color: green !important;
+    background-image: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #a3d39c), color-stop(50%, #66b85d), color-stop(51%, #4fb248), color-stop(100%, #00d100));
+    background-image: -moz-linear-gradient(top, #a3d39c,#66b85d 50%,#4fb248 51%,#00d100);
+    background-image: linear-gradient(top, #a3d39c,#66b85d 50%,#4fb248 51%,#00d100);    
+}
+
+.question {
+    margin-bottom: 15px;
+    margin-top: 10px;    
+    font-size: 14px;
+    display: block;
+}
+
+/*
+.tabs .x-panel-header-text {
+    font-size: 16px;
+}
+*/
