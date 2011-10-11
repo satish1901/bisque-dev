@@ -90,6 +90,8 @@ import zipfile
 import os.path
 import urllib
 import copy
+import mimetypes
+import traceback
 
 try:
     from cStringIO import StringIO
@@ -109,6 +111,7 @@ from bq.util.paths import data_path
 from bq import image_service
 from bq import data_service
 import bq.image_service.controllers.imgcnv as imgcnv
+import bq.image_service.controllers.bioformats as bioformats
 from bq.image_service.controllers.blobsrv import _mkdir
 
 
@@ -127,7 +130,8 @@ class UploadedFile:
     filename = None
     file     = None
     tags     = None
-
+    original = None
+    
     def __init__(self, path, name, tags=None):
         self.filename = name
         self.file = open(path, 'rb')
@@ -150,11 +154,14 @@ class import_serviceController(ServiceController):
     def __init__(self, server_url):
         super(import_serviceController, self).__init__(server_url)
         
+        mimetypes.add_type('image/slidebook', '.sld')
+        
         self.filters = {}
         self.filters['zip-multi-file']  = self.filter_zip_multifile   
         self.filters['zip-time-series'] = self.filter_zip_tstack   
         self.filters['zip-z-stack']     = self.filter_zip_zstack   
         self.filters['zip-5d-image']    = self.filter_5d_image   
+        self.filters['image/slidebook'] = self.filter_series_bioformats
         
         
     @expose('bq.import_service.templates.upload')
@@ -288,39 +295,62 @@ class import_serviceController(ServiceController):
         imgcnv.convert_list(members, combined_filepath, fmt='ome-tiff', extra=extra )
         return combined_filepath
 
+#------------------------------------------------------------------------------
+# multi-series files supported by bioformats
+#------------------------------------------------------------------------------
+
+    def extractSeriesBioformats(self, upload_file):
+        ''' This method unpacked uploaded file into a proper location '''
+        
+        uploadroot = config.get('bisque.image_service.upload_dir', data_path('uploads'))
+        upload_dir = '%s/%s'%(uploadroot, str(bq.core.identity.get_user().user_name))        
+        filename   = self.sanitize_filename(upload_file.filename)
+        filepath   = '%s/%s.%s'%(upload_dir, strftime('%Y%m%d%H%M%S'), filename)
+        unpack_dir = '%s/%s.%s.EXTRACTED'%( upload_dir, strftime('%Y%m%d%H%M%S'), filename )
+        _mkdir (unpack_dir)
+        
+        # we'll store the original uploaded file
+        out = open (filepath,'wb')
+        shutil.copyfileobj (upload_file.file, out)
+        out.close()
+        members = []
+        
+        # extract all the series from the file
+        if bioformats.supported(filepath):
+            info = bioformats.info(filepath)
+            if 'number_series' in info:
+                n = info['number_series']
+                for i in range(n):
+                    fn = 'series_%.5d.ome.tif'%i
+                    outfile = '%s/%s'%(unpack_dir, fn)
+                    bioformats.convert(ifnm=filepath, ofnm=outfile, original=None, series=i)
+                    if os.path.exists(outfile) and imgcnv.supported(outfile):
+                        members.append(fn)
+
+        return unpack_dir, members
+
 
 #---------------------------------------------------------------------------------------
-# filters, take f and return a list of file names and an error string
+# filters, take f and return a list of file names
 #---------------------------------------------------------------------------------------
 
     def filter_zip_multifile(self, f, intags):
-        try:
-            unpack_dir, members = self.unpackPackagedFile(f)
-            l = [ '%s/%s'%(unpack_dir, m) for m in members ]
-            return (l, None)
-        except:
-            return ([], 'Problem unpacking the file: %s'%sys.exc_info()[0])
+        unpack_dir, members = self.unpackPackagedFile(f)
+        return [ '%s/%s'%(unpack_dir, m) for m in members ]
     
     def filter_zip_tstack(self, f, intags):
-        try:
-            filepath = self.process5Dimage(f, number_t=0, **intags)
-            return ([filepath], None)
-        except:
-            return ([], 'Problem constructing the image: %s'%sys.exc_info()[0])
+        return [self.process5Dimage(f, number_t=0, **intags)]
     
     def filter_zip_zstack(self, f, intags):
-        try:
-            filepath = self.process5Dimage(f, number_z=0, **intags)
-            return ([filepath], None)
-        except:
-            return ([], 'Problem constructing the image: %s'%sys.exc_info()[0])
+        return [self.process5Dimage(f, number_z=0, **intags)]
     
     def filter_5d_image(self, f, intags):
-        try:
-            filepath = self.process5Dimage(f, **intags)
-            return ([filepath], None)
-        except:
-            return ([], 'Problem constructing the image: %s'%sys.exc_info()[0])
+        return [self.process5Dimage(f, **intags)]
+
+    def filter_series_bioformats(self, f, intags):
+        unpack_dir, members = self.extractSeriesBioformats(f)
+        return [ '%s/%s'%(unpack_dir, m) for m in members ]
+
 
 #------------------------------------------------------------------------------
 # file ingestion support functions
@@ -345,7 +375,9 @@ class import_serviceController(ServiceController):
             # the image was successfuly added into the image service
             resource = etree.Element('image')
             etree.SubElement(resource, 'tag', name="filename", value=filename)
-            etree.SubElement(resource, 'tag', name="upload_datetime", value=datetime.datetime.now().isoformat(' ') ) 
+            etree.SubElement(resource, 'tag', name="upload_datetime", value=datetime.datetime.now().isoformat(' '), type='datetime' ) 
+            if hasattr(f, 'original') and f.original:
+                etree.SubElement(resource, 'tag', name="original_upload", value=f.original, type='link' )              
             
             log.debug("\n\ninsert_image tags: \n%s\n" % etree.tostring(tags))
                           
@@ -387,31 +419,53 @@ class import_serviceController(ServiceController):
                                    if t.get('value') is not None and t.get('name') is not None ])
                 # remove the ingest tags from the tag document
                 f.tags.remove(xl[0])
-                
-        if intags is None or not 'type' in intags:
-            return self.insert_image(f)
+
+        # append processing tags based on file type and extension
+        mime = mimetypes.guess_type(self.sanitize_filename(f.filename))[0]
+        if mime in self.filters:
+            if intags is not None:
+                intags['type'] = mime
+            else:
+                intags = {'type': mime}
         
+        # no processing required        
+        if intags is None or 'type' not in intags or intags['type'] not in self.filters:
+            return self.insert_image(f)
+
+        # start processing
         else:
             log.debug('process -------------------\n %s'% intags )
-            nf, error = self.filters[ intags['type'] ](f, intags)
-            
-            log.debug('filters error: %s'% error )
-            log.debug('filters nf: %s'% nf )            
-            
+            error = None
+            try:
+                nf = self.filters[ intags['type'] ](f, intags)
+            except:
+                e = sys.exc_info()            
+                log.debug('Exception in %s:\n%s', intags['type'], traceback.print_exception(e[0], e[1], e[2])) 
+                error = 'Problem processing the file: %s'%e[1]
+           
             # some error during pre-processing
-            if not error is None:
+            if error is not None:
+                log.debug('filters error: %s'% error )                
                 resource = etree.Element('file', name=f.filename)
                 etree.SubElement(resource, 'tag', name='error', value=error)
                 return resource
 
+            # include the parent file into the database
+            info = image_service.new_file(src=f.file, name=os.path.split(f.filename)[-1])
+            if info and 'src' in info:
+                parent_uri = info['src']
+
             # pre-process succeeded          
+            log.debug('filters nf: %s'% nf )            
             resources = []
             for n in nf:
                 name = os.path.split(n)[-1]
                 if f.filename not in name:
                     name = '%s.%s'%(f.filename, name )
                 myf = UploadedFile(n, name, f.tags)
+                if parent_uri: myf.original = parent_uri
                 resources.append( self.insert_image(myf) )
+            
             
             # if only one resource was inserted, return right away
             if len(resources)==1:
@@ -421,7 +475,10 @@ class import_serviceController(ServiceController):
             # now we'll just return a stupid stub
             ts = datetime.datetime.now().isoformat(' ')
             resource = etree.Element('dataset', type='datasets', name='%s (uploaded %s)'%(f.filename, ts))
-            etree.SubElement(resource, 'tag', name="upload_datetime", value=ts )             
+            etree.SubElement(resource, 'tag', name="upload_datetime", value=ts, type='datetime' )             
+            if parent_uri:
+                etree.SubElement(resource, 'tag', name="original_upload", value=parent_uri, type='link' )   
+                        
             members = etree.SubElement(resource, 'tag', name='members')
             index=0
             for r in resources:

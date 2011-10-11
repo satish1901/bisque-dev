@@ -60,7 +60,7 @@ class image_serviceController(ServiceController):
 
 
 
-    def new_file(self, src, name, userPerm = 1):
+    def new_file(self, src, name, userPerm = permission.PRIVATE):
         srv = self.srv
         userId = identity.current.user_name
         blob_id, path = srv.storeBlob (src=src, name=name, ownerId = userId, permission = userPerm)

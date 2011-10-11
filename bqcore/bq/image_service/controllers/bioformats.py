@@ -151,7 +151,8 @@ def supported(ifnm, original=None):
 ################################################################################                            
 
 # '.ome.tiff' or '.ome.tif'.
-def convert(ifnm, ofnm, original=None):
+# 
+def convert(ifnm, ofnm, original=None, series=-1):
     '''returns output filename'''
     if not is_installed: return None
     with Locks(ifnm, ofnm) as l:
@@ -164,6 +165,9 @@ def convert(ifnm, ofnm, original=None):
             command = [BFCONVERT, ifnm, ofnm]
         else:
             command = [BFCONVERT, '-map', ifnm, original, ofnm]
+        if series>=0:
+            command.append('-series')
+            command.append('%s'%series)
         retcode = call (command)
         if retcode != 0:
             log.debug ("BioFormats: returned %s" % retcode)  
@@ -231,6 +235,14 @@ def info(ifnm, original=None):
         
         if line.startswith('Checking file format ['):
             rd['format'] = line.replace('Checking file format [', '').replace(']', '')
+            continue
+
+        if line.startswith('Series count = '):
+            val = line.replace('Series count = ', '')
+            try:
+                rd['number_series'] = int(val)
+            except ValueError:
+                pass            
             continue
 
         if line.startswith('Series #0'):
