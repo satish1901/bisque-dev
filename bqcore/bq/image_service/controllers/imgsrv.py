@@ -66,7 +66,7 @@ imgsrv_thumbnail_cmd = config.get('bisque.image_service.thumbnail_command', '-de
 imgsrv_default_cmd = config.get('bisque.image_service.default_command', '-depth 8,d')
 
 imgcnv_needed_version = '1.51'
-bioformats_needed_version = '4.2.0.6685'
+bioformats_needed_version = '4.3.0'
 
 # ImageServer
 #
@@ -1777,8 +1777,8 @@ class ImageServer(BlobServer):
         # check the bioformats version if installed
         if bioformats.installed():        
             if not bioformats.ensure_version( bioformats_needed_version ):
-              log.debug('Bioformats needs update! Has: '+bioformats.version()['full']+' Needs: '+ bioformats_needed_version)            
-              #raise Exception('Bioformats needs update! Has: '+bioformats.version()['full']+' Needs: '+ bioformats_needed_version)
+                log.debug('Bioformats needs update! Has: '+bioformats.version()['full']+' Needs: '+ bioformats_needed_version)            
+                #raise Exception('Bioformats needs update! Has: '+bioformats.version()['full']+' Needs: '+ bioformats_needed_version)
 
     def tmpnam(ext):
         'create a tmp filename with ext'

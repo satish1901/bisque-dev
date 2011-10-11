@@ -60,7 +60,7 @@ TODO
 
 __module__    = "import_service"
 __author__    = "Dmitry Fedorov, Kris Kvilekval"
-__version__   = "2.0"
+__version__   = "2.1"
 __revision__  = "$Rev$"
 __date__      = "$Date$"
 __copyright__ = "Center for BioImage Informatics, University California, Santa Barbara"
@@ -155,6 +155,7 @@ class import_serviceController(ServiceController):
         super(import_serviceController, self).__init__(server_url)
         
         mimetypes.add_type('image/slidebook', '.sld')
+        mimetypes.add_type('image/volocity', '.mvd2')
         
         self.filters = {}
         self.filters['zip-multi-file']  = self.filter_zip_multifile   
@@ -162,6 +163,7 @@ class import_serviceController(ServiceController):
         self.filters['zip-z-stack']     = self.filter_zip_zstack   
         self.filters['zip-5d-image']    = self.filter_5d_image   
         self.filters['image/slidebook'] = self.filter_series_bioformats
+        self.filters['image/volocity']  = self.filter_series_bioformats
         
         
     @expose('bq.import_service.templates.upload')
@@ -318,7 +320,6 @@ class import_serviceController(ServiceController):
         # extract all the series from the file
         if bioformats.supported(filepath):
             info = bioformats.info(filepath)
-            log.debug ('info = %s' % info)
             if 'number_series' in info:
                 n = info['number_series']
                 for i in range(n):

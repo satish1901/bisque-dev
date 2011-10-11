@@ -9,7 +9,7 @@ from __future__ import with_statement
 
 __module__    = "bioformats"
 __author__    = "Dmitry Fedorov"
-__version__   = "0.4"
+__version__   = "0.5"
 __revision__  = "$Rev$"
 __date__      = "$Date$"
 __copyright__ = "Center for BioImage Informatics, University California, Santa Barbara"
@@ -67,6 +67,11 @@ def run_command(command):
 #Version: 4.2.0
 #SVN revision: 6685
 #Build date: 9 July 2010
+
+#Version: 4.3.2
+#VCS revision: bb54cc7
+#Build date: 14 September 2011
+
 def get_version ():
     '''returns the version of bioformats'''    
     o = run_command( [BFINFO, '-version'] )
@@ -80,9 +85,7 @@ def get_version ():
         v[d[0]] = d[1]
     
     if 'Version' in v:
-        #v['full'] = '%s.%s'%( v['Version'], v['SVN revision'] )
         v['full'] =  v['Version']
-            
 
     if 'full' in v:
         d = [int(s) for s in v['full'].split('.', 2)]
@@ -215,6 +218,7 @@ def convert(ifnm, ofnm, original=None, series=-1):
 def info(ifnm, original=None):
     '''returns the dict with file info'''
     if not os.path.exists(ifnm): return {}   
+    if not is_installed: return {}
 
     if original is None:
         command = [BFINFO, '-nopix', '-nometa', ifnm]

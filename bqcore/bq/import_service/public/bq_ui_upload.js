@@ -1,7 +1,7 @@
 /*******************************************************************************
 
-  BQ.upload.Upload - an integrated uploading tool
-  
+  BQ.upload.Panel  - an integrated uploading tool
+  BQ.upload.Dialog 
   
 
   Author: Dima Fedorov
@@ -539,11 +539,11 @@ BQ.upload.Item.STATE_STRINGS = {
 };
 
 //--------------------------------------------------------------------------------------
-// BQ.ui.Upload
+// BQ.upload.Panel
 // upload manages items and all other UI aspects like drag and drop
 //-------------------------------------------------------------------------------------- 
 
-Ext.define('BQ.upload.Upload', {
+Ext.define('BQ.upload.Panel', {
     alias: 'widget.upload',    
     extend: 'Ext.panel.Panel',
     requires: ['Ext.toolbar.Toolbar', 'Ext.tip.QuickTipManager', 'Ext.tip.QuickTip'],
@@ -924,4 +924,48 @@ Ext.define('BQ.upload.Upload', {
        
 });
 
+//--------------------------------------------------------------------------------------
+// BQ.upload.Dialog
+// Instantiates upload panel in a modal window
+//-------------------------------------------------------------------------------------- 
+
+Ext.define('BQ.upload.Dialog', {
+	extend : 'Ext.window.Window',
+	
+    constructor : function(config) {
+        config = config || {};
+        config.height = config.height || '85%';
+        config.width = config.width || '85%';
+        
+        /*
+        var bodySz=Ext.getBody().getViewSize();
+        var width = config.width;        
+        var height=parseInt((config.height.indexOf("%")==-1)?config.height:(bodySz.height*parseInt(config.height)/100));
+        var width = config.width;
+        if (typeof config.width === 'string')
+            width=parseInt((config.width.indexOf("%")==-1)?config.width:(bodySz.width*parseInt(config.width)/100));
+        */
+
+        Ext.apply(this, {
+            layout : 'fit',
+            title : 'Image upload',
+            modal : true,
+            border : false,
+            //height : height,
+            //width : width,
+            items : new Bisque.ResourceBrowser.Browser(config),
+        }, config);
+
+        this.callParent([arguments]);
+
+        // Relay all the custom ResourceBrowser events to this Window
+        //this.relayEvents(this.getComponent(0), ['Select']);
+        
+        //this.getComponent(0).on('Select', function(resourceBrowser, resource) {
+        //    this.destroy();
+        //}, this);
+        
+        this.show();
+    }
+});
 
