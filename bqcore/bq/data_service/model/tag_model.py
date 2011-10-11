@@ -668,6 +668,8 @@ class Vertex(object):
     def set_index(self, v):
         self.indx = v
     index = property(get_index, set_index)
+    def __str__ (self):
+        return "<vertex x=%s y=%s z=%s t=%s ch=%s index=%s />" % (self.x, self.y,self.z,self.t,self.ch, self.indx)
 
 
 class GObject(Taggable):
