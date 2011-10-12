@@ -434,17 +434,19 @@ Ext.define('BQ.upload.Item', {
     },   
 
     onProgress : function(e) {
+        this.updateUi(); 
         var elapsed = (new Date() - this.time_starting)/1000;
-        this.progress.updateProgress( e.loaded/e.total, 'Uploading at ' + (e.loaded/1024)/elapsed +'Kb/s' );
-        this.updateUi();            
+        this.progress.updateProgress( e.loaded/e.total, 'Uploading at ' + formatFileSize(e.loaded/elapsed) +'/s' );
+        if (e.loaded==e.total) this.time_finished_upload = new Date();           
     }, 
 
     onComplete : function(e) {
         this.progress.updateProgress( 1.0 );
         this.state = BQ.upload.Item.STATES.ERROR;
         this.time_finished = new Date();
+        if (!this.time_finished_upload) this.time_finished_upload = this.time_finished;
 
-        var elapsed = (this.time_finished - this.time_starting)/1000;
+        var elapsed = (this.time_finished_upload - this.time_starting)/1000;
         var speed = formatFileSize(this.file.size/elapsed)+'/s';
         var timing = ' in '+ this.time_finished.diff(this.time_starting).toString() +
                      ' at '+ speed;      
