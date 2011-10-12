@@ -769,8 +769,9 @@ def install_matlabwrap(params):
                   "Install a compiled helper to run matlab scripts.  Matlab must be installed and visible!") != 'Y':
         return
 
-    print "Installing mlabwrap dependencies"
-    retcode = call(['easy_install', 'numpy'])
+    # Already installed for stats server
+    #print "Installing mlabwrap dependencies"
+    #retcode = call(['easy_install', 'numpy'])
 
     print """untar'ing  mlabwrap from the external directory
     and running python setup.py.. Please watch for errors
@@ -982,7 +983,7 @@ def install_runtime(params):
                 cfg.edit_config(None, None,
                    '# runtime-bisque.cfg created by bisque-setup')
                 cfg.edit_config(None, 'module_enabled',
-                                'module_enabled=False'  )
+                                'module_enabled=True'  )
             cfg.edit_config(None, 'runtime', 'runtime=%s' % params['runtime.mode'])
             cfg.edit_config(None, 'staging_base', 'staging_base=%s' % params['runtime.staging_base'])
             if params['runtime.matlab_home']:
