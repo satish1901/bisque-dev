@@ -56,7 +56,7 @@ def run_command(command):
        
         return o
     except OSError, e:
-        pass
+        log.exception ('unknown exception')
     return None
 
 ################################################################################
@@ -162,9 +162,6 @@ def convert(ifnm, ofnm, original=None, series=-1):
     with Locks(ifnm, ofnm) as l:
         if not l.locked:
             return       
-      
-        log.debug('BioFormats: Convert '+ifnm+' to ' + ofnm )    
-        
         if original is None:
             command = [BFCONVERT, ifnm, ofnm]
         else:
@@ -172,9 +169,15 @@ def convert(ifnm, ofnm, original=None, series=-1):
         if series>=0:
             command.append('-series')
             command.append('%s'%series)
-        retcode = call (command)
-        if retcode != 0:
-            log.debug ("BioFormats: returned %s" % retcode)  
+        log.debug('BioFormats: %s' % ' '.join (command) )    
+        #retcode = call (command)
+        if os.path.exists(ofnm):
+            log.error ('BioFormats: %s exists before command' % ofnm)
+
+        p = Popen (command, stdout=PIPE, stderr=PIPE)
+        o,e = p.communicate()
+        if p.returncode != 0:
+            log.error ("BioFormats: returned %s %s %s" % (p.returncode, o, e))
             #raise RuntimeError( "BioFormats failed: %s" % '.'.join(command) )      
     return ofnm 
 
