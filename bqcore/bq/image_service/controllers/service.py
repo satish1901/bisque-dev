@@ -51,7 +51,7 @@ class image_serviceController(ServiceController):
         imgdir = config.get('bisque.image_service.local_dir', data_path('imagedir'))
         workdir= config.get('bisque.image_service.work_dir', data_path('workdir'))
 
-        log.info('ROOT=%s' % config.get('bisque.root'))
+        log.info('ROOT=%s images=%s work=%s' % (config.get('bisque.root'), imgdir, workdir))
 
         self.srv = ImageServer (image_dir=imgdir,
                                 work_dir = workdir,

@@ -291,8 +291,11 @@ class NodeFactory(object):
         array, ctor = cls.index_map.get (xmlname, (None,None))
         if array:
             objarr =  getattr(parent, array)
-            objarr.extend ([ ctor() for x in range(((indx+1)-len(objarr)))])
+            #objarr.extend ([ ctor() for x in range(((indx+1)-len(objarr)))])
+            objarr.extend ( [ None ] * ((indx+1)-len(objarr)))
             v = objarr[indx]
+            if v is None:
+                v = ctor()
             v.indx = indx;
             #log.debug ('fetching %s %s[%d]:%s' %(parent , array, indx, v)) 
             return v
