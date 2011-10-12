@@ -13,12 +13,14 @@ Ext.define('Bisque.ResourceTagger',
             style : 'background-color:#FFF',
 
             rootProperty : config.rootProperty || 'tags',
-            viewMgr : Ext.create('Bisque.ResourceTagger.viewStateManager', config.viewMode),
             resource : {},
             tree : {},
             store : {},
             dirtyRecords : []
         });
+
+        var v = new Bisque.ResourceTagger.viewStateManager(config.viewMode);
+        this.viewMgr  = v;
 
         this.callParent([config]);
         this.setResource(config.resource);
@@ -629,17 +631,21 @@ Ext.define('Bisque.ResourceTagger.viewStateManager',
     {
         function setHidden(obj, bool)
         {
+            var result={};
+            
             for (i in obj)
-                obj[i]=bool;
+                result[i]=bool;
+            
+            return result;
         }
         
         switch(mode)
         {
-/*
+
             case 'ViewerOnly':
             {
                 // all the buttons are hidden
-                setHidden(this.state, true);
+                this.state = setHidden(this.state, true);
                 this.state.editable = false;
                 break;
             }
@@ -650,13 +656,13 @@ Ext.define('Bisque.ResourceTagger.viewStateManager',
                 this.state.btnImport = false;
                 break;
             }
-*/
             default:
             {
                 // default case: all buttons are visible (hidden='false')
-                setHidden(this.state, false);
+                this.state = setHidden(this.state, false);
                 this.state.editable = true;
             }
         }
+        
     }
 });
