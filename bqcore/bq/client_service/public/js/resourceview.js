@@ -41,10 +41,10 @@ ResourceDispatch.prototype.dispatch_image = function(bqimage)
 {
     BQApp.resource = bqimage;
 
-    var resourceTagger = new Bisque.ResourceTagger(
+    var resourceTagger = Ext.create('Bisque.ResourceTagger', 
     {
         resource : bqimage,
-        title : 'Tagger'
+        title : 'Tagger',
     });
 
     var embeddedTagger = Ext.create('Bisque.ResourceTagger', {
@@ -165,7 +165,6 @@ ResourceDispatch.prototype.dispatch_image = function(bqimage)
         }
     });
     resTab.add(gobjectTagger);
-
    
     var map = Ext.create('BQ.gmap.GMapPanel3',  {
         title: 'Map',
