@@ -169,13 +169,14 @@ def convert(ifnm, ofnm, original=None, series=-1):
         if series>=0:
             command.append('-series')
             command.append('%s'%series)
-        log.debug('BioFormats: %s' % ' '.join (command) )    
+        log.debug('BioFormats: %s' % ' '.join (command) )
+            
         #retcode = call (command)
         if os.path.exists(ofnm):
             log.error ('BioFormats: %s exists before command' % ofnm)
 
-        p = Popen (command, stdout=PIPE, stderr=PIPE)
-        o,e = p.communicate()
+        p = Popen (command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        o,e = p.communicate(input='y\n')
         if p.returncode != 0:
             log.error ("BioFormats: returned %s %s %s" % (p.returncode, o, e))
             #raise RuntimeError( "BioFormats failed: %s" % '.'.join(command) )      
