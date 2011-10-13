@@ -49,9 +49,24 @@
   <script type="text/javascript" src="/js/ResourceBrowser/Misc/Slider.js"></script>
   <script type="text/javascript" src="/js/ResourceBrowser/Misc/DataTip.js"></script>
 
-  <!-- DatasetBrowser -->
-  <link rel="stylesheet" href="/js/DatasetBrowser/DatasetBrowser.css" type="text/css"/>
-  <script type="text/javascript" src="/js/DatasetBrowser/DatasetBrowser.js"></script>
+    <!-- ResourceTagger files -->
+    <link rel="stylesheet" href="/js/ResourceTagger/Tagger.css" type="text/css"/>
+
+    <script type="text/javascript" src="/js/ResourceTagger/Tagger.js"></script>
+    <script type="text/javascript" src="/js/ResourceTagger/TaggerOffline.js"></script> 
+    <script type="text/javascript" src="/js/ResourceTagger/ResourceRenderers/BaseRenderer.js"></script>
+
+    <!-- DatasetBrowser -->
+    <link rel="stylesheet" href="/js/DatasetBrowser/DatasetBrowser.css" type="text/css"/>
+    <script type="text/javascript" src="/js/DatasetBrowser/DatasetBrowser.js"></script>
+
+    <!-- Upload stuff: Image Service -->
+    <script type="text/javascript" src="/image_service/public/bq_is_formats.js"></script>
+
+    <!-- Upload stuff: Import Service -->
+    <link rel="stylesheet" type="text/css" href="/import_service/public/bq_ui_upload.css" />
+    <script type="text/javascript" src="/import_service/public/bq_file_upload.js"></script>    
+    <script type="text/javascript" src="/import_service/public/bq_ui_upload.js"></script>    
   
 
 <!-- Image Viewer -->
@@ -185,9 +200,8 @@
     <div class="box input">
         <button onclick="webapp.selectImage('/data_service/images')" >Select an Image</button> or
         <button onclick="webapp.selectDataset('/data_service/images')" >Select a Dataset</button> or 
-        <button onclick="webapp.selectExample('*"SeedSize example"*')" disabled='' >Select an example</button> or         
-        <button onclick="webapp.selectFile()" disabled='' >Upload local images</button> or even
-        <button onclick="webapp.selectZip()" disabled='' >Upload local image (separate Ts in a ZIP)</button>        
+        <button onclick="webapp.selectExample('*"SeedSize example"*')" disabled='' >Select an example</button> or even 
+        <button onclick="webapp.selectFile()" >Upload local images</button>
     </div>
   
 </div>

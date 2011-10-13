@@ -17,6 +17,17 @@ function PlantRecognizer (args) {
 PlantRecognizer.prototype = new BQWebApp();
 PlantRecognizer.prototype.constructor = PlantRecognizer;
 
+BQWebApp.prototype.selectFile = function () {
+
+    var uploader = Ext.create('BQ.upload.Dialog', {   
+        maxFiles: 1,
+        dataset_configs: BQ.upload.DATASET_CONFIGS.PROHIBIT, 
+        listeners: {  'uploaded': function(reslist) { 
+                       this.onResourceSelected(reslist[0]);
+                }, scope: this },              
+    });
+}
+
 PlantRecognizer.prototype.createSumary = function () {
     var summary = '<ul>';
     summary += this.renderSummaryTag('Genus', 'Genus');

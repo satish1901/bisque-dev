@@ -27,6 +27,17 @@ multiroot.prototype.run = function () {
     BQWebApp.prototype.run.call(this);
 }
 
+multiroot.prototype.selectFile = function () {
+
+    var uploader = Ext.create('BQ.upload.Dialog', {   
+        maxFiles: 1,
+        dataset_configs: BQ.upload.DATASET_CONFIGS.PROHIBIT, 
+        listeners: {  'uploaded': function(reslist) { 
+                       this.onResourceSelected(reslist[0]);
+                }, scope: this },              
+    });
+}
+
 multiroot.prototype.createSumary = function () {
     /*
     var summary = '<ul>';

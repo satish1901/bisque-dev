@@ -2,7 +2,7 @@
 <module name="SeedSize" path="./launch.py" type="runtime" >
 
     <tag name="inputs">
-        <tag name="input-system" value="image_url"  />
+        <tag name="input-formal" value="image_url" type="image-dataset" />
         <tag name="input-system" value="mex_url" />
         <tag name="input-system" value="bisque_token" />
     </tag>
