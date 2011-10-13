@@ -552,6 +552,21 @@ BQ.upload.Item.STATE_STRINGS = {
 // upload manages items and all other UI aspects like drag and drop
 //-------------------------------------------------------------------------------------- 
 
+BQ.upload.DATASET_CONFIGS = {
+    'NORMAL'   : 0,
+    'REQUIRE'  : 1,
+    'PROHIBIT' : 2,
+};
+
+BQ.upload.DEFAULTS = {
+    heading: 'File upload',
+    maxFiles: 0, // use 1 for single file
+    maxFileSize: 0, // maximum file size in bytes, 0 no limit
+    //allowedFileTypes: undefined, // currently not supported, ex: { mime: ['image/tiff', 'image/jpeg'], exts: ['pptx', 'zip'] }
+    //limitConcurrentUploads: undefined, // currently not supported, use 1 for sequential uploads
+    dataset_configs: BQ.upload.DATASET_CONFIGS.NORMAL,   
+};
+
 Ext.define('BQ.upload.Panel', {
     alias: 'widget.upload',    
     extend: 'Ext.panel.Panel',
@@ -560,15 +575,7 @@ Ext.define('BQ.upload.Panel', {
     border: 0,
     autoScroll: true,
     layout: 'fit',            
-
-    defaults: { 
-        border: 0, 
-        heading: 'File upload',
-        maxFiles: 0, // use 1 for single file
-        maxFileSize: 0, // maximum file size in bytes, 0 no limit
-        //allowedFileTypes: undefined, // currently not supported, ex: { mime: ['image/tiff', 'image/jpeg'], exts: ['pptx', 'zip'] }
-        //limitConcurrentUploads: undefined, // currently not supported, use 1 for sequential uploads
-    },
+    defaults: BQ.upload.DEFAULTS,
 
     constructor: function(config) {
         this.addEvents({
@@ -584,7 +591,14 @@ Ext.define('BQ.upload.Panel', {
         return this;
     },
 
+    processConfig: function() {
+        if (this.maxFiles == 1)
+            this.dataset_configs = BQ.upload.DATASET_CONFIGS.PROHIBIT;
+    },
+
     initComponent : function() {
+        
+        this.processConfig();
         
         // header toolbar's elements
 
@@ -619,6 +633,7 @@ Ext.define('BQ.upload.Panel', {
             tooltip: 'Start the upload of all queued files',
             handler: Ext.Function.bind( this.upload, this ),
         });
+        
         this.btn_cancel = Ext.create('Ext.button.Button', {
             text: 'Cancel', 
             disabled: true,            
@@ -628,12 +643,21 @@ Ext.define('BQ.upload.Panel', {
             tooltip: 'Cancel all queued and uploading files',            
             handler: Ext.Function.bind( this.cancel, this ),
         });
+        
+        var dataset_btn_visible = true;
+        var dataset_btn_preseed = false;
+        if (this.dataset_configs > BQ.upload.DATASET_CONFIGS.NORMAL)
+            dataset_btn_visible = false;
+        if (this.dataset_configs == BQ.upload.DATASET_CONFIGS.REQUIRE)
+            dataset_btn_preseed = true;               
+        
         this.btn_dataset = Ext.create('Ext.button.Button', {
             text: 'Create a dataset', 
             //iconCls: 'cancel', 
             scale: 'large', 
             enableToggle: true,
-            pressed: false,
+            pressed: dataset_btn_preseed,
+            hidden: !dataset_btn_visible,
             cls: 'x-btn-default-large', 
             tooltip: 'Wrap all uploaded images into a dataset, if selected all images will be added into a dataset after upload',   
             
@@ -801,7 +825,7 @@ Ext.define('BQ.upload.Panel', {
             return;
         }        
         
-        if (this.maxFiles && this.maxFiles>0 && this.maxFiles >= this.uploadPanel.items.getCount()) {
+        if (this.maxFiles && this.maxFiles>0 && this.maxFiles <= this.uploadPanel.items.getCount()) {
             BQ.ui.notification('Maximum size of file queue reached...');
             return;
         }        
@@ -946,13 +970,6 @@ Ext.define('BQ.upload.Panel', {
 // Instantiates upload panel in a modal window
 //-------------------------------------------------------------------------------------- 
 
-/*
-        this.addEvents({
-            'filesuploaded'  : true,
-            'datasetcreated' : true,
-        });
-*/
-
 Ext.define('BQ.upload.Dialog', {
     extend : 'Ext.window.Window',
     
@@ -967,9 +984,8 @@ Ext.define('BQ.upload.Dialog', {
         this.addEvents({
             'uploaded'   : true,
         });
-    
-        // dima - some configs should still be passed to the uploader panel
-        this.upload_panel = Ext.create('BQ.upload.Panel', { 
+
+        var uploader_config = { 
             border: 0, 
             flex:2, 
             heading: config.title || 'Image upload',
@@ -979,7 +995,14 @@ Ext.define('BQ.upload.Dialog', {
                     datasetcreated: this.onDatasetCreated,
                     scope: this,
             },               
-        });         
+        };
+
+        // move the config options that belong to the uploader
+        for (var c in config)
+            if (c in BQ.upload.DEFAULTS)
+                 uploader_config[c] = config[c];
+    
+        this.upload_panel = Ext.create('BQ.upload.Panel', uploader_config);         
         this.items = [this.upload_panel];
         config.title = undefined;
         

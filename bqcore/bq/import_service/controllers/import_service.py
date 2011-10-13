@@ -467,12 +467,18 @@ class import_serviceController(ServiceController):
                 myf = UploadedFile(n, name, f.tags)
                 if parent_uri: myf.original = parent_uri
                 resources.append( self.insert_image(myf) )
-            
+
+            # some error during pre-processing
+            if len(resources)<1:
+                log.debug('error while extracting images, none extracted' )
+                resource = etree.Element('file', name=f.filename)
+                etree.SubElement(resource, 'tag', name='error', value='error while extracting images, none extracted')
+                return resource    
             
             # if only one resource was inserted, return right away
             if len(resources)==1:
                 return resources[0]
-
+                
             # multiple resources ingested, we need to group them into a dataset and return a reference to it
             # now we'll just return a stupid stub
             ts = datetime.datetime.now().isoformat(' ')

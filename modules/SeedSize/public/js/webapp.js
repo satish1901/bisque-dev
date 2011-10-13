@@ -17,6 +17,16 @@ function seedsize (args) {
 seedsize.prototype = new BQWebApp();
 seedsize.prototype.constructor = seedsize;
 
+seedsize.prototype.selectFile = function () {
+
+    var uploader = Ext.create('BQ.upload.Dialog', {   
+        dataset_configs: BQ.upload.DATASET_CONFIGS.REQUIRE, 
+        listeners: {  'uploaded': function(reslist) { 
+                       this.onResourceSelected(reslist[0]);
+                }, scope: this },              
+    });
+}
+
 seedsize.prototype.createSumary = function () {
     var summary = '<ul>';
     summary += this.renderSummaryTag('summary/seedcount', 'Total seed count');

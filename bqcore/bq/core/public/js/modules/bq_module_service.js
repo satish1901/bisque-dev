@@ -17,12 +17,13 @@ function ModuleService(module_URI, callbackDone, callbackProgress, callbackError
     this.callbackProgress = callbackProgress;
     this.callbackError = callbackError;
     //BQModule.queryModuleByName(this.name, callback(this, 'onModuleFound'));
+    BQFactory.request({uri: this.URI+'/definition', cb: callback(this, 'setModule'), cache: false});
 }
 
-ModuleService.prototype.onModuleFound = function (module) {
+ModuleService.prototype.setModule = function (module) {
     this.module = module;
     if (this.module == null)
-      alert( "No "+this.name+" found on host system!\nServer may need to be restarted\nPlease inform your bisque sysadmin!" );
+        alert( "No "+this.name+" found on host system!\nServer may need to be restarted\nPlease inform your bisque sysadmin!" );
 }
 
 ModuleService.prototype.run = function (parameters) {
