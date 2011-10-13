@@ -7,8 +7,9 @@
 <xi:include href="master.html" />
 
 <head>
-<meta content="text/html; charset=UTF-8" http-equiv="content-type" py:replace="''"/>
-<title>Login Form</title>
+    <meta content="text/html; charset=UTF-8" http-equiv="content-type" py:replace="''"/>
+    <title>Bisque login</title>
+    <link rel="stylesheet" type="text/css" href="${tg.url('/client_service/public/css/login.css')}" />
 </head>
 
 <script type="text/javascript">
@@ -33,13 +34,21 @@ function login_openid(provider) {
 <div id="loginform" class="loginform">
 
 <form action="${tg.url('/auth_service/login_handler', came_from = came_from.encode('utf-8'), __logins = login_counter.encode('utf-8'))}" method="POST" id='login_form' class="loginfields">
+
+
     <h2>Login</h2>
-    <label for="loginusername">Username:<input type="text" id="loginusername" name="login" class="text"></input></label>
-    <label for="loginpassword">Password:<input type="password" id="loginpassword" name="password" class="text"></input></label>
-    <input type="hidden" id="openid_provider" value="google" />
-    <input type="submit" id="submit" value="Login" />
-    <input py:if="h.asbool(config.get('bisque.login.cas'))" type="button" id="submit_cas" value="Login with CAS" onclick="login_cas()" />
-    <input py:if="h.asbool(config.get('bisque.login.google'))" type="button" id="submit_cas" value="Login with Google" onclick="login_openid('google')" />
+
+    <div class="alternativelogin">
+        <input type="hidden" id="openid_provider" value="google" />        
+        <input py:if="h.asbool(config.get('bisque.login.cas'))" type="button" id="submit_cas" value="Login with CAS" onclick="login_cas()" />
+        <input py:if="h.asbool(config.get('bisque.login.google'))" type="button" id="submit_google" value="Login with Google" onclick="login_openid('google')" />
+    </div>
+
+    <div class="mainlogin">
+        <label for="loginusername">Username:<input type="text" id="loginusername" name="login" class="text"></input></label>
+        <label for="loginpassword">Password:<input type="password" id="loginpassword" name="password" class="text"></input></label>
+        <input type="submit" id="submit" value="Login" />
+    </div>    
 </form>
 
 

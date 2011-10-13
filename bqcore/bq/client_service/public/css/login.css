@@ -1,0 +1,68 @@
+/**************************************************************************/
+/*  */
+/**************************************************************************/
+
+.loginform {
+  width: 550px;
+  margin-top: 80px;
+  margin-bottom: 100px;
+  margin-right: 80px;
+  margin-left: 80px;
+  background: #EEEEEE;
+  padding: 40px;
+  padding-top: 10px;
+  
+  border: #CCCCCC solid 1px;
+  border-radius: 5px;
+  -moz-border-radius: 5px;  
+}
+
+.loginform h2 {
+  font-size: 25px;
+  margin-bottom: 30px;  
+  color: #666666;
+  text-shadow: #AAAAAA 2px 2px 5px;
+}
+
+.loginform label {
+  display:block;
+  margin-bottom: 15px;
+  margin-top: 10px;
+  width: 250px;  
+}
+
+.loginform label>input {
+  margin-left: 20px;
+  width: 150px;
+  float: right;
+}
+
+.loginform input[type=submit] {
+  margin-top: 15px;  
+  display:block;
+  padding: 4px;
+}
+
+
+
+.mainlogin {
+    padding-top: 5px; 
+}
+
+.alternativelogin {
+    float: right;
+    border-left: solid 1px gray;
+    padding: 15px; 
+    padding-left: 30px;     
+    height: 120px;
+}
+
+
+.loginform input[type=button] {
+    width: 130px;
+    padding: 6px;
+    display:block;    
+}
+
+
+
