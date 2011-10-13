@@ -60,7 +60,7 @@ import logging
 from urllib import quote
 from lxml import etree
 
-log = logging.getLogger('bq.API')
+log = logging.getLogger('bq.api.class')
 
 __all__ = [ 'BQFactory', 'BQNode', 'BQResource', 'BQValue', 'BQTag', 'BQVertex', 'BQGObject', 'gobject_primitives',
             'BQPoint', 'BQLabel', 'BQPolyline', 'BQPolygon', 'BQCircle', 'BQEllipse', 'BQShape', 'BQRectangle', 'BQSquare', 'toXml', 'fromXml' ]
