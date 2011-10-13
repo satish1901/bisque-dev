@@ -63,7 +63,7 @@ from bqclass import fromXml, toXml, BQMex
 from util import parse_qs, make_qs, xml2d, d2xml
 
 
-log = logging.getLogger('bq.api')
+log = logging.getLogger('bq.api.comm')
 
 class BQException(Exception):
     "BQException"
@@ -173,17 +173,25 @@ class BQSession(object):
         split_url[3] = make_qs(p)
         url = urlparse.urlunsplit(split_url)
 
-        content =  self.c.fetch (url, headers = {'Content-Type':'text/xml'})
-        return etree.XML(content)
+        log.debug('fetchxml %s ' % url)
+        try:
+            content =  self.c.fetch (url, headers = {'Content-Type':'text/xml'})
+            return etree.XML(content)
+        except:
+            log.exception('during fetch of %s %s' % (url, params))
+            return None
     
     def postxml(self, url, xml, method="POST"):
+        log.debug('postxml %s  content %s ' % (url, xml))
         content = etree.tostring(xml)
-        
-        print "\n\n"  + content + "\n\n"
+        try:
+            content =  self.c.post(url, content=content, method=method,
+                                   headers = {'Content-Type':'text/xml'})
+            return etree.XML(content)
+        except:
+            log.exception('during post %s of %s ' % (url, xml))
+            return None
 
-        content =  self.c.post(url, content=content, method=method,
-                               headers = {'Content-Type':'text/xml'})
-        return etree.XML(content)
 
     def service_url(self, service_type, path = "" , query = None):
         root = self.service_map[service_type]
@@ -207,25 +215,35 @@ class BQSession(object):
         """save an updated mex with the addition
         
         :param status:  The current status of the mex
-        :param tags: list of BQTags or dict objects of form { 'name': 'x', 'value':'z' }
-        :param gobjects: list of BQGObject or dict objects .. see tags
+        :param tags: list of etree.Element|BQTags|dict objects of form { 'name': 'x', 'value':'z' }
+        :param gobjects: same as etree.Element|BQGobject|dict objects of form { 'name': 'x', 'value':'z' }
         """
         self.mex.status = status
         mex = toXml(self.mex)
-        for tg in itertools.chain(tags, gobjects):
-            if isinstance(tg, dict):
-                tg = d2xml({'tag': tg})
-            elif isinstance(tg, BQNode):
-                tg = toXml(tg)
-            else:
-                raise BQException('bad values in tag/gobject list %s' % tg)
-            mex.append(tg)
+        def append_mex (mex, type_, elems):
+            for tg in elems:
+                if isinstance(tg, dict):
+                    tg = d2xml({'tag': tg})
+                elif isinstance(tg, BQNode):
+                    tg = toXml(tg)
+                elif isinstance(tg, ET._Element):
+                    pass
+                else:
+                    raise BQException('bad values in tag/gobject list %s' % tg)
+                mex.append(tg)
+
+        append_mex(mex, 'tag', tags)
+        append_mex(mex, 'gobject', gobjects)
 
         #mex = { 'mex' : { 'uri' : self.mex.uri,
         #                  'status' : status,
         #                  'tag' : tags, 
         #                  'gobject': gobjects }}
-        self.postxml(self.mex.uri, mex)
+        content = self.postxml(self.mex.uri, mex)
+        if content is not None:
+            self.mex = fromXml(content, session = self)
+            return self.mex
+        return None
 
     def finish_mex(self, status = "FINISHED", tags=[], gobjects=[], msg=None ):
         if msg is not None:
@@ -261,7 +279,9 @@ class BQSession(object):
             url = bqo.uri
         xml =  toXml(bqo)
         content = self.postxml(url, xml, **kw)
-        return fromXml(content, session=self)
+        if content is not None:
+            return fromXml(content, session=self)
+        return None
 
 
 
