@@ -21,6 +21,7 @@ Ext.define('Bisque.ResourceBrowser.viewStateManager',
 		btnOrganizer : false,
 		btnDataset : false,
 		btnLink : false,
+		btnPreferences : false
 	},
 	
 	constructor : function(mode)

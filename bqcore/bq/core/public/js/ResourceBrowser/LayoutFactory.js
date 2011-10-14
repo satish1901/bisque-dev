@@ -404,6 +404,7 @@ Ext.define('Bisque.ResourceBrowser.LayoutFactory.PhotoStripLayout',
 	{
 		var res = Bisque.ResourceBrowser.ResourceFactory({
 			resource : resource,
+			browser : layoutMgr.browser,
 			layoutKey : Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PSTRIP_BIG,
 			msgBus : layoutMgr.msgBus,
 			bigPanel : layoutMgr.proxyPnl 

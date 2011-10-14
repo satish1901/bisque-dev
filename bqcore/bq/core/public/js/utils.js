@@ -449,8 +449,6 @@ function makeRequestC(url, obj, objmeth, httpmethod, postxml){
     makeRequest(url, bindload, null, httpmethod, postxml);
 }
 
-
-
 function checkErrorXML (data, xmlResource) {
   if (!xmlResource) return "THERE WAS NO RESPONSE!!!\n";
   //////////////
@@ -473,7 +471,10 @@ function checkResponseXML(data, xmlResponse) {
 
 function clog(str) {
   if (typeof(window['console']) != "undefined")
-      console.log(str);
+  {
+    var caller = arguments.callee.caller.name  || arguments.callee.caller.$name;
+    console.log(caller + ' : ' + str);
+  }
 }
 
 function deleteNodes(t) {

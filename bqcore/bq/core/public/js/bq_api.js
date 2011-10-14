@@ -166,6 +166,20 @@ BQObject.prototype.toDict  = function (deep, found, prefix) {
     return found;
 }
 
+BQObject.prototype.toHashTable  = function (deep, hashTable)
+{
+    hashTable = hashTable || {}; 
+    
+    for (i=0;i<this.tags.length;i++)
+    {
+        tag = this.tags[i];
+        hashTable[tag.name] = (deep && tag.tags.length>0) ? tag.toHashTable(deep) : tag.value;
+    }
+    
+    return hashTable;
+}
+
+
 BQObject.prototype.find_resource  = function (ty) {
     for (var i=0; i < this.children.length; i++) 
         if (this.children[i].type == ty) 
@@ -513,7 +527,8 @@ BQFactory.load = function(uri, cb, progresscb, cache) {
 //request({uri_params : { meta: null, view:'deep' }
 
 default_error_callback = function (o) {
-  alert(o.message);
+  //alert(o.message);
+  clog(o.message);
 }
 
 BQFactory.request = function(params) {
