@@ -583,7 +583,9 @@ class Tag(Taggable):
         '''Clear all the children'''
         super(Tag, self).clear()
         log.debug ('cleared values')
+        old = self.values
         self.values = []
+        return old
         
     # Tag.values
     #  List of SimpleValues
@@ -711,7 +713,9 @@ class GObject(Taggable):
         '''Clear all the children'''
         super(GObject, self).clear()
         log.debug ('cleared vertices')
+        old = self.vertices
         self.vertices = []
+        return old
     
 #    def __str__(self):
 #        return 'gobject %s:%s' % (self.name, str(self.type))

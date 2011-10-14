@@ -156,6 +156,7 @@ def load_services ( wanted = None):
 
 def mount_services (root, enabled = None, disabled = None):
     mounted = []
+    pairs   = []
     for ty, entry in service_registry.get_services().items():
         if (not enabled or  ty in enabled) and ty not in disabled:
             if  hasattr(entry.module, "initialize"):
@@ -163,6 +164,7 @@ def mount_services (root, enabled = None, disabled = None):
                 log.debug ('activating %s at %s' % (str(entry.name), service_url))
                 service = entry.module.initialize(service_url)
                 service_registry.register_instance (service)
+                pairs.append ( (entry.name, service) )
                 mounted.append(entry.name)
             else:
                 log.warn ("SKIPPING %s : no initialize" % entry.name)
@@ -171,6 +173,7 @@ def mount_services (root, enabled = None, disabled = None):
     missing =  set(enabled) - set (mounted)
     if missing:
         log.warn ("Following service were not found: %s" % missing)
+    return pairs
 
         
     
