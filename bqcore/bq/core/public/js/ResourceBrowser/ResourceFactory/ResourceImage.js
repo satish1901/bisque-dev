@@ -6,12 +6,10 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResource',
     // Two functions for speed
     GetImageThumbnailRel : function(params, size, full)
     {
-        //return '';
         //return '<img src="' + this.resource.src + '?thumbnail' + params + '"/>';
-
         return '<img style="position:relative; top:50%; left:50%; margin-top: -'+size.height/2+'px;margin-left: -'+size.width/2+'px;"'
         +((full==undefined)?' id="'+this.resource.uri+'"':'')
-        + ' src="' + this.resource.src + '?thumbnail' + params
+        + ' src="' + this.resource.src + '?' +  this.browser.preferences.ImageParameters +'&thumbnail' + params
         + '"/>';
     },
     
@@ -22,7 +20,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResource',
 
         return '<img style="position:absolute; top:50%; left:50%; margin-top: -'+size.height/2+'px;margin-left: -'+size.width/2+'px;"'
         +((full==undefined)?' id="'+this.resource.uri+'"':'')
-        + ' src="' + this.resource.src + '?thumbnail' + params
+        + ' src="' + this.resource.src + '?' +  this.browser.preferences.ImageParameters +'&thumbnail' + params
         + '"/>';
     },
 
@@ -77,7 +75,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResource',
                 sliceY = this.resource.z
 
             var imgLoader = new Image();
-            imgLoader.src = this.resource.src + '?slice=,,' + sliceY + ',' + sliceX + '&default&thumbnail='+this.layoutMgr.layoutEl.imageWidth+','+this.layoutMgr.layoutEl.imageHeight;
+            imgLoader.src = this.resource.src + '?slice=,,' + sliceY + ',' + sliceX + '&' +  this.browser.preferences.ImageParameters +'&thumbnail='+this.layoutMgr.layoutEl.imageWidth+','+this.layoutMgr.layoutEl.imageHeight;
 
             function ImgOnLoad()
             {
@@ -334,8 +332,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourcePStripBig',
 
     constructor : function(config)
     {
-        Bisque.ResourceBrowser.ResourceFactory.ImageResourcePStripBig.superclass.constructor.apply(this, arguments);
-
+        this.callParent(arguments);
         Ext.apply(this,
         {
             layout:
