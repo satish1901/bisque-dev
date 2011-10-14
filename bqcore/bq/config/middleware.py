@@ -15,8 +15,8 @@ from repoze.who.config import make_middleware_with_config
 
 from bq.config.app_cfg import base_config
 from bq.config.environment import load_environment
-
 from bq.core.controllers import root
+from bq.util.paths import site_cfg_path
 
 
 __all__ = ['make_app', 'bisque_app']
@@ -26,6 +26,8 @@ log = logging.getLogger("bq.core.middleware")
 # Use base_config to setup the necessary PasteDeploy application factory. 
 # make_base_app will wrap the TG2 app with all the middleware it needs. 
 make_base_app = base_config.setup_tg_wsgi_app(load_environment)
+
+
 
 public_file_filter = None
 bisque_app = None
@@ -102,6 +104,11 @@ def make_app(global_conf, full_stack=True, **app_conf):
     global bisque_app
     
     app = make_base_app(global_conf, full_stack=True, **app_conf)
+
+    site_cfg = site_cfg_path()
+    logging.config.fileConfig(site_cfg)
+    
+
     public_file_filter = static_app = BQStaticURLParser()
     if 'who.config_file' in app_conf:
         app = make_middleware_with_config(

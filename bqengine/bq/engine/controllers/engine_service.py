@@ -82,12 +82,13 @@ from bq.core.commands.configfile import ConfigFile
 from bq.util.hostutils import same_host
 from bq.util import http
 from bq.util.http.thread_pool import ThreadPool, makeRequests
+from bq.util.paths import bisque_path
 
 from adapters import MatlabAdapter, PythonAdapter, ShellAdapter, RuntimeAdapter
 
 log = logging.getLogger('bq.engine_service')
 
-MODULE_PATH = config.get('bisque.engine_service.local_modules', 'modules')
+MODULE_PATH = config.get('bisque.engine_service.local_modules', bisque_path('modules'))
 HEARTBEAT   = config.get('bisque.engine_service.hb');
 engine_root = '/'.join ([config.get('bisque.server') , 'engine_service'])
 
@@ -237,7 +238,7 @@ def initialize_available_modules(engines):
     available = []
     unavailable = []
     log.debug ("WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW") 
-    log.debug (MODULE_PATH) 
+    log.debug ('examining %s ' % MODULE_PATH) 
     log.debug ("WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW") 
     for g in os.listdir(MODULE_PATH):
         #log.debug ("Registering Module: " + str(g))    
@@ -246,7 +247,7 @@ def initialize_available_modules(engines):
         ### Check that we are in a module and it is enabled.
         cfg = os.path.join(MODULE_PATH, g, 'runtime-bisque.cfg')
         if not os.path.exists(cfg):
-            log.debug ("Skipping %s : no runtime-bisque.cfg" % g)
+            log.debug ("Skipping %s (%s) : no runtime-bisque.cfg" % (g, cfg))
             continue
         cfg = ConfigFile (cfg)
         mod_vars = cfg.get (None, asdict = True)
@@ -463,7 +464,6 @@ class EngineModuleResource(BaseController):
                  'shell' : ShellAdapter(),
                  'runtime' : RuntimeAdapter(),
                  }
-
 
     def filepath(self,*path):
         return os.path.join (MODULE_PATH, self.name, *path)

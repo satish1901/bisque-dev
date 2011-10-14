@@ -77,8 +77,9 @@ bisque.paths.root  =
 #bisque.google_analytics="UA-3923721-1"
 #
 # Login identification  systems
-bisque.login.cas = False
-bisque.login.google = False
+# note: you must also edit who.ini to enable these
+#bisque.login.cas = False
+#bisque.login.google = False
 #bisque.visit.timeout = 0
 #bisque.password = freetext # hashed
 

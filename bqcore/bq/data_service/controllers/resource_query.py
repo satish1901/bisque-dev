@@ -71,6 +71,7 @@ from bq.core import identity
 from bq.core.identity import get_admin
 from bq.core.identity import get_user_id
 from bq.util.mkdir import _mkdir
+from bq.util.paths import data_path
 
 from bq  import image_service
 from bq.client_service.controllers import notify_service
@@ -230,8 +231,9 @@ def p_error(p):
 
 #  We generate the table once and leave it in generated.  This should be 
 #  move to some system directory like "/var/run/bisque" 
-_mkdir("generated")
-yacc.yacc(outputdir="./generated")
+# http://www.dabeaz.com/ply/ply.html#ply_nn18
+#_mkdir("generated")
+yacc.yacc(outputdir=data_path(), debug= 0)
 
 
 def prepare_permissions (query, user_id, with_public, action):
@@ -269,7 +271,7 @@ def prepare_tag_expr (query, tag_query=None):
         if tag_query=='*':
             return query
         lexer = lex.lex()
-        parser = yacc.yacc()
+        parser = yacc.yacc(outputdir = data_path(), debug = 0)
         log.debug ("parsing '%s'  " % (tag_query))
         #expr = parser.parse (tag_query, lexer=lexer, debug=log)
         expr = parser.parse (tag_query, lexer=lexer)

@@ -63,9 +63,11 @@ class servers(object):
         parser.add_option("--reload", action="store_true", help="autoreload for development" )
         parser.add_option("-n", "--dryrun", action="store_true", help="Dry run and show commands")
         parser.add_option("-v", "--verbose", action="store_true", help="show commands as run" )
+        parser.add_option("-w", "--wait", action="store_true", help="wait for children" )
+        parser.add_option("-s", "--site", help="specify location of site.cfg" )
         options, args = parser.parse_args()
         self.command = self.options = None
-        if len(args) < 1 or args[0] not in ['start', 'stop', 'restart', 'echo']:
+        if len(args) < 1 or args[0] not in ['start', 'stop', 'restart', 'echo', ]:
             parser.print_help()
             return
 

@@ -14,22 +14,61 @@ RUNNER_CMD = ['mexrunner']
 
 SITE_CFG='config/site.cfg'
 
-def readhostconfig ():
+config_dirs = ['.', './config', '/etc/bisque']
+
+
+if os.name == 'nt':
+    import win32api, win32con
+    def kill_process(pid):
+        try:
+            handle = win32api.OpenProcess( win32con.PROCESS_TERMINATE, 0, pid )
+            win32api.TerminateProcess( handle, 0 )
+            win32api.CloseHandle( handle )
+        except:
+            print 'Error terminating %s, the process might be dead'%pid
+            pass
+        #import subprocess
+        #subprocess.call(['taskkill', '/PID', str(pid), '/F'])
+
+else:        
+    import signal
+    def kill_process(pid):
+        print "killing %d " % pid
+        try:
+            pid = os.getpgid(pid)
+            os.killpg (pid, signal.SIGTERM)
+        except OSError, e:
+            print "kill process %s failed with %s"  % (pid, e)
+            
+
+#####################################################################
+# utils
+
+def find_site_cfg():
+    for dp in config_dirs:
+        site_cfg = os.path.join(dp, SITE_CFG)
+        if os.path.exists(site_cfg):
+            return site_cfg
+    return None
+
+def readhostconfig (site_cfg):
     #vars = { 'here' : os.getcwd() }
     config = SafeConfigParser ()
-    config.read (SITE_CFG)
+    config.read (site_cfg)
     root = config.get ('app:main', 'bisque.root')
-    service_hosts = config.items ('servers')
+    service_items = config.items ('servers')
+    hosts = [ x.strip() for x in config.get  ('servers', 'servers').split(',') ] 
 
-    print "SECTION", config.has_section('servers')
+    #print "SECTION", config.has_section('servers')
 
     # Service spec if server.key.url = url
     # Create a dictionary for each host listed
     servers = {}
-    for host_spec,val in service_hosts:
+    for host_spec,val in service_items:
         path = host_spec.split('.')
 
-        if not (path[0].startswith('e') or path[0].startswith('h')):
+        #if not (path[0].startswith('e') or path[0].startswith('h')):
+        if not path[0] in hosts:
             continue
 
         param = path[-1]
@@ -39,9 +78,14 @@ def readhostconfig ():
         d[param] = val
         #ign, host_id, param = 
         #servers.setdefault(host_id, {})[param] = val
-        
+
     print "ROOT", root, "SERVERS", servers.keys()
-    return root, servers
+    bisque =  { 'root': root, 'servers': servers, 'log_dir': '.', 'pid_dir' : '.' }
+    if config.has_option('servers', 'log_dir'):
+        bisque['log_dir'] = config.get ('servers', 'log_dir')
+    if config.has_option('servers', 'pid_dir'):
+        bisque['pid_dir'] = config.get ('servers', 'pid_dir')
+    return bisque
 
 
 def prepare_log (logfile):
@@ -84,39 +128,23 @@ def check_running (pid_file):
         else:
             return False
 
-if os.name == 'nt':
-    import win32api, win32con
-    def kill_process(pid):
-        try:
-            handle = win32api.OpenProcess( win32con.PROCESS_TERMINATE, 0, pid )
-            win32api.TerminateProcess( handle, 0 )
-            win32api.CloseHandle( handle )
-        except:
-            print 'Error terminating %s, the process might be dead'%pid
-            pass
-        #import subprocess
-        #subprocess.call(['taskkill', '/PID', str(pid), '/F'])
-
-else:        
-    import signal
-    def kill_process(pid):
-        print "killing %d " % pid
-        try:
-            pid = os.getpgid(pid)
-            os.killpg (pid, signal.SIGTERM)
-        except OSError, e:
-            print "kill process %s failed with %s"  % (pid, e)
-            
-
 def operation(command, options, *args):
     #pkg_resources.require('BisqueCore >=0.4')
-    if not os.path.exists(SITE_CFG):
+
+    site_cfg = options.site
+    if site_cfg is None:
+        site_cfg = find_site_cfg()
+    if site_cfg is None:
         print "Cannot find site.cfg.. please make sure you are in the bisque dir"
         return
+    site_dir = os.path.dirname(os.path.abspath(site_cfg))
 
+    if options.verbose:
+        print 'using config : %s' % site_cfg
     try:
-        root, servers = readhostconfig()
-        for key, serverspec in sorted(servers.items()):
+        config = readhostconfig(site_cfg)
+        processes  = []
+        for key, serverspec in sorted(config['servers'].items()):
             print key, serverspec
 
             url = serverspec.pop('url')
@@ -131,8 +159,8 @@ def operation(command, options, *args):
 
             proxyroot = serverspec.pop('proxyroot', '')
 
-            logfile = LOG_TEMPL % port
-            pidfile = PID_TEMPL % port
+            logfile = os.path.join(config['log_dir'], LOG_TEMPL % port)
+            pidfile = os.path.join(config['pid_dir'], PID_TEMPL % port)
 
             if command in ('start') and check_running(pidfile):
                 call ([sys.argv[0], 'servers', 'stop'])
@@ -151,14 +179,15 @@ def operation(command, options, *args):
             if options.reload:
                 server_cmd.append ('--reload')
             server_cmd.extend ([
-                          'config/server.ini',
+                          os.path.join(site_dir, 'server.ini'),
                           command,
                           'services_enabled=%s' % services_enabled,
                           'services_disabled=%s' % services_disabled,
                           'http_port=%s' % port,
                           'http_host=%s' % host,
-                          'rooturl=%s' % root,
+                          'rooturl=%s' % config['root'],
                           'proxyroot=%s' % proxyroot,
+                          'sitecfg=%s' % site_cfg,
                           ])
             # server_cmd.extend ([ "%s=%s" % (k,v) for k,v in serverspec.items()])
 
@@ -169,7 +198,7 @@ def operation(command, options, *args):
                 print 'Executing: %s' % ' '.join(server_cmd)
                 
             if not options.dryrun:
-                pid_root =Popen(server_cmd).pid
+                processes.append(Popen(server_cmd))
 
         if options.verbose:
             print '%s: %s' % (command , ' '.join(RUNNER_CMD))
@@ -177,9 +206,11 @@ def operation(command, options, *args):
         if command == 'start':
             if not options.dryrun:
                 logfile = open('mexrunner.log', 'wb')
-                mexrunner_pid = Popen(RUNNER_CMD, stdout = logfile, stderr = logfile ).pid
-                open('mexrunner.pid', 'wb').write(str( mexrunner_pid ))
-            print "Starting Mexrunner: %s"%mexrunner_pid
+                mexrunner = Popen(RUNNER_CMD, stdout = logfile, stderr = logfile )
+
+                processes.append(mexrunner)
+                open('mexrunner.pid', 'wb').write(str( mexrunner.pid ))
+                print "Starting Mexrunner: %s"%mexrunner.pid
         else:
             import signal
             if os.path.exists('mexrunner.pid'):
@@ -191,6 +222,11 @@ def operation(command, options, *args):
                     os.remove ('mexrunner.pid')
                 print "Stopped Mexrunner: %s"%mexrunner_pid
                 
+
+        if options.wait:
+            for proc in processes:
+                proc.wait()
+
 
             #if command in ('start', 'restart'):
             #    time.sleep(5)

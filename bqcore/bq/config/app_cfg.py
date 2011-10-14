@@ -28,10 +28,7 @@ import bq
 from bq.core import model
 from bq.core.lib import app_globals, helpers
 from bq.util.etreerender import render_etree
-from bq.util.paths import site_cfg_path
 
-site_cfg = site_cfg_path()
-logging.config.fileConfig(site_cfg)
 log = logging.getLogger("bq.config")
 
 class BisqueErrorFilter(object):
@@ -89,6 +86,7 @@ class BisqueAppConfig(AppConfig):
         
 
 base_config = BisqueAppConfig()
+
 
 
 #base_config = AppConfig()
