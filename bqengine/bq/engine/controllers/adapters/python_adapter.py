@@ -59,9 +59,10 @@ from tg import config
 from lxml import etree
 
 from bq.core import identity
+from bq.util.paths import bisque_path
 from base_adapter import BaseAdapter
 
-MODULE_BASE = config.get ('bisque.engine_service.local_modules', '')
+MODULE_BASE = config.get('bisque.engine_service.local_modules', bisque_path('modules'))
 log = logging.getLogger('bq.engine_service.adapters.python')
 
 class PythonAdapter(BaseAdapter):

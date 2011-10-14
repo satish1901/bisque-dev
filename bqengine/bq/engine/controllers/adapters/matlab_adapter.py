@@ -61,9 +61,11 @@ import thread
 from lxml import etree
 from bq.core.exceptions import EngineError
 from bq.core import identity
+from bq.util.paths import bisque_path
+
 from base_adapter import BaseAdapter
 
-MATLAB_MODULE_ROOT=config.get('bisque.engine_service.local_modules', '')
+MODULE_BASE = config.get('bisque.engine_service.local_modules', bisque_path('modules'))
 #MATLAB_WS_PATH=+'/interface/'
 log = logging.getLogger('bq.engine_service.adapters.matlab')
 
@@ -138,12 +140,12 @@ class MatlabAdapter(BaseAdapter):
             #''' Open MATLAB engine '''
             #''' Add MATLAB paths '''
             for x in [ module_path]:
-               #p = MATLAB_MODULE_ROOT+'/' + x
-               p = unicode(os.path.join (MATLAB_MODULE_ROOT, x))
+               #p = MODULE_BASE+'/' + x
+               p = unicode(os.path.join (MODULE_BASE, x))
                log.debug ('adding matlab path' +  p)
                mlabraw.eval(self._engine, "addpath(genpath('"+p+"'))")
-            mlabraw.eval(self._engine, "addpath('"+MATLAB_MODULE_ROOT+"')")
-            mlabraw.eval(self._engine, "javaaddpath('"+MATLAB_MODULE_ROOT+'/../lib/bisque.jar'+"')")
+            mlabraw.eval(self._engine, "addpath('"+MODULE_BASE+"')")
+            mlabraw.eval(self._engine, "javaaddpath('"+MODULE_BASE+'/../lib/bisque.jar'+"')")
             mlabraw.eval(self._engine, "import bisque.*")
             #''' Run MATLAB function '''
             mlabraw.eval(self._engine, func_name)

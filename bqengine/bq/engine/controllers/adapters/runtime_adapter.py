@@ -60,10 +60,11 @@ from StringIO import StringIO
 from bq.core import identity
 from bq.core.exceptions import EngineError
 from base_adapter import BaseAdapter
+from bq.util.paths import bisque_path
 
 from subprocess import call, PIPE, Popen, STDOUT
 
-MODULE_BASE = config.get ('bisque.engine_service.local_modules', 'modules')
+MODULE_BASE = config.get('bisque.engine_service.local_modules', bisque_path('modules'))
 log = logging.getLogger('bq.engine_service.adapters.runtime')
 
 
