@@ -8,7 +8,10 @@
 # Allow site admins to configure a number of parallel servers
 # per machine.
 
-h1.url = http://localhost:9091
+#servers = h1,h2,h3,h4,e1
+servers = h1
+
+h1.url = http://localhost:8080
 h1.services_disabled = engine_service
 #h2.url = http://localhost:9092
 #h2.services_disabled = engine_service
@@ -23,6 +26,12 @@ h1.services_disabled = engine_service
 #e1.services_enabled = engine_service
 #e1.proxyroot = http://loup.ece.ucsb.edu:9090
 
+#log_dir = /var/log/bisque
+#pid_dir = /var/run/bisque
+
+
+###############################
+# Extra filters to be added 
 #[filter:linesman]
 # Linesname can be used for profiling
 #use = egg:linesman#profiler

@@ -129,11 +129,9 @@ def check_running (pid_file):
             return False
 
 def operation(command, options, *args):
-    #pkg_resources.require('BisqueCore >=0.4')
-
-    site_cfg = options.site
-    if site_cfg is None:
-        site_cfg = find_site_cfg()
+    """Run a multi-server command to start several bisque jobs
+    """
+    site_cfg = options.site or find_site_cfg()
     if site_cfg is None:
         print "Cannot find site.cfg.. please make sure you are in the bisque dir"
         return
