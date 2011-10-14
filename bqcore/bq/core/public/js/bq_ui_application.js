@@ -69,10 +69,12 @@ Ext.define('BQ.Application', {
     
     onGotUser: function() {
         this.fireEvent( 'gotuser', BQSession.current_session.user);
+        BQ.Preferences.loadUser(BQSession.current_session.user);
     }, 
 
     onNoUser: function() {
         this.fireEvent( 'nouser');
+        BQ.Preferences.unloadUser();
     }, 
 
     getCenterComponent: function() {
