@@ -109,6 +109,7 @@ Ext.define('Bisque.ResourceBrowser.Browser',
             msgBus : new Bisque.Misc.MessageBus(),
             gestureMgr : null,
             showGroups : false,
+            preferenceKey : 'ResourceBrowser',
 
             // Panel related config
             border : false,
@@ -118,13 +119,6 @@ Ext.define('Bisque.ResourceBrowser.Browser',
             listeners : config.listeners || {}, 
         }, config);
 
-        this.listeners['afterrender'] = 
-        {
-            fn: this.ManageEvents,
-            scope: this,
-            single: true
-        };
-        
         this.LoadData(
 		{
 			baseURL: this.browserParams.dataset,
@@ -195,16 +189,29 @@ Ext.define('Bisque.ResourceBrowser.Browser',
 				this.showGroups={tags:tags, order:values};
 		}
 		else
+            //this.showGroups is used in LayoutFactory to group resources based on tag order
 			this.showGroups=false;
-			
-        //this.showGroups is used in LayoutFactory to group resources based on tag order
 
-        this.resourceQueue = new Bisque.ResourceBrowser.ResourceQueue(
-        {
-            callBack : callback(this, 'dataLoaded'),
-            browser : this,
-            uri : uri
-        });
+        this.uri = uri;
+        this.loadPreferences();
+    },
+    
+    loadPreferences : function(preferences, tag)
+    {
+        if (preferences==undefined)
+            BQ.Preferences.get({key:this.preferenceKey, callback: Ext.bind(this.loadPreferences, this)});
+        else
+        {            
+            this.preferences = preferences;
+            this.preferencesTag = tag;
+            
+            this.resourceQueue = new Bisque.ResourceBrowser.ResourceQueue(
+            {
+                callBack : callback(this, 'dataLoaded'),
+                browser : this,
+                uri : this.uri
+            });
+        }
     },
     
     dataLoaded : function()
@@ -217,9 +224,12 @@ Ext.define('Bisque.ResourceBrowser.Browser',
         this.fireEvent('browserLoad', this, this.resourceQueue);
 
         if (this.rendered)
+        {
             doLayout.call(this);
+            this.ManageEvents();
+        }
         else
-            this.on('afterlayout', doLayout, this, {single:true});
+            this.on('afterlayout', Ext.Function(doLayout, this.ManageEvents, this), {single:true});
     },
 
     ChangeLayout : function(newLayoutKey, direction)

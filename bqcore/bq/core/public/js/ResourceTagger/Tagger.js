@@ -215,14 +215,17 @@ Ext.define('Bisque.ResourceTagger',
             applyModifications : function()
             {
                 var nodeHash = this.tree.nodeHash, status = false;
+                
+                if (this.getRemovedRecords().length>0)
+                    return true;
 
                 for(var node in nodeHash)
-                if(nodeHash[node].dirty)
-                {
-                    status = true;
-                    nodeHash[node].commit();
-                    Ext.apply(nodeHash[node].raw, nodeHash[node].getChanges());
-                }
+                    if(nodeHash[node].dirty)
+                    {
+                        status = true;
+                        Ext.apply(nodeHash[node].raw, nodeHash[node].getChanges());
+                        nodeHash[node].commit();
+                    }
                 return status;
             },
 
@@ -368,7 +371,7 @@ Ext.define('Bisque.ResourceTagger',
             var parent = (me.record.parentNode.isRoot()) ? this.resource : me.record.parentNode.raw;
             parent.addtag(newTag);
 
-            this.saveTags(parent);
+            this.saveTags(parent, true);
 
             me.record.raw = newTag;
             me.record.loaded=true;
@@ -398,7 +401,7 @@ Ext.define('Bisque.ResourceTagger',
                 selectedItems[i].parentNode.removeChild(selectedItems[i], true);
             }
 
-            this.saveTags();
+            this.saveTags(null, true);
 
             BQ.ui.message('Resource tagger - Delete', 'Records were deleted successfully!');
         }
@@ -406,14 +409,14 @@ Ext.define('Bisque.ResourceTagger',
             BQ.ui.message('Resource tagger - Delete', 'No records selected!');
     },
 
-    saveTags : function(parent)
+    saveTags : function(parent, silent)
     {
-        var resource = parent || this.resource;
+        var resource = (typeof parent == BQObject) ? parent  : this.resource;
         
         if(this.store.applyModifications())
         {
             resource.save_();
-            BQ.ui.message('Resource tagger - Save', 'Changes were saved successfully!');
+            if (!silent) BQ.ui.message('Resource tagger - Save', 'Changes were saved successfully!');
         }
         else
             BQ.ui.message('Resource tagger - Save', 'No records modified!');
