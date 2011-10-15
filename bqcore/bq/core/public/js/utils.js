@@ -175,6 +175,14 @@ function attribFloat (node, a){
     return null;
 }
 
+function attribStr (node, a){
+    var v = node.getAttribute(a);
+    if (v!=null)
+        return v;
+    return null;
+}
+
+
 function onenterkey(cb) {
     return function (e) {
         var k;
@@ -191,12 +199,6 @@ function onenterkey(cb) {
 }
 
 
-function attribStr (node, a){
-    var v = node.getAttribute(a);
-    if (v)
-      return v;
-    return "";
-}
 
 function getElement(event) {
   return event.target || event.srcElement;
