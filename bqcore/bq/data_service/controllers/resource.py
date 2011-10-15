@@ -186,7 +186,7 @@ class ResponseCache(object):
         if os.path.exists (cachename):
             with open(cachename) as f:
                 headers, cached = f.read().split ('\n\n', 1)
-                log.debug ('cache fetch serviced %s' % url) 
+                log.info ('cache fetch serviced %s' % url) 
                 headers = eval (headers)
                 return headers, cached
         return None, None
@@ -198,7 +198,7 @@ class ResponseCache(object):
         if '?' in url: 
             url = url.split('?',1)[0]
         cachename = self._cache_name(url, user)
-        log.debug ('cache invalidate %s' % cachename )
+        log.info ('cache invalidate %s' % cachename )
         if exact:
             cachename = cachename.split('#',1)[0].split(',',1)[1]
             for mn, cf in [ (fn.split('#',1)[0].split(',',1)[1], fn) for fn in files ] :
@@ -449,7 +449,7 @@ class Resource(ServiceController):
 
 
         http_method = request.method.lower()
-        log.debug ('Got a request "%s" with %s?%s'%(http_method,str(request.path),str(kw)))
+        log.info ('Request "%s" with %s?%s'%(http_method,str(request.path),str(kw)))
 
         #check the http method is supported.
         try:
@@ -529,7 +529,7 @@ class Resource(ServiceController):
 
         method = getattr(self, method_name)
         #pylons.response.headers['Content-Type'] = 'text/xml' 
-        log.debug ("Dispatch for %s", method)
+        log.debug ("Dispatch for %s", method_name)
         try:
             if http_method in ('post', 'put'):
                 clen = int(request.headers.get('Content-Length')) or 0
