@@ -72,7 +72,7 @@ def convert(ifnm, ofnm, fmt, extra=''):
         command.extend (extra.split())
 
         command_line = " ".join(command) 
-        log.info('IMGCNV: %s ' % command_line)
+        log.debug('IMGCNV: %s ' % command_line)
         retcode = call (command)
         if retcode != 0:
             log.debug ("IMGCNV:  returned %s" % retcode)
