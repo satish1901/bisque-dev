@@ -27,10 +27,10 @@ if __name__== "__main__":
         print >>sys.stderr, 'must supply command start|stop'
         sys.exit(2)
 
-    ## Activate Virtual Env
     bin = 'Scripts' if os.name =='nt' else 'bin'
-    activate = os.path.join(BISQUE_ROOT, 'bqenv', bin, 'activate_this.py')
-    execfile(activate, dict(__file__=activate))
+    # Activate virtualenv
+    #activate = os.path.join(BISQUE_ROOT, 'bqenv', bin, 'activate_this.py')
+    #execfile(activate, dict(__file__=activate))
 
     path = os.environ['PATH']
     path = os.path.join(BISQUE_ROOT, 'bqenv', bin) + os.pathsep + path
@@ -39,7 +39,7 @@ if __name__== "__main__":
     
     command = ['bq-admin', 'servers', ]
     command.extend (args)
-    proc = subprocess.call (command)
+    proc = subprocess.call (command, cwd = BISQUE_ROOT)
 
     sys.exit(proc)
         
