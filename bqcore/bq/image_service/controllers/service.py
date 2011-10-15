@@ -191,6 +191,7 @@ class image_serviceController(ServiceController):
     def images(self, id, **kw):
         request = tg.request
         response = tg.response
+        log.info ('Request: %s' % request.url)
       
         path   = request.path+'?'+request.query_string
         userId = identity.current.user_name
@@ -200,8 +201,6 @@ class image_serviceController(ServiceController):
         #tg.response.content_type  = data_token.contentType
         #tg.response.headers['Cache-Control'] = ",".join ([data_token.cacheInfo, "public"])
         cache_control( ",".join ([data_token.cacheInfo, "public"]))
-        
-        log.info('Returning request: %s'%( data_token.data ) )
         
         #first check if the output is an error
         if data_token.isHttpError():
@@ -241,28 +240,14 @@ class image_serviceController(ServiceController):
 
             # fix for the cherrypy error 10055 "No buffer space available" on windows
             # by streaming the contents of the files as opposite to sendall the whole thing
-            log.info ("returning %s type %s dispostion %s"%(fname,data_token.contentType,
+            log.info ("returning %s type %s dispostion %s"%(data_token.data
+                                                            ,data_token.contentType,
                                                             disposition))
                                                             
             return forward(FileApp(data_token.data,
                                    content_type=data_token.contentType,
                                    content_disposition=disposition,
                                    ).cache_control (max_age=60*60*24*7*6)) # 6 weeks
-            ofs = open(data_token.data,'rb')
-            log.info('Returning file: ' + str(fname) )                       
-            
-            def fileContents( fh ):
-                while fh:
-                    buf = fh.read(1*1024*1024)
-                    #log.debug('Returning buf: %d'%(len(buf))  )                         
-                    if len(buf)>0:
-                        yield buf
-                    else:
-                        break
-                    
-            #return fileContents(ofs)
-            return ofs.read()
-            
         
         tg.response.status_int = 404             
         return "File not found"

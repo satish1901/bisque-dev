@@ -53,7 +53,7 @@ class CASPlugin(object):
         # (ala a cookie plugin or a session plugin)
         self.rememberer_name = rememberer_name
         self.auto_register = auto_register
-        self.http = httplib2.Http()
+        self.http = httplib2.Http(disable_ssl_certificate_validation=True)
 
     
     # IChallenger
