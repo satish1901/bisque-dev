@@ -63,12 +63,28 @@ ResourceDispatch.prototype.dispatch_image = function(bqimage)
         'wpublic' : true,
 
         mexLoaded : false,
+
         listeners :
         {
             'browserLoad' : function(me, resQ)
             {
                 me.mexLoaded = true;
-            }
+            },
+            'Select' : function(me, resource)
+            {
+                me.setLoading(true);
+                BQFactory.request(
+                {
+                    uri : resource.module,
+                    cb : function(r)
+                    {
+                        me.setLoading(false);
+                        window.open(bq.url('/module_service/' + r.name + '/?mex=' + resource.uri), "", "menubar=yes,location=yes,resizable=yes,scrollbars=yes,status=yes");
+                    }
+
+                });
+            }, scope:this
+
         }
     });
 

@@ -20,20 +20,23 @@ Ext.define('BQ.Preferences',
         BQFactory.request(
         {
             uri : bq.url('/data_service/system'),
-            cb : Ext.bind(this.loadObject, this)
+            cb : Ext.bind(this.loadObject, this),
         });
     },
 
     loadObject : function(resource)
     {
         if(resource.children.length == 0)
+        {
+            clog('No system object found!');
             return;
+        }
 
         // Load the system object
         BQFactory.request(
         {
             uri : resource.children[0].uri + '?view=deep',
-            cb : Ext.bind(this.objectLoaded, this, ['system'], true)
+            cb : Ext.bind(this.objectLoaded, this, ['system'], true),
         });
     },
 
@@ -85,7 +88,7 @@ Ext.define('BQ.Preferences',
         {
             if (Ext.Object.getSize(this.preference.userTag))
                 var tag = this.preference.userTag.find_tags(caller.key, false);
-            caller.callback(this.preference.userDict[caller.key] || this.preference.systemDict[caller.key], tag);
+            caller.callback(this.preference.userDict[caller.key] || this.preference.systemDict[caller.key] || {}, tag);
         }
         else
             this.queue.push(caller);

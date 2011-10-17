@@ -371,11 +371,11 @@ Ext.define('Bisque.ResourceTagger',
             var parent = (me.record.parentNode.isRoot()) ? this.resource : me.record.parentNode.raw;
             parent.addtag(newTag);
 
-            this.saveTags(parent, true);
+            //this.saveTags(parent, true);
 
             me.record.raw = newTag;
             me.record.loaded=true;
-            me.record.commit();
+            //me.record.commit();
 
             me.record.parentNode.data.iconCls = 'icon-folder';
             me.view.refresh();
