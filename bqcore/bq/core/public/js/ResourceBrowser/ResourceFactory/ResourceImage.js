@@ -9,7 +9,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResource',
         //return '<img src="' + this.resource.src + '?thumbnail' + params + '"/>';
         return '<img style="position:relative; top:50%; left:50%; margin-top: -'+size.height/2+'px;margin-left: -'+size.width/2+'px;"'
         +((full==undefined)?' id="'+this.resource.uri+'"':'')
-        + ' src="' + this.resource.src + '?' +  this.browser.preferences.ImageParameters +'&thumbnail' + params
+        + ' src="' + this.resource.src + '?' +  this.browser.preferences.Images.ImageParameters +'&thumbnail' + params
         + '"/>';
     },
     
@@ -20,7 +20,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResource',
 
         return '<img style="position:absolute; top:50%; left:50%; margin-top: -'+size.height/2+'px;margin-left: -'+size.width/2+'px;"'
         +((full==undefined)?' id="'+this.resource.uri+'"':'')
-        + ' src="' + this.resource.src + '?' +  this.browser.preferences.ImageParameters +'&thumbnail' + params
+        + ' src="' + this.resource.src + '?' +  this.browser.preferences.Images.ImageParameters +'&thumbnail' + params
         + '"/>';
     },
 
@@ -228,7 +228,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourceCard',
             }
         });
 		
-		Bisque.ResourceBrowser.ResourceFactory.ImageResourceCard.superclass.constructor.apply(this, arguments);
+		this.callParent(arguments);
 	},
 	
     prefetch : function(layoutMgr)

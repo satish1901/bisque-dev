@@ -14,7 +14,7 @@ Ext.define('Bisque.ResourceBrowser.PreferencesWindow',
         //  Check if the user is logged in
         if (this.browser.preferencesTag==undefined)
         {
-            BQ.ui.notification('Guests cannot save preferences! Please login first...',  3000);
+            BQ.ui.notification('User not logged in or preferences not found!',  3000);
             return;
         }
         

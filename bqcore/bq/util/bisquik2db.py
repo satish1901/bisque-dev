@@ -604,7 +604,7 @@ def updateDB(root=None, parent=None, resource = None, factory = NodeFactory):
                         setattr(resource, k, unicode(v,"utf-8"))
                     
                 # Check for text
-                if value and value.strip() and value != resource.value:
+                if value is not None and value.strip() and value != resource.value:
                     convert = converters.get(type_, unicode)
                     resource.value = convert (value)
                     #log.debug (u"assigned %s = %s" % (obj.tag , unicode(value,"utf-8")))
