@@ -1327,12 +1327,6 @@ def bisque_installer(options, args):
     #if options.admin:
     #    setup_admin(params)
 
-    if os.path.exists ('.cache'):
-        shutil.rmtree ('.cache')
-    os.mkdir ('.cache')
-    if os.path.exists('.server_cache'):
-        shutil.rmtree('.server_cache')
-    os.mkdir ('.server_cache')
 
     params['bisque.installed'] = "finished"
     params = modify_site_cfg([], params,)
