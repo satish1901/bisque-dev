@@ -861,16 +861,14 @@ Ext.define('BQ.upload.Panel', {
     addFilesPrivate : function(pos) {
         var total = this._files.length;
         if (pos>=total) {
-            //this.uploadPanel.setVisible(false); // dima: if there's another way to speed this up, would be better
             this.uploadPanel.add(this._fps);
-            //this.uploadPanel.setVisible(true); 
             this.uploadPanel.removeCls('waiting');
-            
+
+            //var time_finished = new Date();
+            //this.progress.updateProgress(100, 'Inserted in '+time_finished.diff(this._time_started).toString() );
+            this.progress.setVisible(false);            
             this.btn_upload.setDisabled(false);
             this.btn_cancel.setDisabled(false);  
-            //this.progress.setVisible(false);
-            var time_finished = new Date();
-            this.progress.updateProgress(100, 'Inserted in '+time_finished.diff(this._time_started).toString() );
             this._files = undefined;
             this._fps = undefined;            
             return;
