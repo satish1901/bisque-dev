@@ -277,12 +277,13 @@ var formatFileSize = function (sz) {
 };
 
 Ext.define('BQ.upload.Item', {
-    extend: 'Ext.panel.Panel',
+    //extend: 'Ext.panel.Panel',
+    extend: 'Ext.container.Container', // container is much faster to be insterted
     alias: 'widget.uploaditem',
     requires: ['Ext.toolbar.Toolbar', 'Ext.tip.QuickTipManager', 'Ext.tip.QuickTip'],
 
     border: 0,
-    height: 120,
+    height: 100,
     closable: true,
     cls: 'uploaditem',
     bodyStyle: 'padding: 10px',
@@ -311,29 +312,31 @@ Ext.define('BQ.upload.Item', {
         });
         
         this.fileName = Ext.create('Ext.toolbar.TextItem', {
-            text: '<h4><em>Name: </em>"'+(this.file.name || this.file.fileName)+'"</h4>',
+            text: (this.file.name || this.file.fileName),
+            cls: 'title',
             indent: true,
         });        
 
+        var s = '<h4><em>Size: </em>' + formatFileSize(this.file.size || this.file.fileSize);
+        s += this.file.type == ''? '': ' <em>Type: </em>'+this.file.type;
+        s += '</h4>';
         this.fileSize = Ext.create('Ext.toolbar.TextItem', {
-            text: '<h4><em>Size: </em>' + formatFileSize(this.file.size || this.file.fileSize)+
-                  ' <em>Type: </em>'+this.file.type+'</h4>',
+            text: s,
             indent: true,
         });            
-
-        /*
+        
         this.closeButton = Ext.create('Ext.button.Button', {
-            text:'Close',
-            //anchor: '-50',
-            scale: 'large',
-            //width: 32, height: 32,
-            handler: function() {
-                alert('You clicked the button!')
-            }                       
-        });*/
+            iconCls: 'close', 
+            cls: 'flatbutton',
+            scale: 'small',
+            //scale: 'medium',
+            style: 'float: right;',
+            tooltip: 'Cancel uploading this file',          
+            handler: Ext.Function.bind( this.destroy, this ),
+        });
         
         this.items = [ 
-            //this.closeButton,
+            this.closeButton,
             this.fileName,
             this.fileSize,
             this.progress ];           
@@ -456,7 +459,7 @@ Ext.define('BQ.upload.Item', {
         var timing = ' in '+ this.time_finished.diff(this.time_starting).toString() +
                      ' at '+ speed;      
                    
-        this.fileName.setText( '<h4>Uploaded <b>'+this.file.name+'</b>'+timing+'</h4>' );                
+        this.fileName.setText( 'Uploaded <b>'+this.file.name+'</b>'+timing );                
         this.fileSize.setText( '<h4>Unfortunately some error happened during upload...</h4>' );                    
                  
         // parse response
@@ -466,7 +469,7 @@ Ext.define('BQ.upload.Item', {
             if (this.resource.uri) {
                 // image inserted correctly
                 this.state = BQ.upload.Item.STATES.DONE;                
-                var s = '<h4>Uploaded <a href="'+view_resource+encodeURIComponent(this.resource.uri)+'">'+this.file.name+'</a>'+timing+'</h4>'
+                var s = 'Uploaded <a href="'+view_resource+encodeURIComponent(this.resource.uri)+'">'+this.file.name+'</a>'+timing;
                 this.fileName.setText(s);
 
                 var s = '<h4>'+ render_resource(this.resource) +'</h4>';
@@ -621,7 +624,7 @@ Ext.define('BQ.upload.Panel', {
             flex: 1,
             height: 30,
             style: 'margin-left: 30px; margin-right: 30px;',
-            animate: true,
+            animate: false,
             value: 0,
         });
         this.progress.setVisible(false);
@@ -858,14 +861,16 @@ Ext.define('BQ.upload.Panel', {
     addFilesPrivate : function(pos) {
         var total = this._files.length;
         if (pos>=total) {
-            this.progress.setVisible(false); // dima: if there's another way to speed this up, would be better
+            //this.uploadPanel.setVisible(false); // dima: if there's another way to speed this up, would be better
             this.uploadPanel.add(this._fps);
-            this.progress.setVisible(true); 
+            //this.uploadPanel.setVisible(true); 
             this.uploadPanel.removeCls('waiting');
             
             this.btn_upload.setDisabled(false);
             this.btn_cancel.setDisabled(false);  
-            this.progress.setVisible(false);
+            //this.progress.setVisible(false);
+            var time_finished = new Date();
+            this.progress.updateProgress(100, 'Inserted in '+time_finished.diff(this._time_started).toString() );
             this._files = undefined;
             this._fps = undefined;            
             return;
@@ -889,6 +894,7 @@ Ext.define('BQ.upload.Panel', {
         this._files = files;
         this._fps = [];
         this.uploadPanel.addCls('waiting');
+        this._time_started = new Date(); 
         this.addFilesPrivate(0);
     }, 
    
