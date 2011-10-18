@@ -99,6 +99,16 @@
   <!-- Derived template includes   -->  
   ${select('*[local-name()!="title" and not(@id="config" and local-name()="script")]')}
   
+    <script type="text/javascript" py:if="tg.flash" > 
+        var flash_message = tg.flash.get_flash();
+        var flash_status = tg.flash.get_status();
+        BQ.ui.popup( flash_status, flash_message );
+    </script>
+  
+    <script type="text/javascript" py:if="tg.config.get('server.environment', None) == 'development'" > 
+        BQ.ui.warning( 'This a test environment, all your data may be lost!' );
+    </script>
+  
 </head>
 </py:match>
 
