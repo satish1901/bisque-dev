@@ -47,24 +47,25 @@ BQ.ui = function(){
             m.slideIn('t').ghost("t", { delay: delay, remove: true});
         },
 
+        popup: function(type, text, delay) {
+            var t = BQ.ui.types[type] || BQ.ui.types['notification'];
+            BQ.ui.message( t.title, text, t.delay, t.cls );
+        },
+
         notification: function(text, delay) {
-            if (delay == undefined) delay = 5000;            
-            BQ.ui.message('', text, delay, 'notification' );
+            BQ.ui.popup('notification', text, delay );
         },
 
         attention: function(text, delay) {
-            if (delay == undefined) delay = 10000;            
-            BQ.ui.message('', text, delay, 'warning' );
+            BQ.ui.popup('attention', text, delay );
         },
         
         warning: function(text, delay) {
-            if (delay == undefined) delay = 10000;            
-            BQ.ui.message('Warning', text, delay, 'warning' );
+            BQ.ui.popup('warning', text, delay );            
         },        
 
         error: function(text, delay) {
-            if (delay == undefined) delay = 50000;            
-            BQ.ui.message('Error', text, delay, 'error' );
+            BQ.ui.popup('error', text, delay );
         },
   
         tip: function( element, text, opts ) {
@@ -83,3 +84,11 @@ BQ.ui = function(){
 
     };
 }();
+
+BQ.ui.types = {
+    'notification': { delay: 5000,  title: '',        cls: 'notification' },
+    'attention':    { delay: 10000, title: '',        cls: 'warning' },
+    'warning':      { delay: 10000, title: 'Warning', cls: 'warning' },
+    'error':        { delay: 50000, title: 'Error',   cls: 'error' },            
+};
+
