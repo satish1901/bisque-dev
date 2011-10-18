@@ -131,3 +131,7 @@
     font-size: 16px;
 }
 */
+
+.waiting {
+    cursor: wait;
+}

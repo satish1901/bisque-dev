@@ -552,6 +552,8 @@ BQ.upload.Item.STATE_STRINGS = {
 // upload manages items and all other UI aspects like drag and drop
 //-------------------------------------------------------------------------------------- 
 
+BQ.upload.UPLOAD_STRING = 'Uploading';
+
 BQ.upload.DATASET_CONFIGS = {
     'NORMAL'   : 0,
     'REQUIRE'  : 1,
@@ -615,7 +617,7 @@ Ext.define('BQ.upload.Panel', {
         // footer's toolbar elements
 
         this.progress = Ext.create('Ext.ProgressBar', {
-            text:'Uploading',
+            text: BQ.upload.UPLOAD_STRING,
             flex: 1,
             height: 30,
             style: 'margin-left: 30px; margin-right: 30px;',
@@ -797,8 +799,7 @@ Ext.define('BQ.upload.Panel', {
    
     chooseFiles : function(field, value, opts) {
         var files = field.fileInputEl.dom.files;
-        for (var i=0, f; f=files[i]; i++)
-            this.addFile(f);
+        this.addFiles(files);
     },   
 
     checkFile : function(f) {
@@ -813,7 +814,8 @@ Ext.define('BQ.upload.Panel', {
         return found;
     },   
 
-    addFile : function(f) {
+    // private at this point, noui - should be true if you don't want file to be added to the list right here
+    addFile : function(f, noui) {
         // first check if the file is already included       
         if (this.checkFile(f)) {
             BQ.ui.notification('File already in the upload queue: '+f.name);
@@ -843,18 +845,59 @@ Ext.define('BQ.upload.Panel', {
                     scope: this,
             },     
         });        
-        this.uploadPanel.add(fp);
-        
-        this.btn_upload.setDisabled(false);
-        this.btn_cancel.setDisabled(false);        
-        this.fireEvent( 'fileadded', fp);         
+
+        if (!noui) {
+            this.uploadPanel.add(fp);
+            this.btn_upload.setDisabled(false);
+            this.btn_cancel.setDisabled(false);        
+        }
+        this.fireEvent( 'fileadded', fp);          
+        return fp;
     },   
+   
+    addFilesPrivate : function(pos) {
+        var total = this._files.length;
+        if (pos>=total) {
+            this.progress.setVisible(false); // dima: if there's another way to speed this up, would be better
+            this.uploadPanel.add(this._fps);
+            this.progress.setVisible(true); 
+            this.uploadPanel.removeCls('waiting');
+            
+            this.btn_upload.setDisabled(false);
+            this.btn_cancel.setDisabled(false);  
+            this.progress.setVisible(false);
+            this._files = undefined;
+            this._fps = undefined;            
+            return;
+        }
+           
+        var f = this._files[pos];
+        var fp = this.addFile(f, true);
+        if (fp) this._fps.push(fp);
+        
+        if (pos+1<total)
+            this.progress.updateProgress( pos/total, 'Inserting files: '+(pos+1)+' of '+total, false  );
+        else
+            this.progress.updateProgress( 100, 'Rendering inserted files, wait a bit...' ); 
+        
+        var me = this;
+        setTimeout( function() { me.addFilesPrivate(pos+1); }, 1);
+    },
+   
+    addFiles : function(files) {
+        this.progress.setVisible(true);        
+        this._files = files;
+        this._fps = [];
+        this.uploadPanel.addCls('waiting');
+        this.addFilesPrivate(0);
+    }, 
    
     upload : function() {
         this.all_done = false;        
         this.files_uploaded = 0;
+        this._time_started = new Date();  
         this.progress.setVisible(true);
-        this.progress.updateProgress(0);
+        this.progress.updateProgress(0, BQ.upload.UPLOAD_STRING);
         this.uploadPanel.items.each( function() { if (this.upload) this.upload(); } );
     },     
 
@@ -891,18 +934,18 @@ Ext.define('BQ.upload.Panel', {
         this.uploadPanel.removeCls( 'dragging' );        
         if (!e || !e.browserEvent || !e.browserEvent.dataTransfer || !e.browserEvent.dataTransfer.files) return;
         var files = e.browserEvent.dataTransfer.files;
-        for (var i=0, f; f=files[i]; i++)
-            this.addFile(f);
+        this.addFiles(files);            
     },
 
     testDone : function(nomessage) {
         var total = this.uploadPanel.items.getCount();
-        this.progress.updateProgress( this.files_uploaded/total );
+        this.progress.updateProgress( this.files_uploaded/total, BQ.upload.UPLOAD_STRING );
         
         var e = this.uploadPanel.items.findBy( function(){ return (this.getState && this.getState()<BQ.upload.Item.STATES.DONE); } );
         if (!e && this.files_uploaded==total && !this.all_done) {
             this.all_done = true;
-            if (!nomessage) BQ.ui.notification('All files uploaded!');
+            var time_finished = new Date();
+            if (!nomessage) BQ.ui.notification('All files uploaded in '+time_finished.diff(this._time_started).toString() );
             this.progress.setVisible(false);                    
             this.btn_upload.setDisabled(true);
             this.btn_cancel.setDisabled(true); 
