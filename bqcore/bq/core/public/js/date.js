@@ -82,11 +82,12 @@ DateDiff.prototype.fromMS = function ( diff ) {
 }
 
 DateDiff.prototype.toString = function () {
-  var s = "";
+  var s = '';
   if (this.weeks>0) s += ''+ this.weeks +' weeks ';
   if (this.days>0)  s += ''+ this.days  +' days ';
   if (this.hours>0) s += ''+ this.hours +' hours ';
   if (this.mins>0)  s += ''+ this.mins  +' minutes ';    
   if (this.secs>0)  s += ''+ this.secs  +' seconds ';  
+  if (s=='' && this.msecs>0)  s += ''+ this.msecs  +'ms';  
   return s;
 }
