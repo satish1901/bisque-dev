@@ -122,7 +122,7 @@ setup(
     admin            = bq.client_service.controllers.admin_service
     notebook_service = bq.client_service.controllers.dn_service
     data_service     = bq.data_service.controllers.data_service
-    blob_service     = bq.blob_service.controllers.blobserver
+    #blob_service     = bq.blob_service.controllers.blobserver
     image_service    = bq.image_service.controllers.service
     stats            = bq.stats.controllers.stats_server
     analysis         = bq.module_service.controllers.analysis_server

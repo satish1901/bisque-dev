@@ -77,7 +77,6 @@ from bq.core.service import ServiceController, service_registry
 from bq.core.service import load_services, mount_services, start_services
 from bq.util.http import http_client
 from bq.core.controllers.error import ErrorController
-from bq.blob_service.controllers.blobserver import BlobServerController
 
 #from proxy import ProxyRewriteURL
 
@@ -152,7 +151,6 @@ class RootController(BaseController):
     #service_registry = MultiDict()
     #config['pylons.app_globals'].s = MDWrap(service_registry)
 
-    #blob_service = BlobServerController()
     error  = ErrorController()
     root = config.get ('bisque.root')
     

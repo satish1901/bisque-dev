@@ -799,10 +799,10 @@ class BQUser(Taggable):
         self.email_address = tg_user.email_address
         self.display_name = tg_user.display_name
         DBSession.add(self);
-        DBSession.flush();
-        DBSession.refresh(self)
+        #DBSession.flush();
+        #DBSession.refresh(self)
 
-        tg_user.dough_user_id = self.id
+        #tg_user.dough_user_id = self.id
         self.owner_id = self.id
         
     @classmethod
@@ -1094,6 +1094,8 @@ mapper(BQUser, users, inherits=Taggable,
     }
 )
 def bquser_callback (tg_user, operation, **kw):
+    if tg_user is None:
+        return
     # Deleted users will receive and update callback
     if operation =='create':
         u = DBSession.query(BQUser).filter_by(user_name=tg_user.user_name).first()
