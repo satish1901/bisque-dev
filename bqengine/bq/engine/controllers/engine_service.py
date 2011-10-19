@@ -261,7 +261,12 @@ def initialize_available_modules(engines):
         if not os.path.exists(xmlfile):
             continue
         log.debug ("found module at %s" % xmlfile)
-        module_root = etree.parse (open(xmlfile)).getroot()
+        try:
+            module_root = etree.parse (open(xmlfile)).getroot()
+        except etree.XMLSyntaxError:
+            log.exception ('while parsing %s' % xmlfile)
+            continue
+
         ts = os.stat(xmlfile)
         # for elem in module_root:
         if module_root.tag == "module":

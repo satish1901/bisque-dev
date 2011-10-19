@@ -316,9 +316,10 @@ def make_owner (dbo, fn, baseuri):
     return ('owner', baseuri + str(dbo.owner))
 def make_uri(dbo, fn, baseuri):
     return ('uri', "%s%s" % (baseuri , str (dbo.uri)))
-
 def get_email (dbo, fn, baseuri):
     return ('email', dbo.user.email_address)
+def make_user (dbo, fn, baseuri):
+    return ('user', baseuri + str(dbo.user))
 
 mapping_fields = {
     'table_name':'type',
@@ -349,8 +350,10 @@ mapping_fields = {
     'tguser':None,
     'password': None,
     'acl' : None,
+    'owned' : None,
     # Auth
     'user_id' : get_email,
+    'user'    : make_user,
     'taggable_id': None,
     'permission': 'action',
     'resource': None,

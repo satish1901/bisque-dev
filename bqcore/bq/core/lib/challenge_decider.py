@@ -22,11 +22,15 @@ def bisque_challenge_decider(environ, status, headers):
     # we do the default if it's a 401, probably we show a form then
     if status.startswith('401 '):
         request = Request(environ)
-        content_type = request.headers['content-type']
+        response = Response(environ)
+
+        req_content = request.headers['content-type']
+        content_type = response.headers['content-type']
+
+        log.debug ('req %s resp %s' % (req_content, content_type))
         #log.debug ('challenge_decider %s header=%s environ=%s' % (content_type, headers, environ.keys()))
 
-        
-        req = environ.get('pylons.original_request')
+        #req = environ.get('pylons.original_request')
         #if req:
             #log.debug ('challenge_decider request_header=%s' % req.headers)
             #accept = req.headers.get('accept')
@@ -35,7 +39,7 @@ def bisque_challenge_decider(environ, status, headers):
             #if accept and 'text/xml' in accept: # or 'application/xml' in accept:
             #    return False
 
-        if content_type in ('text/xml', 'application/xml'):
+        if 'text/xml' in content_type or 'application/xml' in content_type:
             return False
 
         return True
