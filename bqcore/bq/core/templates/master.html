@@ -114,7 +114,12 @@
 <py:match path="body" once="true">
 
 <body py:attrs="select('@*')">
-	<div id="content" class="content" >	<!-- class="content" -->
+	<div id="content" class="content" >
+    <!-- FLASH CODE NEEDED FOR tgext.registration2 -->
+    <py:with vars="flash=tg.flash_obj.render('flash', use_js=False)">
+        <div py:if="flash" py:replace="Markup(flash)" />
+    </py:with>
+
     ${select('*|text()')} 
   </div> 
 </body>

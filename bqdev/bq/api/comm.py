@@ -59,7 +59,7 @@ import itertools
 
 from lxml import etree
 
-from bqclass import fromXml, toXml, BQMex
+from bqclass import fromXml, toXml, BQMex, BQNode
 from util import parse_qs, make_qs, xml2d, d2xml
 
 
@@ -93,8 +93,16 @@ class BQServer(object):
         headers.update (self.auth)
         if user_headers:
             headers.update (user_headers)
-
         return headers
+
+    def prepare_url (self, url, **params):
+        split_url = list( urlparse.urlsplit(url))
+        p = parse_qs(split_url[3])
+        # Needs to be a list of values i.e. { k:[v] }
+        p.update(dict([ (k,[v]) for k,v in params.items()]))
+        split_url[3] = make_qs(p)
+        url = urlparse.urlunsplit(split_url)
+        return url
     
     def fetch(self, url, headers = None):
         headers = self.prepare_headers(headers)
@@ -154,7 +162,7 @@ class BQSession(object):
             
         self.bisque_root = bisque_root
         self._load_services()
-        self.mex = self.load (mex_url)
+        self.mex = self.load (mex_url, view='deep')
         return self
 
     def close(self):
@@ -166,12 +174,7 @@ class BQSession(object):
         @param url: A url to fetch from
         @param params: params will be added to url
         """
-        split_url = list( urlparse.urlsplit(url))
-        p = parse_qs(split_url[3])
-        # Needs to be a list of values i.e. { k:[v] }
-        p.update(dict([ (k,[v]) for k,v in params.items()]))
-        split_url[3] = make_qs(p)
-        url = urlparse.urlunsplit(split_url)
+        url = self.c.prepare_url (url, **params)
 
         log.debug('fetchxml %s ' % url)
         try:
@@ -181,9 +184,10 @@ class BQSession(object):
             log.exception('during fetch of %s %s' % (url, params))
             return None
     
-    def postxml(self, url, xml, method="POST"):
+    def postxml(self, url, xml, method="POST", **params):
         log.debug('postxml %s  content %s ' % (url, xml))
         content = etree.tostring(xml)
+        url = self.c.prepare_url(url, **params)
         try:
             content =  self.c.post(url, content=content, method=method,
                                    headers = {'Content-Type':'text/xml'})
@@ -223,10 +227,10 @@ class BQSession(object):
         def append_mex (mex, type_, elems):
             for tg in elems:
                 if isinstance(tg, dict):
-                    tg = d2xml({'tag': tg})
+                    tg = d2xml({ type_ : tg})
                 elif isinstance(tg, BQNode):
                     tg = toXml(tg)
-                elif isinstance(tg, ET._Element):
+                elif isinstance(tg, etree._Element):
                     pass
                 else:
                     raise BQException('bad values in tag/gobject list %s' % tg)
@@ -239,7 +243,7 @@ class BQSession(object):
         #                  'status' : status,
         #                  'tag' : tags, 
         #                  'gobject': gobjects }}
-        content = self.postxml(self.mex.uri, mex)
+        content = self.postxml(self.mex.uri, mex, view='deep')
         if content is not None:
             self.mex = fromXml(content, session = self)
             return self.mex
