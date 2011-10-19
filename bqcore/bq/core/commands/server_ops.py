@@ -79,7 +79,7 @@ def readhostconfig (site_cfg):
         #ign, host_id, param = 
         #servers.setdefault(host_id, {})[param] = val
 
-    print "ROOT", root, "SERVERS", servers.keys()
+
     bisque =  { 'root': root, 'servers': servers, 'log_dir': '.', 'pid_dir' : '.' }
     if config.has_option('servers', 'log_dir'):
         bisque['log_dir'] = config.get ('servers', 'log_dir')
@@ -94,9 +94,9 @@ def prepare_log (logfile):
         if os.path.exists(oldlog):
             os.remove (oldlog)
         os.rename (logfile, oldlog)
-        print ('%s -> %s' % (logfile, oldlog))
-    else:
-        print ("No logfile %s" % logfile)
+        #print ('%s -> %s' % (logfile, oldlog))
+    #else:
+    #    print ("No logfile %s" % logfile)
 
 # def tail(file):
 #     interval = 1.0
@@ -131,19 +131,22 @@ def check_running (pid_file):
 def operation(command, options, *args):
     """Run a multi-server command to start several bisque jobs
     """
+    def verbose(msg):
+        if options.verbose:
+            print msg
+
     site_cfg = options.site or find_site_cfg()
     if site_cfg is None:
         print "Cannot find site.cfg.. please make sure you are in the bisque dir"
         return
     site_dir = os.path.dirname(os.path.abspath(site_cfg))
 
-    if options.verbose:
-        print 'using config : %s' % site_cfg
+    verbose('using config : %s' % site_cfg)
     try:
         config = readhostconfig(site_cfg)
+        verbose("ROOT %s SERVERS %s" % (config['root'], config['servers'].keys()))
         processes  = []
         for key, serverspec in sorted(config['servers'].items()):
-            print key, serverspec
 
             url = serverspec.pop('url')
             fullurl = urlparse (url)
@@ -167,7 +170,7 @@ def operation(command, options, *args):
                 prepare_log (logfile)
 
             msg = { 'start': 'starting', 'stop':'stopping', 'restart':'restarting'}[command]
-            print ("%s bisque on %s .. please wait" %  (msg, port) )
+            verbose ("%s bisque on %s .. please wait" %  (msg, port) )
             server_cmd = ['paster', 'serve']
             server_cmd.extend ([
                           '--log-file', logfile,
@@ -192,14 +195,12 @@ def operation(command, options, *args):
             server_cmd.extend (args)
 
 
-            if options.verbose:
-                print 'Executing: %s' % ' '.join(server_cmd)
+            verbose ( 'Executing: %s' % ' '.join(server_cmd) )
                 
             if not options.dryrun:
                 processes.append(Popen(server_cmd))
 
-        if options.verbose:
-            print '%s: %s' % (command , ' '.join(RUNNER_CMD))
+        verbose( '%s: %s' % (command , ' '.join(RUNNER_CMD)))
 
         if command == 'start':
             if not options.dryrun:
@@ -208,7 +209,7 @@ def operation(command, options, *args):
 
                 processes.append(mexrunner)
                 open('mexrunner.pid', 'wb').write(str( mexrunner.pid ))
-                print "Starting Mexrunner: %s"%mexrunner.pid
+                verbose( "Starting Mexrunner: %s"%mexrunner.pid )
         else:
             import signal
             if os.path.exists('mexrunner.pid'):
@@ -218,7 +219,7 @@ def operation(command, options, *args):
                     f.close()
                     kill_process(mexrunner_pid)
                     os.remove ('mexrunner.pid')
-                print "Stopped Mexrunner: %s"%mexrunner_pid
+                verbose( "Stopped Mexrunner: %s"%mexrunner_pid )
                 
 
         if options.wait:

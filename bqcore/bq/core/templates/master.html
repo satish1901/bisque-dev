@@ -89,17 +89,25 @@
 
   <!-- Bisque Application instantiation   -->   
   <script type="text/javascript" > 
-  //<![CDATA[
-  //   var services = ${g.services};
-  //   Bisque.init_services(services);
-  //   clog ("HELP");
-  //Ext.onReady (BQ.Application.init, BQ.Application);
-  Ext.onReady( function(){ BQApp = Ext.create('BQ.Application', bq); });
- //]]>
+        Ext.onReady( function(){ 
+            BQApp = Ext.create('BQ.Application', bq); 
+        });
   </script>  
 
   <!-- Derived template includes   -->  
   ${select('*[local-name()!="title" and not(@id="config" and local-name()="script")]')}
+  
+    <script type="text/javascript" py:if="tg.flash" > 
+        Ext.onReady( function(){ 
+            BQ.ui.popup( '${tg.flash_obj.status}', '${tg.flash_obj.message}' );
+        });
+    </script>
+  
+    <script type="text/javascript" py:if="tg.config.get('server.environment', None) == 'development'" > 
+        Ext.onReady( function(){     
+        BQ.ui.warning( 'This a test environment, all your data may be lost!' );
+        });
+    </script>
   
 </head>
 </py:match>
@@ -108,7 +116,12 @@
 <py:match path="body" once="true">
 
 <body py:attrs="select('@*')">
-	<div id="content" class="content" >	<!-- class="content" -->
+	<div id="content" class="content" >
+    <!-- FLASH CODE NEEDED FOR tgext.registration2 -->
+    <py:with vars="flash=tg.flash_obj.render('flash', use_js=False)">
+        <div py:if="flash" py:replace="Markup(flash)" />
+    </py:with>
+
     ${select('*|text()')} 
   </div> 
 </body>

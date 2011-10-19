@@ -76,7 +76,7 @@ from bq.util.paths import data_path
 from bq  import image_service
 from bq.client_service.controllers import notify_service
 
-log = logging.getLogger('bq.DS.query')
+log = logging.getLogger('bq.data_service.query')
 
 
 
@@ -542,7 +542,6 @@ def resource_load(resource_type, id,
 
 def resource_permission(resource, action = RESOURCE_READ, user_id=None, with_public = True):
     resource = prepare_permissions (resource, user_id, with_public = with_public, action=action)
-    log.debug ("PERMISSION: %s %s" % (user_id, resource))
     return resource
 
 

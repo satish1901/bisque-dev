@@ -93,60 +93,8 @@ from bq.core.permission import *
 from bq.core.exceptions import RequestError
 from bq.core.controllers.proxy import exposexml
 
-from mexrunner import MexRunner
-
 
 log = logging.getLogger('bq.module_server')
-
-EXEC="EXECUTING"
-INIT="INIT"
-FAILURE="FAILURE"
-
-class RemoteModuleServer(object):
-    def __init__(self, server):
-        self.url = server
-
-    def checkxml (self, resp, content):
-        log.debug ('response:' + str(resp))
-        log.debug ('content:' + str(content))
-
-        if resp['status'] != '200':
-            raise RequestError(resp['status'])
-        return etree.XML(content)
-    
-    def register_engine(self, enginedoc):
-        doc = etree.tostring(enginedoc)
-        log.debug ("sending register request"+ self.url)
-        #req = etree.Element ('request')
-        #req.append (enginedoc)
-        #log.debug ('XXXXXXXXXXXXXXXXXXXXXX:' + str(self.url))
-        #resp, content = http.xmlrequest(self.url+'/engine_register',
-        resp, content = http.xmlrequest(self.url+'/engine/',
-                                        "POST", body = doc)
-
-        return self.checkxml(resp,content)
-
-    def begin_execute (self, mex_request):
-        resp, content = http.xmlrequest(self.url+'/execute_begin',
-                                        "POST", 
-                                        body = etree.tostring(mex_request), 
-                                        )
-        return self.checkxml(resp, content)
-
-    def end_execute (self, mex_request):
-        resp, content = http.xmlrequest(self.url+'/execute_end',
-                                        "POST", 
-                                        body = etree.tostring(mex_request))
-        return self.checkxml(resp,content)
-    
-    def heartbeat(self, hb):
-        hbdoc = etree.tostring(hb)
-        resp, content = http.xmlrequest(self.url+'/heartbeat',
-                                        "POST", 
-                                        body = hbdoc)
-        return self.checkxml(resp, content)
-    
-        
 
 from repoze.what import predicates 
 from bq.core.service import ServiceController
@@ -383,31 +331,13 @@ class ServiceDelegate(controllers.WSGIAppController):
         mex.set ('uri', "%s%s" % (self.mexurl, mexid))
 
 
-def start_mex_runner(url):
-    return None
-    #mexrunner = MexRunner(url)
-    #tgscheduler.add_interval_task(interval=30,
-    #                              action=mexrunner.process_pending,
-    #                              initialdelay=10)
-    #return mexrunner
-
-def start_mex_runner_old(url):
-    def start_runner(url):
-        runner = MexRunner(url)
-        runner.start()
-
-        
-    tgscheduler.add_single_task (action=start_runner, args=[url], initialdelay=10)
-    return None
-
-
 class ModuleServer(ServiceController):
     service_type = "module_service"
     
     def __init__(self, server_url = None):
         super(ModuleServer, self).__init__(uri = server_url)
-        #self.url = server_url
-        self.runner = start_mex_runner(self.url)
+
+        self.runner = None
         self.__class__.mex = self.mex = MexDelegate (self.url + 'mex',
                                                      self.runner)
         self.__class__.modules = self.modules = resource_controller ("modules" , cache=False )

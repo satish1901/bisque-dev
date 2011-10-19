@@ -14,7 +14,7 @@ class MexAuthenticatePlugin(object):
     def identify(self, environ):
         """Lookup the owner """
         mexid = environ.get('HTTP_MEX', None)
-        log.info ("MexAuthenticate %s" % mexid)
+        #log.info ("MexAuthenticate %s" % mexid)
         if mexid :
             return { 'Mex' : mexid }
         return None

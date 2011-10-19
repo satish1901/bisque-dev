@@ -399,11 +399,11 @@ class Taggable(object):
     
     def __init__(self, resource_type = None):
         if self.__class__ == Taggable and resource_type:
-            log.info ("Rsource Taggable using " + resource_type);
+            #log.debug ("Rsource Taggable using " + resource_type);
             self.table = resource_type
         else:
             self.table = str(object_mapper(self).local_table)
-            log.info ("System Taggable %s using %s" %( self.__class__,  self.table));
+            #log.debug ("System Taggable %s using %s" %( self.__class__,  self.table));
             #self.table = self.xmltag
         self.ts = datetime.now()
         #log.debug("new taggable user:" + str(session.dough_user.__dict__) )
