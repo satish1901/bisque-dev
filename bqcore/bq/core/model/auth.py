@@ -25,6 +25,7 @@ except ImportError:
 from sqlalchemy import Table, ForeignKey, Column
 from sqlalchemy.types import Unicode, Integer, DateTime
 from sqlalchemy.orm import relation, synonym
+from sqlalchemy import event 
 
 from bq.core.model import DeclarativeBase, metadata, DBSession
 
@@ -133,7 +134,7 @@ class User(DeclarativeBase):
 
     """
     __tablename__ = 'tg_user'
-    create_callbacks = []
+    callbacks = []
 
     #{ Columns
 
@@ -149,8 +150,6 @@ class User(DeclarativeBase):
     #{ Special methods
     def __init__(self, **kw):
         super(User, self).__init__(**kw)
-        for create in self.create_callbacks:
-            create(tg_user = self)
            
 
     def __repr__(self):
@@ -223,6 +222,18 @@ class User(DeclarativeBase):
         #hash.update(password + str(self.password[:40]))
         #return self.password[40:] == hash.hexdigest()
         return self.password == password
+
+
+def create_user(mapper, connection, target, ):
+    for cb in User.callbacks:
+        cb(tg_user = target, operation = 'create')
+def update_user(mapper, connection, target, ):
+    for cb in User.callbacks:
+        cb(tg_user = target, operation = 'update')
+
+event.listen(User, 'after_update', update_user )
+event.listen(User, 'after_insert', create_user )
+
 
 
 class Permission(DeclarativeBase):

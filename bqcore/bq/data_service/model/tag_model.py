@@ -65,7 +65,7 @@ from datetime import datetime
 from sqlalchemy import Table, Column, ForeignKey
 from sqlalchemy import Integer, String, DateTime, Unicode, Float
 from sqlalchemy import Text, UnicodeText
-from sqlalchemy.orm import relation, class_mapper, object_mapper, validates
+from sqlalchemy.orm import relation, class_mapper, object_mapper, validates, backref
 from sqlalchemy import exceptions
 from sqlalchemy.sql import and_
 from sqlalchemy.ext.associationproxy import association_proxy
@@ -299,7 +299,7 @@ class EntitySingleton(type):
         #hashkey = name
         try:
             instance = cls.instances[hashkey]
-            instance = sess.merge (instance)
+            #instance = sess.merge (instance)
             return instance
         except KeyError:
             instance = sess.query(cls).filter(cls.name==name).first()
@@ -1010,20 +1010,23 @@ mapper( Taggable, taggable,
                             primaryjoin=(taggable.c.tb_id == names.c.id),
                             uselist = False,
                             ),
-    'owner' : relation (BQUser,
-                        uselist=False,
-                        passive_deletes="all",
-                        primaryjoin=(taggable.c.owner_id == users.c.id),
-                        foreign_keys=[users.c.id],
-                        #post_update=True,
-                        ),
-    'mex' : relation (ModuleExecution,
-                      uselist=False,
-                      passive_deletes="all",
-                      primaryjoin=(taggable.c.mex_id == mex.c.id),
-                      foreign_keys=[mex.c.id],
-                      #post_update=True,
-                      ),
+#    'owner' : relation (BQUser,
+#                        uselist=False,
+#                        passive_deletes="all",
+#                        primaryjoin=(taggable.c.owner_id == users.c.id),
+#                        foreign_keys=[users.c.id],
+#                        post_update=True,
+#                        cascade = None,
+#                        ),
+    # 'mex' : relation (ModuleExecution,
+    #                   uselist=False,
+    #                   #passive_deletes="all",
+    #                   primaryjoin=(taggable.c.mex_id == mex.c.id),
+    #                   foreign_keys=[mex.c.id],
+    #                   post_update=True,
+    #                   cascade = None,
+    #                   ),
+
     'tags' : relation(Tag, lazy=True, cascade="all, delete-orphan",
 #    'tags' : relation(Tag, lazy=True, cascade="all",
                          primaryjoin= (tags.c.parent_id==taggable.c.id)),
@@ -1079,16 +1082,36 @@ mapper(BQUser, users, inherits=Taggable,
     properties = { 
         'tguser' : relation(User, uselist=False, 
             primaryjoin=(User.user_name == users.c.user_name),
-            foreign_keys=[User.user_name])
+            foreign_keys=[User.user_name]),
+
+        'owned' : relation(Taggable, 
+                           cascade = None,
+                           primaryjoin = (users.c.id == taggable.c.owner_id),
+                           foreign_keys=[taggable.c.owner_id],
+                           backref = backref('owner', post_update=True),
+                           )
+                           
     }
 )
-def create_bquser (tg_user, **kw):
-    u = DBSession.query(BQUser).filter_by(user_name=tg_user.user_name).first()
-    if u is None:
-        log.info ('creating BQUSER ')
-        BQUser(tg_user=tg_user)
+def bquser_callback (tg_user, operation, **kw):
+    # Deleted users will receive and update callback
+    if operation =='create':
+        u = DBSession.query(BQUser).filter_by(user_name=tg_user.user_name).first()
+        if u is None:
+            log.info ('creating BQUSER ')
+            BQUser(tg_user=tg_user)
+            return
+    if operation  == 'update':
+        u = DBSession.query(BQUser).filter_by(user_name=tg_user.user_name).first()
+        if u is not None:
+            u.email_address = tg_user.email_address 
+            u.password = tg_user.password
+            u.display_name = tg_user.display_name
+        return
         
-User.create_callbacks.append (create_bquser)
+
+        
+User.callbacks.append (bquser_callback)
 
 
 mapper(Template, templates, inherits=Taggable)
@@ -1102,9 +1125,17 @@ mapper(Module, modules, inherits=Taggable,
     }                             
               )
 
-mapper(ModuleExecution, mex,
-              inherits=Taggable,
-              inherit_condition=(mex.c.id == taggable.c.id))
+mapper(ModuleExecution, mex, inherits=Taggable,
+       inherit_condition=(mex.c.id == taggable.c.id),
+       properties = {
+        'owned' : relation(Taggable, 
+                           cascade = None,
+                           primaryjoin = (mex.c.id == taggable.c.mex_id),
+                           foreign_keys=[taggable.c.mex_id],
+                           backref = backref('mex', post_update=True),
+                           )
+        },
+       )
 mapper( Dataset, dataset, 
               inherits=Taggable,
               inherit_condition=(dataset.c.id == taggable.c.id))

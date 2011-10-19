@@ -166,6 +166,20 @@ class AdminController(ServiceController):
     
     @expose ()
     def deleteuser(self, username=None,  **kw):
+        #session.autoflush = False
+
+
+        # Remove the user from the system for most purposes, but
+        # leave the id for statistics purposes.
+        user = session.query(User).filter (User.display_name == username).first()
+        log.debug ("Renaming internal user %s" % user)
+        if user:
+            user.display_name = ("(R)" + user.display_name)[:255]
+            user.email_address = ("(R)" + user.email_address)[:255]
+            user.user_name = ("(R)" + user.user_name)[:16]
+        
+
+
         user = session.query(BQUser).filter(BQUser.user_name == username).first()
         log.debug("ADMIN: Deleting user: " + str(user) )
         # delete the access permission
@@ -180,14 +194,6 @@ class AdminController(ServiceController):
         self.deleteimages(username, will_redirect=False)
         session.delete(user)
 
-        # Remove the user from the system for most purposes, but
-        # leave the id for statistics purposes.
-        user = session.query(User).filter (User.display_name == username).first()
-        if user:
-            user.display_name = ("(R)" + user.display_name)[0:255]
-            user.email_address = ("(R)" + user.email_address)[0:255]
-            user.user_name = ("(R)" + user.user_name)[0:16]
-        
         session.flush()
         redirect('/admin/users')
 
