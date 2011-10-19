@@ -798,7 +798,7 @@ class BQUser(Taggable):
         self.password = tg_user.password
         self.email_address = tg_user.email_address
         self.display_name = tg_user.display_name
-        #DBSession.add(self);
+        DBSession.add(self);
         #DBSession.flush();
         #DBSession.refresh(self)
 
