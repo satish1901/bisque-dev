@@ -185,11 +185,11 @@ class ClientServer(ServiceController):
         
         #log.debug ('DDDDDDDDDDDDDDDDDDDDDD'+query)
         return dict(query=kw.pop('tag_query', None),
-                    layout=kw.pop('layout', 1),
-                    tagOrder=kw.pop('tag_order', ''),
-                    tagQuery=kw.pop('tag_query', ''),
-                    offset=kw.pop('offset', 0),
-                    dataset=kw.pop('dataset', '/data_service/images'),
+                    layout=kw.pop('layout', None),
+                    tagOrder=kw.pop('tag_order', None),
+                    tagQuery=kw.pop('tag_query', None),
+                    offset=kw.pop('offset', None),
+                    dataset=kw.pop('dataset', None),
                     search=0,
                     resource = "",
                     user_id = "",

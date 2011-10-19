@@ -472,7 +472,7 @@ function checkResponseXML(data, xmlResponse) {
 function clog(str) {
   if (typeof(window['console']) != "undefined")
   {
-    var caller = arguments.callee.caller.name  || arguments.callee.caller.$name;
+    var caller = arguments.callee.caller.name || arguments.callee.caller.$name;
     console.log(caller + ' : ' + str);
   }
 }

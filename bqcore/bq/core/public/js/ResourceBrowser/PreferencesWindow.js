@@ -11,27 +11,43 @@ Ext.define('Bisque.ResourceBrowser.PreferencesWindow',
             browser : config.browser || {}
         });
         
-        //  Check if the user is logged in
-        if (this.browser.preferencesTag==undefined)
+        if (BQ.Preferences.user.status=='LOADED')
         {
-            BQ.ui.notification('User not logged in or preferences not found!',  3000);
+            if (BQ.Preferences.user.exists==false)
+            {
+                BQ.ui.notification('Guests cannot save preferences! Please login first...',  3000);
+                return;
+            }
+            else if (BQ.Preferences.user.exists==true)
+            {
+                BQ.ui.notification('User preferences not found!',  3000);
+                return;
+            }
+        }
+        else
+        {
+            BQ.ui.notification('Initializing. Please wait...',  2000);
             return;
         }
-        
+                
         this.callParent(arguments);
-        
         this.addTagger();
         this.show();
     },
     
     addTagger : function()
     {
-        var tagger = Ext.create('Bisque.ResourceTagger',
+        var tag = BQ.Preferences.user.tag.find_tags(this.browser.preferenceKey, true);
+
+        if (tag.uri)
         {
-            resource : this.browser.preferencesTag.uri,
-        });
+            var tagger = Ext.create('Bisque.ResourceTagger',
+            {
+                resource : tag.uri,
+            });
         
-        this.add(tagger);
+            this.add(tagger);
+        }
     }
     
     

@@ -1,113 +1,145 @@
+Ext.define('BQ.Preferences.Object', {
+    tag : {},
+    hashTable : {},
+    status : undefined,
+    exists : undefined
+});
+
 Ext.define('BQ.Preferences',
 {
     singleton : true,
-    systemObject : undefined,
-    systemLoaded : false,
-    userLoaded : false,
     queue : [],
-    preference :
-    {
-        systemTag : {},
-        systemDict : {},
-        userTag : {},
-        userDict : {}
-    },
-
+    
     // load system preferences
     constructor : function()
     {
-        // Load the system object
-        BQFactory.request(
-        {
-            uri : bq.url('/data_service/system'),
-            cb : Ext.bind(this.loadObject, this),
-        });
+        this.system = Ext.create('BQ.Preferences.Object');
+        this.user = Ext.create('BQ.Preferences.Object');
+    
+        this.loadSystem(undefined, 'INIT');
     },
-
-    loadObject : function(resource)
+    
+    loadSystem : function(resource, status)
     {
-        if(resource.children.length == 0)
+        this.system.status=status;
+        
+        if (status=='INIT')
         {
-            clog('No system object found!');
-            return;
+            BQFactory.request(
+            {
+                uri : bq.url('/data_service/system'),
+                cb : Ext.bind(this.loadSystem, this, ['LOADING'], true),
+            });
+        }
+        else if (status=='LOADING')
+        {
+            if (resource.children.length!=0)
+                BQFactory.request(
+                {
+                    uri : resource.children[0].uri + '?view=deep',
+                    cb : Ext.bind(this.loadSystem, this, ['LOADED'], true),
+                });
+            else
+            {
+                clog('SYSTEM object not found!\n');
+                this.system.status='LOADED';
+                this.system.exists=false;
+            }
+        }
+        else if (status=='LOADED')
+        {
+            var tag = resource.find_tags('Preferences', false);
+            
+            if (tag!=null)
+            {
+                this.system.tag=tag;
+                this.system.hashTable=tag.toHashTable(true);
+            }
+            else
+            {
+                clog('SYSTEM preferences tag not found!\n');
+                this.system.exists=false;
+            }
+        }
+        
+        this.clearQueue();
+    },
+    
+
+    loadUser : function(resource, status)
+    {
+        this.user.status=status;
+
+        // User is signed-in
+        if (status=='INIT')
+        {
+            // Load the user object
+            BQFactory.request(
+            {
+                uri : resource.uri + '?view=deep',
+                cb : Ext.bind(this.loadUser, this, ['LOADED'], true)
+            });
+        }
+        else if (status=='LOADED')
+        {
+            if (resource!=null)
+            {
+                var tag = resource.find_tags('Preferences', false);
+                    
+                if (tag!=null)
+                {
+                    this.user.tag=tag;
+                    this.user.hashTable=tag.toHashTable(true);
+                }
+                else
+                {
+                    clog('USER preferences tag not found!\n');
+                    this.user.exists=true;
+                }
+            }
+            else
+            {
+                clog('USER - no user found!\n');
+                this.user.exists=false;
+            }
         }
 
-        // Load the system object
-        BQFactory.request(
-        {
-            uri : resource.children[0].uri + '?view=deep',
-            cb : Ext.bind(this.objectLoaded, this, ['system'], true),
-        });
-    },
-
-    objectLoaded : function(resource, type)
-    {
-        var obj = type+'Object', tag = type+'Tag', dict = type+'Dict';
-        
-        this[obj] = resource;
-        this.preference[tag] = this[obj].find_tags('Preferences', false);
-        if (this.preference[tag])
-            this.preference[dict] = this.preference[tag].toHashTable(true);
-    
-        this[type+'Loaded'] = true;
         this.clearQueue();
-        
     },
     
     clearQueue : function()
     {
-        if (this.userLoaded && this.systemLoaded)
+        if (this.system.status=='LOADED' && this.user.status=='LOADED')
             while (this.queue.length!=0)
                 this.get(this.queue.pop());
     },
 
-    loadUser : function(user)
-    {
-        // Load the user object
-        BQFactory.request(
-        {
-            uri : user.uri + '?view=deep',
-            cb : Ext.bind(this.objectLoaded, this, ['user'], true)
-        });
-    },
-
-    unloadUser : function()
-    {
-        Ext.apply(this.preferences, {
-            userTag : {},
-            userDict : {}
-        });
-        
-        this.userLoaded = true;
-        this.clearQueue();
-    },
-
+    /*
+     * Caller object: 
+     * 
+     * Caller.key = Component's key e.g. "ResourceBrowser"
+     * Caller.callback = Component's callback function when the preferences are loaded
+     */
     get : function(caller)
     {
-        if (this.userLoaded && this.systemLoaded)
-        {
-            if (Ext.Object.getSize(this.preference.userTag))
-                var tag = this.preference.userTag.find_tags(caller.key, false);
-            caller.callback(this.preference.userDict[caller.key] || this.preference.systemDict[caller.key] || {}, tag);
-        }
+        if (this.system.status=='LOADED' && this.user.status=='LOADED')
+            if (caller.type=='user')
+                caller.callback(Ext.Object.merge(this.system.hashTable[caller.key] || {}, this.user.hashTable[caller.key] || {}));
+            else    // return 'system' preferences by default 
+                caller.callback(this.system.hashTable[caller.key] || {});
         else
             this.queue.push(caller);
     },
     
-    set : function(parentKey, pref, value)
+    InitFromSystem : function(key)
     {
-        if (this.userLoaded && this.systemLoaded)
-        {
-            var parent = this.preference.userTag.find_tags(parentKey, false);
-            var tag = parent.find_tags(pref, false);
-            if (tag)
-            {
-                tag.value=value;
-                tag.save_();
-            }
-        }
-        else
-            clog('Not loaded yet!')
+        var tag = this.stripOwnership([this.preference.systemTag.find_tags(key, false)]);
+    },
+    
+    stripOwnership : function(tagDocument)
+    {
+        var treeVisitor = Ext.create('Bisque.ResourceTagger.OwnershipStripper');
+        treeVisitor.visit_array(tagDocument);
+        return tagDocument;
     }
-
 })

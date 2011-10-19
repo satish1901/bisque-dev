@@ -451,18 +451,19 @@ Ext.define('Bisque.ResourceTagger',
     
     appendTags : function(data)
     {
-        function stripURIs(data)
-        {
-            var treeVisitor = Ext.create('Bisque.ResourceTagger.TagTreeVisitor');
-            treeVisitor.visit_array(data);
-        }
-        
         if (data.length>0)
         {
-            stripURIs(data);
+            data = this.stripURIs(data);
             this.resource.tags = this.resource.tags.concat(data);
             this.addNode(this.tree.getRootNode(), data);
         }
+    },
+    
+    stripURIs : function(tagDocument)
+    {
+        var treeVisitor = Ext.create('Bisque.ResourceTagger.OwnershipStripper');
+        treeVisitor.visit_array(tagDocument);
+        return tagDocument;
     },
     
     updateNode : function(loaded, node, data)
@@ -598,7 +599,7 @@ Ext.define('Bisque.ResourceTagger.Editor',
 
 });
 
-Ext.define('Bisque.ResourceTagger.TagTreeVisitor', 
+Ext.define('Bisque.ResourceTagger.OwnershipStripper', 
 {
     extend : BQVisitor,
     

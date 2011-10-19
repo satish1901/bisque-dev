@@ -84,17 +84,6 @@ Ext.define('Bisque.ResourceBrowser.Browser',
 
 		config = config || {};
         
-		Ext.apply(config,
-        {
-        	layout	: config.layout || 1,
-			dataset	: config.dataset || '/data_service/images/',
-			offset	: config.offset || 0,
-			tagQuery : config.tagQuery || '',
-			tagOrder : config.tagOrder || '',
-			wpublic : (config.wpublic=='true'?true:false),
-			selType : (config.selType || 'MULTI').toUpperCase()
-        });
-
         Ext.apply(this,
         {
             browserParams : config,
@@ -118,11 +107,10 @@ Ext.define('Bisque.ResourceBrowser.Browser',
             listeners : config.listeners || {}, 
         }, config);
 
-        this.loadPreferences();
-        
-        this.browserState['offset'] = config.offset;
         this.commandBar = new Bisque.ResourceBrowser.CommandBar({browser:this});
         this.tbar = this.commandBar;
+
+        this.loadPreferences();
 
 		if (Ext.supports.Touch)
 			this.gestureMgr=new Bisque.Misc.GestureManager();
@@ -133,13 +121,28 @@ Ext.define('Bisque.ResourceBrowser.Browser',
     loadPreferences : function(preferences, tag)
     {
         if (preferences==undefined)
-            BQ.Preferences.get({key:this.preferenceKey, callback: Ext.bind(this.loadPreferences, this)});
+            BQ.Preferences.get({type:'user', key:this.preferenceKey, callback: Ext.bind(this.loadPreferences, this)});
         else
+        // preferences loaded
         {            
             this.preferences = preferences;
-            this.preferencesTag = tag;
-            
             this.applyPreferences();
+
+            // defaults (should be loaded from system preferences)
+            Ext.apply(this.browserParams,
+            {
+                layout  : this.browserParams.layout || 1,
+                dataset : this.browserParams.dataset || '/data_service/images/',
+                offset  : this.browserParams.offset || 0,
+                tagQuery : this.browserParams.tagQuery || '',
+                tagOrder : this.browserParams.tagOrder || '',
+                wpublic : (this.browserParams.wpublic=='true'?true:false),
+                selType : (this.browserParams.selType || 'MULTI').toUpperCase()
+            });
+            
+            this.commandBar.applyPreferences();
+            this.browserState['offset'] = this.browserParams.offset;
+            this.layoutKey = this.layoutKey || this.browserParams.layout;
 
             this.LoadData(
             {
@@ -155,11 +158,13 @@ Ext.define('Bisque.ResourceBrowser.Browser',
     {
         var browserPref = this.preferences.Browser;
         
-        this.browserParams.tagQuery = this.browserParams.tagQuery || browserPref["Tag Query"]; 
-        this.layoutKey = parseInt(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS[browserPref["Layout"]] || this.browserParams.layout);
-        this.browserParams.wpublic = (this.browserParams.wpublic==undefined) ? browserPref["Include Public Resources"] : this.browserParams.wpublic; 
         // Browser preferences
-        
+        if (browserPref!=undefined)
+        {
+            this.browserParams.tagQuery = this.browserParams.tagQuery || browserPref["Tag Query"]; 
+            this.layoutKey = parseInt(this.browserParams.layout || Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS[browserPref["Layout"]]);
+            this.browserParams.wpublic = (this.browserParams.wpublic==undefined) ? browserPref["Include Public Resources"] : this.browserParams.wpublic;
+        } 
     },
 
     LoadData : function(uri)
@@ -284,12 +289,12 @@ Ext.define('Bisque.ResourceBrowser.Browser',
         {
         	'ResourceDblClick' : function(resource)
         	{
-        		if (this.selType=='MULTI')
+        		if (this.browserParams.selType=='MULTI')
 					this.fireEvent('Select', this, resource);
         	},
         	'ResourceSingleClick' : function(resource)
         	{
-        		if (this.selType=='SINGLE')
+        		if (this.browserParams.selType=='SINGLE')
 					this.fireEvent('Select', this, resource);
         	},
 			'Browser_ReloadData' : function(uri)
