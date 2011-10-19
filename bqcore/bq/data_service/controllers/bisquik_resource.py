@@ -78,7 +78,7 @@ from resource import Resource
 from resource_query import resource_query, resource_load, resource_count, resource_auth, resource_permission
 from resource_query import RESOURCE_READ, RESOURCE_EDIT
 
-log = logging.getLogger("bq.data_service")
+log = logging.getLogger("bq.data_service.bisquik_resource")
 
 from formats import find_formatter 
 
@@ -188,6 +188,7 @@ class BisquikResource(Resource):
         if resource is None:
             log.info ("Permission check failure %s" % str(query))
             abort(401)
+        #log.debug ("PERMISSION: user %s : %s" % (user_id, resource))
             
         return resource
 
@@ -221,7 +222,7 @@ class BisquikResource(Resource):
         format = kw.pop('format', None)
         offset = int(kw.get ('offset', 0))
         progressive = kw.pop('progressive', False)
-        log.info ("DIR")
+        log.info ('DIR  %s' % (self.browser_url))
         #  Do not use loading 
         parent = getattr(self,'parent', None)
 
@@ -244,7 +245,7 @@ class BisquikResource(Resource):
                                         tag_order = tag_order,
                                         wpublic = wpublic,
                                         **kw)
-            log.debug ("DIR query " + str(resources))
+            #log.debug ("DIR query " + str(resources))
             response = etree.Element('resource', uri=str(tg.request.url))
             db2tree (resources,
                      parent=response,
@@ -271,6 +272,7 @@ class BisquikResource(Resource):
         """
         view=kw.pop('view', None)
         format = kw.pop('format', None)
+        log.info ("NEW: %s %s " %(self.browser_url, xml) )
         
         # Create a DB object from the document.
         if  not identity.not_anonymous():
@@ -281,7 +283,7 @@ class BisquikResource(Resource):
         if parent:
             parent = self.check_access(parent, RESOURCE_EDIT)
         resource = bisquik2db(doc=xml, parent = parent)
-        log.info ("NEW: %s => %s " %(xml, str(resource)) )
+        log.info ("NEW: => %s " %(str(resource)) )
         if resource is not None:
             return self.resource_output(resource, view=view,format=format)
         return "<response>FAIL</response>"
@@ -291,6 +293,7 @@ class BisquikResource(Resource):
     def replace_all(self, resource,  xml, **kw):
         '''PUT /ds/image/1/gobjects  --> Replace contents of gobjects with doc
         '''
+        log.info ('REPLACE_ALL %s %s' % (self.browser_url, xml))
         resource = self.check_access(resource, RESOURCE_EDIT)
         parent = self.load_parent()
         if parent:
@@ -308,8 +311,9 @@ class BisquikResource(Resource):
         """delete a container of objects
         DELETE /ds/images/1/gobjects
         """
+        log.info ('DELETE_ALL %s' % (self.browser_url))
         resource = self.check_access(resource, RESOURCE_EDIT)
-        log.info("delete_all " + str(resource))
+
         parent = self.load_parent()
         parent.clear([self.resource_name])
         return "<response/>"
@@ -319,10 +323,11 @@ class BisquikResource(Resource):
     def get(self, resource, **kw):
         """GET /ds/images/1 : fetch the resource
         """
+        log.info ('GET  %s' % (self.browser_url))
         view=kw.pop('view', None)
         format = kw.pop('format', None)
         resource = self.check_access(resource)
-        log.info ("GET %s" % str(resource))
+        log.info ("GET ==>%s" % str(resource))
         
         return self.resource_output(resource, view=view, format=format)
             
@@ -332,8 +337,8 @@ class BisquikResource(Resource):
         '''PUT /ds/image/1  --> Replace all contents with doc
         '''
         view=kw.pop('view', None)
+        log.info ('MODIFY %s %s' % (self.browser_url, xml))
         resource = self.check_access(resource, RESOURCE_EDIT)
-        log.info ('MODIFY: %s <- %s ' %( str (resource),  xml ))
 
         DBSession.autoflush = False
         old = resource.clear()
@@ -343,6 +348,7 @@ class BisquikResource(Resource):
         log.debug ("OLD values %s no parent %s " % (old, [ x for x in old if x.parent_id is None ]))
         log.debug ('modifyed : new (%d), dirty (%d), deleted(%d)' %
                    (len(DBSession.new), len(DBSession.dirty), len(DBSession.deleted)))
+        log.info ('MODIFY: ==> %s ' %(resource))
         return self.resource_output (resource, view=view)
 
     @expose(content_type='text/xml') #, format='xml')
@@ -351,13 +357,14 @@ class BisquikResource(Resource):
         '''POST /ds/images/1/  : append the document to the resource
         Append value of the resource based on the args
         '''
+        log.info ('APPEND %s %s' % (self.browser_url, xml))
         resource = self.check_access(resource, RESOURCE_EDIT)
         #parent = self.load_parent()
-        log.info ('APPEND/update: %s <= %s ' % (str(resource), xml))
         resource = bisquik2db (doc=xml, parent=resource) #, resource = resource)
         log.debug ('modifyed : new (%d), dirty (%d), deleted(%d)' %
                    (len(DBSession.new), len(DBSession.dirty), len(DBSession.deleted)))
         #resource = session.merge (resource)
+        log.info ('APPEND/update: ==> %s ' % (resource))
         return self.resource_output (resource)
 
     @expose(content_type="text/xml")
@@ -365,8 +372,8 @@ class BisquikResource(Resource):
     def delete(self, resource, **kw):
         """DELETE /ds/images/1/tags/2 : delete a specific resource
         """
+        log.info ('DELETE %s' % (self.browser_url))
         resource = self.check_access(resource, RESOURCE_EDIT)
-        log.info("DELETE %s  by (%s)" % (str(resource),  identity.get_user_id()))
         try:
             if identity.get_user_id() == resource.owner_id:
                 DBSession.delete(resource)

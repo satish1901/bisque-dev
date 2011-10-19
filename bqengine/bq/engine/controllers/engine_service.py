@@ -499,7 +499,7 @@ class EngineModuleResource(BaseController):
             if type == 'file':
                 path = self.filepath(node.get('value'))
                 if os.path.exists(path):
-                    return forward(FileApp(path))
+                    return forward(FileApp(path).cache_control (max_age=60*60*24*7*6))                   
                 
             else:
                 text = node.get ('value', None)

@@ -224,7 +224,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceList',
         {
             this.setData('fetched', -1);	//Loading
 			
-			if (this.resource.module.indexOf(window.location.host)!=-1)	// HACK: Load module names if running on the same host
+			if (this.resource.module && this.resource.module.indexOf(window.location.host)!=-1)	// HACK: Load module names if running on the same host
 			{
 				BQFactory.request(
 				{

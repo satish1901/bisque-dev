@@ -41,11 +41,12 @@ class Identity(object):
     def get_bq_user(self):
         from bq.data_service.model.tag_model import BQUser
         user_name = self.user_name
-        log.debug ("bq user = %s" % user_name)
+        #log.debug ("bq user = %s" % user_name)
         if user_name is None:
             return None
         user =  DBSession.query (BQUser).filter_by(user_name = user_name).first()
-        log.debug ("bq user = %s" % user)
+        #log.debug ("bq user = %s" % user)
+        log.debug ('user %s -> %s' % (user_name, user))
         return user
     
 current  = Identity()
@@ -74,13 +75,13 @@ def not_anonymous():
 
 def get_user_id():
     if request_valid():
-        log.debug ("identity = %s" % ( request.identity['repoze.who.userid'] ))
+        #log.debug ("identity = %s" % ( request.identity['repoze.who.userid'] ))
         bq_user = current.get_bq_user()
         if bq_user:
             return bq_user.id
     if current_user:
         return current_user.id
-    log.debug ('no user id set')
+    #log.debug ('no user id set')
     return None
 
 def get_user():
