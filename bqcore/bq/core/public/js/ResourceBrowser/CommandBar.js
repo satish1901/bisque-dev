@@ -165,6 +165,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 				{
 					icon : bq.url('/js/ResourceBrowser/Images/gear.png'),
 					hidden : this.viewMgr.cBar.btnGear,
+					itemId : 'btnGear',
 					scale : 'large',
 					tooltip : 'Options',
 					menu :
@@ -172,7 +173,8 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 						items : 
 						[{
 							text : 'Include public resources',
-							checked : configOpts.browser.browserParams.wpublic,
+							itemId : 'btnWpublic',
+							checked : false,
 					 		listeners:
 					 		{
 							 	checkchange:
@@ -434,5 +436,11 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 	{
 		if (this.slider.rendered)
 			this.slider.setStatus(status);	
+	},
+	
+	applyPreferences : function()
+	{
+	    this.toggleLayoutBtn();
+        this.getComponent('btnGear').menu.getComponent('btnWpublic').setChecked(this.browser.browserParams.wpublic, true);
 	}
 })
