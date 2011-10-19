@@ -24,11 +24,9 @@ Ext.define('Bisque.ResourceBrowser.Dialog',
         config.height = config.height || '85%';
         config.width = config.width || '85%';
         
-        var bodySz=Ext.getBody().getViewSize();
-        var height=parseInt((config.height.indexOf("%")==-1)?config.height:(bodySz.height*parseInt(config.height)/100));
-        var width = config.width;
-        if (typeof config.width === 'string')
-            width=parseInt((config.width.indexOf("%")==-1)?config.width:(bodySz.width*parseInt(config.width)/100));
+        var bodySz = Ext.getBody().getViewSize();
+        var height = parseInt((config.height.toString().indexOf("%")==-1)?config.height:(bodySz.height*parseInt(config.height)/100));
+        var width = parseInt((config.width.toString().indexOf("%")==-1)?config.width:(bodySz.width*parseInt(config.width)/100));
 
         Ext.apply(this,
         {
@@ -159,7 +157,7 @@ Ext.define('Bisque.ResourceBrowser.Browser',
         var browserPref = this.preferences.Browser;
         
         // Browser preferences
-        if (browserPref!=undefined)
+        if (browserPref!=undefined && !this.browserParams.viewMode)
         {
             this.browserParams.tagQuery = this.browserParams.tagQuery || browserPref["Tag Query"]; 
             this.layoutKey = parseInt(this.browserParams.layout || Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS[browserPref["Layout"]]);
@@ -237,17 +235,16 @@ Ext.define('Bisque.ResourceBrowser.Browser',
         function doLayout()
         {
             this.ChangeLayout(this.layoutKey);
+            if (!this.eventsManaged)
+                this.ManageEvents();
         }
 
         this.fireEvent('browserLoad', this, this.resourceQueue);
 
         if (this.rendered)
-        {
             doLayout.call(this);
-            this.ManageEvents();
-        }
         else
-            this.on('afterlayout', Ext.Function.createSequence(Ext.bind(doLayout, this), this.ManageEvents, this), {single:true});
+            this.on('afterlayout', Ext.bind(doLayout, this), {single:true});
     },
 
     ChangeLayout : function(newLayoutKey, direction)
@@ -281,11 +278,12 @@ Ext.define('Bisque.ResourceBrowser.Browser',
     /* Custom ResourceBrowser event management */
     ManageEvents : function()
     {
+        this.eventsManaged = true;
         this.addEvents('Select');
         this.changeLayoutThrottled = Ext.Function.createThrottled(this.ChangeLayout, 400, this);
         this.centerPanel.on('resize', Ext.bind(this.ChangeLayout, this, [-1]));
         
-        this.msgBus.mon(this.msgBus, 
+        this.msgBus.mon(this.msgBus,  
         {
         	'ResourceDblClick' : function(resource)
         	{
