@@ -27,7 +27,7 @@ Ext.define('BQ.Preferences',
         {
             BQFactory.request(
             {
-                uri : bq.url('/data_service/system'),
+                uri : bq.url('/data_service/system?wpublic=1'),
                 cb : Ext.bind(this.loadSystem, this, ['LOADING'], true),
             });
         }

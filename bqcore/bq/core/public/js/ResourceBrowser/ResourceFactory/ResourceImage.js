@@ -28,6 +28,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResource',
     {
         if (this.browser.preferences.Images)
             return this.browser.preferences.Images[key]
+        return '';
     },
 
     afterRenderFn : function()
@@ -266,16 +267,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourceCard',
             this.resource.tags = data.tags;
 
             // Assuming we know which tags to fetch
-            var tagArr=[], tags =
-            {
-                "filename" : 0,
-                "attached-file" : 0,
-                "image_type" : 0,
-                "imagedate" : 0,
-                "experimenter" : 0,
-                "dataset_label" : 0,
-                "species" : 0
-            };
+            var tagArr=[], tags = this.getSummaryTags();
 
             for (var tagID in tags)
             {
@@ -299,6 +291,22 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourceCard',
             if (renderedRef	&& !renderedRef.isDestroyed)
                 renderedRef.updateContainer();
         }
+    },
+    
+    getSummaryTags : function()
+    {
+        if(this.browser.preferences["Summary Tags"])
+            return this.browser.preferences["Summary Tags"];
+
+        return {
+            "filename" : 0,
+            "attached-file" : 0,
+            "image_type" : 0,
+            "imagedate" : 0,
+            "experimenter" : 0,
+            "dataset_label" : 0,
+            "species" : 0
+        };
     },
 
     updateContainer : function()
@@ -412,7 +420,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourceFull',
             layout:'fit',
         });
 		
-		Bisque.ResourceBrowser.ResourceFactory.ImageResourceFull.superclass.constructor.apply(this, arguments);
+		this.callParent(arguments);
 	},
 
     prefetch : function(layoutMgr)
