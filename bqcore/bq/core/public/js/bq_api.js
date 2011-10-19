@@ -166,15 +166,14 @@ BQObject.prototype.toDict  = function (deep, found, prefix) {
     return found;
 }
 
-BQObject.prototype.toHashTable  = function (deep, hashTable)
+BQObject.prototype.toHashTable  = function (deep)
 {
-    var hashTable = {};
-    //var hashTable = hashTable || {}; 
+    var hashTable = {}, tag;
     
     for (var i=0;i<this.tags.length;i++)
     {
-        var tag = this.tags[i];
-        hashTable[tag.name] = (deep && tag.tags.length>0) ? tag.toHashTable(deep) : tag.value;
+        tag = this.tags[i];
+        hashTable[tag.name] = (deep && tag.tags.length>0) ? tag.toHashTable(deep) : (tag.value || '');
     }
     
     return hashTable;
