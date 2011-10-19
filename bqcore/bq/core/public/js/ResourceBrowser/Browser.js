@@ -140,9 +140,9 @@ Ext.define('Bisque.ResourceBrowser.Browser',
                 selType : (this.browserParams.selType || 'MULTI').toUpperCase()
             });
             
-            this.commandBar.applyPreferences();
             this.browserState['offset'] = this.browserParams.offset;
             this.layoutKey = this.layoutKey || this.browserParams.layout;
+            this.commandBar.applyPreferences();
 
             this.LoadData(
             {
@@ -163,7 +163,7 @@ Ext.define('Bisque.ResourceBrowser.Browser',
         {
             this.browserParams.tagQuery = this.browserParams.tagQuery || browserPref["Tag Query"]; 
             this.layoutKey = parseInt(this.browserParams.layout || Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS[browserPref["Layout"]]);
-            this.browserParams.wpublic = (this.browserParams.wpublic==undefined) ? browserPref["Include Public Resources"] : this.browserParams.wpublic;
+            this.browserParams.wpublic = (browserPref["Include Public Resources"]==undefined) ? this.browserParams.wpublic : browserPref["Include Public Resources"];
         } 
     },
 
