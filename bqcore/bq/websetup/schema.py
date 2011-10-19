@@ -15,6 +15,10 @@ def setup_schema(command, conf, vars):
     # <websetup.websetup.schema.before.metadata.create_all>
     log.info ( "Creating all tables" )
     bq.core.model.metadata.create_all(bind=config['pylons.app_globals'].sa_engine)
+    #for tb_name, tb in bq.core.model.metadata.tables.items():
+    #    print ('creating %s %s' % (tb_name, tb))
+    #    tb.create(bind=config['pylons.app_globals'].sa_engine)
+        
 
 
     for x in pkg_resources.iter_entry_points ("bisque.services"):

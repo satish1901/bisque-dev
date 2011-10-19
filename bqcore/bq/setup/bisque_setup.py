@@ -544,6 +544,7 @@ def create_mysql(dburl):
     if dburl.password:
         command.append ('-p%s' % dburl.password)
     
+    print "please ignore 'Unknown database ..' "
     if call (command+[dburl.database, '-e', 'quit']) == 0:
         print "Database exists, not creating"
         return False
@@ -611,6 +612,11 @@ def install_driver(DBURL):
                 print 'Package %s successfully installed.' % ei_drname
                 return True
             except:
+                print "ERROR: Could not easy install package"
+                print "Usually this occurs if the development headers for a partcular driver"
+                print "are not available. Please check the Bisque Wiki"
+                print "http://biodev.ece.ucsb.edu/projects/bisquik/wiki/AdvancedInstalls"
+
                 log.exception( 'Failed to install package %s.' % ei_drname )
                 return False
 
@@ -640,7 +646,7 @@ def test_db_existance(DBURL):
         print 'Yes, it exists.'
         return True
     except:
-        log.exception("Could not contact database")
+        log.warn("Could not contact database")
         return False
 
 def get_dburi(params):
@@ -705,7 +711,10 @@ Please resolve the problem(s) and re-run 'bisque-setup --database'.""")
             py_drname, ei_drname, create_db = \
                        known_db_types.get(DBURL.drivername, (None,None,None))
             if callable(create_db):
-                db_exists = create_db (DBURL)
+                try:
+                    db_exists = create_db (DBURL)
+                except:
+                    log.warn('Could not create database')
 
     if not db_exists:
         print( """
