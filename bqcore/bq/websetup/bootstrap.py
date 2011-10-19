@@ -14,33 +14,6 @@ def bootstrap(command, conf, vars):
     # <websetup.bootstrap.before.auth
     from sqlalchemy.exc import IntegrityError
 
-    try:
-        ######
-        # 
-        from  bq.data_service.model import Taggable, Tag
-
-
-        from bq.data_service.model import UniqueName
-        
-        system = model.DBSession.query(Taggable).filter_by (tb_id = UniqueName('system').id).first()
-        if system is None:
-            system = Taggable(resource_type = 'system')
-            version = Tag ()
-            version.name ='version'
-            version.value  = '0.5'
-            prefs = Tag()
-            prefs.name = 'Preferences'
-            system.tags.append(version)
-            system.tags.append(prefs)
-            model.DBSession.add(system)
-            transaction.commit()
-    except IntegrityError:
-        print 'Warning, there was a problem adding your system object, it may have already been added:'
-        #import traceback
-        #print traceback.format_exc()
-        transaction.abort()
-        print 'Continuing with bootstrapping...'
-
 
     try:
         admin = model.User(
@@ -63,16 +36,45 @@ def bootstrap(command, conf, vars):
         permission.groups.append(group)
         model.DBSession.add(permission)
         #model.DBSession.flush()
-
-        
-
+        # This commit will setup the BQUser also
         transaction.commit()
+
     except IntegrityError:
         print 'Warning, there was a problem adding your auth data, it may have already been added:'
         #import traceback
         #print traceback.format_exc()
         transaction.abort()
         print 'Continuing with bootstrapping...'
+
+
+    try:
+        ######
+        # 
+        from  bq.data_service.model import Taggable, Tag, BQUser
+        from bq.data_service.model import UniqueName
+
+        admin = model.DBSession.query(BQUser).filter_by(username = 'admin').first()
+        #admin.owner_id = admin.id
+        
+        system = model.DBSession.query(Taggable).filter_by (tb_id = UniqueName('system').id).first()
+        if system is None:
+            system = Taggable(resource_type = 'system')
+            version = Tag ()
+            version.name ='version'
+            version.value  = '0.5'
+            prefs = Tag()
+            prefs.name = 'Preferences'
+            system.tags.append(version)
+            system.tags.append(prefs)
+            model.DBSession.add(system)
+            transaction.commit()
+    except IntegrityError:
+        print 'Warning, there was a problem adding your system object, it may have already been added:'
+        #import traceback
+        #print traceback.format_exc()
+        transaction.abort()
+        print 'Continuing with bootstrapping...'
+
         
 
     # <websetup.bootstrap.after.auth>
