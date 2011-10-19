@@ -84,6 +84,22 @@ class servers(object):
         if self.command:
             server_ops.operation(self.command, self.options, *self.args)
             
+
+class cache(object):
+    desc = "delete the cache"
+
+    def run(self):
+        #Check for self.command in init..
+        import server_ops
+        if self.command:
+            server_ops.operation(self.command, self.options, *self.args)
+
+        if os.path.exists ('.cache'):
+            shutil.rmtree ('.cache')
+        os.mkdir ('.cache')
+        if os.path.exists('.server_cache'):
+            shutil.rmtree('.server_cache')
+        os.mkdir ('.server_cache')
         
 
 
