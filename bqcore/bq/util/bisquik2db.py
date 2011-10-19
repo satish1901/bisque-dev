@@ -581,7 +581,7 @@ def updateDB(root=None, parent=None, resource = None, factory = NodeFactory):
                 attrib = dict (obj.attrib)
 
                 uri   = attrib.pop ('uri', None)
-                value = attrib.pop ('value', None) or obj.text
+                value = attrib.pop ('value', obj.text)
                 type_ = attrib.get ('type', None)
                 indx  = attrib.get ('index', None)
                 ts_   = attrib.pop ('ts', None)
@@ -607,9 +607,9 @@ def updateDB(root=None, parent=None, resource = None, factory = NodeFactory):
                         setattr(resource, k, unicode(v,"utf-8"))
                     
                 # Check for text
-                if value is not None and value.strip() and value != resource.value:
+                if value is not None and value != resource.value:
                     convert = converters.get(type_, unicode)
-                    resource.value = convert (value)
+                    resource.value = convert (value.strip())
                     #log.debug (u"assigned %s = %s" % (obj.tag , unicode(value,"utf-8")))
                 stack.append (resource)
                 last_resource = resource

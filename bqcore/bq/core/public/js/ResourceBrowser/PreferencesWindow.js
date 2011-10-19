@@ -44,6 +44,16 @@ Ext.define('Bisque.ResourceBrowser.PreferencesWindow',
             var tagger = Ext.create('Bisque.ResourceTagger',
             {
                 resource : tag.uri,
+                listeners : 
+                {
+                    'destroy' : function() 
+                    {
+                        this.browser.msgBus.fireEvent('Browser_ReloadData', {
+                            offset:0,
+                        });
+                    },
+                    scope : this    
+                }
             });
         
             this.add(tagger);
