@@ -183,7 +183,7 @@ class DataServerController(ServiceController):
         log.debug ("new_resource %s" % (node)) 
         r =  db2tree (node, baseuri=self.url, view=view)
         # Invalidate the top level container i.e. /data_service/<resource_type>
-        self.cache_invalidate(img.get('uri').rsplit('/', 1)[0])
+        self.cache_invalidate(r.get('uri').rsplit('/', 1)[0])
         return r
 
     def get_resource(self, resource, **kw):
