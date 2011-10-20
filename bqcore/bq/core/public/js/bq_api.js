@@ -166,17 +166,17 @@ BQObject.prototype.toDict  = function (deep, found, prefix) {
     return found;
 }
 
-BQObject.prototype.toHashTable  = function (deep)
+BQObject.prototype.toNestedDict  = function (deep)
 {
-    var hashTable = {}, tag;
+    var dict = {}, tag;
     
     for (var i=0;i<this.tags.length;i++)
     {
         tag = this.tags[i];
-        hashTable[tag.name] = (deep && tag.tags.length>0) ? tag.toHashTable(deep) : (tag.value || '');
+        dict[tag.name] = (deep && tag.tags.length>0) ? tag.toNestedDict(deep) : (tag.value || '');
     }
     
-    return hashTable;
+    return dict;
 }
 
 
