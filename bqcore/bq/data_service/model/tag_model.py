@@ -299,7 +299,7 @@ class EntitySingleton(type):
         #hashkey = name
         try:
             instance = cls.instances[hashkey]
-            #instance = sess.merge (instance)
+            instance = sess.merge (instance)
             return instance
         except KeyError:
             instance = sess.query(cls).filter(cls.name==name).first()
@@ -1094,9 +1094,9 @@ mapper(BQUser, users, inherits=Taggable,
     }
 )
 def bquser_callback (tg_user, operation, **kw):
+    # Deleted users will receive and update callback
     if tg_user is None:
         return
-    # Deleted users will receive and update callback
     if operation =='create':
         u = DBSession.query(BQUser).filter_by(user_name=tg_user.user_name).first()
         if u is None:
