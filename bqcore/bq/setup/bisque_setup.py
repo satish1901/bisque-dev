@@ -911,6 +911,8 @@ def install_servers(params):
     if not os.path.exists(config_path('who.ini')):
         shutil.copy(config_path('who.ini.default'), config_path('who.ini'))
 
+    if not os.path.exists(config_path('registration.cfg')):
+        shutil.copyfile(config_path('registration.cfg.default'), config_path('registration.cfg'))
     if getanswer('Configure bisque with proxy', 'N',
                  ("Multiple bisque servers can be configure behind a proxy "
                   "providing enhanced performance.  As this an advanced "

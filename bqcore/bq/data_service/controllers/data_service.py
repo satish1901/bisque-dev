@@ -155,7 +155,7 @@ class DataServerController(ServiceController):
         resource = bisquik2db (doc=resource)
         img = db2tree (resource, baseuri= self.url)
         #log.debug ("new image " + etree.tostring(img))
-        # Just the host/images portion
+        # Invalidate the top level container i.e. /data_service/images
         self.cache_invalidate(img.get('uri').rsplit('/', 1)[0])
         return img
 
@@ -182,7 +182,8 @@ class DataServerController(ServiceController):
         node = bisquik2db(doc = resource, parent = parent)
         log.debug ("new_resource %s" % (node)) 
         r =  db2tree (node, baseuri=self.url, view=view)
-        self.cache_invalidate(r.get('uri'))
+        # Invalidate the top level container i.e. /data_service/<resource_type>
+        self.cache_invalidate(img.get('uri').rsplit('/', 1)[0])
         return r
 
     def get_resource(self, resource, **kw):

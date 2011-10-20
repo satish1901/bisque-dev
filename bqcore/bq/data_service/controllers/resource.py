@@ -80,6 +80,7 @@ from bq.util.paths import data_path
 log = logging.getLogger("bq.data_service.resource")
 
 CACHING  = bool(config.get ('bisque.data_service.caching', True))
+SERVER_CACHE = bool(config.get('bisque.data_service.server_cache', True))
 CACHEDIR = config.get ('bisque.data_service.server_cache', data_path('server_cache'))
 
 URI = re.compile(r"^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?")
@@ -198,17 +199,20 @@ class ResponseCache(object):
         if '?' in url: 
             url = url.split('?',1)[0]
         cachename = self._cache_name(url, user)
-        log.info ('cache invalidate %s' % cachename )
+        log.info ('cache invalidate ( %s' % cachename )
         if exact:
             cachename = cachename.split('#',1)[0].split(',',1)[1]
             for mn, cf in [ (fn.split('#',1)[0].split(',',1)[1], fn) for fn in files ] :
+
+                log.debug('exact %s <> %s' % (cachename, mn))
+
                 if mn == cachename:
                     os.unlink (os.path.join(self.cachepath, cf))
                     files.remove (cf)
                     log.debug ('cache exact remove %s' % cf)
             return 
         for cf in files[:]:
-            #log.debug ("checking %s" % cf)
+            log.debug ("checking %s" % cf)
             if cachename.startswith('*')\
                and cf.split(',',1)[1].startswith(cachename.split(',',1)[1])\
                or cf.startswith (cachename):
@@ -251,26 +255,27 @@ class HierarchicalCache(ResponseCache):
         # Will not work for public images used by other users
         # Should probably delete all users cached values but seems
         # like overkill
+        scheme = scheme or 'http'
+        authority = authority or 'localhost'
         for special in ('tag_names', 'tag_values'):
             super(HierarchicalCache, self).invalidate(''.join([scheme, "://",
-                                                        authority,
-                                                        '/data_service/images/',
-                                                        special]),
+                                                               authority,
+                                                               '/data_service/images/',
+                                                               special]),
                                          '*',files)
         object_found = False
-
-        
+        #  Delete all cached for the URL 
+        #  Delete exact matches if URL url is 
+        #  
         path = '/'.join(splitpath[:4])
-
-
         request_uri = query and "?".join([path, query]) or path
         super(HierarchicalCache, self).invalidate (
             ''.join([scheme, "://" , authority , request_uri]),
-            '*', files,exact=len(splitpath) < 4 )
+            '*', files,exact= False )
 
+        # Delete all top level caches without regard to parameter
+        # but not recursively (would be alot )
         path = '/'.join(splitpath[:3])
-
-
         request_uri = query and "?".join([path, query]) or path
         super(HierarchicalCache, self).invalidate (
             ''.join([scheme, "://" , authority , request_uri]),
