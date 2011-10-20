@@ -1,6 +1,6 @@
 Ext.define('BQ.Preferences.Object', {
     tag : {},
-    hashTable : {},
+    dictionary : {},
     status : undefined,
     exists : undefined
 });
@@ -53,7 +53,7 @@ Ext.define('BQ.Preferences',
             if (tag!=null)
             {
                 this.system.tag=tag;
-                this.system.hashTable=tag.toHashTable(true);
+                this.system.dictionary=tag.toNestedDict(true);
             }
             else
             {
@@ -89,7 +89,7 @@ Ext.define('BQ.Preferences',
                 if (tag!=null)
                 {
                     this.user.tag=tag;
-                    this.user.hashTable=tag.toHashTable(true);
+                    this.user.dictionary=tag.toNestedDict(true);
                 }
                 else
                 {
@@ -124,9 +124,9 @@ Ext.define('BQ.Preferences',
     {
         if (this.system.status=='LOADED' && this.user.status=='LOADED')
             if (caller.type=='user')
-                caller.callback(Ext.Object.merge(this.system.hashTable[caller.key] || {}, this.user.hashTable[caller.key] || {}));
+                caller.callback(Ext.Object.merge(this.system.dictionary[caller.key] || {}, this.user.dictionary[caller.key] || {}));
             else    // return 'system' preferences by default 
-                caller.callback(this.system.hashTable[caller.key] || {});
+                caller.callback(this.system.dictionary[caller.key] || {});
         else
             this.queue.push(caller);
     },

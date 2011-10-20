@@ -13,15 +13,14 @@ Ext.define('Bisque.ResourceTagger',
             style : 'background-color:#FFF',
 
             rootProperty : config.rootProperty || 'tags',
+            autoSave : (config.autoSave==undefined) ? true : false,
             resource : {},
             tree : {},
             store : {},
             dirtyRecords : []
         });
 
-        var v = new Bisque.ResourceTagger.viewStateManager(config.viewMode);
-        this.viewMgr  = v;
-
+        this.viewMgr = new Bisque.ResourceTagger.viewStateManager(config.viewMode);;
 
         // dima - datastore for the tag value combo box
         var TagValues = Ext.ModelManager.getModel('TagValues');
@@ -105,7 +104,20 @@ Ext.define('Bisque.ResourceTagger',
         var rowEditor = Ext.create('Bisque.ResourceTagger.Editor',
         {
             clicksToMoveEditor : 1,
-            errorSummary : false
+            errorSummary : false,
+            listeners : 
+            {
+                'edit' : function(me)
+                {
+                    if (me.record.raw)
+                        if (this.autoSave)
+                        {
+                            this.saveTags(me.record.raw, true);
+                            me.record.commit();
+                        }
+                },
+                scope : this
+            }
         });
         
         this.tree = Ext.create('Ext.tree.Panel',
@@ -127,24 +139,6 @@ Ext.define('Bisque.ResourceTagger',
 
             selModel : this.getSelModel(),
             plugins : (this.viewMgr.state.editable) ? [rowEditor] : null,
-
-            listeners :
-            {
-                'checkchange' : function(node, checked)
-                {(checked) ? this.fireEvent('select', this, node) : this.fireEvent('deselect', this, node);
-                    this.checkTree(node, checked);
-                    //Recursively check/uncheck all children of a parent node
-                },
-                /*'beforeitemexpand' : function(node)
-                {
-                    if (node.loaded==undefined)
-                    {
-                        node.loaded=true;
-                        this.updateNode(false, node);
-                    }
-                },*/
-                scope : this
-            }
         });
 
         this.store.tagTree = this.tree;
@@ -397,11 +391,11 @@ Ext.define('Bisque.ResourceTagger',
         },
         {
             xtype : 'buttongroup',
-            hidden : (this.viewMgr.state.btnSave),
+            hidden : (this.viewMgr.state.btnSave || this.autoSave),
             items : [
             {
                 text : 'Save',
-                hidden : this.viewMgr.state.btnSave,
+                hidden : this.viewMgr.state.btnSave || this.autoSave, 
                 scale : 'small',
                 iconCls : 'icon-save',
                 handler : this.saveTags,
@@ -429,10 +423,11 @@ Ext.define('Bisque.ResourceTagger',
         var newNode = currentItem.appendChild(child);
         currentItem.expand();
 
-        editor.startEdit(newNode, 1);
+        editor.startEdit(newNode, 0);
 
         editor.on('edit', function(me)
         {
+            this.editing = true;
             var newTag = new BQTag();
             newTag = Ext.apply(newTag,
             {
@@ -442,16 +437,18 @@ Ext.define('Bisque.ResourceTagger',
             var parent = (me.record.parentNode.isRoot()) ? this.resource : me.record.parentNode.raw;
             parent.addtag(newTag);
 
-            //this.saveTags(parent, true);
+            if (this.autoSave)
+                this.saveTags(parent, true);
 
             me.record.raw = newTag;
             me.record.loaded=true;
-            //me.record.commit();
+            me.record.commit();
 
             me.record.parentNode.data.iconCls = 'icon-folder';
             me.view.refresh();
 
-            BQ.ui.message('Resource tagger - Add', 'New records added successfully!');
+            BQ.ui.message('Resource tagger - Add', 'New record added!');
+            this.editing=false;
         }, this, {single : true});
             
         editor.on('canceledit', function(grid, eOpts) {
@@ -479,9 +476,12 @@ Ext.define('Bisque.ResourceTagger',
                 selectedItems[i].parentNode.removeChild(selectedItems[i], true);
             }
 
-            this.saveTags(null, true);
+            if (this.autoSave)
+                this.saveTags(null, true);
 
-            BQ.ui.message('Resource tagger - Delete', 'Records were deleted successfully!');
+            BQ.ui.message('Resource tagger - Delete', selectedItems.length + ' record(s) deleted!');
+            
+            this.tree.getSelectionModel().deselectAll();
         }
         else
             BQ.ui.message('Resource tagger - Delete', 'No records selected!');
@@ -655,7 +655,6 @@ Ext.define('Bisque.GObjectTagger',
 
 Ext.define('Bisque.ResourceTagger.Editor',
 {
-    //extend : 'Ext.grid.plugin.RowEditing',
     extend : 'BQ.grid.plugin.RowEditing',
 
     completeEdit : function()

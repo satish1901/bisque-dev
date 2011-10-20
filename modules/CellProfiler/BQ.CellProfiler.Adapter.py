@@ -3,18 +3,68 @@ import logging
 import csv
 import time
 import sys
+import math
 
 from lxml import etree
 from subprocess import call
 from shutil import copy2
 from glob import glob
 from optparse import OptionParser
-from bq.api import BQSession, BQTag, BQGObject, BQShape
+from bq.api import BQSession, BQTag, BQGObject, BQEllipse, BQVertex
 from bq.api.util import fetchImage, fetchDataset, save_image_pixels
 
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('bq.modules')
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+
+class CPShape(BQGObject):
+
+    def __init__(self, name=None, value=None,  **params):
+        BQGObject.__init__(self)
+
+        self.name = name
+        self.values = value and [value] or []
+        self.tags =  []
+        self.type='CPShape'
+        self.gobjects = []
+
+    def addEllipse(self, **params):
+
+        header = params.get('header')
+        record = params.get('record')
+        getValue = lambda x: float(record[header.index(x)])
+        
+        ellipse = BQEllipse()
+        self.addGObject(gob=ellipse)
+        
+        # centroid
+        x = getValue('AreaShape_Center_X')
+        y = getValue('AreaShape_Center_Y')
+        theta = math.radians(-1*getValue('AreaShape_Orientation'))
+
+        vCentroid = BQVertex(x=x, y=y)
+        ellipse.addGObject(gob=vCentroid)
+
+        # major axis/minor axis endpoint coordinates
+        a = 0.5 * getValue('AreaShape_MajorAxisLength')
+        b = 0.5 * getValue('AreaShape_MinorAxisLength')
+        
+        bX = round(x - b*math.sin(theta))
+        bY = round(y + b*math.cos(theta))
+        vMinor = BQVertex(x=bX, y=bY)
+        ellipse.addGObject(gob=vMinor)
+
+        aX = round(x + a*math.cos(theta))
+        aY = round(y + a*math.sin(theta))
+        vMajor = BQVertex(x=aX, y=aY)
+        ellipse.addGObject(gob=vMajor)
+        
+        
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - # 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+
 
 class CellProfiler():
 
@@ -80,8 +130,7 @@ class CellProfiler():
         print 'Collecting Results'
         
         # create a new parent tag 'CellProfiler' to be placed on the mex
-        parentTag = BQTag(name='CellProfiler Summary')
-        self.bqSession.mex.addTag(tag = parentTag)
+        parentTag = BQTag(name='Summary: '+self.pipeline)
 
         # Read summary from csv and write to tags
         (header, records) = self.readCSV(os.path.join(self.outputDir, 'DefaultOUT_Summary.csv'))
@@ -91,7 +140,7 @@ class CellProfiler():
                 for j in range(len(header)):
                     parentTag.addTag(name=header[j], value=records[i][j])
         
-        print 'Read GObjects'
+        print 'Reading GObjects'
 
         # Read object measurements from csv and write to gobjects
         (header, records) = self.readCSV(os.path.join(self.outputDir, 'DefaultOUT_Objects.csv'))
@@ -101,16 +150,15 @@ class CellProfiler():
             parentGObject = BQGObject(name='CellProfiler: '+self.pipeline)
             
             for i in range(len(records)):
-                shape = BQShape(header=header, record=records[i])
+                shape = CPShape()
+                shape.addEllipse(header=header, record=records[i])
                 shape.addTag(name="Area", value=records[i][header.index('AreaShape_Area')])
-                shape.set_parent(parentGObject)
-            
-            self.bqSession.mex.addGObject(gob = parentGObject)
 
+                parentGObject.addGObject(gob=shape)
 
         # Read any image files that the pipeline generated and post them to mex
         imageTag = BQTag(name='Images')
-        imageTag.set_parent(parentTag)
+        parentTag.addTag(tag=imageTag)
         
         imgFormats  = ['*.tif*', '*.jpg']
         fileList=[]
@@ -122,9 +170,9 @@ class CellProfiler():
                 uri = etree.XML(content).xpath('//image[@uri]/@uri')[0] or "BQ.CellProfiler.Adapter: Upload Error!"
                 fileName = os.path.split(file)[1]
                 tempTag = BQTag(name=fileName, value=uri, type='resource')
-                tempTag.set_parent(imageTag)
+                imageTag.addTag(tag=tempTag)
 
-        self.bqSession.finish_mex()
+        self.bqSession.finish_mex(tags = [parentTag], gobjects = [parentGObject])
         self.bqSession.close()
 
 
