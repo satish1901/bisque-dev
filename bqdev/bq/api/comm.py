@@ -215,7 +215,7 @@ class BQSession(object):
     ##############################
     # Mex
     ##############################
-    def update_mex(self, status, tags = [], gobjects = []):
+    def update_mex(self, status, tags = [], gobjects = [], reload=True):
         """save an updated mex with the addition
         
         :param status:  The current status of the mex
@@ -244,7 +244,7 @@ class BQSession(object):
         #                  'tag' : tags, 
         #                  'gobject': gobjects }}
         content = self.postxml(self.mex.uri, mex, view='deep')
-        if content is not None:
+        if reload and content is not None:
             self.mex = fromXml(content, session = self)
             return self.mex
         return None
@@ -252,7 +252,7 @@ class BQSession(object):
     def finish_mex(self, status = "FINISHED", tags=[], gobjects=[], msg=None ):
         if msg is not None:
             tags.append( { 'name':'message', 'value': msg })
-        return self.update_mex(status, tags, gobjects)
+        return self.update_mex(status, tags, gobjects, reload=False)
                           
 
     def fail_mex (self, msg):

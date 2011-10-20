@@ -397,7 +397,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourcePStripBig',
 					align:'top'
 				},
 				width:'55%',
-				//style:'background-color:#FFF',
+				cls : 'white',
 				contentEl:imgDiv
 			}), resourceTagger]
 		}));

@@ -63,7 +63,7 @@ from lxml import etree
 log = logging.getLogger('bq.api.class')
 
 __all__ = [ 'BQFactory', 'BQNode', 'BQResource', 'BQValue', 'BQTag', 'BQVertex', 'BQGObject', 'gobject_primitives',
-            'BQPoint', 'BQLabel', 'BQPolyline', 'BQPolygon', 'BQCircle', 'BQEllipse', 'BQShape', 'BQRectangle', 'BQSquare', 'toXml', 'fromXml' ]
+            'BQPoint', 'BQLabel', 'BQPolyline', 'BQPolygon', 'BQCircle', 'BQEllipse', 'BQRectangle', 'BQSquare', 'toXml', 'fromXml' ]
 
 gobject_primitives = set(['point', 'label', 'polyline', 'polygon', 'circle', 'ellipse', 'rectangle', 'square'])
 
@@ -275,7 +275,7 @@ class BQGObject(BQResource):
     xmlfields = ['name', 'type', 'uri']
     xmlkids = ['tags', 'gobjects', 'vertices']
 
-    def __init__(self, name='gobject'):
+    def __init__(self, name='gobject', type='gobject'):
         self.vertices = []
         self.tags     = []
         self.gobjects = []
@@ -364,6 +364,8 @@ class BQCircle (BQGObject):
 class BQEllipse (BQGObject):
     '''ellipse gobject resource'''
     xmltag = "ellipse"
+    type = 'ellipse'
+
     def perimeter(self):
         vx = self.verticesAsTuples()
         x1,y1,z1,t1 = vx[0]
@@ -381,58 +383,6 @@ class BQEllipse (BQGObject):
         a = max(math.fabs(x1-x2), math.fabs(y1-y2))
         b = max(math.fabs(x1-x3), math.fabs(y1-y3))
         return math.pi * a * b
-
-
-
-
-class BQShape (BQGObject):
-    '''Generic gobject shape'''
-    xmltag = 'ellipse'
-    type = 'ellipse'
-
-    def __init__(self, name=None, value=None, **params):
-        BQGObject.__init__(self)
-
-        self.name = name
-        self.values = value and [value] or []
-        self.tags =  []
-        self.gobjects = []
-        
-        if params is not None:
-            self.fromParams(**params)
-
-    def set_parent(self, parent):
-        parent.gobjects.append(self)
-
-    def fromParams (self, **params):
-        
-        header = params.get('header')
-        record = params.get('record')
-        
-        getValue = lambda x: float(record[header.index(x)])
-        
-        # centroid
-        x = getValue('AreaShape_Center_X')
-        y = getValue('AreaShape_Center_Y')
-        theta = math.radians(-1*getValue('AreaShape_Orientation'))
-        
-        vCentroid = BQVertex(x=x, y=y)
-        vCentroid.set_parent(self)
-
-        # major axis/minor axis endpoint coordinates
-        a = 0.5 * getValue('AreaShape_MajorAxisLength')
-        b = 0.5 * getValue('AreaShape_MinorAxisLength')
-        
-        bX = round(x - b*math.sin(theta))
-        bY = round(y + b*math.cos(theta))
-        vMinor = BQVertex(x=bX, y=bY)
-        vMinor.set_parent(self)
-
-        aX = round(x + a*math.cos(theta))
-        aY = round(y + a*math.sin(theta))
-        vMajor = BQVertex(x=aX, y=aY)
-        vMajor.set_parent(self)
-        
 
 class BQRectangle (BQGObject):
     '''rectangle gobject resource'''
