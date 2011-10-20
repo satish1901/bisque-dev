@@ -1026,8 +1026,7 @@ def install_mail(params):
                   This section allows you to configure the mail system""" )!="Y":
         params['mail.on'] =  'False'
         return params
-
-    
+    params['mail.on'] = 'True'
     params = modify_site_cfg (MAIL_QUESTIONS, params)
     print "Please review/edit the mail.* settings in site.cfg for you site"""
     return params
