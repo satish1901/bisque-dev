@@ -581,7 +581,7 @@ def updateDB(root=None, parent=None, resource = None, factory = NodeFactory):
                 attrib = dict (obj.attrib)
 
                 uri   = attrib.pop ('uri', None)
-                value = attrib.pop ('value', obj.text)
+                value = attrib.pop ('value', None)
                 type_ = attrib.get ('type', None)
                 indx  = attrib.get ('index', None)
                 ts_   = attrib.pop ('ts', None)
