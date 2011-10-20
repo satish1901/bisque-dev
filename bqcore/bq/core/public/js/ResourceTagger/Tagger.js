@@ -184,7 +184,8 @@ Ext.define('Bisque.ResourceTagger',
             field : {
                 allowBlank: false,
                 //fieldLabel: this.colNameText || 'Name',
-                //labelAlign: 'top',                
+                //labelAlign: 'top',    
+                tabIndex: 0,            
                 
                 validateOnChange: false,
                 blankText: 'Tag name is required!',
@@ -207,6 +208,7 @@ Ext.define('Bisque.ResourceTagger',
             field : {
                 // dima: combo box instead of the normal text edit that will be populated with existing tag values
                 xtype     : 'bqcombobox',
+                tabIndex: 1,                
                 
                 store     : this.store_values,
                 displayField: 'value',
@@ -421,11 +423,7 @@ Ext.define('Bisque.ResourceTagger',
             currentItem = this.tree.getRootNode();
         
         // Adding new tag to tree
-        var child =
-        {
-            name : '', //name : 'name',
-            value : ''
-        };
+        var child = { name : '', value : '' };
         
         child[this.rootProperty] = [];
         var newNode = currentItem.appendChild(child);
@@ -455,10 +453,10 @@ Ext.define('Bisque.ResourceTagger',
 
             BQ.ui.message('Resource tagger - Add', 'New records added successfully!');
         }, this, {single : true});
-           
             
         editor.on('canceledit', function(grid, eOpts) {
-            currentItem.removeChild(newNode);
+            if (!newNode.data.name || (newNode.data.name && newNode.data.value && newNode.name=='' && newNode.value==''))
+                currentItem.removeChild(newNode);
         }, this, {single : true});            
             
             

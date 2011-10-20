@@ -17,7 +17,10 @@ Ext.define('BQ.grid.plugin.RowEditing', {
     cancelEdit: function() {
         var me = this;
         me.callParent();
-        me.fireEvent('canceledit', me.grid, {});
+        
+        var form = me.getEditor().getForm();
+        if (!form.isValid())
+            me.fireEvent('canceledit', me.grid, {});
     },
 
 });
