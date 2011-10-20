@@ -2047,8 +2047,9 @@ class ImageServer(BlobServer):
                 # this will pre-convert the image if it's not supported by the imgcnv
                 # and also set the proper dimensions info
                 data_token = self.getImageInfo(id=id, data_token=data_token)
-                if not imgcnv.supported( data_token.data ):
-                    data_token = self.services['bioformats'].action (id, data_token, '') 
+                # this call seems ambiguous now
+                #if not imgcnv.supported( data_token.data ):
+                #    data_token = self.services['bioformats'].action (id, data_token, '') 
             
             if len(query)>0 and (not 'width' in data_token.dims):
                 data_token.setHtml('File is not in supported image format...')
