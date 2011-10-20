@@ -251,7 +251,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ModuleResourceIconList',
         })
 
         var moduleInfo=new Ext.form.Label({
-            html:'<span style="color:#444">Owner: </span>'+this.getData('owner')+'<hr style="width:95%;float:left"/>',
+            html: this.getData('owner')!=0 ? 'Owner: '+this.getData('owner'):'',
             padding:'0 0 0 3',
             maxHeight:18,
             cls:'lblModuleOwner'
