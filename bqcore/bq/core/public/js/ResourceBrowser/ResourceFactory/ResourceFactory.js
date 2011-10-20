@@ -166,7 +166,8 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.Resource',
             border : false,
             cls : 'LightShadow',
             overCls : 'resource-view-over',
-			style: 'float:left; background-color:#FFF'
+			//style: 'float:left; background-color:#FFF'
+			style: 'float:left;'
         });
         
         Bisque.ResourceBrowser.ResourceFactory.Resource.superclass.constructor.apply(this, arguments);
