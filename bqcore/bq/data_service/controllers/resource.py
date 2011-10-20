@@ -201,8 +201,13 @@ class ResponseCache(object):
         cachename = self._cache_name(url, user)
         log.info ('cache invalidate ( %s' % cachename )
         if exact:
-            cachename = cachename.split('#',1)[0].split(',',1)[1]
-            for mn, cf in [ (fn.split('#',1)[0].split(',',1)[1], fn) for fn in files ] :
+            # current cache names file-system safe versions of urls
+            # /data_service/images/1?view=deep
+            #   =>  ,data_service/images,1#view=deep
+            # ',' can be troublesome at ends so we remove them 
+            #     ,data_service/images,1#view=deep == ,data_service/images,1,#view=deep 
+            cachename = cachename.split('#',1)[0].split(',',1)[1].strip(',')
+            for mn, cf in [ (fn.split('#',1)[0].split(',',1)[1].strip(','), fn) for fn in files ] :
 
                 log.debug('exact %s <> %s' % (cachename, mn))
 
