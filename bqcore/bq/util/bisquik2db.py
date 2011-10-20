@@ -607,6 +607,8 @@ def updateDB(root=None, parent=None, resource = None, factory = NodeFactory):
                     
                 # Check for text
                 value = attrib.pop ('value', None)
+                if value is None and obj.tag == 'value':
+                    value = obj.text
                 if value is not None and value != resource.value:
                     convert = converters.get(type_, unicode)
                     resource.value = convert (value.strip())
