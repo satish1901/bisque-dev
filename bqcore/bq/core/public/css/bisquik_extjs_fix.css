@@ -48,6 +48,14 @@ li {
   list-style: disc;
 }
 
+.x-boundlist-item {
+    list-style: none;
+}
+
+.x-boundlist ul, .x-boundlist ol {
+    padding-left: 0px;
+}
+
 i, cite, em, var, address {
   font-style: italic;
 }
