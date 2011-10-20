@@ -13,6 +13,7 @@ Bisque.ResourceBrowser.DatasetManager = Ext.extend(Ext.Panel,
             title : 'Datasets',
             itemId: 'datasetCt',
             width : 400,
+            autoScroll : true,
 
             tools : [
             {
@@ -99,8 +100,7 @@ Bisque.ResourceBrowser.DatasetManager = Ext.extend(Ext.Panel,
 
     promptDatasetName : function(loaded, btn, name)
     {
-        Ext.MessageBox.prompt('Create new dataset', 'Dataset name:',
-        this.createDataset, this);
+        Ext.MessageBox.prompt('Create new dataset', 'Dataset name:', this.createDataset, this);
     },
 
     createDataset : function(btn, name)
@@ -109,8 +109,9 @@ Bisque.ResourceBrowser.DatasetManager = Ext.extend(Ext.Panel,
         {
             var dataset = new BQDataset();
             dataset.name = name;
-            dataset.save_('/data_service/datasets/', callback(this,
-            'addDataset'));
+            dataset.setMembers([]);
+            
+            dataset.save_('/data_service/datasets/?view=deep', callback(this, 'addDataset'));
         }
     },
 
@@ -231,8 +232,7 @@ Bisque.ResourceBrowser.DatasetManager.DatasetTbar = Ext.extend(Ext.Toolbar,
             })
         });
 
-        Bisque.ResourceBrowser.DatasetManager.DatasetTbar.superclass.constructor
-        .apply(this, arguments);
+        this.callParent(arguments);
     },
 
     showMenu : function(btn)
