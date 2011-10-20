@@ -372,7 +372,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourcePStripBig',
 		{
 			region : 'center',
 			resource : this.resource.uri,
-			style : 'background-color:#FFF',
+			//style : 'background-color:#FFF',
 		});
 
 		this.data.image=this.GetImageThumbnailAbs.call(this, '='+(this.pnlSize.width-10).toString()+','+(this.pnlSize.width-10).toString(),
@@ -397,7 +397,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourcePStripBig',
 					align:'top'
 				},
 				width:'55%',
-				style:'background-color:#FFF',
+				//style:'background-color:#FFF',
 				contentEl:imgDiv
 			}), resourceTagger]
 		}));
