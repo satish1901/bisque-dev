@@ -9,9 +9,13 @@
   <tag name="outputs">
     <tag name="output-formal" value="resource" />
   </tag>
-  <tag name="title" type="string" value="Shell Example" /> 
-  <tag name="authors" type="string" value="The Bisque team" /> 
-  <tag name="description" type="string" value="Example Module for shell script." /> 
-  <tag name="help" value = "No help here" />
+  
+    <tag name="help" type="string" value="This is an example of shell based module" /> 
+    <tag name="thumbnail" type="file" value="public/module_thumbnail.png" />   
+
+    <tag name="title" type="string" value="Shell Example" /> 
+    <tag name="authors" type="string" value="The Bisque team" /> 
+    <tag name="description" type="string" value="This is an example of shell based module" />   
+  
 </module>
 
