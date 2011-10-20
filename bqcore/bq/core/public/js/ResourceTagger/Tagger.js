@@ -22,6 +22,39 @@ Ext.define('Bisque.ResourceTagger',
         var v = new Bisque.ResourceTagger.viewStateManager(config.viewMode);
         this.viewMgr  = v;
 
+
+        // dima - datastore for the tag value combo box
+        var TagValues = Ext.ModelManager.getModel('TagValues');
+        if (!TagValues) {
+            Ext.define('TagValues', {
+                extend : 'Ext.data.Model',
+                fields : [ {name: 'value', mapping: '@value' } ],
+            });
+        }
+        this.store_values = Ext.create('Ext.data.Store', {
+            model : 'TagValues', 
+            autoLoad : true,
+            autoSync : false,
+            
+            proxy: {
+                noCache : false,
+                type: 'ajax',
+                limitParam : undefined,
+                pageParam: undefined,
+                startParam: undefined,
+                
+                //url : '/data_service/images?tag_values=mytag',
+                url: '/xml/dummy_tag_values.xml', // a dummy document just to inhibit initial complaining
+                reader : {
+                    type :  'xml',
+                    root :  'resource',
+                    record: 'tag', 
+                },
+            },
+             
+        });
+
+
         this.callParent([config]);
         this.setResource(config.resource);
     },
@@ -133,30 +166,70 @@ Ext.define('Bisque.ResourceTagger',
         return null;
     },
 
+    updateQueryTagValues: function(tag_name) {
+        var url = '/data_service/images?tag_values='+encodeURIComponent(tag_name);
+        var proxy = this.store_values.getProxy();
+        proxy.url = url;
+        this.store_values.load();
+    },
+
     getTreeColumns : function()
     {
-        return [
-        {
+        return [{
             xtype : 'treecolumn',
             dataIndex : 'name',
             text : this.colNameText || 'Name',
             flex : 0.8,
             sortable : true,
-            field :
-            {
-                allowBlank : false,
-                fieldCls : 'editGrid'
+            field : {
+                allowBlank: false,
+                //fieldLabel: this.colNameText || 'Name',
+                //labelAlign: 'top',                
+                
+                validateOnChange: false,
+                blankText: 'Tag name is required!',
+                msgTarget : 'none',
+                
+                listeners: {
+                    'change': function( field, newValue, oldValue, eOpts ) {
+                        this.updateQueryTagValues(newValue);
+                    },
+                   
+                    scope: this,
+                },                 
+                
             }
-        },
-        {
+        }, {
             text : this.colValueText || 'Value',
             dataIndex : 'value',
             flex : 1,
             sortable : true,
-            field :
-            {
-                fieldCls : 'editGrid'
+            field : {
+                // dima: combo box instead of the normal text edit that will be populated with existing tag values
+                xtype     : 'bqcombobox',
+                
+                store     : this.store_values,
+                displayField: 'value',
+                valueField: 'value',
+                
+                queryMode : 'local',
+                //queryMode : 'remote',
+                                
+                minChars: 1,
+                allowBlank : true,   
+                editable: true,  
+                forceSelection: false,           
+                autoScroll: true,
+                autoSelect: false,
+                typeAhead : true,
+                
+                //matchFieldWidth: false,
+                defaultListConfig : { emptyText: undefined, loadingText: "Loading...", maxHeight: 300, resizable: false, },
+                
+                //fieldLabel: this.colValueText || 'Value',
+                //labelAlign: 'top',
             },
+            
             renderer : Bisque.ResourceTagger.BaseRenderer
         }];
     },
@@ -215,17 +288,17 @@ Ext.define('Bisque.ResourceTagger',
             applyModifications : function()
             {
                 var nodeHash = this.tree.nodeHash, status = false;
-                
+
                 if (this.getRemovedRecords().length>0)
                     return true;
 
                 for(var node in nodeHash)
-                    if(nodeHash[node].dirty)
-                    {
-                        status = true;
+                if(nodeHash[node].dirty)
+                {
+                    status = true;
                         Ext.apply(nodeHash[node].raw, nodeHash[node].getChanges());
-                        nodeHash[node].commit();
-                    }
+                    nodeHash[node].commit();
+                }
                 return status;
             },
 
@@ -350,7 +423,7 @@ Ext.define('Bisque.ResourceTagger',
         // Adding new tag to tree
         var child =
         {
-            name : 'name',
+            name : '', //name : 'name',
             value : ''
         };
         
@@ -382,6 +455,13 @@ Ext.define('Bisque.ResourceTagger',
 
             BQ.ui.message('Resource tagger - Add', 'New records added successfully!');
         }, this, {single : true});
+           
+            
+        editor.on('canceledit', function(grid, eOpts) {
+            currentItem.removeChild(newNode);
+        }, this, {single : true});            
+            
+            
     },
 
     deleteTags : function()
@@ -577,7 +657,8 @@ Ext.define('Bisque.GObjectTagger',
 
 Ext.define('Bisque.ResourceTagger.Editor',
 {
-    extend : 'Ext.grid.plugin.RowEditing',
+    //extend : 'Ext.grid.plugin.RowEditing',
+    extend : 'BQ.grid.plugin.RowEditing',
 
     completeEdit : function()
     {
