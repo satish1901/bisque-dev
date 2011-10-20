@@ -18,8 +18,8 @@
     <link2 rel="stylesheet" type="text/css" href="${tg.url('/extjs/resources/css/xtheme-gray.css')}"/>
     -->
     
-    <script type="text/javascript" src="${tg.url('/extjs/bootstrap.js')}"></script>
-    <!--<script type="text/javascript" src="${tg.url('/extjs/ext-all-debug.js')}"></script>-->
+    <!--<script type="text/javascript" src="${tg.url('/extjs/bootstrap.js')}"></script>-->
+    <script type="text/javascript" src="${tg.url('/extjs/ext-all-debug.js')}"></script>
     
     <!-- Bisque styles -->
     <link rel="stylesheet" type="text/css" href="${tg.url('/css/bisquik_extjs_fix.css')}" />
@@ -45,7 +45,8 @@
  
     <!-- ResourceBrowser code -->
     <link rel="stylesheet" href="${tg.url('/js/ResourceBrowser/ResourceBrowser.css')}" type="text/css"/>
-    
+
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/PreferencesWindow.js')}"></script>    
     <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/Browser.js')}"></script>
     <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/LayoutFactory.js')}"></script>
     <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/Organizer.js')}"></script>
@@ -53,7 +54,6 @@
     <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/DatasetManager.js')}"></script>
     <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/CommandBar.js')}"></script>
     <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/viewStateManager.js')}"></script>
-    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/PreferencesWindow.js')}"></script>
     
     <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/ResourceFactory/ResourceFactory.js')}"></script>
     <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/ResourceFactory/ResourceImage.js')}"></script>
@@ -63,7 +63,6 @@
     
     <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/Misc/MessageBus.js')}"></script>
     <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/Misc/GestureManager.js')}"></script>
-    <!--<script type="text/javascript" src="${tg.url('/js/ResourceBrowser/Misc/ComponentDataView.js')}"></script>-->    
     <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/Misc/Slider.js')}"></script>
     <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/Misc/DataTip.js')}"></script>
     
@@ -77,27 +76,27 @@
     <script type="text/javascript" src="${tg.url('/js/ResourceTagger/ResourceRenderers/BaseRenderer.js')}"></script>
  
 
-  <!-- Configuration variables   -->  
-  <script type="text/javascript" > 
-    // update the configuration in your template
-    bq = Ext.create('BQ', {
-      title : "${tg.config.get('bisque.title', 'CBI Repository')}",
-      root  : "${tg.url('/')}",
-    });
-  </script>
+    <!-- Configuration variables   -->  
+    <script type="text/javascript" > 
+        // update the configuration in your template
+        bq = Ext.create('BQ', {
+          title : "${tg.config.get('bisque.title', 'CBI Repository')}",
+          root  : "${tg.url('/')}",
+        });
+    </script>
 
-  <!-- Derived template configuration includes   -->  
-  ${select('*[@id="config" and local-name()="script"]')}
+    <!-- Derived template configuration includes   -->  
+    ${select('*[@id="config" and local-name()="script"]')}
 
-  <!-- Bisque Application instantiation   -->   
-  <script type="text/javascript" > 
+    <!-- Bisque Application instantiation   -->   
+    <script type="text/javascript" > 
         Ext.onReady( function(){ 
             BQApp = Ext.create('BQ.Application', bq); 
         });
-  </script>  
+    </script>  
 
-  <!-- Derived template includes   -->  
-  ${select('*[local-name()!="title" and not(@id="config" and local-name()="script")]')}
+    <!-- Derived template includes   -->  
+    ${select('*[local-name()!="title" and not(@id="config" and local-name()="script")]')}
   
     <script type="text/javascript" py:if="tg.flash" > 
         Ext.onReady( function(){ 
@@ -107,7 +106,7 @@
   
     <script type="text/javascript" py:if="tg.config.get('server.environment', None) == 'development'" > 
         Ext.onReady( function(){     
-        BQ.ui.warning( 'This a test environment, all your data may be lost!' );
+            BQ.ui.warning( 'This a test environment, all your data may be lost!' );
         });
     </script>
   

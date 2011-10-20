@@ -1,3 +1,6 @@
+
+//Ext.namespace('Bisque.ResourceBrowser');
+
 Bisque.ResourceBrowser.LayoutFactory = function(configOpts) {
 	try {
 		switch (configOpts.browser.layoutKey) {
