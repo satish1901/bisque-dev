@@ -433,8 +433,9 @@ class Taggable(object):
     resource = property(resource)
 
     def uri (self):
-        if hasattr(self,'parent') and self.parent:
-            return "%s/%s/%s" % (self.parent.uri, self.table, self.id)
+        if hasattr(self,'parent') and self.parent is not None:
+            parent = self.parent.loadFull()
+            return "%s/%s/%s" % (parent.uri , self.table, self.id)
         else:
             return "%s/%s" % (self.table, self.id)
             
@@ -495,6 +496,13 @@ class Taggable(object):
             t.name = nm
             self.tags.append(t)
         return t
+
+    def loadFull(self):
+        'hack to load polymorphic taggable type'
+        table, dbtype = dbtype_from_name(self.table)
+        if dbtype != Taggable:
+            return DBSession.query(dbtype).get (self.id)
+        return self
         
     def __str__(self):
         #return "%s/%s" % (self.__class__.xmltag,  str(self.id))

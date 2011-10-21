@@ -225,13 +225,13 @@ BQObject.prototype.save_ = function (parenturi, cb, errorcb) {
     var req = docobj.toXML();
     //errorcb = errorcb || default_error_callback;
     if (docobj.uri  ) {
-        makeRequest(docobj.uri, callback(docobj, 'response_', 'update'), cb, 'put', req, errorcb);
+        makeRequest(docobj.uri, callback(docobj, 'response_', 'update', errorcb), cb, 'put', req, errorcb);
     } else {
-        makeRequest(parenturi, callback(docobj, 'response_', 'created'), cb, 'post', req, errorcb);
+        makeRequest(parenturi, callback(docobj, 'response_', 'created', errorcb), cb, 'post', req, errorcb);
     }
 }
 
-BQObject.prototype.response_ = function (code, cb, xmldoc) {
+BQObject.prototype.response_ = function (code, errorcb, cb, xmldoc) {
     // The response with FAIL or the save URI is here
     //var  = xmldoc.firstChild.firstChild;
 
@@ -240,7 +240,17 @@ BQObject.prototype.response_ = function (code, cb, xmldoc) {
         node = node.firstChild;
     if (code == "created") {
         //alert (printXML(respobj));
-        this.uri = attribStr (node, 'uri');
+        //this.uri = attribStr (node, 'uri');
+        this.children = [];
+        this.tags = [];
+        this.gobjects = [];
+        try {
+            BQFactory.createFromXml(node, this, null)
+        } catch  (err) {
+            clog ("save_" + err);
+            if (errorcb) errorcb ({ xmldoc : xmldoc, message : 'parse error' });
+            return;
+        }
     }
     if (cb != null) {
         cb (this);
