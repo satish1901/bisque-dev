@@ -131,6 +131,12 @@ Ext.define('BQ.Preferences',
             this.queue.push(caller);
     },
     
+    reloadUser : function(user)
+    {
+        this.user = Ext.create('BQ.Preferences.Object');
+        this.loadUser(user, 'INIT');
+    },
+    
     InitFromSystem : function(key)
     {
         var tag = this.stripOwnership([this.preference.systemTag.find_tags(key, false)]);

@@ -180,9 +180,11 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceList',
 	    		}
 	    	});
     	}
-    	
-    	this.callParent(arguments);
+        // HACK to hide session "mex". Come up with better strategy in future
+        if (this.resource.status=='SESSION')
+            this.setVisible(false);
 
+    	this.callParent(arguments);
     },
     
     onMouseEnter : function()
@@ -235,12 +237,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceList',
 			}
 			else
 			{
-			    // HACK to hide session "mex". Come up with better strategy in future
-                if (this.resource.status=='SESSION')
-                    this.style='display:none';
-                else
-                    this.loadResource({name:'Module.NoName'});
-                
+                this.loadResource({name:'Module.NoName'});
 			}
 		}
     },

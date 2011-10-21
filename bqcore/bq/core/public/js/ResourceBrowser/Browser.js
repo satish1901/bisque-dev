@@ -306,6 +306,17 @@ Ext.define('Bisque.ResourceBrowser.Browser',
 			            uri : ""
 			        });
        			}
+       			else if (uri=='ReloadPrefs')
+       			{
+                    var user = BQSession.current_session.user;
+                    
+                    if (user)
+                    {
+                        BQ.Preferences.reloadUser(user);
+                        this.browserParams = {};
+                        this.loadPreferences();
+                    }
+       			}
        			else
            			this.LoadData(uri);
        		},
