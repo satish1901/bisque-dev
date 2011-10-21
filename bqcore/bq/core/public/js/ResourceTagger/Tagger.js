@@ -139,6 +139,18 @@ Ext.define('Bisque.ResourceTagger',
 
             selModel : this.getSelModel(),
             plugins : (this.viewMgr.state.editable) ? [rowEditor] : null,
+            
+
+            listeners :
+            {
+                'checkchange' : function(node, checked)
+                {
+                    (checked) ? this.fireEvent('select', this, node) : this.fireEvent('deselect', this, node);
+                    this.checkTree(node, checked);
+                    //Recursively check/uncheck all children of a parent node
+                },
+                scope :this
+            }
         });
 
         this.store.tagTree = this.tree;
