@@ -149,3 +149,43 @@ Ext.define('BQ.Preferences',
         return tagDocument;
     }
 })
+
+//--------------------------------------------------------------------------------------
+// BQ.Preferences.Dialog
+// instantiates preferences in a modal window
+//-------------------------------------------------------------------------------------- 
+
+Ext.define('BQ.Preferences.Dialog', {
+    extend : 'Ext.window.Window',
+    
+    layout : 'fit',
+    modal : true,
+    border : false,
+    width : '70%',
+    height : '70%',
+    resource: 'not.sure.what.key',
+    
+    constructor : function(config) {
+        
+        if (config) {
+            this.resource = config.resource || this.resource;
+        }
+        
+        //if (BQ.Preferences.system.status=='LOADED')    
+        this.tagger = Ext.create('Bisque.ResourceTagger', {
+            resource : this.resource,
+        });    
+        this.items = [this.tagger ];    
+        
+        this.callParent(arguments);
+       
+        this.show();
+        return this;
+    },
+    
+});
+
+Ext.define('BQ.Preferences.SystemDialog', {
+    extend : 'BQ.Preferences.Dialog',
+    resource: BQ.Preferences.system.tag,
+});
