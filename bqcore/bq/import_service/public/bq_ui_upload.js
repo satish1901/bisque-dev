@@ -327,16 +327,23 @@ Ext.define('BQ.upload.Item', {
         
         this.closeButton = Ext.create('Ext.button.Button', {
             iconCls: 'close', 
-            cls: 'flatbutton',
+            cls: 'flatbutton button-close',
             scale: 'small',
-            //scale: 'medium',
-            style: 'float: right;',
             tooltip: 'Cancel uploading this file',          
             handler: Ext.Function.bind( this.destroy, this ),
+        });
+
+        this.permissionButton = Ext.create('Ext.button.Button', {
+            cls: 'flatbutton button-permission',
+            text: BQ.upload.Item.PERMISSIONS_STRINGS[BQ.upload.Item.PERMISSIONS.PRIVATE],
+            scale: 'small',
+            tooltip: 'Change file access permission',          
+            handler: Ext.Function.bind( this.togglePermission, this ),
         });
         
         this.items = [ 
             this.closeButton,
+            this.permissionButton,
             this.fileName,
             this.fileSize,
             this.progress ];           
@@ -406,6 +413,22 @@ Ext.define('BQ.upload.Item', {
     getState : function() {
         return this.state;
     }, 
+  
+    togglePermission : function() {
+        if (this.permission)
+            this.setPermission( BQ.upload.Item.PERMISSIONS.PRIVATE );
+        else
+            this.setPermission( BQ.upload.Item.PERMISSIONS.PUBLISHED );
+    },      
+   
+    setPermission : function(new_perm) {
+        this.permission = new_perm;
+        if (this.permission)
+            this.permissionButton.addCls('published'); 
+        else
+            this.permissionButton.removeCls('published');                       
+        this.permissionButton.setText(BQ.upload.Item.PERMISSIONS_STRINGS[this.permission]);  
+    },      
    
     upload : function() {
         if (this.state >= BQ.upload.Item.STATES.UPLOADING) return;          
@@ -503,12 +526,21 @@ Ext.define('BQ.upload.Item', {
         resource.type = 'file';
         resource.uri  = this.file.name;
         resource.name = this.file.name; 
+        
+        // add access permission annotation
+        if (this.permission) {
+            if (!this.annotation_dict) 
+                this.annotation_dict = {};
+            this.annotation_dict['permission'] = BQ.upload.Item.PERMISSIONS_STRINGS[this.permission];
+        }
 
+        // add tagger annotations
         if (this.tagger) {
             //resource.tags = this.tagger.getTagDocument();
             resource.addtags( this.tagger.getTagDocument(), true );
         }
         
+        // create the ingest tag
         if (this.annotation_dict) {
             var d = this.annotation_dict;
             ingest = resource.addtag ({name: 'ingest'});
@@ -549,6 +581,17 @@ BQ.upload.Item.STATE_STRINGS = {
     5: 'Canceled',
     6: 'Error',
 };
+
+BQ.upload.Item.PERMISSIONS = {
+    'PRIVATE': 0,
+    'PUBLISHED': 1,
+};
+
+BQ.upload.Item.PERMISSIONS_STRINGS = {
+    0: 'private',
+    1: 'published',
+};
+
 
 //--------------------------------------------------------------------------------------
 // BQ.upload.Panel
@@ -725,11 +768,34 @@ Ext.define('BQ.upload.Panel', {
         this.dockedItems = [{
             xtype: 'toolbar',
             dock: 'top',
-            defaults: { scale: 'large',  },
+            defaults: { scale: 'large'  },
             allowBlank: false,
             cls: 'tools', 
-            items: [ { xtype:'tbtext', html: '<h1>'+this.heading+':</h1>', },
-                     this.fileChooser, {
+            layout: {
+                overflowHandler: 'Menu'
+            },            
+            items: [{ xtype:'tbtext', html: '<h1>'+this.heading+':</h1>', },
+                     this.fileChooser, 
+                     {
+                         xtype:'splitbutton',
+                         text: 'Toggle permissions',
+                         cls: 'x-btn-default-large', 
+                         tooltip: 'Toggle access right to all images being uploaded',                                                   
+                         //iconCls: 'add16',
+                         scope: this,
+                         handler: function() { this.setPermissionsToggle(); },
+                         menu: [{ 
+                                   text: 'Set all published', 
+                                   scope: this, 
+                                   handler: function() { this.setPermissions(BQ.upload.Item.PERMISSIONS.PUBLISHED); },  
+                                }, {
+                                   text: 'Set all private',   
+                                   scope: this, 
+                                   handler: function() { this.setPermissions(BQ.upload.Item.PERMISSIONS.PRIVATE); },  
+                                },]
+                     }, { 
+                        xtype: 'tbfill',
+                     }, {
                          text: 'Annotate', 
                          iconCls: 'annotate', 
                          cls: 'x-btn-default-large', 
@@ -912,6 +978,14 @@ Ext.define('BQ.upload.Panel', {
             this.fireEvent( 'filescanceled', this); 
         }
     },     
+   
+    setPermissionsToggle : function() {
+        this.uploadPanel.items.each( function() { if (this.togglePermission) this.togglePermission(); } );
+    },      
+    
+    setPermissions : function(new_perm) {
+        this.uploadPanel.items.each( function() { if (this.setPermission) this.setPermission(new_perm); } );
+    },  
 
     blockPropagation: function (e) {
         if (e.stopPropagation) e.stopPropagation(); // DOM Level 2
