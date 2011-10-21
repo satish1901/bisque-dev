@@ -101,6 +101,7 @@
     /*margin-bottom: 10px;
     padding: 10px;*/
     background: white;
+    position: relative;
 }
 
 .uploaditem .title {
@@ -146,8 +147,34 @@
     border-bottom-width: 0px;
     border-left-width: 0px;
     border-right-width: 0px;  
-    margin: 5px;          
 }
+
+.uploaditem .button-close {
+    position: absolute;
+    top: 5px;  
+    right: 5px;
+}
+
+.uploaditem .button-permission {
+    position: absolute;
+    top: 38px;  
+    right: 18px;
+    color: white;    
+    background-color: #666666;
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+    border-radius: 5px;    
+}
+
+.uploaditem .published {
+    background-color: #006600;
+}
+
+.uploaditem .button-permission .x-btn-inner {
+    color: white; 
+    font-size: 13px;   
+}
+
 
 .uploaditem .over {
     background-color: orange;

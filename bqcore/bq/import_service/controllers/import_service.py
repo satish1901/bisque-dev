@@ -80,7 +80,6 @@ from bq.core.service import ServiceController
 # additional includes
 import sys
 import traceback
-import datetime
 import time
 import re
 import threading
@@ -101,12 +100,14 @@ except:
 from urllib import quote
 from lxml import etree
 from time import strftime
+from datetime import datetime
 
 import tg
 from tg import request, response, session, flash, require
 from repoze.what import predicates
 
 import bq
+from bq.core import permission, identity
 from bq.util.paths import data_path
 from bq import image_service
 from bq import data_service
@@ -125,12 +126,15 @@ imgcnv_needed_version = '1.43'
 # File object 
 #---------------------------------------------------------------------------------------
 
+AccessRights = { 'private': permission.PRIVATE, 'published': permission.PUBLIC }
+
 class UploadedFile:
     """ Object encapsulating upload file """
-    filename = None
-    file     = None
-    tags     = None
-    original = None
+    filename   = None
+    file       = None
+    tags       = None
+    original   = None
+    permission = permission.PRIVATE
     
     def __init__(self, path, name, tags=None):
         self.filename = name
@@ -357,27 +361,33 @@ class import_serviceController(ServiceController):
 #------------------------------------------------------------------------------
 # file ingestion support functions
 #------------------------------------------------------------------------------
-    from datetime import datetime
-    
+   
     def insert_image(self, f):
         """ effectively inserts the file into the bisque database and returns 
         a document describing an ingested resource
         """
         filename = f.filename
         src      = f.file
+        
+        # check the presense of tags with the file        
         tags     = None
         if hasattr(f, 'tags'): 
             tags = copy.deepcopy(f.tags)
             #tags = f.tags
+        
+        # check the presense of permission with the file
+        perm = permission.PRIVATE
+        if hasattr(f, 'permission'):             
+            perm = f.permission
 
         # try inserting the image in the image service            
-        info = image_service.new_image(src=src, name=filename)
+        info = image_service.new_image(src=src, name=filename, userPerm=perm)
         
         if info:
             # the image was successfuly added into the image service
-            resource = etree.Element('image')
+            resource = etree.Element('image', perm=str(perm))
             etree.SubElement(resource, 'tag', name="filename", value=filename)
-            etree.SubElement(resource, 'tag', name="upload_datetime", value=datetime.datetime.now().isoformat(' '), type='datetime' ) 
+            etree.SubElement(resource, 'tag', name="upload_datetime", value=datetime.now().isoformat(' '), type='datetime' ) 
             if hasattr(f, 'original') and f.original:
                 etree.SubElement(resource, 'tag', name="original_upload", value=f.original, type='link' )              
             
@@ -430,6 +440,11 @@ class import_serviceController(ServiceController):
             else:
                 intags = {'type': mime}
         
+        # check access permission
+        f.permission = permission.PRIVATE
+        if intags is not None and 'permission' in intags:
+            f.permission = AccessRights[intags['permission']]
+        
         # no processing required        
         if intags is None or 'type' not in intags or intags['type'] not in self.filters:
             return self.insert_image(f)
@@ -453,7 +468,7 @@ class import_serviceController(ServiceController):
                 return resource
 
             # include the parent file into the database
-            info = image_service.new_file(src=f.file, name=os.path.split(f.filename)[-1])
+            info = image_service.new_file(src=f.file, name=os.path.split(f.filename)[-1], userPerm=f.permission )
             if info and 'src' in info:
                 parent_uri = info['src']
 
@@ -466,6 +481,7 @@ class import_serviceController(ServiceController):
                     name = '%s.%s'%(f.filename, name )
                 myf = UploadedFile(n, name, f.tags)
                 if parent_uri: myf.original = parent_uri
+                myf.permission = f.permission
                 resources.append( self.insert_image(myf) )
 
             # some error during pre-processing
@@ -481,7 +497,7 @@ class import_serviceController(ServiceController):
                 
             # multiple resources ingested, we need to group them into a dataset and return a reference to it
             # now we'll just return a stupid stub
-            ts = datetime.datetime.now().isoformat(' ')
+            ts = datetime.now().isoformat(' ')
             resource = etree.Element('dataset', type='datasets', name='%s (uploaded %s)'%(f.filename, ts))
             etree.SubElement(resource, 'tag', name="upload_datetime", value=ts, type='datetime' )             
             if parent_uri:
@@ -518,8 +534,57 @@ class import_serviceController(ServiceController):
 
 #------------------------------------------------------------------------------
 # Main import for files
+# Accepts multi-part form with a file and associated tags in XML format
+# form parts should be something like this: file and file_tags
+#
+# The tag XML document is in the following form:
+# <resource>
+#     <tag name='any tag' value='any value' />
+#     <tag name='another' value='new value' />
+# </resource>
+#
+#
+#The document can also contain special tag for prosessing and additional info:
+#<resource>
+#    <tag name='any tag' value='any value' />
+#    <tag name='ingest'>
+#        
+#        Permission setting for imported image as: 'private' or 'published'
+#        <tag name='permission' value='private' />
+#        or
+#        <tag name='permission' value='published' />
+#                
+#        Image is a multi-file compressed archive, should be uncompressed and images ingested individually:
+#        <tag name='type' value='zip-multi-file' />
+#        or
+#        Image is a compressed archive containing multiple files composing a time-series image:        
+#        <tag name='type' value='zip-time-series' />
+#        or
+#        Image is a compressed archive containing multiple files composing a z-stack image:                
+#        <tag name='type' value='zip-z-stack' />
+#        or
+#        Image is a compressed archive containing multiple files composing a 5-D image:
+#        <tag name='type' value='zip-5d-image' />
+#        This tag must have two additional tags with numbers of T and Z planes:
+#        <tag name='number_z' value='XXXX' />
+#        <tag name='number_t' value='XXXXX' />                
+#
+#    </tag>
+#</resource>
+#
+#Example for a file "example.zip":
+#
+#<resource>
+#    <tag name='any tag' value='any value' />
+#    <tag name='ingest'>
+#        <tag name='permission' value='published' />
+#        <tag name='type' value='zip-5d-image' />
+#        <tag name='number_z' value='XXXX' />
+#        <tag name='number_t' value='XXXXX' />
+#    </tag>
+#</resource>
+#
 #------------------------------------------------------------------------------
-    from datetime import datetime
     
     @expose(content_type="text/xml")
     @require(predicates.not_anonymous())
