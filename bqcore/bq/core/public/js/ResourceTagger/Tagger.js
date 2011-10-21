@@ -255,7 +255,10 @@ Ext.define('Bisque.ResourceTagger',
                 type : 'string',
                 convert : function(value, record)
                 {
-                    return value || record.data.type;
+                    if (this.rootProperty=='gobjects')
+                        return (value)?value+' ('+record.data.type+')':record.data.type;
+                    else
+                        return value || record.data.type;
                 }
             },
             {

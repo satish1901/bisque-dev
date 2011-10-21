@@ -187,8 +187,11 @@ Ext.define('BQ.Preferences.Dialog', {
         this.callParent(arguments);
         this.show();
     },
+    
+    
 });
 
 Ext.define('BQ.Preferences.SystemDialog', {
     extend : 'BQ.Preferences.Dialog',
+    resource :  {}
 });
