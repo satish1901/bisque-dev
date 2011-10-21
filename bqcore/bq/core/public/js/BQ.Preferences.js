@@ -163,29 +163,32 @@ Ext.define('BQ.Preferences.Dialog', {
     border : false,
     width : '70%',
     height : '70%',
-    resource: 'not.sure.what.key',
     
-    constructor : function(config) {
+    constructor : function(config) 
+    {
+        config = config || {};
         
-        if (config) {
-            this.resource = config.resource || this.resource;
-        }
+        Ext.apply(config, 
+        {
+            resource : config.resource || BQ.Preferences.system.tag,
+            title : config.title || 'System Preferences' 
+        });
         
-        //if (BQ.Preferences.system.status=='LOADED')    
-        this.tagger = Ext.create('Bisque.ResourceTagger', {
-            resource : this.resource,
-        });    
-        this.items = [this.tagger ];    
+        if (BQ.Preferences.system.status=='LOADED')
+        {
+            this.tagger = Ext.create('Bisque.ResourceTagger', 
+            {
+                resource : config.resource,
+            });
+            this.items = this.tagger;
+        }    
         
+        Ext.apply(this, config);
         this.callParent(arguments);
-       
         this.show();
-        return this;
     },
-    
 });
 
 Ext.define('BQ.Preferences.SystemDialog', {
     extend : 'BQ.Preferences.Dialog',
-    resource: BQ.Preferences.system.tag,
 });
