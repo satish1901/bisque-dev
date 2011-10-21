@@ -119,7 +119,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.DatasetResourceList',
 		var datasetDate=new Ext.form.Label({
 			text:Ext.Date.format(date, "F j, Y g:i:s a"),
 			padding:'0 0 0 8',
-			style:'color:#444;font-size:11px'
+            style:'color:#444;font-size:11px;font-family: tahoma, arial, verdana, sans-serif !important;'
 		})
 
 		this.add([datasetName, datasetOwner, datasetDate]);

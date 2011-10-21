@@ -52,12 +52,13 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResource',
 		else
 		{			
 			var el = this.getEl();
-			this.mmData =
-			{
-				x : el.getX() + el.getOffsetsTo(this.resource.uri)[0],
-				y : el.getY() + el.getOffsetsTo(this.resource.uri)[1],
-				isLoadingImage : false
-			};
+			if (this.getData('fetched')==1)
+    			this.mmData =
+    			{
+    				x : el.getX() + el.getOffsetsTo(this.resource.uri)[0],
+    				y : el.getY() + el.getOffsetsTo(this.resource.uri)[1],
+    				isLoadingImage : false
+    			};
 		}
     },
 

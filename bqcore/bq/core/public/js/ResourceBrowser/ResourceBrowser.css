@@ -211,6 +211,21 @@
     font-family: tahoma, arial, verdana, sans-serif !important;
 }
 
+
+.lblModuleOwnerFin {
+    color: #07AD0C !important;
+    text-shadow: 0px 1px 1px #DDD;
+    font-size: 11px;
+    font-family: tahoma, arial, verdana, sans-serif !important;
+}
+
+.lblModuleOwnerFail {
+    color: #BF1B1B !important;
+    text-shadow: 0px 1px 1px #DDD;
+    font-size: 11px;
+    font-family: tahoma, arial, verdana, sans-serif !important;
+}
+
 .rbFontFamily .lblModuleName .lblModuleOwner{
     font-family: tahoma, arial, verdana, sans-serif !important;
 }
