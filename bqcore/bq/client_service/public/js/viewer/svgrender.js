@@ -203,9 +203,9 @@ SVGRenderer.prototype.polyline = function (visitor, gob,  viewstate, visibility)
             clog("vertex  "+i+" of "+gob.vertices.length);
             continue;
         }
-        if (pnt.z!=null  && Math.round(pnt.z) == viewstate.z )
+        if (pnt.z!=null  && Math.round(pnt.z) != viewstate.z )
             continue;
-        if (pnt.t!=null  && Math.round(pnt.t) == viewstate.t)
+        if (pnt.t!=null  && Math.round(pnt.t) != viewstate.t)
             continue;
 
         var p = viewstate.transformPoint (pnt.x, pnt.y);
