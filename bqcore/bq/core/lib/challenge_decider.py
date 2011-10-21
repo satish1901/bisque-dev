@@ -39,7 +39,10 @@ def bisque_challenge_decider(environ, status, headers):
             #if accept and 'text/xml' in accept: # or 'application/xml' in accept:
             #    return False
 
-        if 'text/xml' in content_type or 'application/xml' in content_type:
+        if 'text/xml' in content_type \
+            or 'application/xml' in content_type \
+            or 'text/xml' in req_content \
+            or 'application/xml' in req_content:
             return False
 
         return True

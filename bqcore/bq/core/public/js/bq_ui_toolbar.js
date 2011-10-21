@@ -91,7 +91,11 @@ Ext.define('BQ.Application.Toolbar', {
     border: false,             
     layout: { overflowHandler: 'Menu' },
     defaults: { scale: 'large', },
-    cls: 'toolbar_main',    
+    cls: 'toolbar_main',
+    
+    tools_none: [ 'menu_user_signin', 'menu_user_register'],    
+    tools_user: ['menu_user_name', 'menu_user_profile', 'menu_user_signout', ],
+    tools_admin: ['menu_user_admin_separator', 'menu_user_admin', 'menu_user_admin_prefs' ],    
     
     config: {
         title: 'Bisque demo',    
@@ -225,46 +229,44 @@ Ext.define('BQ.Application.Toolbar', {
         
         this.callParent();
         
+        
         // update user menu based on application events
         Ext.util.Observable.observe(BQ.Application);        
         BQ.Application.on('gotuser', function(u) { 
-            toolbar.child('#menu_user').setText( u.display_name );
+            this.child('#menu_user').setText( u.display_name );
+            this.menu_user.child('#menu_user_name').setText( u.display_name+' - '+u.email_address );
             
-            var m = toolbar.menu_user.child('#menu_user_name');
-            m.text = u.display_name + ' - ' + u.email_address; // user_name
-            m.setVisible(true);   
-            
-            toolbar.menu_user.child('#menu_user_profile').setVisible(true);
-            toolbar.menu_user.child('#menu_user_signout').setVisible(true);
-            toolbar.menu_user.child('#menu_user_signin').setVisible(false);
-            toolbar.menu_user.child('#menu_user_register').setVisible(false);
-            
-            if (u.user_name == 'admin') {
-                toolbar.menu_user.child('#menu_user_admin_separator').setVisible(true);
-                toolbar.menu_user.child('#menu_user_admin').setVisible(true);                                                
-                toolbar.menu_user.child('#menu_user_admin_prefs').setVisible(true);                 
-            }
-            
-        });
+            // hide no user menus
+            for (var i=0; (p=this.tools_none[i]); i++)
+                this.menu_user.child('#'+p).setVisible(false);
+
+            // show user menus
+            for (var i=0; (p=this.tools_user[i]); i++)
+                this.menu_user.child('#'+p).setVisible(true);            
+
+            // show user menus
+            if (u.user_name == 'admin')
+            for (var i=0; (p=this.tools_admin[i]); i++)
+                this.menu_user.child('#'+p).setVisible(true);  
+        }, this);
 
         BQ.Application.on('signedin', function() { 
             //clog('signed in !!!!!');           
         });  
                  
         BQ.Application.on('signedout', function() { 
-            //clog('signedout');
-            
-            toolbar.child('#menu_user').setText( 'Sign in' );
-            toolbar.menu_user.child('#menu_user_name').setVisible(false);
-            
-            toolbar.menu_user.child('#menu_user_profile').setVisible(false);
-            toolbar.menu_user.child('#menu_user_signout').setVisible(false);
-            toolbar.menu_user.child('#menu_user_signin').setVisible(true);
-            toolbar.menu_user.child('#menu_user_register').setVisible(true);
-            
-            toolbar.menu_user.child('#menu_user_admin_separator').setVisible(false);
-            toolbar.menu_user.child('#menu_user_admin').setVisible(false);                                                
-         });  
+            // show no user menus
+            for (var i=0; (p=this.tools_none[i]); i++)
+                this.menu_user.child('#'+p).setVisible(true);
+
+            // hide user menus
+            for (var i=0; (p=this.tools_user[i]); i++)
+                this.menu_user.child('#'+p).setVisible(false);            
+
+            // hide user menus
+            for (var i=0; (p=this.tools_admin[i]); i++)
+                this.menu_user.child('#'+p).setVisible(false);              
+         }, this);  
         
     },
 
