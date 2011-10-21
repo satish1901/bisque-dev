@@ -203,9 +203,9 @@ SVGRenderer.prototype.polyline = function (visitor, gob,  viewstate, visibility)
             clog("vertex  "+i+" of "+gob.vertices.length);
             continue;
         }
-        if (pnt.z!=null  && pnt.z > viewstate.z )
+        if (pnt.z!=null  && Math.round(pnt.z) != viewstate.z )
             continue;
-        if (pnt.t!=null  && pnt.t > viewstate.t)
+        if (pnt.t!=null  && Math.round(pnt.t) != viewstate.t)
             continue;
 
         var p = viewstate.transformPoint (pnt.x, pnt.y);
@@ -373,9 +373,9 @@ SVGRenderer.prototype.point = function ( visitor, gob, viewstate, visibility) {
     
     var pnt = gob.vertices[0] ;
     var visible = true;
-    if (pnt.z!=null  && viewstate.z != pnt.z)
+    if (pnt.z!=null  && viewstate.z != Math.round(pnt.z))
         visible = false;
-    if (pnt.t!=null && viewstate.t != pnt.t)
+    if (pnt.t!=null && viewstate.t != Math.round(pnt.t))
         visible = false;
 
     if (visibility!=undefined)
@@ -446,9 +446,9 @@ SVGRenderer.prototype.rectangle = function ( visitor, gob,  viewstate, visibilit
     var pnt2 = gob.vertices[1];
     if (!pnt1 || !pnt2) return;
     var visible = true;
-    if (pnt1.z !=null  && viewstate.z != pnt1.z)
+    if (pnt1.z !=null  && viewstate.z != Math.round(pnt1.z))
         visible = false;
-    if (pnt1.t !=null  && viewstate.t != pnt1.t)
+    if (pnt1.t !=null  && viewstate.t != Math.round(pnt1.t))
         visible = false;
 
     if (visibility!=undefined)
@@ -515,9 +515,9 @@ SVGRenderer.prototype.circle = function ( visitor, gob,  viewstate, visibility) 
     var pnt1 = gob.vertices[0] ;
     var pnt2 = gob.vertices[1] ;
     var visible = true;
-    if (pnt1.z != null  && viewstate.z != pnt1.z)
+    if (pnt1.z != null  && viewstate.z != Math.round(pnt1.z))
         visible = false;
-    if (pnt1.t != null  && viewstate.t != pnt1.t)
+    if (pnt1.t != null  && viewstate.t != Math.round(pnt1.t))
         visible = false;
 
 	if (visibility!=undefined)
@@ -586,9 +586,9 @@ SVGRenderer.prototype.ellipse = function ( visitor, gob,  viewstate, visibility)
     
     var visible = true;
     
-    if (pnt1.z != null  && viewstate.z != pnt1.z)
+    if (pnt1.z != null  && viewstate.z != Math.round(pnt1.z))
         visible = false;
-    if (pnt1.t != null  && viewstate.t != pnt1.t)
+    if (pnt1.t != null  && viewstate.t != Math.round(pnt1.t))
         visible = false;
 
     if (visibility!=undefined)
