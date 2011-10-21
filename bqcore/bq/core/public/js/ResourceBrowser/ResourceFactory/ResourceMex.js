@@ -237,7 +237,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceList',
 			{
 			    // HACK to hide session "mex". Come up with better strategy in future
                 if (this.resource.status=='SESSION')
-                    this.setVisible(false);
+                    this.style='display:none';
                 else
                     this.loadResource({name:'Module.NoName'});
                 
@@ -266,7 +266,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceList',
 		var mexStatus=new Ext.form.Label({
 			text:this.resource.status,
 			padding:'0 0 0 4',
-			cls:'lblModuleOwner'
+			cls: this.resource.status=='FINISHED'?'lblModuleOwnerFin':(this.resource.status=='FAILED'?'lblModuleOwnerFail':'lblModuleOwner')
 		})
 
 		var date=Ext.Date.parse(this.resource.ts, 'Y-m-d H:i:s.u');
