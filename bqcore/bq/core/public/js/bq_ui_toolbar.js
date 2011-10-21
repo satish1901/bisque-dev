@@ -137,6 +137,9 @@ Ext.define('BQ.Application.Toolbar', {
         this.menu_user.add( { xtype:'menuseparator', itemId: 'menu_user_admin_separator', hidden: true } );
         this.menu_user.add( {text: 'Website admin', itemId: 'menu_user_admin', hidden: true, 
                                 handler: Ext.Function.pass(pageAction, bq.url('/admin'))} );        
+        
+        this.menu_user.add( { text: 'Website preferences', itemId: 'menu_user_admin_prefs', hidden: true, 
+                              handler: this.systemPrefs, scope: this } );    
 
         this.menu_user.add( {text: 'Register new user', itemId: 'menu_user_register', 
                                 handler: Ext.Function.pass(pageAction, bq.url('/registration'))} );
@@ -237,8 +240,9 @@ Ext.define('BQ.Application.Toolbar', {
             toolbar.menu_user.child('#menu_user_register').setVisible(false);
             
             if (u.user_name == 'admin') {
-              toolbar.menu_user.child('#menu_user_admin_separator').setVisible(true);
-              toolbar.menu_user.child('#menu_user_admin').setVisible(true);                                                
+                toolbar.menu_user.child('#menu_user_admin_separator').setVisible(true);
+                toolbar.menu_user.child('#menu_user_admin').setVisible(true);                                                
+                toolbar.menu_user.child('#menu_user_admin_prefs').setVisible(true);                 
             }
             
         });
@@ -267,6 +271,10 @@ Ext.define('BQ.Application.Toolbar', {
     // private
     onDestroy : function() {
         this.callParent();
+    },
+
+    systemPrefs : function() {
+        var preferences = Ext.create('BQ.Preferences.SystemDialog');
     },
 
    
