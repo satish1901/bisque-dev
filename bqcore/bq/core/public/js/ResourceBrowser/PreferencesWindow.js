@@ -48,9 +48,7 @@ Ext.define('Bisque.ResourceBrowser.PreferencesWindow',
                 {
                     'destroy' : function() 
                     {
-                        this.browser.msgBus.fireEvent('Browser_ReloadData', {
-                            offset:0,
-                        });
+                        this.browser.msgBus.fireEvent('Browser_ReloadData', "ReloadPrefs");
                     },
                     scope : this    
                 }
