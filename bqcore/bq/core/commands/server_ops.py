@@ -33,7 +33,6 @@ if os.name == 'nt':
 else:        
     import signal
     def kill_process(pid):
-        print "killing %d " % pid
         try:
             pid = os.getpgid(pid)
             os.killpg (pid, signal.SIGTERM)
@@ -146,6 +145,8 @@ def operation(command, options, *args):
         config = readhostconfig(site_cfg)
         verbose("ROOT %s SERVERS %s" % (config['root'], config['servers'].keys()))
         processes  = []
+
+
         for key, serverspec in sorted(config['servers'].items()):
 
             url = serverspec.pop('url')
@@ -154,77 +155,83 @@ def operation(command, options, *args):
                 l.strip() for l in serverspec.pop('services_enabled','').split(',')])
             services_disabled = ','.join([
                 l.strip() for l in serverspec.pop('services_disabled','').split(',')])
-
             host = fullurl[1].split(':')[0]
             port = str(fullurl.port)
-
             proxyroot = serverspec.pop('proxyroot', '')
-
             logfile = os.path.join(config['log_dir'], LOG_TEMPL % port)
             pidfile = os.path.join(config['pid_dir'], PID_TEMPL % port)
 
-            if command in ('start') and check_running(pidfile):
-                call ([sys.argv[0], 'servers', 'stop'])
+            def paster_command(command):
+                paster_verbose = '-v' if options.verbose else '-q'
+                msg = { 'start': 'starting', 'stop':'stopping', 'restart':'restarting'}[command]
+                verbose ("%s bisque on %s .. please wait" %  (msg, port) )
+                server_cmd = ['paster', 'serve', paster_verbose]
+                server_cmd.extend (['--log-file', logfile, '--pid-file', pidfile,
+                                    #                   '--deamon',
+                                    ])
+                if options.reload:
+                    server_cmd.append ('--reload')
+                server_cmd.extend ([
+                        os.path.join(site_dir, 'server.ini'),
+                        command,
+                        'services_enabled=%s' % services_enabled,
+                        'services_disabled=%s' % services_disabled,
+                        'http_port=%s' % port,
+                        'http_host=%s' % host,
+                        'rooturl=%s' % config['root'],
+                        'proxyroot=%s' % proxyroot,
+                        'sitecfg=%s' % site_cfg,
+                        ])
+                # server_cmd.extend ([ "%s=%s" % (k,v) for k,v in serverspec.items()])
+                server_cmd.extend (args)
+                verbose ( 'Executing: %s' % ' '.join(server_cmd) )
+                if not options.dryrun:
+                    processes.append(Popen(server_cmd))
+
+            def mex_runner(command):
+                verbose( '%s: %s' % (command , ' '.join(RUNNER_CMD)))
+                if command is 'stop':
+                    if os.path.exists('mexrunner.pid'):
+                        if not options.dryrun:
+                            f = open('mexrunner.pid', 'rb') 
+                        mexrunner_pid = int(f.read())
+                        f.close()
+                        kill_process(mexrunner_pid)
+                        os.remove ('mexrunner.pid')
+                        verbose( "Stopped Mexrunner: %s"%mexrunner_pid )
+
+                if command is 'start':
+                    if not options.dryrun:
+                        logfile = open('mexrunner.log', 'wb')
+                        mexrunner = Popen(RUNNER_CMD, stdout = logfile, stderr = logfile )
+
+                        processes.append(mexrunner)
+                        open('mexrunner.pid', 'wb').write(str( mexrunner.pid ))
+                        verbose( "Starting Mexrunner: %s"%mexrunner.pid )
+
+
+            if command in ('stop', 'restart'):
+                paster_command('stop')
+                for proc in processes:
+                    proc.wait()
+                processes = []
 
             if command in ('start', 'restart'):
                 prepare_log (logfile)
-
-            msg = { 'start': 'starting', 'stop':'stopping', 'restart':'restarting'}[command]
-            verbose ("%s bisque on %s .. please wait" %  (msg, port) )
-            server_cmd = ['paster', 'serve']
-            server_cmd.extend ([
-                          '--log-file', logfile,
-                          '--pid-file', pidfile,
-                          #                   '--deamon',
-                          ])
-            if options.reload:
-                server_cmd.append ('--reload')
-            server_cmd.extend ([
-                          os.path.join(site_dir, 'server.ini'),
-                          command,
-                          'services_enabled=%s' % services_enabled,
-                          'services_disabled=%s' % services_disabled,
-                          'http_port=%s' % port,
-                          'http_host=%s' % host,
-                          'rooturl=%s' % config['root'],
-                          'proxyroot=%s' % proxyroot,
-                          'sitecfg=%s' % site_cfg,
-                          ])
-            # server_cmd.extend ([ "%s=%s" % (k,v) for k,v in serverspec.items()])
-
-            server_cmd.extend (args)
+                paster_command('start')
 
 
-            verbose ( 'Executing: %s' % ' '.join(server_cmd) )
-                
-            if not options.dryrun:
-                processes.append(Popen(server_cmd))
-
-        verbose( '%s: %s' % (command , ' '.join(RUNNER_CMD)))
-
-        if command == 'start':
-            if not options.dryrun:
-                logfile = open('mexrunner.log', 'wb')
-                mexrunner = Popen(RUNNER_CMD, stdout = logfile, stderr = logfile )
-
-                processes.append(mexrunner)
-                open('mexrunner.pid', 'wb').write(str( mexrunner.pid ))
-                verbose( "Starting Mexrunner: %s"%mexrunner.pid )
-        else:
-            import signal
-            if os.path.exists('mexrunner.pid'):
-                if not options.dryrun:
-                    f = open('mexrunner.pid', 'rb') 
-                    mexrunner_pid = int(f.read())
-                    f.close()
-                    kill_process(mexrunner_pid)
-                    os.remove ('mexrunner.pid')
-                verbose( "Stopped Mexrunner: %s"%mexrunner_pid )
-                
-
+        if command in ('stop', 'restart'):
+            mex_runner('stop')
+            for proc in processes:
+                proc.wait()
+            processes = []
+        if command in ('start', 'restart'):
+            mex_runner('start')
         if options.wait:
             for proc in processes:
                 proc.wait()
+
 
 
             #if command in ('start', 'restart'):
