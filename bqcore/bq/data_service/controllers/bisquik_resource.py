@@ -187,7 +187,10 @@ class BisquikResource(Resource):
         resource = self.force_dbload(query)
         if resource is None:
             log.info ("Permission check failure %s" % str(query))
-            abort(401)
+            if identity.not_anonymous():
+                abort(403)
+            else:
+                abort(401)
         #log.debug ("PERMISSION: user %s : %s" % (user_id, resource))
             
         return resource

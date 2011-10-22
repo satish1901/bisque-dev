@@ -178,7 +178,7 @@ class BQSession(object):
 
         log.debug('fetchxml %s ' % url)
         try:
-            content =  self.c.fetch (url, headers = {'Content-Type':'text/xml'})
+            content =  self.c.fetch (url, headers = {'Content-Type':'text/xml', 'Accept':'text/xml'})
             return etree.XML(content)
         except:
             log.exception('during fetch of %s %s' % (url, params))
@@ -190,7 +190,7 @@ class BQSession(object):
         url = self.c.prepare_url(url, **params)
         try:
             content =  self.c.post(url, content=content, method=method,
-                                   headers = {'Content-Type':'text/xml'})
+                                   headers = {'Content-Type':'text/xml', 'Accept': 'text/xml' })
             return etree.XML(content)
         except:
             log.exception('during post %s of %s ' % (url, xml))
