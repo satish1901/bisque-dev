@@ -29,32 +29,34 @@ class OpenIDAuth(object):
             email = 'unknown@nowhere.org'
             if identity.has_key('repoze.who.plugins.openid.email'):
                 email =  identity["repoze.who.plugins.openid.email"][0]
-            registration.register_user(user_name, values = {
+            return registration.register_user(user_name, values = {
                     'display_name' : name,
                     'email_address' : email,
                     #password =  illegal password so all authentication goes through openid
                     })
         else:
             self.log.debug('%s not found in %s' % (self.auto_register, environ['repoze.who.plugins']))
+        return user_name
 
     def authenticate(self, environ, identity):
         if environ['repoze.who.logger'] is not None:
-            log = self.log = environ['repoze.who.logger']
+            self.log =  environ['repoze.who.logger']
 
-        log.info('openid authenticate')
-        
         if identity.has_key("repoze.who.plugins.openid.email"):
-            log.info('authenticated email: %s ' %identity['repoze.who.plugins.openid.email'])
+            self.log.info('authenticated email: %s ' %identity['repoze.who.plugins.openid.email'])
             userid =  identity["repoze.who.plugins.openid.email"]
             name,address = userid[0].split('@')
 
-            if self.auto_register:
-                self._auto_register(environ, identity, name)
+            try:
+                if self.auto_register:
+                    name = self._auto_register(environ, identity, name)
+            except:
+                self.log.exception("problem in autoreg")
 
             return name
 
         if identity.has_key("repoze.who.plugins.openid.userid"):
-            log.info('authenticated : %s ' %identity['repoze.who.plugins.openid.userid'])
+            self.log.info('authenticated : %s ' %identity['repoze.who.plugins.openid.userid'])
             return identity["repoze.who.plugins.openid.userid"]
 
     def as_user_values( self, values, identity ):

@@ -198,13 +198,17 @@ class CASPlugin(object):
         #else:
         #    return self._validate_simple(environ, identity)
 
-        if self.auto_register and user_id:
-            self._auto_register(environ, identity)
+        try:
+            if self.auto_register and user_id:
+                user_id = self._auto_register(environ, identity, user_id)
+        except:
+            log.error ("couldn't authenticate %s"  % user_id)
+            return None
 
         return user_id
 
 
-    def _auto_register(self, environ, identity):
+    def _auto_register(self, environ, identity, user_id):
         registration = environ['repoze.who.plugins'].get(self.auto_register)
         log.debug('looking for %s found %s ' % (self.auto_register, registration))
         
@@ -220,49 +224,13 @@ class CASPlugin(object):
             email = 'unknown@nowhere.org'
             if identity.has_key('repoze.who.plugins.cas.email'):
                 email =  identity["repoze.who.plugins.cas.email"]
-            registration.register_user(user_name, values = {
+            return registration.register_user(user_name, values = {
                     'display_name' : name,
                     'email_address' : email,
                     #password =  illegal password so all authentication goes through openid
                     })
         else:
             log.debug('%s not found in %s' % (self.auto_register, environ['repoze.who.plugins']))
-        
+        return user_id
 
 
-class JUKN():
-    def _logout(self, environ):
-        return None
-
-    def _login(self, environ):
-        request = Request(environ, charset="utf8")
-        userid = None
-        if self.cookie_name in request.cookies:
-            userid = \
-                self._decrypt_identity(request.cookies[self.cookie_name])
-        elif "ticket" in request.GET:
-            queryvars = request.GET
-            ticket = queryvars['ticket']
-            del queryvars['ticket']
-            qs = urlencode(queryvars.items())
-            environ['QUERY_STRING'] = qs
-            environ['webob._parsed_query_vars'] = (queryvars, qs)
-            
-            validation_response = \
-                self.urlopener("%s?service=%s&ticket=%s" % \
-                                   (self.cas_validate_url,
-                                    quote_plus(request.url),
-                                    ticket))
-            if self.cas_version == "1.0":
-                response = validation_response.read()[:-1]
-                if "\n" in response:
-                    result, username = response.split("\n")
-                    if result == "yes":
-                        userid = username
-            elif self.cas_version == "2.0":
-                userid = None
-            
-            if userid is None:
-                environ['repoze.who.application'] = HTTPUnauthorized()
-        
-        return userid

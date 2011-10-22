@@ -150,7 +150,7 @@ Ext.define('BQ.Application.Toolbar', {
         
         this.menu_user.add( '-' );           
         this.menu_user.add( {text: 'Sign out', itemId: 'menu_user_signout', hidden: true, 
-                                handler: Ext.Function.pass(pageAction, bq.url('/auth_service/logout'))} );
+                                handler: Ext.Function.pass(pageAction, bq.url('/auth_service/logout_handler'))} );
                                  
         this.menu_user.add( {text: 'Sign in', itemId: 'menu_user_signin', 
                                 handler: Ext.Function.pass(pageAction, bq.url('/auth_service/login?came_from='+encodeURIComponent(window.location)))} );
