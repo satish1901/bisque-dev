@@ -24,27 +24,24 @@ def bisque_challenge_decider(environ, status, headers):
         request = Request(environ)
         response = Response(environ)
 
+        #log.debug ('401 INFO header=%s environ=%s' % (headers, environ))
+
         req_content = request.headers['content-type']
+        accept = request.headers['accept']
         content_type = response.headers['content-type']
 
-        log.debug ('req %s resp %s' % (req_content, content_type))
-        #log.debug ('challenge_decider %s header=%s environ=%s' % (content_type, headers, environ.keys()))
-
-        #req = environ.get('pylons.original_request')
-        #if req:
-            #log.debug ('challenge_decider request_header=%s' % req.headers)
-            #accept = req.headers.get('accept')
-            #accept = accept and [ 
-            #log.debug ('challenge_decider request accept=%s' % accept)
-            #if accept and 'text/xml' in accept: # or 'application/xml' in accept:
-            #    return False
+        # By default several browser send accept : application/xml
+        # http://www.grauw.nl/blog/entry/470
+        if 'text/xml' in accept: #or 'application/xml' in accept:
+            return False
 
         if 'text/xml' in content_type \
             or 'application/xml' in content_type \
             or 'text/xml' in req_content \
             or 'application/xml' in req_content:
             return False
-
+        log.debug ('challange requested')
+        log.debug ('req %s resp %s' % (req_content, content_type))
         return True
     elif environ.has_key('repoze.whoplugins.openid.openid'):
         # in case IIdentification found an openid it should be in the environ

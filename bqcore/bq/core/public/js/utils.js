@@ -367,14 +367,14 @@ function makeRequest ( url, callback, callbackdata, method, postdata, errorcb ){
 function xmlrequest ( url, cb,  method, postdata, errorcb ){
     var ajaxRequest = null;
     function checkResponse() {
-      if (ajaxRequest.readyState == XMLHttpRequest.UNSENT) {// uninitialized
-      } else if (ajaxRequest.readyState == XMLHttpRequest.OPENED) {
-      } else if (ajaxRequest.readyState == XMLHttpRequest.HEADERS_RECEIVED) {
-      } else if (ajaxRequest.readyState == XMLHttpRequest.LOADING) {
-      } else if (ajaxRequest.readyState == XMLHttpRequest.DONE) {
+        if (ajaxRequest.readyState == XMLHttpRequest.UNSENT) {// uninitialized
+        } else if (ajaxRequest.readyState == XMLHttpRequest.OPENED) {
+        } else if (ajaxRequest.readyState == XMLHttpRequest.HEADERS_RECEIVED) {
+        } else if (ajaxRequest.readyState == XMLHttpRequest.LOADING) {
+        } else if (ajaxRequest.readyState == XMLHttpRequest.DONE) {
             BQSession.reset_timeout();
-          if (ajaxRequest.status == 200) {
-              if (ajaxRequest.callback){
+            if (ajaxRequest.status == 200) {
+                if (ajaxRequest.callback){
                     if(ajaxRequest.responseXML != null) { 
                         // added to accomodate HTML requests 
                         // as well as XML requests
@@ -383,12 +383,17 @@ function xmlrequest ( url, cb,  method, postdata, errorcb ){
                         clog ('WARNING: xmlrequest return text/html');
                         ajaxRequest.callback(ajaxRequest.responseText);
                     }
-              } else {
-                //alert('no callback defined');
-              }
-            } else if (ajaxRequest.status == 404 || ajaxRequest.status==401 ) {
+                } else {
+                    //alert('no callback defined');
+                }
+            } else if (ajaxRequest.status==401 ) {
+            // Unathorized and unauthenticated (not logged in )
+                window.location ="/auth_service/login?came_from=" + window.location;
+            } else if (ajaxRequest.status==403 ) {
+                alert ("You do not have permission for that operation");
+            } else if (ajaxRequest.status == 404 )
                 alert ("You do not have permission for that operation\n(Are you logged in?)");
-          } else {
+            } else {
                 var error_short = ("There was a problem with the request:\n" + 
                                    ajaxRequest.status + ":\t" + ajaxRequest.statusText + "\n");
                 var error_str = (error_short + ajaxRequest.responseText);
@@ -399,9 +404,8 @@ function xmlrequest ( url, cb,  method, postdata, errorcb ){
                     showerror (error_str);
                 }
                 throw(error_str);                
-          }
-    }
-  }
+            }
+        }
 
     try {
   
@@ -413,12 +417,12 @@ function xmlrequest ( url, cb,  method, postdata, errorcb ){
             ajaxRequest.callback = cb;
             ajaxRequest.errorcallback = errorcb;
             method = method || "get";
+            ajaxRequest.open(method, url , true);
+            ajaxRequest.setRequestHeader('Accept', 'text/xml');
 
             if (  method == "get" || method == "delete") {
-                ajaxRequest.open(method, url , true);
                 ajaxRequest.send(null);
             } else {
-                ajaxRequest.open(method, url , true);
                 //ajaxRequest.setRequestHeader("Content-Type",
                 //"application/x-www-form-urlencoded; charset=UTF-8");
                 ajaxRequest.setRequestHeader("Content-Type","text/xml");

@@ -70,6 +70,7 @@ DESCRIPTION
 
 
 """
+import socket
 import copy
 import Queue
 import time
@@ -264,11 +265,9 @@ class ModuleDelegate (BisquikResource):
 from repoze.what.predicates import not_anonymous
 from tg import require
 #from repoze.what.predicates import Any, is_user, has_permission
-
 from lxml.html import builder as E
 class ServiceDelegate(controllers.WSGIAppController):
-    """Create a proxy for the particular service addressable
-    by the module name
+    """Create a proxy for the particular service addressable by the module name
     """
     
     def __init__(self, service_url, module, mexurl):
@@ -284,26 +283,16 @@ class ServiceDelegate(controllers.WSGIAppController):
     @expose()
     def _default (self, *args, **kw):
         log.info ("Service proxy request %s" % ('/'.join(args)) )
-        html = super(ServiceDelegate, self)._default(*args, **kw)
+        try:
+            html = super(ServiceDelegate, self)._default(*args, **kw)
+        except socket.error, e:
+            log.error('service not available')
+            abort(404, 'page not available')
+        #log.info("Service proxy return status %s body %s" % (tg.response.status_int, html))
         return html
         #html = etree.HTML (html[0])
         #self.add_title(html, 'HELLO')
         #return etree.tostring(html)
-
-    # Example process
-    #def add_title(self, html, title):
-    #    head = html.xpath('./head')
-    #    head = (len(head) and head[0]) or None
-    #    if head is None:
-    #        head = E.HEAD()
-    #        html.insert (0, head)
-    #    el = head.xpath('./title')
-    #    el = (len(el) and el[0]) or None
-    #    if el is  None:
-    #        el = E.TITLE(title)
-    #    else:
-    #        el.text = title
-    #    head.insert(0, el)
 
     @require(not_anonymous(msg='You need to log-in to run a module'))
     @expose(content_type='text/xml')
@@ -330,8 +319,28 @@ class ServiceDelegate(controllers.WSGIAppController):
         log.debug ('remap -> %s' % self.mexurl)
         mex.set ('uri', "%s%s" % (self.mexurl, mexid))
 
+    # Example process
+    #def add_title(self, html, title):
+    #    head = html.xpath('./head')
+    #    head = (len(head) and head[0]) or None
+    #    if head is None:
+    #        head = E.HEAD()
+    #        html.insert (0, head)
+    #    el = head.xpath('./title')
+    #    el = (len(el) and el[0]) or None
+    #    if el is  None:
+    #        el = E.TITLE(title)
+    #    else:
+    #        el.text = title
+    #    head.insert(0, el)
+
+
+#############################################################################
+# Module server
 
 class ModuleServer(ServiceController):
+    """Module server provides services for finding and executing modules
+    """
     service_type = "module_service"
     
     def __init__(self, server_url = None):
