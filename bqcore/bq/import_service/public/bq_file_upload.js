@@ -3,12 +3,23 @@
   BQFileUpload - a little hack to wrap AJAX html5 file upload, 
     should be seriously rewritten
 
-  Author: Dima edorov
+  Author: Dima Fedorov
+  
+  Use:
+    conf is an object containing actions and events
+  
+  Events:
+      conf.uploadComplete
+      conf.uploadFailed
+      conf.uploadCanceled
+      conf.uploadTransferProgress
+      conf.uploadTransferStart
+      conf.uploadTransferEnd
   
   Version: 1
   
   History: 
-    2011-09-29 13:57:30 - first creation
+    2011-09-29 13:57:30 - first creation    
     
 *******************************************************************************/
 
@@ -70,8 +81,14 @@ BQFileUpload.prototype.upload = function () {
     //xhr.setRequestHeader('X-File-Size', file.size);
     //xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");    
     
-    if (this.conf.uploadProgress && this.xhr.upload)
-        this.xhr.upload.onprogress = this.conf.uploadProgress;
+    if (this.conf.uploadTransferProgress && this.xhr.upload)
+        this.xhr.upload.onprogress = this.conf.uploadTransferProgress;
+
+    if (this.conf.uploadTransferStart && this.xhr.upload)
+        this.xhr.upload.onloadstart = this.conf.uploadTransferStart;
+
+    if (this.conf.uploadTransferEnd && this.xhr.upload)
+        this.xhr.upload.onload = this.conf.uploadTransferEnd;        
 
     if (this.conf.uploadComplete)
         this.xhr.onload = this.conf.uploadComplete;    

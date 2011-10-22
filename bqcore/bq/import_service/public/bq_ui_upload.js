@@ -290,8 +290,8 @@ Ext.define('BQ.upload.Item', {
     //autoScroll: true,
     layout: 'anchor',  
     //bodyStyle: 'margin: 15px',
-    defaults: { border: 0, height_normal: 120, },
-        
+    defaults: { border: 0, height_normal: 120, hysteresis: 100, }, // hysteresis in ms
+            
     constructor: function(config) {
         this.addEvents({
             'fileuploaded' : true,
@@ -413,6 +413,11 @@ Ext.define('BQ.upload.Item', {
     getState : function() {
         return this.state;
     }, 
+
+    setState : function(state) {
+        this.state = state;
+        updateUi();
+    }, 
   
     togglePermission : function() {
         if (this.permission)
@@ -422,6 +427,7 @@ Ext.define('BQ.upload.Item', {
     },      
    
     setPermission : function(new_perm) {
+        if (this.state >= BQ.upload.Item.STATES.UPLOADING) return;
         this.permission = new_perm;
         if (this.permission)
             this.permissionButton.addCls('published'); 
@@ -432,14 +438,16 @@ Ext.define('BQ.upload.Item', {
    
     upload : function() {
         if (this.state >= BQ.upload.Item.STATES.UPLOADING) return;          
-        this.time_starting = new Date();
+        //this.time_started = new Date();
         this.state = BQ.upload.Item.STATES.UPLOADING;
         this.constructAnnotation();
         this.fup = new BQFileUpload(this.file, {
-            uploadProgress: Ext.Function.bind( this.onProgress, this ),
             uploadComplete: Ext.Function.bind( this.onComplete, this ),
             uploadFailed:   Ext.Function.bind( this.onFailed, this ),
             uploadCanceled: Ext.Function.bind( this.onCanceled, this ),
+            uploadTransferProgress: Ext.Function.bind( this.onProgress, this ),
+            uploadTransferStart:    Ext.Function.bind( this.onTransferStart, this ),
+            uploadTransferEnd:      Ext.Function.bind( this.onTransferEnd, this ),                                    
             formconf: this.formconf,
             tags: this.annotations ? this.annotations.toXML(): undefined,
         });
@@ -459,15 +467,32 @@ Ext.define('BQ.upload.Item', {
         this.updateUi();
     },   
 
-    onProgress : function(e) {
+    onTransferStart : function(e) {
+        //BQ.ui.notification('Started');
+        this.time_started = new Date();
+    }, 
+
+    onTransferEnd : function(e) {
+        //BQ.ui.notification('ended');
+        this.time_finished_upload = new Date();
+        this.state = BQ.upload.Item.STATES.INGESTING;
+        this.progress.updateProgress( 1.0 );
+        this.updateUi();         
+    }, 
+
+    doProgress : function() {
+        this.progress_timeout = null; clearTimeout (this.progress_timeout);
+        var e = this._progress_event;
+        if (this.state != BQ.upload.Item.STATES.UPLOADING) return;
         this.updateUi(); 
-        var elapsed = (new Date() - this.time_starting)/1000;
+        var elapsed = (new Date() - this.time_started)/1000;
         this.progress.updateProgress( e.loaded/e.total, 'Uploading at ' + formatFileSize(e.loaded/elapsed) +'/s' );
-        if (e.loaded==e.total) {
-            this.time_finished_upload = new Date();
-            this.state = BQ.upload.Item.STATES.INGESTING;
-            this.updateUi(); 
-        }
+    }, 
+
+    onProgress : function(e) {
+        this._progress_event = e;
+        if (this.progress_timeout) return;
+        this.progress_timeout = setTimeout( Ext.Function.bind( this.doProgress, this ), this.hysteresis );
     }, 
 
     onComplete : function(e) {
@@ -477,9 +502,9 @@ Ext.define('BQ.upload.Item', {
         if (!this.time_finished_upload) 
             this.time_finished_upload = this.time_finished;
 
-        var elapsed = (this.time_finished_upload - this.time_starting)/1000;
+        var elapsed = (this.time_finished_upload - this.time_started)/1000;
         var speed = formatFileSize(this.file.size/elapsed)+'/s';
-        var timing = ' in '+ this.time_finished.diff(this.time_starting).toString() +
+        var timing = ' in '+ this.time_finished.diff(this.time_started).toString() +
                      ' at '+ speed;      
                    
         this.fileName.setText( 'Uploaded <b>'+this.file.name+'</b>'+timing );                
@@ -612,7 +637,8 @@ BQ.upload.DEFAULTS = {
     maxFileSize: 0, // maximum file size in bytes, 0 no limit
     //allowedFileTypes: undefined, // currently not supported, ex: { mime: ['image/tiff', 'image/jpeg'], exts: ['pptx', 'zip'] }
     //limitConcurrentUploads: undefined, // currently not supported, use 1 for sequential uploads
-    dataset_configs: BQ.upload.DATASET_CONFIGS.NORMAL,   
+    dataset_configs: BQ.upload.DATASET_CONFIGS.NORMAL,
+    hysteresis: 500,  
 };
 
 Ext.define('BQ.upload.Panel', {
@@ -716,6 +742,17 @@ Ext.define('BQ.upload.Panel', {
                     BQ.ui.notification('Dataset will not be created', 1000);                    
             },
         });
+        
+        this.btn_reupload = Ext.create('Ext.button.Button', {
+            text: 'Re-upload failed', 
+            //disabled: true,   
+            hidden: true,         
+            iconCls: 'upload', 
+            scale: 'large', 
+            cls: 'x-btn-default-large',            
+            tooltip: 'Re-upload all failed files',            
+            handler: Ext.Function.bind( this.reupload, this ),
+        });        
 
         // main elements
 
@@ -780,7 +817,7 @@ Ext.define('BQ.upload.Panel', {
                          xtype:'splitbutton',
                          text: 'Toggle permissions',
                          cls: 'x-btn-default-large', 
-                         tooltip: 'Toggle access right to all images being uploaded',                                                   
+                         tooltip: 'Toggle access right to all images, only works before the upload have started',                                                   
                          //iconCls: 'add16',
                          scope: this,
                          handler: function() { this.setPermissionsToggle(); },
@@ -824,7 +861,7 @@ Ext.define('BQ.upload.Panel', {
             //ui: 'footer',
             cls: 'footer',   
             defaults: { scale: 'large', cls: 'x-btn-default-large', },  
-            items: [ this.btn_dataset, this.btn_upload, this.btn_cancel, this.progress, ]            
+            items: [ this.btn_dataset, this.btn_upload, this.btn_cancel, this.btn_reupload, this.progress, ]            
         }];    
        
         //--------------------------------------------------------------------------------------
@@ -923,6 +960,18 @@ Ext.define('BQ.upload.Panel', {
         this.fireEvent( 'fileadded', fp);          
         return fp;
     },   
+
+    doProgress : function() {
+        this.progress_timeout = null; clearTimeout (this.progress_timeout);
+        var e = this._progress_event;
+        this.progress.updateProgress( e.pos, e.message );
+    }, 
+
+    updateProgress : function(pos, message) {
+        this._progress_event = {pos: pos, message: message};
+        if (this.progress_timeout) return;
+        this.progress_timeout = setTimeout( Ext.Function.bind( this.doProgress, this ), this.hysteresis );
+    }, 
    
     addFilesPrivate : function(pos) {
         var total = this._files.length;
@@ -944,10 +993,12 @@ Ext.define('BQ.upload.Panel', {
         var fp = this.addFile(f, true);
         if (fp) this._fps.push(fp);
         
-        if (pos+1<total)
-            this.progress.updateProgress( pos/total, 'Inserting files: '+(pos+1)+' of '+total, false  );
-        else
-            this.progress.updateProgress( 100, 'Rendering inserted files, wait a bit...' ); 
+        if (pos+1<total) {
+            this.updateProgress( pos/total, 'Inserting files: '+(pos+1)+' of '+total );
+        } else {
+            clearTimeout (this.progress_timeout); this.progress_timeout = null;        
+            this.progress.updateProgress( 1, 'Rendering inserted files, wait a bit...' );             
+        }
         
         var me = this;
         setTimeout( function() { me.addFilesPrivate(pos+1); }, 1);
@@ -1022,8 +1073,16 @@ Ext.define('BQ.upload.Panel', {
         var e = this.uploadPanel.items.findBy( function(){ return (this.getState && this.getState()<BQ.upload.Item.STATES.DONE); } );
         if (!e && this.files_uploaded==total && !this.all_done) {
             this.all_done = true;
-            var time_finished = new Date();
-            if (!nomessage) BQ.ui.notification('All files uploaded in '+time_finished.diff(this._time_started).toString() );
+
+            // first find out if some files had upload error
+            var failed = this.testFailed();
+            if (!nomessage) {
+                var time_finished = new Date();
+                var s = ''+(total-failed)+' files uploaded successfully in '+time_finished.diff(this._time_started).toString();
+                if (failed>0) s += '<br>Although '+failed+' files have failed to upload.'
+                BQ.ui.notification(s);
+            }
+
             this.progress.setVisible(false);                    
             this.btn_upload.setDisabled(true);
             this.btn_cancel.setDisabled(true); 
@@ -1083,7 +1142,32 @@ Ext.define('BQ.upload.Panel', {
         BQ.ui.notification('Dataset created with the name: "'+dataset.name+'"', 10000);
         this.fireEvent( 'datasetcreated', dataset);
     },        
+    
+    testFailed : function () {
+        var failed=0;
+        this.uploadPanel.items.each( function() { 
+            if (this.state != BQ.upload.Item.STATES.DONE)
+                failed++;
+        });        
+        if (failed>0)
+            this.btn_reupload.setVisible(true);
+        else
+            this.btn_reupload.setVisible(false);                        
+        return failed;
+    }, 
        
+    reupload : function () {
+        this.uploadPanel.items.each( function() { 
+            if (this.state == BQ.upload.Item.STATES.DONE) {
+                this.destroy();
+            } else
+            if (this.state > BQ.upload.Item.STATES.DONE) {
+                this.setState( BQ.upload.Item.STATES.READY );
+            }
+        });         
+        this.btn_reupload.setVisible(false);        
+        this.upload();
+    }, 
 });
 
 //--------------------------------------------------------------------------------------
