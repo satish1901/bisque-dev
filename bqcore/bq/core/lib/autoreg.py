@@ -1,5 +1,6 @@
 import logging
 import transaction
+from sqlalchemy.exc import SQLAlchemyError, DatabaseError
 from zope.interface import implements
 from repoze.who.interfaces import IAuthenticator, IMetadataProvider
 
@@ -32,18 +33,27 @@ class AutoRegister (object):
         self.key_map = key_map
 
     def register_user( self, user_name, values = {} ):
-        """Add SReg extension data to our mapping information"""
-        current = model.User.by_user_name( user_name )
-        if not current:
-            log.info("adding user %s" % user_name )
-            model.DBSession.add(
-                model.User(user_name = user_name, **values)
-                )
-            transaction.commit()
+        """Attempt to register the user locally"""
+        name_match = model.User.by_user_name( user_name )
+        email_match= values.get('email_address') and model.User.by_email_address(values['email_address'])
+        if  name_match is None and email_match is None:
+            try:
+                log.info("adding user %s" % user_name )
+                model.DBSession.add(
+                    model.User(user_name = user_name, **values)
+                    )
+                transaction.commit()
+            except (SQLAlchemyError, DatabaseError), e:
+                log.exception('problem with autoreg')
+                return None
         else:
-            log.info("found existing user: %s" % current)
+            log.info("found existing user: name %s by email %s " % (user_name, email_match.user_name))
 
-        return True
+        if email_match:
+            return email_match.user_name
+        if name_match:
+            return name_match.user_name
+        return None
 
     def add_metadata( self, environ, identity ):
         """Add our stored metadata to given identity if available"""

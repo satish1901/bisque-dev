@@ -124,7 +124,7 @@ class AuthenticationServer(ServiceController):
 
     
     @expose ()
-    def logout(self, **kw):
+    def logout_handler(self, **kw):
         log.debug ("logout %s" % kw)
         #session = request.environ['beaker.session']
         #session.delete()
@@ -134,7 +134,7 @@ class AuthenticationServer(ServiceController):
         except:
             log.exception("logout")
 
-        redirect ('/auth_service/logout_handler')
+        redirect ('/')
 
     #@expose ()
     #def logout_handler(self, **kw):

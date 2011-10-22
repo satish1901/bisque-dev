@@ -112,23 +112,23 @@ plugins =
     auth_tkt
     basicauth
     mexauth
-#    openid
 #    cas_auth
+#    openid
 
 [challengers]
 plugins =
-#    openid
 #    cas_auth
+#    openid
     friendlyform;browser
 
 
 [authenticators]
 plugins =
-#    openid_auth
     sqlauth       
 #    ldap_auth
     mexauth
 #    cas_auth
+#    openid_auth
 
 
 [mdproviders]
