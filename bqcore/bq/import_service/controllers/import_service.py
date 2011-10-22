@@ -53,14 +53,13 @@ TODO
 
   1. Add regexp sorting for files in the composed Zip
   2. Problem with OME-XML in the imgcnv
-  3. Add image resoultion
   
 
 """
 
 __module__    = "import_service"
 __author__    = "Dmitry Fedorov, Kris Kvilekval"
-__version__   = "2.1"
+__version__   = "2.2"
 __revision__  = "$Rev$"
 __date__      = "$Date$"
 __copyright__ = "Center for BioImage Informatics, University California, Santa Barbara"
@@ -586,6 +585,7 @@ class import_serviceController(ServiceController):
 #
 #------------------------------------------------------------------------------
     
+
     @expose(content_type="text/xml")
     @require(predicates.not_anonymous())
     def transfer(self, **kw):
