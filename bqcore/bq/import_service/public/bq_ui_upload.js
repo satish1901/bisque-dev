@@ -339,7 +339,7 @@ Ext.define('BQ.upload.Item', {
     requires: ['Ext.toolbar.Toolbar', 'Ext.tip.QuickTipManager', 'Ext.tip.QuickTip'],
 
     border: 0,
-    height: 100,
+    height: 110,
     closable: true,
     cls: 'uploaditem',
     bodyStyle: 'padding: 10px',
@@ -1124,7 +1124,7 @@ Ext.define('BQ.upload.Panel', {
 
     testDone : function(nomessage) {
         var total = this.uploadPanel.items.getCount();
-        this.progress.updateProgress( this.files_uploaded/total, BQ.upload.UPLOAD_STRING );
+        this.progress.updateProgress( this.files_uploaded/total, 'Uploaded '+this.files_uploaded+'/'+total );
         
         var e = this.uploadPanel.items.findBy( function(){ return (this.getState && this.getState()<BQ.upload.Item.STATES.DONE); } );
         if (!e && this.files_uploaded==total && !this.all_done) {
