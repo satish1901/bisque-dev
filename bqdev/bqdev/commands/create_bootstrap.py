@@ -6,7 +6,7 @@ import os, subprocess, shutil,glob
 
 def extend_parser(optparse_parser):
     optparse_parser.add_option('--repo', help='Specify a repository to bootstrap from', 
-                               default= 'http://biodev.ece.ucsb.edu/hg/bisque')
+                               default= 'http://biodev.ece.ucsb.edu/hg/bisque-stable')
 
 def adjust_options(options, args):
     options.no_site_packages=True
