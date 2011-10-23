@@ -171,7 +171,10 @@ function BQStatisticsVisualizer( surface, url, xpath, xmap, xreduce, opts ) {
   if (!('grid' in this.opts)) this.opts.grid = true;
   if (!('plot' in this.opts)) this.opts.plot = true;
 
-  showHourGlass(this.surface); // show hour glass here  
+  //showHourGlass(this.surface); // show hour glass here 
+  this.surface.style.height = '140px';
+  this.progress = new BQProgressBar( this.surface, 'Fetching data' );  
+     
   var aopts = { 'ondone': callback(this, "onDone"), 'onerror': callback(this, "onError") };
   if ('args' in opts) aopts.args = opts['args'];
   this.accessor = new BQStatisticsAccessor( this.url, this.xpath, this.xmap, this.xreduce, aopts );
@@ -179,7 +182,8 @@ function BQStatisticsVisualizer( surface, url, xpath, xmap, xreduce, opts ) {
 
 BQStatisticsVisualizer.prototype.onDone = function (results) {
   this.surface.style.height = 'auto';  
-  removeAllChildren(this.surface);
+  //removeAllChildren(this.surface);
+  this.progress.stop();
   
   if (this.opts.plot == false) { this.opts.width_grid = '100%'; this.opts.width_plot = 0; }
   if (this.opts.grid == false) { this.opts.width_grid = 0; this.opts.width_plot = '100%'; } 
@@ -244,7 +248,8 @@ BQStatisticsVisualizer.prototype.onDone = function (results) {
 
 BQStatisticsVisualizer.prototype.onError = function (e) {
   this.surface.style.height = 'auto';
-  removeAllChildren(this.surface);
+  //removeAllChildren(this.surface);
+  this.progress.stop();
   this.surface.innerHTML = e.message;  
 }
 
