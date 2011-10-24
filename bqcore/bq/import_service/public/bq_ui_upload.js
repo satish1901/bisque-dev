@@ -416,7 +416,7 @@ Ext.define('BQ.upload.Item', {
 
     setState : function(state) {
         this.state = state;
-        updateUi();
+        this.updateUi();
     }, 
   
     togglePermission : function() {
