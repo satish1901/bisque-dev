@@ -9,24 +9,35 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResource',
         //return '<img src="' + this.resource.src + '?thumbnail' + params + '"/>';
         return '<img style="position:relative; top:50%; left:50%; margin-top: -'+size.height/2+'px;margin-left: -'+size.width/2+'px;"'
         +((full==undefined)?' id="'+this.resource.uri+'"':'')
-        + ' src="' + this.resource.src + '?' +  this.getImagePrefs('ImageParameters') +'&thumbnail' + params
+        + ' src="' + this.resource.src + this.getImageParams(params)
         + '"/>';
     },
     
     GetImageThumbnailAbs : function(params, size, full)
     {
         //return '<img src="' + this.resource.src + '?thumbnail' + params + '"/>';
-
         return '<img style="position:absolute; top:50%; left:50%; margin-top: -'+size.height/2+'px;margin-left: -'+size.width/2+'px;"'
         +((full==undefined)?' id="'+this.resource.uri+'"':'')
-        + ' src="' + this.resource.src + '?' +  this.getImagePrefs('ImageParameters') +'&thumbnail' + params
+        + ' src="' + this.resource.src + this.getImageParams(params) 
         + '"/>';
+    },
+    
+    getImageParams : function(config)
+    {
+        var prefs = this.getImagePrefs('ImageParameters') || '?slice=,,{sliceZ},{sliceT}&thumbnail={width},{height}';
+        
+        prefs = prefs.replace('{sliceZ}', config.sliceZ || 1);
+        prefs = prefs.replace('{sliceT}', config.sliceT || 1);
+        prefs = prefs.replace('{width}', config.width || 150);
+        prefs = prefs.replace('{height}', config.height || 150);
+        
+        return prefs;
     },
     
     getImagePrefs : function(key)
     {
-        if (this.browser.preferences && this.browser.preferences.Images)
-            return this.browser.preferences.Images[key]
+        if (this.browser.preferences && this.browser.preferences.Images && this.browser.preferences.Images[key])
+                return this.browser.preferences.Images[key];
         return '';
     },
 
@@ -82,7 +93,14 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResource',
                 sliceY = this.resource.z
 
             var imgLoader = new Image();
-            imgLoader.src = this.resource.src + '?slice=,,' + sliceY + ',' + sliceX + '&' +  this.getImagePrefs('ImageParameters') +'&thumbnail='+this.layoutMgr.layoutEl.imageWidth+','+this.layoutMgr.layoutEl.imageHeight;
+            imgLoader.src = this.resource.src + this.getImageParams({
+                sliceZ : sliceY,
+                sliceT : sliceX,
+                width : this.layoutMgr.layoutEl.imageWidth,
+                height : this.layoutMgr.layoutEl.imageHeight
+            });
+            
+            //'?slice=,,' + sliceY + ',' + sliceX + '&' + this.getImagePrefs('ImageParameters') +'thumbnail='+this.layoutMgr.layoutEl.imageWidth+','+this.layoutMgr.layoutEl.imageHeight;
 
             function ImgOnLoad()
             {
@@ -199,7 +217,11 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourceCompact',
     
     loadResource : function(img)
     {
-        this.setData('image', this.GetImageThumbnailRel.call(this, '='+this.layoutMgr.layoutEl.imageWidth+','+this.layoutMgr.layoutEl.imageHeight,
+        this.setData('image', this.GetImageThumbnailRel( 
+        {
+            width: this.layoutMgr.layoutEl.imageWidth,
+            height: this.layoutMgr.layoutEl.imageHeight,
+        },
         {
             width:img.currentTarget.width,
             height:img.currentTarget.height
@@ -257,7 +279,11 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourceCard',
     loadResource : function(data, type)
     {
         if (type=='image')
-            this.setData('image', this.GetImageThumbnailRel.call(this, '='+this.layoutMgr.layoutEl.imageWidth+','+this.layoutMgr.layoutEl.imageHeight,
+            this.setData('image', this.GetImageThumbnailRel( 
+            {
+                width: this.layoutMgr.layoutEl.imageWidth,
+                height: this.layoutMgr.layoutEl.imageHeight
+            },
             {
                 width:data.currentTarget.width,
                 height:data.currentTarget.height
@@ -375,10 +401,14 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourcePStripBig',
 			//style : 'background-color:#FFF',
 		});
 
-		this.data.image=this.GetImageThumbnailAbs.call(this, '='+(this.pnlSize.width-10).toString()+','+(this.pnlSize.width-10).toString(),
+		this.data.image=this.GetImageThumbnailAbs(
 		{
-			width:data.currentTarget.width,
-			height:data.currentTarget.height
+            width: this.pnlSize.width-10,
+            height: this.pnlSize.width-10,
+		},
+		{
+			width: data.currentTarget.width,
+			height: data.currentTarget.height
 		}, true);
             
 		var imgDiv = new Ext.get(document.createElement('div'));
@@ -442,10 +472,14 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourceFull',
     loadResource : function(data, type)
     {
         if (type=='image')
-            this.setData('image', this.GetImageThumbnailAbs.call(this, '='+this.layoutMgr.layoutEl.imageWidth+','+this.layoutMgr.layoutEl.imageHeight,
+            this.setData('image', this.GetImageThumbnailAbs(
             {
-                width:data.currentTarget.width,
-                height:data.currentTarget.height
+                width: this.layoutMgr.layoutEl.imageWidth,
+                height: this.layoutMgr.layoutEl.imageHeight
+            },
+            {
+                width: data.currentTarget.width,
+                height: data.currentTarget.height
             }, true));
         else
         {
