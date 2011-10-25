@@ -344,11 +344,11 @@ class BisquikResource(Resource):
         resource = self.check_access(resource, RESOURCE_EDIT)
 
         DBSession.autoflush = False
-        old = resource.clear()
+        #old = resource.clear()
         #pdb.set_trace()
         parent = self.load_parent()
-        resource = bisquik2db (doc=xml, resource=resource, parent=parent)
-        log.debug ("OLD values %s no parent %s " % (old, [ x for x in old if x.parent_id is None ]))
+        resource = bisquik2db (doc=xml, resource=resource, parent=parent, replace=True)
+        #log.debug ("OLD values %s no parent %s " % (old, [ x for x in old if x.parent_id is None ]))
         log.debug ('modifyed : new (%d), dirty (%d), deleted(%d)' %
                    (len(DBSession.new), len(DBSession.dirty), len(DBSession.deleted)))
         log.info ('MODIFY: ==> %s ' %(resource))
