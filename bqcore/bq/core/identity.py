@@ -41,7 +41,7 @@ class Identity(object):
     def get_bq_user(self):
         from bq.data_service.model.tag_model import BQUser
         user_name = self.user_name
-        #log.debug ("bq user = %s" % user_name)
+        log.debug ("bq user = %s" % user_name)
         if user_name is None:
             return None
         user =  DBSession.query (BQUser).filter_by(user_name = user_name).first()

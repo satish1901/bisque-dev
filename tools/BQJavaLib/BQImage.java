@@ -513,7 +513,7 @@ public class BQImage extends BQObject{
 					"&format=raw";
 			String url = "http://bodzio.ece.ucsb.edu:8080/";
 			//URL server = new URL(url + "/upload_raw_image" + urlQuery); //was '/bisquik/upload_raw_image'
-			URL server = new URL(serverUri + "/bisquik/upload_raw_image" + urlQuery); //was '/bisquik/upload_raw_image'  
+			URL server = new URL(serverUri + "/client_service/upload_raw_image" + urlQuery); //was '/bisquik/upload_raw_image'  
 			//System.out.println(serverUri + "/upload_raw_image" + urlQuery);
 			HttpURLConnection connection = (HttpURLConnection)server.openConnection();
 			//Set post parameters;
@@ -582,7 +582,7 @@ public class BQImage extends BQObject{
             File file = new File(filePath);
             String response = null;
             String boundary = "--------------------" + Long.toString(System.currentTimeMillis(), 30);
-            URL server = new URL(serverUri + "/bisquik/upload_raw_image"); //was '/bisquik/upload_raw_image'  
+            URL server = new URL(serverUri + "/client_service/upload_raw_image"); //was '/bisquik/upload_raw_image'  
             HttpURLConnection connection = (HttpURLConnection)server.openConnection();
             //Set post parameters;
             connection.setDoOutput(true);

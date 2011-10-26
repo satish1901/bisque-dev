@@ -31,7 +31,7 @@ import java.awt.image.ColorModel;
 import java.awt.image.SampleModel;
 import java.awt.image.DataBufferByte;
 import java.awt.image.renderable.ParameterBlock;
-import com.sun.media.jai.operator.ImageReadDescriptor;
+//import com.sun.media.jai.operator.ImageReadDescriptor;
 import com.sun.media.imageio.stream.RawImageInputStream;
 import com.sun.media.imageioimpl.plugins.raw.RawImageReader;
 import com.sun.media.imageioimpl.plugins.raw.RawImageReaderSpi;
@@ -93,9 +93,9 @@ public class BQImagePlane{
 
         ListRegistry();
         //BQJAIInfo jai = new BQJAIInfo();
-        ImageReadDescriptor descriptor = new ImageReadDescriptor (); 
-        System.out.println("ImageRead ClassLoader: "+descriptor.getClass().getClassLoader()); 
-        System.out.println("JAI ClassLoader: "+JAI.class.getClassLoader()); 
+        //ImageReadDescriptor descriptor = new ImageReadDescriptor (); 
+        //System.out.println("ImageRead ClassLoader: "+descriptor.getClass().getClassLoader()); 
+        //System.out.println("JAI ClassLoader: "+JAI.class.getClassLoader()); 
         plane = JAI.create("ImageRead", pbjImageRead, hints);
         //plane = JAI.create("stream",raw);
         //Raster inputRaster = plane.getData();
