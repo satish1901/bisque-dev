@@ -1,6 +1,6 @@
 # the following line should be commented out from your cfg file too.
 #[global]
-from  bq.util import registration_cb
+from  bq.util.registration import registration_cb
 
 registration.site_name = 'www.example.com'
 registration.callback  = registration_cb
