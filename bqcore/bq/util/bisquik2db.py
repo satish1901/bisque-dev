@@ -285,18 +285,23 @@ class NodeFactory(object):
 
     index_map = dict(vertex=('vertices',Vertex), tag=('tags', Tag))
     @classmethod
-    def index(cls, node, parent, indx):
+    def index(cls, node, parent, indx, cleared):
         xmlname = node.tag
         #return cls.new(xmlname, parent)
-        array, ctor = cls.index_map.get (xmlname, (None,None))
+        array, klass = cls.index_map.get (xmlname, (None,None))
         if array:
             objarr =  getattr(parent, array)
-            objarr.extend ([ ctor() for x in range(((indx+1)-len(objarr)))])
-            #objarr.extend ( [ None ] * ((indx+1)-len(objarr)))
-            v = objarr[indx]
-            #if v is None:
-            #    v = ctor()
-            v.indx = indx;
+            v = DBSession.query(klass).filter_by(parent_id=parent.id, indx=indx).first()
+            log.debug('indx fetched %s' % v)
+            objarr.extend ([ klass() for x in range(((indx+1)-len(objarr)))])
+            if not v:
+                #objarr.extend ( [ None ] * ((indx+1)-len(objarr)))
+                v = objarr[indx]
+                #if v is None:
+                #    v = ctor()
+                v.indx = indx;
+            else:
+                objarr[indx] = v
             #log.debug ('fetching %s %s[%d]:%s' %(parent , array, indx, v)) 
             return v
 
@@ -549,7 +554,7 @@ converters = {
     'string'  : lambda x: unicode(x, "utf-8"),
     }
 
-def updateDB(root=None, parent=None, resource = None, factory = NodeFactory):
+def updateDB(root=None, parent=None, resource = None, factory = NodeFactory, replace=False):
     '''Update the database type resource with doc or tree'''
     try:
         evnodes = etree.iterwalk(root, events=('start','end'))
@@ -584,16 +589,19 @@ def updateDB(root=None, parent=None, resource = None, factory = NodeFactory):
                 type_ = attrib.get ('type', None)
                 indx  = attrib.get ('index', None)
                 ts_   = attrib.pop ('ts', None)
-                
+
+                cleared = []
                 if resource is not None:
                     factory.set_parent (resource, parent)
                 elif uri:
                     resource = factory.load_uri (uri, parent)
                     if resource is None:
                         resource = factory.new (obj, parent, uri=uri)
+                    if replace:
+                        cleared = resource.clear()
                 elif indx is not None:
                     #log.debug(u'index of %s[%s] on parent %s'%(obj.tag, indx, parent))
-                    resource = factory.index (obj, parent, int(indx))
+                    resource = factory.index (obj, parent, int(indx), cleared)
                 else:
                     # TODO if tag == resource, then type should be used
                     resource = factory.new (obj, parent)
@@ -634,7 +642,7 @@ def updateDB(root=None, parent=None, resource = None, factory = NodeFactory):
     
 
 
-def bisquik2db(doc= None, parent=None, resource = None, xmlschema=None):
+def bisquik2db(doc= None, parent=None, resource = None, xmlschema=None, replace=False):
     '''Parse a document (either as a doc, or an etree.
     Verify against xmlschema if present
     '''
@@ -651,7 +659,7 @@ def bisquik2db(doc= None, parent=None, resource = None, xmlschema=None):
         
     results = []
     for el in inputs:
-        node = updateDB(root=el, parent = parent, resource=resource)
+        node = updateDB(root=el, parent = parent, resource=resource, replace=replace)
         log.debug ("returned %s " % str(node))
         log.debug ('modifyed : new (%d), dirty (%d), deleted(%d)' %
                    (len(DBSession.new), len(DBSession.dirty), len(DBSession.deleted)))
