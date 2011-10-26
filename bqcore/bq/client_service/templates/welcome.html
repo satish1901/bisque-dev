@@ -72,11 +72,12 @@
           cls: 'welcome',          
           listeners: { 'Select': function(me, resource) {
                           me.setLoading(true);
+                          var nw = window.open('', "_blank");
                           BQFactory.request( {uri: resource.module, cb: function(r) {
                               me.setLoading(false);
-                              window.open(bq.url('/module_service/'+r.name+'/?mex='+resource.uri), "", 
-                                        "menubar=yes,location=yes,resizable=yes,scrollbars=yes,status=yes"  
-                                         ); 
+                              //window.open( bq.url('/module_service/'+r.name+'/?mex='+resource.uri) );
+                              // crazy stuff, can't seem to figure out how to open it in the tab vs new window
+                              nw.location = bq.url('/module_service/'+r.name+'/?mex='+resource.uri);                                         
                           }});
                        }, 
                        scope: this },    
