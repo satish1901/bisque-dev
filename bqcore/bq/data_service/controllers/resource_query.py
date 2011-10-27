@@ -502,25 +502,28 @@ def resource_query(resource_type,
     for k,v in kw.items():
         #log.debug ("extra " + str(k) +'=' + str(v))
         if hasattr(dbtype, k):
-            v  = v.strip('"\'')
-            op, v = ATTR_EXPR.match(v).groups()
-            if k=='ts': 
-                try:
-                    v = datetime.strptime(v, "%Y-%m-%dT%H:%M:%S")
-                except ValueError:
-                    log.error('bad time: %s' %v)
-                    continue
-            log.debug ("adding attribute search %s %s op=%s %s" % (dbtype, k, op,  v))
-            if op == '>=':
-                query =query.filter( getattr(dbtype, k) >= v)
-            elif op == '>':
-                query =query.filter( getattr(dbtype, k) > v)
-            elif op == '<=':
-                query =query.filter( getattr(dbtype, k) <= v)
-            elif op == '<':
-                query =query.filter( getattr(dbtype, k) < v )
-            else:
-                query =query.filter( getattr(dbtype, k)==v)
+            if not hasattr(v, '__iter__'):
+                v = [v] 
+            for val  in v:
+                val  = val.strip('"\'')
+                op, val = ATTR_EXPR.match(val).groups()
+                if k=='ts': 
+                    try:
+                        val = datetime.strptime(val, "%Y-%m-%dT%H:%M:%S")
+                    except ValueError:
+                        log.error('bad time: %s' %val)
+                        continue
+                log.debug ("adding attribute search %s %s op=%s %s" % (dbtype, k, op,  val))
+                if op == '>=':
+                    query =query.filter( getattr(dbtype, k) >= val)
+                elif op == '>':
+                    query =query.filter( getattr(dbtype, k) > val)
+                elif op == '<=':
+                    query =query.filter( getattr(dbtype, k) <= val)
+                elif op == '<':
+                    query =query.filter( getattr(dbtype, k) < val )
+                else:
+                    query =query.filter( getattr(dbtype, k)==val)
             del kw[k]
 
     #metadata.bind.echo=True
