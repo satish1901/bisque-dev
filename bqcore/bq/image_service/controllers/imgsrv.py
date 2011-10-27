@@ -25,38 +25,23 @@ import datetime
 import StringIO
 import time
 import shutil
-
-import tg
-
-from lxml import etree
-from datetime import datetime
-
-from tg import config
-
-#import PIL
-#from PIL import Image as PILImage
-#from PIL import ImageStat 
-
-from urlparse import urlparse
 import urllib
 from urllib import quote
 from urllib import unquote
+from urlparse import urlparse
+from lxml import etree
+from datetime import datetime
 
-# Projects 
+import tg
+from tg import config
 
-# Locals 
-from exceptions import *
-from blobsrv import BlobServer, _mkdir, file_hash_SHA1
-import blobdb
-import imgcnv
-
-# Projects 
+#Project
+from bq import blob_service
 from bq.util.http import request
+from bq.util.mkdir import _mkdir
+
 # Locals 
 from exceptions import *
-from blobsrv import BlobServer, _mkdir, file_hash_SHA1
-import blobdb
-
 import imgcnv
 import bioformats
 
@@ -382,7 +367,7 @@ class InfoService(object):
             tag.attrib['value'] = str(v)
 
         # append original file name
-        fileName = self.server.originalFileName(id=image_id)
+        fileName = self.server.originalFileName(image_id)
         if len(fileName)>0:
             tag = etree.SubElement(image, 'tag')
             tag.attrib['name'] = 'filename'
@@ -426,8 +411,8 @@ class MetaService(object):
     def hookInsert(self, data_token, image_id, hookpoint='post'):
         pass
     def action(self, image_id, data_token, arg):
-        ifile = self.server.id2path(image_id)
-        #infoname = self.server.id2path(image_id)+'.info'
+        ifile = self.server.imagepath(image_id)
+        #infoname = self.server.imagepath(image_id)+'.info'
         infoname = self.server.getOutFileName( ifile, '.info' )
         metacache = self.server.getOutFileName( self.server.imagepath(image_id), '.meta' )             
      
@@ -465,7 +450,7 @@ class MetaService(object):
             planes = None
             
             # append original file name
-            fileName = self.server.originalFileName(id=image_id)
+            fileName = self.server.originalFileName(image_id)
             if len(fileName)>0:
                 tag = etree.SubElement(image, 'tag')
                 tag.attrib['name'] = 'filename'
@@ -527,7 +512,7 @@ class FileNameService(object):
         pass
     def action(self, image_id, data_token, arg):
         
-        fileName = self.server.originalFileName(id=image_id)
+        fileName = self.server.originalFileName(image_id)
 
         response = etree.Element ('response')
         image    = etree.SubElement (response, 'image')
@@ -763,7 +748,7 @@ class FormatService(object):
             if stream:
               ext = imgcnv.defaultExtension(fmt)            
               fpath = ofile.split('/')
-              filename = self.server.originalFileName(id=image_id) +'_'+ fpath[len(fpath)-1] +'.'+ext                 
+              filename = self.server.originalFileName(image_id) +'_'+ fpath[len(fpath)-1] +'.'+ext                 
               data_token.setFile(fname=ofile)
               data_token.outFileName = filename
             else:  
@@ -1422,7 +1407,7 @@ class BioFormatsService(object):
         if not os.path.exists(ofile):
             log.debug('BioFormats service: ' + ifile + ' to ' + ofile)          
             try:
-                original = self.server.originalFileName(id=image_id)
+                original = self.server.originalFileName(image_id)
                 bioformats.convert( ifile, ofile, original )
                 
                 if os.path.exists(ofile) and imgcnv.supported(ofile):
@@ -1728,11 +1713,11 @@ class CloseImageService(object):
 #  equalize (thumbnail (getimage(1)))
 #  
 
-class ImageServer(BlobServer):
+class ImageServer(object):
     def __init__(self, image_dir, work_dir, server_url):
         '''Start an image server, using local dir imagedir,
         and loading extensions as methods'''
-        super(ImageServer, self).__init__(image_dir, server_url)
+        #super(ImageServer, self).__init__(image_dir, server_url)
         self.imagedir = image_dir
         self.workdir = work_dir
         self.cache = FileCache()
@@ -1784,8 +1769,11 @@ class ImageServer(BlobServer):
         'create a tmp filename with ext'
         pass
 
-    def imagepath(self, id):
-        return self.id2path(id)
+    def imagepath(self, ident):
+        return blob_service.localpath(ident, self.workdir)
+
+    def originalFileName(self, ident):
+        return blob_service.original_name(ident)
 
     def getFileInfo(self, id=None, filename=None):
         if id==None and filename==None: return {}
@@ -1847,7 +1835,7 @@ class ImageServer(BlobServer):
                 info = imgcnv.info(filename)
 
             # if not decoded try bioformats
-            original = self.originalFileName(id=id)
+            original = self.originalFileName(id)
             if (not 'width' in info) and (bioformats.supported(filename, original)):
                 if data_token is None: data_token = ProcessToken()
                 data_token.setImage(filename, format='tiff') 
@@ -1938,64 +1926,65 @@ class ImageServer(BlobServer):
         ofile = self.ensureWorkPath(infilename)
         return ofile + appendix
 
-    def addImage(self, src, name, ownerId = None, permission = None, **kw):
-        """Add image:
-            1. Store original in unique ID ending in .orig
-            2. Store canonical format i.e. raw (use link)
-            3. Store preprocessed image:
-                 a) thumbnail
-        """
-        #log.debug('IMGSRV: Adding image: ' + str(src.name) + ' ' + str(name) )      
-        info = {}        
+    # def addImage(self, src, name, ownerId = None, permission = None, **kw):
+    #     """Add image:
+    #         1. Store original in unique ID ending in .orig
+    #         2. Store canonical format i.e. raw (use link)
+    #         3. Store preprocessed image:
+    #              a) thumbnail
+    #     """
+    #     #log.debug('IMGSRV: Adding image: ' + str(src.name) + ' ' + str(name) )      
+    #     info = {}        
         
-        if 'format' in kw and kw['format'] == 'raw':
-            image_id, origpath = self.nextEmptyBlob()
+    #     if 'format' in kw and kw['format'] == 'raw':
+    #         image_id, origpath = self.nextEmptyBlob()
             
-            tmppath = self.ensureWorkPath(origpath)
-            workfile = open(tmppath, "wb")
-            shutil.copyfileobj(src, workfile)
-            workfile.close()
+    #         tmppath = self.ensureWorkPath(origpath)
+    #         workfile = open(tmppath, "wb")
+    #         shutil.copyfileobj(src, workfile)
+    #         workfile.close()
             
-            #-raw     - reads RAW image with w,h,c,d,p,e,t, ex: -raw 100,100,3,8,10,0,uint8\n
-            num_pages = int(kw['zsize'])*int(kw['tsize'])
-            rawargs = '%s,%s,%s,%s,%s,%s,%s'%( kw['width'], kw['height'], kw['channels'], kw['depth'], num_pages, kw['endian'], kw['type'] )        
-            imgcnv.convert(tmppath, origpath, fmt='tiff', extra='-multi -raw '+rawargs)         
-            self.loginfo (name, image_id)
+    #         #-raw     - reads RAW image with w,h,c,d,p,e,t, ex: -raw 100,100,3,8,10,0,uint8\n
+    #         num_pages = int(kw['zsize'])*int(kw['tsize'])
+    #         rawargs = '%s,%s,%s,%s,%s,%s,%s'%( kw['width'], kw['height'], kw['channels'], kw['depth'], num_pages, kw['endian'], kw['type'] )        
+    #         imgcnv.convert(tmppath, origpath, fmt='tiff', extra='-multi -raw '+rawargs)         
+    #         self.loginfo (name, image_id)
             
-            sha1 = file_hash_SHA1( origpath )
-            imgtype = 'TIFF'
-            flocal = origpath[len(self.imagedir)+1:]
+    #         sha1 = file_hash_SHA1( origpath )
+    #         imgtype = 'TIFF'
+    #         flocal = origpath[len(self.imagedir)+1:]
             
-            blobdb.updateFile (dbid = image_id, original = name, uri = self.geturi(image_id), owner = ownerId, perm = permission, fhash=sha1, ftype=imgtype, flocal=flocal)
+    #         blobdb.updateFile (dbid = image_id, original = name, uri = self.geturi(image_id), owner = ownerId, perm = permission, fhash=sha1, ftype=imgtype, flocal=flocal)
            
-        else:
-            image_id, origpath = self.storeBlob(src, name, ownerId, permission)
+    #     else:
+    #         image_id, origpath = self.storeBlob(src, name, ownerId, permission)
 
-        # if it's not supported, fail   
-        info = self.getImageInfo(id=image_id)
-        if info is None or not hasattr(info, '__iter__') or not 'width' in info:
-            log.debug('############################################')              
-            log.debug('Image format is NOT SUPPORTED!!!!!!!!!!!!!!!')
-            log.debug('############################################')                      
-            return None, None, None, None, None, None, None
+    #     # if it's not supported, fail   
+    #     info = self.getImageInfo(id=image_id)
+    #     if info is None or not hasattr(info, '__iter__') or not 'width' in info:
+    #         log.debug('############################################')              
+    #         log.debug('Image format is NOT SUPPORTED!!!!!!!!!!!!!!!')
+    #         log.debug('############################################')                      
+    #         return None, None, None, None, None, None, None
 
-        # in case the user supplied image physical parameters, store them and use over the embedded
-        if 'width'      in kw: info['width']      = kw['width']
-        if 'height'     in kw: info['height']     = kw['height']
-        if 'channels'   in kw: info['channels']   = kw['channels']
-        if 'zsize'      in kw: info['zsize']      = kw['zsize']
-        if 'tsize'      in kw: info['tsize']      = kw['tsize']
-        if 'dimensions' in kw: info['dimensions'] = kw['dimensions']  
+    #     # in case the user supplied image physical parameters, store them and use over the embedded
+    #     if 'width'      in kw: info['width']      = kw['width']
+    #     if 'height'     in kw: info['height']     = kw['height']
+    #     if 'channels'   in kw: info['channels']   = kw['channels']
+    #     if 'zsize'      in kw: info['zsize']      = kw['zsize']
+    #     if 'tsize'      in kw: info['tsize']      = kw['tsize']
+    #     if 'dimensions' in kw: info['dimensions'] = kw['dimensions']  
                   
-        self.setImageInfo( id=image_id, info=info )
-        image_path = self.imagepath(image_id)
-        log.debug( 'New image: %d %s %s,%s,%s,%s,%s'%( image_id, image_path, info['width'], info['height'], info['channels'], info['zsize'], info['tsize'] )  )
-        return image_id, image_path, info['width'], info['height'], info['channels'], info['zsize'], info['tsize']
+    #     self.setImageInfo( id=image_id, info=info )
+    #     image_path = self.imagepath(image_id)
+    #     log.debug( 'New image: %d %s %s,%s,%s,%s,%s'%( image_id, image_path, info['width'], info['height'], info['channels'], info['zsize'], info['tsize'] )  )
+    #     return image_id, image_path, info['width'], info['height'], info['channels'], info['zsize'], info['tsize'
+#                                                                                                          ]
 
     def request(self, method, image_id, imgfile, argument):
         '''Apply an image request'''
         if not method:
-            #image = self.cache.check(self.id2path(image_id))
+            #image = self.cache.check(self.imagepath(image_id))
             #return image
             return imgfile
          
@@ -2012,7 +2001,7 @@ class ImageServer(BlobServer):
             r = service.action (image_id, imgfile, argument)
         return r
        
-    def process(self, url, id, userId, **kw):
+    def process(self, url, ident, userId, **kw):
         log.debug ('')   
         #log.debug ('headers:'+ str(cherrypy.request.headers))
         log.debug ('')         
@@ -2026,29 +2015,30 @@ class ImageServer(BlobServer):
         
         if id != -1:
             try:
-                intid = int(id)
+                #intid = int(id)
+                pass
             except:
                 data_token.setHtmlErrorNotFound()
                 return data_token            
                
-            if not self.accessPermission(id, userId):
-                data_token.setHtmlErrorUnauthorized()
-                return data_token                         
+            #if not self.accessPermission(id, userId):
+            #    data_token.setHtmlErrorUnauthorized()
+            #    return data_token                         
     
-            if not self.fileExists(id):
+            if not blob_service.file_exists(ident):
                 data_token.setHtmlErrorNotFound()
                 return data_token    
     
-            data_token.setFile( self.id2path(id) )
+            data_token.setFile( self.imagepath(ident) )
             
             if len(query)>0:
                 # this will pre-convert the image if it's not supported by the imgcnv
                 # and also set the proper dimensions info
-                data_token = self.getImageInfo(id=id, data_token=data_token)
+                data_token = self.getImageInfo(id=ident, data_token=data_token)
                 # dima: this call seems ambiguous now, but some bugs appeared, call it anyways with a small test
                 if 'width' not in data_token.dims:
                     if not imgcnv.supported( data_token.data ):
-                        data_token = self.services['bioformats'].action (id, data_token, '') 
+                        data_token = self.services['bioformats'].action (ident, data_token, '') 
             
             if len(query)>0 and (not 'width' in data_token.dims):
                 data_token.setHtml('File is not in supported image format...')
@@ -2057,7 +2047,7 @@ class ImageServer(BlobServer):
         try:
             #process all the requested operations
             for action,args in query:
-                data_token = self.request(action, int(id), data_token, args)
+                data_token = self.request(action, ident, data_token, args)
 
             # test output, if it is a file but it does not exist, set 404 error
             data_token.testFile()
@@ -2069,7 +2059,7 @@ class ImageServer(BlobServer):
             # set to the original file name
             if data_token.isFile() and not data_token.isImage() and not data_token.hasFileName():
                 data_token.contentType = 'application/octet-stream'
-                data_token.outFileName = self.originalFileName(id)
+                data_token.outFileName = self.originalFileName(ident)
 
             # if supplied file name overrides filename
             for action,args in query:
@@ -2092,11 +2082,11 @@ class ImageServer(BlobServer):
             data_token.setHtmlErrorUnauthorized()
             return data_token  
         
-        if (self.fileExists(image_id) == False):
+        if (blob_service.file_exists(image_id) == False):
             data_token.setHtmlErrorNotFound()
             return data_token                      
         
-        data_token.setImage( self.id2path(image_id), 'tiff' )
+        data_token.setImage( self.imagepath(image_id), 'tiff' )
         
         # this will pre-convert the image if it's not supported by the imgcnv
         # and also set the proper dimensions info
@@ -2119,6 +2109,4 @@ class ImageServer(BlobServer):
         pass
 
 
-class FeatureServer(BlobServer):
-    pass
 

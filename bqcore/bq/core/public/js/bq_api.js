@@ -59,7 +59,7 @@ function BQObject (uri, doc){
     this.created = true;
     this.mex = null;
     this.xmltag = "resource";
-    this.xmlfields  = [ 'type', 'uri', 'src', 'perm'];
+    this.xmlfields  = [ 'type', 'uri', 'src', 'perm', 'resource_uniq', 'resource_name'];
 }
 BQObject.prototype = new BQXml();
 

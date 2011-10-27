@@ -240,9 +240,19 @@ class ImageService(proxy_dispatch):
 
 from bq.core.service import service_registry
 
-def find_server(url):
+def find_server(url=None):
     return service_registry.find_service ('image_service')
 
+
+def store_blob (src, name):
+    server = find_server()
+    if server:
+        return server.store_blob(src=src, name=name)
+    else:
+        log.debug ("PREFERED IS NONE: no image server is available")
+        # Find a remote image server that is writable and send image there
+        pass
+    
 def new_file(src=None, name=None, **kw):
     ''' Find the preferred image server and store the file there
     '''
