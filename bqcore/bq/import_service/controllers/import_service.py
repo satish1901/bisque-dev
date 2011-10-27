@@ -380,29 +380,38 @@ class import_serviceController(ServiceController):
             perm = f.permission
 
         # try inserting the image in the image service            
-        info = image_service.new_image(src=src, name=filename, userPerm=perm)
-        
-        if info:
-            # the image was successfuly added into the image service
-            resource = etree.Element('image', perm=str(perm))
-            etree.SubElement(resource, 'tag', name="filename", value=filename)
-            etree.SubElement(resource, 'tag', name="upload_datetime", value=datetime.now().isoformat(' '), type='datetime' ) 
-            if hasattr(f, 'original') and f.original:
-                etree.SubElement(resource, 'tag', name="original_upload", value=f.original, type='link' )              
+        #info = image_service.new_image(src=src, name=filename, userPerm=perm)
+
+        try:
+            uniq, uri, guessed_type = image_service.store_blob (src, filename)
+
+
+            log.debug ("store %s at %s" % (filename, localpath))
+        except e:
+            log.exception("eek")
+        # the image was successfuly added into the image service
+        resource = etree.Element(guessed_type, perm = str(perm),
+                                 resource_uniq = uniq,
+                                 resource_name = filename,
+                                 resource_val  = uri)
+        etree.SubElement(resource, 'tag', name="filename", value=filename)
+        etree.SubElement(resource, 'tag', name="upload_datetime", value=datetime.now().isoformat(' '), type='datetime' ) 
+        if hasattr(f, 'original') and f.original:
+            etree.SubElement(resource, 'tag', name="original_upload", value=f.original, type='link' )              
             
-            log.debug("\n\ninsert_image tags: \n%s\n" % etree.tostring(tags))
+        log.debug("\n\ninsert_image tags: \n%s\n" % etree.tostring(tags))
                           
-            # ingest extra tags
-            if tags is not None:
-                if tags.tag == 'resource':
-                    #resource.extend(copy.deepcopy(list(tags)))
-                    resource.extend(list(tags))
-            log.info ("NEW IMAGE %s <= %s" % (info, etree.tostring(resource)))
-            resource = data_service.new_image(resource = resource, **info)
-        else:
-            # error happened or the file was filtered during the pre-processing stage                
-            resource = etree.Element('file', name=filename)                
-            etree.SubElement(resource, 'tag', name='error', value='Problem inserting this image')
+        # ingest extra tags
+        if tags is not None:
+            if tags.tag == 'resource':
+                #resource.extend(copy.deepcopy(list(tags)))
+                resource.extend(list(tags))
+        log.info ("NEW IMAGE <= %s" % (etree.tostring(resource)))
+        resource = data_service.new_image(resource = resource)
+        #else:
+        #    # error happened or the file was filtered during the pre-processing stage                
+        #    resource = etree.Element('file', name=filename)                
+        #    etree.SubElement(resource, 'tag', name='error', value='Problem inserting this image')
         
         log.debug('insert_image :::::\n %s'% etree.tostring(resource) )
         return resource
@@ -454,10 +463,9 @@ class import_serviceController(ServiceController):
             error = None
             try:
                 nf = self.filters[ intags['type'] ](f, intags)
-            except:
-                e = sys.exc_info()            
-                log.debug('Exception in %s:\n%s', intags['type'], traceback.print_exception(e[0], e[1], e[2])) 
-                error = 'Problem processing the file: %s'%e[1]
+            except e:
+                log.exception('Problem in processing file: %s'  % intags['type'])
+                error = 'Problem processing the file: %s'%e
            
             # some error during pre-processing
             if error is not None:

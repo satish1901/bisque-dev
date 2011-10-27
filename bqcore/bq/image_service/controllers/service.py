@@ -58,7 +58,9 @@ class image_serviceController(ServiceController):
                                 server_url = server_url)
 
 
-
+    def store_blob(self, src, name):
+        log.info('storing blob %s' % name)
+        return self.srv.storeBlob(src,name)
 
     def new_file(self, src, name, userPerm = permission.PRIVATE):
         srv = self.srv
