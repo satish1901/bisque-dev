@@ -8,57 +8,120 @@
 <xi:include href="master.html" />
 
 <head>
-
-    <link rel="stylesheet" type="text/css" href="${tg.url('/client_service/public/css/welcome.css')}" />
-    
+    <title>Welcome</title>
+      
     <script type="text/javascript" src="${tg.url('/client_service/public/js/DataExplore.js')}" ></script>
 
+    <link rel="stylesheet" type="text/css" href="${tg.url('/js/carousel/carousel.css')}" />
+    <script type="text/javascript" src="${tg.url('/js/carousel/Panel.js')}" ></script>    
 
-  
- <!--
-  <link rel="stylesheet" type="text/css" href="${tg.url('/js/Portal/portal.css')}" />
--->
+    <script type="text/javascript" src="${tg.url('/usage/public/bq_usage_stats.js')}" ></script>
+    
+    
+    <!--<link rel="stylesheet" type="text/css" href="${tg.url('/extjs/resources/css/ext-all-gray.css')}"/>
+    <link rel="stylesheet" type="text/css" href="${tg.url('/css/bisquik_extjs_fix.css')}" />-->
+    <link rel="stylesheet" type="text/css" href="${tg.url('/client_service/public/css/welcome.css')}" />
 
-<script type="text/javascript" >
-  /*
-  Ext.Loader.setConfig({enabled:true});
-  Ext.Loader.setPath('Ext.app', '${tg.url('/js/Portal/classes')}');  
-  Ext.require([
-      'Ext.layout.container.*',
-      'Ext.resizer.Splitter',
-      'Ext.fx.target.Element',
-      'Ext.fx.target.Component',
-      'Ext.window.Window',  
-  
-      'Ext.app.Portlet',
-      'Ext.app.PortalColumn',
-      'Ext.app.PortalPanel',
-      'Ext.app.Portlet',
-      'Ext.app.PortalDropZone',
-      'Ext.app.GridPortlet',
-      'Ext.app.ChartPortlet'
-  ]);
-  */
+<style type="text/css" py:if="thumbnail">
+.welcome_front { 
+    background-image: url('${thumbnail}=800,600');
+    background-size: cover !important;
+    background-origin: content-box;
+}
+</style>
 
-  Ext.onReady( function() { 
+<style py:if="not tg.identity" type="text/css">
+.activity {
+    width: 490px;
+}
+</style>
+
+<style py:if="tg.identity" type="text/css">
+.activity {
+    left: 460px;
+}
+</style>
+
+<script type="text/javascript">
+
+    function doResize ( comp, id ) {
+        setTimeout(function() { 
+            var w = document.getElementById(id);
+            comp.setSize(w.offsetWidth, w.offsetHeight);
+        }, 100);          
+    }
+    
+    Ext.onReady( function() { 
+        
+        var main = BQApp.getCenterComponent();
+        main.body.addCls('welcome_front');
+        main.setAutoScroll( false );        
+        
+        var usage_stats = Ext.create('BQ.usage.Stats', {});   
+        var usage_uploads = Ext.create('BQ.usage.Uploads', { height: 120, showAxisTitles: false, });   
+        var usage_analysis = Ext.create('BQ.usage.Analysis', {height: 120, showAxisTitles: false, });              
+
+        var usageExplorer = Ext.create('Ext.carousel.Panel', {
+            renderTo: 'stats', 
+            width: '100%',
+            height: 200,            
+            items: [ usage_uploads, usage_analysis, usage_stats, ],      
+        });
+        
+    });      
+
+</script>
+
+<script type="text/javascript" py:if="tg.config.get('server.environment', None) == 'development'" > 
+    BQ.ui.warning( 'This a test environment, all your data may be lost!' );
+</script>
+
+
+<script py:if="not tg.identity" type="text/javascript" >
+
+    Ext.onReady( function() { 
        
-      var moduleBrowser = new Bisque.ResourceBrowser.Browser({
-          layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.ICON_LIST,
-          //title: 'Bisque applications',
-          viewMode: 'ModuleBrowser',
-          dataset: '/module_service',
-          wpublic: true,
-          border: true,
-          selType: 'SINGLE',
-          height: 500,          
-          renderTo: 'applications',
-          cls: 'welcome',
-          listeners: { 'Select': function(me, resource) { 
+        var moduleBrowser = new Bisque.ResourceBrowser.Browser({
+            layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.ICON_LIST,
+            //title: 'Applications',
+            viewMode: 'ModuleBrowser',
+            dataset: '/module_service',
+            wpublic: true,
+            border: true,
+            selType: 'SINGLE',
+            width: 450,        
+            //height: 500,          
+            renderTo: 'recents',
+            cls: 'apps welcome',
+            listeners: { 'Select': function(me, resource) { 
                           window.open(bq.url('/module_service/'+resource.name)); 
                        }, 
                        scope: this },          
           
-      }); 
+        });
+        Ext.EventManager.addListener( window, 'resize', function(e) {
+            doResize ( moduleBrowser, "recents" );
+        }, this );
+        doResize ( moduleBrowser, "recents" );
+     
+    });
+</script>
+
+<script py:if="not tg.identity and welcome_tags" type="text/javascript" >
+
+    Ext.onReady( function() { 
+        var tagsExplorer = Ext.create('Ext.carousel.Panel', {
+            renderTo: 'tags', 
+            width: '100%',
+            height: 210,            
+        });      
+      
+       DataExplore("${welcome_tags}", tagsExplorer);
+    });
+</script>
+
+<script py:if="tg.identity" type="text/javascript" >
+    Ext.onReady( function() { 
 
       var mexBrowser = new Bisque.ResourceBrowser.Browser({
           layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.LIST,
@@ -77,7 +140,7 @@
                               me.setLoading(false);
                               //window.open( bq.url('/module_service/'+r.name+'/?mex='+resource.uri) );
                               // crazy stuff, can't seem to figure out how to open it in the tab vs new window
-                              nw.location = bq.url('/module_service/'+r.name+'/?mex='+resource.uri);                                         
+                              nw.location = bq.url('/module_service/'+r.name+'/?mex='+resource.uri);
                           }});
                        }, 
                        scope: this },    
@@ -120,63 +183,22 @@
           //collapsible : true,
           split : true,
           //width : 450,
-          height : 500, 
+          //height : 500, 
+          cls: 'apps welcome',
           plain : true,
           border: false,
+          //style: 'float: right;',
           renderTo: 'recents',          
-          bodyStyle : 'background-color: #ccc;',
-          items : [mexBrowser, imgBrowser, setBrowser]
-      });       
-              
-              
-      /*       
-      var portal = Ext.create('Ext.tab.Panel', {
-          //title : 'Portal',
-          region : 'east',
-          activeTab : 0,
-          border : false,
-          bodyBorder : 0,
-          collapsible : true,
-          split : true,
-          width : 900,
-          height : 500,          
-          plain : true,
-          renderTo: 'recents',          
-          items : [
-              
-                  {
-                    xtype: 'portalpanel',
-                    region: 'center',
-                    items: [{
-                        id: 'col-1',
-                        items: [{
-                            id: 'portlet-2',
-                            title: 'Portlet 2',
-                            html: '<div class="portlet-content">stufffff stuffff</div>',
-                        }]
-                    },{
-                        id: 'col-2',
-                        items: [{
-                            id: 'portlet-3',
-                            title: 'Portlet 3',
-                            html: '<div class="portlet-content">fhsjkfh fhsdjfhs dfksh fhkjfhskd </div>',
-                        }]
-                    },{
-                        id: 'col-3',
-                        items: [{
-                            id: 'portlet-4',
-                            title: 'Stock Portlet',
-                            html: '<div class="portlet-content">fhsjkfh fhsdjfhs dfksh fhkjfhskd </div>',
-                        }]
-                    }]
-                }              
-              
-          ]
-      });                
-      */        
-           
-      
-  });
+          items : [imgBrowser, mexBrowser, setBrowser]
+      }); 
+            
+        Ext.EventManager.addListener( window, 'resize', function(e) {
+            doResize ( tabs, "recents" );
+        }, this );
+        doResize ( tabs, "recents" );      
+     
+     
+    });
 </script>
 
 </head>
@@ -184,75 +206,35 @@
 <body>
 
 
-<!-- **************************************************************************** -->
-<!-- RIGHT COLUMN -->
-<!-- **************************************************************************** -->
-
-<div class="highlightsbar">
-
-  <dl id="yellow">
-  	<dt><a href="browser">Explore images</a></dt>
-  	<dd><a href="browser"><img src="${tg.url('/client_service/public/images/browse_80.png')}" alt="Enter Public Image Collection!" border="0" /></a></dd>
-  </dl>
-  
-  
-  <dl id="gray" title="Current statistics for this BISQUE database.">
-  	<dt>Usage statistics</dt>
-  	<dd><p>
-      <span py:if="not tg.identity">Public Images: ${item_count}</span>
-      <span py:if="tg.identity">My Images: ${item_count}</span>
-      <br />
-      All Images: ${all_count}<br />
-      2D Planes: ${images2d}<br />
-      Tags: ${tag_count}<br />
-  </p>
-  </dd>
-  </dl>
-
-  <dl id="gray" title="Random image">
-  	<dt>Random image</dt>
-    
-  	<dd><a href="${imageurl}" ><img py:if="thumbnail" id="border" src="${thumbnail}=200,200" alt="Example Image"/></a></dd>
-  </dl>
-
+<div class="box heading" py:if="not tg.identity and welcome_message">
+    <h2>${welcome_message}</h2>
 </div>
 
-<!-- **************************************************************************** -->
-<!-- CENTER -->
-<!-- **************************************************************************** -->
+<div class="box randomimage" py:if="not tg.identity and imageurl">
+    <a href="${imageurl}">Current random image</a>
+</div>
 
-<h2>${welcome_message}</h2>
-
-<p style="color: #FF6600;" py:if="tg.config.get('bisque.environment', None) == 'development'">
-   <b>WARNING: This a test environment DATA MAY BE LOST</b>
-</p>
-
-<div>
-    <div class="widget">
-        <h3>Applications</h3>
-        <div id="applications" class="contents"></div>
-    </div>
-
-    <div class="widget">
-        <span py:if="tg.identity"><h3>My recent activity</h3></span>
-        <span py:if="not tg.identity"><h3>Recent activity</h3></span>        
-        <div id="recents" class="contents"></div>
-    </div>
+<div class="box exploreimages" py:if="not tg.identity">
+  	<a href="browser"><img src="${tg.url('/client_service/public/images/browse_80.png')}" alt="Enter Public Image Collection!" border="0" /></a>
+    <h3><a href="browser">Explore images</a></h3>  	
 </div>
 
 
-<div id="data_explore" class="welcome_main" >
-  <h3>Explore images:</h3>
+<div class="box tags" id="tags" py:if="not tg.identity">
 
-
-  <script type="text/javascript" >
-        Bisque.onReady (function () {
-          new DataExplore(document.getElementById("data_explore"), "${welcome_tags}" );
-});
-  </script>
 </div>
 
-<div style="height: 50px;"></div>
+
+<div class="box stats" id="stats">
+</div>
+
+
+<div class="box activity" id="activity">
+    <span py:if="tg.identity"><h3>My recent stuff</h3></span>
+    <span py:if="not tg.identity"><h3>Applications</h3></span>        
+    <div id="recents" class="contents" style="height: 90%;" ></div>
+</div>
+
 
 </body>
 </html>
