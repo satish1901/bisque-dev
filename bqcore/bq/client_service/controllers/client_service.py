@@ -400,6 +400,26 @@ class ClientServer(ServiceController):
         
         return etree.tostring(response)
 
+    @expose()
+#    @identity.require(identity.not_anonymous())
+    def upload_raw_image(self, **kw):
+        '''Upload a raw image:  required parameter accepted x,y,z,t,c and format
+           format should be a string with the order of the bytes i.e.  format=XYZTC
+          '''
+        #srv = controllers.Root.imgsrv
+        log.info('upload_raw_Image: '+str(kw))
+        uploaded = kw.pop('upload', None)
+        if uploaded is not None:
+            log.debug( 'upload_image' + str(uploaded.filename) )
+            perm = int( kw.pop('userPerm', 1) )
+            log.debug ("calling %s" % (image_service.new_image))
+            info = image_service.new_image(src=uploaded.file, name=uploaded.filename, userPerm=perm, **kw)
+            log.debug('Image INFO: '+str(info))
+            resource = etree.Element('image')
+            etree.SubElement(resource, 'tag', name="filename", value=filename)
+            image = data_service.new_image(resource = resource, **info)
+            return  image.get('uri')
+        return ""
 
 
 
@@ -526,24 +546,6 @@ class Garbage(ServiceController):
         """Entry point for simple image uploads from clients """
         return self.upload_raw_image (**kw)
 
-    @expose()
-#    @identity.require(identity.not_anonymous())
-    def upload_raw_image(self, **kw):
-        '''Upload a raw image:  required parameter accepted x,y,z,t,c and format
-           format should be a string with the order of the bytes i.e.  format=XYZTC
-          '''
-        #srv = controllers.Root.imgsrv
-        #log.debug('Image INFO: '+str(kw))
-        uploaded = kw.pop('upload', None)
-        if uploaded is not None:
-            log.debug( 'upload_image' + str(uploaded.filename) )
-            perm = int( kw.pop('userPerm', 1) )
-            log.debug ("calling %s" % (image_service.new_image))
-            info = image_service.new_image(src=uploaded.file, name=uploaded.filename, userPerm=perm, **kw)
-            log.debug('Image INFO: '+str(info))
-            image = data_service.new_image(**info)
-            return  image.get('uri')
-        return ""
     
     #####################################################################################################    
     # NEW IMAGE UPLOADER WITH PROGRESS BAR

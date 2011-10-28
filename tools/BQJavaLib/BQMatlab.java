@@ -23,8 +23,8 @@ import java.util.Iterator;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
-import javax.media.jai.JAI;
-import com.sun.media.jai.operator.ImageReadDescriptor;
+//import javax.media.jai.JAI;
+//import com.sun.media.jai.operator.ImageReadDescriptor;
 
 
 public class BQMatlab{
@@ -395,11 +395,11 @@ public class BQMatlab{
         Object data = null;
         return data;
     }
-    public void JAI(){
-        //BQJAIInfo jai = new BQJAIInfo();
-        ImageReadDescriptor descriptor = new ImageReadDescriptor (); 
-        System.out.println("ImageRead ClassLoader: "+descriptor.getClass().getClassLoader()); 
-        System.out.println("JAI ClassLoader: "+JAI.class.getClassLoader()); 
-    }
+    // public void JAI(){
+    //     //BQJAIInfo jai = new BQJAIInfo();
+    //     ImageReadDescriptor descriptor = new ImageReadDescriptor (); 
+    //     System.out.println("ImageRead ClassLoader: "+descriptor.getClass().getClassLoader()); 
+    //     System.out.println("JAI ClassLoader: "+JAI.class.getClassLoader()); 
+    // }
     //--------------------------------------------------------------
  }
