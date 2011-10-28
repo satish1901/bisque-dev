@@ -1668,5 +1668,23 @@ BQSession.prototype.session_timeout = function (baseurl) {
     //alert("Your session has  timed out");
 }
 
+//-------------------------------------------------------------------------
+// BQQuery
+//-------------------------------------------------------------------------
+
+function BQQuery(uri, parent, callback) {
+    this.parent = parent;
+    this.tags = new Array();
+    this.callback = callback;  
+    makeRequest( uri, this.parseResponse, this , "GET", null ); 
+} 
+
+BQQuery.prototype.parseResponse = function(o, data) {
+    var tags = data.getElementsByTagName("tag");
+    for(var i=0; i<tags.length; i++) {
+        o.tags[i] = tags[i].getAttribute('value');
+    }
+    o.callback(o);
+}
 
 

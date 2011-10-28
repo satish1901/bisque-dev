@@ -1,0 +1,54 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+                      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:py="http://genshi.edgewall.org/"
+      xmlns:xi="http://www.w3.org/2001/XInclude">
+
+
+<xi:include href="master.html" />
+
+<head>
+  <meta content="text/html; charset=UTF-8" http-equiv="content-type" py:replace="''"/>
+  <title>usage</title>
+  
+  <script type="text/javascript" src="${tg.url('/usage/public/bq_usage_stats.js')}" ></script>
+  
+
+<script type="text/javascript" >
+
+Ext.onReady(function() {
+    
+    var usage_stats = Ext.create('BQ.usage.Stats', {border: 0,});   
+    var usage_uploads = Ext.create('BQ.usage.Uploads', { height: 250, });   
+    var usage_analysis = Ext.create('BQ.usage.Analysis', {height: 250, });           
+
+    var uploader = Ext.create('Ext.panel.Panel', {    
+        closable: false,
+        autoShow: true,
+        border: 0,
+        defaults: {border: 0,},
+        bodyPadding: 30,
+        
+        layout: {
+            type: 'vbox',
+            align: 'stretch',
+            pack: 'start',
+        },        
+
+        items: [ {html: '<h1>Bisque usage statistics</h1>'}, usage_stats, usage_uploads, usage_analysis ],      
+    });
+
+    BQApp.setCenterComponent(uploader);
+});
+  
+</script>  
+
+  
+</head>
+
+<body>
+
+</body>
+</html>
+
+

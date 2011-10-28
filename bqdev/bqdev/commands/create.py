@@ -92,9 +92,10 @@ class createCoreService(create):
     templates = "bisque_core"
     name = "you_core_service"
     def run(self):
-        if not os.getcwd ().endswith ('bqcore'):
-            print "Must be run in bqcore directory"
+        if not os.path.exists('bqcore'):
+            print "Must be run in the top level Bisque directory"
             sys.exit(1)
+        os.chdir('bqcore')
         super(createCoreService, self).run()
         if os.path.exists ('bq/%s' % self.package):
             print "WARNING service bq/%s already exists.. not moving %s from current directory" % (self.package, self.package)
