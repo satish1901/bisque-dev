@@ -386,16 +386,19 @@ Ext.define('Bisque.ResourceTagger',
                     {
                         text : 'as XML',
                         handler : this.exportToXml,
+                        hidden : this.viewMgr.state.btnXML,
                         scope : this
                     },
                     {
                         text : 'as CSV',
                         handler : this.exportToCsv,
+                        hidden : this.viewMgr.state.btnCSV,
                         scope : this
                     },
                     {
                         text : 'to Google Docs',
                         handler : this.exportToGDocs,
+                        hidden : this.viewMgr.state.btnGDocs,
                         scope : this
                     }]
                 }
@@ -415,12 +418,9 @@ Ext.define('Bisque.ResourceTagger',
             }]
         }];
 
-        tbar = tbar.concat(this.addButtons() || []);
         return tbar;
     },
     
-    addButtons : Ext.emptyFn,
-
     addTags : function()
     {
         var currentItem = this.tree.getSelectionModel().getSelection();
@@ -650,19 +650,24 @@ Ext.define('Bisque.GObjectTagger',
         }
     },
     
-    addButtons : function()
+    getToolbar : function()
     {
+        var toolbar = this.callParent(arguments);
+        
         var buttons =  
         [{
-            text : 'Uncheck All',
-            scale : 'small',
-            iconCls : 'icon-uncheck',
-            handler : this.toggleCheck,
-            scope : this,
-            checked : true
+            xtype : 'buttongroup',
+            items : [{
+                text : 'Uncheck All',
+                scale : 'small',
+                iconCls : 'icon-uncheck',
+                handler : this.toggleCheck,
+                scope : this,
+                checked : true
+            }]
         }];
         
-        return buttons;
+        return buttons.concat(toolbar);
     },
     
     toggleCheck : function(button)
@@ -700,6 +705,46 @@ Ext.define('Bisque.GObjectTagger',
             this.addNode(this.tree.getRootNode(), {name:data[0].name, value:Ext.Date.format(Ext.Date.parse(mex.ts, 'Y-m-d H:i:s.u'), "F j, Y g:i:s a"), gobjects:data});
             this.fireEvent('onappend', this, data);
         }
+    },
+
+    exportToXml : Ext.emptyFn,
+    exportToGDocs : Ext.emptyFn,
+
+    exportToCsv : function()
+    {
+        var gobject, selection = this.tree.getChecked();
+        this.noFiles = 0, this.csvData = '';
+        
+        function countGObjects(node, i)
+        {
+            if (node.raw)
+                this.noFiles++;
+        }
+        
+        selection.forEach(Ext.bind(countGObjects, this));
+        
+        for (var i=0;i<selection.length;i++)
+        {
+            gobject = selection[i].raw;
+
+            if (gobject)
+            {
+                Ext.Ajax.request({
+                    url : gobject.uri+'?view=deep&format=csv',
+                    success : Ext.bind(this.saveCSV, this),
+                    disableCaching : false 
+                });
+            }
+        }
+    },
+    
+    saveCSV : function(data)
+    {
+        this.csvData += '\n'+data.responseText;
+        this.noFiles--;
+        
+        if (!this.noFiles)
+            location.href = "data:text/csv," + encodeURIComponent(this.csvData);
     }
 });
 
@@ -756,6 +801,9 @@ Ext.define('Bisque.ResourceTagger.viewStateManager',
         
         btnImport : true,
         btnExport : true,
+        btnXML : true,
+        btnCSV : true,
+        btnGDocs : true,
     
         btnSave : true,
         editable : true,
@@ -797,6 +845,10 @@ Ext.define('Bisque.ResourceTagger.viewStateManager',
                 this.state.editable = false;
                 
                 this.state.btnExport = false;
+                this.state.btnCSV = false;
+                //this.state.btnGDocs = false;
+                //this.state.btnXML = false;
+                
                 break;
             }
             default:
