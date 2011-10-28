@@ -8,6 +8,8 @@
 <head py:attrs="select('@*')">
 
     <meta content="text/html; charset=UTF-8" http-equiv="content-type" py:replace="''"/>
+    <meta name="viewport" content="width=device-width" />
+    
     <title py:with="title = list(select('title/text()'))">
     Bisque<py:if test="title">: ${title}</py:if>
     </title>  
@@ -15,7 +17,7 @@
     <!-- ExtJS -->
     <link rel="stylesheet" type="text/css" href="${tg.url('/extjs/resources/css/ext-all.css')}" />
     <!--
-    <link2 rel="stylesheet" type="text/css" href="${tg.url('/extjs/resources/css/xtheme-gray.css')}"/>
+    <link rel="stylesheet" type="text/css" href="${tg.url('/extjs/resources/css/ext-all-gray.css')}"/>
     -->
     
     <!--<script type="text/javascript" src="${tg.url('/extjs/bootstrap.js')}"></script>-->

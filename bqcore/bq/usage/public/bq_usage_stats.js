@@ -146,7 +146,7 @@ Ext.define('BQ.usage.Uploads', {
                   width: 300,
                   //height: 28,
                   renderer: function(storeItem, item) {
-                      this.setTitle( Ext.Date.format(new Date(storeItem.get('date')), 'M y, Y')
+                      this.setTitle( Ext.Date.format(new Date(storeItem.get('date')), 'M d, Y')
                               + ' - ' + storeItem.get('count') + ' ' + heading );
                   }
                 },                
