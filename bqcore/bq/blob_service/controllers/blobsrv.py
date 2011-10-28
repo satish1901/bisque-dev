@@ -20,8 +20,9 @@ from bq.core import permission, identity
 from bq.core.exceptions import IllegalOperation
 from bq.util.paths import data_path
 from bq.util.mkdir import _mkdir
-from bq.data_service.model import Taggable, DBSession
+from bq.util import irods_handler
 from bq import data_service
+from bq.data_service.model import Taggable, DBSession
 
 log = logging.getLogger('bq.blobs')
 
@@ -56,6 +57,20 @@ def file_hash_MD5( filename ):
     f.close()
     return m.hexdigest()	  
    
+
+def make_uniq_hash(filename):
+    rand_str = str(random.randint(1, 1000000))
+    rand_str = filename + rand_str + str(datetime.datetime.now().isoformat()) 
+    rand_hash = hashlib.sha1(rand_str).hexdigest()
+    return rand_hash
+
+
+def guess_type(filename):
+    from bq import image_service 
+    filetype = image_service.guess_image_type (filename)
+    if filetype:
+        return 'image'
+    return 'file'
 
 
 
@@ -92,7 +107,8 @@ class BlobServer(RestController, ServiceMixin):
     def storeBlob(self, src, name):
         """Store the file object in the next blob and return the
         descriptor"""
-        filepath = self.nextEmptyBlob(name)
+        user_name = identity.current.user_name
+        filepath = self.nextEmptyBlob(user_name, name)
             
         log.debug('storeBlob: ' +str(name) +' '+ str(filepath) )               
             
@@ -116,10 +132,9 @@ class BlobServer(RestController, ServiceMixin):
         if resource is not None:
             # Determine type of resource_ url and fetch to localpath
             if resource.resource_val.startswith('irods://'):
-                
-
-
-            path = "%s/%s" % (self.top, resource.resource_val)
+                path = irods_handler.irods_fetch_file(resource.resource_val)
+            else:
+                path = "%s/%s" % (self.top, resource.resource_val)
             log.debug('using localpath=%s' % path)
             return path
 

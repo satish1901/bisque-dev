@@ -7,7 +7,7 @@ import os
 from paste.deploy import appconfig
 from bq.config.environment import load_environment
 from bq.core import model
-
+from bq.blob_service.controllers.blobsrv import make_uniq_hash
 
 
 
@@ -24,13 +24,14 @@ from bq.data_service.model import *
 from bq.image_service.model import *
 
 
+    
 
 def move_files_to_resources():
     for fi in DBSession.query(FileEntry):
         image = DBSession.query (Image).filter_by(src = fi.uri).first()
         if image is None:
             print "processing file", fi.local
-            resource = DBSession.query(Taggable).filter_by(resource_uniq = f1.sha1).first()
+            resource = DBSession.query(Taggable).filter_by(resource_uniq = fi.sha1).first()
             if resource is None:
                 resource = Taggable(resource_type='file')
                 DBSession.add(resource)

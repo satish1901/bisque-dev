@@ -110,6 +110,7 @@ from bq.core import permission, identity
 from bq.util.paths import data_path
 from bq import image_service
 from bq import data_service
+from bq import blob_service
 import bq.image_service.controllers.imgcnv as imgcnv
 import bq.image_service.controllers.bioformats as bioformats
 from bq.image_service.controllers.blobsrv import _mkdir
@@ -357,6 +358,30 @@ class import_serviceController(ServiceController):
         return [ '%s/%s'%(unpack_dir, m) for m in members ]
 
 
+
+    def insert_image_url(self, url):
+        filename = url.rsplit('/',1)[1]
+        uniq = blob_service.make_uniq_hash(filename)
+        perm = permission.PRIVATE
+
+        resource_type = blob_service.guess_type(filename)
+
+        resource = etree.Element(resource_type, perm=str(perm),
+                                 resource_uniq = uniq,
+                                 resource_name = filename,
+                                 resource_val  = url)
+        if resource_type == 'image':
+            resource.set('src', "/image_service/images/%s" % uniq)
+
+        etree.SubElement(resource, 'tag', name="filename", value=filename)
+        etree.SubElement(resource, 'tag', name="upload_datetime", value=datetime.now().isoformat(' '), type='datetime' ) 
+            
+        #log.debug("\n\ninsert_image tags: \n%s\n" % etree.tostring(tags))
+
+        log.info ("NEW IMAGE <= %s" % (etree.tostring(resource)))
+        resource = data_service.new_resource(resource = resource)
+        return resource
+
 #------------------------------------------------------------------------------
 # file ingestion support functions
 #------------------------------------------------------------------------------
@@ -383,17 +408,19 @@ class import_serviceController(ServiceController):
         #info = image_service.new_image(src=src, name=filename, userPerm=perm)
 
         try:
-            uniq, uri, guessed_type = image_service.store_blob (src, filename)
-
+            uniq, uri = blob_service.store_blob (src, filename)
+            resource_type = blob_service.guess_type(filename)
 
             log.debug ("store %s at %s" % (filename, localpath))
-        except e:
+        except Exception, e:
             log.exception("eek")
         # the image was successfuly added into the image service
-        resource = etree.Element(guessed_type, perm = str(perm),
+        resource = etree.Element(resource_type, perm = str(perm),
                                  resource_uniq = uniq,
                                  resource_name = filename,
                                  resource_val  = uri)
+        if resource_type == 'image':
+            resource.set('src', "/image_service/images/%s" % uniq)
         etree.SubElement(resource, 'tag', name="filename", value=filename)
         etree.SubElement(resource, 'tag', name="upload_datetime", value=datetime.now().isoformat(' '), type='datetime' ) 
         if hasattr(f, 'original') and f.original:
@@ -407,7 +434,7 @@ class import_serviceController(ServiceController):
                 #resource.extend(copy.deepcopy(list(tags)))
                 resource.extend(list(tags))
         log.info ("NEW IMAGE <= %s" % (etree.tostring(resource)))
-        resource = data_service.new_image(resource = resource)
+        resource = data_service.new_resource(resource = resource)
         #else:
         #    # error happened or the file was filtered during the pre-processing stage                
         #    resource = etree.Element('file', name=filename)                
@@ -648,7 +675,10 @@ class import_serviceController(ServiceController):
 
         return dict(error = 'Some problem uploading the file have occured')
 
-
+    @expose()
+    @require(predicates.not_anonymous())
+    def insert(self, **kw):
+        return self.insert_image_url (**kw)
 
         
 #---------------------------------------------------------------------------------------

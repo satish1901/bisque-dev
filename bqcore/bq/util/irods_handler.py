@@ -75,19 +75,19 @@ import pdb
 def irods_fetch_dir(url):
     
     conn, base_url, path = irods_conn(url)
-    print 'path1 Null', '\x00' in path
+    #print 'path1 Null', '\x00' in path
     coll = irods.irodsCollection(conn)
     coll.openCollection(path); 
     # Bug in openCollection (appends \0)
     path = path.strip('\x00')
-    print 'path2 Null', '\x00' in path
+    #print 'path2 Null', '\x00' in path
 
     result = []
     # Construct urls for objects contained
     for nm in coll.getSubCollections():
-        print " '%s' '%s' '%s' " % (base_url, path, nm)
-        print 'nm Null', '\x00' in nm
-        print 'path3 Null', '\x00' in path
+        #print " '%s' '%s' '%s' " % (base_url, path, nm)
+        #print 'nm Null', '\x00' in nm
+        #print 'path3 Null', '\x00' in path
         result.append('/'.join([base_url, path[1:], nm, '']))
         
     for nm, resource in  coll.getObjects():
@@ -130,10 +130,26 @@ def irods_fetch_file(url):
     return localname
 
 
+# def _IrodsFile(object):
+#     def __init__(self, path, f):
+#         self.irods_f = f
+#         self.irods_path = path
+#     def read(self, bufsize=None):
+#         return self.irods_f.read(bufsize)
+#     def close(self):
+# def irods_open_file(url):
+#     conn, base_url, path = irods_conn(url)
+#     print "irods-path",  path
+#     localname = irods_cache_fetch(path)
+#     if localname is None:
+#         print "fetching"
+#         f = irods.iRodsOpen(conn, path)
+#         localname = irods_cache_save(path, f)
+#         f.close()
+#     return localname
 
-def irods_fetch(url):
 
-    pass
+
 
     
     
