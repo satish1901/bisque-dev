@@ -145,6 +145,17 @@ class BlobServer(RestController, ServiceMixin):
         resource = DBSession.query(Taggable).filter_by (resource_uniq = ident).first()
         return resource
 
+    def blobsExist(self, fhashes):
+        'search for files by content hash'
+        blobsfound = []
+        #for fhash in fhashes:
+        #   if blobdb.find_image_id(fhash) != None:
+        #       blobsfound.append(fhash)
+        log.warn("blobsExist not implemented")
+        return blobsfound
+
+
+
     def setBlobInfo(self, image_uri, **kw): 
         blobdb.set_image_info( image_uri, kw )
         
@@ -194,12 +205,6 @@ class BlobServer(RestController, ServiceMixin):
     def blobExists(self, fhash):
         return blobdb.find_image_id(fhash)
 
-    def blobsExist(self, fhashes):
-        blobsfound = []
-        for fhash in fhashes:
-           if blobdb.find_image_id(fhash) != None:
-               blobsfound.append(fhash)
-        return blobsfound
 
     def blobUris(self, fhash):
         return blobdb.find_uris(fhash)
