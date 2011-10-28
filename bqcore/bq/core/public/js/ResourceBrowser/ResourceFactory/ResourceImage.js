@@ -235,7 +235,9 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourceCompact',
 
     updateContainer : function()
     {
-    	var text="ch:"+this.resource.ch+" x:"+this.resource.x+" y:"+this.resource.y+" z:"+this.resource.z+" t:"+this.resource.t;
+    	//var text="ch:"+this.resource.ch+" x:"+this.resource.x+" y:"+this.resource.y+" z:"+this.resource.z+" t:"+this.resource.t;
+        var text = this.resource.resource_name || '';
+            
         this.update('<div class="textOnImage" style="width:'+this.layoutMgr.layoutEl.width+'px;">'+text+'</div>'+this.getData('image'));
         
         this.setLoading(false);

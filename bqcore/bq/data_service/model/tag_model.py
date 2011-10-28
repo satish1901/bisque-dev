@@ -137,6 +137,8 @@ names = Table('names', metadata,
               Column('name', UnicodeText)
               )
 
+
+
 taggable = Table('taggable', metadata,
                  Column('id', Integer, primary_key=True),
                  Column('tb_id', Integer, ForeignKey('names.id')),
@@ -145,6 +147,14 @@ taggable = Table('taggable', metadata,
                  Column('ts', DateTime(timezone=False)),
                  Column('perm', Integer), #ForeignKey('permission_sets.set_id')
                  Column('owner_id', Integer, ForeignKey('taggable.id')),
+                 Column('resource_name', UnicodeText),
+                 Column('resource_uniq', String(40)),
+                 Column('resource_val',  UnicodeText),
+                 Column('resource_type', Unicode(255) ),  # will be same as tb_id UniqueName
+                 Column('resource_parent', Integer, ForeignKey('taggable.id')),
+                 #Column('resource_document', Integer, ForeignKey('document.id')), # Unique Element
+                 
+
                  )
 
 images= Table ('images', metadata,
@@ -1018,28 +1028,10 @@ mapper( Taggable, taggable,
                             primaryjoin=(taggable.c.tb_id == names.c.id),
                             uselist = False,
                             ),
-#    'owner' : relation (BQUser,
-#                        uselist=False,
-#                        passive_deletes="all",
-#                        primaryjoin=(taggable.c.owner_id == users.c.id),
-#                        foreign_keys=[users.c.id],
-#                        post_update=True,
-#                        cascade = None,
-#                        ),
-    # 'mex' : relation (ModuleExecution,
-    #                   uselist=False,
-    #                   #passive_deletes="all",
-    #                   primaryjoin=(taggable.c.mex_id == mex.c.id),
-    #                   foreign_keys=[mex.c.id],
-    #                   post_update=True,
-    #                   cascade = None,
-    #                   ),
 
     'tags' : relation(Tag, lazy=True, cascade="all, delete-orphan",
-#    'tags' : relation(Tag, lazy=True, cascade="all",
                          primaryjoin= (tags.c.parent_id==taggable.c.id)),
     'gobjects' : relation(GObject, lazy=True, cascade="all, delete-orphan",
-#    'gobjects' : relation(GObject, lazy=True, cascade="all",
                          primaryjoin= (gobjects.c.parent_id==taggable.c.id)),
     'acl'  : relation(TaggableAcl, lazy=True, cascade="all, delete-orphan",
                       primaryjoin = (TaggableAcl.taggable_id == taggable.c.id)),
