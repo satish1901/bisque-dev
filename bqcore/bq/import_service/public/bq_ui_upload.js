@@ -821,6 +821,7 @@ Ext.define('BQ.upload.Panel', {
         this.helpPanel = Ext.create('Ext.panel.Panel', {
             border: 0, 
             title: 'Help on compressed files', 
+            autoScroll: true,
             bodyStyle: 'padding: 10px',
             loader: { url: '/import_service/public/help.html', renderer: 'html', autoLoad: true },
         });

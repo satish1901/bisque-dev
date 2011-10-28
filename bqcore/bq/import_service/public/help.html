@@ -1,21 +1,23 @@
 <h2>Compressed files</h2>
 
-<p>Bisque ingest system supports most common compressed file formats and required operations.</p>
+<p>Bisque ingest system supports most common compressed file formats and operations.</p>
 
-<li>Supported formats: Zip and Tar</li>
+<ol><li>Supported formats: Zip and Tar</li></ol>
 
 <p>Several operations can be applied after uncompressing the file:</p>
 
+<ol>
 <li>Ingest all files as a dataset of separate images</li>
 <li>Combine all files in a multi-dimensional image and ingest</li>
+</ol>
 
 <h3>Multi-dimensional images</h3>
 
 <p>Files contained in the compressed package must comply to our specifications. Currently we require:</p>
 
 <li>All files are located in the root</li>
-<li>They should be sorted alphanumerically</li>
-<li>4D files should be in the Z-T order, where Z is most significative</li>
+<li>They should be sortable alphanumerically</li>
+<li>4D file names should be in the T-Z order (All Z positions for a given time point, then all Z positions for the next time point):</li>
 
 <p>Example of the 4D file:</p>
 

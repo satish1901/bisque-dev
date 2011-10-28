@@ -73,13 +73,15 @@ ResourceDispatch.prototype.dispatch_image = function(bqimage)
             'Select' : function(me, resource)
             {
                 me.setLoading(true);
+                var nw = window.open('', "_blank");
                 BQFactory.request(
                 {
                     uri : resource.module,
                     cb : function(r)
                     {
                         me.setLoading(false);
-                        window.open(bq.url('/module_service/' + r.name + '/?mex=' + resource.uri), "", "menubar=yes,location=yes,resizable=yes,scrollbars=yes,status=yes");
+                        //window.open(bq.url('/module_service/' + r.name + '/?mex=' + resource.uri), "", "menubar=yes,location=yes,resizable=yes,scrollbars=yes,status=yes");
+                        nw.location = bq.url('/module_service/' + r.name + '/?mex=' + resource.uri);
                     }
 
                 });
