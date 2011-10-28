@@ -199,19 +199,18 @@ class ClientServer(ServiceController):
                     wpublic = kw.pop('wpublic', wpublicVal),                    
                     analysis = None)
 
+    
+    
+    
+    # Test
+    
     @expose(template='bq.client_service.templates.test')
     def test(self):
-        from urllib import basejoin
-        from tg import config
-
-        def presentable_url(relative_url):
-            return basejoin( config.get( "proxied_host" , 'root' ),
-                             "/".join( [  config.get("proxied_dir","") , relative_url ] ))
-        return dict(vars = { 'x':'y',
-                             'url' : presentable_url('a/b/c.htmk')
-                             } 
-                    )
-
+        from bq.export_service.controllers.tar_streamer import TarStreamer
+        tarStreamer = TarStreamer() 
+        tarStreamer.sendResponseHeader('Bisque.tar')
+        return tarStreamer.stream(['C:\\Python27\\TarStreamer\\file1.tif', 'C:\\Python27\\TarStreamer\\file2.tif', 'C:\\Python27\\TarStreamer\\file3.tif'])
+        
     @expose(content_type="text/xml")
     def images(self, **kw):
         log.debug ("keyargs " + str(kw))

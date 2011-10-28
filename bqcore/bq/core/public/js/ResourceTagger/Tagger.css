@@ -23,6 +23,14 @@
 	background-image: url('../ResourceTagger/Images/save.png') !important;
 }
 
+.icon-check {
+    background-image: url('../ResourceTagger/Images/check.png') !important;
+}
+
+.icon-uncheck {
+    background-image: url('../ResourceTagger/Images/uncheck.png') !important;
+}
+
 .icon-import {
     background-image: url('../ResourceTagger/Images/import.png') !important;
 }

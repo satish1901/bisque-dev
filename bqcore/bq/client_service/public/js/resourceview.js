@@ -138,7 +138,7 @@ ResourceDispatch.prototype.dispatch_image = function(bqimage)
         imgViewer : imageCt.IV,
         mexBrowser : mexBrowser,
         title : 'GObjects',
-        viewMode : 'ViewerOnly',
+        viewMode : 'GObjectTagger',
         listeners :
         {
             'beforeload' : function(me, resource)
