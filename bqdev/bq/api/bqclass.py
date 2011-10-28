@@ -275,11 +275,12 @@ class BQGObject(BQResource):
     xmlfields = ['name', 'type', 'uri']
     xmlkids = ['tags', 'gobjects', 'vertices']
 
-    def __init__(self, name='gobject', type='gobject'):
+    def __init__(self, name=None, type=None):
         self.vertices = []
         self.tags     = []
         self.gobjects = []
         self.name=name
+        self.type= type or self.xmltag
 
     def __str__(self):
         return '(type: %s, name: %s, %s)'%(self.type, self.name, self.vertices)
