@@ -26,6 +26,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ModuleResourceCompact',
             	align:'stretch'	
             }
         });
+        this.addCls('compact');
 		
 		Bisque.ResourceBrowser.ResourceFactory.ModuleResourceCompact.superclass.constructor.apply(this, arguments);
 	},
@@ -57,13 +58,13 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ModuleResourceCompact',
     {
 		var moduleName=new Ext.form.Label({
 			text:this.resource.name,
-			padding:5,
+			//padding:5,
 			cls:'lblModuleName',
 		})
 		
 		var moduleOwner=new Ext.form.Label({
 			text:this.getData('owner'),
-			padding:'0 0 0 5',
+			//padding:'0 0 0 5',
 			cls:'lblModuleOwner'
 		})
 
@@ -195,13 +196,13 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ModuleResourceList',
     {
 		var moduleName=new Ext.form.Label({
 			text:' '+this.resource.name+' ',
-			padding:5,
+			//padding:5,
 			cls:'lblModuleName',
 		})
 
 		var moduleOwner=new Ext.form.Label({
 			text:this.getData('owner'),
-			padding:'0 0 0 5',
+			//padding:'0 0 0 5',
 			cls:'lblModuleOwner'
 		})
 
@@ -219,6 +220,11 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ModuleResourceList',
 Ext.define('Bisque.ResourceBrowser.ResourceFactory.ModuleResourceIconList',
 {
     extend : 'Bisque.ResourceBrowser.ResourceFactory.ModuleResourceList',
+
+    initComponent : function() {
+        this.addCls('icon-list');
+        this.callParent();
+    },	    
     
     afterRenderFn : function()
     {
@@ -246,13 +252,13 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ModuleResourceIconList',
 
         var moduleName=new Ext.form.Label({
             text:this.resource.name,
-            padding:'0 0 1 3',
+            //padding:'0 0 1 3',
             cls:'lblModuleName',
         })
 
         var moduleInfo=new Ext.form.Label({
             html: this.getData('owner')!=0 ? 'Owner: '+this.getData('owner'):'',
-            padding:'0 0 0 3',
+            //padding:'0 0 0 3',
             maxHeight:18,
             cls:'lblModuleOwner'
         })

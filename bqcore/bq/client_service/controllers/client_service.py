@@ -115,63 +115,28 @@ class ClientServer(ServiceController):
 
     @expose(template='bq.client_service.templates.welcome')
     def index(self, **kw):
-        log.debug ("WELCOME")
-        query = kw.pop('query', '')
+        log.info("WELCOME")
         wpublic = kw.pop('wpublic', not bq.core.identity.current)
         pybool = {'True': 'true', 'False': 'false'}
-        thumbnail = None
-        images2d = aggregate_service.count("image", wpublic=wpublic, images2d=True)
-        all_count = aggregate_service.count("image", wpublic=wpublic, welcome=True)
-        image_count = aggregate_service.count("image", wpublic=wpublic)
-        tag_count = aggregate_service.count("tag", wpublic=wpublic, welcome=True )
-        
         welcome_tags = config.get ('bisque.welcome_tags', "")
         welcome_message = config.get ('bisque.welcome_message', "Welcome to the Bisque image database")
-        c.commandbar_enabled = True
-        c.datasets_enabled =False
-        c.organizer_enabled = False
-        c.search_enabled = False
-        c.analysis_enabled = False
-        c.visualization_enabled = False
-        c.upload_enabled = False
-        log.debug ('welcome images ='+ str(all_count))
+        image_count = aggregate_service.count("image", wpublic=wpublic)
+
+        thumbnail = None
+        imageurl = None
         if image_count:
             im = random.randint(0, image_count-1)
             image = aggregate_service.retrieve("image", view=None, wpublic=wpublic)[im]
             imageurl = self.viewlink(image.attrib['uri'])
             thumbnail = image.attrib['src'] +'?thumbnail'
        
-            return dict(imageurl=imageurl,
-                    resource = "",
-                    user_id = "",
-                        query=query,
-                        thumbnail=thumbnail,
-                        all_count = all_count,
-                        images2d = images2d,
-                        item_count = image_count,
-                        tag_count = tag_count,
-                        wpublic = wpublic,
-                        wpublicjs = pybool[str(wpublic)],
-                        search = None,
-                        analysis = None,
-                        welcome_tags = welcome_tags,
-                        welcome_message = welcome_message
-                        )
-        return dict(all_count = all_count,
-                    resource = "",
-                    user_id = "",
-                    images2d = images2d,
-                    item_count=image_count,
-                    tag_count = tag_count,
-                    query = query,
+        return dict(imageurl=imageurl,
+                    thumbnail=thumbnail,
                     wpublic = wpublic,
-                    wpublicjs = pybool[str(wpublic)],                    
-                    search = None,
-                    analysis = None,
-                    imageurl = None,
-                    thumbnail = None,
+                    wpublicjs = pybool[str(wpublic)],
                     welcome_tags = welcome_tags,
-                    welcome_message = welcome_message )
+                    welcome_message = welcome_message
+                    )
 
     @expose(template='bq.client_service.templates.browser')
     def browser(self, **kw):
