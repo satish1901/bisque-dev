@@ -220,10 +220,15 @@ class DataServerController(ServiceController):
     def query(self, resource_tag, tag_query=None, view=None, **kw):
         '''Query the local database with expr'''
         resource_type = dbtype_from_tag(resource_tag)
-        nodelist = resource_query (resource_type, tag_query=tag_query, **kw)
-        response  = etree.Element ('response')
-        db2tree (nodelist, parent=response,
-                 view=view, baseuri = self.url)
+        if view == 'count':
+            count = resource_count (resource_type, tag_query=tag_query, **kw)           
+            response = etree.Element ('resource')
+            etree.SubElement(response, resource_tag, count = str(count))            
+        else:    
+            nodelist = resource_query (resource_type, tag_query=tag_query, **kw)
+            response  = etree.Element ('response')
+            db2tree (nodelist, parent=response,
+                     view=view, baseuri = self.url)
 
         #log.debug ("DS: " + etree.tostring(response))
         return response

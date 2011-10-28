@@ -50,11 +50,13 @@ DESCRIPTION
 ===========
    Parse and execute query expressions for DoughDB objects
 """
+import re
 import logging
 import string
 import textwrap
 
 from tg import config, url
+from datetime import datetime
 from sqlalchemy.sql import select, func, exists, and_, or_, not_, asc, desc
 
 from bq.core.model import DBSession as session
@@ -435,6 +437,7 @@ def tags_special(dbtype, query, params):
     
     return None
 
+ATTR_EXPR = re.compile('([><=]*)([\w:-]+)')
 def resource_query(resource_type,
                    tag_query=None,
                    tag_order=None,
@@ -499,9 +502,28 @@ def resource_query(resource_type,
     for k,v in kw.items():
         #log.debug ("extra " + str(k) +'=' + str(v))
         if hasattr(dbtype, k):
-            log.debug ("adding attribute search %s %s=%s" % (dbtype, k, v))
-            if v:
-                query =query.filter( getattr(dbtype, k)==v)
+            if not hasattr(v, '__iter__'):
+                v = [v] 
+            for val  in v:
+                val  = val.strip('"\'')
+                op, val = ATTR_EXPR.match(val).groups()
+                if k=='ts': 
+                    try:
+                        val = datetime.strptime(val, "%Y-%m-%dT%H:%M:%S")
+                    except ValueError:
+                        log.error('bad time: %s' %val)
+                        continue
+                log.debug ("adding attribute search %s %s op=%s %s" % (dbtype, k, op,  val))
+                if op == '>=':
+                    query =query.filter( getattr(dbtype, k) >= val)
+                elif op == '>':
+                    query =query.filter( getattr(dbtype, k) > val)
+                elif op == '<=':
+                    query =query.filter( getattr(dbtype, k) <= val)
+                elif op == '<':
+                    query =query.filter( getattr(dbtype, k) < val )
+                else:
+                    query =query.filter( getattr(dbtype, k)==val)
             del kw[k]
 
     #metadata.bind.echo=True

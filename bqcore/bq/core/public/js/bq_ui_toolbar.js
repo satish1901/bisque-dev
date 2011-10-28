@@ -167,7 +167,8 @@ Ext.define('BQ.Application.Toolbar', {
                             handler: Ext.Function.pass(htmlAction, bq.url('/client_service/public/about/termsofuse.html') )} );    
         menu_help.push( {text: 'License', 
                             handler: Ext.Function.pass(htmlAction, bq.url('/client_service/public/about/license.html') )} );  
-
+        menu_help.push( {text: 'Usage statistics', 
+                            handler: Ext.Function.pass(pageAction, bq.url('/usage/') )} );  
         
         menu_help.push( '-' );                
         menu_help.push( {text: 'Online Help', 
