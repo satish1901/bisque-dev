@@ -57,7 +57,8 @@ def reserveFile (**kw):
     rand_str = rand_str + str(datetime.datetime.now().isoformat()) 
     rand_hash = hashlib.sha1(rand_str).hexdigest()
    
-    return newFile (rand_hash, None, None, None, None, None, None)  
+    #return newFile (rand_hash, None, None, None, None, None, None)  
+    
     
       
     

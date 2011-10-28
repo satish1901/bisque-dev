@@ -62,6 +62,7 @@ from tg import expose, redirect, response
 from tg import config
 from lxml import etree
 from urllib import urlencode
+from repoze.what import predicates
 from repoze.what.predicates import not_anonymous
 
 from bq.core.identity import get_user_id, get_user_pass
@@ -71,6 +72,7 @@ from bq.util.bisquik2db import bisquik2db
 from bq.util.mkdir import _mkdir
 from bq.util.paths import data_path
 from bq import image_service
+from bq import blob_service
 
 #from turbogears import controllers, expose, redirect, paginate
 #from turbogears import identity, visit, config, validate, error_handler
@@ -121,9 +123,9 @@ class DNServer(ServiceController):
         
         
     @expose(content_type="text/xml")
-    #@identity.require(identity.not_anonymous())
+    #@require(predicates.not_anonymous())
     def savefile (self, **kw):
-        log.debug ("savefile request " + str (tg.request))
+        log.info ("savefile request " + str (tg.request))
         #log.debug( 'savefile - username: ' + str(identity.current.user_name) )      
 
         userpwd = get_user_pass()
@@ -156,9 +158,9 @@ class DNServer(ServiceController):
         out = open (upload_dir+'/'+upload.filename,"wb")
         shutil.copyfileobj (upload.file, out)
         out.close()
-        #uploadfilter.upload_finished(upload.file, upload.filename)
+
+        #fhash, path = blob_service.store_blob (upload.file, upload.filename)
         
-        log.debug ('wrote %s' % upload_dir+'/'+upload.filename)
         return 'Upload done for: ' + upload.filename
 
 

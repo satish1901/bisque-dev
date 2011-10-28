@@ -59,7 +59,7 @@ function BQObject (uri, doc){
     this.created = true;
     this.mex = null;
     this.xmltag = "resource";
-    this.xmlfields  = [ 'type', 'uri', 'src', 'perm'];
+    this.xmlfields  = [ 'type', 'uri', 'src', 'perm', 'resource_uniq', 'resource_name'];
 }
 BQObject.prototype = new BQXml();
 
@@ -69,6 +69,7 @@ BQObject.prototype.initializeXml = function (resource) {
     this.ts   = attribStr(resource,'ts');
     this.owner = attribStr(resource,'owner');
     this.type   = attribStr(resource,'type');
+    this.resource_name = attribStr(resource,'resource_name');
     this.attributes = attribDict (resource);
     this.resource_type = this.xmltag;
     this.dirty = false;
@@ -709,6 +710,7 @@ BQImage.prototype.initializeXml = function (image) {
     this.ts   = attribStr(image,'ts');
     this.type   = attribStr(image,'type');
     this.owner   = attribStr(image,'owner');
+    this.resource_name  = attribStr(image,'resource_name');
     this.resource_type = this.xmltag;
 
     this.src  = attribStr(image,'src');
@@ -1124,6 +1126,11 @@ BQImagePhys.prototype.onloadIS = function (image) {
   this.pixel_size_is[1] = hash['pixel_resolution_y'];
   this.pixel_size_is[2] = hash['pixel_resolution_z'];
   this.pixel_size_is[3] = hash['pixel_resolution_t'];
+  this.x  = hash['image_num_x'];
+  this.y  = hash['image_num_y'];
+  this.z  = hash['image_num_z'];
+  this.t  = hash['image_num_t'];
+  this.ch  = hash['image_num_c'];
 
   //-------------------------------------------------------  
   // units
