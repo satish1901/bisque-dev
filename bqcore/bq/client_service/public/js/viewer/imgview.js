@@ -529,16 +529,6 @@ ImgViewer.prototype.newImage = function (bqimage) {
     this.image = bqimage;
     this.imageuri = bqimage.uri;
     this.imagesrc  = this.image.src;
-    this.imagedim = new ImageDim (bqimage.x, bqimage.y, bqimage.z, bqimage.t, bqimage.ch);
-
-    this.current_view = new Viewstate(imgview_min_width, imgview_min_width, 0, 0, 1.0);
-    this.current_view.imagesrc = this.imagesrc;
-    this.current_view.imagedim = this.imagedim.clone();
-    
-    for (var i = 0; i < this.plugins.length; i++) {
-        plugin = this.plugins[i];
-        plugin.newImage ();
-    }   
  
     //this.bq_user = new BQUser ();
     //this.bq_user.get_credentials (this.imageuri, null );     
@@ -705,7 +695,21 @@ ImgViewer.prototype.end_wait = function (o) {
 
 
 ImgViewer.prototype.newPhys = function (bqimagephys) {
+
     this.imagephys = bqimagephys;
+    
+    this.imagedim = new ImageDim (bqimagephys.x, bqimagephys.y, bqimagephys.z, bqimagephys.t, bqimagephys.ch);
+
+    this.current_view = new Viewstate(imgview_min_width, imgview_min_width, 0, 0, 1.0);
+    this.current_view.imagesrc = this.imagesrc;
+    this.current_view.imagedim = this.imagedim.clone();
+    
+    for (var i = 0; i < this.plugins.length; i++) {
+        plugin = this.plugins[i];
+        plugin.newImage ();
+    }   
+
+
     this.updateImage ();
 
     // Load gobjects from string and return
