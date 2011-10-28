@@ -415,8 +415,11 @@ Ext.define('Bisque.ResourceTagger',
             }]
         }];
 
+        tbar = tbar.concat(this.addButtons() || []);
         return tbar;
     },
+    
+    addButtons : Ext.emptyFn,
 
     addTags : function()
     {
@@ -647,17 +650,54 @@ Ext.define('Bisque.GObjectTagger',
         }
     },
     
+    addButtons : function()
+    {
+        var buttons =  
+        [{
+            text : 'Uncheck All',
+            scale : 'small',
+            iconCls : 'icon-uncheck',
+            handler : this.toggleCheck,
+            scope : this,
+            checked : true
+        }];
+        
+        return buttons;
+    },
+    
+    toggleCheck : function(button)
+    {
+        button.checked = !button.checked;
+        var rootNode = this.tree.getRootNode(), eventName=(button.checked)?'Select':'Deselect';
+        
+        if (button.checked)
+        {
+            button.setText('Uncheck All')
+            button.setIconCls('icon-uncheck')
+        }
+        else
+        {
+            button.setText('Check All')
+            button.setIconCls('icon-check')
+        }
+        
+        for (var i=0;i<rootNode.childNodes.length;i++)
+            this.fireEvent(eventName, this, rootNode.childNodes[i]);
+
+        this.checkTree(rootNode, button.checked);
+    },
+    
     appendFromMex : function(resQ)
     {
         for (var i=0;i<resQ.length;i++)
-            resQ[i].resource.loadGObjects({cb: callback(this, "appendGObjects")});
+            resQ[i].resource.loadGObjects({cb: Ext.bind(this.appendGObjects, this, [resQ[i].resource], true)});
     },
     
-    appendGObjects : function(data)
+    appendGObjects : function(data, mex)
     {
         if (data.length>0)
         {
-            this.addNode(this.tree.getRootNode(), {name:data[0].name, value:Ext.Date.format(Ext.Date.parse(this.resource.ts, 'Y-m-d H:i:s.u'), "F j, Y g:i:s a"), gobjects:data});
+            this.addNode(this.tree.getRootNode(), {name:data[0].name, value:Ext.Date.format(Ext.Date.parse(mex.ts, 'Y-m-d H:i:s.u'), "F j, Y g:i:s a"), gobjects:data});
             this.fireEvent('onappend', this, data);
         }
     }
@@ -712,6 +752,8 @@ Ext.define('Bisque.ResourceTagger.viewStateManager',
         btnAdd : true,
         btnDelete : true,
         
+        btnToggleCheck : true,
+        
         btnImport : true,
         btnExport : true,
     
@@ -746,6 +788,15 @@ Ext.define('Bisque.ResourceTagger.viewStateManager',
                 this.state.btnAdd = false;
                 this.state.btnDelete = false;
                 this.state.btnImport = false;
+                break;
+            }
+            case 'GObjectTagger':
+            {
+                // all the buttons are hidden except export
+                this.state = setHidden(this.state, true);
+                this.state.editable = false;
+                
+                this.state.btnExport = false;
                 break;
             }
             default:
