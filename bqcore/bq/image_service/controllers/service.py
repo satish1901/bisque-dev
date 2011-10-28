@@ -23,7 +23,8 @@ from bq.core import permission, identity
 from bq.util.paths import data_path
 from imgsrv import ImageServer
 from imgsrv import ProcessToken
-
+import imgcnv
+import bioformats
 
 log = logging.getLogger("bq.image_service")
 
@@ -35,6 +36,19 @@ def get_image_id(url):
 
     id = path.split('/')[-1]
     return id
+
+def get_format_map():
+    xmlout = '<response>' + imgcnv.installed_formats()
+    if bioformats.installed():
+        xmlout += bioformats.installed_formats()
+        xmlout += '</response>'
+    format_tree = etree.XML(xmlout)
+    formats = {}
+    for ex in format_tree.xpath ('./format/codec/tag[@name="extensions"]'):
+        codec = ex.getparent().get('name')
+        for ext in ex.get('value').split('|'):
+            formats.setdefault(ext, []).append(codec)
+    return formats
 
 
 def cache_control (value):
@@ -52,6 +66,7 @@ class image_serviceController(ServiceController):
         workdir= config.get('bisque.image_service.work_dir', data_path('workdir'))
 
         log.info('ROOT=%s images=%s work=%s' % (config.get('bisque.root'), imgdir, workdir))
+        self.format_map = None
 
         self.srv = ImageServer (image_dir=imgdir,
                                 work_dir = workdir,
@@ -118,6 +133,15 @@ class image_serviceController(ServiceController):
     def set_file_acl( self, image_uri, owner_name, permission ):
         self.srv.set_file_acl(image_uri, owner_name, permission )    
 
+    def guess_image_type (self, filename):
+        """guess whether the file is an image based on the filename
+        and whether we think we can decode
+        """
+        if self.format_map is None:
+            self.format_map = get_format_map()
+
+        ext = os.path.splitext(filename)[1]
+        return self.format_map.get(ext[1:].lower())
 
 
     @expose()

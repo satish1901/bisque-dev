@@ -1,5 +1,7 @@
 from bq.core.service import service_registry
 
+from controllers.blobsrv import make_uniq_hash, guess_type
+
 def find_server():
     return service_registry.find_service ('blobs')
 
@@ -18,6 +20,9 @@ def file_exists(ident):
 def original_name(ident):
     server = find_server()
     return server.originalFileName(ident)
+
+
+
 
 #def fetch(url):
 #    server = find_server(url)

@@ -1721,6 +1721,7 @@ class ImageServer(object):
         self.imagedir = image_dir
         self.workdir = work_dir
         self.cache = FileCache()
+        self.url = server_url
         
         self.services = {}
         self.services = { 'services'     : ServicesService(self),
