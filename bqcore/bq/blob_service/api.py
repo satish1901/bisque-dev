@@ -21,6 +21,9 @@ def original_name(ident):
     server = find_server()
     return server.originalFileName(ident)
 
+def files_exists(hashes):
+    server = find_server()
+    return server.blobsExist(hashes)
 
 
 
