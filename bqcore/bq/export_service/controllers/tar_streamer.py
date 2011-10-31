@@ -17,12 +17,10 @@ class TarFileWrapper(tarfile.TarFile):
         self.offset += len(buf)
         
         self.members.append(tarinfo)
-    
 
     def writeFileChunk(self, fileobj=None, block_size=tarfile.BLOCKSIZE):
         self.fileobj.write(fileobj.read(block_size))
-    
-    
+   
     def finishWrite(self, filesize):
         blocks, remainder = divmod(filesize, tarfile.BLOCKSIZE)
         if remainder > 0:

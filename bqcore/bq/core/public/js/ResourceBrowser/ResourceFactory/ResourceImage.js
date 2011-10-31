@@ -298,12 +298,15 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourceCard',
             for (var tagID in tags)
             {
                 var tag = this.resource.find_tags(tagID, false, '');
-                tags[tagID] = (tag == null || tag.value == "" ? 'None' : tag.value);
-                tagArr.push(new Ext.grid.property.Property(
+                if (tag!=null && tag.value!='')
                 {
-                    name: tagID,
-                    value: tags[tagID]
-                }));
+                    tags[tagID] = (tag == null || tag.value == "" ? 'None' : tag.value);
+                    tagArr.push(new Ext.grid.property.Property(
+                    {
+                        name: tagID,
+                        value: tags[tagID]
+                    }));
+                }
             }
 
             this.setData('tags', tagArr);
