@@ -62,12 +62,39 @@
         var usage_analysis = Ext.create('BQ.usage.Analysis', {height: 120, showAxisTitles: false, });              
 
         var usageExplorer = Ext.create('Ext.carousel.Panel', {
-            renderTo: 'stats', 
-            width: '100%',
-            height: 200,            
             items: [ usage_uploads, usage_analysis, usage_stats, ],      
         });
         
+        this.usageExplorer = Ext.create('Ext.panel.Panel', {
+            renderTo: 'stats', 
+            title: 'Bisque usage',
+            width: 350,       
+            height: 220,
+            cls: 'box',
+            collapsible: true,
+            collapseDirection: 'left',
+            layout: 'fit',
+            border: 0, 
+            defaults: { border: 0, cls: 'usage', }, 
+            items: [usageExplorer],
+        });          
+  
+        this.recentsExplorer = Ext.create('Ext.panel.Panel', {
+            renderTo: 'activity', 
+            width: '100%',       
+            height: '100%',            
+            cls: 'box',
+            collapsible: true,
+            collapseDirection: 'bottom',
+            layout: 'fit',
+            border: 0, 
+            defaults: { border: 0, cls: 'usage', }, 
+        });    
+        Ext.EventManager.addListener( window, 'resize', function(e) {
+            doResize ( this.recentsExplorer, "activity" );
+        }, this );
+        doResize ( this.recentsExplorer, "activity" );  
+   
     });      
 
 </script>
@@ -83,15 +110,11 @@
        
         var moduleBrowser = new Bisque.ResourceBrowser.Browser({
             layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.ICON_LIST,
-            //title: 'Applications',
             viewMode: 'ModuleBrowser',
             dataset: '/module_service',
             wpublic: true,
             border: true,
             selType: 'SINGLE',
-            width: 450,        
-            //height: 500,          
-            renderTo: 'recents',
             cls: 'apps welcome',
             listeners: { 'Select': function(me, resource) { 
                           window.open(bq.url('/module_service/'+resource.name)); 
@@ -99,10 +122,29 @@
                        scope: this },          
           
         });
-        Ext.EventManager.addListener( window, 'resize', function(e) {
-            doResize ( moduleBrowser, "recents" );
-        }, this );
-        doResize ( moduleBrowser, "recents" );
+        this.recentsExplorer.setTitle('Applications');
+        this.recentsExplorer.add(moduleBrowser);
+        
+     
+        var s = '<a href="browser"><img src="';
+        s += '${tg.url('/client_service/public/images/browse_80.png')}';
+        s += '" alt="Browse public images" /></a>';
+        s += '<h3><a href="browser">Browse</a></h3>'; 
+        
+        this.imageExplorer = Ext.create('Ext.panel.Panel', {
+            renderTo: 'explore', 
+            title: 'Explore images',
+            width: 400,       
+            height: 255,
+            cls: 'box',
+            collapsible: true,
+            collapseDirection: 'left',
+            layout: 'hbox',
+            border: 0, 
+            defaults: { border: 0, }, 
+            items: [{ html: s, width: 140, height: 230, cls: 'explore' },],
+        });      
+     
      
     });
 </script>
@@ -111,10 +153,10 @@
 
     Ext.onReady( function() { 
         var tagsExplorer = Ext.create('Ext.carousel.Panel', {
-            renderTo: 'tags', 
-            width: '100%',
-            height: 210,            
-        });      
+            width: 260,
+            height: 200,  
+        }); 
+        this.imageExplorer.add(tagsExplorer);     
       
        DataExplore("${welcome_tags}", tagsExplorer);
     });
@@ -123,7 +165,7 @@
 <script py:if="tg.identity" type="text/javascript" >
     Ext.onReady( function() { 
 
-      var mexBrowser = new Bisque.ResourceBrowser.Browser({
+        var mexBrowser = new Bisque.ResourceBrowser.Browser({
           layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.LIST,
           title : 'Analysis',
           viewMode : 'MexBrowser',
@@ -144,9 +186,9 @@
                           }});
                        }, 
                        scope: this },    
-      });    
-      
-      var imgBrowser = new Bisque.ResourceBrowser.Browser({
+        });    
+        
+        var imgBrowser = new Bisque.ResourceBrowser.Browser({
           title : 'Images',
           tagOrder: '"@ts":desc',          
           selType: 'SINGLE',          
@@ -157,9 +199,9 @@
                           window.open(bq.url('/client_service/view?resource='+resource.uri)); 
                        }, 
                        scope: this },    
-      });    
-      
-      var setBrowser = new Bisque.ResourceBrowser.Browser({
+        });    
+        
+        var setBrowser = new Bisque.ResourceBrowser.Browser({
           layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.LIST,
           title: 'Datasets',
           tagOrder: '"@ts":desc',          
@@ -172,31 +214,20 @@
                           window.open(bq.url('/client_service/view?resource='+resource.uri)); 
                        }, 
                        scope: this },    
-      });        
+        });        
 
-      var tabs = Ext.create('Ext.tab.Panel', {
-          //title : 'My recent activity',
-          region : 'east',
-          activeTab : 0,
-          //border : false,
-          //bodyBorder : 0,
-          //collapsible : true,
-          split : true,
-          //width : 450,
-          //height : 500, 
-          cls: 'apps welcome',
-          plain : true,
-          border: false,
-          //style: 'float: right;',
-          renderTo: 'recents',          
-          items : [imgBrowser, mexBrowser, setBrowser]
-      }); 
-            
-        Ext.EventManager.addListener( window, 'resize', function(e) {
-            doResize ( tabs, "recents" );
-        }, this );
-        doResize ( tabs, "recents" );      
+        var tabs = Ext.create('Ext.tab.Panel', {
+            region : 'east',
+            activeTab : 0,
+            split : true,
+            cls: 'apps welcome',
+            plain : true,
+            border: false,
+            items : [imgBrowser, mexBrowser, setBrowser]
+        }); 
      
+        this.recentsExplorer.setTitle('My recent stuff');
+        this.recentsExplorer.add(tabs);     
      
     });
 </script>
@@ -205,36 +236,19 @@
 
 <body>
 
-
-<div class="box heading" py:if="not tg.identity and welcome_message">
-    <h2>${welcome_message}</h2>
-</div>
-
-<div class="box randomimage" py:if="not tg.identity and imageurl">
-    <a href="${imageurl}">Current random image</a>
-</div>
-
-<div class="box exploreimages" py:if="not tg.identity">
-  	<a href="browser"><img src="${tg.url('/client_service/public/images/browse_80.png')}" alt="Enter Public Image Collection!" border="0" /></a>
-    <h3><a href="browser">Explore images</a></h3>  	
-</div>
-
-
-<div class="box tags" id="tags" py:if="not tg.identity">
-
-</div>
-
-
-<div class="box stats" id="stats">
-</div>
-
-
-<div class="box activity" id="activity">
-    <span py:if="tg.identity"><h3>My recent stuff</h3></span>
-    <span py:if="not tg.identity"><h3>Applications</h3></span>        
-    <div id="recents" class="contents" style="height: 90%;" ></div>
-</div>
-
+    <div class="box heading" py:if="not tg.identity and welcome_message">
+        <h2>${welcome_message}</h2>
+    </div>
+    
+    <div class="box randomimage" py:if="not tg.identity and imageurl">
+        <a href="${imageurl}">Current random image</a>
+    </div>
+    
+    <div class="exploreimages" py:if="not tg.identity" id="explore" ></div>
+    
+    <div class="stats" id="stats"></div>
+    
+    <div class="activity" id="activity"></div>
 
 </body>
 </html>
