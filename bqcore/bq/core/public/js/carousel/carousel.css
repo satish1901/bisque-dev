@@ -37,4 +37,7 @@
 .x-carousel, .x-carousel-child .x-panel-body {
     background-color: transparent;
     color: white;
+    border-color: transparent;
+    border-width: 0px;
+    border-style: solid;    
 }

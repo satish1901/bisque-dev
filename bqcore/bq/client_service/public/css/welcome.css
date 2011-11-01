@@ -22,7 +22,7 @@
     background-color: rgba(215,228,242,0.8);
     
     color: black;
-    padding: 10px 20px 10px 20px;       
+    padding: 0px 0px 0px 0px;
 }
 
 .box a {
@@ -34,68 +34,78 @@
     color: #e8630c;
 }
 
+.box .x-panel-body {
+    background: transparent;   
+}
+
+.box .x-panel-header {
+    line-height: 20px;
+    border-color: rgba(203, 221, 243, 0.5);
+    border-width: 0px;
+    border-style: solid;
+    background-image: none;
+    background-color: rgba(203, 221, 243, 0.3);
+}
+
+.box .x-panel-header-text {
+    font-family: Georgia, serif !important;
+    font-weight: normal;
+    font-size: 15px;
+    color: #333333;
+    padding-left: 15px;
+}
 
 .heading {
     padding: 0px 30px 0px 30px;   
     position: absolute;
     top: 30px;
-    left: 0px;
+    right: 0px;
 }
 
 .randomimage {
-    padding: 10px 20px 10px 20px;   
+    padding: 6px 10px 6px 10px;   
     position: absolute;
+    font-size: 12px;
     top: 30px;
-    right: 30px;
+    left: 30px;
 }
 
 .exploreimages {
-    padding: 30px 30px 15px 30px;   
+    padding: 0px 0px 0px 0px;
     position: absolute;
     top: 120px;
-    width: 240px;       
-    height: 170px;    
-    left: 10px;
+    left: 0px;
 }
 
-.exploreimages img {
-    margin-left: 50px;
+.explore img {
+    margin: 35px 0px 10px 35px;  
 }
 
-.tags {
-    padding: 10px 15px 0px 15px;   
-    position: absolute;
-    top: 140px;
-    left: 260px;
-    width: 260px;
-    height: 240px;
+.explore h3 {
+    text-align: center;
 }
 
 .stats {
-    padding: 0px 30px 0px 30px;   
-        
+    padding: 0px 0px 0px 0px;
     position: absolute;
-    bottom: 20px;
-    left: 20px;
-    
-    width: 350px;       
-    height: 210px;       
+    bottom: 30px;
+    left: 0px;
+}
+
+.usage {
+    padding: 0px 15px 0px 15px;
 }
 
 .stats h2 {
-    font-size: 22px;
+    font-size: 15px;
 }
 
 
 .activity {
-    padding: 10px 30px 0px 30px;   
-    /*width: 500px;
-    height: 600px;
-    top: 200px;
-    left: 600px;*/
+    padding: 0px 0px 0px 0px;
     position: absolute;
-    bottom: 10px;
-    right: 10px;
+    bottom: 0px;
+    right: 20px;
     top: 150px;    
 }
 
@@ -109,6 +119,18 @@
     /*color: white;*/
     color: black;     
 }
+
+.x-carousel li {
+    text-overflow: ellipsis;
+}
+
+.x-carousel li a {
+    text-overflow: ellipsis;
+    width: inherit;
+    display: block;
+    overflow: hidden;
+}
+
 
 .x-carousel-bar .x-tab {
     background: url('/js/carousel/images/tabs_white.png') -0px 0px no-repeat !important;
