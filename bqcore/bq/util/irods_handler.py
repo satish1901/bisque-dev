@@ -1,19 +1,22 @@
 import os
 import re
 import urlparse
-import irods
 import shutil
 import atexit
+import logging
+import irods
 
 from bq.util.mkdir import _mkdir
+
+CONNECTION_POOL = {}
+IRODS_CACHE = 'data/irods_cache/'
+
+
+log = logging.getLogger('bq.irods')
 
 parse_net = re.compile('^((?P<user>[^:]+):(?P<password>[\w.#^!;]+)?@)?(?P<host>[^:]+)(?P<port>:\d+)?')
 irods_env, status = irods.getRodsEnv()
 
-
-CONNECTION_POOL = {}
-
-IRODS_CACHE = 'data/irods_cache/'
 
 if not os.path.exists(IRODS_CACHE):
     _mkdir (IRODS_CACHE)
@@ -35,7 +38,7 @@ def irods_conn(url):
     user  = env['user'] or irods_env.getRodsUserName()
     host  = env['host'] or irods_env.getRodsHost()
     port  = env['port'] or irods_env.getRodsPort() or 1247
-    password  = env['password'] or '7#959^3~Uq'
+    password  = env['password'] or '7#959^3~Uq'  # Bisque irods password
 
     path = ''
     zone = ''
@@ -68,13 +71,13 @@ def irods_conn(url):
         path = nm
     assert path.startswith(nm)
 
-    return conn, irods_url, path
+    return conn, irods_url, nm, path
     
 
 import pdb
 def irods_fetch_dir(url):
     
-    conn, base_url, path = irods_conn(url)
+    conn, base_url, basedir, path = irods_conn(url)
     #print 'path1 Null', '\x00' in path
     coll = irods.irodsCollection(conn)
     coll.openCollection(path); 
@@ -94,6 +97,9 @@ def irods_fetch_dir(url):
         result.append( '/'.join([base_url, path[1:], nm]))
     return result
 
+def irods_cache_name(path):
+    cache_filename = os.path.join(IRODS_CACHE, path[1:])
+    return cache_filename
 def irods_cache_fetch(path):
     cache_filename = os.path.join(IRODS_CACHE, path[1:])
     if os.path.exists(cache_filename):
@@ -101,52 +107,45 @@ def irods_cache_fetch(path):
     return None
 
 BLOCK_SZ=512*1024
-def irods_cache_save(path, f):
+def copyfile(f1, *dest):
+    'copy a file to multiple destinations'
+    while True:
+        buf = f1.read(BLOCK_SZ)
+        if not buf:
+            break
+        for fw in dest:
+            fw.write(buf)
+        if len(buf) < BLOCK_SZ:
+            break
+    
+def irods_cache_save(f, path, *dest):
     cache_filename = os.path.join(IRODS_CACHE, path[1:])
     _mkdir(os.path.dirname(cache_filename))
     with open(cache_filename, 'wb') as fw:
         #shutil.copyfileobj(f, fw)
-        while True:
-            buf = f.read(BLOCK_SZ)
-            if not buf:
-                break
-            fw.write(buf)
-            if len(buf) < BLOCK_SZ:
-                break
-            
+        copyfile(f, fw, *dest)
     return cache_filename
     
 def irods_fetch_file(url):
-    conn, base_url, path = irods_conn(url)
+    conn, base_url, basedir, path = irods_conn(url)
     print "irods-path",  path
-
     localname = irods_cache_fetch(path)
     if localname is None:
         print "fetching"
         f = irods.iRodsOpen(conn, path)
-        localname = irods_cache_save(path, f)
+        localname = irods_cache_save(f, path)
         f.close()
-
     return localname
 
+def irods_push_file(fileobj, url, savelocal=True):
+    conn, base_url, basedir, path = irods_conn(url)
+    irods.mkCollR(conn, basedir, os.path.dirname(path))
+    print "irods-path",  path
+    f = irods.iRodsOpen(conn, path, 'w')
+    localname = irods_cache_save(fileobj, path, f)
+    f.close()
+    return localname
 
-# def _IrodsFile(object):
-#     def __init__(self, path, f):
-#         self.irods_f = f
-#         self.irods_path = path
-#     def read(self, bufsize=None):
-#         return self.irods_f.read(bufsize)
-#     def close(self):
-# def irods_open_file(url):
-#     conn, base_url, path = irods_conn(url)
-#     print "irods-path",  path
-#     localname = irods_cache_fetch(path)
-#     if localname is None:
-#         print "fetching"
-#         f = irods.iRodsOpen(conn, path)
-#         localname = irods_cache_save(path, f)
-#         f.close()
-#     return localname
 
 
 

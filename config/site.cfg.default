@@ -73,6 +73,11 @@ bisque.paths.root  =
 #bisque.paths.config  = installationdir/config
 
 
+# Blobservice
+#bisque.blob_service.default_store = local
+#bisque.blob_service.stores = irods,s3,local
+#bisque.blob_service.local.dir = installationdir/data/imagedir
+#bisque.blob_service.irods.url = irods://irodshost/zone/home/bisque
 # Data service
 #bisque.data_service.caching=true
 #bisque.data_service.server_cache=.server_cache
@@ -82,7 +87,6 @@ bisque.paths.root  =
 # Engine Service
 #bisque.engine_service.local_modules = modules
 # Image Service
-#bisque.image_service.local_dir = ./data/imagedir
 #bisque.image_service.work_dir  = ./data//workdir
 #bisque.image_service.upload_dir  = ./data/uploads
 #bisque.image_service.thumbnail_command = -depth 8,d -page 1 -display

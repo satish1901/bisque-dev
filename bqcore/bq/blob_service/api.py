@@ -1,6 +1,7 @@
 from bq.core.service import service_registry
 
-from controllers.blobsrv import make_uniq_hash, guess_type
+from controllers.blobsrv import  guess_type
+from controllers.blob_storage import make_uniq_hash
 
 def find_server():
     return service_registry.find_service ('blobs')
@@ -21,7 +22,7 @@ def original_name(ident):
     server = find_server()
     return server.originalFileName(ident)
 
-def files_exists(hashes):
+def files_exist(hashes):
     server = find_server()
     return server.blobsExist(hashes)
 

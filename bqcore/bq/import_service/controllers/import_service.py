@@ -369,7 +369,7 @@ class import_serviceController(ServiceController):
         resource = etree.Element(resource_type, perm=str(perm),
                                  resource_uniq = uniq,
                                  resource_name = filename,
-                                 resource_val  = url)
+                                 resource_value  = url)
         if resource_type == 'image':
             resource.set('src', "/image_service/images/%s" % uniq)
 
@@ -408,17 +408,16 @@ class import_serviceController(ServiceController):
         #info = image_service.new_image(src=src, name=filename, userPerm=perm)
 
         try:
-            uniq, uri = blob_service.store_blob (src, filename)
+            uri, uniq = blob_service.store_blob (src, filename)
             resource_type = blob_service.guess_type(filename)
-
-            log.debug ("store %s at %s" % (filename, localpath))
+            log.debug ("stored %s at %s" % (filename, uri))
         except Exception, e:
-            log.exception("eek")
+            log.exception("Error during store")
         # the image was successfuly added into the image service
         resource = etree.Element(resource_type, perm = str(perm),
                                  resource_uniq = uniq,
                                  resource_name = filename,
-                                 resource_val  = uri)
+                                 resource_value  = uri)
         if resource_type == 'image':
             resource.set('src', "/image_service/images/%s" % uniq)
         etree.SubElement(resource, 'tag', name="filename", value=filename)

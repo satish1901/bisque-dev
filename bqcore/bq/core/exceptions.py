@@ -97,3 +97,6 @@ class RequestError(BQException):
     '''Used for any request that cannot be satisfied
     For example: HTTP requests to services
     '''
+
+class ServiceError(BQException):
+    '''Any error during in a service'''
