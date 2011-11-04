@@ -115,7 +115,6 @@ class NodeConverter (object):
     """Base class for providing XML convertion"""
     def element(self, dbo, parent, baseuri, **kw):
         xtag = kw.pop('xtag', dbo.__class__.xmltag)
-        #log.debug ("element kw" + str(kw))
         if not kw:
             kw = model_fields (dbo, baseuri)
         if parent is not None:
@@ -333,9 +332,19 @@ mapping_fields = {
     'id': make_uri,
     'indx': 'index',
     'name_id':None,
+    # Taggable
     'owner_id':None,
     'owner' : make_owner,
     'parent_id':None,
+    'children': None,
+#    'type' : 'resource_user_type',
+#    'name' : 'resource_name',
+#    'value': 'resoruce_value',
+    'resource_parent_id': None,
+    'resource_document_id': None,
+    'resource_name' : None,
+    'resource_type' : None,
+    'resource_user_type' : None,
     'module_type_id':None,
     'mex' : None,
     'mex_id' : None,
@@ -362,6 +371,7 @@ mapping_fields = {
     'taggable_id': None,
     'permission': 'action',
     'resource': None,
+
     }
 
 
@@ -395,6 +405,44 @@ def model_fields(dbo, baseuri=None):
                attrs[fn] = str(attr_val) #unicode(attr_val,'utf-8')
     return attrs
 
+
+
+
+def xmlnode(dbo, parent, baseuri, view, **kw):
+    #elem = self.element(dbo, parent, baseuri)
+    xtag = kw.pop('xtag', dbo.resource_type)
+    if not kw:
+        kw = model_fields (dbo, baseuri)
+    if parent is not None:
+        #log.debug ("etree: " + str(xtag)+ str(kw))
+        elem =  etree.SubElement (parent, xtag, **kw)
+    else:
+        elem =  etree.Element (xtag,  **kw)
+
+    if  dbo.resource_type == 'tag' and dbo.resource_value is None:
+        [ toxmlnode (x, parent = elem, baseuri=baseuri, view=view) for x in dbo.values ]
+    elif  dbo.resource_type == 'gobject' and dbo.resource_value is None:
+        [ toxmlnode (x, parent = elem, baseuri=baseuri, view=view) for x in dbo.vertices ]
+    return elem
+
+def resource2tree(dbo, parent=None, view=[], baseuri=None, progressive=False, **kw):
+    doc_id = dbo.resource_document_id
+    docnodes = DBSession.query(Taggable).filter(Taggable.resource_document_id == doc_id)
+    docnodes = docnodes.order_by(Taggable.id)
+
+    nodes = {}
+    for node in docnodes:
+        if node.resource_parent_id is not None:
+            parent = nodes[node.resource_parent_id]
+            #elem = etree.SubElement(parent, node.resource_type)
+            elem = xmlnode (node, parent, baseuri, view)
+            nodes[node.id] = elem
+        else:
+            #elem = root = etree.Element(node.resource_type)
+            elem = root = xmlnode(node, None, baseuri, view)
+            nodes[node.id] = elem
+
+    return root
 
 
 def db2tree(dbo, parent=None, view=[], baseuri=None, progressive=False, **kw):

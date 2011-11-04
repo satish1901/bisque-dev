@@ -1,12 +1,6 @@
 import os
-import shutil
 import logging
-from lxml import etree
-
-import random
-import datetime  
 import hashlib
-
 
 import tg
 from tg import expose, flash, config
@@ -23,6 +17,8 @@ from bq.util.mkdir import _mkdir
 from bq.util import irods_handler
 from bq import data_service
 from bq.data_service.model import Taggable, DBSession
+
+import blob_storage
 
 log = logging.getLogger('bq.blobs')
 
@@ -58,12 +54,6 @@ def file_hash_MD5( filename ):
     return m.hexdigest()	  
    
 
-def make_uniq_hash(filename):
-    rand_str = str(random.randint(1, 1000000))
-    rand_str = filename + rand_str + str(datetime.datetime.now().isoformat()) 
-    rand_hash = hashlib.sha1(rand_str).hexdigest()
-    return rand_hash
-
 
 def guess_type(filename):
     from bq import image_service 
@@ -84,8 +74,14 @@ class BlobServer(RestController, ServiceMixin):
     
     def __init__(self, url ):
         ServiceMixin.__init__(self, url)
-        imgdir = config.get('bisque.image_service.local_dir', data_path('imagedir'))
-        self.top = imgdir
+        default_store = config.get('bisque.blob_service.default_store', 'local')
+        store_list = [ x.strip() for x in config.get('bisque.blob_service.stores','irods,local').split(',') ] 
+        self.stores = []
+        for st in store_list:
+            self.stores.append( (st,  blob_storage.make(st)) )
+        self.default_store = dict(self.stores) [default_store]
+        log.info ('configured stores %s' % ','.join([ str(x[1]) for x in self.stores]))
+        log.info ('Using %s for default storage' % self.default_store)
 
 
     @expose(content_type='text/xml')
@@ -108,62 +104,28 @@ class BlobServer(RestController, ServiceMixin):
         """Store the file object in the next blob and return the
         descriptor"""
         user_name = identity.current.user_name
-        filepath = self.nextEmptyBlob(user_name, name)
-            
-        log.debug('storeBlob: ' +str(name) +' '+ str(filepath) )               
-            
-        if not src and name:
-            src = open(name,'rb')
-        src.seek(0)
-        with  open(filepath, 'wb') as trg:
-            shutil.copyfileobj(src, trg)
-
-        fhash = file_hash_SHA1( filepath )
-        flocal = filepath[len(self.top)+1:]
-
-        #blobdb.updateFile (dbid=id, uri = self.geturi(id), original = name, owner = ownerId, perm = permission, fhash=fhash, ftype=ftype, flocal=flocal )
-        #self.loginfo (name, id, **kw)
-        return fhash, flocal
+        blob_ident, flocal = self.default_store.write(src, name, user_name = user_name)
+        fhash = file_hash_SHA1( flocal )
+        return blob_ident, fhash
 
     def localpath (self, ident, workdir=None):
         "Find  local path for the identified blob, using workdir for local copy if needed"
 
         resource = DBSession.query(Taggable).filter_by (resource_uniq = ident).first()
+        path = None
         if resource is not None:
-            # Determine type of resource_ url and fetch to localpath
-            if resource.resource_val.startswith('irods://'):
-                path = irods_handler.irods_fetch_file(resource.resource_val)
-            else:
-                path = "%s/%s" % (self.top, resource.resource_val)
+            for nm,store in self.stores:
+                if store.valid(resource.resource_value):
+                    path =  store.localpath(resource.resource_value)
+                    break
             log.debug('using localpath=%s' % path)
             return path
-
         raise IllegalOperation("bad resource value %s" % ident)
 
 
     def getBlobInfo(self, ident): 
         resource = DBSession.query(Taggable).filter_by (resource_uniq = ident).first()
         return resource
-
-    def blobsExist(self, fhashes):
-        'search for files by content hash'
-        blobsfound = []
-        #for fhash in fhashes:
-        #   if blobdb.find_image_id(fhash) != None:
-        #       blobsfound.append(fhash)
-        log.warn("blobsExist not implemented")
-        return blobsfound
-
-
-
-    def setBlobInfo(self, image_uri, **kw): 
-        blobdb.set_image_info( image_uri, kw )
-        
-    def setBlobCredentials(self, image_uri, owner_name, permission ): 
-        blobdb.set_image_credentials( image_uri, owner_name, permission )        
-
-    def set_file_acl(self, image_uri, owner_name, permission ): 
-        blobdb.set_file_acl( image_uri, owner_name, permission )        
 
     def getBlobFileName(self, id): 
         fobj = self.getBlobInfo(id)
@@ -173,73 +135,33 @@ class BlobServer(RestController, ServiceMixin):
         log.debug('Blobsrv - original name for id: ' +str(id) +' '+ fname )    
         return fname   
 
-    def getBlobOwner(self, id): 
-        fobj = self.getBlobInfo(id)
-        fown = None
-        if fobj != None and fobj.owner != None:        
-            fown = str( fobj.owner )
-        log.debug('Blobsrv - original owner for id: ' +str(id) +' '+ fown )    
-        return fown       
+    def blobsExist(self, fhashes):
+        'search for files by content hash'
+        blobsfound = []
+        #for fhash in fhashes:
+        #   if blobdb.find_image_id(fhash) != None:
+        #       blobsfound.append(fhash)
 
-    def getBlobPerm(self, id): 
-        fobj = self.getBlobInfo(id)
-        fown = None
-        if fobj != None and fobj.perm != None:            
-            fown = str( fobj.perm )
-        log.debug('Blobsrv - original perm for id: ' +str(id) +' '+ fown )    
-        return fown    
-
-    def getBlobHash(self, id): 
-        fobj = self.getBlobInfo(id)
-        fhash = None
-        if fobj != None and fobj.sha1 != None:          
-            fhash = fobj.sha1
-        if fhash == None:
-            fhash = file_hash_SHA1( self.originalFileName(id) )
-            fobj.sha1 = fhash
-            blobdb.set_image_info (fobj.uri, fobj)
-            
-        log.debug('Blobsrv - hash for id: ' +str(id) +' '+ str(fhash) )    
-        return fhash   
-        
-    def blobExists(self, fhash):
-        return blobdb.find_image_id(fhash)
-
-
-    def blobUris(self, fhash):
-        return blobdb.find_uris(fhash)
+        for fhash in fhashes:
+            resource = DBSession.query(Taggable).filter_by (resource_uniq = fhash).first()
+            if resource:
+                blobsfound.append(fhash)
+        log.warn("blobsExist not implemented")
+        return blobsfound
 
     def originalFileName(self, id): 
         return self.getBlobFileName(id) 
         
-
     def fileExists(self, id):
         if id==None: return False      
         fileName = self.localpath(id)    
-        return os.path.exists(fileName)
+        return fileName and os.path.exists(fileName)
         
+
+
+
     def geturi(self, id):
         return self.url + '/' + str(id)
-
-
-    def reserveFile (self, user, filename):
-        rand_str = str(random.randint(1, 1000000))
-        rand_str = rand_str + str(datetime.datetime.now().isoformat()) 
-        rand_hash = hashlib.sha1(rand_str).hexdigest()
-        # imagedir/user/[A-Z0-9]/hash-filename
-        return "%s/%s/%s/%s-%s" % (self.top, user, rand_hash[0], rand_hash, filename)
-
-    def nextEmptyBlob(self, user, filename):
-        "Return a file object to the next empty blob"
-        while 1:
-            fn = self.reserveFile(user, filename)
-            _mkdir (os.path.dirname(fn))
-            if os.path.exists (fn):
-                log.warning('%s already exists' % fn)
-            else:
-                break
-        return fn
-            
 
 
 
@@ -264,16 +186,3 @@ def initialize(uri):
 
 __controller__ =  BlobServer
 
-
-
-
-
-#web.webapi.internalerror = web.debugerror
-if __name__ == "__main__":
-    #web.run(urls, globals())
-
-    srv = BlobServer()
-    srv.resetFilenames()
-    for i in range(10):
-        p = open ('/etc/passwd')
-        srv.addBlob(p)

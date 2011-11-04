@@ -138,6 +138,19 @@ names = Table('names', metadata,
               )
 
 
+document = Table('document', metadata, 
+                 Column('id', Integer, primary_key=True),
+                 Column('uniq', String(40)),
+                 Column('perm', String(15)),
+                 Column('ts', DateTime(timezone=False)),
+                 Column('owner_id', Integer, ForeignKey ('document.id')),
+                 )
+document_acl = Table('document_acl', metadata,
+                     Column('document_id', Integer, ForeignKey('document.id'), primary_key=True),
+                     Column('user_id', Integer, ForeignKey('document.id'),primary_key=True),
+                     Column('permission', String (15)),
+                     )
+
 
 taggable = Table('taggable', metadata,
                  Column('id', Integer, primary_key=True),
@@ -147,12 +160,13 @@ taggable = Table('taggable', metadata,
                  Column('ts', DateTime(timezone=False)),
                  Column('perm', Integer), #ForeignKey('permission_sets.set_id')
                  Column('owner_id', Integer, ForeignKey('taggable.id')),
-                 Column('resource_name', UnicodeText),
                  Column('resource_uniq', String(40)),
-                 Column('resource_val',  UnicodeText),
                  Column('resource_type', Unicode(255) ),  # will be same as tb_id UniqueName
-                 Column('resource_parent', Integer, ForeignKey('taggable.id')),
-                 #Column('resource_document', Integer, ForeignKey('document.id')), # Unique Element
+                 Column('resource_name', UnicodeText (1023)),
+                 Column('resource_user_type', UnicodeText(1023), key="type" ),
+                 Column('resource_value',  UnicodeText),
+                 Column('resource_parent_id', Integer, ForeignKey('taggable.id')),
+                 Column('resource_document_id', Integer, ForeignKey('taggable.id')), # Unique Element
                  
 
                  )
@@ -459,7 +473,7 @@ class Taggable(object):
         self.table_name = UniqueName(v)
 
     table = property(gettable, settable)
-    type  = property(gettable, settable)
+    #type  = property(gettable, settable)
 
     @validates('owner')
     def validate_owner (self, key, owner):
@@ -922,7 +936,6 @@ class Module(Taggable):
         self.module_type = UniqueName(v)
     type = property(get_module_type, set_module_type)
 
-
 class ModuleExecution(Taggable):
     '''
     A module execution is an actual execution of a module.
@@ -1031,10 +1044,25 @@ mapper( Taggable, taggable,
 
     'tags' : relation(Tag, lazy=True, cascade="all, delete-orphan",
                          primaryjoin= (tags.c.parent_id==taggable.c.id)),
+#                         primaryjoin= and_(taggable.c.resource_parent_id==taggable.c.id,
+#                                           taggable.c.resource_type == 'tag')),
     'gobjects' : relation(GObject, lazy=True, cascade="all, delete-orphan",
                          primaryjoin= (gobjects.c.parent_id==taggable.c.id)),
+#                         primaryjoin= and_(taggable.c.resource_parent_id==taggable.c.id,
+#                                           taggable.c.resource_type == 'gobject')),
     'acl'  : relation(TaggableAcl, lazy=True, cascade="all, delete-orphan",
                       primaryjoin = (TaggableAcl.taggable_id == taggable.c.id)),
+    'children' : relation(Taggable, cascade="all, delete-orphan",
+                          backref = backref('parent', remote_side = [ taggable.c.id]),
+                          primaryjoin = (taggable.c.id == taggable.c.resource_parent_id)),
+    'values' : relation(Value,  lazy=True, cascade="all, delete-orphan",
+                        primaryjoin =(taggable.c.id == values.c.parent_id),
+                        foreign_keys=[values.c.parent_id]
+                        ),
+    'vertices' : relation(Vertex, cascade="all, delete-orphan",
+                          primaryjoin =(taggable.c.id == vertices.c.parent_id),
+                          foreign_keys=[vertices.c.parent_id]
+                          ),
     }
               )
 
@@ -1044,15 +1072,14 @@ mapper( Tag, tags, inherits=Taggable,
                   properties={
     'tagname': relation(UniqueName, uselist=False,
                         primaryjoin =(tags.c.name_id==names.c.id)),
-    'parent' : relation (Taggable,
-                         primaryjoin =(tags.c.parent_id == taggable.c.id)),
+#    'parent' : relation (Taggable,
+#                         primaryjoin =(tags.c.parent_id == taggable.c.id)),
     'type_name' : relation (UniqueName, uselist=False,
                        primaryjoin =(tags.c.type_id==names.c.id)),
-    'values' : relation(Value,  lazy=True, cascade="all, delete-orphan",
-                        primaryjoin =(taggable.c.id == values.c.parent_id),
-#                        foreignkey=values.c.parent_id,
-                        foreign_keys=[values.c.parent_id]
-                        ),
+#    'values' : relation(Value,  lazy=True, cascade="all, delete-orphan",
+#                        primaryjoin =(taggable.c.id == values.c.parent_id),
+#                        foreign_keys=[values.c.parent_id]
+#                        ),
     }
               )
 
@@ -1062,15 +1089,14 @@ mapper( GObject, gobjects, inherits=Taggable,
                   properties={
     'tagname': relation(UniqueName,
                         primaryjoin =(gobjects.c.name_id==names.c.id)),
-    'parent' : relation (Taggable,
-                         primaryjoin =(gobjects.c.parent_id == taggable.c.id)),
+#    'parent' : relation (Taggable,
+#                         primaryjoin =(gobjects.c.parent_id == taggable.c.id)),
     'type_name' : relation (UniqueName, 
                        primaryjoin =(gobjects.c.type_id==names.c.id)),
-    'vertices' : relation(Vertex, cascade="all, delete-orphan",
-                          primaryjoin =(taggable.c.id == vertices.c.parent_id),
-#                          foreignkey=vertices.c.parent_id
-                          foreign_keys=[vertices.c.parent_id]
-                          ),
+#    'vertices' : relation(Vertex, cascade="all, delete-orphan",
+#                          primaryjoin =(taggable.c.id == vertices.c.parent_id),
+#                          foreign_keys=[vertices.c.parent_id]
+#                          ),
     }
               )
 
@@ -1121,7 +1147,7 @@ mapper(Template, templates, inherits=Taggable)
 mapper(Module, modules, inherits=Taggable,
               properties = {
     'module_type' : relation(UniqueName,
-                             primaryjoin = (modules.c.module_type_id==names.c.id)),
+                      primaryjoin = (modules.c.module_type_id==names.c.id)),
 
            
     }                             
