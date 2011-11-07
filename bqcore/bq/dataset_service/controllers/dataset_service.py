@@ -1,6 +1,7 @@
 import os
 import logging
 import pkg_resources
+from lxml import etree
 from pylons.i18n import ugettext as _, lazy_ugettext as l_
 from tg import expose, flash
 from repoze.what import predicates 
@@ -30,6 +31,7 @@ class DatasetOp(object):
         
     
 class IdemOp(DatasetOp):
+    'An idempotent operation'
     def action(self, member, **kw):
         'return the members'
         log.debug ('idem action %s' % member)
@@ -64,7 +66,15 @@ class DeleteOp(DatasetOp):
 class TagEditOp (DatasetOp):
     'Add/Remove/Modify Tags on each member'
     def action(self, member, action, tagdoc, **kw):
-        log.debug ('TagEdit action %s' % member)
+        """Modify the tags of the member 
+        @param member: the memeber of the dataset
+        @param action: a string :append, delete, edit_value, edit_name, change_name
+        @poarag tagdoc
+        """
+        if isinstance(tagdoc, basestring):
+            tagdoc = etree.XML(tagdoc)
+
+        log.debug ('TagEdit (%s) %s with %s' % (action, member, etree.tostring(tagdoc)))
         # These update operation should be done in the database
         # However, I don't want to think about it now
         # so here's the brute-force way
@@ -130,12 +140,18 @@ class DatasetServer(ServiceController):
             
     @expose('bq.dataset_service.templates.datasets')
     def index(self, **kw):
+        'list operations of dataset service'
 
         return dict(operations = self.operations, )
 
     @expose(content_type="text/xml")
     def add_query(self, duri, resource_tag, tag_query):
-        """Append query results to dataset"""
+        """Append query results to a dataset
+
+        @param duri: dataset uri of an existing dataset
+        @param resource_tag:resource type tag i.e. images
+        @param tag_query:  expression of tag search
+        """
 
         dataset = data_service.get_resource(duri, view='deep')
         members = dataset.xpath('./tag[@name="members"]')[0]
@@ -152,6 +168,13 @@ class DatasetServer(ServiceController):
 
     @expose(content_type="text/xml")
     def iterate(self, duri, operation='idem', **kw):
+        """Iterate over a dataset executing an operation on each member
+
+        @param  duri: dataset uri
+        @param operation: an operation name (i.e. module, permisssion)
+        @param kw : operation parameters by name
+        """
+
         log.info('iterate op %s on  %s' % (operation, duri))
         dataset = data_service.get_resource(duri, view='deep')
         members = dataset.xpath('/dataset/tag[@name="members"]')[0]
