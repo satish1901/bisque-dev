@@ -254,10 +254,8 @@ class BQSession(object):
             tags.append( { 'name':'message', 'value': msg })
         return self.update_mex(status, tags, gobjects, reload=False)
                           
-
     def fail_mex (self, msg):
-        self.mex.status = 'FAILED'
-        self.save(self.mex)
+        self.finish_mex(status='FAILED', msg=msg)
 
     def _begin_mex (self, moduleuri):
         """create a mex on the server for this run"""
