@@ -91,7 +91,7 @@ Bisque.ResourceBrowser.DatasetManager = Ext.extend(Ext.Panel,
             var uri =
             {
                 offset : 0,
-                baseURL : '/data_service/images'
+                baseURL : '/data_service/image'
             };
 
             this.msgBus.fireEvent('Browser_ReloadData', uri);
@@ -127,7 +127,7 @@ Bisque.ResourceBrowser.DatasetManager = Ext.extend(Ext.Panel,
                 var uri =
                 {
                     offset : 0,
-                    baseURL : '/data_service/images'
+                    baseURL : '/data_service/image'
                 };
 
                 document.title='Dataset: Images';

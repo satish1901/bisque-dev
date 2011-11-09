@@ -60,14 +60,14 @@ from datetime import datetime
 from sqlalchemy.sql import select, func, exists, and_, or_, not_, asc, desc
 
 from bq.core.model import DBSession as session
-from bq.data_service.model import Taggable, taggable, Image, TaggableAcl, BQUser
 #from bq.image_service import image_service
 #from bq.notify_service import notify_service
 
 
 from bq.data_service.model import UniqueName, names
-from bq.data_service.model import Taggable, taggable, Image, TaggableAcl, BQUser
-from bq.data_service.model import Tag, tags
+from bq.data_service.model import Taggable, taggable, Image
+from bq.data_service.model import TaggableAcl, BQUser
+from bq.data_service.model import Tag
 from bq.data_service.model import Value, values
 from bq.core import identity
 from bq.core.identity import get_admin
@@ -173,14 +173,50 @@ def p_expr_term(p):
     #p[0] = Taggable.id.in_ (select([Taggable.id], p[1]).correlate(None))
     p[0] = p[1]
 
-
 def p_term_tagval(p):
+    '''term : tagval SEP tagval'''
+    vals= values.alias()
+    resource = taggable.alias ()
+    if p[1].count('*'):
+        namexpr = resource.c.resource_name.ilike (p[1].replace('*', '%'))
+    else:
+        namexpr = resource.c.resource_name == p[1]
+    
+    if p[3].count('*'):
+        v = p[3].replace('*', '%')
+        valexpr = or_(and_(vals.c.valstr.ilike (v),
+                           resource.c.id == vals.c.parent_id),
+                      resource.c.resource_value.ilike(v))
+    else:
+        valexpr = or_(and_(func.lower(vals.c.valstr)==p[3].lower(),
+                           resource.c.id == vals.c.parent_id),                          
+                      func.lower(resource.c.resource_value) == p[3].lower())
+
+    p[0] = and_(namexpr, valexpr,
+                resource.c.document_id == taggable.c.id)
+    
+
+def p_term_tag(p):
+    '''term : tagval'''
+    #tag = tags.alias ()
+    vals= values.alias()
+    resource = taggable.alias()
+    #taggableobj = taggable.alias()
+
+    if p[1].count('*'):
+        valexpr = (vals.c.valstr.ilike (p[1].replace('*', '%')))
+    else:
+        valexpr = func.lower(vals.c.valstr) == p[1].lower()
+
+    p[0] = and_(taggable.c.id == vals.document_id,
+                valexpr)
+
+def XXXp_term_tagval(p):
       '''term : tagval SEP tagval'''
       tag = tags.alias ()
       vals= values.alias()
       tagname = names.alias()
       resource = taggable.alias ()
-      #taggableobj = taggable.alias()
       if p[1].count('*'):
           namexpr = and_(tagname.c.name.ilike (p[1].replace('*', '%')),
                          tag.c.name_id == tagname.c.id )
@@ -199,9 +235,8 @@ def p_term_tagval(p):
                 valexpr,
                 taggable.c.id == resource.c.id))
 
-def p_term_tag(p):
+def XXXp_term_tag(p):
     '''term : tagval'''
-    tag = tags.alias ()
     vals= values.alias()
     resource = taggable.alias()
     #taggableobj = taggable.alias()
@@ -216,7 +251,6 @@ def p_term_tag(p):
              tag.c.parent_id == resource.c.id,
              vals.c.parent_id == tag.c.id,
              valexpr))
-
 
 
 def p_tagval_norm (p):
@@ -290,7 +324,8 @@ def prepare_type (resource_type, query = None):
         query = session.query(dbtype)
 
     if dbtype == Taggable:
-        query_expr = (Taggable.tb_id == UniqueName(name).id)
+        #query_expr = (Taggable.tb_id == UniqueName(name).id)
+        query_expr = (Taggable.resource_type == name)
     else:
         if hasattr(dbtype, 'id'):
             query_expr = (dbtype.id == Taggable.id)
@@ -301,13 +336,11 @@ def prepare_type (resource_type, query = None):
 def prepare_parent(resource_type, query, parent_query=None):
     if parent_query:
         name, dbtype = resource_type
-        #log.debug ("Using %s" % sqlalchemy.__version__)
-        #subquery = select([Taggable.id], parent_query._criterion,
-        #                  from_obj= parent_query._from_obj).as_scalar().correlate(None)
-        #query = query.filter (dbtype.c.parent_id == subquery )
         subquery = parent_query.with_labels().subquery()
         log.debug ("subquery " + str(subquery))
-        query = session.query(dbtype).filter (dbtype.parent_id == subquery.c.taggable_id)
+        log.debug ( "parent %s %s " % ( name , dbtype))
+        #query = session.query(dbtype).filter (dbtype.resource_parent_id == subquery.c.taggable_id)
+        query  = query.filter(dbtype.resource_parent_id == subquery.c.taggable_id)
     return query
 
 
@@ -325,11 +358,12 @@ def prepare_order_expr (query, tag_order, **kw):
             if order.startswith('@'):
                 query = query.order_by(ordering(getattr(Taggable, order[1:])))
                 continue
-            ordertags = tags.alias()
+            ordertags = taggable.alias()
             ordervals = values.alias()
             query_expr = and_ (#query_expr,
-                               Taggable.id == ordertags.c.parent_id,
-                               ordertags.c.name_id == UniqueName(order).id,
+                               Taggable.id == ordertags.c.resource_parent_id,
+                               ordertags.c.resource_type == 'tag', 
+                               ordertags.c.resource_name == order,
                                ordertags.c.id == ordervals.c.parent_id)
             query = query.filter(query_expr).order_by (ordering(ordervals.c.valstr))
     else:
@@ -339,10 +373,9 @@ def prepare_order_expr (query, tag_order, **kw):
 
 def count_special(**kw):
     if kw.pop('images2d', None):
-        vs = session.execute(select ([func.sum (Image.z * Image.t)])).fetchall()
-        # vs = [ (count , ) ] 
-        #log.debug ('images2d=' + str(vs[0]))
-        count = vs[0][0]
+        #vs = session.execute(select ([func.sum (Image.z * Image.t)])).fetchall()
+        #count = vs[0][0]
+        count = session.query(Image).count()
         if count:
             return count
     return None
@@ -364,6 +397,11 @@ class fobject(object):
         self.__class__.xmltag = xmltag
         self.tags = []
         self.gobjects = []
+        self.children = []
+        self.values = []
+        self.vertices = []
+        self.resource_name  = None
+        self.resource_value = None
         self.__dict__.update(**kw)
 
     @classmethod
@@ -396,44 +434,66 @@ def tags_special(dbtype, query, params):
         
         ### Return all tha available tag names for the given superquery
         sq1 = query.with_labels().subquery()
-        sq2 = session.query(Tag.name_id).filter(Tag.parent_id == sq1.c.taggable_id).distinct().subquery()
-        log.debug ("tag_names query = %s" % sq1)
-        names = session.query(UniqueName).filter(UniqueName.id == sq2.c.name_id)
-        names = names.distinct().order_by(UniqueName.name)
-        log.debug ('names query = %s' % str(names))
-        q = [ fobject (xmltag='tag', name = str(tg.name)) for tg in names.all()]
+        # Fetch all name on all 'top' level tags from the query
+        sq2 = session.query(Tag.resource_name).filter(Tag.document_id == sq1.c.taggable_document_id)
+        sq3 = sq2.distinct().order_by(Tag.resource_name)
+        #log.debug ("tag_names query = %s" % sq1)
+        q = [ fobject (resource_type='tag', resource_name = tg[0]) for tg in sq3]
+        #names = session.query(UniqueName).filter(UniqueName.id == sq2.c.name_id)
+        #names = names.distinct().order_by(UniqueName.name)
+        #log.debug ('names query = %s' % str(names))
+        #q = [ fobject (xmltag='tag', name = str(tg.name)) for tg in names.all()]
         return q
     
     tv = params.pop('tag_values', None)
     if tv:
         ### Given a query and a tag_name, return all the possible values for the tag
         #valtags = tags.alias()
-        tv = UniqueName(tv)
+        #tv = UniqueName(tv)
         sq1 = query.with_labels().subquery()
-        sq2 = session.query(Tag).filter(and_(Tag.parent_id == sq1.c.taggable_id,
-                                             Tag.name_id == tv.id)).with_labels().subquery()
+        #sq2 = session.query(Tag).filter(and_(Tag.parent_id == sq1.c.taggable_id,
+        #                                     Tag.name_id == tv.id)).with_labels().subquery()
+        sq2 = session.query(Tag).filter(
+            and_(Tag.resource_name == tv,
+                 Tag.document_id == sq1.c.taggable_document_id)).with_labels().subquery()
         vs=session.query(Value.valstr).filter(Value.parent_id == sq2.c.taggable_id).distinct()
-
         log.debug ('tag_values = %s' % vs)
-        q = [ fobject (xmltag='tag', name = tv.name, value = v[0])
+        q = [ fobject (resource_type='tag', resource_name = tv, value = v[0])
               for v in vs.all() ]
         return q
 
-    if params.has_key('name') and dbtype==Tag:
+    if params.has_key('name'):
         ### Find tags with name
         ## Equiv .../tag[@name=param]
-        q  =  and_(Tag.name_id == names.c.id,
-                   names.c.name == params.pop('name'),
-                   Taggable.id == Tag.id)
-        return session.query(Tag).filter(q)
-    if params.has_key('value') and dbtype==Tag:
+        return session.query(Tag).filter(
+            Taggable.resource_name == params.pop('name'))
+    if params.has_key('value'):
         ### Find tags with name
-        ## Equiv .../tag[@name=param]
-        q  = and_(Tag.id == Value.parent_id,
-                  Value.valstr == params.pop('value'),
-                  Taggable.id == Tag.id)
+        ## Equiv .../tag[@value=param]
+        return session.query(Tag).filter(
+            and_(Tag.id == Value.parent_id, 
+                 Value.valstr == params.pop('value')))
+                 
         
-        return session.query(Tag).filter(q)
+
+    #if params.has_key('name') and dbtype==Tag:
+        ### Find tags with name
+        ## Equiv .../tag[@name=param]
+        #q  =  and_(Tag.name_id == names.c.id,
+        #           names.c.name == params.pop('name'),
+        #           Taggable.id == Tag.id)
+        #return session.query(Tag).filter(q)
+        
+
+
+    #if params.has_key('value') and dbtype==Tag:
+    #    ### Find tags with name
+    #    ## Equiv .../tag[@name=param]
+    #    q  = and_(Tag.id == Value.parent_id,
+    #              Value.valstr == params.pop('value'),
+    #              Taggable.id == Tag.id)
+    #    
+    #    return session.query(Tag).filter(q)
     
     return None
 

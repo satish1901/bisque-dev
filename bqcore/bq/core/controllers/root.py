@@ -258,7 +258,7 @@ def startup():
     enabled  = enabled and [ x.strip() for x in enabled.split(',') ] or []
     disabled = disabled and [ x.strip() for x in disabled.split(',') ] or []
 
-    log.debug ('using root=%s proxy=%s with services=%s - %s'
+    log.info ('using root=%s proxy=%s with services=%s - %s'
                % (root, proxy, enabled, disabled))
 
     RootController.mount_local_services(root, enabled, disabled)

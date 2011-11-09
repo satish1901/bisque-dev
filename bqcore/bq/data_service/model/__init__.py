@@ -1,6 +1,8 @@
 #
 #
+import bq
 from bq.core.model import DeclarativeBase, metadata, DBSession
+
 
 from tag_model import *
 

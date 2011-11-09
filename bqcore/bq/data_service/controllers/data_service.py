@@ -226,7 +226,7 @@ class DataServerController(ServiceController):
             etree.SubElement(response, resource_tag, count = str(count))            
         else:    
             nodelist = resource_query (resource_type, tag_query=tag_query, **kw)
-            response  = etree.Element ('response')
+            response  = etree.Element ('resource', uri='/data_service/%s' % resource_tag)
             db2tree (nodelist, parent=response,
                      view=view, baseuri = self.url)
 
