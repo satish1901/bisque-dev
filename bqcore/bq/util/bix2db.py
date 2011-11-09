@@ -58,8 +58,10 @@ from StringIO import StringIO
 from datetime import datetime, time, date
 from lxml import etree
 
+from bq import blob_service
 from bq import image_service 
 from bq import data_service
+
 from bq.util.bisquik2db import bisquik2db
 from bq.data_service.model import Image, Tag
 from bq.core import permission
@@ -105,33 +107,48 @@ class BIXImporter(object):
             local_src = self.import_files [fn]
             return dict(src = local_src)
         # Normal import
-        info =  image_service.new_file(src=open(self.fullname(fn), 'rb'),
-                                       name=fn,
-                                       userPerm = self.permission_flag)
-        self.import_files[fn] = info['src']
+        info = {}
+        with open(self.fullname(fn), 'rb') as src:
+            path, fhash =  blob_service.store_blob(src,fn) 
+
+        resource = etree.Element('file', perm = str(self.permission_flag),
+                                 resource_uniq = fhash,
+                                 resource_name = fn,
+                                 resource_value  = path)
+
+        resource = data_service.new_resource(resource = resource)
+        
+        self.import_files[fn] = info['src'] = "/image_service/images/%s" % fhash
         return info
             
 
     def save_image (self, fn, **kw):
         '''save a file in the image server and return info'''
-        if self.flags.get('reimport', False):
-            # lookup filename and request info
-            local_src = self.import_files [fn]
-            return image_service.info(local_src)
+        #if self.flags.get('reimport', False):
+        #    # lookup filename and request info
+        #    local_src = self.import_files [fn]
+        #    return image_service.info(local_src)
         
         # Normal import
         log.debug ("Store new image: " + fn + " " + str(self.image_info)) 
-        info =  image_service.new_image(src=open(self.fullname(fn), 'rb'),
-                                        name=fn,
-                                        userPerm = self.permission_flag,
-                                        **(self.image_info) )
-        if 'src' in  info:
-            self.import_files[fn] = info['src']
-            self.image_uri = info['src']
-            return info
+        with open(self.fullname(fn), 'rb') as src:
+            path, fhash =  blob_service.store_blob(src,fn) 
+
+        resource = etree.Element('image', perm = str(self.permission_flag),
+                                 resource_uniq = fhash,
+                                 resource_name = fn,
+                                 resource_value  = path, 
+                                 src = "/image_service/images/%s" % fhash )
+
+        etree.SubElement(resource, 'tag', name="filename", value=fn)
+        etree.SubElement(resource, 'tag', name="upload_datetime", value=datetime.now().isoformat(' '), type='datetime' ) 
+        self.resource = data_service.new_resource(resource = resource)
+
+        if 'src' in  self.resource.attrib:
+            self.import_files[fn] = self.resource.attrib['src']
+            self.image_uri = self.resource.attrib['src']
         else:
             raise BIXError ("Image service could not create image %s" % fn)
-        
 
 
     def process_bix(self, bixfile, name_map = {} ):
@@ -193,23 +210,19 @@ class BIXImporter(object):
         except BIXError, e:
             log.error ("Exception" + e)
         except:
-            excType, excVal, excTrace  = sys.exc_info()
-            log.error ("BixImport:\n"
-                       + "   Exception:\n"
-                       + "   ".join(traceback.format_exception(excType,excVal, excTrace))
-                       )
+            log.exception ("BixImport")
         if  self.resource is None:
             return '', ''
 
-        try:
-            bixlog = open(BIXLOG, 'a+')
-            bixlog.write(str(self.import_files))
-            bixlog.write("\n")
-            bixlog.close()
-        except IOError, (errno, strerr):
-            log.error ("can't append to bixlog: %s" % (strerr) )
-        except:
-            log.error ("Upexpected %s " % ( sys.exc_info()[0]))
+        #try:
+        #    bixlog = open(BIXLOG, 'a+')
+        #    bixlog.write(str(self.import_files))
+        #    bixlog.write("\n")
+        #    bixlog.close()
+        #except IOError, (errno, strerr):
+        #    log.error ("can't append to bixlog: %s" % (strerr) )
+        #except:
+        #    log.error ("Upexpected %s " % ( sys.exc_info()[0]))
         del et
         
         return self.filename, self.resource.get('uri')
@@ -259,11 +272,11 @@ class BIXImporter(object):
         fn = item[1].text
         log.debug ("filename: " + fn + ':')
         self.filename = fn
-        info = self.save_image(fn)
-        if info is not None:
-            info['perm'] = self.permission_flag
-            self.resource = data_service.new_image(**info)
-            etree.SubElement(self.resource, 'tag', name = 'filename', value = str(fn))
+        self.save_image(fn)
+        #if info is not None:
+        #    info['perm'] = self.permission_flag
+        #    self.resource = data_service.new_image(**info)
+        #    etree.SubElement(self.resource, 'tag', name = 'filename', value = str(fn))
 
     def tag_image_visibility(self, item, **kw):
         '''set visibability (public, private) for image v'''

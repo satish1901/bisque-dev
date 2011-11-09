@@ -130,7 +130,7 @@ Ext.define('Bisque.ResourceBrowser.Browser',
             Ext.apply(this.browserParams,
             {
                 layout  : this.browserParams.layout || 1,
-                dataset : this.browserParams.dataset || '/data_service/images/',
+                dataset : this.browserParams.dataset || '/data_service/image/',
                 offset  : this.browserParams.offset || 0,
                 tagQuery : this.browserParams.tagQuery || '',
                 tagOrder : this.browserParams.tagOrder || '',

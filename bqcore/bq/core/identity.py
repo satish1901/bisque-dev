@@ -44,7 +44,7 @@ class Identity(object):
         log.debug ("bq user = %s" % user_name)
         if user_name is None:
             return None
-        user =  DBSession.query (BQUser).filter_by(user_name = user_name).first()
+        user =  DBSession.query (BQUser).filter_by(resource_name = user_name).first()
         #log.debug ("bq user = %s" % user)
         log.debug ('user %s -> %s' % (user_name, user))
         return user
@@ -59,16 +59,21 @@ def get_admin():
     global user_admin
     if user_admin is None:
         from bq.data_service.model.tag_model import BQUser
-        user_admin = DBSession.query(BQUser).filter_by(user_name=u'admin').first()
+        user_admin = DBSession.query(BQUser).filter_by(resource_name=u'admin').first()
     else:
         user_admin = DBSession.merge (user_admin)
     return user_admin
 
 def anonymous():
-    return request.identity is None
+    try:
+        return request.identity is None
+    except (TypeError, AttributeError):
+        return True
+    
 
 def not_anonymous():
-    return request.identity is not None
+    return not anonymous()
+
 #     if request_available():
 #         return identity.not_anonymous()
 #     return current_user

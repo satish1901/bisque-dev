@@ -59,31 +59,19 @@ DESCRIPTION
 
 """
 import urlparse
-import sqlalchemy
 from datetime import datetime
 
+import sqlalchemy
 from sqlalchemy import Table, Column, ForeignKey
-from sqlalchemy import Integer, String, DateTime, Unicode, Float, Boolean
+from sqlalchemy import Integer, String, DateTime, Unicode, Float
 from sqlalchemy import Text, UnicodeText
 from sqlalchemy.orm import relation, class_mapper, object_mapper, validates, backref
-from sqlalchemy import exceptions
+from sqlalchemy import MetaData, exceptions
 from sqlalchemy.sql import and_
 from sqlalchemy.ext.associationproxy import association_proxy
 
 from tg import config, session
-
-from bq.core.model import mapper
-from bq.core.model import DBSession as current_session
-from bq.core.model import DBSession
-
-from datetime import datetime
-
-#import turbogears
-#from turbogears.database import metadata, session
-#from turbogears.util import request_available
 from bq.core import identity
-from bq.core.model import DeclarativeBase, metadata
-from bq.core.model import User, Group
 from bq.core.permission import *
 from bq.util.memoize import memoized
 
@@ -94,51 +82,32 @@ from bq.util.memoize import memoized
 import logging
 log = logging.getLogger("bq.data_service")
 
-global admin_user, init_module, init_mex
-admin_user =  init_module = init_mex = None
-
-
-def create_tables1(bind):
-    metadata.bind = bind
-    """Create the appropriate database tables."""
-    log.info( "Creating tag_model tables" )
-    engine = config['pylons.app_globals'].sa_engine
-    metadata.create_all (bind=engine, checkfirst = True)
-#   db_setup()
-#     names.create(checkfirst=True)
-#     taggable.create(checkfirst=True)
-#     images.create(checkfirst=True)
-#     tags.create(checkfirst=True)
-#     values.create(checkfirst=True)
-#     gobjects.create(checkfirst=True)
-#     vertices.create(checkfirst=True)
-#     users.create(checkfirst=True)
-#     groups.create(checkfirst=True)
-#     # permission_tokens.create(checkfirst=True)
-#     #    permission_sets.create(checkfirst=True)
-#     templates.create(checkfirst=True)
-#     # engines.create(checkfirst=True)
-#     modules.create(checkfirst=True)
-#     mex.create(checkfirst=True)
-#     dataset.create(checkfirst=True)
-#     services.create(checkfirst=True)
-    #    bisquik.identity.user_admin = u
-    # tag_index.create()
-    # init_global_perms()
-
-
 # Automatically create the registration tables when TurboGears starts up
 #turbogears.startup.call_on_startup.append(create_tables)
 
-
-names = Table('names', metadata,
-              Column('id', Integer, primary_key = True),
-              Column('name', UnicodeText)
-              )
+from migration.versions.env002 import metadata, DBSession, mapper
+current_session = DBSession
 
 
+files = Table('files', metadata, autoload=True)
+#              Column('id', Integer, primary_key=True),
+#              Column('sha1', String(40), index=True), # new column v2
+#              Column('uri', Unicode(512), index=True),
+#              Column('owner', Text), 
+#              Column('perm', Integer),
+#              Column('ts', DateTime(timezone=False)),
+#              Column('original', Text),
+#              Column('file_type', Text), # new column v2
+#              Column('local', Text) # new column v3              
+#              )
 
-taggable = Table('taggable', metadata,
+names = Table('names', metadata, autoload=True)
+#               Column('id', Integer, primary_key = True),
+#               Column('name', UnicodeText)
+#               )
+
+
+taggable = Table('taggable', metadata, 
                  Column('id', Integer, primary_key=True),
                  Column('tb_id', Integer, ForeignKey('names.id')),
     Column('mex', Integer, ForeignKey('taggable.id'), key='mex_id'),
@@ -147,28 +116,24 @@ taggable = Table('taggable', metadata,
                  Column('perm', Integer), #ForeignKey('permission_sets.set_id')
                  Column('owner_id', Integer, ForeignKey('taggable.id')),
                  Column('resource_uniq', String(40)),
-                 Column('resource_index', Integer),
-                 Column('resource_hidden', Boolean),
                  Column('resource_type', Unicode(255) ),  # will be same as tb_id UniqueName
-                 Column('resource_name', Unicode (1023), ),
-                 Column('resource_user_type', Unicode(1023), ),
+                 Column('resource_name', Unicode (1023)),
+                 Column('resource_user_type', Unicode(1023) ),
                  Column('resource_value',  UnicodeText),
                  Column('resource_parent_id', Integer, ForeignKey('taggable.id')),
-                 Column('document_id', Integer, ForeignKey('taggable.id')), # Unique Element
-                 
-
+                 Column('document_id', Integer, ForeignKey('taggable.id')), # Unique Elemen#
                  )
 
-images= Table ('images', metadata,
-               Column('id', Integer, ForeignKey('taggable.id'),primary_key=True),
-               Column('src', Text),
-               Column('x', Integer),
-               Column('y', Integer),
-               Column('z', Integer),
-               Column('t', Integer),
-               Column('ch', Integer))
+images= Table ('images', metadata, autoload=True)
+#               Column('id', Integer, ForeignKey('taggable.id'),primary_key=True),
+#               Column('src', Text),
+#               Column('x', Integer),
+#               Column('y', Integer),
+#               Column('z', Integer),
+#               Column('t', Integer),
+#               Column('ch', Integer))
 
-#tags = Table ('tags', metadata,
+tags = Table ('tags', metadata, autoload=True)
 #              Column('id',  Integer, ForeignKey('taggable.id'), primary_key=True),
 #              Column('parent_id', Integer, ForeignKey('taggable.id'), index=True),
 #              Column('type_id',  Integer, ForeignKey('names.id')),
@@ -176,103 +141,94 @@ images= Table ('images', metadata,
 #              Column('indx', Integer),
 #              )
 
-# gobjects = Table ('gobjects', metadata,
-#               Column('id', Integer, ForeignKey('taggable.id'), primary_key=True),
-#               Column('parent_id', Integer, ForeignKey('taggable.id'), index=True),
-#               Column('type_id',  Integer, ForeignKey('names.id')),
-#               Column('name_id', Integer, ForeignKey('names.id')),
-#               Column('indx', Integer),
-#               )
+gobjects = Table ('gobjects', metadata, autoload=True)
+#              Column('id', Integer, ForeignKey('taggable.id'), primary_key=True),
+#              Column('parent_id', Integer, ForeignKey('taggable.id'), index=True),
+#              Column('type_id',  Integer, ForeignKey('names.id')),
+#              Column('name_id', Integer, ForeignKey('names.id')),
+#              Column('indx', Integer),
+#              )
 
 
-              
+
 #simplevalues = Table ('simplevalues', metadata,
 #          Column('id',  Integer, ForeignKey('taggable.id'), primary_key=True),
-values = Table ('values', metadata,
-          Column('parent_id',Integer, ForeignKey('taggable.id'),primary_key=True),
-          Column('document_id',Integer, ForeignKey('taggable.id')),
-          Column('indx', Integer, primary_key = True, autoincrement=False),
-          Column('valstr', UnicodeText),
-          Column('valnum', Float),
-          Column('valobj', Integer, ForeignKey('taggable.id'))
-                      )
+values = Table ('values', metadata, autoload=True)
+#          Column('parent_id',Integer, ForeignKey('taggable.id'),primary_key=True),
+#          Column('indx', Integer, primary_key = True, autoincrement=False),
+#          Column('valstr', UnicodeText),
+#          Column('valnum', Float),
+#          Column('valobj', Integer, ForeignKey('taggable.id'))
+#                      )
 
-vertices = Table ('vertices', metadata,
+vertices = Table ('vertices', metadata, autoload=True)
+   # Column('id', Integer, ForeignKey('taggable.id'), primary_key=True),
+#                Column('parent_id',Integer, ForeignKey('taggable.id'), primary_key=True),
+#                Column('indx', Integer, primary_key=True, autoincrement=False),
+#                Column('x', Float),
+#                Column('y', Float),
+#                Column('z', Float),
+#                Column('t', Float),
+#                Column('ch', Integer))
+
+
+
+users = Table ('users', metadata, autoload=True)
+#               Column('id', Integer, ForeignKey('taggable.id'), primary_key=True),
+#               Column('user_name', UnicodeText),
+#               Column('display_name', UnicodeText),
+#               Column('email_address', UnicodeText),
+#               Column('password', UnicodeText),
+            # Column('tg_user_id', Integer, ForeignKey('tg_user.user_id')),
+            # Column('default_perm_id', Integer, ForeignKey('permission_sets.set_id')),
+#)
+
+groups = Table ('groups', metadata, autoload=True)
 #                Column('id', Integer, ForeignKey('taggable.id'), primary_key=True),
-                Column('parent_id',Integer, ForeignKey('taggable.id'), primary_key=True),
-                Column('indx', Integer, primary_key=True, autoincrement=False),
-                Column('x', Float),
-                Column('y', Float),
-                Column('z', Float),
-                Column('t', Float),
-                Column('ch', Integer))
+#                Column ('group_name', UnicodeText),
+#                Column ('display_name', UnicodeText))
 
 
-
-# users = Table ('users', metadata,
-#                Column('id', Integer, ForeignKey('taggable.id'), primary_key=True),
-#                Column('user_name', UnicodeText),
-#                Column('display_name', UnicodeText),
-#                Column('email_address', UnicodeText),
-#                Column('password', UnicodeText),
-#                )
-
-# groups = Table ('groups', metadata,
-#                 Column('id', Integer, ForeignKey('taggable.id'), primary_key=True),
-#                 Column ('group_name', UnicodeText),
-#                 Column ('display_name', UnicodeText))
-
-
-# templates = Table ('templates', metadata,
-#                    Column('id', Integer, ForeignKey('taggable.id'),  primary_key=True),
-#                    Column ('name', Text))
+templates = Table ('templates', metadata, autoload=True)
+#                   Column('id', Integer, ForeignKey('taggable.id'),  primary_key=True),
+#                   Column ('name', Text))
 
 #engines = Table('engines', metadata,
 #                Column('id', Integer, primary_key=True),
 #                Column('name', String))
 
-# modules = Table ('modules', metadata,
-#                  Column('id', Integer,
+modules = Table ('modules', metadata, autoload=True)
+#                 Column('id', Integer,
+#                        ForeignKey('taggable.id'), primary_key=True),
+#                 Column('name', Text),
+#                 Column('codeurl', Text),
+#                 Column('module_type_id', Integer, ForeignKey('names.id'))
+#                 )
+
+mex = Table ('mex', metadata, autoload=True)
+#             Column('id',  Integer,
+#                    ForeignKey('taggable.id'), primary_key=True),
+#             Column('module', Text),
+#             Column('status', Text)
+#             )
+
+dataset = Table ('datasets', metadata, autoload=True)
+#                 Column('id', Integer, ForeignKey('taggable.id'), primary_key=True),
+#                 Column('name', Text),
+#                 )
+
+taggable_acl = Table('taggable_acl', metadata, autoload=True)
+#                     Column('taggable_id', Integer, ForeignKey('taggable.id'), primary_key=True),
+#                     Column('user_id', Integer, ForeignKey('taggable.id'),primary_key=True),
+#                     Column('permission', Integer),
+#                     )
+
+services = Table ('service', metadata, autoload=True)
+#                  Column('id',  Integer,
 #                         ForeignKey('taggable.id'), primary_key=True),
-#                  Column('name', Text),
-#                  Column('codeurl', Text),
-#                  Column('module_type_id', Integer, ForeignKey('names.id'))
+#                  Column('type', Text),
+#                  Column('uri', Text),
 #                  )
-
-# mex = Table ('mex', metadata,
-#              Column('id',  Integer,
-#                     ForeignKey('taggable.id'), primary_key=True),
-#              Column('module', Text),
-#              Column('status', Text)
-#              )
-
-# dataset = Table ('datasets', metadata,
-#                  Column('id', Integer, ForeignKey('taggable.id'), primary_key=True),
-#                  Column('name', Text),
-#                  )
-
-taggable_acl = Table('taggable_acl', metadata,
-                     Column('taggable_id', Integer, ForeignKey('taggable.id'), primary_key=True),
-                     Column('user_id', Integer, ForeignKey('taggable.id'),primary_key=True),
-                     Column('permission', Integer),
-                     )
-
-
-#dataset_members = Table ('dataset_member',
-#                         Column ('dataset_id', 
-#                                 ForeignKey('taggable.id'), primary_key=True),
-#                         Column ('item_id', 
-                 
-
-#
-# Registered services
-# Allow bisquik installation to access remote services defined here.
-# services = Table ('service', metadata,
-#                   Column('id',  Integer,
-#                          ForeignKey('taggable.id'), primary_key=True),
-#                   Column('type', Text),
-#                   Column('uri', Text),
-#                   )
 
 # permission_tokens = Table ('permission_tokens', metadata,
 #                             Column('id', Integer, primary_key=True),
@@ -351,6 +307,22 @@ class UniqueName(object):
 
 
 
+# The following are deprecated
+class TagName(UniqueName):
+    pass
+class GObjectType(UniqueName):
+    pass
+class Engine(UniqueName):
+    pass
+
+class TableName(UniqueName):
+    pass
+# end deprecations
+
+
+
+
+
 ######################################################################
 #
 def parse_uri(uri):
@@ -378,11 +350,31 @@ def map_url (uri):
     resource = DBSession.query(dbcls).get (ida)
     #log.debug("loading uri name (%s) type (%s) = %s" %(name,  str(dbcls), str(resource)))
     return resource
+
     
 
 ################################
 # Taggable types
 # 
+
+class FileEntry(object):
+  
+#    def __init__(self):
+#        self.id = None
+
+    def _set_id(self, new_id):
+      #self._id_db = new_id+1
+      pass
+
+    def _get_id(self):
+      return self._id_db-1
+
+    id = property( _get_id, _set_id )
+  
+    def str(self):
+        return "FileEntry(%s, %s, %s, %s, %s)" % (self.id, self.sha1, self.uri, self.owner, self.perm, self.ts, self.original, self.file_type )
+
+
 
 class Taggable(object):
     """
@@ -392,34 +384,39 @@ class Taggable(object):
     """
     xmltag = 'resource'
     
-    def __init__(self, resource_type = None):
+    def __init__(self, resource_type = None, owner = None):
+        #if self.__class__ == Taggable and resource_type:
+        #    self.table = resource_type
+        #else:
+        #    self.table = str(object_mapper(self).local_table)
+            #log.debug ("System Taggable %s using %s" %( self.__class__,  self.table));
+            #self.table = self.xmltag
         if resource_type is None:
             resource_type = self.xmltag
         self.resource_type = resource_type
-
         self.ts = datetime.now()
         #log.debug("new taggable user:" + str(session.dough_user.__dict__) )
-        owner  = identity.current.get_bq_user()
-        mex = None
+        #if owner is None:
+        #    owner  = identity.current.get_bq_user()
         log.debug (".owner = %s mex = %s" % (owner, mex))
-        if owner:
-            self.owner_id = owner.id
+        #if owner:
+        #    self.owner_id = owner.id
         #self.mex_id = session.get('mex.id', None)
         #mex_id = DBSession.get ('mex.id', None)
         #mex    = module_service.get_mex()
         #if mex_id is not None:
         #    self.mex_id = mex_id
         self.perm = PUBLIC
-        if owner :
-            self.perm = PRIVATE
-        if identity.current_mex():
-            self.mex_id = int ( identity.current_mex() )
-        if owner is None:
-            log.warn ("CREATING taggable %s with no owner" % str(self) )
-            admin = identity.get_admin()
-            if admin:
-                log.warn("Setting owner to admin")
-                self.owner_id = admin.id
+        #if owner :
+        #    self.perm = PRIVATE
+        #if identity.current_mex():
+        #    self.mex_id = int ( identity.current_mex() )
+        #if owner is None:
+        #    log.warn ("CREATING taggable %s with no owner" % str(self) )
+        #    admin = identity.get_admin()
+        #    if admin:
+        #        log.warn("Setting owner to admin")
+        #        self.owner_id = admin.id
     
     def resource (self):
         return "%s/%s" % ( self.table , self.id)
@@ -428,9 +425,9 @@ class Taggable(object):
     def uri (self):
         if hasattr(self,'parent') and self.parent is not None:
             parent = self.parent.loadFull()
-            return "%s/%s/%s" % (parent.uri , self.resource_type, self.id)
+            return "%s/%s/%s" % (parent.uri , self.table, self.id)
         else:
-            return "%s/%s" % (self.resource_type, self.id)
+            return "%s/%s" % (self.table, self.id)
             
     uri = property(uri)
 
@@ -442,7 +439,7 @@ class Taggable(object):
         self.table_name = UniqueName(v)
 
     table = property(gettable, settable)
-    #type  = property(gettable, settable)
+    type  = property(gettable, settable)
 
     @validates('owner')
     def validate_owner (self, key, owner):
@@ -457,7 +454,6 @@ class Taggable(object):
 #    def set_owner (self,name):
 #        self.owner_ob = BQUser.filter_by (user_name=name).one()
 #    owner = property(get_owner, set_owner)
-
     def clear(self, what=['tags', 'gobjects']):
         '''Clear all the children'''
         results = []
@@ -470,6 +466,15 @@ class Taggable(object):
             self.gobjects = []
             log.debug ('cleared gobjects')
         return results
+
+    def fieldTag(self, nm, v = None):
+        t = DBSession.query(Tag).filter(and_(self.id == tags.c.parent_id,
+                                           tags.c.name_id== UniqueName(nm).id)).first()
+        if not t:
+            t = Tag()
+            t.name = nm
+            self.tags.append(t)
+        return t
 
     def findtag (self, nm, create=False):
         for t in self.tags:
@@ -488,65 +493,7 @@ class Taggable(object):
         if dbtype != Taggable:
             return DBSession.query(dbtype).get (self.id)
         return self
-
-    # Tag.indx used for ordering tags
-    def get_index(self):
-        return self.resource_index
-    def set_index(self, v):
-        self.resource_index = v
-    index = property(get_index, set_index)
-
-    # Tag.indx used for ordering tags
-    def get_name(self):
-        return self.resource_name
-    def set_name(self, v):
-        self.resource_name = v
-    name = property(get_name, set_name)
-
-    # Tag.indx used for ordering tags
-    def get_type(self):
-        return self.resource_user_type
-    def set_type(self, v):
-        self.resource_user_tupe = v
-    type = property(get_type, set_type)
-
-    # Tag.value helper functions
-    def newval(self, v, i = 0):
-        if isinstance(v,basestring):
-            v = Value(i, s = v)
-        elif type(v) == int or type(v) == float:
-            v = Value(i, n = v)
-        elif isinstance(v, Taggable):
-            v = Value(i, o = v)
-        else:
-            raise BadValue("Tag "+self.name, v)
-        return v
-    def getvalue(self):
-        if self.resource_value is not None:
-            return self.resource_value
-        else:
-            # call SimpleValue decoder
-            values =  [ v.value for v in self.values ] 
-            if len(values) == 0:
-                return None
-            return values
-
-    def setvalue(self, v):
-        if isinstance(v, list):
-            l = [ self.newval(v[i], i) for i in xrange(len(v)) ]
-            self.values = l
-            self.resource_value = None
-        else:
-            l = [ self.newval(v, 0) ]
-            self.resource_value = v
-
-    value = property(fget=getvalue,
-                     fset=setvalue,
-                     doc="resource_value")
-
-
-    #def __repr__(self):
-    #    return u"<%s: %s=%s>" % (self.resource_type, self.resource_name, self.resource_value)
+        
     def __str__(self):
         #return "%s/%s" % (self.__class__.xmltag,  str(self.id))
         return self.uri 
@@ -569,6 +516,67 @@ class Tag(Taggable):
     def __str__(self):
         return 'tag "%s":"%s"' % (unicode(self.name), unicode(self.value))
 
+    # Tag.name helper functions
+    def getname(self):
+        if self.tagname:
+            return self.tagname.name
+        return None
+    def setname(self, v):
+        self.tagname = UniqueName(v)
+    name = property(getname, setname)
+
+    # Tag.type helper functions
+    def gettype (self):
+        if self.type_name is not None:
+            return self.type_name.name
+        return self.xmltag
+    def settype(self, v):
+        self.type_name = UniqueName(v)
+    tag_type = property(gettype, settype)
+    type = property(gettype, settype)
+
+
+    # Tag.parent helper
+    # Handled by mapper
+
+    # Tag.indx used for ordering tags
+    def get_index(self):
+        return self.indx
+    def set_index(self, v):
+        self.indx = v
+    index = property(get_index, set_index)
+
+    # Tag.value helper functions
+    def newval(self, v, i = 0):
+        if type(v) == str or type(v) == unicode:
+            v = Value(i, s = v)
+        elif type(v) == int or type(v) == float:
+            v = Value(i, n = v)
+        elif isinstance(v, Taggable):
+            v = Value(i, o = v)
+        else:
+            raise BadValue("Tag "+self.name, v)
+        return v
+
+    def getvalue(self):
+        value = None
+        if len(self.values) == 1:
+            return self.values[0].value
+        else:
+            # call SimpleValue decoder
+            return [ v.value for v in self.values ] 
+
+    def setvalue(self, v):
+        if type(v) == list:
+            l = [ self.newval(v[i], i) for i in xrange(len(v)) ]
+        else:
+            l = [ self.newval(v, 0) ]
+        self.values = l
+    value = property(fget=getvalue,
+                     fset=setvalue,
+                     doc="Value of tag")
+
+
     def clear(self, what=None):
         '''Clear all the children'''
         super(Tag, self).clear()
@@ -577,6 +585,18 @@ class Tag(Taggable):
         self.values = []
         return old
         
+    # Tag.values
+    #  List of SimpleValues
+
+    # Tag.vertices
+    #  List of vertices
+    
+
+
+#    def match(nm, value):
+#        return session.query(Tag).select_by (tagnames.c.name == nm,
+#                                             valstr = value)
+#    match = staticmethod (match)
 class Value(object):
     xmltag = 'value'
     
@@ -655,6 +675,38 @@ class Vertex(object):
 class GObject(Taggable):
     xmltag = 'gobject'
         
+    # Tag.name helper functions
+    def getname(self):
+        if self.tagname:
+            return self.tagname.name
+        return ""
+    def setname(self, v):
+        #log.debug ("Setting gobject name " + v);
+        if self.tagname is None or self.tagname.name != v :
+            self.tagname = UniqueName(v)
+        #log.debug ("Setting gobject name " + str(UniqueName(v)));
+        
+    name = property(getname, setname)
+
+    # Tag.type helper functions
+    def gettype (self):
+        if self.type_name:
+            return self.type_name.name
+        return None
+    def settype(self, v):
+        #log.debug ('set type ' + v)
+        if (self.type_name is None or self.type_name.name != v) :
+            self.type_name = UniqueName(v)
+    tag_type = property(gettype, settype)
+    type = property(gettype, settype)
+
+    # Tag.indx used for ordering tags
+    def get_index(self):
+        return self.indx
+    def set_index(self, v):
+        self.indx = v
+    index = property(get_index, set_index)
+
     def clear(self, what=None):
         '''Clear all the children'''
         super(GObject, self).clear()
@@ -665,6 +717,57 @@ class GObject(Taggable):
     
 #    def __str__(self):
 #        return 'gobject %s:%s' % (self.name, str(self.type))
+
+
+    
+
+
+class BQGroup(Taggable):
+    '''
+    Group object: a group of other objects.
+    The element of the group are formed
+    as tag/value pairs with tag=='group_member'
+    '''
+    xmltag = 'group'
+    
+    def __init__(self, group_name):
+        #super(Group, self).__init__()
+        self.group_name = group_name
+        self.members    = self.fieldTag ('members')
+        
+    def __str__(self):
+        return self.group_name
+    
+    def __repr__(self):
+        return self.group_name
+
+    def group_id(self):
+        return self.id
+    group_id = property(group_id)
+    
+    def addMember(self, member):
+        self.members.value = self.members.value + [ member ]
+
+    def delMember(self, member_id):
+        pass
+
+    def addPermission(self, perm):
+        self.addTag('permission', perm)
+
+    def users(self):
+        return self.selectTags('group_member')
+
+    users = property(users)
+
+    def permissions(self):
+        return self.selectTags('permission')
+
+    permissions = property(permissions)
+
+    def contains(self, m):
+        return m in self.members.values
+                                       
+
 
 
 
@@ -744,10 +847,36 @@ class BQUser(Taggable):
 #         #self.permission = permissions
         
         
+#    def __str__(self):
+#        return "%s/%d" % (self.user_name, self.id)
+    
+    def __repr__(self):
+        return "BQUser<user_name: '%s', display_name: '%s'>" % (self.user_name, self.display_name)
     
     def user_id(self):
         return self.id
     user_id = property(user_id)
+    
+    def addPermission(self, perm):
+        self.perm.addTag('permission', perm)
+    
+    def groups(self):
+        # Find group objects that have a member == self.
+        # 1.  iterate groups searching for group_member == self
+        # 2.  find taggables with tag=='group_member' and value=='self'
+        #     and convert to groups
+        pass
+    
+    groups = property(groups)
+    
+    def permissions(self):
+        return self.selectTags('permission')
+
+    permissions = property(permissions)
+
+    def email(self):
+        return self.email_address
+
 
 class Template(Taggable):
     '''
@@ -767,7 +896,7 @@ class Module(Taggable):
     xmltag ='module'
     def get_module_type(self):
         if self.module_type:
-            return self.module_type
+            return self.module_type.name
         return ""
     def set_module_type(self, v):
         self.module_type = UniqueName(v)
@@ -783,9 +912,6 @@ class ModuleExecution(Taggable):
     xmltag ='mex'
     def closed(self):
         return self.status in ('FINISHED', 'FAILED')
-    # alias for resource_value
-    status = taggable.c.resource_value
-
 
 class Dataset(Taggable):
     xmltag = 'dataset'
@@ -834,7 +960,6 @@ class TaggableAcl(object):
                                                        self.user_id,
                                                        self.action)
 
-
 class Service (Taggable):
     """A executable service"""
     xmltag = "service"
@@ -849,7 +974,7 @@ mapper( UniqueName, names)
         
 mapper( Value, values,
               properties = {
-    'parent' : relation (Taggable,
+    'parent' : relation (Tag,
                          primaryjoin =(taggable.c.id == values.c.parent_id)),
     'objref' : relation(Taggable, uselist=False,
                         primaryjoin=(values.c.valobj==taggable.c.id),
@@ -861,15 +986,23 @@ mapper( Value, values,
 mapper( Vertex, vertices)
 mapper(TaggableAcl, taggable_acl,
        properties = {
-           'user'    : relation(Taggable, 
+           'user'    : relation(BQUser, 
                                 passive_deletes="all",
                                 uselist=False,
-                                primaryjoin=and_(taggable_acl.c.user_id== taggable.c.id,
-                                                 taggable.c.resource_type=='user'),
-                                foreign_keys=[taggable.c.id])
+                                primaryjoin=(taggable_acl.c.user_id==
+                                             users.c.id),
+                                foreign_keys=[users.c.id])
            })
        
        
+
+mapper(FileEntry, files, properties={
+    '_id_db' : files.c.id,
+#    'acls'  : relation(FileAcl, lazy=True, cascade="all, delete-orphan",
+#                      #primaryjoin = (FileEntry.id == FileAcl.id),
+#                      )
+
+    })
 
 
 ############################
@@ -882,93 +1015,82 @@ mapper( Taggable, taggable,
                             uselist = False,
                             ),
 
-#    'tags' : relation(Tag, lazy=True, cascade="all, delete-orphan",
-#                         primaryjoin= (tags.c.parent_id==taggable.c.id)),
-    'tags' : relation(Taggable, lazy=True, viewonly=True,
-                         primaryjoin= and_(taggable.c.resource_parent_id==taggable.c.id,
-                                           taggable.c.resource_type == 'tag')),
-#    'gobjects' : relation(GObject, lazy=True, cascade="all, delete-orphan",
-#                         primaryjoin= (gobjects.c.parent_id==taggable.c.id)),
-    'gobjects' : relation(Taggable, lazy=True, viewonly=True,
-                         primaryjoin= and_(taggable.c.resource_parent_id==taggable.c.id,
-                                           taggable.c.resource_type == 'gobject')),
+    'tags' : relation(Tag, lazy=True, cascade="all, delete-orphan",
+                         primaryjoin= (tags.c.parent_id==taggable.c.id)),
+#                         primaryjoin= and_(taggable.c.resource_parent_id==taggable.c.id,
+#                                           taggable.c.resource_type == 'tag')),
+    'gobjects' : relation(GObject, lazy=True, cascade="all, delete-orphan",
+                         primaryjoin= (gobjects.c.parent_id==taggable.c.id)),
+#                         primaryjoin= and_(taggable.c.resource_parent_id==taggable.c.id,
+#                                           taggable.c.resource_type == 'gobject')),
     'acl'  : relation(TaggableAcl, lazy=True, cascade="all, delete-orphan",
                       primaryjoin = (TaggableAcl.taggable_id == taggable.c.id)),
-    'children' : relation(Taggable, lazy=True, cascade="all, delete-orphan",
-                          backref = backref('parent', remote_side = [ taggable.c.id]),
+    'children' : relation(Taggable, cascade="all, delete-orphan",
                           primaryjoin = (taggable.c.id == taggable.c.resource_parent_id)),
     'values' : relation(Value,  lazy=True, cascade="all, delete-orphan",
                         primaryjoin =(taggable.c.id == values.c.parent_id),
                         foreign_keys=[values.c.parent_id]
                         ),
-    'vertices' : relation(Vertex, lazy=True, cascade="all, delete-orphan",
+    'vertices' : relation(Vertex, cascade="all, delete-orphan",
                           primaryjoin =(taggable.c.id == vertices.c.parent_id),
                           foreign_keys=[vertices.c.parent_id]
                           ),
-
-
-    'docnodes': relation(Taggable, 
-                         cascade = "all",
-                         post_update=True,
-                         primaryjoin = (taggable.c.id == taggable.c.document_id),
-                         backref = backref('document', post_update=True, remote_side=[taggable.c.id]),
-                         )
-#    'document' : 
-#                          primaryjoin = (taggable.c.id == taggable.c.document_id),
-#                          foreign_keys=[taggable.c.id],
-#                          )
     }
-        )
+              )
 
-mapper( Image, inherits=Taggable,
-        polymorphic_on = taggable.c.resource_type,
-        polymorphic_identity = 'image',
-        )
-mapper( Tag, inherits=Taggable,
-        polymorphic_on = taggable.c.resource_type,
-        polymorphic_identity = 'tag',
-        )
-#                   inherit_condition=(tags.c.id == taggable.c.id),
-#                   properties={
-#     'tagname': relation(UniqueName, uselist=False,
-#                         primaryjoin =(tags.c.name_id==names.c.id)),
-#     'type_name' : relation (UniqueName, uselist=False,
-#                        primaryjoin =(tags.c.type_id==names.c.id)),
-#     }
-#               )
-
-
-mapper( GObject,  inherits=Taggable,
-        polymorphic_on = taggable.c.resource_type,
-        polymorphic_identity = 'gobject',
-        )
-#         inherit_condition=(gobjects.c.id == taggable.c.id),
-#         properties={
-#         'tagname': relation(UniqueName,
-#                             primaryjoin =(gobjects.c.name_id==names.c.id)),
-#         'type_name' : relation (UniqueName, 
-#                                 primaryjoin =(gobjects.c.type_id==names.c.id)),
-#         }
-#         )
+mapper( Image, images, inherits=Taggable)
+mapper( Tag, tags, inherits=Taggable,
+                  inherit_condition=(tags.c.id == taggable.c.id),
+                  properties={
+    'tagname': relation(UniqueName, uselist=False,
+                        primaryjoin =(tags.c.name_id==names.c.id)),
+    'parent' : relation (Taggable,
+                         primaryjoin =(tags.c.parent_id == taggable.c.id)),
+    'type_name' : relation (UniqueName, uselist=False,
+                       primaryjoin =(tags.c.type_id==names.c.id)),
+#    'values' : relation(Value,  lazy=True, cascade="all, delete-orphan",
+#                        primaryjoin =(taggable.c.id == values.c.parent_id),
+#                        foreign_keys=[values.c.parent_id]
+#                        ),
+    }
+              )
 
 
+mapper( GObject, gobjects, inherits=Taggable,
+                  inherit_condition=(gobjects.c.id == taggable.c.id),
+                  properties={
+    'tagname': relation(UniqueName,
+                        primaryjoin =(gobjects.c.name_id==names.c.id)),
+    'parent' : relation (Taggable,
+                         primaryjoin =(gobjects.c.parent_id == taggable.c.id)),
+    'type_name' : relation (UniqueName, 
+                       primaryjoin =(gobjects.c.type_id==names.c.id)),
+#    'vertices' : relation(Vertex, cascade="all, delete-orphan",
+#                          primaryjoin =(taggable.c.id == vertices.c.parent_id),
+#                          foreign_keys=[vertices.c.parent_id]
+#                          ),
+    }
+              )
 
 
-# mapper(BQGroup, groups, inherits=Taggable)
-mapper(BQUser,  inherits=Taggable,
-        polymorphic_on = taggable.c.resource_type,
-        polymorphic_identity = 'user',
-     properties = { 
-#         'tguser' : relation(User, uselist=False, 
-#             primaryjoin=(User.user_name == users.c.user_name),
-#             foreign_keys=[User.user_name]),
-         'owns' : relation(Taggable, 
-                            cascade = None,
-                            primaryjoin = (taggable.c.id == taggable.c.owner_id),
-                            backref = backref('owner', post_update=True, remote_side=[taggable.c.id]),
-                            )
-         }
- )
+
+
+mapper(BQGroup, groups, inherits=Taggable)
+mapper(BQUser, users, inherits=Taggable,
+    properties = { 
+#        'tguser' : relation(User, uselist=False, 
+#            primaryjoin=(User.user_name == users.c.user_name),
+#            foreign_keys=[User.user_name]),
+
+        'owned' : relation(Taggable, 
+                           cascade = None,
+                           primaryjoin = (users.c.id == taggable.c.owner_id),
+                           foreign_keys=[taggable.c.owner_id],
+                           backref = backref('owner', post_update=True),
+                           )
+                           
+    }
+)
 def bquser_callback (tg_user, operation, **kw):
     # Deleted users will receive and update callback
     if tg_user is None:
@@ -989,50 +1111,43 @@ def bquser_callback (tg_user, operation, **kw):
         
 
         
-User.callbacks.append (bquser_callback)
+#User.callbacks.append (bquser_callback)
 
 
-# mapper(Template, templates, inherits=Taggable)
-mapper(Module, inherits=Taggable,
-        polymorphic_on = taggable.c.resource_type,
-        polymorphic_identity = 'module',
+mapper(Template, templates, inherits=Taggable)
+    
+mapper(Module, modules, inherits=Taggable,
+              properties = {
+    'module_type' : relation(UniqueName,
+                      primaryjoin = (modules.c.module_type_id==names.c.id)),
+
+           
+    }                             
+              )
+
+mapper(ModuleExecution, mex, inherits=Taggable,
+       inherit_condition=(mex.c.id == taggable.c.id),
+       properties = {
+        'owned' : relation(Taggable, 
+                           cascade = None,
+                           primaryjoin = (mex.c.id == taggable.c.mex_id),
+                           foreign_keys=[taggable.c.mex_id],
+                           backref = backref('mex', post_update=True),
+                           )
+        },
        )
-#        properties = {
-#         'module_type' : relation(UniqueName,
-#                                  primaryjoin = (modules.c.module_type_id==names.c.id)),
-#         }                             
-#        )
+mapper( Dataset, dataset, 
+              inherits=Taggable,
+              inherit_condition=(dataset.c.id == taggable.c.id))
 
-mapper(ModuleExecution,  inherits=Taggable,
-        polymorphic_on = taggable.c.resource_type,
-        polymorphic_identity = 'mex',
-       )
-#        inherit_condition=(mex.c.id == taggable.c.id),
-#        properties = {
-#         'owned' : relation(Taggable, 
-#                            cascade = None,
-#                            primaryjoin = (mex.c.id == taggable.c.mex_id),
-#                            foreign_keys=[taggable.c.mex_id],
-#                            backref = backref('mex', post_update=True),
-#                            )
-#         },
-#        )
-mapper( Dataset,  inherits=Taggable,
-        polymorphic_on = taggable.c.resource_type,
-        polymorphic_identity = 'dataset',
-#               inherit_condition=(dataset.c.id == taggable.c.id))
+mapper( Service, services, 
+        inherits=Taggable,
+        inherit_condition=(services.c.id == taggable.c.id),
+        properties = {
+            'engine' : services.c.uri,
+            'module' : services.c.type,
+            }
         )
-
-mapper( Service, inherits=Taggable,
-        polymorphic_on = taggable.c.resource_type,
-        polymorphic_identity = 'service',
-        )
-#         inherit_condition=(services.c.id == taggable.c.id),
-#         properties = {
-#             'engine' : services.c.uri,
-#             'module' : services.c.type,
-#             }
-#         )
 
 
 #################################################
@@ -1045,58 +1160,58 @@ mapper( Service, inherits=Taggable,
 #    )
 #)
 
-# def registration_hook(action, **kw):
-#     if action=="new_user":
-#         u = kw.pop('user', None)
-#         if u:
-#             BQUser.new_user (u.email_adress)
+def registration_hook(action, **kw):
+    if action=="new_user":
+        u = kw.pop('user', None)
+        if u:
+            BQUser.new_user (u.email_adress)
 
-#     elif action=="update_user":
-#         u = kw.pop('user', None)
-#         if u:
-#             bquser = DBSession.query(BQUser).filter_by(email_adress=u.email_address).first()
-#             if not bquser:
-#                 bquser = BQUser.new_user (u.email_adress)
+    elif action=="update_user":
+        u = kw.pop('user', None)
+        if u:
+            bquser = DBSession.query(BQUser).filter_by(email_adress=u.email_address).first()
+            if not bquser:
+                bquser = BQUser.new_user (u.email_adress)
                 
-#             bquser.display_name = u.display_name
-#             bquser.user_name = u.user_name
+            bquser.display_name = u.display_name
+            bquser.user_name = u.user_name
             
-#     elif action =="delete_user":
-#         pass
+    elif action =="delete_user":
+        pass
 
         
-# def db_setup():
-#     global admin_user, init_module, init_mex
-#     admin_user = BQUser.query.filter(BQUser.user_name == u'admin').first()
-#     if not admin_user:
-#         admin_user = BQUser.new_user(password=u'admin', email = u'admin')
-#         init_module = Module ()
-#         init_mex = ModuleExecution ()
-#         DBSession.add (init_module)
-#         DBSession.add (init_mex)
-#         DBSession.flush()
+def db_setup():
+    global admin_user, init_module, init_mex
+    admin_user = BQUser.query.filter(BQUser.user_name == u'admin').first()
+    if not admin_user:
+        admin_user = BQUser.new_user(password=u'admin', email = u'admin')
+        init_module = Module ()
+        init_mex = ModuleExecution ()
+        DBSession.add (init_module)
+        DBSession.add (init_mex)
+        DBSession.flush()
     
-#         DBSession.refresh (init_module)
-#         DBSession.refresh (init_mex)
-#         admin_user.mex_id = init_mex.id
+        DBSession.refresh (init_module)
+        DBSession.refresh (init_mex)
+        admin_user.mex_id = init_mex.id
 
-#         init_module.owner_id = admin_user.id
-#         init_module.mex_id = init_mex.id
-#         init_module.name  = "initialize"
+        init_module.owner_id = admin_user.id
+        init_module.mex_id = init_mex.id
+        init_module.name  = "initialize"
 
-#         init_mex.mex_id = init_mex.id
-#         init_mex.owner_id = admin_user.id
-#         init_mex.module = "initialize"
-#         init_mex.status = "FINISH"
-#     identity.set_admin (admin_user)
+        init_mex.mex_id = init_mex.id
+        init_mex.owner_id = admin_user.id
+        init_mex.module = "initialize"
+        init_mex.status = "FINISH"
+    identity.set_admin (admin_user)
         
 
-# def db_load():
-#     global admin_user, init_module, init_mex
-#     admin_user = DBSession.query(BQUser).filter_by(user_name=u'admin').first()
-#     init_module= DBSession.query(Module).filter_by(name='initialize').first()
-#     init_mex   = DBSession.query(ModuleExecution).filter_by(module='initialize').first()
-#     log.info( "initalize mex = %s" % init_mex)
+def db_load():
+    global admin_user, init_module, init_mex
+    admin_user = DBSession.query(BQUser).filter_by(user_name=u'admin').first()
+    init_module= DBSession.query(Module).filter_by(name='initialize').first()
+    init_mex   = DBSession.query(ModuleExecution).filter_by(module='initialize').first()
+    log.info( "initalize mex = %s" % init_mex)
 
 
 def init_admin():
@@ -1139,10 +1254,8 @@ def dbtype_from_tag(tag):
 def all_resources ():
     ''' Return the setof unique names that are taggable objects
     '''
-    #names = DBSession.query(UniqueName).filter(UniqueName.id == Taggable.tb_id).all()
-    #log.debug ('all_resources' + str(names))
-    names = [ x[0] for x in DBSession.query(Taggable.resource_type).distinct().all() ]
-
+    names = DBSession.query(UniqueName).filter(UniqueName.id == Taggable.tb_id).all()
+    log.debug ('all_resources' + str(names))
     return names
 
     

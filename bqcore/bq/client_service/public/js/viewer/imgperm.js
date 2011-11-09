@@ -31,15 +31,7 @@ ImgPermissions.prototype.togglePermission = function () {
     var xmldata = '<request>';
     xmldata += '<image uri="' + uri + '" perm="' + perm +'" />';
     xmldata += '</request>';
-	  makeRequest( uri, callback(this, 'checkPerm'), null, "post", xmldata );
-
-    // Imageserver
-    var xmldata = '<request>';
-    xmldata += '<image src="' + src + '" perm="' + perm +'" />';
-    xmldata += '</request>';
-
-    var imgsrv_req = src.replace (/\d+$/, "update_image_permission");
-	  makeRequest(imgsrv_req , null, null, "post", xmldata );
+	makeRequest( uri, callback(this, 'checkPerm'), null, "post", xmldata );
 
     this.viewer.image.perm = perm;
 }

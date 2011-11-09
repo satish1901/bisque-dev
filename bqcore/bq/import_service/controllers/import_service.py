@@ -110,6 +110,7 @@ from bq.core import permission, identity
 from bq.util.paths import data_path
 from bq import image_service
 from bq import data_service
+from bq import blob_service
 import bq.image_service.controllers.imgcnv as imgcnv
 import bq.image_service.controllers.bioformats as bioformats
 from bq.image_service.controllers.blobsrv import _mkdir
@@ -357,6 +358,30 @@ class import_serviceController(ServiceController):
         return [ '%s/%s'%(unpack_dir, m) for m in members ]
 
 
+
+    def insert_resource_url(self, url):
+        filename = url.rsplit('/',1)[1]
+        uniq = blob_service.make_uniq_hash(filename)
+        perm = permission.PRIVATE
+
+        resource_type = blob_service.guess_type(filename)
+
+        resource = etree.Element(resource_type, perm=str(perm),
+                                 resource_uniq = uniq,
+                                 resource_name = filename,
+                                 resource_value  = url)
+        if resource_type == 'image':
+            resource.set('src', "/image_service/images/%s" % uniq)
+
+        etree.SubElement(resource, 'tag', name="filename", value=filename)
+        etree.SubElement(resource, 'tag', name="upload_datetime", value=datetime.now().isoformat(' '), type='datetime' ) 
+            
+        #log.debug("\n\ninsert_image tags: \n%s\n" % etree.tostring(tags))
+
+        log.info ("NEW IMAGE <= %s" % (etree.tostring(resource)))
+        resource = data_service.new_resource(resource = resource)
+        return resource
+
 #------------------------------------------------------------------------------
 # file ingestion support functions
 #------------------------------------------------------------------------------
@@ -380,29 +405,39 @@ class import_serviceController(ServiceController):
             perm = f.permission
 
         # try inserting the image in the image service            
-        info = image_service.new_image(src=src, name=filename, userPerm=perm)
-        
-        if info:
-            # the image was successfuly added into the image service
-            resource = etree.Element('image', perm=str(perm))
-            etree.SubElement(resource, 'tag', name="filename", value=filename)
-            etree.SubElement(resource, 'tag', name="upload_datetime", value=datetime.now().isoformat(' '), type='datetime' ) 
-            if hasattr(f, 'original') and f.original:
-                etree.SubElement(resource, 'tag', name="original_upload", value=f.original, type='link' )              
+        #info = image_service.new_image(src=src, name=filename, userPerm=perm)
+
+        try:
+            uri, uniq = blob_service.store_blob (src, filename)
+            resource_type = blob_service.guess_type(filename)
+            log.debug ("stored %s at %s" % (filename, uri))
+        except Exception, e:
+            log.exception("Error during store")
+        # the image was successfuly added into the image service
+        resource = etree.Element(resource_type, perm = str(perm),
+                                 resource_uniq = uniq,
+                                 resource_name = filename,
+                                 resource_value  = uri)
+        if resource_type == 'image':
+            resource.set('src', "/image_service/images/%s" % uniq)
+        etree.SubElement(resource, 'tag', name="filename", value=filename)
+        etree.SubElement(resource, 'tag', name="upload_datetime", value=datetime.now().isoformat(' '), type='datetime' ) 
+        if hasattr(f, 'original') and f.original:
+            etree.SubElement(resource, 'tag', name="original_upload", value=f.original, type='link' )              
             
-            log.debug("\n\ninsert_image tags: \n%s\n" % etree.tostring(tags))
+        log.debug("\n\ninsert_image tags: \n%s\n" % etree.tostring(tags))
                           
-            # ingest extra tags
-            if tags is not None:
-                if tags.tag == 'resource':
-                    #resource.extend(copy.deepcopy(list(tags)))
-                    resource.extend(list(tags))
-            log.info ("NEW IMAGE %s <= %s" % (info, etree.tostring(resource)))
-            resource = data_service.new_image(resource = resource, **info)
-        else:
-            # error happened or the file was filtered during the pre-processing stage                
-            resource = etree.Element('file', name=filename)                
-            etree.SubElement(resource, 'tag', name='error', value='Problem inserting this image')
+        # ingest extra tags
+        if tags is not None:
+            if tags.tag == 'resource':
+                #resource.extend(copy.deepcopy(list(tags)))
+                resource.extend(list(tags))
+        log.info ("NEW IMAGE <= %s" % (etree.tostring(resource)))
+        resource = data_service.new_resource(resource = resource)
+        #else:
+        #    # error happened or the file was filtered during the pre-processing stage                
+        #    resource = etree.Element('file', name=filename)                
+        #    etree.SubElement(resource, 'tag', name='error', value='Problem inserting this image')
         
         log.debug('insert_image :::::\n %s'% etree.tostring(resource) )
         return resource
@@ -454,10 +489,9 @@ class import_serviceController(ServiceController):
             error = None
             try:
                 nf = self.filters[ intags['type'] ](f, intags)
-            except:
-                e = sys.exc_info()            
-                log.debug('Exception in %s:\n%s', intags['type'], traceback.print_exception(e[0], e[1], e[2])) 
-                error = 'Problem processing the file: %s'%e[1]
+            except e:
+                log.exception('Problem in processing file: %s'  % intags['type'])
+                error = 'Problem processing the file: %s'%e
            
             # some error during pre-processing
             if error is not None:
@@ -640,7 +674,10 @@ class import_serviceController(ServiceController):
 
         return dict(error = 'Some problem uploading the file have occured')
 
-
+    @expose()
+    @require(predicates.not_anonymous())
+    def insert(self, **kw):
+        return self.insert_image_url (**kw)
 
         
 #---------------------------------------------------------------------------------------
