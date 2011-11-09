@@ -359,7 +359,7 @@ class import_serviceController(ServiceController):
 
 
 
-    def insert_image_url(self, url):
+    def insert_resource_url(self, url):
         filename = url.rsplit('/',1)[1]
         uniq = blob_service.make_uniq_hash(filename)
         perm = permission.PRIVATE

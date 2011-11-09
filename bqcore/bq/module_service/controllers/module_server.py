@@ -352,7 +352,7 @@ class ModuleServer(ServiceController):
         self.__class__.modules = self.modules = resource_controller ("modules" , cache=False )
         self.__class__.engine = self.engine = EngineResource (server_url,
                                                               self.modules)
-        self.load_services()
+        #self.load_services()
 
     def load_services(self):
         services = session.query(Service)
