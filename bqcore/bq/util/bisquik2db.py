@@ -97,13 +97,13 @@ class XMLNode(list):
         self.xmltag = tag
         self.tags = []
         self.gobjects = []
-        self.kids = []
+        self.children = []
     def __iter__(self):
-        return itertools.chain(self.tags, self.gobjects, self.kids)
+        return itertools.chain(self.tags, self.gobjects, self.children)
     def __len__(self):
-        return len(self.tags)+ len(self.gobjects)+len(self.kids)
+        return len(self.tags)+ len(self.gobjects)+len(self.children)
     def __getitem__(self, key):
-        return (self.tags + self.gobjects + self.kids)[key]
+        return (self.tags + self.gobjects + self.children)[key]
 
     def __str__(self):
         return "%s tag:%s gobject:%s kids %s" % (self.xmltag,
@@ -304,6 +304,89 @@ class NodeFactory(object):
             #log.debug ('fetching %s %s[%d]:%s' %(parent , array, indx, v)) 
             return v
 
+##################################################
+# Resource
+class ResourceFactory(object):
+    '''Create db class based on XML tags and place in proper
+    hierarchy
+    '''
+    @classmethod
+    def load_uri(cls, uri, parent):
+        node =   load_uri(uri)
+        if node is not None and parent is not None:
+            if node.id != parent.id:  # POST /ds/image/1/ <image uri="/ds/image/1" ..>
+                cls.set_parent (node, parent)
+        log.debug ("loading %s->%s" % (uri,node))
+        return node
+
+    @classmethod
+    def new(cls, xmlnode, parent, **kw):
+        xmlname = xmlnode.tag
+        if xmlname== "request" or xmlname=="response":
+            if parent:
+                node = parent
+            else:
+                node = XMLNode(xmlname)
+        elif xmlname == "vertex":
+            node = Vertex()
+            parent.vertices.append (node)
+            node.indx = len(parent.vertices)-1 # Default value (maybe overridden)
+        elif xmlname == "value":
+            node = Value()
+            parent.values.append(node)
+            node.indx = len(parent.values)-1   # Default value (maybe overridden)
+        else:
+            if xmlname=="resource":
+                xmlname = xmlnode.get ('resource_type')
+            node = Taggable(xmlname)
+        if parent:
+            cls.set_parent(node, parent)
+        else:
+            node.document = node
+
+        return node
+
+    @classmethod
+    def set_parent(cls, node, parent):
+        xmlname = node.xmltag
+        if xmlname == "vertex":
+            if parent and node not in parent.vertices:
+                parent.vertices.append (node)
+                node.indx = len(parent.vertices)-1 # Default value (maybe overridden)
+        elif xmlname == "value":
+            if node not in parent.values:
+                parent.values.append(node)
+                node.indx = len(parent.values)-1   # Default value (maybe overridden)
+        elif xmlname== "request" or xmlname=="response":
+            pass
+        else:
+            if parent and node not in parent.children:
+                node.document = parent.document
+                parent.children.append(node)
+
+
+    index_map = dict(vertex=('vertices',Vertex), tag=('values', Value))
+    @classmethod
+    def index(cls, node, parent, indx, cleared):
+        xmlname = node.tag
+        #return cls.new(xmlname, parent)
+        array, klass = cls.index_map.get (xmlname, (None,None))
+        if array:
+            objarr =  getattr(parent, array)
+            v = DBSession.query(klass).filter_by(parent_id=parent.id, indx=indx).first()
+            log.debug('indx fetched %s' % v)
+            objarr.extend ([ klass() for x in range(((indx+1)-len(objarr)))])
+            if not v:
+                #objarr.extend ( [ None ] * ((indx+1)-len(objarr)))
+                v = objarr[indx]
+                #if v is None:
+                #    v = ctor()
+                v.indx = indx;
+            else:
+                objarr[indx] = v
+            #log.debug ('fetching %s %s[%d]:%s' %(parent , array, indx, v)) 
+            return v
+
 
 
 #####################################
@@ -325,6 +408,12 @@ def get_email (dbo, fn, baseuri):
 def make_user (dbo, fn, baseuri):
     return ('user', baseuri + str(dbo.user))
 
+def get_name (dbo, fn, baseuri):
+    return ('name', dbo.resource_name)
+def get_type (dbo, fn, baseuri):
+    return ('type', dbo.resource_user_type)
+
+
 mapping_fields = {
     'table_name':'type',
     'engine_id' : 'engine',
@@ -337,12 +426,15 @@ mapping_fields = {
     'owner' : make_owner,
     'parent_id':None,
     'children': None,
+    'docnodes': None,
 #    'type' : 'resource_user_type',
 #    'name' : 'resource_name',
 #    'value': 'resoruce_value',
+    'document_id': None,
+    'document' : None,
     'resource_parent_id': None,
-    'resource_document_id': None,
-    'resource_name' : None,
+    'resource_name' : get_name,
+    'resource_value': 'value',
     'resource_type' : None,
     'resource_user_type' : None,
     'module_type_id':None,
@@ -364,7 +456,7 @@ mapping_fields = {
     'tguser':None,
     'password': None,
     'acl' : None,
-    'owned' : None,
+    'owns' : None,
     # Auth
     'user_id' : get_email,
     'user'    : make_user,
@@ -402,14 +494,12 @@ def model_fields(dbo, baseuri=None):
             if isinstance(attr_val, basestring):
                attrs[fn] = attr_val
             else:
-               attrs[fn] = str(attr_val) #unicode(attr_val,'utf-8')
+               attrs[fn] = unicode(attr_val) #unicode(attr_val,'utf-8')
     return attrs
 
 
 
-
-def xmlnode(dbo, parent, baseuri, view, **kw):
-    #elem = self.element(dbo, parent, baseuri)
+def xmlelement(dbo, parent, baseuri, **kw):
     xtag = kw.pop('xtag', dbo.resource_type)
     if not kw:
         kw = model_fields (dbo, baseuri)
@@ -418,31 +508,61 @@ def xmlnode(dbo, parent, baseuri, view, **kw):
         elem =  etree.SubElement (parent, xtag, **kw)
     else:
         elem =  etree.Element (xtag,  **kw)
-
-    if  dbo.resource_type == 'tag' and dbo.resource_value is None:
-        [ toxmlnode (x, parent = elem, baseuri=baseuri, view=view) for x in dbo.values ]
-    elif  dbo.resource_type == 'gobject' and dbo.resource_value is None:
-        [ toxmlnode (x, parent = elem, baseuri=baseuri, view=view) for x in dbo.vertices ]
     return elem
 
-def resource2tree(dbo, parent=None, view=[], baseuri=None, progressive=False, **kw):
-    doc_id = dbo.resource_document_id
-    docnodes = DBSession.query(Taggable).filter(Taggable.resource_document_id == doc_id)
+
+def xmlnode(dbo, parent, baseuri, view, **kw):
+    if  dbo.resource_type == 'tag':
+        elem = xmlelement (dbo, parent, baseuri)
+        if  dbo.resource_value is None:        
+            [ toxmlnode (x, parent = elem, baseuri=baseuri, view=view) for x in dbo.values ]
+    elif  dbo.resource_type == 'gobject':
+        if 'canonical' not in view and dbo.type in known_gobjects:
+            elem = xmlelement (dbo, parent, baseuri, xtag=dbo.type)
+        else:
+            elem = xmlelement (dbo, parent, baseuri)
+        if  dbo.resource_value is None:
+            [ toxmlnode (x, parent = elem, baseuri=baseuri, view=view) for x in dbo.vertices ]
+    else:
+        elem = xmlelement (dbo, parent, baseuri)
+
+    return elem
+
+def valnode(val, parent, baseuri, view):
+    if parent.resource_type in gobjects:
+        # create vertex node from val
+        pass
+    else:
+        toxmlnode(val,  parent = parent, baseuri=baseuri, view=view)
+
+def resource2tree(dbo, parent=None, view=[], baseuri=None, **kw):
+    doc_id = dbo.document_id
+    docnodes = DBSession.query(Taggable).filter(Taggable.document_id == doc_id)
     docnodes = docnodes.order_by(Taggable.id)
 
+    log.debug('resource2tree :%s doc %s' % (dbo.id , doc_id))
     nodes = {}
     for node in docnodes:
         if node.resource_parent_id is not None:
-            parent = nodes[node.resource_parent_id]
+            node_parent = nodes[node.resource_parent_id]
             #elem = etree.SubElement(parent, node.resource_type)
-            elem = xmlnode (node, parent, baseuri, view)
+            elem = xmlnode (node, node_parent, baseuri, view)
             nodes[node.id] = elem
         else:
             #elem = root = etree.Element(node.resource_type)
             elem = root = xmlnode(node, None, baseuri, view)
             nodes[node.id] = elem
-
-    return root
+    #vals = DBSession.query(Values).filter(Value.value_document_id == doc_id)
+    #for val in vals:
+    #    parent = nodes[val.parent_id]
+    #    elem = valnode (val, parent, baseuri, view)
+            
+    log.debug('resource2tree :read %d nodes ' % (len(nodes.keys())))
+    if parent is not None:
+        log.debug ("parent %s + %s" % (parent, nodes[dbo.id]))
+        parent.append ( nodes[dbo.id])
+    return nodes [ dbo.id ] 
+    #return root
 
 
 def db2tree(dbo, parent=None, view=[], baseuri=None, progressive=False, **kw):
@@ -482,37 +602,25 @@ def db2tree_int(dbo, parent = None, view=None ,  baseuri=None, endtime=None):
         return True, r
         #return [ db2tree_int(x, parent, view, baseuri) for x in dbo ]
 
-    #log.debug ("dbo = " + unicode(dbo))
-    node = toxmlnode(dbo, parent, baseuri, view)
-    #log.debug ('node = '+ etree.tostring(node))
+    if 'deep' in view  and dbo.document_id == dbo.id:
+        return True, resource2tree(dbo, parent, view, baseuri)
+
+
+    log.debug ("dbo = " + unicode(dbo))
+    node = xmlnode(dbo, parent, baseuri, view)
     if "full" in view :
-        v = list(itertools.ifilter (lambda x: x != 'full', view))
-        tl = [ db2tree_int(x, node, view=v, baseuri=baseuri) for x in dbo.tags ] 
-        gl = [ db2tree_int(x, node, view=v, baseuri=baseuri) for x in dbo.gobjects ]
-        
-        #[ etree.SubElement (node, 'tag', **model_fields(x)) for x in dbo.tags ]
-        #[ etree.SubElement (node, 'gobject', **model_fields(x)) for x in dbo.gobjects ]
+         v = list(itertools.ifilter (lambda x: x != 'full', view))
+         tl = [ db2tree_int(x, node, view=v, baseuri=baseuri) for x in dbo.children ] 
+         #gl = [ db2tree_int(x, node, view=v, baseuri=baseuri) for x in dbo.gobjects ]
     elif "deep" in view:
-        tl = [ db2tree_int(x, node, view, baseuri) for x in dbo.tags ] 
-        gl = [ db2tree_int(x, node, view, baseuri) for x in dbo.gobjects ]
+         tl = [ db2tree_int(x, node, view, baseuri) for x in dbo.children ] 
+         #gl = [ db2tree_int(x, node, view, baseuri) for x in dbo.gobjects ]
     elif view is None or len(view)==0 or 'short' in view:
-        return True, node
+         return True, node
     else:
-        v = list(itertools.ifilter (lambda x: x != 'full', view))
-        #log.debug ("TAG VIEW=%s", v)
-        tl = [ db2tree_int(x, node, v, baseuri)
-               for x in dbo.tags if x.name in v ] 
-#    elif  True: #'normal' in view:
-#        #if len(dbo.tags):
-#        # Hack to keep from loading tags when checking for existance
-#        if hasattr(dbo, 'id') and DBSession.query(Tag).filter (dbo.id == tags.c.parent_id).first():
-#            etree.SubElement(node, 'resource', type="tag", uri=baseuri+dbo.uri+'/tags')
-#        #if len(dbo.gobjects):
-#        # Hack to keep from loading gobjects when checking for existance
-#        if hasattr(dbo, 'id') and DBSession.query(GObject).filter (dbo.id == gobjects.c.parent_id).first():
-#            etree.SubElement(node, 'resource', type="gobject", uri=baseuri+dbo.uri+'/gobjects')
-#    else: #  if  'short' in view:
-#        return True, node;
+         v = list(itertools.ifilter (lambda x: x != 'full', view))
+         #log.debug ("TAG VIEW=%s", v)
+         tl = [ db2tree_int(x, node, v, baseuri) for x in dbo.tags if x.name in v ] 
         
     return True, node
 
@@ -602,7 +710,7 @@ converters = {
     'string'  : lambda x: unicode(x, "utf-8"),
     }
 
-def updateDB(root=None, parent=None, resource = None, factory = NodeFactory, replace=False):
+def updateDB(root=None, parent=None, resource = None, factory = ResourceFactory, replace=False):
     '''Update the database type resource with doc or tree'''
     try:
         evnodes = etree.iterwalk(root, events=('start','end'))

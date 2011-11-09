@@ -21,7 +21,7 @@ from bq.util.paths import site_cfg_path
 
 __all__ = ['make_app', 'bisque_app']
 
-log = logging.getLogger("bq.core.middleware")
+log = logging.getLogger("bq.config.middleware")
 
 # Use base_config to setup the necessary PasteDeploy application factory. 
 # make_base_app will wrap the TG2 app with all the middleware it needs. 

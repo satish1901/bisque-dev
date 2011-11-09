@@ -19,7 +19,7 @@ ResourceDispatch.prototype.dispatch = function(resource) {
     if (!resource || resource == '') return;
     resource = decodeURIComponent(resource);
     
-    if(resource.match(/\/data_service\/images\/\d+$/)) {
+    if(resource.match(/\/data_service\/image\/\d+$/)) {
         BQFactory.load(resource, callback(this, 'dispatch_image'));
     }
     else

@@ -69,7 +69,7 @@ BQObject.prototype.initializeXml = function (resource) {
     this.ts   = attribStr(resource,'ts');
     this.owner = attribStr(resource,'owner');
     this.type   = attribStr(resource,'type');
-    this.resource_name = attribStr(resource,'resource_name');
+    this.resource_name = attribStr(resource,'name');
     this.attributes = attribDict (resource);
     this.resource_type = this.xmltag;
     this.dirty = false;
@@ -116,11 +116,10 @@ BQObject.prototype.toXML = function (){
     return this.xmlNode (xmlrep);
 }
 
-BQObject.prototype.delete_ = function (cb) {
+BQObject.prototype.delete_ = function (cb, errorcb) {
     // Delete object from db
     if (this.uri != null) {
-        makeRequest(this.uri, callback(this, 'response_', 'delete'), 
-                    cb, 'delete');
+        xmlrequest(this.uri, callback(this, 'response_', 'delete', errorcb, cb), 'delete', null, errorcb);
     }
 }
 
@@ -226,9 +225,9 @@ BQObject.prototype.save_ = function (parenturi, cb, errorcb) {
     var req = docobj.toXML();
     //errorcb = errorcb || default_error_callback;
     if (docobj.uri  ) {
-        makeRequest(docobj.uri, callback(docobj, 'response_', 'update', errorcb), cb, 'put', req, errorcb);
+        xmlrequest(docobj.uri, callback(docobj, 'response_', 'update', errorcb, cb),'put', req, errorcb);
     } else {
-        makeRequest(parenturi, callback(docobj, 'response_', 'created', errorcb), cb, 'post', req, errorcb);
+        xmlrequest(parenturi, callback(docobj, 'response_', 'created', errorcb, cb),'post', req, errorcb);
     }
 }
 
@@ -264,7 +263,7 @@ BQObject.prototype.response_ = function (code, errorcb, cb, xmldoc) {
 BQObject.prototype.load_tags = function (cb, url, progress) {
     if (!url) {
         if (this.uri)
-            url = this.uri + "/tags";
+            url = this.uri + "/tag";
         else {
             if (cb) cb();
             return;
@@ -277,17 +276,20 @@ BQObject.prototype.load_tags = function (cb, url, progress) {
 }
 
 
-// loadTags : function to facilitate progressive fetching of tags/gobjects etc. 
+// load_children : function to facilitate progressive fetching of tags/gobjects etc. 
 // config params - 
+// attrib -- filter tag or gobject usually
+// vector -- where the item are store .. tags, gobjects, or kids
 // cb : callback
 // progress : progress callback
 // depth : 'full', 'deep', 'short' etc.
-BQObject.prototype.loadTags = function (config)
+BQObject.prototype.load_children = function (config)
 {
     Ext.apply(config, 
     {
-        attrib : config.attrib || 'tags',
+        attrib : config.attrib || 'tag',
         depth : config.depth || 'deep',
+        vector : config.vector || 'tags',
         cb : config.cb || Ext.emptyFn
     })
     
@@ -303,17 +305,24 @@ BQObject.prototype.loadTags = function (config)
         uri : config.uri+'?view='+config.depth,
         cb : Ext.bind(function(resource, config)
         {
-            this[config.attrib] = resource[config.attrib];
-            config.cb(resource[config.attrib]);
+            this[config.vector] = resource[config.vector];
+            config.cb(resource[config.vector]);
         }, this, [config], true), 
         progresscb : config.progress
     });
 }
 
+BQObject.prototype.loadTags = function (config)
+{
+    config.attrib='tag';
+    config.vector='tags';
+    BQObject.prototype.load_children.call(this, config);
+}
 BQObject.prototype.loadGObjects = function (config)
 {
-    config.attrib='gobjects';
-    BQObject.prototype.loadTags.call(this, config);
+    config.attrib='gobject';
+    config.vector='gobjects';
+    BQObject.prototype.load_children.call(this, config);
 }
 
 BQObject.prototype.loaded_tags = function (cb, resource) {
@@ -322,7 +331,7 @@ BQObject.prototype.loaded_tags = function (cb, resource) {
 }
 
 BQObject.prototype.load_gobjects = function (cb, url, progress) {
-    if (!url) url = this.uri + "/gobjects";
+    if (!url) url = this.uri + "/gobject";
     this.remove_resource (url);
     BQFactory.load (url + "?view=deep", 
                     callback(this, 'loaded_gobjects', cb), 
@@ -336,14 +345,14 @@ BQObject.prototype.loaded_gobjects = function (cb, resource) {
 
 BQObject.prototype.save_gobjects = function (cb, url, progress, errorcb) {
     if (!url) url = this.uri;
-    var resource = new BQResource (url + "/gobjects");
+    var resource = new BQResource (url + "/gobject");
     resource.gobjects = this.gobjects;
     resource.created = false;   // HACK 
     resource.save_(resource.uri, cb, errorcb);
 }
 BQObject.prototype.save_tags = function (cb, url, progress, errorcb) {
     if (!url) url = this.uri;
-    var resource = new BQResource (url + "/tags");
+    var resource = new BQResource (url + "/tag");
     resource.tags = this.tags;
     resource.created = false;   // HACK 
     resource.save_(resource.uri, cb, errorcb);
@@ -698,8 +707,9 @@ BQFactory.parseBQDocument = function (xmltxt) {
 function BQImage (uri){
     BQObject.call(this, uri);
     this.xmltag = "image";
-    this.xmlfields = [ "uri", "perm", "type",
-                       "src", "x", "y","z", "t", "ch" ] ;
+    this.xmlfields = [ "uri", "perm", "type", ] ;
+                        
+//                       "src", "x", "y","z", "t", "ch" ] ;
 
 }
 BQImage.prototype = new BQObject();
@@ -713,12 +723,12 @@ BQImage.prototype.initializeXml = function (image) {
     this.resource_name  = attribStr(image,'resource_name');
     this.resource_type = this.xmltag;
 
-    this.src  = attribStr(image,'src');
-    this.x    = attribInt(image,'x');
-    this.y    = attribInt(image,'y');
-    this.z    = attribInt(image,'z');
-    this.t    = attribInt(image,'t');
-    this.ch   = attribInt(image,'ch');
+    this.src  = '/image_service/images/' + attribStr(image,'resource_uniq');
+//    this.x    = attribInt(image,'x');
+//    this.y    = attribInt(image,'y');
+//    this.z    = attribInt(image,'z');
+//    this.t    = attribInt(image,'t');
+//    this.ch   = attribInt(image,'ch');
 }
 
 
@@ -1304,6 +1314,8 @@ BQUser.prototype.initializeXml = function (user) {
     //this.password  = attribStr(user,'password');    
     this.email_address = attribStr (user, 'email_address');
     this.resource_type = this.xmltag;
+    this.display_name = attribStr(user, 'name');
+    this.email = attribStr(user, 'value');
 }
 
 
