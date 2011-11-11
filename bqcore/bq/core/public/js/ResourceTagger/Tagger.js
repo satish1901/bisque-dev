@@ -42,7 +42,7 @@ Ext.define('Bisque.ResourceTagger',
                 pageParam: undefined,
                 startParam: undefined,
                 
-                //url : '/data_service/images?tag_values=mytag',
+                //url : '/data_service/image?tag_values=mytag',
                 url: '/xml/dummy_tag_values.xml', // a dummy document just to inhibit initial complaining
                 reader : {
                     type :  'xml',
@@ -173,7 +173,7 @@ Ext.define('Bisque.ResourceTagger',
     },
 
     updateQueryTagValues: function(tag_name) {
-        var url = '/data_service/images?tag_values='+encodeURIComponent(tag_name);
+        var url = '/data_service/image?tag_values='+encodeURIComponent(tag_name);
         var proxy = this.store_values.getProxy();
         proxy.url = url;
         this.store_values.load();

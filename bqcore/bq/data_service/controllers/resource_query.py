@@ -64,7 +64,7 @@ from bq.core.model import DBSession as session
 #from bq.notify_service import notify_service
 
 
-from bq.data_service.model import UniqueName, names
+#from bq.data_service.model import UniqueName, names
 from bq.data_service.model import Taggable, taggable, Image
 from bq.data_service.model import TaggableAcl, BQUser
 from bq.data_service.model import Tag
@@ -182,11 +182,10 @@ def p_term_tagval(p):
     else:
         namexpr = resource.c.resource_name == p[1]
     
+    v = p[3].lower()
     if p[3].count('*'):
-        v = p[3].replace('*', '%')
-        valexpr = or_(and_(vals.c.valstr.ilike (v),
-                           resource.c.id == vals.c.parent_id),
-                      resource.c.resource_value.ilike(v))
+        v = v.replace('*', '%')
+        valexpr = resource.c.resource_value.ilike(v)
     else:
         valexpr = or_(and_(func.lower(vals.c.valstr)==p[3].lower(),
                            resource.c.id == vals.c.parent_id),                          
@@ -200,57 +199,24 @@ def p_term_tag(p):
     '''term : tagval'''
     #tag = tags.alias ()
     vals= values.alias()
-    resource = taggable.alias()
+    #resource = taggable.alias()
+    tag = taggable.alias()
     #taggableobj = taggable.alias()
 
+    v = p[1].lower()
     if p[1].count('*'):
-        valexpr = (vals.c.valstr.ilike (p[1].replace('*', '%')))
+        valexpr = (func.lower(tag.c.resource_value).ilike(v))
     else:
-        valexpr = func.lower(vals.c.valstr) == p[1].lower()
+        #q1 = session.query(Tag).filter(and_(
+        #        Tag.id == vals.c.parent_id, 
+        #        func.lower(vals.c.valstr) == v))
+        #q2 = session.query(Tag).filter(func.lower(Tag.resource_value) == 'f.tiff')
+        #sq = q1.union(q2).subquery()
+        # exists([taggable.id]).where(taggable.c.id == sq.c.taggable_document_id)
+        valexpr = (func.lower(tag.c.resource_value) == v)
+                                     
+    p[0] = exists([tag.c.id]).where (and_(valexpr, tag.c.document_id == taggable.c.document_id))
 
-    p[0] = and_(taggable.c.id == vals.document_id,
-                valexpr)
-
-def XXXp_term_tagval(p):
-      '''term : tagval SEP tagval'''
-      tag = tags.alias ()
-      vals= values.alias()
-      tagname = names.alias()
-      resource = taggable.alias ()
-      if p[1].count('*'):
-          namexpr = and_(tagname.c.name.ilike (p[1].replace('*', '%')),
-                         tag.c.name_id == tagname.c.id )
-      else:
-          namexpr = ( tag.c.name_id == UniqueName(p[1]).id )
-
-      if p[3].count('*'):
-          valexpr = vals.c.valstr.ilike (p[3].replace('*', '%'))
-      else:
-          valexpr = func.lower(vals.c.valstr)==p[3].lower()
-
-      p[0] =  exists ([resource.c.id]).where (
-          and_ (namexpr,
-                tag.c.parent_id == resource.c.id,
-                vals.c.parent_id == tag.c.id,
-                valexpr,
-                taggable.c.id == resource.c.id))
-
-def XXXp_term_tag(p):
-    '''term : tagval'''
-    vals= values.alias()
-    resource = taggable.alias()
-    #taggableobj = taggable.alias()
-
-    if p[1].count('*'):
-        valexpr = (vals.c.valstr.ilike (p[1].replace('*', '%')))
-    else:
-        valexpr = func.lower(vals.c.valstr) == p[1].lower()
-
-    p[0] = exists ([resource.c.id]).where (
-        and_(resource.c.id == taggable.c.id,
-             tag.c.parent_id == resource.c.id,
-             vals.c.parent_id == tag.c.id,
-             valexpr))
 
 
 def p_tagval_norm (p):
@@ -465,8 +431,10 @@ def tags_special(dbtype, query, params):
     if params.has_key('name'):
         ### Find tags with name
         ## Equiv .../tag[@name=param]
+        sq1 = query.with_labels().subquery()
         return session.query(Tag).filter(
-            Taggable.resource_name == params.pop('name'))
+             Tag.document_id == sq1.c.taggable_document_id,
+             Tag.resource_name == params.pop('name'))
     if params.has_key('value'):
         ### Find tags with name
         ## Equiv .../tag[@value=param]
@@ -554,7 +522,8 @@ def resource_query(resource_type,
     # /ds/images/19292/tags?names=experimenter,date
     tv = kw.pop('names', None)
     if tv and dbtype==Tag:
-        query = query.filter (or_(*[ dbtype.name_id==UniqueName(k).id 
+#        query = query.filter (or_(*[ dbtype.name_id==UniqueName(k).id 
+        query = query.filter (or_(*[ taggable.c.resource_name == k
                                      for k in tv.split(',')]))
 
     ## Extra attributes

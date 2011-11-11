@@ -344,7 +344,7 @@ class BisquikResource(Resource):
         resource = self.check_access(resource, RESOURCE_EDIT)
 
         DBSession.autoflush = False
-        #old = resource.clear()
+        old = resource.clear()
         #pdb.set_trace()
         parent = self.load_parent()
         resource = bisquik2db (doc=xml, resource=resource, parent=parent, replace=True)

@@ -12,12 +12,10 @@ if db is None:
     print "Please set sqlalchemy.url in site.cfg "
 
 
-engine = create_engine(db, echo = False)
 
 
-
+engine = None
 metadata = MetaData()
-metadata.bind = engine
 
 maker = sessionmaker(autoflush=True, autocommit=False,
                      extension=ZopeTransactionExtension())
@@ -30,5 +28,10 @@ def session_mapper (scoped_session):
     return mapper
 
 mapper = session_mapper (DBSession)
-DBSession.configure(bind=engine)
-print "attached to", engine
+
+
+#engine = create_engine(db, echo = False)
+if engine:
+    metadata.bind = engine
+    DBSession.configure(bind=engine)
+    print "attached to", engine
