@@ -14,7 +14,6 @@ from bq.core import permission, identity
 from bq.core.exceptions import IllegalOperation
 from bq.util.paths import data_path
 from bq.util.mkdir import _mkdir
-from bq.util import irods_handler
 from bq import data_service
 from bq.data_service.model import Taggable, DBSession
 
@@ -75,10 +74,9 @@ class BlobServer(RestController, ServiceMixin):
     def __init__(self, url ):
         ServiceMixin.__init__(self, url)
         default_store = config.get('bisque.blob_service.default_store', 'local')
-        store_list = [ x.strip() for x in config.get('bisque.blob_service.stores','irods,local').split(',') ] 
-        self.stores = []
-        for st in store_list:
-            self.stores.append( (st,  blob_storage.make(st)) )
+        store_list = [ x.strip() for x in config.get('bisque.blob_service.stores','local').split(',') ] 
+        self.stores = [ (st,  blob_storage.make(st)) for st in store_list
+                         if  st in blob_storage.supported_storage_types]
         self.default_store = dict(self.stores) [default_store]
         log.info ('configured stores %s' % ','.join([ str(x[1]) for x in self.stores]))
         log.info ('Using %s for default storage' % self.default_store)

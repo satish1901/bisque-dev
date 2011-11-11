@@ -113,7 +113,7 @@ from bq import data_service
 from bq import blob_service
 import bq.image_service.controllers.imgcnv as imgcnv
 import bq.image_service.controllers.bioformats as bioformats
-from bq.image_service.controllers.blobsrv import _mkdir
+from bq.util.mkdir import _mkdir
 
 
 #---------------------------------------------------------------------------------------
