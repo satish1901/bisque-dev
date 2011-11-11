@@ -8,18 +8,23 @@ from bq.util.paths import data_path
 from bq.util.mkdir import _mkdir
 from bq.util.hash import make_uniq_hash
 
+log = logging.getLogger('bq.blobs.storage')
+
+
+supported_storage_types = [ 'local' ] 
+
 try:
     from bq.util import irods_handler
+    supported_storage_types.append('irods')
 except ImportError:
-    pass
+    log.warn ("Can't import irods: irods storage not supported")
 
 try:
     import boto
+    supported_storage_types.append('S3')
 except ImportError:
-    pass
+    log.warn ("Can't import boto:  S3  Storage not supported")
 
-
-log = logging.getLogger('bq.blobs.storage')
 
 
 def randomPath (top, user, filename):
@@ -113,13 +118,15 @@ class S3Storage(object):
         return "<s3_store: %s>" %self.top
 
 
-storage_drivers = {
-    'local' : LocalStorage,
-    'irods' : iRodsStorage,
-    's3'    : S3Storage,
-}
    
 def make(storage):
-    store = storage_drivers.get(storage)
-    return store()
+    storage_drivers = {
+        'local' : LocalStorage,
+        'irods' : iRodsStorage,
+        'S3'    : S3Storage,
+        }
+    if storage in supported_storage_types:
+        store = storage_drivers.get(storage)
+        return store()
+    return None
  
