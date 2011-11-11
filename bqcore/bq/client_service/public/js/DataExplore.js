@@ -10,7 +10,7 @@ TagExplore.prototype.queryTag = function( tag_str ) {
   var v = tag_str.split(':');
   this.title = v[0];
   this.tag = v[1];  
-  this.query = new BQQuery("/data_service/images?tag_values="+this.tag, this, callback(this, this.createValues) );
+  this.query = new BQQuery("/data_service/image?tag_values="+this.tag, this, callback(this, this.createValues) );
 }
 
 function encodeURLquery(s) {

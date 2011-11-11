@@ -88,7 +88,6 @@ log = logging.getLogger("bq.data_service")
 from migration.versions.env002 import metadata, DBSession, mapper
 current_session = DBSession
 
-
 files = Table('files', metadata, autoload=True)
 #              Column('id', Integer, primary_key=True),
 #              Column('sha1', String(40), index=True), # new column v2
@@ -100,6 +99,9 @@ files = Table('files', metadata, autoload=True)
 #              Column('file_type', Text), # new column v2
 #              Column('local', Text) # new column v3              
 #              )
+files_acl = Table('file_acl', metadata, autoload=True)
+
+
 
 names = Table('names', metadata, autoload=True)
 #               Column('id', Integer, primary_key = True),
@@ -1026,7 +1028,8 @@ mapper( Taggable, taggable,
     'acl'  : relation(TaggableAcl, lazy=True, cascade="all, delete-orphan",
                       primaryjoin = (TaggableAcl.taggable_id == taggable.c.id)),
     'children' : relation(Taggable, cascade="all, delete-orphan",
-                          primaryjoin = (taggable.c.id == taggable.c.resource_parent_id)),
+                          primaryjoin = (taggable.c.id == taggable.c.resource_parent_id),
+                          foreign_keys=[taggable.c.resource_parent_id]),
     'values' : relation(Value,  lazy=True, cascade="all, delete-orphan",
                         primaryjoin =(taggable.c.id == values.c.parent_id),
                         foreign_keys=[values.c.parent_id]
@@ -1035,6 +1038,15 @@ mapper( Taggable, taggable,
                           primaryjoin =(taggable.c.id == vertices.c.parent_id),
                           foreign_keys=[vertices.c.parent_id]
                           ),
+
+    'docnodes': relation(Taggable, 
+                         cascade = "all",
+                         post_update=True,
+                         primaryjoin = (taggable.c.id == taggable.c.document_id),
+                         backref = backref('document', post_update=True, remote_side=[taggable.c.id]),
+                         )
+
+
     }
               )
 

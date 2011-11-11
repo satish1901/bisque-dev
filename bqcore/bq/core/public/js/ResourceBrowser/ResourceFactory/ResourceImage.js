@@ -236,7 +236,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourceCompact',
     updateContainer : function()
     {
     	//var text="ch:"+this.resource.ch+" x:"+this.resource.x+" y:"+this.resource.y+" z:"+this.resource.z+" t:"+this.resource.t;
-        var text = this.resource.resource_name || '';
+        var text = this.resource.name || '';
             
         this.update('<div class="textOnImage" style="width:'+this.layoutMgr.layoutEl.width+'px;">'+text+'</div>'+this.getData('image'));
         
@@ -466,7 +466,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourceFull',
         {
             this.setData('fetched', -1);	//Loading
 
-            BQFactory.load(this.resource.uri + '/tags', Ext.bind(this.loadResource, this, ['tags'], true));
+            BQFactory.load(this.resource.uri + '/tag', Ext.bind(this.loadResource, this, ['tags'], true));
 
             var prefetchImg = new Image();
             prefetchImg.src = this.resource.src + '?thumbnail='+this.layoutMgr.layoutEl.imageWidth+','+this.layoutMgr.layoutEl.imageHeight;

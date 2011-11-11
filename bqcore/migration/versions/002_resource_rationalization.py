@@ -1,22 +1,15 @@
 from sqlalchemy import *
 from migrate import *
 
-
-
-#from sqlalchemy.ext.declarative import declarative_base
-#DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
-#Base = declarative_base()
-#names = Table('names', meta, autoload=True)
-
-
-
 def upgrade(migrate_engine):
     # Upgrade operations go here. Don't create your own engine; bind migrate_engine
     # to your metadata
-    meta = MetaData()
-    meta.bind = migrate_engine
 
-    taggable = Table('taggable', meta, autoload=True)
+    from migration.versions.env002 import metadata, DBSession
+    #meta = MetaData()
+    metadata.bind = migrate_engine
+    DBSession.configure(bind=migrate_engine)
+    from migration.versions.model002 import  taggable, values
 
     resource_uniq = Column('resource_uniq', String(40) ) # will be used for sha1
     resource_parent_id = Column('resource_parent_id', Integer, ForeignKey('taggable.id'))
@@ -26,7 +19,8 @@ def upgrade(migrate_engine):
     resource_name =  Column('resource_name', Unicode (1023) )
     resource_user_type =  Column('resource_user_type', Unicode(1023) )
     resource_value = Column('resource_value', UnicodeText ) 
-    
+
+    # New columns
     resource_uniq.create(taggable)
     resource_parent_id.create(taggable)
     resource_index.create(taggable)
@@ -36,11 +30,14 @@ def upgrade(migrate_engine):
     resource_user_type.create(taggable)
     resource_value.create(taggable)
 
+    
+    # Adding document_id 
+    document_id = Column('document_id', Integer, ForeignKey('taggable.id')) # Unique Element
+    document_id.create(taggable)
+    document_id = Column('document_id', Integer, ForeignKey('taggable.id')) # Unique Element
+    document_id.create(values)
 
-    # Copy name from all objects
-    # Removing  file and file_acl
-
-
+    
 
 def downgrade(migrate_engine):
     # Operations to reverse the above upgrade go here.

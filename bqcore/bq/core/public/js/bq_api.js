@@ -69,7 +69,7 @@ BQObject.prototype.initializeXml = function (resource) {
     this.ts   = attribStr(resource,'ts');
     this.owner = attribStr(resource,'owner');
     this.type   = attribStr(resource,'type');
-    this.resource_name = attribStr(resource,'name');
+    this.name = attribStr(resource,'name');
     this.attributes = attribDict (resource);
     this.resource_type = this.xmltag;
     this.dirty = false;
@@ -720,7 +720,7 @@ BQImage.prototype.initializeXml = function (image) {
     this.ts   = attribStr(image,'ts');
     this.type   = attribStr(image,'type');
     this.owner   = attribStr(image,'owner');
-    this.resource_name  = attribStr(image,'resource_name');
+    this.name  = attribStr(image,'name');
     this.resource_type = this.xmltag;
 
     this.src  = '/image_service/images/' + attribStr(image,'resource_uniq');
@@ -869,7 +869,9 @@ BQGObject.prototype = new BQObject();
 //extend(BQGObject,BQObject)
 
 BQGObject.prototype.initializeXml = function (node) {
-    this.type = attribStr(node, 'type');
+    this.type  = node.nodeName;
+    if (this.type == 'gobject') 
+        this.type = attribStr(node, 'type');
     this.name = attribStr(node, 'name');
     this.uri =  attribStr(node, 'uri');
     this.resource_type = this.xmltag;

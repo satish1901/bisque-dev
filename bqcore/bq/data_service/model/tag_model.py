@@ -104,45 +104,11 @@ def create_tables1(bind):
     log.info( "Creating tag_model tables" )
     engine = config['pylons.app_globals'].sa_engine
     metadata.create_all (bind=engine, checkfirst = True)
-#   db_setup()
-#     names.create(checkfirst=True)
-#     taggable.create(checkfirst=True)
-#     images.create(checkfirst=True)
-#     tags.create(checkfirst=True)
-#     values.create(checkfirst=True)
-#     gobjects.create(checkfirst=True)
-#     vertices.create(checkfirst=True)
-#     users.create(checkfirst=True)
-#     groups.create(checkfirst=True)
-#     # permission_tokens.create(checkfirst=True)
-#     #    permission_sets.create(checkfirst=True)
-#     templates.create(checkfirst=True)
-#     # engines.create(checkfirst=True)
-#     modules.create(checkfirst=True)
-#     mex.create(checkfirst=True)
-#     dataset.create(checkfirst=True)
-#     services.create(checkfirst=True)
-    #    bisquik.identity.user_admin = u
-    # tag_index.create()
-    # init_global_perms()
-
-
-# Automatically create the registration tables when TurboGears starts up
-#turbogears.startup.call_on_startup.append(create_tables)
-
-
-names = Table('names', metadata,
-              Column('id', Integer, primary_key = True),
-              Column('name', UnicodeText)
-              )
-
 
 
 taggable = Table('taggable', metadata,
                  Column('id', Integer, primary_key=True),
-                 Column('tb_id', Integer, ForeignKey('names.id')),
-    Column('mex', Integer, ForeignKey('taggable.id'), key='mex_id'),
-#                 Column('mex_id', Integer, ForeignKey('taggable.id')),
+                 Column('mex_id', Integer, ForeignKey('taggable.id')),
                  Column('ts', DateTime(timezone=False)),
                  Column('perm', Integer), #ForeignKey('permission_sets.set_id')
                  Column('owner_id', Integer, ForeignKey('taggable.id')),
@@ -159,14 +125,14 @@ taggable = Table('taggable', metadata,
 
                  )
 
-images= Table ('images', metadata,
-               Column('id', Integer, ForeignKey('taggable.id'),primary_key=True),
-               Column('src', Text),
-               Column('x', Integer),
-               Column('y', Integer),
-               Column('z', Integer),
-               Column('t', Integer),
-               Column('ch', Integer))
+# images= Table ('images', metadata,
+#                Column('id', Integer, ForeignKey('taggable.id'),primary_key=True),
+#                Column('src', Text),
+#                Column('x', Integer),
+#                Column('y', Integer),
+#                Column('z', Integer),
+#                Column('t', Integer),
+#                Column('ch', Integer))
 
 #tags = Table ('tags', metadata,
 #              Column('id',  Integer, ForeignKey('taggable.id'), primary_key=True),
@@ -434,15 +400,6 @@ class Taggable(object):
             
     uri = property(uri)
 
-    def gettable(self):
-        if self.table_name is not None:
-            return self.table_name.name
-        return self.__class__.xmltag
-    def settable(self, v):
-        self.table_name = UniqueName(v)
-
-    table = property(gettable, settable)
-    #type  = property(gettable, settable)
 
     @validates('owner')
     def validate_owner (self, key, owner):
@@ -458,15 +415,24 @@ class Taggable(object):
 #        self.owner_ob = BQUser.filter_by (user_name=name).one()
 #    owner = property(get_owner, set_owner)
 
-    def clear(self, what=['tags', 'gobjects']):
+    def clear(self, what=['all']):
         '''Clear all the children'''
         results = []
+        if 'all' in what:
+            results.extend(self.children)
+            self.children = []
+            self.tags = []
+            self.gobjects = []
+            log.debug ('cleared all')
+            return results
         if 'tags' in what:
             results.extend(self.tags)
+            self.children = list (set(self.children) - set(self.tags))
             self.tags = []
             log.debug ('cleared tags')
         if 'gobjects' in what:
             results.extend(self.gobjects)
+            self.children = list (set(self.children) - set(self.gobjects))
             self.gobjects = []
             log.debug ('cleared gobjects')
         return results
@@ -484,9 +450,9 @@ class Taggable(object):
 
     def loadFull(self):
         'hack to load polymorphic taggable type'
-        table, dbtype = dbtype_from_name(self.table)
-        if dbtype != Taggable:
-            return DBSession.query(dbtype).get (self.id)
+        #table, dbtype = dbtype_from_name(self.table)
+        #if dbtype != Taggable:
+        #    return DBSession.query(dbtype).get (self.id)
         return self
 
     # Tag.indx used for ordering tags
@@ -765,13 +731,13 @@ class Module(Taggable):
     
     '''
     xmltag ='module'
-    def get_module_type(self):
-        if self.module_type:
-            return self.module_type
-        return ""
-    def set_module_type(self, v):
-        self.module_type = UniqueName(v)
-    type = property(get_module_type, set_module_type)
+    # def get_module_type(self):
+    #     if self.module_type:
+    #         return self.module_type
+    #     return ""
+    # def set_module_type(self, v):
+    #     self.module_type = UniqueName(v)
+    # type = property(get_module_type, set_module_type)
 
 class ModuleExecution(Taggable):
     '''
@@ -844,7 +810,7 @@ class Service (Taggable):
     
 #################################################
 # Simple Mappers
-mapper( UniqueName, names)
+#mapper( UniqueName, names)
 #session.mapper(UniqueName, names)
         
 mapper( Value, values,
@@ -861,39 +827,31 @@ mapper( Value, values,
 mapper( Vertex, vertices)
 mapper(TaggableAcl, taggable_acl,
        properties = {
-           'user'    : relation(Taggable, 
-                                passive_deletes="all",
-                                uselist=False,
-                                primaryjoin=and_(taggable_acl.c.user_id== taggable.c.id,
-                                                 taggable.c.resource_type=='user'),
-                                foreign_keys=[taggable.c.id])
+#           'user'    : relation(User, 
+#                                passive_deletes="all",
+#                                uselist=False,
+#                                primaryjoin=(taggable_acl.c.user_id== taggable.c.id),
+#                                foreign_keys=[taggable.c.id])
            })
-       
-       
-
 
 ############################
 # Taggable mappers
 
 mapper( Taggable, taggable,
                        properties = {
-    'table_name' : relation(UniqueName,
-                            primaryjoin=(taggable.c.tb_id == names.c.id),
-                            uselist = False,
-                            ),
 
-#    'tags' : relation(Tag, lazy=True, cascade="all, delete-orphan",
-#                         primaryjoin= (tags.c.parent_id==taggable.c.id)),
-    'tags' : relation(Taggable, lazy=True, viewonly=True,
+    'tags' : relation(Taggable, lazy=True, viewonly=True, cascade="all, delete-orphan",
+
                          primaryjoin= and_(taggable.c.resource_parent_id==taggable.c.id,
                                            taggable.c.resource_type == 'tag')),
-#    'gobjects' : relation(GObject, lazy=True, cascade="all, delete-orphan",
-#                         primaryjoin= (gobjects.c.parent_id==taggable.c.id)),
-    'gobjects' : relation(Taggable, lazy=True, viewonly=True,
+    'gobjects' : relation(Taggable, lazy=True, viewonly=True, cascade="all, delete-orphan",
+
                          primaryjoin= and_(taggable.c.resource_parent_id==taggable.c.id,
                                            taggable.c.resource_type == 'gobject')),
     'acl'  : relation(TaggableAcl, lazy=True, cascade="all, delete-orphan",
-                      primaryjoin = (TaggableAcl.taggable_id == taggable.c.id)),
+                      primaryjoin = (TaggableAcl.taggable_id == taggable.c.id),
+                      backref = backref('resource', remote_side=[taggable.c.id] ),
+                      ),
     'children' : relation(Taggable, lazy=True, cascade="all, delete-orphan",
                           backref = backref('parent', remote_side = [ taggable.c.id]),
                           primaryjoin = (taggable.c.id == taggable.c.resource_parent_id)),
@@ -907,68 +865,41 @@ mapper( Taggable, taggable,
                           ),
 
 
-    'docnodes': relation(Taggable, 
-                         cascade = "all",
+    'docnodes': relation(Taggable, lazy=True, viewonly=True, 
+                         cascade = "all, delete-orphan",
                          post_update=True,
                          primaryjoin = (taggable.c.id == taggable.c.document_id),
                          backref = backref('document', post_update=True, remote_side=[taggable.c.id]),
                          )
-#    'document' : 
-#                          primaryjoin = (taggable.c.id == taggable.c.document_id),
-#                          foreign_keys=[taggable.c.id],
-#                          )
     }
         )
 
 mapper( Image, inherits=Taggable,
         polymorphic_on = taggable.c.resource_type,
-        polymorphic_identity = 'image',
-        )
+        polymorphic_identity = 'image',)
 mapper( Tag, inherits=Taggable,
         polymorphic_on = taggable.c.resource_type,
-        polymorphic_identity = 'tag',
-        )
-#                   inherit_condition=(tags.c.id == taggable.c.id),
-#                   properties={
-#     'tagname': relation(UniqueName, uselist=False,
-#                         primaryjoin =(tags.c.name_id==names.c.id)),
-#     'type_name' : relation (UniqueName, uselist=False,
-#                        primaryjoin =(tags.c.type_id==names.c.id)),
-#     }
-#               )
-
-
+        polymorphic_identity = 'tag',)
 mapper( GObject,  inherits=Taggable,
         polymorphic_on = taggable.c.resource_type,
-        polymorphic_identity = 'gobject',
-        )
-#         inherit_condition=(gobjects.c.id == taggable.c.id),
-#         properties={
-#         'tagname': relation(UniqueName,
-#                             primaryjoin =(gobjects.c.name_id==names.c.id)),
-#         'type_name' : relation (UniqueName, 
-#                                 primaryjoin =(gobjects.c.type_id==names.c.id)),
-#         }
-#         )
-
-
-
-
-# mapper(BQGroup, groups, inherits=Taggable)
+        polymorphic_identity = 'gobject',)
 mapper(BQUser,  inherits=Taggable,
-        polymorphic_on = taggable.c.resource_type,
-        polymorphic_identity = 'user',
-     properties = { 
-#         'tguser' : relation(User, uselist=False, 
-#             primaryjoin=(User.user_name == users.c.user_name),
-#             foreign_keys=[User.user_name]),
-         'owns' : relation(Taggable, 
-                            cascade = None,
-                            primaryjoin = (taggable.c.id == taggable.c.owner_id),
-                            backref = backref('owner', post_update=True, remote_side=[taggable.c.id]),
-                            )
-         }
- )
+       polymorphic_on = taggable.c.resource_type,
+       polymorphic_identity = 'user',
+       properties = { 
+        'owns' : relation(Taggable, lazy=True,
+                          cascade = None,
+                          primaryjoin = (taggable.c.id == taggable.c.owner_id),
+                          backref = backref('owner', post_update=True, remote_side=[taggable.c.id]),
+                          ),
+
+        'user_acls': relation(TaggableAcl,  lazy=True, cascade="all, delete-orphan",
+                              primaryjoin= (taggable.c.id == taggable_acl.c.user_id),
+                              backref = backref('user'),
+                              )
+                              
+        }
+       )
 def bquser_callback (tg_user, operation, **kw):
     # Deleted users will receive and update callback
     if tg_user is None:
@@ -986,54 +917,29 @@ def bquser_callback (tg_user, operation, **kw):
             u.password = tg_user.password
             u.display_name = tg_user.display_name
         return
-        
-
-        
 User.callbacks.append (bquser_callback)
 
-
-# mapper(Template, templates, inherits=Taggable)
+mapper(Template, inherits=Taggable,
+        polymorphic_on = taggable.c.resource_type,
+        polymorphic_identity = 'template')
 mapper(Module, inherits=Taggable,
         polymorphic_on = taggable.c.resource_type,
-        polymorphic_identity = 'module',
-       )
-#        properties = {
-#         'module_type' : relation(UniqueName,
-#                                  primaryjoin = (modules.c.module_type_id==names.c.id)),
-#         }                             
-#        )
-
+        polymorphic_identity = 'module',)
 mapper(ModuleExecution,  inherits=Taggable,
-        polymorphic_on = taggable.c.resource_type,
-        polymorphic_identity = 'mex',
-       )
-#        inherit_condition=(mex.c.id == taggable.c.id),
-#        properties = {
-#         'owned' : relation(Taggable, 
-#                            cascade = None,
-#                            primaryjoin = (mex.c.id == taggable.c.mex_id),
-#                            foreign_keys=[taggable.c.mex_id],
-#                            backref = backref('mex', post_update=True),
-#                            )
-#         },
-#        )
+       polymorphic_on = taggable.c.resource_type,
+       polymorphic_identity = 'mex',
+       properties = {
+        'owns' : relation(Taggable, 
+                          cascade = None,
+                          primaryjoin = (taggable.c.id == taggable.c.mex_id),
+                          backref = backref('mex', post_update=True, remote_side=[taggable.c.id])),
+        })
 mapper( Dataset,  inherits=Taggable,
         polymorphic_on = taggable.c.resource_type,
-        polymorphic_identity = 'dataset',
-#               inherit_condition=(dataset.c.id == taggable.c.id))
-        )
-
+        polymorphic_identity = 'dataset',)
 mapper( Service, inherits=Taggable,
         polymorphic_on = taggable.c.resource_type,
-        polymorphic_identity = 'service',
-        )
-#         inherit_condition=(services.c.id == taggable.c.id),
-#         properties = {
-#             'engine' : services.c.uri,
-#             'module' : services.c.type,
-#             }
-#         )
-
+        polymorphic_identity = 'service')
 
 #################################################
 # Support Functions
@@ -1045,24 +951,22 @@ mapper( Service, inherits=Taggable,
 #    )
 #)
 
-# def registration_hook(action, **kw):
-#     if action=="new_user":
-#         u = kw.pop('user', None)
-#         if u:
-#             BQUser.new_user (u.email_adress)
-
-#     elif action=="update_user":
-#         u = kw.pop('user', None)
-#         if u:
-#             bquser = DBSession.query(BQUser).filter_by(email_adress=u.email_address).first()
-#             if not bquser:
-#                 bquser = BQUser.new_user (u.email_adress)
+def registration_hook(action, **kw):
+    if action=="new_user":
+        u = kw.pop('user', None)
+        if u:
+            BQUser.new_user (u.email_adress)
+    elif action=="update_user":
+        u = kw.pop('user', None)
+        if u:
+            bquser = DBSession.query(BQUser).filter_by(email_adress=u.email_address).first()
+            if not bquser:
+                bquser = BQUser.new_user (u.email_adress)
                 
-#             bquser.display_name = u.display_name
-#             bquser.user_name = u.user_name
-            
-#     elif action =="delete_user":
-#         pass
+            bquser.display_name = u.display_name
+            bquser.user_name = u.user_name
+    elif action =="delete_user":
+        pass
 
         
 # def db_setup():
