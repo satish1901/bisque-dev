@@ -865,7 +865,7 @@ mapper( Taggable, taggable,
                           ),
 
 
-    'docnodes': relation(Taggable, lazy=True, viewonly=True, 
+    'docnodes': relation(Taggable, lazy=True, 
                          cascade = "all, delete-orphan",
                          post_update=True,
                          primaryjoin = (taggable.c.id == taggable.c.document_id),

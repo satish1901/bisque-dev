@@ -774,7 +774,8 @@ def updateDB(root=None, parent=None, resource = None, factory = ResourceFactory,
                 else:
                     # TODO if tag == resource, then type should be used
                     resource = factory.new (obj, parent)
-                    log.debug("update: created %s:%s" % (obj.tag, str(resource)))
+                    #log.debug("update: created %s:%s of %s" % (obj.tag, resource, resource.document))
+                    log.debug("update: created %s:%s" % (obj.tag, resource))
                 # Assign attributes
                 resource.ts = ts
                 for k,v in attrib.items():
@@ -835,14 +836,14 @@ def bisquik2db(doc= None, parent=None, resource = None, xmlschema=None, replace=
         if not node in DBSession:
             DBSession.add(node)
         results.append(node)
-    try:
 
+    try:
         DBSession.flush()
         for node in results:
             DBSession.refresh(node)
             log.debug ('modifyed : new (%d), dirty (%d), deleted(%d)' %
                        (len(DBSession.new), len(DBSession.dirty), len(DBSession.deleted)))
-            log.debug(u"Bisquik2db last_node : " + unicode(node))
+            log.debug("Bisquik2db last_node %s of document %s " % ( node, node.document ))
         if len(results) == 1:
             return node
         return results

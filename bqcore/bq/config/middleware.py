@@ -57,13 +57,13 @@ class BQStaticURLParser (object):
     
     def __call__(self, environ, start_response):
         path_info = environ['PATH_INFO']
-        log.debug ('static search for %s' % path_info)
+        #log.debug ('static search for %s' % path_info)
         if path_info in self.files:
             path, app = self.files.get(path_info)
             if not app:
                 app = FileApp (path).cache_control (max_age=60*60*24*7*6) #6 weeks
                 self.files[path_info] = (path, app)
-            log.info ( "STATIC %s" %  path_info)
+            log.info ( "STATIC REQ %s" %  path_info)
             if_none_match = environ.get('HTTP_IF_NONE_MATCH')
             if if_none_match:
                 mytime = os.stat(path).st_mtime
