@@ -58,7 +58,7 @@ class CASPlugin(object):
     
     # IChallenger
     def challenge(self, environ, status, app_headers, forget_headers):
-        log.debug ('challenge')
+        #log.debug ('challenge')
         request = Request(environ, charset="utf8")
         service_url = request.url
 
@@ -75,6 +75,7 @@ class CASPlugin(object):
         #         destination = came_from or script_name or '/' 
         # else:
         if login_type == 'cas':
+            log.debug ('CAS challenge redirect to %s' % self.cas_login_url)
             destination =  "%s?service=%s" % (self.cas_login_url, quote_plus(service_url))
             return HTTPFound(location=destination)
         return None
@@ -92,7 +93,7 @@ class CASPlugin(object):
     # IIdentifier
     def remember(self, environ, identity):
         """remember the openid in the session we have anyway"""
-        log.debug("remember")
+        #log.debug("remember")
         rememberer = self._get_rememberer(environ)
         r = rememberer.remember(environ, identity)
         return r
@@ -100,15 +101,12 @@ class CASPlugin(object):
     # IIdentifier
     def forget(self, environ, identity):
         """forget about the authentication again"""
-        log.debug("forget")
+        #log.debug("forget")
         rememberer = self._get_rememberer(environ)
         return rememberer.forget(environ, identity)
     
     # IIdentifier
     def identify(self, environ):
-        #if environ['repoze.who.logger'] is not None:
-        log.debug ('identify')
-
         request = Request(environ)
 
         # first test for logout as we then don't need the rest
@@ -191,15 +189,16 @@ class CASPlugin(object):
     #IAuthenticator
     def authenticate(self, environ, identity):
         ''
-        log.debug ('authenticate')
         user_id = None
         if self.cas_saml_validate:
+            log.debug ('CAS authenticate')
             user_id =  self._validate_saml(environ, identity)
         #else:
         #    return self._validate_simple(environ, identity)
 
         try:
             if self.auto_register and user_id:
+                log.debug ('CAS autoregister')
                 user_id = self._auto_register(environ, identity, user_id)
         except:
             log.error ("couldn't authenticate %s"  % user_id)
@@ -230,7 +229,7 @@ class CASPlugin(object):
                     #password =  illegal password so all authentication goes through openid
                     })
         else:
-            log.debug('%s not found in %s' % (self.auto_register, environ['repoze.who.plugins']))
+            log.debug('%s not found in %s. Ensure autoreg is enabled' % (self.auto_register, environ['repoze.who.plugins']))
         return user_id
 
 
