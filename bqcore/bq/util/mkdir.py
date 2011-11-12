@@ -1,6 +1,8 @@
 import shutil
 import os
+import logging
 
+log = logging.getLogger('bq.util')
 
 def _mkdir(newdir):
     """works the way a good mkdir should :)
