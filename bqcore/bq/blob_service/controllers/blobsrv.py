@@ -154,9 +154,6 @@ class BlobServer(RestController, ServiceMixin):
         if id==None: return False      
         fileName = self.localpath(id)    
         return fileName and os.path.exists(fileName)
-        
-
-
 
     def geturi(self, id):
         return self.url + '/' + str(id)

@@ -535,12 +535,12 @@ def valnode(val, parent, baseuri, view):
     else:
         toxmlnode(val,  parent = parent, baseuri=baseuri, view=view)
 
-def resource2tree(dbo, parent=None, view=[], baseuri=None, **kw):
+
+def resource2nodes(dbo, parent=None, view=[], baseuri=None,  **kw):
     doc_id = dbo.document_id
     docnodes = DBSession.query(Taggable).filter(Taggable.document_id == doc_id)
     docnodes = docnodes.order_by(Taggable.id)
-
-    log.debug('resource2tree :%s doc %s' % (dbo.id , doc_id))
+    log.debug('resource2nodes :%s doc %s' % (dbo.id , doc_id))
     nodes = {}
     for node in docnodes:
         if node.resource_parent_id is not None:
@@ -556,12 +556,17 @@ def resource2tree(dbo, parent=None, view=[], baseuri=None, **kw):
     #for val in vals:
     #    parent = nodes[val.parent_id]
     #    elem = valnode (val, parent, baseuri, view)
-            
-    log.debug('resource2tree :read %d nodes ' % (len(nodes.keys())))
+    log.debug('resource2nodes :read %d nodes ' % (len(nodes.keys())))
+    return nodes, doc_id 
+
+
+def resource2tree(dbo, parent=None, view=[], baseuri=None, nodes= {}, doc_id = None, **kw):
+    if doc_id != dbo.document_id:
+        nodes, doc_id = resource2nodes(dbo, parent, view, baseuri)
     if parent is not None:
         log.debug ("parent %s + %s" % (parent, nodes[dbo.id]))
         parent.append ( nodes[dbo.id])
-    return nodes [ dbo.id ] 
+    return nodes[dbo.id], nodes, doc_id
     #return root
 
 
@@ -590,39 +595,47 @@ def db2tree(dbo, parent=None, view=[], baseuri=None, progressive=False, **kw):
     return r
     
 
-def db2tree_int(dbo, parent = None, view=None ,  baseuri=None, endtime=None):
+def db2tree_int(dbo, parent = None, view=None, baseuri=None, endtime=None):
     '''Convert a database object to a tree/doc'''
+    nodes =  {} 
+    doc_id = None
     if hasattr(dbo, '__iter__'):
         r = []
         for x in dbo:
             if endtime and  time.clock() >= endtime:
                 fetched = len (r)
                 return False, r
-            r.append(db2tree_int(x, parent, view, baseuri))
+            n, nodes, doc_id = db2node(x, parent, view, baseuri, nodes, doc_id)
+            r.append(n)
         return True, r
         #return [ db2tree_int(x, parent, view, baseuri) for x in dbo ]
+    n, nodes, doc_id = db2node(dbo, parent, view, baseuri, nodes, doc_id)
+    return True, n
 
-    if 'deep' in view  and dbo.document_id == dbo.id:
-        return True, resource2tree(dbo, parent, view, baseuri)
 
 
-    log.debug ("dbo = " + unicode(dbo))
+def db2node(dbo, parent, view, baseuri, nodes, doc_id):
+    log.debug ("dbo=%s %s" % ( unicode(dbo), view))
+    if 'deep' in view:
+        n, nodes, doc_id = resource2tree(dbo, parent, view, baseuri, nodes, doc_id)
+        return n, nodes, doc_id
+
     node = xmlnode(dbo, parent, baseuri, view)
     if "full" in view :
          v = list(itertools.ifilter (lambda x: x != 'full', view))
          tl = [ db2tree_int(x, node, view=v, baseuri=baseuri) for x in dbo.children ] 
          #gl = [ db2tree_int(x, node, view=v, baseuri=baseuri) for x in dbo.gobjects ]
-    elif "deep" in view:
-         tl = [ db2tree_int(x, node, view, baseuri) for x in dbo.children ] 
-         #gl = [ db2tree_int(x, node, view, baseuri) for x in dbo.gobjects ]
+#    elif "deep" in view:
+#         tl = [ db2tree_int(x, node, view, baseuri) for x in dbo.children ] 
+#         #gl = [ db2tree_int(x, node, view, baseuri) for x in dbo.gobjects ]
     elif view is None or len(view)==0 or 'short' in view:
-         return True, node
+        pass
     else:
          v = list(itertools.ifilter (lambda x: x != 'full', view))
          #log.debug ("TAG VIEW=%s", v)
          tl = [ db2tree_int(x, node, v, baseuri) for x in dbo.tags if x.name in v ] 
         
-    return True, node
+    return node, nodes, doc_id
 
 
 
