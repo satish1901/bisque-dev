@@ -10,8 +10,8 @@ function ImgPermissions (viewer,name){
 ImgPermissions.prototype = new ViewerPlugin();
 
 ImgPermissions.prototype.update_state = function () {
-    var perm = this.viewer.image.perm;
-    this.bt_public.innerHTML=(perm==0)?'Public':'Private';    
+    var perm = this.viewer.image.permission;
+    this.bt_public.innerHTML=(perm=='published')?'Published':'Private';    
 }
 ImgPermissions.prototype.newImage = function () {
     var show = this.viewer.user && (this.viewer.image.owner == this.viewer.user);
@@ -24,16 +24,16 @@ ImgPermissions.prototype.newImage = function () {
 ImgPermissions.prototype.togglePermission = function () {
     var uri = this.viewer.imageuri;
     var src = this.viewer.imagesrc;
-    var perm = this.viewer.image.perm;
-    perm = (perm == 0)?1:0;
+    var perm = this.viewer.image.permission;
+    perm = (perm == 'published')?'private':'published';
 
     // Dataserver 
     var xmldata = '<request>';
-    xmldata += '<image uri="' + uri + '" perm="' + perm +'" />';
+    xmldata += '<image uri="' + uri + '" permission="' + perm +'" />';
     xmldata += '</request>';
 	makeRequest( uri, callback(this, 'checkPerm'), null, "post", xmldata );
 
-    this.viewer.image.perm = perm;
+    this.viewer.image.permission = perm;
 }
 ImgPermissions.prototype.checkPerm = function (ignore, response) {
     this.update_state()

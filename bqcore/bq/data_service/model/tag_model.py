@@ -415,7 +415,7 @@ class Taggable(object):
     def get_type(self):
         return self.resource_user_type
     def set_type(self, v):
-        self.resource_user_tupe = v
+        self.resource_user_type = v
     type = property(get_type, set_type)
 
 
@@ -423,7 +423,7 @@ class Taggable(object):
         return perm2str.get(self.perm)
 
     def set_permission(self, v):
-        self.perm = perm2code(v)
+        self.perm = perm2code.get(v)
     permission = property(get_permission, set_permission)
 
     # Tag.value helper functions
