@@ -145,7 +145,8 @@ SVGRenderer.prototype.set_select_handler = function (callback){
     this.select_callback = callback;
 }
 SVGRenderer.prototype.default_select = function (gob, view) {
-    this.select_callback(gob);
+    if (this.select_callback)
+        this.select_callback(gob);
 }
 
 

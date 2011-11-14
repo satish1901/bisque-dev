@@ -716,7 +716,7 @@ BQImage.prototype = new BQObject();
 //extend(BQImage, BQObject);
 BQImage.prototype.initializeXml = function (image) {
     this.uri = attribStr(image,'uri');
-    this.perm = attribInt(image,'perm');
+    this.permission = attribStr(image,'permission');
     this.ts   = attribStr(image,'ts');
     this.type   = attribStr(image,'type');
     this.owner   = attribStr(image,'owner');
