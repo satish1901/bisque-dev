@@ -191,8 +191,9 @@ class CASPlugin(object):
         ''
         user_id = None
         if self.cas_saml_validate:
-            log.debug ('CAS authenticate')
             user_id =  self._validate_saml(environ, identity)
+            if user_id:
+                log.debug ('CAS authenticate : %s' % user_id)
         #else:
         #    return self._validate_simple(environ, identity)
 

@@ -32,22 +32,38 @@ class Identity(object):
     user_name = property(get_username)
 
     def get_user(self):
+        if not request_valid():
+            return None
+
+        user = request.identity.get ('bq.user')
+        if user:
+            return user
         user_name = self.user_name
         if user_name is None:
             return None
-        return DBSession.query (User).filter_by(user_name = user_name).first()
+        user = DBSession.query (User).filter_by(user_name = user_name).first()
+        request.identity['bq.user'] = user
+        return user
     user = property(get_user)
 
     def get_bq_user(self):
         from bq.data_service.model.tag_model import BQUser
+
+        if not request_valid():
+            return None
+        bquser = request.identity.get ('bq.bquser')
+        if bquser:
+            return bquser
+
         user_name = self.user_name
         log.debug ("bq user = %s" % user_name)
         if user_name is None:
             return None
-        user =  DBSession.query (BQUser).filter_by(resource_name = user_name).first()
+        bquser =  DBSession.query (BQUser).filter_by(resource_name = user_name).first()
+        request.identity['bq.bquser'] = bquser
         #log.debug ("bq user = %s" % user)
-        log.debug ('user %s -> %s' % (user_name, user))
-        return user
+        log.debug ('user %s -> %s' % (user_name, bquser))
+        return bquser
     
 current  = Identity()
 

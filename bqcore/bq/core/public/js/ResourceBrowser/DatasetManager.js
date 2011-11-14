@@ -64,7 +64,7 @@ Bisque.ResourceBrowser.DatasetManager = Ext.extend(Ext.Panel,
     LoadDSList : function(loaded, list)
     {
         if (!loaded)
-            BQFactory.load('/data_service/datasets/?view=short', callback(this, 'LoadDSList', true));
+            BQFactory.load('/data_service/dataset/?view=short', callback(this, 'LoadDSList', true));
         else
         {
             for (i = 0; i < list.children.length; i++)
@@ -111,7 +111,7 @@ Bisque.ResourceBrowser.DatasetManager = Ext.extend(Ext.Panel,
             dataset.name = name;
             dataset.setMembers([]);
             
-            dataset.save_('/data_service/datasets/?view=deep', callback(this, 'addDataset'));
+            dataset.save_('/data_service/dataset/?view=deep', callback(this, 'addDataset'));
         }
     },
 

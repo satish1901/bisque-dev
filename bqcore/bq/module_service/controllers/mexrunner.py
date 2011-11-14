@@ -60,14 +60,14 @@ class MexRequest(object):
         #module_xml = data_service.load(mex.module, view='deep')
         #log.debug ("module %s -> %s" % (mex.module, module_xml))
         #self.modtree = etree.XML(module_xml)
-        module = load_db(Module, mex.module)
+        module = load_db(Module, mex.resource_name)
         self.modtree = db2tree(module, view='deep', baseuri=baseuri)
         log.debug ("MODULE = %s"  % etree.tostring (self.modtree))
         self.mex_id = mex.uri.rsplit('/', 1)[1]
         # End the transaction so the http request is
         # not part of it.
         self.asynch = self.modtree.xpath('//tag[@name="asynchronous"]')
-        self.service_uri = service.engine
+        self.service_uri = service.resource_value
 
     def reload(self):
         self.mex = DBSession.merge(self.mex)
@@ -108,22 +108,22 @@ class MexRunner(object):
 
     def find_active_service(self, mex):
         engine = None
-        log.info ('service for mex = %s and module %s' % (mex.uri, mex.module))
+        log.info ('service for mex = %s and module %s' % (mex.uri, mex.resource_name))
         engines = self.session.query(Service).filter_by(
-            module = mex.module).all()
+            resource_name = mex.resource_name).all()
         # Choose an (enabled) engine
         for engine in list(engines):
             engine_status = engine.findtag('status')
             if engine_status and engine_status.value == 'disabled':
                 engines.remove (engine)
         log.info ('service for mex=%s/module %s=%s'
-                  % (mex.uri, mex.module, engines))
+                  % (mex.uri, mex.resource_name, engines))
         return engines
 
 
     def prepare_request(self, mex, service, baseuri):
         mex = DBSession.merge(mex)
-        mex.status = 'DISPATCH'
+        mex.resource_value = 'DISPATCH'
         return MexRequest(mex, service, baseuri)
 
         
@@ -159,7 +159,7 @@ class MexRunner(object):
             # Depending on return code, we will update the engine/service
             # availability i.e. after a bunch of tries disable the service
             # and notify the admin
-            log.info ("DISPATCH to %s FAILED" % response.request.service.engine)
+            log.info ("DISPATCH to %s FAILED" % response.request.service.resource_value)
             return False
         return True
 
@@ -173,7 +173,7 @@ class MexRunner(object):
             # Depending on return code, we will update the engine/service
             # availability i.e. after a bunch of tries disable the service
             # and notify the admin
-            log.info ("DISPATCH to %s FAILED" % response.request.service.engine)
+            log.info ("DISPATCH to %s FAILED" % response.request.service.resource_value)
         if response.status == 200:
             # We received a good status so we update the last-contact
             contact = response.request.service.findtag('last-contact')
@@ -208,7 +208,7 @@ class MexRunner(object):
             else:
                 mextree = response.request.mextree
         except etree.ParseError:
-            mextree = etree.Element ('mex', status='FAILED')
+            mextree = etree.Element ('mex', value='FAILED')
             log.warn("Bad Mex Content %s" % content)
 
         if mextree.get ('uri', None) != mexuri:
@@ -219,8 +219,8 @@ class MexRunner(object):
                          name="end-time",
                          value=time.strftime("%Y-%m-%d %H:%M:%S",
                                              time.localtime()))
-        if  mextree.get('status') not in ['FINISHED', 'FAILED' ]:
-            mextree.set('status', 'FAILED')
+        if  mextree.get('value') not in ['FINISHED', 'FAILED' ]:
+            mextree.set('value', 'FAILED')
             
         if response.status != 200:
             etree.SubElement (mextree, 'tag',
@@ -235,7 +235,7 @@ class MexRunner(object):
         bisquik2db(mextree)
         #self.session.refresh (mex)
 
-        log.info ('END_MEX %s->%s' % (mex.uri, mex.status))
+        log.info ('END_MEX %s->%s' % (mex.uri, mex.resource_value))
             
         return mex
 
@@ -265,7 +265,7 @@ class MexRunner(object):
         self.session = DBSession
         self.session.autoflush = False
         # Create service pairs 
-        pending = self.session.query(Mex).filter_by(status='PENDING')
+        pending = self.session.query(Mex).filter_by(resource_value='PENDING')
         for mex in pending:
             for service in  self.find_active_service (mex):
                 request, response = self.process_one(mex, service)

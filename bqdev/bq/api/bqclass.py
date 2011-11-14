@@ -78,6 +78,9 @@ class BQNode (object):
     xmlfields = []
     xmlkids = []
 
+    def initialize(self):
+        'used for class post parsing initialization'
+        pass
     def set_parent(self, parent):
         pass
 
@@ -87,9 +90,9 @@ class BQNode (object):
         return '(%s:%s)'%(self.xmltag,
                           ','.join (['%s=%s' % (f, getattr(self,f,''))
                                      for f in self.xmlfields]))
-
     def toTuple (self):
         return tuple( [ x for x in self.xmlfields ] )
+
 
 ################################################################################
 # Base class for bisque resources
@@ -109,6 +112,12 @@ class BQResource (BQNode):
         self.gobjects = []
         self.kids = []
 
+
+    def toDict (self):
+        objs = {}
+        objs.update ( [ (f.name, f) for f in self.tags if f.name ] )
+        objs.update ( [ (f.name, f) for f in self.gobjects if f.name ] )
+        return objs
 
     def set_parent(self, parent):
         parent.kids.append(self)
@@ -130,12 +139,24 @@ class BQResource (BQNode):
 
 class BQImage(BQResource):
     xmltag = "image"
-    xmlfields = ['name', 'uri', 'ts' , "src", "x", "y","z", "t", "ch"  ]
+    xmlfields = ['name', 'uri', 'ts' , "value", 'resource_uniq' ] #  "x", "y","z", "t", "ch"  ]
     xmlkids = ['tags', 'gobjects']
 
     def __init__(self):
         self.tags = []
         self.gobjects = []
+        self.geometry = None
+        
+    def geometry(self):
+        'return x,y,z,t,ch of image'
+        if self.geometry is None:
+            geom = self.toDict().get ('geometry')
+            if geom:
+                x,y,z,t,ch = geom.split(',')
+                self.geometry = (x, y, z, t, ch)
+        return self.geometry
+
+
     def pixels(self):
         return BQImagePixels(self)
 
@@ -149,7 +170,9 @@ class BQImagePixels(object):
     def _construct_url(self):
         """build the final url based on the operation
         """
-        return "%s?%s" % (self.image.src, '&'.join(self.ops))
+        session = self.image.session
+        return session.service_url('image_service', "images/%s?%s" 
+                                   % (self.image.resource_uniq, '&'.join(self.ops)))
     def fetch(self):
         """resolve the current and fetch the pixel
         """
@@ -428,7 +451,7 @@ class BQUser(BQResource):
 
 class BQMex(BQResource):
     xmltag = "mex"
-    xmlfields = ['module', 'uri', 'ts', 'status']
+    xmlfields = ['module', 'uri', 'ts', 'value']
     xmlkids = ['tags', 'gobjects']
     def __init__(self):
         self.tags = []
@@ -497,6 +520,8 @@ def fromXml (xmlResource, resource=None, parent=None, factory=BQFactory,
             #resource.doc = parent.doc;
         for k in node:
             stack.append( (k, None, resource) );
+
+    resources[0].initialize()
     return resources[0];
 
 

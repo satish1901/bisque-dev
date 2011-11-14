@@ -81,7 +81,8 @@ def move_files_to_resources():
     transaction.commit()
 
 def nunicode (v):
-    return v is not None and unicode(v)
+    #return v is not None and unicode(v)
+    return (v is not None and unicode(v)) or None
 
 def move_all_to_resource():
     print "MOVING Images, etc to RESOURCE"
@@ -109,19 +110,24 @@ def move_all_to_resource():
 
     print "processing ", Module.xmltag
     for r in DBSession.query(Module):
-        map_(r, Module)
-        r.resource_value = r.codeurl
+        #map_(r, Module)
+        r.resource_name  = nunicode(r.name)
+        r.resource_user_type = nunicode(r.type)
+        r.resource_value = nunicode(r.codeurl)
         
     print "processing ", ModuleExecution.xmltag
     for r in DBSession.query(ModuleExecution):
-        map_(r, ModuleExecution)
+        #map_(r, ModuleExecution)
+        r.resource_name = nunicode(r.name)
         r.resource_value = nunicode(r.status)
-        
-    print "processing ", Service.xmltag
-    for r in DBSession.query(Service):
-        map_(r, Service)
-        r.resource_user_type = u'app'
-        r.resource_value = r.uri
+
+    # Don't bother as they must reregister
+    #print "processing ", Service.xmltag
+    #for r in DBSession.query(Service):
+    #    #map_(r, Service)
+    #    r.resource_name = r.type
+    #    r.resource_user_type = u'app'
+    #    r.resource_value = r.uri
 
     print "processing ", Image.xmltag
     for r in DBSession.query(Image):

@@ -222,7 +222,7 @@ class BQSession(object):
         :param tags: list of etree.Element|BQTags|dict objects of form { 'name': 'x', 'value':'z' }
         :param gobjects: same as etree.Element|BQGobject|dict objects of form { 'name': 'x', 'value':'z' }
         """
-        self.mex.status = status
+        self.mex.value = status
         mex = toXml(self.mex)
         def append_mex (mex, type_, elems):
             for tg in elems:

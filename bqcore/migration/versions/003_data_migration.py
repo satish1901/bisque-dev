@@ -21,7 +21,8 @@ def upgrade(migrate_engine):
     # so we fork to a new process instead
     #from migration.versions.mig002 import main
     #main()
-    os.system("python bqcore/migration/versions/mig002.py %s" % migrate_engine.url)
+    path = os.path.join('bqcore', 'migration', 'versions', 'mig002.py')
+    os.system("python %s %s" % (path, migrate_engine.url))
 
     print "END MIGRATING DATA"
     print "cleaning up"
