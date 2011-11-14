@@ -114,11 +114,11 @@ def move_all_to_resource():
         r.resource_name  = nunicode(r.name)
         r.resource_user_type = nunicode(r.type)
         r.resource_value = nunicode(r.codeurl)
-        
+
     print "processing ", ModuleExecution.xmltag
     for r in DBSession.query(ModuleExecution):
         #map_(r, ModuleExecution)
-        r.resource_name = nunicode(r.name)
+        r.resource_name = nunicode(r.module)
         r.resource_value = nunicode(r.status)
 
     # Don't bother as they must reregister

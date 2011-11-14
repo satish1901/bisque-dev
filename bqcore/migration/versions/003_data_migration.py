@@ -2,6 +2,8 @@ import os
 from sqlalchemy import *
 from migrate import *
 
+class MigrationException(Exception):
+    pass
 def upgrade(migrate_engine):
     # Upgrade operations go here. Don't create your own engine; bind migrate_engine
     # to your metadata
@@ -17,12 +19,15 @@ def upgrade(migrate_engine):
     print "BEGIN MIGRATING DATA.. can take a very long TIME"
 
     # While the following lines seem like they would work
-    # the column were not really defined in the current process
+    # the columns were not really defined in the current process
     # so we fork to a new process instead
     #from migration.versions.mig002 import main
     #main()
     path = os.path.join('bqcore', 'migration', 'versions', 'mig002.py')
-    os.system("python %s %s" % (path, migrate_engine.url))
+    ret = os.system("python %s %s" % (path, migrate_engine.url))
+    if ret  != 0:
+        print "MIGRATION FAILED.. exiting"
+        raise  MigrationException()
 
     print "END MIGRATING DATA"
     print "cleaning up"
