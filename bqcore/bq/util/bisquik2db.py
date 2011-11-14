@@ -322,11 +322,10 @@ class ResourceFactory(object):
     @classmethod
     def new(cls, xmlnode, parent, **kw):
         xmlname = xmlnode.tag
-        if xmlname== "request" or xmlname=="response":
-            if parent:
-                node = parent
-            else:
-                node = XMLNode(xmlname)
+        if xmlname in known_gobjects:
+            node = GObject(parent = parent)
+            if xmlname != 'gobject':
+                node.resource_user_type = xmlname
         elif xmlname == "vertex":
             node = Vertex()
             parent.vertices.append (node)
@@ -335,14 +334,15 @@ class ResourceFactory(object):
             node = Value()
             parent.values.append(node)
             node.indx = len(parent.values)-1   # Default value (maybe overridden)
+        elif xmlname== "request" or xmlname=="response":
+            if parent:
+                node = parent
+            else:
+                node = XMLNode(xmlname)
         else:
             if xmlname=="resource":
                 xmlname = xmlnode.get ('resource_type')
-            node = Taggable(xmlname)
-        if parent:
-            cls.set_parent(node, parent)
-        else:
-            node.document = node
+            node = Taggable(xmlname, parent=parent)
 
         return node
 
@@ -424,6 +424,7 @@ mapping_fields = {
     # Taggable
     'owner_id':None,
     'owner' : make_owner,
+    'perm'  : 'permission',
     'parent_id':None,
     'children': None,
     'docnodes': None,
@@ -433,7 +434,7 @@ mapping_fields = {
     'document_id': None,
     'document' : None,
     'resource_parent_id': None,
-    'resource_name' : get_name,
+    'resource_name' : 'name',
     'resource_value': 'value',
     'resource_type' : None,
     'resource_user_type' : None,
@@ -461,7 +462,7 @@ mapping_fields = {
     'user_id' : get_email,
     'user'    : make_user,
     'taggable_id': None,
-    'permission': 'action',
+    #'permission': 'action',
     'resource': None,
 
     }
@@ -516,6 +517,8 @@ def xmlnode(dbo, parent, baseuri, view, **kw):
         elem = xmlelement (dbo, parent, baseuri)
         if  dbo.resource_value is None:        
             [ toxmlnode (x, parent = elem, baseuri=baseuri, view=view) for x in dbo.values ]
+            if elem.attrib.has_key('value'):
+                del elem.attrib['value']
     elif  dbo.resource_type == 'gobject':
         if 'canonical' not in view and dbo.type in known_gobjects:
             elem = xmlelement (dbo, parent, baseuri, xtag=dbo.type)
@@ -523,6 +526,8 @@ def xmlnode(dbo, parent, baseuri, view, **kw):
             elem = xmlelement (dbo, parent, baseuri)
         if  dbo.resource_value is None:
             [ toxmlnode (x, parent = elem, baseuri=baseuri, view=view) for x in dbo.vertices ]
+            if elem.attrib.has_key('value'):
+                del elem.attrib['value']
     else:
         elem = xmlelement (dbo, parent, baseuri)
 
@@ -633,7 +638,7 @@ def db2node(dbo, parent, view, baseuri, nodes, doc_id):
     else:
          v = list(itertools.ifilter (lambda x: x != 'full', view))
          #log.debug ("TAG VIEW=%s", v)
-         tl = [ db2tree_int(x, node, v, baseuri) for x in dbo.tags if x.name in v ] 
+         tl = [ db2tree_int(x, node, v, baseuri) for x in dbo.tags if x.resource_name in v ] 
         
     return node, nodes, doc_id
 

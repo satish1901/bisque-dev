@@ -60,7 +60,7 @@ ModuleService.prototype.run = function (parameters) {
 }
 
 ModuleService.prototype.checkMexStatus = function (mex) {
-    if (mex.status=="FINISHED" || mex.status=="FAILED") {
+    if (mex.value =="FINISHED" || mex.value=="FAILED") {
         this.callbackDone(mex);
     } else {
         this.callbackProgress(mex);

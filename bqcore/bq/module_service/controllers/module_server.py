@@ -149,8 +149,8 @@ class MexDelegate (Resource):
 
                         
     def create_mex(self, mex):
-        if mex.get('status') is None:
-            mex.set ('status', "PENDING")
+        if mex.get('value') is None:
+            mex.set ('value', "PENDING")
         etree.SubElement(mex, 'tag',
                          name="start-time",
                          value=time.strftime("%Y-%m-%d %H:%M:%S",
@@ -227,7 +227,7 @@ def create_mex(module_url, **kw):
     inputs = module.xpath('./tag[@name="inputs"]')
     inputs = inputs and inputs[0]
     real_params = dict(kw)
-    mex = etree.Element('mex', status = 'PENDING', module = module_url)
+    mex = etree.Element('mex', value = 'PENDING', name = module_url)
     #mex_inputs = etree.SubElement(mex, 'tag', name='inputs')
     for mi in inputs:
         param_name = mi.get('value').split(':')[0].strip('$')
@@ -246,7 +246,7 @@ def create_mex(module_url, **kw):
 def check_mex(mex):
     if mex.tag == "request":
         mex = mex[0]
-    if mex.get ('status') in ['FINISHED', 'FAILED']:
+    if mex.get ('value') in ['FINISHED', 'FAILED']:
         etree.SubElement(mex, 'tag',
                          name="end-time",
                          value=time.strftime("%Y-%m-%d %H:%M:%S",
@@ -302,8 +302,8 @@ class ServiceDelegate(controllers.WSGIAppController):
         if mex is None:
             mex = create_mex(self.module, **kw)
         else:
-            mex.set('status', 'PENDING')
-            mex.set('module', self.module)
+            mex.set('value', 'PENDING')
+            mex.set('name', self.module)
 
         etree.SubElement(mex, 'tag',
                          name="start-time",
@@ -349,10 +349,10 @@ class ModuleServer(ServiceController):
         self.runner = None
         self.__class__.mex = self.mex = MexDelegate (self.url + 'mex',
                                                      self.runner)
-        self.__class__.modules = self.modules = resource_controller ("modules" , cache=False )
+        self.__class__.modules = self.modules = resource_controller ("module" , cache=False )
         self.__class__.engine = self.engine = EngineResource (server_url,
                                                               self.modules)
-        #self.load_services()
+        self.load_services()
 
     def load_services(self):
         services = session.query(Service)
@@ -362,8 +362,8 @@ class ModuleServer(ServiceController):
             if not status or status.value == "disabled":
                 continue
             log.debug ("      SERVICE: %s enabled"  %service)
-            engine = service.engine
-            module = service.module
+            engine = service.resource_value
+            module = service.resource_name
             name = engine.rsplit('/',1)[1] 
 
             setattr(self.__class__, name , ServiceDelegate(engine, module, self.mex.url))
@@ -387,13 +387,13 @@ class ModuleServer(ServiceController):
         kw.setdefault ('view','short')
         xml= self.modules.default(**kw)
         modules = etree.XML(xml)
-        log.debug ("Got %s " % xml)
+        log.debug ("all modules = %s " % xml)
         
         for module in modules.findall ('module'):
             enabled = False
-            del module.attrib['codeurl']
+            #del module.attrib['codeurl']
             #module.attrib['codeurl'] = "%s%s" %( self.url , module.get('name'))
-            services = session.query(Service).filter_by (module = module.get ('uri'))
+            services = session.query(Service).filter_by (resource_name = module.get ('uri'))
             for service in services:
                 log.debug ("FOUND SERVICE: %s" %service)
                 status = service.findtag('status')
@@ -409,7 +409,9 @@ class ModuleServer(ServiceController):
     @expose(content_type='text/xml')
     def register_engine(self, **kw):
         'Helper method .. redirect post to engine resource'
-        return self.engine.default (**kw)
+        xml =  self.engine.default (**kw)
+        self.load_services()
+        return xml
 
     def execute(self, module_uri, **kw):
         mex = etree.Element ('mex', module = module_uri)
@@ -431,7 +433,7 @@ class ModuleServer(ServiceController):
         
 
     def begin_internal_mex(self, name=None):
-        mex = etree.Element('mex', status="SESSION")
+        mex = etree.Element('mex', value="SESSION")
         etree.SubElement(mex, 'tag',
                          name="start-time",
                          value=time.strftime("%Y-%m-%d %H:%M:%S",
@@ -444,7 +446,7 @@ class ModuleServer(ServiceController):
         return mex.get('uri')
         
     def end_internal_mex(self, mexid):
-        mex = etree.Element('mex', status="FINISHED", uri='http://localhost/ds/mex/%s' % mexid)
+        mex = etree.Element('mex', value="FINISHED", uri='http://localhost/ds/mex/%s' % mexid)
         etree.SubElement(mex, 'tag',
                          name="end-time",
                          value=time.strftime("%Y-%m-%d %H:%M:%S",
@@ -477,8 +479,8 @@ class EngineResource (Resource):
         for s in  session.query(Service):
             service = etree.SubElement(response,'service',
                                        uri=s.uri,
-                                       module=s.module,
-                                       engine=s.engine)
+                                       name=s.resource_name,
+                                       value=s.resource_value)
             #etree.SubElement(service, 'tag', name='module', value=s.module)
             #etree.SubElement(service, 'tag', name='engine', value=s.engine)
 
@@ -503,7 +505,7 @@ class EngineResource (Resource):
         name = module_def.get ('name')
         ts   = module_def.get ('ts')
         
-        modules = data_service.query ('module', name=name, view="deep")
+        modules = data_service.query ('module', resource_name=name, view="deep")
         m = (len(modules) and modules[0]) or None
         # Create a new module only if newer
 
@@ -534,23 +536,23 @@ class EngineResource (Resource):
         else:
             resource = etree.XML (xml)
         for module_def in resource.getiterator('module'):
-            codeurl = module_def.get ('codeurl')
+            #codeurl = module_def.get ('codeurl')
             engine_url = module_def.get ('engine_url', None)
-            if codeurl is None or not codeurl.startswith('http://'):
-                if engine_url is not None:
-                    log.debug ("Engine_url is deprecated. please use codeurl ")
-                    codeurl = engine_url
-                    module_def.set('codeurl', engine_url)
-            if codeurl is None or not codeurl.startswith('http://'):
-                log.error ("Could not determine module codeurl during registration")
-                raise abort(400)
+            #if codeurl is None or not codeurl.startswith('http://'):
+            #    if engine_url is not None:
+            #        log.debug ("Engine_url is deprecated. please use codeurl ")
+            #        codeurl = engine_url
+            #        module_def.set('codeurl', engine_url)
+            #if codeurl is None or not codeurl.startswith('http://'):
+            #    log.error ("Could not determine module codeurl during registration")
+            #    raise abort(400)
 
             module = self.register_module(module_def)
             module_def.set ('uri', module.get ('uri'))
 
             service = session.query(Service).filter_by (
-                module = module.get ('uri'),
-                engine = engine_url).first()
+                resource_name  = module.get ('uri'),
+                resource_value = engine_url).first()
 
             if module_def.get ('status') == 'disabled':
                 if service:
@@ -560,8 +562,8 @@ class EngineResource (Resource):
             
             if not service:
                 service = Service ()
-                service.module = module.get('uri')
-                service.engine = engine_url
+                service.resource_name = module.get('uri')
+                service.resource_value = engine_url
                 session.add(service)
             log.debug("updating contact of %s", service.uri)
             contact = service.findtag('last-contact', True)

@@ -1492,14 +1492,14 @@ BQModuleList.prototype.findModuleByName = function (name) {
 function BQMex (){
     BQObject.call(this);
     this.xmltag = "mex";
-    this.xmlfields = [ "uri", "status", "module" ] ;
+    this.xmlfields = [ "uri", "name", "value" ] ;
 }
 
 BQMex.prototype = new BQObject();
 BQMex.prototype.initializeXml = function (mex) {
     this.uri = attribStr(mex,'uri');
-    this.status = attribStr(mex,'status');
-    this.module = attribStr(mex,'module');
+    this.name = attribStr(mex,'name');
+    this.value = attribStr(mex,'value');
     this.ts     = attribStr(mex,'ts');
     this.resource_type = this.xmltag;
 }

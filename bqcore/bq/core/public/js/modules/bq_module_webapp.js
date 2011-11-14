@@ -358,8 +358,8 @@ BQWebApp.prototype.updateResultsVisibility = function (vis, onlybuttons) {
 BQWebApp.prototype.progress_check = function (mex) {
     if (!mex) return;
     var button_run = document.getElementById("webapp_run_button");    
-    if (mex.status != "FINISHED" && mex.status != "FAILED") {
-        button_run.childNodes[0].nodeValue = "Progress: " + mex.status;
+    if (mex.value != "FINISHED" && mex.value != "FAILED") {
+        button_run.childNodes[0].nodeValue = "Progress: " + mex.value;
         button_run.disabled = true;
     }
 }
@@ -383,7 +383,7 @@ BQWebApp.prototype.done = function (mex) {
     button_run.disabled = false;
     this.mexdict = mex.toDict(true);       
       
-    if (mex.status == "FINISHED") {
+    if (mex.value == "FINISHED") {
         this.parseResults(mex);
     } else {
         if ('message' in this.mexdict) 

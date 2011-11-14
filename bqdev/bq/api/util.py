@@ -49,9 +49,10 @@ def make_qs(pd):
 
 def fetch_image_planes(session, uri, dest, uselocalpath=False):
     'fetch all the image planes of an image locally'
-    image = session.load (uri)
-    tplanes = int(image.t)
-    zplanes = int(image.z)
+    image = session.load (uri, view='full')
+    x,y,z,t,ch = image.geometry()
+    tplanes = int(t)
+    zplanes = int(z)
 
     planes=[]
     for t in range(tplanes):

@@ -65,10 +65,11 @@ from datetime import datetime
 from sqlalchemy import Table, Column, ForeignKey
 from sqlalchemy import Integer, String, DateTime, Unicode, Float, Boolean
 from sqlalchemy import Text, UnicodeText
-from sqlalchemy.orm import relation, class_mapper, object_mapper, validates, backref
+from sqlalchemy.orm import relation, class_mapper, object_mapper, validates, backref, synonym
 from sqlalchemy import exceptions
 from sqlalchemy.sql import and_
 from sqlalchemy.ext.associationproxy import association_proxy
+from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 
 from tg import config, session
 
@@ -84,7 +85,7 @@ from datetime import datetime
 from bq.core import identity
 from bq.core.model import DeclarativeBase, metadata
 from bq.core.model import User, Group
-from bq.core.permission import *
+from bq.core.permission import PUBLIC, PRIVATE, perm2code, perm2str
 from bq.util.memoize import memoized
 
 #from bq.MS import module_service
@@ -220,7 +221,7 @@ vertices = Table ('vertices', metadata,
 taggable_acl = Table('taggable_acl', metadata,
                      Column('taggable_id', Integer, ForeignKey('taggable.id'), primary_key=True),
                      Column('user_id', Integer, ForeignKey('taggable.id'),primary_key=True),
-                     Column('permission', Integer),
+                     Column('permission', Integer, key="action"),
                      )
 
 
@@ -252,69 +253,6 @@ taggable_acl = Table('taggable_acl', metadata,
 #       Column('token_id', Integer, ForeignKey('permission_tokens.id')),
 #       Column('set_id', Integer, ForeignKey('permission_sets.set_id')),
 # )
-
-
-#ctx = turbogears.database.session.context
-###############################
-# Basic types
-import weakref
-class EntitySingleton(type):
-    """a metaclass that insures the creation of unique and
-    non-existent entities for a particular constructor argument.  if
-    an entity with a particular constructor argument was already
-    created, either in memory or in the database, it is returned in
-    place of constructing the new instance."""
-
-    def __init__(cls, name, bases, dct):
-        cls.instances = weakref.WeakValueDictionary()
-
-    def __call__(cls, name):
-        #sess = current_session()
-        sess = current_session
-        name = unicode(name)
-        hashkey =  name
-        #hashkey = name
-        try:
-            instance = cls.instances[hashkey]
-            instance = sess.merge (instance)
-            return instance
-        except KeyError:
-            instance = sess.query(cls).filter(cls.name==name).first()
-            #log.debug('read %s in %s' % (instance, id(session.context)) )
-            if instance is None:
-                #log.debug('no value in sess' + str(hashkey))
-                instance = type.__call__(cls, name)
-                sess.add(instance)
-                # optional - flush the instance when it's saved
-                #try:
-                #    #sess.flush()
-                #    #sess.flush()
-                #    #sess.commit()
-                #    sess.refresh(instance)
-                #except exceptions.SQLError:
-                    # if desired, add a check for the specific
-                    # constraint error code/message, if
-                    # known
-                    #log.debug('error while saving' + str(hashkey))
-                #    instance = sess.query(cls).filter(cls.name==name).first()
-                #    if instance is None:
-                #        #log.debug ('still no val:' + str(hashkey))
-                #       raise
-            cls.instances[hashkey] = instance
-            return instance
-
-class UniqueName(object):
-    __metaclass__ = EntitySingleton
-    def __init__(self, name):
-        log.debug ("unique name:" + name)
-        self.name = unicode(name)
-
-    def __repr__(self):
-        return 'UniqueName('+self.name+')'
-
-    def __str__(self):
-        return self.name
-
 
 
 ######################################################################
@@ -358,10 +296,16 @@ class Taggable(object):
     """
     xmltag = 'resource'
     
-    def __init__(self, resource_type = None):
+    def __init__(self, resource_type = None, parent = None):
         if resource_type is None:
             resource_type = self.xmltag
         self.resource_type = resource_type
+        # By defualt you are the document
+        if parent: 
+            parent.children.append(self)
+            self.document = parent.document
+        else:
+            self.document = self
 
         self.ts = datetime.now()
         #log.debug("new taggable user:" + str(session.dough_user.__dict__) )
@@ -439,13 +383,12 @@ class Taggable(object):
 
     def findtag (self, nm, create=False):
         for t in self.tags:
-            if t.name == nm:
+            if t.resource_name == nm:
                 return t
         t=None
         if create:
-            t = Tag()
-            t.name = nm
-            self.tags.append(t)
+            t = Tag(parent = self)
+            t.resource_name = nm
         return t
 
     def loadFull(self):
@@ -468,13 +411,20 @@ class Taggable(object):
     def set_name(self, v):
         self.resource_name = v
     name = property(get_name, set_name)
-
     # Tag.indx used for ordering tags
     def get_type(self):
         return self.resource_user_type
     def set_type(self, v):
         self.resource_user_tupe = v
     type = property(get_type, set_type)
+
+
+    def get_permission(self):
+        return perm2str.get(self.perm)
+
+    def set_permission(self, v):
+        self.perm = perm2code(v)
+    permission = property(get_permission, set_permission)
 
     # Tag.value helper functions
     def newval(self, v, i = 0):
@@ -750,7 +700,14 @@ class ModuleExecution(Taggable):
     def closed(self):
         return self.status in ('FINISHED', 'FAILED')
     # alias for resource_value
-    status = taggable.c.resource_value
+    #status = taggable.c.resource_value
+    #@hybrid_property
+    def getstatus(self):
+        return self.resource_value
+    #@status.setter
+    def setstatus(self, v):
+        self.resource_value = v
+    status = property(getstatus,setstatus)
 
 
 class Dataset(Taggable):
@@ -789,11 +746,11 @@ class TaggableAcl(object):
 
 
     def setperm(self, perm):
-        self.permission = { "read":0, "edit":1 } .get(perm, 0)
+        self.action = { "read":0, "edit":1 } .get(perm, 0)
     def getperm(self):
-        return [ "read", "edit"] [self.permission]
+        return [ "read", "edit"] [self.action]
         
-    action = property(getperm, setperm)
+    permission = property(getperm, setperm)
     
     def __str__(self):
         return "resource:%s  user:%s permission:%s" % (self.taggable_id,
@@ -805,8 +762,8 @@ class Service (Taggable):
     """A executable service"""
     xmltag = "service"
     
-    def __str__(self):
-        return "%s module=%s engine=%s" % (self.uri, self.module, self.engine)
+    #def __str__(self):
+    #    return "%s module=%s engine=%s" % (self.uri, self.module, self.engine)
     
 #################################################
 # Simple Mappers
@@ -814,15 +771,16 @@ class Service (Taggable):
 #session.mapper(UniqueName, names)
         
 mapper( Value, values,
-              properties = {
-    'parent' : relation (Taggable,
-                         primaryjoin =(taggable.c.id == values.c.parent_id)),
-    'objref' : relation(Taggable, uselist=False,
-                        primaryjoin=(values.c.valobj==taggable.c.id),
-                        enable_typechecks=False
-                        ),
-    }
-    )
+        properties = {
+        'resource_parent_id' : values.c.parent_id,
+        #'parent' : relation (Taggable,
+        #                 primaryjoin =(taggable.c.id == values.c.parent_id)),
+        'objref' : relation(Taggable, uselist=False,
+                            primaryjoin=(values.c.valobj==taggable.c.id),
+                            enable_typechecks=False
+                            ),
+        }
+        )
 
 mapper( Vertex, vertices)
 mapper(TaggableAcl, taggable_acl,
@@ -838,8 +796,9 @@ mapper(TaggableAcl, taggable_acl,
 # Taggable mappers
 
 mapper( Taggable, taggable,
+        #polymorphic_on = taggable.c.resource_type,
+        #polymorphic_identity = '', 
                        properties = {
-
     'tags' : relation(Taggable, lazy=True, viewonly=True, cascade="all, delete-orphan",
 
                          primaryjoin= and_(taggable.c.resource_parent_id==taggable.c.id,
@@ -853,11 +812,13 @@ mapper( Taggable, taggable,
                       backref = backref('resource', remote_side=[taggable.c.id] ),
                       ),
     'children' : relation(Taggable, lazy=True, cascade="all, delete-orphan",
-                          backref = backref('parent', remote_side = [ taggable.c.id]),
+                          enable_typechecks = False, 
+                          backref = backref('parent', enable_typechecks=False, remote_side = [ taggable.c.id]),
                           primaryjoin = (taggable.c.id == taggable.c.resource_parent_id)),
     'values' : relation(Value,  lazy=True, cascade="all, delete-orphan",
                         primaryjoin =(taggable.c.id == values.c.parent_id),
-                        foreign_keys=[values.c.parent_id]
+                        backref = backref('parent', remote_side=[taggable.c.id])
+                        #foreign_keys=[values.c.parent_id]
                         ),
     'vertices' : relation(Vertex, lazy=True, cascade="all, delete-orphan",
                           primaryjoin =(taggable.c.id == vertices.c.parent_id),
@@ -867,9 +828,11 @@ mapper( Taggable, taggable,
 
     'docnodes': relation(Taggable, lazy=True, 
                          cascade = "all, delete-orphan",
+                         enable_typechecks = False, 
                          post_update=True,
                          primaryjoin = (taggable.c.id == taggable.c.document_id),
-                         backref = backref('document', post_update=True, remote_side=[taggable.c.id]),
+                         backref = backref('document', post_update=True, 
+                                           enable_typechecks=False, remote_side=[taggable.c.id]),
                          )
     }
         )
@@ -887,6 +850,11 @@ mapper(BQUser,  inherits=Taggable,
        polymorphic_on = taggable.c.resource_type,
        polymorphic_identity = 'user',
        properties = { 
+        'tguser' : relation(User, uselist=False, 
+            primaryjoin=(User.user_name == taggable.c.resource_name),
+            foreign_keys=[User.user_name]),
+
+
         'owns' : relation(Taggable, lazy=True,
                           cascade = None,
                           primaryjoin = (taggable.c.id == taggable.c.owner_id),
@@ -929,6 +897,7 @@ mapper(ModuleExecution,  inherits=Taggable,
        polymorphic_on = taggable.c.resource_type,
        polymorphic_identity = 'mex',
        properties = {
+        #"status":synonym("resource_value"), # map_column=True) ,
         'owns' : relation(Taggable, 
                           cascade = None,
                           primaryjoin = (taggable.c.id == taggable.c.mex_id),
