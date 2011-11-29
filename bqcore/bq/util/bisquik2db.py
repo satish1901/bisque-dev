@@ -323,7 +323,7 @@ class ResourceFactory(object):
     def new(cls, xmlnode, parent, **kw):
         xmlname = xmlnode.tag
         if xmlname in known_gobjects:
-            node = GObject(parent = parent)
+            node = Taggable('gobject', parent = parent)
             if xmlname != 'gobject':
                 node.resource_user_type = xmlname
         elif xmlname == "vertex":
@@ -344,6 +344,7 @@ class ResourceFactory(object):
                 xmlname = xmlnode.get ('resource_type')
             node = Taggable(xmlname, parent=parent)
 
+        log.debug  ('factor.new %s -> %s ' % (xmlname, node))
         return node
 
     @classmethod
@@ -365,15 +366,17 @@ class ResourceFactory(object):
                 parent.children.append(node)
 
 
-    index_map = dict(vertex=('vertices',Vertex), tag=('values', Value))
+    index_map = dict(vertex=('vertices',Vertex), value=('values', Value))
     @classmethod
     def index(cls, node, parent, indx, cleared):
         xmlname = node.tag
+        if xmlname in known_gobjects:
+            xmlname = 'gobject'
         #return cls.new(xmlname, parent)
         array, klass = cls.index_map.get (xmlname, (None,None))
         if array:
             objarr =  getattr(parent, array)
-            v = DBSession.query(klass).filter_by(parent_id=parent.id, indx=indx).first()
+            v = DBSession.query(klass).filter_by(resource_parent_id=parent.id, indx=indx).first()
             log.debug('indx fetched %s' % v)
             objarr.extend ([ klass() for x in range(((indx+1)-len(objarr)))])
             if not v:
@@ -774,13 +777,16 @@ def updateDB(root=None, parent=None, resource = None, factory = ResourceFactory,
                     if replace:
                         cleared = resource.clear()
                 elif indx is not None:
-                    #log.debug(u'index of %s[%s] on parent %s'%(obj.tag, indx, parent))
+                    log.debug('index of %s[%s] on parent %s'%(obj.tag, indx, parent))
                     resource = factory.index (obj, parent, int(indx), cleared)
                 else:
                     # TODO if tag == resource, then type should be used
                     resource = factory.new (obj, parent)
                     #log.debug("update: created %s:%s of %s" % (obj.tag, resource, resource.document))
                     log.debug("update: created %s:%s" % (obj.tag, resource))
+
+                
+
                 # Assign attributes
                 resource.ts = ts
                 for k,v in attrib.items():

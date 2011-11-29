@@ -104,6 +104,7 @@ def move_all_to_resource():
     print "processing ", BQUser.xmltag
     for r in DBSession.query(BQUser):
         #map_(r, BQUser)
+        r.resource_type = u'user'
         r.resource_name = nunicode(r.user_name)
         r.resource_value = nunicode(r.email_address)
         new_tag(r, 'display_name', r.display_name)
@@ -111,6 +112,7 @@ def move_all_to_resource():
     print "processing ", Module.xmltag
     for r in DBSession.query(Module):
         #map_(r, Module)
+        r.resource_type = u'module'
         r.resource_name  = nunicode(r.name)
         r.resource_user_type = nunicode(r.type)
         r.resource_value = nunicode(r.codeurl)
@@ -118,6 +120,7 @@ def move_all_to_resource():
     print "processing ", ModuleExecution.xmltag
     for r in DBSession.query(ModuleExecution):
         #map_(r, ModuleExecution)
+        r.resource_type = u'mex'
         r.resource_name = nunicode(r.module)
         r.resource_value = nunicode(r.status)
 
@@ -131,6 +134,7 @@ def move_all_to_resource():
 
     print "processing ", Image.xmltag
     for r in DBSession.query(Image):
+        #r.resource_type = u'image'
         #map_(r, Image)
         new_tag(r, 'geometry', 
                 "%s,%s,%s,%s,%s" % (r.x or '', r.y or '',r.z or '',r.t or '',r.ch or '')
@@ -158,6 +162,9 @@ def move_values():
 
             #DBSession.delete (r.values[0])
 
+    for r in DBSession.query(GObject):
+        for v in r.vertices:
+            v.document_id = r.document_id
     #print "processing ", GObject.xmltag
     #for r in DBSession.query(GObject):
     #    if len(r.vertices) == 1:

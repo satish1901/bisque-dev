@@ -156,7 +156,7 @@ taggable = Table('taggable', metadata,
 #simplevalues = Table ('simplevalues', metadata,
 #          Column('id',  Integer, ForeignKey('taggable.id'), primary_key=True),
 values = Table ('values', metadata,
-          Column('parent_id',Integer, ForeignKey('taggable.id'),primary_key=True),
+          Column('resource_parent_id',Integer, ForeignKey('taggable.id'),primary_key=True),
           Column('document_id',Integer, ForeignKey('taggable.id')),
           Column('indx', Integer, primary_key = True, autoincrement=False),
           Column('valstr', UnicodeText),
@@ -166,7 +166,8 @@ values = Table ('values', metadata,
 
 vertices = Table ('vertices', metadata,
 #                Column('id', Integer, ForeignKey('taggable.id'), primary_key=True),
-                Column('parent_id',Integer, ForeignKey('taggable.id'), primary_key=True),
+                Column('resource_parent_id',Integer, ForeignKey('taggable.id'), primary_key=True),
+#                Column('document_id',Integer, ForeignKey('taggable.id')),
                 Column('indx', Integer, primary_key=True, autoincrement=False),
                 Column('x', Float),
                 Column('y', Float),
@@ -772,7 +773,7 @@ class Service (Taggable):
         
 mapper( Value, values,
         properties = {
-        'resource_parent_id' : values.c.parent_id,
+        #'resource_parent_id' : values.c.parent_id,
         #'parent' : relation (Taggable,
         #                 primaryjoin =(taggable.c.id == values.c.parent_id)),
         'objref' : relation(Taggable, uselist=False,
@@ -816,13 +817,13 @@ mapper( Taggable, taggable,
                           backref = backref('parent', enable_typechecks=False, remote_side = [ taggable.c.id]),
                           primaryjoin = (taggable.c.id == taggable.c.resource_parent_id)),
     'values' : relation(Value,  lazy=True, cascade="all, delete-orphan",
-                        primaryjoin =(taggable.c.id == values.c.parent_id),
+                        primaryjoin =(taggable.c.id == values.c.resource_parent_id),
                         backref = backref('parent', remote_side=[taggable.c.id])
                         #foreign_keys=[values.c.parent_id]
                         ),
     'vertices' : relation(Vertex, lazy=True, cascade="all, delete-orphan",
-                          primaryjoin =(taggable.c.id == vertices.c.parent_id),
-                          foreign_keys=[vertices.c.parent_id]
+                          primaryjoin =(taggable.c.id == vertices.c.resource_parent_id),
+                          #foreign_keys=[vertices.c.resource_parent_id]
                           ),
 
 
