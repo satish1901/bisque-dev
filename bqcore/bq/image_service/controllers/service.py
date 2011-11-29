@@ -106,7 +106,14 @@ class image_serviceController(ServiceController):
     def local_path (self, src, **kw):
         ''' return local path if it exists otherwise None'''
         return self.srv.id2path(get_image_id(src))
+
+    def get_filename (self, src):
+        ''' returns filename'''
+        return self.srv.originalFileName(get_image_id(src))
         
+    def get_image_id (self, src):
+        return get_image_id(src)
+    
     def set_file_info( self, image_uri, **kw ):
         self.srv.setBlobInfo(image_uri, **kw)
 
