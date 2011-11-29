@@ -441,9 +441,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 	applyPreferences : function()
 	{
 	    if (this.rendered)
-	    {
             this.toggleLayoutBtn();
-            this.getComponent('btnGear').menu.getComponent('btnWpublic').setChecked(this.browser.browserParams.wpublic, true);
-	    }
+        this.getComponent('btnGear').menu.getComponent('btnWpublic').setChecked(this.browser.browserParams.wpublic, true);
 	}
 })
