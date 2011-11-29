@@ -1,0 +1,25 @@
+/* Icons */ 
+.icon-select-images {
+    background-image: url('../images/select-images.png') !important;
+}
+
+.icon-select-dataset {
+    background-image: url('../images/select-dataset.png') !important;
+}
+
+.icon-download {
+    background-image: url('../images/download.png') !important;
+}
+
+.icon-gdocs {
+    background-image: url('../images/gdocs.png') !important;
+}
+
+.icon-delete {
+    background-image: url('../images/delete.png') !important;
+}
+
+.align {
+    vertical-align: middle;
+}
+

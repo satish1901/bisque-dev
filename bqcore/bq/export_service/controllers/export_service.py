@@ -179,6 +179,62 @@ class export_serviceController(ServiceController):
         entry = gd_client.UploadSpreadsheet(ms, m_title)
         return dict(error=None, google_url=str(entry.GetAlternateLink().href))
 
+
+    #------------------------------------------------------------------
+    # new ArchiveStreamer - Utkarsh
+    #------------------------------------------------------------------
+
+    @expose()
+    def initStream(self, **kw):
+        from bq.export_service.controllers.archive_streamer import ArchiveStreamer
+        import string
+
+        compressionType = kw.pop('compressionType', '')
+        files = string.split(kw.pop('files', ''), ',')
+        datasets = string.split(kw.pop('datasets', ''), ',')
+        
+        archiveStreamer = ArchiveStreamer(compressionType)
+        archiveStreamer.init(archiveName='Bisque archive '+time.strftime('%H.%M.%S'), fileList=files, datasetList=datasets)
+        
+        return archiveStreamer.stream()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #------------------------------------------------------------------------------
 # Tar file export, by Santosh
 #------------------------------------------------------------------------------
