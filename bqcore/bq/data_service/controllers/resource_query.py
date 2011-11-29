@@ -331,7 +331,7 @@ def prepare_order_expr (query, tag_order, **kw):
                                Taggable.id == ordertags.c.resource_parent_id,
                                ordertags.c.resource_type == 'tag', 
                                ordertags.c.resource_name == order,
-                               ordertags.c.id == ordervals.c.parent_id)
+                               ordertags.c.id == ordervals.c.resource_parent_id)
             query = query.filter(query_expr).order_by (ordering(ordervals.c.valstr))
     else:
         query = query.order_by(Taggable.id)
@@ -423,7 +423,7 @@ def tags_special(dbtype, query, params):
         sq2 = session.query(Tag).filter(
             and_(Tag.resource_name == tv,
                  Tag.document_id == sq1.c.taggable_document_id)).with_labels().subquery()
-        vs=session.query(Value.valstr).filter(Value.parent_id == sq2.c.taggable_id).distinct()
+        vs=session.query(Value.valstr).filter(Value.resource_parent_id == sq2.c.taggable_id).distinct()
         log.debug ('tag_values = %s' % vs)
         q = [ fobject (resource_type='tag', resource_name = tv, value = v[0])
               for v in vs.all() ]
@@ -440,7 +440,7 @@ def tags_special(dbtype, query, params):
         ### Find tags with name
         ## Equiv .../tag[@value=param]
         return session.query(Tag).filter(
-            and_(Tag.id == Value.parent_id, 
+            and_(Tag.id == Value.resource_parent_id, 
                  Value.valstr == params.pop('value')))
                  
         
@@ -756,8 +756,8 @@ def prepare_query_expr (query, resource_type, user_id, wpublic, parent, tag_quer
     ## to parent_id to better represent what they are and simplify
     ## the parent check below
     if parent:
-        if hasattr(dbtype.c, 'parent_id'):
-            query = query.filter(dbtype.parent_id == parent.id)
+        if hasattr(dbtype.c, 'resource_parent_id'):
+            query = query.filter(dbtype.resource_parent_id == parent.id)
         elif hasattr(dbtype.c, 'id'):
             query = query.filter(dbtype.id == parent.id)
             

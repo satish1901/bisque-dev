@@ -124,7 +124,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ModuleResourceList',
     {
     	if (!this.tagsLoaded)
     	{
-    		BQFactory.request({uri: this.resource.uri + '/tags', cb: Ext.bind(this.tagData, this)});
+    		BQFactory.request({uri: this.resource.uri + '/tag', cb: Ext.bind(this.tagData, this)});
     	}
     	this.callParent(arguments);
     },

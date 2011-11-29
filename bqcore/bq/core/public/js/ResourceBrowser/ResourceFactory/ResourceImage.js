@@ -165,7 +165,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourceCompact',
     {
     	if (!this.tagsLoaded)
     	{
-    		BQFactory.request({uri: this.resource.uri + '/tags', cb: Ext.bind(this.tagData, this, ['tags'], true)});
+    		BQFactory.request({uri: this.resource.uri + '/tag', cb: Ext.bind(this.tagData, this, ['tags'], true)});
     		BQFactory.request({uri: this.resource.src + '?meta', cb: Ext.bind(this.tagData, this, ['meta'], true)});
     	}
     },
@@ -270,7 +270,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourceCard',
         {
             this.setData('fetched', -1);	//Loading
 
-            BQFactory.load(this.resource.uri + '/tags', Ext.bind(this.loadResource, this, ['tags'], true));
+            BQFactory.load(this.resource.uri + '/tag', Ext.bind(this.loadResource, this, ['tags'], true));
 
             var prefetchImg = new Image();
             prefetchImg.src = this.resource.src + '?thumbnail='+this.layoutMgr.layoutEl.imageWidth+','+this.layoutMgr.layoutEl.imageHeight;

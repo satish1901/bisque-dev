@@ -9,7 +9,7 @@ def upgrade(migrate_engine):
     #meta = MetaData()
     metadata.bind = migrate_engine
     DBSession.configure(bind=migrate_engine)
-    from migration.versions.model002 import  taggable, values
+    from migration.versions.model002 import  taggable, values, vertices
 
     resource_uniq = Column('resource_uniq', String(40) ) # will be used for sha1
     resource_parent_id = Column('resource_parent_id', Integer, ForeignKey('taggable.id'))
@@ -36,6 +36,8 @@ def upgrade(migrate_engine):
     document_id.create(taggable)
     document_id = Column('document_id', Integer, ForeignKey('taggable.id')) # Unique Element
     document_id.create(values)
+    document_id = Column('document_id', Integer, ForeignKey('taggable.id')) # Unique Element
+    document_id.create(vertices)
 
     
 
