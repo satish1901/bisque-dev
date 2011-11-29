@@ -234,9 +234,15 @@ class ImageService(proxy_dispatch):
 
     def info (self, uri):
         return self.server.info (uri)
+    
     def meta(self, uri):
         return self.server.meta(uri)
-        
+    
+    def getFileName(self, imgsrc):
+        return self.server.get_filename(imgsrc)
+
+    def getImageID(self, imgsrc):
+        return self.server.get_image_id(imgsrc)
 
 from bq.core.service import service_registry
 
@@ -308,6 +314,16 @@ def image_path(imgsrc, **kw):
         server = find_server(imgsrc)
         if server:
             return server.local_path (imgsrc, **kw)
+
+def getFileName(imgsrc):
+    server = find_server(imgsrc)
+    if server:
+        return server.get_filename(imgsrc)
+
+def getImageID(imgsrc):
+    server = find_server(imgsrc)
+    if server:
+        return server.get_image_id(imgsrc)
 
 def set_file_info(image_uri, **kw):
     ''' Set file info in blob server'''
