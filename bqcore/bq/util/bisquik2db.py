@@ -411,12 +411,6 @@ def get_email (dbo, fn, baseuri):
 def make_user (dbo, fn, baseuri):
     return ('user', baseuri + str(dbo.user))
 
-def get_name (dbo, fn, baseuri):
-    return ('name', dbo.resource_name)
-def get_type (dbo, fn, baseuri):
-    return ('type', dbo.resource_user_type)
-
-
 mapping_fields = {
     'table_name':'type',
     'engine_id' : 'engine',
@@ -486,6 +480,7 @@ def model_fields(dbo, baseuri=None):
         # This occurs when the object is a fake DB objects
         # The dictionary is sufficient 
         dbo_fields= dbo.__dict__
+        log.debug ('dbo_fields %s' % dbo_fields)
     for fn in dbo_fields:
         fn = mapping_fields.get(fn, fn)
         if fn is None:

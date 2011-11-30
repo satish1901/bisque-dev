@@ -405,7 +405,7 @@ def tags_special(dbtype, query, params):
         sq2 = session.query(Tag.resource_name).filter(Tag.document_id == sq1.c.taggable_document_id)
         sq3 = sq2.distinct().order_by(Tag.resource_name)
         #log.debug ("tag_names query = %s" % sq1)
-        q = [ fobject (resource_type='tag', resource_name = tg[0]) for tg in sq3]
+        q = [ fobject (resource_type='tag', name = tg[0]) for tg in sq3]
         #names = session.query(UniqueName).filter(UniqueName.id == sq2.c.name_id)
         #names = names.distinct().order_by(UniqueName.name)
         #log.debug ('names query = %s' % str(names))
@@ -424,9 +424,10 @@ def tags_special(dbtype, query, params):
             and_(Tag.resource_name == tv,
                  Tag.document_id == sq1.c.taggable_document_id)).with_labels().subquery()
         vs=session.query(Value.valstr).filter(Value.resource_parent_id == sq2.c.taggable_id).distinct()
-        log.debug ('tag_values = %s' % vs)
-        q = [ fobject (resource_type='tag', resource_name = tv, value = v[0])
-              for v in vs.all() ]
+        vsall = vs.all()
+        log.debug ('tag_values = %s' % vsall)
+        q = [ fobject (resource_type='tag', name = tv, value = v[0], resource_value = v[0])
+              for v in vsall ]
         return q
 
     if params.has_key('name') and dbtype == Tag:
