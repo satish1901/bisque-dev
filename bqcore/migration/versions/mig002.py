@@ -125,8 +125,9 @@ def move_all_to_resource():
         r.resource_value = nunicode(r.status)
 
     # Don't bother as they must reregister
-    #print "processing ", Service.xmltag
-    #for r in DBSession.query(Service):
+    print "processing ", Service.xmltag
+    for r in DBSession.query(Service):
+        DBSession.delete(r)
     #    #map_(r, Service)
     #    r.resource_name = r.type
     #    r.resource_user_type = u'app'
