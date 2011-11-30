@@ -1771,7 +1771,7 @@ class ImageServer(object):
         pass
 
     def imagepath(self, ident):
-        return blob_service.localpath(ident, self.workdir)
+        return blob_service.localpath(ident)
 
     def originalFileName(self, ident):
         return blob_service.original_name(ident)
