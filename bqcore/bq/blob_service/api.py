@@ -10,9 +10,9 @@ def store_blob(src, name):
     server = find_server()
     return server.storeBlob(src, name)
 
-def localpath(ident, localdir):
+def localpath(ident):
     server = find_server()
-    return server.localpath(ident, localdir)
+    return server.localpath(ident)
 
 def file_exists(ident):
     server = find_server()

@@ -4,7 +4,7 @@ import copy
 from tg import response, expose
 from lxml import etree
 from cStringIO import StringIO
-from bq import data_service, image_service
+from bq import data_service, image_service, blob_service
 from bq.export_service.controllers.archiver.archiver_factory import ArchiverFactory
 
 
@@ -45,17 +45,19 @@ class ArchiveStreamer():
     def fileInfoList(self, fileList, datasetList):
         
         def fileInfo(dataset, uri):
-            file = {}
-
-            file['XML'] = data_service.get_resource(uri, view='deep')
-            file['source'] = file.get('XML').get('src')
-            file['name'] = image_service.getFileName(file.get('source'))
-            file['path'] = image_service.image_path(file.get('source'))
-            file['id'] = image_service.getImageID(file.get('source'))
-            file['dataset'] = dataset
-            file['extension'] = ''
+            file_info = {}
             
-            return file
+            xml = data_service.get_resource(uri, view='deep')
+            file_info['XML'] = xml
+            file_info['source'] = xml.get('value')
+            file_info['name'] = xml.get('name')
+            file_info['uniq']  = xml.get('resource_uniq')
+            file_info['path'] = blob_service.localpath(file_info['uniq'])
+            file_info['id'] = xml.get('uri').rsplit('/', 1)[1] # pick the resource ID
+            file_info['dataset'] = dataset
+            file_info['extension'] = ''
+            
+            return file_info
         
         def xmlInfo(finfo):
             file = finfo.copy()

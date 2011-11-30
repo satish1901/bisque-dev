@@ -106,7 +106,7 @@ class BlobServer(RestController, ServiceMixin):
         fhash = file_hash_SHA1( flocal )
         return blob_ident, fhash
 
-    def localpath (self, ident, workdir=None):
+    def localpath (self, ident):
         "Find  local path for the identified blob, using workdir for local copy if needed"
 
         resource = DBSession.query(Taggable).filter_by (resource_uniq = ident).first()
