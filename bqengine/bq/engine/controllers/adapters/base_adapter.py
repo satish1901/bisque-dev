@@ -92,9 +92,12 @@ class BaseAdapter(object):
 
         '''
 
-        mex_specials = { 'mex_url' : mex.get('uri'),
+        # ? dima - client_server, look at any find_service('client_service') in any api file
+        mex_specials = { 'mex_url'      : mex.get('uri'),
                          'bisque_token' : identity.mex_authorization_token(),
-                         'module_url' : module.get ('uri'),
+                         'module_url'   : module.get ('uri'),
+                         #'bisque_root'  : '',
+                         #'client_server': '',
                          }
 
         # Pass through module definition looking for inputs
@@ -110,7 +113,8 @@ class BaseAdapter(object):
         for mi in formal_inputs:
             # pull type off and markers off
             found = None
-            param_name = mi.get('value').split(':')[0].strip('$')
+            #param_name = mi.get('value').split(':')[0].strip('$')
+            param_name = mi.get('name')
             #log.debug ("PARAM %s" % param_name)
             if param_name in mex_specials:
                 log.debug ("PARAM special %s=%s" % ( param_name, mex_specials[param_name]))

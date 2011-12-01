@@ -48,6 +48,7 @@ BQXml.prototype.xmlNode = function (content) {
 
 function BQObject (uri, doc){
     BQXml.call(this, uri, doc);
+    this.readonly = false;
     this.uri = uri;
     this.children = [];
     this.tags = [];
@@ -74,13 +75,32 @@ BQObject.prototype.initializeXml = function (resource) {
     this.resource_type = this.xmltag;
     this.dirty = false;
     this.created = false;
+    this.template = {};
 }
+
+BQObject.prototype.afterInitialized = function () {
+    var ta = this.find_tags('template');
+
+    if (ta && ta.resource_type == 'tag')
+        this.template = ta.toDict(true);
+    else if (ta && ta.length>0)
+        this.template = ta[0].toDict(true);
+}
+
+BQObject.prototype.testReadonly = function () {
+  if (this.readonly)
+      throw "This object is read only!";
+}
+
 BQObject.prototype.setParent = function (p) {
     if (p instanceof BQTag)
         p.values.push (this);
-    else
+    else {
         p.children.push (this);
+        this.parent = p;
+    }
 }
+
 BQObject.prototype.getkids = function (){
     // Note concat make new array
     var allkids = this.children.concat( this.tags, this.gobjects);
@@ -116,15 +136,17 @@ BQObject.prototype.toXML = function (){
     return this.xmlNode (xmlrep);
 }
 
-BQObject.prototype.delete_ = function (cb, errorcb) {
+BQObject.prototype.delete_ = function (cb) {
+    this.testReadonly();
     // Delete object from db
     if (this.uri != null) {
         xmlrequest(this.uri, callback(this, 'response_', 'delete', errorcb, cb), 'delete', null, errorcb);
     }
+    }
 }
 
-BQObject.prototype.deleteTag = function(childTag)
-{
+BQObject.prototype.deleteTag = function(childTag) {
+    
 	if (childTag instanceof BQTag)
 		this.remove(childTag);
 	else
@@ -147,38 +169,109 @@ BQObject.prototype.find_tags  = function (name, deep, found) {
     return found;
 }
 
+
+
+BQObject.attributes_skip = { 'uri':undefined, 'src':undefined, 'perm':undefined, 
+                             'ts':undefined, 'owner':undefined, 'parent':undefined, 
+                             'doc':undefined, 'mex':undefined,  };
+BQObject.types_skip = { 'template':undefined, };
+
+function clean_resources(resource, skiptemplate) {
+    // remove undesired attributes
+    for (var i in resource)
+        if (i in BQObject.attributes_skip || (skiptemplate && i=='template'))
+            delete resource[i];
+
+    // remove template
+    if (skiptemplate && resource.tags) {
+        var p=resource.tags.length-1;
+        while (p>=0) {
+            var t = resource.tags[p];
+            if (t.type in BQObject.types_skip)
+                resource.tags.splice(p, 1);
+            p--;
+        }
+    }
+    
+    var r = undefined;
+    for (var p=0; (r=resource.tags[p]); p++)
+        clean_resources(r, skiptemplate);
+    
+    for (var p=0; (r=resource.gobjects[p]); p++)
+        clean_resources(r, skiptemplate);
+    
+    for (var p=0; (r=resource.children[p]); p++)
+        clean_resources(r, skiptemplate);        
+}
+
+BQObject.prototype.clone = function (skiptemplate) {
+    var resource = Ext.clone(this);
+    clean_resources(resource, skiptemplate);
+    return resource;
+}
+
 BQObject.prototype.toDict  = function (deep, found, prefix) {
     deep = deep || false;
     found = found || {};
-    prefix = prefix || '';   
-    for (var i=0; i < this.tags.length; i++) {
-        var t = this.tags[i];
-        if (!(prefix+t.name in found))    
-            found[prefix+t.name] = t.value;
-        else
-            if (typeof found[prefix+t.name] == 'string')
-                found[prefix+t.name] = [ found[prefix+t.name], t.value ];
-            else
-                found[prefix+t.name].push(t.value);        
+    prefix = prefix || '';
+    
+    var t=null;
+    for (var p=0; (t=this.tags[p]); p++) {
+        
+        var values = undefined;
+        if (t.values && t.values.length>0) {
+            values = [];
+            for (var i=0; (v=t.values[i]); i++)
+               values.push(v.value);
+        }
+        
+        if (!(prefix+t.name in found)) {   
+            found[prefix+t.name] = values?values:t.value;
+        } else {
+            if (found[prefix+t.name] instanceof Array) {
+                if (!values) 
+                    found[prefix+t.name].push(t.value);
+                else
+                    found[prefix+t.name] = found[prefix+t.name].concat(values);
+            } else {
+                if (!values)             
+                    found[prefix+t.name] = [ found[prefix+t.name], t.value ];
+                else {
+                    found[prefix+t.name] = [ found[prefix+t.name] ];                    
+                    found[prefix+t.name] = found[prefix+t.name].concat(values);
+                }                    
+            }
+        }
+                                        
         if (deep && t.tags.length >0 ) 
             t.toDict (deep, found, prefix+t.name+'/');
     }
     return found;
 }
 
-BQObject.prototype.toNestedDict  = function (deep)
-{
+BQObject.prototype.toNestedDict  = function (deep) {
     var dict = {}, tag;
-    
-    for (var i=0;i<this.tags.length;i++)
-    {
+    for (var i=0;i<this.tags.length;i++) {
         tag = this.tags[i];
         dict[tag.name] = (deep && tag.tags.length>0) ? tag.toNestedDict(deep) : (tag.value || '');
     }
-    
     return dict;
 }
 
+BQObject.prototype.create_flat_index = function ( index, prefix ) {
+    index = index || {};
+    prefix = prefix || '';
+    
+    var t=null;
+    for (var p=0; (t=this.tags[p]); p++) {
+        if (!(prefix+t.name in index))    
+            index[prefix+t.name] = t;
+        
+        if (t.tags.length >0) 
+            index = t.create_flat_index(index, prefix+t.name+'/');
+    }
+    return index;
+} 
 
 BQObject.prototype.find_resource  = function (ty) {
     for (var i=0; i < this.children.length; i++) 
@@ -221,6 +314,7 @@ BQObject.prototype.remove  = function (o) {
 //     }
 // }
 BQObject.prototype.save_ = function (parenturi, cb, errorcb) {
+    this.testReadonly();    
     var docobj = this.doc;
     var req = docobj.toXML();
     //errorcb = errorcb || default_error_callback;
@@ -344,6 +438,7 @@ BQObject.prototype.loaded_gobjects = function (cb, resource) {
 }
 
 BQObject.prototype.save_gobjects = function (cb, url, progress, errorcb) {
+    this.testReadonly();    
     if (!url) url = this.uri;
     var resource = new BQResource (url + "/gobject");
     resource.gobjects = this.gobjects;
@@ -351,6 +446,7 @@ BQObject.prototype.save_gobjects = function (cb, url, progress, errorcb) {
     resource.save_(resource.uri, cb, errorcb);
 }
 BQObject.prototype.save_tags = function (cb, url, progress, errorcb) {
+    this.testReadonly();    
     if (!url) url = this.uri;
     var resource = new BQResource (url + "/tag");
     resource.tags = this.tags;
@@ -396,7 +492,8 @@ BQObject.prototype.addgobjects=function (gob){
     this.dirty = true;
     return gob;
 }
-BQObject.prototype.addchild=function (kid){
+
+BQObject.prototype.addchild = function (kid) {
     kid.setParent(this);
     kid.doc = this.doc;
     this.dirty = true;
@@ -529,6 +626,12 @@ BQFactory.createFromXml = function(xmlResource, resource, parent) {
             //    clog ("Got Node type" + k.nodeType + " for " + k.text);
         }
     }
+
+    // dima: do some additional processing after you inited elements    
+    var rr = resources.reverse();       
+    for (var p=0; (r=rr[p]); p++)
+        if (r.afterInitialized) r.afterInitialized(); 
+    
     return resources[0];
 }
 
@@ -731,21 +834,37 @@ BQImage.prototype.initializeXml = function (image) {
 //    this.ch   = attribInt(image,'ch');
 }
 
-
 ////////////////////////////////////////////////
+
+function parseValueType(v, t) {
+    try {
+        if (t && t == 'number') 
+            return parseFloat(v);
+        else if (t && t == 'boolean') 
+            return (v=='true') ? true : false;
+    } catch(err) {
+        return v;          
+    }
+    return v;    
+}
+
 function Value (t, v) {
     this.xmltag = "value";
     this.xmlfields = [ 'type' ];
     
     if (t != undefined) this.type = t;
-    if (v != undefined) this.value = v;    
+    //if (v != undefined) this.value = v; // dima  
+    if (v != undefined) this.value = parseValueType(v, this.type);    
 }
+
 Value.prototype = new BQXml();
 Value.prototype.initializeXml = function (node){
     //this.value = node.text;
     this.type = attribStr(node, 'type');
-    this.value = node.textContent;
+    //this.value = node.textContent; // dima
+    this.value = parseValueType(node.textContent, this.type);
 }
+
 Value.prototype.setParent = function (p){
     p.values.push (this);
 }
@@ -774,8 +893,9 @@ BQTag.prototype.initializeXml = function (node) {
 
     this.index = attribInt(node, 'index');
     this.name = attribStr(node, 'name');
-    this.value = attribStr(node, 'value');
     this.type =  attribStr(node,'type');
+    //this.value = attribStr(node, 'value'); // dima
+    this.value = parseValueType(attribStr(node, 'value'), this.type);
     this.resource_type = this.xmltag;
 }
 BQTag.prototype.setParent = function (p) {
@@ -786,6 +906,7 @@ BQTag.prototype.setParent = function (p) {
         p.tags.push (this);
 //        this.index = p.tags.length
 //    }
+    this.parent = p;
 }
 
 // BQTag.prototype.xmlNode = function (content) {
@@ -858,7 +979,7 @@ Vertex.prototype.initializeXml = function (node) {
 
 function BQGObject(ty, uri){
     BQObject.call(this, uri);
-  this.type = ty;           // one of our registeredTypes: point, polygon, etc.
+    this.type = ty;           // one of our registeredTypes: point, polygon, etc.
     this.uri=null;
     this.name = null;
     this.vertices = [];
@@ -879,6 +1000,7 @@ BQGObject.prototype.initializeXml = function (node) {
 
 BQGObject.prototype.setParent = function (p) {
     p.gobjects.push (this);
+    this.parent = p;    
 }
 
 // BQGObject.prototype.xmlNode =  function ( ) {
@@ -1356,57 +1478,25 @@ BQAuth.prototype.initializeXml = function (auth) {
 }
 
 
-
-//------------------------------------------------------------------------------
-// BQModuleParameters
-//------------------------------------------------------------------------------
-function BQModuleParameters( element ) {
-    this.name = null;
-    this.type = null;
-    this.defaultValue = null;
-    this.index = null;
-    if (element) this.fromElement(element);
-}
-
-BQModuleParameters.prototype.isSystemVariable = function () {
-  return (this.name.indexOf('$') == 0); 
-}
-
-BQModuleParameters.prototype.parseValue = function (val) {
-    var value = val;
-    if (value.indexOf(':')!=-1) {
-        var tab = value.split(':');
-        this.name = tab[0];
-        this.type = tab[1];
-        if(this.type.indexOf('=')!=-1) {
-            var tab = this.type.split('=');
-            this.type = tab[0];
-            tab = tab[1];
-            this.defaultValue = tab.substring(1,tab.length-1);
-        }
-    } else {
-        this.type = 'string';
-        if(value.indexOf('=')!=-1) {
-            var tab = value.split('=');
-            this.name = tab[0];
-            tab = tab[1];
-            this.defaultValue = tab.substring(1,tab.length-1);
-        }
-    }
-}
-
-BQModuleParameters.prototype.fromElement = function (element) {
-    this.name = element.getAttribute("name");
-    this.index = element.getAttribute("index");
-    this.type = 'string';
-    this.parseValue( element.getAttribute("value") );
-}
-
 //-------------------------------------------------------------------------------
 // BQModule
+// dima: should produce MEX from inputs section, have both input and output trees
+// have them indexed in a flat way for easy access to elements
+// template parsing?
 //-------------------------------------------------------------------------------
 
-function BQModule (){
+function BQModule () {
+    this.readonly = true;
+    this.reserved_io_types = {'system-input':null, 'template':null, };
+    this.configs = { 'help': 'help', 
+                     'thumbnail': 'thumbnail', 
+                     'title': 'title', 
+                     'authors': 'authors', 
+                     'description': 'description',
+                     'display_options/group': 'group', 
+                     'module_options/version': 'version',   
+                   };
+
     BQObject.call(this);
     this.xmltag = "module";
 }
@@ -1418,71 +1508,71 @@ BQModule.prototype.initializeXml = function (node) {
     this.type    = attribStr(node,'type');
     this.ts      = attribStr(node,'ts');
     this.owner   = attribStr(node, 'owner');
-    this.group   = null;
-    this.help    = null;    
-    this.inputs  = [];
-    this.outputs = [];
     this.resource_type = this.xmltag;
-        
-    var tags = node.getElementsByTagName("tag");
-    for (var i=0; i<tags.length; i++) {      
-      var n = attribStr(tags[i], 'name');
-      var v = attribStr(tags[i], 'value');
-      
-      if (n == 'group') this.group = v;
-      if (n == 'help')  this.help = v;
-      if (n == 'inputs'||n=='outputs') continue;
-      if (n == 'formal-input' || n.startswith('input')) this.inputs.push(v);
-      if (n == 'formal-output'|| n.startswith('output')) this.outputs.push(v);
+
+    // now copy over all other config params
+    var dict = domTagsToDict(node, true);
+    for (var i in this.configs) {
+        if (i in dict && !(i in this))
+            this[this.configs[i]] = dict[i];
     }
 }
+
+BQModule.prototype.afterInitialized = function () {
+    // define inputs and outputs    
+    //BQObject.prototype.afterInitialized.call ();
+    var inputs  = this.find_tags('inputs');
+    var outputs = this.find_tags('outputs');
+    
+    if (inputs && inputs.tags) {
+        this.inputs = inputs.tags; // dima - this should be children in the future
+        this.inputs_index  = inputs.create_flat_index();    
+    }
+    if (outputs && outputs.tags) {
+        this.outputs = outputs.tags; // dima - this should be children in the future   
+        this.outputs_index  = outputs.create_flat_index();          
+    }
+    this.updateTemplates();
+}
+
+BQModule.prototype.updateTemplates = function () {
+    
+    // unfortunately there's no asy way to test if JS vector has an element
+    // change the accepted_type to an object adding the type of the resource
+    for (var i in this.inputs_index) {
+        var e = this.inputs_index[i]; 
+        if (e.template) {
+            var act = {};
+            if (e.type) act[e.type] = e.type;
+            if (e.template.accepted_type)
+            for (var p=0; (t=e.template.accepted_type[p]); p++) {
+                act[t] = t;
+            }
+            e.template.accepted_type = act;
+        }
+    }
+}
+
 
 BQModule.prototype.fromNode = function (node) {
     this.initializeXml(node);
 }
 
-BQModule.prototype.toHTML = function ( parent_node ) {
-  var opt = document.createElement('li');
-  var optLink = document.createElement('a');
-  var text = '<a href="'+ this.uri +'">' + this.name + '</a>';
-  if (this.group != null) text += ' for ' + this.group + ', ';
-  if (this.type != null) text += ' in ' + this.type;
-  opt.innerHTML = text;
-  parent_node.appendChild(opt);
-}
+BQModule.prototype.createMEX = function( ) {
+    var mex = new BQMex();
+    //mex.status = 'PENDING';
+    //mex.module = this.URI; //this.module.uri;
+    //mex.addtag ({name:'client_server', value:client_server});
 
-BQModule.queryModuleByName = function (name, cb) {
-    if (!BQModule.module_list)  {
-        BQModule.module_list = new BQModuleList();
-        
-        BQModule.module_list.load ('/ms/', callback(this, 'new_module_list', name, cb));
-        return
+    var tag_inputs = mex.addtag ({name:'inputs'});
+    //var tag_outputs = mex.addtag ({name:'outputs'}); // dima: the outputs tag will be created by the module?
+       
+    var i = undefined;
+    for (var p=0; (i=this.inputs[p]); p++) {
+        var r = i.clone(true);
+        tag_inputs.addchild(r);
     }
-
-    BQModule.filter_module(name, cb)
-}
-BQModule.new_module_list = function  (name, cb, resource) {
-    // Resource is a set of module definitions
-    this.module_list = resource;
-    BQModule.filter_module(name, cb)
-}
-
-BQModule.filter_module = function (name, cb) {
-    var module =  this.module_list.findModuleByName(name);
-    if (cb) {
-        cb(module);
-    }
-}
-function BQModuleList(URI) {
-    BQObject.call(this, URI);
-}
-BQModuleList.prototype = new BQObject();
-BQModuleList.prototype.findModuleByName = function (name) {
-    for(var i=0; i<this.children.length; i++) {
-        if(this.children[i].name == name) 
-        return  this.children[i];
-    }
-    return null;
+    return mex;
 }
 
 
@@ -1690,7 +1780,7 @@ BQSession.prototype.session_timeout = function (baseurl) {
 }
 
 //-------------------------------------------------------------------------
-// BQQuery
+// BQQuery - this is something old that probably should gof
 //-------------------------------------------------------------------------
 
 function BQQuery(uri, parent, callback) {

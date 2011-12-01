@@ -874,17 +874,19 @@ def bquser_callback (tg_user, operation, **kw):
     if tg_user is None:
         return
     if operation =='create':
-        u = DBSession.query(BQUser).filter_by(user_name=tg_user.user_name).first()
+        u = DBSession.query(BQUser).filter_by(resource_name=tg_user.user_name).first()
         if u is None:
             log.info ('creating BQUSER ')
             BQUser(tg_user=tg_user)
             return
     if operation  == 'update':
-        u = DBSession.query(BQUser).filter_by(user_name=tg_user.user_name).first()
+        u = DBSession.query(BQUser).filter_by(resource_name=tg_user.user_name).first()
         if u is not None:
-            u.email_address = tg_user.email_address 
-            u.password = tg_user.password
-            u.display_name = tg_user.display_name
+            #u.email_address = tg_user.email_address 
+            #u.password = tg_user.password
+            #u.display_name = tg_user.display_name
+            log.error('update display name')
+            pass
         return
 User.callbacks.append (bquser_callback)
 
@@ -929,12 +931,13 @@ def registration_hook(action, **kw):
     elif action=="update_user":
         u = kw.pop('user', None)
         if u:
-            bquser = DBSession.query(BQUser).filter_by(email_adress=u.email_address).first()
+            bquser = DBSession.query(BQUser).filter_by(resource_value=u.email_address).first()
             if not bquser:
                 bquser = BQUser.new_user (u.email_adress)
                 
-            bquser.display_name = u.display_name
-            bquser.user_name = u.user_name
+            #bquser.display_name = u.display_name
+            bquser.resource_name = u.user_name
+            log.error('Fix the display_name')
     elif action =="delete_user":
         pass
 

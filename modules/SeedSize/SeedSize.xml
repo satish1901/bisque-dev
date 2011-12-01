@@ -1,11 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
 <module name="SeedSize" path="./launch.py" type="runtime" >
 
+    <!-- INPUTS
+    Inputs define exactly what the module takes, UI options can be provided in the interface section
+    
+    Notes:
+    1. "system-input" type is a reserved type for inputs that should be defined by the
+    system during the execution
+    2. if an input resource can have multiple types, those can be defined in the interface section
+
+    Examples:
+        <tag name="resource_url" type="image" />    - takes "image" as an input in "resource_url"
+        <tag name="resource_url" type="dataset" />  - takes "dataset" as an input in "resource_url"            
+        <tag name="resource_url" type="resource" /> - takes any resource, can be configured in the interface to allow specific types
+    --> 
     <tag name="inputs">
+        <!--
         <tag name="input-formal" value="image_url" type="image-dataset" />
         <tag name="input-system" value="mex_url" />
         <tag name="input-system" value="bisque_token" />
+        -->
+        <tag name="mex_url"      type="system-input" />
+        <tag name="bisque_token" type="system-input" />
+        <tag name="image_url"    type="resource" />
+        
     </tag>
+
+    <!-- OUTPUTS
+    Outputs are needed for automated generation of the results interface, the type of the output        
+    will be used to define what UI component will be used to display its value, the UI options
+    can be specified in the interface section same way as for elements in inputs 
+
+    Notes:
+    1. inputs and outputs are written directly into the MEX, without "inputs" or "outputs" parent tags
+       thus you should use distinguishable names
+    2. resource with a name indicates data stored directly into the MEX 
+    3. tag with a specific type indicates a tag containing a link to the actual resource 
+    
+    Examples:         
+        <gobject name="results" />           - contains resultant gobjects inplace
+        <tag name="summary" />               - contains tags inplace
+        <tag name="image" type="resource" /> - contains a link (URL) to the resultant resource
+    -->  
+    <tag name="outputs">
+        <gobject name="SeedSize" />
+        <tag name="summary" />
+    </tag>
+
+
 
     <tag name="execute_options">
         <tag name="argument_style" value="named" />
@@ -18,8 +60,54 @@
     <tag name="display_options" >
         <tag name="group" value="application" />
     </tag>
-   
-    <tag name="interface" type="file" value="public/html/seedsize.html" />
+
+    <!-- INTERFACE
+    Interface subtags can configure the interface elements that should be created for 
+    elements in inputs, these configs are used by the automated UI generator 
+    the input elemnet is matched based on a name, so the element "image_url" can
+    have a tag with the same name and subtags defining the configuration
+    
+    If the interface tag does not point to a file or a string inplace then the web UI
+    will be generated for the module automatically using inputs, outputs and interface configs.
+    Though interface can still contain configs even if it does provide html interface itself,
+    since HTML interface can use default JS components from default module interface and those
+    can configure themselves using the interface configuration
+    
+    Types and configs:
+        resource_type - defines valid type for a resource, if you specify multiple then multiple 
+                        interface elements will be created although only one input can be used,
+                        currently is the last selected, if you need multiple inputs you should 
+                        specify those as multiple inputs
+    
+    Notes:
+    1. xxxx
+    
+    Examples:
+        <dsdsda>
+    -->  
+    <tag name="interface" type="file" value="public/html/seedsize.html">
+        <tag name="image_url">
+            <tag name="resource_type" value="image" />
+            <tag name="resource_type" value="dataset" />
+        </tag>
+    </tag>    
+
+    
+    <!-- ENTRY POINTS and/or DESCRIPTIONS
+    
+    Required entry points currently are:
+        help, thumbnail, description, title, authors
+    
+    Types:
+        string - used to specify the returned value inplace
+        file   - points to a local file containing the returned value
+    
+    Examples:
+        <tag name="thumbnail" type="file"   value="public/images/thumbnail.png" /> 
+        <tag name="help"      type="string" value="My help inplace" />
+    -->      
+    
+    
     <tag name="help"      type="file" value="public/html/help.html" />
     <tag name="thumbnail" type="file" value="public/images/thumbnail.png" /> 
 
@@ -28,3 +116,4 @@
     <tag name="authors" type="string" value="Nathan Miller, Logan Johnson, Kris Kvilekval and Dmitry Fedorov" />
 
 </module>
+

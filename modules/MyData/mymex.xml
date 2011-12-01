@@ -1,0 +1,67 @@
+<mex status="FINISHED" >
+    <tag name="inputs" >
+        <tag name="mex_url" type="system-input" />
+        <tag name="bisque_token" type="system-input" />
+        <tag name="image_url" type="image" value="http://vidi.ece.ucsb.edu:9090/data_service/images/21" >
+            <gobject name="MyGobjects" >
+                <gobject type="point" >
+                    <vertex x="130" y="184.00000000000003" z="0" t="0" index="0" />
+                </gobject>
+                <gobject type="point" >
+                    <vertex x="161.99999999999997" y="126.00000000000003" z="0" t="0" index="0" />
+                </gobject>
+                <gobject type="point" >
+                    <vertex x="220.99999999999997" y="135" z="0" t="0" index="0" />
+                </gobject>
+            </gobject>
+        </tag>
+        <tag name="resource_url" type="resource" value="http://vidi.ece.ucsb.edu:9090/data_service/images/130" />
+        <tag name="my_image" type="image" value="http://vidi.ece.ucsb.edu:9090/data_service/images/185" >
+            <gobject name="MyOtherGobjects" />
+        </tag>
+        <tag name="radius" type="number" value="6" />
+        <tag name="mynumber" type="number" value="2" />
+        <tag name="myrange" type="number" >
+            <value >6</value>
+            <value >12</value>
+            <value >14</value>
+        </tag>
+        <tag name="mystring" type="string" value="nothing" />
+        <tag name="mycombo" type="combo" value="choice1" />
+        <tag name="new combo" type="combo" value="choice1" />
+        <tag name="mycheck" type="boolean" value="true" />
+        <tag name="mydate" type="date" value="2011-11-30 12:54:58" />
+        <tag name="mytime" type="time" />
+    </tag>
+
+    <tag name="outputs" >
+         <tag name="MyData" type="tag">
+            <tag name="radius" type="number" value="6" />
+            <tag name="mystring" value="some text" />
+            <tag name="description" value="lot's of stuff here" />
+         </tag>
+
+         <tag name="MyTable" type="tag">
+            <tag name="position" type="number" value="1.4" />
+            <tag name="position" type="number" value="1.8" />
+            <tag name="position" type="number" value="2.4" />
+            <tag name="position" type="number" value="3.2" />
+            <tag name="position" type="number" value="6.8" />                                                
+         </tag>
+         
+         <tag name="MyImage" type="image" value="http://vidi.ece.ucsb.edu:9090/data_service/images/21">
+             <gobject name="MyAnnotation">
+                <gobject type="point" >
+                    <vertex x="130" y="184.00000000000003" z="0" t="0" index="0" />
+                </gobject>
+                <gobject type="point" >
+                    <vertex x="161.99999999999997" y="126.00000000000003" z="0" t="0" index="0" />
+                </gobject>
+                <gobject type="point" >
+                    <vertex x="220.99999999999997" y="135" z="0" t="0" index="0" />
+                </gobject>
+            </gobject>             
+         </tag>   
+    </tag>
+    
+</mex>

@@ -82,6 +82,51 @@ function callback (obj, method) {
     };
 }
 
+
+function parseXML(txt) {
+    var xmlDoc=null;
+    if (window.DOMParser) {
+        parser=new DOMParser();
+        xmlDoc = parser.parseFromString(txt, "text/xml");
+    } else { // Internet Explorer
+        xmlDoc = new ActiveXObject("Microsoft.XMLDOM");
+        xmlDoc.async="false";
+        xmlDoc.loadXML(txt); 
+    }
+    return xmlDoc; 
+}
+
+function evalXpath(node, expression) {
+    var xpe = new XPathEvaluator();
+    var nsResolver = xpe.createNSResolver(node.ownerDocument == null ? node.documentElement : node.ownerDocument.documentElement);    
+    return xpe.evaluate( expression, node, nsResolver, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null );     
+}
+
+function domTagsToDict(node, deep, found, prefix) {
+    deep = deep || false;
+    found = found || {};
+    prefix = prefix || '';   
+    
+    var tags = node.getElementsByTagName("tag");
+    for (var i=0; i<tags.length; i++) {       
+        var name  = attribStr(tags[i], 'name');
+        var value = attribStr(tags[i], 'value');
+        if (!(prefix+name in found) && value)    
+            found[prefix+name] = value;
+        else
+            if (!found[prefix+name])
+                found[prefix+name] = [ value ];            
+            else if (typeof found[prefix+name] == 'string')
+                found[prefix+name] = [ found[prefix+name], value ];
+            else
+                found[prefix+name].push(value);
+        if (deep) 
+            domTagsToDict (tags[i], deep, found, prefix+name+'/');
+    }
+    return found;
+}
+
+
 // this is needed by selector and region selector to get events 
 function createMethodReference(object, methodName) {
   return function (event) {

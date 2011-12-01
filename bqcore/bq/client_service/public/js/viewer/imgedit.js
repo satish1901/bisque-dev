@@ -197,8 +197,14 @@ ImgEdit.prototype.endEdit = function () {
         this.tageditor.destroy();
         delete this.tageditor;
     }
-    this.editing_gobjects = false;      
+    this.editing_gobjects = false;     
 }
+
+ImgEdit.prototype.dochange = function () {
+    if (this.viewer.parameters.gobjectschanged) 
+        this.viewer.parameters.gobjectschanged(this.gobjects);
+}
+
 
 ImgEdit.prototype.save_edit = function (mode) {
 
@@ -236,6 +242,7 @@ ImgEdit.prototype.delete_item =  function (e){
             this.tageditor = null;
         }
     }
+    this.dochange();
 }
 
 ImgEdit.prototype.mousedown = function (e) {
@@ -311,7 +318,8 @@ ImgEdit.prototype.newPoint = function (e, x, y) {
     g.vertices.push (new Vertex (pt.x, pt.y, v.z, v.t, null, 0));
     this.push_gobject (g);
 
-    this.visit_render.visitall(g, [v])
+    this.visit_render.visitall(g, [v]);
+    this.dochange();
 }
 
 ImgEdit.prototype.newRect = function (e, x, y) {
@@ -321,7 +329,8 @@ ImgEdit.prototype.newRect = function (e, x, y) {
     g.vertices.push (new Vertex (pt.x, pt.y, v.z, v.t, null, 0));
     g.vertices.push (new Vertex (pt.x+50, pt.y+50, v.z, v.t, null, 1));
     this.push_gobject (g);
-    this.visit_render.visitall(g, [v])
+    this.visit_render.visitall(g, [v]);
+    this.dochange();
 }
 
 ImgEdit.prototype.newPolygon = function (e, x, y) {
@@ -336,7 +345,8 @@ ImgEdit.prototype.newPolygon = function (e, x, y) {
     g.vertices.push (new Vertex (pt.x, pt.y, v.z, v.t, null, index));
     // Double click ends the object otherwise add points 
     this.current_gob =  (e.detail > 1)?null:g;
-    this.visit_render.visitall(g, [v])
+    this.visit_render.visitall(g, [v]);
+    this.dochange();
 }
 
 
@@ -352,7 +362,8 @@ ImgEdit.prototype.newPolyline = function (e, x, y) {
     g.vertices.push (new Vertex (pt.x, pt.y, v.z, v.t, null, index));
     // Double click ends the object otherwise add points 
     this.current_gob =  (e.detail > 1)?null:g;
-    this.visit_render.visitall(g, [v])
+    this.visit_render.visitall(g, [v]);
+    this.dochange();
 }
 
 
@@ -365,6 +376,7 @@ ImgEdit.prototype.newCircle = function (e, x, y) {
     this.push_gobject (g);
 
     this.visit_render.visitall(g, [v]);
+    this.dochange();
 }
 
 

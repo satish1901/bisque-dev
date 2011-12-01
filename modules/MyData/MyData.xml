@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<module name="MyData" path="./MyData" type="python">
+
+    <!--  hsdkjashdkjashdkasdkhkahdas -->
+    <tag name="inputs">
+        <tag name="mex_url"      type="system-input" />
+        <tag name="bisque_token" type="system-input" />
+
+        <tag name="image_url"    type="image" >
+            <tag name="template" type="template">
+                <tag name="label" value="Select input image" />
+                <tag name="prohibit_upload" value="true" type="boolean" />
+                <tag name="require_geometry">
+                    <tag name="z" value="stack" />
+                    <tag name="t" value="single" />
+                    <tag name="fail_message" value="Only supports 3D images!" />
+                </tag>                
+            </tag> 
+            
+            <gobject name="MyGobjects">
+                <tag name="template" type="template">
+                    <tag name="gobject" value="point" />
+                    <tag name="gobject" value="polygon" />
+                    <tag name="amount" value="single" />
+                    <tag name="fail_message" value="Requires at least one point" />
+                </tag> 
+            </gobject>
+        </tag> 
+        
+        <tag name="resource_url" type="resource">
+            <tag name="template" type="template">
+                <tag name="accepted_type" value="image" />
+                <tag name="accepted_type" value="dataset" />
+                <tag name="label" value="Select input resource" />
+            </tag>            
+        </tag>   
+        
+        
+        <tag name="my_image" type="image" >
+            <tag name="template" type="template">
+                <tag name="label" value="Select input image" />
+                <tag name="require_geometry">
+                    <tag name="t" value="stack" />
+                    <tag name="z" value="single" />
+                    <tag name="fail_message" value="Only supports time series images!" />
+                </tag>                
+            </tag> 
+            
+            <gobject name="MyOtherGobjects">
+                <tag name="template" type="template">
+                    <tag name="gobject" value="point" />
+                    <tag name="gobject" value="polygon" />
+                    <tag name="amount" value="many" />
+                    <tag name="fail_message" value="Requires at least one point" />
+                </tag> 
+            </gobject>
+        </tag>         
+        
+        <tag name="radius" value="5.6" type="number" >
+            <tag name="template" type="template">
+                <tag name="label" value="Radius" />
+                <tag name="minValue" value="-10" type="number" />
+                <tag name="maxValue" value="33" type="number" />
+                <tag name="allowDecimals" value="true" type="boolean" />
+                <tag name="decimalPrecision" value="4" type="number" />
+                <tag name="step" value="1" type="number" />
+                <tag name="units" value="microns" />
+            </tag>             
+        </tag>
+
+        <tag name="mynumber" type="number" >
+            <tag name="template" type="template">
+                <tag name="label" value="My number with no default" />
+                <tag name="minValue" value="-10" type="number" />
+                <tag name="maxValue" value="33" type="number" />
+                <tag name="allowDecimals" value="true" type="boolean" />
+                <tag name="decimalPrecision" value="4" type="number" />
+                <tag name="step" value="1" type="number" />
+                <tag name="units" value="microns" />
+                <tag name="showSlider" value="false" type="boolean" />
+            </tag>             
+        </tag>
+        
+        <tag name="myrange" type="number" >
+            <value>5.6</value>
+            <value>12</value>
+            <value>14</value>                        
+            <tag name="template" type="template">
+                <tag name="label" value="My multi range" />
+                <tag name="minValue" value="-10" type="number" />
+                <tag name="maxValue" value="33" type="number" />
+                <tag name="allowDecimals" value="true" type="boolean" />
+                <tag name="decimalPrecision" value="4" type="number" />
+                <tag name="step" value="1" type="number" />
+                <tag name="units" value="microns" />
+            </tag>             
+        </tag>        
+        
+        <tag name="mystring" value="nothing" type="string" >
+            <tag name="template" type="template">
+                <tag name="label" value="Some text here" />
+                <tag name="minLength" value="0" type="number" />
+                <tag name="maxLength" value="100" type="number" />
+                <tag name="allowBlank" value="true" type="boolean" />
+                <tag name="regex" value="" />
+            </tag>             
+        </tag>           
+        
+        <tag name="mycombo" value="choice1" type="combo" >
+            <tag name="template" type="template">
+                <tag name="label" value="My combo" />
+                <tag name="select" value="choice1" />
+                <tag name="select" value="choice2" />
+                <tag name="select" value="choice3" />
+                <tag name="editable" value="false" type="boolean" />             
+            </tag>             
+        </tag>                
+
+        <tag name="newcombo" value="choice1" type="combo" >
+            <tag name="template" type="template">
+                <tag name="label" value="New combo" />
+                <tag name="select">
+                    <value>choice1</value>
+                    <value>choice2</value>
+                    <value>choice3</value>
+                </tag>
+                                
+                <tag name="editable" value="false" type="boolean" />             
+            </tag>             
+        </tag>  
+
+        <tag name="mycheck" value="true" type="boolean" >
+            <tag name="template" type="template">
+                <tag name="label" value="My check" />
+            </tag>             
+        </tag>        
+
+        <tag name="mydate" type="date" >
+            <tag name="template" type="template">
+                <tag name="label" value="My date" />
+            </tag>             
+        </tag>  
+        
+        <tag name="mytime" type="time" >
+            <tag name="template" type="template">
+                <tag name="label" value="My time" />
+            </tag>             
+        </tag>                  
+        
+    </tag>
+    
+    <tag name="outputs">
+         <tag name="MyData" type="tag" />
+         <tag name="MyTable" type="tag" />         
+         <tag name="MyImage" type="image">
+             <gobject name="MyAnnotation" />
+         </tag>
+    </tag>
+    
+
+    <tag name="module_options" >
+        <tag name="version" value="2" />
+    </tag>
+    
+    <tag name="display_options" >
+       <tag name="group" value="Generic" />
+    </tag>
+    
+    <tag name="help" type="file" value="public/help.html" /> 
+    <tag name="thumbnail" type="file" value="public/thumbnail.png" />   
+
+    <tag name="title" value="MyData" /> 
+    <tag name="authors" value="The Bisque team" /> 
+    <tag name="description" value="This module annotates an image with its embedded metadata." /> 
+</module>
