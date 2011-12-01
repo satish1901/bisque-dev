@@ -51,12 +51,12 @@ def bootstrap(command, conf, vars):
         ######
         # 
         from  bq.data_service.model import Taggable, Tag, BQUser
-        from bq.data_service.model import UniqueName
+        #from bq.data_service.model import UniqueName
 
         #admin = model.DBSession.query(BQUser).filter_by(username = 'admin').first()
         #admin.owner_id = admin.id
         
-        system = model.DBSession.query(Taggable).filter_by (tb_id = UniqueName('system').id).first()
+        system = model.DBSession.query(Taggable).filter_by (resource_type='system').first()
         if system is None:
             system = Taggable(resource_type = 'system')
             version = Tag ()

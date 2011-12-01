@@ -458,6 +458,8 @@ class RemoteEngineServer(object):
                            user_pass= up)
 
 
+reserved_io_types = ['system-input']
+
 from tg import require
 from repoze.what.predicates import not_anonymous
 from bq.config.middleware import public_file_filter
@@ -480,6 +482,7 @@ class EngineModuleResource(BaseController):
         self.module_xml = module_xml
         self.module_uri = module_xml.get('uri')
         self.name       = module_xml.get('name')
+        self.define_io() # this should produce lists on required inputs and outputs
 
         static_path = os.path.join (MODULE_PATH, self.name, 'public')
         if os.path.exists(static_path):
@@ -524,9 +527,9 @@ class EngineModuleResource(BaseController):
         def _xml2d(e, d, path=''):
             for child in e:
                 name  = '%s%s'%(path, child.get('name', ''))
+                ttype = child.get('type', None) 
                 value = child.get('value', None) 
-                ttype = child.get('type', None)                 
-                if not value is None:
+                if value is not None:
                     if not name in d:
                         d[name] = value
                     else:
@@ -534,8 +537,9 @@ class EngineModuleResource(BaseController):
                             d[name].append(value)
                         else:
                             d[name] = [d[name], value]
-                    if not ttype is None:
-                        d['%s.type'%name] = ttype
+                    #if not ttype is None:
+                    #    d['%s.type'%name] = ttype
+                        
                 d = _xml2d(child, d, path='%s%s/'%(path, child.get('name', '')))
             return d
 
@@ -544,6 +548,60 @@ class EngineModuleResource(BaseController):
         d['module/uri']  = self.module_uri 
         if not 'title' in d: d['title'] = self.name
         return d
+
+
+
+#    <tag name="inputs">
+#        <tag name="image_url"    type="image" />
+#        <tag name="resource_url" type="resource">
+#            <tag name="template" type="template">
+#                <tag name="type" value="image" />
+#                <tag name="type" value="dataset" />
+#                <tag name="selector" value="image" />
+#                <tag name="selector" value="dataset" />
+#            </tag>            
+#        </tag>      
+#        <tag name="mex_url"      type="system-input" />
+#        <tag name="bisque_token" type="system-input" />
+#    </tag>
+#    
+#    <tag name="outputs">
+#         <tag name="MetaData" type="tag" />
+#         <gobject name="Gobjects" />
+#    </tag>
+
+
+    def define_io(self):
+        
+        def define_tempalte(xs):
+            l = []
+            for i in xs:
+                r = i.tag
+                n = i.get('name', None) 
+                v = i.get('value', None)
+                t = i.get('type', None)
+                if t in reserved_io_types: continue
+                x = { 'resource_type': r, 'name': n, 'value': v, 'type': t, }    
+
+                tmpl = i.xpath('tag[@name="template" and @type="template"]/tag')
+                for c in tmpl:
+                    nn = c.get('name', None) 
+                    vv = c.get('value', None)
+                    if not nn in x:
+                        x[nn] = vv
+                    else:
+                        if isinstance(x[nn], list):
+                            x[nn].append(vv)
+                        else:
+                            x[nn] = [x[nn], vv]
+                #if 'label' not in x: x['label'] = n
+                l.append(x)
+            return l        
+        
+        self.inputs  = define_tempalte( self.module_xml.xpath('//tag[@name="inputs"]/*') )
+        self.outputs = define_tempalte( self.module_xml.xpath('//tag[@name="outputs"]/*') )
+        log.debug(str(self.inputs))
+        log.debug(str(self.outputs))
         
 
     @expose()
@@ -558,7 +616,12 @@ class EngineModuleResource(BaseController):
             override_template(self.index, "genshi:bq.engine.templates.default_module")
             return dict (module_uri  = self.module_uri,
                          module_name = self.name,
-                        module_def = self.definition_as_dict(),
+                         module_def  = self.definition_as_dict(),
+                         module_xml  = etree.tostring(self.module_xml),
+                         
+                         inputs  = self.inputs,
+                         outputs = self.outputs,
+                         
                          extra_args  = kw
                          )
         return self.serve_entry_point(node)        
@@ -571,7 +634,12 @@ class EngineModuleResource(BaseController):
             override_template(self.interface, "genshi:bq.engine.templates.default_module")
             return dict (module_uri  = self.module_uri,
                          module_name = self.name,
-                         module_def = self.definition_as_dict(),                         
+                         module_def  = self.definition_as_dict(),      
+                         module_xml  = etree.tostring(self.module_xml),   
+                         
+                         inputs  = self.inputs,
+                         outputs = self.outputs,                       
+                                         
                          extra_args  = kw
                          )
         return self.serve_entry_point(node)

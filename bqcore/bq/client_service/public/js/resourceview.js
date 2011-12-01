@@ -80,7 +80,6 @@ ResourceDispatch.prototype.dispatch_image = function(bqimage)
                     cb : function(r)
                     {
                         me.setLoading(false);
-                        //window.open(bq.url('/module_service/' + r.name + '/?mex=' + resource.uri), "", "menubar=yes,location=yes,resizable=yes,scrollbars=yes,status=yes");
                         nw.location = bq.url('/module_service/' + r.name + '/?mex=' + resource.uri);
                     }
 
@@ -100,44 +99,28 @@ ResourceDispatch.prototype.dispatch_image = function(bqimage)
         bodyBorder : 0,
         collapsible : true,
         split : true,
-        width : 480,
+        width : 400,
         plain : true,
         bodyStyle : 'background-color:#F00',
         items : [resourceTagger, embeddedTagger, mexBrowser]
     });
     
-    var imageCt = new Ext.container.Container(
-    {
+    var viewerContainer = Ext.create('BQ.viewer.Image', {
         region : 'center',
-        padding : 2,
-        style : 'background-color:#FFF',
-
-        listeners :
-        {
-            'resize' : function(me, width, height)
-            {
-                if(me.IV)
-                    //me.IV.resize( {height : height} );
-                    me.IV.resize();
-            }
-
-        }
+        resource: bqimage,
+        user: this.user_url,
     });
 
-    BQApp.main.getComponent('centerEl').add(
-    {
+    BQApp.main.getComponent('centerEl').add({
         xtype : 'container',
         layout : 'border',
-        items : [imageCt, resTab]
+        items : [viewerContainer, resTab]
     });
-
-    imageCt.IV = new ImgViewer(imageCt.getId(), bqimage, this.user_url);
-    //imageCt.doComponentLayout(null, null, true);
 
     var gobjectTagger = new Bisque.GObjectTagger(
     {
         resource : bqimage,
-        imgViewer : imageCt.IV,
+        imgViewer : viewerContainer.viewer,
         mexBrowser : mexBrowser,
         title : 'GObjects',
         viewMode : 'GObjectTagger',
@@ -183,6 +166,7 @@ ResourceDispatch.prototype.dispatch_image = function(bqimage)
         }
     });
     resTab.add(gobjectTagger);
+
    
     var map = Ext.create('BQ.gmap.GMapPanel3',  {
         title: 'Map',

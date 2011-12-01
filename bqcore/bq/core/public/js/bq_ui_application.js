@@ -58,21 +58,25 @@ Ext.define('BQ.Application', {
     },
     
     onSignedIn: function() {
+        this.session = BQSession.current_session;
         this.fireEvent( 'signedin', BQSession.current_session);
     },
     
     onSignedOut: function() {
+        this.session = undefined;
         this.fireEvent( 'signedout');
         alert("Your session has  timed out");
         window.location = this.url( "/auth_service/logout" );
     },
     
     onGotUser: function() {
+        this.user = BQSession.current_session.user;
         this.fireEvent( 'gotuser', BQSession.current_session.user);
         BQ.Preferences.loadUser(BQSession.current_session.user, 'INIT');
     }, 
 
     onNoUser: function() {
+        this.user = undefined;
         this.fireEvent( 'nouser');
         BQ.Preferences.loadUser(null, 'LOADED');
     }, 

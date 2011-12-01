@@ -2,9 +2,18 @@
 <module name="RootTip" path="./launch.py" type="runtime" >
     
     <tag name="inputs">
+        <!--
         <tag name="input-system" value="image_url"  />
         <tag name="input-system" value="mex_url" />
+        -->
+        <tag name="image_url"    type="image" />     
+        <tag name="mex_url"      type="system-input" />
+        <tag name="bisque_token" type="system-input" />        
     </tag>
+    
+    <tag name="outputs">
+        <gobject name="results" /> <!-- this is not correct, module needs update -->
+    </tag>      
 
     <tag name="execute_options">
         <tag name="argument_style" value="named" />

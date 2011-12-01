@@ -110,8 +110,8 @@ def get_static_dirs():
     package_path = pkg_resources.resource_filename(package,'bq')
     return [(package_path, os.path.join(package_path, 'usage', 'public'))]
 
-def get_model():
-    from bq.usage import model
-    return model
+#def get_model():
+#    from bq.usage import model
+#    return model
 
 __controller__ =  usageController

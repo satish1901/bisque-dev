@@ -8,7 +8,9 @@
 <xi:include href="master.html" />
 
 <head>
-    <title>Welcome</title>
+    
+    <title py:if="not welcome_message">Welcome</title>
+    <title py:if="welcome_message">${welcome_message}</title>
       
     <script type="text/javascript" src="${tg.url('/client_service/public/js/DataExplore.js')}" ></script>
 
@@ -61,7 +63,7 @@
         var usage_uploads = Ext.create('BQ.usage.Uploads', { height: 120, showAxisTitles: false, });   
         var usage_analysis = Ext.create('BQ.usage.Analysis', {height: 120, showAxisTitles: false, });              
 
-        var usageExplorer = Ext.create('Ext.carousel.Panel', {
+        var usagePanel = Ext.create('Ext.carousel.Panel', {
             items: [ usage_uploads, usage_analysis, usage_stats, ],      
         });
         
@@ -76,7 +78,7 @@
             layout: 'fit',
             border: 0, 
             defaults: { border: 0, cls: 'usage', }, 
-            items: [usageExplorer],
+            items: [usagePanel],
         });          
   
         this.recentsExplorer = Ext.create('Ext.panel.Panel', {

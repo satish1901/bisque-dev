@@ -7,6 +7,7 @@ from bq.core.exceptions import ConfigurationError, ServiceError
 from bq.util.paths import data_path
 from bq.util.mkdir import _mkdir
 from bq.util.hash import make_uniq_hash
+import shutil
 
 log = logging.getLogger('bq.blobs.storage')
 
@@ -47,7 +48,9 @@ class LocalStorage(object):
         log.debug('local.write: %s -> %s' % (name,filepath))
         if not fp and name:
             src = open(name,'rb')
-        fp.seek(0)
+        else:
+            src=fp
+        src.seek(0)
         with  open(filepath, 'wb') as trg:
             shutil.copyfileobj(src, trg)
 

@@ -20,6 +20,9 @@
 	  nosave         - disables saving gobjects
 	  editprimitives - only load edit for given primitives, 'editprimitives':'point,polyline'
 	                   can be one of: 'Point,Rectangle,Polyline,Polygon,Circle'
+	                       
+    gobjectschanged - callback to call when graphical objects have changed
+	                   
 */
 
 
@@ -302,8 +305,7 @@ function ImgViewer (parentid, image_or_uri, user_uri, parameters) {
     this.groups = {};           // Menu Groups
     this.submenu = null;
 
-    this.parameters = {};       
-    if (parameters) this.parameters = parameters;      
+    this.parameters = parameters || {};      
 
     this.menudiv = document.createElementNS (xhtmlns, "div");
     this.menudiv.id =  "imgmenu";

@@ -109,7 +109,8 @@
     <script type="text/javascript" src="/client_service/public/js/viewer/imgscalebar.js"></script>
     <script type="text/javascript" src="/client_service/public/js/viewer/imginfobar.js"></script>
     <script type="text/javascript" src="/client_service/public/js/viewer/progressbar.js"></script>
-    
+    <script type="text/javascript" src="/client_service/public/js/viewer/widget_extjs.js"></script>
+        
     
     <!-- Plotting stuff, use Raphael now -->
     <script src="/raphael/raphael.js" type="text/javascript" charset="utf-8"></script>
@@ -133,12 +134,14 @@
     <link rel="stylesheet" type="text/css" href="/js/bq_ui_misc.css" />
     <script type="text/javascript" src="/js/bq_ui_misc.js"></script>
     
-    <link rel="stylesheet" type="text/css" href="${bq.url('/js/modules/bq_module_webapp.css')}" />     
-    <script type="text/javascript" src="${bq.url('/js/modules/bq_module_service.js')}"></script>   
-    <script type="text/javascript" src="${bq.url('/js/modules/bq_module_webapp.js')}"></script>  
+    <link rel="stylesheet" type="text/css" href="${bq.url('/js/modules/bq_webapp.css')}" />     
+    <script type="text/javascript" src="${bq.url('/js/modules/bq_webapp_service.js')}"></script>   
+    <script type="text/javascript" src="${bq.url('/js/modules/bq_webapp.js')}"></script>  
     <script type="text/javascript" src="${bq.url('/js/modules/bq_module_webapp_default.js')}"></script>      
     <script type="text/javascript" src="${bq.url('/js/modules/bq_ui_module.js')}"></script>    
-    
+
+    <link rel="stylesheet" type="text/css" href="${bq.url('/js/modules/bq_ui_renderes.css')}" /> 
+    <script type="text/javascript" src="${bq.url('/js/modules/bq_ui_renderes.js')}"></script> 
     
     <!--<link rel="stylesheet" type="text/css" href="css/webapp.css" />
     <script type="text/javascript" src="js/webapp.js"></script>-->
@@ -146,7 +149,7 @@
     <title>${module_name}</title>
 
 <script type="text/javascript" >
-    //var module_url = ${module_def['description']};
+    var module_definition_xml = '${Markup(module_xml.replace('\'', '\\\'').replace('\n', ''))}'; 
 </script>
 
 
@@ -169,6 +172,11 @@
 
 <div id="content" class="content webapp">
 
+<!--
+<li py:for="m in module_def">
+    "${m}": "${module_def[m]}"
+</li>
+-->
 
 <div class="help" id="help">
   <iframe src="help" width="100%" height="100%" style="border: none;"></iframe>
@@ -179,30 +187,21 @@
 
 <div id="webapp_main" class="main">
 
-<h1 py:if="'title' in module_def">${module_def['title']}</h1>
+<img id="thumbnail" py:if="'thumbnail' in module_def" width="150" alt="Thumnail" src="thumbnail" />
+<h1 id="title"></h1>
 
-<p><span py:if="'module_options/version' in module_def">Version: ${module_def['module_options/version']},</span> 
-   <span py:if="'authors' in module_def">Authors: ${module_def['authors']}</span></p>
 
-<p py:if="'description' in module_def"><em>${module_def['description']}</em></p>
+<p><span id="version" py:if="'module_options/version' in module_def">Version: ${module_def['module_options/version']},</span> 
+   <span id="authors" py:if="'authors' in module_def">Authors: ${module_def['authors']}</span></p>
+
+<p py:if="'description' in module_def"><em id="description">${module_def['description']}</em></p>
 
 
 <div id="webapp_input">
     <h2>1. Select data for processing:</h2>
 
-    <div class="box input">
-        <span py:if="'inputs/input-formal.type' in module_def and 'image' in module_def['inputs/input-formal.type']"> 
-            <button onclick="webapp.selectImage('/data_service/images')" >Select an Image</button>
-        </span>            
-        <span py:if="'inputs/input-formal.type' in module_def and 'dataset' in module_def['inputs/input-formal.type']"> 
-            or <button onclick="webapp.selectDataset('/data_service/images')" >Select a Dataset</button> 
-        </span>
+    <div id="inputs" class="input box">
 
-        <span py:if="'inputs/input-formal.type' in module_def">
-        <!-- or <button onclick="webapp.selectExample('${module_def['example_query']}')" disabled='' >Select an example</button>
-        or <button onclick="webapp.selectFile()" disabled='' >Upload local images</button>
-        or even <button onclick="webapp.selectZip()" disabled='' >Upload local image (separate Ts in a ZIP)</button> -->
-        </span>
     </div>
   
 </div>
@@ -212,12 +211,14 @@
 <div id="webapp_parameters">
     <h2>2. Parameters:</h2>
     
-    <div class="box parameters" >
+    <div id="parameters" class="parameters box" >
+        <!--
         <div id="webapp_input_description">
-          <h3>Nothing is yet selected, first select an image or a dataset from the database or upload one from your local machine...</h3>  
+ 
         </div>
         <div id="webapp_input_thumbnail" class="thumbnail" style="display:none;"></div>
         <div id="webapp_input_viewer" class="imageviewer" style="display:none;" ></div>
+        -->
     </div>
     
 </div>
@@ -232,12 +233,13 @@
     </div>
 </div>
 
-<!--
 
-<div id="webapp_results">
+
+
+<div id="webapp_results" py:if="outputs is not None and len(outputs)>0">
     <h2>4. Results:</h2>  
   
-    <div class="box results" >  
+    <div id="outputs" class="box results" >  
   
         <p>Detected seeds are stored as graphical annotations on the image and are referenced by a tag. You can always verify this results later by accessing the image and checking the tag corresponding to current date and time.</p>
     
@@ -275,9 +277,8 @@
 </div>
 
 
-<div style="height: 50px;"></div>
+<div style="height: 20px;"></div>
 
--->
 
 </div> <!-- main -->
 </div> <!-- webapp -->
