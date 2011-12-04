@@ -342,7 +342,13 @@ class ResourceFactory(object):
         else:
             if xmlname=="resource":
                 xmlname = xmlnode.get ('resource_type')
-            node = Taggable(xmlname, parent=parent)
+
+            tag, type_ = dbtype_from_tag(xmlname)
+            node = type_(xmlname, parent=parent)
+            if tag == 'mex':
+                node.mex = node
+            if tag == 'user':
+                node.user = node
 
         log.debug  ('factor.new %s -> %s ' % (xmlname, node))
         return node
@@ -441,6 +447,7 @@ mapping_fields = {
     'parent':None,
     'tagname':'name',
     'tags':None,
+    'tagq':None,
     'tb_id':None,
 #    'type':None,
     'type_id':None,
@@ -454,6 +461,7 @@ mapping_fields = {
     'tguser':None,
     'password': None,
     'acl' : None,
+    'user_acls': None,
     'owns' : None,
     # Auth
     'user_id' : get_email,
@@ -634,10 +642,16 @@ def db2node(dbo, parent, view, baseuri, nodes, doc_id):
     elif view is None or len(view)==0 or 'short' in view:
         pass
     else:
+        # Allow a list of tags to be specified in the view parameter which 
+        # will be included the object
          v = list(itertools.ifilter (lambda x: x != 'full', view))
          #log.debug ("TAG VIEW=%s", v)
-         tl = [ db2tree_int(x, node, v, baseuri) for x in dbo.tags if x.resource_name in v ] 
-        
+         #tl = [ db2tree_int(x, node, v, baseuri) for x in dbo.tags if x.resource_name in v ] 
+         for tag_name in v:
+             tag = dbo.tagq.filter_by(resource_name = tag_name).first()
+             if tag:
+                 db2tree_int(tag, node, v, baseuri)
+             
     return node, nodes, doc_id
 
 

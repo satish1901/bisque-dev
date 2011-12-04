@@ -142,7 +142,6 @@ BQObject.prototype.delete_ = function (cb) {
     if (this.uri != null) {
         xmlrequest(this.uri, callback(this, 'response_', 'delete', errorcb, cb), 'delete', null, errorcb);
     }
-    }
 }
 
 BQObject.prototype.deleteTag = function(childTag) {

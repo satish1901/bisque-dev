@@ -491,6 +491,7 @@ def modify_site_cfg(qs, bisque_vars, section = BQ_SECTION, append=True):
         
     for k,v in bisque_vars.items():
         c.edit_config (section, k, '%s = %s' % (k,v), {}, append)
+        print "edit %s %s" % (k,v)
 
     c.write (open (SITE_CFG, 'w'))
 
@@ -544,7 +545,7 @@ def create_mysql(dburl):
     if dburl.password:
         command.append ('-p%s' % dburl.password)
     
-    print "please ignore 'Unknown database ..' "
+    print "PLEASE ignore 'ERROR (...)Unknown database ..' "
     if call (command+[dburl.database, '-e', 'quit']) == 0:
         print "Database exists, not creating"
         return False
@@ -654,7 +655,7 @@ def get_dburi(params):
     params = modify_site_cfg(DB_QUESTIONS, params)
     dburi = params.get('sqlalchemy.url', None)
     DBURL = sa.engine.url.make_url (dburi)
-    return DBURL
+    return params, DBURL
 
 
 def test_db_initialized(DBURL):
@@ -673,7 +674,7 @@ def install_database(params):
     before running Bisque setup.
     """
     try:
-        DBURL = get_dburi(params) 
+        params, DBURL = get_dburi(params) 
     except sa.exc.ArgumentError:
         log.exception( "Unable to understand DB url. Please see SqlAlchemy" )
         return params
@@ -732,16 +733,19 @@ Please resolve the problem(s) and re-run 'bisque-setup --database'.""")
         The database is freshly created and doesn't seem to have
         any tables yet.  Allow the system to create them..
         """) == "Y":
-        r = call (['paster','setup-app', config_path('site.cfg')])
-        if r != 0:
+        if call (['paster','setup-app', config_path('site.cfg')]) != 0:
             raise SetupError("There was a problem initializing the Database")
-        db_version = call ([PYTHON, to_sys_path('bqcore/migration/manage.py'),
-                            'version_control'])
-        sql(DBURL, "update migrate_version set version=%s" % db_version)
+        if call ([PYTHON, to_sys_path('bqcore/migration/manage.py'), 'version_control']) != 0:
+            raise SetupError("Could not setup version management in new database."
+                             "Please try to setup the database manually or contact the developers")
+
+        from bq.release import __DB_VERSION__
+        sql(DBURL, "update migrate_version set version=%s" % __DB_VERSION__)
         
     # Step 4: Always upgrade the database to newest version
     print "Upgrading database version"
     call ([PYTHON, to_sys_path ('bqcore/migration/manage.py'), 'upgrade'])
+    print params
     return params
         
         
@@ -1139,7 +1143,7 @@ def install_dependencies ():
 #
 def setup_admin(params):
     try:
-        DBURL = get_dburi(params) 
+        params, DBURL = get_dburi(params) 
     except sa.exc.ArgumentError:
         log.exception( "Unable to understand DB url. Please see SqlAlchemy" )
         return 

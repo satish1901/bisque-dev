@@ -366,8 +366,8 @@ def get_static_dirs():
     package_path = pkg_resources.resource_filename(package,'bq')
     return [(package_path, os.path.join(package_path, 'image_service', 'public'))]
 
-def get_model():
-    from bq.image_service import model
-    return model
+#def get_model():
+#    from bq.image_service import model
+#    return model
 
 __controller__ =  image_serviceController
