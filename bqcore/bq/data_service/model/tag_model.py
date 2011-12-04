@@ -308,23 +308,35 @@ class Taggable(object):
         else:
             self.document = self
 
+        #if self.resource_type == 'mex':
+        #    self.mex = self
+        #    session['mex'] = self
+
+        #if self.resource_type == 'user':
+        #    self.owner = self
+
+        self.perm = PUBLIC
         self.ts = datetime.now()
         #log.debug("new taggable user:" + str(session.dough_user.__dict__) )
         owner  = identity.current.get_bq_user()
-        mex = None
-        log.debug (".owner = %s mex = %s" % (owner, mex))
+        mex = session.get('mex', None)
+        log.debug ("owner = %s mex = %s" % (owner, mex))
         if owner:
             self.owner_id = owner.id
-        #self.mex_id = session.get('mex.id', None)
-        #mex_id = DBSession.get ('mex.id', None)
-        #mex    = module_service.get_mex()
-        #if mex_id is not None:
-        #    self.mex_id = mex_id
-        self.perm = PUBLIC
-        if owner :
             self.perm = PRIVATE
-        if identity.current_mex():
-            self.mex_id = int ( identity.current_mex() )
+        if mex:
+            self.mex = mex
+        else:
+            mexid = session.get('mex_id')
+            if mexid:
+                self.mex = DBSession.query(ModuleExecution).get(mexid)
+                session['mex'] = self.mex
+            else:
+                # Default to the system/init mex
+                self.mex = DBSession.query(ModuleExecution).filter_by(
+                    resource_user_type = "initialization").first()
+                session['mex'] = self.mex
+
         if owner is None:
             log.warn ("CREATING taggable %s with no owner" % str(self) )
             admin = identity.get_admin()
@@ -449,13 +461,16 @@ class Taggable(object):
             return values
 
     def setvalue(self, v):
+        self.resource_value = None
         if isinstance(v, list):
             l = [ self.newval(v[i], i) for i in xrange(len(v)) ]
             self.values = l
-            self.resource_value = None
+        elif isinstance(v, basestring):
+            self.resource_value = v
         else:
             l = [ self.newval(v, 0) ]
-            self.resource_value = v
+            self.values = l
+            
 
     value = property(fget=getvalue,
                      fset=setvalue,
@@ -606,16 +621,14 @@ class BQUser(Taggable):
             DBSession.add(tg_user)
 
         self.perm = PUBLIC
-        self.user_name = tg_user.user_name
-        self.password = tg_user.password
-        self.email_address = tg_user.email_address
-        self.display_name = tg_user.display_name
+        self.name = tg_user.user_name
+        self.value = tg_user.email_address
+        dn = Tag (parent = self)
+        dn.name = 'display_name'
+        dn.value = tg_user.display_name
+        dn.owner = self
+        self.owner = self
         DBSession.add(self);
-        #DBSession.flush();
-        #DBSession.refresh(self)
-
-        #tg_user.dough_user_id = self.id
-        self.owner_id = self.id
         
     @classmethod
     def new_user (cls, email, password, create_tg = False):
@@ -639,29 +652,7 @@ class BQUser(Taggable):
             DBSession.flush()
 
         return bquser
-    
-        
-#     def init_permissions(self):
-#         if not self.user_name:
-#             raise IllegalOperation('no user_name for permission')
-#         u_r = PermissionToken()
-#         u_r.name = "R_" + self.user_name
-#         u_w = PermissionToken()
-#         u_w.name = "W_" + self.user_name
-#         session.add(u_r)
-#         session.add(u_w)
-#         permissions = PermissionSet(self.id)
-#         self.perm =  permissions
-#         self.default_perm = permissions
-#         permissions.add(u_r)
-#         permissions.add(u_w)
-#         global r_all, w_all
-#         permissions.add(r_all)
-#         permissions.add(w_all)
-#         #self.permission = permissions
-        
-        
-    
+
     def user_id(self):
         return self.id
     user_id = property(user_id)
@@ -698,6 +689,7 @@ class ModuleExecution(Taggable):
       (actual_output: taggable_id)
     '''
     xmltag ='mex'
+
     def closed(self):
         return self.status in ('FINISHED', 'FAILED')
     # alias for resource_value
@@ -826,6 +818,10 @@ mapper( Taggable, taggable,
                           #foreign_keys=[vertices.c.resource_parent_id]
                           ),
 
+    'tagq' : relation(Taggable, lazy='dynamic',
+                      primaryjoin= and_(taggable.c.resource_parent_id==taggable.c.id,
+                                        taggable.c.resource_type == 'tag')),
+
 
     'docnodes': relation(Taggable, lazy=True, 
                          cascade = "all, delete-orphan",
@@ -857,7 +853,9 @@ mapper(BQUser,  inherits=Taggable,
 
 
         'owns' : relation(Taggable, lazy=True,
-                          cascade = None,
+                          cascade = "all, delete-orphan",
+                          post_update = True,
+                          enable_typechecks=False,
                           primaryjoin = (taggable.c.id == taggable.c.owner_id),
                           backref = backref('owner', post_update=True, remote_side=[taggable.c.id]),
                           ),
@@ -882,13 +880,34 @@ def bquser_callback (tg_user, operation, **kw):
     if operation  == 'update':
         u = DBSession.query(BQUser).filter_by(resource_name=tg_user.user_name).first()
         if u is not None:
-            #u.email_address = tg_user.email_address 
-            #u.password = tg_user.password
-            #u.display_name = tg_user.display_name
-            log.error('update display name')
+            u.value = tg_user.email_address
+            dn = u.findtag('display_name', create=True)
+            dn.value = tg_user.display_name
             pass
         return
 User.callbacks.append (bquser_callback)
+
+def registration_hook(action, **kw):
+    if action=="new_user":
+        u = kw.pop('user', None)
+        if u:
+            BQUser.new_user (u.email_adress)
+    elif action=="update_user":
+        u = kw.pop('user', None)
+        if u:
+            bquser = DBSession.query(BQUser).filter_by(resource_value=u.email_address).first()
+            if not bquser:
+                bquser = BQUser.new_user (u.email_adress)
+            dn = bq_user.findtag('display_name', create=True)
+            dn.value = tg_user.display_name
+                
+            #bquser.display_name = u.display_name
+            bquser.resource_name = u.user_name
+            log.error('Fix the display_name')
+    elif action =="delete_user":
+        pass
+
+
 
 mapper(Template, inherits=Taggable,
         polymorphic_on = taggable.c.resource_type,
@@ -902,7 +921,10 @@ mapper(ModuleExecution,  inherits=Taggable,
        properties = {
         #"status":synonym("resource_value"), # map_column=True) ,
         'owns' : relation(Taggable, 
-                          cascade = None,
+                          cascade = "all, delete-orphan",
+                          #cascade = None,
+                          post_update = True,
+                          enable_typechecks=False,
                           primaryjoin = (taggable.c.id == taggable.c.mex_id),
                           backref = backref('mex', post_update=True, remote_side=[taggable.c.id])),
         })
@@ -922,24 +944,6 @@ mapper( Service, inherits=Taggable,
 #         foreign_keys=[Taggable.id],
 #    )
 #)
-
-def registration_hook(action, **kw):
-    if action=="new_user":
-        u = kw.pop('user', None)
-        if u:
-            BQUser.new_user (u.email_adress)
-    elif action=="update_user":
-        u = kw.pop('user', None)
-        if u:
-            bquser = DBSession.query(BQUser).filter_by(resource_value=u.email_address).first()
-            if not bquser:
-                bquser = BQUser.new_user (u.email_adress)
-                
-            #bquser.display_name = u.display_name
-            bquser.resource_name = u.user_name
-            log.error('Fix the display_name')
-    elif action =="delete_user":
-        pass
 
         
 # def db_setup():

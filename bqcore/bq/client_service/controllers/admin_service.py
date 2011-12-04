@@ -64,7 +64,7 @@ from bq.core import identity
 from bq.core.model import   User #, Visit
 from bq.core.model import DBSession as session
 from bq.data_service.model import  BQUser, Image, TaggableAcl
-from bq.image_service.model import  FileAcl
+#from bq.image_service.model import  FileAcl
 from tg import redirect
 from tg import request
 
@@ -183,9 +183,9 @@ class AdminController(ServiceController):
         user = session.query(BQUser).filter(BQUser.user_name == username).first()
         log.debug("ADMIN: Deleting user: " + str(user) )
         # delete the access permission
-        for p in session.query(FileAcl).filter_by(user = user.user_name):
-            log.debug ("KILL FILEACL %s" % p)
-            session.delete(p)
+        #for p in session.query(FileAcl).filter_by(user = user.user_name):
+        #    log.debug ("KILL FILEACL %s" % p)
+        #    session.delete(p)
         for p in session.query(TaggableAcl).filter_by(user_id=user.id):
             log.debug ("KILL ACL %s" % p)
             session.delete(p)

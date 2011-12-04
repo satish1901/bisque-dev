@@ -49,6 +49,7 @@ Ext.define('BQ.viewer.Image', {
             'changed': true,            
         });
         this.callParent(arguments);
+        this.parameters = {};
         return this;
     },
 

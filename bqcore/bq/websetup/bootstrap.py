@@ -2,8 +2,10 @@
 """Setup the bqcore application"""
 
 import logging
-from tg import config
+from tg import config, session
 from bq.core import model
+from paste.registry import Registry
+from beaker.session import Session, SessionObject
 
 import transaction
 
@@ -13,9 +15,20 @@ def bootstrap(command, conf, vars):
 
     # <websetup.bootstrap.before.auth
     from sqlalchemy.exc import IntegrityError
+    from  bq.data_service.model import Taggable, Tag, BQUser, ModuleExecution
 
+    registry = Registry()
+    registry.prepare()
+    registry.register(session, SessionObject({}))
 
     try:
+        initial_mex = ModuleExecution()
+        initial_mex.mex = initial_mex
+        initial_mex.name = "initialization"
+        initial_mex.type = "initialization"
+        model.DBSession.add(initial_mex)
+        session['mex'] = initial_mex
+
         admin = model.User(
             user_name = u"admin",
             display_name = u'Example manager',
@@ -50,22 +63,21 @@ def bootstrap(command, conf, vars):
     try:
         ######
         # 
-        from  bq.data_service.model import Taggable, Tag, BQUser
         #from bq.data_service.model import UniqueName
 
-        #admin = model.DBSession.query(BQUser).filter_by(username = 'admin').first()
-        #admin.owner_id = admin.id
+        admin = model.DBSession.query(BQUser).filter_by(resource_name = 'admin').first()
+        admin.mex = initial_mex
+        initial_mex.owner = admin
+        session['user'] = admin
         
         system = model.DBSession.query(Taggable).filter_by (resource_type='system').first()
         if system is None:
             system = Taggable(resource_type = 'system')
-            version = Tag ()
+            version = Tag (parent = system)
             version.name ='version'
             version.value  = '0.5'
-            prefs = Tag()
+            prefs = Tag(parent = system)
             prefs.name = 'Preferences'
-            system.tags.append(version)
-            system.tags.append(prefs)
             model.DBSession.add(system)
             transaction.commit()
     except IntegrityError:

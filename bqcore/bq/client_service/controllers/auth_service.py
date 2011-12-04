@@ -207,21 +207,22 @@ class AuthenticationServer(ServiceController):
         #
         #log.debug('begin_session '+ str(tgidentity.current.visit_link ))
         #log.debug ( str(tgidentity.current.visit_link.users))
-        mexurl = module_service.begin_internal_mex()
-        mexid  = mexurl.rsplit('/',1)[1]
-        tg.request.mexid = mexid
-        session['mexid']  = mexid
+        mex = module_service.begin_internal_mex()
+        mexid  = mex.get('uri').rsplit('/',1)[1]
+        session['mex_id']  = mexid
+        session['mex_uri'] = mex.get('uri')
+        session.save()
         #v = Visit.lookup_visit (tgidentity.current.visit_link.visit_key)
         #v.mexid = mexid
         #session.flush()
-        return mexurl
+        return mex
 
     def _end_mex_session(self):
         """Close a mex associated with the visit to record changes"""
         try:
-            mexid = tg.request.mexid
-            if mexid:
-                module_service.end_internal_mex (mexid)
+            mexuri = session.get('mex_uri')
+            if mexuri:
+                module_service.end_internal_mex (mexuri)
         except AttributeError:
             pass
         return ""

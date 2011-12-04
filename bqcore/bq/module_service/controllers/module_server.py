@@ -432,8 +432,10 @@ class ModuleServer(ServiceController):
         return etree.tostring(x)
         
 
-    def begin_internal_mex(self, name=None):
-        mex = etree.Element('mex', value="SESSION")
+    def begin_internal_mex(self, name=None, mex_type = "session"):
+        mex = etree.Element('mex', value = 'exec', type=mex_type)
+        if name:
+            mex.set('name',name)
         etree.SubElement(mex, 'tag',
                          name="start-time",
                          value=time.strftime("%Y-%m-%d %H:%M:%S",
@@ -443,16 +445,16 @@ class ModuleServer(ServiceController):
         #response =  self.delegate.new (factory, mex, view='deep',**kw)
         mex = data_service.new_resource (mex, view='deep')
         #return mex.get ('uri').rsplit('/', 1)[1]
-        return mex.get('uri')
+        return mex
         
-    def end_internal_mex(self, mexid):
-        mex = etree.Element('mex', value="FINISHED", uri='http://localhost/ds/mex/%s' % mexid)
+    def end_internal_mex(self, mexuri):
+        mex = etree.Element('mex', value="FINISHED", uri=mexuri)
         etree.SubElement(mex, 'tag',
                          name="end-time",
                          value=time.strftime("%Y-%m-%d %H:%M:%S",
                                              time.localtime()))
         mex = data_service.update (mex)
-
+        return mex
         
 
 #######################################

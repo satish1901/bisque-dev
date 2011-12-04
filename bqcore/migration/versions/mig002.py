@@ -47,7 +47,8 @@ def new_tag(r, name, val, ty_=None):
 
 def move_files_to_resources():
     print "MOVING FILE TABLE TO RESOURCE"
-    for fi in DBSession.query(FileEntry):
+    DBSession.autoflush = False
+    for count, fi in enumerate(DBSession.query(FileEntry)):
         image = DBSession.query (Image).filter_by(src = fi.uri).first()
         hash_id = make_uniq_hash(fi.original or '', fi.ts)
         if image is None:
@@ -77,6 +78,8 @@ def move_files_to_resources():
         resource.resource_uniq   = hash_id
         resource.resource_value  = fi.local
         new_tag(resource, 'sha1', fi.sha1).resource_hidden=True
+        if count % 1024 == 0:
+            DBSession.flush()
 
     transaction.commit()
 
@@ -147,7 +150,7 @@ def move_all_to_resource():
 def move_values():
     print "ADDING DOCUMENT POINTERS TO VALUES"
     print "processing values:", Tag.xmltag
-    for r in DBSession.query(Tag):
+    for count, r in enumerate(DBSession.query(Tag)):
         for v in r.values:
             v.document_id = r.document_id
         if len(r.values) == 1:
@@ -162,6 +165,8 @@ def move_values():
                 r.resource_user_type = 'resource'
 
             #DBSession.delete (r.values[0])
+        if count % 1024 == 0:
+            DBSession.flush()
 
     for r in DBSession.query(GObject):
         for v in r.vertices:
@@ -197,19 +202,20 @@ def build_document_pointers():
     """Visit all top level resource and apply a document_id (root) to 
     all children: tags and gobjects
     """
+    DBSession.autoflush = False
     types_ =  [ Image, Dataset, Module, ModuleExecution, Service, Template, BQUser ] 
     print "ADDING DOCUMENT POINTERS"
     visited = {}
     for ty_ in types_:
         print "processing %s" % ty_.xmltag
-        for resource in  DBSession.query(ty_):
+        for count, resource in  enumerate(DBSession.query(ty_)):
             print "doc %s %s" % (resource.table, resource.id )
             resource.resource_type = unicode(resource.xmltag)
 
-            if resource.id in visited:
-                print "VISTED %s before when visiting %s" % (resource, visited[resource.id][1])
-            else:
-                visited[resource.id] = (resource, ty_)
+            #if resource.id in visited:
+            #    print "VISTED %s before when visiting %s" % (resource, visited[resource.id][1])
+            #else:
+            #    visited[resource.id] = (resource, ty_)
             
             # Given a top level resource create a document 
             #document = Document()
@@ -217,6 +223,8 @@ def build_document_pointers():
             #document.owner_id = resource.owner_id
             #document.perm     =  resource.perm
             apply_to_all(resource , parent_id=None, document_id=resource.id)
+            if count % 1024 == 0:
+                DBSession.flush()
 
     # Taggable
     user_types = [ (nm, ty) for nm, ty in [ dbtype_from_name(str(y)) for y in all_resources() ] 
@@ -226,10 +234,10 @@ def build_document_pointers():
         for resource in  DBSession.query(ty_).filter(ty_.tb_id == UniqueName(table).id):
             print "doc %s %s" % (resource.table, resource.id)
 
-            if resource.id in visited:
-                print "VISTED %s before when visiting %s" % (resource, visited[resource.id][1])
-            else:
-                visited[resource.id] = ( resource, ty_)
+            #if resource.id in visited:
+            #    print "VISTED %s before when visiting %s" % (resource, visited[resource.id][1])
+            #else:
+            #    visited[resource.id] = ( resource, ty_)
 
             resource.resource_type = table
             apply_to_all(resource , parent_id=None, document_id=resource.id)
