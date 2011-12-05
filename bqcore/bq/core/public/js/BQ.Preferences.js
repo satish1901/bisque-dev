@@ -66,6 +66,7 @@ Ext.define('BQ.Preferences',
     },
     
 
+    // bq_ui_application raises event loadUser 
     loadUser : function(resource, status)
     {
         this.user.status=status;
