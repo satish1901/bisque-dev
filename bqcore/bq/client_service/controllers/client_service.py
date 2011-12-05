@@ -172,10 +172,12 @@ class ClientServer(ServiceController):
     
     @expose(template='bq.client_service.templates.test')
     def test(self):
-        from bq.export_service.controllers.tar_streamer import TarStreamer
+        """from bq.export_service.controllers.tar_streamer import TarStreamer
         tarStreamer = TarStreamer() 
         tarStreamer.sendResponseHeader('Bisque.tar')
         return tarStreamer.stream(['C:\\Python27\\TarStreamer\\file1.tif', 'C:\\Python27\\TarStreamer\\file2.tif', 'C:\\Python27\\TarStreamer\\file3.tif'])
+        """
+        return dict()
         
     @expose(content_type="text/xml")
     def images(self, **kw):
