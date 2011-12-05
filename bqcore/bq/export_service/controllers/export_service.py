@@ -180,6 +180,12 @@ class export_serviceController(ServiceController):
         return dict(error=None, google_url=str(entry.GetAlternateLink().href))
 
 
+    @expose()
+    def exportString(self, **kw):
+        value = kw.pop('value', '')
+        return value
+    
+    
     #------------------------------------------------------------------
     # new ArchiveStreamer - Utkarsh
     #------------------------------------------------------------------

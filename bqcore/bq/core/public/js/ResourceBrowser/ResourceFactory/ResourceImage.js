@@ -9,8 +9,13 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResource',
         //return '<img src="' + this.resource.src + '?thumbnail' + params + '"/>';
         return '<img style="position:relative; top:50%; left:50%; margin-top: -'+size.height/2+'px;margin-left: -'+size.width/2+'px;"'
         +((full==undefined)?' id="'+this.resource.uri+'"':'')
-        + ' src="' + this.resource.src + this.getImageParams(params)
+        + ' src="' + this.getThumbnailSrc(params)
         + '"/>';
+    },
+    
+    getThumbnailSrc : function(params)
+    {
+        return this.resource.src + this.getImageParams(params);
     },
     
     GetImageThumbnailAbs : function(params, size, full)
@@ -18,13 +23,13 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResource',
         //return '<img src="' + this.resource.src + '?thumbnail' + params + '"/>';
         return '<img style="position:absolute; top:50%; left:50%; margin-top: -'+size.height/2+'px;margin-left: -'+size.width/2+'px;"'
         +((full==undefined)?' id="'+this.resource.uri+'"':'')
-        + ' src="' + this.resource.src + this.getImageParams(params) 
+        + ' src="' + this.getThumbnailSrc(params) 
         + '"/>';
     },
     
     getImageParams : function(config)
     {
-        var prefs = this.getImagePrefs('ImageParameters') || '?slice=,,{sliceZ},{sliceT}&thumbnail={width},{height}';
+        var prefs = this.getImagePrefs('ImageParameters') || '?slice=,,{sliceZ},{sliceT}&thumbnail={width},{height}&format=png';
         //var prefs = this.getImagePrefs('ImageParameters') || '?slice=,,{sliceZ},{sliceT}&depth=8,d&resize={width},{height},bc,ar&projectmax&format=jpeg';
 
         prefs = prefs.replace('{sliceZ}', config.sliceZ || 1);
@@ -101,8 +106,6 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResource',
                 height : this.layoutMgr.layoutEl.imageHeight
             });
             
-            //'?slice=,,' + sliceY + ',' + sliceX + '&' + this.getImagePrefs('ImageParameters') +'thumbnail='+this.layoutMgr.layoutEl.imageWidth+','+this.layoutMgr.layoutEl.imageHeight;
-
             function ImgOnLoad()
             {
                 if (Ext.isDefined(document.images[this.resource.uri]))
@@ -211,7 +214,11 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourceCompact',
             this.setData('fetched', -1);	//Loading
 
             var prefetchImg = new Image();
-            prefetchImg.src = this.resource.src + '?thumbnail='+this.layoutMgr.layoutEl.imageWidth+','+this.layoutMgr.layoutEl.imageHeight;
+            prefetchImg.src = this.getThumbnailSrc(
+            {
+                width: this.layoutMgr.layoutEl.imageWidth,
+                height: this.layoutMgr.layoutEl.imageHeight,
+            });
             prefetchImg.onload=Ext.bind(this.loadResource, this);
         }
     },
@@ -274,7 +281,11 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourceCard',
             BQFactory.load(this.resource.uri + '/tag', Ext.bind(this.loadResource, this, ['tags'], true));
 
             var prefetchImg = new Image();
-            prefetchImg.src = this.resource.src + '?thumbnail='+this.layoutMgr.layoutEl.imageWidth+','+this.layoutMgr.layoutEl.imageHeight;
+            prefetchImg.src = this.getThumbnailSrc(
+            {
+                width: this.layoutMgr.layoutEl.imageWidth,
+                height: this.layoutMgr.layoutEl.imageHeight,
+            });
             prefetchImg.onload=Ext.bind(this.loadResource, this, ['image'], true);
         }
     },
@@ -470,7 +481,11 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourceFull',
             BQFactory.load(this.resource.uri + '/tag', Ext.bind(this.loadResource, this, ['tags'], true));
 
             var prefetchImg = new Image();
-            prefetchImg.src = this.resource.src + '?thumbnail='+this.layoutMgr.layoutEl.imageWidth+','+this.layoutMgr.layoutEl.imageHeight;
+            prefetchImg.src = this.getThumbnailSrc(
+            {
+                width: this.layoutMgr.layoutEl.imageWidth,
+                height: this.layoutMgr.layoutEl.imageHeight,
+            });
             prefetchImg.onload=Ext.bind(this.loadResource, this, ['image'], true);
         }
     },

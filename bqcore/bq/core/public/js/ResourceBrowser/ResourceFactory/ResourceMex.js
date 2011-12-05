@@ -244,7 +244,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceList',
 
 	loadResource : function(moduleInfo)
     {
-		this.setData('module', moduleInfo.name);
+		this.setData('module', this.resource.value);
 		this.setData('fetched', 1);	//Loaded
 
         var renderedRef=this.getData('renderedRef')
