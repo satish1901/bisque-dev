@@ -69,7 +69,7 @@ use = bq.core.lib.autoreg:AutoRegister
 # login_handler_path = /auth_service/openid_login_handler
 # logout_handler_path = /auth_service/logout_handler
 # logged_in_url = /
-# logged_out_url = /
+# logged_out_url = /auth_service/post_logout
 # rememberer_name = auth_tkt
 # # Required by google open id http://code.google.com/apis/accounts/docs/OpenID.html
 # ax_require=email=http://axschema.org/contact/email firstname=http://axschema.org/namePerson/first lastname=http://axschema.org/namePerson/last
@@ -89,7 +89,7 @@ use = bq.core.lib.autoreg:AutoRegister
 # login_form = /auth_service/login
 # login_path  = /auth_service/login_handler
 # logout_path =/auth_service/logout_handler
-# post_logout = http://loup.ece.ucsb.edu:9090/
+# post_logout = /auth_service/post_logout
 # remember_name = auth_tkt
 # auto_register=autoregister
 

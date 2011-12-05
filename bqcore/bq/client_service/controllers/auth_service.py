@@ -117,8 +117,7 @@ class AuthenticationServer(ServiceController):
         timeout = int (config.get ('bisque.visit.timeout', 0))
         if timeout:
             session['expires']  = datetime.now() + timedelta(minutes=timeout)
-            session.save()
-            
+        session.save()
         redirect(came_from)
 
 
@@ -150,6 +149,13 @@ class AuthenticationServer(ServiceController):
         """
         #self._end_mex_session()
         #flash(_('We hope to see you soon!'))
+        log.debug("post_logout")
+        try:
+            self._end_mex_session()
+            session.delete()
+        except:
+            log.exception("post_logout")
+
         redirect(came_from)
     
     @expose(content_type="text/xml")
@@ -211,7 +217,6 @@ class AuthenticationServer(ServiceController):
         mexid  = mex.get('uri').rsplit('/',1)[1]
         session['mex_id']  = mexid
         session['mex_uri'] = mex.get('uri')
-        session.save()
         #v = Visit.lookup_visit (tgidentity.current.visit_link.visit_key)
         #v.mexid = mexid
         #session.flush()

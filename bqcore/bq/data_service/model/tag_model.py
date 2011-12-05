@@ -328,6 +328,7 @@ class Taggable(object):
             self.mex = mex
         else:
             mexid = session.get('mex_id')
+            log.debug ("mex_id = %s" % mexid)
             if mexid:
                 self.mex = DBSession.query(ModuleExecution).get(mexid)
                 session['mex'] = self.mex
@@ -335,7 +336,7 @@ class Taggable(object):
                 # Default to the system/init mex
                 self.mex = DBSession.query(ModuleExecution).filter_by(
                     resource_user_type = "initialization").first()
-                session['mex'] = self.mex
+                #session['mex'] = self.mex
 
         if owner is None:
             log.warn ("CREATING taggable %s with no owner" % str(self) )

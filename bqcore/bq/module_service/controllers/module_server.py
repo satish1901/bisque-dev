@@ -436,10 +436,10 @@ class ModuleServer(ServiceController):
         mex = etree.Element('mex', value = 'exec', type=mex_type)
         if name:
             mex.set('name',name)
-        etree.SubElement(mex, 'tag',
-                         name="start-time",
-                         value=time.strftime("%Y-%m-%d %H:%M:%S",
-                                             time.localtime()))
+        #etree.SubElement(mex, 'tag',
+        #                 name="start-time",
+        #                 value=time.strftime("%Y-%m-%d %H:%M:%S",
+        #                                     time.localtime()))
 
         #kw.pop('view', None)
         #response =  self.delegate.new (factory, mex, view='deep',**kw)
@@ -449,10 +449,11 @@ class ModuleServer(ServiceController):
         
     def end_internal_mex(self, mexuri):
         mex = etree.Element('mex', value="FINISHED", uri=mexuri)
-        etree.SubElement(mex, 'tag',
-                         name="end-time",
-                         value=time.strftime("%Y-%m-%d %H:%M:%S",
-                                             time.localtime()))
+        #etree.SubElement(mex, 'tag',
+        #                 name="end-time",
+        #                 value=time.strftime("%Y-%m-%d %H:%M:%S",
+        #                                     time.localtime()))
+
         mex = data_service.update (mex)
         return mex
         

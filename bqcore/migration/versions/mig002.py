@@ -43,8 +43,6 @@ def new_tag(r, name, val, ty_=None):
     r.children.append(t)
     return t
 
-
-
 def move_files_to_resources():
     print "MOVING FILE TABLE TO RESOURCE"
     DBSession.autoflush = False
