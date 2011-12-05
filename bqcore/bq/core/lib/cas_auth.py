@@ -124,6 +124,7 @@ class CASPlugin(object):
                     res.location = "%s?url=%s" % (self.cas_logout_url, self.post_logout)
                     environ['repoze.who.application'] = res
                 return {}
+            return None
 
         identity = {}
 
