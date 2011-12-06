@@ -94,6 +94,8 @@ def move_all_to_resource():
         r.resource_type = ty.xmltag
         r.resource_name = nunicode(getattr(r, 'name', None))
         r.resource_user_type = nunicode(getattr(r, 'type', None))
+        if r.resource_type == 'tag' and r.resource_user_type=='tag':
+            r.resource_user_type = None
         r.resource_parent_id = getattr(r, 'parent_id', None)
 
     for ty_ in [ Tag, GObject, Dataset,  Template,  ]:
@@ -207,7 +209,7 @@ def build_document_pointers():
     for ty_ in types_:
         print "processing %s" % ty_.xmltag
         for count, resource in  enumerate(DBSession.query(ty_)):
-            print "doc %s %s" % (resource.table, resource.id )
+            print >>sys.stderr, "doc %s(%s) %s" % (resource.table, count, resource.id )
             resource.resource_type = unicode(resource.xmltag)
 
             #if resource.id in visited:
@@ -221,8 +223,7 @@ def build_document_pointers():
             #document.owner_id = resource.owner_id
             #document.perm     =  resource.perm
             apply_to_all(resource , parent_id=None, document_id=resource.id)
-            if count % 1024 == 0:
-                DBSession.flush()
+            DBSession.flush()
 
     # Taggable
     user_types = [ (nm, ty) for nm, ty in [ dbtype_from_name(str(y)) for y in all_resources() ] 
