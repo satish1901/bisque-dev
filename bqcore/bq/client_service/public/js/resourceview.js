@@ -182,7 +182,7 @@ ResourceDispatch.prototype.dispatch_dataset = function(resource) {
     BQApp.resource = resource;
     BQApp.main.getComponent('centerEl').setLoading(false);
     var resourcesBrowser = new Bisque.ResourceBrowser.Browser({
-        dataset: resource.getMembers().uri+'/values',
+        dataset: resource.getMembers().uri+'/value',
         height: '100%',   
         selType: 'SINGLE',
         //viewMode : 'ViewerOnly',
