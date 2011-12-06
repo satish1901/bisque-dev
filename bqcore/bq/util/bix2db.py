@@ -83,8 +83,6 @@ class BIXImporter(object):
             'private': permission.PRIVATE,
             'group': permission.PRIVATE }
              
-
-
     def __init__(self, updir, **kw):
         self.upload_dir= updir
         self.flags = kw

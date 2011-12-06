@@ -225,7 +225,7 @@ class import_serviceController(ServiceController):
         ''' This method unpacked uploaded file into a proper location '''
         
         uploadroot = config.get('bisque.image_service.upload_dir', data_path('uploads'))
-        upload_dir = '%s/%s'%(uploadroot, str(bq.core.identity.get_user().user_name))        
+        upload_dir = '%s/%s'%(uploadroot, str(bq.core.identity.get_user().name)) # .user_name
         filename   = self.sanitize_filename(upload_file.filename)
         filepath   = '%s/%s.%s'%(upload_dir, strftime('%Y%m%d%H%M%S'), filename)
         unpack_dir = '%s/%s.%s.UNPACKED'%( upload_dir, strftime('%Y%m%d%H%M%S'), filename )
@@ -255,7 +255,7 @@ class import_serviceController(ServiceController):
         unpack_dir, members = self.unpackPackagedFile(upload_file)
 
         uploadroot = config.get('bisque.image_service.upload_dir', data_path('uploads'))
-        upload_dir = '%s/%s'%(uploadroot, str(bq.core.identity.get_user().user_name))
+        upload_dir = '%s/%s'%(uploadroot, str(bq.core.identity.get_user().name)) # .user_name
         filename   = self.sanitize_filename(upload_file.filename)
         combined_filename = '%s.%s.ome.tif'%(strftime('%Y%m%d%H%M%S'), filename)
         combined_filepath = '%s/%s'%(upload_dir, combined_filename)
@@ -309,7 +309,7 @@ class import_serviceController(ServiceController):
         ''' This method unpacked uploaded file into a proper location '''
         
         uploadroot = config.get('bisque.image_service.upload_dir', data_path('uploads'))
-        upload_dir = '%s/%s'%(uploadroot, str(bq.core.identity.get_user().user_name))        
+        upload_dir = '%s/%s'%(uploadroot, str(bq.core.identity.get_user().name)) # .user_name       
         filename   = self.sanitize_filename(upload_file.filename)
         filepath   = '%s/%s.%s'%(upload_dir, strftime('%Y%m%d%H%M%S'), filename)
         unpack_dir = '%s/%s.%s.EXTRACTED'%( upload_dir, strftime('%Y%m%d%H%M%S'), filename )
@@ -359,28 +359,28 @@ class import_serviceController(ServiceController):
 
 
 
-    def insert_resource_url(self, url):
-        filename = url.rsplit('/',1)[1]
-        uniq = blob_service.make_uniq_hash(filename)
-        perm = permission.PRIVATE
-
-        resource_type = blob_service.guess_type(filename)
-
-        resource = etree.Element(resource_type, perm=str(perm),
-                                 resource_uniq = uniq,
-                                 resource_name = filename,
-                                 resource_value  = url)
-        if resource_type == 'image':
-            resource.set('src', "/image_service/images/%s" % uniq)
-
-        etree.SubElement(resource, 'tag', name="filename", value=filename)
-        etree.SubElement(resource, 'tag', name="upload_datetime", value=datetime.now().isoformat(' '), type='datetime' ) 
-            
-        #log.debug("\n\ninsert_image tags: \n%s\n" % etree.tostring(tags))
-
-        log.info ("NEW IMAGE <= %s" % (etree.tostring(resource)))
-        resource = data_service.new_resource(resource = resource)
-        return resource
+#    def insert_resource_url(self, url):
+#        filename = url.rsplit('/',1)[1]
+#        uniq = blob_service.make_uniq_hash(filename)
+#        perm = permission.PRIVATE
+#
+#        resource_type = blob_service.guess_type(filename)
+#
+#        resource = etree.Element(resource_type, perm=str(perm),
+#                                 resource_uniq = uniq,
+#                                 resource_name = filename,
+#                                 resource_value  = url)
+#        if resource_type == 'image':
+#            resource.set('src', "/image_service/images/%s" % uniq)
+#
+#        etree.SubElement(resource, 'tag', name="filename", value=filename)
+#        etree.SubElement(resource, 'tag', name="upload_datetime", value=datetime.now().isoformat(' '), type='datetime' ) 
+#            
+#        #log.debug("\n\ninsert_image tags: \n%s\n" % etree.tostring(tags))
+#
+#        log.info ("NEW IMAGE <= %s" % (etree.tostring(resource)))
+#        resource = data_service.new_resource(resource = resource)
+#        return resource
 
 #------------------------------------------------------------------------------
 # file ingestion support functions
@@ -407,37 +407,46 @@ class import_serviceController(ServiceController):
         # try inserting the image in the image service            
         #info = image_service.new_image(src=src, name=filename, userPerm=perm)
 
+        # fix to add the tag
+        #if hasattr(f, 'original') and f.original:
+        #    etree.SubElement(resource, 'tag', name="original_upload", value=f.original, type='link' )      
+
+
         try:
-            uri, uniq = blob_service.store_blob (src, filename)
-            resource_type = blob_service.guess_type(filename)
-            log.debug ("stored %s at %s" % (filename, uri))
+            resource = blob_service.store_blob (filesrc=src, filename=filename, perm=perm, tags=tags)
         except Exception, e:
             log.exception("Error during store")
-        # the image was successfuly added into the image service
-        resource = etree.Element(resource_type, perm = str(perm),
-                                 resource_uniq = uniq,
-                                 resource_name = filename,
-                                 resource_value  = uri)
-        if resource_type == 'image':
-            resource.set('src', "/image_service/images/%s" % uniq)
-        etree.SubElement(resource, 'tag', name="filename", value=filename)
-        etree.SubElement(resource, 'tag', name="upload_datetime", value=datetime.now().isoformat(' '), type='datetime' ) 
-        if hasattr(f, 'original') and f.original:
-            etree.SubElement(resource, 'tag', name="original_upload", value=f.original, type='link' )              
-            
-        log.debug("\n\ninsert_image tags: \n%s\n" % etree.tostring(tags))
-                          
-        # ingest extra tags
-        if tags is not None:
-            if tags.tag == 'resource':
-                #resource.extend(copy.deepcopy(list(tags)))
-                resource.extend(list(tags))
-        log.info ("NEW IMAGE <= %s" % (etree.tostring(resource)))
-        resource = data_service.new_resource(resource = resource)
-        #else:
-        #    # error happened or the file was filtered during the pre-processing stage                
-        #    resource = etree.Element('file', name=filename)                
-        #    etree.SubElement(resource, 'tag', name='error', value='Problem inserting this image')
+
+
+        #        try:
+        #            uri, uniq = blob_service.store_blob (src, filename)
+        #            resource_type = blob_service.guess_type(filename)
+        #            log.debug ("stored %s at %s" % (filename, uri))
+        #        except Exception, e:
+        #            log.exception("Error during store")
+        #        # the image was successfuly added into the image service
+        #        resource = etree.Element(resource_type, perm = str(perm),
+        #                                 resource_uniq = uniq,
+        #                                 resource_name = filename,
+        #                                 resource_value  = uri)
+        #        if resource_type == 'image':
+        #            resource.set('src', "/image_service/images/%s" % uniq)
+        #        etree.SubElement(resource, 'tag', name="filename", value=filename)
+        #        etree.SubElement(resource, 'tag', name="upload_datetime", value=datetime.now().isoformat(' '), type='datetime' ) 
+        #        
+        #        if hasattr(f, 'original') and f.original:
+        #            etree.SubElement(resource, 'tag', name="original_upload", value=f.original, type='link' )              
+        #            
+        #        log.debug("\n\ninsert_image tags: \n%s\n" % etree.tostring(tags))
+        #                          
+        #        # ingest extra tags
+        #        if tags is not None:
+        #            if tags.tag == 'resource':
+        #                #resource.extend(copy.deepcopy(list(tags)))
+        #                resource.extend(list(tags))
+        #        log.info ("NEW IMAGE <= %s" % (etree.tostring(resource)))
+        #        resource = data_service.new_resource(resource = resource)
+
         
         log.debug('insert_image :::::\n %s'% etree.tostring(resource) )
         return resource
@@ -489,7 +498,7 @@ class import_serviceController(ServiceController):
             error = None
             try:
                 nf = self.filters[ intags['type'] ](f, intags)
-            except e:
+            except Exception, e:
                 log.exception('Problem in processing file: %s'  % intags['type'])
                 error = 'Problem processing the file: %s'%e
            
@@ -501,9 +510,22 @@ class import_serviceController(ServiceController):
                 return resource
 
             # include the parent file into the database
-            info = image_service.new_file(src=f.file, name=os.path.split(f.filename)[-1], userPerm=f.permission )
-            if info and 'src' in info:
-                parent_uri = info['src']
+            #info = image_service.new_file(src=f.file, name=os.path.split(f.filename)[-1], userPerm=f.permission )
+            #if info and 'src' in info:
+            #    parent_uri = info['src']
+                
+
+            # try inserting the image in the image service            
+            try:
+                resource_parent = blob_service.store_blob (filesrc=f.file, filename=os.path.split(f.filename)[-1], perm=f.permission)
+                parent_uri = resource_parent.get('uri')
+            except Exception, e:
+                log.exception("Error during store")  
+              
+                
+                
+                
+                
 
             # pre-process succeeded          
             log.debug('filters nf: %s'% nf )            
@@ -531,7 +553,7 @@ class import_serviceController(ServiceController):
             # multiple resources ingested, we need to group them into a dataset and return a reference to it
             # now we'll just return a stupid stub
             ts = datetime.now().isoformat(' ')
-            resource = etree.Element('dataset', type='datasets', name='%s (uploaded %s)'%(f.filename, ts))
+            resource = etree.Element('dataset', name='%s (uploaded %s)'%(f.filename, ts))
             etree.SubElement(resource, 'tag', name="upload_datetime", value=ts, type='datetime' )             
             if parent_uri:
                 etree.SubElement(resource, 'tag', name="original_upload", value=parent_uri, type='link' )   
@@ -552,7 +574,7 @@ class import_serviceController(ServiceController):
                 
             log.debug('process resource :::::\n %s'% etree.tostring(resource) )
                 
-            resource = data_service.new_resource(resource=resource)
+            resource = data_service.new_resource(resource=resource) # dima: possible to request on post???
             resource = data_service.get_resource(resource.get('uri'), view='deep')
             log.debug('process created resource :::::\n %s'% etree.tostring(resource) )
             return resource            

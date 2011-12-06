@@ -278,25 +278,25 @@ class image_serviceController(ServiceController):
         tg.response.status_int = 404             
         return "File not found"
        
-    @expose()
-    #@identity.require(identity.not_anonymous())    
-    def upload_file(self, file, **kw):
-        userId = identity.current.user_name
-        userPerm = 1
-        if ('permission' in kw): userPerm = kw['permission']
-        image_id, path = self.srv.storeBlob( file, None, ownerId = userId, permission = userPerm )
-        return '/imgsrv/images/'+str(image_id)  	
-    
-    @expose()
-    #@identity.require(identity.not_anonymous())    
-    def upload_image(self, file, **kw):
-        userId = identity.current.user_name
-        userPerm = 1
-        if ('permission' in kw): userPerm = kw['permission']
-        	    
-        image_id, path, x, y , ch, z ,t = self.srv.addImage( file, None, ownerId = userId, permission = userPerm, **kw )
-        #return turbogears.url('/imgsrv/images/'+str(image_id))
-        return '/imgsrv/images/'+str(image_id), x, y, ch, z, t
+#    @expose()
+#    #@identity.require(identity.not_anonymous())    
+#    def upload_file(self, file, **kw):
+#        userId = identity.current.user_name
+#        userPerm = 1
+#        if ('permission' in kw): userPerm = kw['permission']
+#        image_id, path = self.srv.storeBlob( file, None, ownerId = userId, permission = userPerm )
+#        return '/imgsrv/images/'+str(image_id)  	
+#    
+#    @expose()
+#    #@identity.require(identity.not_anonymous())    
+#    def upload_image(self, file, **kw):
+#        userId = identity.current.user_name
+#        userPerm = 1
+#        if ('permission' in kw): userPerm = kw['permission']
+#        	    
+#        image_id, path, x, y , ch, z ,t = self.srv.addImage( file, None, ownerId = userId, permission = userPerm, **kw )
+#        #return turbogears.url('/imgsrv/images/'+str(image_id))
+#        return '/imgsrv/images/'+str(image_id), x, y, ch, z, t
 
     @expose()
     def update_image_permission(self):

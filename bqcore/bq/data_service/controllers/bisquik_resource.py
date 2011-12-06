@@ -149,7 +149,7 @@ class BisquikResource(Resource):
         self.resource_name = table
         if table:
             #self.resource_type = dbtype_from_tag(table)
-            self.resource_type = dbtype_from_name(table)
+            self.resource_type = dbtype_from_tag(table)
             self.children['auth'] = ResourceAuth(url)
     
     def error(self, tg_errors=None):
@@ -225,6 +225,7 @@ class BisquikResource(Resource):
         format = kw.pop('format', None)
         offset = int(kw.get ('offset', 0))
         progressive = kw.pop('progressive', False)
+        #limit = kw.pop('limit', None) 
         log.info ('DIR  %s' % (self.browser_url))
         #  Do not use loading 
         parent = getattr(self,'parent', None)
@@ -241,12 +242,17 @@ class BisquikResource(Resource):
             response = etree.Element ('resource')
             etree.SubElement(response, xtag, count = str(count))
         else:
+            #if limit is None: limit = 1000
+            #if limit > 1000:
+            #    log.warn('LIMIT of %s requested over accepted 1000' % limit)
+            #    limit = 1000
             resources = resource_query (self.resource_type,
                                         parent=parent,
                                         user_id=self.user_id,
                                         tag_query = tag_query,
                                         tag_order = tag_order,
                                         wpublic = wpublic,
+                                        #limit = limit,
                                         **kw)
             #log.debug ("DIR query " + str(resources))
             response = etree.Element('resource', uri=str(tg.request.url))

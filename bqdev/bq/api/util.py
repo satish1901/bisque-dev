@@ -175,7 +175,7 @@ def save_image_pixels(session,  localfile, image_tags=None):
     @param localfile:  a file-like object or name of a localfile
     @return XML content  when upload ok
     """
-    url = session.service_url('client_service', 'upload_images')
+    url = session.service_url('import_service', 'transfer')
     
     if isinstance(localfile, basestring):
         localfile = open(localfile,'rb')
