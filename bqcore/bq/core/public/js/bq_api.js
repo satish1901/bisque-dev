@@ -626,12 +626,14 @@ BQFactory.createFromXml = function(xmlResource, resource, parent) {
         }
     }
 
+    response = resources[0];
+
     // dima: do some additional processing after you inited elements    
     var rr = resources.reverse();       
     for (var p=0; (r=rr[p]); p++)
         if (r.afterInitialized) r.afterInitialized(); 
     
-    return resources[0];
+    return response;
 }
 
 

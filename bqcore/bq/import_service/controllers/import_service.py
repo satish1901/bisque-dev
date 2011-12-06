@@ -267,8 +267,10 @@ class import_serviceController(ServiceController):
 
         num_pages = len(members)
         z=1; t=1
-        if 'number_z' in kw: z = int(kw['number_z'])
-        if 'number_t' in kw: t = int(kw['number_t'])
+        #if 'number_z' in kw: z = int(kw['number_z'])
+        #if 'number_t' in kw: t = int(kw['number_t'])
+        if 'number-z' in kw: z = int(kw['number-z'])
+        if 'number-t' in kw: t = int(kw['number-t'])            
         if t==0: t=num_pages; z=1
         if z==0: z=num_pages; t=1
 
@@ -404,49 +406,17 @@ class import_serviceController(ServiceController):
         if hasattr(f, 'permission'):             
             perm = f.permission
 
-        # try inserting the image in the image service            
-        #info = image_service.new_image(src=src, name=filename, userPerm=perm)
+        # dima: fix to add the tag
+        if hasattr(f, 'original') and f.original:
+            if tags is None:
+                tags = etree.Element('resource')
+            etree.SubElement(tags, 'tag', name="original_upload", value=f.original, type='link' )      
 
-        # fix to add the tag
-        #if hasattr(f, 'original') and f.original:
-        #    etree.SubElement(resource, 'tag', name="original_upload", value=f.original, type='link' )      
-
-
+        # try inserting the file in the blob service            
         try:
             resource = blob_service.store_blob (filesrc=src, filename=filename, perm=perm, tags=tags)
         except Exception, e:
             log.exception("Error during store")
-
-
-        #        try:
-        #            uri, uniq = blob_service.store_blob (src, filename)
-        #            resource_type = blob_service.guess_type(filename)
-        #            log.debug ("stored %s at %s" % (filename, uri))
-        #        except Exception, e:
-        #            log.exception("Error during store")
-        #        # the image was successfuly added into the image service
-        #        resource = etree.Element(resource_type, perm = str(perm),
-        #                                 resource_uniq = uniq,
-        #                                 resource_name = filename,
-        #                                 resource_value  = uri)
-        #        if resource_type == 'image':
-        #            resource.set('src', "/image_service/images/%s" % uniq)
-        #        etree.SubElement(resource, 'tag', name="filename", value=filename)
-        #        etree.SubElement(resource, 'tag', name="upload_datetime", value=datetime.now().isoformat(' '), type='datetime' ) 
-        #        
-        #        if hasattr(f, 'original') and f.original:
-        #            etree.SubElement(resource, 'tag', name="original_upload", value=f.original, type='link' )              
-        #            
-        #        log.debug("\n\ninsert_image tags: \n%s\n" % etree.tostring(tags))
-        #                          
-        #        # ingest extra tags
-        #        if tags is not None:
-        #            if tags.tag == 'resource':
-        #                #resource.extend(copy.deepcopy(list(tags)))
-        #                resource.extend(list(tags))
-        #        log.info ("NEW IMAGE <= %s" % (etree.tostring(resource)))
-        #        resource = data_service.new_resource(resource = resource)
-
         
         log.debug('insert_image :::::\n %s'% etree.tostring(resource) )
         return resource
@@ -509,23 +479,12 @@ class import_serviceController(ServiceController):
                 etree.SubElement(resource, 'tag', name='error', value=error)
                 return resource
 
-            # include the parent file into the database
-            #info = image_service.new_file(src=f.file, name=os.path.split(f.filename)[-1], userPerm=f.permission )
-            #if info and 'src' in info:
-            #    parent_uri = info['src']
-                
-
-            # try inserting the image in the image service            
+            # include the parent file into the database            
             try:
                 resource_parent = blob_service.store_blob (filesrc=f.file, filename=os.path.split(f.filename)[-1], perm=f.permission)
                 parent_uri = resource_parent.get('uri')
             except Exception, e:
                 log.exception("Error during store")  
-              
-                
-                
-                
-                
 
             # pre-process succeeded          
             log.debug('filters nf: %s'% nf )            
@@ -553,7 +512,7 @@ class import_serviceController(ServiceController):
             # multiple resources ingested, we need to group them into a dataset and return a reference to it
             # now we'll just return a stupid stub
             ts = datetime.now().isoformat(' ')
-            resource = etree.Element('dataset', name='%s (uploaded %s)'%(f.filename, ts))
+            resource = etree.Element('dataset', name='%s'%(f.filename))
             etree.SubElement(resource, 'tag', name="upload_datetime", value=ts, type='datetime' )             
             if parent_uri:
                 etree.SubElement(resource, 'tag', name="original_upload", value=parent_uri, type='link' )   
