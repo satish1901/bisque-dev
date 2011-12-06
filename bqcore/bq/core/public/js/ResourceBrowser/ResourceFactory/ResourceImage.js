@@ -243,11 +243,8 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourceCompact',
 
     updateContainer : function()
     {
-    	//var text="ch:"+this.resource.ch+" x:"+this.resource.x+" y:"+this.resource.y+" z:"+this.resource.z+" t:"+this.resource.t;
-        var text = this.resource.name || '';
-            
+        var text = Ext.String.ellipsis(this.resource.name, 25) || '';
         this.update('<div class="textOnImage" style="width:'+this.layoutMgr.layoutEl.width+'px;">'+text+'</div>'+this.getData('image'));
-        
         this.setLoading(false);
     },
 });
@@ -477,7 +474,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourceFull',
         if (!this.getData('fetched'))
         {
             this.setData('fetched', -1);	//Loading
-
+            
             BQFactory.load(this.resource.uri + '/tag', Ext.bind(this.loadResource, this, ['tags'], true));
 
             var prefetchImg = new Image();

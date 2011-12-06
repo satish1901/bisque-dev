@@ -94,7 +94,12 @@ Ext.define('BQ.Preferences',
                 }
                 else
                 {
-                    clog('USER preferences tag not found!\n');
+                    clog('USER preferences tag not found! Initializing from system\n');
+                    //this.user.tag = this.stripOwnership([this.system.tag])[0];
+                    //this.user.dictionary = this.system.dictionary;
+                    //this.user.tag.save_(resource.uri);
+                    
+                    //alert('USER preferences tag not found!\n');
                     this.user.exists=true;
                 }
             }
