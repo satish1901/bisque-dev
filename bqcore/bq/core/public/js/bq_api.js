@@ -136,7 +136,7 @@ BQObject.prototype.toXML = function (){
     return this.xmlNode (xmlrep);
 }
 
-BQObject.prototype.delete_ = function (cb) {
+BQObject.prototype.delete_ = function (cb, errorcb) {
     this.testReadonly();
     // Delete object from db
     if (this.uri != null) {

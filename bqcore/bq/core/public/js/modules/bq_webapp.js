@@ -631,7 +631,7 @@ BQWebApp.prototype.parseResults = function (mex) {
             if (this.resultantResourcesBrowser) this.resultantResourcesBrowser.destroy();
             this.resultantResourcesBrowser = new Bisque.ResourceBrowser.Browser({
                 //dataset: this.bq_resource.tags[0].uri+'/values',
-                dataset: this.bq_resource.getMembers().uri+'/values',
+                dataset: this.bq_resource.getMembers().uri+'/value',
                 height: '100%',   
                 selType: 'SINGLE',
                 viewMode : 'ViewerOnly',
