@@ -69,6 +69,8 @@ from bq.data_service.model import Taggable, taggable, Image
 from bq.data_service.model import TaggableAcl, BQUser
 from bq.data_service.model import Tag
 from bq.data_service.model import Value, values
+from bq.data_service.model import dbtype_from_tag
+
 from bq.core import identity
 from bq.core.identity import get_admin
 from bq.core.identity import get_user_id
@@ -173,6 +175,30 @@ def p_expr_term(p):
     #p[0] = Taggable.id.in_ (select([Taggable.id], p[1]).correlate(None))
     p[0] = p[1]
 
+def p_term_tagvaltype(p):
+    '''term : tagval SEP tagval SEP tagval'''
+    vals= values.alias()
+    tag = taggable.alias ()
+    if p[1].count('*'):
+        namexpr = tag.c.resource_name.ilike (p[1].replace('*', '%'))
+    else:
+        namexpr = tag.c.resource_name == p[1]
+    
+    v = p[3].lower()
+    valexpr = None
+    if p[3].count('*'):
+        v = v.replace('*', '%')
+        valexpr = tag.c.resource_value.ilike(v)
+    else:
+        valexpr = (func.lower(tag.c.resource_value) == v)
+
+    ty = p[5].lower()
+    tyexpr = (func.lower(tag.c.resource_user_type) == ty)
+    
+
+    p[0] = exists([tag.c.id]).where(
+        and_(namexpr, valexpr, tyexpr, tag.c.document_id == taggable.c.id))
+    
 def p_term_tagval(p):
     '''term : tagval SEP tagval'''
     vals= values.alias()
@@ -191,7 +217,8 @@ def p_term_tagval(p):
 
     p[0] = exists([tag.c.id]).where(
         and_(namexpr, valexpr, tag.c.document_id == taggable.c.id))
-    
+
+
 
 def p_term_tag(p):
     '''term : tagval'''
@@ -285,9 +312,11 @@ def prepare_type (resource_type, query = None):
     ## Setup universal query type
     query_expr = None
     if not query:
+        log.debug ("query ype %s" % dbtype)
         query = session.query(dbtype)
 
     if dbtype == Taggable:
+        log.debug ("query resource_type %s" % name)
         #query_expr = (Taggable.tb_id == UniqueName(name).id)
         query_expr = (Taggable.resource_type == name)
     else:
@@ -396,20 +425,17 @@ def tags_special(dbtype, query, params):
        name=tag_name   : all tags have a name="tag_name" as an attribute
        value=tag_val   : all tags having a value attribute of tag_val
     '''
-    
-    if params.pop('tag_names', None):
+
+    tn = params.pop('tag_names', None)
+    if tn:
         
         ### Return all tha available tag names for the given superquery
         sq1 = query.with_labels().subquery()
         # Fetch all name on all 'top' level tags from the query
-        sq2 = session.query(Tag.resource_name).filter(Tag.document_id == sq1.c.taggable_document_id)
-        sq3 = sq2.distinct().order_by(Tag.resource_name)
+        sq2 = session.query(Tag).filter(Tag.document_id == sq1.c.taggable_document_id)
+        sq3 = sq2.distinct(Tag.resource_name).order_by(Tag.resource_name)
         #log.debug ("tag_names query = %s" % sq1)
-        q = [ fobject (resource_type='tag', name = tg[0]) for tg in sq3]
-        #names = session.query(UniqueName).filter(UniqueName.id == sq2.c.name_id)
-        #names = names.distinct().order_by(UniqueName.name)
-        #log.debug ('names query = %s' % str(names))
-        #q = [ fobject (xmltag='tag', name = str(tg.name)) for tg in names.all()]
+        q = [ fobject (resource_type='tag' , name=tg.resource_name, type=tg.resource_user_type ) for tg in sq3]
         return q
     
     tv = params.pop('tag_values', None)
@@ -429,6 +455,21 @@ def tags_special(dbtype, query, params):
         q = [ fobject (resource_type='tag', name = tv, value = v[0], resource_value = v[0])
               for v in vsall ]
         return q
+
+    # Return name of specified resource
+    tn = params.pop('names', None)
+    if tn:
+        name, dbtype1 = dbtype_from_tag(tn)
+        ### Return all tha available tag names for the given superquery
+        sq1 = query.with_labels().subquery()
+        # Fetch all name on all 'top' level tags from the query
+        sq2 = session.query(dbtype1).filter(dbtype1.document_id == sq1.c.taggable_document_id)
+        sq3 = sq2.distinct(dbtype1.resource_name).order_by(dbtype1.resource_name)
+        #log.debug ("tag_names query = %s" % sq1)
+        q = [ fobject (resource_type=dbtype1.xmltag , name=tg.resource_name, type=tg.resource_user_type ) for tg in sq3]
+        return q
+
+
 
     if params.has_key('name') and dbtype == Tag:
         ### Find tags with name

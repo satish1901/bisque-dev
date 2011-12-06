@@ -440,7 +440,7 @@ mapping_fields = {
     'resource_name' : 'name',
     'resource_value': 'value',
     'resource_type' : None,
-    'resource_user_type' : None,
+    'resource_user_type' : 'type',
     'module_type_id':None,
     'mex' : None,
     'mex_id' : None,
@@ -726,7 +726,7 @@ def load_uri (uri):
     # Check that we are looking at the right resource.
     
     net, name, ida = parse_uri(uri)
-    name, dbcls = dbtype_from_name(name)
+    name, dbcls = dbtype_from_tag(name)
     resource = DBSession.query(dbcls).get (ida)
     log.debug("loading uri name/type (%s/%s)(%s) => %s" %(name,  str(dbcls), ida, str(resource)))
     return resource
@@ -783,6 +783,7 @@ def updateDB(root=None, parent=None, resource = None, factory = ResourceFactory,
                     resource = factory.load_uri (uri, parent)
                     if resource is None:
                         resource = factory.new (obj, parent, uri=uri)
+                        resource.created = ts
                     if replace:
                         cleared = resource.clear()
                 elif indx is not None:
@@ -791,11 +792,10 @@ def updateDB(root=None, parent=None, resource = None, factory = ResourceFactory,
                 else:
                     # TODO if tag == resource, then type should be used
                     resource = factory.new (obj, parent)
+                    resource.created = ts
+
                     #log.debug("update: created %s:%s of %s" % (obj.tag, resource, resource.document))
                     log.debug("update: created %s:%s" % (obj.tag, resource))
-
-                
-
                 # Assign attributes
                 resource.ts = ts
                 for k,v in attrib.items():

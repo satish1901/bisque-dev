@@ -1,3 +1,7 @@
+# obsolete
+#
+#
+
 # -*- coding: utf-8 -*-
 """Sample controller with all its actions protected."""
 import tg

@@ -11,6 +11,7 @@ def upgrade(migrate_engine):
     DBSession.configure(bind=migrate_engine)
     from migration.versions.model002 import  taggable, values, vertices
 
+    resource_created = Column('created', DateTime(timezone=False))
     resource_uniq = Column('resource_uniq', String(40) ) # will be used for sha1
     resource_parent_id = Column('resource_parent_id', Integer, ForeignKey('taggable.id'))
     resource_index = Column('resource_index', Integer)
@@ -21,6 +22,7 @@ def upgrade(migrate_engine):
     resource_value = Column('resource_value', UnicodeText ) 
 
     # New columns
+    resource_created.create(taggable)
     resource_uniq.create(taggable)
     resource_parent_id.create(taggable)
     resource_index.create(taggable)
@@ -29,7 +31,6 @@ def upgrade(migrate_engine):
     resource_name.create(taggable)
     resource_user_type.create(taggable)
     resource_value.create(taggable)
-
     
     # Adding document_id 
     document_id = Column('document_id', Integer, ForeignKey('taggable.id')) # Unique Element
