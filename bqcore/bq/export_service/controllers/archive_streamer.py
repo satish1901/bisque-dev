@@ -53,7 +53,6 @@ class ArchiveStreamer():
             file_info['name'] = xml.get('name')
             file_info['uniq']  = xml.get('resource_uniq')
             file_info['path'] = blob_service.localpath(file_info['uniq'])
-            file_info['id'] = xml.get('uri').rsplit('/', 1)[1] # pick the resource ID
             file_info['dataset'] = dataset
             file_info['extension'] = ''
             
