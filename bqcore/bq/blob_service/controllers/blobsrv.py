@@ -2,6 +2,9 @@ import os
 import logging
 import hashlib
 
+from lxml import etree
+from datetime import datetime
+
 import tg
 from tg import expose, flash, config
 from tg.controllers import RestController
@@ -98,13 +101,47 @@ class BlobServer(RestController, ServiceMixin):
         log.info("post() body %s" % tg.request.body_file.read())
         user = identity.get_user_id()
 
-    def storeBlob(self, src, name):
+    # available additional configs:
+    # perm
+    # tags
+    def storeBlob(self, flosrc, filename, **kw):
         """Store the file object in the next blob and return the
         descriptor"""
+        
+        # blob storage part
         user_name = identity.current.user_name
-        blob_ident, flocal = self.default_store.write(src, name, user_name = user_name)
+        blob_id, flocal = self.default_store.write(flosrc, filename, user_name = user_name)
         fhash = file_hash_SHA1( flocal )
-        return blob_ident, fhash
+        #return blob_id, fhash
+
+        # resource creation
+        resource_type = guess_type(filename)                  
+
+        perm = permission.PRIVATE
+        if 'perm' in kw:             
+            perm = kw['perm']
+
+        resource = etree.Element( resource_type, perm = str(perm),
+                                  resource_uniq = fhash,
+                                  resource_name = filename,
+                                  resource_value  = blob_id )
+
+        if resource_type == 'image':
+            resource.set('src', "/image_service/images/%s" % fhash) # dima: this here is a hack!!!!
+
+        etree.SubElement(resource, 'tag', name="filename", value=filename)
+        etree.SubElement(resource, 'tag', name="upload_datetime", value=datetime.now().isoformat(' '), type='datetime' ) 
+
+        # ingest extra tags
+        if 'tags' in kw and kw['tags'] is not None:
+            tags = kw['tags']
+            if hasattr(tags, 'tag') and tags.tag == 'resource':
+                #resource.extend(copy.deepcopy(list(tags)))
+                resource.extend(list(tags))
+
+        log.info ("NEW RESOURCE <= %s" % (etree.tostring(resource)))
+        return data_service.new_resource(resource = resource)
+
 
     def localpath (self, ident):
         "Find  local path for the identified blob, using workdir for local copy if needed"
