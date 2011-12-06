@@ -250,42 +250,42 @@ def find_server(url=None):
     return service_registry.find_service ('image_service')
 
 
-def store_blob (src, name):
-    server = find_server()
-    if server:
-        return server.store_blob(src=src, name=name)
-    else:
-        log.debug ("PREFERED IS NONE: no image server is available")
-        # Find a remote image server that is writable and send image there
-        pass
+#def store_blob (src, name):
+#    server = find_server()
+#    if server:
+#        return server.store_blob(src=src, name=name)
+#    else:
+#        log.debug ("PREFERED IS NONE: no image server is available")
+#        # Find a remote image server that is writable and send image there
+#        pass
 
 def guess_image_type(filename):
     server = find_server()
     return server.guess_image_type(filename)
     
-def new_file(src=None, name=None, **kw):
-    ''' Find the preferred image server and store the file there
-    '''
-    server = find_server(src)
-    if server:
-        return server.new_file(src=src, name=name, **kw)
-    else:
-        log.debug ("PREFERED IS NONE: no image server is available")
-        # Find a remote image server that is writable and send image there
-        pass
-
-def new_image(name, src = None, **kw):
-    ''' Find the preferred image server and store the image there
-    '''
-    log.debug("new %s %s" % (name, src))
-    server = find_server(src)
-    if server:
-        log.debug ("PREFERED : %s" % str(server))
-        return server.new_image(src, name, **kw)
-    else:
-        log.debug ("PREFERED IS NONE: no image server is available")
-        # Find a remote image server that is writable and send image there
-        pass
+#def new_file(src=None, name=None, **kw):
+#    ''' Find the preferred image server and store the file there
+#    '''
+#    server = find_server(src)
+#    if server:
+#        return server.new_file(src=src, name=name, **kw)
+#    else:
+#        log.debug ("PREFERED IS NONE: no image server is available")
+#        # Find a remote image server that is writable and send image there
+#        pass
+#
+#def new_image(name, src = None, **kw):
+#    ''' Find the preferred image server and store the image there
+#    '''
+#    log.debug("new %s %s" % (name, src))
+#    server = find_server(src)
+#    if server:
+#        log.debug ("PREFERED : %s" % str(server))
+#        return server.new_image(src, name, **kw)
+#    else:
+#        log.debug ("PREFERED IS NONE: no image server is available")
+#        # Find a remote image server that is writable and send image there
+#        pass
 
 
 def meta(imgsrc, **kw):
