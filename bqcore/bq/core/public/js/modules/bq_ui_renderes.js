@@ -156,7 +156,7 @@ Ext.define('BQ.selectors.Resource', {
         var btns = [];
         var accepted_type = template.accepted_type || {};
         accepted_type[resource.type] = resource.type;
-        
+
         if ('image' in accepted_type) {
             this.btn_select_image = Ext.create('Ext.button.Button', {
                 text: 'Select an Image', 

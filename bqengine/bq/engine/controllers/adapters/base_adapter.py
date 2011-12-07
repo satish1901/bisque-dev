@@ -106,9 +106,9 @@ class BaseAdapter(object):
         input_nodes = []
         formal_inputs = module.xpath('./tag[@name="inputs"]')
         formal_inputs = formal_inputs and formal_inputs[0]
-        #actual_inputs = mex.xpath('./tag[@name="inputs"]')
-        #actual_inputs = actual_inputs and actual_inputs[0]
-        actual_inputs = mex
+        actual_inputs = mex.xpath('./tag[@name="inputs"]')
+        actual_inputs = actual_inputs and actual_inputs[0]
+        #actual_inputs = mex
 
         for mi in formal_inputs:
             # pull type off and markers off

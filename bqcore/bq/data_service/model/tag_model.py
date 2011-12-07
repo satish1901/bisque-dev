@@ -331,7 +331,7 @@ class Taggable(object):
             log.debug ("mex_id = %s" % mexid)
             if mexid:
                 self.mex = DBSession.query(ModuleExecution).get(mexid)
-                session['mex'] = self.mex
+                #session['mex'] = self.mex
             else:
                 # Default to the system/init mex
                 self.mex = DBSession.query(ModuleExecution).filter_by(

@@ -8,7 +8,10 @@ import logging
 import transaction
 
 import tg
-from tg import config, url
+from tg import config, url, session
+from paste.registry import Registry
+from beaker.session import Session, SessionObject
+
 from lxml import etree
 from datetime import datetime, timedelta
 from zope.sqlalchemy import ZopeTransactionExtension
@@ -60,7 +63,7 @@ class MexRequest(object):
         #module_xml = data_service.load(mex.module, view='deep')
         #log.debug ("module %s -> %s" % (mex.module, module_xml))
         #self.modtree = etree.XML(module_xml)
-        module = load_db(Module, mex.resource_name)
+        module = load_db(Module, mex.resource_user_type)
         self.modtree = db2tree(module, view='deep', baseuri=baseuri)
         log.debug ("MODULE = %s"  % etree.tostring (self.modtree))
         self.mex_id = mex.uri.rsplit('/', 1)[1]
@@ -102,6 +105,9 @@ class MexRunner(object):
         #Session.configure(bind=sqlengine)
         self.__class__.runner_count = self.__class__.runner_count +1
 
+        registry = Registry()
+        registry.prepare()
+        registry.register(session, SessionObject({}))
         
 
 
@@ -110,14 +116,14 @@ class MexRunner(object):
         engine = None
         log.info ('service for mex = %s and module %s' % (mex.uri, mex.resource_name))
         engines = self.session.query(Service).filter_by(
-            resource_name = mex.resource_name).all()
+            resource_user_type = mex.resource_user_type).all()
         # Choose an (enabled) engine
-        for engine in list(engines):
-            engine_status = engine.findtag('status')
-            if engine_status and engine_status.value == 'disabled':
-                engines.remove (engine)
+        #for engine in list(engines):
+        #    engine_status = engine.findtag('status')
+        #    if engine_status and engine_status.value == 'disabled':
+        #        engines.remove (engine)
         log.info ('service for mex=%s/module %s=%s'
-                  % (mex.uri, mex.resource_name, engines))
+                  % (mex.uri, mex.resource_user_type, engines))
         return engines
 
 
@@ -176,8 +182,8 @@ class MexRunner(object):
             log.info ("DISPATCH to %s FAILED" % response.request.service.resource_value)
         if response.status == 200:
             # We received a good status so we update the last-contact
-            contact = response.request.service.findtag('last-contact')
-            contact.value = str(datetime.now())
+            #contact = response.request.service.findtag('last-contact')
+            #contact.value = str(datetime.now())
             # End this this request if non-asynchronous
             if not response.request.asynch:
                 mex = self.end_response(response)
@@ -267,6 +273,7 @@ class MexRunner(object):
         # Create service pairs 
         pending = self.session.query(Mex).filter_by(resource_value='PENDING')
         for mex in pending:
+            session['mex_id' ] = mex.id
             for service in  self.find_active_service (mex):
                 request, response = self.process_one(mex, service)
                 if response.status == 200:
@@ -278,6 +285,8 @@ class MexRunner(object):
     def run(self):
         log.info ("STARTING %s" % id(self))
         set_admin_mode(True)
+        
+
         mex_id = None
         while True:
             log.debug ("WAIT REQUEST %s" % self.timeout)
