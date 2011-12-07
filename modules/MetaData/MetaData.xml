@@ -3,17 +3,17 @@
 
    <!-- Comments are OK -->  
     <tag name="inputs">
-        <tag name="input-formal" value="image_url" type="image" />
-        <tag name="input-system" value="mex_url"  />
-        <tag name="input-system" value="bisque_token"  />
+        <tag name="image_url" type="image" />
+        <tag name="mex_url"  type="system-input" />
+        <tag name="bisque_token"  type="system-input" />
     </tag>
     
     <tag name="outputs">
-         <tag name="output-formal" value="MetaData" type="tag" />
+         <tag name="MetaData"  />
     </tag>
     
     <tag name="module_options" >
-        <tag name="version" value="2" />
+        <tag name="version" value="3" />
     </tag>
     
     <tag name="display_options" >

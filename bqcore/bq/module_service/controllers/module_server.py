@@ -84,7 +84,6 @@ from datetime import datetime, timedelta
 from paste.proxy import make_proxy
 from pylons.controllers.util import abort
 from tg import controllers, expose, config
-import tgscheduler
 
 from bq import data_service
 from bq.util import http
@@ -93,7 +92,6 @@ from bq.core.identity import user_admin, not_anonymous, get_user_pass
 from bq.core.permission import *
 from bq.core.exceptions import RequestError
 from bq.core.controllers.proxy import exposexml
-
 
 log = logging.getLogger('bq.module_server')
 
@@ -506,23 +504,28 @@ class EngineResource (Resource):
     def register_module (self, module_def):
         name = module_def.get ('name')
         ts   = module_def.get ('ts')
+        version = module_def.xpath('//tag[@name="version"]')
+        version = version and version[0].get('value')
         
+        found = False
         modules = data_service.query ('module', resource_name=name, view="deep")
-        m = (len(modules) and modules[0]) 
-        # Create a new module only if newer
-        if m != 0:
+        for m in modules:
             log.info ('module %s : new=%s current=%s' % (name,ts, m.get('ts')))
-            if ts > m.get('ts'):
-                module_def.set('uri', m.get('uri'))
-                module_def.set('ts', str(datetime.now()))
-                m = data_service.update(module_def, replace_all=True)
-                log.debug("Updating new module definition with: " + etree.tostring(m))
-        else:
-        #if m is None or ts > str(m.ts):
+            m_version = module_def.xpath('//tag[@name="version"]')[0].get('value')
+            if m_version == version:
+                if  ts > m.get('ts'):
+                    module_def.set('uri', m.get('uri'))
+                    module_def.set('ts', str(datetime.now()))
+                    m = data_service.update(module_def, replace_all=True)
+                    log.debug("Updating new module definition with: " + etree.tostring(m))
+                found = True
+                break
+
+        if not found:
             log.debug ("CREATING NEW MODULE: %s " % name)
             m = data_service.new_resource(module_def)
-            #m = bisquik2db (doc = module_def)
-            #module = db2tree (m, baseuri = self.module_resource.baseurl)
+
+        log.debug("register_module using  module %s for %s version %s" % (m.get('uri'), name, version))
         return m
 
     def new(self, resource, xml, **kw):
@@ -559,6 +562,11 @@ class EngineResource (Resource):
                                             type = module.get('uri'),
                                             value = engine_url)
                 service = data_service.new_resource(service_def)
+            else: 
+                service.set('type', module.get('uri'))
+                service.set('value', engine_url)
+                service = data_service.update(service)
+                
                 log.info("service create %s" % etree.tostring(service))
         return etree.tostring (resource)
 

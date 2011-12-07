@@ -1583,7 +1583,7 @@ BQModule.prototype.createMEX = function( ) {
 function BQMex (){
     BQObject.call(this);
     this.xmltag = "mex";
-    this.xmlfields = [ "uri", "name", "value" ] ;
+    this.xmlfields = [ "uri", "name", "value", "type" ] ;
 }
 
 BQMex.prototype = new BQObject();
@@ -1591,8 +1591,11 @@ BQMex.prototype.initializeXml = function (mex) {
     this.uri = attribStr(mex,'uri');
     this.name = attribStr(mex,'name');
     this.value = attribStr(mex,'value');
+    this.type  = attribStr(mex,'type');
     this.ts     = attribStr(mex,'ts');
     this.resource_type = this.xmltag;
+
+    this.status =this.value;
 }
 
 

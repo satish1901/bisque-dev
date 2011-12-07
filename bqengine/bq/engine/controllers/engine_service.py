@@ -743,13 +743,13 @@ class EngineModuleResource(BaseController):
 
             except EngineError, e:
                 log.exception ("EngineError")
-                mextree.set('status', 'FAILED')
+                mextree.set('value', 'FAILED')
                 mextree.append(etree.Element('tag', name='error_message', value=str(e)))
                 log.debug ('QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ' + str(e))
                 tg.response.status_int = 500
             except:
                 log.exception ("Execption in adaptor:" )
-                mextree.set('status', 'FAILED')
+                mextree.set('value', 'FAILED')
                 excType, excVal, excTrace  = sys.exc_info()
                 trace =  " ".join(traceback.format_exception(excType,excVal, excTrace))
                 mextree.append (etree.Element ('tag',name='execption_trace', value=str(trace)))
