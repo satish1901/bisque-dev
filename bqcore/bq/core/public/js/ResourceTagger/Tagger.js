@@ -821,14 +821,24 @@ Ext.define('Bisque.ResourceTagger.viewStateManager',
             return result;
         }
         
+        if (!BQApp.user)
+            mode = 'ReadOnly';
+        
         switch(mode)
         {
-
             case 'ViewerOnly':
             {
                 // all the buttons are hidden
                 this.state = setHidden(this.state, true);
                 this.state.editable = false;
+                break;
+            }
+            case 'ReadOnly':
+            {
+                this.state.btnExport = false;
+                this.state.btnXML = false;
+                this.state.btnCSV = false;
+                this.state.btnGDocs = false;
                 break;
             }
             case 'Offline':
