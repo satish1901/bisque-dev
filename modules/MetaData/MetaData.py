@@ -45,8 +45,12 @@ class MetaData(object):
                            value=t.get('value'))
         # Add the new tag to the image
         image.addTag(tag = md)
-        bq.save(md, image.uri + "/tag")
-        bq.close()
+        medata_tag = bq.save(md, image.uri + "/tag")
+        bq.finish_mex(tags = [{ 'name': 'outputs',
+                                'tag' : [{ 'name': 'metadata',
+                                           'value': metadata_tag.uri,
+                                           'type' : 'tag' }]}])
+        #bq.close()
 
 
 if __name__ == "__main__":
@@ -54,18 +58,25 @@ if __name__ == "__main__":
     parser = optparse.OptionParser()
     parser.add_option("-c", "--credentials", dest="credentials",
                       help="credentials are in the form user:password")
+    #parser.add_option('--image_url')
+    #parser.add_option('--mex_url')
+    #parser.add_option('--auth_token')
                       
     (options, args) = parser.parse_args()
 
-    image_url = args.pop(0)
-
-    if not options.credentials:
-        parser.error('need credentials')
-    user,pwd = options.credentials.split(':')
-
-    bq = BQSession().init_local(user, pwd)
     M = MetaData()
-    M.main(image_url, bq=bq)
+    if options.credentials is None:
+        image_url, mex_url,  auth_token  = args
+        M.main(image_url, mex_url, auth_token)
+    else:
+        image_url = args.pop(0)
+
+        if not options.credentials:
+            parser.error('need credentials')
+        user,pwd = options.credentials.split(':')
+
+        bq = BQSession().init_local(user, pwd)
+        M.main(image_url, bq=bq)
 
 
 
