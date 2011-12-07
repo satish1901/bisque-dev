@@ -194,23 +194,13 @@ Ext.define('BQ.Export.Panel', {
 
     selectImage : function()
     {
-        // TODO: Remove as soon as "name" becomes standard in the resource definition i.e. 0.51+
-        function loadFileName(me, resource)
-        {
-            if (resource instanceof Array)
-                for (var i=0;i<resource.length;i++)
-                    BQFactory.request({uri: resource[i].uri + '?view=filename', cb: callback(this, 'addToStore', '')});
-            else
-                BQFactory.request({uri: resource.uri + '?view=filename', cb: callback(this, 'addToStore', '')});
-        }
-        
         var rbDialog = Ext.create('Bisque.ResourceBrowser.Dialog', {
             'height' : '85%',
             'width' :  '85%',
             wpublic: 'true',
             listeners : 
             {
-                'Select' : Ext.bind(loadFileName, this),
+                'Select' : this.addToStore,
                 scope: this
             }
         });
@@ -237,7 +227,7 @@ Ext.define('BQ.Export.Panel', {
         if (resource.resource_type=='image')
         {
             record.push(resource.src);
-            resource.name = resource.find_tags('filename').value || 'Unknown';
+            resource.name = resource.name || 'Unknown';
             record.push(resource.name);
             record.push(resource.resource_type, resource.ts, resource.perm, resource.uri, 1);
         }

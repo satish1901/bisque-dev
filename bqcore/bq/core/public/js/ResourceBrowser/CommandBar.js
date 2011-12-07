@@ -267,22 +267,23 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 		
 		this.mon(this, 'afterlayout', this.toggleLayoutBtn, this);
 		
-		this.slider.on('buttonClick', Ext.Function.createThrottled(function(newOffset)
-		{
-			var oldOffset=this.browser.resourceQueue.rqOffset+this.browser.resourceQueue.dbOffset.left;
-			var diff=newOffset-oldOffset;
+        this.slider.on('buttonClick', Ext.Function.createThrottled(function(newOffset)
+        {
+            var oldOffset = this.browser.resourceQueue.rqOffset + this.browser.resourceQueue.dbOffset.left;
+            var diff = newOffset - oldOffset;
 
-			if (diff>0)
-			{
-				this.browser.resourceQueue.loadNext(diff);
-				this.browser.changeLayoutThrottled(this.browser.layoutKey, 'Right');
-			}
-			else if (diff<0)
-			{
-				this.browser.resourceQueue.loadPrev(-1*diff);
-				this.browser.changeLayoutThrottled(this.browser.layoutKey, 'Left');
-			}
-		}, 400, this), this);
+            if(diff > 0)
+            {
+                this.browser.resourceQueue.loadNext(diff);
+                this.browser.changeLayoutThrottled(this.browser.layoutKey, 'Right');
+            }
+            else if(diff < 0)
+            {
+                this.browser.resourceQueue.loadPrev(-1 * diff);
+                this.browser.changeLayoutThrottled(this.browser.layoutKey, 'Left');
+            }
+        }, 400, this), this);
+
 	},
 
 	btnTS : function(btn)

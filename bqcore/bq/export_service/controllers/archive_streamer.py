@@ -23,7 +23,6 @@ class ArchiveStreamer():
         response.headers['Content-Type'] = self.archiver.getContentType()
         response.headers['Transfer-Encoding'] = 'chunked'
         response.headers['Content-Disposition'] = 'attachment;filename=' + archiveName + self.archiver.getFileExtension()
-        
     
     def stream(self):
         flist = self.fileInfoList(self.fileList, self.datasetList)

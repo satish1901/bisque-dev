@@ -69,7 +69,7 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
 			this.loading.right=true;
 			var uri=this.browser.getURIFromState();
 			uri.offset=this.dbOffset.right;
-			uri.limit=2*this.dataLimit;
+			uri.limit=this.dataLimit;
 			
 			BQFactory.request({
 				uri:this.generateURI(uri),
@@ -89,8 +89,9 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
 			for(var i=0;i<data.children.length;i++)
 				this.push(Bisque.ResourceBrowser.ResourceFactory({resource:data.children[i], layoutKey:this.layoutKey, msgBus:this.msgBus, resQ:this, browser:this.browser}));
 			
-			this.hasMoreData.right=(data.children.length==2*this.dataLimit)?true:false;
+			this.hasMoreData.right=(data.children.length==this.dataLimit)?true:false;
 			this.loading.right=false;
+            this.browser.changeLayoutThrottled(this.browser.layoutKey, 'Right');
 		}
 	},
 
@@ -100,7 +101,7 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
 		{
 			this.loading.left=true;
 			var oldLeft=this.dbOffset.left;
-			this.dbOffset.left=((this.dbOffset.left-2*this.dataLimit)>=0)?this.dbOffset.left-2*this.dataLimit:0;
+			this.dbOffset.left=((this.dbOffset.left-this.dataLimit)>=0)?this.dbOffset.left-this.dataLimit:0;
 			
 			var uri=this.browser.getURIFromState();
 			uri.offset=this.dbOffset.left;
@@ -122,8 +123,9 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
 
 			for(var i=0;i<data.children.length;i++)
 				this.unshift(Bisque.ResourceBrowser.ResourceFactory({resource:data.children[i], layoutKey:this.layoutKey, msgBus:this.msgBus, resQ:this, browser:this.browser}));
-			this.hasMoreData.left=(data.children.length==2*this.dataLimit)?true:false;
+			this.hasMoreData.left=(data.children.length==this.dataLimit)?true:false;
 			this.loading.left=false;
+            this.browser.changeLayoutThrottled(this.browser.layoutKey, 'Left');
 		}
 	},
 
