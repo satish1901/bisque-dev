@@ -34,25 +34,27 @@ class IdemOp(DatasetOp):
     'An idempotent operation'
     def action(self, member, **kw):
         'return the members'
-        log.debug ('idem action %s' % member)
+        log.debug ('idem action %s' % member.text)
         return member
 
 class ModuleOp(DatasetOp):
     'Run a module on each member'
     def action(self, member, module, **kw):
         log.debug ('module action %s' % member)
+        member = member.text 
         mex = module_service.execute (module_uri = module,
-                                image_url = member.get('uri'),
+                                image_url = member,
                                 **kw)
         return mex
 
 class PermissionOp(DatasetOp):
     'change permission on member'
     def action(self, member, permission):
+        member = member.text 
         log.debug('permission action %s' % member)
-        resource = data_service.get_resource(member.get('uri'), view='short')
+        resource = data_service.get_resource(member, view='short')
         log.debug('GOT %s' % etree.tostring (resource))
-        resource.set('perm', permission)
+        resource.set('permission',  permission)
         data_service.update(resource)
         return None
 
@@ -60,7 +62,7 @@ class DeleteOp(DatasetOp):
     'Delete each member'
     def action(self, member, **kw):
         log.debug ('Delete action %s' % member)
-        data_service.del_resource (member.get('uri'))
+        data_service.del_resource (member.text)
         return None
 
 class TagEditOp (DatasetOp):
@@ -71,6 +73,7 @@ class TagEditOp (DatasetOp):
         @param action: a string :append, delete, edit_value, edit_name, change_name
         @poarag tagdoc
         """
+        member = member.text
         if isinstance(tagdoc, basestring):
             tagdoc = etree.XML(tagdoc)
 
@@ -79,31 +82,31 @@ class TagEditOp (DatasetOp):
         # However, I don't want to think about it now
         # so here's the brute-force way
         if action=="append":
-            resource = data_service.get_resource(member.get('uri'), view='short')
+            resource = data_service.get_resource(member, view='short')
             resource.append(tagdoc)
             data_service.update(resource)
         elif action=='delete':
-            resource = data_service.get_resource(member.get('uri'), view='full')
+            resource = data_service.get_resource(member, view='full')
             for tag in tagdoc.xpath('./tag'):
                 resource_tags = resource.xpath('./tag[@name="%s"]' % tag.get('name'))
                 for killtag in resource_tags:
                     data_service.del_resource(killtag.get('uri'))
         elif action=='edit_value':
-            resource = data_service.get_resource(member.get('uri'), view='full')
+            resource = data_service.get_resource(member, view='full')
             for tag in tagdoc.xpath('./tag'):
                 resource_tags = resource.xpath('./tag[@name="%s"]' % tag.get('name'))
                 for mtag in resource_tags:
                     mtag.set('value', tag.get('value'))
             data_service.update(resource)
         elif action=='edit_name':
-            resource = data_service.get_resource(member.get('uri'), view='full')
+            resource = data_service.get_resource(member, view='full')
             for tag in tagdoc.xpath('./tag'):
                 resource_tags = resource.xpath('./tag[@value="%s"]' % tag.get('value'))
                 for mtag in resource_tags:
                     mtag.set('name', tag.get('name'))
             data_service.update(resource)
         elif action=='change_name':
-            resource = data_service.get_resource(member.get('uri'), view='full')
+            resource = data_service.get_resource(member, view='full')
             for tag in tagdoc.xpath('./tag'):
                 resource_tags = resource.xpath('./tag[@name="%s"]' % tag.get('name'))
                 for mtag in resource_tags:
@@ -176,7 +179,7 @@ class DatasetServer(ServiceController):
         """
 
         log.info('iterate op %s on  %s' % (operation, duri))
-        dataset = data_service.get_resource(duri, view='deep')
+        dataset = data_service.get_resource(duri, view='full')
         members = dataset.xpath('/dataset/tag[@name="members"]')[0]
 
         op_klass  = self.operations.get(operation, IdemOp)
@@ -185,19 +188,16 @@ class DatasetServer(ServiceController):
         #mex = module_service.begin_internal_mex ("dataset_iterate")
 
         log.debug ("%s on %s with members %s" % (op, dataset.get('uri'), members))
-        results = etree.Element('resource', uri=self.baseuri + '/iterate')
-        for member in members:
-            result =  op(member = member, **kw)
-            log.debug ("acting on %s -> %s" % (member, result ))
+        results = etree.Element('resource', uri=self.baseuri + 'iterate')
+        for val in members:
+            result =  op(member = val, **kw)
+            log.debug ("acting on %s -> %s" % (val, result ))
             if result is not None:
                 results.append (result)
 
         #module_service.end_internal_mex(mex.uri)
 
         return etree.tostring(results)
-
-
-
 
 
 def initialize(uri):

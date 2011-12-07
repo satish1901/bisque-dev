@@ -167,7 +167,7 @@ Ext.define('BQ.selectors.Resource', {
             btns.push(this.btn_select_image);   
         }
 
-        if ('dataset' in template.accepted_type) {
+        if (template.accepted_type && 'dataset' in template.accepted_type) {
             this.btn_select_dataset = Ext.create('Ext.button.Button', {
                 text: 'Select a set of images', 
                 //iconCls: 'upload', 

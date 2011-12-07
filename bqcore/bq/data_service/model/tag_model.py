@@ -756,8 +756,8 @@ class Service (Taggable):
     """A executable service"""
     xmltag = "service"
     
-    #def __str__(self):
-    #    return "%s module=%s engine=%s" % (self.uri, self.module, self.engine)
+    def __str__(self):
+        return "<service %s %s %s>" % (self.resource_name, self.resource_value, self.resource_user_type)
     
 #################################################
 # Simple Mappers
