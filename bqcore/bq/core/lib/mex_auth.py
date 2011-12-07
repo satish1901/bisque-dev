@@ -1,6 +1,7 @@
 import logging
 from repoze.who.interfaces import IIdentifier
 from zope.interface import implements
+from tg import session
 
 from bq.core.model import DBSession
 from bq.data_service.model import ModuleExecution
@@ -29,6 +30,8 @@ class MexAuthenticatePlugin(object):
             return None
         log.debug("MexAuthenticate:auth %s" % (identity))
         mex = DBSession.query(ModuleExecution).get (mexid)
+        session['mex_id'] = mexid
+
         #if  mex.closed():
         #    log.warn ('attempt with  closed mex %s' % mexid)
         #    return None

@@ -172,6 +172,8 @@ def move_values():
         if count % 1024 == 0:
             DBSession.flush()
 
+    transaction.commit()
+
     for r in DBSession.query(GObject):
         for v in r.vertices:
             v.document_id = r.document_id
@@ -228,6 +230,7 @@ def build_document_pointers():
             #document.perm     =  resource.perm
             apply_to_all(resource , parent_id=None, document_id=resource.id)
             DBSession.flush()
+    transaction.commit()
 
     # Taggable
     user_types = [ (nm, ty) for nm, ty in [ dbtype_from_name(str(y)) for y in all_resources() ] 
