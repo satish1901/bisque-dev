@@ -3,7 +3,13 @@
 
    <!-- Comments are OK -->  
     <tag name="inputs">
-        <tag name="image_url" type="image" />
+        <tag name="image_url" type="image">
+            <tag name="template" type="template">
+                <tag name="label" value="Image to extract metadata" />
+                <tag name="prohibit_upload" value="true" type="boolean" />
+            </tag>                
+        </tag> 
+                        
         <tag name="mex_url"  type="system-input" />
         <tag name="bisque_token"  type="system-input" />
     </tag>
