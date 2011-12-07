@@ -12,6 +12,7 @@ try:
 except:
     from xml.etree import ElementTree as et
 
+
 logging.basicConfig(level=logging.DEBUG, filename='module.log')
 
 from bq.core.commands.configfile import ConfigFile
@@ -163,8 +164,9 @@ class BaseRunner(object):
         """Deal with any arguments and prepare the mex and module
         returns a callable for the next actions
         """
+        args  = kw.pop('arguments', None)
 
-        self.options, arguments = self.parser.parse_args()
+        self.options, arguments = self.parser.parse_args(args)
         self.named_args = {}
         
         command = arguments.pop()
