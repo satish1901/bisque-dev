@@ -154,8 +154,10 @@ Ext.define('BQ.selectors.Resource', {
         var resource = this.resource;
         var template = resource.template || {};
         var btns = [];
+        var accepted_type = template.accepted_type || {};
+        accepted_type[resource.type] = resource.type;
         
-        if (template.accepted_type && 'image' in template.accepted_type) {
+        if ('image' in accepted_type) {
             this.btn_select_image = Ext.create('Ext.button.Button', {
                 text: 'Select an Image', 
                 //iconCls: 'upload', 
@@ -167,7 +169,7 @@ Ext.define('BQ.selectors.Resource', {
             btns.push(this.btn_select_image);   
         }
 
-        if (template.accepted_type && 'dataset' in template.accepted_type) {
+        if ('dataset' in accepted_type) {
             this.btn_select_dataset = Ext.create('Ext.button.Button', {
                 text: 'Select a set of images', 
                 //iconCls: 'upload', 
