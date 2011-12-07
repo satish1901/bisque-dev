@@ -109,8 +109,6 @@ from bq.data_service import resource_controller
 from bq.data_service.model import Service, Module, Tag, ModuleExecution as Mex
 from bq.util.bisquik2db import bisquik2db, db2tree, load_uri
 
-
-
 class MexDelegate (Resource):
     def __init__(self,  url, runner = None):
         super(MexDelegate, self).__init__(uri = url)
@@ -227,7 +225,9 @@ def create_mex(module_url, **kw):
     inputs = module.xpath('./tag[@name="inputs"]')
     inputs = inputs and inputs[0]
     real_params = dict(kw)
-    mex = etree.Element('mex', value = 'PENDING', name = module_url)
+    mex = etree.Element('mex', 
+                        name = module.get('name'), 
+                        value = 'PENDING', type = module_url)
     #mex_inputs = etree.SubElement(mex, 'tag', name='inputs')
     for mi in inputs:
         param_name = mi.get('value').split(':')[0].strip('$')
@@ -270,7 +270,8 @@ class ServiceDelegate(controllers.WSGIAppController):
     """Create a proxy for the particular service addressable by the module name
     """
     
-    def __init__(self, service_url, module, mexurl):
+    def __init__(self, name, service_url, module, mexurl):
+        self.name = name 
         self.module = module
         self.mexurl = mexurl
         if not service_url[-1] =='/':
@@ -302,8 +303,9 @@ class ServiceDelegate(controllers.WSGIAppController):
         if mex is None:
             mex = create_mex(self.module, **kw)
         else:
+            mex.set('name', self.name)
             mex.set('value', 'PENDING')
-            mex.set('name', self.module)
+            mex.set('type', self.module)
 
         etree.SubElement(mex, 'tag',
                          name="start-time",
@@ -355,18 +357,15 @@ class ModuleServer(ServiceController):
         self.load_services()
 
     def load_services(self):
-        services = session.query(Service)
-        for service in services:
-            log.debug ("FOUND SERVICE: %s" %service)
-            status = service.findtag('status')
-            if not status or status.value == "disabled":
-                continue
-            log.debug ("      SERVICE: %s enabled"  %service)
-            engine = service.resource_value
-            module = service.resource_name
-            name = engine.rsplit('/',1)[1] 
 
-            setattr(self.__class__, name , ServiceDelegate(engine, module, self.mex.url))
+        
+        services = data_service.query('service')
+        for service in services:
+            log.debug ("FOUND SERVICE: %s" % etree.tostring(service))
+            engine = service.get('value')
+            module = service.get('type')
+            name = service.get('name')
+            setattr(self.__class__, name , ServiceDelegate(name, engine, module, self.mex.url))
             log.info ("SERVICE PROXY %s -> %s " % (name, engine))
             
 
@@ -385,25 +384,32 @@ class ModuleServer(ServiceController):
         """
         kw['wpublic']='1'
         kw.setdefault ('view','short')
-        xml= self.modules.default(**kw)
-        modules = etree.XML(xml)
-        log.debug ("all modules = %s " % xml)
+        #xml= self.modules.default(**kw)
+        #modules = etree.XML(xml)
+        #log.debug ("all modules = %s " % xml)
+
+        resource = etree.Element('resource', uri = self.uri)
+        services = data_service.query('service')
+        for service in services:
+            module = data_service.get_resource(service.get ('type'))
+            resource.append(module)
+        return etree.tostring(resource)
         
-        for module in modules.findall ('module'):
-            enabled = False
-            #del module.attrib['codeurl']
-            #module.attrib['codeurl'] = "%s%s" %( self.url , module.get('name'))
-            services = session.query(Service).filter_by (resource_name = module.get ('uri'))
-            for service in services:
-                log.debug ("FOUND SERVICE: %s" %service)
-                status = service.findtag('status')
-                if status and status.value != "disabled":
-                    enabled = True
-                    log.debug ("      SERVICE: %s enabled"  %service)
-            if not enabled:
-                modules.remove (module)
-        result = etree.tostring(modules)
-        return result
+        # for module in modules.findall ('module'):
+        #     enabled = False
+        #     #del module.attrib['codeurl']
+        #     #module.attrib['codeurl'] = "%s%s" %( self.url , module.get('name'))
+        #     services = session.query(Service).filter_by (resource_name = module.get ('uri'))
+        #     for service in services:
+        #         log.debug ("FOUND SERVICE: %s" %service)
+        #         status = service.findtag('status')
+        #         if status and status.value != "disabled":
+        #             enabled = True
+        #             log.debug ("      SERVICE: %s enabled"  %service)
+        #     if not enabled:
+        #         modules.remove (module)
+        # result = etree.tostring(modules)
+        # return result
 
 
     @expose(content_type='text/xml')
@@ -420,8 +426,6 @@ class ModuleServer(ServiceController):
             etree.SubElement(mex, 'tag', name=k, value=v)
         log.info ("EXECUTE %s" % etree.tostring (mex))
         return self.mex.create_mex(mex)
-    
-
 
     @expose('bq.module_service.templates.register')
     def register_module(name, module):
@@ -432,8 +436,8 @@ class ModuleServer(ServiceController):
         return etree.tostring(x)
         
 
-    def begin_internal_mex(self, name=None, mex_type = "session"):
-        mex = etree.Element('mex', value = 'exec', type=mex_type)
+    def begin_internal_mex(self, name='session', value='active', mex_type = "session"):
+        mex = etree.Element('mex', name=name, value=value, type=mex_type)
         if name:
             mex.set('name',name)
         #etree.SubElement(mex, 'tag',
@@ -478,14 +482,9 @@ class EngineResource (Resource):
         """
         
         response = etree.Element ('resource', url=self.url)
-
-        for s in  session.query(Service):
-            service = etree.SubElement(response,'service',
-                                       uri=s.uri,
-                                       name=s.resource_name,
-                                       value=s.resource_value)
-            #etree.SubElement(service, 'tag', name='module', value=s.module)
-            #etree.SubElement(service, 'tag', name='engine', value=s.engine)
+        services = data_service.query('service')
+        for service in services:
+            response.append(service)
 
         tg.response.headers['Content-Type'] = 'text/xml'
         return etree.tostring (response)
@@ -509,10 +508,9 @@ class EngineResource (Resource):
         ts   = module_def.get ('ts')
         
         modules = data_service.query ('module', resource_name=name, view="deep")
-        m = (len(modules) and modules[0]) or None
+        m = (len(modules) and modules[0]) 
         # Create a new module only if newer
-
-        if m is not None:
+        if m != 0:
             log.info ('module %s : new=%s current=%s' % (name,ts, m.get('ts')))
             if ts > m.get('ts'):
                 module_def.set('uri', m.get('uri'))
@@ -553,30 +551,15 @@ class EngineResource (Resource):
             module = self.register_module(module_def)
             module_def.set ('uri', module.get ('uri'))
 
-            service = session.query(Service).filter_by (
-                resource_name  = module.get ('uri'),
-                resource_value = engine_url).first()
-
-            if module_def.get ('status') == 'disabled':
-                if service:
-                    status = service.findtag('status', True)
-                    status.value = "disabled"
-                    continue
-            
-            if not service:
-                service = Service ()
-                service.resource_name = module.get('uri')
-                service.resource_value = engine_url
-                session.add(service)
-            log.debug("updating contact of %s", service.uri)
-            contact = service.findtag('last-contact', True)
-            #contact.name = 'last-contact'
-            contact.value = str(datetime.now())
-            contact.type  = 'datetime'
-            status = service.findtag('status', True)
-            #status.name = 'status'
-            status.value= 'enabled'
-
+            service = data_service.query('service', resource_name=module.get('name'), view="deep")
+            service = (len(service) and service[0]) 
+            if  service == 0:
+                service_def = etree.Element('service', 
+                                            name = module.get('name'),
+                                            type = module.get('uri'),
+                                            value = engine_url)
+                service = data_service.new_resource(service_def)
+                log.info("service create %s" % etree.tostring(service))
         return etree.tostring (resource)
 
     def modify(self, resource, xml, **kw):
