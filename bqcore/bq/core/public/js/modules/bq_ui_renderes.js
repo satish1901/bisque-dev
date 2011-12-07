@@ -24,7 +24,8 @@ BQ.selectors.resources  = { 'image'   : 'BQ.selectors.Resource',
                             'resource': 'BQ.selectors.Resource', 
                             'gobject' : 'BQ.selectors.Gobject', };
 
-BQ.selectors.parameters = { 'string'  : 'BQ.selectors.String', 
+BQ.selectors.parameters = { 'tag'     : 'BQ.selectors.String', 
+                            'string'  : 'BQ.selectors.String', 
                             'number'  : 'BQ.selectors.Number', 
                             'combo'   : 'BQ.selectors.Combo',
                             'boolean' : 'BQ.selectors.Boolean',
@@ -827,7 +828,7 @@ Ext.define('BQ.renderers.Tag', {
         var resource = this.resource;        
         
         this.tagger = Ext.create('Bisque.ResourceTagger', {
-            resource : resource,
+            resource: definition.type?resource:resource.value, // reference or resource
             flex: 1,
             cls: 'tagger',
             //title : template.label?template.label:resource.name,
@@ -867,7 +868,7 @@ Ext.define('BQ.renderers.Image', {
         
         var parameters = { simpleview: '', gobjects: resource.gobjects, };
         this.viewer = Ext.create('BQ.viewer.Image', {
-            resource: resource.value,
+            resource: definition.type?resource:resource.value, // reference or resource
             flex: 1,
             parameters: parameters,
             //listeners: { 'changed': this.onchanged, scope: this, },
