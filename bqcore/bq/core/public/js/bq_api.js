@@ -136,7 +136,7 @@ BQObject.prototype.toXML = function (){
     return this.xmlNode (xmlrep);
 }
 
-BQObject.prototype.delete_ = function (cb) {
+BQObject.prototype.delete_ = function (cb, errorcb) {
     this.testReadonly();
     // Delete object from db
     if (this.uri != null) {
@@ -626,12 +626,14 @@ BQFactory.createFromXml = function(xmlResource, resource, parent) {
         }
     }
 
+    response = resources[0];
+
     // dima: do some additional processing after you inited elements    
     var rr = resources.reverse();       
     for (var p=0; (r=rr[p]); p++)
         if (r.afterInitialized) r.afterInitialized(); 
     
-    return resources[0];
+    return response;
 }
 
 
@@ -1581,7 +1583,7 @@ BQModule.prototype.createMEX = function( ) {
 function BQMex (){
     BQObject.call(this);
     this.xmltag = "mex";
-    this.xmlfields = [ "uri", "name", "value" ] ;
+    this.xmlfields = [ "uri", "name", "value", "type" ] ;
 }
 
 BQMex.prototype = new BQObject();
@@ -1589,8 +1591,11 @@ BQMex.prototype.initializeXml = function (mex) {
     this.uri = attribStr(mex,'uri');
     this.name = attribStr(mex,'name');
     this.value = attribStr(mex,'value');
+    this.type  = attribStr(mex,'type');
     this.ts     = attribStr(mex,'ts');
     this.resource_type = this.xmltag;
+
+    this.status =this.value;
 }
 
 

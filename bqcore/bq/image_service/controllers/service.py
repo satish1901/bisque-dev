@@ -48,6 +48,7 @@ def get_format_map():
         codec = ex.getparent().get('name')
         for ext in ex.get('value').split('|'):
             formats.setdefault(ext, []).append(codec)
+    del formats['zip'] # zip should not be accepted as an image format
     return formats
 
 
@@ -140,8 +141,8 @@ class image_serviceController(ServiceController):
         if self.format_map is None:
             self.format_map = get_format_map()
 
-        ext = os.path.splitext(filename)[1]
-        return self.format_map.get(ext[1:].lower())
+        ext = os.path.splitext(filename)[1][1:].lower()
+        return self.format_map.get(ext)
 
 
     @expose()

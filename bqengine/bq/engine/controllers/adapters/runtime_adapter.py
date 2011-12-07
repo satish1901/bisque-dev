@@ -143,7 +143,7 @@ class RuntimeAdapter(BaseAdapter):
             return process.pid
         except Exception, e:
             log.exception ("During exec of %s: %s" % (command_line, e))
-            mex.set ('status', 'FAILED')
+            mex.set ('value', 'FAILED')
             etree.SubElement(mex, 'tag',
                              name = "ERROR",
                              value = "During exec of %s: %s" % (command_line, e))

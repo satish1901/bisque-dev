@@ -418,12 +418,12 @@ def make_user (dbo, fn, baseuri):
     return ('user', baseuri + str(dbo.user))
 
 mapping_fields = {
-    'table_name':'type',
+#    'table_name':'type',
     'engine_id' : 'engine',
     'gobjects':None,
     'id': make_uri,
     'indx': 'index',
-    'name_id':None,
+#    'name_id':None,
     # Taggable
     'owner_id':None,
     'owner' : make_owner,

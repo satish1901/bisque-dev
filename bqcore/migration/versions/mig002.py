@@ -102,6 +102,7 @@ def move_all_to_resource():
         print "processing ", ty_.xmltag
         for r in DBSession.query (ty_):
             map_(r, ty_)
+        DBSession.flush()
 
     # Special type here
     print "processing ", BQUser.xmltag
@@ -111,6 +112,7 @@ def move_all_to_resource():
         r.resource_name = nunicode(r.user_name)
         r.resource_value = nunicode(r.email_address)
         new_tag(r, 'display_name', r.display_name)
+    DBSession.flush()
 
     print "processing ", Module.xmltag
     for r in DBSession.query(Module):
@@ -119,6 +121,7 @@ def move_all_to_resource():
         r.resource_name  = nunicode(r.name)
         r.resource_user_type = nunicode(r.type)
         r.resource_value = nunicode(r.codeurl)
+    DBSession.flush()
 
     print "processing ", ModuleExecution.xmltag
     for r in DBSession.query(ModuleExecution):
@@ -126,6 +129,7 @@ def move_all_to_resource():
         r.resource_type = u'mex'
         r.resource_name = nunicode(r.module)
         r.resource_value = nunicode(r.status)
+    DBSession.flush()
 
     # Don't bother as they must reregister
     print "processing ", Service.xmltag

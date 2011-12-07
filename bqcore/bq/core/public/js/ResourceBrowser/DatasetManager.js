@@ -160,7 +160,7 @@ Bisque.ResourceBrowser.DatasetManager = Ext.extend(Ext.Panel,
             var uri =
             {
                 offset : 0,
-                baseURL : data.uri+'/values'
+                baseURL : data.uri+'/value'
             };
 
             this.msgBus.fireEvent('Browser_ReloadData', uri);

@@ -45,7 +45,7 @@ class MetaData(object):
                            value=t.get('value'))
         # Add the new tag to the image
         image.addTag(tag = md)
-        bq.save(md, image.uri + "/tags")
+        bq.save(md, image.uri + "/tag")
         bq.close()
 
 

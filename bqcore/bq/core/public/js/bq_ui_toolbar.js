@@ -132,7 +132,7 @@ Ext.define('BQ.Application.Toolbar', {
         
         // Sign in | Register
         this.menu_user = Ext.create('Ext.menu.Menu');
-        this.menu_user.add( {xtype:'tbtext', itemId: 'menu_user_name', text: 'Sign in', indent: true, hidden: true } );
+        this.menu_user.add( {xtype:'tbtext', itemId: 'menu_user_name', text: 'Sign in', indent: true, hidden: true, cls: 'menu-heading', } );
         
         
         this.menu_user.add( {text: 'Profile', itemId: 'menu_user_profile', hidden: true, 
@@ -167,6 +167,8 @@ Ext.define('BQ.Application.Toolbar', {
                             handler: Ext.Function.pass(htmlAction, bq.url('/client_service/public/about/termsofuse.html') )} );    
         menu_help.push( {text: 'License', 
                             handler: Ext.Function.pass(htmlAction, bq.url('/client_service/public/about/license.html') )} );  
+
+        menu_help.push( '-' );  
         menu_help.push( {text: 'Usage statistics', 
                             handler: Ext.Function.pass(pageAction, bq.url('/usage/') )} );  
         
@@ -178,7 +180,7 @@ Ext.define('BQ.Application.Toolbar', {
                          handler: Ext.Function.pass(urlAction, 'http://www.bioimage.ucsb.edu/downloads/Bisque%20Database') } );   
                              
         menu_help.push( '-' ); 
-        menu_help.push( {xtype:'tbtext', text: 'Problems with Bisque?', indent: true} );
+        menu_help.push( {xtype:'tbtext', text: 'Problems with Bisque?', indent: true, cls: 'menu-heading', } );
         menu_help.push( {text: 'Developers website', 
                          handler: Ext.Function.pass(urlAction, 'http://biodev.ece.ucsb.edu/projects/bisquik')} );
         menu_help.push( {text: 'Submit a bug or suggestion', 
@@ -208,7 +210,7 @@ Ext.define('BQ.Application.Toolbar', {
         this.items.push('-');            
 
         var browse_vis = (this.toolbar_opts && this.toolbar_opts.browse===false) ? false : true;
-        this.items.push({ text: 'Images', icon: this.images_base_url+'browse.png', hidden: !browse_vis, tooltip: 'Browse images', 
+        this.items.push({itemId: 'menu_images', text: 'Images', icon: this.images_base_url+'browse.png', hidden: !browse_vis, tooltip: 'Browse images', 
                 handler: function(c){ 
                   var q = '';
                   var m = toolbar.child('#menu_query');
@@ -218,10 +220,16 @@ Ext.define('BQ.Application.Toolbar', {
               });
                 
         this.items.push({ xtype: 'tbspacer', width: 10, hidden: !browse_vis });    
-        this.items.push({itemId: 'menu_query',  xtype:'textfield', flex: 2, name: 'search', value: this.image_query_text, hidden: !browse_vis,
+        this.items.push({itemId: 'menu_query', xtype:'textfield', flex: 2, name: 'search', value: this.image_query_text, hidden: !browse_vis,
                  tooltip: 'Query for images used Bisque expression',  
+                 enableKeyEvents: true,
                  listeners: {
-                   focus: function(c){ if (c.value == toolbar.image_query_text) c.setValue(''); }
+                   focus: function(c){ if (c.value == toolbar.image_query_text) c.setValue(''); },
+                   specialkey: function(f, e) { 
+                       if (e.getKey()==e.ENTER && f.value!='' && f.value != toolbar.image_query_text) {
+                              document.location = bq.url('/client_service/browser?tag_query='+escape(f.value)); 
+                       }                         
+                   },
                  }
                });
 

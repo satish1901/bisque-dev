@@ -1,7 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--  
+Module definition for an example module MyData
+
+For details on notation and configuration:
+    http://biodev.ece.ucsb.edu/projects/bisquik/wiki/BisqueModuleSpecification
+-->
 <module name="MyData" path="./MyData" type="python">
 
-    <!--  hsdkjashdkjashdkasdkhkahdas -->
+    <!-- INPUTS
+    Inputs section formally defines all inputs the module 
+          will require and templates automated UI renderers
+    
+    Notes:
+    1. "system-input" type is a reserved type for inputs that should be defined by the
+       system during the execution
+    2. tags with a type of another resource are references and will produce a url to a resource
+    2. resources without a user-defined type will have all their data in-place
+
+    Template subtags can configure the interface elements that should be created for 
+    elements in inputs, these configs are used by the automated UI generator.
+    
+    See detailed specs:
+        http://biodev.ece.ucsb.edu/projects/bisquik/wiki/BisqueModuleSpecification
+    -->           
+             
     <tag name="inputs">
         <tag name="mex_url"      type="system-input" />
         <tag name="bisque_token" type="system-input" />
@@ -149,14 +171,32 @@
         
     </tag>
     
+    <!-- OUTPUTS
+    Outputs section formally defines all outputs the module will produce and templates 
+    automated UI renderers, the UI options can be specified using templates 
+    same way as for elements in inputs 
+
+    Notes:
+    1. inputs and outputs are written directly into the MEX and should use distinguishable names
+    2. resource with a name indicates data stored directly into the MEX 
+    3. tag with a specific type indicates a tag containing a link to the actual resource 
+    
+    Examples:         
+        <gobject name="results" />           - contains resultant gobjects inplace
+        <tag name="summary" />               - contains tags inplace
+        <tag name="image" type="resource" /> - contains a link (URL) to the resultant resource
+    -->  
+          
     <tag name="outputs">
-         <tag name="MyData" type="tag" />
-         <tag name="MyTable" type="tag" />         
+         <tag name="MyData" />
+         <tag name="MyTable" />         
          <tag name="MyImage" type="image">
              <gobject name="MyAnnotation" />
          </tag>
     </tag>
-    
+
+
+    <!--  Module parameters and general configuration -->    
 
     <tag name="module_options" >
         <tag name="version" value="2" />
@@ -165,7 +205,28 @@
     <tag name="display_options" >
        <tag name="group" value="Generic" />
     </tag>
+
+    <!--  Interface     
+    If the interface tag does exist or does not point to a file or a string inplace then the web UI
+    will be generated for the module automatically using inputs, outputs and templated interface configs.
+    Though interface can still contain configs even if it does provide html interface itself,
+    since HTML interface can use default JS components from default module interface and those
+    can configure themselves using the interface configuration. -->    
+
+    <!--<tag name="interface" type="file" value="public/index.html" />-->
     
+
+    
+    <!-- ENTRY POINTS and/or DESCRIPTIONS
+    
+    Required entry points currently are:
+        help, thumbnail, description, title, authors
+    
+    Types:
+        string - used to specify the returned value inplace
+        file   - points to a local file containing the returned value
+    -->   
+   
     <tag name="help" type="file" value="public/help.html" /> 
     <tag name="thumbnail" type="file" value="public/thumbnail.png" />   
 

@@ -249,7 +249,7 @@ BQWebApp.prototype.setupUI_inputs = function () {
     // render all other prameters
     if (inputs && inputs.length>0)
     for (var p=0; (i=inputs[p]); p++) {
-        var t = i.type;
+        var t = (i.type || i.resource_type).toLowerCase();
         if (t in BQ.selectors.parameters)
             this.create_renderer( 'parameters', BQ.selectors.parameters[t], { resource: i,} );
             
@@ -267,8 +267,8 @@ BQWebApp.prototype.setupUI_outputs = function () {
     if (outputs_definitions && outputs_definitions.length>0)
     for (var p=0; (i=outputs_definitions[p]); p++) {
         var n = i.name;
-        var t = i.type;
-        var r = outputs_index[n];   
+        var t = (i.type || i.resource_type).toLowerCase();
+        var r = outputs_index[n];  
         if (t in BQ.renderers.resources) {
             this.create_renderer( 'outputs', BQ.renderers.resources[t], { definition: i, resource: r, } );
         }
@@ -631,7 +631,7 @@ BQWebApp.prototype.parseResults = function (mex) {
             if (this.resultantResourcesBrowser) this.resultantResourcesBrowser.destroy();
             this.resultantResourcesBrowser = new Bisque.ResourceBrowser.Browser({
                 //dataset: this.bq_resource.tags[0].uri+'/values',
-                dataset: this.bq_resource.getMembers().uri+'/values',
+                dataset: this.bq_resource.getMembers().uri+'/value',
                 height: '100%',   
                 selType: 'SINGLE',
                 viewMode : 'ViewerOnly',

@@ -10,6 +10,10 @@
     margin: 6px 0px 0px 0px;
 }
 
+/*
+resourcerenderer
+*/
+
 .resourcerenderer label {
     margin: 10px 10px 5px 2px;
     padding: 4px 0px 0px 0px; 
@@ -25,6 +29,16 @@
 .resourcerenderer .bq-image-viewer {
     margin-top: 15px;
 }
+
+.resourcerenderer .ImageCompact {
+    margin: 0px;
+    margin-top: 10px;    
+    margin-bottom: 10px;      
+}
+
+/*
+selectors
+*/
 
 .selector .number {
     margin-right: 15px;
