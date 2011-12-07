@@ -80,6 +80,8 @@ def bootstrap(command, conf, vars):
             prefs.name = 'Preferences'
             model.DBSession.add(system)
             transaction.commit()
+
+
     except IntegrityError:
         print 'Warning, there was a problem adding your system object, it may have already been added:'
         #import traceback

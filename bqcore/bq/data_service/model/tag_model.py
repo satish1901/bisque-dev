@@ -331,7 +331,7 @@ class Taggable(object):
             log.debug ("mex_id = %s" % mexid)
             if mexid:
                 self.mex = DBSession.query(ModuleExecution).get(mexid)
-                session['mex'] = self.mex
+                #session['mex'] = self.mex
             else:
                 # Default to the system/init mex
                 self.mex = DBSession.query(ModuleExecution).filter_by(
@@ -756,8 +756,8 @@ class Service (Taggable):
     """A executable service"""
     xmltag = "service"
     
-    #def __str__(self):
-    #    return "%s module=%s engine=%s" % (self.uri, self.module, self.engine)
+    def __str__(self):
+        return "<service %s %s %s>" % (self.resource_name, self.resource_value, self.resource_user_type)
     
 #################################################
 # Simple Mappers
@@ -811,7 +811,7 @@ mapper( Taggable, taggable,
                           primaryjoin = (taggable.c.id == taggable.c.resource_parent_id)),
     'values' : relation(Value,  lazy=True, cascade="all, delete-orphan",
                         primaryjoin =(taggable.c.id == values.c.resource_parent_id),
-                        backref = backref('parent', remote_side=[taggable.c.id])
+                        backref = backref('parent', enable_typechecks = False, remote_side=[taggable.c.id])
                         #foreign_keys=[values.c.parent_id]
                         ),
     'vertices' : relation(Vertex, lazy=True, cascade="all, delete-orphan",
@@ -922,6 +922,7 @@ mapper(ModuleExecution,  inherits=Taggable,
        properties = {
         #"status":synonym("resource_value"), # map_column=True) ,
         'owns' : relation(Taggable, 
+                          lazy = True,
                           cascade = "all, delete-orphan",
                           #cascade = None,
                           post_update = True,

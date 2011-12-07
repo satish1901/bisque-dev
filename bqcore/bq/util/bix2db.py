@@ -83,6 +83,8 @@ class BIXImporter(object):
             'private': permission.PRIVATE,
             'group': permission.PRIVATE }
              
+
+
     def __init__(self, updir, **kw):
         self.upload_dir= updir
         self.flags = kw
@@ -106,17 +108,22 @@ class BIXImporter(object):
             return dict(src = local_src)
         # Normal import
         info = {}
-        with open(self.fullname(fn), 'rb') as src:
-            path, fhash =  blob_service.store_blob(src,fn) 
-
-        resource = etree.Element('file', perm = str(self.permission_flag),
-                                 resource_uniq = fhash,
-                                 resource_name = fn,
-                                 resource_value  = path)
-
-        resource = data_service.new_resource(resource = resource)
+#        with open(self.fullname(fn), 'rb') as src:
+#            path, fhash = blob_service.store_blob(src, fn ) 
+#
+#        resource = etree.Element('file', perm = str(self.permission_flag),
+#                                 resource_uniq = fhash,
+#                                 resource_name = fn,
+#                                 resource_value  = path)
+#
+#        resource = data_service.new_resource(resource = resource)
+#        
+#        self.import_files[fn] = info['src'] = "/image_service/images/%s" % fhash
         
-        self.import_files[fn] = info['src'] = "/image_service/images/%s" % fhash
+        with open(self.fullname(fn), 'rb') as src:
+            resource = blob_service.store_blob(src, fn, perm = str(self.permission_flag) ) 
+        self.import_files[fn] = info['src'] = resource.get('src')
+
         return info
             
 
@@ -129,18 +136,21 @@ class BIXImporter(object):
         
         # Normal import
         log.debug ("Store new image: " + fn + " " + str(self.image_info)) 
+#        with open(self.fullname(fn), 'rb') as src:
+#            path, fhash =  blob_service.store_blob(src,fn) 
+#
+#        resource = etree.Element('image', perm = str(self.permission_flag),
+#                                 resource_uniq = fhash,
+#                                 resource_name = fn,
+#                                 resource_value  = path, 
+#                                 src = "/image_service/images/%s" % fhash )
+#
+#        etree.SubElement(resource, 'tag', name="filename", value=fn)
+#        etree.SubElement(resource, 'tag', name="upload_datetime", value=datetime.now().isoformat(' '), type='datetime' ) 
+#        self.resource = data_service.new_resource(resource = resource)
+
         with open(self.fullname(fn), 'rb') as src:
-            path, fhash =  blob_service.store_blob(src,fn) 
-
-        resource = etree.Element('image', perm = str(self.permission_flag),
-                                 resource_uniq = fhash,
-                                 resource_name = fn,
-                                 resource_value  = path, 
-                                 src = "/image_service/images/%s" % fhash )
-
-        etree.SubElement(resource, 'tag', name="filename", value=fn)
-        etree.SubElement(resource, 'tag', name="upload_datetime", value=datetime.now().isoformat(' '), type='datetime' ) 
-        self.resource = data_service.new_resource(resource = resource)
+            self.resource = blob_service.store_blob(src, fn, perm = str(self.permission_flag)) 
 
         if 'src' in  self.resource.attrib:
             self.import_files[fn] = self.resource.attrib['src']

@@ -24,7 +24,8 @@ BQ.selectors.resources  = { 'image'   : 'BQ.selectors.Resource',
                             'resource': 'BQ.selectors.Resource', 
                             'gobject' : 'BQ.selectors.Gobject', };
 
-BQ.selectors.parameters = { 'string'  : 'BQ.selectors.String', 
+BQ.selectors.parameters = { 'tag'     : 'BQ.selectors.String', 
+                            'string'  : 'BQ.selectors.String', 
                             'number'  : 'BQ.selectors.Number', 
                             'combo'   : 'BQ.selectors.Combo',
                             'boolean' : 'BQ.selectors.Boolean',
@@ -154,12 +155,14 @@ Ext.define('BQ.selectors.Resource', {
         var resource = this.resource;
         var template = resource.template || {};
         var btns = [];
-        
-        if (template.accepted_type && 'image' in template.accepted_type) {
+        var accepted_type = template.accepted_type || {};
+        accepted_type[resource.type] = resource.type;
+
+        if ('image' in accepted_type) {
             this.btn_select_image = Ext.create('Ext.button.Button', {
                 text: 'Select an Image', 
                 //iconCls: 'upload', 
-                //scale: 'large', 
+                scale: 'large', 
                 //cls: 'x-btn-default-large',
                 //tooltip: 'Start the upload of all queued files',
                 handler: Ext.Function.bind( this.selectImage, this ),
@@ -167,11 +170,11 @@ Ext.define('BQ.selectors.Resource', {
             btns.push(this.btn_select_image);   
         }
 
-        if ('dataset' in template.accepted_type) {
+        if ('dataset' in accepted_type) {
             this.btn_select_dataset = Ext.create('Ext.button.Button', {
                 text: 'Select a set of images', 
                 //iconCls: 'upload', 
-                //scale: 'large', 
+                scale: 'large', 
                 //cls: 'x-btn-default-large',
                 //tooltip: 'Start the upload of all queued files',
                 handler: Ext.Function.bind( this.selectDataset, this ),
@@ -183,7 +186,7 @@ Ext.define('BQ.selectors.Resource', {
             this.btn_select_example = Ext.create('Ext.button.Button', {
                 text: 'Select an example', 
                 //iconCls: 'upload', 
-                //scale: 'large', 
+                scale: 'large', 
                 //cls: 'x-btn-default-large',
                 //tooltip: 'Start the upload of all queued files',
                 handler: Ext.Function.bind( this.selectExample, this ),
@@ -195,7 +198,7 @@ Ext.define('BQ.selectors.Resource', {
             this.btn_select_upload = Ext.create('Ext.button.Button', {
                 text: 'Upload local images', 
                 //iconCls: 'upload', 
-                //scale: 'large', 
+                scale: 'large', 
                 //cls: 'x-btn-default-large',
                 //tooltip: 'Start the upload of all queued files',
                 handler: Ext.Function.bind( this.selectFile, this ),
@@ -271,28 +274,26 @@ Ext.define('BQ.selectors.Resource', {
         // right now only one gobject selector will be available
         // !!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+        var increment = this.resource.gobjects.length<1?20:20;
+
+        if (this.resourcePreview) {
+            this.setHeight( this.getHeight() - this.resourcePreview.getHeight() - increment);    
+            this.resourcePreview.destroy();
+        }
         
         // show the preview thumbnail of the selected resource, 
         // if gobjects are required the image viewer will be shown, so no need for the preview
-        if (this.resource.gobjects.length<1) {        
-            this.resourcePreview = Bisque.ResourceBrowser.ResourceFactoryWrapper( {resource:R} );
-            this.add(this.resourcePreview);
-            this.setHeight( this.getHeight() + this.resourcePreview.getHeight() + 25 );
+        if (this.resource.gobjects.length<1) {    
+            this.resourcePreview = Bisque.ResourceBrowser.ResourceFactoryWrapper({resource:R});
         } else {
-            if (this.selector_gobs) {
-                this.setHeight( this.getHeight() - this.selector_gobs.getHeight() );    
-                this.selector_gobs.destroy();
-            }
-            
-            this.selector_gobs = Ext.create('BQ.selectors.Gobject', {
+            this.resourcePreview = Ext.create('BQ.selectors.Gobject', {
                 resource: this.resource.gobjects[0],
                 selected_resource: this.selected_resource,
             });            
-            
-            this.add(this.selector_gobs);
-            this.setHeight( this.getHeight() + this.selector_gobs.getHeight() );
-        }  
+        } 
         
+        this.add(this.resourcePreview);
+        this.setHeight( this.getHeight() + this.resourcePreview.getHeight() + increment );
     },
 
     validate: function() {
@@ -323,8 +324,11 @@ Ext.define('BQ.selectors.Resource', {
             return false;
         }        
         
-        if (this.selector_gobs) 
-            return this.selector_gobs.validate();
+        //if (this.selector_gobs) 
+        //    return this.selector_gobs.validate();
+
+        if (this.resourcePreview && this.resourcePreview.validate) 
+            return this.resourcePreview.validate();
         
         return true;
     },
@@ -825,7 +829,7 @@ Ext.define('BQ.renderers.Tag', {
         var resource = this.resource;        
         
         this.tagger = Ext.create('Bisque.ResourceTagger', {
-            resource : resource,
+            resource: definition.type?resource:resource.value, // reference or resource
             flex: 1,
             cls: 'tagger',
             //title : template.label?template.label:resource.name,
@@ -865,7 +869,7 @@ Ext.define('BQ.renderers.Image', {
         
         var parameters = { simpleview: '', gobjects: resource.gobjects, };
         this.viewer = Ext.create('BQ.viewer.Image', {
-            resource: resource.value,
+            resource: definition.type?resource:resource.value, // reference or resource
             flex: 1,
             parameters: parameters,
             //listeners: { 'changed': this.onchanged, scope: this, },
