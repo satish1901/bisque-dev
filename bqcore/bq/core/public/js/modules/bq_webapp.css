@@ -144,6 +144,10 @@ h3 {
 
 }
 
+.webapp .results h3 {
+    font-size: 120%;
+}
+
 .webapp .imageviewer {
   margin-top: 15px;
   position: relative;
