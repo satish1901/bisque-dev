@@ -202,8 +202,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.Resource',
             }),
 
             columns:
-            [
-            {
+            [{
                 text: 'Tag',
                 flex: 0.8,
                 dataIndex: 'name'
@@ -264,6 +263,8 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.Resource',
     
     preClick : function()
     {
+        this.msgBus.fireEvent('ResourceSingleClick', this.resource);
+    	
     	if (this.el.hasCls('resource-view-selected'))
     	{
     		this.toggleSelect(false);
@@ -273,7 +274,6 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.Resource',
     	{
     		this.toggleSelect(true);
     		this.fireEvent('select', this);
-			this.msgBus.fireEvent('ResourceSingleClick', this.resource);
     	}
     },
     
