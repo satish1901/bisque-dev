@@ -148,7 +148,7 @@ class BlobServer(RestController, ServiceMixin):
 
         resource = DBSession.query(Taggable).filter_by (resource_uniq = ident).first()
         path = None
-        if resource is not None:
+        if resource is not None and resource.resource_value:
             for nm,store in self.stores:
                 if store.valid(resource.resource_value):
                     path =  store.localpath(resource.resource_value)

@@ -79,7 +79,7 @@ Ext.define('BQ.viewer.Image', {
 
         //if (!this.user || typeof this.user != 'string')
         //    this.user = BQSession.current_session.user?BQSession.current_session.user.uri:null;
-        this.user = null;
+        //this.user = null;
         
         this.parameters.gobjectschanged = callback(this, 'onchanged');
         this.viewer = new ImgViewer(this.getId(), resource, this.user, this.parameters);   
