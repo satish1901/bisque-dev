@@ -436,7 +436,7 @@ function xmlrequest ( url, cb,  method, postdata, errorcb ){
                 window.location ="/auth_service/login?came_from=" + window.location;
             } else if (ajaxRequest.status==403 ) {
                 alert ("You do not have permission for that operation");
-            } else if (ajaxRequest.status == 404 )
+            } else if (ajaxRequest.status == 404 ) {
                 alert ("You do not have permission for that operation\n(Are you logged in?)");
             } else {
                 var error_short = ("There was a problem with the request:\n" + 
@@ -451,6 +451,7 @@ function xmlrequest ( url, cb,  method, postdata, errorcb ){
                 throw(error_str);                
             }
         }
+    }
 
     try {
   

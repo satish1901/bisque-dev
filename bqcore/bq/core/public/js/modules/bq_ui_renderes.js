@@ -826,7 +826,8 @@ Ext.define('BQ.renderers.Tag', {
     initComponent : function() {
         var definition = this.definition;
         var template = definition.template || {};
-        var resource = this.resource;        
+        var resource = this.resource;
+        if (!definition || !resource) return;                
         
         this.tagger = Ext.create('Bisque.ResourceTagger', {
             resource: definition.type?resource:resource.value, // reference or resource
@@ -866,6 +867,7 @@ Ext.define('BQ.renderers.Image', {
         var definition = this.definition;
         var template = definition.template || {};
         var resource = this.resource;
+        if (!definition || !resource) return;
         
         var parameters = { simpleview: '', gobjects: resource.gobjects, };
         this.viewer = Ext.create('BQ.viewer.Image', {
