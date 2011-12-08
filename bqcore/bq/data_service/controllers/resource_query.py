@@ -719,8 +719,13 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
                         check_name = name + str(count)
                         count += 1 
                         
+                    log.debug('AUTH: tg_user name=%s email=%s display=%s' %
+                              ( name, email, email))
 
                     tg_user = User(user_name=name, password='bisque', email_address=email, display_name=email)
+                    session.add(tg_user)
+                    session.flush()
+                    log.debug ("AUTH: tg_user = %s" % tg_user)
                     
                     #user = BQUser(create_tg=True,
                     #              user_name = name,
@@ -753,8 +758,10 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
                     acl = (a for a in resource.acl if a.user == user).next()
                 except StopIteration:
                     # Not found
-                    acl = TaggableAcl()                    
-                    acl.user_id = user.id
+                    acl = TaggableAcl()
+                    log.info('new acl for user %s' % user.name)
+                    acl.user = user
+                    #DBSession.add(acl)
 
                 shares.append(acl)
                 acl.action = action

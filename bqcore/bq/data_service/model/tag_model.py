@@ -349,6 +349,7 @@ class Taggable(object):
     @validates('owner')
     def validate_owner (self, key, owner):
         if isinstance(owner, basestring) and owner.startswith ('http'):
+            log.warn ("validating owner  %s" % owner)
             return map_url (owner)
         return owner
         
@@ -608,15 +609,14 @@ class BQUser(Taggable):
             tg_user.display_name = display_name
             DBSession.add(tg_user)
 
-        self.perm = PUBLIC
-        self.name = tg_user.user_name
-        self.value = tg_user.email_address
+        self.permission = 'published'
+        self.resource_name = tg_user.user_name
+        self.resource_value = tg_user.email_address
         dn = Tag (parent = self)
         dn.name = 'display_name'
         dn.value = tg_user.display_name
         dn.owner = self
         self.owner = self
-        DBSession.add(self);
         
     @classmethod
     def new_user (cls, email, password, create_tg = False):
@@ -644,6 +644,9 @@ class BQUser(Taggable):
     def user_id(self):
         return self.id
     user_id = property(user_id)
+
+    #def __str__(self):
+    #    return "<user:%d %s %s>" % (self.id, self.resource_name, self.resource_value)
 
 class Template(Taggable):
     '''
@@ -842,7 +845,7 @@ mapper(BQUser,  inherits=Taggable,
 
         'user_acls': relation(TaggableAcl,  lazy=True, cascade="all, delete-orphan",
                               primaryjoin= (taggable.c.id == taggable_acl.c.user_id),
-                              backref = backref('user'),
+                              backref = backref('user', enable_typechecks=False),
                               )
                               
         }
@@ -854,8 +857,9 @@ def bquser_callback (tg_user, operation, **kw):
     if operation =='create':
         u = DBSession.query(BQUser).filter_by(resource_name=tg_user.user_name).first()
         if u is None:
-            log.info ('creating BQUSER ')
-            BQUser(tg_user=tg_user)
+            u = BQUser(tg_user=tg_user)
+            DBSession.add(u)
+            log.info ('created BQUSER %s' % u.name)
             return
     if operation  == 'update':
         u = DBSession.query(BQUser).filter_by(resource_name=tg_user.user_name).first()
@@ -865,6 +869,7 @@ def bquser_callback (tg_user, operation, **kw):
             dn.value = tg_user.display_name
             pass
         return
+
 User.callbacks.append (bquser_callback)
 
 def registration_hook(action, **kw):
@@ -980,7 +985,7 @@ def current_mex ():
         if mex is None:
             mex_id = session.get('mex_id', None)
             if mex_id:
-                mex = DBSession.query(ModuleExecution).get(mexid)
+                mex = DBSession.query(ModuleExecution).get(mex_id)
     except TypeError, e:
         pass
 
