@@ -30,7 +30,7 @@ class MexAuthenticatePlugin(object):
             return None
         log.debug("MexAuthenticate:auth %s" % (identity))
         mex = DBSession.query(ModuleExecution).get (mexid)
-        session['mex_id'] = mexid
+        #session['mex_id'] = mexid
 
         #if  mex.closed():
         #    log.warn ('attempt with  closed mex %s' % mexid)

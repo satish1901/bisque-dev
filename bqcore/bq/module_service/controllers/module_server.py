@@ -512,6 +512,7 @@ class EngineResource (Resource):
         for m in modules:
             log.info ('module %s : new=%s current=%s' % (name,ts, m.get('ts')))
             m_version = module_def.xpath('//tag[@name="version"]')[0].get('value')
+            
             if m_version == version:
                 if  ts > m.get('ts'):
                     module_def.set('uri', m.get('uri'))
@@ -519,7 +520,6 @@ class EngineResource (Resource):
                     m = data_service.update(module_def, replace_all=True)
                     log.debug("Updating new module definition with: " + etree.tostring(m))
                 found = True
-                break
 
         if not found:
             log.debug ("CREATING NEW MODULE: %s " % name)

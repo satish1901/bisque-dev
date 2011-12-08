@@ -63,7 +63,7 @@ from bq.core.exceptions import EngineError
 from bq.util.paths import bisque_path
 
 from base_adapter import BaseAdapter
-from module_run import ModuleRunner
+from bq.engine.controllers.module_run import ModuleRunner
 
 
 MODULE_BASE = config.get('bisque.engine_service.local_modules', bisque_path('modules'))
@@ -77,12 +77,12 @@ class RuntimeAdapter(BaseAdapter):
     def __init__(self):
         pass
     def check(self, module):
-        module_name = module.get('name')
-        module_path = module.get('path').split(' ')[-1]
-        command = os.path.join(MODULE_BASE, module_name, module_path)
-        if not os.path.exists (command):
-            log.debug ("Failed to find module at %s" % command)
-            return False
+        #module_name = module.get('name')
+        #module_path = module.get('path').split(' ')[-1]
+        #command = os.path.join(MODULE_BASE, module_name, module_path)
+        #if not os.path.exists (command):
+        #    log.debug ("Failed to find module at %s" % command)
+        #    return False
         
         async =  module.xpath('//tag[@name="asynchronous"]')
         if len(async):
