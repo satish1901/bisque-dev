@@ -42,6 +42,10 @@ class ModuleRunner(object):
                     return None
                 print "Missing launcher: %s" % launcher
                 return None
+        else:
+            print "Missing runtime-module.cfg"
+            return None            
+            
         runners = cfg.get(None, 'runtime')
         self.module_runners = [r.strip() for r in runners.split(',')]
 

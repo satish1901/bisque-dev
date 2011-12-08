@@ -46,8 +46,8 @@
     width: 450px;
     font-size: 18px;    
     background: #CC0000;
-    color: #FFFFFF;
-    border-color: #000000;
+    color: #FFFFFF !important;
+    border-color: #000000 !important;
 }
 
 #messagepopup .error h3 {

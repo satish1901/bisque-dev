@@ -15,7 +15,11 @@
     </tag>
     
     <tag name="outputs">
-         <tag name="metadata"  />
+         <tag name="metadata">
+            <tag name="template" type="template">
+                <tag name="label" value="Extracted metadata" />
+            </tag>             
+         </tag>          
     </tag>
     
     <tag name="module_options" >

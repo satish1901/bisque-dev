@@ -65,10 +65,7 @@ function BQWebApp (urlargs) {
   //this.ui_create_holder('inputs');  
   //this.ui_create_holder('parameters');  
  
-  
-  
-  
-  
+ 
   
   
 
@@ -191,6 +188,10 @@ BQWebApp.prototype.onerror = function (str) {
     var button_run = document.getElementById("webapp_run_button");
     button_run.childNodes[0].nodeValue = this.label_run;
     button_run.disabled = false;
+    
+    var result_label = document.getElementById("webapp_results_summary");
+    if (result_label)
+        result_label.innerHTML = '<h3 class="error">'+str+'</h3>';    
 }
 
 BQWebApp.prototype.onmoduleloaded = function (module) {
@@ -206,7 +207,8 @@ BQWebApp.prototype.onmoduleloaded = function (module) {
 
 BQWebApp.prototype.create_renderer = function ( surface, selector, args ) {
     args = args || {};
-    args.resource.renderer = Ext.create(selector, {
+    var rr = args.definition || args.resource;
+    rr.renderer = Ext.create(selector, {
           width: '100%',          
           renderTo: surface,
           definition: args.definition,          
@@ -214,7 +216,7 @@ BQWebApp.prototype.create_renderer = function ( surface, selector, args ) {
     });
     //surface.add(input.renderer);
     
-    var c = args.resource.renderer;    
+    var c = rr.renderer;    
     Ext.EventManager.addListener( window, 'resize', function(e) {
             var w = document.getElementById(surface);
             var horizontal_padding = 20;
@@ -508,6 +510,12 @@ BQWebApp.prototype.updateResultsVisibility = function (vis, onlybuttons) {
     changeVisibility("webapp_results_plotter", false);
     if (this.holder_result) this.holder_result.hide();                    
   }
+  
+    if (!vis) {
+        var result_label = document.getElementById("webapp_results_summary");
+        if (result_label)
+            result_label.innerHTML = '<h3>No results yet...</h3>';
+    }  
 }
 
 //------------------------------------------------------------------------------
@@ -546,12 +554,14 @@ BQWebApp.prototype.done = function (mex) {
     if (mex.status == "FINISHED") {
         this.parseResults(mex);
     } else {
-        if ('message' in this.mexdict) 
-            //alert("The module reported an internal error:\n\n" + this.mexdict.message);
-            BQ.ui.error("The module reported an internal error:<br>" + this.mexdict.message);
-        else
-            //alert("Module execution failure:\n\n" + mex.toXML());
-            BQ.ui.error("Module execution failure:<br>" + mex.toXML());
+        var message = "Module execution failure:<br>" + mex.toXML(); 
+        if ('message' in this.mexdict && this.mexdict.message!='') 
+            message = "The module reported an internal error:<br>" + this.mexdict.message;
+        
+        BQ.ui.error(message);
+        var result_label = document.getElementById("webapp_results_summary");
+        if (result_label)
+            result_label.innerHTML = '<h3 class="error">'+ message+'</h3>';
     }      
 }
 
@@ -590,6 +600,14 @@ BQWebApp.prototype.parseResults = function (mex) {
         this.outputs = outputs.tags; // dima - this should be children in the future   
         this.outputs_index  = outputs.create_flat_index();          
     } 
+    
+    // Update module run info
+    var result_label = document.getElementById("webapp_results_summary");
+    if (result_label) {
+        result_label.innerHTML = '<h3 class="good">The module ran in ' + this.getRunTimeString(this.mexdict)+'</h3>';
+    }
+    
+    // setup output renderers
     this.setupUI_outputs();
     
     return;

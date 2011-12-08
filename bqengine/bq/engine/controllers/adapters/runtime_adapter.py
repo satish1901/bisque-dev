@@ -135,8 +135,8 @@ class RuntimeAdapter(BaseAdapter):
         
         current_dir = os.getcwd()
         try:
-            log.debug ("Exec in %s" % os.getcwd())
-            log.debug ("Exec of '%s' in %s " % (' '.join(command_line), module_dir))
+            log.info ("Currently in %s" % os.getcwd())
+            log.info ("Exec of '%s' in %s " % (' '.join(command_line), module_dir))
 
             os.chdir(module_dir)
             m = ModuleRunner()
