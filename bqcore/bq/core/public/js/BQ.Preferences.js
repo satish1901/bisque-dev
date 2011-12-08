@@ -86,7 +86,7 @@ Ext.define('BQ.Preferences',
             if (resource!=null)
             {
                 var tag = resource.find_tags('Preferences', false);
-                    
+
                 if (tag!=null)
                 {
                     this.user.tag=tag;
@@ -95,12 +95,22 @@ Ext.define('BQ.Preferences',
                 else
                 {
                     clog('USER preferences tag not found! Initializing from system\n');
-                    //this.user.tag = this.stripOwnership([this.system.tag])[0];
-                    //this.user.dictionary = this.system.dictionary;
-                    //this.user.tag.save_(resource.uri);
                     
-                    //alert('USER preferences tag not found!\n');
-                    this.user.exists=true;
+                    var newTag = new BQTag();
+                    newTag = Ext.apply(newTag,
+                    {
+                        name : 'Preferences',
+                        permission : 'published'
+                    });
+                    resource.addtag(newTag);
+                    resource.save_();
+
+                    // Reload the user object
+                    BQFactory.request(
+                    {
+                        uri : resource.uri + '?view=deep',
+                        cb : Ext.bind(this.loadUser, this, ['LOADED'], true)
+                    });
                 }
             }
             else
@@ -193,8 +203,6 @@ Ext.define('BQ.Preferences.Dialog', {
         this.callParent(arguments);
         this.show();
     },
-    
-    
 });
 
 Ext.define('BQ.Preferences.SystemDialog', {
