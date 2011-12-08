@@ -447,7 +447,7 @@ Ext.define('Bisque.ResourceTagger',
             newTag = Ext.apply(newTag,
             {
                 name : me.record.data.name,
-                value : me.record.data.value
+                value : me.record.data.value,
             });
             var parent = (me.record.parentNode.isRoot()) ? this.resource : me.record.parentNode.raw;
             parent.addtag(newTag);
