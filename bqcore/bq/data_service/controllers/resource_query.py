@@ -74,6 +74,7 @@ from bq.data_service.model import dbtype_from_tag
 from bq.core import identity
 from bq.core.identity import get_admin
 from bq.core.identity import get_user_id
+from bq.core.model import User
 from bq.util.mkdir import _mkdir
 from bq.util.paths import data_path
 
@@ -661,7 +662,8 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
     # 
     if action==RESOURCE_EDIT:
         owner  = session.query(BQUser).get(user_id)
-        owner_name = owner.user_name
+        owner_name = owner.name
+        owner_email = owner.value
         # Remove the previous ACL elements and replace with the provided xml
 
         log.debug ("RESOURCE EDIT %d %s" % (resource.id, resource.acl))
@@ -671,14 +673,6 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
         for acl in resource.acl:
             previous_shares.append (acl.user)
             
-            
-        #resource.acl = []
-        #This flush is needed as otherwise SA Update and then deletes
-        # the elements by user_id, resource.id.   This will delete
-        # the elements we are updating if they existed in the acl before.
-        image_service.set_file_acl (resource.src, owner_name, "remove")
-        session.flush()  
-
         invite_msg = """
         You've been invited by $owner_name <$owner_email> to view an image at
         $image_url
@@ -694,8 +688,8 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
         bisque_root = config.get ('bisque.root')
 
         common_email = {
-            'owner_name' : owner.display_name,
-            'owner_email' : owner.email_address,
+            'owner_name' : owner_name,
+            'owner_email' : owner_email,
             'image_url'  : url ('%s/client_service/view?resource=%s' % (bisque_root, "/data_service/%s" % (resource.uri))),
             'root'       : bisque_root,
             }
@@ -706,7 +700,7 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
             log.debug ("AUTH : %s %s " % (email, action))
             if email is not None and action is not None:
                 invite = None
-                user = session.query(BQUser).filter_by(email_address=unicode(email)).first()
+                user = session.query(BQUser).filter_by(resource_value=unicode(email)).first()
 
                 if  user is None:
                     log.debug ('AUTH: no user %s sending invite' % email)
@@ -718,22 +712,23 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
                     check_name = name
                     while True:
                         user = session.query(BQUser).filter_by(
-                            user_name=check_name).first()
+                            resource_name=check_name).first()
                         if user is None:
                             name = check_name
                             break
                         check_name = name + str(count)
                         count += 1 
                         
-                    
-                    user = BQUser(create_tg=True,
-                                  user_name = name,
-                                  password  = 'bisque',
-                                  email_address = email,
-                                  display_name=name)
 
-                    session.flush()
-                    session.refresh(user)
+                    tg_user = User(user_name=name, password='bisque', email_address=email, display_name=email)
+                    
+                    #user = BQUser(create_tg=True,
+                    #              user_name = name,
+                    #              password  = 'bisque',
+                    #              email_address = email,
+                    #              display_name=name)
+
+                    user = session.query(BQUser).filter_by(resource_name = name).first()
 
                     invite = string.Template(textwrap.dedent(invite_msg)).substitute(
                         common_email,
@@ -763,13 +758,13 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
 
                 shares.append(acl)
                 acl.action = action
-                image_service.set_file_acl(resource.src,
-                                           user.user_name,
-                                           action)
+                #image_service.set_file_acl(resource.src,
+                #                           user.user_name,
+                #                           action)
 
                 try:
                     if invite is not None:
-                        notify_service.send_mail (owner.email_address,
+                        notify_service.send_mail (owner_email,
                                                   email,
                                                   "Invitation to view",
                                                   invite,

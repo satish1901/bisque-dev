@@ -237,17 +237,20 @@ class AdminController(ServiceController):
         display_name = unicode( kw.get('display_name', '') )
                                 
         log.debug("ADMIN: Updating user: " + str(user_name) )
+
+        ####NOTE###
+        # Changes to user are propagated so there is no need to update bquser seperately.
+
         #Grab the user passed from url
-        user = BQUser.query.filter(BQUser.user_name == user_name).first()
+        #user = BQUser.query.filter(BQUser.name == user_name).first()
         
         #If we haven't got a handle on the user
-        if not user:
-            log.debug('No user was found with name of ' + user_name + '. Perhaps something odd happened?')
-            redirect(url('/admin/'))
-        
-        user.password = password
-        user.email_address = email_address
-        user.display_name = display_name
+        #if not user:
+        #    log.debug('No user was found with name of ' + user_name + '. Perhaps something odd happened?')
+        #    redirect(url('/admin/'))
+        #user.value = email_address
+        #user.tag('display_name') = display_name
+        #user.display_name = display_name
 
         tg_user = User.query.filter (User.user_name == user_name).first()
         if not tg_user:

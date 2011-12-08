@@ -28,8 +28,8 @@ ImgShare.prototype.editShare = function (resource) {
         Ext.define('User', {
             extend : 'Ext.data.Model',
             fields : [ {name: 'id', mapping: '@uri' },
-                       {name: 'name', mapping: '@display_name' },
-                       {name: 'email', mapping: '@email_address' },]
+                       {name: 'name', mapping: '@name' },
+                       {name: 'email', mapping: '@value' },]
             
         });
     
@@ -42,7 +42,7 @@ ImgShare.prototype.editShare = function (resource) {
                 pageParam: undefined,
                 startParam: undefined,
                 type: 'ajax',
-                url : '/data_service/users?wpublic=1',
+                url : '/data_service/user?wpublic=1',
                 reader : {
                     type :'xml',
                     root : 'resource',

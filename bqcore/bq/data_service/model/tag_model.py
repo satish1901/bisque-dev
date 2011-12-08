@@ -222,7 +222,7 @@ vertices = Table ('vertices', metadata,
 taggable_acl = Table('taggable_acl', metadata,
                      Column('taggable_id', Integer, ForeignKey('taggable.id'), primary_key=True),
                      Column('user_id', Integer, ForeignKey('taggable.id'),primary_key=True),
-                     Column('permission', Integer, key="action"),
+                     Column('permission', Integer),
                      )
 
 
@@ -726,12 +726,12 @@ class TaggableAcl(object):
     xmltag = "auth"
 
 
-    def setperm(self, perm):
-        self.action = { "read":0, "edit":1 } .get(perm, 0)
-    def getperm(self):
-        return [ "read", "edit"] [self.action]
+    def setaction(self, perm):
+        self.permission = { "read":0, "edit":1 } .get(perm, 0)
+    def getaction(self):
+        return [ "read", "edit"] [self.permission]
         
-    permission = property(getperm, setperm)
+    action = property(getaction, setaction)
     
     def __str__(self):
         return "resource:%s  user:%s permission:%s" % (self.taggable_id,
@@ -764,14 +764,7 @@ mapper( Value, values,
         )
 
 mapper( Vertex, vertices)
-mapper(TaggableAcl, taggable_acl,
-       properties = {
-#           'user'    : relation(User, 
-#                                passive_deletes="all",
-#                                uselist=False,
-#                                primaryjoin=(taggable_acl.c.user_id== taggable.c.id),
-#                                foreign_keys=[taggable.c.id])
-           })
+mapper(TaggableAcl, taggable_acl,)
 
 ############################
 # Taggable mappers
@@ -790,7 +783,7 @@ mapper( Taggable, taggable,
                                            taggable.c.resource_type == 'gobject')),
     'acl'  : relation(TaggableAcl, lazy=True, cascade="all, delete-orphan",
                       primaryjoin = (TaggableAcl.taggable_id == taggable.c.id),
-                      backref = backref('resource', remote_side=[taggable.c.id] ),
+                      backref = backref('resource', enable_typechecks=False, remote_side=[taggable.c.id] ),
                       ),
     'children' : relation(Taggable, lazy=True, cascade="all, delete-orphan",
                           enable_typechecks = False, 
@@ -838,7 +831,6 @@ mapper(BQUser,  inherits=Taggable,
         'tguser' : relation(User, uselist=False, 
             primaryjoin=(User.user_name == taggable.c.resource_name),
             foreign_keys=[User.user_name]),
-
 
         'owns' : relation(Taggable, lazy=True,
                           cascade = "all, delete-orphan",
