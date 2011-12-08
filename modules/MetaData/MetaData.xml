@@ -15,7 +15,7 @@
     </tag>
     
     <tag name="outputs">
-         <tag name="MetaData"  />
+         <tag name="metadata"  />
     </tag>
     
     <tag name="module_options" >

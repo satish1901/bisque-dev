@@ -1,3 +1,4 @@
+import sys
 from lxml import etree as ET
 from bq.api import BQSession, BQTag
 
@@ -45,11 +46,12 @@ class MetaData(object):
                            value=t.get('value'))
         # Add the new tag to the image
         image.addTag(tag = md)
-        medata_tag = bq.save(md, image.uri + "/tag")
+        metadata_tag = bq.save(md, image.uri + "/tag")
         bq.finish_mex(tags = [{ 'name': 'outputs',
                                 'tag' : [{ 'name': 'metadata',
                                            'value': metadata_tag.uri,
                                            'type' : 'tag' }]}])
+        sys.exit(0)
         #bq.close()
 
 
