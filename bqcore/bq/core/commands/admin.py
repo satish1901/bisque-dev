@@ -1,9 +1,16 @@
 import sys
+import os
 import re
 import pkg_resources
 import bq
 import optparse
 from bq.release import __VERSION__
+
+def load_config(filename):
+    from paste.deploy import appconfig
+    from bq.config.environment import load_environment
+    conf = appconfig('config:' + os.path.abspath(filename))
+    load_environment(conf.global_conf, conf.local_conf)
 
 def main():
     """Main entrypoint for bq-admin commands"""
@@ -145,8 +152,64 @@ class setup(object):
     def run(self):
         ''
         from bq.setup import bisque_setup
-
         bisque_setup.setup( self.server_type, self.options, self.args )
+
+
+
+class preferences (object):
+    desc = "read and/or update preferences"
+    def __init__(self, version):
+        parser = optparse.OptionParser(
+                    usage="%prog preferences [init|read|save]",
+                    version="%prog " + version)
+        parser.add_option('-c','--config', default="config/site.cfg")
+        options, args = parser.parse_args()
+
+        self.args = args
+        self.options = options
+        if len(args) == 0:
+            parser.error('argument must be init, read, save')
+
+    def run(self):
+        load_config(self.options.config)
+        from tg import config
+        from lxml import etree
+        from bq import data_service
+        import transaction
+
+        root = config.get ('bisque.root')
+        enabled = config.get('bisque.services_enabled', None)
+        disabled = config.get('bisque.services_disabled', None)
+        enabled  = enabled and [ x.strip() for x in enabled.split(',') ] or []
+        disabled = disabled and [ x.strip() for x in disabled.split(',') ] or []
+
+        from bq.core.controllers.root import RootController
+        RootController.mount_local_services(root, enabled, disabled)
+        prefs = 'config/preferences.xml'
+
+        if self.args[0].startswith('init'):
+            if os.path.exists(prefs):
+                print ('%s exists.. cannot init' % prefs)
+                return
+            
+            system = etree.parse('config/preferences.xml.default').getroot()
+            system = data_service.new_resource(system, view='deep')
+        else:
+            system = etree.parse(prefs)
+            uri = system.getroot().get('uri')
+            if self.args[0].startswith('read'):
+                system = data_service.get_resource(uri, view='deep')
+            elif self.args[0] == 'save':
+                system = data_service.update(system, view='deep')
+        transaction.commit()
+        with open(prefs,'w') as f:
+            f.write(etree.tostring(system, pretty_print=True))
+
+
+
+        
+
+            
 
 
 
@@ -157,19 +220,22 @@ class sql(object):
         parser = optparse.OptionParser(
                     usage="%prog sql <sql>",
                     version="%prog " + version)
+        parser.add_option('-c','--config', default="config/site.cfg")
         options, args = parser.parse_args()
 
         self.args = args
         self.options = options
 
-
     def run(self):
         ''
+
         from tg import config
         import bq
         from sqlalchemy import create_engine
         from sqlalchemy.sql import text
         from ConfigParser import ConfigParser
+
+        load_config(self.options.config)
 
         engine = config['pylons.app_globals'].sa_engine
 

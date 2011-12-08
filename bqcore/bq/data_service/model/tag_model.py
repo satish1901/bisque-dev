@@ -319,24 +319,11 @@ class Taggable(object):
         self.ts = datetime.now()
         #log.debug("new taggable user:" + str(session.dough_user.__dict__) )
         owner  = identity.current.get_bq_user()
-        mex = session.get('mex', None)
-        log.debug ("owner = %s mex = %s" % (owner, mex))
+        self.mex = current_mex()
+        log.debug ("owner = %s mex = %s" % (owner, self.mex))
         if owner:
             self.owner_id = owner.id
             self.perm = PRIVATE
-        if mex:
-            self.mex = mex
-        else:
-            mexid = session.get('mex_id')
-            log.debug ("mex_id = %s" % mexid)
-            if mexid:
-                self.mex = DBSession.query(ModuleExecution).get(mexid)
-                #session['mex'] = self.mex
-            else:
-                # Default to the system/init mex
-                self.mex = DBSession.query(ModuleExecution).filter_by(
-                    resource_user_type = "initialization").first()
-                #session['mex'] = self.mex
 
         if owner is None:
             log.warn ("CREATING taggable %s with no owner" % str(self) )
@@ -991,6 +978,43 @@ def init_admin():
         
     log.debug ("admin user = %s" %  admin_user)
     return admin_user
+
+
+
+def current_mex ():
+    mex = None
+    try:
+        mex = session.get('mex', None)
+        if mex is None:
+            mex_id = session.get('mex_id', None)
+            if mex_id:
+                mex = DBSession.query(ModuleExecution).get(mexid)
+    except TypeError, e:
+        pass
+
+    if mex is None:
+        mex = DBSession.query(ModuleExecution).filter_by(
+            resource_user_type = "initialization").first()
+    return mex
+
+def set_current_mex(mex):
+    try:
+        session['mex'] = mex
+        return 
+    except TypeError,e:
+        pass
+            
+    from tg import session
+    from bq.core import model
+    from paste.registry import Registry
+    from beaker.session import Session, SessionObject
+
+    registry = Registry()
+    registry.prepare()
+    registry.register(session, SessionObject({}))
+
+    session['mex'] = mex
+
 
 
 
