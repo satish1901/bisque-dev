@@ -3,10 +3,10 @@
 <module name="CellProfiler" path="python launch.py" type="runtime">
 
     <tag name="inputs">
-        <tag name="input-formal" value="image_url"  />
-        <tag name="input-system" value="mex_url" />
-        <tag name="input-system" value="bisque_token" />
-        <tag name="input-formal" value="pipeline"/>
+        <tag type="image" name="image_url"  />
+        <tag type="input-system" name="mex_url" />
+        <tag type="input-system" name="bisque_token" />
+        <tag type="input-formal" name="pipeline"/>
     </tag>
 
     <tag name="execute_options">

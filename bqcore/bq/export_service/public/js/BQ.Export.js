@@ -222,6 +222,13 @@ Ext.define('BQ.Export.Panel', {
 
     addToStore : function(rb, resource)
     {
+        if (resource instanceof Array)
+        {
+            for (var i=0;i<resource.length;i++)
+                this.addToStore(rb, resource[i]);
+            return;
+        }
+
         var record = [];
 
         if (resource.resource_type=='image')
