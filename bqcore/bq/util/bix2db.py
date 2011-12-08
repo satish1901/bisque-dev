@@ -92,9 +92,6 @@ class BIXImporter(object):
         self.image_info = {}
 
     def fullname(self, name):
-        if self.flags.get('reimport', False):
-            return image_service.local_path (self.import_files[name])
-
         if name[0] != '/':
             return '/'.join([self.upload_dir, name])
         return name
@@ -102,60 +99,21 @@ class BIXImporter(object):
 
     def save_file (self, fn, **kw):
         '''save a file in the image server and return info'''
-        if self.flags.get('reimport', False):
-            # lookup filename and request info
-            local_src = self.import_files [fn]
-            return dict(src = local_src)
-        # Normal import
-        info = {}
-#        with open(self.fullname(fn), 'rb') as src:
-#            path, fhash = blob_service.store_blob(src, fn ) 
-#
-#        resource = etree.Element('file', perm = str(self.permission_flag),
-#                                 resource_uniq = fhash,
-#                                 resource_name = fn,
-#                                 resource_value  = path)
-#
-#        resource = data_service.new_resource(resource = resource)
-#        
-#        self.import_files[fn] = info['src'] = "/image_service/images/%s" % fhash
-        
         with open(self.fullname(fn), 'rb') as src:
-            resource = blob_service.store_blob(src, fn, perm = str(self.permission_flag) ) 
-        self.import_files[fn] = info['src'] = resource.get('src')
-
-        return info
+            return blob_service.store_blob(src, fn, perm = str(self.permission_flag) ) 
             
 
     def save_image (self, fn, **kw):
         '''save a file in the image server and return info'''
-        #if self.flags.get('reimport', False):
-        #    # lookup filename and request info
-        #    local_src = self.import_files [fn]
-        #    return image_service.info(local_src)
-        
-        # Normal import
         log.debug ("Store new image: " + fn + " " + str(self.image_info)) 
-#        with open(self.fullname(fn), 'rb') as src:
-#            path, fhash =  blob_service.store_blob(src,fn) 
-#
-#        resource = etree.Element('image', perm = str(self.permission_flag),
-#                                 resource_uniq = fhash,
-#                                 resource_name = fn,
-#                                 resource_value  = path, 
-#                                 src = "/image_service/images/%s" % fhash )
-#
-#        etree.SubElement(resource, 'tag', name="filename", value=fn)
-#        etree.SubElement(resource, 'tag', name="upload_datetime", value=datetime.now().isoformat(' '), type='datetime' ) 
-#        self.resource = data_service.new_resource(resource = resource)
 
         with open(self.fullname(fn), 'rb') as src:
             self.resource = blob_service.store_blob(src, fn, perm = str(self.permission_flag)) 
 
-        if 'src' in  self.resource.attrib:
-            self.import_files[fn] = self.resource.attrib['src']
-            self.image_uri = self.resource.attrib['src']
+        if 'uri' in self.resource.attrib:
+            self.import_files[fn] = self.resource.get('uri')
         else:
+            log.debug ("Image service could not create image %s" % fn) 
             raise BIXError ("Image service could not create image %s" % fn)
 
 
@@ -176,17 +134,19 @@ class BIXImporter(object):
                 log.debug ('trying tag:' + tag)
                 items = et.getroot().xpath ('./item[name="%s"]' % tag )
                 log.debug ('got ' + str(items))
-                if items:
+                if items and hasattr(self, 'tag_' + tag):
                     handler = getattr(self, 'tag_' + tag)
                     handler(items[0])
 
-            bixinfo = self.save_file (bixfile)
-            self.import_files[bixfile] = bixinfo['src']
-            self.import_files['BIX'] = bixinfo['src']
+            rr = self.save_file (bixfile)
+            self.import_files[bixfile] = rr.get('uri')
+            self.import_files['BIX'] = rr.get('uri')
+            
+            
 
             e = etree.SubElement(self.resource, 'tag', name = 'attached-file')
             etree.SubElement (e, 'tag', name='original-name', value = bixfile)
-            etree.SubElement (e, 'tag', name='url', type='file', value = bixinfo['src'])
+            etree.SubElement (e, 'tag', name='url', type='file', value = rr.get('uri') )
 
             # Process all other nodes
             for config in et.getroot().getiterator('config'):
@@ -209,9 +169,7 @@ class BIXImporter(object):
                                          name=name,
                                          value=value)
                     log.debug ('tag ' + name +':' + value)
-                    #print name, str(value)
-                    #self.resource.addTag(name, str(value))
-            #if self.resource in session:
+
             #  Should check if we have local changes (redirect to DS)
             log.debug ("update image" + etree.tostring(self.resource))
             data_service.update (self.resource)
@@ -232,8 +190,7 @@ class BIXImporter(object):
         #except:
         #    log.error ("Upexpected %s " % ( sys.exc_info()[0]))
         del et
-        
-        return self.filename, self.resource.get('uri')
+        return self.resource.get('name'), self.resource.get('uri')
             
     def parseValue(self, vs):
         if not len(vs): return vs.text
@@ -281,10 +238,6 @@ class BIXImporter(object):
         log.debug ("filename: " + fn + ':')
         self.filename = fn
         self.save_image(fn)
-        #if info is not None:
-        #    info['perm'] = self.permission_flag
-        #    self.resource = data_service.new_image(**info)
-        #    etree.SubElement(self.resource, 'tag', name = 'filename', value = str(fn))
 
     def tag_image_visibility(self, item, **kw):
         '''set visibability (public, private) for image v'''
@@ -305,25 +258,25 @@ class BIXImporter(object):
                 log.debug ("adding to " + str(type(self.resource)))
                 data_service.append_resource(self.resource, tree = g)
 
-    def tag_microtubule_track_file(self, item, **kw):
-        '''special uploaded files manual mt tracks'''
-        v = item[1].text
-        if v:
-            import bisquik.importer.trackimport as trackimport
-            imagemeta = self.parse_image_meta()
-            files = v.split(';')
-            filepaths = []
-            for f in files:
-                path = self.fullname(f)
-                filepaths.append(path)
-                info = self.save_file(f)
-                
-            bfis, missing = trackimport.trackimport(filepaths, imagemeta)
-            for bfi in bfis:
-                for tb in bfi:
-                    data_service.append_resource(self.resource, tree = tb)
-                    #log.debug ("BIX: adding tube" + tube.name)
-                    #tube.save()
+#    def tag_microtubule_track_file(self, item, **kw):
+#        '''special uploaded files manual mt tracks'''
+#        v = item[1].text
+#        if v:
+#            import bisquik.importer.trackimport as trackimport
+#            imagemeta = self.parse_image_meta()
+#            files = v.split(';')
+#            filepaths = []
+#            for f in files:
+#                path = self.fullname(f)
+#                filepaths.append(path)
+#                info = self.save_file(f)
+#                
+#            bfis, missing = trackimport.trackimport(filepaths, imagemeta)
+#            for bfi in bfis:
+#                for tb in bfi:
+#                    data_service.append_resource(self.resource, tree = tb)
+#                    #log.debug ("BIX: adding tube" + tube.name)
+#                    #tube.save()
 
     def tag_attachments(self, items, **kw):
         attachments = items[1].text
@@ -333,11 +286,11 @@ class BIXImporter(object):
             for f in files:
                 path = self.fullname(f)
                 filepaths.append(path)
-                info = self.save_file(f)
+                rr = self.save_file(f)
 
                 e = etree.Element('tag', name = 'attached-file')
                 etree.SubElement (e, 'tag', name='original-name', value = str(f))
-                etree.SubElement (e, 'tag', name='url', type='file', value = info['src'])
+                etree.SubElement (e, 'tag', name='url', type='file', value = rr.get('uri'))
                 
                 data_service.append_resource(self.resource, tree=e)
                 

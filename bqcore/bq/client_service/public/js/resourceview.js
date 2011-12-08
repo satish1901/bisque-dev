@@ -70,23 +70,10 @@ ResourceDispatch.prototype.dispatch_image = function(bqimage)
             {
                 me.mexLoaded = true;
             },
-            'Select' : function(me, resource)
-            {
-                me.setLoading(true);
-                var nw = window.open('', "_blank");
-                BQFactory.request(
-                {
-                    uri : resource.module,
-                    cb : function(r)
-                    {
-                        me.setLoading(false);
-                        nw.location = bq.url('/module_service/' + r.name + '/?mex=' + resource.uri);
-                    }
-
-                });
+            'Select' : function(me, resource) {
+                window.open( bq.url('/module_service/'+resource.name+'/?mex='+resource.uri) );
             }, scope:this
-
-        }
+        },
     });
 
     var resTab = Ext.create('Ext.tab.Panel',
