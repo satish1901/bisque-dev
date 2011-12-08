@@ -37,13 +37,13 @@ Ext.define('Bisque.ResourceBrowser.PreferencesWindow',
     
     addTagger : function()
     {
-        var tag = BQ.Preferences.user.tag.find_tags(this.browser.preferenceKey, true);
+        //var tag = BQ.Preferences.user.tag.find_tags(this.browser.preferenceKey, true);
 
-        if (tag.uri)
+        //if (tag.uri)
         {
             var tagger = Ext.create('Bisque.ResourceTagger',
             {
-                resource : tag.uri,
+                resource : BQ.Preferences.user.tag,
                 listeners : 
                 {
                     'destroy' : function() 
