@@ -136,6 +136,16 @@ h3 {
 
 }
 
+.webapp .run p {
+    margin: 0px;
+}
+
+.webapp .run button {
+    padding: 6px;
+    min-height: 30px;
+    min-width: 90px;    
+}
+
 /*-------------------------------------------------------
   RESULTS
 -------------------------------------------------------*/
@@ -145,7 +155,15 @@ h3 {
 }
 
 .webapp .results h3 {
-    font-size: 120%;
+    font-size: 140%;
+}
+
+.webapp .results .error {
+    color: red;
+}
+
+.webapp .results .good {
+    color: green;
 }
 
 .webapp .imageviewer {

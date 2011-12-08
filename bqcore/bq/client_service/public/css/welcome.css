@@ -187,7 +187,7 @@
 .welcome_front .ResourceIconList img { 
     /*opacity:0.4;
     filter:alpha(opacity=40); /* For IE8 and earlier */
-    border: solid 3px orange;
+    /*border: solid 3px orange;*/
     margin-right: 15px;
 }
 
