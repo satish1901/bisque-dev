@@ -115,6 +115,7 @@ setup(
     servers = bq.core.commands.admin:servers
     setup   = bq.core.commands.admin:setup
     sql     = bq.core.commands.admin:sql
+    preferences= bq.core.commands.admin:preferences
 
     [bisque.services]
     client_service   = bq.client_service.controllers.service

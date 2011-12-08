@@ -384,9 +384,8 @@ class BisquikResource(Resource):
         log.info ('DELETE %s' % (self.browser_url))
         resource = self.check_access(resource, RESOURCE_EDIT)
         try:
-            if identity.get_user_id() == resource.owner_id:
-                DBSession.delete(resource)
-                return "<response/>"
+            DBSession.delete(resource)
+            return "<response/>"
         except:
             pass
         return '<response>Error in deleting resource</response>'
