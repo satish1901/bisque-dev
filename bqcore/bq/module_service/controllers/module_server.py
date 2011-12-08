@@ -221,19 +221,20 @@ def read_xml_body():
 def create_mex(module_url, **kw):
     module = data_service.get_resource(module_url, view='deep')
     inputs = module.xpath('./tag[@name="inputs"]')
-    inputs = inputs and inputs[0]
+    formal_inputs = inputs and inputs[0]
     real_params = dict(kw)
     mex = etree.Element('mex', 
                         name = module.get('name'), 
                         value = 'PENDING', type = module_url)
+    inputs = etree.SubElement(mex, 'tag', name='inputs')
     #mex_inputs = etree.SubElement(mex, 'tag', name='inputs')
-    for mi in inputs:
-        param_name = mi.get('value').split(':')[0].strip('$')
+    for mi in formal_inputs:
+        param_name = mi.get('name')
         log.debug ('param check %s' % param_name)
         if param_name in real_params:
             param_val = real_params.pop(param_name)
             #etree.SubElement(mex_inputs, 'tag',
-            etree.SubElement(mex, 'tag',
+            etree.SubElement(inputs, 'tag',
                              name = param_name,
                              value= param_val)
             log.debug ('param found %s=%s' % (param_name, param_val))
