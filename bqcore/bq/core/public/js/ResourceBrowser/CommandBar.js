@@ -113,10 +113,10 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 				},'->',
 				{
 					itemId : 'btnTS',
-					icon : bq.url('/js/ResourceBrowser/Images/asc.png'),
-					tooltip : 'Sort data descending by timestamp (current: ascending)',
+					icon : bq.url('/js/ResourceBrowser/Images/desc.png'),
+					tooltip : 'Sort data ascending by timestamp (current: descending)',
 					hidden : this.viewMgr.cBar.btnTS,
-					sortState : 'ASC',
+					sortState : 'DESC',
 					scale : 'large',
 					handler : this.btnTS,
 					scope : this
