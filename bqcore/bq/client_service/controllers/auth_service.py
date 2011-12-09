@@ -121,19 +121,19 @@ class AuthenticationServer(ServiceController):
         redirect(came_from)
 
 
-    
-    @expose ()
-    def logout_handler(self, **kw):
-        log.debug ("logout %s" % kw)
-        #session = request.environ['beaker.session']
-        #session.delete()
-        try:
-            self._end_mex_session()
-            session.delete()
-        except:
-            log.exception("logout")
+    # This function is never called but used as token to recognize the logout
+    # @expose ()
+    # def logout_handler(self, **kw):
+    #     log.debug ("logout %s" % kw)
+    #     #session = request.environ['beaker.session']
+    #     #session.delete()
+    #     try:
+    #         self._end_mex_session()
+    #         session.delete()
+    #     except:
+    #         log.exception("logout")
 
-        redirect ('/')
+    #     redirect ('/')
 
     #@expose ()
     #def logout_handler(self, **kw):

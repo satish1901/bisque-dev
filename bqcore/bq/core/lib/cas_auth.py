@@ -93,7 +93,7 @@ class CASPlugin(object):
     # IIdentifier
     def remember(self, environ, identity):
         """remember the openid in the session we have anyway"""
-        #log.debug("remember")
+        log.debug("cas:remember")
         rememberer = self._get_rememberer(environ)
         r = rememberer.remember(environ, identity)
         return r
@@ -101,7 +101,7 @@ class CASPlugin(object):
     # IIdentifier
     def forget(self, environ, identity):
         """forget about the authentication again"""
-        #log.debug("forget")
+        log.debug("cas:forget")
         rememberer = self._get_rememberer(environ)
         return rememberer.forget(environ, identity)
     
@@ -113,6 +113,7 @@ class CASPlugin(object):
         if request.path == self.logout_path:
 
             userdata = environ.get('REMOTE_USER_DATA', '')
+            log.debug ("cas logout:  %s " % environ)
             cas_ticket = userdata.startswith('cas:') and userdata[4:]
             log.debug ("logout cas ticket %s" % cas_ticket)
             if cas_ticket:
@@ -137,7 +138,7 @@ class CASPlugin(object):
             log.debug ("login_path ticket=%s" % ticket)
             environ['repoze.who.plugins.cas'] = True
             if ticket is not None:
-                identity['userdata'] = "cas:%s" % ticket
+                identity['userdata'] = ( "cas:%s" % ticket, )
                 identity['repoze.who.plugins.cas.ticket' ] = ticket
                 del environ['repoze.who.plugins.cas']
                 return identity
