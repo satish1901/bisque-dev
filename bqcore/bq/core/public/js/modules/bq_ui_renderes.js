@@ -834,7 +834,7 @@ Ext.define('BQ.renderers.Tag', {
             flex: 1,
             cls: 'tagger',
             //title : template.label?template.label:resource.name,
-            viewMode : 'ViewerOnly',
+            viewMode : 'ReadOnly',
         });        
        
         this.items = [];

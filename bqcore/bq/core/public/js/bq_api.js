@@ -60,13 +60,13 @@ function BQObject (uri, doc){
     this.created = true;
     this.mex = null;
     this.xmltag = "resource";
-    this.xmlfields  = [ 'type', 'uri', 'src', 'perm', 'resource_uniq', 'resource_name'];
+    this.xmlfields  = [ 'type', 'uri', 'src', 'permission', 'resource_uniq', 'resource_name'];
 }
 BQObject.prototype = new BQXml();
 
 BQObject.prototype.initializeXml = function (resource) {
     this.uri = attribStr(resource,'uri');
-    this.perm = attribInt(resource,'perm');
+    this.permission = attribStr(resource,'permission');
     this.ts   = attribStr(resource,'ts');
     this.owner = attribStr(resource,'owner');
     this.type   = attribStr(resource,'type');
@@ -811,7 +811,7 @@ BQFactory.parseBQDocument = function (xmltxt) {
 function BQImage (uri){
     BQObject.call(this, uri);
     this.xmltag = "image";
-    this.xmlfields = [ "uri", "perm", "type", ] ;
+    this.xmlfields = [ "uri", "permission", "type", ] ;
                         
 //                       "src", "x", "y","z", "t", "ch" ] ;
 
@@ -881,14 +881,14 @@ function BQTag (uri){
     BQObject.call(this, uri);
     this.values = [];
     this.xmltag = "tag";
-    this.xmlfields = [ 'uri', 'name', 'type', 'value', 'index', 'perm'];
+    this.xmlfields = [ 'uri', 'name', 'type', 'value', 'index', 'permission'];
 }
 BQTag.prototype = new BQObject();
 //extend(BQTag, BQObject);
 
 BQTag.prototype.initializeXml = function (node) {
     this.uri = attribStr(node,'uri');
-    this.perm = attribInt(node,'perm');
+    this.permission = attribStr(node,'permission');
     this.ts   = attribStr(node,'ts');
     this.owner   = attribStr(node,'owner');
 
