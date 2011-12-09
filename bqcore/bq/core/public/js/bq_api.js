@@ -60,13 +60,13 @@ function BQObject (uri, doc){
     this.created = true;
     this.mex = null;
     this.xmltag = "resource";
-    this.xmlfields  = [ 'type', 'uri', 'src', 'permission', 'resource_uniq', 'resource_name'];
+    this.xmlfields  = [ 'type', 'uri', 'src', 'perm', 'resource_uniq', 'resource_name'];
 }
 BQObject.prototype = new BQXml();
 
 BQObject.prototype.initializeXml = function (resource) {
     this.uri = attribStr(resource,'uri');
-    this.permission = attribStr(resource,'permission');
+    this.perm = attribInt(resource,'perm');
     this.ts   = attribStr(resource,'ts');
     this.owner = attribStr(resource,'owner');
     this.type   = attribStr(resource,'type');
@@ -811,7 +811,7 @@ BQFactory.parseBQDocument = function (xmltxt) {
 function BQImage (uri){
     BQObject.call(this, uri);
     this.xmltag = "image";
-    this.xmlfields = [ "uri", "permission", "type", ] ;
+    this.xmlfields = [ "uri", "perm", "type", ] ;
                         
 //                       "src", "x", "y","z", "t", "ch" ] ;
 
@@ -881,14 +881,14 @@ function BQTag (uri){
     BQObject.call(this, uri);
     this.values = [];
     this.xmltag = "tag";
-    this.xmlfields = [ 'uri', 'name', 'type', 'value', 'index', 'permission'];
+    this.xmlfields = [ 'uri', 'name', 'type', 'value', 'index', 'perm'];
 }
 BQTag.prototype = new BQObject();
 //extend(BQTag, BQObject);
 
 BQTag.prototype.initializeXml = function (node) {
     this.uri = attribStr(node,'uri');
-    this.permission = attribStr(node,'permission');
+    this.perm = attribInt(node,'perm');
     this.ts   = attribStr(node,'ts');
     this.owner   = attribStr(node,'owner');
 
@@ -1433,22 +1433,23 @@ BQUser.prototype = new BQObject();
 //extend(BQImage, BQObject);
 
 BQUser.prototype.initializeXml = function (user) {
-    this.uri = attribStr(user,'uri');
-    //this.display_name = attribStr(user,'display_name');
-    this.user_name = attribStr(user,'user_name');
-    //this.password  = attribStr(user,'password');    
-    //this.email_address = attribStr (user, 'email_address');
-    
     this.resource_type = this.xmltag;
-    //this.display_name = attribStr(user, 'name');
+    this.uri = attribStr(user,'uri');
+
+    //this.display_name = attribStr(user,'display_name');
+    //this.password  = attribStr(user,'password');  
+    //this.email_address = attribStr (user, 'email_address');
+
+    this.user_name = attribStr(user,'name');
+    this.display_name = this.user_name;
+  
     this.email = attribStr(user, 'value');
     this.email_address = this.email;
 }
 
 BQUser.prototype.afterInitialized = function () {
     var display_name  = this.find_tags('display_name');
-    if (display_name)
-        this.display_name = display_name.value;
+    this.display_name = (display_name && display_name.value)?display_name.value:this.user_name;
 }
 
 BQUser.prototype.get_credentials = function( cb) {
@@ -1725,7 +1726,7 @@ BQSession.prototype.parseTags  = function (){
         //BQFactory.load( user.value, callback(this, this.setUser) );
         BQFactory.request({uri: user.value, cb: callback(this, 'setUser'), cache: false, uri_params: {view:'full'}});
     } else {
-        var sess = this;
+        var sess = this;        
         if (sess.onnouser) sess.onnouser();    
     } 
 }
