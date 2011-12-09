@@ -31,7 +31,6 @@ Ext.define('Bisque.Module.CellProfiler',
     
     tagger : function()
     {
-
         var tagger = Ext.create('Bisque.ResourceTagger',
         {
             resource : this.mexURI,
@@ -39,6 +38,24 @@ Ext.define('Bisque.Module.CellProfiler',
             height: 500,
             renderTo: 'webapp_results_tagger',
             viewMode : 'ViewerOnly',
+        });
+    },
+    
+    view : function()
+    {
+        document.getElementById("webapp_results_viewer").style.display = ''; 
+
+        var parameters = {    
+                             simpleview: '',
+                             gobjects: this.gobjectURL
+                         };
+
+        var imgViewer = Ext.create('BQ.viewer.Image',
+        {
+            renderTo: 'webapp_results_viewer',
+            resource: this.bq_resource,
+            //flex: 1,
+            parameters: parameters,
         });
     },
     

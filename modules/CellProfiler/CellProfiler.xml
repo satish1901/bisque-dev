@@ -8,8 +8,12 @@
     </tag>
 
     <tag name="outputs">
-        <tag name="MyData"/>
+        <tag name="CellProfiler Summary"/>
+        <tag type="image" name="output_image">
+            <tag type="gobject" name="cellprofiler"/>
+        </tag>
     </tag>
+    
     <tag name="execute_options">
         <tag name="argument_style" value="named" />
     </tag>
