@@ -244,7 +244,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceList',
 
 	loadResource : function(moduleInfo)
     {
-		this.setData('module', this.resource.value);
+		this.setData('module', this.resource.name);
 		this.setData('fetched', 1);	//Loaded
 
         var renderedRef=this.getData('renderedRef')
@@ -255,7 +255,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceList',
     updateContainer : function()
     {
 		var mexName=new Ext.form.Label({
-			text:' '+this.getData('module')+' ',
+			text:' '+Ext.String.ellipsis(this.resource.name, 22)+' ',
 			padding:'0 8 0 8',
 			cls:'lblModuleName',
 		})
