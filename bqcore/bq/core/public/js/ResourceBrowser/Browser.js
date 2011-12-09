@@ -199,7 +199,7 @@ Ext.define('Bisque.ResourceBrowser.Browser',
                 dataset : this.browserParams.dataset || '/data_service/image/',
                 offset : this.browserParams.offset || 0,
                 tagQuery : this.browserParams.tagQuery || '',
-                tagOrder : this.browserParams.tagOrder || '',
+                tagOrder : this.browserParams.tagOrder || '"@ts":desc',
                 wpublic : (this.browserParams.wpublic == 'true' ? true : false),
                 selType : (this.browserParams.selType || 'MULTI').toUpperCase()
             });
@@ -347,6 +347,8 @@ Ext.define('Bisque.ResourceBrowser.Browser',
             layoutMgr : this.layoutMgr
         });
 
+        var btnOrganize = this.commandBar.getComponent("btnGear").menu.getComponent("btnOrganize");
+        this.showOrganizer?btnOrganize.handler.call(this.commandBar):'';
         this.layoutMgr.Init(this.resourceQueue.getMainQ(this.layoutMgr.getVisibleElements(direction), this.layoutMgr));
         this.centerPanel.add(this.layoutMgr);
 
@@ -450,7 +452,6 @@ Ext.define('Bisque.ResourceBrowser.Browser',
     updateTbarItemStatus : function()
     {
         var btnRight = this.commandBar.getComponent("btnRight"), btnLeft = this.commandBar.getComponent("btnLeft");
-        var btnOrganize = this.commandBar.getComponent("btnGear").menu.getComponent("btnOrganize");
         var st = this.resourceQueue.getStatus();
 
         this.commandBar.setStatus(st);
@@ -460,8 +461,6 @@ Ext.define('Bisque.ResourceBrowser.Browser',
 
         this.commandBar.btnTSSetState(this.browserState.tag_order.toLowerCase());
         this.commandBar.btnSearchSetState(this.browserState.tag_query);
-        
-        this.showOrganizer?btnOrganize.handler.call(this.commandBar):'';
     },
 
     getURIFromState : function()
