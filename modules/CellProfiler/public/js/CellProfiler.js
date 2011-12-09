@@ -55,6 +55,7 @@ Ext.define('Bisque.Module.CellProfiler',
             renderTo: 'webapp_results_viewer',
             resource: this.bq_resource,
             //flex: 1,
+            height: 400,
             parameters: parameters,
         });
     },
