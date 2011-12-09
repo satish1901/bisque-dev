@@ -439,12 +439,16 @@ function xmlrequest ( url, cb,  method, postdata, errorcb ){
             } else if (ajaxRequest.status == 404 ) {
                 alert ("You do not have permission for that operation\n(Are you logged in?)");
             } else {
-                var error_short = ("There was a problem with the request:\n" + 
-                                   ajaxRequest.status + ":\t" + ajaxRequest.statusText + "\n");
+                var error_short = "There was a problem with the request:\n"; 
+                if (ajaxRequest.request_url) error_short += 'URL: ' + ajaxRequest.request_url+'\n';             
+                error_short += 'Status: ' + ajaxRequest.status+'\n';                                    
+                error_short += 'Message: ' + ajaxRequest.statusText+'\n';  
+                                   
                 var error_str = (error_short + ajaxRequest.responseText);
                 if (ajaxRequest.errorcallback) {
                     ajaxRequest.errorcallback({ request : ajaxRequest,
-                                                message : error_str, message_short: error_short});
+                                                message : error_str, 
+                                                message_short: error_short});
                 } else {
                     showerror (error_str);
                 }
@@ -462,6 +466,7 @@ function xmlrequest ( url, cb,  method, postdata, errorcb ){
             ajaxRequest.onreadystatechange = checkResponse;
             ajaxRequest.callback = cb;
             ajaxRequest.errorcallback = errorcb;
+            ajaxRequest.request_url = url;
             method = method || "get";
             ajaxRequest.open(method, url , true);
             ajaxRequest.setRequestHeader('Accept', 'text/xml');
