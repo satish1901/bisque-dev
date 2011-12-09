@@ -108,15 +108,18 @@ challenge_decider = bq.core.lib.challenge_decider:bisque_challenge_decider
 
 [identifiers]
 plugins =
+# plugin order matters: friendlyform on logout_handler send httpunathorized
     friendlyform;browser
     auth_tkt
     basicauth
     mexauth
-#    cas_auth
 #    openid
+#    cas_auth
+# Cas must be last because openid replaces logout with redirect /post_logout
 
 [challengers]
 plugins =
+# Cas must be first challenger (as openid always send challenge to google)
 #    cas_auth
 #    openid
     friendlyform;browser

@@ -58,7 +58,7 @@ class CASPlugin(object):
     
     # IChallenger
     def challenge(self, environ, status, app_headers, forget_headers):
-        #log.debug ('challenge')
+        log.debug ('cas:challenge')
         request = Request(environ, charset="utf8")
         service_url = request.url
 
@@ -78,13 +78,8 @@ class CASPlugin(object):
             log.debug ('CAS challenge redirect to %s' % self.cas_login_url)
             destination =  "%s?service=%s" % (self.cas_login_url, quote_plus(service_url))
             return HTTPFound(location=destination)
-        return None
 
-        # redirect to login_form
-        #res = Response()
-        #res.status = 302
-        #res.location = "%s?came_from=%s" % (self.login_form , request.url)
-        #return res
+        return None
 
     def _get_rememberer(self, environ):
         rememberer = environ['repoze.who.plugins'][self.rememberer_name]
@@ -112,20 +107,30 @@ class CASPlugin(object):
         # first test for logout as we then don't need the rest
         if request.path == self.logout_path:
 
-            userdata = environ.get('REMOTE_USER_DATA', '')
             log.debug ("cas logout:  %s " % environ)
-            cas_ticket = userdata.startswith('cas:') and userdata[4:]
+            tokens = environ.get('REMOTE_USER_TOKENS', '')
+            cas_ticket = None
+            for token in tokens:
+                cas_ticket = token.startswith('cas:') and token[4:]
+                break
             log.debug ("logout cas ticket %s" % cas_ticket)
             if cas_ticket:
                 res = Response()
                 # set forget headers
+                #headers = self.forget(environ, {})
+                #destination = 'http://%s%s' % (environ['HTTP_HOST'], self.post_logout)
+                #destination = self.post_logout
+                #app = HTTPFound(location = destination, headers=headers)
+                #environ['repoze.who.application'] = app
+                # The above doesn't work
+                
                 for a,v in self.forget(environ,{}):
                     res.headers.add(a,v)
-                    res.status = 302
-                    res.location = "%s?url=%s" % (self.cas_logout_url, self.post_logout)
-                    environ['repoze.who.application'] = res
-                return {}
-            return None
+                res.status = 302
+                logout_url = 'http://%s%s' % (environ['HTTP_HOST'], self.post_logout)
+                res.location = "%s?url=%s" % (self.cas_logout_url, logout_url)
+                environ['repoze.who.application'] = res
+            return {}
 
         identity = {}
 
@@ -138,7 +143,7 @@ class CASPlugin(object):
             log.debug ("login_path ticket=%s" % ticket)
             environ['repoze.who.plugins.cas'] = True
             if ticket is not None:
-                identity['userdata'] = ( "cas:%s" % ticket, )
+                identity['tokens'] =  "cas:%s" % ticket
                 identity['repoze.who.plugins.cas.ticket' ] = ticket
                 del environ['repoze.who.plugins.cas']
                 return identity
