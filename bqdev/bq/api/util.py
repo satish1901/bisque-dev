@@ -175,7 +175,7 @@ def save_image_pixels(session,  localfile, image_tags=None):
     @param localfile:  a file-like object or name of a localfile
     @return XML content  when upload ok
     """
-    url = session.service_url('import_service', 'transfer')
+    url = session.service_url('import', 'transfer')
     
     if isinstance(localfile, basestring):
         localfile = open(localfile,'rb')
@@ -184,6 +184,11 @@ def save_image_pixels(session,  localfile, image_tags=None):
         if image_tags:
             fields['file_tags'] = etree.tostring(toXml(image_tags))
         body, headers = poster.encode.multipart_encode(fields)
+        
+        
+        print '\n\nfile name\n'
+        print headers
+        
         content = session.c.post(url, headers=headers, content=body)
     return content
 
