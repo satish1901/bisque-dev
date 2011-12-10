@@ -238,6 +238,10 @@
     border-right-width: 0px;    
 }
 
+.welcome_front .textOnImage  {
+    background-color: transparent;    
+}
+
 /* dataset list  */
 
 .welcome_front .ResourceList {

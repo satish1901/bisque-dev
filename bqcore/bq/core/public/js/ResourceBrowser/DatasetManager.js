@@ -12,7 +12,7 @@ Bisque.ResourceBrowser.DatasetManager = Ext.extend(Ext.Panel,
 
             title : 'Datasets',
             itemId: 'datasetCt',
-            width : 400,
+            width : 300,
             autoScroll : true,
 
             tools : [

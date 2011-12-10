@@ -29,6 +29,7 @@ Ext.onReady(function() {
       'tagOrder': '${tagOrder}', 
       'offset'  : '${offset}', 
       'wpublic' : '${wpublic}',
+      showOrganizer : true,
       listeners : { 'Select': function(me, resource) { 
                       window.open(bq.url('/client_service/view?resource='+resource.uri)); 
                     }, 

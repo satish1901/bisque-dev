@@ -191,6 +191,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 				 		},'-',
 						{
 							text : 'Organize',
+                            itemId : 'btnOrganize',
 							icon : bq.url('/js/ResourceBrowser/Images/organize.png'),
 							hidden : this.viewMgr.cBar.btnOrganizer,
 				 			handler : this.btnOrganizerClick,

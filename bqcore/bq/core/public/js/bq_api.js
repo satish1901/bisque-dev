@@ -1433,16 +1433,24 @@ BQUser.prototype = new BQObject();
 //extend(BQImage, BQObject);
 
 BQUser.prototype.initializeXml = function (user) {
-    this.uri = attribStr(user,'uri');
-    this.display_name = attribStr(user,'display_name');
-    this.user_name = attribStr(user,'user_name');
-    //this.password  = attribStr(user,'password');    
-    this.email_address = attribStr (user, 'email_address');
     this.resource_type = this.xmltag;
-    this.display_name = attribStr(user, 'name');
+    this.uri = attribStr(user,'uri');
+
+    //this.display_name = attribStr(user,'display_name');
+    //this.password  = attribStr(user,'password');  
+    //this.email_address = attribStr (user, 'email_address');
+
+    this.user_name = attribStr(user,'name');
+    this.display_name = this.user_name;
+  
     this.email = attribStr(user, 'value');
+    this.email_address = this.email;
 }
 
+BQUser.prototype.afterInitialized = function () {
+    var display_name  = this.find_tags('display_name');
+    this.display_name = (display_name && display_name.value)?display_name.value:this.user_name;
+}
 
 BQUser.prototype.get_credentials = function( cb) {
     var u = new BQUrl(this.uri);
@@ -1715,11 +1723,8 @@ BQSession.prototype.parseTags  = function (){
     }
     var user = this.find_tags ('user');
     if (user) {
-        var sess = this;
-        BQFactory.load(user.value, function (user) {
-                         sess.user = user;
-                         if (sess.ongotuser) sess.ongotuser(sess.user);   
-                       } );
+        //BQFactory.load( user.value, callback(this, this.setUser) );
+        BQFactory.request({uri: user.value, cb: callback(this, 'setUser'), cache: false, uri_params: {view:'full'}});
     } else {
         var sess = this;        
         if (sess.onnouser) sess.onnouser();    
@@ -1727,10 +1732,13 @@ BQSession.prototype.parseTags  = function (){
 }
 
 BQSession.prototype.hasUser = function (){
-    if (this.user) 
-        return true;
-    else
-        return false;
+    return this.user ? true : false;
+}
+
+BQSession.prototype.setUser = function (user) {
+    this.user = user;
+    if (this.ongotuser) 
+        this.ongotuser(this.user);   
 }
 
 BQSession.prototype.set_timeout  = function (baseurl, opts) {
