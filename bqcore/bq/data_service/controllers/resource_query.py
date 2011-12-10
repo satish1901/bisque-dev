@@ -448,9 +448,12 @@ def tags_special(dbtype, query, params):
         sq3 = sq2.distinct(Tag.resource_name).order_by(Tag.resource_name)
         vsall = sq3.all()
         # for sqlite (no distinct on)
-        vsall = unique(vsall, lambda x: x.resource_name)
-        #log.debug ("tag_names query = %s" % sq1)
-        q = [ fobject (resource_type='tag' , name=tg.resource_name, type=tg.resource_user_type ) for tg in vsall]
+        try:        
+            vsall = unique(vsall, lambda x: x.resource_name)
+            #log.debug ("tag_names query = %s" % sq1)
+            q = [ fobject (resource_type='tag' , name=tg.resource_name, type=tg.resource_user_type ) for tg in vsall]
+        except (IndexError, StopIteration):
+            return []            
         return q
     
     tv = params.pop('tag_values', None)
@@ -468,9 +471,12 @@ def tags_special(dbtype, query, params):
             and_(Tag.resource_name == tv,
                  Tag.document_id == sq1.c.taggable_document_id)).distinct(Tag.resource_value).order_by(Tag.resource_value)
         # for sqllite (no distinct on)
-        vsall = unique(sq2.all(), lambda x: x.resource_value)
-        q = [ fobject (resource_type='tag', name = tv, value = v.resource_value, resource_value = v.resource_value)
-             for v in vsall ]
+        try:
+            vsall = unique(sq2.all(), lambda x: x.resource_value)
+            q = [ fobject (resource_type='tag', name = tv, value = v.resource_value, resource_value = v.resource_value)
+                 for v in vsall ]
+        except (IndexError, StopIteration):
+            return []
         
         #vs=session.query(Value.valstr).filter(Value.resource_parent_id == sq2.c.taggable_id).distinct()
         #vsall = vs.all()
