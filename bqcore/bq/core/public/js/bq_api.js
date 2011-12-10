@@ -248,14 +248,28 @@ BQObject.prototype.toDict  = function (deep, found, prefix) {
     return found;
 }
 
-BQObject.prototype.toNestedDict  = function (deep) {
+BQObject.prototype.toNestedDict = function(deep)
+{
     var dict = {}, tag;
-    for (var i=0;i<this.tags.length;i++) {
+    for(var i = 0; i < this.tags.length; i++)
+    {
         tag = this.tags[i];
-        dict[tag.name] = (deep && tag.tags.length>0) ? tag.toNestedDict(deep) : (tag.value || '');
+        dict[tag.name] = (deep && tag.tags.length > 0) ? tag.toNestedDict(deep) : (tag.value || '');
     }
     return dict;
 }
+
+BQObject.prototype.fromNestedDict = function(dict)
+{
+    for (var tag in dict)
+    {
+        value = dict[tag];
+        if (value instanceof Object)
+            this.addtag({name:tag}).fromNestedDict(value);
+        else
+            this.addtag({name:tag, value:value});
+    }
+} 
 
 BQObject.prototype.create_flat_index = function ( index, prefix ) {
     index = index || {};

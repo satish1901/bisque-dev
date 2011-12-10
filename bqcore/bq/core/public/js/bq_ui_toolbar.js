@@ -142,7 +142,7 @@ Ext.define('BQ.Application.Toolbar', {
         this.menu_user.add( {text: 'Website admin', itemId: 'menu_user_admin', hidden: true, 
                                 handler: Ext.Function.pass(pageAction, bq.url('/admin'))} );        
         
-        this.menu_user.add( { text: 'Website preferences', itemId: 'menu_user_admin_prefs', hidden: true, 
+        this.menu_user.add( { text: 'Website preferences', itemId: 'menu_user_admin_prefs', 
                               handler: this.systemPrefs, scope: this } );    
 
         this.menu_user.add( {text: 'Register new user', itemId: 'menu_user_register', 
@@ -288,7 +288,7 @@ Ext.define('BQ.Application.Toolbar', {
     },
 
     systemPrefs : function() {
-        var preferences = Ext.create('BQ.Preferences.SystemDialog');
+        var preferences = Ext.create('BQ.Preferences.Dialog');
     },
 
    

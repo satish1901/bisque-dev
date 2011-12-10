@@ -1,4 +1,4 @@
-Ext.define('Bisque.ResourceBrowser.PreferencesWindow',
+Ext.define('BQ.Preferences.Dialog',
 {
     extend : 'Ext.window.Window',
     
@@ -7,8 +7,10 @@ Ext.define('Bisque.ResourceBrowser.PreferencesWindow',
         Ext.apply(this, 
         {
             title : 'Set preferences',
+            modal : true,
             layout : 'fit',
-            browser : config.browser || {}
+            height : '70%',
+            width : '70%',
         });
         
         if (BQ.Preferences.user.status=='LOADED')
@@ -37,26 +39,29 @@ Ext.define('Bisque.ResourceBrowser.PreferencesWindow',
     
     addTagger : function()
     {
-        //var tag = BQ.Preferences.user.tag.find_tags(this.browser.preferenceKey, true);
-
-        //if (tag.uri)
+        this.tagger = Ext.create('Bisque.PreferenceTagger',
         {
-            var tagger = Ext.create('Bisque.ResourceTagger',
+            viewMode : 'Offline'
+            /*listeners : 
             {
-                resource : BQ.Preferences.user.tag,
-                listeners : 
+                'destroy' : function() 
                 {
-                    'destroy' : function() 
-                    {
-                        this.browser.msgBus.fireEvent('Browser_ReloadData', "ReloadPrefs");
-                    },
-                    scope : this    
-                }
-            });
-        
-            this.add(tagger);
-        }
+                    this.browser.msgBus.fireEvent('Browser_ReloadData', "ReloadPrefs");
+                },
+                scope : this    
+            }*/
+        });
+    
+        this.add(this.tagger);
     }
-    
-    
 })
+
+
+
+
+
+//--------------------------------------------------------------------------------------
+// BQ.Preferences.Dialog
+// instantiates preferences in a modal window
+//-------------------------------------------------------------------------------------- 
+

@@ -29,7 +29,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResource',
     
     getImageParams : function(config)
     {
-        var prefs = this.getImagePrefs('ImageParameters') || '?slice=,,{sliceZ},{sliceT}&thumbnail={width},{height}&format=png';
+        var prefs = this.getImagePrefs('ImageParameters') || '?slice=,,{sliceZ},{sliceT}&thumbnail={width},{height}&format=jpeg';
         //var prefs = this.getImagePrefs('ImageParameters') || '?slice=,,{sliceZ},{sliceT}&depth=8,d&resize={width},{height},bc,ar&projectmax&format=jpeg';
 
         prefs = prefs.replace('{sliceZ}', config.sliceZ || 1);
