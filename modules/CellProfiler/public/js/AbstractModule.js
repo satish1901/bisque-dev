@@ -12,11 +12,6 @@ Ext.define('Bisque.Module.AbstractModule',
             module_url : '/module_service/CellProfiler',
             label_run : "Analyze Images"
         })
-        /*Ext.apply(this, 
-        {
-            module_url : '/module_service/CellProfiler',
-            label_run : "Analyze Images"
-        });*/
         
         this.callParent(arguments);
     },

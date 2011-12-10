@@ -206,6 +206,7 @@ Ext.define('Bisque.ResourceBrowser.Browser',
 
             this.browserState['offset'] = this.browserParams.offset;
             this.layoutKey = this.layoutKey || this.browserParams.layout;
+            this.showOrganizer = this.browserParams.showOrganizer || false,
             this.commandBar.applyPreferences();
 
             this.LoadData(
@@ -307,6 +308,7 @@ Ext.define('Bisque.ResourceBrowser.Browser',
         function doLayout()
         {
             this.ChangeLayout(this.layoutKey);
+
             if(!this.eventsManaged)
                 this.ManageEvents();
         }
@@ -448,6 +450,7 @@ Ext.define('Bisque.ResourceBrowser.Browser',
     updateTbarItemStatus : function()
     {
         var btnRight = this.commandBar.getComponent("btnRight"), btnLeft = this.commandBar.getComponent("btnLeft");
+        var btnOrganize = this.commandBar.getComponent("btnGear").menu.getComponent("btnOrganize");
         var st = this.resourceQueue.getStatus();
 
         this.commandBar.setStatus(st);
@@ -457,6 +460,8 @@ Ext.define('Bisque.ResourceBrowser.Browser',
 
         this.commandBar.btnTSSetState(this.browserState.tag_order.toLowerCase());
         this.commandBar.btnSearchSetState(this.browserState.tag_query);
+        
+        this.showOrganizer?btnOrganize.handler.call(this.commandBar):'';
     },
 
     getURIFromState : function()

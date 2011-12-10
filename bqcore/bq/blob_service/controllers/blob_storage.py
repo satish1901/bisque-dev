@@ -30,7 +30,7 @@ except ImportError:
 
 def randomPath (top, user, filename):
     rand_hash = make_uniq_hash(filename)
-    return "%s/%s/%s/%s-%s" % (top, user, rand_hash[0], rand_hash, filename)
+    return "%s/%s/%s/%s-%s" % (top, user, rand_hash[0], rand_hash, os.path.basename(filename))
 
 class LocalStorage(object):
     'blobs locally on file system'

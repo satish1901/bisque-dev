@@ -570,6 +570,7 @@ BQWebApp.prototype.view = function() {
         }
         
         var viewer_params = {'gobjects':this.gobjectURL, 'simpleview':''};          
+        debugger;
         this.result_viewer = new ImgViewer ("webapp_results_viewer", this.bq_image, this.bq_user.user_name, viewer_params );
     } else {
         viewer_div.style.display = 'none'; 
