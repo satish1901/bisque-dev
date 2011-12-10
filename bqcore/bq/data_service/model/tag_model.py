@@ -863,6 +863,7 @@ def bquser_callback (tg_user, operation, **kw):
             return
     if operation  == 'update':
         u = DBSession.query(BQUser).filter_by(resource_name=tg_user.user_name).first()
+        log.info ('update BQUSER %s' % u.name)
         if u is not None:
             u.value = tg_user.email_address
             dn = u.findtag('display_name', create=True)
