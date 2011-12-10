@@ -417,6 +417,17 @@ class fobject(object):
 ##   NOTE: Please examine for a better way of handling 
 ##   specilized attribute queries esp.  'name' and 'value' queries
 ##
+
+def unique(l, fn):
+    current = l[0]
+    yield current
+    for x in l[1:]:
+        if fn(x) != fn(current):
+            current = x
+            yield current
+        
+    
+
 def tags_special(dbtype, query, params):
     '''Specialized query for tags to support tag based browsing
        tag_names=1 :  names of all tags that can be found on the
@@ -435,8 +446,11 @@ def tags_special(dbtype, query, params):
         # Fetch all name on all 'top' level tags from the query
         sq2 = session.query(Tag).filter(Tag.document_id == sq1.c.taggable_document_id)
         sq3 = sq2.distinct(Tag.resource_name).order_by(Tag.resource_name)
+        vsall = sq3.all()
+        # for sqlite (no distinct on)
+        vsall = unique(vsall, lambda x: x.resource_name)
         #log.debug ("tag_names query = %s" % sq1)
-        q = [ fobject (resource_type='tag' , name=tg.resource_name, type=tg.resource_user_type ) for tg in sq3]
+        q = [ fobject (resource_type='tag' , name=tg.resource_name, type=tg.resource_user_type ) for tg in vsall]
         return q
     
     tv = params.pop('tag_values', None)
@@ -450,11 +464,18 @@ def tags_special(dbtype, query, params):
         sq2 = session.query(Tag).filter(
             and_(Tag.resource_name == tv,
                  Tag.document_id == sq1.c.taggable_document_id)).with_labels().subquery()
-        vs=session.query(Value.valstr).filter(Value.resource_parent_id == sq2.c.taggable_id).distinct()
-        vsall = vs.all()
-        log.debug ('tag_values = %s' % vsall)
-        q = [ fobject (resource_type='tag', name = tv, value = v[0], resource_value = v[0])
-              for v in vsall ]
+        sq2 = session.query(Tag).filter(
+            and_(Tag.resource_name == tv,
+                 Tag.document_id == sq1.c.taggable_document_id)).distinct(Tag.resource_value)
+        vsall = sq2.all()
+        q = [ fobject (resource_type='tag', name = tv, value = v.resource_value, resource_value = v.resource_value)
+             for v in vsall ]
+        
+        #vs=session.query(Value.valstr).filter(Value.resource_parent_id == sq2.c.taggable_id).distinct()
+        #vsall = vs.all()
+        #log.debug ('tag_values = %s' % vsall)
+        #q = [ fobject (resource_type='tag', name = tv, value = v[0], resource_value = v[0])
+        #     for v in vsall ]
         return q
 
     # Return name of specified resource
