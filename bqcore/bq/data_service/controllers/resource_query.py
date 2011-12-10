@@ -466,8 +466,9 @@ def tags_special(dbtype, query, params):
                  Tag.document_id == sq1.c.taggable_document_id)).with_labels().subquery()
         sq2 = session.query(Tag).filter(
             and_(Tag.resource_name == tv,
-                 Tag.document_id == sq1.c.taggable_document_id)).distinct(Tag.resource_value)
-        vsall = sq2.all()
+                 Tag.document_id == sq1.c.taggable_document_id)).distinct(Tag.resource_value).order_by(Tag.resource_value)
+        # for sqllite (no distinct on)
+        vsall = unique(sq2.all(), lambda x: x.resource_value)
         q = [ fobject (resource_type='tag', name = tv, value = v.resource_value, resource_value = v.resource_value)
              for v in vsall ]
         
