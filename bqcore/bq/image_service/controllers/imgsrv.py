@@ -1415,6 +1415,7 @@ class BioFormatsService(object):
                     bfinfo = imgcnv.info(ofile)
                     if 'width' in bfinfo and 'width' in orig_info:
                         if 'format' in orig_info: bfinfo['format'] = orig_info['format']
+                    bfinfo['converted_file'] = ofile
                     self.server.setImageInfo( id=image_id, info=bfinfo )                   
                 
             except:
@@ -1878,9 +1879,10 @@ class ImageServer(object):
             # backwards compatibility, store pixelFormat if it was not found
             #self.setImageInfo( id=id, filename=filename, info=info )
 
-
         if return_token is True: 
-            data_token.dims = info
+            if 'converted_file' in info:
+                data_token.setImage(info['converted_file'], format='tiff')   
+            data_token.dims = info                
             return data_token                              
         return info 
 
@@ -2036,10 +2038,11 @@ class ImageServer(object):
                 # this will pre-convert the image if it's not supported by the imgcnv
                 # and also set the proper dimensions info
                 data_token = self.getImageInfo(id=ident, data_token=data_token)
+                
                 # dima: this call seems ambiguous now, but some bugs appeared, call it anyways with a small test
-                if 'width' not in data_token.dims:
-                    if not imgcnv.supported( data_token.data ):
-                        data_token = self.services['bioformats'].action (ident, data_token, '') 
+                #if 'width' not in data_token.dims:
+                #    if not imgcnv.supported( data_token.data ):
+                #        data_token = self.services['bioformats'].action (ident, data_token, '') 
             
             if len(query)>0 and (not 'width' in data_token.dims):
                 data_token.setHtml('File is not in supported image format...')
@@ -2075,39 +2078,36 @@ class ImageServer(object):
 
         return data_token
 
-    def execute(self, method, image_id, userId, arg):
-        '''Directly execute a method on an image id'''
-        data_token = ProcessToken()
-        
-        if (self.accessPermission(image_id, userId) == False):
-            data_token.setHtmlErrorUnauthorized()
-            return data_token  
-        
-        if (blob_service.file_exists(image_id) == False):
-            data_token.setHtmlErrorNotFound()
-            return data_token                      
-        
-        data_token.setImage( self.imagepath(image_id), 'tiff' )
-        
-        # this will pre-convert the image if it's not supported by the imgcnv
-        # and also set the proper dimensions info
-        data_token = self.getImageInfo(id=image_id, data_token=data_token)
-        if not imgcnv.supported( data_token.data ):
-            data_token = self.services['bioformats'].action (image_id, data_token, '')         
-            
-        if not 'width' in data_token.dims:
-            data_token.setHtml('File is not in supported image format...')
-            return data_token           
-        
-        service = self.services[method]
-        if not service:
-            raise UnknownService(method)
-        r =  service.action (image_id, data_token, arg)
-        return data_token.data
-
-
-    def upload_file(self):
-        pass
-
-
-
+#    def execute(self, method, image_id, userId, arg):
+#        '''Directly execute a method on an image id'''
+#        data_token = ProcessToken()
+#        
+#        if (self.accessPermission(image_id, userId) == False):
+#            data_token.setHtmlErrorUnauthorized()
+#            return data_token  
+#        
+#        if (blob_service.file_exists(image_id) == False):
+#            data_token.setHtmlErrorNotFound()
+#            return data_token                      
+#        
+#        data_token.setImage( self.imagepath(image_id), 'tiff' )
+#        
+#        # this will pre-convert the image if it's not supported by the imgcnv
+#        # and also set the proper dimensions info
+#        data_token = self.getImageInfo(id=image_id, data_token=data_token)
+#        if not imgcnv.supported( data_token.data ):
+#            data_token = self.services['bioformats'].action (image_id, data_token, '')         
+#            
+#        if not 'width' in data_token.dims:
+#            data_token.setHtml('File is not in supported image format...')
+#            return data_token           
+#        
+#        service = self.services[method]
+#        if not service:
+#            raise UnknownService(method)
+#        r =  service.action (image_id, data_token, arg)
+#        return data_token.data
+#
+#
+#    def upload_file(self):
+#        pass

@@ -31,8 +31,8 @@ def bootstrap(command, conf, vars):
 
         admin = model.User(
             user_name = u"admin",
-            display_name = u'Example manager',
-            email_address = u'manager@somedomain.com',
+            display_name = config.get('bisque.admin_display_name', 'Bisque admin'),
+            email_address = config.get('bisque.admin_email', 'manager@somedomain.com'),
             password = u'admin')
         model.DBSession.add(admin)
         
