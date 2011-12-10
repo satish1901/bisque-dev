@@ -745,6 +745,11 @@ Ext.define('Bisque.GObjectTagger',
         
         if (!this.noFiles)
             location.href = "data:text/csv," + encodeURIComponent(this.csvData);
+    },
+    
+    updateViewState : function(state)
+    {
+        
     }
 });
 
@@ -821,9 +826,6 @@ Ext.define('Bisque.ResourceTagger.viewStateManager',
             return result;
         }
         
-        if (!BQApp.user)
-            mode = 'ReadOnly';
-        
         switch(mode)
         {
             case 'ViewerOnly':
@@ -831,6 +833,13 @@ Ext.define('Bisque.ResourceTagger.viewStateManager',
                 // all the buttons are hidden
                 this.state = setHidden(this.state, true);
                 this.state.editable = false;
+                break;
+            }
+            case 'PreferenceTagger':
+            {
+                this.state.btnAdd = false;
+                this.state.btnDelete = false;
+                this.state.btnExport = false;
                 break;
             }
             case 'ReadOnly':

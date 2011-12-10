@@ -175,6 +175,7 @@ Bisque.ResourceBrowser.DatasetManager.DatasetTbar = Ext.extend(Ext.Toolbar,
         Ext.apply(this,
         {
             layout:'hbox',
+            height: 44,
             layoutConfig:
             {
                 align:'middle'

@@ -224,25 +224,6 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 				 					value : val
 				 				});
 				 			}
-				 		},'-',
-				 		{
-                            text : 'Preferences',
-                            icon : bq.url('/js/ResourceBrowser/Images/preferences.png'),
-                            hidden : this.viewMgr.cBar.btnPreferences,
-                            handler : function()
-                            {
-                                if (!this.browser.prefWindow)
-                                    var prefWindow = Ext.create('Bisque.ResourceBrowser.PreferencesWindow',
-                                    {
-                                        height: 500,
-                                        width: 500,
-                                        modal: true,
-                                        browser: this.browser
-                                    });
-                                else
-                                    this.browser.prefWindow.show();
-                            },
-                            scope : this
 				 		}]
 					}
 				},

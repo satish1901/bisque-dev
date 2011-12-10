@@ -300,6 +300,8 @@ Ext.define('Bisque.ResourceBrowser.Browser',
             browser : this,
             uri : this.uri
         });
+        var btnOrganize = this.commandBar.getComponent("btnGear").menu.getComponent("btnOrganize");
+        this.showOrganizer?btnOrganize.handler.call(this.commandBar):'';
 
     },
 
@@ -347,8 +349,6 @@ Ext.define('Bisque.ResourceBrowser.Browser',
             layoutMgr : this.layoutMgr
         });
 
-        var btnOrganize = this.commandBar.getComponent("btnGear").menu.getComponent("btnOrganize");
-        this.showOrganizer?btnOrganize.handler.call(this.commandBar):'';
         this.layoutMgr.Init(this.resourceQueue.getMainQ(this.layoutMgr.getVisibleElements(direction), this.layoutMgr));
         this.centerPanel.add(this.layoutMgr);
 

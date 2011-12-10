@@ -27,27 +27,13 @@ Ext.define('BQ.Preferences',
         {
             BQFactory.request(
             {
-                uri : bq.url('/data_service/system?wpublic=1'),
-                cb : Ext.bind(this.loadSystem, this, ['LOADING'], true),
+                uri : bq.url('/data_service/system?wpublic=1&view=deep'),
+                cb : Ext.bind(this.loadSystem, this, ['LOADED'], true),
             });
-        }
-        else if (status=='LOADING')
-        {
-            if (resource.children.length!=0)
-                BQFactory.request(
-                {
-                    uri : resource.children[0].uri + '?view=deep',
-                    cb : Ext.bind(this.loadSystem, this, ['LOADED'], true),
-                });
-            else
-            {
-                clog('SYSTEM object not found!\n');
-                this.system.status='LOADED';
-                this.system.exists=false;
-            }
         }
         else if (status=='LOADED')
         {
+            resource = resource.children[0];
             var tag = resource.find_tags('Preferences', false);
             
             if (tag!=null)
@@ -95,6 +81,9 @@ Ext.define('BQ.Preferences',
                 else
                 {
                     clog('USER preferences tag not found! Initializing from system\n');
+                    
+                    alert('User preferences not found.. Aborting');
+                    return
                     
                     var newTag = new BQTag();
                     newTag = Ext.apply(newTag,
@@ -147,6 +136,17 @@ Ext.define('BQ.Preferences',
             this.queue.push(caller);
     },
     
+    getMerged : function()
+    {
+        var mergedPrefs = Ext.Object.merge(this.system.dictionary, this.user.dictionary);
+
+        var prefs = new BQObject();
+        prefs.name = 'Preferences';
+        prefs.fromNestedDict(mergedPrefs);
+
+        return prefs.tags;
+    },
+    
     reloadUser : function(user)
     {
         this.user = Ext.create('BQ.Preferences.Object');
@@ -165,47 +165,3 @@ Ext.define('BQ.Preferences',
         return tagDocument;
     }
 })
-
-//--------------------------------------------------------------------------------------
-// BQ.Preferences.Dialog
-// instantiates preferences in a modal window
-//-------------------------------------------------------------------------------------- 
-
-Ext.define('BQ.Preferences.Dialog', {
-    extend : 'Ext.window.Window',
-    
-    layout : 'fit',
-    modal : true,
-    border : false,
-    width : '70%',
-    height : '70%',
-    
-    constructor : function(config) 
-    {
-        config = config || {};
-        
-        Ext.apply(config, 
-        {
-            resource : config.resource || BQ.Preferences.system.tag,
-            title : config.title || 'System Preferences' 
-        });
-        
-        if (BQ.Preferences.system.status=='LOADED')
-        {
-            this.tagger = Ext.create('Bisque.ResourceTagger', 
-            {
-                resource : config.resource,
-            });
-            this.items = this.tagger;
-        }    
-        
-        Ext.apply(this, config);
-        this.callParent(arguments);
-        this.show();
-    },
-});
-
-Ext.define('BQ.Preferences.SystemDialog', {
-    extend : 'BQ.Preferences.Dialog',
-    resource :  {}
-});
