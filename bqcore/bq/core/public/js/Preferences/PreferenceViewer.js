@@ -20,11 +20,6 @@ Ext.define('BQ.Preferences.Dialog',
                 BQ.ui.notification('Guests cannot save preferences! Please login first...',  3000);
                 return;
             }
-            else if (BQ.Preferences.user.exists==true)
-            {
-                BQ.ui.notification('User preferences not found!',  3000);
-                return;
-            }
         }
         else
         {
@@ -42,26 +37,8 @@ Ext.define('BQ.Preferences.Dialog',
         this.tagger = Ext.create('Bisque.PreferenceTagger',
         {
             viewMode : 'Offline'
-            /*listeners : 
-            {
-                'destroy' : function() 
-                {
-                    this.browser.msgBus.fireEvent('Browser_ReloadData', "ReloadPrefs");
-                },
-                scope : this    
-            }*/
         });
     
         this.add(this.tagger);
     }
 })
-
-
-
-
-
-//--------------------------------------------------------------------------------------
-// BQ.Preferences.Dialog
-// instantiates preferences in a modal window
-//-------------------------------------------------------------------------------------- 
-

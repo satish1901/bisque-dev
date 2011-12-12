@@ -71,6 +71,7 @@ Ext.define('BQ.Preferences',
         {
             if (resource!=null)
             {
+                this.user.object = resource;
                 var tag = resource.find_tags('Preferences', false);
 
                 if (tag!=null)
@@ -80,26 +81,9 @@ Ext.define('BQ.Preferences',
                 }
                 else
                 {
-                    clog('USER preferences tag not found! Initializing from system\n');
-                    
-                    alert('User preferences not found.. Aborting');
-                    return
-                    
-                    var newTag = new BQTag();
-                    newTag = Ext.apply(newTag,
-                    {
-                        name : 'Preferences',
-                        permission : 'published'
-                    });
-                    resource.addtag(newTag);
-                    resource.save_();
-
-                    // Reload the user object
-                    BQFactory.request(
-                    {
-                        uri : resource.uri + '?view=deep',
-                        cb : Ext.bind(this.loadUser, this, ['LOADED'], true)
-                    });
+                    clog('USER preferences tag not found!\n');
+                    this.user.exists = true;
+                    this.user.tag = resource;
                 }
             }
             else
