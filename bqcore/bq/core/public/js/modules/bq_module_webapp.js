@@ -371,7 +371,7 @@ BQWebApp.prototype.load_from_mex = function (mex) {
     // fetch requested mex
     this.mexdict = mex.toDict(true);       
     var me = this;
-    BQFactory.request( { uri: this.mexdict['image_url'], 
+    BQFactory.request( { uri: this.mexdict['inputs/image_url'], 
                          uri_params: {view:'deep'}, 
                          cb: function (r) { me.bq_resource = r; me.done(mex); } });
 }
@@ -570,7 +570,6 @@ BQWebApp.prototype.view = function() {
         }
         
         var viewer_params = {'gobjects':this.gobjectURL, 'simpleview':''};          
-        debugger;
         this.result_viewer = new ImgViewer ("webapp_results_viewer", this.bq_image, this.bq_user.user_name, viewer_params );
     } else {
         viewer_div.style.display = 'none'; 
