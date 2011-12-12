@@ -54,16 +54,12 @@ def main():
     mexrunner = MexRunner(module_service)
 
 
-    #tgscheduler.start_scheduler()
-    #tgscheduler.add_interval_task(interval=30,
-    #                              action=mexrunner.process_pending,
-    #                              initialdelay=10)
-
+    qwait = int(tg.config.get('bisque.module_service.queue_wait', 5))
     
     time.sleep(10)
     while True:
         mexrunner.process_pending()
-        time.sleep(20)
+        time.sleep(qwait)
 
 if __name__ == '__main__':
     sys.exit(main())

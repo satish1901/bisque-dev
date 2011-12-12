@@ -358,11 +358,13 @@ def prepare_order_expr (query, tag_order, **kw):
             ordertags = taggable.alias()
             ordervals = values.alias()
             query_expr = and_ (#query_expr,
-                                Taggable.id == ordertags.c.resource_parent_id,
-                                ordertags.c.resource_type == 'tag',
-                                ordertags.c.resource_name == order)
-
+                               Taggable.id == ordertags.c.resource_parent_id,
+                               ordertags.c.resource_type == 'tag', 
+                               ordertags.c.resource_name == order)
+                               #ordertags.c.id == ordervals.c.resource_parent_id)
+            
             query = query.filter(query_expr).order_by (ordering(ordertags.c.resource_value))
+            #query = query.filter(query_expr).order_by (ordering(ordervals.c.valstr))
     else:
         query = query.order_by(Taggable.id)
             

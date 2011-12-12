@@ -85,7 +85,7 @@ bisque.paths.root  =
 #bisque.data_service.server_cache=.server_cache
 #bisque.data_service.max_response_time = 0
 # Module Service
-#bisque.module_service.queue_wait =  20
+#bisque.module_service.queue_wait =  5
 # Engine Service
 #bisque.engine_service.local_modules = modules
 # Image Service
