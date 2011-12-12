@@ -263,16 +263,14 @@ class MexRunner(object):
 
     def process_pending(self, mex_id=None):
         """return the list of dispatchable mexes"""
-        print "PROCESSING"
-        log.info('processing')
         if self.runner_count > 1:
             log.error ("RUNNER COUNT")
-
         self.session = DBSession
         self.session.autoflush = False
         # Create service pairs 
         pending = self.session.query(Mex).filter_by(resource_value='PENDING')
         for mex in pending:
+            log.info('processing %s' % mex)
             session['mex_id' ] = mex.id
             for service in  self.find_active_service (mex):
                 request, response = self.process_one(mex, service)

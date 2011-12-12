@@ -112,9 +112,6 @@ function BQWebApp (urlargs) {
   var args = parseUrlArguments(urlargs);   
  
   // process arguments
-  if ('resource' in args)
-      BQFactory.request( {uri: args.resource, cb: callback(this, 'onResourceSelected') });
-       
   if ('mex' in args) {
       this.showProgress(null, 'Fetching module execution document');
       BQFactory.request( {uri: args.mex, cb: callback(this, 'load_from_mex'), uri_params: {view:'deep'}  }); 
@@ -122,6 +119,11 @@ function BQWebApp (urlargs) {
   }
   
   if (this.ms.module) this.setupUI_inputs();
+  
+  // loading resource requires initied input UI renderers
+  if ('resource' in args)
+      BQFactory.request( {uri: args.resource, cb: callback(this, 'load_from_resource') });
+  
 }
 
 //------------------------------------------------------------------------------
@@ -200,6 +202,37 @@ BQWebApp.prototype.onmoduleloaded = function (module) {
         this.setupUI_inputs();
     }
 }
+
+//------------------------------------------------------------------------------
+// loading from
+//------------------------------------------------------------------------------
+
+BQWebApp.prototype.load_from_resource = function (R) {
+    // find first suitable resource renderer
+    var renderer = null;    
+    var inputs = this.ms.module.inputs;
+    if (inputs && inputs.length>0)
+    for (var p=0; (i=inputs[p]); p++) {
+        if (!i.renderer) continue;
+        var template = i.template || {};
+        var accepted_type = template.accepted_type || {};
+        accepted_type[i.type] = i.type;
+
+        if (R.resource_type in accepted_type) {
+            renderer = i.renderer;
+            break;
+        }    
+    }
+    if (renderer && renderer.select)
+        renderer.select(R);
+}
+
+BQWebApp.prototype.load_from_mex = function (mex) {
+    this.hideProgress();
+    this.mexMode();
+    this.done(mex);
+}
+
 
 //------------------------------------------------------------------------------
 // Selections of resources
@@ -315,6 +348,7 @@ BQWebApp.prototype.ui_create_holder = function (surf) {
 //------------------------------------------------------------------------------
 // Selections of resources
 //------------------------------------------------------------------------------
+/*
 BQWebApp.prototype.selectFile = function (input) {
 
     var uploader = Ext.create('BQ.upload.Dialog', {   
@@ -351,7 +385,7 @@ BQWebApp.prototype.selectDataset = function (input) {
                 }, scope: this },
     });
 }
-
+*/
 
 
 
@@ -528,22 +562,6 @@ BQWebApp.prototype.progress_check = function (mex) {
         button_run.disabled = true;
     }
 }
-
-BQWebApp.prototype.load_from_mex = function (mex) {
-    this.hideProgress();
-    this.mexMode();
-    this.done(mex);
-    
-    // fetch requested mex
-    /*
-    this.mexdict = mex.toDict(true);       
-    var me = this;
-    BQFactory.request( { uri: this.mexdict['image_url'], 
-                         uri_params: {view:'deep'}, 
-                         cb: function (r) { me.bq_resource = r; me.done(mex); } });
-    */
-}
-
 
 BQWebApp.prototype.done = function (mex) {
     var button_run = document.getElementById("webapp_run_button");
