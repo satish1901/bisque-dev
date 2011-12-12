@@ -18,6 +18,15 @@ def check_exec (path, fix = True):
     if fix:
         os.chmod (path, 0744)
 
+
+LAUNCHER_SCRIPT = \
+"""#!/usr/bin/env python
+import sys
+from bq.engine.controllers.module_run import ModuleRunner
+if __name__ == "__main__":
+    sys.exit(ModuleRunner().main())
+"""
+
 class CondorHelper(object):
     """Condor script construction
 

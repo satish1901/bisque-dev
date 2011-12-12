@@ -522,7 +522,28 @@ def fromXml (xmlResource, resource=None, parent=None, factory=BQFactory,
             stack.append( (k, None, resource) );
 
     resources[0].initialize()
+    resources[0].flat= as_flat_dict(xmlResource)
     return resources[0];
+
+
+def as_flat_dict(xmltree):
+    def _xml2d(e, d, path=''):
+        for child in e:
+            name  = '%s%s'%(path, child.get('name', ''))
+            value = child.get('value', None) 
+            if value is not None:
+                if not name in d:
+                    d[name] = value
+                else:
+                    if isinstance(d[name], list):
+                        d[name].append(value)
+                    else:
+                        d[name] = [d[name], value]
+            d = _xml2d(child, d, path='%s%s/'%(path, child.get('name', '')))
+        return d
+
+    return _xml2d(xmltree, {})
+
 
 
 ################################################################################
