@@ -52,7 +52,6 @@ class BaseRunner(object):
 
     Runners interact with module environments (see base_env)
 
-
     For each module it is expected that custom  launcher will be written.
     A simple example might be:
        from bisque.util.launcher import Launcher
@@ -164,6 +163,8 @@ class BaseRunner(object):
         """Deal with any arguments and prepare the mex and module
         returns a callable for the next actions
         """
+        # Args are passed directly from the Engine
+        # However condor_dag will enter here with command line arguments
         args  = kw.pop('arguments', None)
 
         self.options, arguments = self.parser.parse_args(args)
@@ -177,7 +178,6 @@ class BaseRunner(object):
             if sep != '=':
                 break
             self.named_args[tag] = val
-            arguments.remove(arg)
 
         # Add remaining arguments to the executable line
         # Ensure the loaded executable is a list
