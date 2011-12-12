@@ -128,6 +128,11 @@ Ext.define('BQ.selectors.Selector', {
         return true;
     },
 
+    select: function(new_resource) {
+        // you need to provide a way to programmatically select an element
+        BQ.ui.warning('Programmatic select is not implemented in this selector');
+    },
+
 });
 
 
@@ -263,6 +268,10 @@ Ext.define('BQ.selectors.Resource', {
                     }, scope: this },              
         });        
     },
+    
+    select: function(new_resource) {
+        this.onselected(new_resource);
+    },    
     
     onselected: function(R) {
         this.selected_resource = R;
