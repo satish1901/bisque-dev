@@ -130,6 +130,8 @@ Ext.define('Bisque.ResourceBrowser.Browser',
             layout : 'fit',
             border : false,
             hidden : true,
+            collapsible: true,
+            hideCollapseTool : true,
         });
 
         this.centerPanel = new Ext.Panel(

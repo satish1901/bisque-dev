@@ -3,9 +3,6 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
     extend : 'Ext.Panel',
     constructor : function()
     {
-
-        //var toolTemplate = ['<img id="{id}-toolEl" src="{blank}" class="{baseCls}-{type}" role="presentation"/><div></div>'];
-
         Ext.apply(this,
         {
             parentCt : arguments[0].parentCt,
@@ -18,11 +15,8 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
             itemId : 'organizerCt',
             layout : 'accordion',
             border : false,
-            layoutConfig :
-            {
-                animate : true,
-                collapseFirst : false
-            },
+            collapsible:true,
+
             existingTags : new Array(),
             items : [],
             tools : [
@@ -46,7 +40,8 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
                 tooltip : 'Collapse organizer panel',
                 handler : function()
                 {
-                    this.parentCt.collapse(Ext.Component.DIRECTION_LEFT, true);
+                    this.parentCt.hideCollapseTool = false;
+                    this.parentCt.collapse();
                 },
 
                 scope : this
@@ -57,25 +52,8 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
         this.on('afterrender', function()
         {
             this.AddFilter();
-
             this.ManageEvents();
-        }, this,
-
-        {
-            single : true
-        });
-        /*
-
-         , this.parentCt.toolTemplate = new Ext.XTemplate(
-         '<tpl if="id==\'toggle\'">',
-         '<div class="x-tool x-tool-{id}">&#160;</div>',
-         '</tpl>',
-         '<tpl if="id!=\'toggle\'">',
-         '<div class="x-tool x-tool-{id}">&#160;</div><div class="Org-Tools">{text}</div>',
-         '</tpl>');
-         this.parentCt.addTool.apply(this.parentCt, this.parentCt.tools);
-         */
-
+        }, this, {single : true});
     },
 
     AddFilter : function()

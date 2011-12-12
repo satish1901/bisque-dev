@@ -22,7 +22,8 @@ Bisque.ResourceBrowser.DatasetManager = Ext.extend(Ext.Panel,
                 tooltip : 'Collapse dataset panel',
                 handler : function()
                 {
-                    this.parentCt.collapse(Ext.Component.DIRECTION_LEFT, true);
+                    this.parentCt.hideCollapseTool = false;
+                    this.parentCt.collapse();
                 },
 
                 scope:this

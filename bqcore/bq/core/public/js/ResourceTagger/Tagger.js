@@ -837,8 +837,6 @@ Ext.define('Bisque.ResourceTagger.viewStateManager',
             }
             case 'PreferenceTagger':
             {
-                this.state.btnAdd = false;
-                this.state.btnDelete = false;
                 this.state.btnExport = false;
                 break;
             }
