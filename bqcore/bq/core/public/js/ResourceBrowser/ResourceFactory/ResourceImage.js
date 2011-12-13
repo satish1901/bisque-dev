@@ -43,7 +43,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResource',
     getImagePrefs : function(key)
     {
         if (this.browser.preferences && this.browser.preferences.Images && this.browser.preferences.Images[key])
-                return this.browser.preferences.Images[key];
+            return this.browser.preferences.Images[key];
         return '';
     },
 

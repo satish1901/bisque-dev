@@ -244,7 +244,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 	{
 		this.msgBus.on('SearchBar_Query', function(query)
 		{
-			this.getComponent('searchBar').setValue(query);
+			this.getComponent('searchBar').setValue(decodeURIComponent(query));
 		}, this);
 		
 		this.mon(this, 'afterlayout', this.toggleLayoutBtn, this);
@@ -412,7 +412,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 	
 	btnSearchSetState : function(tagQuery)
 	{
-	    this.getComponent('searchBar').setValue(tagQuery);
+	    this.getComponent('searchBar').setValue(decodeURIComponent(tagQuery));
 	},
 	
 	setStatus : function(status)
