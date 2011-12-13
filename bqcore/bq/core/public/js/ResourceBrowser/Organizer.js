@@ -15,7 +15,6 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
             itemId : 'organizerCt',
             layout : 'accordion',
             border : false,
-            collapsible:true,
 
             existingTags : new Array(),
             items : [],
