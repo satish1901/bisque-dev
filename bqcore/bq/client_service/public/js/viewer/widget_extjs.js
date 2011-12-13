@@ -19,10 +19,10 @@
     gobjects       - load gobjects from the givel URL, 'gobjects':'http://gobejcts_url' or a BQGobject or a vector of BQGObject
 
     noedit         - read-only view for gobjects
-	  alwaysedit     - instantiates editor right away and disables hiding it
-	  nosave         - disables saving gobjects
-	  editprimitives - only load edit for given primitives, 'editprimitives':'point,polyline'
-	                   can be one of: 'Point,Rectangle,Polyline,Polygon,Circle'  
+      alwaysedit     - instantiates editor right away and disables hiding it
+      nosave         - disables saving gobjects
+      editprimitives - only load edit for given primitives, 'editprimitives':'point,polyline'
+                       can be one of: 'Point,Rectangle,Polyline,Polygon,Circle'  
 
   Example:
     var myviewer = Ext.create('BQ.viewer.Image', {
@@ -39,7 +39,6 @@ Ext.define('BQ.viewer.Image', {
     alias: 'widget.imageviewer',    
     extend: 'Ext.container.Container',
     requires: ['ImgViewer'],
-    
     border: 0,
     cls: 'bq-image-viewer',
 
@@ -49,7 +48,6 @@ Ext.define('BQ.viewer.Image', {
             'changed': true,            
         });
         this.callParent(arguments);
-        this.parameters = {};
         return this;
     },
 
@@ -80,8 +78,8 @@ Ext.define('BQ.viewer.Image', {
         //if (!this.user || typeof this.user != 'string')
         //    this.user = BQSession.current_session.user?BQSession.current_session.user.uri:null;
         if (this.user == undefined)
-            this.user = null;
-        
+        this.user = null;
+        this.parameters = this.parameters || {};
         this.parameters.gobjectschanged = callback(this, 'onchanged');
         this.viewer = new ImgViewer(this.getId(), resource, this.user, this.parameters);   
         this.fireEvent( 'loaded', this ); 

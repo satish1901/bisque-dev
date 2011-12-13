@@ -15,7 +15,7 @@
     </tag>
     
     <tag name="outputs">
-         <tag name="metadata">
+         <tag name="metadata" type="tag">
             <tag name="template" type="template">
                 <tag name="label" value="Extracted metadata" />
             </tag>             
