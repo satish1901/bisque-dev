@@ -68,7 +68,7 @@ if __name__ == "__main__":
 
     M = MetaData()
     if options.credentials is None:
-        image_url, mex_url,  auth_token  = args
+        image_url, mex_url,  auth_token  = args[:3]
         M.main(image_url, mex_url, auth_token)
     else:
         image_url = args.pop(0)
