@@ -120,8 +120,8 @@ class RuntimeAdapter(BaseAdapter):
 
         #xml_module_path = local_xml_copy(module)
         #xml_mex_path    = local_xml_copy(mex)
-        params.append ('mex_url=%s' % mex.get('uri'))
-        params.append ('module_url=%s' % module.get('uri'))
+        #params.append ('mex_url=%s' % mex.get('uri'))
+        #params.append ('module_url=%s' % module.get('uri'))
         
         params.append ('start')
 
