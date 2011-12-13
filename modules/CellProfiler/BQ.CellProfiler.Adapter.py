@@ -166,11 +166,8 @@ class CellProfiler():
         for file in fileList:
             content = save_image_pixels(self.bqSession, file)
             
-            print '\n\n\nCONTENT BEGINS HERE'
-            print content
-            print '\n\n\n'
-            
             if content is not None:
+                print 'chuck testa'
                 uri = etree.XML(content).xpath('//image[@uri]/@uri')[0] or "BQ.CellProfiler.Adapter: Upload Error!"
                 fileName = os.path.split(file)[1]
                 tempTag = BQTag(name=fileName, value=uri, type='resource')
