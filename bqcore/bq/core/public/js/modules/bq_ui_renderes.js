@@ -839,7 +839,7 @@ Ext.define('BQ.renderers.Tag', {
         if (!definition || !resource) return;                
         
         this.tagger = Ext.create('Bisque.ResourceTagger', {
-            resource: definition.type?resource.value:resource, // reference or resource
+            resource: resource.type?resource.value:resource, // reference or resource
             flex: 1,
             cls: 'tagger',
             //title : template.label?template.label:resource.name,
