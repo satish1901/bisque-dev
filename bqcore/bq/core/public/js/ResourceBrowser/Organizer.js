@@ -148,11 +148,13 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
     {
         if(!loaded)
         {
+            child.grid.setLoading({msg:''});
             var uri = this.dataset + '?tag_query=' + this.GetTagQuery() + '&tag_values=' + child.tag + '&wpublic=' + this.wpublic;
             BQFactory.load(uri, callback(this, 'PopulateGrid', true, child));
         }
         else
         {
+            child.grid.setLoading(false);
             // Populate child filter's grid
             var tagArr = [];
             for( i = 0; i < resourceData.tags.length; i++)
@@ -223,7 +225,6 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
         while(this.items.length != 0)
         this.getComponent(0).destroy();
     }
-
 });
 
 /**
