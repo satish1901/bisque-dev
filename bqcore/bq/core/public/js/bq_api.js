@@ -261,6 +261,8 @@ BQObject.prototype.toNestedDict = function(deep)
 
 BQObject.prototype.fromNestedDict = function(dict)
 {
+    var value;
+    
     for (var tag in dict)
     {
         value = dict[tag];
