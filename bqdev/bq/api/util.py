@@ -185,10 +185,6 @@ def save_image_pixels(session,  localfile, image_tags=None):
             fields['file_tags'] = etree.tostring(toXml(image_tags))
         body, headers = poster.encode.multipart_encode(fields)
         
-        
-        print '\n\nfile name\n'
-        print headers
-        
         content = session.c.post(url, headers=headers, content=body)
     return content
 

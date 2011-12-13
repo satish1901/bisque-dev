@@ -392,7 +392,7 @@ class import_serviceController(ServiceController):
         """ effectively inserts the file into the bisque database and returns 
         a document describing an ingested resource
         """
-        filename = f.filename
+        filename = self.sanitize_filename(f.filename)
         src      = f.file
         
         # check the presense of tags with the file        
