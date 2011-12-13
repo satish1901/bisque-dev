@@ -451,11 +451,11 @@ Ext.define('BQ.selectors.Number', {
             fieldLabel: (template.label && this.multivalue)?template.label:undefined,
 
             values: values,
-            minValue: template.minValue?template.minValue:undefined,
-            maxValue: template.maxValue?template.maxValue:undefined,
+            minValue: template.minValue!=undefined?template.minValue:undefined,
+            maxValue: template.maxValue!=undefined?template.maxValue:undefined,
             //allowDecimals: template.allowDecimals?template.allowDecimals:true,
             //decimalPrecision: template.decimalPrecision?template.decimalPrecision:2,
-            increment: template.step?template.step:1,
+            increment: template.step!=undefined?template.step:1,
 
             listeners: {
                 change: function(field, value) {
@@ -481,13 +481,13 @@ Ext.define('BQ.selectors.Number', {
             labelAlign: 'right',
             fieldLabel: template.label?template.label:'',
             
-            value: resource.value?parseFloat(resource.value):undefined,
+            value: resource.value!=undefined?parseFloat(resource.value):undefined,
             
-            minValue: template.minValue?template.minValue:undefined,
-            maxValue: template.maxValue?template.maxValue:undefined,
-            allowDecimals: template.allowDecimals?template.allowDecimals:true,
-            decimalPrecision: template.decimalPrecision?template.decimalPrecision:2,
-            step: template.step?template.step:1,
+            minValue: template.minValue!=undefined?template.minValue:undefined,
+            maxValue: template.maxValue!=undefined?template.maxValue:undefined,
+            allowDecimals: template.allowDecimals!=undefined?template.allowDecimals:true,
+            decimalPrecision: template.decimalPrecision!=undefined?template.decimalPrecision:2,
+            step: template.step!=undefined?template.step:1,
             
             listeners: {
                 change: function(field, value) {
@@ -556,9 +556,9 @@ Ext.define('BQ.selectors.String', {
             fieldLabel: template.label?template.label:'',
             value: resource.value?resource.value:'',
             
-            minLength: template.minLength?template.minLength:undefined,
-            maxLength: template.maxLength?template.maxLength:undefined,
-            allowBlank: template.allowBlank?template.allowBlank:true,
+            minLength: template.minLength!=undefined?template.minLength:undefined,
+            maxLength: template.maxLength!=undefined?template.maxLength:undefined,
+            allowBlank: template.allowBlank!=undefined?template.allowBlank:true,
             regex: template.regex?template.regex:undefined,
 
             listeners: {
@@ -753,7 +753,7 @@ Ext.define('BQ.selectors.Date', {
                 fieldLabel: template.label?template.label:'',
                 
                 format: 'Y-m-d',
-                value: resource.value?resource.value:new Date(),
+                value: resource.value!=undefined?resource.value:new Date(),
                 listeners: { select: this.onselect, scope: this, },
                 
             });
@@ -771,7 +771,7 @@ Ext.define('BQ.selectors.Date', {
                 labelSeparator: '',            
                 
                 format: 'H:i:s',
-                value: resource.value?resource.value:new Date(),
+                value: resource.value!=undefined?resource.value:new Date(),
                 listeners: { select: this.onselect, scope: this, },
                 
             });  
@@ -839,7 +839,7 @@ Ext.define('BQ.renderers.Tag', {
         if (!definition || !resource) return;                
         
         this.tagger = Ext.create('Bisque.ResourceTagger', {
-            resource: definition.type?resource:resource.value, // reference or resource
+            resource: definition.type?resource.value:resource, // reference or resource
             flex: 1,
             cls: 'tagger',
             //title : template.label?template.label:resource.name,
@@ -880,7 +880,7 @@ Ext.define('BQ.renderers.Image', {
         
         var parameters = { simpleview: '', gobjects: resource.gobjects, };
         this.viewer = Ext.create('BQ.viewer.Image', {
-            resource: definition.type?resource:resource.value, // reference or resource
+            resource: resource.resource_type=='image'?resource:resource.value, // reference or resource
             flex: 1,
             parameters: parameters,
             //listeners: { 'changed': this.onchanged, scope: this, },

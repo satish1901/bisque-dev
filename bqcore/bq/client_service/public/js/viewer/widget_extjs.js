@@ -49,7 +49,6 @@ Ext.define('BQ.viewer.Image', {
             'changed': true,            
         });
         this.callParent(arguments);
-        this.parameters = {};
         return this;
     },
 
@@ -81,7 +80,7 @@ Ext.define('BQ.viewer.Image', {
         //    this.user = BQSession.current_session.user?BQSession.current_session.user.uri:null;
         if (this.user == undefined)
             this.user = null;
-        
+	this.paremeters = this.parameters || {};
         this.parameters.gobjectschanged = callback(this, 'onchanged');
         this.viewer = new ImgViewer(this.getId(), resource, this.user, this.parameters);   
         this.fireEvent( 'loaded', this ); 

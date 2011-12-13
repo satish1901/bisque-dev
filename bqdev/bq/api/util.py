@@ -50,7 +50,13 @@ def make_qs(pd):
 def fetch_image_planes(session, uri, dest, uselocalpath=False):
     'fetch all the image planes of an image locally'
     image = session.load (uri, view='full')
-    x,y,z,t,ch = image.geometry()
+    #x,y,z,t,ch = image.geometry()
+    meta = image.pixels().meta().fetch()
+    meta = ET.XML(meta)
+    t  = meta.xpath('//tag[@name="image_num_t"]')
+    t  = len(t) and t[0].get('value')
+    z  = meta.xpath('//tag[@name="image_num_z"]')
+    z  = len(z) and z[0].get('value')
     tplanes = int(t)
     zplanes = int(z)
 
