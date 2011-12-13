@@ -573,8 +573,8 @@ BQWebApp.prototype.done = function (mex) {
         this.parseResults(mex);
     } else {
         var message = "Module execution failure:<br>" + mex.toXML(); 
-        if ('message' in this.mexdict && this.mexdict.message!='') 
-            message = "The module reported an internal error:<br>" + this.mexdict.message;
+        if ('error_message' in this.mexdict && this.mexdict.error_message!='') 
+            message = "The module reported an internal error:<br>" + this.mexdict.error_message;
         
         BQ.ui.error(message);
         var result_label = document.getElementById("webapp_results_summary");
