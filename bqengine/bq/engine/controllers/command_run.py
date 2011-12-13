@@ -245,10 +245,13 @@ class BaseRunner(object):
             return 0
         except ModuleEnvironmentError, e:
             log.exception( "Problem occured in module")
+            raise e
         except RunnerException, e:
             log.exception("during the command %s:" % (command))
-        except:
+            raise e
+        except Exception, e:
             log.exception ("Unknown exeception")
+            raise e
 
         return 1
 
