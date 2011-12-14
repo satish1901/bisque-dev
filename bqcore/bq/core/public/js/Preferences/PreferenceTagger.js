@@ -32,11 +32,11 @@ Ext.define('Bisque.PreferenceTagger',
     {
         if(this.store.applyModifications())
         {
-            if (this.prefsType=='user')
+            if (this.prefType=='user')
             {
                 var parents = this.getTagParents(tag);
                 this.savePrefs(tag, parents); 
-                if (!silent) BQ.ui.message('Resource tagger - Save', 'Changes were saved successfully!');
+                if (!silent) BQ.ui.message('Save', 'Changes were saved successfully!');
             }
             else
             {
@@ -45,7 +45,7 @@ Ext.define('Bisque.PreferenceTagger',
             }
         }
         else
-            BQ.ui.message('Resource tagger - Save', 'No records modified!');
+            BQ.ui.message('Save', 'No records modified!');
     },
     
     savePrefs : function(changedTag, parents)
