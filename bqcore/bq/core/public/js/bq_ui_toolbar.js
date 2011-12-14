@@ -145,7 +145,7 @@ Ext.define('BQ.Application.Toolbar', {
         this.menu_user.add( { text: 'User preferences', itemId: 'menu_user_prefs', 
                               handler: this.userPrefs, scope: this } );    
 
-        this.menu_user.add( { text: 'Admin preferences', itemId: 'menu_user_admin_prefs', hidden:true, 
+        this.menu_user.add( { text: 'System preferences', itemId: 'menu_user_admin_prefs', hidden:true, 
                               handler: this.systemPrefs, scope: this } );    
 
         this.menu_user.add( {text: 'Register new user', itemId: 'menu_user_register', 
