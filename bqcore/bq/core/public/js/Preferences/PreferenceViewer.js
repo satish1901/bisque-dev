@@ -16,7 +16,7 @@ Ext.define('BQ.Preferences.Dialog',
             prefType : config.prefType || 'user'
         });
         
-        if (config.prefType=='user')
+        if (this.prefType=='user')
             if (BQ.Preferences.user.status=='LOADED')
             {
                 if (BQ.Preferences.user.exists==false)
