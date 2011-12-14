@@ -338,9 +338,11 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
 			uriObj.view=tags.join(',');
 		}
 
-		
 		for (var param in uriObj)
-			uri+='&'+param+'='+uriObj[param];
+            if(uriObj[param].length == 0)
+                delete uriObj[param];
+            else
+                uri+='&'+param+'='+uriObj[param];
 		
 		return (baseURL+(uri==''?uri:'?'+uri.substring(1,uri.length)));
 	},
