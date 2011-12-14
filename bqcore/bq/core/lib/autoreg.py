@@ -43,6 +43,7 @@ class AutoRegister (object):
                     model.User(user_name = user_name, **values)
                     )
                 transaction.commit()
+                return user_name
             except (SQLAlchemyError, DatabaseError), e:
                 log.exception('problem with autoreg')
                 return None

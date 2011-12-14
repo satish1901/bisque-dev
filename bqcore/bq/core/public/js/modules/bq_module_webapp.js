@@ -458,7 +458,7 @@ BQWebApp.prototype.parseResults = function (mex) {
             if (this.resultantResourcesBrowser) this.resultantResourcesBrowser.destroy();
             this.resultantResourcesBrowser = new Bisque.ResourceBrowser.Browser({
                 //dataset: this.bq_resource.tags[0].uri+'/values',
-                dataset: this.bq_resource.getMembers().uri+'/values',
+                dataset: this.bq_resource.getMembers().uri+'/value',
                 height: '100%',   
                 selType: 'SINGLE',
                 viewMode : 'ViewerOnly',
@@ -481,8 +481,8 @@ BQWebApp.prototype.parseResults = function (mex) {
 
 BQWebApp.prototype.selectResultantResource = function (resource) {
 
-    var md = resource.toDict();
-    this.bq_image = md['image_url'];
+    var md = resource.toDict(true);
+    this.bq_image = md['inputs/image_url'] || md['image_url'];
 
     this.gobjectURL = null;
     document.getElementById("webapp_results_viewer").style.display = 'none'; 
@@ -570,7 +570,7 @@ BQWebApp.prototype.view = function() {
         }
         
         var viewer_params = {'gobjects':this.gobjectURL, 'simpleview':''};          
-        this.result_viewer = new ImgViewer ("webapp_results_viewer", this.bq_image, this.bq_user.user_name, viewer_params );
+        this.result_viewer = new ImgViewer ("webapp_results_viewer", this.bq_image, null, viewer_params );
     } else {
         viewer_div.style.display = 'none'; 
     }

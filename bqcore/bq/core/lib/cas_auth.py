@@ -209,7 +209,7 @@ class CASPlugin(object):
                 log.debug ('CAS autoregister')
                 user_id = self._auto_register(environ, identity, user_id)
         except:
-            log.error ("couldn't authenticate %s"  % user_id)
+            log.exception ("couldn't authenticate %s"  % user_id)
             return None
 
         return user_id
@@ -221,6 +221,8 @@ class CASPlugin(object):
         
         if registration:
             user_name = identity["repoze.who.plugins.cas.user_id"]
+            name  = user_name
+            email = '%s@nowhere.org' % name
 
             if identity.has_key('repoze.who.plugins.cas.firstName'):
                 name = identity["repoze.who.plugins.cas.firstName"]
@@ -228,7 +230,6 @@ class CASPlugin(object):
             if identity.has_key('repoze.who.plugins.cas.lastName'):
                 name = "%s %s" % (name, identity["repoze.who.plugins.cas.lastName"])
 
-            email = 'unknown@nowhere.org'
             if identity.has_key('repoze.who.plugins.cas.email'):
                 email =  identity["repoze.who.plugins.cas.email"]
             return registration.register_user(user_name, values = {
