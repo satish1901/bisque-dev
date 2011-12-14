@@ -95,7 +95,7 @@ Ext.define('BQ.Application.Toolbar', {
     
     tools_none: [ 'menu_user_signin', 'menu_user_register'],    
     tools_user: ['menu_user_name', 'menu_user_profile', 'menu_user_signout', ],
-    tools_admin: ['menu_user_admin_separator', 'menu_user_admin', 'menu_user_admin_prefs' ],    
+    tools_admin: ['menu_user_admin_separator', 'menu_user_admin', 'menu_user_admin_prefs', ],    
     
     config: {
         title: 'Bisque demo',    
@@ -142,7 +142,10 @@ Ext.define('BQ.Application.Toolbar', {
         this.menu_user.add( {text: 'Website admin', itemId: 'menu_user_admin', hidden: true, 
                                 handler: Ext.Function.pass(pageAction, bq.url('/admin'))} );        
         
-        this.menu_user.add( { text: 'Website preferences', itemId: 'menu_user_admin_prefs', 
+        this.menu_user.add( { text: 'User preferences', itemId: 'menu_user_prefs', 
+                              handler: this.userPrefs, scope: this } );    
+
+        this.menu_user.add( { text: 'Admin preferences', itemId: 'menu_user_admin_prefs', hidden:true, 
                               handler: this.systemPrefs, scope: this } );    
 
         this.menu_user.add( {text: 'Register new user', itemId: 'menu_user_register', 
@@ -287,10 +290,13 @@ Ext.define('BQ.Application.Toolbar', {
         this.callParent();
     },
 
-    systemPrefs : function() {
+    userPrefs : function() {
         var preferences = Ext.create('BQ.Preferences.Dialog');
     },
 
+    systemPrefs : function() {
+        var preferences = Ext.create('BQ.Preferences.Dialog', {prefType:'system'});
+    },
    
 });
 

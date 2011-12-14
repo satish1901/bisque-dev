@@ -4,6 +4,8 @@ Ext.define('BQ.Preferences.Dialog',
     
     constructor : function(config)
     {
+        config = config || {};
+        
         Ext.apply(this, 
         {
             title : 'Set preferences',
@@ -11,32 +13,35 @@ Ext.define('BQ.Preferences.Dialog',
             layout : 'fit',
             height : '70%',
             width : '70%',
+            prefType : config.prefType || 'user'
         });
         
-        if (BQ.Preferences.user.status=='LOADED')
-        {
-            if (BQ.Preferences.user.exists==false)
+        if (config.prefType=='user')
+            if (BQ.Preferences.user.status=='LOADED')
             {
-                BQ.ui.notification('Guests cannot save preferences! Please login first...',  3000);
+                if (BQ.Preferences.user.exists==false)
+                {
+                    BQ.ui.notification('Guests cannot save preferences! Please login first...',  3000);
+                    return;
+                }
+            }
+            else
+            {
+                BQ.ui.notification('Initializing. Please wait...',  2000);
                 return;
             }
-        }
-        else
-        {
-            BQ.ui.notification('Initializing. Please wait...',  2000);
-            return;
-        }
                 
         this.callParent(arguments);
-        this.addTagger();
+        this.addTagger(this.prefType);
         this.show();
     },
     
-    addTagger : function()
+    addTagger : function(prefType)
     {
         this.tagger = Ext.create('Bisque.PreferenceTagger',
         {
-            viewMode : 'Offline'
+            viewMode : 'Offline',
+            prefType : prefType
         });
     
         this.add(this.tagger);
