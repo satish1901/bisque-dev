@@ -53,6 +53,36 @@ Ext.define('Bisque.ResourceTagger',
              
         });
 
+        // dima - datastore for the tag name combo box
+        var TagNames = Ext.ModelManager.getModel('TagNames');
+        if (!TagNames) {
+            Ext.define('TagNames', {
+                extend : 'Ext.data.Model',
+                fields : [ {name: 'name', mapping: '@name' } ],
+            });
+        }
+        this.store_names = Ext.create('Ext.data.Store', {
+            model : 'TagNames', 
+            autoLoad : true,
+            autoSync : false,
+            
+            proxy: {
+                noCache : false,
+                type: 'ajax',
+                limitParam : undefined,
+                pageParam: undefined,
+                startParam: undefined,
+                
+                url : '/data_service/image/?tag_names=1',
+                reader : {
+                    type :  'xml',
+                    root :  'resource',
+                    record: 'tag', 
+                },
+            },
+             
+        });
+
 
         this.callParent([config]);
         this.setResource(config.resource);
@@ -188,18 +218,30 @@ Ext.define('Bisque.ResourceTagger',
             flex : 0.8,
             sortable : true,
             field : {
+                // dima: combo box instead of the normal text edit that will be populated with existing tag names
+                xtype     : 'bqcombobox',
+                tabIndex: 0,  
+                
+                store     : this.store_names,
+                displayField: 'name',
+                valueField: 'name',
+                queryMode : 'local',
+                                
                 allowBlank: false,
                 //fieldLabel: this.colNameText || 'Name',
                 //labelAlign: 'top',    
-                tabIndex: 0,            
-                
+
                 validateOnChange: false,
                 blankText: 'Tag name is required!',
                 msgTarget : 'none',
                 
                 listeners: {
-                    'change': function( field, newValue, oldValue, eOpts ) {
-                        this.updateQueryTagValues(newValue);
+                    //'change': function( field, newValue, oldValue, eOpts ) {
+                    //    this.updateQueryTagValues(newValue);
+                    //},
+                   
+                    'blur': function( field, eOpts ) {
+                        this.updateQueryTagValues(field.getValue());
                     },
                    
                     scope: this,
@@ -215,13 +257,11 @@ Ext.define('Bisque.ResourceTagger',
                 // dima: combo box instead of the normal text edit that will be populated with existing tag values
                 xtype     : 'bqcombobox',
                 tabIndex: 1,                
-                
+
                 store     : this.store_values,
                 displayField: 'value',
                 valueField: 'value',
-                
-                queryMode : 'local',
-                //queryMode : 'remote',
+                queryMode : 'local',                
                                 
                 minChars: 1,
                 allowBlank : true,   
