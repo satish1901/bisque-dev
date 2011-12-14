@@ -262,10 +262,6 @@ Ext.define('Bisque.ResourceBrowser.Browser',
         else
             var uri = this.getURIFromState();
 
-        for(var param in uri)
-        if(uri[param].length == 0)
-            delete uri[param];
-
         if(uri.tag_order)
         {
             var tagValuePair = uri.tag_order.split(','), tags = [], values = [], nextPair;
@@ -297,6 +293,10 @@ Ext.define('Bisque.ResourceBrowser.Browser',
         else
             //this.showGroups is used in LayoutFactory to group resources based on tag order
             this.showGroups = false;
+
+        for(var param in uri)
+            if(uri[param].length == 0)
+                delete uri[param];
 
         this.uri = uri;
         this.resourceQueue = new Bisque.ResourceBrowser.ResourceQueue(
