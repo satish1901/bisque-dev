@@ -148,7 +148,8 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
         if(!loaded)
         {
             child.grid.setLoading({msg:''});
-            var uri = this.dataset + '?tag_query=' + this.GetTagQuery() + '&tag_values=' + child.tag + '&wpublic=' + this.wpublic;
+            var query = this.GetTagQuery();
+            var uri = this.dataset + '?tag_values=' + child.tag + '&wpublic=' + this.wpublic + (query.length?'?tag_query='+query:'');
             BQFactory.load(uri, callback(this, 'PopulateGrid', true, child));
         }
         else
@@ -332,7 +333,13 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
     {
         if(!loaded)
         {
-            var uri = this.parent.dataset + '?tag_query=' + this.parent.GetTagQuery() + '&tag_names=1&wpublic=' + this.parent.wpublic;
+            var query = this.parent.GetTagQuery();
+            
+            var uri = this.parent.dataset 
+                      + '?tag_names=1&wpublic=' 
+                      + this.parent.wpublic
+                      + (query.length?'tag_query='+query:''); 
+            
             BQFactory.load(uri, callback(this, 'GetTagList', true));
         }
         else
