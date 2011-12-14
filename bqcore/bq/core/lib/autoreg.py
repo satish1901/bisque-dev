@@ -43,11 +43,12 @@ class AutoRegister (object):
                     model.User(user_name = user_name, **values)
                     )
                 transaction.commit()
+                return user_name
             except (SQLAlchemyError, DatabaseError), e:
                 log.exception('problem with autoreg')
                 return None
         else:
-            log.info("found existing user: name %s by email %s " % (user_name, email_match.user_name))
+            log.info("found existing user: name %s by email %s " % (user_name, email_match))
 
         if email_match:
             return email_match.user_name
