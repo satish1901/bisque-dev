@@ -114,7 +114,7 @@ Ext.define('Bisque.ResourceTagger',
             this.resource.loadTags(
             {
                 cb: callback(this, "loadResourceTags"),
-                //depth: 'full'
+                depth: 'deep&wpublic=1'
             });
     },
 
@@ -677,7 +677,7 @@ Ext.define('Bisque.GObjectTagger',
         this.resource.loadGObjects(
         {
             cb: callback(this, "loadResourceTags"),
-            //depth: 'full'
+            depth: 'deep&wpublic=1'
         });
     },
 

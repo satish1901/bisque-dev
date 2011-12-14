@@ -860,15 +860,14 @@ def bquser_callback (tg_user, operation, **kw):
             u = BQUser(tg_user=tg_user)
             DBSession.add(u)
             log.info ('created BQUSER %s' % u.name)
-            return
+        return
     if operation  == 'update':
         u = DBSession.query(BQUser).filter_by(resource_name=tg_user.user_name).first()
-        log.info ('update BQUSER %s' % u.name)
         if u is not None:
             u.value = tg_user.email_address
             dn = u.findtag('display_name', create=True)
             dn.value = tg_user.display_name
-            pass
+            log.info ('updated BQUSER %s' % u.name)
         return
 
 User.callbacks.append (bquser_callback)
