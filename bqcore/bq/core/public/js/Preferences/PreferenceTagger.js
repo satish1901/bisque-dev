@@ -12,10 +12,19 @@ Ext.define('Bisque.PreferenceTagger',
 
     setResource : function(resource)
     {
-        this.resource = resource || new BQResource();
-        this.loadResourceTags(this.resource.tags);
-        
-        this.appendTags(BQ.Preferences.getMerged());
+        if (this.prefType=='user')
+        {
+            this.resource = resource || new BQResource();
+            this.loadResourceTags(this.resource.tags);
+            
+            this.appendTags(BQ.Preferences.getMerged());
+        }
+        else
+        {
+            this.resource = BQ.Preferences.system.tag;
+            this.loadResourceTags(this.resource.tags);
+        }
+
         this.tree.expandAll();
     },
     
@@ -23,15 +32,23 @@ Ext.define('Bisque.PreferenceTagger',
     {
         if(this.store.applyModifications())
         {
-            var parents = this.getTagParents(tag);
-            this.saveUserPrefs(tag, parents); 
-            if (!silent) BQ.ui.message('Resource tagger - Save', 'Changes were saved successfully!');
+            if (this.prefsType=='user')
+            {
+                var parents = this.getTagParents(tag);
+                this.savePrefs(tag, parents); 
+                if (!silent) BQ.ui.message('Resource tagger - Save', 'Changes were saved successfully!');
+            }
+            else
+            {
+                this.resource.doc = this.resource;
+                this.resource.save_();
+            }
         }
         else
             BQ.ui.message('Resource tagger - Save', 'No records modified!');
     },
     
-    saveUserPrefs : function(changedTag, parents)
+    savePrefs : function(changedTag, parents)
     {
         var root = BQ.Preferences.user.object;
 

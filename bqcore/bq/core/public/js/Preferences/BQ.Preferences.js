@@ -2,7 +2,8 @@ Ext.define('BQ.Preferences.Object', {
     tag : {},
     dictionary : {},
     status : undefined,
-    exists : undefined
+    exists : undefined,
+    object : undefined
 });
 
 Ext.define('BQ.Preferences',
@@ -34,6 +35,7 @@ Ext.define('BQ.Preferences',
         else if (status=='LOADED')
         {
             resource = resource.children[0];
+            this.system.object = resource;
             var tag = resource.find_tags('Preferences', false);
             
             if (tag!=null)
@@ -107,6 +109,7 @@ Ext.define('BQ.Preferences',
      * Caller object: 
      * 
      * Caller.key = Component's key e.g. "ResourceBrowser"
+     * Caller.type = 'user' or 'system'
      * Caller.callback = Component's callback function when the preferences are loaded
      */
     get : function(caller)
