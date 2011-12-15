@@ -10,6 +10,8 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
             wpublic : arguments[0].wpublic,
             msgBus : arguments[0].msgBus,
             uri : arguments[0].browser.uri,
+            tag_order : arguments[0].browser.uri.tag_order || '',
+            tag_query : arguments[0].browser.uri.tag_query || '',
 
             title : 'Tag Filters',
             width : 300,
@@ -51,25 +53,29 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
         Bisque.ResourceBrowser.Organizer.superclass.constructor.apply(this, arguments);
         this.on('afterrender', function()
         {
-            this.AddFilter(this.uri);
+            //this.AddFilter();
+            this.initFilters(this.uri);
             this.ManageEvents();
         }, this, {single : true});
     },
     
     initFilters : function(uri)
     {
-        var tag_order = uri.tag_order.replace(/"/g,'').split(',');
-        var tag_query = this.parseTagQuery(uri.tag_query.replace(/"/g,''));
+        this.tag_order = uri.tag_order || '';
+        this.tag_query = uri.tag_query || '';
+        
+        this.tag_order = this.tag_order.replace(/"/g,'').split(',');
+        this.tag_query = this.parseTagQuery(this.tag_query.replace(/"/g,''));
 
-        for(var i=0;i<tag_order.length;i++)
+        for(var i=0;i<this.tag_order.length;i++)
         {
-            var pair = tag_order[i].split(':');
-            var filterCt = new Bisque.ResourceBrowser.Organizer.TagFilterCt({parent: this, tag_order: pair, tag_query: tag_query[pair[0]] || ''});
+            var pair = this.tag_order[i].split(':');
+            var filterCt = new Bisque.ResourceBrowser.Organizer.TagFilterCt({parent: this, tag_order: pair, tag_query: this.tag_query[pair[0]] || ''});
             this.add(filterCt);
     
             filterCt.addEvents('onFilterDragDrop');
             this.relayEvents(filterCt, ['onFilterDragDrop']);
-            filterCt.expand(true);
+            //filterCt.expand(true);
         }
     },
     
@@ -103,7 +109,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
 
         filterCt.addEvents('onFilterDragDrop');
         this.relayEvents(filterCt, ['onFilterDragDrop']);
-        filterCt.expand(true);
+        //filterCt.expand(true);
     },
 
     ManageEvents : function()
@@ -204,13 +210,14 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
 
             child.grid.store.loadData(tagArr);
             
-            // Initialize with tag_order if provided
+            // Initialize the grid with tag_query if provided
             var index, selector = child.grid.getSelectionModel();
-            /*for (var i=0;i<child.tag_query.length;i++)
+            for (var i=0;i<child.tag_query.length;i++)
             {
                 index = child.grid.store.findExact('value', child.tag_query[i]);
-                selector.select(child.grid.store.getAt(index));
-            }*/
+                selector.select(child.grid.store.getAt(index), true);
+                child.OnGridSelect();
+            }
         }
     },
 
@@ -220,11 +227,11 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
         {
             this.existingTags.splice(this.existingTags.indexOf(tag), 1);
             for(var i = 0; i < this.items.length; i++)
-            if(this.getComponent(i).getId() != skipCt)
-            {
-                this.getComponent(i).tagCombo.store.loadData([tag], true);
-                this.getComponent(i).SortComboBox('ASC');
-            }
+                if(this.getComponent(i).getId() != skipCt)
+                {
+                    this.getComponent(i).tagCombo.store.loadData([tag], true);
+                    this.getComponent(i).SortComboBox('ASC');
+                }
         }
     },
 
@@ -292,8 +299,8 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
             },
             frame : true,
             parent : arguments[0].parent,
-            tag_order : arguments[0].tag_order,
-            tag_query : arguments[0].tag_query,
+            tag_order : arguments[0].tag_order || '',
+            tag_query : arguments[0].tag_query || '',
             tag : "",
             oldTag : "",
             sortOrder : "",
@@ -406,11 +413,11 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
                 this.tagCombo.store.remove(this.tagCombo.findRecord(this.tagCombo.displayField, this.parent.existingTags[i]));
 
             // Initialize the filter if provided with tag_order/tag_query
-            /*if (this.tag_order.length)
+            if (this.tag_order.length)
             {
                 this.tagCombo.select(this.tag_order[0]);
-                this.tagCombo.fireEvent('Select', this.tagCombo);
-            }*/
+                this.tagCombo.fireEvent('Select', this.tagCombo, true);
+            }
         }
     },
 
@@ -546,7 +553,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
     },
 
     /* Event handlers */
-    OnCBSelect : function(combo)
+    OnCBSelect : function(combo, silent)
     {
         if(this.tag != combo.getRawValue())
         {
@@ -554,11 +561,13 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
             this.tag = combo.getRawValue();
             this.value = [];
             this.SetTitle();
-            this.parent.msgBus.fireEvent('Organizer_OnCBSelect', this);
+
+            if (silent)
+                this.parent.msgBus.fireEvent('Organizer_OnCBSelect', this);
         }
     },
 
-    OnGridSelect : function(grid, row, column, record)
+    OnGridSelect : function()
     {
         this.value = this.GetSelection();
         this.SetTitle();
