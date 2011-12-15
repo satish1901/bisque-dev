@@ -344,6 +344,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
             parentCt : this.westPanel,
             dataset : this.browser.browserState['baseURL'],
             wpublic : this.browser.browserParams.wpublic,
+            browser : this.browser,
             msgBus : this.msgBus
         });
         
