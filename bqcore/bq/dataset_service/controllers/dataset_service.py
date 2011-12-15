@@ -116,6 +116,11 @@ class TagEditOp (DatasetOp):
         return None
 
 
+
+#---------------------------------------------------------------------------------------
+# controller 
+#---------------------------------------------------------------------------------------
+
 class DatasetServer(ServiceController):
     """Server side actions on datasets
     """
@@ -199,15 +204,22 @@ class DatasetServer(ServiceController):
 
         return etree.tostring(results)
 
+#---------------------------------------------------------------------------------------
+# bisque init stuff
+#---------------------------------------------------------------------------------------
 
 def initialize(uri):
     """ Initialize the top level server for this microapp"""
     # Add you checks and database initialize
     log.debug ("initialize " + uri)
     service =  DatasetServer(uri)
-    #directory.register_service ('dataset_service', service)
-
     return service
+
+def get_static_dirs():
+    """Return the static directories for this server"""
+    package = pkg_resources.Requirement.parse ("bqcore")
+    package_path = pkg_resources.resource_filename(package,'bq')
+    return [(package_path, os.path.join(package_path, 'dataset_service', 'public'))]
 
 __controller__ =  DatasetServer
 
