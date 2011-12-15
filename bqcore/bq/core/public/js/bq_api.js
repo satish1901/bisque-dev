@@ -1188,12 +1188,12 @@ function BQImagePhys(bqimage) {
     this.ds_done = false; 
     this.loadcallback = null;
     this.image = bqimage;
-    this.init();
+    //this.init();
 }
 
 BQImagePhys.prototype.init = function () {
   if (!this.image) return;
-  this.num_channels = this.image.ch;
+  this.num_channels = this.ch || this.image.ch;
 
   //-------------------------------------------------------
   // image physical sizes
@@ -1224,9 +1224,10 @@ BQImagePhys.prototype.init = function () {
 }
 
 function combineValue( v1, v2, def ) {
-  if (v1 && v1 != undefined && v1 != NaN && v1 != '') return v1;  
-  if (v2 && v2 != undefined && v2 != NaN && v2 != '') return v2;  
-  return def;  
+  //if (v1 && v1 != undefined && v1 != NaN && v1 != '') return v1;  
+  //if (v2 && v2 != undefined && v2 != NaN && v2 != '') return v2;  
+  //return def;  
+  return v1 || v2 || def;
 }
 
 BQImagePhys.prototype.normalizeMeta = function() {
@@ -1266,7 +1267,7 @@ BQImagePhys.prototype.onload = function() {
 }
 
 BQImagePhys.prototype.onloadIS = function (image) {
-  clog ("BQImagePhys: Got metadata from IS");    
+  clog ("BQImagePhys: Got metadata from IS");   
   var hash = {};
   for (var t in image.tags ) 
       hash[image.tags[t].name] = image.tags[t].value;
@@ -1282,6 +1283,8 @@ BQImagePhys.prototype.onloadIS = function (image) {
   this.z  = hash['image_num_z'];
   this.t  = hash['image_num_t'];
   this.ch  = hash['image_num_c'];
+  
+  this.init();   
 
   //-------------------------------------------------------  
   // units
