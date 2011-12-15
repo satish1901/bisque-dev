@@ -358,7 +358,7 @@ def prepare_order_expr (query, tag_order, **kw):
             ordertags = taggable.alias()
             ordervals = values.alias()
             query_expr = and_ (#query_expr,
-                               Taggable.id == ordertags.c.resource_parent_id,
+                               Taggable.id == ordertags.c.document_id,
                                ordertags.c.resource_type == 'tag', 
                                ordertags.c.resource_name == order)
                                #ordertags.c.id == ordervals.c.resource_parent_id)

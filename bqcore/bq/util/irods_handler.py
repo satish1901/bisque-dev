@@ -12,6 +12,9 @@ CONNECTION_POOL = {}
 IRODS_CACHE = 'data/irods_cache/'
 
 
+class IrodsError(Exception):
+    pass
+
 log = logging.getLogger('bq.irods')
 
 parse_net = re.compile('^((?P<user>[^:]+):(?P<password>[\w.#^!;]+)?@)?(?P<host>[^:]+)(?P<port>:\d+)?')
@@ -28,17 +31,18 @@ def irods_cleanup():
 
 atexit.register(irods_cleanup)
 
-def irods_conn(url):
+def irods_conn(url, user=None, host=None, port=None, password = None):
     global CONNECTION_POOL
 
     irods_url = urlparse.urlparse(url)
     assert irods_url.scheme == 'irods'
     env = parse_net.match(irods_url.netloc).groupdict()
+    log.debug ("irods_handler url %s -> env %s" % (url, env))
 
-    user  = env['user'] or irods_env.getRodsUserName()
-    host  = env['host'] or irods_env.getRodsHost()
-    port  = env['port'] or irods_env.getRodsPort() or 1247
-    password  = env['password'] or '7#959^3~Uq'  # Bisque irods password
+    user  = user or env['user'] or irods_env.getRodsUserName()
+    host  = host or env['host'] or irods_env.getRodsHost()
+    port  = port or env['port'] or irods_env.getRodsPort() or 1247
+    password = password or env['password'] 
 
     path = ''
     zone = ''
@@ -51,11 +55,11 @@ def irods_conn(url):
         zone = irods_env.getRodsZone()
         
 
-    print [user, password, host, port]
+    log.debug("irods_connect with %s" % ( [user, password, host, port] ))
     key = ','.join([user, host, str(port)])
     conn = CONNECTION_POOL.get(key)
     if conn is None:
-        print "Connecting"
+        log.debug ( "Connecting" )
         conn, err = irods.rcConnect(host, port, user, zone)
         if password:
             irods.clientLoginWithPassword(conn, password)
@@ -126,25 +130,30 @@ def irods_cache_save(f, path, *dest):
         copyfile(f, fw, *dest)
     return cache_filename
     
-def irods_fetch_file(url):
-    conn, base_url, basedir, path = irods_conn(url)
-    print "irods-path",  path
+def irods_fetch_file(url, **kw):
+    conn, base_url, basedir, path = irods_conn(url, **kw)
+    log.debug( "irods-path %s" %  path)
     localname = irods_cache_fetch(path)
     if localname is None:
-        print "fetching"
+        log.debug( "irods_fetching %s" % url)
         f = irods.iRodsOpen(conn, path)
-        localname = irods_cache_save(f, path)
-        f.close()
+        if f:
+            localname = irods_cache_save(f, path)
+            f.close()
+            return localname
+        raise IrodsError("can't read from %s" % url)
     return localname
 
-def irods_push_file(fileobj, url, savelocal=True):
-    conn, base_url, basedir, path = irods_conn(url)
+def irods_push_file(fileobj, url, savelocal=True, **kw):
+    conn, base_url, basedir, path = irods_conn(url, **kw)
     irods.mkCollR(conn, basedir, os.path.dirname(path))
-    print "irods-path",  path
+    log.debug( "irods-path %s" %  path)
     f = irods.iRodsOpen(conn, path, 'w')
-    localname = irods_cache_save(fileobj, path, f)
-    f.close()
-    return localname
+    if f:
+        localname = irods_cache_save(fileobj, path, f)
+        f.close()
+        return localname
+    raise IrodsError("can't write irods url %s" % url)
 
 
 
