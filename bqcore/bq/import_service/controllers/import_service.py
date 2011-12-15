@@ -417,6 +417,7 @@ class import_serviceController(ServiceController):
             resource = blob_service.store_blob (filesrc=src, filename=filename, perm=perm, tags=tags)
         except Exception, e:
             log.exception("Error during store")
+            return None
         
         log.debug('insert_image :::::\n %s'% etree.tostring(resource) )
         return resource
@@ -480,6 +481,7 @@ class import_serviceController(ServiceController):
                 return resource
 
             # include the parent file into the database            
+            parent_uri = None
             try:
                 resource_parent = blob_service.store_blob (filesrc=f.file, filename=os.path.split(f.filename)[-1], perm=f.permission)
                 parent_uri = resource_parent.get('uri')
