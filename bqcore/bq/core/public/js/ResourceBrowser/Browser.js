@@ -146,7 +146,7 @@ Ext.define('Bisque.ResourceBrowser.Browser',
         {
             browserParams : config,
             layoutKey : parseInt(config.layout),
-            viewMgr : new Bisque.ResourceBrowser.viewStateManager(config.viewMode),
+            viewMgr : Ext.create('Bisque.ResourceBrowser.viewStateManager', config.viewMode),
             organizerCt : null,
             datasetCt : null,
             layoutMgr : null,

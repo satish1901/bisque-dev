@@ -41,6 +41,7 @@ Ext.define('BQ.dataset.Service', {
             region:'west',                
             collapsible: false,
             width: 350,
+            aaa:'DATASET',
             
             layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.LIST,
             title: 'Datasets',
@@ -58,6 +59,7 @@ Ext.define('BQ.dataset.Service', {
         this.preview = Ext.create('Bisque.ResourceBrowser.Browser', {
             region:'north', 
             flex: 1,
+            aaa:'BROWSER',
             
             title : 'Dataset content preview',
             tagOrder: '"@ts":desc',          
