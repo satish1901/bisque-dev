@@ -1,31 +1,31 @@
 Ext.define('Bisque.ResourceBrowser.viewStateManager',
 {
 	//	ResourceBrowser view-state 
-	cBar : 
-	{
-		cbar : false,
-		
-		searchBar : false,
-		
-		btnTS : false,
-		
-		btnLayoutThumb : false,
-		btnLayoutCard : false,
-		btnLayoutPStrip : false,
-		btnLayoutFull : false,
-
-		btnLayoutLeft : false,
-		btnLayoutRight : false,
-		
-		btnGear : false,
-		btnOrganizer : false,
-		btnDataset : false,
-		btnLink : false,
-		btnPreferences : false
-	},
-	
 	constructor : function(mode)
 	{
+        this.cBar = 
+        {
+            cbar : false,
+            
+            searchBar : false,
+            
+            btnTS : false,
+            
+            btnLayoutThumb : false,
+            btnLayoutCard : false,
+            btnLayoutPStrip : false,
+            btnLayoutFull : false,
+    
+            btnLayoutLeft : false,
+            btnLayoutRight : false,
+            
+            btnGear : false,
+            btnOrganizer : false,
+            btnDataset : false,
+            btnLink : false,
+            btnPreferences : false
+        };
+	    
 		switch(mode)
 		{
 			case 'MexBrowser':
