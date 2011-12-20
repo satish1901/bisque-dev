@@ -81,11 +81,16 @@ class BQNode (object):
     def initialize(self):
         'used for class post parsing initialization'
         pass
+
+    def initializeXml(self, xmlnode):
+        for x in self.xmlfields:
+            setattr(self, x, xmlnode.get (x, None))
+
     def set_parent(self, parent):
         pass
 
     def __repr__(self):
-        return '(%s:%s)' % (self.xmltag, self.id)
+        return '(%s:%s)' % (self.xmltag, id(self) )
     def __str__(self):
         return '(%s:%s)'%(self.xmltag,
                           ','.join (['%s=%s' % (f, getattr(self,f,''))
@@ -226,12 +231,20 @@ class BQImagePixels(object):
 class BQValue (BQNode):
     '''tag value'''
     xmltag = "value"
-    xmlfields = ['value', 'type']
+    xmlfields = ['value', 'type', 'index']
 
     def set_parent(self, parent):
-        parent.values.append(self)
+        if self.index is not None:
+            parent.values.extend([None for x in range((self.index+1)-len(parent.values))])
+            parent.values[self.index] = self
+        else:
+            parent.values.append(self)
 
-
+    def initializeXml(self, xmlnode):
+        super(BQValue, self).initializeXml(xmlnode)
+        self.index = int(self.index)
+        self.value = xmlnode.text
+        
     def __call__(self):
         if len(self.values<=0): return ''
         elif len(self.values==1): return str(self.values[0])
@@ -250,7 +263,7 @@ class BQTag (BQResource):
 
     def __init__(self, name='', value=None, type=None):
         self.name = name
-        self.values = value and [value] or ''
+        self.values = (value and [value]) or []
         self.tags =  []
         self.gobjects = []
         
@@ -266,7 +279,8 @@ class BQTag (BQResource):
             return self.values[0]
         return str(self.values)
     def set_value(self, v):
-        self.values = [v]
+        if v is not None:
+            self.values = [v]
     value = property(get_value, set_value)
 
 
@@ -522,9 +536,7 @@ def fromXml (xmlResource, resource=None, parent=None, factory=BQFactory,
             resource = factory.make(xmltag, type_);
 
         resource.session = session
-        for x in resource.xmlfields:
-            setattr(resource, x, node.get (x, None))
-
+        resource.initializeXml(node)
         resources.append (resource);
         if parent:
             resource.set_parent(parent) ;
