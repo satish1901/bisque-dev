@@ -13,10 +13,12 @@ from repoze.what import predicates
 
 from bq.core.service import ServiceMixin
 from bq.core.service import ServiceController
-from bq.core import permission, identity
+from bq.core import  identity
+from bq.core.permission import perm2str
 from bq.core.exceptions import IllegalOperation
 from bq.util.paths import data_path
 from bq.util.mkdir import _mkdir
+from bq.util.hash import make_uniq_hash
 from bq import data_service
 from bq.data_service.model import Taggable, DBSession
 
@@ -104,24 +106,31 @@ class BlobServer(RestController, ServiceMixin):
     # available additional configs:
     # perm
     # tags
-    def storeBlob(self, flosrc, filename, **kw):
+    def storeBlob(self, flosrc=None, filename=None, url=None,  permission="private", **kw):
         """Store the file object in the next blob and return the
         descriptor"""
-        
-        # blob storage part
+
         user_name = identity.current.user_name
-        blob_id, flocal = self.default_store.write(flosrc, filename, user_name = user_name)
-        fhash = file_hash_SHA1( flocal )
-        #return blob_id, fhash
+        if flosrc is not None:
+            # blob storage part
+            blob_id, flocal = self.default_store.write(flosrc, filename, user_name = user_name)
+            fhash = file_hash_SHA1( flocal )
+        elif url is not None:
+            if filename is None:
+                filename  = url.rsplit('/',1)[1]
+            blob_id = url
+            fhash   = make_uniq_hash(filename)
+        else:
+            log.error("blobStore without URL or file: nothing to do")
+            return None
 
         # resource creation
         resource_type = guess_type(filename)                  
 
-        perm = permission.PRIVATE
         if 'perm' in kw:             
-            perm = kw['perm']
+            permision = perm2str.get (kw['perm'], 'private')
 
-        resource = etree.Element( resource_type, perm = str(perm),
+        resource = etree.Element( resource_type, permision = permission,
                                   resource_uniq = fhash,
                                   resource_name = filename,
                                   resource_value  = blob_id )

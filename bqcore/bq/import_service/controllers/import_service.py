@@ -71,6 +71,7 @@ import os
 import logging
 import pkg_resources
 from pylons.i18n import ugettext as _, lazy_ugettext as l_
+from pylons.controllers.util import abort
 from tg import expose, flash
 from tg import config
 from repoze.what import predicates 
@@ -657,10 +658,25 @@ class import_serviceController(ServiceController):
 
         return dict(error = 'Some problem uploading the file have occured')
 
-    @expose()
+    @expose(content_type="text/xml")
     @require(predicates.not_anonymous())
-    def insert(self, **kw):
-        return self.insert_image_url (**kw)
+    def insert(self, url = None, filename=None, permission='private',  **kw):
+        """insert a URL to a fixed resource. This allows  insertion 
+        of  resources  when they are already present on safe media
+        i.e on the local server drives or remote irods, hdfs etc.
+
+        Local URL should not include  scheme i.e forgot the file://
+        irods://irods.host.org/zone/..  The bisque system must have rights to read the file
+        """
+        # Note: This entrypoint should allow permission and tags to be inserted
+        # in a similar way to tranfers.. maybe combining the two would be needed.
+        try:
+            resource =  blob_service.store_blob(filename=filename, url=url, permission=permission, **kw)
+            return etree.tostring(resource)
+        except Exception,e:
+            log.exception("insert: %s %s" % (url, filename))
+            abort(500, "exception during url insert")
+
 
         
 #---------------------------------------------------------------------------------------
