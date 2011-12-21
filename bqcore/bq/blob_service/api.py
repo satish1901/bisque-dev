@@ -6,9 +6,9 @@ from controllers.blob_storage import make_uniq_hash
 def find_server():
     return service_registry.find_service ('blobs')
 
-def store_blob(filesrc, filename, **kw):
+def store_blob(flosrc=None, filename=None, url=None, permission='private', **kw):
     server = find_server()
-    return server.storeBlob(filesrc, filename, **kw)
+    return server.storeBlob(flosrc=flosrc, filename=filename,url=url, permission=permission, **kw)
 
 def localpath(ident):
     server = find_server()
