@@ -413,7 +413,7 @@ def make_owner (dbo, fn, baseuri):
 def make_uri(dbo, fn, baseuri):
     return ('uri', "%s%s" % (baseuri , str (dbo.uri)))
 def get_email (dbo, fn, baseuri):
-    return ('email', dbo.user.email_address)
+    return ('email', dbo.user.resource_value)
 def make_user (dbo, fn, baseuri):
     return ('user', baseuri + str(dbo.user))
 
@@ -441,6 +441,7 @@ mapping_fields = {
     'resource_value': 'value',
     'resource_type' : None,
     'resource_user_type' : 'type',
+    'resource_hidden' : 'hidden',
     'module_type_id':None,
     'mex' : None,
     'mex_id' : None,
@@ -507,9 +508,11 @@ def model_fields(dbo, baseuri=None):
 
 
 def xmlelement(dbo, parent, baseuri, **kw):
-    xtag = kw.pop('xtag', dbo.resource_type)
+    xtag = kw.pop('xtag', dbo.xmltag)
     if not kw:
         kw = model_fields (dbo, baseuri)
+    if xtag == 'resource':
+        xtag = dbo.resource_type
     if parent is not None:
         #log.debug ("etree: " + str(xtag)+ str(kw))
         elem =  etree.SubElement (parent, xtag, **kw)
@@ -519,13 +522,14 @@ def xmlelement(dbo, parent, baseuri, **kw):
 
 
 def xmlnode(dbo, parent, baseuri, view, **kw):
-    if  dbo.resource_type == 'tag':
+    rtype = getattr(dbo, 'resource_type', None)
+    if  rtype == 'tag':
         elem = xmlelement (dbo, parent, baseuri)
         if  dbo.resource_value is None:        
             [ toxmlnode (x, parent = elem, baseuri=baseuri, view=view) for x in dbo.values ]
             if elem.attrib.has_key('value'):
                 del elem.attrib['value']
-    elif  dbo.resource_type == 'gobject':
+    elif  rtype == 'gobject':
         if 'canonical' not in view and dbo.type in known_gobjects:
             elem = xmlelement (dbo, parent, baseuri, xtag=dbo.type)
         else:

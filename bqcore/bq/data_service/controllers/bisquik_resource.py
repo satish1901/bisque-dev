@@ -75,7 +75,7 @@ from bq.data_service.model  import Taggable, Image, dbtype_from_tag, dbtype_from
 from bq.util.bisquik2db import bisquik2db, db2tree
 
 from resource import Resource
-from resource_query import resource_query, resource_load, resource_count, resource_auth, resource_permission
+from resource_query import resource_query, resource_load, resource_count, resource_auth, resource_permission, resource_delete
 from resource_query import RESOURCE_READ, RESOURCE_EDIT
 
 log = logging.getLogger("bq.data_service.bisquik_resource")
@@ -354,9 +354,6 @@ class BisquikResource(Resource):
         #pdb.set_trace()
         parent = self.load_parent()
         resource = bisquik2db (doc=xml, resource=resource, parent=parent, replace=True)
-        #log.debug ("OLD values %s no parent %s " % (old, [ x for x in old if x.parent_id is None ]))
-        log.debug ('modifyed : new (%d), dirty (%d), deleted(%d)' %
-                   (len(DBSession.new), len(DBSession.dirty), len(DBSession.deleted)))
         log.info ('MODIFY: ==> %s ' %(resource))
         return self.resource_output (resource, view=view)
 
@@ -370,9 +367,6 @@ class BisquikResource(Resource):
         resource = self.check_access(resource, RESOURCE_EDIT)
         #parent = self.load_parent()
         resource = bisquik2db (doc=xml, parent=resource) #, resource = resource)
-        log.debug ('modifyed : new (%d), dirty (%d), deleted(%d)' %
-                   (len(DBSession.new), len(DBSession.dirty), len(DBSession.deleted)))
-        #resource = session.merge (resource)
         log.info ('APPEND/update: ==> %s ' % (resource))
         return self.resource_output (resource)
 
@@ -382,13 +376,9 @@ class BisquikResource(Resource):
         """DELETE /ds/images/1/tags/2 : delete a specific resource
         """
         log.info ('DELETE %s' % (self.browser_url))
-        resource = self.check_access(resource, RESOURCE_EDIT)
-        try:
-            DBSession.delete(resource)
-            return "<response/>"
-        except:
-            pass
-        return '<response>Error in deleting resource</response>'
+        resource = self.check_access(resource)
+        response = resource_delete(resource, user_id = self.user_id)
+        return "<resource/>"
 
 
         

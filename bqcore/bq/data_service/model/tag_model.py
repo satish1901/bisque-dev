@@ -423,10 +423,16 @@ class Taggable(object):
 
     def get_permission(self):
         return perm2str.get(self.perm)
-
     def set_permission(self, v):
         self.perm = perm2code.get(v)
     permission = property(get_permission, set_permission)
+
+    def get_hidden(self):
+        return self.resource_hidden
+    def set_hidden(self, v):
+        self.resource_hidden=v
+        return v
+    hidden = property(get_hidden, set_hidden)
 
     # Tag.value helper functions
     def newval(self, v, i = 0):

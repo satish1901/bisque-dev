@@ -17,7 +17,7 @@ ImgPermissions.prototype.newImage = function () {
     var show = this.viewer.user && (this.viewer.image.owner == this.viewer.user);
     //var show =  (this.viewer.image.owner_id == this.viewer.user_id);
     this.bt_public.style.display = show?"":"none";
-    this.bt_delete.style.display = show?"":"none";
+    //this.bt_delete.style.display = show?"":"none";
 
     this.update_state();
 }

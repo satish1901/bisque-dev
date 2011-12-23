@@ -288,7 +288,7 @@ def prepare_permissions (query, user_id, with_public, action):
                                                        
     else:
         visibility = (Taggable.perm == PUBLIC)
-    
+
     return query.filter(visibility)
 
 
@@ -539,7 +539,7 @@ def tags_special(dbtype, query, params):
     
     return None
 
-ATTR_EXPR = re.compile('([><=]*)([\w:-]+)')
+ATTR_EXPR = re.compile('([><=]*)(.+)')
 def resource_query(resource_type,
                    tag_query=None,
                    tag_order=None,
@@ -604,16 +604,29 @@ def resource_query(resource_type,
                                      for k in tv.split(',')]))
 
     ## Extra attributes
-    legal_attributes= []
-    for k,v in kw.items():
+    if kw.has_key('hidden'):
+        query = query.filter(Taggable.resource_hidden == kw.pop('hidden'))
+    else:
+        query = query.filter(Taggable.resource_hidden == None)
+
+
+    legal_attributes= {'ts':'ts', 
+                       'hidden': 'resource_hidden', 
+                       'resouce_hidden': 'resource_hidden', 
+                       'created':'created', 
+                       'name' : 'resource_name',
+                       'resource_name' : 'resource_name',
+                       }
+    for ky,v in kw.items():
         #log.debug ("extra " + str(k) +'=' + str(v))
-        if hasattr(dbtype, k):
+        k = legal_attributes.get(ky)
+        if k and hasattr(dbtype, k):
             if not hasattr(v, '__iter__'):
                 v = [v] 
             for val  in v:
                 val  = val.strip('"\'')
                 op, val = ATTR_EXPR.match(val).groups()
-                if k=='ts': 
+                if k in ('ts', 'created'): 
                     try:
                         val = datetime.strptime(val, "%Y-%m-%dT%H:%M:%S")
                     except ValueError:
@@ -630,23 +643,14 @@ def resource_query(resource_type,
                     query =query.filter( getattr(dbtype, k) < val )
                 else:
                     query =query.filter( getattr(dbtype, k)==val)
-            del kw[k]
+            del kw[ky]
 
-    #metadata.bind.echo=True
-    #results = query.all()
-    #log.debug ("RQ: count=%d" % len(results))
-    #metadata.bind.echo=False
-    #return results
-    
-    #taggable_query = query.with_labels().subquery()
-    #log.debug ('taggable query %s' % taggable_query)
-    #query = prepare_type(resource_type)
-    
-    #query = query.filter (taggable_query.c.taggable_id == dbtype.id)
+    # These must be last @ SQLAlchemy issues
     if kw.has_key('offset'):
         query = query.offset (int(kw.pop('offset')))
     if kw.has_key('limit'):
         query = query.limit (int(kw.pop('limit')))
+
     
     log.debug ("query = %s" % query)
     #query =  query.distinct()
@@ -812,7 +816,37 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
         resource.acl = shares
     
     return []
-    
+
+
+def resource_delete(resource, user_id=None):
+    """Delete the given resource:
+       1. if owner delete the resource
+       2. else remove ACL permissions 
+       3. Ensure all references are deleted also.
+       """
+    log.info('resource_delete %s' % resource)
+    if  user_id is None:
+        user_id = get_user_id()
+    if resource.owner_id != user_id and user_id != get_admin().id:
+        # Remove the ACL only
+        q = session.query (TaggableAcl).filter_by (taggable_id = resource.id)
+        q = q.filter (TaggableAcl.user_id == user_id)
+        q.delete()
+        log.debug('deleting acls %s' % q)
+        return
+    # owner so first delete all referneces.
+    # ACL, values etc.. 
+    # 
+    value_count = session.query(Value).filter_by(valobj = resource.id).count()
+    if value_count:
+        resource.resource_hidden = True
+        log.debug('hiding resource due to references')
+        return
+
+    q = session.query (TaggableAcl).filter_by (taggable_id = resource.id)
+    q.delete()
+    session.delete(resource)
+    log.debug('resource delete %s' % resource)
 
 
 def prepare_query_expr (query, resource_type, user_id, wpublic, parent, tag_query, **kw):
