@@ -392,8 +392,8 @@ def resource_count (resource_type, tag_query, **kw):
 
 class fobject(object):
     ''' A fake database object'''
-    def __init__(self, xmltag = '', **kw):
-        self.__class__.xmltag = xmltag
+    def __init__(self, xmltag = None, **kw):
+        self.xmltag = xmltag or kw.get('resource_type')
         self.tags = []
         self.gobjects = []
         self.children = []
@@ -539,7 +539,7 @@ def tags_special(dbtype, query, params):
     
     return None
 
-ATTR_EXPR = re.compile('([><=]*)(.+)')
+ATTR_EXPR = re.compile('([><=]*)([^><=]+)')
 def resource_query(resource_type,
                    tag_query=None,
                    tag_order=None,
@@ -628,7 +628,12 @@ def resource_query(resource_type,
                 op, val = ATTR_EXPR.match(val).groups()
                 if k in ('ts', 'created'): 
                     try:
-                        val = datetime.strptime(val, "%Y-%m-%dT%H:%M:%S")
+                        if '.' not in val:
+                            val = datetime.strptime(val, "%Y-%m-%dT%H:%M:%S")
+                        else:
+                            val, frag = val.split('.')
+                            val = datetime.strptime(val, "%Y-%m-%dT%H:%M:%S")
+                            val = val.replace(microsecond=int(frag))
                     except ValueError:
                         log.error('bad time: %s' %val)
                         continue
