@@ -509,7 +509,7 @@ class EngineResource (Resource):
         version = version and version[0].get('value')
         
         found = False
-        modules = data_service.query ('module', resource_name=name, view="deep")
+        modules = data_service.query ('module', name=name, view="deep")
         for m in modules:
             log.info ('module %s : new=%s current=%s' % (name,ts, m.get('ts')))
             m_version = module_def.xpath('//tag[@name="version"]')[0].get('value')
@@ -555,7 +555,7 @@ class EngineResource (Resource):
             module = self.register_module(module_def)
             module_def.set ('uri', module.get ('uri'))
 
-            service = data_service.query('service', resource_name=module.get('name'), view="deep")
+            service = data_service.query('service', name=module.get('name'), view="deep")
             service = (len(service) and service[0]) 
             if  service == 0:
                 service_def = etree.Element('service', 
