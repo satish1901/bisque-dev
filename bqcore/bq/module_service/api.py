@@ -53,7 +53,7 @@ DESCRIPTION
 import os
 import pkg_resources
 from bq.core.service import service_registry
-from bq.core.exceptions import RequestError
+from bq.exceptions import RequestError
 from controllers.module_server import ModuleServer
 
 def find_server(server):

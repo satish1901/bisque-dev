@@ -12,7 +12,7 @@ LOG_TEMPL='bisque_%s.log'
 
 RUNNER_CMD = ['mexrunner']
 
-SITE_CFG='config/site.cfg'
+SITE_CFG='site.cfg'
 
 config_dirs = ['.', './config', '/etc/bisque']
 
@@ -43,9 +43,9 @@ else:
 #####################################################################
 # utils
 
-def find_site_cfg():
+def find_site_cfg(cfg_file):
     for dp in config_dirs:
-        site_cfg = os.path.join(dp, SITE_CFG)
+        site_cfg = os.path.join(dp, cfg_file)
         if os.path.exists(site_cfg):
             return site_cfg
     return None
@@ -127,14 +127,14 @@ def check_running (pid_file):
         else:
             return False
 
-def operation(command, options, *args):
+def operation(command, options, mexrun = True, cfg_file = SITE_CFG, *args):
     """Run a multi-server command to start several bisque jobs
     """
     def verbose(msg):
         if options.verbose:
             print msg
 
-    site_cfg = options.site or find_site_cfg()
+    site_cfg = options.site or find_site_cfg(cfg_file)
     if site_cfg is None:
         print "Cannot find site.cfg.. please make sure you are in the bisque dir"
         return
@@ -221,12 +221,12 @@ def operation(command, options, *args):
                 paster_command('start')
 
 
-        if command in ('stop', 'restart'):
+        if mexrun and command in ('stop', 'restart'):
             mex_runner('stop')
             for proc in processes:
                 proc.wait()
             processes = []
-        if command in ('start', 'restart'):
+        if mexrun and command in ('start', 'restart'):
             mex_runner('start')
         if options.wait:
             for proc in processes:

@@ -2,7 +2,7 @@
 #
 import os,sys
 import subprocess 
-from bq.core.commands.configfile import ConfigFile
+from bq.util.configfile import ConfigFile
 
 from command_run import CommandRunner
 from condor_run import CondorRunner

@@ -12,7 +12,7 @@ from repoze.what import predicates
 
 from bq.core.service import ServiceMixin
 from bq.core.service import ServiceController
-from bq.core.exceptions import BQException
+from bq.exceptions import BQException
 from bq.ingest import model
 from lxml import etree
 from bq import data_service

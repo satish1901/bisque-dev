@@ -2,6 +2,7 @@ setup.py
 bisque.egg-info/PKG-INFO
 bisque.egg-info/SOURCES.txt
 bisque.egg-info/dependency_links.txt
+bisque.egg-info/paster_plugins.txt
 bisque.egg-info/top_level.txt
 bqcore/bq/__init__.py
 bqcore/bq/release.py

@@ -27,11 +27,20 @@ setup(name='bqdev',
 
       entry_points="""
       # -*- Entry points: -*-
+      [console_scripts]
+      bq-admin = bqdev.commands.admin:main
+      mexrunner = bqdev.commands.mexrunner:main
+
       [bq.commands]
       create-core    = bqdev.commands.create:createCoreService
       create-service = bqdev.commands.create:createService
       create-module = bqdev.commands.create:createModule
       create-bootstrap = bqdev.commands.create_bootstrap:make_bootstrap
+      server = bqdev.commands.admin:server
+      engine = bqdev.commands.admin:engine
+      setup   = bqdev.commands.admin:setup
+      sql     = bqdev.commands.admin:sql
+      preferences= bqdev.commands.admin:preferences
       
       [paste.paster_create_template]
       bisque_core = bqdev.bisque_template:CoreServiceTemplate

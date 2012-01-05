@@ -137,15 +137,39 @@ class DatasetServer(ServiceController):
     def __init__(self, server_url):
         super(DatasetServer, self).__init__(server_url)
 
-    def _iterate_dataset(self, duri, operation):
-        """Call operation on each dataset member"""
-        results = []
-        dataset = data_service.get_resource(duri)
-        members = dataset.xpath('./tag[@name="members"]')
-        for member in members:
-            results.append (operation(member.get('uri')))
-        return results
-            
+    def iterate(self, duri=None, operation='idem', dataset=None, members = None, **kw):
+        """Iterate over a dataset executing an operation on each member
+
+        @param  duri: dataset uri
+        @param operation: an operation name (i.e. module, permisssion)
+        @param kw : operation parameters by name
+        """
+
+        log.info('iterate op %s on  %s' % (operation, duri))
+        if dataset is None:
+            dataset = data_service.get_resource(duri, view='full')
+        if members is None:
+            members = dataset.xpath('/dataset/tag[@name="members"]')[0]
+
+        op_klass  = self.operations.get(operation, IdemOp)
+        op = op_klass(duri, dataset=dataset, members = members)
+
+        #mex = module_service.begin_internal_mex ("dataset_iterate")
+
+        log.debug ("%s on  members %s" % (op,  members))
+        results = etree.Element('resource', uri=self.baseuri + 'iterate')
+        for val in members:
+            result =  op(member = val, **kw)
+            log.debug ("acting on %s -> %s" % (val, result ))
+            if result is not None:
+                results.append (result)
+
+        #module_service.end_internal_mex(mex.uri)
+
+        return etree.tostring(results)
+
+    #############################################
+    # visible 
     @expose('bq.dataset_service.templates.datasets')
     @require(predicates.not_anonymous())
     def index(self, **kw):
@@ -177,34 +201,25 @@ class DatasetServer(ServiceController):
 
     @expose(content_type="text/xml")
     @require(predicates.not_anonymous())
-    def iterate(self, duri, operation='idem', **kw):
-        """Iterate over a dataset executing an operation on each member
-
-        @param  duri: dataset uri
-        @param operation: an operation name (i.e. module, permisssion)
-        @param kw : operation parameters by name
-        """
-
-        log.info('iterate op %s on  %s' % (operation, duri))
+    def delete(self, duri, **kw):
+        # remove all member 
         dataset = data_service.get_resource(duri, view='full')
-        members = dataset.xpath('/dataset/tag[@name="members"]')[0]
+        members = dataset.xpath('./tag[@name="members"]')[0]
+        data_service.del_resource(dataset)
+        return self.iterate (operation='delete', dataset=dataset, members=members, **kw)
 
-        op_klass  = self.operations.get(operation, IdemOp)
-        op = op_klass(duri, dataset=dataset, members = members)
 
-        #mex = module_service.begin_internal_mex ("dataset_iterate")
+        
+    @expose(content_type="text/xml")
+    @require(predicates.not_anonymous())
+    def permission(self, duri, **kw):
+        return self.iterate(duri, operation='permission', **kw)
 
-        log.debug ("%s on %s with members %s" % (op, dataset.get('uri'), members))
-        results = etree.Element('resource', uri=self.baseuri + 'iterate')
-        for val in members:
-            result =  op(member = val, **kw)
-            log.debug ("acting on %s -> %s" % (val, result ))
-            if result is not None:
-                results.append (result)
+    @expose(content_type="text/xml")
+    @require(predicates.not_anonymous())
+    def tagedit(self, duri, **kw):
+        return self.iterate(duri, operation='tagedit', **kw)
 
-        #module_service.end_internal_mex(mex.uri)
-
-        return etree.tostring(results)
 
 #---------------------------------------------------------------------------------------
 # bisque init stuff

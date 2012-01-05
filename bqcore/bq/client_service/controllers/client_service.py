@@ -77,7 +77,7 @@ from repoze.what import predicates
 import bq
 from bq.core.service import ServiceController, service_registry
 from bq.client_service import model
-from bq.core.exceptions import IllegalOperation
+from bq.exceptions import IllegalOperation
 import bq.release as __VERSION__
 
 import aggregate_service

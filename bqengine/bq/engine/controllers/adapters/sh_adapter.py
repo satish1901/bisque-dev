@@ -56,7 +56,6 @@ from tg import config
 from lxml import etree
 from StringIO import StringIO
 
-from bq.core import identity
 from bq.util.paths import bisque_path
 from base_adapter import BaseAdapter
 

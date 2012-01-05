@@ -5,7 +5,7 @@ import logging
 import string
 import subprocess
 import StringIO
-from bq.core.commands.configfile import ConfigFile
+from bq.util.configfile import ConfigFile
 from command_run import CommandRunner, strtolist
 from condor_templates import CondorTemplates
 
