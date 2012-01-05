@@ -83,14 +83,14 @@ from lxml import etree
 from datetime import datetime, timedelta
 from paste.proxy import make_proxy
 from pylons.controllers.util import abort
-from tg import controllers, expose, config
+from tg import controllers, expose, config, override_template
 
 from bq import data_service
 from bq.util import http
 from bq.util.xmldict import d2xml, xml2d
 from bq.core.identity import user_admin, not_anonymous, get_user_pass
 from bq.core.permission import *
-from bq.core.exceptions import RequestError
+from bq.exceptions import RequestError
 from bq.core.controllers.proxy import exposexml
 
 log = logging.getLogger('bq.module_server')
@@ -276,6 +276,7 @@ class ServiceDelegate(controllers.WSGIAppController):
         if not service_url[-1] =='/':
             service_url = service_url + '/'
             
+        self.service_url = service_url
         proxy = make_proxy(config, service_url)
         super(ServiceDelegate, self).__init__(proxy)
 
@@ -286,8 +287,9 @@ class ServiceDelegate(controllers.WSGIAppController):
         try:
             html = super(ServiceDelegate, self)._default(*args, **kw)
         except socket.error, e:
-            log.error('service not available')
-            abort(404, 'page not available')
+            log.error('service %s at %s is not available' % (self.name, self.service_url))
+            override_template(self._default, "genshi:bq.core.templates.master")
+            abort(503, 'The service provider for %s at %s is unavailable' % (self.name, self.service_url))
         #log.info("Service proxy return status %s body %s" % (tg.response.status_int, html))
         return html
         #html = etree.HTML (html[0])
@@ -353,29 +355,42 @@ class ModuleServer(ServiceController):
         self.__class__.modules = self.modules = resource_controller ("module" , cache=False )
         self.__class__.engine = self.engine = EngineResource (server_url,
                                                               self.modules)
-        self.load_services()
+        #self.load_services()
+        self.service_list = None
 
     def load_services(self):
 
         
         services = data_service.query('service')
+        service_list = {}
         for service in services:
             log.debug ("FOUND SERVICE: %s" % etree.tostring(service))
             engine = service.get('value')
             module = service.get('type')
             name = service.get('name')
-            setattr(self.__class__, name , ServiceDelegate(name, engine, module, self.mex.url))
+            service = ServiceDelegate(name, engine, module, self.mex.url)
+            service_list[name] = service
+            #setattr(self.__class__, name , )
             log.info ("SERVICE PROXY %s -> %s " % (name, engine))
             
-
+        return service_list
         #self.runner.start()
 
-    @expose(content_type='text/xml')
-    def default(self, *path, **kw):
-        log.info ("default : %s" % str(path))
-        kw['wpublic']='1'
-        #kw['view'] = 'deep'
-        return self.modules.default(*path, **kw)
+    @expose()
+    def _lookup(self, service, *rest):
+        log.info('service lookup for %s' % service)
+        if self.service_list is None:
+            self.service_list = self.load_services()
+
+        return self.service_list.get(service), rest
+
+
+    #@expose(content_type='text/xml')
+    #def default(self, *path, **kw):
+    #    log.info ("default : %s" % str(path))
+    #    kw['wpublic']='1'
+    #    #kw['view'] = 'deep'
+    #    return self.modules.default(*path, **kw)
 
     @expose(content_type='text/xml')
     def index (self, **kw):

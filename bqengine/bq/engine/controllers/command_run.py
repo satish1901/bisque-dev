@@ -15,7 +15,7 @@ except:
 
 logging.basicConfig(level=logging.DEBUG, filename='module.log')
 
-from bq.core.commands.configfile import ConfigFile
+from bq.util.configfile import ConfigFile
 
 from module_env import MODULE_ENVS, ModuleEnvironmentError
 

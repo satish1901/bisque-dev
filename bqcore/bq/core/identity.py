@@ -4,7 +4,7 @@
 
 from tg import request
 import logging
-from bq.core.exceptions import BQException
+from bq.exceptions import BQException
 from bq.core.model import DBSession, User
 
 user_admin = None

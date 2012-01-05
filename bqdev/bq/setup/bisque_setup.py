@@ -37,7 +37,7 @@ capture = None
 try:
     import bq
     import sqlalchemy as sa
-    from bq.core.commands.configfile import ConfigFile
+    from bq.util.configfile import ConfigFile
     #from bq.model import db_version
 except ImportError, e:
     log.exception( "There was a problem with the bisque environment\n"
@@ -902,8 +902,6 @@ def install_servers(params):
     #    return
 
     print "Server config"
-
-
     if not os.path.exists(config_path('server.ini')):
         shutil.copyfile(config_path('server.ini.default'), config_path('server.ini'))
         server_params = { 'bisque.root' : params['bisque.root'], 'h1.url' : params['bisque.root']}
@@ -925,6 +923,19 @@ def install_servers(params):
         print ("See site.cfg comments and contrib/apache/proxy-{http,ssl} "
                "for details. Also see the website "
                "http://biodev.ece.ucsb.edu/projects/bisquik/wiki/AdvancedInstalls")
+
+
+def install_engines(params):
+
+    #if getanswer("Configure bisque to run behind apache",
+    #             "Apache provides some benifits for large sites", "N") == "N":
+    #    return
+
+    print "Engine config"
+    if not os.path.exists(config_path('engine.ini')):
+        shutil.copyfile(config_path('engine.ini.default'), config_path('engine.ini'))
+        server_params = { 'bisque.root' : params['bisque.root'], 'h1.url' : params['bisque.root']}
+        params = modify_site_cfg([], server_params, 'servers', append=False)
 
 
 #######################################################
@@ -1274,6 +1285,17 @@ install_options= [
            'admin']
 
 
+engine_options= [
+           'site',
+           'binaries',
+           'matlab',
+           'modules',
+           'runtime',
+           'bioformats',
+           'engines',
+           ]
+
+
 usage = " usage: bq-admin setup [%s] " % ' '.join(install_options)
 
 
@@ -1299,8 +1321,10 @@ def bisque_installer(options, args):
     The default answer is AK and is chosen by simply entering <enter>
 
     """
-    if len(args) == 0:
+    if len(args) == 0 or args[0] == 'bisque':
         installer = install_options[:]
+    elif args[0] == 'engine':
+        pass
     else:
         installer = args
 
@@ -1308,6 +1332,8 @@ def bisque_installer(options, args):
         print usage
         return
 
+
+    print "Beginning install of %s" % (server_type)
         
     #call ([PYTHON, "setup.py", "develop"])
     
@@ -1336,6 +1362,8 @@ def bisque_installer(options, args):
         install_modules(params)
     if 'servers'  in installer:
         install_servers(params)
+    if 'engines'  in installer:
+        install_engines(params)
     if 'mail'  in installer:
         params = install_mail(params)
     #if options.admin:
@@ -1407,7 +1435,7 @@ def setup(server_type, options, args):
         
     begin_install = datetime.datetime.now()
     if has_script and not options.inscript:
-        script = ['bq-admin', 'setup', '--inscript']
+        script = ['bq-admin', 'setup', server_type, '--inscript']
         script.extend (args)
         r = typescript(script, 'bisque-install.log')
         #print "RETURN is ", r
@@ -1421,7 +1449,7 @@ def setup(server_type, options, args):
         
     
     try:
-        params  = bisque_installer(options, args)
+        params  = bisque_installer(server_type, options, args)
     except InstallError, e:
         cancelled = True
     except KeyboardInterrupt:

@@ -31,7 +31,6 @@ bq/engine/templates/engine_modules.html
 bq/engine/templates/index.html
 bqengine.egg-info/PKG-INFO
 bqengine.egg-info/SOURCES.txt
-bqengine.egg-info/SOURCES.txt.orig
 bqengine.egg-info/dependency_links.txt
 bqengine.egg-info/entry_points.txt
 bqengine.egg-info/namespace_packages.txt

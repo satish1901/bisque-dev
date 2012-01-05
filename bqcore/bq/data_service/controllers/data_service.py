@@ -66,12 +66,12 @@ from repoze.what import predicates
 from bq.core.service import ServiceController
 from bq.data_service.model  import dbtype_from_tag, dbtype_from_name, all_resources
 from bq.util.bisquik2db import bisquik2db, load_uri, db2tree, updateDB
-from bq.core.exceptions import BadValue
+from bq.exceptions import BadValue
 from bq.core import identity
 from bq.util.paths import data_path
 
 from bisquik_resource import BisquikResource
-from resource_query import resource_query, resource_count, resource_load
+from resource_query import resource_query, resource_count, resource_load, resource_delete
 from resource import HierarchicalCache
 from formats import find_formatter
 
@@ -213,8 +213,8 @@ class DataServerController(ServiceController):
             uri = resource
         if uri is not None:
             resource = load_uri (uri)
-        db_del(resource)
-        self.cache_invalidate(resource.get('uri'))
+        resource_delete(resource)
+        self.cache_invalidate(uri)
 
 
     def query(self, resource_tag, tag_query=None, view=None, **kw):
