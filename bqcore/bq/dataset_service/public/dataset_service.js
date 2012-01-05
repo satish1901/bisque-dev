@@ -51,16 +51,12 @@ Ext.define('BQ.dataset.Service', {
             wpublic: false,
             viewMode: 'ViewerOnly',
             listeners: { 'Select': function(me, resource) { 
-                          //window.open(bq.url('/client_service/view?resource='+resource.uri)); 
                           this.btn_modify.setDisabled(false);
                           this.dataset = resource;
                           this.preview.setTitle('Dataset preview for "'+resource.name+'"');
-                          //this.preview.setDataset  dataset: resource.getMembers().uri+'/value',
-                          
                           this.preview.loadData({baseURL:resource});
-
                           if (this.selected_operation) 
-                              this.onChanged(this.selected_operation);
+                              this.onChanged(this.selected_operation);                          
                          }, 
                        scope: this },    
         });        

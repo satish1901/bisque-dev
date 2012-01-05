@@ -19,7 +19,7 @@ Ext.namespace('BQ.dataset');
 
 BQ.dataset.Operations = { 'permission' : 'BQ.dataset.Permissions', 
                           'delete'     : 'BQ.dataset.Delete', 
-                          'tagedit'    : 'BQ.dataset.Edittags',
+                          //'tagedit'    : 'BQ.dataset.Edittags',
                         };
 
 /*******************************************************************************
@@ -163,7 +163,7 @@ Ext.define('BQ.dataset.Delete', {
             items: [{
                 name: 'delete',
                 value: 'false',
-                boxLabel: 'Delete all elements',
+                boxLabel: '<b>Delete</b> all elements',
                 listeners: { 'change': function(f) { this.fireEvent( 'changed', this ); }, scope: this },                
             }],
             
