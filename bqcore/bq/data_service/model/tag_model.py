@@ -424,7 +424,15 @@ class Taggable(object):
     def get_permission(self):
         return perm2str.get(self.perm)
     def set_permission(self, v):
-        self.perm = perm2code.get(v)
+        log.debug("permission deep = %s" % v)
+        def set_perm_deep(n, v):
+            n.perm = v
+            for k in n.children:
+                set_perm_deep(k, v)
+        set_perm_deep(self, perm2code.get(v))
+        #self.perm = perm2code.get(v)
+
+
     permission = property(get_permission, set_permission)
 
     def get_hidden(self):
@@ -620,7 +628,7 @@ class BQUser(Taggable):
         self.resource_value = tg_user.email_address
         dn = Tag (parent = self)
         dn.name = 'display_name'
-        dn.value = tg_user.display_name
+        dn.value = tg_user.display_name or tg_user.user_name
         dn.owner = self
         self.owner = self
         
