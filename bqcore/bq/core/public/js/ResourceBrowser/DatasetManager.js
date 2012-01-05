@@ -91,7 +91,6 @@ Bisque.ResourceBrowser.DatasetManager = Ext.extend(Ext.Panel,
             this.selectedDS = null;
             var uri =
             {
-                offset : 0,
                 baseURL : '/data_service/image'
             };
 
@@ -127,7 +126,6 @@ Bisque.ResourceBrowser.DatasetManager = Ext.extend(Ext.Panel,
                 this.selectedDS = null;
                 var uri =
                 {
-                    offset : 0,
                     baseURL : '/data_service/image'
                 };
 
@@ -160,7 +158,6 @@ Bisque.ResourceBrowser.DatasetManager = Ext.extend(Ext.Panel,
         {
             var uri =
             {
-                offset : 0,
                 baseURL : data.uri+'/value'
             };
 

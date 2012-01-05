@@ -213,7 +213,7 @@ Ext.define('Bisque.ResourceBrowser.Browser',
 
             if (this.browserParams.dataset!="None")
             {
-                this.LoadData(
+                this.loadData(
                 {
                     baseURL : this.browserParams.dataset,
                     offset : this.browserParams.offset,
@@ -240,7 +240,7 @@ Ext.define('Bisque.ResourceBrowser.Browser',
         }
     },
 
-    LoadData : function(uri)
+    loadData : function(uri)
     {
         this.centerPanel.setLoading(
         {
@@ -254,6 +254,8 @@ Ext.define('Bisque.ResourceBrowser.Browser',
                 uri.tag_query = this.browserState.tag_query || '';
             if(uri.tag_order == undefined)
                 uri.tag_order = this.browserState.tag_order || '';
+            if(uri.offset == undefined)
+                uri.offset = this.browserState.offset;
 
             if(!uri.baseURL)
                 uri.baseURL = this.browserState.baseURL;
@@ -297,17 +299,29 @@ Ext.define('Bisque.ResourceBrowser.Browser',
             //this.showGroups is used in LayoutFactory to group resources based on tag order
             this.showGroups = false;
 
-        for(var param in uri)
-            if(uri[param].length == 0)
-                delete uri[param];
+        function loadQueue(datasetCt)
+        {
+            if (datasetCt)
+                this.uri.baseURL = datasetCt.uri + '/value'; 
+                
+            for(var param in this.uri)
+                if(this.uri[param].length == 0)
+                    delete this.uri[param];
+    
+            this.resourceQueue = new Bisque.ResourceBrowser.ResourceQueue(
+            {
+                callBack : callback(this, 'dataLoaded'),
+                browser : this,
+                uri : this.uri
+            });
+        }
 
         this.uri = uri;
-        this.resourceQueue = new Bisque.ResourceBrowser.ResourceQueue(
-        {
-            callBack : callback(this, 'dataLoaded'),
-            browser : this,
-            uri : this.uri
-        });
+        // if baseURL is typeof BQResource (BQDataset etc.) then load its members
+        if (uri.baseURL instanceof BQDataset)
+            uri.baseURL.getMembers(Ext.bind(loadQueue, this));
+        else
+            loadQueue.call(this);
     },
 
     dataLoaded : function()
@@ -409,7 +423,7 @@ Ext.define('Bisque.ResourceBrowser.Browser',
                     }
                 }
                 else
-                    this.LoadData(uri);
+                    this.loadData(uri);
             },
 
             scope : this

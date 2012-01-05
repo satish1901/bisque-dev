@@ -37,17 +37,6 @@ Ext.define('BQ.dataset.Service', {
 
     initComponent : function() {
         
-        function loadDataset(dataset)
-        {
-            var uri =
-            {
-                offset : 0,
-                baseURL : dataset.uri+'/value'
-            };
-            
-            this.preview.msgBus.fireEvent('Browser_ReloadData', uri);
-        }
-        
         this.browser = Ext.create('Bisque.ResourceBrowser.Browser', {
             region:'west',                
             collapsible: false,
@@ -68,7 +57,7 @@ Ext.define('BQ.dataset.Service', {
                           this.preview.setTitle('Dataset preview for "'+resource.name+'"');
                           //this.preview.setDataset  dataset: resource.getMembers().uri+'/value',
                           
-                          resource.getMembers(Ext.bind(loadDataset, this));
+                          this.preview.loadData({baseURL:resource});
 
                           if (this.selected_operation) 
                               this.onChanged(this.selected_operation);
@@ -82,7 +71,7 @@ Ext.define('BQ.dataset.Service', {
             width: 500,
             flex: 1,
             //border: 1,
-            dataset: '',
+            dataset: 'None',
             
             title : 'Dataset preview',
             tagOrder: '"@ts":desc',          
