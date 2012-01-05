@@ -56,6 +56,15 @@ Ext.define('BQ.dataset.Service', {
                           this.dataset = resource;
                           this.preview.setTitle('Dataset preview for "'+resource.name+'"');
                           //this.preview.setDataset  dataset: resource.getMembers().uri+'/value',
+                          
+                          var uri =
+                          {
+                              offset : 0,
+                              baseURL : resource.getMembers().uri+'/value'
+                          };
+
+                          this.preview.msgBus.fireEvent('Browser_ReloadData', uri);
+                              
                           if (this.selected_operation) 
                               this.onChanged(this.selected_operation);
                          }, 
@@ -68,7 +77,7 @@ Ext.define('BQ.dataset.Service', {
             width: 500,
             flex: 1,
             //border: 1,
-            //dataset: '/',
+            dataset: 'None',
             
             title : 'Dataset preview',
             tagOrder: '"@ts":desc',          
