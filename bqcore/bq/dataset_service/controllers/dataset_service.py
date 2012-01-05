@@ -3,7 +3,7 @@ import logging
 import pkg_resources
 from lxml import etree
 from pylons.i18n import ugettext as _, lazy_ugettext as l_
-from tg import expose, flash
+from tg import expose, flash, require
 from repoze.what import predicates 
 from bq.core.service import ServiceController
 from bq.dataset_service import model
@@ -147,12 +147,13 @@ class DatasetServer(ServiceController):
         return results
             
     @expose('bq.dataset_service.templates.datasets')
+    @require(predicates.not_anonymous())
     def index(self, **kw):
         'list operations of dataset service'
-
         return dict(operations = self.operations, )
 
     @expose(content_type="text/xml")
+    @require(predicates.not_anonymous())
     def add_query(self, duri, resource_tag, tag_query):
         """Append query results to a dataset
 
@@ -175,6 +176,7 @@ class DatasetServer(ServiceController):
         data_service.update(members)
 
     @expose(content_type="text/xml")
+    @require(predicates.not_anonymous())
     def iterate(self, duri, operation='idem', **kw):
         """Iterate over a dataset executing an operation on each member
 
