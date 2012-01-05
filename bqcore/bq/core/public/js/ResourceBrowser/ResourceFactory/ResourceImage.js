@@ -303,24 +303,20 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourceCard',
         {
             this.resource.tags = data.tags;
 
-            // Assuming we know which tags to fetch
-            var tagArr=[], tags = this.getSummaryTags();
-
-            for (var tagID in tags)
+            var tag, tagProp, tagArr=[], tags = this.getSummaryTags();
+            
+            // Show preferred tags first
+            for (var i=0;i<this.resource.tags.length;i++)
             {
-                var tag = this.resource.find_tags(tagID, false, '');
-                if (tag!=null && tag.value!='')
-                {
-                    tags[tagID] = (tag == null || tag.value == "" ? 'None' : tag.value);
-                    tagArr.push(new Ext.grid.property.Property(
-                    {
-                        name: tagID,
-                        value: tags[tagID]
-                    }));
-                }
+                tag = this.resource.tags[i];
+                tagProp = new Ext.grid.property.Property({
+                                                            name: tag.name,
+                                                            value: tag.value
+                                                        });
+                (tags[tag.name])?tagArr.unshift(tagProp):tagArr.push(tagProp);
             }
-
-            this.setData('tags', tagArr);
+            
+            this.setData('tags', tagArr.slice(0, 7));
         }
 
         if (this.getData('tags') && this.getData('image'))
