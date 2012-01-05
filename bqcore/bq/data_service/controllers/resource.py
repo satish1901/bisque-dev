@@ -139,6 +139,7 @@ def safename(filename, user):
     filename = re_url_scheme.sub("", filename)
     filename = re_slash.sub(",", filename)
     filename = filename.replace('?', '#')
+    filename = filename.replace('"', '')
 
     # limit length of filename
     if len(filename)>200:

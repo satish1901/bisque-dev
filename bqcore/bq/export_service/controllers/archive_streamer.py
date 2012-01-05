@@ -1,6 +1,7 @@
 import os
 import tarfile
 import copy
+import string
 from tg import response, expose
 from lxml import etree
 from cStringIO import StringIO
@@ -21,7 +22,6 @@ class ArchiveStreamer():
         self.datasetList = datasetList
         
         response.headers['Content-Type'] = self.archiver.getContentType()
-        response.headers['Transfer-Encoding'] = 'chunked'
         response.headers['Content-Disposition'] = 'attachment;filename=' + archiveName + self.archiver.getFileExtension()
     
     def stream(self):
