@@ -26,9 +26,9 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ModuleResourceCompact',
             	align:'stretch'	
             }
         });
-        this.addCls('compact');
-		
+	
 		Bisque.ResourceBrowser.ResourceFactory.ModuleResourceCompact.superclass.constructor.apply(this, arguments);
+        this.addCls('compact');		
 	},
 
     prefetch : function()
