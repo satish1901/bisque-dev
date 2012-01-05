@@ -39,7 +39,8 @@ Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS = {
 	"PSTRIP_BIG" : 3.1,
 	"FULL" : 4,
 	"LIST" : 5,
-	"ICON_LIST" : 6
+	"ICON_LIST" : 6,
+	'GRID' : 7
 };
 
 Bisque.ResourceBrowser.LayoutFactory.DEFAULT_LAYOUT = Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.COMPACT;
@@ -178,7 +179,7 @@ Ext.define('Bisque.ResourceBrowser.LayoutFactory.BaseLayout',
 					items:resCtSub,
 					cls:'fieldSet',
 	            	margin:'8 0 0 8',
-	            	width: (this.getParentSize().width*0.97)-15,
+	            	width: (this.getParentSize().width),
 	            	//autoScroll:true,
         	    	padding:0,
             		title: '<b>Group </b><i>'+currentGrp+'</i>',
