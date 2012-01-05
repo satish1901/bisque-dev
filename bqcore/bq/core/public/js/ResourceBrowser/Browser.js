@@ -330,7 +330,7 @@ Ext.define('Bisque.ResourceBrowser.Browser',
 
     ChangeLayout : function(newLayoutKey, direction)
     {
-        console.time("Browser - ChangeLayout");
+        //console.time("Browser - ChangeLayout");
         direction = direction || 'none';
         this.centerPanel.setLoading(false);
 
@@ -356,7 +356,7 @@ Ext.define('Bisque.ResourceBrowser.Browser',
 
         this.updateTbarItemStatus();
 
-        console.timeEnd("Browser - ChangeLayout");
+        //console.timeEnd("Browser - ChangeLayout");
     },
 
     /* Custom ResourceBrowser event management */

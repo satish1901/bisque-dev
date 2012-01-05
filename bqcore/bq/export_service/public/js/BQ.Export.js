@@ -129,6 +129,7 @@ Ext.define('BQ.Export.Panel', {
                 items: 
                 {
                     text: 'Export to Google Docs',
+                    disabled : true,
                     scale: 'large',
                     padding : 3,
                     width: 160,
@@ -158,6 +159,7 @@ Ext.define('BQ.Export.Panel', {
             
             while((index = this.resourceStore.find('type', type, index))!=-1)
             {
+                // add quotes to make it work in Safari
                 list.push(this.resourceStore.getAt(index).get('uri'));
                 index++;
             }

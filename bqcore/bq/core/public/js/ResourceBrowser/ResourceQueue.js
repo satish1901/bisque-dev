@@ -206,13 +206,13 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
 	{
 		if (this.clicks.left==this.noUnloadClicks)
 		{
-			console.time("unloadRight");
+			//console.time("unloadRight");
 			this.clicks.left=0;	
 			var len=Math.floor(this.indRight.length/2)
 			for (var i=0;i<len;i++)
 				this.dataHash[this.indRight.shift()]={};
 		
-			console.timeEnd("unloadRight");
+			//console.timeEnd("unloadRight");
 		}
 	},
 
@@ -220,19 +220,19 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
     {
         if (this.clicks.right==this.noUnloadClicks)
         {
-            console.time("unloadLeft");
+            //console.time("unloadLeft");
             this.clicks.right=0;
             var len=Math.floor(this.indLeft.length/2);  
             for (var i=0;i<len;i++)
                 this.dataHash[this.indLeft.shift()]={};
             
-            console.timeEnd("unloadLeft");
+            //console.timeEnd("unloadLeft");
         }
     },
 
 	prefetch : function(layoutMgr)
 	{
-		console.time("prefetch");
+		//console.time("prefetch");
 		
 		this.list=this.slice(this.rqOffset, this.rqOffset+this.visLimit);
 
@@ -247,7 +247,7 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
 		else
 			window.setTimeout(Ext.bind(this.prefetchPrev, this, [layoutMgr]), 400);
 
-		console.timeEnd("prefetch");
+		//console.timeEnd("prefetch");
 		return this.list;
 	},
 	
@@ -274,7 +274,7 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
 
 	changeLayout : function(layoutObj)
 	{
-		console.time("resourceQueue - changeLayout");
+		//console.time("resourceQueue - changeLayout");
 		
 		if (this.layoutKey!=layoutObj.key)
 		{
@@ -285,7 +285,7 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
 				this.splice(i, 1, Bisque.ResourceBrowser.ResourceFactory({resource:this[i].resource, layoutKey:this.layoutKey, msgBus:this.msgBus, resQ:this, browser:this.browser}))
 		}
 
-		console.timeEnd("resourceQueue - changeLayout");
+		//console.timeEnd("resourceQueue - changeLayout");
 	},
 	
 	/* Utility functions */
