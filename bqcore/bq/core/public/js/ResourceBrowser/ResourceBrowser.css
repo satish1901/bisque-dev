@@ -247,6 +247,24 @@
 }
 
 
+
+.lblModuleDate {
+    padding: 8px 8px 8px 5px;
+    color: #444;
+    font-size: 11px;
+}
+
+.compact .lblModuleDate {
+    padding: 8px 8px 8px 5px;
+}
+
+.list .lblModuleDate {
+    padding: 0px 0px 0px 8px;    
+    font-family: tahoma, arial, verdana, sans-serif !important;
+}
+
+
+
 .textOnImage {
 	color: #FFF;
 	position:absolute;

@@ -26,7 +26,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceCompact',
             	align:'stretch'	
             }
         });
-		
+		this.addCls('compact');
 		Bisque.ResourceBrowser.ResourceFactory.MexResourceCompact.superclass.constructor.apply(this, arguments);
 	},
 	
@@ -136,7 +136,8 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceCompact',
 		var mexDate=new Ext.form.Label({
 			text:Ext.Date.format(date, "F j, Y g:i:s a"),
 			padding:5,
-			style:'color:#444'
+			//style:'color:#444',
+			cls: 'lblModuleDate',			
 		})
 
 		this.add([mexName, mexStatus, mexDate]);
@@ -158,7 +159,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceList',
             	align:'middle'	
             }
         });
-		
+		this.addCls('list');		
 		this.callParent(arguments);
 	},
 
@@ -271,7 +272,8 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceList',
 		var mexDate=new Ext.form.Label({
 			text:Ext.Date.format(date, "F j, Y g:i:s a"),
 			padding:'0 0 0 8',
-			style:'color:#444;font-size:11px;font-family: tahoma, arial, verdana, sans-serif !important;'
+			//style:'color:#444;font-size:11px;font-family: tahoma, arial, verdana, sans-serif !important;'
+			cls: 'lblModuleDate',
 		})
 
 		this.add([mexName, mexStatus, mexDate]);

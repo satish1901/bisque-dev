@@ -26,7 +26,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.DatasetResourceCompact',
             	align:'stretch'	
             }
         });
-		
+        this.addCls('compact');		
 		this.callParent(arguments);
 	},
     
@@ -66,15 +66,16 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.DatasetResourceCompact',
 		var datasetOwner=new Ext.form.Label({
 			text:this.getData('owner'),
 			padding:5,
-			cls:'lblModuleOwner'
+			cls:'lblModuleOwner',
 		})
 
 		var date=Ext.Date.parse(this.resource.ts, 'Y-m-d H:i:s.u');
 		
 		var datasetDate=new Ext.form.Label({
 			text:Ext.Date.format(date, "F j, Y g:i:s a"),
-			padding:'8 8 8 5',
-			style:'color:#444;font-size:11px'
+			//padding:'8 8 8 5',
+			//style:'color:#444;font-size:11px'
+			cls: 'lblModuleDate',			
 		})
 
 		this.add([datasetName, datasetOwner, datasetDate]);
@@ -98,6 +99,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.DatasetResourceList',
             	align:'middle'	
             }
         });
+        this.addCls('list');        
 	},
 	
     updateContainer : function()
@@ -111,15 +113,16 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.DatasetResourceList',
 		var datasetOwner=new Ext.form.Label({
 			text:this.getData('owner'),
 			padding:'0 0 0 4',
-			cls:'lblModuleOwner'
+			cls:'lblModuleOwner',
 		})
 
 		var date=Ext.Date.parse(this.resource.ts, 'Y-m-d H:i:s.u');
 		
 		var datasetDate=new Ext.form.Label({
 			text:Ext.Date.format(date, "F j, Y g:i:s a"),
-			padding:'0 0 0 8',
-            style:'color:#444;font-size:11px;font-family: tahoma, arial, verdana, sans-serif !important;'
+			cls: 'lblModuleDate',			
+			//padding:'0 0 0 8',
+            //style:'color:#444;font-size:11px;font-family: tahoma, arial, verdana, sans-serif !important;'
 		})
 
 		this.add([datasetName, datasetOwner, datasetDate]);
