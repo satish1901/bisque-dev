@@ -19,7 +19,7 @@
 Ext.define('BQ.dataset.Service', {
     alias: 'widget.datasetservice',    
     extend: 'Ext.panel.Panel',
-    requires: ['Ext.toolbar.Toolbar', 'Ext.tip.QuickTipManager', 'Ext.tip.QuickTip'],
+    requires: ['Ext.toolbar.Toolbar', 'Ext.tip.QuickTipManager', 'Ext.tip.QuickTip', 'BQ.dataset.Operations'],
 
     border: 0,
     autoScroll: true,
@@ -36,12 +36,12 @@ Ext.define('BQ.dataset.Service', {
     },
 
     initComponent : function() {
-
+        
         this.browser = Ext.create('Bisque.ResourceBrowser.Browser', {
             region:'west',                
             collapsible: false,
             width: 350,
-            aaa:'DATASET',
+            //border: 1,
             
             layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.LIST,
             title: 'Datasets',
@@ -52,16 +52,25 @@ Ext.define('BQ.dataset.Service', {
             viewMode: 'ViewerOnly',
             listeners: { 'Select': function(me, resource) { 
                           //window.open(bq.url('/client_service/view?resource='+resource.uri)); 
-                       }, 
+                          this.btn_modify.setDisabled(false);
+                          this.dataset = resource;
+                          this.preview.setTitle('Dataset preview for "'+resource.name+'"');
+                          //this.preview.setDataset  dataset: resource.getMembers().uri+'/value',
+                          if (this.selected_operation) 
+                              this.onChanged(this.selected_operation);
+                         }, 
                        scope: this },    
         });        
 
         this.preview = Ext.create('Bisque.ResourceBrowser.Browser', {
-            region:'north', 
+            //region:'north',
+            region:'west', 
+            width: 500,
             flex: 1,
-            aaa:'BROWSER',
+            //border: 1,
+            //dataset: '/',
             
-            title : 'Dataset content preview',
+            title : 'Dataset preview',
             tagOrder: '"@ts":desc',          
             selType: 'SINGLE',          
             wpublic: false,
@@ -72,24 +81,35 @@ Ext.define('BQ.dataset.Service', {
                        scope: this },         
         }); 
 
+        this.operations = {};
+        var op_items = [];
+        for (i in BQ.dataset.Operations) {
+            var o = Ext.create(BQ.dataset.Operations[i], {
+                listeners: { 'changed': this.onChanged,
+                             scope: this },       
+            });
+            this.operations[i] = o;
+            op_items.push(o);
+        }
         this.operationPanel = Ext.create('Ext.panel.Panel', {
             flex: 1,
             title : 'Operations',            
-            border: 0,
+            border: 1,
             region:'center',
             layout: 'accordion',                            
-            defaults: { border: 0, },            
+            defaults: { border: 0, }, 
+            items: op_items,           
         }); 
 
+        
         // header toolbar's elements
         this.btn_modify = Ext.create('Ext.button.Button', {
             text: 'Modify', 
-            disabled: false,
+            disabled: true,
             //iconCls: 'upload', 
             scale: 'large', 
-            cls: 'x-btn-default-large',
-            tooltip: 'Start the upload of all queued files',
-            handler: Ext.Function.bind( this.upload, this ),
+            //tooltip: 'Start the upload of all queued files',
+            handler: Ext.Function.bind( this.run, this ),
         });
 
         //--------------------------------------------------------------------------------------
@@ -138,7 +158,43 @@ Ext.define('BQ.dataset.Service', {
         }];        
         
         this.callParent();
+        this.doComponentLayout(null, null, true); // some rendering bug in showing options
     },
+   
+    onChanged: function(o) {
+        this.selected_operation = o;
+        var txt = o.getStatus();
+        txt += this.dataset ? ' in dataset "<b>'+this.dataset.name+'</b>"':'';
+        this.btn_modify.setText( txt );
+    },    
+
+    run: function(o) {
+        //this.btn_modify.setText( txt ); 
+        if (this.selected_operation && this.dataset) {
+            this.btn_modify.setDisabled(true);
+            var d = this.selected_operation.getArguments();
+            d.operation = this.selected_operation.getName();
+            d.duri = this.dataset.uri;
+            var l = [];
+            for (var i in d)
+                l.push( i+'='+d[i] );
+            var uri = '/dataset_service/iterate?' + l.join('&');            
+            BQFactory.request ({uri : uri, 
+                                cb : callback(this, 'onDone'),
+                                errorcb: callback(this, 'onError'),
+                                cache : false});           
+        }
+    },    
+
+    onDone: function(response) {
+        this.btn_modify.setDisabled(false);
+        BQ.ui.notification(response);        
+    },    
+
+    onError: function(response) {
+        this.btn_modify.setDisabled(false);
+        BQ.ui.error(response);
+    },  
 
 });
 

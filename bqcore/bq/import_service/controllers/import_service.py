@@ -172,6 +172,7 @@ class import_serviceController(ServiceController):
         
         
     @expose('bq.import_service.templates.upload')
+    @require(predicates.not_anonymous())
     def index(self, **kw):
         """Add your first page here.. """
         return dict()
