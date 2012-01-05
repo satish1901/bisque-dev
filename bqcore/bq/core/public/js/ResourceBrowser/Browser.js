@@ -211,16 +211,19 @@ Ext.define('Bisque.ResourceBrowser.Browser',
             this.showOrganizer = this.browserParams.showOrganizer || false,
             this.commandBar.applyPreferences();
 
-            this.LoadData(
+            if (this.browserParams.dataset!="None")
             {
-                baseURL : this.browserParams.dataset,
-                offset : this.browserParams.offset,
-                tag_query : this.browserParams.tagQuery,
-                tag_order : this.browserParams.tagOrder
-            });
+                this.LoadData(
+                {
+                    baseURL : this.browserParams.dataset,
+                    offset : this.browserParams.offset,
+                    tag_query : this.browserParams.tagQuery,
+                    tag_order : this.browserParams.tagOrder
+                });
 
-            var btnOrganize = this.commandBar.getComponent("btnGear").menu.getComponent("btnOrganize");
-            this.showOrganizer?btnOrganize.handler.call(this.commandBar):'';
+                var btnOrganize = this.commandBar.getComponent("btnGear").menu.getComponent("btnOrganize");
+                this.showOrganizer?btnOrganize.handler.call(this.commandBar):'';
+            }
         }
     },
 
@@ -392,8 +395,7 @@ Ext.define('Bisque.ResourceBrowser.Browser',
                         uri : ""
                     });
                 }
-                else
-                if(uri == 'ReloadPrefs')
+                else if(uri == 'ReloadPrefs')
                 {
                     var user = BQSession.current_session.user;
 
