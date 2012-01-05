@@ -26,8 +26,8 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.DatasetResourceCompact',
             	align:'stretch'	
             }
         });
-        this.addCls('compact');		
 		this.callParent(arguments);
+        this.addCls('compact');				
 	},
     
     prefetch : function()
@@ -75,6 +75,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.DatasetResourceCompact',
 			text:Ext.Date.format(date, "F j, Y g:i:s a"),
 			//padding:'8 8 8 5',
 			//style:'color:#444;font-size:11px'
+			flex: 1,				
 			cls: 'lblModuleDate',			
 		})
 
@@ -120,7 +121,8 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.DatasetResourceList',
 		
 		var datasetDate=new Ext.form.Label({
 			text:Ext.Date.format(date, "F j, Y g:i:s a"),
-			cls: 'lblModuleDate',			
+			cls: 'lblModuleDate',	
+			flex: 1,		
 			//padding:'0 0 0 8',
             //style:'color:#444;font-size:11px;font-family: tahoma, arial, verdana, sans-serif !important;'
 		})

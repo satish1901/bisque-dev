@@ -26,8 +26,8 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceCompact',
             	align:'stretch'	
             }
         });
-		this.addCls('compact');
 		Bisque.ResourceBrowser.ResourceFactory.MexResourceCompact.superclass.constructor.apply(this, arguments);
+		this.addCls('compact');		
 	},
 	
     afterRenderFn : function(me)
@@ -137,7 +137,8 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceCompact',
 			text:Ext.Date.format(date, "F j, Y g:i:s a"),
 			padding:5,
 			//style:'color:#444',
-			cls: 'lblModuleDate',			
+			cls: 'lblModuleDate',	
+			flex: 1,					
 		})
 
 		this.add([mexName, mexStatus, mexDate]);
@@ -159,8 +160,8 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceList',
             	align:'middle'	
             }
         });
-		this.addCls('list');		
 		this.callParent(arguments);
+		this.addCls('list');			
 	},
 
     afterRenderFn : function(me)
@@ -274,6 +275,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceList',
 			padding:'0 0 0 8',
 			//style:'color:#444;font-size:11px;font-family: tahoma, arial, verdana, sans-serif !important;'
 			cls: 'lblModuleDate',
+			flex: 1,			
 		})
 
 		this.add([mexName, mexStatus, mexDate]);

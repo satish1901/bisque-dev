@@ -75,7 +75,7 @@ Ext.define('BQ.dataset.Service', {
             wpublic: false,
             viewMode: 'ViewerLayouts',
             listeners: { 'Select': function(me, resource) { 
-                          //window.open(bq.url('/client_service/view?resource='+resource.uri)); 
+                          window.open(bq.url('/client_service/view?resource='+resource.uri)); 
                        }, 
                        scope: this },         
         }); 
