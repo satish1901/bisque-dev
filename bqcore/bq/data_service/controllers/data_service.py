@@ -97,13 +97,14 @@ class DataServerController(ServiceController):
             self.children[token]= child
         return child
 
-    @expose('genshi:bq.data_service.templates.resources',
-            content_type='text/xml')
+    @expose(content_type='text/xml')
     def index(self):
         resources = all_resources()
-        view = None
-        resources =[ self.makeurl(str(r)) for r in resources]
-        return dict(resources=resources, view=view)
+        resource = etree.Element('resource')
+        for r in resources:
+            etree.SubElement(resource, 'resource', name = str(r), uri = self.makeurl(str(r)))
+
+        return etree.tostring(resource)
 
 
 
