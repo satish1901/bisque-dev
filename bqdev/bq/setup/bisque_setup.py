@@ -365,12 +365,18 @@ class InstallError(Exception):
 #####################################################
 # Installer routines
 
-def install_site (params):
+
+def install_cfg (params, server_type='bisque'):
     if not os.path.exists (config_path('site.cfg')):
-        shutil.copyfile(config_path('site.cfg.default'), config_path('site.cfg'))
+        if server_type == 'bisque':
+            shutil.copyfile(config_path('site.cfg.default'), config_path('site.cfg'))
+        if server_type == 'engine':
+            shutil.copyfile(config_path('engine.cfg.default'), config_path('site.cfg'))
+
         params = read_site_cfg()
         params.update(initial_vars)
 
+def install_site(params):
     print "Top level site variables are:"
     for k in sorted(params.keys()):
         if k in site:
@@ -476,6 +482,8 @@ def update_site_cfg (bisque_vars, section = BQ_SECTION, append=True):
 
 
 def modify_site_cfg(qs, bisque_vars, section = BQ_SECTION, append=True):
+    if not os.path.exists (SITE_CFG):
+        raise InstallError('missing %s' % SITE_CFG)
 
     bisque_vars =  update_variables(qs, bisque_vars )
     for k,v in linked_vars.items():
@@ -484,15 +492,10 @@ def modify_site_cfg(qs, bisque_vars, section = BQ_SECTION, append=True):
     bisque_vars =  update_variables([], bisque_vars )
 
     c = ConfigFile()
-    if os.path.exists (SITE_CFG):
-        c.read(open(SITE_CFG))
-    else:
-        c.read (open(SITE_DEFAULT))
-        
+    c.read(open(SITE_CFG))
     for k,v in bisque_vars.items():
         c.edit_config (section, k, '%s = %s' % (k,v), {}, append)
         print "edit %s %s" % (k,v)
-
     c.write (open (SITE_CFG, 'w'))
 
     return bisque_vars
@@ -932,10 +935,16 @@ def install_engines(params):
     #    return
 
     print "Engine config"
-    if not os.path.exists(config_path('engine.ini')):
-        shutil.copyfile(config_path('engine.ini.default'), config_path('engine.ini'))
+    if not os.path.exists(config_path('server.ini')):
+        shutil.copyfile(config_path('server.ini.default'), config_path('server.ini'))
         server_params = { 'bisque.root' : params['bisque.root'], 'h1.url' : params['bisque.root']}
         params = modify_site_cfg([], server_params, 'servers', append=False)
+
+    if not os.path.exists(config_path('shell.ini')):
+        shutil.copyfile(config_path('shell.ini.default'), config_path('shell.ini'))
+
+    if not os.path.exists(config_path('who.ini')):
+        shutil.copy(config_path('who.ini.default'), config_path('who.ini'))
 
 
 #######################################################
@@ -1286,7 +1295,6 @@ install_options= [
 
 
 engine_options= [
-           'site',
            'binaries',
            'matlab',
            'modules',
@@ -1321,10 +1329,12 @@ def bisque_installer(options, args):
     The default answer is AK and is chosen by simply entering <enter>
 
     """
+    system_type = 'bisque'
     if len(args) == 0 or args[0] == 'bisque':
         installer = install_options[:]
     elif args[0] == 'engine':
-        pass
+        installer = engine_options[:]
+        system_type = 'engine'
     else:
         installer = args
 
@@ -1341,6 +1351,8 @@ def bisque_installer(options, args):
     params = {}
     if os.path.exists (SITE_CFG): 
         params = read_site_cfg()
+    else:
+        install_cfg( params, system_type)
     
     params['bisque.installed'] = "inprogress"
     if 'site' in installer:

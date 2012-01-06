@@ -71,7 +71,7 @@ from bq.core import identity
 from bq.util.paths import data_path
 
 from bisquik_resource import BisquikResource
-from resource_query import resource_query, resource_count, resource_load, resource_delete
+from resource_query import resource_query, resource_count, resource_load, resource_delete, resource_types
 from resource import HierarchicalCache
 from formats import find_formatter
 
@@ -99,15 +99,12 @@ class DataServerController(ServiceController):
 
     @expose(content_type='text/xml')
     def index(self):
-        resources = all_resources()
+        #resources = all_resources()
         resource = etree.Element('resource')
-        for r in resources:
+        for r in resource_types():
             etree.SubElement(resource, 'resource', name = str(r), uri = self.makeurl(str(r)))
 
         return etree.tostring(resource)
-
-
-
         
     @expose()
     def default(self, *path, **kw):

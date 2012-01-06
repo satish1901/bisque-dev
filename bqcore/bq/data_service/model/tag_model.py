@@ -1053,7 +1053,7 @@ def dbtype_from_tag(tag):
             return (tag, mapper_.class_)
     return (tag, Taggable)
 
-@memoized
+#@memoized
 def all_resources ():
     ''' Return the setof unique names that are taggable objects
     '''
