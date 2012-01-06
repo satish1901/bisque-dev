@@ -24,7 +24,7 @@
 Ext.onReady(function() {
     var resourceBrowser = new Bisque.ResourceBrowser.Browser( { 
       'layout'  : '${layout}',
-      'dataset' : bq.url('${dataset}'), 
+      'dataset' : bq.url('${dataset or resource}'), 
       'tagQuery': '${query}', 
       'tagOrder': '${tagOrder}', 
       'offset'  : '${offset}', 
