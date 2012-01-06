@@ -28,6 +28,20 @@ For details on notation and configuration:
         <tag name="mex_url"      type="system-input" />
         <tag name="bisque_token" type="system-input" />
 
+        <tag name="main_resource" type="image" >
+            <tag name="template" type="template">
+                <!-- Iterable will allow this module to run as a batch -->
+                <tag name="iterable" value="iterable-001" />
+                
+                <tag name="label" value="Select an image or a set of images" />
+                <tag name="require_geometry">
+                    <tag name="z" value="stack" />
+                    <tag name="t" value="single" />
+                    <tag name="fail_message" value="Only supports 3D images!" />
+                </tag>                
+            </tag> 
+        </tag> 
+
         <tag name="image_url"    type="image" >
             <tag name="template" type="template">
                 <tag name="label" value="Select input image" />
