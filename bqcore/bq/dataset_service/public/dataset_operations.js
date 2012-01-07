@@ -162,7 +162,8 @@ Ext.define('BQ.dataset.Delete', {
             defaultType: 'radiofield',
             items: [{
                 name: 'delete',
-                value: 'false',
+                value: true,
+                checked: true,
                 boxLabel: '<b>Delete</b> all elements',
                 listeners: { 'change': function(f) { this.fireEvent( 'changed', this ); }, scope: this },                
             }],

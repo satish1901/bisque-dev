@@ -172,12 +172,12 @@ Ext.define('BQ.dataset.Service', {
         if (this.selected_operation && this.dataset) {
             this.btn_modify.setDisabled(true);
             var d = this.selected_operation.getArguments();
-            d.operation = this.selected_operation.getName();
+            var operation = this.selected_operation.getName();
             d.duri = this.dataset.uri;
             var l = [];
             for (var i in d)
                 l.push( i+'='+d[i] );
-            var uri = '/dataset_service/iterate?' + l.join('&');            
+            var uri = '/dataset_service/' + operation + '?' + l.join('&');            
             BQFactory.request ({uri : uri, 
                                 cb : callback(this, 'onDone'),
                                 errorcb: callback(this, 'onError'),
@@ -187,12 +187,12 @@ Ext.define('BQ.dataset.Service', {
 
     onDone: function(response) {
         this.btn_modify.setDisabled(false);
-        BQ.ui.notification(response);        
+        BQ.ui.notification('done');        
     },    
 
     onError: function(response) {
         this.btn_modify.setDisabled(false);
-        BQ.ui.error(response);
+        BQ.ui.error('error');
     },  
 
 });

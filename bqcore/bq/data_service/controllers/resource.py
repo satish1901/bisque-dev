@@ -74,7 +74,7 @@ from tg import config
 
 from bq.core import identity
 from bq.core.service import ServiceController
-from bq.core.exceptions import RequestError
+from bq.exceptions import RequestError
 from bq.util.paths import data_path
 
 log = logging.getLogger("bq.data_service.resource")

@@ -74,11 +74,11 @@ from repoze.what import predicates
 
 from bq import  module_service
 from bq.core.service import ServiceController, BaseController
-from bq.core.exceptions import EngineError, RequestError
-from bq.core.identity  import get_user_pass
+from bq.exceptions import EngineError, RequestError
+#from bq.core.identity  import get_user_pass
 #from bq.core.proxy import ProxyRewriteURL
-from bq.core.commands.configfile import ConfigFile
 
+from bq.util.configfile import ConfigFile
 from bq.util.hostutils import same_host
 from bq.util import http
 from bq.util.http.thread_pool import ThreadPool, makeRequests
@@ -436,26 +436,23 @@ class AsyncRequest:
 
 
 
-class RemoteEngineServer(object):
-    def __init__(self):
-        #self.url = serverurl
-        self.async = AsyncRequest(5)
-        
-        
-    def execute(self, mextree, server_url, callback=None, calldata=None, up=None):
-        if not up:
-            up = get_user_pass ()
-        log.debug ('user_pass' + str(up))
-
-        body = ProxyRewriteURL.for_output(etree.tostring(mextree))
-        log.debug ("POST " + body)
-        self.async.request(server_url+'/mex_execute',
-                           "POST", 
-                           body,
-                           {'content-type':'text/xml' },
-                           callback,
-                           calldata,
-                           user_pass= up)
+# class RemoteEngineServer(object):
+#     def __init__(self):
+#         #self.url = serverurl
+#         self.async = AsyncRequest(5)
+#     def execute(self, mextree, server_url, callback=None, calldata=None, up=None):
+#         if not up:
+#             up = get_user_pass ()
+#         log.debug ('user_pass' + str(up))
+#         body = ProxyRewriteURL.for_output(etree.tostring(mextree))
+#         log.debug ("POST " + body)
+#         self.async.request(server_url+'/mex_execute',
+#                            "POST", 
+#                            body,
+#                            {'content-type':'text/xml' },
+#                            callback,
+#                            calldata,
+#                            user_pass= up)
 
 
 reserved_io_types = ['system-input']
@@ -779,9 +776,9 @@ def initialize(uri=None):
         server = EngineServer(server_url)
         _preferred = _servers[server_url] = server
     
-    else:
-        server = RemoteEngineServer()
-        _preferred = server
+    #else:
+    #    server = RemoteEngineServer()
+    #    _preferred = server
         
     #server_url = config.get('bisquik.engine_service.remote', None)
     #if server_url:

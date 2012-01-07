@@ -1399,16 +1399,16 @@ BQImagePhys.prototype.getPixelInfoT = function () {
 /* parseUri JS v0.1, by Steven Levithan (http://badassery.blogspot.com)
 Splits any well-formed URI into the following parts (all are optional):
 ----------------------
-� source (since the exec() method returns backreference 0 [i.e., the entire match] as key 0, we might as well use it)
-� protocol (scheme)
-� authority (includes both the domain and port)
-    � domain (part of the authority; can be an IP address)
-    � port (part of the authority)
-� path (includes both the directory path and filename)
-    � directoryPath (part of the path; supports directories with periods, and without a trailing backslash)
-    � fileName (part of the path)
-� query (does not include the leading question mark)
-� anchor (fragment)
+* source (since the exec() method returns backreference 0 [i.e., the entire match] as key 0, we might as well use it)
+* protocol (scheme)
+* authority (includes both the domain and port)
+    * domain (part of the authority; can be an IP address)
+    * port (part of the authority)
+* path (includes both the directory path and filename)
+    * directoryPath (part of the path; supports directories with periods, and without a trailing backslash)
+    * fileName (part of the path)
+* query (does not include the leading question mark)
+* anchor (fragment)
 */
 function parseUri(sourceUri){
     var uriPartNames = ["source","protocol","authority","domain","port","path","directoryPath","fileName","query","anchor"];
@@ -1565,8 +1565,12 @@ BQModule.prototype.afterInitialized = function () {
 }
 
 BQModule.prototype.updateTemplates = function () {
+    // create iterable dict
+    var iterable_names = [];
+    var iterable_recources = {};
     
-    // unfortunately there's no asy way to test if JS vector has an element
+    // create accepted_type
+    // unfortunately there's no easy way to test if JS vector has an element
     // change the accepted_type to an object adding the type of the resource
     for (var i in this.inputs_index) {
         var e = this.inputs_index[i]; 
@@ -1578,7 +1582,21 @@ BQModule.prototype.updateTemplates = function () {
                 act[t] = t;
             }
             e.template.accepted_type = act;
+            
+            if ('iterable' in e.template) {
+                iterable_names.push(e.template.iterable);
+                iterable_recources[e.template.iterable] = e;
+            }
         }
+    }
+    
+    // create sorted iterable resource names
+    if (iterable_names.length>0) {
+        iterable_names = iterable_names.sort();
+        this.iterables = [];
+        var n = null;
+        for (var i=0; (n=iterable_names[i]); i++)
+            this.iterables.push( iterable_recources[n] );
     }
 }
 
@@ -1593,14 +1611,27 @@ BQModule.prototype.createMEX = function( ) {
     //mex.module = this.URI; //this.module.uri;
     //mex.addtag ({name:'client_server', value:client_server});
 
+    // create INPUTS block
     var tag_inputs = mex.addtag ({name:'inputs'});
-    //var tag_outputs = mex.addtag ({name:'outputs'}); // dima: the outputs tag will be created by the module?
-       
     var i = undefined;
     for (var p=0; (i=this.inputs[p]); p++) {
         var r = i.clone(true);
         tag_inputs.addchild(r);
     }
+
+    // create OUTPUTS block
+    //var tag_outputs = mex.addtag ({name:'outputs'}); // dima: the outputs tag will be created by the module?
+    
+    // create execute_options block
+    if (this.iterables && this.iterables.length>0) {
+        var tag_execute = mex.addtag ({name:'execute_options'});
+        var i = undefined;
+        for (var p=0; (i=this.iterables[p]); p++) {
+            if (i.type == 'dataset')
+                tag_execute.addtag({name:'iterable', value:i.name});
+        }
+    }
+    
     return mex;
 }
 

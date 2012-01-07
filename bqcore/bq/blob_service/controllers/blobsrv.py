@@ -15,7 +15,7 @@ from bq.core.service import ServiceMixin
 from bq.core.service import ServiceController
 from bq.core import  identity
 from bq.core.permission import perm2str
-from bq.core.exceptions import IllegalOperation
+from bq.exceptions import IllegalOperation
 from bq.util.paths import data_path
 from bq.util.mkdir import _mkdir
 from bq.util.hash import make_uniq_hash
@@ -82,7 +82,10 @@ class BlobServer(RestController, ServiceMixin):
         store_list = [ x.strip() for x in config.get('bisque.blob_service.stores','local').split(',') ] 
         self.stores = [ (st,  blob_storage.make(st)) for st in store_list
                          if  st in blob_storage.supported_storage_types]
-        self.default_store = dict(self.stores) [default_store]
+        self.default_store = dict(self.stores).get(default_store)
+        if self.default_store is None:
+            log.error('No default storage available: %s is not a valid store' % default_store)
+            return
         log.info ('configured stores %s' % ','.join([ str(x[1]) for x in self.stores]))
         log.info ('Using %s for default storage' % self.default_store)
 

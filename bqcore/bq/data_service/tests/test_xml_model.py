@@ -15,7 +15,6 @@ from sqlalchemy.orm import lazyload
 #from bq.core.tests import TestController, ModelTest, DBTest
 from bq.data_service.model.xml_model import (meta,
           Document, _Node, _Attribute, documents, query_xpath)
-from bq.data_service.model import UniqueName
 from bq.core.model import DBSession
 
 

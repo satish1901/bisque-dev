@@ -3,7 +3,7 @@ import logging
 
 from tg import config
 
-from bq.core.exceptions import ConfigurationError, ServiceError
+from bq.exceptions import ConfigurationError, ServiceError
 from bq.util.paths import data_path
 from bq.util.mkdir import _mkdir
 from bq.util.hash import make_uniq_hash

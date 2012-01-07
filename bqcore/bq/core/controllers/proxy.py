@@ -8,7 +8,7 @@ from urlparse import urlunsplit, urlsplit, urljoin
 from tg import expose, flash, require, url, request, response, redirect, config
 from lxml import etree
 from bq.core.lib.base import BaseController
-from bq.core.exceptions import ConfigurationError, IllegalOperation, RequestError
+from bq.exceptions import ConfigurationError, IllegalOperation, RequestError
 from bq.util.http import http_client 
 
 
