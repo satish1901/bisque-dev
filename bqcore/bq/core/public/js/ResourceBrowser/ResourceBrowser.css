@@ -246,8 +246,6 @@
     font-family: tahoma, arial, verdana, sans-serif !important;
 }
 
-
-
 .lblModuleDate {
     padding: 8px 8px 8px 5px;
     color: #444;
@@ -264,6 +262,28 @@
     font-family: tahoma, arial, verdana, sans-serif !important;
 }
 
+.lblHeading1{
+    color: #555;
+    background:#f4f4f4;
+    text-shadow: 1px 1px 1px #CCC;
+    font-size: 13px;
+    font-weight:bold;
+    font-family: tahoma, arial, verdana, sans-serif !important;
+    padding: 5px;    
+}
+
+.lblHeading2{
+    color: #07AD0C;
+    background:#f4f4f4;
+    text-shadow: 1px 1px 1px #CCC;
+    font-size: 12px;
+    font-family: tahoma, arial, verdana, sans-serif !important;
+    padding: 5px;    
+}
+
+.lblContent{
+    padding: 5px;
+}
 
 
 .textOnImage {
