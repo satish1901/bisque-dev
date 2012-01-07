@@ -66,7 +66,7 @@ from bq.util.bisquik2db import bisquik2db
 from bq.data_service.model import Image, Tag
 from bq.core import permission
 
-from bq.core.exceptions import BQException
+from bq.exceptions import BQException
 BIXLOG='biximport.log'
 
 

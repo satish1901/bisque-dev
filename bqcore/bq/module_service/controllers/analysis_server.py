@@ -87,7 +87,7 @@ from bq.util import http
 from bq.util.xmldict import d2xml, xml2d
 from bq.core.identity import user_admin, not_anonymous, get_user_pass
 from bq.core.permission import *
-from bq.core.exceptions import RequestError
+from bq.exceptions import RequestError
 from bq.core.controllers.proxy import exposexml
 
 from repoze.what import predicates 

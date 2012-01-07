@@ -175,7 +175,7 @@ Ext.define('BQ.selectors.Resource', {
             btns.push(this.btn_select_image);   
         }
 
-        if ('dataset' in accepted_type) {
+        if ('dataset' in accepted_type || 'iterable' in template) {
             this.btn_select_dataset = Ext.create('Ext.button.Button', {
                 text: 'Select a set of images', 
                 //iconCls: 'upload', 
@@ -224,7 +224,7 @@ Ext.define('BQ.selectors.Resource', {
         }
         
         if (template.label)
-            btns.unshift( {xtype: 'label', text:template.label+':', width: 200, } );
+            btns.unshift( {xtype: 'label', text:template.label+':' } );
 
         this.items = btns;       
         this.callParent();
@@ -276,6 +276,7 @@ Ext.define('BQ.selectors.Resource', {
     onselected: function(R) {
         this.selected_resource = R;
         this.resource.value = R.uri;
+        this.resource.type = R.resource_type;
         if (!this.validate()) return;
        
         // !!!!!!!!!!!!!!!!!!!!!!!!
@@ -787,7 +788,7 @@ Ext.define('BQ.selectors.Date', {
 
     validate: function() {
         if (!this.resource.value) {
-            var template = resource.template || {};
+            var template = this.resource.template || {};
             var msg = template.fail_message || 'You need to select a time!';
             BQ.ui.attention(msg);
             BQ.ui.tip(this.getId(), msg);

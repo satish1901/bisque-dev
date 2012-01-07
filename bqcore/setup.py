@@ -34,7 +34,7 @@ setup(
         "repoze.who-friendlyform >= 1.0.4",
         "repoze.what-pylons >= 1.0",
         "repoze.what.plugins.sql",
-        "repoze.who==1.0.18",
+        "repoze.who",
         "tgext.admin >= 0.3.9",
         "tw.forms",
 
@@ -107,15 +107,6 @@ setup(
     [paste.app_install]
     main = pylons.util:PylonsInstaller
 
-    [console_scripts]
-    bq-admin = bq.core.commands.admin:main
-    mexrunner = bq.core.commands.mexrunner:main
-
-    [bq.commands]
-    servers = bq.core.commands.admin:servers
-    setup   = bq.core.commands.admin:setup
-    sql     = bq.core.commands.admin:sql
-    preferences= bq.core.commands.admin:preferences
 
     [bisque.services]
     client_service   = bq.client_service.controllers.service

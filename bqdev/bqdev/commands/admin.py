@@ -60,7 +60,7 @@ Commands:""" % (__VERSION__, sys.argv[0])
 
 
 
-class servers(object):
+class server(object):
     desc = "Start or stop a bisque server"
     
     def __init__(self, version):
@@ -90,6 +90,18 @@ class servers(object):
         import server_ops
         if self.command:
             server_ops.operation(self.command, self.options, *self.args)
+
+
+class engine(server):
+    desc = 'Start or stop a bisque engine'
+
+    def run(self):
+        #Check for self.command in init..
+        import server_ops
+        if self.command:
+            server_ops.operation(self.command, self.options, 
+                                 mexrun=False,  cfg_file = 'engine.cfg',
+                                 *self.args)
             
 
 class cache(object):
@@ -143,7 +155,6 @@ class setup(object):
         for arg in args:
             if arg not in install_options:
                 parser.error('argument must be install option')
-
         
         self.args = args
         self.options = options

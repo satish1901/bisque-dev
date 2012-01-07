@@ -77,7 +77,7 @@ from repoze.what import predicates
 import bq
 from bq.core.service import ServiceController, service_registry
 from bq.client_service import model
-from bq.core.exceptions import IllegalOperation
+from bq.exceptions import IllegalOperation
 import bq.release as __VERSION__
 
 import aggregate_service
@@ -156,8 +156,8 @@ class ClientServer(ServiceController):
                     tagQuery=kw.pop('tag_query', None),
                     offset=kw.pop('offset', None),
                     dataset=kw.pop('dataset', None),
+                    resource=kw.pop('resource', None),                    
                     search=0,
-                    resource = "",
                     user_id = "",
                     page = kw.pop('page', 'null'),
                     view  = kw.pop('view', ''),

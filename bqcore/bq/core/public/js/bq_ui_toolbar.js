@@ -89,7 +89,7 @@ Ext.define('BQ.Application.Toolbar', {
     // default toolbar config
     region: 'north', 
     border: false,             
-    layout: { overflowHandler: 'Menu' },
+    layout: { overflowHandler: 'Menu',  },
     defaults: { scale: 'large', },
     cls: 'toolbar_main',
     
@@ -213,16 +213,30 @@ Ext.define('BQ.Application.Toolbar', {
                  tooltip: '' });
         this.items.push('-');            
 
+
         var browse_vis = (this.toolbar_opts && this.toolbar_opts.browse===false) ? false : true;
-        this.items.push({itemId: 'menu_images', text: 'Images', icon: this.images_base_url+'browse.png', hidden: !browse_vis, tooltip: 'Browse images', 
-                handler: function(c){ 
-                  var q = '';
-                  var m = toolbar.child('#menu_query');
-                  if (m && m.value != toolbar.image_query_text) { q = '?tag_query='+escape(m.value); }
-                  document.location = bq.url('/client_service/browser'+q); 
-                },
+        this.items.push({itemId: 'menu_images', 
+                         xtype:'splitbutton', 
+                         text: 'Images', 
+                         icon: this.images_base_url+'browse.png', 
+                         hidden: !browse_vis, 
+                         tooltip: 'Browse images',
+                         //menu: [{text: 'Menu Button 1'}], 
+                         handler: function(c) { 
+                              var q = '';
+                              var m = toolbar.child('#menu_query');
+                              if (m && m.value != toolbar.image_query_text) { q = '?tag_query='+escape(m.value); }
+                              document.location = bq.url('/client_service/browser'+q); 
+                         },
               });
-                
+        this.items.push({itemId: 'menu_resources', 
+                         text: 'Resources', 
+                         icon: this.images_base_url+'browse.png', 
+                         hidden: browse_vis, 
+                         tooltip: 'Browse resources',
+              });
+
+               
         this.items.push({ xtype: 'tbspacer', width: 10, hidden: !browse_vis });    
         this.items.push({itemId: 'menu_query', xtype:'textfield', flex: 2, name: 'search', value: this.image_query_text, hidden: !browse_vis,
                  tooltip: 'Query for images used Bisque expression',  
@@ -282,8 +296,9 @@ Ext.define('BQ.Application.Toolbar', {
             // hide user menus
             for (var i=0; (p=this.tools_admin[i]); i++)
                 this.menu_user.child('#'+p).setVisible(false);              
-         }, this);  
+        }, this);  
         
+        this.fetchResourceTypes();        
     },
 
     // private
@@ -298,6 +313,25 @@ Ext.define('BQ.Application.Toolbar', {
     systemPrefs : function() {
         var preferences = Ext.create('BQ.Preferences.Dialog', {prefType:'system'});
     },
+
+    fetchResourceTypes : function() {
+        BQFactory.request ({uri : '/data_service/', 
+                            cb : callback(this, 'onResourceTypes'),
+                            cache : false});             
+    }, 
+
+    onResourceTypes : function(resource) {
+        var menu = Ext.create('Ext.menu.Menu');
+        var r=null;
+        for (var i=0; (r=resource.children[i]); i++) {
+            var name = r.name;
+            var uri = r.uri;            
+            menu.add( {text: name, handler: Ext.Function.pass(pageAction, '/client_service/browser?resource='+uri)} );
+        }
+        
+        this.child('#menu_images').menu = menu;
+        this.child('#menu_resources').menu = menu;        
+    }, 
    
 });
 

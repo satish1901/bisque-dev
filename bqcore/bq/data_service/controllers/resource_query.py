@@ -264,7 +264,7 @@ def p_error(p):
 yacc.yacc(outputdir=data_path(), debug= 0)
 
 
-def prepare_permissions (query, user_id, with_public, action):
+def prepare_permissions (query, user_id, with_public, action = RESOURCE_READ):
     # get system supplied user ID
     public_vals = { 'false': False, '0': False, 'private':False, 0:False,
                     'true': True, '1': True, 'public': True, 1:True
@@ -852,6 +852,22 @@ def resource_delete(resource, user_id=None):
     q.delete()
     session.delete(resource)
     log.debug('resource delete %s' % resource)
+
+
+def resource_types(user_id=None, wpublic=False):
+    'return all toplevel resource types available to user'
+    #names = [ x[0] for x in DBSession.query(Taggable.resource_type).distinct().all() ]
+    query = session.query(Taggable).filter_by(parent=None)
+    query = prepare_permissions(query, user_id=user_id, with_public=wpublic)
+    vsall = query.distinct(Taggable.resource_type).order_by(Taggable.resource_type).all()
+    # for sqlite (no distinct on)
+    try:        
+        vsall = unique(vsall, lambda x: x.resource_type)
+        #log.debug ("tag_names query = %s" % sq1)
+        return [ x.resource_type for x in vsall ] 
+    except (IndexError, StopIteration):
+        return []
+    return vsall
 
 
 def prepare_query_expr (query, resource_type, user_id, wpublic, parent, tag_query, **kw):

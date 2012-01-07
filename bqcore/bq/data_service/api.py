@@ -103,6 +103,12 @@ def get_resource(resource, server=None, **kw):
     if server is None: server = service_registry.find_service ('data_service')
     return server.get_resource(resource, **kw)
 
+def del_resource(resource, server=None, **kw):
+    ''' Create a new resource
+    '''
+    if server is None: server = service_registry.find_service ('data_service')
+    return server.del_resource(resource, **kw)
+
 def load(resource_url, **kw):
     '''Return XML resource document
     '''

@@ -7,6 +7,9 @@ import os, subprocess, shutil,glob
 def extend_parser(optparse_parser):
     optparse_parser.add_option('--repo', help='Specify a repository to bootstrap from', 
                                default= 'http://biodev.ece.ucsb.edu/hg/bisque-stable')
+    optparse_parser.add_option('--engine', action="store_true",
+                               help='Specify a repository to bootstrap from', 
+                               default= False)
 
 def adjust_options(options, args):
     options.no_site_packages=True
@@ -21,9 +24,27 @@ def after_install(options, home_dir):
                      '-i', 'http://www.turbogears.org/2.1/downloads/current/index',
                      'tg.devtools'])
     subprocess.call([os.path.join(home_dir, bin, 'easy_install'),
-                     'mercurial'])
-    subprocess.call([os.path.join(home_dir, bin, 'easy_install'),
                      'paver'])
+
+    if options.engine:
+       engine_install(options, home_dir)
+    else:
+       bisque_install(options, home_dir)
+      
+
+def engine_install(options, home_dir):
+    subprocess.call([os.path.join(home_dir, bin, 'pip'),
+                     '-i', 'http://biodev.ece.ucsb.edu/binaries/depot',
+                     'bqengine'])
+    print "*********************************"
+    print "* Execute the following commands*"
+    print "source bqenv/bin/activate"
+    print "bq-admin setup engine"
+
+def bisque_install(options, home_dir):
+    subprocess.call([os.path.join(home_dir, bin, 'easy_install'),
+                     'mercurial'])
+
     print "********************************"
     print "**     Fetching bisque        **"
     print "********************************"
