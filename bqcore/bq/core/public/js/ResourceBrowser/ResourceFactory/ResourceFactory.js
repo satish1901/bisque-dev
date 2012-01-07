@@ -1,101 +1,96 @@
 
 Bisque.ResourceBrowser.ResourceFactory = function(config)
 {
-    try
+    var resType = (config.resource.xmltag=="resource")?config.resource.type:config.resource.xmltag; 
+    
+    switch (resType)
     {
-        var resType = (config.resource.xmltag=="resource")?config.resource.type:config.resource.xmltag; 
-        
-        switch (resType)
-        {
-        	// TODO: Change to a 2D mapping table
-            case 'images':
-            case 'image':
-                switch (config.layoutKey)
-                {
-                    case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.COMPACT :
-                        return new Bisque.ResourceBrowser.ResourceFactory.ImageResourceCompact(config);
-                        break;
-                    case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.CARD :
-                        return new Bisque.ResourceBrowser.ResourceFactory.ImageResourceCard(config);
-                        break;
-                    case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PSTRIP :
-                        return new Bisque.ResourceBrowser.ResourceFactory.ImageResourcePStrip(config);
-                        break;
-                    case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PSTRIP_BIG :
-                        return new Bisque.ResourceBrowser.ResourceFactory.ImageResourcePStripBig(config);
-                        break;
-                    case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.FULL :
-                        return new Bisque.ResourceBrowser.ResourceFactory.ImageResourceFull(config);
-                        break;
-                    default :
-                        throw new Error('ResourceFactory: Unrecognized resource layout key - '
-                        + config.layoutKey);
-                }
-                break;
-            case 'mex':
-                switch (config.layoutKey)
-                {
-                    case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.COMPACT :
-                    case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.CARD :
-                    case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PSTRIP :
-                    case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PSTRIP_BIG :
-                    case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.FULL :
-                        return new Bisque.ResourceBrowser.ResourceFactory.MexResourceCompact(config);
-                        break;
-                    case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.LIST :
-                        return new Bisque.ResourceBrowser.ResourceFactory.MexResourceList(config);
-                        break;
-                    default :
-                        throw new Error('ResourceFactory: Unrecognized resource layout key - '
-                        + config.layoutKey);
-                }
-                break;
-            case 'module':
-                switch (config.layoutKey)
-                {
-                    case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.COMPACT :
-                    case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.CARD :
-                    case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PSTRIP :
-                    case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PSTRIP_BIG :
-                    case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.FULL :
-                        return new Bisque.ResourceBrowser.ResourceFactory.ModuleResourceCompact(config);
-                        break;
-                    case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.LIST :
-                        return new Bisque.ResourceBrowser.ResourceFactory.ModuleResourceList(config);
-                        break;
-                    case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.ICON_LIST :
-                        return new Bisque.ResourceBrowser.ResourceFactory.ModuleResourceIconList(config);
-                        break;
-                    default :
-                        throw new Error('ResourceFactory: Unrecognized resource layout key - '
-                        + config.layoutKey);
-                }
-                break;
-            case 'dataset':
-                switch (config.layoutKey)
-                {
-                    case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.COMPACT :
-                    case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.CARD :
-                    case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PSTRIP :
-                    case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PSTRIP_BIG :
-                    case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.FULL :
-                        return new Bisque.ResourceBrowser.ResourceFactory.DatasetResourceCompact(config);
-                        break;
-                    case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.LIST :
-                        return new Bisque.ResourceBrowser.ResourceFactory.DatasetResourceList(config);
-                        break;
-                    default :
-                        throw new Error('ResourceFactory: Unrecognized resource layout key - '
-                        + config.layoutKey);
-                }
-                break;
-            default :
-                throw new Error('ResourceFactory: Unknown resource type: ' + config.resource.type);
-        }
-    }
-    catch (error)
-    {
-        console.log(error.message);
+    	// TODO: Change to a 2D mapping table
+        case 'images':
+        case 'image':
+            switch (config.layoutKey)
+            {
+                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.COMPACT :
+                    return new Bisque.ResourceBrowser.ResourceFactory.ImageResourceCompact(config);
+                    break;
+                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.CARD :
+                    return new Bisque.ResourceBrowser.ResourceFactory.ImageResourceCard(config);
+                    break;
+                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PSTRIP :
+                    return new Bisque.ResourceBrowser.ResourceFactory.ImageResourcePStrip(config);
+                    break;
+                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PSTRIP_BIG :
+                    return new Bisque.ResourceBrowser.ResourceFactory.ImageResourcePStripBig(config);
+                    break;
+                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.FULL :
+                    return new Bisque.ResourceBrowser.ResourceFactory.ImageResourceFull(config);
+                    break;
+                default :
+                    throw new Error('ResourceFactory: Unrecognized resource layout key - '
+                    + config.layoutKey);
+            }
+            break;
+        case 'mex':
+            switch (config.layoutKey)
+            {
+                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.COMPACT :
+                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.CARD :
+                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PSTRIP :
+                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PSTRIP_BIG :
+                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.FULL :
+                    return new Bisque.ResourceBrowser.ResourceFactory.MexResourceCompact(config);
+                    break;
+                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.LIST :
+                    return new Bisque.ResourceBrowser.ResourceFactory.MexResourceList(config);
+                    break;
+                default :
+                    throw new Error('ResourceFactory: Unrecognized resource layout key - '
+                    + config.layoutKey);
+            }
+            break;
+        case 'module':
+            switch (config.layoutKey)
+            {
+                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.COMPACT :
+                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.CARD :
+                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PSTRIP :
+                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PSTRIP_BIG :
+                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.FULL :
+                    return new Bisque.ResourceBrowser.ResourceFactory.ModuleResourceCompact(config);
+                    break;
+                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.LIST :
+                    return new Bisque.ResourceBrowser.ResourceFactory.ModuleResourceList(config);
+                    break;
+                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.ICON_LIST :
+                    return new Bisque.ResourceBrowser.ResourceFactory.ModuleResourceIconList(config);
+                    break;
+                default :
+                    throw new Error('ResourceFactory: Unrecognized resource layout key - '
+                    + config.layoutKey);
+            }
+            break;
+        case 'dataset':
+            switch (config.layoutKey)
+            {
+                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.COMPACT :
+                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.CARD :
+                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PSTRIP :
+                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PSTRIP_BIG :
+                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.FULL :
+                    return new Bisque.ResourceBrowser.ResourceFactory.DatasetResourceCompact(config);
+                    break;
+                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.LIST :
+                    return new Bisque.ResourceBrowser.ResourceFactory.DatasetResourceList(config);
+                    break;
+                default :
+                    throw new Error('ResourceFactory: Unrecognized resource layout key - '
+                    + config.layoutKey);
+            }
+            break;
+        default :
+            return new Bisque.ResourceBrowser.ResourceFactory.Resource(config);
+            
+            //throw new Error('ResourceFactory: Unknown resource type: ' + config.resource.type);
     }
 };
 
@@ -225,8 +220,36 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.Resource',
     	this.layoutMgr=layoutMgr;
     },
     loadResource : Ext.emptyFn,	//Callback fn when data is loaded 
-    updateContainer : Ext.emptyFn,	//Render resource view into container when resource data is loaded
+
+    //Render a default resource view into container when resource data is loaded
+    updateContainer : function()
+    {
+        this.setLoading(false);
+        
+        // default data shown
+        var name = Ext.create('Ext.container.Container', {
+            cls : 'lblHeading1',
+            html : this.resource.name,
+        })
+
+        var type = Ext.create('Ext.container.Container', {
+            cls : 'lblHeading2',
+            html : this.resource.resource_type,
+        })
+
+        var value = Ext.create('Ext.container.Container', {
+            cls : 'lblContent',
+            html : this.resource.ts,
+        })
+
+        this.add([name, type, value]);
+    },
     
+    afterRenderFn : function()
+    {
+        this.updateContainer();
+    },
+
     manageEvents : function()
     {
     	this.on('afterrender', Ext.Function.createInterceptor(this.afterRenderFn, this.preAfterRender, this));
