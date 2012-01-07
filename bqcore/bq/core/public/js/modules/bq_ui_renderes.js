@@ -276,6 +276,7 @@ Ext.define('BQ.selectors.Resource', {
     onselected: function(R) {
         this.selected_resource = R;
         this.resource.value = R.uri;
+        this.resource.type = R.resource_type;
         if (!this.validate()) return;
        
         // !!!!!!!!!!!!!!!!!!!!!!!!

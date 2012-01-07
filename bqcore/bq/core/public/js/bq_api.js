@@ -1584,7 +1584,7 @@ BQModule.prototype.updateTemplates = function () {
             
             if ('iterable' in e.template) {
                 iterable_names.push(e.template.iterable);
-                iterable_recources[e.template.iterable] = e.name;
+                iterable_recources[e.template.iterable] = e;
             }
         }
     }
@@ -1625,8 +1625,10 @@ BQModule.prototype.createMEX = function( ) {
     if (this.iterables && this.iterables.length>0) {
         var tag_execute = mex.addtag ({name:'execute_options'});
         var i = undefined;
-        for (var p=0; (i=this.iterables[p]); p++)
-            tag_execute.addtag({name:'iterable', value:i});
+        for (var p=0; (i=this.iterables[p]); p++) {
+            if (i.type == 'dataset')
+                tag_execute.addtag({name:'iterable', value:i.name});
+        }
     }
     
     return mex;
