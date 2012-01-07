@@ -8,7 +8,7 @@
                 <tag name="label" value="Image to extract metadata" />
                 <tag name="prohibit_upload" value="true" type="boolean" />
                 <tag name="iterable" value="iterable-001" />
-            </tag>                
+            </tag>
         </tag> 
                         
         <tag name="mex_url"  type="system-input" />
