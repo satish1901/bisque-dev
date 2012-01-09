@@ -140,7 +140,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourceCompact',
 	    		dismissDelay: 0,
 	    		style: 'background-color:#FAFAFA;border: solid 2px #E0E0E0;',
 	    		layout: 'hbox',
-	    		
+	    		autoHide : false,
 	    		listeners : 
 	    		{
 	    			"beforeshow" : function(me){if (!this.tagsLoaded || !this.mouseIn) return false;},

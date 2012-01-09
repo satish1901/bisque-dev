@@ -41,6 +41,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceCompact',
 	    		cls:'LightShadow',
 	    		style:'background-color:#FAFAFA;border: solid 3px #E0E0E0;',
 	    		layout:'hbox',
+                autoHide : false,
 	    		listeners : 
 	    		{
 	    			"afterrender" : function(me){if (!this.tagsLoaded) me.setLoading({msg:''})},
@@ -175,6 +176,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceList',
 	    		cls:'LightShadow',
 	    		style:'background-color:#FAFAFA;border: solid 3px #E0E0E0;',
 	    		layout:'hbox',
+                autoHide : false,
 	    		listeners : 
 	    		{
 	    			"afterrender" : function(me){if (!this.tagsLoaded) me.setLoading({msg:''})},

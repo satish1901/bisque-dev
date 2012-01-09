@@ -108,6 +108,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ModuleResourceList',
 	    		cls:'LightShadow',
 	    		style:'background-color:#FAFAFA;border: solid 3px #E0E0E0;',
 	    		layout:'hbox',
+                autoHide : false,
 	    		listeners : 
 	    		{
 	    			"afterrender" : function(me){if (!this.tagsLoaded) me.setLoading({msg:''})},
