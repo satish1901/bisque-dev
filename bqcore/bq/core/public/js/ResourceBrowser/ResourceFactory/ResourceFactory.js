@@ -211,7 +211,11 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.Resource',
         return propsGrid
     },
 
-    getData : function(tag) {return this.resQ.getMyData(this.resource.uri, tag)},
+    getData : function(tag) 
+    {
+        if (this.resQ)
+            return this.resQ.getMyData(this.resource.uri, tag);
+    },
     setData : function(tag, value) {this.resQ.storeMyData(this.resource.uri, tag, value)},
     // Resource functions 
     prefetch : function(layoutMgr)	//Code to prefetch resource data
@@ -255,7 +259,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.Resource',
     
     preAfterRender : function()
     {
-		//this.setLoadingMask();	// Put a mask on the resource container while loading
+		this.setLoadingMask();	// Put a mask on the resource container while loading
 		var el=this.getEl();
 
 		el.on('mouseenter', Ext.Function.createSequence(this.preMouseEnter, this.onMouseEnter, this), this);
