@@ -1461,6 +1461,8 @@ BQUser.prototype.initializeXml = function (user) {
     //this.email_address = attribStr (user, 'email_address');
 
     this.user_name = attribStr(user,'name');
+    this.name = attribStr(user,'name');
+    this.value = attribStr(user,'value');
     this.display_name = this.user_name;
   
     this.email = attribStr(user, 'value');

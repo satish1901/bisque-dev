@@ -45,7 +45,6 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
                     this.parentCt.hideCollapseTool = false;
                     this.parentCt.collapse();
                 },
-
                 scope : this
             }]
         });
@@ -374,7 +373,11 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
 
     SetTitle : function()
     {
-        this.setTitle('Tag|Value : <span class="TagStyle">' + this.tag + ':' + this.sortOrder + '|' + this.value + '</span>');
+        var tag = this.tag || '';
+        tag += this.sortOrder ? ':'+this.sortOrder : '';
+        tag += this.value.length!=0 ? '|'+this.value : '';
+        
+        this.setTitle('Tag|Value : <span class="TagStyle">' + tag + '</span>');
     },
 
     SortComboBox : function(dir)

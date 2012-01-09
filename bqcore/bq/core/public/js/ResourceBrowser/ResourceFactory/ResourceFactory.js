@@ -161,7 +161,6 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.Resource',
             border : false,
             cls : 'LightShadow',
             overCls : 'resource-view-over',
-			//style: 'float:left; background-color:#FFF'
 			style: 'float:left;'
         });
         
@@ -224,8 +223,6 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.Resource',
     //Render a default resource view into container when resource data is loaded
     updateContainer : function()
     {
-        this.setLoading(false);
-        
         // default data shown
         var name = Ext.create('Ext.container.Container', {
             cls : 'lblHeading1',
@@ -239,10 +236,11 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.Resource',
 
         var value = Ext.create('Ext.container.Container', {
             cls : 'lblContent',
-            html : this.resource.ts,
+            html : this.resource.value,
         })
 
         this.add([name, type, value]);
+        this.setLoading(false);
     },
     
     afterRenderFn : function()
@@ -257,7 +255,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.Resource',
     
     preAfterRender : function()
     {
-		this.setLoadingMask();	// Put a mask on the resource container while loading
+		//this.setLoadingMask();	// Put a mask on the resource container while loading
 		var el=this.getEl();
 
 		el.on('mouseenter', Ext.Function.createSequence(this.preMouseEnter, this.onMouseEnter, this), this);
@@ -283,7 +281,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.Resource',
 				}
 			]);
     },
-    
+
     preClick : function()
     {
         this.msgBus.fireEvent('ResourceSingleClick', this.resource);
