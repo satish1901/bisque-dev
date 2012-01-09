@@ -445,7 +445,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourcePStripBig',
 		this.setLoading(false);
 	},
     
-    preAfterRender : this.setLoadingMask,
+    preAfterRender : Ext.emptyFn,
     afterRenderFn : Ext.emptyFn
 });
 

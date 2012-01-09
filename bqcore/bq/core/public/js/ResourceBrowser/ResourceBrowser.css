@@ -266,23 +266,24 @@
     color: #555;
     background:#f4f4f4;
     text-shadow: 1px 1px 1px #CCC;
-    font-size: 13px;
     font-weight:bold;
     font-family: tahoma, arial, verdana, sans-serif !important;
-    padding: 5px;    
+    word-wrap: break-word;
+    padding: 3px;    
 }
 
 .lblHeading2{
     color: #07AD0C;
     background:#f4f4f4;
     text-shadow: 1px 1px 1px #CCC;
-    font-size: 12px;
     font-family: tahoma, arial, verdana, sans-serif !important;
-    padding: 5px;    
+    word-wrap: break-word;
+    padding: 3px;    
 }
 
 .lblContent{
     padding: 5px;
+    word-wrap: break-word;
 }
 
 

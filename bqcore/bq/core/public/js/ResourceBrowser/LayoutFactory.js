@@ -427,8 +427,8 @@ Ext.define('Bisque.ResourceBrowser.LayoutFactory.PhotoStripLayout',
 			duration: 180,
 		});
 		
-		res.setLoading({msg:''});
-		
+        if (!res.rendered)
+            res.setLoading({msg:''});
 		if (layoutMgr.proxyPnl.items.length>1)
 			layoutMgr.proxyPnl.getComponent(layoutMgr.proxyPnl.items.length-1).destroy();
 	},
