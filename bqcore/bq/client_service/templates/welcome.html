@@ -106,11 +106,18 @@
 </script>
 
 
+<script type="text/javascript" >
+    var my_items = [];
+</script>
+
+
 <script py:if="not tg.identity" type="text/javascript" >
 
     Ext.onReady( function() { 
+        this.recentsExplorer.setTitle('Explore published data');
        
         var moduleBrowser = new Bisque.ResourceBrowser.Browser({
+            title: 'Applications',
             layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.ICON_LIST,
             viewMode: 'ModuleBrowser',
             dataset: '/module_service',
@@ -124,9 +131,7 @@
                        scope: this },          
           
         });
-        this.recentsExplorer.setTitle('Applications');
-        this.recentsExplorer.add(moduleBrowser);
-        
+        my_items.push(moduleBrowser);
      
         var s = '<a href="browser"><img src="';
         s += '${tg.url('/client_service/public/images/browse_80.png')}';
@@ -146,8 +151,6 @@
             defaults: { border: 0, }, 
             items: [{ html: s, width: 140, height: 230, cls: 'explore' },],
         });      
-     
-     
     });
 </script>
 
@@ -164,9 +167,47 @@
     });
 </script>
 
+<script type="text/javascript" >
+    Ext.onReady( function() { 
+        var imgBrowser = new Bisque.ResourceBrowser.Browser({
+          title : 'Images',
+          viewMode: 'ViewerOnly',
+          tagOrder: '"@ts":desc',          
+          selType: 'SINGLE',          
+          wpublic: false,
+          border: true,
+          cls: 'welcome',          
+          listeners: { 'Select': function(me, resource) { 
+                          window.open(bq.url('/client_service/view?resource='+resource.uri)); 
+                       }, 
+                       scope: this },    
+        });  
+        
+        var setBrowser = new Bisque.ResourceBrowser.Browser({
+          layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.LIST,
+          title: 'Datasets',
+          viewMode: 'ViewerOnly',
+          tagOrder: '"@ts":desc',          
+          dataset: '/data_service/dataset',
+          selType: 'SINGLE',          
+          wpublic: false,
+          border: true,
+          cls: 'welcome',          
+          listeners: { 'Select': function(me, resource) { 
+                          window.open(bq.url('/client_service/view?resource='+resource.uri)); 
+                       }, 
+                       scope: this },    
+        });        
+
+        my_items.push(imgBrowser); 
+        my_items.push(setBrowser);  
+    });
+</script>
+
 <script py:if="tg.identity" type="text/javascript" >
     Ext.onReady( function() { 
-
+        this.recentsExplorer.setTitle('My recent stuff');
+        
         var mexBrowser = new Bisque.ResourceBrowser.Browser({
           layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.LIST,
           title : 'Analysis',
@@ -181,36 +222,13 @@
                           window.open( bq.url('/module_service/'+resource.name+'/?mex='+resource.uri) );
                        }, 
                        scope: this },    
-        });    
-        
-        var imgBrowser = new Bisque.ResourceBrowser.Browser({
-          title : 'Images',
-          tagOrder: '"@ts":desc',          
-          selType: 'SINGLE',          
-          wpublic: false,
-          border: true,
-          cls: 'welcome',          
-          listeners: { 'Select': function(me, resource) { 
-                          window.open(bq.url('/client_service/view?resource='+resource.uri)); 
-                       }, 
-                       scope: this },    
-        });    
-        
-        var setBrowser = new Bisque.ResourceBrowser.Browser({
-          layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.LIST,
-          title: 'Datasets',
-          tagOrder: '"@ts":desc',          
-          dataset: '/data_service/dataset',
-          selType: 'SINGLE',          
-          wpublic: false,
-          border: true,
-          cls: 'welcome',          
-          listeners: { 'Select': function(me, resource) { 
-                          window.open(bq.url('/client_service/view?resource='+resource.uri)); 
-                       }, 
-                       scope: this },    
-        });        
+        });   
+        my_items.push(mexBrowser); 
+    });
+</script>
 
+<script type="text/javascript" >
+    Ext.onReady( function() { 
         var tabs = Ext.create('Ext.tab.Panel', {
             region : 'east',
             activeTab : 0,
@@ -218,14 +236,12 @@
             cls: 'apps welcome',
             plain : true,
             border: false,
-            items : [imgBrowser, mexBrowser, setBrowser]
+            items : my_items,
         }); 
-     
-        this.recentsExplorer.setTitle('My recent stuff');
         this.recentsExplorer.add(tabs);     
-     
     });
 </script>
+
 
 </head>
 
