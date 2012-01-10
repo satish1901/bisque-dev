@@ -74,7 +74,15 @@
     <script type="text/javascript" src="/client_service/public/js/map/gmapPanel3.js"></script>
 
     <!-- Resource dispatch -->
-    <script type="text/javascript" src="/client_service/public/js/resourceview.js"></script>
+    <link rel="stylesheet" type="text/css" href="${bq.url('/dataset_service/public/dataset_panel.css')}" />
+    <script type="text/javascript" src="${bq.url('/dataset_service/public/dataset_operations.js')}"></script>    
+    <script type="text/javascript" src="${bq.url('/dataset_service/public/dataset_panel.js')}"></script>       
+    
+    <link rel="stylesheet" type="text/css" href="${bq.url('/js/renderers/dataset.css')}" />
+    <script type="text/javascript" src="${bq.url('/js/renderers/dataset.js')}"></script>
+    <script type="text/javascript" src="${bq.url('/client_service/public/js/resourceview.js')}"></script>
+
+
   
     <!-- Fix for templates that do not create html in the body -->
     <style type="text/css">
