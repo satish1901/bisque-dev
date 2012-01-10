@@ -2,18 +2,6 @@ h1 {
     font-size: 30px;
 }
 
-.datasets-form {
-    padding: 10px;  
-}
-
-.datasets-form .radio-published b {
-    color: #009900;
-}
-
-.datasets-form .radio-private b {
-    
-}
-
 .footer {
     padding: 10px;   
 }
