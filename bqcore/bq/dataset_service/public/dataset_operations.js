@@ -1,6 +1,6 @@
 /*******************************************************************************
 
-  BQ.dataset.Operations  - 
+  BQ.dataset.operations  - 
 
   Author: Dima Fedorov
 
@@ -17,7 +17,7 @@
 
 Ext.namespace('BQ.dataset');
 
-BQ.dataset.Operations = { 'permission' : 'BQ.dataset.Permissions', 
+BQ.dataset.operations = { 'permission' : 'BQ.dataset.Permissions', 
                           'delete'     : 'BQ.dataset.Delete', 
                           //'tagedit'    : 'BQ.dataset.Edittags',
                         };
@@ -73,11 +73,6 @@ Ext.define('BQ.dataset.Operation', {
     },    
     
     validate: function() {
-        if (!this.resource) {
-            BQ.ui.error('Selector is not configured properly, no resource is defined!'); 
-            return false;            
-        }        
-        
         return true;
     },
 
@@ -139,6 +134,10 @@ Ext.define('BQ.dataset.Permissions', {
     getArguments: function() {
         return this.form.getValues();
     },   
+
+    validate: function() {
+        return (this.title != this.getStatus());
+    },
 
 });
 
