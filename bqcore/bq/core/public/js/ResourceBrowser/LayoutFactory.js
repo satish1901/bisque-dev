@@ -1,25 +1,22 @@
-
-//Ext.namespace('Bisque.ResourceBrowser');
-
 Bisque.ResourceBrowser.LayoutFactory = function(configOpts) {
 	try {
 		switch (configOpts.browser.layoutKey) {
-			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.COMPACT :
+			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Compact :
 				return new Bisque.ResourceBrowser.LayoutFactory.CompactLayout(configOpts);
 				break;
-			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.CARD :
+			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Card :
 				return new Bisque.ResourceBrowser.LayoutFactory.CardLayout(configOpts);
 				break;
-			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PSTRIP :
+			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PStrip :
 				return new Bisque.ResourceBrowser.LayoutFactory.PhotoStripLayout(configOpts);
 				break;
-			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.FULL :
+			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Full :
 				return new Bisque.ResourceBrowser.LayoutFactory.FullLayout(configOpts);
 				break;
-			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.LIST :
+			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.List :
 				return new Bisque.ResourceBrowser.LayoutFactory.ListLayout(configOpts);
 				break;
-            case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.ICON_LIST :
+            case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.IconList :
                 return new Bisque.ResourceBrowser.LayoutFactory.IconListLayout(configOpts);
                 break;
 			default :
@@ -33,17 +30,16 @@ Bisque.ResourceBrowser.LayoutFactory = function(configOpts) {
 
 // Available layout enumerations
 Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS = {
-	"COMPACT" : 1,
-	"CARD" : 2,
-	"PSTRIP" : 3,
-	"PSTRIP_BIG" : 3.1,
-	"FULL" : 4,
-	"LIST" : 5,
-	"ICON_LIST" : 6,
-	'GRID' : 7
+	"Compact"      :   1,
+	"Card"         :   2,
+	"PStrip"       :   3,
+	"PStripBig"    :   3.1,
+	"Full"         :   4,
+	"List"         :   5,
+	"IconList"     :   6
 };
 
-Bisque.ResourceBrowser.LayoutFactory.DEFAULT_LAYOUT = Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.COMPACT;
+Bisque.ResourceBrowser.LayoutFactory.DEFAULT_LAYOUT = Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Compact;
 
 /**
  * BaseLayout: Abstract base layout from which all other layouts derive
@@ -76,7 +72,7 @@ Ext.define('Bisque.ResourceBrowser.LayoutFactory.BaseLayout',
 			autoScroll : true
 		});
 		
-		Bisque.ResourceBrowser.LayoutFactory.BaseLayout.superclass.constructor.apply(this, arguments);
+		this.callParent(arguments);
 
 		this.readCSSSettings();
 		this.manageEvents();
@@ -327,7 +323,7 @@ Ext.define('Bisque.ResourceBrowser.LayoutFactory.CompactLayout',
 	extend : 'Bisque.ResourceBrowser.LayoutFactory.BaseLayout',	
 	constructor : function()
 	{
-		Bisque.ResourceBrowser.LayoutFactory.CompactLayout.superclass.constructor.call(this, arguments[0]);
+		this.callParent(arguments);
 		this.layoutEl.imageWidth=150;
 		this.layoutEl.imageHeight=150;
 	},
@@ -364,7 +360,7 @@ Ext.define('Bisque.ResourceBrowser.LayoutFactory.PhotoStripLayout',
 	constructor : function() 
 	{
 		Ext.apply(this, {layout:{type:'vbox', align:'stretch'}});
-		Bisque.ResourceBrowser.LayoutFactory.PhotoStripLayout.superclass.constructor.call(this, arguments[0]);
+		this.callParent(arguments);
 
 		this.layoutEl.imageWidth=150;
 		this.layoutEl.imageHeight=150;
@@ -410,13 +406,14 @@ Ext.define('Bisque.ResourceBrowser.LayoutFactory.PhotoStripLayout',
 	// Private member
 	CreateBigResource : function(resource, layoutMgr) 
 	{
-		var res = Bisque.ResourceBrowser.ResourceFactory({
-			resource : resource,
-			browser : layoutMgr.browser,
-			layoutKey : Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PSTRIP_BIG,
-			msgBus : layoutMgr.msgBus,
-			bigPanel : layoutMgr.proxyPnl 
-		});
+		var res = Bisque.ResourceFactory.getResource(
+		    {
+    			resource  :  resource,
+    			browser   :  layoutMgr.browser,
+    			layoutKey :  Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PStripBig,
+    			msgBus    :  layoutMgr.msgBus,
+    			bigPanel  :  layoutMgr.proxyPnl 
+    		});
 		
 		layoutMgr.proxyPnl.add(0, res);
 		layoutMgr.proxyPnl.animate(

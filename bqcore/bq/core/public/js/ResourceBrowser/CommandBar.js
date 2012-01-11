@@ -358,16 +358,16 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 		switch (item.itemId)
 		{
 			case 'btnThumb' :
-				this.browser.changeLayoutThrottled(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.COMPACT);
+				this.browser.changeLayoutThrottled(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Compact);
 				break;
 			case 'btnCard' :
-				this.browser.changeLayoutThrottled(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.CARD);
+				this.browser.changeLayoutThrottled(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Card);
 				break;
 			case 'btnPStrip' :
-				this.browser.changeLayoutThrottled(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PSTRIP);
+				this.browser.changeLayoutThrottled(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PStrip);
 				break;
 			case 'btnFull' :
-				this.browser.changeLayoutThrottled(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.FULL);
+				this.browser.changeLayoutThrottled(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Full);
 				break;
 		}
 	},
@@ -376,16 +376,16 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 	{
 		switch(this.browser.layoutKey)
 		{
-			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.COMPACT :
+			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Compact :
 				this.getComponent('btnThumb').toggle(true, false);
 				break;
-			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.CARD :
+			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Card :
 				this.getComponent('btnCard').toggle(true, false);
 				break;
-			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PSTRIP :
+			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PStrip :
 				this.getComponent('btnPStrip').toggle(true, false);
 				break;
-			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.FULL :
+			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Full :
 				this.getComponent('btnFull').toggle(true, false);
 				break;
 		}
