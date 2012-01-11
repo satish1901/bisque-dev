@@ -120,8 +120,7 @@ Ext.define('BQ.usage.Uploads', {
                 fields: ['date'],
                 label: {
                     renderer: function(v) {
-                        return ''+v.getMonth()+'/'+v.getDate();
-                        //return v.toISOString();
+                        return Ext.Date.format(v, 'n/d');
                     }
                 },
             }],
