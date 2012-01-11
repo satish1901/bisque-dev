@@ -9,8 +9,9 @@
 
 <head>
   <meta content="text/html; charset=UTF-8" http-equiv="content-type" py:replace="''"/>
-  <title>usage</title>
+  <title>Usage</title>
   
+  <link rel="stylesheet" type="text/css" href="${bq.url('/usage/public/bq_usage_stats.css')}" />
   <script type="text/javascript" src="${tg.url('/usage/public/bq_usage_stats.js')}" ></script>
   
 
@@ -25,15 +26,10 @@ Ext.onReady(function() {
     var uploader = Ext.create('Ext.panel.Panel', {    
         closable: false,
         autoShow: true,
+        autoScroll: true,
         border: 0,
         defaults: {border: 0,},
         bodyPadding: 30,
-        
-        layout: {
-            type: 'vbox',
-            align: 'stretch',
-            pack: 'start',
-        },        
 
         items: [ {html: '<h1>Bisque usage statistics</h1>'}, usage_stats, usage_uploads, usage_analysis ],      
     });
