@@ -111,7 +111,7 @@
     Ext.onReady( function() { 
        
         var moduleBrowser = new Bisque.ResourceBrowser.Browser({
-            layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.ICON_LIST,
+            layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.IconList,
             viewMode: 'ModuleBrowser',
             dataset: '/module_service',
             wpublic: true,
@@ -168,7 +168,7 @@
     Ext.onReady( function() { 
 
         var mexBrowser = new Bisque.ResourceBrowser.Browser({
-          layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.LIST,
+          layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.List,
           title : 'Analysis',
           viewMode : 'MexBrowser',
           dataset : '/data_service/mex',
@@ -197,7 +197,7 @@
         });    
         
         var setBrowser = new Bisque.ResourceBrowser.Browser({
-          layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.LIST,
+          layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.List,
           title: 'Datasets',
           tagOrder: '"@ts":desc',          
           dataset: '/data_service/dataset',

@@ -1,7 +1,7 @@
 /* Abstract Mex resource definition (inherits from Resource abstract class) */
-Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResource',
+Ext.define('Bisque.Resource.Mex',
 {
-    extend:'Bisque.ResourceBrowser.ResourceFactory.Resource',
+    extend:'Bisque.Resource',
 
     afterRenderFn : function()
     {
@@ -12,9 +12,9 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResource',
     },
 });
 
-Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceCompact',
+Ext.define('Bisque.Resource.Mex.Compact',
 {
-    extend : 'Bisque.ResourceBrowser.ResourceFactory.MexResource',
+    extend : 'Bisque.Resource.Mex',
     
    	constructor : function()
 	{
@@ -26,7 +26,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceCompact',
             	align:'stretch'	
             }
         });
-		Bisque.ResourceBrowser.ResourceFactory.MexResourceCompact.superclass.constructor.apply(this, arguments);
+		this.callParent(arguments);
 		this.addCls('compact');		
 	},
 	
@@ -93,18 +93,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceCompact',
         if (!this.getData('fetched'))
         {
             this.setData('fetched', -1);	//Loading
-
-			/*if (this.resource.module.indexOf(window.location.host)!=-1)	// Load module names if running on
-			{
-				BQFactory.request(
-				{
-					uri:this.resource.module,
-					cb:Ext.bind(this.loadResource, this),
-					errorcb:Ext.emptyFn
-				});
-			}
-			else*/
-				this.loadResource({name:'Module.NoName'});
+            this.loadResource({name:'Module.NoName'});
 		}
     },
     
@@ -147,9 +136,9 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceCompact',
     },
 });
 
-Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceList',
+Ext.define('Bisque.Resource.Mex.List',
 {
-    extend : 'Bisque.ResourceBrowser.ResourceFactory.MexResource',
+    extend : 'Bisque.Resource.Mex',
     
    	constructor : function()
 	{
@@ -176,7 +165,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceList',
 	    		cls:'LightShadow',
 	    		style:'background-color:#FAFAFA;border: solid 3px #E0E0E0;',
 	    		layout:'hbox',
-                autoHide : false,
+                //autoHide : false,
 	    		listeners : 
 	    		{
 	    			"afterrender" : function(me){if (!this.tagsLoaded) me.setLoading({msg:''})},
@@ -199,6 +188,13 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceList',
     	}
     	this.callParent(arguments);
     },
+    
+    onMouseLeave : function(e)
+    {
+        this.mouseIn=false;
+        this.callParent(arguments);
+    },
+    
     
 	tagData : function(data)
 	{

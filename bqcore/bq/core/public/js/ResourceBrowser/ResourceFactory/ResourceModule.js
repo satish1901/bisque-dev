@@ -1,7 +1,7 @@
 /* Abstract Module resource definition (inherits from Resource abstract class) */
-Ext.define('Bisque.ResourceBrowser.ResourceFactory.ModuleResource',
+Ext.define('Bisque.Resource.Module',
 {
-    extend:'Bisque.ResourceBrowser.ResourceFactory.Resource',
+    extend:'Bisque.Resource',
 
     afterRenderFn : function()
     {
@@ -12,9 +12,9 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ModuleResource',
     },
 });
 
-Ext.define('Bisque.ResourceBrowser.ResourceFactory.ModuleResourceCompact',
+Ext.define('Bisque.Resource.Module.Compact',
 {
-    extend : 'Bisque.ResourceBrowser.ResourceFactory.ModuleResource',
+    extend : 'Bisque.Resource.Module',
     
    	constructor : function()
 	{
@@ -27,7 +27,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ModuleResourceCompact',
             }
         });
 	
-		Bisque.ResourceBrowser.ResourceFactory.ModuleResourceCompact.superclass.constructor.apply(this, arguments);
+		this.callParent(arguments);
         this.addCls('compact');		
 	},
 
@@ -79,9 +79,9 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ModuleResourceCompact',
     },
 });
 
-Ext.define('Bisque.ResourceBrowser.ResourceFactory.ModuleResourceList',
+Ext.define('Bisque.Resource.Module.List',
 {
-    extend : 'Bisque.ResourceBrowser.ResourceFactory.ModuleResource',
+    extend : 'Bisque.Resource.Module',
     
    	constructor : function()
 	{
@@ -94,7 +94,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ModuleResourceList',
             }
         });
 		
-		Bisque.ResourceBrowser.ResourceFactory.ModuleResourceList.superclass.constructor.apply(this, arguments);
+		this.callParent(arguments);
 	},
     
     afterRenderFn : function(me)
@@ -218,9 +218,9 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ModuleResourceList',
     },
 });
 
-Ext.define('Bisque.ResourceBrowser.ResourceFactory.ModuleResourceIconList',
+Ext.define('Bisque.Resource.Module.IconList',
 {
-    extend : 'Bisque.ResourceBrowser.ResourceFactory.ModuleResourceList',
+    extend : 'Bisque.Resource.Module.List',
 
     initComponent : function() {
         this.addCls('icon-list');
@@ -267,7 +267,6 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ModuleResourceIconList',
         var moduleDesc=new Ext.form.Label({
             html:description,
             padding:'7 2 0 3',
-            //style:'color:#555'
         })
         
         var rightCt=Ext.create('Ext.container.Container',
