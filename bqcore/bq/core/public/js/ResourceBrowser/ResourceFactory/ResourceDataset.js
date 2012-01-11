@@ -1,7 +1,7 @@
 /* Abstract Dataset resource definition (inherits from Resource abstract class) */
-Ext.define('Bisque.ResourceBrowser.ResourceFactory.DatasetResource',
+Ext.define('Bisque.Resource.Dataset',
 {
-    extend:'Bisque.ResourceBrowser.ResourceFactory.Resource',
+    extend:'Bisque.Resource',
 
     afterRenderFn : function()
     {
@@ -12,9 +12,9 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.DatasetResource',
     },
 });
 
-Ext.define('Bisque.ResourceBrowser.ResourceFactory.DatasetResourceCompact',
+Ext.define('Bisque.Resource.Dataset.Compact',
 {
-    extend : 'Bisque.ResourceBrowser.ResourceFactory.DatasetResource',
+    extend : 'Bisque.Resource.Dataset',
     
    	constructor : function()
 	{
@@ -84,9 +84,9 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.DatasetResourceCompact',
     },
 });
 
-Ext.define('Bisque.ResourceBrowser.ResourceFactory.DatasetResourceList',
+Ext.define('Bisque.Resource.Dataset.List',
 {
-    extend : 'Bisque.ResourceBrowser.ResourceFactory.DatasetResourceCompact',
+    extend : 'Bisque.Resource.Dataset.Compact',
     
    	constructor : function()
 	{
@@ -131,5 +131,3 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.DatasetResourceList',
         this.setLoading(false);
     },
 });
-
-

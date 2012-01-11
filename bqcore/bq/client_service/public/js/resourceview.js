@@ -11,8 +11,6 @@ Ext.require(['Ext.window.*', 'Ext.ux.GMapPanel']);
 function ResourceDispatch(user_url, imagediv, tagdiv)
 {
     this.user_url = user_url;
-    this.imagediv = imagediv;
-    this.tagdiv = tagdiv;
 }
 
 ResourceDispatch.prototype.dispatch = function(resource) {
@@ -59,7 +57,7 @@ ResourceDispatch.prototype.dispatch_image = function(bqimage)
         'title' : 'Execution Results',
         'viewMode' : 'MexBrowser',
         'dataset' : '/data_service/mex',
-        'tagQuery' : Ext.String.format('"{0}":"{1}"', 'image_url', ( bqimage instanceof BQObject) ? bqimage.uri : bqimage),
+        'tagQuery' : (bqimage instanceof BQObject)?bqimage.uri:bqimage,
         'wpublic' : true,
 
         mexLoaded : false,
@@ -153,7 +151,6 @@ ResourceDispatch.prototype.dispatch_image = function(bqimage)
         }
     });
     resTab.add(gobjectTagger);
-
    
     var map = Ext.create('BQ.gmap.GMapPanel3',  {
         title: 'Map',
@@ -167,6 +164,7 @@ ResourceDispatch.prototype.dispatch_image = function(bqimage)
 
 ResourceDispatch.prototype.dispatch_dataset = function(resource) {
     BQApp.resource = resource;
+    resource.resource = resource;
     BQApp.main.getComponent('centerEl').setLoading(false);
     
     var renderer = Ext.create('BQ.renderers.dataset', {

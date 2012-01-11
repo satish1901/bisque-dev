@@ -44,7 +44,7 @@ function analysisAction(o, e) {
     
     //var resourceBrowser  = new Bisque.ResourceBrowser.Dialog({    
     var resourceBrowser  = new Bisque.ResourceBrowser.Browser({
-        layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.ICON_LIST,
+        layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.IconList,
         wpublic: true,
         selType: 'SINGLE',        
         viewMode: 'ModuleBrowser',

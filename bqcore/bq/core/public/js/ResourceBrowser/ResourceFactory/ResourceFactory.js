@@ -1,12 +1,39 @@
+Ext.define('Bisque.ResourceFactory', {
 
-Bisque.ResourceBrowser.ResourceFactory = function(config)
+    statics : {
+
+        baseClass : 'Bisque.Resource',
+
+        getResource : function(config) {
+            var resourceType = (config.resource.xmltag=="resource")?config.resource.resource_type:config.resource.xmltag;
+            var layoutKey = Ext.Object.getKey(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS, config.layoutKey);
+            
+            // resource naming convention : classPrefix.resourceType.layoutKey
+            var className = Bisque.ResourceFactory.baseClass + '.' + Ext.String.capitalize(resourceType.toLowerCase()) + '.' + layoutKey;
+            
+            if (Ext.ClassManager.get(className))
+                return Ext.create(className, config);
+            else
+            {
+                Ext.log({
+                    msg     :   Ext.String.format('Unknown class: {0}, type: {1}, layoutKey: {2}. Initializing with base resource class.', className, resourceType, layoutKey),
+                    level   :   'warn',
+                    stack   :   true
+                });
+                return Ext.create(Bisque.ResourceFactory.baseClass, config);
+            }
+        }
+    }
+})
+
+
+Bisque.ResourceFactory12 = function(config)
 {
     var resType = (config.resource.xmltag=="resource")?config.resource.type:config.resource.xmltag; 
     
     switch (resType)
     {
     	// TODO: Change to a 2D mapping table
-        case 'images':
         case 'image':
             switch (config.layoutKey)
             {
@@ -96,7 +123,7 @@ Bisque.ResourceBrowser.ResourceFactory = function(config)
 
 
 // Returns standalone resources 
-Bisque.ResourceBrowser.ResourceFactoryWrapper = function(config)
+Bisque.ResourceFactoryWrapper = function(config)
 {
 		config.resourceManager = Ext.create('Ext.Component', 
 		{
@@ -109,8 +136,8 @@ Bisque.ResourceBrowser.ResourceFactoryWrapper = function(config)
 			
 			getMyData : function(uri, tag)
 			{
-				if (this.store[tag])
-						return this.store[tag];
+                if (this.store[tag])
+                    return this.store[tag];
 				return 0;
 			}
 		});
@@ -126,7 +153,7 @@ Bisque.ResourceBrowser.ResourceFactoryWrapper = function(config)
 			height : config.height || 160 
 		});
 			
-		var resource = Bisque.ResourceBrowser.ResourceFactory(config);
+		var resource = Bisque.ResourceFactory.getResource(config);
 		
 		resource.prefetch({layoutEl:{width:config.width-10, imageWidth:config.width-10, imageHeight:config.height-10}});
 		resource.setSize({width:config.width, height:config.height});
@@ -144,7 +171,7 @@ Bisque.ResourceBrowser.ResourceFactoryWrapper = function(config)
  *            object, layoutKey : layout key according to which the resource
  *            object will be formatted
  */
-Ext.define('Bisque.ResourceBrowser.ResourceFactory.Resource',
+Ext.define('Bisque.Resource',
 {
     extend:'Ext.container.Container',
 
@@ -164,7 +191,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.Resource',
 			style: 'float:left;'
         });
         
-        Bisque.ResourceBrowser.ResourceFactory.Resource.superclass.constructor.apply(this, arguments);
+        this.callParent(arguments);
         this.manageEvents();
     },
     
@@ -180,7 +207,6 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.Resource',
         {
             autoHeight : configOpts.autoHeight,
             style : "text-overflow:ellipsis;"+configOpts.style,
-            //height : configOpts.height,
             width : configOpts.width,
             store : Ext.create('Ext.data.Store',
             {
@@ -225,6 +251,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.Resource',
     loadResource : Ext.emptyFn,	//Callback fn when data is loaded 
 
     //Render a default resource view into container when resource data is loaded
+    //(can be overridden for a customized view of the resource)
     updateContainer : function()
     {
         // default data shown
