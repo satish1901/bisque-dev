@@ -1,7 +1,7 @@
 /* Abstract Image resource definition (inherits from Resource abstract class) */
-Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResource',
+Ext.define('Bisque.Resource.Image',
 {
-    extend:'Bisque.ResourceBrowser.ResourceFactory.Resource',
+    extend:'Bisque.Resource',
 
     // Two functions for speed
     GetImageThumbnailRel : function(params, size, full)
@@ -121,9 +121,9 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResource',
     
 });
 
-Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourceCompact',
+Ext.define('Bisque.Resource.Image.Compact',
 {
-    extend : 'Bisque.ResourceBrowser.ResourceFactory.ImageResource',
+    extend : 'Bisque.Resource.Image',
     
   	afterRenderFn : function(e)
   	{
@@ -207,7 +207,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourceCompact',
 	    
     prefetch : function(layoutMgr)
     {
-    	Bisque.ResourceBrowser.ResourceFactory.ImageResourceCompact.superclass.prefetch(layoutMgr);
+    	this.callParent(arguments);
     	
         if (!this.getData('fetched'))
         {
@@ -249,9 +249,9 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourceCompact',
     },
 });
 
-Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourceCard',
+Ext.define('Bisque.Resource.Image.Card',
 {
-    extend : 'Bisque.ResourceBrowser.ResourceFactory.ImageResource',
+    extend : 'Bisque.Resource.Image',
 
 	constructor : function()
 	{
@@ -269,7 +269,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourceCard',
 	
     prefetch : function(layoutMgr)
     {
-    	Bisque.ResourceBrowser.ResourceFactory.ImageResourceCard.superclass.prefetch(layoutMgr);
+    	this.callParent(arguments);
 
         if (!this.getData('fetched'))
         {
@@ -358,9 +358,9 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourceCard',
 	onMouseMove : Ext.emptyFn,
 });
 
-Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourcePStrip',
+Ext.define('Bisque.Resource.Image.PStrip',
 {
-    extend:'Bisque.ResourceBrowser.ResourceFactory.ImageResourceCompact',
+    extend:'Bisque.Resource.Image.Compact',
 
     onClick : function()
     {
@@ -376,9 +376,9 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourcePStrip',
     requestTags : Ext.emptyFn,
 });
 
-Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourcePStripBig',
+Ext.define('Bisque.Resource.Image.PStripBig',
 {
-    extend:'Bisque.ResourceBrowser.ResourceFactory.ImageResource',
+    extend:'Bisque.Resource.Image',
 
     constructor : function(config)
     {
@@ -449,9 +449,9 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourcePStripBig',
     afterRenderFn : Ext.emptyFn
 });
 
-Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourceFull',
+Ext.define('Bisque.Resource.Image.Full',
 {
-    extend : 'Bisque.ResourceBrowser.ResourceFactory.ImageResource',
+    extend : 'Bisque.Resource.Image',
 
 	constructor : function()
 	{
@@ -465,7 +465,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ImageResourceFull',
 
     prefetch : function(layoutMgr)
     {
-    	Bisque.ResourceBrowser.ResourceFactory.ImageResourceFull.superclass.prefetch(layoutMgr);
+    	this.callParent(arguments);
     	
         if (!this.getData('fetched'))
         {
