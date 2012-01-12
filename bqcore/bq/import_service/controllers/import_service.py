@@ -661,7 +661,7 @@ class import_serviceController(ServiceController):
 
     @expose(content_type="text/xml")
     @require(predicates.not_anonymous())
-    def insert(self, url = None, filename=None, permission='private',  **kw):
+    def insert(self, url = None, filename=None, permission='private',  user=None, **kw):
         """insert a URL to a fixed resource. This allows  insertion 
         of  resources  when they are already present on safe media
         i.e on the local server drives or remote irods, hdfs etc.
@@ -672,6 +672,8 @@ class import_serviceController(ServiceController):
         # Note: This entrypoint should allow permission and tags to be inserted
         # in a similar way to tranfers.. maybe combining the two would be needed.
         try:
+            if user is not None and identity.current.user_name == 'admin':
+                identity.current.user_name = user
             resource =  blob_service.store_blob(filename=filename, url=url, permission=permission, **kw)
             return etree.tostring(resource)
         except Exception,e:

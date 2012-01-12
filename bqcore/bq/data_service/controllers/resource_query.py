@@ -328,7 +328,6 @@ def prepare_type (resource_type, query = None):
 
 
 def prepare_parent(resource_type, query, parent_query=None):
-    name, dbtype = resource_type
     if parent_query:
         name, dbtype = resource_type
         subquery = parent_query.with_labels().subquery()
@@ -338,6 +337,8 @@ def prepare_parent(resource_type, query, parent_query=None):
         #query = session.query(dbtype).filter (dbtype.resource_parent_id == subquery.c.taggable_id)
         query  = query.filter(dbtype.resource_parent_id == subquery.c.taggable_id)
         #query  = query.filter(dbtype.resource_parent_id == parent.id)
+    else:
+        query = query.filter_by(resource_parent_id = None)
     return query
 
 
