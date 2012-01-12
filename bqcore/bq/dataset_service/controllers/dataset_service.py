@@ -213,6 +213,8 @@ class DatasetServer(ServiceController):
     @expose(content_type="text/xml")
     @require(predicates.not_anonymous())
     def permission(self, duri, **kw):
+        ds = etree.Element ('dataset', uri = duri, permission= kw["permission"])
+        data_service.update(ds)
         return self.iterate(duri, operation='permission', **kw)
 
     @expose(content_type="text/xml")

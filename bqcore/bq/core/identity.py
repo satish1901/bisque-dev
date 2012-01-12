@@ -29,7 +29,10 @@ class Identity(object):
         if request_valid():
             return request.identity['repoze.who.userid']
         return None
-    user_name = property(get_username)
+    def set_username (self, v):
+        if request_valid():
+            request.identity['repoze.who.userid'] = v
+    user_name = property(get_username, set_username)
 
     def get_user(self):
         if not request_valid():
