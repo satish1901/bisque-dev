@@ -1,6 +1,6 @@
 Ext.define('Bisque.ResourceTagger',
 {
-    extend : 'Ext.container.Container',
+    extend : 'Ext.panel.Panel',
 
     constructor : function(config)
     {
@@ -11,6 +11,7 @@ Ext.define('Bisque.ResourceTagger',
             layout : 'fit',
             padding : '0 1 0 0',
             style : 'background-color:#FFF',
+            border : false,
 
             rootProperty : config.rootProperty || 'tags',
             autoSave : (config.autoSave==undefined) ? true : false,
