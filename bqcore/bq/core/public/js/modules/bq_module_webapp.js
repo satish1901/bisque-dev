@@ -246,7 +246,7 @@ BQWebApp.prototype.onResourceSelected = function (R) {
         var e = document.getElementById("webapp_input_thumbnail");
         e.style.display = '';        
         if (this.resourceContainer) { this.resourceContainer.destroy(); }
-        this.resourceContainer = Bisque.ResourceFactoryWrapper( {resource:R} );
+        this.resourceContainer = Bisque.ResourceFactoryWrapper.getResource( {resource:R} );
         this.holder_selection.add(this.resourceContainer);
     }
         

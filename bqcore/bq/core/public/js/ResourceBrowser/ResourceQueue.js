@@ -94,7 +94,7 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
 
 			this.dbOffset.right+=data.children.length;
 			for(var i=0;i<data.children.length;i++)
-				this.push(Bisque.ResourceBrowser.ResourceFactory({resource:data.children[i], layoutKey:this.layoutKey, msgBus:this.msgBus, resQ:this, browser:this.browser}));
+				this.push(Bisque.ResourceFactory.getResource({resource:data.children[i], layoutKey:this.layoutKey, msgBus:this.msgBus, resQ:this, browser:this.browser}));
 			
 			this.hasMoreData.right=(data.children.length==this.dataLimit)?true:false;
 			this.loading.right=false;
