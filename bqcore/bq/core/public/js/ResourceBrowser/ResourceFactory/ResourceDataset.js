@@ -131,3 +131,29 @@ Ext.define('Bisque.Resource.Dataset.List',
         this.setLoading(false);
     },
 });
+
+// Page view for a dataset
+Ext.define('Bisque.Resource.Dataset.Page',
+{
+    extend : 'Bisque.Resource',
+    
+    constructor : function()
+    {
+        Ext.apply(this, {
+            layout:'fit',
+        });
+        
+        this.callParent(arguments);
+    },
+    
+    updateContainer : function()
+    {
+        this.setLoading(false);
+    
+        var renderer = Ext.create('BQ.renderers.dataset', {
+            resource: this.resource,
+        });
+        
+        this.add(renderer);
+    }
+});

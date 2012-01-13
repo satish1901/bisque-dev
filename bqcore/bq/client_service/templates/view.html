@@ -91,8 +91,7 @@
     
     <script type="text/javascript">
     Ext.onReady(function() {
-        var _SB = new ResourceDispatch("${user}");
-        _SB.dispatch("${resource}");
+        var _SB = BQ.ResourceViewer.dispatch('${resource}');
     });
     </script>
 

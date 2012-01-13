@@ -356,7 +356,7 @@ Ext.define('Bisque.ResourceBrowser.Browser',
 
         this.layoutKey = newLayoutKey == -1 ? this.layoutKey : newLayoutKey;
 
-        this.layoutMgr = Bisque.ResourceBrowser.LayoutFactory(
+        this.layoutMgr = Bisque.ResourceBrowser.LayoutFactory.getLayout(
         {
             browser : this,
             direction : direction
