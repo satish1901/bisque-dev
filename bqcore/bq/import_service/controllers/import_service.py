@@ -671,6 +671,7 @@ class import_serviceController(ServiceController):
         """
         # Note: This entrypoint should allow permission and tags to be inserted
         # in a similar way to tranfers.. maybe combining the two would be needed.
+        log.info ('insert %s for %s' % (url, user))
         try:
             if user is not None and identity.current.user_name == 'admin':
                 identity.current.user_name = user
