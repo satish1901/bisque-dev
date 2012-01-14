@@ -123,7 +123,7 @@ Ext.define('BQ.Application.Toolbar', {
         //this.menu_services = Ext.create('Ext.menu.Menu');
         this.menu_services = [];
         this.menu_services.push( {text: 'Analysis', handler: analysisAction } );
-        this.menu_services.push( {text: 'Dataset operations', handler: Ext.Function.pass(pageAction, '/dataset_service/') } );        
+        //this.menu_services.push( {text: 'Dataset operations', handler: Ext.Function.pass(pageAction, '/dataset_service/') } );        
         this.menu_services.push( '-' );
         this.menu_services.push( {text: 'Import', handler: Ext.Function.pass(pageAction, '/import/')} );
         this.menu_services.push( {text: 'Export', handler: Ext.Function.pass(pageAction, '/export/')} );
