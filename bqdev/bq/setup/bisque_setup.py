@@ -63,130 +63,9 @@ except ImportError:
 class SetupError(Exception):
     'error in setup'
 
-
-#############################################
-#  Setup some local constants
-
-PYTHON=sys.executable
-EXT_SERVER = "http://biodev.ece.ucsb.edu/binaries/depot/" # EXTERNAL host server BQDEPOT
-BQDIR = os.path.abspath ('.')  # Our top installation path
-BQDEPOT  = os.path.join(BQDIR, "external") # Local directory for externals
-
-BQENV = None
-BQBIN = None
-
-
-#################################################
-## Initial values
-site = {
-    'bisque.root' : 'http://localhost:8080',
-    'bisque.organization': 'Your Organization',
-    'bisque.title': 'Image Repository',
-    'bisque.admin_email' : 'YourEmail@YourOrganization',
-    'bisque.paths.root' : os.getcwd(),
-    }
-# Add any variables to read from the site.cfg each time
-# you run bisque-setup
-initial_vars = {
-    'bisque.paths.root' : os.getcwd(),
-    'bisque.root' : 'http://localhost:8080',
-    'bisque.organization': 'Your Organization',
-    'bisque.title': 'Image Repository',
-    'bisque.admin_email' : 'YourEmail@YourOrganization',
-    'sqlalchemy.url': 'sqlite:///bisque.db',
-    'mail.on' : 'False',
-    'mail.manager' : "immediate",
-    'mail.transport' : "smtp",
-    'mail.smtp.server' : 'localhost',
-    'runtime.matlab_home' : '',
-    'runtime.mode' : 'command',
-    'runtime.staging_base' : '',
-    'condor.submit_template': '',
-    'condor.dag_template' : '',
-    'condor.dag_config_template': '',
-    }
-
-linked_vars = {
-    'h1.url' : '${bisque.root}',
-    'smtp_server' : '${mail.smtp.server}',        
-    'registration.host' : '${bisque.root}',
-    'registration.mail.smtp_server' : '${mail.smtp.server}',
-    'registration.mail.admin_email' : '${bisque.admin_email}',
-}
-
-
-SITE_QUESTIONS = [('bisque.root' , 'Enter the root URL of the server ',
-"""A complete URL where your application will be mounted i.e. http://someserver:8080/
-If you server will be mounted behind a proxy, please enter
-the proxy address and see AdvancedInstalls"""),
-             ('bisque.admin_email' , 'An email for the administrator', None),
-             ('bisque.organization', 'A small organization title for the main page',
-              "This will show up in the upper left of every page display"),
-             ('bisque.title', 'The main title for the web page header',
-              "The title of your collection, group or project" ),
-             ('bisque.paths.root', 'Installation Directory', 
-              'Location of bisque installation.. used for find configuration and data')
-             ]
-
-
-
-DB_QUESTIONS = [
-                 ('sqlalchemy.url', 'A database URI', """
-                  A SQLAlchemy DBURI (see http://www.sqlalchemy.org/).
-                  Examples of typical DB URI:
-                      sqlite:///bisque.db
-                      postgres://localhost:5432/bisque
-                      mysql://user:pass@localhost/bisque
-                      mysql://user:pass@localhost/bisque?unix_socket=/bisque-data/mysql-db/mysql-socket.sock
-                  """),
-    ]
-
-MATLAB_QUESTIONS=[
-    ('runtime.matlab_home', "Enter toplevel matlab directory (under which is bin)",
-     "matlab home is used by modules to setup the correct environment variables"),
-
-    ]
-RUNTIME_QUESTIONS=[
-    ('runtime.mode', "Enter a list (comma,seperated) of module runtimes",
-     'controls how  module are run locally or condor'),
-
-    ('runtime.staging_base', "An temproary area that can be used to stage execution of modules",
-    """
-    Some modules are copied to a temporary directory with data so that they may run
-    cleanly.  Condor often requires a staging area that is seen by all nodes that
-    it can dispatch jobs to.  This area can be a local or condor shared filesystem
-    """)
-    ]
-
-
-CONDOR_QUESTIONS =[
-    ('condor.submit_template', "Path to condor submit script",
-     """A script used to submit jobs to Condor"""),
-    ('condor.dag_template', "A DAGMAN script", None),
-    ('condor.dag_config_template', "A DAGMan Config", None)
-    ]
-
-
-
-
-###
-### Unfinished 
-# SERVER_QUESTIONS = [
-#     ('bisque.root.port_range',
-#      'Enter port range for root servers',
-#      """
-#      Multple bisque servers can help performance and machine
-#      utilization.  Each bisque server needs it's own TCP/IP port.
-#      Please enter a free range i.e. 5000,5004
-#      """),
-#     ('bisquik.engine_service.port_range',
-#      'Port range for engine servers'
-#      """
-#      Mutliple engine servers can be run on a single machine but each needs
-#      a single TCP port to operate on. Please give a suitable free range i.e.
-#      10000,10004
-#      """)
-#     ]
+class InstallError(Exception):
+    pass
+    
 
 ############################################
 # HELPER FUNCTIONS
@@ -358,23 +237,145 @@ def unpack_zip (zfile, dest):
     z.close()
     return names
 
-class InstallError(Exception):
-    pass
-    
+
+#############################################
+#  Setup some local constants
+
+PYTHON=sys.executable
+EXT_SERVER = "http://biodev.ece.ucsb.edu/binaries/depot/" # EXTERNAL host server BQDEPOT
+BQDIR = os.path.abspath ('.')  # Our top installation path
+BQDEPOT  = os.path.join(BQDIR, "external") # Local directory for externals
+
+BQENV = None
+BQBIN = None
+
+
+SITE_CFG     = config_path('site.cfg')
+SITE_DEFAULT = config_path('site.cfg.default')
+RUNTIME_CFG  = config_path('runtime-bisque.cfg')
+
+
+#################################################
+## Initial values
+site = {
+    'bisque.root' : 'http://localhost:8080',
+    'bisque.organization': 'Your Organization',
+    'bisque.title': 'Image Repository',
+    'bisque.admin_email' : 'YourEmail@YourOrganization',
+    'bisque.paths.root' : os.getcwd(),
+    }
+# Add any variables to read from the site.cfg each time
+# you run bisque-setup
+initial_vars = {
+    'bisque.paths.root' : os.getcwd(),
+    'bisque.root' : 'http://localhost:8080',
+    'bisque.organization': 'Your Organization',
+    'bisque.title': 'Image Repository',
+    'bisque.admin_email' : 'YourEmail@YourOrganization',
+    'sqlalchemy.url': 'sqlite:///bisque.db',
+    'mail.on' : 'False',
+    'mail.manager' : "immediate",
+    'mail.transport' : "smtp",
+    'mail.smtp.server' : 'localhost',
+    'runtime.matlab_home' : '',
+    'runtime.mode' : 'command',
+    'runtime.staging_base' : '',
+    'condor.submit_template': '',
+    'condor.dag_template' : '',
+    'condor.dag_config_template': '',
+    }
+
+linked_vars = {
+    'h1.url' : '${bisque.root}',
+    'smtp_server' : '${mail.smtp.server}',        
+    'registration.host' : '${bisque.root}',
+    'registration.mail.smtp_server' : '${mail.smtp.server}',
+    'registration.mail.admin_email' : '${bisque.admin_email}',
+}
+
+
+SITE_QUESTIONS = [('bisque.root' , 'Enter the root URL of the server ',
+"""A complete URL where your application will be mounted i.e. http://someserver:8080/
+If you server will be mounted behind a proxy, please enter
+the proxy address and see AdvancedInstalls"""),
+             ('bisque.admin_email' , 'An email for the administrator', None),
+             ('bisque.organization', 'A small organization title for the main page',
+              "This will show up in the upper left of every page display"),
+             ('bisque.title', 'The main title for the web page header',
+              "The title of your collection, group or project" ),
+             ('bisque.paths.root', 'Installation Directory', 
+              'Location of bisque installation.. used for find configuration and data')
+             ]
+
+
+
+DB_QUESTIONS = [
+                 ('sqlalchemy.url', 'A database URI', """
+                  A SQLAlchemy DBURI (see http://www.sqlalchemy.org/).
+                  Examples of typical DB URI:
+                      sqlite:///bisque.db
+                      postgres://localhost:5432/bisque
+                      mysql://user:pass@localhost/bisque
+                      mysql://user:pass@localhost/bisque?unix_socket=/bisque-data/mysql-db/mysql-socket.sock
+                  """),
+    ]
+
+MATLAB_QUESTIONS=[
+    ('runtime.matlab_home', "Enter toplevel matlab directory (under which is bin)",
+     "matlab home is used by modules to setup the correct environment variables"),
+
+    ]
+RUNTIME_QUESTIONS=[
+    ('runtime.platforms', "Enter a list (comma,seperated) of module platforms",
+     'controls how  module are run locally or condor'),
+
+    ('runtime.staging_base', "An temproary area that can be used to stage execution of modules",
+    """
+    Some modules are copied to a temporary directory with data so that they may run
+    cleanly.  Condor often requires a staging area that is seen by all nodes that
+    it can dispatch jobs to.  This area can be a local or condor shared filesystem
+    """)
+    ]
+
+
+CONDOR_QUESTIONS =[
+    ('condor.submit_template', "Path to condor submit script",
+     """A script used to submit jobs to Condor"""),
+    ('condor.dag_template', "A DAGMAN script", None),
+    ('condor.dag_config_template', "A DAGMan Config", None)
+    ]
+
+
+
+###
+### Unfinished 
+# SERVER_QUESTIONS = [
+#     ('bisque.root.port_range',
+#      'Enter port range for root servers',
+#      """
+#      Multple bisque servers can help performance and machine
+#      utilization.  Each bisque server needs it's own TCP/IP port.
+#      Please enter a free range i.e. 5000,5004
+#      """),
+#     ('bisquik.engine_service.port_range',
+#      'Port range for engine servers'
+#      """
+#      Mutliple engine servers can be run on a single machine but each needs
+#      a single TCP port to operate on. Please give a suitable free range i.e.
+#      10000,10004
+#      """)
+#     ]
+
 
 #####################################################
 # Installer routines
 
 
-def install_cfg (params, server_type='bisque'):
-    if not os.path.exists (config_path('site.cfg')):
-        if server_type == 'bisque':
-            shutil.copyfile(config_path('site.cfg.default'), config_path('site.cfg'))
-        if server_type == 'engine':
-            shutil.copyfile(config_path('engine.cfg.default'), config_path('site.cfg'))
-
-        params = read_site_cfg()
-        params.update(initial_vars)
+def install_cfg (site_cfg, default_cfg ):
+    if not os.path.exists (site_cfg):
+        shutil.copyfile(default_cfg, site_cfg)
+    params = read_site_cfg(cfg=site_cfg)
+    return params
 
 def install_site(params):
     print "Top level site variables are:"
@@ -455,35 +456,32 @@ def update_variables (qs, store):
 #######################################################
 #
 BQ_SECTION="app:main"
-SITE_CFG = config_path('site.cfg')
-SITE_DEFAULT = config_path('site.cfg.default')
-
-def read_site_cfg(section = BQ_SECTION ):
+def read_site_cfg(section = BQ_SECTION, cfg = SITE_CFG ):
     bisque_vars = {}
     
     # first pull initial values from config files
     #iv = initial
     tc = ConfigFile()      
-    if os.path.exists (SITE_CFG): 
-        tc.read(open(SITE_CFG))
+    if os.path.exists (cfg): 
+        tc.read(open(cfg))
         bisque_vars.update(tc.get(section, asdict=True))
 
     return bisque_vars
 
 
-def update_site_cfg (bisque_vars, section = BQ_SECTION, append=True):
+def update_site_cfg (bisque_vars, section = BQ_SECTION, append=True, cfg=SITE_CFG):
     c = ConfigFile()
-    if os.path.exists (SITE_CFG):
-        c.read(open(SITE_CFG))
+    if os.path.exists (cfg):
+        c.read(open(cfg))
 
     for k,v in bisque_vars.items():
         c.edit_config (section, k, '%s = %s' % (k,v), {}, append)
-    c.write (open (SITE_CFG, 'w'))
+    c.write (open (cfg, 'w'))
 
 
-def modify_site_cfg(qs, bisque_vars, section = BQ_SECTION, append=True):
-    if not os.path.exists (SITE_CFG):
-        raise InstallError('missing %s' % SITE_CFG)
+def modify_site_cfg(qs, bisque_vars, section = BQ_SECTION, append=True, cfg=SITE_CFG):
+    if not os.path.exists (cfg):
+        raise InstallError('missing %s' % cfg)
 
     bisque_vars =  update_variables(qs, bisque_vars )
     for k,v in linked_vars.items():
@@ -492,11 +490,11 @@ def modify_site_cfg(qs, bisque_vars, section = BQ_SECTION, append=True):
     bisque_vars =  update_variables([], bisque_vars )
 
     c = ConfigFile()
-    c.read(open(SITE_CFG))
+    c.read(open(cfg))
     for k,v in bisque_vars.items():
         c.edit_config (section, k, '%s = %s' % (k,v), {}, append)
         print "edit %s %s" % (k,v)
-    c.write (open (SITE_CFG, 'w'))
+    c.write (open (cfg, 'w'))
 
     return bisque_vars
 
@@ -756,25 +754,16 @@ Please resolve the problem(s) and re-run 'bisque-setup --database'.""")
 
 #######################################################
 #
-def install_matlab(params):
-    if getanswer ('Install matlab helpers', 'Y',
-"""Matlab is needed to compile and run several default modules in bisque.
-These modules are not required, but do show the capabilities.  The installer
-will look for matlab and use that to perform the the rest of the install""") != 'Y':
-        return
-
-    matlab_home = which('matlab')
+def install_matlab(params, cfg = RUNTIME_CFG):
+    matlab_home = which('matlab') 
     if matlab_home:
         params['runtime.matlab_home'] = os.path.abspath(os.path.join (matlab_home, '../..'))
-    else:
-        if getanswer("No Matlab was found.. please add matlab to the path (cancel now)", "Y",
-                     "Matlab needs to be in the shell path, then rerun setup") == 'Y':
-            #raise InstallError ("need matlab for modules")
-            return
-    #params['matlab_installed'] = str(check_exec('matlab'))
-    params = modify_site_cfg(MATLAB_QUESTIONS, params)
-
+    params = modify_site_cfg(MATLAB_QUESTIONS, params, section=None, cfg=cfg)
+    if not os.path.exists(params['runtime.matlab_home']):
+        print "Matlab must be provided to install modules"
+        params['matlab_installed'] = False
     #install_matlabwrap(params)
+    return params
 
 
 def install_matlabwrap(params):
@@ -837,6 +826,7 @@ def install_modules(params):
             except Exception, e:
                 log.exception ("An exception occured during the module setup: %s" % str(e))
             os.chdir (cwd)
+    return params
 
 #######################################################
 #
@@ -898,12 +888,7 @@ def install_bioformats(params):
 #######################################################
 #
 
-def install_servers(params):
-
-    #if getanswer("Configure bisque to run behind apache",
-    #             "Apache provides some benifits for large sites", "N") == "N":
-    #    return
-
+def install_server_defaults(params):
     print "Server config"
     if not os.path.exists(config_path('server.ini')):
         shutil.copyfile(config_path('server.ini.default'), config_path('server.ini'))
@@ -918,22 +903,9 @@ def install_servers(params):
 
     if not os.path.exists(config_path('registration.cfg')):
         shutil.copyfile(config_path('registration.cfg.default'), config_path('registration.cfg'))
-    if getanswer('Configure bisque with proxy', 'N',
-                 ("Multiple bisque servers can be configure behind a proxy "
-                  "providing enhanced performance.  As this an advanced "
-                  "configuration it is only suggested for experienced "
-                  "system administrators")) == 'Y':
-        print ("See site.cfg comments and contrib/apache/proxy-{http,ssl} "
-               "for details. Also see the website "
-               "http://biodev.ece.ucsb.edu/projects/bisquik/wiki/AdvancedInstalls")
 
 
-def install_engines(params):
-
-    #if getanswer("Configure bisque to run behind apache",
-    #             "Apache provides some benifits for large sites", "N") == "N":
-    #    return
-
+def install_engine_defaults(params):
     print "Engine config"
     if not os.path.exists(config_path('server.ini')):
         shutil.copyfile(config_path('server.ini.default'), config_path('server.ini'))
@@ -947,15 +919,26 @@ def install_engines(params):
         shutil.copy(config_path('who.ini.default'), config_path('who.ini'))
 
 
+def install_proxy(params):
+    if getanswer('Configure bisque with proxy', 'N',
+                 ("Multiple bisque servers can be configure behind a proxy "
+                  "providing enhanced performance.  As this an advanced "
+                  "configuration it is only suggested for experienced "
+                  "system administrators")) == 'Y':
+        print ("See site.cfg comments and contrib/apache/proxy-{http,ssl} "
+               "for details. Also see the website "
+               "http://biodev.ece.ucsb.edu/projects/bisquik/wiki/AdvancedInstalls")
+
+
+
 #######################################################
 #
-def check_condor (params):
-    params['condor.enabled'] = ""
+def check_condor (params, cfg  = RUNTIME_CFG):
     try:
         if os.path.exists('/dev/null'):
-          devnull = open ('/dev/null') 
+            devnull = open ('/dev/null') 
         else:
-          devnull = open('junk.txt', 'w')
+            devnull = open('junk.txt', 'w')
         retcode = call ([ 'condor_status' ], stdout=devnull, stderr=devnull )
     except OSError:
         print "No condor was found. See bisque website for details on using condor"
@@ -966,7 +949,7 @@ def check_condor (params):
     if getanswer("Condigure modules for condor", 'Y',
                  "Configure condor shared directories for better performance")=="Y":
         params['condor.enabled'] = "true"
-        params['runtime.mode'] = ','.join ([params['runtime.mode'], 'condor'])
+        params['runtime.platforms'] = ','.join ([params['runtime.mode'], 'condor'])
         print """
         NOTE: condor configuration is complex and must be tuned to
         every instance.  Bisque will try to use the condor facilities
@@ -980,24 +963,27 @@ def check_condor (params):
                      "Change the condor templates used for submitting jobs")!='Y':
             return params
         
-        params = modify_site_cfg(CONDOR_QUESTIONS, params)
+        params = modify_site_cfg(CONDOR_QUESTIONS, params, section='condor', cfg=cfg)
         for v, d, h in CONDOR_QUESTIONS:
             if params[v]:
                 params[v] = os.path.abspath(os.path.expanduser(params[v]))
                 print "CONDOR", v, params[v]
-        update_site_cfg(params)
+        update_site_cfg(params, section="condor", cfg=cfg)
 
     return params
 
 
 
-def install_runtime(params):
+def install_runtime(params, cfg = RUNTIME_CFG):
     """Check and install runtime control files"""
-    params['runtime.mode'] = "command"
-    params = check_condor(params)
 
-    params = modify_site_cfg(RUNTIME_QUESTIONS, params)
+
+    params['runtime.platforms'] = "command"
+    params = check_condor(params, cfg=cfg)
+
+    params = modify_site_cfg(RUNTIME_QUESTIONS, params, section=None, cfg=cfg)
     staging=params['runtime.staging_base'] = os.path.abspath(os.path.expanduser(params['runtime.staging_base']))
+    update_site_cfg(params, section=None, cfg=cfg)
 
     try:
         if not os.path.exists(staging):
@@ -1005,29 +991,28 @@ def install_runtime(params):
     except OSError,e:
         print "%s does not exist and cannot create: %s" % (staging, e)
 
-    print params
-    for bm in os.listdir (bisque_path('modules')):
-        modpath = bisque_path('modules', bm)
-        if os.path.isdir(modpath) and os.path.exists(os.path.join(modpath, "%s.xml" % bm )):
-            cfg_path = os.path.join(modpath, 'runtime-bisque.cfg')
-            #if  os.path.exists(cfg_path):
-            #    shutil.copyfile(cfg_path, "%s.old" %cfg_path)
-
-            cfg = ConfigFile (cfg_path)
-            if not os.path.exists(cfg_path):
-                cfg.edit_config(None, None,
-                   '# runtime-bisque.cfg created by bisque-setup')
-                cfg.edit_config(None, 'module_enabled',
-                                'module_enabled=True'  )
-            cfg.edit_config(None, 'runtime', 'runtime=%s' % params['runtime.mode'])
-            cfg.edit_config(None, 'staging_base', 'staging_base=%s' % params['runtime.staging_base'])
-            if params['runtime.matlab_home']:
-                cfg.edit_config(None, 'matlab_home', 'matlab_home=%s'%params['runtime.matlab_home'])
-            for v, d, h in CONDOR_QUESTIONS:
-                if params.get(v, None):
-                    cfg.edit_config("condor", v, "%s=%s" % (v, params[v]))
-                    print "CONDIR EDIT", v
-            cfg.write (open(cfg_path, 'w'))
+    #print params
+    # for bm in os.listdir (bisque_path('modules')):
+    #     modpath = bisque_path('modules', bm)
+    #     if os.path.isdir(modpath) and os.path.exists(os.path.join(modpath, "%s.xml" % bm )):
+    #         cfg_path = os.path.join(modpath, 'runtime-bisque.cfg')
+    #         #if  os.path.exists(cfg_path):
+    #         #    shutil.copyfile(cfg_path, "%s.old" %cfg_path)
+    #         cfg = ConfigFile (cfg_path)
+    #         if not os.path.exists(cfg_path):
+    #             cfg.edit_config(None, None,
+    #                '# runtime-bisque.cfg created by bisque-setup')
+    #             cfg.edit_config(None, 'module_enabled',
+    #                             'module_enabled=True'  )
+    #         cfg.edit_config(None, 'runtime', 'runtime=%s' % params['runtime.mode'])
+    #         cfg.edit_config(None, 'staging_base', 'staging_base=%s' % params['runtime.staging_base'])
+    #         if params['runtime.matlab_home']:
+    #             cfg.edit_config(None, 'matlab_home', 'matlab_home=%s'%params['runtime.matlab_home'])
+    #         for v, d, h in CONDOR_QUESTIONS:
+    #             if params.get(v, None):
+    #                 cfg.edit_config("condor", v, "%s=%s" % (v, params[v]))
+    #                 print "CONDOR EDIT", v
+    #         cfg.write (open(cfg_path, 'w'))
     return params
     
 
@@ -1289,7 +1274,7 @@ install_options= [
            'modules',
            'runtime',
            'bioformats',
-           'servers',
+           'server',
            'mail',
            'admin']
 
@@ -1300,7 +1285,7 @@ engine_options= [
            'modules',
            'runtime',
            'bioformats',
-           'engines',
+           'engine',
            ]
 
 
@@ -1342,17 +1327,23 @@ def bisque_installer(options, args):
         print usage
         return
 
-
-    print "Beginning install of %s" % (server_type)
+    print "Beginning install of %s" % (system_type)
         
     #call ([PYTHON, "setup.py", "develop"])
+    cfg_map = { 'bisque': config_path('site.cfg.default'), 
+                'engine' : config_path('engine.cfg.default') } 
     
     #install_scripts()
     params = {}
-    if os.path.exists (SITE_CFG): 
-        params = read_site_cfg()
+    if not os.path.exists (SITE_CFG): 
+        params = install_cfg(SITE_CFG, cfg_map[system_type])
     else:
-        install_cfg( params, system_type)
+        params = read_site_cfg()
+
+    if not os.path.exists(RUNTIME_CFG):
+        runtime_params = install_cfg(RUNTIME_CFG, config_path('runtime-bisque.default'))
+    else:
+        runtime_params = read_site_cfg(RUNTIME_CFG)
     
     params['bisque.installed'] = "inprogress"
     if 'site' in installer:
@@ -1367,15 +1358,15 @@ def bisque_installer(options, args):
     if 'bioformats'  in installer:
         install_bioformats(params)
     if 'matlab'  in installer:
-        install_matlab(params)
+        runtime_params = install_matlab(runtime_params)
     if 'runtime'  in installer:
-        params = install_runtime(params)
+        runtime_params = install_runtime(runtime_params)
     if 'modules'  in installer:
-        install_modules(params)
-    if 'servers'  in installer:
-        install_servers(params)
-    if 'engines'  in installer:
-        install_engines(params)
+        runtime_params = install_modules(runtime_params)
+    if 'server'  in installer:
+        install_server_defaults(params)
+    if 'engine'  in installer:
+        install_engine_defaults(params)
     if 'mail'  in installer:
         params = install_mail(params)
     #if options.admin:
@@ -1429,7 +1420,7 @@ def typescript(command, filename="typescript"):
     script.write(('Script done on %s\n' % time.asctime()).encode())
     return r
 
-def setup(server_type, options, args):
+def setup(options, args):
     virtenv = os.environ.get ('VIRTUAL_ENV', None)
     if virtenv is None:
         print "Cannot determine your python virtual environment"
@@ -1447,7 +1438,7 @@ def setup(server_type, options, args):
         
     begin_install = datetime.datetime.now()
     if has_script and not options.inscript:
-        script = ['bq-admin', 'setup', server_type, '--inscript']
+        script = ['bq-admin', 'setup', '--inscript']
         script.extend (args)
         r = typescript(script, 'bisque-install.log')
         #print "RETURN is ", r
@@ -1461,7 +1452,7 @@ def setup(server_type, options, args):
         
     
     try:
-        params  = bisque_installer(server_type, options, args)
+        params  = bisque_installer(options, args)
     except InstallError, e:
         cancelled = True
     except KeyboardInterrupt:
@@ -1486,4 +1477,4 @@ def setup(server_type, options, args):
 #            send_installation_report(params)
 
 if __name__ == "__main__":
-    setup('bisque')
+    setup()

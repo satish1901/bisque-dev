@@ -2,12 +2,16 @@
 #
 import os,sys
 import subprocess 
-from bq.util.configfile import ConfigFile
+import logging
 
+from bq.util.configfile import ConfigFile
 from command_run import CommandRunner
 from condor_run import CondorRunner
+
 MODULE_RUNNERS = [CommandRunner, CondorRunner]
 RUNNER_MAP     = dict([(r.name, r) for r in MODULE_RUNNERS ])
+
+log = logging.getLogger('bq.engine.modulerunner')
 
 class ModuleRunner(object):
     """Top Level runner and entry point for the Runners and Environments
@@ -46,12 +50,12 @@ class ModuleRunner(object):
             print "Missing runtime-module.cfg"
             return None            
             
-        runners = cfg.get(None, 'runtime')
+        runners = cfg.get(None, 'runtime.platforms')
         self.module_runners = [r.strip() for r in runners.split(',')]
 
         if os.path.exists('runtime-bisque.cfg'):
             cfg = ConfigFile('runtime-bisque.cfg')
-            runners = cfg.get(None, 'runtime')
+            runners = cfg.get(None, 'runtime.platforms')
             self.system_runners = [r.strip() for r in runners.split(',')]
 
         for sys_runner in self.system_runners:
@@ -63,7 +67,6 @@ class ModuleRunner(object):
     def main(self, **kw):
         """Called when module is launched.
         """
-        print "module_run: ", " ".join (sys.argv)
         runner_class = self.choose_runner()
         if runner_class is not None:
             runner = runner_class(**kw)
@@ -71,5 +74,6 @@ class ModuleRunner(object):
             return runner.main(**kw)
 
 if __name__ == "__main__":
+    log.info( "ModuleRunner: main %s" % " ".join(sys.argv) )
     ModuleRunner().main()
     sys.exit(0)
