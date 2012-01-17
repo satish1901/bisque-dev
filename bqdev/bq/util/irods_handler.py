@@ -73,7 +73,7 @@ def irods_conn(url, user=None, host=None, port=None, password = None):
     irods_url = urlparse.urlunparse(list(irods_url)[:2] + ['']*4)
     if path in ['', '/']:
         path = nm
-    assert path.startswith(nm)
+    #assert path.startswith(nm)
 
     return conn, irods_url, nm, path
     

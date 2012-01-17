@@ -83,6 +83,8 @@ class iRodsStorage(object):
         self.top = config.get('bisque.blob_service.irods.url', None)
         self.user = config.get('bisque.blob_service.irods.user')
         self.password = config.get('bisque.blob_service.irods.password')
+        if self.password:
+            self.password = self.password.strip('"\'')
         log.debug('irods.user: %s irods.password: %s' % (self.user, self.password))
 
     def valid(self, irods_ident):
