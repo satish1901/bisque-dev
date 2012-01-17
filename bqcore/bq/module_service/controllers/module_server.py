@@ -250,15 +250,17 @@ def create_mex(module_url, name, mex = None, **kw):
         if len(iterable):
             #mex.set('value', 'SUPER')
             inputs = mex.xpath('./tag[@name="inputs"]')[0]
-            mex.remove(inputs)
+            #mex.remove(inputs)
             iterable_tag_name = iterable[0].get('value')
             dataset_tag = inputs.xpath('./tag[@name="%s"]' % iterable_tag_name)[0]
-            inputs.remove(dataset_tag)
+            #inputs.remove(dataset_tag)
             dataset = data_service.get_resource(dataset_tag.get('value'), view='full')
             members = dataset.xpath('/dataset/tag[@name="members"]')[0]
             for resource in members:
                 subinputs = copy.deepcopy(inputs)
-                etree.SubElement(subinputs, 'tag', name=iterable_tag_name, value=resource.text)
+                resource_tag = subinputs.xpath('./tag[@name="%s"]' % iterable_tag_name)[0]
+                resource_tag.set('value', resource.text)
+                #etree.SubElement(subinputs, 'tag', name=iterable_tag_name, value=resource.text)
                 submex = etree.Element('mex', name=name, type=module_url)
                 submex.append(subinputs)
                 mex.append(submex)
