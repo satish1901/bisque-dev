@@ -1,6 +1,6 @@
 #
 """
-Allow remapping of arguments to the Module
+Use a script specified by the user to run setup, run, and teardown
 
 
 """
@@ -19,21 +19,27 @@ class ScriptEnvironment(BaseEnvironment):
     def __init__(self, runner, **kw):
         super(ScriptEnvironment, self).__init__(runner, **kw)
         
-    def process_config(self, runner):
+    def create_script(self, mex):
         """Runs before the normal command but after read the config"""
-
-        script = string.Template(runner.script).safe_substitute(runner.named_args)
-        script = string.Template(script).safe_substitute(runner.__dict__)
-        self.script = shlex.split(script, posix=(os.name != "nt"))
-        runner.executable=list(self.script) + ['start']
+        script = string.Template(runner.script).safe_substitute(mex.named_args)
+        script = string.Template(script).safe_substitute(mex.__dict__)
+        script = shlex.split(script, posix=(os.name != "nt"))
+        mex.executable=list(script) + ['start']
+        return script
         
     def setup_environment(self, runner):
-        runner.log ("Execute setup '%s' in %s" % (" ".join (self.script + ['setup']), os.getcwd()))
-        if subprocess.call(self.script + ['setup'])!=0:
-            raise ModuleEnvironmentError("Error during setup")
+        for mex in runner.mexes:
+            if mex.executable:
+                script = self.create_script(mex)
+                runner.log ("Execute setup '%s' in %s" % (" ".join (script + ['setup']), os.getcwd()))
+                if subprocess.call(script + ['setup'])!=0:
+                    raise ModuleEnvironmentError("Error during setup")
         
     def teardown_environment(self, runner):
-        runner.log ("Execute teardown '%s' in %s" % (" ".join(self.script+['teardown']), os.getcwd()))
-        if subprocess.call(self.script + ['teardown'])!= 0:
-            raise ModuleEnvironmentError("Error during teardown")
+        for mex in runner.mexes:
+            if mex.executable:
+                script = self.create_script(mex)
+                runner.log ("Execute teardown '%s' in %s" % (" ".join(script+['teardown']), os.getcwd()))
+                if subprocess.call(script + ['teardown'])!= 0:
+                    raise ModuleEnvironmentError("Error during teardown")
             

@@ -63,6 +63,7 @@ from bq.util.paths import bisque_path
 
 from base_adapter import BaseAdapter
 from bq.engine.controllers.module_run import ModuleRunner
+from bq.core import identity
 
 
 MODULE_BASE = config.get('bisque.engine_service.local_modules', bisque_path('modules'))
@@ -99,47 +100,35 @@ class RuntimeAdapter(BaseAdapter):
         # Pass through module definition looking for inputs
         # for each input find the corresponding tag in the mex
         # Warn about missing inputs
-        
-        input_nodes = self.prepare_inputs(module=module, mex=mex)
-        options= self.prepare_options (module=module, mex=mex)
 
-        #up = identity.get_user_pass()
-        #if up[0] is not None:
-        #    for k,v in zip(['user','password'], up):
-        #        input_nodes.append (etree.Element('tag', name=k, value=v))
-        #input_nodes.append(etree.Element('tag', name='mex_url',
-        #                                 value=mex.get('uri')))
-        #params.append ( identity.mex_authorization_token() )
-        
-        arguments = options.get("argument_style", None)
-        if arguments is not None and arguments.get('value') == 'named':
-            params = ['%s=%s'%(i.get('name'), i.get('value')) for i in input_nodes]
-        else:
-            params = [ i.get('value') for i in input_nodes ]
+        params = []
+        #input_nodes = self.prepare_inputs(module=module, mex=mex)
+        #options= self.prepare_options (module=module, mex=mex)
+        #arguments = options.get("argument_style", None)
+        #if arguments is not None and arguments.get('value') == 'named':
+        #    params = ['%s=%s'%(i.get('name'), i.get('value')) for i in input_nodes]
+        #else:
+        #    params = [ i.get('value') for i in input_nodes ]
 
-        #xml_module_path = local_xml_copy(module)
-        #xml_mex_path    = local_xml_copy(mex)
-        #params.append ('mex_url=%s' % mex.get('uri'))
-        #params.append ('module_url=%s' % module.get('uri'))
-        
         params.append ('start')
-
-        module_dir = os.path.join(MODULE_BASE, module_name)
-            
         #command = os.path.join(module_dir, module_path)
         #command_line = module_path.split(' ')
         command_line = []
         command_line.append('-d')
         command_line.extend (params)
         
+        module_dir = os.path.join(MODULE_BASE, module_name)
         current_dir = os.getcwd()
         try:
             log.info ("Currently in %s" % os.getcwd())
-            log.info ("Exec of '%s' in %s " % (' '.join(command_line), module_dir))
+            log.info ("Exec of %s '%s' in %s " % (module_name, ' '.join(command_line), module_dir))
 
             os.chdir(module_dir)
             m = ModuleRunner()
-            m.main(arguments=command_line)
+            m.main(arguments=command_line, 
+                   mex_tree=mex, 
+                   module_tree=module, 
+                   mex_token = identity.mex_authorization_token())
             os.chdir(current_dir)
             #process = Popen(command_line, cwd=module_dir, stdout=PIPE, stderr=PIPE)
             #stdout,stderr = process.communicate()

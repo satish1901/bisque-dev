@@ -1,0 +1,14 @@
+# This file created by bq-admin setup and contains runtime variables needed by modules
+# Original copy is config and linked into the modules
+# 
+# Mode is a list of allow runtime platforms i.e. command, condor, [hadoop]
+runtime.plaforms = command
+# Where staging directory are createed
+runtime.staging_base = ~/staging
+runtime.matlab_home = 
+
+[condor]
+condor.enabled = False
+condor.dag_template = config/templates/condor_dag.tmpl
+condor.submit_template = config/templates/condor_submit.tmpl
+condor.dag_config_template = config/templates/condor_dag_conf.tmpl

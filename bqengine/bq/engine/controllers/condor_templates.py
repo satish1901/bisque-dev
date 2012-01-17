@@ -1,23 +1,27 @@
 import os
 import pkg_resources
+import logging
+
+log = logging.getLogger('bq.engine.condor_templates')
 
 
 # Variables (staging_id, post_exec, post_args)
-templateDAG ="""
-JOB ${staging_id}  ./${staging_id}.cmd
+templateDAG =\
+"""JOB ${staging_id}  ./${staging_id}.cmd
 CONFIG ./${staging_id}.dag.config 
 SCRIPT POST ${staging_id} ${post_exec} ${post_args}
 """
 #RETRY ${staging_id} 5
 
-templateDAGCONF = """
-DAGMAN_LOG_ON_NFS_IS_ERROR = FALSE
+templateDAGCONF = \
+"""DAGMAN_LOG_ON_NFS_IS_ERROR = FALSE
 """
 
 
 # Variables (script, script_args, transfers, staging, cmd_extra)
-templateCMD = """
-universe = vanilla
+templateCMD = \
+"""universe = vanilla
+excecutable=${executable}
 error = ./launcher.err
 output = ./launcher.out
 log = ./launcher.log
@@ -29,17 +33,30 @@ requirements = (Arch == "x86_64") && (TARGET.Name =!= LastMatchName1) && (OpSys 
 on_exit_remove = (ExitBySignal == False)&&(ExitCode == 0)
 should_transfer_files = YES
 when_to_transfer_output = ON_EXIT_OR_EVICT
-executable = ${executable}
-arguments = ${arguments}
-initialdir = ${staging_path}
 Notification = never
-transfer_input_files = ${transfers}
 request_cpus = 1
 request_memory = 1024
 
 ${condor_submit}
 
+%for mex in mexes:
+<%   
+    if not mex.executable: 
+        continue
+%>
+initialdir = ${mex.staging_path}
+transfer_input_files  = ${' '.join(mex.transfers)}
+arguments  = ${' '.join(mex.executable[1:])}
 queue
+%endfor
+"""
+
+LAUNCHER_SCRIPT = \
+"""#!/usr/bin/env python
+import sys
+from bq.engine.controllers.module_run import ModuleRunner
+if __name__ == "__main__":
+    sys.exit(ModuleRunner().main())
 """
 
 
@@ -129,9 +146,9 @@ class CondorTemplates(object):
     request_memory = 2048
     """
     @classmethod
-    def mk_path(cls, name, vars):
-        return os.path.join('%(staging_path)s' % vars,
-                            name % vars)
+    def mk_path(cls, name, mapping):
+        return os.path.join('%(staging_path)s' % mapping,
+                            name % mapping)
                             
     def __init__(self, cfg):
         engine = cfg.get('condor.template_engine', 'mako')
@@ -149,34 +166,44 @@ class CondorTemplates(object):
                 print "CONDOR_TEMPLATE using default"
             
 
-    def create_file(self,output_path, template, vars):
-        f = open(output_path, 'w')
+    def create_file(self,output_path, template, mapping):
+        try:
+            f = open(output_path, 'w')
 
-        # default templates are in mako
-        if not os.path.exists(template):
-            template = mako.template.Template(template)
+            # default templates are in mako
+            if not os.path.exists(template):
+                template = mako.template.Template(template)
 
-        f.write(self.engine.render(template=template, info=vars))
-        f.close()
+            f.write(self.engine.render(template=template, info=mapping))
+            f.close()
+        except KeyError:
+            log.exception('Bad template : %s dict=%s' % (template, mapping))
+            raise e
+            
 
-    def construct_launcher(self, vars):
-        self.launch_path = self.mk_path('%(staging_id)s_launch.py', vars)
-        self.create_file(self.launch_path, LAUNCHER_SCRIPT, vars)
-        return self.launch_path
+    def construct_launcher(self, mapping):
+        try:
+            self.launch_path = self.mk_path('%(staging_id)s_launch.py', mapping)
+            self.create_file(self.launch_path, LAUNCHER_SCRIPT, mapping)
+            return self.launch_path
+        except KeyError, e:
+            log.exception('missing  mapping in %s' % mapping)
+            raise e
+            
         
-    def prepare_submit(self, vars):
+    def prepare_submit(self, mapping):
         """Create the condor required files"""
-        self.dag_path = self.mk_path('%(staging_id)s.dag', vars)
+        self.dag_path = self.mk_path('%(staging_id)s.dag', mapping)
         self.create_file(self.dag_path,
-                         self.template['condor.dag_template'], vars)
+                         self.template['condor.dag_template'], mapping)
 
-        self.conf_path = self.mk_path('%(staging_id)s.dag.config', vars)
+        self.conf_path = self.mk_path('%(staging_id)s.dag.config', mapping)
         self.create_file(self.conf_path,
-                         self.template['condor.dag_config_template'], vars)
+                         self.template['condor.dag_config_template'], mapping)
 
-        self.submit_path = self.mk_path('%(staging_id)s.cmd', vars)
+        self.submit_path = self.mk_path('%(staging_id)s.cmd', mapping)
         self.create_file(self.submit_path,
-                         self.template['condor.submit_template'], vars)
+                         self.template['condor.submit_template'], mapping)
 
         
         
