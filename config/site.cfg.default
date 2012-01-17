@@ -80,6 +80,8 @@ bisque.paths.root  =
 #bisque.blob_service.stores = irods,s3,local
 #bisque.blob_service.local.dir = installationdir/data/imagedir
 #bisque.blob_service.irods.url = irods://irodshost/zone/home/bisque
+#bisque.blob_service.irods.user = 
+#bisque.blob_service.irods.password = 
 # Data service
 #bisque.data_service.caching=true
 #bisque.data_service.server_cache=.server_cache

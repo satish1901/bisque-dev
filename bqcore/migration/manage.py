@@ -3,7 +3,7 @@ import sys
 import os
 from migrate.versioning.shell import main
 import bq
-from bq.core.commands.configfile import ConfigFile
+from bq.util.configfile import ConfigFile
 
 
 # first pull initial values from config files
