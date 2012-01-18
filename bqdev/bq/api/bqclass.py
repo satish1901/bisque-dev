@@ -106,7 +106,7 @@ class BQNode (object):
 class BQResource (BQNode):
     '''Base class for Bisque resources'''
     xmltag = 'resource'
-    xmlfields = ['name', 'uri', 'ts']
+    xmlfields = ['name', 'value', 'type', 'uri', 'ts']
     xmlkids = ['kids', 'tags', 'gobjects']
 
     def __repr__(self):
@@ -159,8 +159,7 @@ class BQImage(BQResource):
     xmlkids = ['tags', 'gobjects']
 
     def __init__(self):
-        self.tags = []
-        self.gobjects = []
+        super(BQImage, self).__init__()
         self.geometry = None
         
     def geometry(self):
@@ -458,29 +457,19 @@ class BQSquare (BQRectangle):
 ################################################################################
 class BQDataset(BQResource):
     xmltag = "dataset"
-    xmlfields = ['name', 'uri', 'ts']
-    xmlkids = ['tags', 'gobjects']
-    def __init__(self):
-        self.tags = []
-        self.gobjects = []
+    #xmlfields = ['name', 'uri', 'ts']
+    #xmlkids = ['kids', 'tags', 'gobjects']
 
 
 class BQUser(BQResource):
     xmltag = "user"
-    xmlfields = ['name', 'uri', 'ts']
-    xmlkids = ['tags', 'gobjects']
-    def __init__(self):
-        self.tags = []
-        self.gobjects = []
-
+    #xmlfields = ['name', 'uri', 'ts']
+    #xmlkids = ['tags', 'gobjects']
 
 class BQMex(BQResource):
     xmltag = "mex"
-    xmlfields = ['module', 'uri', 'ts', 'value']
-    xmlkids = ['tags', 'gobjects']
-    def __init__(self):
-        self.tags = []
-        self.gobjects = []
+    #xmlfields = ['module', 'uri', 'ts', 'value']
+    #xmlkids = ['tags', 'gobjects']
 
 
 

@@ -7,20 +7,24 @@ import urllib2
 import shlex
 import subprocess
 import optparse
+import pickle
+import tempfile
 try:
     from lxml import etree as et
 except:
     from xml.etree import ElementTree as et
-
-
-logging.basicConfig(level=logging.DEBUG, filename='module.log')
-
 from bq.util.configfile import ConfigFile
+from bq.api import BQSession
 
 from module_env import MODULE_ENVS, ModuleEnvironmentError
+from mexparser import MexParser
 
 ENV_MAP = dict ([ (env.name, env) for env in MODULE_ENVS ])
+logging.basicConfig(level=logging.DEBUG, filename='module.log')
+log = logging.getLogger('bq.runtime')
 
+####################
+# Helpers
 def check_exec (path, fix = True):
     if os.access (path, os.X_OK):
         return
@@ -28,20 +32,43 @@ def check_exec (path, fix = True):
     if fix:
         os.chmod (path, 0744)
 
-
-log = logging.getLogger('bq.runtime')
-
 def strtobool(x):
     return {"true": True, "false": False}.get(x.lower())
 
 def strtolist(x, sep=','):
     return [ s.strip() for s in x.split(sep)]
 
+def config_path(*names):
+    return to_sys_path(os.path.join('.', 'config', *names))
+
 
 class RunnerException(Exception):
     """Exception in the runners"""
     pass
 
+
+class AttrDict(dict):
+    def __init__(self, *args, **kwargs):
+        dict.__init__(self, *args, **kwargs)
+    def __getattr__(self, name):
+        try:
+            return self[name]
+        except KeyError:
+            raise AttributeError
+    def __setattr__(self, name, value):
+        self[name] = value
+        return value
+
+    def __getstate__(self):
+        return self.items()
+
+    def __setstate__(self, items):
+        for key, val in items:
+            self[key] = val
+
+
+###############################
+# BaseRunner
 class BaseRunner(object):
     """Base runner for ways of running a module in some runtime evironment.
 
@@ -77,7 +104,7 @@ class BaseRunner(object):
     name       = "Base"
     env = None # A mapping of environment variables (or Inherit)
     executable = [] # A command line list of the arguments
-    environments =""
+    environments = []
     launcher   = None  # Use Default launcher
     mexhandled = "true"
 
@@ -89,18 +116,21 @@ class BaseRunner(object):
                                default=False)
         self.parser.add_option('-d', '--debug', action="store_true",
                                default=False)
+        self.session = None
 
     def log (self, msg):
         #if self.options.verbose:
         log.info( msg )
 
+    ###########################################
+    # Config 
     def read_config (self, **kw):
         """Initial state of a runner.  The module-runtime.cfg is read
         and the relevent runner section is applied.  The environment
         list is created and setup in order to construct the
         environments next
         """
-        self.config = {}
+        self.config = AttrDict(executable="", environments="")
         self.sections = {}
         self.log("BaseRunner: read_config")
         # Load any bisque related variable into this runner
@@ -120,8 +150,25 @@ class BaseRunner(object):
         section = self.sections.setdefault(name, {})
         section.update  ( cfg.get (name, asdict = True) )
         self.config.update (section)
-        for k,v in section.items():
-            setattr(self,k,v)
+        #for k,v in section.items():
+        #    setattr(self,k,v)
+
+    #########################################################
+    # Helpers 
+    def create_environments(self,  **kw):
+        """Build the set of environments listed by the module config"""
+        if isinstance(self.config.environments, basestring):
+            self.environments = strtolist(self.config.environments)
+        envs = []
+        for name in self.environments:
+            env = ENV_MAP.get (name, None)
+            if env is not None:
+                envs.append (env(runner = self))
+                continue
+            log.debug ('Unknown environment: %s ignoring' % name)
+        self.environments = envs
+        log.info ('created environments %s' % envs)
+
 
     def process_config(self, **kw):
         """Configuration occurs in several passes.
@@ -136,29 +183,19 @@ class BaseRunner(object):
         for env in self.environments:
             env.process_config (self)
 
-
-    def create_environments(self,  **kw):
-        """Build the set of environment managers from the config
-        """
-        if isinstance(self.environments,basestring):
-            self.environments = strtolist(self.environments)
-        envs = []
-        for name in self.environments:
-            env = ENV_MAP.get (name, None)
-            if env is not None:
-                envs.append (env(self))
-        self.environments = envs
-
-
     def setup_environments(self, **kw):
+        'Call setup_environment during "start" processing'
         for env in self.environments:
             env.setup_environment (self, **kw)
 
+    # Run during finish
     def teardown_environments(self, **kw):
+        'Call teardown_environment during "finish" processing'
         for env in reversed(self.environments):
             env.teardown_environment (self, **kw)
 
-
+    ##########################################
+    # Extract arguments from command line or mex
     def process_args(self,  **kw):
         """Deal with any arguments and prepare the mex and module
         returns a callable for the next actions
@@ -166,39 +203,66 @@ class BaseRunner(object):
         # Args are passed directly from the Engine
         # However condor_dag will enter here with command line arguments
         args  = kw.pop('arguments', None)
-
-        self.options, arguments = self.parser.parse_args(args)
-        self.named_args = {}
-        
-        command = arguments.pop()
-        self.command = command
-        # Scan argument looking for named arguments
-        for arg in reversed(arguments):
-            tag, sep, val = arg.partition('=')
-            if sep != '=':
-                break
-            self.named_args[tag] = val
+        self.mex_tree = kw.pop('mex_tree', None)
+        self.module_tree = kw.pop('module_tree', None)
+        self.mex_token = kw.pop('mex_token', None)
+        # list of dict representing each mex : variables and arguments
+        self.mexes = []
 
         # Add remaining arguments to the executable line
         # Ensure the loaded executable is a list
-        if isinstance(self.executable, str):
-            self.executable = shlex.split(self.executable)
-        self.executable.extend (arguments)
+        if isinstance(self.config.executable, str):
+            executable = shlex.split(self.config.executable)
+        #self.executable.extend (arguments)
 
-        mexurl  = self.named_args.get ('mex_url', None)
-        modurl  = self.named_args.get ('module_url', None)
-        if mexurl:
-            self.mex_url = mexurl
-        #    handle = urllib2.urlopen(mex)
-        #    self.mex = et.parse(handle).getroot()
-        #    handle.close()
-        if modurl:
-            self.module_url = modurl
-        #    handle = urllib2.urlopen(mod)
-        #    self.module = et.parse(handle).getroot()
-        #    handle.close()
+        topmex = AttrDict(self.config)
+        topmex.update(dict(named_args={}, 
+                           executable=executable, 
+#                           arguments = [],
+                           mexuri = self.mex_tree and self.mex_tree.get('uri') or None,
+                           mex_token = self.mex_token))
+        self.mexes.append(topmex)
 
-        command = getattr (self, 'command_%s' % command, None)
+        # Pull out command line arguments 
+        self.options, topmex.arguments = self.parser.parse_args(args)
+        self.command = topmex.arguments.pop()
+        # Scan argument looking for named arguments
+        for arg in reversed(topmex.arguments):
+            tag, sep, val = arg.partition('=')
+            if sep != '=':
+                break
+            topmex.named_args[tag] = val
+
+        # Pull out arguments from mex 
+        if self.mex_tree is not None and self.module_tree is not None:
+            mexparser = MexParser()
+            mex_inputs  = mexparser.prepare_mex_params(self.module_tree, self.mex_tree)
+            module_options = mexparser.prepare_options(self.module_tree, self.mex_tree)
+
+            argument_style = module_options.get('argument_style')
+            if argument_style == 'named':
+                topmex.named_args.update ( [x.split('=') for x in mex_inputs] )
+            topmex.executable.extend(mex_inputs)
+            
+            # Create a nested list of  arguments  (in case of submex)
+            submexes = self.mex_tree.xpath('/mex/mex')
+            for mex in submexes:
+                sub_inputs = mexparser.prepare_mex_params(self.module_tree, mex)
+                submex = AttrDict(self.config)
+                submex.update(dict(named_args=dict(topmex.named_args), 
+#                                   arguments =list(topmex.arguments),
+                                   executable=topmex.executable + topmex.arguments,
+                                   mexuri = mex.get('uri'), 
+                                   mex_token = self.mex_token))
+                if argument_style == 'named':
+                    submex.named_args.update ( [x.split('=') for x in sub_inputs] )
+                submex.executable.extend(sub_inputs)
+                self.mexes.append(submex)
+            if len(self.mexes) > 1:
+                topmex.executable = None
+        log.info("processing %d mexes -> %s" % (len(self.mexes), self.mexes))
+
+        command = getattr (self, 'command_%s' % self.command, None)
         return command
 
 
@@ -209,8 +273,16 @@ class BaseRunner(object):
     # Derived classes should overload these functions
 
     def command_start(self, **kw):
-        #if self.mexhandled is False:
         self.setup_environments()
+        with open('%s/mexes.bq' % self.mexes[0].get('staging_path', tempfile.gettempdir()),'wb') as f:
+            pickle.dump(self.mexes, f)
+
+        log.info("starting %d mexes -> %s" % (len(self.mexes), self.mexes))
+
+        if len(self.mexes) > 1:
+            if self.session is None:
+                self.session = BQSession().init_mex(self.mexes[0].mexuri, self.mexes[0].mex_token)
+            self.session.update_mex('running parallel')
         return self.command_execute
 
     def command_execute(self, **kw):
@@ -221,8 +293,19 @@ class BaseRunner(object):
         """Cleanup the environment and perform any needed actions
         after the module completion
         """
+        with open('%s/mexes.bq' % self.mexes[0].get('staging_path', tempfile.gettempdir()),'rb') as f:
+            self.mexes = pickle.load(f)
+
+        log.info("finishing %d mexes -> %s" % (len(self.mexes), self.mexes))
+
         self.teardown_environments()
+
+        if len(self.mexes) > 1:
+            if self.session is None:
+                self.session = BQSession().init_mex(self.mexes[0].mexuri, self.mexes[0].mex_token)
+            self.session.finish_mex()
         return None
+
     def command_kill(self, **kw):
         """Kill the running module if possible
         """
@@ -235,8 +318,8 @@ class BaseRunner(object):
         # Find and read a config file for the module
         try:
             self.read_config(**kw)
-            self.create_environments(**kw)
             command = self.process_args(**kw)
+            self.create_environments(**kw)
             self.process_config(**kw)
 
             while command:
@@ -266,24 +349,37 @@ class CommandRunner(BaseRunner):
         self.load_section('command', self.module_cfg) # Runner's name
         
     
-    def command_execute(self, **kw):
-        if not self.options.dryrun:
-            print "Running '%s' in %s" % (' '.join(self.executable), os.getcwd())
-            # Check 
-            if len(self.executable) > 1:
-                #check_exec (self.executable[0])
-                retcode = subprocess.call (self.executable,
-                                  stdout = open("%s.log" % self.executable[0],'w'),
-                                  stderr = open("%s.err" % self.executable[0],'w'),
+
+    def execone(self, command_line, stdout = None, stderr=None, cwd = None):
+        retcode = subprocess.call(command_line,
+                                  stdout = stdout,
+                                  stderr = stderr,
                                   #stdin  = open("/dev/null"),
-                                  shell  = (os.name == "nt")
+                                  shell  = (os.name == "nt"),
+                                  cwd    = cwd
                                   )
-                if retcode:
-                    raise RunnerException (
-                        "Command %s gave non-zero return code %s" %
-                        (" ".join(self.executable), retcode))
-        else:
-            self.log ("Dryrun of '%s'" % ' '.join(self.executable))
+        if retcode:
+            raise RunnerException (
+                "Command %s gave non-zero return code %s" %
+                (" ".join(command_line), retcode))
+
+    def command_execute(self, **kw):
+
+        for mex in self.mexes:
+            if not mex.executable:
+                log.info ('skipping mex %s ' % mex)
+                continue
+            command_line = list(mex.executable)
+            #command_line.extend (mex.arguments)
+            if  self.options.dryrun:
+                self.log( "DryRunning '%s' in %s" % (' '.join(command_line), os.getcwd()))
+                continue
+
+            self.log( "running '%s' in %s" % (' '.join(command_line), os.getcwd()))
+            self.execone(command_line, 
+                         stdout = open("%s.out" % mex.executable[0],'w'),
+                         stderr = open("%s.err" % mex.executable[0],'w'),
+                         cwd = mex.get('staging_path'))
         
         return self.command_finish
 

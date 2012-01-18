@@ -82,7 +82,7 @@ from bq.util.configfile import ConfigFile
 from bq.util.hostutils import same_host
 from bq.util import http
 from bq.util.http.thread_pool import ThreadPool, makeRequests
-from bq.util.paths import bisque_path
+from bq.util.paths import bisque_path, config_path
 
 from adapters import MatlabAdapter, PythonAdapter, ShellAdapter, RuntimeAdapter
 
@@ -245,13 +245,13 @@ def initialize_available_modules(engines):
         #xmlfile = MODULE_PATH +'/'+ g + '/' + g + '.xml'
 
         ### Check that we are in a module and it is enabled.
-        cfg = os.path.join(MODULE_PATH, g, 'runtime-bisque.cfg')
+        cfg = os.path.join(MODULE_PATH, g, 'runtime-module.cfg')
         if not os.path.exists(cfg):
-            log.debug ("Skipping %s (%s) : no runtime-bisque.cfg" % (g, cfg))
+            log.debug ("Skipping %s (%s) : no runtime-module.cfg" % (g, cfg))
             continue
         cfg = ConfigFile (cfg)
         mod_vars = cfg.get (None, asdict = True)
-        enabled = mod_vars.get('module_enabled', 'False') == "True"
+        enabled = mod_vars.get('module_enabled', 'true').lower() == "true"
         status = (enabled and 'enabled') or 'disabled'
         if not enabled :
             log.debug ("Skipping %s : disabled" % g)
@@ -266,7 +266,10 @@ def initialize_available_modules(engines):
         except etree.XMLSyntaxError:
             log.exception ('while parsing %s' % xmlfile)
             continue
-
+        bisque_cfg = os.path.join(MODULE_PATH, g, 'runtime-bisque.cfg')
+        if  os.path.exists(bisque_cfg):
+            os.unlink (bisque_cfg)
+        os.link (config_path('runtime-bisque.cfg'), bisque_cfg)
         ts = os.stat(xmlfile)
         # for elem in module_root:
         if module_root.tag == "module":
@@ -720,10 +723,8 @@ class EngineModuleResource(BaseController):
         module = self.module_xml
         try:
             try:
-                #up = get_user_pass ()
-                #log.debug ('user_pass' + str(up))
                 self.running [mexid] = mextree
-                mex_moduleuri = mextree.get ('module')
+                mex_moduleuri = mextree.get ('type')
                 log.debug ('moduleuri ' + str(mex_moduleuri))
                 #if mex_moduleuri != module.get ('uri'):
                 #    return None
@@ -732,7 +733,7 @@ class EngineModuleResource(BaseController):
                 if not adapter:
                     log.debug ('No adaptor for type %s' % (adapter_type))
                     raise EngineError ('No adaptor for type %s' % (adapter_type))
-                exec_id = adapter.execute (module, mextree)
+                exec_id = adapter.execute(module, mextree)
                 mextree.append(etree.Element('tag', name='execution_id', value=str(exec_id)))
                 
                 #if not mextree.get ('asynchronous'):

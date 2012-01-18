@@ -81,8 +81,11 @@ class iRodsStorage(object):
     
     def __init__(self):
         self.top = config.get('bisque.blob_service.irods.url', None)
-        self.password = config.get('bisque.blob_service.irods.password', None)
-        log.debug('irods.password: %s' % (self.password))
+        self.user = config.get('bisque.blob_service.irods.user')
+        self.password = config.get('bisque.blob_service.irods.password')
+        if self.password:
+            self.password = self.password.strip('"\'')
+        log.debug('irods.user: %s irods.password: %s' % (self.user, self.password))
 
     def valid(self, irods_ident):
         return irods_ident and irods_ident.startswith('irods://')
@@ -93,11 +96,11 @@ class iRodsStorage(object):
             
         blob_ident = randomPath(self.top, user_name, filename)
         log.debug('irods.write: %s -> %s' % (filename,blob_ident))
-        flocal = irods_handler.irods_push_file(fp, blob_ident, password = self.password)
+        flocal = irods_handler.irods_push_file(fp, blob_ident, user=self.user, password = self.password)
         return blob_ident, flocal
 
     def localpath(self, irods_ident):
-        path = irods_handler.irods_fetch_file(irods_ident, password = self.password)
+        path = irods_handler.irods_fetch_file(irods_ident, user=self.user, password = self.password)
         return  path
     def __str__(self):
         return "<irods_store: %s>" %self.top
