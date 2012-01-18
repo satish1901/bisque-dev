@@ -24,7 +24,6 @@ Ext.define('Bisque.ResourceFactory', {
     }
 })
 
-
 Bisque.ResourceFactoryDeprecated = function(config)
 {
     var resType = (config.resource.xmltag=="resource")?config.resource.type:config.resource.xmltag; 
@@ -354,7 +353,15 @@ Ext.define('Bisque.Resource.PStrip', {
     extend:'Bisque.Resource'
 });
 
+Ext.define('Bisque.Resource.PStripBig', {
+    extend:'Bisque.Resource',
+});
+
 Ext.define('Bisque.Resource.Full', {
+    extend:'Bisque.Resource'
+});
+
+Ext.define('Bisque.Resource.List', {
     extend:'Bisque.Resource'
 });
 

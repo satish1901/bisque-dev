@@ -132,13 +132,23 @@ Ext.define('Bisque.ResourceBrowser.Browser',
             hidden : true,
             collapsible: true,
             hideCollapseTool : true,
+            listeners : {
+                'beforecollapse' : function(me)
+                {
+                    me.setTitle(me.getComponent(0).title);
+                },
+                'beforeexpand' : function(me)
+                {
+                    me.removeDocked(me.header, false);
+                }
+            }
         });
 
         this.centerPanel = new Ext.Panel(
         {
             region : 'center',
             border : false,
-            layout : 'hbox',
+            layout : 'fit',
         });
         config = config || {};
 

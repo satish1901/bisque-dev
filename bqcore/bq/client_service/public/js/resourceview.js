@@ -1,7 +1,5 @@
 Ext.define('BQ.ResourceViewer', 
 {
-    extend : 'Ext.Component',
-
     statics : 
     {
         dispatch : function(resource) 
