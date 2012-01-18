@@ -50,12 +50,16 @@ class ModuleRunner(object):
             print "Missing runtime-module.cfg"
             return None            
             
+        log.debug('Path: %s'%os.getcwd())         
+            
         runners = cfg.get(None, 'runtime.platforms')
+        log.debug('Module runners: %s'%runners)
         self.module_runners = [r.strip() for r in runners.split(',')]
 
         if os.path.exists('runtime-bisque.cfg'):
             cfg = ConfigFile('runtime-bisque.cfg')
             runners = cfg.get(None, 'runtime.platforms')
+            log.debug('System runners: %s'%runners)
             self.system_runners = [r.strip() for r in runners.split(',')]
 
         for sys_runner in self.system_runners:

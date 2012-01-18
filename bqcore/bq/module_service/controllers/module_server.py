@@ -259,8 +259,9 @@ def create_mex(module_url, name, mex = None, **kw):
             for resource in members:
                 subinputs = copy.deepcopy(inputs)
                 resource_tag = subinputs.xpath('./tag[@name="%s"]' % iterable_tag_name)[0]
-                resource_tag.set('value', resource.text)
-                #etree.SubElement(subinputs, 'tag', name=iterable_tag_name, value=resource.text)
+                #resource_tag.set('value', resource.text)
+                subinputs.remove (resource_tag)
+                etree.SubElement(subinputs, 'tag', name=iterable_tag_name, value=resource.text)
                 submex = etree.Element('mex', name=name, type=module_url)
                 submex.append(subinputs)
                 mex.append(submex)

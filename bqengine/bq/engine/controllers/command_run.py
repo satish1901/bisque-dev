@@ -217,7 +217,7 @@ class BaseRunner(object):
 
         topmex = AttrDict(self.config)
         topmex.update(dict(named_args={}, 
-                           executable=executable, 
+                           executable=list(executable), 
 #                           arguments = [],
                            mexuri = self.mex_tree and self.mex_tree.get('uri') or None,
                            mex_token = self.mex_token))
@@ -251,11 +251,11 @@ class BaseRunner(object):
                 submex = AttrDict(self.config)
                 submex.update(dict(named_args=dict(topmex.named_args), 
 #                                   arguments =list(topmex.arguments),
-                                   executable=topmex.executable + topmex.arguments,
+                                   executable=list(executable), #+ topmex.arguments,
                                    mexuri = mex.get('uri'), 
                                    mex_token = self.mex_token))
-                if argument_style == 'named':
-                    submex.named_args.update ( [x.split('=') for x in sub_inputs] )
+                #if argument_style == 'named':
+                #    submex.named_args.update ( [x.split('=') for x in sub_inputs] )
                 submex.executable.extend(sub_inputs)
                 self.mexes.append(submex)
             if len(self.mexes) > 1:
@@ -376,6 +376,8 @@ class CommandRunner(BaseRunner):
                 continue
 
             self.log( "running '%s' in %s" % (' '.join(command_line), os.getcwd()))
+            log.info ('mex %s ' % mex)
+            
             self.execone(command_line, 
                          stdout = open("%s.out" % mex.executable[0],'w'),
                          stderr = open("%s.err" % mex.executable[0],'w'),

@@ -83,6 +83,7 @@ from bq.util.hostutils import same_host
 from bq.util import http
 from bq.util.http.thread_pool import ThreadPool, makeRequests
 from bq.util.paths import bisque_path, config_path
+from bq.util.copylink import copy_link
 
 from adapters import MatlabAdapter, PythonAdapter, ShellAdapter, RuntimeAdapter
 
@@ -267,9 +268,12 @@ def initialize_available_modules(engines):
             log.exception ('while parsing %s' % xmlfile)
             continue
         bisque_cfg = os.path.join(MODULE_PATH, g, 'runtime-bisque.cfg')
-        if  os.path.exists(bisque_cfg):
-            os.unlink (bisque_cfg)
-        os.link (config_path('runtime-bisque.cfg'), bisque_cfg)
+
+        #if  os.path.exists(bisque_cfg):
+        #    os.unlink (bisque_cfg)
+        #os.link (config_path('runtime-bisque.cfg'), bisque_cfg)
+        copy_link (config_path('runtime-bisque.cfg'), bisque_cfg)
+        
         ts = os.stat(xmlfile)
         # for elem in module_root:
         if module_root.tag == "module":
