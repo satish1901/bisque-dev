@@ -176,23 +176,25 @@ Ext.define('Bisque.ResourceBrowser.Layout.Base',
 		
 		var resCt=[],resCtSub=[], i=0, currentGrp;
 		
-		// if resourceQueue is blank, show a default message
+		// if no results were obtained for a given query, show a default no-results message
 		
 		if (this.resQ.length==0)
 		{
-            var label = Ext.create('Ext.container.Container', {
-                cls : 'lblBig',
-                html : 'No data found...',
+            var imgNoResults = Ext.create('Ext.Img', 
+            {
+                src : bq.url('/js/ResourceBrowser/Images/no-results.png'),
             })
             
-            var ct = Ext.create('Ext.container.Container', {
-                layout : {
-                    type : 'vbox',
-                    pack : 'center',
-                    align: 'center'
-                },
-                height : '100%',
-                items : label
+            var ct = Ext.create('Ext.container.Container', 
+            {
+                layout  :   {
+                                type : 'vbox',
+                                pack : 'center',
+                                align: 'center'
+                            },
+                height  :   '100%',
+                width   :   '100%',
+                items   :   imgNoResults
             });
 
 		    this.add(ct);
