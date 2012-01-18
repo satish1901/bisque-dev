@@ -5,7 +5,16 @@ Ext.define('Bisque.ResourceTaggerOffline',
     constructor : function(config)
     {
         config = config || {};
-        config.viewMode = 'Offline';
+        
+        Ext.apply(config, 
+        {
+            viewMode    :   'Offline',
+            tree        :   {
+                                btnAdd : false,
+                                btnDelete : false,
+                                btnImport : false
+                            }
+        });
         
         this.callParent([config]);
     },

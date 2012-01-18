@@ -118,7 +118,7 @@
        
         var moduleBrowser = new Bisque.ResourceBrowser.Browser({
             title: 'Applications',
-            layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.ICON_LIST,
+            layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.IconList,
             viewMode: 'ModuleBrowser',
             dataset: '/module_service',
             wpublic: true,
@@ -184,7 +184,7 @@
         });  
         
         var setBrowser = new Bisque.ResourceBrowser.Browser({
-          layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.LIST,
+          layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.List,
           title: 'Datasets',
           viewMode: 'ViewerOnly',
           tagOrder: '"@ts":desc',          
@@ -209,7 +209,7 @@
         this.recentsExplorer.setTitle('My recent stuff');
         
         var mexBrowser = new Bisque.ResourceBrowser.Browser({
-          layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.LIST,
+          layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.List,
           title : 'Analysis',
           viewMode : 'MexBrowser',
           dataset : '/data_service/mex',

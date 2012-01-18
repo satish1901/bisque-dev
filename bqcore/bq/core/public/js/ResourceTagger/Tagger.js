@@ -1,6 +1,6 @@
 Ext.define('Bisque.ResourceTagger',
 {
-    extend : 'Ext.container.Container',
+    extend : 'Ext.panel.Panel',
 
     constructor : function(config)
     {
@@ -11,11 +11,16 @@ Ext.define('Bisque.ResourceTagger',
             layout : 'fit',
             padding : '0 1 0 0',
             style : 'background-color:#FFF',
+            border : false,
 
             rootProperty : config.rootProperty || 'tags',
             autoSave : (config.autoSave==undefined) ? true : false,
             resource : {},
-            tree : {},
+            tree : config.tree || {
+                btnAdd : true,
+                btnDelete : true,
+                btnImport : true
+            },
             store : {},
             dirtyRecords : []
         });
@@ -30,6 +35,7 @@ Ext.define('Bisque.ResourceTagger',
                 fields : [ {name: 'value', mapping: '@value' } ],
             });
         }
+        
         this.store_values = Ext.create('Ext.data.Store', {
             model : 'TagValues', 
             autoLoad : true,
@@ -83,7 +89,6 @@ Ext.define('Bisque.ResourceTagger',
              
         });
 
-
         this.callParent([config]);
         this.setResource(config.resource);
     },
@@ -108,6 +113,8 @@ Ext.define('Bisque.ResourceTagger',
         this.fireEvent('beforeload', this, resource);
 
         this.resource = resource;
+        this.testAuth(BQApp.user);
+        
         if(this.resource.tags.length > 0)
             this.loadResourceTags(this.resource.tags);
         else
@@ -170,7 +177,6 @@ Ext.define('Bisque.ResourceTagger',
             selModel : this.getSelModel(),
             plugins : (this.viewMgr.state.editable) ? [rowEditor] : null,
             
-
             listeners :
             {
                 'checkchange' : function(node, checked)
@@ -341,12 +347,12 @@ Ext.define('Bisque.ResourceTagger',
                     return true;
 
                 for(var node in nodeHash)
-                if(nodeHash[node].dirty)
-                {
-                    status = true;
-                        Ext.apply(nodeHash[node].raw, nodeHash[node].getChanges());
-                    nodeHash[node].commit();
-                }
+                    if(nodeHash[node].dirty)
+                    {
+                        status = true;
+                            Ext.apply(nodeHash[node].raw, nodeHash[node].getChanges());
+                        nodeHash[node].commit();
+                    }
                 return status;
             },
 
@@ -384,35 +390,43 @@ Ext.define('Bisque.ResourceTagger',
         var tbar = [
         {
             xtype : 'buttongroup',
+            itemId : 'grpAddDelete',
             hidden : (this.viewMgr.state.btnAdd && this.viewMgr.state.btnDelete),
             items : [
             {
+                itemId : 'btnAdd', 
                 text : 'Add',
                 hidden : this.viewMgr.state.btnAdd,
                 scale : 'small',
                 iconCls : 'icon-add',
                 handler : this.addTags,
+                disabled : this.tree.btnAdd,
                 scope : this
             },
             {
+                itemId : 'btnDelete', 
                 text : 'Delete',
                 hidden : this.viewMgr.state.btnDelete,
                 scale : 'small',
                 iconCls : 'icon-delete',
                 handler : this.deleteTags,
+                disabled : this.tree.btnDelete,
                 scope : this
             }]
         },
         {
             xtype : 'buttongroup',
+            itemId : 'grpImportExport',
             hidden : (this.viewMgr.state.btnImport && this.viewMgr.state.btnExport),
             items : [
             {
+                itemId : 'btnImport', 
                 text : 'Import',
                 hidden : this.viewMgr.state.btnImport,
                 scale : 'small',
                 iconCls : 'icon-import',
                 handler : this.importTags,
+                disabled : this.tree.btnImport,
                 scope : this
             },
             {
@@ -633,6 +647,31 @@ Ext.define('Bisque.ResourceTagger',
             this.tree.getView().refresh();
         }
     },
+    
+    testAuth : function(user)
+    {
+        if (user && (user.uri==this.resource.owner))
+        {
+            // user is autorized to edit tags
+            this.tree.btnAdd = false;
+            this.tree.btnDelete = false;
+            this.tree.btnImport = false;
+            
+            if (this.tree.rendered)
+            {
+                var tbar = this.tree.getDockedItems('toolbar')[0];
+
+                tbar.getComponent('grpAddDelete').getComponent('btnAdd').setDisabled(false);
+                tbar.getComponent('grpAddDelete').getComponent('btnDelete').setDisabled(false);
+                tbar.getComponent('grpImportExport').getComponent('btnImport').setDisabled(false);
+            }
+        }
+        else if (user===undefined)
+        {
+            // User autentication hasn't been done yet
+            BQApp.on('gotuser', Ext.bind(this.testAuth, this));
+        }
+    },
 
     exportToXml : function()
     {
@@ -653,7 +692,6 @@ Ext.define('Bisque.ResourceTagger',
         var url = '/export/to_gdocs?url=' + encodeURIComponent(this.resource.uri);
         window.open(url);
     },
-
 });
 
 Ext.define('Bisque.GObjectTagger',

@@ -6,28 +6,28 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
 
 		Ext.apply(this,
 		{
-			browser:config.browser,
-			layoutKey:config.browser.layoutKey,
-			msgBus:config.browser.msgBus,
-			uri:config.uri,
-			callBack:config.callBack,
+			browser          :   config.browser,
+			layoutKey        :   config.browser.layoutKey,
+			msgBus           :   config.browser.msgBus,
+			uri              :   config.uri,
+			callBack         :   config.callBack,
 			
-			prefetchFactor: 1,	// (prefetchFactor X visibileElements) elements are prefetched 
-			dataLimit: 500,	// Number of resource URIs fetched
-			noUnloadClicks : 5, // Cache of the opposite direction will be unloaded after these many clicks in a given direction (right or left) 
+			prefetchFactor   :   1,	// (prefetchFactor X visibileElements) elements are prefetched 
+			dataLimit        :   500,	// Number of resource URIs fetched
+			noUnloadClicks   :   5, // Cache of the opposite direction will be unloaded after these many clicks in a given direction (right or left) 
 			
-			hasMoreData: {left:true, right:true},
-			loading: {left:false, right:false},
-			dataHash:{},
-			list:[],
-			selectedRes:{},
-			indRight:[],	//Indexes of prefetched items on the right - prefetch cache
-			indLeft:[],		//Indexes of prefetched items on the left - prefetch cache
-			dbOffset:{left:0, center:parseInt(config.uri.offset), right:0},
-			currentDirection: 1, // 1=Right, 0=Left
+			hasMoreData      :   {left:true, right:true},
+			loading          :   {left:false, right:false},
+			dataHash         :   {},
+			list             :   [],
+			selectedRes      :   {},
+			indRight         :   [],	//Indexes of prefetched items on the right - prefetch cache
+			indLeft          :   [],		//Indexes of prefetched items on the left - prefetch cache
+			dbOffset         :   {left:0, center:parseInt(config.uri.offset), right:0},
+			currentDirection :   1, // 1=Right, 0=Left
 			
-			clicks: {right:0, left:0},
-			rqOffset:0
+			clicks           :   {right:0, left:0},
+			rqOffset         :   0
 		});
 		
 		this.loadData();
@@ -54,7 +54,14 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
 		this.dbOffset.right=this.dbOffset.left+resourceData.children.length;
 		
 		for(var i=0;i<resourceData.children.length;i++)
-			this.push(Bisque.ResourceBrowser.ResourceFactory({resource:resourceData.children[i], layoutKey:this.layoutKey, msgBus:this.msgBus, resQ:this, browser:this.browser}));
+			this.push(Bisque.ResourceFactory.getResource(
+			    {
+                    resource    :   resourceData.children[i],
+    			    layoutKey   :   this.layoutKey,
+    			    msgBus      :   this.msgBus, 
+    			    resQ        :   this, 
+    			    browser     :   this.browser
+                }));
 
 		this.hasMoreData.left=(this.dbOffset.left>0)?true:false;
 		this.hasMoreData.right=((this.dbOffset.right-this.dbOffset.center)==this.dataLimit)?true:false;
@@ -87,7 +94,7 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
 
 			this.dbOffset.right+=data.children.length;
 			for(var i=0;i<data.children.length;i++)
-				this.push(Bisque.ResourceBrowser.ResourceFactory({resource:data.children[i], layoutKey:this.layoutKey, msgBus:this.msgBus, resQ:this, browser:this.browser}));
+				this.push(Bisque.ResourceFactory.getResource({resource:data.children[i], layoutKey:this.layoutKey, msgBus:this.msgBus, resQ:this, browser:this.browser}));
 			
 			this.hasMoreData.right=(data.children.length==this.dataLimit)?true:false;
 			this.loading.right=false;
@@ -122,7 +129,7 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
 			this.browser.commandBar.getComponent('btnLeft').setLoading(false);
 
 			for(var i=0;i<data.children.length;i++)
-				this.unshift(Bisque.ResourceBrowser.ResourceFactory({resource:data.children[i], layoutKey:this.layoutKey, msgBus:this.msgBus, resQ:this, browser:this.browser}));
+				this.unshift(Bisque.ResourceFactory.getResource({resource:data.children[i], layoutKey:this.layoutKey, msgBus:this.msgBus, resQ:this, browser:this.browser}));
 			this.hasMoreData.left=(data.children.length==this.dataLimit)?true:false;
 			this.loading.left=false;
             this.browser.changeLayoutThrottled(this.browser.layoutKey, 'Left');
@@ -238,7 +245,7 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
 
 		for(var i=0;i<this.list.length;i++)
 		{
-			this.splice(i+this.rqOffset, 1, Bisque.ResourceBrowser.ResourceFactory({resource:this[i+this.rqOffset].resource, layoutKey:this.layoutKey, msgBus:this.msgBus, resQ:this, browser:this.browser}))
+			this.splice(i+this.rqOffset, 1, Bisque.ResourceFactory.getResource({resource:this[i+this.rqOffset].resource, layoutKey:this.layoutKey, msgBus:this.msgBus, resQ:this, browser:this.browser}))
 			this.list[i].prefetch(layoutMgr);
 		}
 
@@ -282,7 +289,7 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
 			this.dataHash={};
 		
 			for(i=0;i<this.length;i++)
-				this.splice(i, 1, Bisque.ResourceBrowser.ResourceFactory({resource:this[i].resource, layoutKey:this.layoutKey, msgBus:this.msgBus, resQ:this, browser:this.browser}))
+				this.splice(i, 1, Bisque.ResourceFactory.getResource({resource:this[i].resource, layoutKey:this.layoutKey, msgBus:this.msgBus, resQ:this, browser:this.browser}))
 		}
 
 		//console.timeEnd("resourceQueue - changeLayout");

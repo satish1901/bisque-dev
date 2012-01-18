@@ -29,7 +29,7 @@ Ext.define('BQ.dataset.Service', {
             collapsible: false,
             width: 350,
             
-            layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.LIST,
+            layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.List,
             title: 'Datasets',
             tagOrder: '"@ts":desc',          
             dataset: '/data_service/dataset',

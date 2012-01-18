@@ -132,13 +132,23 @@ Ext.define('Bisque.ResourceBrowser.Browser',
             hidden : true,
             collapsible: true,
             hideCollapseTool : true,
+            listeners : {
+                'beforecollapse' : function(me)
+                {
+                    me.setTitle(me.getComponent(0).title);
+                },
+                'beforeexpand' : function(me)
+                {
+                    me.removeDocked(me.header, false);
+                }
+            }
         });
 
         this.centerPanel = new Ext.Panel(
         {
             region : 'center',
             border : false,
-            layout : 'hbox',
+            layout : 'fit',
         });
         config = config || {};
 
@@ -356,7 +366,7 @@ Ext.define('Bisque.ResourceBrowser.Browser',
 
         this.layoutKey = newLayoutKey == -1 ? this.layoutKey : newLayoutKey;
 
-        this.layoutMgr = Bisque.ResourceBrowser.LayoutFactory(
+        this.layoutMgr = Bisque.ResourceBrowser.LayoutFactory.getLayout(
         {
             browser : this,
             direction : direction
