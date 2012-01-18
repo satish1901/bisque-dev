@@ -40,6 +40,10 @@ Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS = {
 	"List"       :   5,
 	"IconList"   :   6,
 	'Page'       :   7,
+
+    // for backwards compatibility
+    "COMPACT"    :   1,
+    "CARD"       :   2,
 };
 
 Bisque.ResourceBrowser.LayoutFactory.DEFAULT_LAYOUT = Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Compact;
@@ -172,6 +176,29 @@ Ext.define('Bisque.ResourceBrowser.Layout.Base',
 		
 		var resCt=[],resCtSub=[], i=0, currentGrp;
 		
+		// if resourceQueue is blank, show a default message
+		
+		if (this.resQ.length==0)
+		{
+            var label = Ext.create('Ext.container.Container', {
+                cls : 'lblBig',
+                html : 'No data found...',
+            })
+            
+            var ct = Ext.create('Ext.container.Container', {
+                layout : {
+                    type : 'vbox',
+                    pack : 'center',
+                    align: 'center'
+                },
+                height : '100%',
+                items : label
+            });
+
+		    this.add(ct);
+		    return;
+		}
+		
 		// Avoid 'if' in for loop for speed
 		if (this.showGroups)
 		{
@@ -193,7 +220,7 @@ Ext.define('Bisque.ResourceBrowser.Layout.Base',
 					items:resCtSub,
 					cls:'fieldSet',
 	            	margin:'8 0 0 8',
-	            	width: (this.getParentSize().width),
+	            	width: (this.getParentSize().width-30),
 	            	//autoScroll:true,
         	    	padding:0,
             		title: '<b>Group </b><i>'+currentGrp+'</i>',
@@ -356,15 +383,17 @@ Ext.define('Bisque.ResourceBrowser.Layout.Compact',
 Ext.define('Bisque.ResourceBrowser.Layout.Card',
 {
 	extend : 'Bisque.ResourceBrowser.Layout.Base',
+
+    inheritableStatics : {
+        layoutCSS : 'ImageCard'
+    },
+
 	constructor : function()
 	{
 		this.callParent(arguments);
 		this.layoutEl.imageWidth=140;
 		this.layoutEl.imageHeight=115;
-	},
-    inheritableStatics : {
-        layoutCSS : 'ImageCard'
-    }
+	}
 });
 
 
@@ -373,6 +402,10 @@ Ext.define('Bisque.ResourceBrowser.Layout.PStrip',
 {
 	extend : 'Bisque.ResourceBrowser.Layout.Base',
 	
+    inheritableStatics : {
+        layoutCSS : 'ImagePStripSmall'
+    },
+
 	constructor : function() 
 	{
 		Ext.apply(this, {layout:{type:'vbox', align:'stretch'}});
@@ -414,10 +447,6 @@ Ext.define('Bisque.ResourceBrowser.Layout.PStrip',
 		return nCol;
 	},
 	
-    inheritableStatics : {
-        layoutCSS : 'ImagePStripSmall'
-    },
-
 	// Private member
 	CreateBigResource : function(resource, layoutMgr) 
 	{
@@ -439,8 +468,6 @@ Ext.define('Bisque.ResourceBrowser.Layout.PStrip',
 			duration: 180,
 		});
 		
-        if (!res.rendered)
-            res.setLoading({msg:''});
 		if (layoutMgr.proxyPnl.items.length>1)
 			layoutMgr.proxyPnl.getComponent(layoutMgr.proxyPnl.items.length-1).destroy();
 	},
@@ -451,37 +478,18 @@ Ext.define('Bisque.ResourceBrowser.Layout.Full',
 {
 	extend : 'Bisque.ResourceBrowser.Layout.Base',
 
-	constructor : function()
-	{
-		this.callParent(arguments);
-		this.layoutEl.imageHeight=275;
-		this.layoutEl.imageWidth=280;
-		
-		var size=this.getParentSize();
-		this.setSize({height:size.height, width:size.width+31});
-	},
-	
-	Init : function(resourceQueue) 
-	{
-		var proxyPnl=new Ext.panel.Panel({border:false, autoScroll:true});
-
-		this.callParent([arguments[0], proxyPnl]);
-		
-		this.add(proxyPnl);
-	},
-	
-	getParentSize : function() 
-	{
-		var size = this.browser.centerPanel.getSize();
-		size.width=size.width-31;
-		
-		return size;
-	},
-	
     inheritableStatics : {
         layoutCSS : 'ImageFull'
     },
 
+	constructor : function()
+	{
+		this.callParent(arguments);
+
+		this.layoutEl.imageHeight=275;
+		this.layoutEl.imageWidth=280;
+	},
+	
 	getVisibleElements : function() 
 	{
 		return 10;
@@ -493,16 +501,6 @@ Ext.define('Bisque.ResourceBrowser.Layout.List',
 {
 	extend : 'Bisque.ResourceBrowser.Layout.Full',
 
-	constructor : function()
-	{
-		this.callParent(arguments);
-		//this.layoutEl.iconHeight=72;
-		//this.layoutEl.iconWidth=72;
-		
-		var size=this.getParentSize();
-		this.setSize({height:size.height, width:size.width});
-	},
-	
     inheritableStatics : {
         layoutCSS : 'ResourceList'
     },
@@ -518,16 +516,16 @@ Ext.define('Bisque.ResourceBrowser.Layout.IconList',
 {
     extend : 'Bisque.ResourceBrowser.Layout.List',
 
+    inheritableStatics : {
+        layoutCSS : 'ResourceIconList'
+    },
+    
     constructor : function()
     {
         this.callParent(arguments);
 
         this.layoutEl.iconHeight=110;
         this.layoutEl.iconWidth=110;
-    },
-    
-    inheritableStatics : {
-        layoutCSS : 'ResourceIconList'
     },
     
     getVisibleElements : function() 

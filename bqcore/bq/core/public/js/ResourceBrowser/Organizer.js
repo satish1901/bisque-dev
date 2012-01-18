@@ -49,7 +49,8 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
             }]
         });
 
-        Bisque.ResourceBrowser.Organizer.superclass.constructor.apply(this, arguments);
+        this.callParent(arguments);
+        
         this.on('afterrender', function()
         {
             //this.AddFilter();

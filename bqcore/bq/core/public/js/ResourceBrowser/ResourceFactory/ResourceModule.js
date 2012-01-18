@@ -56,25 +56,22 @@ Ext.define('Bisque.Resource.Module.Compact',
     
     updateContainer : function()
     {
-		var moduleName=new Ext.form.Label({
-			text:this.resource.name,
-			//padding:5,
-			cls:'lblModuleName',
-		})
-		
-		var moduleOwner=new Ext.form.Label({
-			text:this.getData('owner'),
-			//padding:'0 0 0 5',
-			cls:'lblModuleOwner'
-		})
+        var name = Ext.create('Ext.container.Container', {
+            cls : 'lblHeading1',
+            html : this.resource.name,
+        })
 
-		var moduleType=new Ext.form.Label({
-			text:this.resource.type,
-			padding:5,
-			style:'color:#444'
-		})
+        var type = Ext.create('Ext.container.Container', {
+            cls : 'lblHeading2',
+            html : this.getData('owner'),
+        })
 
-		this.add([moduleName, moduleOwner, moduleType]);
+        var value = Ext.create('Ext.container.Container', {
+            cls : 'lblContent',
+            html : this.resource.value,
+        })
+
+        this.add([name, type, value]);
         this.setLoading(false);
     },
 });

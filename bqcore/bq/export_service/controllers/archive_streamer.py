@@ -22,7 +22,7 @@ class ArchiveStreamer():
         self.datasetList = datasetList
         
         response.headers['Content-Type'] = self.archiver.getContentType()
-        response.headers['Content-Disposition'] = 'attachment;filename=' + archiveName + self.archiver.getFileExtension()
+        response.headers['Content-Disposition'] = 'attachment;filename="' + archiveName + self.archiver.getFileExtension() + '"'
     
     def stream(self):
         flist = self.fileInfoList(self.fileList, self.datasetList)

@@ -76,7 +76,7 @@ Ext.define('BQ.Application', {
     }, 
 
     onNoUser: function() {
-        this.user = undefined;
+        this.user = null;
         this.fireEvent( 'nouser');
         BQ.Preferences.loadUser(null, 'LOADED');
     }, 

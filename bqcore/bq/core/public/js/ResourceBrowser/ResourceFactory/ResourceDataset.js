@@ -57,29 +57,22 @@ Ext.define('Bisque.Resource.Dataset.Compact',
     
     updateContainer : function()
     {
-		var datasetName=new Ext.form.Label({
-			text:' '+this.resource.name+' ',
-			padding:'8 8 8 5',
-			cls:'lblModuleName',
-		})
-		
-		var datasetOwner=new Ext.form.Label({
-			text:this.getData('owner'),
-			padding:5,
-			cls:'lblModuleOwner',
-		})
+        var name = Ext.create('Ext.container.Container', {
+            cls : 'lblHeading1',
+            html : Ext.String.ellipsis(this.resource.name || 'undefined', 24),
+        })
 
-		var date=Ext.Date.parse(this.resource.ts, 'Y-m-d H:i:s.u');
-		
-		var datasetDate=new Ext.form.Label({
-			text:Ext.Date.format(date, "F j, Y g:i:s a"),
-			//padding:'8 8 8 5',
-			//style:'color:#444;font-size:11px'
-			flex: 1,				
-			cls: 'lblModuleDate',			
-		})
+        var type = Ext.create('Ext.container.Container', {
+            cls : 'lblHeading2',
+            html : Ext.Date.format(Ext.Date.parse(this.resource.ts, 'Y-m-d H:i:s.u'), "m-d-Y g:i:s a"),
+        })
 
-		this.add([datasetName, datasetOwner, datasetDate]);
+        var value = Ext.create('Ext.container.Container', {
+            cls : 'lblContent',
+            html : this.getData('owner'),
+        })
+
+        this.add([name, type, value]);
         this.setLoading(false);
     },
 });
