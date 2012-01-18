@@ -49,7 +49,8 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
             }]
         });
 
-        Bisque.ResourceBrowser.Organizer.superclass.constructor.apply(this, arguments);
+        this.callParent(arguments);
+        
         this.on('afterrender', function()
         {
             //this.AddFilter();
@@ -108,7 +109,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
 
         filterCt.addEvents('onFilterDragDrop');
         this.relayEvents(filterCt, ['onFilterDragDrop']);
-        //filterCt.expand(true);
+        filterCt.expand(true);
     },
 
     ManageEvents : function()
@@ -178,7 +179,6 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
     {
         var uri =
         {
-            offset : 0,
             tag_query : this.GetTagQuery(),
             tag_order : this.GetTagOrder()
         };

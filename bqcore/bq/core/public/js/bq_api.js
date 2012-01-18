@@ -1539,6 +1539,7 @@ BQModule.prototype.initializeXml = function (node) {
     this.type    = attribStr(node,'type');
     this.ts      = attribStr(node,'ts');
     this.owner   = attribStr(node, 'owner');
+    this.value   = attribStr(node, 'value');
     this.resource_type = this.xmltag;
 
     // now copy over all other config params

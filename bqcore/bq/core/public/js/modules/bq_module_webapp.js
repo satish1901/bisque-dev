@@ -218,7 +218,7 @@ BQWebApp.prototype.onResourceSelected = function (R) {
 
     var e = document.getElementById("webapp_input_description");    
     if (R.resource_type == 'image') {
-        var s = '<p>You have selected an individual "<a href="'+R.uri+'">image</a>"</p>';
+        var s = '<p>You have selected an individual <a target="_blank" href="/client_service/view?resource='+R.uri+'">image</a></p>';
         e.innerHTML = s; 
         this.bq_image = R;
         
@@ -232,7 +232,7 @@ BQWebApp.prototype.onResourceSelected = function (R) {
             return;
         }
         
-        var s = '<p>You have selected a "<a href="'+R.uri+'">group of images</a>" or a dataset. ';
+        var s = '<p>You have selected a <a target="_blank" href="/client_service/view?resource='+R.uri+'">group of images</a> or a dataset. ';
         s += 'This means that all the images will be used for this execution.</p>';
         e.innerHTML = s;    
         
@@ -246,7 +246,7 @@ BQWebApp.prototype.onResourceSelected = function (R) {
         var e = document.getElementById("webapp_input_thumbnail");
         e.style.display = '';        
         if (this.resourceContainer) { this.resourceContainer.destroy(); }
-        this.resourceContainer = Bisque.ResourceBrowser.ResourceFactoryWrapper( {resource:R} );
+        this.resourceContainer = Bisque.ResourceFactoryWrapper.getResource( {resource:R} );
         this.holder_selection.add(this.resourceContainer);
     }
         
