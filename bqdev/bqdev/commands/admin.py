@@ -147,13 +147,8 @@ class setup(object):
                     version="%prog " + version)
         parser.add_option("--inscript", action="store_true", help="we are running under typescript" )
         options, args = parser.parse_args()
-        self.server_type = 'bisque'
-        if len(args) >= 1:
-            if args[0] in ('bisque', 'engine'):
-                self.server_type = args.pop(0)
-
         for arg in args:
-            if arg not in install_options:
+            if arg not in install_options + ['bisque', 'engine']:
                 parser.error('argument must be install option')
         
         self.args = args
@@ -163,7 +158,7 @@ class setup(object):
     def run(self):
         ''
         from bq.setup import bisque_setup
-        bisque_setup.setup( self.server_type, self.options, self.args )
+        bisque_setup.setup( self.options, self.args )
 
 
 

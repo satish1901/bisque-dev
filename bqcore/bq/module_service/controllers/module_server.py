@@ -210,6 +210,7 @@ class MexDelegate (Resource):
         """
         raise abort(501)
 
+
 def read_xml_body():
     clen = int(tg.request.headers.get('Content-Length')) or 0
     content = tg.request.headers.get('Content-Type')
@@ -218,26 +219,52 @@ def read_xml_body():
     return None
 
 
-def create_mex(module_url, **kw):
+def create_mex(module_url, name, mex = None, **kw):
     module = data_service.get_resource(module_url, view='deep')
     inputs = module.xpath('./tag[@name="inputs"]')
     formal_inputs = inputs and inputs[0]
-    real_params = dict(kw)
-    mex = etree.Element('mex', 
-                        name = module.get('name'), 
-                        value = 'PENDING', type = module_url)
-    inputs = etree.SubElement(mex, 'tag', name='inputs')
-    #mex_inputs = etree.SubElement(mex, 'tag', name='inputs')
-    for mi in formal_inputs:
-        param_name = mi.get('name')
-        log.debug ('param check %s' % param_name)
-        if param_name in real_params:
-            param_val = real_params.pop(param_name)
-            #etree.SubElement(mex_inputs, 'tag',
-            etree.SubElement(inputs, 'tag',
-                             name = param_name,
-                             value= param_val)
-            log.debug ('param found %s=%s' % (param_name, param_val))
+    if mex is None:
+        real_params = dict(kw)
+        mex = etree.Element('mex', 
+                            name = module.get('name'), 
+                            value = 'PENDING', type = module_url)
+        inputs = etree.SubElement(mex, 'tag', name='inputs')
+        #mex_inputs = etree.SubElement(mex, 'tag', name='inputs')
+        for mi in formal_inputs:
+            param_name = mi.get('name')
+            log.debug ('param check %s' % param_name)
+            if param_name in real_params:
+                param_val = real_params.pop(param_name)
+                #etree.SubElement(mex_inputs, 'tag',
+                etree.SubElement(inputs, 'tag',
+                                 name = param_name,
+                                 value= param_val)
+                log.debug ('param found %s=%s' % (param_name, param_val))
+    else:
+        mex.set('name', name)
+        mex.set('value', 'PENDING')
+        mex.set('type', module_url)
+
+        # Check that we might have an iterable resource
+        iterable = mex.xpath('./tag[@name="execute_options"]/tag[@name="iterable"]')
+        if len(iterable):
+            #mex.set('value', 'SUPER')
+            inputs = mex.xpath('./tag[@name="inputs"]')[0]
+            #mex.remove(inputs)
+            iterable_tag_name = iterable[0].get('value')
+            dataset_tag = inputs.xpath('./tag[@name="%s"]' % iterable_tag_name)[0]
+            #inputs.remove(dataset_tag)
+            dataset = data_service.get_resource(dataset_tag.get('value'), view='full')
+            members = dataset.xpath('/dataset/tag[@name="members"]')[0]
+            for resource in members:
+                subinputs = copy.deepcopy(inputs)
+                resource_tag = subinputs.xpath('./tag[@name="%s"]' % iterable_tag_name)[0]
+                resource_tag.set('value', resource.text)
+                #etree.SubElement(subinputs, 'tag', name=iterable_tag_name, value=resource.text)
+                submex = etree.Element('mex', name=name, type=module_url)
+                submex.append(subinputs)
+                mex.append(submex)
+            log.info('mex rewritten-> %s' % etree.tostring(mex))
             
     return mex
         
@@ -301,13 +328,7 @@ class ServiceDelegate(controllers.WSGIAppController):
     def execute(self, **kw):
         log.debug ('EXECUTE %s with %s' % (self.module, kw))
         mex = read_xml_body()
-        if mex is None:
-            mex = create_mex(self.module, **kw)
-        else:
-            mex.set('name', self.name)
-            mex.set('value', 'PENDING')
-            mex.set('type', self.module)
-
+        mex = create_mex(self.module, self.name, mex=mex, **kw)
         etree.SubElement(mex, 'tag',
                          name="start-time",
                          value=time.strftime("%Y-%m-%d %H:%M:%S",
