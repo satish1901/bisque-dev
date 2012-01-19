@@ -66,8 +66,8 @@ class StagedEnvironment(BaseEnvironment):
             if not mex.staging_id:
                 if mex.staging_path:
                     mex.staging_id = mex.staging_path.rsplit('/',1)[1]
-                elif mex.get('mexuri'): # Use the MEX_ID as the staging ID
-                    mexid = mex.mexuri.rsplit('/', 1)[1]
+                elif mex.get('mex_url'): # Use the MEX_ID as the staging ID
+                    mexid = mex.mex_url.rsplit('/', 1)[1]
                     mex.staging_id = mexid
 
             runner.log ( 'staging_id = %s' % mex.staging_id)

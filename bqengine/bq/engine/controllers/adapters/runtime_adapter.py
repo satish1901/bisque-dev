@@ -128,7 +128,7 @@ class RuntimeAdapter(BaseAdapter):
             m.main(arguments=command_line, 
                    mex_tree=mex, 
                    module_tree=module, 
-                   mex_token = identity.mex_authorization_token())
+                   bisque_token = identity.mex_authorization_token())
             os.chdir(current_dir)
             #process = Popen(command_line, cwd=module_dir, stdout=PIPE, stderr=PIPE)
             #stdout,stderr = process.communicate()
