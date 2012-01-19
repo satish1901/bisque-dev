@@ -10,9 +10,12 @@ bq/engine/controllers/command_run.py
 bq/engine/controllers/condor_run.py
 bq/engine/controllers/condor_templates.py
 bq/engine/controllers/engine_service.py
+bq/engine/controllers/local_env.py
 bq/engine/controllers/matlab_env.py
+bq/engine/controllers/mexparser.py
 bq/engine/controllers/module_env.py
 bq/engine/controllers/module_run.py
+bq/engine/controllers/parellel_env.py
 bq/engine/controllers/script_env.py
 bq/engine/controllers/staged_env.py
 bq/engine/controllers/adapters/__init__.py

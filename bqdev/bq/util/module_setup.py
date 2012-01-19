@@ -7,7 +7,7 @@ import os,sys
 from subprocess import call
 import shutil
 import functools
-from bq.core.commands.configfile import ConfigFile
+from bq.util.configfile import ConfigFile
 
 BISQUE_DEPS = map (functools.partial(os.path.join, '../../external'), [ "bisque.jar", "jai_codec.jar", "jai_core.jar", "jai_imageio.jar", "clibwrapper_jiio.jar"])
 

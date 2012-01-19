@@ -14,6 +14,7 @@ setup(
     #url='',
     install_requires=["bqcore",
                       "httplib2",
+                      'bbfreeze',
                       ],
     setup_requires=["PasteScript>=1.6.3"],
     paster_plugins=['PasteScript', 'Pylons' ],
