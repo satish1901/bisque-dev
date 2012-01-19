@@ -62,10 +62,13 @@ class ModuleRunner(object):
             log.debug('System runners: %s'%runners)
             self.system_runners = [r.strip() for r in runners.split(',')]
 
-        for sys_runner in self.system_runners:
-            if sys_runner in self.module_runners:
-                print "Choosing %s" % sys_runner
-                return RUNNER_MAP[sys_runner]
+        # Determine best platform for module by comparing system platforms 
+        # and module platforms.  The platforms are listed in order
+        # of preference
+        for run_platform in self.module_runners:
+            if run_platform in self.system_runners:
+                print "Choosing Runtime Platform: %s" % run_platform
+                return RUNNER_MAP[run_platform]
         return None
 
     def main(self, **kw):
