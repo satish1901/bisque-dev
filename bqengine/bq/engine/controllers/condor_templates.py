@@ -21,7 +21,7 @@ templateDAGCONF = \
 # Variables (script, script_args, transfers, staging, cmd_extra)
 templateCMD = \
 """universe = vanilla
-excecutable=${executable}
+executable=${executable}
 error = ./launcher.err
 output = ./launcher.out
 log = ./launcher.log
