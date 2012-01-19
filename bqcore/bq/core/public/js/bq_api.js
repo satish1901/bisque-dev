@@ -1660,6 +1660,32 @@ BQMex.prototype.initializeXml = function (mex) {
     this.status =this.value;
 }
 
+BQMex.prototype.afterInitialized = function () {
+    //BQObject.prototype.afterInitialized.call ();
+    
+    this.dict = this.toDict(true);
+    
+    // check if the mex has iterables and if does create mapping 
+    // from iterable resources in sub MEXes to their MEXes
+    if (this.dict['execute_options/iterable'] && this.children.length>0) {
+        this.iterables = this.iterables || {};
+        var name = this.dict['execute_options/iterable'];
+        var dataset = this.dict['inputs/'+name];
+        
+        this.iterables[name] = this.iterables[name] || {};
+        this.iterables[name]['dataset'] = dataset;
+        
+        var o=null;
+        for (var i=0; (o=this.children[i]); i++) {
+            if (o instanceof BQMex) {
+                var resource = o.dict['inputs/'+name];
+                this.iterables[name][resource] = o;
+            }
+        }
+        
+    }
+}
+
 
 //-------------------------------------------------------------------------------
 // BQDataset
