@@ -948,8 +948,9 @@ def check_condor (params, cfg  = RUNTIME_CFG):
 
     if getanswer("Condigure modules for condor", 'Y',
                  "Configure condor shared directories for better performance")=="Y":
-        params['condor.enabled'] = "true"
-        params['runtime.platforms'] = ','.join ([params['runtime.mode'], 'condor'])
+        if 'condor' not in params['runtime.platforms']:
+            params['runtime.platforms'] = ','.join (['condor', params['runtime.platforms']])
+
         print """
         NOTE: condor configuration is complex and must be tuned to
         every instance.  Bisque will try to use the condor facilities
@@ -959,10 +960,18 @@ def check_condor (params, cfg  = RUNTIME_CFG):
         Please check the wiki at biodev.ece.ucsb.edu/projects/bisquik/wiki/AdvancedInstalls#CondorConfiguration
         """
 
+        params = read_site_cfg(section='condor', cfg=cfg)
+        params['condor.enabled'] = "True"
+        print params
         if getanswer("Advanced Bisque-Condor configuration", "N",
                      "Change the condor templates used for submitting jobs")!='Y':
+            for f in ['condor.dag_template', 'condor.submit_template', 'condor.dag_config_template']:
+                if os.path.exists(params[f]):
+                    params[f] = os.path.abspath(params[f])
+
+            update_site_cfg(params, section="condor", cfg=cfg)
             return params
-        
+
         params = modify_site_cfg(CONDOR_QUESTIONS, params, section='condor', cfg=cfg)
         for v, d, h in CONDOR_QUESTIONS:
             if params[v]:
@@ -979,10 +988,11 @@ def install_runtime(params, cfg = RUNTIME_CFG):
 
 
     params['runtime.platforms'] = "command"
-    params = check_condor(params, cfg=cfg)
+    check_condor(params, cfg=cfg)
 
     params = modify_site_cfg(RUNTIME_QUESTIONS, params, section=None, cfg=cfg)
     staging=params['runtime.staging_base'] = os.path.abspath(os.path.expanduser(params['runtime.staging_base']))
+
     update_site_cfg(params, section=None, cfg=cfg)
 
     try:

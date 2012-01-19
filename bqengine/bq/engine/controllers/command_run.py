@@ -205,7 +205,7 @@ class BaseRunner(object):
         args  = kw.pop('arguments', None)
         self.mex_tree = kw.pop('mex_tree', None)
         self.module_tree = kw.pop('module_tree', None)
-        self.mex_token = kw.pop('mex_token', None)
+        self.bisque_token = kw.pop('bisque_token', None)
         # list of dict representing each mex : variables and arguments
         self.mexes = []
 
@@ -219,8 +219,8 @@ class BaseRunner(object):
         topmex.update(dict(named_args={}, 
                            executable=list(executable), 
 #                           arguments = [],
-                           mexuri = self.mex_tree and self.mex_tree.get('uri') or None,
-                           mex_token = self.mex_token))
+                           mex_url = self.mex_tree and self.mex_tree.get('uri') or None,
+                           bisque_token = self.bisque_token))
         self.mexes.append(topmex)
 
         # Pull out command line arguments 
@@ -252,8 +252,8 @@ class BaseRunner(object):
                 submex.update(dict(named_args=dict(topmex.named_args), 
 #                                   arguments =list(topmex.arguments),
                                    executable=list(executable), #+ topmex.arguments,
-                                   mexuri = mex.get('uri'), 
-                                   mex_token = self.mex_token))
+                                   mex_url = mex.get('uri'), 
+                                   bisque_token = self.bisque_token))
                 #if argument_style == 'named':
                 #    submex.named_args.update ( [x.split('=') for x in sub_inputs] )
                 submex.executable.extend(sub_inputs)
@@ -281,7 +281,7 @@ class BaseRunner(object):
 
         if len(self.mexes) > 1:
             if self.session is None:
-                self.session = BQSession().init_mex(self.mexes[0].mexuri, self.mexes[0].mex_token)
+                self.session = BQSession().init_mex(self.mexes[0].mex_url, self.mexes[0].bisque_token)
             self.session.update_mex('running parallel')
         return self.command_execute
 
@@ -302,7 +302,7 @@ class BaseRunner(object):
 
         if len(self.mexes) > 1:
             if self.session is None:
-                self.session = BQSession().init_mex(self.mexes[0].mexuri, self.mexes[0].mex_token)
+                self.session = BQSession().init_mex(self.mexes[0].mex_url, self.mexes[0].bisque_token)
             self.session.finish_mex()
         return None
 

@@ -6,7 +6,8 @@
       module_definition_xml
   
   Possible configurations:
-    onloaded   - 
+    onloaded   -
+    onstarted  -  
     ondone     -
     onprogress -
     onerror    -
@@ -45,7 +46,10 @@ function ModuleService(module_URI, conf) {
         this.setModule( BQFactory.parseBQDocument(module_definition_xml) );
     } else {
         // fetch it otherwise
-        BQFactory.request({uri: this.URI+'/definition', cb: callback(this, 'setModule'), cache: false});
+        BQFactory.request({ uri: this.URI+'/definition', 
+                            cb: callback(this, 'setModule'), 
+                            errorcb: callback(this, 'onerror'), 
+                            cache: false });
     }
 }
 
@@ -91,7 +95,12 @@ ModuleService.prototype.run = function (parameters) {
 
     var mex = this.module.createMEX();
     //var xml = mex.toXML();
-    mex.save_(ensureTrailingSlash(this.URI) + 'execute', callback(this, 'checkMexStatus'), callback(this, 'onerror'));
+    mex.save_(ensureTrailingSlash(this.URI) + 'execute', callback(this, 'onstarted'), callback(this, 'onerror'));
+}
+
+ModuleService.prototype.onstarted = function (mex) {
+    if (this.conf.onstarted) this.conf.onstarted(mex);
+    this.checkMexStatus(mex);
 }
 
 ModuleService.prototype.checkMexStatus = function (mex) {
