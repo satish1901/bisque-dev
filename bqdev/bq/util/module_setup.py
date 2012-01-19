@@ -71,7 +71,7 @@ def copy_files (files, dest):
 
 def matlab_setup(main_path, files = [], bisque_deps = True, params = {}, **kw):
 
-    if not require('matlab_home', params):
+    if not require('runtime.matlab_home', params):
         return False
 
     if main_path.endswith (".m"):

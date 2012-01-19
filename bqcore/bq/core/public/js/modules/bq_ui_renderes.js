@@ -294,7 +294,7 @@ Ext.define('BQ.selectors.Resource', {
         // show the preview thumbnail of the selected resource, 
         // if gobjects are required the image viewer will be shown, so no need for the preview
         if (this.resource.gobjects.length<1) {    
-            this.resourcePreview = Bisque.ResourceBrowser.ResourceFactoryWrapper({resource:R});
+            this.resourcePreview = Bisque.ResourceFactoryWrapper.getResource( {resource:R} );
         } else {
             this.resourcePreview = Ext.create('BQ.selectors.Gobject', {
                 resource: this.resource.gobjects[0],
