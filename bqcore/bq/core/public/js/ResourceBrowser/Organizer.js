@@ -179,6 +179,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
     {
         var uri =
         {
+            offset : 0,
             tag_query : this.GetTagQuery(),
             tag_order : this.GetTagOrder()
         };

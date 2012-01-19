@@ -54,9 +54,7 @@ Bisque.ResourceBrowser.DatasetManager = Ext.extend(Ext.Panel,
             })
         });
 
-        Bisque.ResourceBrowser.DatasetManager.superclass.constructor.apply(
-        this, arguments);
-
+        this.callParent(arguments);
         this.ManageEvents();
 
         this.LoadDSList(false);
@@ -91,6 +89,7 @@ Bisque.ResourceBrowser.DatasetManager = Ext.extend(Ext.Panel,
             this.selectedDS = null;
             var uri =
             {
+                offset : 0,
                 baseURL : '/data_service/image'
             };
 
@@ -126,6 +125,7 @@ Bisque.ResourceBrowser.DatasetManager = Ext.extend(Ext.Panel,
                 this.selectedDS = null;
                 var uri =
                 {
+                    offset : 0,
                     baseURL : '/data_service/image'
                 };
 
@@ -158,6 +158,7 @@ Bisque.ResourceBrowser.DatasetManager = Ext.extend(Ext.Panel,
         {
             var uri =
             {
+                offset : 0,
                 baseURL : data.uri+'/value'
             };
 
@@ -188,7 +189,7 @@ Bisque.ResourceBrowser.DatasetManager.DatasetTbar = Ext.extend(Ext.Toolbar,
                 width : 6
             },
             {
-                text : configOpts.dataset.name,
+                text : Ext.String.ellipsis(configOpts.dataset.name, 35),
                 overCls :'',
                 pressedCls:'',
                 handler : this.datasetLoad,
