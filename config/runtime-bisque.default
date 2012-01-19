@@ -2,7 +2,7 @@
 # Original copy is config and linked into the modules
 # 
 # Mode is a list of allow runtime platforms i.e. command, condor, [hadoop]
-runtime.plaforms = command
+runtime.platforms = command
 # Where staging directory are createed
 runtime.staging_base = ~/staging
 runtime.matlab_home = 

@@ -32,7 +32,7 @@ BQ.selectors.parameters = { 'tag'     : 'BQ.selectors.String',
                             'date'    : 'BQ.selectors.Date', };
 
 BQ.renderers.resources  = { 'image'   : 'BQ.renderers.Image', 
-                            //'dataset' : 'BQ.renderers.Dataset', 
+                            'dataset' : 'BQ.renderers.Dataset', 
                             //'gobject' : 'BQ.renderers.Gobject', 
                             'tag'     : 'BQ.renderers.Tag', };
 
@@ -294,7 +294,7 @@ Ext.define('BQ.selectors.Resource', {
         // show the preview thumbnail of the selected resource, 
         // if gobjects are required the image viewer will be shown, so no need for the preview
         if (this.resource.gobjects.length<1) {    
-            this.resourcePreview = Bisque.ResourceBrowser.ResourceFactoryWrapper({resource:R});
+            this.resourcePreview = Bisque.ResourceFactoryWrapper.getResource( {resource:R} );
         } else {
             this.resourcePreview = Ext.create('BQ.selectors.Gobject', {
                 resource: this.resource.gobjects[0],
@@ -895,3 +895,65 @@ Ext.define('BQ.renderers.Image', {
     },
 
 });
+
+/*******************************************************************************
+Dataset templated configs:
+
+*******************************************************************************/
+
+Ext.define('BQ.renderers.Dataset', {
+    alias: 'widget.rendererdataset',    
+    extend: 'BQ.renderers.Renderer',
+    requires: ['Bisque.ResourceBrowser.Browser'],
+    
+    height: 300,
+    layout: {
+        type: 'vbox',
+        align : 'stretch',
+        pack  : 'start',
+    },    
+
+    constructor: function(config) {
+        this.addEvents({
+            'selected' : true,
+        });
+        this.callParent(arguments);
+        return this;
+    },
+
+    initComponent : function() {
+        var definition = this.definition;
+        var template = definition ? definition.template||{} : {};
+        var resource = this.resource;
+        
+        var heading = this.title?this.title:(template.label?template.label:resource.name); 
+
+        this.items = [];
+        this.items.push( {xtype: 'label', html: heading, } );        
+        //this.items.push(this.browser);        
+        this.callParent();
+        if (typeof resource == 'string') {
+            BQFactory.request( { uri: resource, 
+                                 cb:  callback(this, 'initBrowser'), 
+                                 uri_params: {view:'deep'}, });
+        } else {
+            this.initBrowser(resource);
+        }        
+    },
+    
+    initBrowser: function(resource) {
+        //resource: resource.resource_type=='image'?resource:resource.value, // reference or resource
+        this.browser = Ext.create('Bisque.ResourceBrowser.Browser', {
+            //dataset: resource,
+            dataset: resource.getMembers().uri+'/value',
+            selType: 'SINGLE',
+            height: '100%',
+            cls: 'bordered',
+            viewMode : 'ViewerOnly',
+            listeners: { 'Select': function(me, resource) { this.fireEvent( 'selected', resource); }, scope: this },
+        }); 
+        this.add(this.browser);              
+    },
+
+});
+

@@ -21,8 +21,8 @@ class ScriptEnvironment(BaseEnvironment):
         
     def create_script(self, mex):
         """Runs before the normal command but after read the config"""
-        script = string.Template(runner.script).safe_substitute(mex.named_args)
-        script = string.Template(script).safe_substitute(mex.__dict__)
+        script = string.Template(mex.script).safe_substitute(mex.named_args)
+        script = string.Template(script).safe_substitute(mex)
         script = shlex.split(script, posix=(os.name != "nt"))
         mex.executable=list(script) + ['start']
         return script

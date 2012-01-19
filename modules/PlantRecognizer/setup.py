@@ -3,11 +3,6 @@ import sys
 from bq.util.module_setup import matlab_setup, require, read_config
 
 def setup(params, *args, **kw):
-
-    if not require (['matlab_home'], params):
-        print "Skipping.. no matlab_home", params
-        return 1
-    
     return matlab_setup('PlantRecognizer', params=params)
     
 if __name__ =="__main__":

@@ -72,9 +72,10 @@ function BQWebApp (urlargs) {
   if (this.module_url)  
       this.ms = new ModuleService(this.module_url, {
           ondone     : callback(this, 'done'), 
-          onprogress : callback(this, 'progress_check'), 
+          onstarted  : callback(this, 'onstarted'),           
+          onprogress : callback(this, 'onprogress'), 
           onerror    : callback(this, 'onerror'),
-          onloaded   : callback(this, 'onmoduleloaded'),          
+          onloaded   : callback(this, 'onmoduleloaded'),
       });  
   this.module_defined = true;
   if (this.ms.module) this.setupUI();
@@ -94,8 +95,9 @@ function BQWebApp (urlargs) {
       this.holder_result = Ext.create('Ext.container.Container', {
           layout: { type: 'fit' },
           renderTo: 'webapp_results_dataset',
-          height: 250,
-          cls: 'bordered',
+          border: 0,
+          //height: 500,
+          //cls: 'bordered',
       });    
       this.holder_result.hide();
       Ext.EventManager.addListener( window, 'resize', function(e) {
@@ -114,7 +116,10 @@ function BQWebApp (urlargs) {
   // process arguments
   if ('mex' in args) {
       this.showProgress(null, 'Fetching module execution document');
-      BQFactory.request( {uri: args.mex, cb: callback(this, 'load_from_mex'), uri_params: {view:'deep'}  }); 
+      BQFactory.request( { uri: args.mex, 
+                           cb: callback(this, 'load_from_mex'), 
+                           errorcb: callback(this, 'onerror'), 
+                           uri_params: {view:'deep'}  }); 
       return;      
   }
   
@@ -122,7 +127,9 @@ function BQWebApp (urlargs) {
   
   // loading resource requires initied input UI renderers
   if ('resource' in args)
-      BQFactory.request( {uri: args.resource, cb: callback(this, 'load_from_resource') });
+      BQFactory.request( { uri:     args.resource, 
+                           cb:      callback(this, 'load_from_resource'),
+                           errorcb: callback(this, 'onerror'), });
   
 }
 
@@ -138,8 +145,20 @@ function setInnerHtml(id, html) {
 
 function parseUrlArguments(urlargs) {
     var a = urlargs.split('?', 2);
-    if (a.length<2) return {};
-    a = a[1].split('&');
+    if (a.length<2) {
+        a = urlargs.split('#', 2);
+        if (a.length<2) return {};
+    }
+    
+    // see if hash is present
+    a = a[1].split('#', 2);  
+    if (a.length<2)
+        a = a[0];
+    else
+        a = a[0] +'&'+ a[1];  
+
+    // now parse all the arguments    
+    a = a.split('&');
     var d = {};
     for (var i=0; i<a.length; i++) {
         var e = a[i].split('=', 2);
@@ -184,7 +203,11 @@ BQWebApp.prototype.onnouser = function () {
     }
 }
 
-BQWebApp.prototype.onerror = function (str) {
+BQWebApp.prototype.onerror = function (error) {
+    var str = error;
+    if (typeof(error)=="object") str = error.message;  
+    
+    this.hideProgress();
     BQ.ui.error(str);
      
     var button_run = document.getElementById("webapp_run_button");
@@ -297,9 +320,11 @@ BQWebApp.prototype.setupUI_outputs = function () {
     var outputs_definitions = this.ms.module.outputs;
     //var mex = this.mex;
     var outputs = this.outputs;
-    var outputs_index = this.outputs_index;   
+    var outputs_index = this.outputs_index; 
+    if (!outputs || !outputs_index) return; 
+    if (!outputs_definitions || outputs_definitions.length<=0) return;    
     
-    if (outputs_definitions && outputs_definitions.length>0)
+    //if (outputs_definitions && outputs_definitions.length>0)
     for (var p=0; (i=outputs_definitions[p]); p++) {
         var n = i.name;
         var t = (i.type || i.resource_type).toLowerCase();
@@ -554,7 +579,14 @@ BQWebApp.prototype.updateResultsVisibility = function (vis, onlybuttons) {
 
 //------------------------------------------------------------------------------
 
-BQWebApp.prototype.progress_check = function (mex) {
+BQWebApp.prototype.onstarted = function (mex) {
+    if (!mex) return;
+    window.location.hash = 'mex=' + mex.uri;
+    //window.location.hash
+    //history.pushState({mystate: djksjdskjd, }, "page 2", "bar.html");
+}
+
+BQWebApp.prototype.onprogress = function (mex) {
     if (!mex) return;
     var button_run = document.getElementById("webapp_run_button");    
     if (mex.status != "FINISHED" && mex.status != "FAILED") {
@@ -567,14 +599,14 @@ BQWebApp.prototype.done = function (mex) {
     var button_run = document.getElementById("webapp_run_button");
     button_run.childNodes[0].nodeValue = this.label_run;
     button_run.disabled = false;
-    this.mexdict = mex.toDict(true);  
+    this.mex = mex;
       
     if (mex.status == "FINISHED") {
         this.parseResults(mex);
     } else {
         var message = "Module execution failure:<br>" + mex.toXML(); 
-        if ('error_message' in this.mexdict && this.mexdict.error_message!='') 
-            message = "The module reported an internal error:<br>" + this.mexdict.error_message;
+        if ('error_message' in mex.dict && mex.dict.error_message!='') 
+            message = "The module reported an internal error:<br>" + mex.dict.error_message;
         
         BQ.ui.error(message);
         var result_label = document.getElementById("webapp_results_summary");
@@ -597,95 +629,45 @@ BQWebApp.prototype.getRunTimeString = function (tags) {
   return time_string;
 }
 
-BQWebApp.prototype.renderSummaryTag = function (tag, name, url, descr) {
-    if (tag in this.mexdict) {
-        if (url && descr)       
-            return '<li>'+name +': '+this.mexdict[tag]+' [<a href="'+url+'">'+descr+'</a>]</li>';
-        else
-            return '<li>'+name +': '+this.mexdict[tag]+'</li>';
-    } else
-        return '';
-}
-
-BQWebApp.prototype.createSumary = function () {
-    return '';
-}
-
 BQWebApp.prototype.parseResults = function (mex) {
-    this.mex = mex;    
+    // Update module run info
+    var result_label = document.getElementById("webapp_results_summary");
+    if (result_label) {
+        result_label.innerHTML = '<h3 class="good">The module ran in ' + this.getRunTimeString(mex.dict)+'</h3>';
+    }
+
+    // if mex contains sub-runs, show dataset picker
+    if (mex.iterables) {
+        if (this.holder_result) {
+            var name = mex.dict['execute_options/iterable'];              
+            this.holder_result.show();        
+            if (this.resultantResourcesBrowser) this.resultantResourcesBrowser.destroy();
+            this.resultantResourcesBrowser = Ext.create('BQ.renderers.Dataset', {
+                resource: mex.iterables[name]['dataset'],
+                title: 'This module ran in parallel over the following dataset, pick an element to see indicidual results:',
+                listeners: { 'selected': function(resource) { 
+                                 var suburl = resource.uri;
+                                 var submex = mex.iterables[name][suburl];
+                                 this.showOutputs(submex);
+                             }, scope: this },
+            });    
+            this.holder_result.add(this.resultantResourcesBrowser);          
+        }    
+    } else {
+        this.showOutputs(mex);
+    }
+}
+
+BQWebApp.prototype.showOutputs = function (mex) {
     var outputs = mex.find_tags('outputs');
     if (outputs && outputs.tags) {
         this.outputs = outputs.tags; // dima - this should be children in the future   
         this.outputs_index  = outputs.create_flat_index();          
-    } 
-    
-    // Update module run info
-    var result_label = document.getElementById("webapp_results_summary");
-    if (result_label) {
-        result_label.innerHTML = '<h3 class="good">The module ran in ' + this.getRunTimeString(this.mexdict)+'</h3>';
-    }
+    }   
     
     // setup output renderers
+    this.clearUI_outputs();
     this.setupUI_outputs();
-    
-    return;
-    
-    
-    // here do a test if the input is a dataset or an image
-    this.gobjectURL = null;
-    
-    document.getElementById("webapp_result_description").innerHTML = '';
-    var result_label = document.getElementById("webapp_results_summary");
-    var summary = this.createSumary();
-    this.mexURI = mex.uri;
-   
-    if (this.bq_resource.resource_type == 'image') {
-        //this.bq_image = this.bq_resource;
-        result_label.innerHTML = '<h3>The image was processed in ' + this.getRunTimeString(this.mexdict)+'</h3>'+this.createSumary();
-        this.selectResultantResource(mex);
-    }
-    else if (this.bq_resource.resource_type == 'dataset') {
-        // create a list of image urls and mex urls 
-        
-        var mexes = this.mexdict['submex/mex_url'];
-        var images = this.mexdict['submex/image_url'];
-        if (typeof mexes == 'string') mexes = [mexes];
-        if (typeof images == 'string') images = [images];           
-        var results = {}; 
-        for (var i=0; i<mexes.length; i++)
-            results[images[i]] = mexes[i];
-        
-        // dima - funct test 
-        //for (var i=0; i<mexes.length; i++)
-        //    results[images[i]] = '/xml/seedszie_image_submex.xml';
-        
-        result_label.innerHTML = '<h3>The dataset was processed in ' + this.getRunTimeString(this.mexdict)+'</h3>'+this.createSumary()+
-          '<p>You can now verify the results for each individual image by selecting one in the dataset browser below:</p>';            
-      
-        if (this.holder_result) {
-            this.holder_result.show();        
-            if (this.resultantResourcesBrowser) this.resultantResourcesBrowser.destroy();
-            this.resultantResourcesBrowser = new Bisque.ResourceBrowser.Browser({
-                //dataset: this.bq_resource.tags[0].uri+'/values',
-                dataset: this.bq_resource.getMembers().uri+'/value',
-                height: '100%',   
-                selType: 'SINGLE',
-                viewMode : 'ViewerOnly',
-                listeners: {  'Select': function(me, resource) { 
-                               var uri = results[resource.uri];
-                               this.bq_image = resource.uri;
-                               if (uri) {
-                                   this.updateResultsVisibility(false, true);
-                                   this.showProgress('webapp_results_content', 'Fetching results for the selected image');                               
-                                   BQFactory.request( {uri: uri, uri_params: {view:'deep'}, cb: callback(this, this.selectResultantResource) }); 
-                               } else
-                                   alert('This image does not have any results associated! An error?');
-                        }, scope: this },
-            });    
-            this.holder_result.add(this.resultantResourcesBrowser);          
-        }
-    } 
-    
 }
 
 BQWebApp.prototype.selectResultantResource = function (resource) {

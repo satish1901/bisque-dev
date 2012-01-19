@@ -1,2 +1,3 @@
 bqcore
 httplib2
+bbfreeze
