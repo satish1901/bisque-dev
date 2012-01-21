@@ -1,13 +1,11 @@
 # Install script for Metalab
 import sys
-from bq.util.module_setup import matlab_setup, require, read_config
+from bq.setup.module_setup import python_setup, require, read_config
 
 from bbfreeze import Freezer
 
 def setup(params, *args, **kw):
-    f = Freezer("dist")
-    f.addScript('MetaData.py')
-    f()
+    python_setup('MetaData.py',  params=params )
     
 if __name__ =="__main__":
     params = read_config('runtime-bisque.cfg')

@@ -41,7 +41,8 @@ class SeedSize(object):
 
     def start(self):
         self.bq.update_mex('executing')
-        subprocess.call([EXEC, self.images])
+        # Matlab requires trailing slash
+        subprocess.call([EXEC, 'images/'])
         
 
     def teardown(self):

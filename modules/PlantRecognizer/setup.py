@@ -1,6 +1,6 @@
 # Install script for PlantRecognizer
 import sys
-from bq.util.module_setup import matlab_setup, require, read_config
+from bq.setup.module_setup import matlab_setup, read_config
 
 def setup(params, *args, **kw):
     return matlab_setup('PlantRecognizer', params=params)
