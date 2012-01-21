@@ -64,9 +64,9 @@ class ModuleRunner(object):
 
         # Determine best platform for module by comparing system platforms 
         # and module platforms.  The platforms are listed in order
-        # of preference
-        for run_platform in self.module_runners:
-            if run_platform in self.system_runners:
+        # of preference based on the system preferences
+        for run_platform in self.system_runners:
+            if run_platform in self.module_runners:
                 print "Choosing Runtime Platform: %s" % run_platform
                 return RUNNER_MAP[run_platform]
         return None

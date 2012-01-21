@@ -7,8 +7,6 @@ error = ./launcher.err
 output = ./launcher.out
 log = ./launcher.log
 on_exit_remove = (ExitBySignal == False)&&(ExitCode == 0)
-should_transfer_files = YES
-when_to_transfer_output = ON_EXIT_OR_EVICT
 Notification = never
 # variables from local environment here
 ${condor_submit}
@@ -19,7 +17,6 @@ ${condor_submit}
         continue
 %>
 initialdir = ${mex.staging_path}
-transfer_input_files  = ${','.join(mex.transfers)}
 arguments  = ${' '.join(mex.executable[1:])}
 queue
 %endfor
