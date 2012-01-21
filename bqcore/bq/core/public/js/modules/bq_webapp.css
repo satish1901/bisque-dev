@@ -20,6 +20,23 @@ h3 {
   border: 1px solid #CCCCCC; /* #006699;*/
 }
 
+ol.method-steps {
+    padding-left: 0;
+}
+
+ol li {
+    list-style-type: decimal;
+    list-style-position: inside;
+}
+
+.heading-2 {
+    font-family: Georgia, serif;
+    font-weight: normal;
+    font-size: 28px;
+    clear: left;
+    margin: 0.5em 0px; 
+}
+
 /*-------------------------------------------------------
   MAIN
 -------------------------------------------------------*/

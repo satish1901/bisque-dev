@@ -199,37 +199,21 @@
 
 <p py:if="'description' in module_def"><em id="description">${module_def['description']}</em></p>
 
-
+<ol class="method-steps">
 <div id="webapp_input">
-    <h2>1. Select data for processing:</h2>
-
-    <div id="inputs" class="input box">
-
-    </div>
-  
+    <li class="heading-2">Select data for processing:</li>
+    <div id="inputs" class="input box"></div>
 </div>
 
 
-
-<div id="webapp_parameters">
-    <h2>2. Parameters:</h2>
-    
-    <div id="parameters" class="parameters box" >
-        <!--
-        <div id="webapp_input_description">
- 
-        </div>
-        <div id="webapp_input_thumbnail" class="thumbnail" style="display:none;"></div>
-        <div id="webapp_input_viewer" class="imageviewer" style="display:none;" ></div>
-        -->
-    </div>
-    
+<div id="webapp_parameters" style="display:none;">
+    <li class="heading-2">Parameters:</li>
+    <div id="parameters" class="parameters box"></div>
 </div>
-
 
 
 <div id="webapp_run" >    
-    <h2>3. Run algorithm:</h2>
+    <li class="heading-2">Run algorithm:</li>
     <div class="box run">
         <p><button id="webapp_run_button" onclick="webapp.run()" >Run</button>  
           This may take some time, progress will be shown on the button.</p>
@@ -237,10 +221,8 @@
 </div>
 
 
-
-
 <div id="webapp_results" py:if="outputs is not None and len(outputs)>0">
-    <h2>4. Results:</h2>  
+    <li class="heading-2">Results:</li>  
   
     <div id="outputs" class="box results" >  
         <span id="webapp_results_summary"><h3>No results yet, please run the module first.</h3></span>        
@@ -277,17 +259,16 @@
         
     </div>  
     
+    <!--
     <div id="webapp_results_viewer" class="imageviewer" style="display:none;"></div>
     <div id="webapp_results_plotter" class="plotter" style="display:none;"></div>      
+    -->
 </div>
-
+</ol>
 
 <div style="height: 20px;"></div>
 
-
 </div> <!-- main -->
 </div> <!-- webapp -->
-
-
 </body>
 </html>
