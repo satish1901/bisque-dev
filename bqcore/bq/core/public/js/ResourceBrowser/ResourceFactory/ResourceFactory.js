@@ -380,9 +380,10 @@ Ext.define('Bisque.Resource.Page',
         {
             title : title,
             resource : this.resource,
-            split : true
+            split : true,
         });
-        
+
+        this.layout = 'fit';        
         this.add(resourceTagger);
         this.setLoading(false);
     }

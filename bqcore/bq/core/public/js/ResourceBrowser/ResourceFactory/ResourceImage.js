@@ -213,32 +213,51 @@ Ext.define('Bisque.Resource.Image.Compact',
         {
             this.setData('fetched', -1);	//Loading
 
+            BQFactory.load(this.resource.uri + '/tag', Ext.bind(this.loadResource, this, ['tags'], true));
+
             var prefetchImg = new Image();
             prefetchImg.src = this.getThumbnailSrc(
             {
                 width: this.layoutMgr.layoutEl.imageWidth,
                 height: this.layoutMgr.layoutEl.imageHeight,
             });
-            prefetchImg.onload=Ext.bind(this.loadResource, this);
+            prefetchImg.onload=Ext.bind(this.loadResource, this, ['image'], true);
         }
     },
     
-    loadResource : function(img)
+    loadResource : function(data, type)
     {
-        this.setData('image', this.GetImageThumbnailRel( 
+        if (type=='image')
         {
-            width: this.layoutMgr.layoutEl.imageWidth,
-            height: this.layoutMgr.layoutEl.imageHeight,
-        },
+            this.setData('image', this.GetImageThumbnailRel( 
+            {
+                width: this.layoutMgr.layoutEl.imageWidth,
+                height: this.layoutMgr.layoutEl.imageHeight,
+            },
+            {
+                width:data.currentTarget.width,
+                height:data.currentTarget.height
+            }));
+        }
+        else
         {
-            width:img.currentTarget.width,
-            height:img.currentTarget.height
-        }));
-        this.setData('fetched', 1);	//Loaded
+            this.resource.tags = data.tags;
+            var geometry = this.resource.find_tags('geometry') || {value:'1,1,1,1,1'};
+            this.resource.geometry = geometry.value.split(',');
+            
+            this.resource.z = parseInt(this.resource.geometry[2]);
+            this.resource.t = parseInt(this.resource.geometry[3]);
+            this.setData('tags', 'true');
+        }
 
-        var renderedRef=this.getData('renderedRef')
-        if (renderedRef)
-			renderedRef.updateContainer();
+        if (this.getData('tags') && this.getData('image'))
+        {
+            this.setData('fetched', 1); //Loaded
+    
+            var renderedRef=this.getData('renderedRef')
+            if (renderedRef)
+                renderedRef.updateContainer();
+        }
     },
 
     updateContainer : function()

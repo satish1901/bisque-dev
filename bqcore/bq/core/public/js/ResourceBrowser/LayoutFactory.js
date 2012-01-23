@@ -104,7 +104,6 @@ Ext.define('Bisque.ResourceBrowser.Layout.Base',
 			
 			resQ : [],
 			layoutEl :{},
-			
 			border : false,
 			autoScroll : true
 		});
@@ -177,28 +176,10 @@ Ext.define('Bisque.ResourceBrowser.Layout.Base',
 		var resCt=[],resCtSub=[], i=0, currentGrp;
 		
 		// if no results were obtained for a given query, show a default no-results message
-		
 		if (this.resQ.length==0)
 		{
-            var imgNoResults = Ext.create('Ext.Img', 
-            {
-                src : bq.url('/js/ResourceBrowser/Images/no-results.png'),
-            })
-            
-            var ct = Ext.create('Ext.container.Container', 
-            {
-                layout  :   {
-                                type : 'vbox',
-                                pack : 'center',
-                                align: 'center'
-                            },
-                height  :   '100%',
-                width   :   '100%',
-                items   :   imgNoResults
-            });
-
-		    this.add(ct);
-		    return;
+            this.noResults();
+            return;
 		}
 		
 		// Avoid 'if' in for loop for speed
@@ -245,6 +226,28 @@ Ext.define('Bisque.ResourceBrowser.Layout.Base',
 		}
 		thisCt.add(resCt);
 	},
+
+    noResults : function()
+    {
+        var imgNoResults = Ext.create('Ext.Img', 
+        {
+            src : bq.url('/js/ResourceBrowser/Images/no-results.png'),
+        })
+        
+        var ct = Ext.create('Ext.container.Container', 
+        {
+            layout  :   {
+                            type : 'vbox',
+                            pack : 'center',
+                            align: 'center'
+                        },
+            items   :   imgNoResults,
+        });
+
+        this.layout = 'fit';
+        this.add(ct);     // add calls doLayout internally so 'fit' will be applied
+    },
+	
 	
 	getParentSize : function() 
 	{
@@ -422,6 +425,13 @@ Ext.define('Bisque.ResourceBrowser.Layout.PStrip',
 	Init : function(resourceQueue) 
 	{
 		this.resQ = resourceQueue;
+
+        // if no results were obtained for a given query, show a default no-results message
+        if (this.resQ.length==0)
+        {
+            this.noResults();
+            return;
+        }
 		
 		this.proxyPnl = new Ext.Panel({border:false, flex:1, autoScroll:true, layout:{type:'hbox', align:'middle',  pack:'center'}});
 		var psPnl = new Ext.Panel({border:false});
