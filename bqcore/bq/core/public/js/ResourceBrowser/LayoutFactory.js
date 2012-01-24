@@ -248,7 +248,6 @@ Ext.define('Bisque.ResourceBrowser.Layout.Base',
         this.add(ct);     // add calls doLayout internally so 'fit' will be applied
     },
 	
-	
 	getParentSize : function() 
 	{
 		return this.browser.centerPanel.getSize();

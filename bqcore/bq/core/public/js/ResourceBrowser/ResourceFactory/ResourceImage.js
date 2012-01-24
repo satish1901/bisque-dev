@@ -147,7 +147,6 @@ Ext.define('Bisque.Resource.Image.Compact',
 	    			scope : this
 	    		}
 	    	});
-
     	}
     	this.callParent(arguments);
   	},
