@@ -1541,16 +1541,17 @@ BQModule.prototype.initializeXml = function (node) {
     this.owner   = attribStr(node, 'owner');
     this.value   = attribStr(node, 'value');
     this.resource_type = this.xmltag;
-
-    // now copy over all other config params
-    var dict = domTagsToDict(node, true);
-    for (var i in this.configs) {
-        if (i in dict && !(i in this))
-            this[this.configs[i]] = dict[i];
-    }
 }
 
 BQModule.prototype.afterInitialized = function () {
+    
+    // now copy over all other config params
+    var dict = this.toDict(true);
+    for (var i in this.configs) {
+        if (i in dict && !(i in this))
+            this[this.configs[i]] = dict[i];
+    }    
+    
     // define inputs and outputs    
     //BQObject.prototype.afterInitialized.call ();
     var inputs  = this.find_tags('inputs');
