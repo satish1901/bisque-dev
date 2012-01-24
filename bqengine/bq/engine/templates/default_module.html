@@ -199,37 +199,21 @@
 
 <p py:if="'description' in module_def"><em id="description">${module_def['description']}</em></p>
 
-
+<ol class="method-steps">
 <div id="webapp_input">
-    <h2>1. Select data for processing:</h2>
-
-    <div id="inputs" class="input box">
-
-    </div>
-  
+    <li class="heading-2">Select data for processing:</li>
+    <div id="inputs" class="input box"></div>
 </div>
 
 
-
-<div id="webapp_parameters">
-    <h2>2. Parameters:</h2>
-    
-    <div id="parameters" class="parameters box" >
-        <!--
-        <div id="webapp_input_description">
- 
-        </div>
-        <div id="webapp_input_thumbnail" class="thumbnail" style="display:none;"></div>
-        <div id="webapp_input_viewer" class="imageviewer" style="display:none;" ></div>
-        -->
-    </div>
-    
+<div id="webapp_parameters" style="display:none;">
+    <li class="heading-2">Parameters:</li>
+    <div id="parameters" class="parameters box"></div>
 </div>
-
 
 
 <div id="webapp_run" >    
-    <h2>3. Run algorithm:</h2>
+    <li class="heading-2">Run algorithm:</li>
     <div class="box run">
         <p><button id="webapp_run_button" onclick="webapp.run()" >Run</button>  
           This may take some time, progress will be shown on the button.</p>
@@ -237,57 +221,20 @@
 </div>
 
 
-
-
 <div id="webapp_results" py:if="outputs is not None and len(outputs)>0">
-    <h2>4. Results:</h2>  
+    <li class="heading-2">Results:</li>  
   
     <div id="outputs" class="box results" >  
         <span id="webapp_results_summary"><h3>No results yet, please run the module first.</h3></span>        
- 
         <div id="webapp_results_dataset"></div>
-        
-        
-        <!--      
-        <div id="webapp_results_content" >
-            
-            <span id="webapp_result_description"></span>        
-            
-            <p>View:  
-            <button id="webapp_result_view" onclick="webapp.view()" disabled="true">View detected seeds</button>
-            <button id="webapp_result_plot" onclick="webapp.plot()" disabled="true">Plot distributions (areas and axis)</button>        
-            </p>
-    
-            <p>View as a Movie: 
-            <button id="webapp_result_movie" onclick="webapp.exportToMovie()" disabled="true">Overlay tips on an image</button>
-            </p>
-    
-            <p>Export Area, Major and Minor axis: 
-            <button id="webapp_result_csv" onclick="webapp.exportToCSV()" disabled="true">Export as CSV</button>
-            </p>
-            
-            <p>Export full document: 
-            <button id="webapp_result_xml" onclick="webapp.exportToXML()" disabled="true">Export as XML</button>
-            <button id="webapp_result_excel" onclick="webapp.exportToExcel()" disabled="true">Export as Excel (CSV)</button>
-            <button id="webapp_result_gdocs" onclick="webapp.exportToGDocs()" disabled="true">Export to Google Docs</button>
-            </p>
-            
-        </div>
-        -->
-        
     </div>  
-    
-    <div id="webapp_results_viewer" class="imageviewer" style="display:none;"></div>
-    <div id="webapp_results_plotter" class="plotter" style="display:none;"></div>      
-</div>
 
+</div>
+</ol>
 
 <div style="height: 20px;"></div>
 
-
 </div> <!-- main -->
 </div> <!-- webapp -->
-
-
 </body>
 </html>

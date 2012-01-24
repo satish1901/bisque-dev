@@ -144,7 +144,14 @@ accepted_type
 example_query
 prohibit_upload
 
-dima: missing viewer and selection of gobjects
+Validation: enforce input image geometry, not used for datasets
+ex: { z: 'stack', t:'single', fail_message: 'Only supports 3D images!' };
+    fail_message - message that will be displayed if failed the check
+    z or t       - specify dimension to be checked
+    here the z or t value may be:
+        null or undefined - means it should not be enforced
+        'single' - only one plane is allowed
+        'stack'  - only stack is allowed  
 *******************************************************************************/
 
 Ext.define('BQ.selectors.Resource', {
@@ -349,7 +356,17 @@ Ext.define('BQ.selectors.Resource', {
 Gobject templated configs:
 accepted_type
 
-dima: missing viewer and selection of gobjects
+Validation: enforce selection of graphical objects
+ex: { gobject: ['point'], amount: 'many', fail_message: 'You must select some root tips!' }; 
+    fail_message - message that will be displayed if failed the check
+    gobject      - a vector of types of gobjects that can be collected
+    amount       - constraint on the amount of objects of allowed type
+    here the amount value can be:
+        null or undefined - means it should not be enforced
+        'single' - only one object is allowed
+        'many'   - only more than one object allowed
+        'oneornone' - only one or none
+        number   - exact number of objects allowed        
 *******************************************************************************/
 
 Ext.define('BQ.selectors.Gobject', {
@@ -860,6 +877,15 @@ Ext.define('BQ.renderers.Tag', {
 Image templated configs:
 
 *******************************************************************************/
+function createStatsArgs(command, template) {
+    var c = template['plot/'+command];
+    if (!c) return '';
+    if (typeof(c)=='string') return '&'+command+'='+escape(c);
+    var s='';
+    for (var i=0; i<c.length; i++)
+        s += '&'+command+(i==0?'':i)+'='+escape(c[i]);
+    return s;    
+}
 
 Ext.define('BQ.renderers.Image', {
     alias: 'widget.rendererimage',    
@@ -873,13 +899,37 @@ Ext.define('BQ.renderers.Image', {
         pack  : 'start',
     },    
 
+/*
+    tools: {
+        'plot'          : 'createMenuPlot',
+        'export-csv'    : 'createMenuExportCsv',
+        'export-xml'    : 'createMenuExportXml',
+        'export-excel'  : 'createMenuExportExcel',
+        'export-gdocs'  : 'createMenuExportGdocs',
+        'preview-movie' : 'createMenuPreviewMovie',   
+    },
+*/
+    toolsPlot: {
+        'plot'          : 'createMenuPlot',
+    },
+    toolsPreview: {
+        'preview_movie' : 'createMenuPreviewMovie',   
+    },
+    toolsExport: {
+        'export_csv'    : 'createMenuExportCsv',
+        'export_xml'    : 'createMenuExportXml',
+        'export_excel'  : 'createMenuExportExcel',
+        'export_gdocs'  : 'createMenuExportGdocs',
+    },
+
     initComponent : function() {
         var definition = this.definition;
         var template = definition.template || {};
         var resource = this.resource;
         if (!definition || !resource) return;
         
-        var parameters = { simpleview: '', gobjects: resource.gobjects, };
+        this.gobjects = resource.gobjects;
+        var parameters = { simpleview: '', gobjects: this.gobjects, };
         this.viewer = Ext.create('BQ.viewer.Image', {
             resource: resource.resource_type=='image'?resource:resource.value, // reference or resource
             flex: 1,
@@ -887,14 +937,154 @@ Ext.define('BQ.renderers.Image', {
             //listeners: { 'changed': this.onchanged, scope: this, },
         });
 
+        // create tools menus
+        var tool_items = [];                
+        if (this.gobjects.length>0) {
+
+            var plotMenu = Ext.create('Ext.menu.Menu');
+            for (var i in this.toolsPlot)
+                this[this.toolsPlot[i]](plotMenu);
+
+            var previewMenu = Ext.create('Ext.menu.Menu');
+            for (var i in this.toolsPreview)
+                this[this.toolsPreview[i]](previewMenu);
+
+            var exportMenu = Ext.create('Ext.menu.Menu');                
+            for (var i in this.toolsExport)
+                this[this.toolsExport[i]](exportMenu);     
+    
+            if (plotMenu.items.getCount()>0)    tool_items.push( { text : 'Plot',    menu: plotMenu, } );
+            if (previewMenu.items.getCount()>0) tool_items.push( { text : 'Preview', menu: previewMenu, } );
+            if (exportMenu.items.getCount()>0)  tool_items.push( { text : 'Export',  menu: exportMenu, } ); 
+        }               
+
         this.items = [];
         this.items.push( {xtype: 'label', html:(template.label?template.label:resource.name), } );        
+        if (tool_items.length>0) this.items.push( {xtype: 'toolbar', items: tool_items, defaults: { scale: 'medium' }, } );               
         this.items.push(this.viewer);        
                
         this.callParent();
     },
 
+/*
+BQWebApp.prototype.plot = function() {
+
+      var url = this.gobjectURL;
+      var xmap = 'tag-value-number';
+      var xreduce = 'histogram';
+
+      var xpath1 = '//tag[@name="area"]';      
+      var opts = { title: 'Distribution of seed areas', height:500, args: {numbins: 18} };
+      this.plotter1 = new BQStatisticsVisualizer( surface_area, url, xpath1, xmap, xreduce, opts );
+
+      var xpath2 = '//tag[@name="major"]';      
+      var opts = { title: 'Distribution of major axis', height:500, args: {numbins: 18} };
+      this.plotter2 = new BQStatisticsVisualizer( surface_major, url, xpath2, xmap, xreduce, opts );
+
+      var xpath3 = '//tag[@name="minor"]';      
+      var opts = { title: 'Distribution of minor axis', height:500, args: {numbins: 18} };
+      this.plotter3 = new BQStatisticsVisualizer( surface_minor, url, xpath3, xmap, xreduce, opts );
+
+}
+
+*/
+
+    createMenuPlot : function(menu) {
+        var gobs = this.definition.gobjects[0];
+        var template = (gobs?gobs.template:{}) || {};
+        if ('plot' in template && template['plot']==false) return;
+        
+        menu.add({
+            text: template['plot/label']?template['plot/label']:'Plot',
+            scope: this,
+            handler: function() {
+                var opts = { title: template['plot/title'], args: {numbins: template['plot/args/numbins']} };
+                this.plotter = Ext.create('BQ.stats.Dialog', {
+                    url     : this.gobjects[0].uri,
+                    xpath   : template['plot/xpath'],
+                    xmap    : template['plot/xmap'],
+                    xreduce : template['plot/xreduce'],
+                    opts    : opts,
+                });
+            },
+        });  
+            
+    }, 
+
+    createMenuExportCsv : function(menu) {
+        var gobs = this.definition.gobjects[0];
+        var template = (gobs?gobs.template:{}) || {};
+        if ('export_csv' in template && template['export_csv']==false) return;
+        
+        menu.add({
+            text: template['export_csv/label']?template['export_csv/label']:'as CSV',
+            scope: this,
+            handler: function() {
+                var url = '/stats/csv?url=' + this.gobjects[0].uri;
+                url += createStatsArgs('xpath', template);
+                url += createStatsArgs('xmap', template);
+                url += createStatsArgs('xreduce', template);                                        
+                window.open(url);                
+            },
+        }); 
+    }, 
+
+    createMenuExportXml : function(menu) {
+        var gobs = this.definition.gobjects[0];
+        var template = (gobs?gobs.template:{}) || {};
+        if ('export_xml' in template && template['export_xml']==false) return; 
+        menu.add({
+            text: 'complete document as XML',
+            scope: this,
+            handler: function() {
+                window.open(this.gobjects[0].uri + '?view=deep');
+            },
+        }); 
+    }, 
+
+    createMenuExportExcel : function(menu) {
+        var gobs = this.definition.gobjects[0];
+        var template = (gobs?gobs.template:{}) || {};
+        if ('export_excel' in template && template['export_excel']==false) return; 
+        menu.add({
+            text: 'complete document as CSV',
+            scope: this,
+            handler: function() {
+                window.open(this.gobjects[0].uri + '?view=deep&format=csv');
+            },
+        });      
+    }, 
+
+    createMenuExportGdocs : function(menu) {
+        var gobs = this.definition.gobjects[0];
+        var template = (gobs?gobs.template:{}) || {};
+        if ('export_gdocs' in template && template['export_gdocs']==false) return; 
+        menu.add({
+            text: 'complete document to Google Docs',
+            scope: this,
+            handler: function() {
+                window.open('/export/to_gdocs?url='+this.gobjects[0].uri);
+            },
+        });        
+    }, 
+
+    createMenuPreviewMovie : function(menu) {
+        var gobs = this.definition.gobjects[0];
+        var template = (gobs?gobs.template:{}) || {};
+        if ('preview_movie' in template && template['preview_movie']==false) return;
+        var resource_uri = this.resource.resource_type=='image'?this.resource.uri:this.resource.value;
+        menu.add({
+            text: 'Overlay annotations on a movie',
+            scope: this,
+            handler: function() {
+                window.open('/client_service/movieplayer?resource='+resource_uri+'&gobjects='+this.gobjects[0].uri);
+            },
+        }); 
+    }, 
+
+
 });
+
 
 /*******************************************************************************
 Dataset templated configs:

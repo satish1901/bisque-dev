@@ -202,11 +202,49 @@ For details on notation and configuration:
     -->  
           
     <tag name="outputs">
-         <tag name="MyData" />
-         <tag name="MyTable" />         
-         <tag name="MyImage" type="image">
-             <gobject name="MyAnnotation" />
-         </tag>
+        <tag name="MyData" />
+        <tag name="MyTable" />         
+        <tag name="MyImage" type="image">
+            <gobject name="MyAnnotation">
+                <tag name="template" type="template">
+                    
+                    <tag name="plot" value="true"  type="boolean">
+                        <tag name="label" value="Distributions of seed areas, major and minor axis" />
+                        <tag name="title">
+                            <value>Distribution of seed areas</value>
+                            <value>Distribution of major axis</value>
+                            <value>Distribution of minor axis</value>                                                        
+                        </tag>                           
+                        <tag name="xmap" value="tag-value-number" />
+                        <tag name="xreduce" value="histogram" />
+                        <tag name="xpath">
+                            <value>//tag[@name="color"]</value>
+                            <value>//tag[@name="shape"]</value>    
+                            <value>//tag[@name="line_width"]</value>
+                        </tag>                        
+                        <tag name="args">
+                            <tag name="numbins" value="18" type="number" />
+                        </tag>                        
+                    </tag>
+                    
+                    <tag name="export_csv" value="true" type="boolean">
+                        <tag name="label" value="Area, Major and Minor axis as CSV" />
+                        <tag name="xmap" value="tag-value-number" />
+                        <tag name="xreduce" value="vector" />
+                        <tag name="xpath">
+                            <value>//tag[@name='color']</value>
+                            <value>//tag[@name='shape']</value>
+                            <value>//tag[@name='line_width']</value>
+                        </tag>                        
+                    </tag>                      
+
+                    <tag name="export_xml"    value="true"  type="boolean" />
+                    <tag name="export_excel"  value="false" type="boolean" />
+                    <tag name="export_gdocs"  value="true"  type="boolean" />
+                    <tag name="preview_movie" value="false" type="boolean" />
+                </tag>                  
+            </gobject>
+        </tag>
     </tag>
 
 
