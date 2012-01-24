@@ -64,23 +64,23 @@ ImgDownload.prototype.downloadOriginal = function () {
 }
 
 ImgDownload.prototype.downloadGObjects = function () {
-    //window.location = this.viewer.imageuri + "/gobjects?view=deep";
-    window.open( this.viewer.imageuri + "/gobjects?view=deep" );    
+    //window.location = this.viewer.imageuri + "/gobject?view=deep";
+    window.open( this.viewer.imageuri + "/gobject?view=deep" );    
 }
 
 ImgDownload.prototype.downloadGObjectsCSV = function () {
-    //window.location = this.viewer.imageuri + "/gobjects?view=deep&format=csv";
-    window.open( this.viewer.imageuri + "/gobjects?view=deep&format=csv" );        
+    //window.location = this.viewer.imageuri + "/gobject?view=deep&format=csv";
+    window.open( this.viewer.imageuri + "/gobject?view=deep&format=csv" );        
 }
 
 ImgDownload.prototype.downloadTags = function () {
-    //window.location = this.viewer.imageuri + "/tags?view=deep";
-    window.open( this.viewer.imageuri + "/tags?view=deep" );        
+    //window.location = this.viewer.imageuri + "/tag?view=deep";
+    window.open( this.viewer.imageuri + "/tag?view=deep" );        
 }
 
 ImgDownload.prototype.downloadTagsCSV = function () {
-    //window.location = this.viewer.imageuri + "/tags?view=deep&format=csv";
-    window.open( this.viewer.imageuri + "/tags?view=deep&format=csv" );        
+    //window.location = this.viewer.imageuri + "/tag?view=deep&format=csv";
+    window.open( this.viewer.imageuri + "/tag?view=deep&format=csv" );        
 }
 
 ImgDownload.prototype.downloadMetadata = function () {
