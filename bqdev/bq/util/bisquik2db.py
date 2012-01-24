@@ -470,6 +470,7 @@ mapping_fields = {
     'taggable_id': None,
     #'permission': 'action',
     'resource': None,
+    'xmltag': None,
 
     }
 
@@ -648,7 +649,7 @@ def db2node(dbo, parent, view, baseuri, nodes, doc_id):
     else:
         # Allow a list of tags to be specified in the view parameter which 
         # will be included the object
-         v = list(itertools.ifilter (lambda x: x != 'full', view))
+         v = list(itertools.ifilter (lambda x: x not in ('full','deep','short', 'canonical'), view))
          #log.debug ("TAG VIEW=%s", v)
          #tl = [ db2tree_int(x, node, v, baseuri) for x in dbo.tags if x.resource_name in v ] 
          for tag_name in v:
