@@ -27,13 +27,13 @@ function openDownloadOriginal( parent_id ) {
 }
 
 function downloadAnnotations( parent_id ) {
-  var requesturl = this._img_resourceURI + "/gobjects?view=deep,canonical";
+  var requesturl = this._img_resourceURI + "/gobject?view=deep,canonical";
   window.location = requesturl;
   //makeRequest( requesturl, parseImageTagsXML, null, "get", "" );
 }
 
 function downloadTags( parent_id ) {
-  var requesturl = this._img_resourceURI + "/tags?view=deep";
+  var requesturl = this._img_resourceURI + "/tag?view=deep";
   window.location = requesturl;
   //makeRequest( requesturl, parseImageTagsXML, null, "get", "" );
 }
