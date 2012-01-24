@@ -268,7 +268,7 @@ class import_serviceController(ServiceController):
 #        log.debug('process5Dimage ::::: combined_filepath\n %s'% combined_filepath )
 
         num_pages = len(members)
-        z=1; t=1
+        z=0; t=0
         #if 'number_z' in kw: z = int(kw['number_z'])
         #if 'number_t' in kw: t = int(kw['number_t'])
         if 'number-z' in kw: z = int(kw['number-z'])

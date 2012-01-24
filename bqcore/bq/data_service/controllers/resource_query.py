@@ -67,7 +67,7 @@ from bq.core.model import DBSession as session
 #from bq.data_service.model import UniqueName, names
 from bq.data_service.model import Taggable, taggable, Image
 from bq.data_service.model import TaggableAcl, BQUser
-from bq.data_service.model import Tag
+from bq.data_service.model import Tag, GObject
 from bq.data_service.model import Value, values
 from bq.data_service.model import dbtype_from_tag
 
@@ -99,12 +99,13 @@ except:
     import yacc as yacc
     import lex as lex
  
-tokens = ('TAGVAL',  'SEP', 'AND', 'OR', 'LP', 'RP', 'QUOTED')
+tokens = ('TAGVAL',  'SEP', 'TYSEP', 'AND', 'OR', 'LP', 'RP', 'QUOTED')
 reserved = { 'and': 'AND', 'AND': 'AND',
              'or' : 'OR', 'OR' : 'OR', 
              }
 
 #t_TAGVAL   = r'\w+\*?'
+t_TYSEP = r'::'
 t_SEP   = r':'
 t_AND   = r'\&'
 t_OR    = r'\|'
@@ -122,13 +123,21 @@ def t_QUOTED(t):
     t.type = 'TAGVAL'
     t.value = t.value[1:-1]
     return t
-
 def t_TAGVAL(t):
     r'[^:\t\n\r\f\v()" ]+'
     t.type = reserved.get(t.value, 'TAGVAL')
     if t.type != 'TAGVAL':
         t.value = t.value.upper()
     return t
+
+
+# def t_TAGVAL(t):
+#     r'([^:"\'\t\n\t\f\v() ]+)|(?P<q>["\'])[^"\']*(?P=q)' 
+#     t.type = reserved.get(t.value, 'TAGVAL')
+#     if t.type != 'TAGVAL':
+#         t.value = t.value.upper()
+#     t.value = t.value.strip('"\'')
+#     return t
     
 def t_error(t):
     global report_errors
@@ -176,81 +185,110 @@ def p_expr_term(p):
     #p[0] = Taggable.id.in_ (select([Taggable.id], p[1]).correlate(None))
     p[0] = p[1]
 
+# def p_term_tagval(p):
+#     '''term : tagval SEP tagval'''
+#     vals= values.alias()
+#     tag = taggable.alias ()
+#     if p[1].count('*'):
+#         namexpr = tag.c.resource_name.ilike (p[1].replace('*', '%'))
+#     else:
+#         namexpr = tag.c.resource_name == p[1]
+#     v = p[3].lower()
+#     if p[3].count('*'):
+#         v = v.replace('*', '%')
+#         valexpr = tag.c.resource_value.ilike(v)
+#     else:
+#         valexpr = (func.lower(tag.c.resource_value) == v)
+#     p[0] = exists([tag.c.id]).where(
+#         and_(namexpr, valexpr, tag.c.document_id == taggable.c.id))
+
+# def p_term_tag(p):
+#     '''term : tagval'''
+#     vals= values.alias()
+#     tag = taggable.alias()
+#     v = p[1].lower()
+#     if p[1].count('*'):
+#         valexpr = (func.lower(tag.c.resource_value).ilike(v))
+#     else:
+#         #q1 = session.query(Tag).filter(and_(
+#         #        Tag.id == vals.c.parent_id, 
+#         #        func.lower(vals.c.valstr) == v))
+#         #q2 = session.query(Tag).filter(func.lower(Tag.resource_value) == 'f.tiff')
+#         #sq = q1.union(q2).subquery()
+#         # exists([taggable.id]).where(taggable.c.id == sq.c.taggable_document_id)
+#         valexpr = (func.lower(tag.c.resource_value) == v)
+#     p[0] = exists([tag.c.id]).where (and_(valexpr, tag.c.document_id == taggable.c.document_id))
+# def p_tagval_norm (p):
+#     '''tagval : TAGVAL'''
+#     p[0] = p[1]
+# def p_tagval_quote (p):
+#     '''tagval : QUOTED'''
+#     p[0] = p[1]
+
+
+
+
 def p_term_tagvaltype(p):
-    '''term : tagval SEP tagval SEP tagval'''
-    vals= values.alias()
+    '''term : sexpr '''
+
+    log.debug ('tagval %s' % list(p[1]))
+    name, val, type_ = p[1]
+    #vals= values.alias()
     tag = taggable.alias ()
-    if p[1].count('*'):
-        namexpr = tag.c.resource_name.ilike (p[1].replace('*', '%'))
-    else:
-        namexpr = tag.c.resource_name == p[1]
-    
-    v = p[3].lower()
-    valexpr = None
-    if p[3].count('*'):
-        v = v.replace('*', '%')
-        valexpr = tag.c.resource_value.ilike(v)
-    else:
-        valexpr = (func.lower(tag.c.resource_value) == v)
 
-    ty = p[5].lower()
-    tyexpr = (func.lower(tag.c.resource_user_type) == ty)
+    tagfilter =None
+    if name:
+        if name.count('*'):
+            namexpr = tag.c.resource_name.ilike (name.replace('*', '%'))
+        else:
+            namexpr = tag.c.resource_name == name
+        tagfilter = namexpr
     
+    if val:
+        v = val.lower()
+        valexpr = None
+        if val.count('*'):
+            v = v.replace('*', '%')
+            valexpr = tag.c.resource_value.ilike(v)
+        else:
+            valexpr = (func.lower(tag.c.resource_value) == v)
+        tagfilter = and_(tagfilter, valexpr)
 
+    if type_:
+        ty = type_.lower()
+        tyexpr = (func.lower(tag.c.resource_user_type) == ty)
+        tagfilter = and_(tagfilter, tyexpr)
+    
     p[0] = exists([tag.c.id]).where(
-        and_(namexpr, valexpr, tyexpr, tag.c.document_id == taggable.c.id))
-    
-def p_term_tagval(p):
-    '''term : tagval SEP tagval'''
-    vals= values.alias()
-    tag = taggable.alias ()
-    if p[1].count('*'):
-        namexpr = tag.c.resource_name.ilike (p[1].replace('*', '%'))
-    else:
-        namexpr = tag.c.resource_name == p[1]
-    
-    v = p[3].lower()
-    if p[3].count('*'):
-        v = v.replace('*', '%')
-        valexpr = tag.c.resource_value.ilike(v)
-    else:
-        valexpr = (func.lower(tag.c.resource_value) == v)
+        and_(tagfilter, tag.c.document_id == taggable.c.id))
 
-    p[0] = exists([tag.c.id]).where(
-        and_(namexpr, valexpr, tag.c.document_id == taggable.c.id))
+    log.debug ("SQL %s" % p[0])
 
 
 
-def p_term_tag(p):
-    '''term : tagval'''
-    #tag = tags.alias ()
-    vals= values.alias()
-    #resource = taggable.alias()
-    tag = taggable.alias()
-    #taggableobj = taggable.alias()
 
-    v = p[1].lower()
-    if p[1].count('*'):
-        valexpr = (func.lower(tag.c.resource_value).ilike(v))
-    else:
-        #q1 = session.query(Tag).filter(and_(
-        #        Tag.id == vals.c.parent_id, 
-        #        func.lower(vals.c.valstr) == v))
-        #q2 = session.query(Tag).filter(func.lower(Tag.resource_value) == 'f.tiff')
-        #sq = q1.union(q2).subquery()
-        # exists([taggable.id]).where(taggable.c.id == sq.c.taggable_document_id)
-        valexpr = (func.lower(tag.c.resource_value) == v)
-                                     
-    p[0] = exists([tag.c.id]).where (and_(valexpr, tag.c.document_id == taggable.c.document_id))
+def p_tagval_val(p):
+    '''sexpr : tagval'''
+    p[0] = (None, p[1], None)
+def p_tagval_nameval (p):
+    '''sexpr : tagval SEP tagval'''
+    p[0] = (p[1], p[3], None)
+def p_tagval_namevaltype (p):
+    '''sexpr : tagval TYSEP sexpr
+    '''
+    p[0] = (p[3][0], p[3][1], p[1])
 
 
-
-def p_tagval_norm (p):
-    '''tagval : TAGVAL'''
+def p_tagval(p):
+    '''tagval : TAGVAL
+              | QUOTED
+              | empty
+    '''
     p[0] = p[1]
-def p_tagval_quote (p):
-    '''tagval : QUOTED'''
-    p[0] = p[1]
+
+def p_empty(p):
+    'empty :'
+    p[0] = ''
 
 
 def p_error(p):
@@ -261,7 +299,7 @@ def p_error(p):
 #  move to some system directory like "/var/run/bisque" 
 # http://www.dabeaz.com/ply/ply.html#ply_nn18
 #_mkdir("generated")
-yacc.yacc(outputdir=data_path(), debug= 0)
+yacc.yacc(outputdir=data_path(), debug= 1)
 
 
 def prepare_permissions (query, user_id, with_public, action = RESOURCE_READ):
@@ -440,6 +478,50 @@ def tags_special(dbtype, query, params):
        name=tag_name   : all tags have a name="tag_name" as an attribute
        value=tag_val   : all tags having a value attribute of tag_val
     '''
+
+    tn = params.pop('gob_types', None)
+    if tn:
+        
+        ### Return all tha available tag names for the given superquery
+        sq1 = query.with_labels().subquery()
+        # Fetch all name on all 'top' level tags from the query
+        sq2 = session.query(GObject).filter(GObject.document_id == sq1.c.taggable_document_id)
+        sq3 = sq2.distinct(GObject.resource_user_type).order_by(Tag.resource_user_type)
+        vsall = sq3.all()
+        # for sqlite (no distinct on)
+        try:        
+            vsall = unique(vsall, lambda x: x.resource_user_type)
+            #log.debug ("tag_names query = %s" % sq1)
+            q = [ fobject (resource_type='gobject' , type=tg.resource_user_type ) for tg in vsall]
+        except (IndexError, StopIteration):
+            return []            
+        return q
+
+    tv = params.pop('gob_names', None)
+    if tv:
+        log.debug ("GOB %s" % tv)
+        ### Given a query and a tag_name, return all the possible values for the tag
+        #valtags = tags.alias()
+        #tv = UniqueName(tv)
+        sq1 = query.with_labels().subquery()
+        #sq2 = session.query(Tag).filter(and_(Tag.parent_id == sq1.c.taggable_id,
+        #                                     Tag.name_id == tv.id)).with_labels().subquery()
+        #sq2 = session.query(GObject).filter(
+        #    and_(GObject.resource_user_type == tv,
+        #         GObject.document_id == sq1.c.taggable_document_id)).with_labels().subquery()
+        sq2 = session.query(GObject).filter(
+            and_(GObject.resource_user_type == tv,
+                 GObject.document_id == sq1.c.taggable_document_id)).distinct(GObject.resource_name).order_by(GObject.resource_name)
+        # for sqllite (no distinct on)
+        try:
+            vsall = unique(sq2.all(), lambda x: x.resource_name)
+            q = [ fobject (resource_type='gobject', type = tv, name = v.resource_name)
+                 for v in vsall ]
+        except (IndexError, StopIteration):
+            return []
+        return q
+
+
 
     tn = params.pop('tag_names', None)
     if tn:
