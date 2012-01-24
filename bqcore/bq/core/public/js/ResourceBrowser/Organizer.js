@@ -120,13 +120,11 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
             this.ReloadBrowserData();
         }, this);
 
-
         this.msgBus.on('Organizer_OnGridSelect', function()
         {
             this.GridSelect();
             this.ReloadBrowserData();
         }, this);
-
 
         this.on('onFilterDragDrop', this.ReorderFilters, this);
     },
@@ -276,7 +274,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
     Reset : function()
     {
         while(this.items.length != 0)
-        this.getComponent(0).destroy();
+            this.getComponent(0).destroy();
     }
 });
 
