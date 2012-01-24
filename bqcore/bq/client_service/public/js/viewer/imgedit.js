@@ -218,7 +218,7 @@ ImgEdit.prototype.save_edit = function (mode) {
 ImgEdit.prototype.gobjectSelected = function (gob) {
     
     
-    //var tg= new Tagger( , this.viewer.imageuri+'/tags' , "gobject tags", true  );
+    //var tg= new Tagger( , this.viewer.imageuri+'/tag' , "gobject tags", true  );
     //tg.load();
     //tg.renderHTML();
 }

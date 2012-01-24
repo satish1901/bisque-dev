@@ -82,11 +82,11 @@ ImgExternal.prototype.launchBioView3D = function () {
 }
 
 ImgExternal.prototype.exportGObjectsToGoogle = function () {
-    //window.location = '/export/to_gdocs?url=' + this.viewer.imageuri + "/gobjects";
-    window.open( '/export/to_gdocs?url=' + this.viewer.imageuri + "/gobjects" );      
+    //window.location = '/export/to_gdocs?url=' + this.viewer.imageuri + "/gobject";
+    window.open( '/export/to_gdocs?url=' + this.viewer.imageuri + "/gobject" );      
 }
 
 ImgExternal.prototype.exportTagsToGoogle = function () {
-    //window.location = '/export/to_gdocs?url=' + this.viewer.imageuri + "/tags";  
-    window.open( '/export/to_gdocs?url=' + this.viewer.imageuri + "/tags" );        
+    //window.location = '/export/to_gdocs?url=' + this.viewer.imageuri + "/tag";  
+    window.open( '/export/to_gdocs?url=' + this.viewer.imageuri + "/tag" );        
 }

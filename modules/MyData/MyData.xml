@@ -209,7 +209,7 @@ For details on notation and configuration:
                 <tag name="template" type="template">
                     
                     <tag name="plot" value="true"  type="boolean">
-                        <tag name="label" value="Plot distributions" />
+                        <tag name="label" value="Distributions of seed areas, major and minor axis" />
                         <tag name="title">
                             <value>Distribution of seed areas</value>
                             <value>Distribution of major axis</value>
@@ -228,7 +228,7 @@ For details on notation and configuration:
                     </tag>
                     
                     <tag name="export_csv" value="true" type="boolean">
-                        <tag name="label" value="Export Area, Major and Minor axis as CSV" />
+                        <tag name="label" value="Area, Major and Minor axis as CSV" />
                         <tag name="xmap" value="tag-value-number" />
                         <tag name="xreduce" value="vector" />
                         <tag name="xpath">

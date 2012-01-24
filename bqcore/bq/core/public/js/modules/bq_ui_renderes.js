@@ -940,22 +940,18 @@ Ext.define('BQ.renderers.Image', {
         // create tools menus
         var tool_items = [];                
         if (this.gobjects.length>0) {
+
             var plotMenu = Ext.create('Ext.menu.Menu');
+            for (var i in this.toolsPlot)
+                this[this.toolsPlot[i]](plotMenu);
+
             var previewMenu = Ext.create('Ext.menu.Menu');
-            var exportMenu = Ext.create('Ext.menu.Menu');
-    
-            for (var i in this.toolsPlot) {
-                var t = this[this.toolsPlot[i]]();
-                if (t) plotMenu.add(t);
-            }
-            for (var i in this.toolsPreview) {
-                var t = this[this.toolsPreview[i]]();
-                if (t) previewMenu.add(t);
-            }
-            for (var i in this.toolsExport) {
-                var t = this[this.toolsExport[i]]();
-                if (t) exportMenu.add(t);
-            }        
+            for (var i in this.toolsPreview)
+                this[this.toolsPreview[i]](previewMenu);
+
+            var exportMenu = Ext.create('Ext.menu.Menu');                
+            for (var i in this.toolsExport)
+                this[this.toolsExport[i]](exportMenu);     
     
             if (plotMenu.items.getCount()>0)    tool_items.push( { text : 'Plot',    menu: plotMenu, } );
             if (previewMenu.items.getCount()>0) tool_items.push( { text : 'Preview', menu: previewMenu, } );
@@ -972,68 +968,55 @@ Ext.define('BQ.renderers.Image', {
 
 /*
 BQWebApp.prototype.plot = function() {
-    // before we provide config for this, through an error
-    BQ.ui.warning('This method needs to be overwritten by a developer of a module in order to provide proper function'); 
-
-    var plotter_div = document.getElementById("webapp_results_plotter"); 
-    
-    if (plotter_div.style.display == 'none') {
-      plotter_div.style.display = '';
-      removeAllChildren(plotter_div);        
 
       var url = this.gobjectURL;
       var xmap = 'tag-value-number';
       var xreduce = 'histogram';
-    
-      var surface_area = document.createElementNS(xhtmlns,'div');
-      plotter_div.appendChild(surface_area);
+
       var xpath1 = '//tag[@name="area"]';      
       var opts = { title: 'Distribution of seed areas', height:500, args: {numbins: 18} };
       this.plotter1 = new BQStatisticsVisualizer( surface_area, url, xpath1, xmap, xreduce, opts );
 
-      var surface_major = document.createElementNS(xhtmlns,'div');
-      plotter_div.appendChild(surface_major);
       var xpath2 = '//tag[@name="major"]';      
       var opts = { title: 'Distribution of major axis', height:500, args: {numbins: 18} };
       this.plotter2 = new BQStatisticsVisualizer( surface_major, url, xpath2, xmap, xreduce, opts );
 
-      var surface_minor = document.createElementNS(xhtmlns,'div');
-      plotter_div.appendChild(surface_minor);
       var xpath3 = '//tag[@name="minor"]';      
       var opts = { title: 'Distribution of minor axis', height:500, args: {numbins: 18} };
       this.plotter3 = new BQStatisticsVisualizer( surface_minor, url, xpath3, xmap, xreduce, opts );
-    } else {
-        plotter_div.style.display = 'none';      
-    }
 
 }
 
 */
 
-    createMenuPlot : function() {
+    createMenuPlot : function(menu) {
         var gobs = this.definition.gobjects[0];
         var template = (gobs?gobs.template:{}) || {};
         if ('plot' in template && template['plot']==false) return;
         
-        return {
+        menu.add({
             text: template['plot/label']?template['plot/label']:'Plot',
             scope: this,
             handler: function() {
-                var url = '/stats/csv?url=' + this.gobjects[0].uri;
-                url += createStatsArgs('xpath', template);
-                url += createStatsArgs('xmap', template);
-                url += createStatsArgs('xreduce', template);                                        
-                window.open(url);                
+                var opts = { title: template['plot/title'], args: {numbins: template['plot/args/numbins']} };
+                this.plotter = Ext.create('BQ.stats.Dialog', {
+                    url     : this.gobjects[0].uri,
+                    xpath   : template['plot/xpath'],
+                    xmap    : template['plot/xmap'],
+                    xreduce : template['plot/xreduce'],
+                    opts    : opts,
+                });
             },
-        };  
+        });  
+            
     }, 
 
-    createMenuExportCsv : function() {
+    createMenuExportCsv : function(menu) {
         var gobs = this.definition.gobjects[0];
         var template = (gobs?gobs.template:{}) || {};
         if ('export_csv' in template && template['export_csv']==false) return;
         
-        return {
+        menu.add({
             text: template['export_csv/label']?template['export_csv/label']:'as CSV',
             scope: this,
             handler: function() {
@@ -1043,60 +1026,60 @@ BQWebApp.prototype.plot = function() {
                 url += createStatsArgs('xreduce', template);                                        
                 window.open(url);                
             },
-        };        
+        }); 
     }, 
 
-    createMenuExportXml : function() {
+    createMenuExportXml : function(menu) {
         var gobs = this.definition.gobjects[0];
         var template = (gobs?gobs.template:{}) || {};
         if ('export_xml' in template && template['export_xml']==false) return; 
-        return {
+        menu.add({
             text: 'complete document as XML',
             scope: this,
             handler: function() {
                 window.open(this.gobjects[0].uri + '?view=deep');
             },
-        };
+        }); 
     }, 
 
-    createMenuExportExcel : function() {
+    createMenuExportExcel : function(menu) {
         var gobs = this.definition.gobjects[0];
         var template = (gobs?gobs.template:{}) || {};
         if ('export_excel' in template && template['export_excel']==false) return; 
-        return {
+        menu.add({
             text: 'complete document as CSV',
             scope: this,
             handler: function() {
                 window.open(this.gobjects[0].uri + '?view=deep&format=csv');
             },
-        };        
+        });      
     }, 
 
-    createMenuExportGdocs : function() {
+    createMenuExportGdocs : function(menu) {
         var gobs = this.definition.gobjects[0];
         var template = (gobs?gobs.template:{}) || {};
         if ('export_gdocs' in template && template['export_gdocs']==false) return; 
-        return {
+        menu.add({
             text: 'complete document to Google Docs',
             scope: this,
             handler: function() {
                 window.open('/export/to_gdocs?url='+this.gobjects[0].uri);
             },
-        };           
+        });        
     }, 
 
-    createMenuPreviewMovie : function() {
+    createMenuPreviewMovie : function(menu) {
         var gobs = this.definition.gobjects[0];
         var template = (gobs?gobs.template:{}) || {};
         if ('preview_movie' in template && template['preview_movie']==false) return;
         var resource_uri = this.resource.resource_type=='image'?this.resource.uri:this.resource.value;
-        return {
+        menu.add({
             text: 'Overlay annotations on a movie',
             scope: this,
             handler: function() {
                 window.open('/client_service/movieplayer?resource='+resource_uri+'&gobjects='+this.gobjects[0].uri);
             },
-        };
+        }); 
     }, 
 
 
