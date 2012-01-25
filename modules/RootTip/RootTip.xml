@@ -12,7 +12,9 @@
     </tag>
     
     <tag name="outputs">
-        <gobject name="results" /> <!-- this is not correct, module needs update -->
+      <tag name='roots' type="image">
+          <gobject name="root_tips" /> 
+      </tag>
     </tag>      
 
     <tag name="execute_options">
@@ -27,6 +29,8 @@
         <tag name="group" value="Root Analysis" />
     </tag>
   
+    <tag name="title" value="RootTip" /> 
+    <tag name="authors" value="Nathan Miller" />
     <tag name="help"      type="file" value="public/help.html" />
     <tag name="thumbnail" type="file" value="public/thumbnail.png" />   
     <tag name="description" type="string" value="This module tracks root tip in a time sequence image." />     

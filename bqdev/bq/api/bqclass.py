@@ -160,16 +160,16 @@ class BQImage(BQResource):
 
     def __init__(self):
         super(BQImage, self).__init__()
-        self.geometry = None
+        self._geometry = None
         
     def geometry(self):
         'return x,y,z,t,ch of image'
-        if self.geometry is None:
+        if self._geometry is None:
             geom = self.toDict().get ('geometry')
             if geom:
-                x,y,z,t,ch = geom.split(',')
-                self.geometry = (x, y, z, t, ch)
-        return self.geometry
+                self._geometry = tuple(map(int, geom.value.split(',')))
+                #self._geometry = (x, y, z, t, ch)
+        return self._geometry
 
 
     def pixels(self):

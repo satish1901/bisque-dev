@@ -105,7 +105,7 @@ sub command_teardown {
       1;
     } or do {
       $log->error("problems while saving data $@");
-      $bq->finish_mex ( status => "FAILED", msg=>$@);
+      $bq->finish_mex(status=>"FAILED", msg=>$@);
       return 1;
     }
   }
@@ -158,40 +158,43 @@ sub saveTipsAndAngles {
 
   }
   my $gentime = strftime ("%d-%b-%Y %H:%M", localtime);
-  my $req = {request => {gobject => [  { name => "RootTip $gentime",
-                                         gobject => \@gobs } ]
-			}
-	    };
+  #my $req = {request => {gobject => [  { name => "RootTip $gentime",
+  #                                       gobject => \@gobs } ]
+  #}
+  #};
 
 
-  my $content =  $xs->XMLout($req);
-  my $gurl    = "";
-  my $doc;
-  if ( ! $dryrun ) {
-    $doc = $bq->postxml ($image . "/gobjects", $content);
-    die "post failed:" . $image . "/gobjects" unless defined $doc;
-    $gurl = $doc->findnodes('//gobject/@uri')->to_literal->value;
-  }
-  if ( $debug ) {
-    print "GOB $gurl\n";
-    print "GOB => $content";
-  }
+  # my $content =  $xs->XMLout($req);
+  # my $gurl    = "";
+  # my $doc;
+  # if ( ! $dryrun ) {
+  #   $doc = $bq->postxml ($image . "/gobjects", $content);
+  #   die "post failed:" . $image . "/gobjects" unless defined $doc;
+  #   $gurl = $doc->findnodes('//gobject/@uri')->to_literal->value;
+  # }
+  # if ( $debug ) {
+  #   print "GOB $gurl\n";
+  #   print "GOB => $content";
+  # }
 
-  $req = { request => { tag =>  [ { name => "RootTip",
-				    tag => [ { name=>"gobjects_url", type=>"link", value => $gurl},
-					     { name=>"mex_url", type=>"link", value => $mex} ]}]}};
+  # $req = { request => { tag =>  [ { name => "RootTip",
+  #   			    tag => [ { name=>"gobjects_url", type=>"link", value => $gurl},
+  #   				     { name=>"mex_url", type=>"link", value => $mex} ]}]}};
 
-  $content =  $xs->XMLout($req);
+  #$content =  $xs->XMLout($req);
 
-  if (! $dryrun ) {
-    $doc = $bq->postxml ($image . "/tags", $content);
-    die "post failed:" . $image . "/tags" unless defined $doc;
-  }
-  if ( $debug ) {
-    print "TAG => $content";
-  }
+#  if (! $dryrun ) {
+#    $doc = $bq->postxml ($image . "/tags", $content);
+#    die "post failed:" . $image . "/tags" unless defined $doc;
+#  }
+#  if ( $debug ) {
+#    print "TAG => $content";
+#  }
 
-  my $mextags = [ {name=>"gobjects_url", type=>"link", value=>$gurl} ];
+  #my $mextags = [ {name=>"gobjects_url", type=>"link", value=>$gurl} ];
+  my $mextags = [ {name=>"outputs", 
+                   gobject => [ { name => "RootTip $gentime",
+                                  gobject => \@gobs } ]} ];
   return $mextags;
 }
 
