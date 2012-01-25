@@ -191,7 +191,9 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
         {
             child.grid.setLoading({msg:''});
             var query = this.GetTagQuery();
-            var uri = this.dataset + '?tag_values=' + child.tag + '&wpublic=' + this.wpublic + (query.length?'&tag_query='+query:'');
+            var uri = this.dataset + '?{0}=' + child.tag + '&wpublic=' + this.wpublic + (query.length?'&tag_query='+query:'');
+            var uri = Ext.String.format(uri, (child.tagType=='tag'?'tag_values':'gob_names'));
+            
             BQFactory.load(uri, callback(this, 'PopulateGrid', true, child));
         }
         else
@@ -199,11 +201,13 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
             child.grid.setLoading(false);
             // Populate child filter's grid
             var tagArr = [];
-            for( i = 0; i < resourceData.tags.length; i++)
+            var data=(child.tagType=='tag'?resourceData.tags:resourceData.gobjects);
+            
+            for( i = 0; i < data.length; i++)
                 tagArr.push(new Ext.grid.property.Property(
                 {
                     name : i + 1,
-                    value : resourceData.tags[i].value
+                    value : (child.tagType=='tag'?data[i].value:data[i].name)
                 }));
 
             child.grid.store.loadData(tagArr);
@@ -251,7 +255,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
         var tagOrder = "";
         for(var i = 0; i < this.items.length; i++)
         {
-            if(this.getComponent(i).tag != "")
+            if(this.getComponent(i).tag != "" && this.getComponent(i).tagType=='tag') 
                 tagOrder = tagOrder + '"' + encodeURIComponent(this.getComponent(i).tag) + '":' + (this.getComponent(i).sortOrder == "" ? 'asc' : this.getComponent(i).sortOrder) + ",";
             else
                 continue;
@@ -343,7 +347,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
             }]
         });
 
-        Bisque.ResourceBrowser.Organizer.TagFilterCt.superclass.constructor.apply(this, arguments);
+        this.callParent(arguments);
 
         this.on('afterrender', function(thisCt)
         {
@@ -384,29 +388,31 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
         this.tagCombo.store.sort(this.tagCombo.displayField, dir);
     },
 
-    GetTagList : function(loaded, tagData)
+    GetTagList : function(loaded, type, tagData)
     {
         if(!loaded)
         {
             var query = this.parent.GetTagQuery();
             
             var uri = this.parent.dataset 
-                      + '?tag_names=1&wpublic=' 
+                      + '?{0}=1&wpublic=' 
                       + this.parent.wpublic
                       + (query.length?'&tag_query='+query:''); 
             
-            BQFactory.load(uri, callback(this, 'GetTagList', true));
+            BQFactory.load(Ext.String.format(uri, 'tag_names'), Ext.bind(this.GetTagList, this, [true, 'tag'], 0));
+            BQFactory.load(Ext.String.format(uri, 'gob_types'), Ext.bind(this.GetTagList, this, [true, 'gobject'], 0));
         }
-        else
+        else if (type=='tag')
         {
             var tagArr = [];
             for( i = 0; i < tagData.tags.length; i++)
                 tagArr.push(
                 {
-                    "name" : tagData.tags[i].name.toString()
+                    "name" : tagData.tags[i].name.toString(),
+                    "value": 'tag'
                 });
 
-            this.tagCombo.store.loadData(tagArr.slice(0), false);
+            this.tagCombo.store.loadData(tagArr, false);
             this.tagCombo.setLoading(false);
 
             // Remove already selected tags from the just added filter
@@ -420,6 +426,18 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
                 this.tagCombo.select(this.tag_order[0]);
                 this.tagCombo.fireEvent('Select', this.tagCombo, true);
             }
+        }
+        else if (type=='gobject')
+        {
+            var tagArr = [];
+            for( i = 0; i < tagData.gobjects.length; i++)
+                tagArr.push(
+                {
+                    "name" : tagData.gobjects[i].type.toString(),
+                    "value": 'gobject'
+                });
+
+            this.tagCombo.store.loadData(tagArr, true);
         }
     },
 
@@ -511,15 +529,30 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
 
     GetTagValuePair : function()
     {
-        if(this.value.length > 0)
+        if  (this.tagType=='gobject')
         {
-            var str = "";
-            for( i = 0; i < this.value.length; i++)
-            str += '"' + encodeURIComponent(this.tag) + '":"' + encodeURIComponent(this.value[i]) + '" OR ';
-            return str.substring(0, str.length - 4);
+            if (this.value.length>0)
+            {
+                var str = "";
+                for( i = 0; i < this.value.length; i++)
+                    str += '"' + encodeURIComponent(this.tag) + '"::"' + encodeURIComponent(this.value[i]) + '" OR ';
+                return str.substring(0, str.length - 4);
+            }
+            else
+                return encodeURIComponent(this.tag)+':::';
         }
         else
-            return "";
+        {
+            if(this.value.length > 0)
+            {
+                var str = "";
+                for( i = 0; i < this.value.length; i++)
+                    str += '"' + encodeURIComponent(this.tag) + '":"' + encodeURIComponent(this.value[i]) + '" OR ';
+                return str.substring(0, str.length - 4);
+            }
+            else
+                return "";
+        }
     },
 
     Reinitialize : function()
@@ -561,6 +594,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
         {
             this.oldTag = this.tag;
             this.tag = combo.getRawValue();
+            this.tagType = combo.lastSelection[0].data.value;
             this.value = [];
             this.SetTitle();
 

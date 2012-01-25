@@ -101,6 +101,7 @@ Ext.define('Bisque.ResourceBrowser.Layout.Base',
 			parentCt : configOpts.browser.centerPanel,
 			msgBus : configOpts.browser.msgBus,
 			showGroups : configOpts.browser.showGroups,
+			bodyStyle : 'background: #AFA',
 			
 			resQ : [],
 			layoutEl :{},
@@ -232,15 +233,20 @@ Ext.define('Bisque.ResourceBrowser.Layout.Base',
         var imgNoResults = Ext.create('Ext.Img', 
         {
             src : bq.url('/js/ResourceBrowser/Images/no-results.png'),
+            widht: 300,
+            height: 80,
         })
         
-        var ct = Ext.create('Ext.container.Container', 
+        var ct = Ext.create('Ext.panel.Panel', 
         {
+            bodyStyle:  'background:#eee',
             layout  :   {
                             type : 'vbox',
                             pack : 'center',
                             align: 'center'
                         },
+            height  :   '100%',
+            width   :   '100%',                        
             items   :   imgNoResults,
         });
 
