@@ -249,8 +249,10 @@ class BQValue (BQNode):
         self.index = int(self.index)
         self.value = xmlnode.text
     def toetree(self, parent, baseuri):
-        n = etree.SubElement(parent, 'value', type=self.type, index = self.index)
-        n.text = self.value
+        n = etree.SubElement(parent, 'value', )
+        if self.type is not None: n.set('type', str(self.type))
+        if self.index is not None: n.set('index', str(self.index))
+        if self.value is not None: n.text = str(self.value)
         return n
         
     #def __call__(self):
@@ -294,11 +296,11 @@ class BQTag (BQResource):
             n = create_element(self, parent, baseuri)
         else:
             n = create_element(self, parent, baseuri)
-            del n['value']
+            del n.attrib['value']
             xmlkids.append('values')
         for kid_name in xmlkids:
-            for x in getattr(dbo, kid_name, None):
-                toxmlnode (x, node, baseuri, view)
+            for x in getattr(self, kid_name, None):
+                toxmlnode (x, n, baseuri)
 
     value = property(get_value, set_value)
 
