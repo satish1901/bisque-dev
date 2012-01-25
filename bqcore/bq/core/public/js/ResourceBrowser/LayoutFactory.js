@@ -101,7 +101,7 @@ Ext.define('Bisque.ResourceBrowser.Layout.Base',
 			parentCt : configOpts.browser.centerPanel,
 			msgBus : configOpts.browser.msgBus,
 			showGroups : configOpts.browser.showGroups,
-			bodyStyle : 'background: #AFA',
+			//bodyStyle : 'background: #AFA',
 			
 			resQ : [],
 			layoutEl :{},
@@ -239,7 +239,7 @@ Ext.define('Bisque.ResourceBrowser.Layout.Base',
         
         var ct = Ext.create('Ext.panel.Panel', 
         {
-            bodyStyle:  'background:#eee',
+            //bodyStyle:  'background:#eee',
             layout  :   {
                             type : 'vbox',
                             pack : 'center',
