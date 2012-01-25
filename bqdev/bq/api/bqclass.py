@@ -232,6 +232,11 @@ class BQValue (BQNode):
     xmltag = "value"
     xmlfields = ['value', 'type', 'index']
 
+    def __init__(self,  value=None, type=None, index=None):
+        self.value = value
+        self.type = type
+        self.index = index
+
     def set_parent(self, parent):
         if self.index is not None:
             parent.values.extend([None for x in range((self.index+1)-len(parent.values))])
@@ -243,22 +248,22 @@ class BQValue (BQNode):
         super(BQValue, self).initializeXml(xmlnode)
         self.index = int(self.index)
         self.value = xmlnode.text
+    def toetree(self, parent, baseuri):
+        n = etree.SubElement(parent, 'value', type=self.type, index = self.index)
+        n.text = self.value
+        return n
         
-    def __call__(self):
-        if len(self.values<=0): return ''
-        elif len(self.values==1): return str(self.values[0])
-        def str_join(x,y): return '%s,%s'%(x,y)
-        return reduce(str_join, self.values)
-
-    def __str__(self):
-        return ','.join( [str(x) for x in self.values] )
-
+    #def __call__(self):
+    #    if len(self.values<=0): return ''
+    #    elif len(self.values==1): return str(self.values[0])
+    #    def str_join(x,y): return '%s,%s'%(x,y)
+    #    return reduce(str_join, self.values)
 
 class BQTag (BQResource):
     '''tag resource'''
     xmltag = "tag"
     xmlfields = ['name', 'type', 'uri', 'ts', 'value']
-    xmlkids = ['tags', 'gobjects' ]
+    xmlkids = ['tags', 'gobjects',  ] # handle values  specially
 
     def __init__(self, name='', value=None, type=None):
         self.name = name
@@ -268,18 +273,33 @@ class BQTag (BQResource):
         
         if type is not None:
             self.type=type
-
-
     def set_parent(self, parent):
         parent.tags.append(self)
 
     def get_value(self):
+        if len(self.values)==0:
+            return None
         if len(self.values)==1:
-            return self.values[0]
-        return str(self.values)
-    def set_value(self, v):
-        if v is not None:
-            self.values = [v]
+            return self.values[0].value
+        return [ x.value for x in self.values ] 
+    def set_value(self, values):
+        if not isinstance(values, list):
+            self.values = [ BQValue(values)]
+        else:
+            self.values = [ BQValue(v) for v in values ] 
+
+    def toetree(self, parent, baseuri):
+        xmlkids = list(self.xmlkids)
+        if len(self.values)<=1:
+            n = create_element(self, parent, baseuri)
+        else:
+            n = create_element(self, parent, baseuri)
+            del n['value']
+            xmlkids.append('values')
+        for kid_name in xmlkids:
+            for x in getattr(dbo, kid_name, None):
+                toxmlnode (x, node, baseuri, view)
+
     value = property(get_value, set_value)
 
 
@@ -565,13 +585,13 @@ def create_element(dbo, parent, baseuri, **kw):
     return node
 
 def toxmlnode (dbo, parent, baseuri, view=None):
-    if hasattr(dbo, 'toEtree'):
+    if hasattr(dbo, 'toetree'):
         node = dbo.toetree(parent, baseuri)
     else:
         node = create_element (dbo, parent, baseuri)
-    for kid_name in dbo.xmlkids:
-        for x in getattr(dbo, kid_name, None):
-            toxmlnode (x, node, baseuri, view)
+        for kid_name in dbo.xmlkids:
+            for x in getattr(dbo, kid_name, None):
+                toxmlnode (x, node, baseuri, view)
     return node
 
 
