@@ -411,8 +411,24 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
                     "name" : tagData.tags[i].name.toString(),
                     "value": 'tag'
                 });
-
-            this.tagCombo.store.loadData(tagArr, false);
+            this.tagArr = tagArr;
+            this.tagArrLoaded = true;
+        }
+        else if (type=='gobject')
+        {
+            var gobArr = [];
+            for( i = 0; i < tagData.gobjects.length; i++)
+                gobArr.push(
+                {
+                    "name" : tagData.gobjects[i].type.toString(),
+                    "value": 'gobject'
+                });
+            this.gobArr = gobArr;
+            this.gobArrLoaded = true;
+        }
+        if (this.tagArrLoaded && this.gobArrLoaded)
+        {
+            this.tagCombo.store.loadData(this.tagArr.concat(this.gobArr), false);
             this.tagCombo.setLoading(false);
 
             // Remove already selected tags from the just added filter
@@ -426,18 +442,8 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
                 this.tagCombo.select(this.tag_order[0]);
                 this.tagCombo.fireEvent('Select', this.tagCombo, true);
             }
-        }
-        else if (type=='gobject')
-        {
-            var tagArr = [];
-            for( i = 0; i < tagData.gobjects.length; i++)
-                tagArr.push(
-                {
-                    "name" : tagData.gobjects[i].type.toString(),
-                    "value": 'gobject'
-                });
 
-            this.tagCombo.store.loadData(tagArr, true);
+            this.SortComboBox('ASC');
         }
     },
 
@@ -535,11 +541,11 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
             {
                 var str = "";
                 for( i = 0; i < this.value.length; i++)
-                    str += '"' + encodeURIComponent(this.tag) + '"::"' + encodeURIComponent(this.value[i]) + '" OR ';
+                    str += '"' + encodeURIComponent(this.tag) + '"::"' + encodeURIComponent(this.value[i]) + '": OR ';
                 return str.substring(0, str.length - 4);
             }
             else
-                return encodeURIComponent(this.tag)+':::';
+                return '"'+encodeURIComponent(this.tag)+'":::';
         }
         else
         {
@@ -584,7 +590,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
         if(this.ownerCt)
             this.ownerCt.ReloadBrowserData();
 
-        Bisque.ResourceBrowser.Organizer.TagFilterCt.superclass.destroy.apply(this, arguments);
+        this.callParent(arguments);
     },
 
     /* Event handlers */
