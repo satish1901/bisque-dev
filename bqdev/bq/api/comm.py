@@ -265,7 +265,7 @@ class BQSession(object):
     ##############################
     # Low-level save
     ##############################
-    def load(self,url, **params):
+    def load(self,url,  **params):
         """Load a bisque object
         """
         #if view not in url:

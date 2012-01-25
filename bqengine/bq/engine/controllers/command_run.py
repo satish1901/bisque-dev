@@ -371,17 +371,18 @@ class CommandRunner(BaseRunner):
                 continue
             command_line = list(mex.executable)
             #command_line.extend (mex.arguments)
+            rundir = mex.get('staging_path', os.getcwd())
             if  self.options.dryrun:
-                self.log( "DryRunning '%s' in %s" % (' '.join(command_line), os.getcwd()))
+                self.log( "DryRunning '%s' in %s" % (' '.join(command_line), rundir))
                 continue
 
-            self.log( "running '%s' in %s" % (' '.join(command_line), os.getcwd()))
+            self.log( "running '%s' in %s" % (' '.join(command_line), rundir))
             log.info ('mex %s ' % mex)
             
             self.execone(command_line, 
                          stdout = open("%s.out" % mex.executable[0],'w'),
                          stderr = open("%s.err" % mex.executable[0],'w'),
-                         cwd = mex.get('staging_path'))
+                         cwd = rundir)
         
         return self.command_finish
 

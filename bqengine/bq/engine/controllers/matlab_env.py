@@ -82,6 +82,7 @@ class MatlabEnvironment(BaseEnvironment):
 
     def process_config (self, runner, **kw):
         self.matlab_home = runner.config['runtime.matlab_home']
+        self.matlab_launcher = runner.config.get('runtime.matlab_launcher')
         #if runner.named_args.has_key('matlab_home'):
         #    self.matlab_home = runner.named_args['matlab_home']
 

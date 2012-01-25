@@ -540,7 +540,10 @@ class LocalPathService(object):
         res = etree.Element ('resource')
         if os.path.exists(ifile):  
             res.attrib['type'] = 'file'
-            res.attrib['src'] = 'file:%s'%( urllib.pathname2url(ifile) )
+            #res.attrib['src'] = 'file:%s'%( urllib.pathname2url(ifile) )
+            # This urlencode a filepath in an xml file, which to me doesn't make sense.
+            # maybe needs XML encoding, but not url
+            res.attrib['src'] = 'file:%s'%( ifile )
     
         log.debug("LocalPathService: local path: " + str(ifile))
         data_token.setXml( etree.tostring(res) )

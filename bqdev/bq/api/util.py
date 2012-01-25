@@ -9,6 +9,26 @@ from xmldict import xml2d, d2xml
 from bqclass import fromXml, toXml, BQMex
 
 
+class AttrDict(dict):
+    def __init__(self, *args, **kwargs):
+        dict.__init__(self, *args, **kwargs)
+    def __getattr__(self, name):
+        try:
+            return self[name]
+        except KeyError:
+            raise AttributeError
+    def __setattr__(self, name, value):
+        self[name] = value
+        return value
+
+    def __getstate__(self):
+        return self.items()
+
+    def __setstate__(self, items):
+        for key, val in items:
+            self[key] = val
+
+
 def safecopy (*largs):
     largs = list (largs)
     d = largs.pop()
@@ -48,7 +68,13 @@ def make_qs(pd):
 
 
 def fetch_image_planes(session, uri, dest, uselocalpath=False):
-    'fetch all the image planes of an image locally'
+    """fetch all the image planes of an image locally
+    @param session: the bqsession
+    @param uri: resource image uri 
+    @param dest: a destination directory
+    @param uselocalpath: true when routine is run on same host as server
+
+    """
     image = session.load (uri, view='full')
     #x,y,z,t,ch = image.geometry()
     meta = image.pixels().meta().fetch()
@@ -71,10 +97,11 @@ def fetch_image_planes(session, uri, dest, uselocalpath=False):
     files = []
     for i, p in enumerate(planes):
         slize = p.fetch()
-        fname = os.path.join (dest, "%.5d.tif" % i)
+        fname = os.path.join (dest, "%.5d.TIF" % i)
         if uselocalpath:
             path = ET.XML(slize).xpath('/resource/@src')[0]
-            safecopy (path, fname)
+            # Strip file:/ from path
+            safecopy (path[5:], fname)
         else:
             f = open(fname, 'wb')
             f.write(slize)
@@ -84,17 +111,24 @@ def fetch_image_planes(session, uri, dest, uselocalpath=False):
     return files
 
 def fetch_image_pixels(session, uri, dest, uselocalpath=False):
+    """fetch original image locally as tif
+    @param session: the bqsession
+    @param uri: resource image uri 
+    @param dest: a destination directory
+    @param uselocalpath: true when routine is run on same host as server
+    """
     image = session.load (uri)
     ip = image.pixels().format('tiff')
     if uselocalpath:
         ip = ip.localpath()
     pixels = ip.fetch()
     if os.path.isdir(dest):
-        dest = os.path.join (dest, "0.tif")
+        dest = os.path.join (dest, "0.TIF")
 
     if uselocalpath:
         path = ET.XML(pixels).xpath('/resource/@src')[0]
-        path = urllib.url2pathname(path[5:])
+        #path = urllib.url2pathname(path[5:])
+        path = path[5:]
         # Skip 'file:'
         safecopy (path, dest)
         return { uri : dest }
@@ -105,6 +139,12 @@ def fetch_image_pixels(session, uri, dest, uselocalpath=False):
             
 
 def fetch_dataset(session, uri, dest, uselocalpath=False):
+    """fetch elemens of dataset locally as tif
+    @param session: the bqsession
+    @param uri: resource image uri 
+    @param dest: a destination directory
+    @param uselocalpath: true when routine is run on same host as server
+    """
     dataset = session.fetchxml (uri, view='deep')
     members = dataset.xpath('//value[@type="object"]')
 
@@ -136,7 +176,8 @@ def fetchImage(session, uri, dest, uselocalpath=False):
 
     if uselocalpath:
         path = ET.XML(pixels).xpath('/resource/@src')[0]
-        path = urllib.url2pathname(path[5:])
+        #path = urllib.url2pathname(path[5:])
+        path = path[5:]
 
         # Skip 'file:'
         safecopy (path, dest)
