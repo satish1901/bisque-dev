@@ -15,12 +15,14 @@ Examples:
 Ext.namespace('BQ.ui');
 
 function showTip( element, text, opts ) {
-  if (!opts) opts={};
+  opts = opts || {};
   if (!('color' in opts)) opts.color = 'red';
   if (!('timeout' in opts)) opts.timeout = 5000;  
+  opts.anchor = opts.anchor || 'top';    
+  
   var tip = new Ext.ToolTip({
       target: element,
-      anchor: 'top',
+      anchor: opts.anchor,
       bodyStyle: 'font-size: 160%; color: '+opts.color+';',        
       html: text
   });
@@ -69,12 +71,13 @@ BQ.ui = function(){
         },
   
         tip: function( element, text, opts ) {
-            if (!opts) opts={};
+            opts = opts || {};
             if (!('color' in opts)) opts.color = 'red';
             if (!('timeout' in opts)) opts.timeout = 5000;  
+            opts.anchor = opts.anchor || 'top';               
             var tip = new Ext.ToolTip({
               target: element,
-              anchor: 'top',
+              anchor: opts.anchor,
               bodyStyle: 'font-size: 160%; color: '+opts.color+';',        
               html: text
             });

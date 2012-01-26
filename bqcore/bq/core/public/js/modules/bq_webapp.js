@@ -147,7 +147,8 @@ BQWebApp.prototype.mexMode = function () {
     document.getElementById("webapp_input").style.display = 'none';
     document.getElementById("webapp_parameters").style.display = 'none';
     document.getElementById("webapp_run").style.display = 'none';
-    showTip( 'webapp_results', 'Visualizing results of a selected execution!', {color: 'green', timeout: 10000} );
+    BQ.ui.tip('webapp_results', 'Visualizing results of a selected execution!',
+              {color: 'green', timeout: 10000, anchor:'bottom',}); 
 }
 
 BQWebApp.prototype.showProgress = function (p, s) {
@@ -346,7 +347,8 @@ BQWebApp.prototype.run = function () {
     for (var p=0; (i=inputs[p]); p++) {
         var renderer = i.renderer;
         if (renderer) 
-            valid = valid && renderer.validate();
+            //valid = valid && renderer.validate();
+            valid = renderer.validate() && valid; // make this run for all inputs and validate them all
     }    
     if (!valid) return;
     
