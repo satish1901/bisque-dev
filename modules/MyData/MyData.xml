@@ -90,7 +90,7 @@ For details on notation and configuration:
                     <tag name="fail_message" value="Requires at least one point" />
                 </tag> 
             </gobject>
-        </tag>         
+        </tag>     
         
         <tag name="radius" value="5.6" type="number" >
             <tag name="template" type="template">
@@ -117,21 +117,51 @@ For details on notation and configuration:
             </tag>             
         </tag>
         
-        <tag name="myrange" type="number" >
-            <value>5.6</value>
+        <tag name="myfloat2" type="number" >
+            <value>0.5</value>
+            <tag name="template" type="template">
+                <tag name="label" value="My floating point number" />
+                <tag name="minValue" value="0" type="number" />
+                <tag name="maxValue" value="1" type="number" />
+                <tag name="allowDecimals" value="true" type="boolean" />
+                <tag name="decimalPrecision" value="2" type="number" />
+                <tag name="step" value="0.1" type="number" />
+                <tag name="units" value="microns" />
+                <tag name="showSlider" value="true" type="boolean" />
+                <tag name="hideNumberPicker" value="true" type="boolean" />
+            </tag>             
+        </tag>           
+        
+        <tag name="myrange_int" type="number" >
+            <value>5</value>
             <value>12</value>
             <value>14</value>                        
             <tag name="template" type="template">
-                <tag name="label" value="My multi range" />
+                <tag name="label" value="My integer multi slider" />
                 <tag name="minValue" value="-10" type="number" />
                 <tag name="maxValue" value="33" type="number" />
-                <tag name="allowDecimals" value="true" type="boolean" />
-                <tag name="decimalPrecision" value="4" type="number" />
+                <tag name="allowDecimals" value="false" type="boolean" />
+                <tag name="decimalPrecision" value="0" type="number" />
                 <tag name="step" value="1" type="number" />
                 <tag name="units" value="microns" />
             </tag>             
         </tag>        
         
+        <tag name="myrange_float" type="number" >
+            <value>5.6</value>
+            <value>12</value>
+            <value>14</value>                        
+            <tag name="template" type="template">
+                <tag name="label" value="My float multi slider" />
+                <tag name="minValue" value="-10" type="number" />
+                <tag name="maxValue" value="33" type="number" />
+                <tag name="allowDecimals" value="true" type="boolean" />
+                <tag name="decimalPrecision" value="2" type="number" />
+                <tag name="step" value="0.1" type="number" />
+                <tag name="units" value="microns" />
+            </tag>             
+        </tag>  
+
         <tag name="mystring" value="nothing" type="string" >
             <tag name="template" type="template">
                 <tag name="label" value="Some text here" />
@@ -203,8 +233,15 @@ For details on notation and configuration:
           
     <tag name="outputs">
         <tag name="MyData" />
-        <tag name="MyTable" />         
+        <tag name="MyTable">
+            <tag name="template" type="template">
+                <tag name="label" value="Another set of tags with a custom label" />
+            </tag>
+        </tag>              
         <tag name="MyImage" type="image">
+            <tag name="template" type="template">
+                <tag name="label" value="Custom image label" />
+            </tag>            
             <gobject name="MyAnnotation">
                 <tag name="template" type="template">
                     

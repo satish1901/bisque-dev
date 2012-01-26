@@ -113,23 +113,36 @@ Ext.define('BQ.selectors.Selector', {
         return this;
     },
 
-    initComponent : function() {
-        var resource = this.resource;
-        var template = resource.template || {};      
-        this.callParent();
-    },
-    
     validate: function() {
         if (!this.resource) {
             BQ.ui.error('Selector is not configured properly, no resource is defined!'); 
             return false;            
         }        
         
+        if (!this.isValid()) {
+            this.addCls('invalid');
+            return false;                
+        }
+        
+        this.removeCls('invalid');        
         return true;
     },
 
+    // implement: you need to actually create UI for the element
+    initComponent : function() {
+        var resource = this.resource;
+        var template = resource.template || {};      
+        this.callParent();
+    },
+    
+    // implement: you need to provide a way to check the validity of the element
+    isValid: function() {
+        return true;
+    },    
+
+    // implement: you need to provide a way to programmatically select an element
     select: function(new_resource) {
-        // you need to provide a way to programmatically select an element
+        
         BQ.ui.warning('Programmatic select is not implemented in this selector');
     },
 
@@ -161,7 +174,7 @@ Ext.define('BQ.selectors.Resource', {
     
     layout: 'auto',
     cls: 'resourcerenderer',
-    height: 60,
+    height: 75,
 
     initComponent : function() {
         var resource = this.resource;
@@ -313,13 +326,13 @@ Ext.define('BQ.selectors.Resource', {
         this.setHeight( this.getHeight() + this.resourcePreview.getHeight() + increment );
     },
 
-    validate: function() {
+    isValid: function() {
         var resource = this.resource;
         var template = resource.template || {};        
 
         if (!this.selected_resource || !this.selected_resource.uri) {
-            BQ.ui.attention('You need to select an input resource!');
-            BQ.ui.tip(this.getId(), 'You need to select an input resource!'); // dima: maybe i need to give dom object for this one, instead of this
+            //BQ.ui.attention('You need to select an input resource!');
+            BQ.ui.tip(this.getId(), 'You need to select an input resource!', {anchor:'left',}); // dima: maybe i need to give dom object for this one, instead of this
             return false;
         }
 
@@ -329,6 +342,8 @@ Ext.define('BQ.selectors.Resource', {
         } 
         
         // check for image geometry if requested    
+        // we don't have image config right in the resource for, skip this for now
+        /*
         if ( this.selected_resource.resource_type == 'image' && 'require_geometry' in template && (
              (template['require_geometry/z'] && template['require_geometry/z']=='single' && this.selected_resource.z>1) ||
              (template['require_geometry/z'] && template['require_geometry/z']=='stack'  && this.selected_resource.z<=1) ||
@@ -339,7 +354,7 @@ Ext.define('BQ.selectors.Resource', {
             BQ.ui.attention(msg);
             BQ.ui.tip(this.getId(), msg); // dima: maybe i need to give dom object id for this one, instead of this        
             return false;
-        }        
+        } */      
         
         //if (this.selector_gobs) 
         //    return this.selector_gobs.validate();
@@ -399,7 +414,7 @@ Ext.define('BQ.selectors.Gobject', {
         this.resource.gobjects = Ext.clone( this.viewer.getGobjects() );              
     },
     
-    validate: function() {
+    isValid: function() {
         var resource = this.resource;
         var template = resource.template || {};               
         
@@ -414,7 +429,7 @@ Ext.define('BQ.selectors.Gobject', {
             ) {
                 var msg = template['require_gobjects/fail_message'] || 'Graphical annotations check failed!';
                 BQ.ui.attention(msg);
-                BQ.ui.tip(this.viewer.getId(), msg);
+                BQ.ui.tip(this.viewer.getId(), msg, {anchor:'left',});
                 return;
             }  
         }         
@@ -434,6 +449,8 @@ Number templated configs:
             allowDecimals: template.allowDecimals?template.allowDecimals:true,
             decimalPrecision: template.decimalPrecision?template.decimalPrecision:2,
             step: template.step?template.step:1,
+            hideNumberPicker
+            showSlider
 *******************************************************************************/
 
 Ext.define('BQ.selectors.Number', {
@@ -448,32 +465,38 @@ Ext.define('BQ.selectors.Number', {
         var resource = this.resource;
         var template = resource.template || {};
         this.items = [];
+
+        var label = template.label?template.label:undefined;
         
         var values = [resource.value];           
         if (resource.values && resource.values.length>0) {
-            this.multivalue = true;
             values = []; 
             var v=undefined;
             for (var i=0; (v=resource.values[i]); i++)
                 values.push(v.value);
             delete resource.value;
         }
-            
+        if (values.length>1) this.multivalue = true;
+        // slider needs max and min!
+        if (!('minValue' in template) || !('maxValue' in template)) template.showSlider = false;
+        // configure slider for floating point values
+        var defaultDecimalPrecision = template.allowDecimals?2:0;
+        var sliderStep = (template.allowDecimals && (!('setep' in template) || template.step>=1))?0.01:1.0;
+        
         if (this.multivalue || template.showSlider != false)
         this.slider = Ext.create('Ext.slider.Multi', {        
             flex: 1,
             name: resource.name+'-slider',
             
-            labelWidth: this.multivalue?200:undefined,
             labelAlign: 'right',
-            fieldLabel: (template.label && this.multivalue)?template.label:undefined,
+            labelWidth: (this.multivalue || template.hideNumberPicker)?200:undefined,
+            fieldLabel: (this.multivalue || template.hideNumberPicker)?label:undefined,
 
             values: values,
-            minValue: template.minValue!=undefined?template.minValue:undefined,
-            maxValue: template.maxValue!=undefined?template.maxValue:undefined,
-            //allowDecimals: template.allowDecimals?template.allowDecimals:true,
-            //decimalPrecision: template.decimalPrecision?template.decimalPrecision:2,
-            increment: template.step!=undefined?template.step:1,
+            minValue: template.minValue,
+            maxValue: template.maxValue,
+            decimalPrecision: template.decimalPrecision?template.decimalPrecision:template.allowDecimals,
+            increment: sliderStep,
 
             listeners: {
                 change: function(field, value) {
@@ -490,14 +513,14 @@ Ext.define('BQ.selectors.Number', {
             
         });          
         
-        if (!this.multivalue)
+        if (!this.multivalue && template.hideNumberPicker != true)
         this.numfield = Ext.create('Ext.form.field.Number', {
             //flex: 1,
             cls: 'number',
             name: resource.name,
             labelWidth: 200,
             labelAlign: 'right',
-            fieldLabel: template.label?template.label:'',
+            fieldLabel: label,
             
             value: resource.value!=undefined?parseFloat(resource.value):undefined,
             
@@ -523,7 +546,7 @@ Ext.define('BQ.selectors.Number', {
         this.callParent();
     },
 
-    validate: function() {
+    isValid: function() {
         var valid = true;
         if (!this.multivalue && !this.resource.value) valid = false;
         if (this.multivalue)
@@ -532,9 +555,9 @@ Ext.define('BQ.selectors.Number', {
             
         if (!valid) {
             var template = this.resource.template || {};
-            var msg = template.fail_message || 'A numeric value need to be selected!';
-            BQ.ui.attention(msg);
-            BQ.ui.tip(this.getId(), msg);
+            var msg = template.fail_message || 'A numeric value needs to be selected!';
+            //BQ.ui.attention(msg);
+            BQ.ui.tip(this.getId(), msg, {anchor:'left',});
             return false;            
         }
         return true;
@@ -557,8 +580,7 @@ Ext.define('BQ.selectors.String', {
     extend: 'BQ.selectors.Selector',
     requires: ['Ext.form.field.Text'],
 
-    height: 25,    
-    cls: 'parameter',
+    height: 30,    
     layout: 'fit',
 
     initComponent : function() {
@@ -596,12 +618,12 @@ Ext.define('BQ.selectors.String', {
         this.callParent();
     },
 
-    validate: function() {
+    isValid: function() {
         if (!this.resource.value) {
-            var template = resource.template || {};
+            var template = this.resource.template || {};
             var msg = template.fail_message || 'A string is needed!';
-            BQ.ui.attention(msg);
-            BQ.ui.tip(this.getId(), msg);
+            //BQ.ui.attention(msg);
+            BQ.ui.tip(this.getId(), msg, {anchor:'left',});
             return false;            
         }        
         return true;
@@ -621,8 +643,7 @@ Ext.define('BQ.selectors.Combo', {
     extend: 'BQ.selectors.Selector',
     requires: ['Ext.data.Store', 'Ext.form.field.ComboBox'],
 
-    height: 25,
-    cls: 'parameter',
+    height: 30,
     layout: 'hbox',
 
     initComponent : function() {
@@ -673,12 +694,12 @@ Ext.define('BQ.selectors.Combo', {
         this.callParent();
     },
 
-    validate: function() {
+    isValid: function() {
         if (!this.resource.value) {
             var template = resource.template || {};
             var msg = template.fail_message || 'You need to select an option!';
-            BQ.ui.attention(msg);
-            BQ.ui.tip(this.getId(), msg);
+            //BQ.ui.attention(msg);
+            BQ.ui.tip(this.getId(), msg, {anchor:'left',});
             return false;               
         }        
         return true;
@@ -695,8 +716,7 @@ Ext.define('BQ.selectors.Boolean', {
     extend: 'BQ.selectors.Selector',
     requires: ['Ext.form.field.Checkbox'],
     
-    height: 25,
-    cls: 'parameter',
+    height: 30,
     layout: 'hbox',
 
     initComponent : function() {
@@ -726,12 +746,12 @@ Ext.define('BQ.selectors.Boolean', {
         this.callParent();
     },
 
-    validate: function() {
+    isValid: function() {
         if (!this.resource.value) {
             var template = resource.template || {};
             var msg = template.fail_message || 'You need to make a selection!';
-            BQ.ui.attention(msg);
-            BQ.ui.tip(this.getId(), msg);
+            //BQ.ui.attention(msg);
+            BQ.ui.tip(this.getId(), msg, {anchor:'left',});
             return false;             
         }        
         return true;
@@ -750,8 +770,7 @@ Ext.define('BQ.selectors.Date', {
     extend: 'BQ.selectors.Selector',
     requires: ['Ext.form.field.Date', 'Ext.form.field.Time'],
     
-    height: 25,
-    cls: 'parameter',
+    height: 30,
     layout: {type: 'hbox', pack: 'start', },
 
     initComponent : function() {
@@ -803,12 +822,12 @@ Ext.define('BQ.selectors.Date', {
         this.resource.value = this.selector_date.getRawValue() +' ' + this.selector_time.getRawValue();
     },
 
-    validate: function() {
+    isValid: function() {
         if (!this.resource.value) {
             var template = this.resource.template || {};
             var msg = template.fail_message || 'You need to select a time!';
-            BQ.ui.attention(msg);
-            BQ.ui.tip(this.getId(), msg);
+            //BQ.ui.attention(msg);
+            BQ.ui.tip(this.getId(), msg, {anchor:'left',});
             return false;            
         }        
         return true;

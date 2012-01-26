@@ -6,17 +6,30 @@
     margin: 2px 0px 0px 10px;
 }
 
-.parameter {
-    margin: 6px 0px 0px 0px;
+.invalid {
+    background: #ffcccc;
+    /*border: #FF0000 solid 1px;*/
+    border-radius: 5px;
+    -moz-border-radius: 5px;   
+     
+    -moz-box-shadow: 0px 0px 5px #ffcccc;
+    -webkit-box-shadow: 0px 0px 5px #ffcccc;
+    box-shadow: 0px 0px 5px #ffcccc;    
 }
 
 /*
 resourcerenderer
 */
 
+.resourcerenderer {
+    margin: 5px 0px 0px 0px;
+    padding: 6px;    
+}
+
 .resourcerenderer label {
-    margin: 10px 10px 5px 2px;
-    padding: 4px 0px 0px 0px; 
+    /*margin: 10px 10px 5px 2px;
+    padding: 4px 0px 0px 0px; */
+    margin-bottom: 5px;
     display: block;
     /*float: left;*/   
 }
@@ -40,9 +53,18 @@ resourcerenderer
 selectors
 */
 
+.selector {
+    margin: 2px 0px 0px 0px;
+    padding: 4px 0px 4px 0px;
+}
+
 .selector .number {
     margin-right: 15px;
 }
+
+/*
+renderer
+*/
 
 .renderer {
     margin-top: 15px;    
