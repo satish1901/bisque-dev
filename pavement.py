@@ -52,8 +52,9 @@ def setup():
     sh('easy_install numpy==1.6.0')
     sh('easy_install numpy==1.6.0')
     # End Hack
-    sh('easy_install http://biodev.ece.ucsb.edu/binaries/download/tw.output-0.5.0dev-20110505.tar.gz')
-    sh('easy_install http://biodev.ece.ucsb.edu/binaries/download/tgext.registration2-0.5.1bisque1.tar.gz')
+    sh ('easy_install http://biodev.ece.ucsb.edu/binaries/depot/tw.output/tw.output-0.5.0dev-20110906.tar.gz')
+    sh ('easy_install http://biodev.ece.ucsb.edu/binaries/depot/tgext.registration2/tgext.registration2-0.5.1bisque3.tar.gz')
+
 
     top = os.getcwd()
     for d in subdirs:
