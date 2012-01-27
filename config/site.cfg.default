@@ -76,10 +76,12 @@ bisque.paths.root  =
 
 
 # Blobservice
-#bisque.blob_service.default_store = local
-#bisque.blob_service.stores = irods,s3,local
-#bisque.blob_service.local.dir = installationdir/data/imagedir
-#bisque.blob_service.irods.url = irods://irodshost/zone/home/bisque
+# Ordered list of stores .. path is created based on template
+bisque.blob_service.stores=file:$datadir/imagedir/$user/$dirhash/$filehash-$filename
+#bisque.blob_service.stores=
+# irods://winwood.iplantcollaborative.org/iplant/home/$user/bisque_data/uploads/$dirhash/$filehash-$filename, 
+# file:$datadir/imagedir/$user/$dirhash/$filehash-$filename
+#bisque.blob_service.file.dir = file:{datadir}/imagedir
 #bisque.blob_service.irods.user = 
 #bisque.blob_service.irods.password = 
 # Data service
