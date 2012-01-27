@@ -301,6 +301,7 @@ class BQTag (BQResource):
         for kid_name in xmlkids:
             for x in getattr(self, kid_name, None):
                 toxmlnode (x, n, baseuri)
+        return n
 
     value = property(get_value, set_value)
 
