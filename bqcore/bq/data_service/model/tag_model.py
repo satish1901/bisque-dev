@@ -887,6 +887,7 @@ def bquser_callback (tg_user, operation, **kw):
 User.callbacks.append (bquser_callback)
 
 def registration_hook(action, **kw):
+    log.info ('regisration_hook %s -> %s' % (action, kw))
     if action=="new_user":
         u = kw.pop('user', None)
         if u:

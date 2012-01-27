@@ -79,9 +79,9 @@ def irods_conn(url, user=None, host=None, port=None, password = None):
     
 
 import pdb
-def irods_fetch_dir(url):
+def irods_fetch_dir(url, **kw):
     
-    conn, base_url, basedir, path = irods_conn(url)
+    conn, base_url, basedir, path = irods_conn(url, **kw)
     #print 'path1 Null', '\x00' in path
     coll = irods.irodsCollection(conn)
     coll.openCollection(path); 
@@ -146,7 +146,10 @@ def irods_fetch_file(url, **kw):
 
 def irods_push_file(fileobj, url, savelocal=True, **kw):
     conn, base_url, basedir, path = irods_conn(url, **kw)
-    irods.mkCollR(conn, basedir, os.path.dirname(path))
+    # Hmm .. if an irodsEnv exists then it is used over our login name provided above, 
+    # meaning even though we have logged in as user X we may be the homedir of user Y (in .irodsEnv)
+    #irods.mkCollR(conn, basedir, os.path.dirname(path))
+    irods.mkCollR(conn, '/', os.path.dirname(path))
     log.debug( "irods-path %s" %  path)
     f = irods.iRodsOpen(conn, path, 'w')
     if f:

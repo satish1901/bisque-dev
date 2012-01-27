@@ -1,9 +1,12 @@
 import os
 import logging
 import hashlib
+import urlparse
+import itertools
 
 from lxml import etree
 from datetime import datetime
+
 
 import tg
 from tg import expose, flash, config
@@ -78,16 +81,11 @@ class BlobServer(RestController, ServiceMixin):
     
     def __init__(self, url ):
         ServiceMixin.__init__(self, url)
-        default_store = config.get('bisque.blob_service.default_store', 'local')
-        store_list = [ x.strip() for x in config.get('bisque.blob_service.stores','local').split(',') ] 
-        self.stores = [ (st,  blob_storage.make(st)) for st in store_list
-                         if  st in blob_storage.supported_storage_types]
-        self.default_store = dict(self.stores).get(default_store)
-        if self.default_store is None:
-            log.error('No default storage available: %s is not a valid store' % default_store)
-            return
-        log.info ('configured stores %s' % ','.join([ str(x[1]) for x in self.stores]))
-        log.info ('Using %s for default storage' % self.default_store)
+        store_list = [ x.strip() for x in config.get('bisque.blob_service.stores','').split(',') ] 
+        log.debug ('requested stores = %s' % store_list)
+        # Filter out None values for stores that can't be made
+        self.stores = list(itertools.ifilter(lambda x:x, (blob_storage.make_driver(st) for st in store_list )))
+        log.info ('configured stores %s' % ','.join( str(x) for x in self.stores))
 
 
     @expose(content_type='text/xml')
@@ -110,13 +108,27 @@ class BlobServer(RestController, ServiceMixin):
     # perm
     # tags
     def storeBlob(self, flosrc=None, filename=None, url=None,  permission="private", **kw):
-        """Store the file object in the next blob and return the
-        descriptor"""
+        """Store the file object in the next blob and return the resource.
 
+        @param flosrc: a local file object
+        @param filename: the original filename
+        @param url: a url if a remote object
+        @param perrmision: the permission for the resource
+        @return: a resource or None on failure
+        """
         user_name = identity.current.user_name
+        blob_id = None
         if flosrc is not None:
-            # blob storage part
-            blob_id, flocal = self.default_store.write(flosrc, filename, user_name = user_name)
+            for store in self.stores:
+                try:
+                    # blob storage part
+                    blob_id, flocal = store.write(flosrc, filename, user_name = user_name)
+                    break
+                except Exception, e:
+                    log.exception('storing blob failed')
+            if blob_id is None:
+                log.error('Could not store %s on any %s' %(filename, self.stores))
+                return None
             fhash = file_hash_SHA1( flocal )
         elif url is not None:
             if filename is None:
@@ -161,7 +173,7 @@ class BlobServer(RestController, ServiceMixin):
         resource = DBSession.query(Taggable).filter_by (resource_uniq = ident).first()
         path = None
         if resource is not None and resource.resource_value:
-            for nm,store in self.stores:
+            for store in self.stores:
                 if store.valid(resource.resource_value):
                     path =  store.localpath(resource.resource_value)
                     break
