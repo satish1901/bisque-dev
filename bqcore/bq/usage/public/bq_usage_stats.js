@@ -83,7 +83,7 @@ Ext.define('BQ.usage.Uploads', {
         for (var i=0; i<counts.length; i++) {
             var date = new Date();
             date.setISO8601(dates[i]);
-            data.push({ count: parseFloat(counts[i]), date: date });  
+            data.push({ index: i, count: parseFloat(counts[i]), date: date });  
         }
         
         var store = Ext.create('Ext.data.Store', {
@@ -128,9 +128,10 @@ Ext.define('BQ.usage.Uploads', {
             series: [{
                 type: 'line',
                 fill: true,  
-                smooth: true, 
+                smooth: 3, 
                 highlight: true, 
                 showMarkers: false,                            
+                selectionTolerance: 3, // dima: this here is a problem, gives wrong items if large, no way to split x and y tolerances
                 xField: 'date',
                 yField: 'count',
                 
@@ -142,11 +143,12 @@ Ext.define('BQ.usage.Uploads', {
                 },
                 tips: {
                   trackMouse: true,
+                  anchor: 'bottom',
                   width: 300,
                   //height: 28,
                   renderer: function(storeItem, item) {
-                      this.setTitle( Ext.Date.format(new Date(storeItem.get('date')), 'M d, Y')
-                              + ' - ' + storeItem.get('count') + ' ' + heading );
+                      this.setTitle( storeItem.get('count') + ' ' + heading + ' on ' +
+                                     Ext.Date.format(new Date(storeItem.get('date')), 'M d, Y'));
                   }
                 },                
                 

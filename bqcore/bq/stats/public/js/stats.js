@@ -660,19 +660,7 @@ BQVectorGrid.prototype.createStore = function () {
     var data_type = 'auto'; // auto string int float boolean date
     if (!isNaN(this.results[this.xreduce][0])) 
       data_type = 'float';
-    
-    /*
-    // ExtJS3
-    this.store = new Ext.data.ArrayStore({
-        fields: [
-           {name: 'index', title: 'Index', type: 'int' },
-           {name: 'value', title: 'Value', type: data_type }, 
-        ]
-    });
-    this.store.loadData(mydata);
-    */
-
-    // ExtJS4    
+   
     var myfields = [
            {name: 'index', title: 'Index', type: 'int' },
            {name: 'value', title: 'Value', type: data_type }, 
@@ -708,18 +696,6 @@ BQHistogramGrid.prototype.createStore = function () {
     if (!isNaN(this.results['bin_centroids'][0])) 
       data_type = 'float';
 
-    /*
-    // ExtJS3
-    this.store = new Ext.data.ArrayStore({
-        fields: [
-           {name: 'centroid', title: 'Centroid', type: data_type},
-           {name: 'frequency', title: 'Frequency', type: 'int'}, 
-        ]
-    });
-    this.store.loadData(mydata);
-    */
-    
-    // ExtJS4    
     var myfields = [
            {name: 'centroid', title: 'Centroid', type: data_type},
            {name: 'frequency', title: 'Frequency', type: 'int'}, 
@@ -756,62 +732,97 @@ BQ.stats.plotter.Factory.make = function(xreduce, results, opts) {
     if (xreduce in BQ.stats.plotter.Factory.ctormap) 
         ctor = BQ.stats.plotter.Factory.ctormap[xreduce];
     
-    return Ext.create(ctor, { 
+    var conf = { 
         xreduce: xreduce, 
         results: results, 
-        opts: opts,
         flex: 1,
-    });
+    };
+    if (opts) Ext.applyIf(conf, opts);
+    
+    return Ext.create(ctor, conf);
 }
 
 //------------------------------------------------------------------------------
 // BQ.stats.plotter.Plotter
 //------------------------------------------------------------------------------
+BQ.stats.plotter.SMALL_PLOT_SIZE = 100;
 
 Ext.define('BQ.stats.plotter.Plotter', {
     alias: 'widget.statsplotter',    
     extend: 'Ext.panel.Panel', // extend: 'Ext.container.Container', // dima - apparently requires Panel
-    //requires: ['Ext.grid.Panel'],    
+    requires: ['Ext.chart.*', 'Ext.layout.container.Fit'], 
     
     // required inputs
     xreduce : undefined,
     results : undefined,
-    opts    : undefined,
 
     // configs
     layout: 'fit',
+    defaults: { border: 0, },
     
     initComponent : function() {
-        this.opts = this.opts || {};      
         this.callParent();
+        this.plot = undefined;
+        
+        if (!this.xreduce) return;
+        if (!this.xreduce in this.results) return;            
         this.createStore();
     },      
     
     afterRender : function() {
-        this.plot();
+        if (!this.store) return;
+        this.createPlot();
+        this.add(this.plot);        
     },    
     
     createStore: function () {
-        if (!this.xreduce) return;
-        if (!this.xreduce in this.results) return;    
+        var results = this.results;
+        var fields = [];
+        var data = [];
+        var maxsz = 0;
+        this.titles = this.titles || [];
+
+        for (var i=0; i<results.length; i++) {
+            if (!(this.xreduce in results[i])) continue;
+            var v = results[i][this.xreduce];
+            if (!allNumbers(v)) continue;
+            
+            var name = 'data'+i;
+            fields.push(name);
+            maxsz = Math.max(maxsz, v.length);
+            for (var k=0; k<v.length; k++) {
+                data[k] = data[k] || { 'index': k, };
+                data[k][name] = parseFloat(v[k]);
+            }
+            
+            this.titles[i] = this.titles[i] || results[i].xpath;
+        }
+ 
+        this.store = Ext.create('Ext.data.JsonStore', {
+            fields: ['index'].concat(fields),
+            data: data,
+        });        
         
-        var mydata = [
-            [this.xreduce, this.results[this.xreduce]]
-        ];
-        
-        var myfields = [
-               {name: 'name', title: 'Name'},
-               {name: 'value', title: 'Value'}, 
-            ];
-        
-        this.store = Ext.create('Ext.data.ArrayStore', {
-            fields: myfields,        
-            data: mydata
+        this.fields = fields;
+        this.large_array = maxsz>BQ.stats.plotter.SMALL_PLOT_SIZE;
+
+
+        /*
+        this.store = Ext.create('Ext.data.JsonStore', {
+            fields: ['name', 'data1', 'data2', 'data3', 'data4', 'data5'],
+            data: [
+                { 'name': 'metric one',   'data1': 10, 'data2': 12, 'data3': 14, 'data4': 8,  'data5': 13 },
+                { 'name': 'metric two',   'data1': 7,  'data2': 8,  'data3': 16, 'data4': 10, 'data5': 3  },
+                { 'name': 'metric three', 'data1': 5,  'data2': 2,  'data3': 14, 'data4': 12, 'data5': 7  },
+                { 'name': 'metric four',  'data1': 2,  'data2': 14, 'data3': 6,  'data4': 1,  'data5': 23 },
+                { 'name': 'metric five',  'data1': 4,  'data2': 4,  'data3': 36, 'data4': 13, 'data5': 33 }
+            ]
         });
-        this.store.bqfields = myfields;    
+        */
+     
     },
 
-    plot: function () {
+    createPlot: function () {
 
     },    
 
@@ -820,66 +831,116 @@ Ext.define('BQ.stats.plotter.Plotter', {
 
 
 //------------------------------------------------------------------------------
-// BQLinePlotter
+// BQ.stats.plotter.Line
 //------------------------------------------------------------------------------
 
-/*
-BQLinePlotter.SMALL_PLOT_SIZE = 100;
+Ext.define('BQ.stats.plotter.Line', {
+    alias: 'widget.statsplotter',    
+    extend: 'BQ.stats.plotter.Plotter',
+    requires: ['Ext.chart.Chart'],   
+    
+    createPlot: function () {
+        var series = [];
+        var f = undefined;
+        for (var i=0; (f=this.fields[i]); i++) {
+            series.push({
+                type: 'line',
+                title: this.titles?this.titles[i]:undefined,
+                axis: 'left',
+                xField: 'index',
+                yField: f,
 
-BQLinePlotter.prototype.draw = function (results) {
-  // prepare data
-  var y = [];  
-  var N = 0; 
-  var mytitles = [];       
-  if ('titles' in this.opts) mytitles = this.opts.titles;
-  
-  for (var i=0; i<results.length; i++) {
-    if (!(this.xreduce in results[i])) continue;
-    var v = results[i][this.xreduce];
-    if (!allNumbers(v)) continue;
-  
-    y[i] = v;
-    N = Math.max(N, v.length);
-    if (!('titles' in this.opts)) mytitles[i] = results[i].xpath;      
-  }
-  if (y.length<=0) return;
-  var x = [];
-  for (var i=0; i<N; i++) x[i] = i;
-   
-  // plot   
-  var r = Raphael(this.surface, this.surface.clientWidth, this.surface.clientHeight);
-  //c.push( "rgb(0,0,"+ (Math.random()*80)+50 +"%)" );   
-  
-  var title_height = 0;
-  if (this.opts.title && this.opts.title!='') {
-    r.g.txtattr.font = "18px 'Fontin Sans', Fontin-Sans, sans-serif";    
-    r.g.text(this.surface.clientWidth/2, this.plotter.y, this.opts.title).attr({fill: '#003399'});     
-    title_height = 25;
-  }
+                smooth: 3,
+                selectionTolerance: 3, // dima: this here is a problem, gives wrong items if large, no way to split x and y tolerances  
+                              
+                showMarkers: this.large_array?false:true,
+                markerConfig: {
+                    size: 4,
+                    radius: 4,
+                    //'stroke-width': 0,
+                }, 
+                
+                //highlight: true, 
+                highlight: {
+                    size: 4,
+                    radius: 4,
+                },
+                style: {
+                    //opacity: 0.86,
+                    'stroke-width': 2,
+                },    
+                
+                tips: {
+                  trackMouse: true,
+                  anchor: 'bottom',
+                  //width: 300,
+                  //height: 28,
+                  renderer: function(storeItem, item) {
+                      this.setTitle( item.value[1] );
+                  }
+                },                               
+            });   
+        }
 
-  var fin  = function () { 
-    r.g.txtattr.font = "11px 'Fontin Sans', Fontin-Sans, sans-serif";  
-    this.flag = r.g.popup(this.x, this.y, this.value+'\nfor\n'+this.title).insertBefore(this); 
-  };
-  var fout = function () { this.flag.animate({opacity: 0}, 300, function () {this.remove();}); };
- 
-  if (N>BQLinePlotter.SMALL_PLOT_SIZE) {
-    // if vector is large
-    var opts = { shade: false, axis: "0 0 1 1", nostroke: false, titles: mytitles };    
-    r.g.linechart(this.plotter.x, this.plotter.y+title_height, this.plotter.w, this.plotter.h-title_height, x, y, opts ).hover(fin, fout);
-  } else {
-    // if vector is small, show vertices and hover values
-    var opts = { shade: false, axis: "0 0 1 1", nostroke: false, titles: mytitles, symbol: "o", smooth: true };
-    var line = r.g.linechart(this.plotter.x, this.plotter.y+title_height, this.plotter.w, this.plotter.h-title_height, x, y, opts).hover(fin, fout);
-    line.symbols.attr({r: 3});
-  }
-}
+    
+        if (this.plot) this.plot.destroy();
+        this.plot = Ext.create('Ext.chart.Chart', {
+            title: 'My chart',
+            animate: false,
+            shadow: false,            
+            border: 0,
+            legend: {
+                position: 'bottom',
+                boxStroke: '',
+                boxStrokeWidth: '0',
+            },           
+            
+            store: this.store,
+            axes: [
+                {
+                    type: 'Numeric',
+                    position: 'left',
+                    fields: this.fields,
+                    label: {
+                        renderer: Ext.util.Format.numberRenderer('0,0')
+                    },
+                    //title: 'Sample Values',
+                    //grid: true,
+                    //minimum: 0
+                },
+                {
+                    type: 'Numeric',
+                    position: 'bottom',
+                    fields: ['index'],
+                    //title: 'Sample Metrics'
+                }
+            ],
+
+            series: series,
+            
+        });    
+    
+    
+    },    
+
+});
+
+
 
 //------------------------------------------------------------------------------
-// BQHistogramPlotter
+// BQ.stats.plotter.Histogram
 //------------------------------------------------------------------------------
 
-BQHistogramPlotter.prototype.draw = function (results) {
+Ext.define('BQ.stats.plotter.Histogram', {
+    alias: 'widget.statsplotter',    
+    extend: 'BQ.stats.plotter.Plotter',
+    requires: ['Ext.chart.Chart'],   
+    
+    /*
+    createStore: function () {
+        
+        
+        /*
   // prepare data  
   var x = [];
   var mytitles = []; 
@@ -897,33 +958,150 @@ BQHistogramPlotter.prototype.draw = function (results) {
       
     if (!('titles' in this.opts)) mytitles[i] = titles;
   }
-  if (x.length<=0) return;
-
-  // plot  
-  var r = Raphael(this.surface, this.surface.clientWidth, this.surface.clientHeight);
- 
-  var title_height = 0;
-  if (this.opts.title && this.opts.title!='') {
-    r.g.txtattr.font = "18px 'Fontin Sans', Fontin-Sans, sans-serif";              
-    r.g.text(this.surface.clientWidth/2, this.plotter.y, this.opts.title).attr({fill: '#003399'});     
-    title_height = 25;
-  }
-  
-  //, stacked: true  
-  var opts = {gutter: "0%", titles: mytitles } ;
-  fin  = function () { 
-    r.g.txtattr.font = "11px 'Fontin Sans', Fontin-Sans, sans-serif";  
-    this.flag = r.g.popup(this.bar.x, this.bar.y, this.bar.title).insertBefore(this); 
-  };
-  fout = function () { this.flag.animate({opacity: 0}, 300, function () {this.remove();}); };  
-  r.g.barchart(this.plotter.x, this.plotter.y+title_height, this.plotter.w, this.plotter.h-title_height, x, opts).hover(fin, fout);
-}
-
-
+  if (x.length<=0) return;    
+        */ /*
+    },
 */
 
+    createStore: function () {
+        var results = this.results;
+        var fields = [];
+        var data = [];
+        var maxsz = 0;
+        this.titles = this.titles || [];
 
+        for (var i=0; i<results.length; i++) {
+            if (!(this.xreduce in results[i])) continue;
+            var v = results[i][this.xreduce];
+            var b = results[i]['bin_centroids'];
+            if (!allNumbers(v)) continue;
+            
+            var name = 'data'+i;
+            fields.push(name);
+            maxsz = Math.max(maxsz, v.length);
+            for (var k=0; k<v.length; k++) {
+                data[k] = data[k] || { 'index': k, };
+                data[k][name] = parseFloat(v[k]);
+                data[k][name+'_centroid'] = parseFloat(b[k]);                
+            }
+            
+            this.titles[i] = this.titles[i] || results[i].xpath;
+        }
+ 
+        this.store = Ext.create('Ext.data.JsonStore', {
+            fields: ['index'].concat(fields),
+            data: data,
+        });        
+        
+        this.fields = fields;
+        //this.large_array = maxsz>BQ.stats.plotter.SMALL_PLOT_SIZE;
+     
+    },        
 
+    createPlot: function () {
+        var series = [];
+        var f = undefined;
+        var centroids = [];
+        for (var i=0; (f=this.fields[i]); i++) {
+            centroids[i] = this.fields[i] + '_centroid';
+        }
+        
+        //for (var i=0; (f=this.fields[i]); i++) {
+            var h = Math.floor(Math.random()*256);
+            var color = 'hsl('+h+', 75%, 70%)';
+            
+            series.push({
+                type: 'column',
+                //title: this.titles?this.titles[i]:undefined,
+                title: this.titles?this.titles:undefined,
+                axis: 'left',
+                //xField: 'index',
+                //yField: f,
+                xField: centroids,
+                yField: this.fields,
+
+                groupGutter: 2,
+                gutter: 10,
+
+                highlight: false, 
+                /*highlight: {
+                    fill: '#ff0000',
+                    'stroke-width': 0,
+                    stroke: '',
+                },*/
+                
+                /*style: {
+                    //opacity: 0.86,
+                    //'stroke-width': 2,
+                    fill: color,
+                },*/   
+                
+                label: {
+                    display: 'insideEnd',
+                    'text-anchor': 'middle',
+                    //field: f,
+                    field: this.fields,
+                    renderer: Ext.util.Format.numberRenderer('0'),
+                    orientation: 'vertical',
+                },       
+                
+                tips: {
+                  trackMouse: true,
+                  anchor: 'bottom',
+                  width: 200,
+                  //height: 28,
+                  renderer: function(storeItem, item) {
+                      var s = 'Frequency: '+item.value[1];
+                      s += item.value[0]?'<br>'+'Centroid: '+item.value[0]:'';
+                      this.setTitle( s );
+                  }
+                },                               
+            });   
+        //}
+
+    
+        if (this.plot) this.plot.destroy();
+        this.plot = Ext.create('Ext.chart.Chart', {
+            title: 'My chart',
+            animate: false,
+            shadow: false,            
+            border: 0,
+            legend: {
+                position: 'bottom',
+                boxStroke: '',
+                boxStrokeWidth: '0',
+            },           
+            
+            store: this.store,
+            axes: [
+                {
+                    type: 'Numeric',
+                    position: 'left',
+                    fields: this.fields,
+                    label: {
+                        renderer: Ext.util.Format.numberRenderer('0,0')
+                    },
+                    //title: 'Sample Values',
+                    //grid: true,
+                    //minimum: 0
+                },
+                {
+                    type: 'Numeric',
+                    position: 'bottom',
+                    //fields: ['index'],
+                    fields: centroids,
+                    //title: 'Sample Metrics'
+                }
+            ],
+
+            series: series,
+            
+        });        
+    
+    
+    },    
+
+});
 
 
 //******************************************************************************
@@ -1165,7 +1343,8 @@ Ext.define('BQ.stats.Visualizer', {
             collapsible: false,
             region: 'center',
             flex: 1,
-            //layout: 'fit',
+            layout: 'fit',
+            defaults: { border: 0, },            
         });
         this.items.push(this.plotPanel);        
         
@@ -1173,12 +1352,15 @@ Ext.define('BQ.stats.Visualizer', {
     },
     
     afterRender : function() {
-        //this.callParent();
-        this.setLoading('Fetching data');
+        this.load();
+    },    
+    
+    load : function() {
+        var m = this.setLoading('Fetching data');
         var opts = { 'ondone': callback(this, 'ondone'), 'onerror': callback(this, 'onerror') };
         if ('args' in opts) opts.args = this.opts.args;
         this.accessor = new BQStatisticsAccessor( this.url, this.xpath, this.xmap, this.xreduce, opts );        
-    },    
+    },       
     
     onerror: function (e) {
         this.setLoading(false);
@@ -1186,12 +1368,20 @@ Ext.define('BQ.stats.Visualizer', {
     },    
 
     ondone: function (results) {
-        this.setLoading(false);
         
         if (this.opts.plot == true) {
             //TODO: find first vector type to be plotted
-            if (!('title' in this.opts)) this.opts.title = results[0].xreduce +' of '+ results[0].xmap;    
-            this.plotter = BQPlotterFactory.make( this.plotPanel.el.dom, results[0].xreduce, results, this.opts );
+            //if (!('title' in this.opts)) this.opts.title = results[0].xreduce +' of '+ results[0].xmap;    
+            //this.plotter = BQPlotterFactory.make( this.plotPanel.el.dom, results[0].xreduce, results, this.opts );
+            
+            var opts = {
+                border: 0,
+                title: this.opts?this.opts.title:undefined,
+                //titles: [],
+            };
+            
+            this.plotter = BQ.stats.plotter.Factory.make( results[0].xreduce, results, opts );
+            this.plotPanel.add(this.plotter);
         }        
         
         // create tables and plots here
@@ -1205,6 +1395,7 @@ Ext.define('BQ.stats.Visualizer', {
                 this.gridPanel.add(this.grids[i]);
             }  
         }
+        this.setLoading(false);        
     },
 
 });
@@ -1229,7 +1420,7 @@ Ext.define('BQ.stats.Dialog', {
 
         var conf = { 
             border: 0, 
-            //flex: 1, 
+            flex: 1, 
         };
 
         // move the config options that belong to the uploader
