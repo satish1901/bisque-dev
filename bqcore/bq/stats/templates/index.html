@@ -173,17 +173,27 @@ function cloneInput(surface, tocopy) {
 }
 
 function doPlot() {
-  if (!validate()) return;
+    if (!validate()) return;
+    
+    var url = document.getElementById("url").value;
+    var xpath = getValues("xpath");
+    var xmap = document.getElementById("xmap").value;
+    var xreduce = document.getElementById("xreduce").value;
+    var plotter = document.getElementById("plotter"); 
+    var args = getHiddenValues("xargs");
 
-  var url = document.getElementById("url").value;
-  var xpath = getValues("xpath");
-  var xmap = document.getElementById("xmap").value;
-  var xreduce = document.getElementById("xreduce").value;
-  var plotter = document.getElementById("plotter"); 
-  var args = getHiddenValues("xargs");
-
-  removeAllChildren(plotter); 
-  this.visualizer = new BQStatisticsVisualizer( plotter, url, xpath, xmap, xreduce, { height:500, args: args } );
+  //removeAllChildren(plotter); 
+  //this.visualizer = new BQStatisticsVisualizer( plotter, url, xpath, xmap, xreduce, { height:500, args: args } );
+  
+    var opts = { /*title: 'Plot for ...',*/ args: args, };
+    var plotter = Ext.create('BQ.stats.Dialog', {
+        url     : url,
+        xpath   : xpath,
+        xmap    : xmap,
+        xreduce : xreduce,
+        opts    : opts,
+    });  
+  
 }
 
 function parseUrlArguments() {
