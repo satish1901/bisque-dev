@@ -350,7 +350,7 @@ Ext.define('Bisque.ResourceTagger',
                     if(nodeHash[node].dirty)
                     {
                         status = true;
-                            Ext.apply(nodeHash[node].raw, nodeHash[node].getChanges());
+                        Ext.apply(nodeHash[node].raw, nodeHash[node].getChanges());
                         nodeHash[node].commit();
                     }
                 return status;
