@@ -81,7 +81,7 @@ bisque.blob_service.stores=file:$datadir/imagedir/$user/$dirhash/$filehash-$file
 #bisque.blob_service.stores=
 # irods://winwood.iplantcollaborative.org/iplant/home/$user/bisque_data/uploads/$dirhash/$filehash-$filename, 
 # file:$datadir/imagedir/$user/$dirhash/$filehash-$filename
-#bisque.blob_service.file.dir = file:{datadir}/imagedir
+#bisque.blob_service.file.dir = file:$datadir/imagedir
 #bisque.blob_service.irods.user = 
 #bisque.blob_service.irods.password = 
 # Data service
