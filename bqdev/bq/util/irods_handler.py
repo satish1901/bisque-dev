@@ -61,6 +61,8 @@ def irods_conn(url, user=None, host=None, port=None, password = None):
     if conn is None:
         log.debug ( "Connecting" )
         conn, err = irods.rcConnect(host, port, user, zone)
+        if conn is None:
+            raise IrodsError("Can't create connection to %s " % host)
         if password:
             irods.clientLoginWithPassword(conn, password)
         else:

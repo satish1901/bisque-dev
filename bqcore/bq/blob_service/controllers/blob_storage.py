@@ -66,6 +66,7 @@ class LocalStorage(BlobStorage):
 
     def __init__(self, format_path):
         self.top = config.get('bisque.blob_service.file.dir',  data_path('imagedir'))
+        self.top = string.TemplateX(self.top).safe_substitute(datadir=data_path())
         self.format_path = string.Template(format_path).safe_substitute ( datadir = data_path() )
         if self.format_path.startswith('file:') and not self.top.startswith('file:'):
             self.top = 'file:' + self.top
