@@ -44,6 +44,13 @@ def upgrade(migrate_engine):
     taggable.c.mex_id.alter (name='mex_id')
     values.c.parent_id.alter(name='resource_parent_id')
     vertices.c.parent_id.alter(name='resource_parent_id')
+    # Indexes
+    doc_index = Index('resource_document_idx', taggable.c.document_id)
+    doc_index.create()
+    parent_index = Index('resource_parent_idx', taggable.c.resource_parent_id)
+    parent_index.create()
+    type_index = Index('resource_type_idx', taggable.c.resource_type_id)
+    type_index.create()
 
     services.drop()
     dataset.drop()

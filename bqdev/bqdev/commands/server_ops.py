@@ -227,11 +227,21 @@ def operation(command, options, mexrun = True, cfg_file = SITE_CFG, *args):
                 proc.wait()
             processes = []
         if mexrun and command in ('start', 'restart'):
-            mex_runner('start')
+            startmex = True
+            # Should work, paster server returns 0 even when it fails
+            for proc in processes:
+                #print "checking %s" % proc
+                proc.poll()
+                if proc.returncode is not None and proc.returncode != 0:
+                    print "Warning: %s failed" % proc
+                    startmex = False
+            if startmex:
+                mex_runner('start')
         if options.wait:
             for proc in processes:
                 proc.wait()
 
+        #check for failed start
 
 
             #if command in ('start', 'restart'):

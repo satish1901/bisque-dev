@@ -116,12 +116,12 @@ taggable = Table('taggable', metadata,
                  Column('resource_uniq', String(40)),
                  Column('resource_index', Integer),
                  Column('resource_hidden', Boolean),
-                 Column('resource_type', Unicode(255) ),  # will be same as tb_id UniqueName
+                 Column('resource_type', Unicode(255), index=True ),  # will be same as tb_id UniqueName
                  Column('resource_name', Unicode (1023), ),
                  Column('resource_user_type', Unicode(1023), ),
                  Column('resource_value',  UnicodeText),
-                 Column('resource_parent_id', Integer, ForeignKey('taggable.id')),
-                 Column('document_id', Integer, ForeignKey('taggable.id')), # Unique Element
+                 Column('resource_parent_id', Integer, ForeignKey('taggable.id'), index=True),
+                 Column('document_id', Integer, ForeignKey('taggable.id'), index=True), # Unique Element
                  
 
                  )

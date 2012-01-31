@@ -1358,8 +1358,10 @@ def bisque_installer(options, args):
     params['bisque.installed'] = "inprogress"
     if 'site' in installer:
         params = install_site(params)
-#    if 'mercurial' in installer:
-#        install_mercurial_hooks()
+    if 'server'  in installer:
+        install_server_defaults(params)
+    if 'engine'  in installer:
+        install_engine_defaults(params)
     if 'binaries'  in installer:
         fetch_external_binaries()
         install_dependencies()
@@ -1373,10 +1375,6 @@ def bisque_installer(options, args):
         runtime_params = install_runtime(runtime_params)
     if 'modules'  in installer:
         runtime_params = install_modules(runtime_params)
-    if 'server'  in installer:
-        install_server_defaults(params)
-    if 'engine'  in installer:
-        install_engine_defaults(params)
     if 'mail'  in installer:
         params = install_mail(params)
     #if options.admin:
