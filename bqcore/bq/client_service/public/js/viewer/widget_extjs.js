@@ -52,12 +52,10 @@ Ext.define('BQ.viewer.Image', {
     },
 
     initComponent : function() {
-        this.bq_user = new BQUser();
         if (this.resource && typeof this.resource === 'string') {
             this.setLoading('Loading image resource');
             BQFactory.request( {uri: this.resource, uri_params: {view:'short'}, cb: callback(this, 'loadViewer') }); 
         } 
- 
         this.addListener( 'resize', function(me, width, height) {
             if (me.viewer) me.viewer.resize();   
         });
@@ -70,20 +68,17 @@ Ext.define('BQ.viewer.Image', {
     },
 
     loadViewer: function(resource) {
-        if (!resource) return;        
         this.setLoading(false);
+        if (!resource) return;
         if (this.loaded) return;
         this.loaded = true;
+        this.resource = resource; 
 
-        //if (!this.user || typeof this.user != 'string')
-        //    this.user = BQSession.current_session.user?BQSession.current_session.user.uri:null;
-        if (this.user == undefined)
-        this.user = null;
         this.parameters = this.parameters || {};
         this.parameters.gobjectschanged = callback(this, 'onchanged');
-        this.viewer = new ImgViewer(this.getId(), resource, this.user, this.parameters);   
+        this.viewer = new ImgViewer(this.getId(), this.resource, this.parameters);   
         this.fireEvent( 'loaded', this ); 
-        this.viewer.resize();     
+        this.viewer.resize();  
     },
 
     onchanged : function(gobs) {

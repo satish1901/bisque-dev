@@ -15,7 +15,7 @@ ImgShare.prototype.update_state = function () {
     this.bt_public.innerHTML = (perm == 0) ? 'Public' : 'Private';
 }
 ImgShare.prototype.newImage = function () {
-    var show = this.viewer.user && (this.viewer.image.owner == this.viewer.user);
+    var show = this.viewer.user_uri && (this.viewer.image.owner == this.viewer.user_uri);
     this.bt_share.style.display = show ? "" : "none";
 }
 

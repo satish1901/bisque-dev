@@ -1770,27 +1770,29 @@ function BQSession () {
     this.current_timer = null;
     this.timeout = null;
     this.expires = null;
-    this.user = null;
+    this.user = undefined;
+    this.user_uri = undefined;    
 }
 
 BQSession.prototype= new BQObject();
+BQSession.current_session = undefined;
 
-BQSession.current_session = null
 BQSession.reset_timeout  = function (){
-    if (BQSession.current_session )
+    if (BQSession.current_session)
         BQSession.current_session.reset_timeout();
 }
 BQSession.initialize_timeout = function (baseurl, opts) {
-  BQFactory.load (baseurl + bq.url("/auth_service/session"), 
+    BQFactory.load (baseurl + bq.url("/auth_service/session"), 
                     function (session) {
+                        BQSession.current_session = session;
                         session.set_timeout (baseurl, opts);
                         if (session.onsignedin) session.onsignedin(session); 
                     }, null, false);
 }
 BQSession.clear_timeout = function (baseurl) {
-    if (BQSession.current_session ){
+    if (BQSession.current_session) {
         clearTimeout(BQSession.current_session.current_timer);
-        BQSession.current_session = null;
+        BQSession.current_session = undefined;
     }
 }
 
@@ -1804,15 +1806,17 @@ BQSession.prototype.parseTags  = function (){
     }
     var user = this.find_tags ('user');
     if (user) {
-        //BQFactory.load( user.value, callback(this, this.setUser) );
+        this.user_uri = user.value;        
         BQFactory.request({uri: user.value, cb: callback(this, 'setUser'), cache: false, uri_params: {view:'full'}});
     } else {
+        this.user = null;
+        this.user_uri = null;        
         var sess = this;        
         if (sess.onnouser) sess.onnouser();    
     } 
 }
 
-BQSession.prototype.hasUser = function (){
+BQSession.prototype.hasUser = function () {
     return this.user ? true : false;
 }
 

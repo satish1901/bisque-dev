@@ -62,8 +62,8 @@ ImgExternal.prototype.toggleMenu = function () {
 
 
 ImgExternal.prototype.launchBioView = function () {
-    var user = this.viewer.bq_user.credentials.user;
-    var pass = this.viewer.bq_user.credentials.pass;  
+    var user = this.viewer.user.credentials.user;
+    var pass = this.viewer.user.credentials.pass;  
     var new_url = 'bioview://resource/?user='+user+'&pass='+pass+'&url='+this.viewer.imageuri;  
     //window.location = new_url;
     window.open( new_url );      
@@ -74,8 +74,8 @@ ImgExternal.prototype.launchBioView3D = function () {
         alert ("Image is not a 3D stack (multiplane image)");
         return;
     }
-    var user = this.viewer.bq_user.credentials.user;
-    var pass = this.viewer.bq_user.credentials.pass;  
+    var user = this.viewer.user.credentials.user;
+    var pass = this.viewer.user.credentials.pass;  
     var new_url = 'bioview3d://resource/?user='+user+'&pass='+pass+'&url='+this.viewer.imageuri;  
     //window.location = new_url;
     window.open( new_url );      

@@ -262,7 +262,7 @@ BQWebApp.prototype.onResourceSelected = function (R) {
         var viewer_params = {'nogobjects':'', 'nosave':'', 'alwaysedit':'', 'onlyedit':''};
         if (this.require_gobjects.gobject)
             viewer_params.editprimitives = this.require_gobjects.gobject;
-        this.image_viewer = new ImgViewer ("webapp_input_viewer", this.bq_resource, this.bq_user.user_name, viewer_params );
+        this.image_viewer = new ImgViewer ("webapp_input_viewer", this.bq_resource, viewer_params );
     } 
 }
 
@@ -570,7 +570,7 @@ BQWebApp.prototype.view = function() {
         }
         
         var viewer_params = {'gobjects':this.gobjectURL, 'simpleview':''};          
-        this.result_viewer = new ImgViewer ("webapp_results_viewer", this.bq_image, null, viewer_params );
+        this.result_viewer = new ImgViewer ("webapp_results_viewer", this.bq_image, viewer_params );
     } else {
         viewer_div.style.display = 'none'; 
     }

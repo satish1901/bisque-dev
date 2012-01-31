@@ -118,8 +118,8 @@ ImgEdit.prototype.editImage = function () {
       this.cancelEdit();
       return;
     }
-      
-    if ( this.viewer.bq_user == null || this.viewer.bq_user.uri != this.viewer.image.owner )
+    
+    if (!(this.viewer.user_uri && (this.viewer.image.owner == this.viewer.user_uri)))
         if (!('nosave' in this.viewer.parameters)) {
             alert ("You are not the owner the image and may not save graphical annotations");
         }      
@@ -379,7 +379,7 @@ ImgEdit.prototype.newCircle = function (e, x, y) {
     this.dochange();
 }
 
-
+/*
 ImgEdit.prototype.select_object = function (gob){
     //alert('KK');
     return; // disable for now until we get better window layout
@@ -393,7 +393,7 @@ ImgEdit.prototype.select_object = function (gob){
         this.tageditor.load (gob);
     
 }
-
+*/
 
 ImgEdit.prototype.helpBox = function () {
 
@@ -404,3 +404,5 @@ ImgEdit.prototype.helpBox = function () {
                 "Delete Key to remove object",
         ];
 }
+
+
