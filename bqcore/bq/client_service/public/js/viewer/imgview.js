@@ -289,12 +289,11 @@ DefaultImgPlugin.prototype.blink = function (){
 //  The viewer can contain plugins that may modify the 
 //  the image src and the current image contents (i.e the view)
 
-function ImgViewer (parentid, image_or_uri, user_uri, parameters) {
+function ImgViewer (parentid, image_or_uri, parameters) {
   
     this.update_delay_ms = 50;  // Update the viewer asynchronously 
   
     this.target = getObj(parentid);
-    this.user   = user_uri;
     this.imageuri = null;   // Toplevel Image URI
     this.plugins = [];          // Ordered array of plugins to be called
     this.plugins_by_name = {};  // dictionary of plugins
@@ -304,6 +303,7 @@ function ImgViewer (parentid, image_or_uri, user_uri, parameters) {
     this.current_view = null;
     this.groups = {};           // Menu Groups
     this.submenu = null;
+    this.image_or_uri = image_or_uri;
 
     this.parameters = parameters || {};      
 
@@ -362,29 +362,39 @@ function ImgViewer (parentid, image_or_uri, user_uri, parameters) {
         if (ctor)
            this.plugins_by_name[name] = this.addPlugin (new ctor(this, name));
     }
-    if (this.user) {
-        var viewer = this;
-        BQFactory.load (this.user, function (user) {
-            viewer.bq_user = user;
-            user.get_credentials();
-        });
-    }
-
-    this.renderer = this.plugins_by_name["renderer"];
-    this.createPlugins(this.imagediv);
-    if (image_or_uri instanceof BQImage)
-        this.newImage(image_or_uri);
-    else if (image_or_uri instanceof BQObject) 
-        throw BQOperationError;
-    else if (image_or_uri)
-        this.load(image_or_uri);
-
+    
+    if (!BQSession.current_session)
+        BQFactory.request( {uri: '/auth_service/session', cb: callback(this, 'onsession') }); 
+    else
+        this.onsession(BQSession.current_session);
 }
-
 
 ImgViewer.prototype = new ViewerPlugin();
 ImgViewer.prototype.close = function (){
     history.back();
+}
+
+ImgViewer.prototype.onsession = function (session) {
+    this.user_uri = session && session.user_uri?session.user_uri:null;
+    if (this.user_uri) {
+        var viewer = this;
+        BQFactory.load (this.user_uri, function (user) {
+            viewer.user = user;
+            user.get_credentials();
+        });
+    }    
+    this.init();
+}
+
+ImgViewer.prototype.init = function () {
+    this.renderer = this.plugins_by_name["renderer"];
+    this.createPlugins(this.imagediv);
+    if (this.image_or_uri instanceof BQImage)
+        this.newImage(this.image_or_uri);
+    else if (this.image_or_uri instanceof BQObject) 
+        throw BQOperationError;
+    else if (this.image_or_uri)
+        this.load(this.image_or_uri);
 }
 
 ImgViewer.prototype.cleanup = function() {
@@ -531,9 +541,6 @@ ImgViewer.prototype.newImage = function (bqimage) {
     this.image = bqimage;
     this.imageuri = bqimage.uri;
     this.imagesrc  = this.image.src;
- 
-    //this.bq_user = new BQUser ();
-    //this.bq_user.get_credentials (this.imageuri, null );     
 
     var bqimagephys = new BQImagePhys (this.image);
     bqimagephys.load (callback (this, 'newPhys') ); 
@@ -542,8 +549,6 @@ ImgViewer.prototype.newImage = function (bqimage) {
     // in order to disable the use of "default" service at all!
     // here we would have to init a certain waiting widget
     //this.updateImage (); // dima
-
-
 }
 
 
