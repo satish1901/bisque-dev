@@ -19,20 +19,20 @@
   </div>
 	
 	<div style="clear:both; margin: 15px;">
-   	<a href="mailto:${user.email_address}">${user.display_name}</a>:
+   	<a href="mailto:${user.resource_value}">${user.resource_name}</a>:
    	Total images: ${options['totalimages']} |
-    <a href="/admin/confirmdeleteimages/${user.user_name}">Delete all images</a> |
-    <a href="/admin/confirmdeleteuser/${user.user_name}">Delete User</a>
+    <a href="/admin/confirmdeleteimages/${user.resource_name}">Delete all images</a> |
+    <a href="/admin/confirmdeleteuser/${user.resource_name}">Delete User</a>
 	</div>
 	
 	<div class="user_box" >
   <h3>Edit user details:</h3> 
   <form action="/admin/updateuser" method="post" enctype="application/x-www-form-urlencoded" class="admin_form" >
-    <label> User name: ${user.user_name}</label><br />
-    <input type="hidden" name="user_name" id="user_name" value="${user.user_name}" />
-    <label> User password: </label><input type="password" name="user_password" id="user_password" value="${user.password}" /><br />
-    <label> Display name: </label><input type="text" name="display_name" id="display_name" value="${user.display_name}" /><br />
-    <label> E-mail: </label><input type="text" name="email" id="email" value="${user.email_address}" /><br />
+    <label> User name: ${user.resource_name}</label><br />
+    <input type="hidden" name="user_name" id="user_name" value="${user.resource_name}" />
+<!--    <label> User password: </label><input type="password" name="user_password" id="user_password" value="${user.password}" /><br /> -->
+<!--    <label> Display name: </label><input type="text" name="display_name" id="display_name" value="${user.display_name}" /><br /> -->
+    <label> E-mail: </label><input type="text" name="email" id="email" value="${user.resource_value}" /><br />
     <input type="submit" name="button" id="button" value="Submit" />
   </form> 
   </div>
@@ -62,9 +62,9 @@
 	</div>
 	
 	<div id="pages" style="clear:both; margin: 10px;">
-			<a py:if="not options['page'] == 1" href="/admin/edituser/${user.user_name}?page=${options['page']-1}">&lt;Previous&gt;  - </a>
+			<a py:if="not options['page'] == 1" href="/admin/edituser/${user.resource_name}?page=${options['page']-1}">&lt;Previous&gt;  - </a>
 			pg:${options['page']}
-			<a py:if="not options['page'] > (options['totalimages']/20 )" href="/admin/edituser/${user.user_name}?page=${options['page']+1}"> -&lt;Next&gt;</a>
+			<a py:if="not options['page'] > (options['totalimages']/20 )" href="/admin/edituser/${user.resource_name}?page=${options['page']+1}"> -&lt;Next&gt;</a>
 	</div>
 
 	

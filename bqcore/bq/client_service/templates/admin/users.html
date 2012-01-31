@@ -18,23 +18,23 @@
  
 <div class="admin_box">
 <h3>Bisque users:</h3> 
-<table border="0" class="admin_table" >
+<table border="1" class="admin_table" >
    <tr align="left" >
      <th><a href="/admin/users?order=id">ID</a></th>
      <th><a href="/admin/users?order=user_name">User Name</a></th>
-     <th><a href="/admin/users?order=display_name">Real Name</a></th>
+<!--     <th><a href="/admin/users?order=display_name">Real Name</a></th> -->
      <th><a href="/admin/users?order=email_address">Email</a></th>
      <th><a href="/admin/users?order=images">Images</a></th><th>Operations</th>
    </tr>
    
    <tr py:for="u in users"> 
      <td><a href="/ds/users/${u[0].id}"> ${u[0].id} </a></td>
-     <td><a href="/admin/edituser/${u[0].user_name}?page=1">${u[0].user_name}</a></td>
-     <td>${u[0].display_name}</td>
-     <td>${u[0].email_address}</td>
+     <td><a href="/admin/edituser/${u[0].resource_name}?page=1">${u[0].resource_name}</a></td>
+<!--     <td>${u[0].display_name}</td> -->
+     <td>${u[0].resource_value}</td>
      <td><b>${u[1]}</b></td>
-     <td><a href="/admin/edituser/${u[0].user_name}?page=1">Edit</a> |
-         <a href="/admin/confirmdeleteuser/${u[0].user_name}">Delete</a></td>     
+     <td><a href="/admin/edituser/${u[0].resource_name}?page=1">Edit</a> |
+         <a href="/admin/confirmdeleteuser/${u[0].resource_name}">Delete</a></td>     
      </tr>
 </table> 
 </div>

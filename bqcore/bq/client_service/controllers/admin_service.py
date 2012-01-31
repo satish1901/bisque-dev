@@ -93,9 +93,9 @@ class AdminController(ServiceController):
     @expose ('bq.client_service.templates.admin.users')
     def users(self, order = "id", **kw):
         ordering = { 'id' : BQUser.id,
-                     'user_name' : BQUser.user_name,
-                     'display_name' : BQUser.display_name,
-                     'email_address' : BQUser.email_address,
+                     'user_name' : BQUser.resource_name,
+#                     'display_name' : BQUser.display_name,
+                     'email_address' : BQUser.resource_value,
                      'images': BQUser.id
                      }
         order_with = ordering.get (order, BQUser.id)
@@ -128,7 +128,7 @@ class AdminController(ServiceController):
         options['perpage'] = 20
 
         #Grab the user passed from url
-        user = BQUser.query.filter(BQUser.user_name == username).first()
+        user = BQUser.query.filter(BQUser.resource_name == username).first()
         
         #If we got a handle on the user
         if user:
@@ -175,12 +175,12 @@ class AdminController(ServiceController):
         log.debug ("Renaming internal user %s" % user)
         if user:
             user.display_name = ("(R)" + user.display_name)[:255]
-            user.email_address = ("(R)" + user.email_address)[:255]
-            user.user_name = ("(R)" + user.user_name)[:16]
+            user.user_name = ("(R)" + user.user_name)[:255]
+            user.email_address = ("(R)" + user.email_address)[:16]
         
 
 
-        user = session.query(BQUser).filter(BQUser.user_name == username).first()
+        user = session.query(BQUser).filter(BQUser.resource_name == username).first()
         log.debug("ADMIN: Deleting user: " + str(user) )
         # delete the access permission
         #for p in session.query(FileAcl).filter_by(user = user.user_name):
@@ -204,7 +204,7 @@ class AdminController(ServiceController):
 
     @expose ()
     def deleteimages(self, username=None,  will_redirect=True, **kw):
-        user = session.query(BQUser).filter(BQUser.user_name == username).first()
+        user = session.query(BQUser).filter(BQUser.resource_name == username).first()
         log.debug("ADMIN: Deleting all images of: " + str(user) )
         images = session.query(Image).filter( Image.owner_id == user.id).all()
         for i in images:
@@ -225,8 +225,9 @@ class AdminController(ServiceController):
         log.debug("ADMIN: Adding user: " + str(user_name) )
        
         user = User(user_name=user_name, password=password, email_address=email_address, display_name=display_name)
-        
-        session.flush()        
+        session.add(user)
+        session.flush()
+
         redirect('/admin/users')    
     
     @expose ()
