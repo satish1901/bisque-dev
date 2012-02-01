@@ -774,7 +774,27 @@ Ext.define('Bisque.GObjectTagger',
     {
         // Only look for gobjects in tags which have value = image_url 
         for (var i=0;i<resQ.length;i++)
-            resQ[i].resource.loadGObjects({cb: Ext.bind(this.appendGObjects, this, [resQ[i].resource], true)});
+        {
+            var outputsTag = resQ[i].resource.find_tags('outputs');
+            
+            if (outputsTag)
+                this.appendGObjects(this.findGObjects(outputsTag, this.resource.uri), resQ[i].resource);
+            else
+                resQ[i].resource.loadGObjects({cb: Ext.bind(this.appendGObjects, this, [resQ[i].resource], true)});    
+        }
+    },
+    
+    findGObjects : function(resource, imageURI)
+    {
+        if (resource.value == imageURI)
+            return resource.gobjects;
+            
+        var gobjects = null;
+        
+        for (var i=0; i<=resource.tags.length, !gobjects; i++)
+            gobjects = this.findGObjects(resource.tags[i], imageURI); 
+
+        return gobjects;
     },
     
     appendGObjects : function(data, mex)
