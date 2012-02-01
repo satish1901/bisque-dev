@@ -665,7 +665,6 @@ Ext.define('Bisque.Resource.Image.Page',
         var viewerContainer = Ext.create('BQ.viewer.Image', {
             region : 'center',
             resource: this.resource,
-            user: BQApp.user?BQApp.user.uri:'',
         });
     
         this.add({
