@@ -144,8 +144,8 @@ Ext.define('Bisque.Resource.Mex.List',
 	    	});
     	}
         // HACK to hide session "mex". Come up with better strategy in future
-        if (this.resource.status=='SESSION')
-            this.setVisible(false);
+        //if (this.resource.status=='SESSION')
+        //    this.setVisible(false);
 
     	this.callParent(arguments);
     },
@@ -250,4 +250,3 @@ Ext.define('Bisque.Resource.Mex.List',
         this.setLoading(false);
     },
 });
-
