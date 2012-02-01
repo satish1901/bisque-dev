@@ -1896,11 +1896,11 @@ Ext.define('BQField',
     loaded          :   false,
     template        :   {},
     
-    constructor     :   function(data, properties)
+    /*constructor     :   function(data, properties)
     {
-        debugger;
+        //debugger;
         
-    },
+    },*/
     
     setTemplate   :   function(template)
     {
