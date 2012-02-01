@@ -39,6 +39,21 @@
     background-image: url('../ResourceTagger/Images/export.png') !important;
 }
 
+
+.icon-add-large {
+    background-image: url('../ResourceTagger/Images/add.png') !important;
+}
+
+.icon-delete-large {
+    background-image: url('../ResourceTagger/Images/delete.gif') !important;
+}
+
+.icon-save-large {
+    background-image: url('../ResourceTagger/Images/save.png') !important;
+}
+
+
+
 .editGrid {
 	color: #444;
 	font-size: 11px;

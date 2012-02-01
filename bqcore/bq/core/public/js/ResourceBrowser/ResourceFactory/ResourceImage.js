@@ -6,7 +6,7 @@ Ext.define('Bisque.Resource.Image',
     // Two functions for speed
     GetImageThumbnailRel : function(params, size, full)
     {
-        //return '<img src="' + this.resource.src + '?thumbnail' + params + '"/>';
+        //return '<img style="position:absolute;top:50%;left:50%" src="' + this.getThumbnailSrc(params) + '"/>';
         return '<img style="position:relative; top:50%; left:50%; margin-top: -'+size.height/2+'px;margin-left: -'+size.width/2+'px;"'
         +((full==undefined)?' id="'+this.resource.uri+'"':'')
         + ' src="' + this.getThumbnailSrc(params)
@@ -264,6 +264,13 @@ Ext.define('Bisque.Resource.Image.Compact',
         var text = Ext.String.ellipsis(this.resource.name, 25) || '';
         this.update('<div class="textOnImage" style="width:'+this.layoutMgr.layoutEl.width+'px;">'+text+'</div>'+this.getData('image'));
         this.setLoading(false);
+        
+        /*this.resizer = Ext.create('Ext.resizer.Resizer', {
+            target : this,
+            handles : 'all',
+            transparent : true
+            //pinned  : true
+        });*/
     },
 });
 
@@ -654,11 +661,10 @@ Ext.define('Bisque.Resource.Image.Page',
             bodyStyle : 'background-color:#F00',
             items : [resourceTagger, embeddedTagger, mexBrowser]
         });
-        
+
         var viewerContainer = Ext.create('BQ.viewer.Image', {
             region : 'center',
             resource: this.resource,
-            user: this.user_url,
         });
     
         this.add({
