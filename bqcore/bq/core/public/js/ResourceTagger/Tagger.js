@@ -350,7 +350,7 @@ Ext.define('Bisque.ResourceTagger',
                     if(nodeHash[node].dirty)
                     {
                         status = true;
-                            Ext.apply(nodeHash[node].raw, nodeHash[node].getChanges());
+                        Ext.apply(nodeHash[node].raw, nodeHash[node].getChanges());
                         nodeHash[node].commit();
                     }
                 return status;
@@ -772,6 +772,7 @@ Ext.define('Bisque.GObjectTagger',
     
     appendFromMex : function(resQ)
     {
+        // Only look for gobjects in tags which have value = image_url 
         for (var i=0;i<resQ.length;i++)
             resQ[i].resource.loadGObjects({cb: Ext.bind(this.appendGObjects, this, [resQ[i].resource], true)});
     },
