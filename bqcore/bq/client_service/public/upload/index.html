@@ -8,7 +8,7 @@
 <body>
 <h3>Upload file (one by one):</h3>
 
-<form action="/bisquik/savefile" method="post" enctype="multipart/form-data" name="form" id="form">
+<form action="/notebook_service/savefile" method="post" enctype="multipart/form-data" name="form" id="form">
   <input name="upload" type="file" id="upload" size="100" />
   <input type="submit" name="submit" id="submit" value="Transfer" />
 </form>
@@ -16,7 +16,7 @@
 <hr />
 <h3>Signal database with uploaded BIX/image files:</h3>
 
-<form action="/bisquik/dn_http_upload" method="post" name="form2" id="form2">
+<form action="/notebook_service/dn_http_upload" method="post" name="form2" id="form2">
         <label>bixfiles (: separated) 
         <input name="bixfiles" type="text" id="bixfiles" size="100" />
         </label>
@@ -38,7 +38,7 @@
 
 <h3>Test if hashes exist (provide comma separated list):</h3>
 
-<form action="/bisquik/dn_test_uploaded" method="post" enctype="multipart/form-data" name="form" id="form">
+<form action="/notebook_service/dn_test_uploaded" method="post" enctype="multipart/form-data" name="form" id="form">
   <label>
   <input name="hashes" type="text" id="hashes" size="100" />
   </label>
@@ -47,7 +47,7 @@
 
 <h3>Test if hashes exist using savefile (provide comma separated list):</h3>
 
-<form action="/bisquik/savefile" method="post" enctype="multipart/form-data" name="form" id="form">
+<form action="/notebook_service/savefile" method="post" enctype="multipart/form-data" name="form" id="form">
   <input name="upload" type="hidden" value="" />
   <label>
   <input name="hashes" type="text" id="hashes" size="100" />
