@@ -61,6 +61,7 @@ def copy_files (files, dest):
 def matlab_setup(main_path, files = [], bisque_deps = True, dependency_dir = "mbuild", params = {}, **kw):
     'prepare a matlab script for execution  by compiling with mcc'
     if not require('runtime.matlab_home', params):
+        print "runtime.matlab_home  not set"
         return False
     #mcc -m -C -R -nodisplay -R -nojvm -nocache maizeG.m
     #m Macro that generates a C stand-alone application. This is

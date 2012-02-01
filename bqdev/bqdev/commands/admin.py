@@ -158,7 +158,8 @@ class setup(object):
     def run(self):
         ''
         from bq.setup import bisque_setup
-        bisque_setup.setup( self.options, self.args )
+        r = bisque_setup.setup( self.options, self.args )
+        sys.exit(r)
 
 
 
