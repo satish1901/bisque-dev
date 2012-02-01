@@ -213,7 +213,7 @@ Ext.define('Bisque.ResourceBrowser.Browser',
                 tagQuery : this.browserParams.tagQuery || '',
                 tagOrder : this.browserParams.tagOrder || '"@ts":desc',
                 wpublic : (this.browserParams.wpublic == 'true' ? true : false),
-                selType : (this.browserParams.selType || 'SINGLE').toUpperCase()
+                selType : (this.browserParams.selType || 'MULTI').toUpperCase()
             });
 
             this.browserState['offset'] = this.browserParams.offset;
