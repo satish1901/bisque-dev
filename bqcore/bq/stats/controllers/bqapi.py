@@ -189,10 +189,10 @@ class BQTag (BQNode):
 class BQVertex (BQNode):
     '''gobject vertex''' 
     xmltag = "vertex"
-    xmlfields = ['x', 'y', 'z', 't', 'c']       
+    xmlfields = ['x', 'y', 'z', 't', 'ch', 'index']       
     
     def __init__(self, element=None):
-        self.x = None; self.y = None; self.z = None; self.t = None; self.c = None; 
+        self.x = None; self.y = None; self.z = None; self.t = None; self.c = None; self.index = None; 
         super(BQVertex, self).__init__(element=element)
 
     def fromEtree(self, element):
@@ -203,7 +203,7 @@ class BQVertex (BQNode):
                 setattr(self, a, float(getattr(self, a)))        
     
     def __repr__(self):
-        return 'vertex(x:%s,y:%s,z:%s,t:%s)'%(self.x, self.y, self.z, self.t)
+        return 'vertex(x:%s,y:%s,z:%s,t:%s,c:%s,i:%s)'%(self.x, self.y, self.z, self.t, self.c, self.index)
         
     def toTuple(self):
         return (self.x, self.y, self.z, self.t)
@@ -211,6 +211,12 @@ class BQVertex (BQNode):
     def fromTuple(self, v):
         x,y,z,t = v
         self.x=x; self.y=y; self.z=z; self.t=t
+
+    def toString(self):
+        def toStr(a):
+            if a is not None: return str(a)
+            return ''
+        return '%s, %s, %s, %s, %s, %s'%(toStr(self.x), toStr(self.y), toStr(self.z), toStr(self.t), toStr(self.c), toStr(self.index))
 
 
 class BQGObject (BQNode):

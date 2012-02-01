@@ -985,29 +985,6 @@ Ext.define('BQ.renderers.Image', {
         this.callParent();
     },
 
-/*
-BQWebApp.prototype.plot = function() {
-
-      var url = this.gobjectURL;
-      var xmap = 'tag-value-number';
-      var xreduce = 'histogram';
-
-      var xpath1 = '//tag[@name="area"]';      
-      var opts = { title: 'Distribution of seed areas', height:500, args: {numbins: 18} };
-      this.plotter1 = new BQStatisticsVisualizer( surface_area, url, xpath1, xmap, xreduce, opts );
-
-      var xpath2 = '//tag[@name="major"]';      
-      var opts = { title: 'Distribution of major axis', height:500, args: {numbins: 18} };
-      this.plotter2 = new BQStatisticsVisualizer( surface_major, url, xpath2, xmap, xreduce, opts );
-
-      var xpath3 = '//tag[@name="minor"]';      
-      var opts = { title: 'Distribution of minor axis', height:500, args: {numbins: 18} };
-      this.plotter3 = new BQStatisticsVisualizer( surface_minor, url, xpath3, xmap, xreduce, opts );
-
-}
-
-*/
-
     createMenuPlot : function(menu) {
         var gobs = this.definition.gobjects[0];
         var template = (gobs?gobs.template:{}) || {};
@@ -1017,12 +994,15 @@ BQWebApp.prototype.plot = function() {
             text: template['plot/label']?template['plot/label']:'Plot',
             scope: this,
             handler: function() {
-                var opts = { title: template['plot/title'], args: {numbins: template['plot/args/numbins']} };
+                var title = template['plot/title'];
+                if (title instanceof Array) title = title.join(', ');
+                var opts = { args: {numbins: template['plot/args/numbins']}, titles: template['plot/title'], };
                 this.plotter = Ext.create('BQ.stats.Dialog', {
                     url     : this.gobjects[0].uri,
                     xpath   : template['plot/xpath'],
                     xmap    : template['plot/xmap'],
                     xreduce : template['plot/xreduce'],
+                    title   : title,
                     opts    : opts,
                 });
             },

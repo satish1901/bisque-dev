@@ -79,7 +79,7 @@ appropriate base classes and writng the code in appropriate files, just that...
 
 __module__    = "stats_server.py"
 __author__    = "Dmitry Fedorov and Kris Kvilekval"
-__version__   = "1.3"
+__version__   = "1.4"
 __revision__  = "$Rev$"
 __date__      = "$Date$"
 __copyright__ = "Center for BioImage Informatics, University California, Santa Barbara"
@@ -237,14 +237,14 @@ class statsController(ServiceController):
         d = self.compute_stats(**kw)
 
         response = etree.Element ('resource')        
-        response.attrib['uri'] = '%s/compute?%s'%(self.baseuri, dict2url(kw, ['url']))
+        response.set('uri', '%s/compute?%s'%(self.baseuri, dict2url(kw, ['url'])))
         
         for i in d:
             r = etree.SubElement (response, 'resource')
             xpath   = i.pop('xpath')
             xmap    = i.pop('xmap')
             xreduce = i.pop('xreduce')
-            r.attrib['uri'] = '/stats/compute?%s'%(dict2url({ 'xpath':xpath, 'xmap':xmap, 'xreduce':xreduce }))
+            r.set('uri', '/stats/compute?%s'%(dict2url({ 'xpath':xpath, 'xmap':xmap, 'xreduce':xreduce })))
             for k in i:     
                 v = i[k]
                 if hasattr(v, '__iter__') and len(v)>0: 
@@ -308,6 +308,7 @@ class statsController(ServiceController):
         xpath   = guaranteeSize(xpath, maxsize)        
         xmap    = guaranteeSize(xmap, maxsize)
         xreduce = guaranteeSize(xreduce, maxsize)        
+        setmode = 'setmode' in kw
 
 
         # -----------------------------------------------------
@@ -316,8 +317,16 @@ class statsController(ServiceController):
         #etree = data_service.load(url+'?view=deep')
         #data_service.get_resource(url, view='deep', tag_query="AAA")
         # TODO: Vey inefficient now, need to request queries to the DB!!!!!!!!!!!!!!
-        #request = etree.parse('F:/dima/develop/python/bisque/TG/bisquik/SS/examples/gobjects.xml')
+        #request = etree.parse('F:\dima\develop\python\dataset.xml')
         request = data_service.get_resource(url, view='deep')
+        
+        # if the resource is a dataset, fetch contents of documents linked in it
+        if request.tag == 'dataset' and not setmode: 
+            members = request.xpath("tag[@name='members']")
+            if len(members)>0:
+                members_uri = members[0].get('uri', None)
+                if members_uri is not None:
+                    request = data_service.get_resource('%s/value'%members_uri, view='deep')
         
         response = []        
         for i in range(len(xpath)):
