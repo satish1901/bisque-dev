@@ -896,8 +896,8 @@ Ext.define('BQ.renderers.Tag', {
 Image templated configs:
 
 *******************************************************************************/
-function createStatsArgs(command, template) {
-    var c = template['plot/'+command];
+function createStatsArgs(command, template, name) {
+    var c = template[name+'/'+command];
     if (!c) return '';
     if (typeof(c)=='string') return '&'+command+'='+escape(c);
     var s='';
@@ -985,47 +985,67 @@ Ext.define('BQ.renderers.Image', {
         this.callParent();
     },
 
+    createPlot : function(menu, name, template) {
+        menu.add({
+            text: template[name+'/label']?template[name+'/label']:'Plot',
+            scope: this,
+            handler: function() {
+                var title = template[name+'/title'];
+                if (title instanceof Array) title = title.join(', ');
+                var titles = template[name+'/title'];
+                if (!(titles instanceof Array)) titles = [titles];
+                var opts = { args: {numbins: template[name+'/args/numbins']}, titles: titles, };
+                this.plotter = Ext.create('BQ.stats.Dialog', {
+                    url     : this.gobjects[0].uri,
+                    xpath   : template[name+'/xpath'],
+                    xmap    : template[name+'/xmap'],
+                    xreduce : template[name+'/xreduce'],
+                    title   : title,
+                    opts    : opts,
+                });
+            },
+        });          
+    },
+
     createMenuPlot : function(menu) {
         var gobs = this.definition.gobjects[0];
         var template = (gobs?gobs.template:{}) || {};
         if ('plot' in template && template['plot']==false) return;
         
-        menu.add({
-            text: template['plot/label']?template['plot/label']:'Plot',
-            scope: this,
-            handler: function() {
-                var title = template['plot/title'];
-                if (title instanceof Array) title = title.join(', ');
-                var opts = { args: {numbins: template['plot/args/numbins']}, titles: template['plot/title'], };
-                this.plotter = Ext.create('BQ.stats.Dialog', {
-                    url     : this.gobjects[0].uri,
-                    xpath   : template['plot/xpath'],
-                    xmap    : template['plot/xmap'],
-                    xreduce : template['plot/xreduce'],
-                    title   : title,
-                    opts    : opts,
-                });
-            },
-        });  
+        var name = 'plot';
+        for (var i=0; i<20; i++) {
+            if (i>0) name = 'plot' + i;
+            if (!(name in template)) break;        
+            this.createPlot(menu, name, template);
+        }
             
     }, 
+
+    createExportCsv : function(menu, name, template) {
+        menu.add({
+            text: template[name+'/label']?template[name+'/label']:'as CSV',
+            scope: this,
+            handler: function() {
+                var url = '/stats/csv?url=' + this.gobjects[0].uri;
+                url += createStatsArgs('xpath', template, name);
+                url += createStatsArgs('xmap', template, name);
+                url += createStatsArgs('xreduce', template, name);                                        
+                window.open(url);                
+            },
+        });         
+    },
 
     createMenuExportCsv : function(menu) {
         var gobs = this.definition.gobjects[0];
         var template = (gobs?gobs.template:{}) || {};
         if ('export_csv' in template && template['export_csv']==false) return;
         
-        menu.add({
-            text: template['export_csv/label']?template['export_csv/label']:'as CSV',
-            scope: this,
-            handler: function() {
-                var url = '/stats/csv?url=' + this.gobjects[0].uri;
-                url += createStatsArgs('xpath', template);
-                url += createStatsArgs('xmap', template);
-                url += createStatsArgs('xreduce', template);                                        
-                window.open(url);                
-            },
-        }); 
+        var name = 'export_csv';
+        for (var i=0; i<20; i++) {
+            if (i>0) name = 'export_csv' + i;
+            if (!(name in template)) break;            
+            this.createExportCsv(menu, name, template);
+        }
     }, 
 
     createMenuExportXml : function(menu) {

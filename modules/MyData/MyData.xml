@@ -263,6 +263,19 @@ For details on notation and configuration:
                             <tag name="numbins" value="18" type="number" />
                         </tag>                        
                     </tag>
+
+                    <tag name="plot1" value="true"  type="boolean">
+                        <tag name="label" value="Distribution of seed areas" />
+                        <tag name="title" value="Distribution of seed areas" />
+                        <tag name="xmap" value="tag-value-number" />
+                        <tag name="xreduce" value="histogram" />
+                        <tag name="xpath">
+                            <value>//tag[@name="color"]</value>
+                        </tag>                        
+                        <tag name="args">
+                            <tag name="numbins" value="18" type="number" />
+                        </tag>                        
+                    </tag>
                     
                     <tag name="export_csv" value="true" type="boolean">
                         <tag name="label" value="Area, Major and Minor axis as CSV" />
@@ -274,6 +287,17 @@ For details on notation and configuration:
                             <value>//tag[@name='line_width']</value>
                         </tag>                        
                     </tag>                      
+
+                    <tag name="export_csv1" value="true" type="boolean">
+                        <tag name="label" value="Color, Shape, Line width as CSV" />
+                        <tag name="xmap" value="tag-value-number" />
+                        <tag name="xreduce" value="vector" />
+                        <tag name="xpath">
+                            <value>//tag[@name='color']</value>
+                            <value>//tag[@name='shape']</value>
+                            <value>//tag[@name='line_width']</value>
+                        </tag>                        
+                    </tag>   
 
                     <tag name="export_xml"    value="true"  type="boolean" />
                     <tag name="export_excel"  value="false" type="boolean" />

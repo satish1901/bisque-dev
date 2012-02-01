@@ -761,6 +761,14 @@ Ext.define('BQ.stats.plotter.Plotter', {
     layout: 'fit',
     defaults: { border: 0, },
     
+    constructor: function(config) {
+        this.addEvents({
+            'selected' : true,
+        });
+        this.callParent(arguments);
+        return this;
+    },    
+    
     initComponent : function() {
         this.callParent();
         this.plot = undefined;
@@ -878,7 +886,14 @@ Ext.define('BQ.stats.plotter.Line', {
                   renderer: function(storeItem, item) {
                       this.setTitle( item.value[1] );
                   }
-                },                               
+                },
+                
+               listeners: { 
+                    'itemmouseover': function( item, e ) { 
+                            this.fireEvent( 'selected', this, item); 
+                        }, 
+                    scope: this 
+                },                                                
             });   
         }
 
@@ -1055,7 +1070,15 @@ Ext.define('BQ.stats.plotter.Histogram', {
                       s += item.value[0]?'<br>'+'Centroid: '+item.value[0]:'';
                       this.setTitle( s );
                   }
-                },                               
+                },
+                
+                listeners: { 
+                    'itemmouseover': function( item, e ) { 
+                            this.fireEvent( 'selected', this, item); 
+                        }, 
+                    scope: this 
+                },                
+                                               
             });   
         //}
 
@@ -1151,6 +1174,14 @@ Ext.define('BQ.stats.grid.Grid', {
     // configs
     layout: 'fit',
     
+    constructor: function(config) {
+        this.addEvents({
+            'selected' : true,
+        });
+        this.callParent(arguments);
+        return this;
+    },       
+    
     initComponent : function() {
         this.callParent();
         this.createStore();
@@ -1212,8 +1243,13 @@ Ext.define('BQ.stats.grid.Grid', {
                     sortable : true, 
                     dataIndex: myfields[1].name
                 },              
-                
             ],
+            listeners: { 
+                'itemclick': function( view, record, item, index, e, eOpts) { 
+                        this.fireEvent( 'selected', this, record ); 
+                    }, 
+                scope: this 
+            },
         });    
         this.add(this.grid);
     },
@@ -1380,6 +1416,12 @@ Ext.define('BQ.stats.Visualizer', {
                 var opts = {
                     title: this.opts.titles ? this.opts.titles[i] :
                            results[i].xreduce +' of '+ results[i].xmap +' for '+  results[i].xpath,
+                    listeners: { 
+                        'selected': function( gr, record ) {
+                                 
+                        }, 
+                        scope: this 
+                    },                           
                 };                
                 
                 this.grids[i] = BQ.stats.grid.Factory.make(results[i].xreduce, results[i], opts);
@@ -1391,6 +1433,12 @@ Ext.define('BQ.stats.Visualizer', {
             var opts = {
                 border: 0,
                 titles: this.opts?this.opts.titles:undefined,
+                listeners: { 
+                    'selected': function( pl, item ) {
+                             
+                    }, 
+                    scope: this 
+                },                  
             };
 
             //TODO: find first vector type to be plotted            
