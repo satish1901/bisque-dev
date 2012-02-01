@@ -1888,20 +1888,26 @@ Ext.define('BQTemplate',
 });
 
 
-Ext.define('BQTemplateField',
+Ext.define('BQField',
 {
     extend          :   'BQTag',
+    
+    config  :           {},
     loaded          :   false,
-    properties      :   {},
-    mixins          :   {
-                            'template'  :   'BQTemplate'
-                    },
-    setProperties   :   function(properties)
+    template        :   {},
+    
+    constructor     :   function(data, properties)
+    {
+        debugger;
+        
+    },
+    
+    setTemplate   :   function(template)
     {
         this.properties = properties;
     },
     
-    getProperties   :   function(properties)
+    getTemplate   :   function(properties)
     {
         return this.properties;
     }

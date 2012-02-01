@@ -772,6 +772,7 @@ Ext.define('Bisque.GObjectTagger',
     
     appendFromMex : function(resQ)
     {
+        // Only look for gobjects in tags which have value = image_url 
         for (var i=0;i<resQ.length;i++)
             resQ[i].resource.loadGObjects({cb: Ext.bind(this.appendGObjects, this, [resQ[i].resource], true)});
     },

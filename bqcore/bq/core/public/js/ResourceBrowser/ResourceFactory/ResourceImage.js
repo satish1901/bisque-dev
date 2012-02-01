@@ -629,7 +629,7 @@ Ext.define('Bisque.Resource.Image.Page',
             'title' : 'Execution Results',
             'viewMode' : 'MexBrowser',
             'dataset' : '/data_service/mex',
-            'tagQuery' : this.resource.uri,
+            'tagQuery' : '"'+this.resource.uri+'"&view=deep',
             'wpublic' : true,
     
             mexLoaded : false,
