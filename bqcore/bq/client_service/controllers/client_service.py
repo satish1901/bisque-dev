@@ -80,7 +80,7 @@ from bq.client_service import model
 from bq.exceptions import IllegalOperation
 import bq.release as __VERSION__
 
-import aggregate_service
+#import aggregate_service
 from bq import image_service
 from bq import data_service
 
@@ -120,13 +120,21 @@ class ClientServer(ServiceController):
         pybool = {'True': 'true', 'False': 'false'}
         welcome_tags = config.get ('bisque.welcome_tags', "")
         welcome_message = config.get ('bisque.welcome_message', "Welcome to the Bisque image database")
-        image_count = aggregate_service.count("image", wpublic=wpublic)
+        #image_count = aggregate_service.count("image", wpublic=wpublic)
+        #image_count = data_service.count("image", wpublic=wpublic)
+        tag_query = config.get('bisque.background_query', "welcome_background:")
+        image_count  = data_service.count("image", tag_query=tag_query, wpublic=wpublic)
+        if image_count == 0:
+            image_count = data_service.count("image", wpublic=wpublic)
+            tag_query  = None
+
 
         thumbnail = None
         imageurl = None
         if image_count:
             im = random.randint(0, image_count-1)
-            image = aggregate_service.retrieve("image", view=None, wpublic=wpublic)[im]
+            #image = aggregate_service.retrieve("image", view=None, wpublic=wpublic)[im]
+            image  = data_service.query('image', tag_query=tag_query, wpublic=wpublic, view=None)[im]
             imageurl = self.viewlink(image.attrib['uri'])
             #thumbnail = image.attrib['src'] +'?thumbnail'
             thumbnail = "/image_service/images/%s?thumbnail" % image.get('resource_uniq')
@@ -178,9 +186,11 @@ class ClientServer(ServiceController):
         return tarStreamer.stream(['C:\\Python27\\TarStreamer\\file1.tif', 'C:\\Python27\\TarStreamer\\file2.tif', 'C:\\Python27\\TarStreamer\\file3.tif'])
         """
         return dict()
-        
+
+    # TO BE REMOVED ON NEXT ITERATION
     @expose(content_type="text/xml")
-    def images(self, **kw):
+    def images_removed(self, **kw):
+        # 
         log.debug ("keyargs " + str(kw))
         query = kw.pop('tag_query', None)
         view=kw.pop('view', 'short')
