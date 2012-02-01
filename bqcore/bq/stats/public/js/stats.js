@@ -728,9 +728,10 @@ BQ.stats.plotter.Factory.ctormap = { vector          : 'BQ.stats.plotter.Line',
 };
 
 BQ.stats.plotter.Factory.make = function(xreduce, results, opts) {
-    var ctor = 'BQ.stats.plotter.Plotter';
+    var ctor = undefined;
     if (xreduce in BQ.stats.plotter.Factory.ctormap) 
         ctor = BQ.stats.plotter.Factory.ctormap[xreduce];
+    if (!ctor) return undefined;
     
     var conf = { 
         xreduce: xreduce, 
@@ -805,7 +806,6 @@ Ext.define('BQ.stats.plotter.Plotter', {
         
         this.fields = fields;
         this.large_array = maxsz>BQ.stats.plotter.SMALL_PLOT_SIZE;
-
 
         /*
         this.store = Ext.create('Ext.data.JsonStore', {
@@ -1124,12 +1124,14 @@ BQ.stats.grid.Factory.make = function(xreduce, results, opts) {
     if (xreduce in BQ.stats.grid.Factory.ctormap) 
         ctor = BQ.stats.grid.Factory.ctormap[xreduce];
     
-    return Ext.create(ctor, { 
+    var conf = { 
         xreduce: xreduce, 
         results: results, 
-        opts: opts,
         flex: 1,
-    });
+    };
+    if (opts) Ext.applyIf(conf, opts);
+    
+    return Ext.create(ctor, conf); 
 }
 
 //------------------------------------------------------------------------------
@@ -1184,7 +1186,7 @@ Ext.define('BQ.stats.grid.Grid', {
         if (!this.xreduce in this.results) return;    
         var store = this.store;
 
-        var mytitle = this.opts.title ? this.opts.title : this.xreduce;
+        var mytitle = this.title ? this.title : this.xreduce;
         this.setTitle(mytitle);
         
         Ext.QuickTips.init();
@@ -1331,7 +1333,9 @@ Ext.define('BQ.stats.Visualizer', {
         if (this.opts.grid == true) {
             this.gridPanel = Ext.create('Ext.panel.Panel', {
                 region: 'west',
-                width: '35%',          
+                collapsible: true,
+                split: true,
+                flex: 1,      
                 layout: 'accordion',
                 defaults: { border: 0, },
             });
@@ -1342,7 +1346,7 @@ Ext.define('BQ.stats.Visualizer', {
         this.plotPanel = Ext.create('Ext.panel.Panel', {
             collapsible: false,
             region: 'center',
-            flex: 1,
+            flex: 2,
             layout: 'fit',
             defaults: { border: 0, },            
         });
@@ -1368,33 +1372,35 @@ Ext.define('BQ.stats.Visualizer', {
     },    
 
     ondone: function (results) {
-        
-        if (this.opts.plot == true) {
-            //TODO: find first vector type to be plotted
-            //if (!('title' in this.opts)) this.opts.title = results[0].xreduce +' of '+ results[0].xmap;    
-            //this.plotter = BQPlotterFactory.make( this.plotPanel.el.dom, results[0].xreduce, results, this.opts );
-            
-            var opts = {
-                border: 0,
-                title: this.opts?this.opts.title:undefined,
-                //titles: [],
-            };
-            
-            this.plotter = BQ.stats.plotter.Factory.make( results[0].xreduce, results, opts );
-            this.plotPanel.add(this.plotter);
-        }        
-        
+
         // create tables and plots here
         if (this.opts.grid == true) {
             this.grids = [];
             for (var i=0; i<results.length; i++) {
-                this.opts.title = this.opts.titles ? this.opts.titles[i] :
-                    results[i].xreduce +' of '+ results[i].xmap +' for '+  results[i].xpath;
+                var opts = {
+                    title: this.opts.titles ? this.opts.titles[i] :
+                           results[i].xreduce +' of '+ results[i].xmap +' for '+  results[i].xpath,
+                };                
                 
-                this.grids[i] = BQ.stats.grid.Factory.make(results[i].xreduce, results[i], this.opts);
+                this.grids[i] = BQ.stats.grid.Factory.make(results[i].xreduce, results[i], opts);
                 this.gridPanel.add(this.grids[i]);
             }  
         }
+        
+        if (this.opts.plot == true) {
+            var opts = {
+                border: 0,
+                titles: this.opts?this.opts.titles:undefined,
+            };
+
+            //TODO: find first vector type to be plotted            
+            this.plotter = BQ.stats.plotter.Factory.make( results[0].xreduce, results, opts );
+            if (this.plotter) 
+                this.plotPanel.add(this.plotter);
+            //else
+            //    this.plotPanel.setVisible(false);
+        }        
+        
         this.setLoading(false);        
     },
 
@@ -1404,6 +1410,7 @@ Ext.define('BQ.stats.Visualizer', {
 // BQ.upload.Dialog
 // Instantiates upload panel in a modal window
 //-------------------------------------------------------------------------------------- 
+BQ.stats.DEFAULTS = { 'title':null, 'width':null, 'height':null, }
 
 Ext.define('BQ.stats.Dialog', {
     extend : 'Ext.window.Window',
@@ -1425,7 +1432,7 @@ Ext.define('BQ.stats.Dialog', {
 
         // move the config options that belong to the uploader
         for (var c in config)
-            //if (c in BQ.upload.DEFAULTS)
+            if (!(c in BQ.stats.DEFAULTS))
                  conf[c] = config[c];
     
         this.my_panel = Ext.create('BQ.stats.Visualizer', conf);         

@@ -72,6 +72,7 @@ __copyright__ = "Center for BioImage Informatics, University California, Santa B
 from lxml import etree
 import sys
 import math
+import operator
 import logging
 
 from bqapi import *
@@ -98,6 +99,13 @@ class StatOperator (object):
     def do_map(self, v_in, **kw):
         # this one does nothing really                 
         return v_in
+
+################################################################################
+# misc
+################################################################################       
+
+def mapflat(f, l):
+    return reduce(operator.add, map(f, l))
 
 ################################################################################
 # Tag Operator implementations
@@ -173,6 +181,40 @@ def gobPerimeter(gob):
 
 def gobArea(gob):
     return BQFactory.make(gob).area()
+
+def gobVertexStr(gob):
+    return [ v.toString() for v in BQFactory.make(gob).vertices ]
+
+def gobVertexType(gob):
+    g = BQFactory.make(gob)
+    n = str(g.getAttr('type'))
+    return [ n for v in g.vertices ]
+
+def gobVertexName(gob):
+    g = BQFactory.make(gob)
+    n = str(g.getAttr('name'))
+    return [ n for v in g.vertices ]
+
+def gobVertexV(gob, f):
+    return [ f(v) for v in BQFactory.make(gob).vertices ]
+
+def gobVertexX(gob):
+    return gobVertexV(gob, lambda v: v.x)
+
+def gobVertexY(gob):
+    return gobVertexV(gob, lambda v: v.y)
+
+def gobVertexZ(gob):
+    return gobVertexV(gob, lambda v: v.z)
+
+def gobVertexT(gob):
+    return gobVertexV(gob, lambda v: v.t)        
+
+def gobVertexC(gob):
+    return gobVertexV(gob, lambda v: v.c)
+
+def gobVertexI(gob):
+    return gobVertexV(gob, lambda v: v.index)
     
 #-------------------------------------------------------------------------------
 # Gob Operator implementations
@@ -237,7 +279,69 @@ class StatOperatorGobNumber (StatOperator):
     def do_map(self, v_in, **kw):
         return map(gobNumber, v_in)
 
+#-------------------------------------------------------------------------------
+# Gob Vertex Operator implementations
+#-------------------------------------------------------------------------------
 
+class StatOperatorGobVertexString (StatOperator):
+    '''maps gobjects into a vector of their vertices as strings: "X, Y, Z, T, C, I"''' 
+    name = 'gobject-vertex-string'
+    version = '1.0'    
+    def do_map(self, v_in, **kw):
+        return mapflat(gobVertexStr, v_in)
 
+class StatOperatorGobVertexType (StatOperator):
+    '''maps gobjects into a vector of their types given for every vertex''' 
+    name = 'gobject-vertex-type'
+    version = '1.0'    
+    def do_map(self, v_in, **kw):
+        return mapflat(gobVertexType, v_in)
 
+class StatOperatorGobVertexName (StatOperator):
+    '''maps gobjects into a vector of their names given for every vertex''' 
+    name = 'gobject-vertex-name'
+    version = '1.0'    
+    def do_map(self, v_in, **kw):
+        return mapflat(gobVertexName, v_in)
 
+class StatOperatorGobVertexX (StatOperator):
+    '''maps gobjects into a vector of their vertices''s x coordinate''' 
+    name = 'gobject-vertex-x'
+    version = '1.0'    
+    def do_map(self, v_in, **kw):
+        return mapflat(gobVertexX, v_in)
+
+class StatOperatorGobVertexY (StatOperator):
+    '''maps gobjects into a vector of their vertices''s y coordinate''' 
+    name = 'gobject-vertex-y'
+    version = '1.0'    
+    def do_map(self, v_in, **kw):
+        return mapflat(gobVertexY, v_in)
+        
+class StatOperatorGobVertexZ (StatOperator):
+    '''maps gobjects into a vector of their vertices''s z coordinate''' 
+    name = 'gobject-vertex-z'
+    version = '1.0'    
+    def do_map(self, v_in, **kw):
+        return mapflat(gobVertexZ, v_in)
+        
+class StatOperatorGobVertexT (StatOperator):
+    '''maps gobjects into a vector of their vertices''s t coordinate''' 
+    name = 'gobject-vertex-t'
+    version = '1.0'    
+    def do_map(self, v_in, **kw):
+        return mapflat(gobVertexT, v_in)                
+
+class StatOperatorGobVertexC (StatOperator):
+    '''maps gobjects into a vector of their vertices''s c coordinate''' 
+    name = 'gobject-vertex-c'
+    version = '1.0'    
+    def do_map(self, v_in, **kw):
+        return mapflat(gobVertexC, v_in)
+
+class StatOperatorGobVertexI (StatOperator):
+    '''maps gobjects into a vector of their vertices''s index''' 
+    name = 'gobject-vertex-index'
+    version = '1.0'    
+    def do_map(self, v_in, **kw):
+        return mapflat(gobVertexI, v_in)

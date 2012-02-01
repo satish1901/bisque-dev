@@ -202,7 +202,6 @@ class StatSummarizerMax (StatSummarizer):
     name = "max"  
     version = '1.1'          
     def do_reduce(self, v_in, **kw):
-        v_in = None
         if len(v_in)>0: v_in = max(v_in)          
         return { self.name:v_in } 
 
@@ -211,7 +210,6 @@ class StatSummarizerMin (StatSummarizer):
     name = "min"  
     version = '1.1'          
     def do_reduce(self, v_in, **kw):
-        v_in = None
         if len(v_in)>0: v_in = min(v_in)          
         return { self.name:v_in } 
 
