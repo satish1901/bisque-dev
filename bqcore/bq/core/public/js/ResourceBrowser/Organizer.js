@@ -1,3 +1,4 @@
+// Needs to be rewritten for better generics as and when the specs become clear
 Ext.define('Bisque.ResourceBrowser.Organizer',
 {
     extend : 'Ext.Panel',
@@ -544,8 +545,10 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
                     str += '"' + encodeURIComponent(this.tag) + '"::"' + encodeURIComponent(this.value[i]) + '": OR ';
                 return str.substring(0, str.length - 4);
             }
-            else
+            else if (this.tag!="")
                 return '"'+encodeURIComponent(this.tag)+'":::';
+            else
+                return "";
         }
         else
         {

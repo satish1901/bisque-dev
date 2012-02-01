@@ -270,6 +270,8 @@ Ext.define('BQ.Export.Panel', {
                 {
                     width: 120,
                     dataIndex: 'icon',
+                    menuDisabled : true,
+                    sortable : false,
                     align:'center',
                     renderer : function(value)
                     {
@@ -310,6 +312,8 @@ Ext.define('BQ.Export.Panel', {
                 {
                     xtype: 'actioncolumn',
                     maxWidth: 80,
+                    menuDisabled : true,
+                    sortable : false,
                     align: 'center',
                     items: [
                     {
