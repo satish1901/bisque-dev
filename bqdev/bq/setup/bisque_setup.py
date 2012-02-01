@@ -493,7 +493,7 @@ def modify_site_cfg(qs, bisque_vars, section = BQ_SECTION, append=True, cfg=SITE
     c.read(open(cfg))
     for k,v in bisque_vars.items():
         c.edit_config (section, k, '%s = %s' % (k,v), {}, append)
-        print "edit %s %s" % (k,v)
+        #print "edit %s %s" % (k,v)
     c.write (open (cfg, 'w'))
 
     return bisque_vars
@@ -755,6 +755,7 @@ Please resolve the problem(s) and re-run 'bisque-setup --database'.""")
 #######################################################
 #
 def install_matlab(params, cfg = RUNTIME_CFG):
+    #print params
     matlab_home = which('matlab') 
     if matlab_home:
         params['runtime.matlab_home'] = os.path.abspath(os.path.join (matlab_home, '../..'))
@@ -1353,7 +1354,7 @@ def bisque_installer(options, args):
     if not os.path.exists(RUNTIME_CFG):
         runtime_params = install_cfg(RUNTIME_CFG, config_path('runtime-bisque.default'))
     else:
-        runtime_params = read_site_cfg(RUNTIME_CFG)
+        runtime_params = read_site_cfg(section=None, cfg=RUNTIME_CFG)
     
     params['bisque.installed'] = "inprogress"
     if 'site' in installer:
@@ -1384,7 +1385,11 @@ def bisque_installer(options, args):
     params['bisque.installed'] = "finished"
     params = modify_site_cfg([], params,)
 
-    print STemplate(start_msg).substitute(params)
+    if installer == install_options:
+        print STemplate(start_msg).substitute(params)
+        return 0
+
+    return -1
 
 
 class CaptureIO(object):
@@ -1455,12 +1460,14 @@ def setup(options, args):
             params = read_site_cfg()
             params['install_started'] = begin_install 
             params['duration'] = str(end_install-begin_install)
+            print "got ", r
             send_installation_report(params)
-        sys.exit(0)
+        sys.exit(r)
         
     
     try:
-        params  = bisque_installer(options, args)
+        r  = bisque_installer(options, args)
+        return r
     except InstallError, e:
         cancelled = True
     except KeyboardInterrupt:
@@ -1484,5 +1491,3 @@ def setup(options, args):
 #            end_install = datetime.datetime.now()
 #            send_installation_report(params)
 
-if __name__ == "__main__":
-    setup()
