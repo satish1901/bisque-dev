@@ -1876,6 +1876,45 @@ BQSession.prototype.session_timeout = function (baseurl) {
     //alert("Your session has  timed out");
 }
 
+
+Ext.define('BQTemplate',
+{
+    extend      :   'BQResource',
+    
+    addField    :   function(field)
+    {
+        // ADD FIELD CODE
+    }
+});
+
+
+Ext.define('BQField',
+{
+    extend          :   'BQTag',
+    
+    config  :           {},
+    loaded          :   false,
+    template        :   {},
+    
+    constructor     :   function(data, properties)
+    {
+        debugger;
+        
+    },
+    
+    setTemplate   :   function(template)
+    {
+        this.properties = properties;
+    },
+    
+    getTemplate   :   function(properties)
+    {
+        return this.properties;
+    }
+});
+
+
+
 //-------------------------------------------------------------------------
 // BQQuery - this is something old that probably should gof
 //-------------------------------------------------------------------------
