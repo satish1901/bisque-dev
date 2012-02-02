@@ -68,6 +68,7 @@ function BQWebApp (urlargs) {
       }, this, { delay: 100 } );
   }
 
+  if (this.ms.module) this.setupUI_inputs();
  
   // parse URL arguments
   if (!urlargs) urlargs = document.URL;
@@ -82,9 +83,7 @@ function BQWebApp (urlargs) {
                            uri_params: {view:'deep'}  }); 
       return;      
   }
-  
-  if (this.ms.module) this.setupUI_inputs();
-  
+ 
   // loading resource requires initied input UI renderers
   if ('resource' in args)
       BQFactory.request( { uri:     args.resource, 
@@ -144,9 +143,9 @@ BQWebApp.prototype.mexMode = function () {
     this.mex_mode = true;
     BQ.ui.notification('This application is currently showing previously computed results.<br><br>'+
         '<i>Remove the "mex" url parameter in order to analyse new data.</i>', 20000); 
-    document.getElementById("webapp_input").style.display = 'none';
-    document.getElementById("webapp_parameters").style.display = 'none';
-    document.getElementById("webapp_run").style.display = 'none';
+    //document.getElementById("webapp_input").style.display = 'none';
+    //document.getElementById("webapp_parameters").style.display = 'none';
+    //document.getElementById("webapp_run").style.display = 'none';
     BQ.ui.tip('webapp_results', 'Visualizing results of a selected execution!',
               {color: 'green', timeout: 10000, anchor:'bottom',}); 
 }
@@ -217,9 +216,25 @@ BQWebApp.prototype.load_from_resource = function (R) {
         renderer.select(R);
 }
 
+BQWebApp.prototype.inputs_from_mex = function (mex) {
+    var inputs = this.ms.module.inputs_index;
+    var dmex = mex.dict;
+    
+    for (var i in dmex) {
+        if (i.indexOf('inputs/')!=0) continue;
+        var n = i.replace('inputs/', '');
+        var v = dmex[i];        
+        if (!(n in inputs)) continue;
+        var renderer = inputs[n].renderer;
+        if (renderer && renderer.select)
+            renderer.select(v);
+    }
+}
+
 BQWebApp.prototype.load_from_mex = function (mex) {
     this.hideProgress();
     this.mexMode();
+    this.inputs_from_mex(mex);
     this.done(mex);
 }
 
