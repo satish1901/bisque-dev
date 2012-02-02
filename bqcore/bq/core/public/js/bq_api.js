@@ -542,7 +542,7 @@ BQObject.prototype.convert_tags=function (){
 function BQResource (uri, doc) {
     BQObject.call(this, uri, doc);
     this.xmltag = "resource";
-    this.xmlfields = [ 'uri',  'type' ];
+    this.xmlfields = [ 'uri',  'type', 'name' ];
 }
 BQResource.prototype = new BQObject();
 //classExtend (BQObject, BQResource);
