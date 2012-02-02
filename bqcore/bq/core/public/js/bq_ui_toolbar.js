@@ -328,10 +328,95 @@ Ext.define('BQ.Application.Toolbar', {
             var uri = r.uri;            
             menu.add( {text: name, handler: Ext.Function.pass(pageAction, '/client_service/browser?resource='+uri)} );
         }
+        menu.add( '-' );
+        menu.add( {text: 'Create a new resource', 
+                   handler: function() {this.createResource(resource);},
+                   scope: this, });
+        
         
         this.child('#menu_images').menu = menu;
         this.child('#menu_resources').menu = menu;        
     }, 
+   
+    createResource : function(resource) {
+        var ignore = { 'mex':null, 'user':null, 'image':null, 'module':null, 'service':null, 'system':null, };        
+        var mydata = [];
+        var r=null;
+        for (var i=0; (r=resource.children[i]); i++)
+            if (!(r.name in ignore))
+                mydata.push( [r.name] );       
+        
+        store_types = Ext.create('Ext.data.ArrayStore', {
+            fields: [ {name: 'name',}, ],        
+            data: mydata,
+        });                
+        
+        var formpanel = Ext.create('Ext.form.Panel', {
+            //url:'save-form.php',
+            frame:true,
+            bodyStyle:'padding:5px 5px 0',
+            width: 350,
+            fieldDefaults: {
+                msgTarget: 'side',
+                labelWidth: 75
+            },
+            defaultType: 'textfield',
+            defaults: {
+                anchor: '100%'
+            },
+    
+            items: [{
+                xtype : 'combobox',
+                fieldLabel: 'Type',
+                name: 'type',
+                allowBlank: false,
+                
+                store     : store_types,
+                displayField: 'name',
+                valueField: 'name',
+                queryMode : 'local',
+                
+                invalidText: 'This type is not allowed for creation!',
+                validator: function(value) { return !(value in ignore) },
+            },{
+                fieldLabel: 'Name',
+                name: 'name',
+                allowBlank: false,                
+            }],
+    
+        });
+        
+        var w = Ext.create('Ext.window.Window', {
+            layout : 'fit',
+            modal : true,
+            border : false,
+            title: 'Create new resource',
+            buttonAlign: 'center',
+            items: formpanel,
+            buttons: [{
+                text: 'Save',
+                scope: this,
+                handler: function () {
+                    var form = formpanel.getForm();
+                    if (form.isValid()) {
+                        var v = form.getValues()
+                        var resource = new BQResource();
+                        resource.xmltag = v.type;
+                        resource.name = v.name;
+                        resource.save_('/data_service/'+v.type);
+                        formpanel.ownerCt.hide();                    
+                    };                    
+                }
+            }, {
+                text: 'Cancel',
+                //scope: this,
+                handler: function (me) {
+                    formpanel.ownerCt.hide();
+                }
+            }]            
+            
+        }).show();
+    },    
    
 });
 
