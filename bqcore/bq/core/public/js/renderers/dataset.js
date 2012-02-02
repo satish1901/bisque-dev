@@ -51,7 +51,7 @@ Ext.define('BQ.renderers.dataset', {
         this.preview = Ext.create('Bisque.ResourceBrowser.Browser', {
             region:'center', 
             flex: 1,
-            dataset: this.resource?this.resource.getMembers().uri+'/value':'None',
+            dataset: this.resource?this.resource:'None',
             
             title : this.resource.name?'Preview for "'+this.resource.name+'"':'Preview',
             tagOrder: '"@ts":desc',          
