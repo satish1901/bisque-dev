@@ -90,5 +90,11 @@ Ext.define('BQ.viewer.Image', {
         return this.viewer.gobjects();
     },
 
+    // g can be either a url, BQGobject or an array of BQGobject
+    setGobjects : function(g) {
+        if (!this.viewer) return;
+        this.viewer.loadGObjects(g);
+    },
+
 });
 

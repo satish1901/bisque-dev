@@ -289,8 +289,14 @@ Ext.define('BQ.selectors.Resource', {
         });        
     },
     
-    select: function(new_resource) {
-        this.onselected(new_resource);
+    select: function(resource) {
+        if (typeof resource != 'string')
+            this.onselected(resource);
+        else
+            BQFactory.request( { uri: resource, 
+                                 cb: callback(this, 'onselected'), 
+                                 //errorcb: callback(this, 'onerror'), 
+                               });         
     },    
     
     onselected: function(R) {
@@ -413,6 +419,10 @@ Ext.define('BQ.selectors.Gobject', {
         if (!this.validate()) return;
         this.resource.gobjects = Ext.clone( this.viewer.getGobjects() );              
     },
+
+    select: function(resource) {
+        this.viewer.setGobjects(resource);
+    },       
     
     isValid: function() {
         var resource = this.resource;
@@ -546,6 +556,18 @@ Ext.define('BQ.selectors.Number', {
         this.callParent();
     },
 
+    select: function(value) {
+        if (this.slider) {
+            if (value instanceof Array)
+                for (var i=0; i<value.length; i++)
+                    this.slider.setValue( i, value[i] );
+            else
+                this.slider.setValue( 0, value ); 
+        } else {
+            this.numfield.setValue( value ); 
+        }
+    },     
+
     isValid: function() {
         var valid = true;
         if (!this.multivalue && !this.resource.value) valid = false;
@@ -588,6 +610,7 @@ Ext.define('BQ.selectors.String', {
         var template = resource.template || {};
         this.items = [{
             xtype: 'textfield',
+            itemId: 'textfield',
             flex: 1,
             name: resource.name,
             labelWidth: 200,
@@ -617,6 +640,10 @@ Ext.define('BQ.selectors.String', {
         
         this.callParent();
     },
+
+    select: function(value) {
+        this.child('#textfield').setValue( value );
+    }, 
 
     isValid: function() {
         if (!this.resource.value) {
@@ -663,6 +690,7 @@ Ext.define('BQ.selectors.Combo', {
         this.items = [];            
         this.items.push({
             xtype: 'combobox',
+            itemId: 'combobox',
             //flex: 1,
             name: resource.name,
             labelWidth: 200,
@@ -693,6 +721,10 @@ Ext.define('BQ.selectors.Combo', {
         
         this.callParent();
     },
+
+    select: function(value) {
+        this.child('#combobox').setValue( value );
+    }, 
 
     isValid: function() {
         if (!this.resource.value) {
@@ -726,6 +758,7 @@ Ext.define('BQ.selectors.Boolean', {
         this.items = [];            
         this.items.push({
             xtype: 'checkbox',
+            itemId: 'checkbox',
             //flex: 1,
             name: resource.name,
             labelWidth: 200,
@@ -745,6 +778,10 @@ Ext.define('BQ.selectors.Boolean', {
         
         this.callParent();
     },
+
+    select: function(value) {
+        this.child('#checkbox').setValue( value );
+    }, 
 
     isValid: function() {
         if (!this.resource.value) {
@@ -817,6 +854,12 @@ Ext.define('BQ.selectors.Date', {
         
         this.callParent();
     },
+
+    /*
+    select: function(value) {
+        this.child('#checkbox').setValue( value );
+    },
+    */ 
 
     onselect: function() {
         this.resource.value = this.selector_date.getRawValue() +' ' + this.selector_time.getRawValue();
