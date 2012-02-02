@@ -400,10 +400,15 @@ Ext.define('BQ.Application.Toolbar', {
                     var form = formpanel.getForm();
                     if (form.isValid()) {
                         var v = form.getValues()
-                        var resource = new BQResource();
-                        resource.xmltag = v.type;
-                        resource.name = v.name;
-                        resource.save_('/data_service/'+v.type);
+                        var resource = BQFactory.make(v.type, undefined, v.name);
+                        
+                        // dima: temporary hack to fix the dataset memebers tag problem
+                        if (v.type == 'dataset')
+                             resource.addtag ({name: 'members'});
+                        
+                        resource.save_('/data_service/'+v.type, 
+                                       callback(this, this.onResourceCreated), 
+                                       callback(this, this.onResourceError));
                         formpanel.ownerCt.hide();                    
                     };                    
                 }
@@ -417,6 +422,14 @@ Ext.define('BQ.Application.Toolbar', {
             
         }).show();
     },    
+
+    onResourceCreated: function(resource) {
+        document.location = '/client_service/view?resource='+resource.uri;
+    },
+
+    onResourceError: function(message) {
+        BQ.ui.error('Error creating resource: <br>'+message);
+    },
    
 });
 

@@ -603,11 +603,15 @@ BQFactory.escapeXML = function(xml) {
 
 BQFactory.session = {};
 
-BQFactory.make = function(ty, uri) {
-    var ctor = BQObject;
+BQFactory.make = function(ty, uri, name, value) {
+    var ctor = BQResource;
     if (ty in BQFactory.ctormap) 
         ctor = BQFactory.ctormap[ty];
-    return new ctor(uri);
+    o =  new ctor(uri);
+    if (ctor == BQResource) o.xmltag = ty;
+    o.name = name;
+    o.value = value;
+    return o;
 }
 BQFactory.createFromXml = function(xmlResource, resource, parent) {
     var stack = [];
@@ -1705,7 +1709,7 @@ BQMex.prototype.afterInitialized = function () {
 function BQDataset (){
     BQObject.call(this);
     this.xmltag = "dataset";
-    this.xmlfields = [ "uri", "name" ] ;
+    this.xmlfields = [ "uri", "name" ];
     //this.addtag ({ name: 'members' });
 }
 
@@ -1735,7 +1739,7 @@ BQDataset.prototype.members_loaded = function (cb, dataset_tags) {
     if (!members) {
         members = this.addtag ({ name: 'members' })
     }
-    cb(members)
+    cb(members);
 }
 
 BQDataset.prototype.setMembers = function (nvs) {
