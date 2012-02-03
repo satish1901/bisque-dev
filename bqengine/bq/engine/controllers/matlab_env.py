@@ -89,9 +89,10 @@ class MatlabEnvironment(BaseEnvironment):
     def setup_environment(self, runner):
         # Construct a special environment script
         for mex in runner.mexes:
+            #if mex.executable:
+            condor_matlab = self.create_matlab_launcher(mex.staging_path)
+            condor_matlab = os.path.join('.', os.path.basename(condor_matlab))
             if mex.executable:
-                condor_matlab = self.create_matlab_launcher(mex.staging_path)
-                condor_matlab = os.path.join('.', os.path.basename(condor_matlab))
                 mex.executable.insert(0, condor_matlab)
 
     def create_matlab_launcher(self, dest):

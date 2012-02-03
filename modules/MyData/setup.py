@@ -1,14 +1,10 @@
 # Install script for Metalab
 import sys
-from bq.util.module_setup import matlab_setup, require, read_config
-
-from bbfreeze import Freezer
+from bq.setup.module_setup import matlab_setup, python_setup, read_config
 
 def setup(params, *args, **kw):
-    f = Freezer("dist")
-    f.addScript('MyData.py')
-    f()
-    
+    python_setup('MyData.py',  params=params )
+
 if __name__ =="__main__":
     params = read_config('runtime-bisque.cfg')
     if len(sys.argv)>1:
