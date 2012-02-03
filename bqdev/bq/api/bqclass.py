@@ -169,6 +169,15 @@ class BQImage(BQResource):
             if geom:
                 self._geometry = tuple(map(int, geom.value.split(',')))
                 #self._geometry = (x, y, z, t, ch)
+            else:
+                info = self.pixels().meta().fetch()
+                info = etree.XML(info)
+                geom = []
+                for n in 'xyztc':
+                    tn = info.xpath('//tag[@name="image_num_%s"]' % n)
+                    geom.append(tn[0].get('value'))
+                self._geometry = tuple(map(int, geom))
+
         return self._geometry
 
 
@@ -218,7 +227,7 @@ class BQImagePixels(object):
         self.ops.append('meta')
         return self
     
-    def getInfo(self):
+    def info(self):
         self.ops.append('info')
         return self
 

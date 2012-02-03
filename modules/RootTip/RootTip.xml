@@ -6,13 +6,24 @@
         <tag name="input-system" value="image_url"  />
         <tag name="input-system" value="mex_url" />
         -->
-        <tag name="image_url"    type="image" />     
+        <tag name="image_url"    type="image" > 
+           <tag name="template" type="template">
+             <tag name="require_gemetry" >
+               <tag name="t" value="stack" />
+               <tag name="fail_message" value="we need time a series image" />
+             </tag>
+             <tag name="iterable" value="iterable-001" />
+           </tag>
+        </tag>
         <tag name="mex_url"      type="system-input" />
         <tag name="bisque_token" type="system-input" />        
     </tag>
     
     <tag name="outputs">
       <tag name='roots' type="image">
+          <tag name="template" type="template" >
+              <tag name="label" value="Detected Root Tips" />
+          </tag>
           <gobject name="root_tips" /> 
       </tag>
     </tag>      
