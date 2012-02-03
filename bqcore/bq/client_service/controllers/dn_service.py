@@ -64,6 +64,7 @@ from lxml import etree
 from urllib import urlencode
 from repoze.what import predicates
 from repoze.what.predicates import not_anonymous
+from paste.debug.profile import profile_decorator
 
 from bq.core.identity import get_user_id, get_user_pass
 from bq.core.service import ServiceController, service_registry
@@ -124,6 +125,7 @@ class DNServer(ServiceController):
         
     @expose(content_type="text/xml")
     #@require(predicates.not_anonymous())
+    #@profile_decorator(logfile="/home/kage/dn_savefile.profile")
     def savefile (self, **kw):
         log.info ("savefile request " + str (tg.request))
         #log.debug( 'savefile - username: ' + str(identity.current.user_name) )      

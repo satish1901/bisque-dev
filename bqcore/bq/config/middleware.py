@@ -6,7 +6,8 @@ import pkg_resources
 #from webtest import TestApp
 
 from paste.httpexceptions import HTTPNotFound
-from paste.cascade import Cascade
+#from paste.cascade import Cascade
+from direct_cascade import DirectCascade
 from paste.fileapp import FileApp
 from paste.urlparser import StaticURLParser
 from paste.httpheaders import ETAG
@@ -31,6 +32,7 @@ make_base_app = base_config.setup_tg_wsgi_app(load_environment)
 
 public_file_filter = None
 bisque_app = None
+
 class BQStaticURLParser (object):
 
     def __init__(self):
@@ -140,7 +142,7 @@ def make_app(global_conf, full_stack=True, **app_conf):
         #    staticfilters.append (static_app)
     #cascade = staticfilters + [app]
     #print ("CASCADE", cascade)
-    app = Cascade([static_app, app])
+    app = DirectCascade([static_app, app])
     bisque_app = app
 
     log.info( "END STATICS: discovered %s static files " % len(static_app.files.keys()))
