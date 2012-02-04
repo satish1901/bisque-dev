@@ -1762,7 +1762,6 @@ BQDataset.prototype.appendMembers = function (newmembers, cb) {
 BQDataset.prototype.appendMembersResp = function (newmembers, cb, members_tag) {
     var members = members_tag.values.concat(newmembers)
     this.setMembers (members)
-
     if (cb) cb();
 }
 

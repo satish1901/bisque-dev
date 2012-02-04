@@ -614,7 +614,7 @@ Ext.define('Bisque.Resource.Image.Page',
         var resourceTagger = Ext.create('Bisque.ResourceTagger', 
         {
             resource : this.resource,
-            title : 'Tagger',
+            title : 'Annotations',
         });
     
         var embeddedTagger = Ext.create('Bisque.ResourceTagger', {
@@ -626,7 +626,7 @@ Ext.define('Bisque.Resource.Image.Page',
         var mexBrowser = new Bisque.ResourceBrowser.Browser(
         {
             'layout' : 5,
-            'title' : 'Execution Results',
+            'title' : 'Analysis',
             'viewMode' : 'MexBrowser',
             'dataset' : '/data_service/mex',
             'tagQuery' : '"'+this.resource.uri+'"&view=deep',
@@ -678,7 +678,7 @@ Ext.define('Bisque.Resource.Image.Page',
             resource : this.resource,
             imgViewer : viewerContainer.viewer,
             mexBrowser : mexBrowser,
-            title : 'GObjects',
+            title : 'Graphical',
             viewMode : 'GObjectTagger',
             listeners :
             {
