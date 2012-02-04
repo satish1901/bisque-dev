@@ -100,11 +100,11 @@ var view_resource = '/client_service/view?resource=';
 // trivial resource renderers - receive a resource and return a string
 //-------------------------------------------------------------------------------------- 
 
-function render_resource(r) {
+function renderer_resource(r) {
     return 'Created a resource of type <b>'+r.resource_type+'</b>';
 }
 
-function render_image(r) {
+function renderer_image(r) {
     var s = '';
     s += 'Created an <b>image</b> with geometry: ';
     if (r.x) s += 'x: '+r.x+' ';
@@ -115,15 +115,15 @@ function render_image(r) {
     return s;    
 }
 
-function render_dataset(r) {
+function renderer_dataset(r) {
     var m = r.getMembers();
     return 'Created a <b>dataset</b> with '+ m.values.length +' images';
 }
 
-var resource_renderers = { 'image': render_image, 'dataset': render_dataset };
+var resource_renderers = { 'image': renderer_image, 'dataset': renderer_dataset };
 
 function render_resource(r) {
-    var f = render_resource;
+    var f = renderer_resource;
     if (r.resource_type in resource_renderers)
         f = resource_renderers[r.resource_type];
     return f(r);
