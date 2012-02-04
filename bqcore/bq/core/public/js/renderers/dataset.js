@@ -110,7 +110,12 @@ Ext.define('BQ.renderers.dataset', {
                         handler: this.remove, scope: this, iconCls: 'icon_x', 
                         tooltip: 'Delete current dataset, keeps all the elements untouched' },
                     '->', 
-                    { xtype:'tbtext', html: 'Dataset: <b>'+this.resource.name+'</b>', cls: 'heading', }
+                    //{ xtype:'tbtext', html: 'Dataset: <b>'+this.resource.name+'</b>', cls: 'heading', }
+                    
+                    { itemId: 'menu_rename', 
+                      text: 'Dataset: <b>'+this.resource.name+'</b>', cls: 'heading',
+                      scope: this, tooltip: 'Rename the dataset', //cls: 'x-btn-default-medium', 
+                      handler: this.askRename, },
                   ],
         }];    
         
@@ -184,7 +189,9 @@ Ext.define('BQ.renderers.dataset', {
         this.setLoading(false);
         // reload the browser
         var uri = { offset: 0, };
-        this.preview.msgBus.fireEvent('Browser_ReloadData', uri);        
+        this.preview.msgBus.fireEvent('Browser_ReloadData', uri);
+        this.child('#toolbar').child('#menu_rename').setText('Dataset: <b>'+this.resource.name+'</b>'); 
+        this.preview.setTitle(this.resource.name?'Preview for "'+this.resource.name+'"':'Preview');    
     },     
 
     changedError : function(message) {
@@ -256,6 +263,23 @@ Ext.define('BQ.renderers.dataset', {
             msgCls: 'final', 
         });
         myMask.show();
+    },
+
+    askRename: function() {   
+        Ext.Msg.prompt('Dataset name', 'Please enter a new name:', function(btn, text){
+            if (btn == 'ok'){
+                this.rename(text);
+            }
+        }, this, false, this.resource.name);
+    },
+
+    rename: function(name) {   
+        if (!this.checkAllowWrites(true)) return;
+        this.setLoading('Renaming...');        
+        this.resource.name = name;
+        this.resource.save_(undefined, 
+                            callback(this, 'changedOk'),
+                            callback(this, 'changedError'));
     },
     
 });

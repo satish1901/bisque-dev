@@ -20,8 +20,8 @@
     font-size: 14px !important;
 }
 
-.heading b {
-    
+.heading .x-btn-inner {
+    font-size: 14px !important;
 }
 
 .x-mask-loading {
