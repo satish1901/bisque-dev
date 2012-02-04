@@ -313,6 +313,7 @@ Ext.define('Bisque.ResourceBrowser.Browser',
         {
             if (datasetCt)
                 this.uri.baseURL = datasetCt.uri + '/value'; 
+                this.browserState['baseURL'] = this.uri.baseURL;                
                 
             for(var param in this.uri)
                 if(this.uri[param].length == 0)

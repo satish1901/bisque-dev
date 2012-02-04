@@ -77,12 +77,16 @@ Ext.define('BQ.dataset.Panel', {
     },     
    
     onChanged: function(o) {
+        var disable = this.dataset&&o.validate()?false:true;
         this.selected_operation = o;
         this.status = o.getStatus();
         this.btn_modify.setText( this.status );
+        if (!disable)
+            BQ.ui.tip(this.btn_modify.getId(), this.status, { anchor:'top', color: 'green', });
+
         this.status += this.dataset ? ' for dataset "<b>'+this.dataset.name+'</b>"':'';
         this.btn_modify.setTooltip( this.status );        
-        this.btn_modify.setDisabled(this.dataset&&o.validate()?false:true);
+        this.btn_modify.setDisabled(disable);
     },    
 
     run: function(o) {
