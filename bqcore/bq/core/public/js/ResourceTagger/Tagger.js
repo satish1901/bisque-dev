@@ -242,13 +242,18 @@ Ext.define('Bisque.ResourceTagger',
                 msgTarget : 'none',
                 
                 listeners: {
-                    //'change': function( field, newValue, oldValue, eOpts ) {
-                    //    this.updateQueryTagValues(newValue);
-                    //},
-                   
-                    'blur': function( field, eOpts ) {
-                        this.updateQueryTagValues(field.getValue());
+                    'change': {
+                        fn: function( field, newValue, oldValue, eOpts ) {
+                                this.updateQueryTagValues(newValue);
+                            },
+                        buffer: 250,
                     },
+                   
+                    // dima: does not work at the init, so the values are not inited, no other 
+                    // event seems to do it actually, so back to change!
+                    //'blur': function( field, eOpts ) {
+                    //    this.updateQueryTagValues(field.getValue());
+                    //},
                    
                     scope: this,
                 },                 
