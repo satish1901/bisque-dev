@@ -843,16 +843,16 @@ mapper( Taggable, taggable,
         )
 
 mapper( Image, inherits=Taggable,
-#        polymorphic_on = taggable.c.resource_type,
+        polymorphic_on = taggable.c.resource_type,
         polymorphic_identity = 'image',)
 mapper( Tag, inherits=Taggable,
-#        polymorphic_on = taggable.c.resource_type,
+        polymorphic_on = taggable.c.resource_type,
         polymorphic_identity = 'tag',)
 mapper( GObject,  inherits=Taggable,
-#        polymorphic_on = taggable.c.resource_type,
+        polymorphic_on = taggable.c.resource_type,
         polymorphic_identity = 'gobject',)
 mapper(BQUser,  inherits=Taggable,
-#       polymorphic_on = taggable.c.resource_type,
+       polymorphic_on = taggable.c.resource_type,
        polymorphic_identity = 'user',
        properties = { 
         'tguser' : relation(User, uselist=False, 
@@ -920,13 +920,13 @@ def registration_hook(action, **kw):
 
 
 mapper(Template, inherits=Taggable,
-#        polymorphic_on = taggable.c.resource_type,
+        polymorphic_on = taggable.c.resource_type,
         polymorphic_identity = 'template')
 mapper(Module, inherits=Taggable,
-#        polymorphic_on = taggable.c.resource_type,
+        polymorphic_on = taggable.c.resource_type,
         polymorphic_identity = 'module',)
 mapper(ModuleExecution,  inherits=Taggable,
-#       polymorphic_on = taggable.c.resource_type,
+       polymorphic_on = taggable.c.resource_type,
        polymorphic_identity = 'mex',
        properties = {
         #"status":synonym("resource_value"), # map_column=True) ,
@@ -940,10 +940,10 @@ mapper(ModuleExecution,  inherits=Taggable,
                           backref = backref('mex', post_update=True, remote_side=[taggable.c.id])),
         })
 mapper( Dataset,  inherits=Taggable,
-#        polymorphic_on = taggable.c.resource_type,
+        polymorphic_on = taggable.c.resource_type,
         polymorphic_identity = 'dataset',)
 mapper( Service, inherits=Taggable,
-#        polymorphic_on = taggable.c.resource_type,
+        polymorphic_on = taggable.c.resource_type,
         polymorphic_identity = 'service')
 
 #################################################
