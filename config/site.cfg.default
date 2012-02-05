@@ -59,7 +59,7 @@ bisque.organization = ORG
 bisque.title = BioImage Repository
 bisque.admin_email = admin@nowhere.com
 bisque.welcome_message = Welcome to the Bisque database
-bisque.background_query = welcome_background:
+#bisque.background_query = welcome_background:
 
 # tags used by the front page for site contents overview
 bisque.welcome_tags=Types of images:image_type;Experimenters:experimenter;Species:species;

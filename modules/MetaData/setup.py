@@ -2,7 +2,6 @@
 import sys
 from bq.setup.module_setup import python_setup, require, read_config
 
-from bbfreeze import Freezer
 
 def setup(params, *args, **kw):
     python_setup('MetaData.py',  params=params )

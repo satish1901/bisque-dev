@@ -16,24 +16,24 @@ def adjust_options(options, args):
 
 def after_install(options, home_dir):
     if sys.platform == 'win32':
-        bin = 'Scripts'
+        bindir = 'Scripts'
     else:
-       bin = 'bin'
+       bindir = 'bin'
     
-    subprocess.call([os.path.join(home_dir, bin, 'easy_install'),
+    subprocess.call([os.path.join(home_dir, bindir, 'easy_install'),
                      '-i', 'http://www.turbogears.org/2.1/downloads/current/index',
                      'tg.devtools'])
-    subprocess.call([os.path.join(home_dir, bin, 'easy_install'),
+    subprocess.call([os.path.join(home_dir, bindir, 'easy_install'),
                      'paver'])
 
     if options.engine:
-       engine_install(options, home_dir)
+       engine_install(options, home_dir, bindir)
     else:
-       bisque_install(options, home_dir)
+       bisque_install(options, home_dir, bindir)
       
 
-def engine_install(options, home_dir):
-    subprocess.call([os.path.join(home_dir, bin, 'pip'),
+def engine_install(options, home_dir, bindir):
+    subprocess.call([os.path.join(home_dir, bindir, 'pip'),
                      '-i', 'http://biodev.ece.ucsb.edu/binaries/depot',
                      'bqengine'])
     print "*********************************"
@@ -41,8 +41,8 @@ def engine_install(options, home_dir):
     print "source bqenv/bin/activate"
     print "bq-admin setup engine"
 
-def bisque_install(options, home_dir):
-    subprocess.call([os.path.join(home_dir, bin, 'easy_install'),
+def bisque_install(options, home_dir, bindir):
+    subprocess.call([os.path.join(home_dir, bindir, 'easy_install'),
                      'mercurial'])
 
     print "********************************"
