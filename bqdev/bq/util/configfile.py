@@ -11,15 +11,37 @@ section_re = re.compile (r'^\[(.*)\]')
 
 GLOBAL_SECTION="__GLOBAL__"
 
+
+class peekable(object):
+    def __init__(self, iter):
+        self.iter = iter
+        self.buffer = []
+    def __iter__(self):
+        return self
+    def next(self):
+        if self.buffer:
+            return self.buffer.pop(0)
+        else:
+            return self.iter.next()
+    def peek(self, n, default=None):
+        while n >= len(self.buffer):
+            try:
+                self.buffer.append(self.iter.next())
+            except StopIteration:
+                return default
+        return self.buffer[n]
+
 def filterfluff(lines):
     '''Remove empty lines and comments'''
     if isinstance(lines, str):
         lines = lines.splitlines()
-    lines = iter(lines)
-    for l in lines:
+    lines = peekable (iter(lines))
+    for  l in lines:
         line, sep, comment = l.partition ('#')
         while line.endswith("\\"):
             line = line[:-1] + lines.next()
+#        while lines.peek(1, '').startswith(' '):
+#            line = line[:-1] + lines.next()
         line = line.strip()
         if line:
             yield line
@@ -58,7 +80,7 @@ class ConfigFile(object):
                 section = self.sections.setdefault (name, [])
                 self.section_order.append (name)
                 continue
-            section.append (l.strip())
+            section.append (l)
                 
         
     def edit_config (self, section, key, line, env = {}, append=True):
@@ -117,7 +139,7 @@ class ConfigFile(object):
         lines = self.get (section)
         for l in lines:
             k,p,ov = [ x.strip() for x in l.partition('=') ] 
-            if k in items:
+            if p and k in items:
                 rv = string.Template(ov).safe_substitute(items)
                 nv = items.pop(k)
                 if rv != ov:
@@ -176,7 +198,8 @@ class ConfigFile(object):
             if section != GLOBAL_SECTION:
                 f.write ("[%s]\n" % section)
             s = self.sections[section]
-            s = "\n".join ( [ l.strip() for l in s ] )
+            #s = "\n".join ( [ l.strip() for l in s ] )
+            s = "\n".join ( s ) 
             f.write (s)
             f.write ("\n")
 

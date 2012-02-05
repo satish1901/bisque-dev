@@ -34,7 +34,7 @@ setup(
         "repoze.who-friendlyform >= 1.0.4",
         "repoze.what-pylons >= 1.0",
         "repoze.what.plugins.sql",
-        "repoze.who",
+        "repoze.who <= 1.99",
         "tgext.admin >= 0.3.9",
         "tw.forms",
 

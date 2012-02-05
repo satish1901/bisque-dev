@@ -20,9 +20,11 @@ setup(name='bisque',
       author_email='help@bioimage.ucsb.edu',
       home_page = 'http://biodev.ece.ucsb.edu/projects/bisque',
       url='http://biodeve.ece.ucsb.edu/projects/bisquik',
-      #packages=['bq', 'bqdev'],
-      #package_dir={'bq': 'bqcore/bq', 'bqdev' : 'bqdev/bqdev'},
-      data_files = [ ('config', [ 'config/site.cfg.default' ])]
+      packages=['bq', 'bqdev'],
+      package_dir={'bq': 'bqcore/bq', 'bqdev' : 'bqdev/bqdev'},
+      #package_dir = { 'bq':'bqcore' } ,
+      #packages = ['bq', 'bq.core'],
+      data_files = [ ('config', [ 'config/site.cfg.default' ])],
      )
 
 
