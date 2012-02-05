@@ -67,7 +67,7 @@ from sqlalchemy import Integer, String, DateTime, Unicode, Float, Boolean
 from sqlalchemy import Text, UnicodeText
 from sqlalchemy.orm import relation, class_mapper, object_mapper, validates, backref, synonym
 from sqlalchemy import exceptions
-from sqlalchemy.sql import and_
+from sqlalchemy.sql import and_, case
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 
@@ -369,6 +369,8 @@ class Taggable(object):
             self.children = []
             self.tags = []
             self.gobjects = []
+            self.values = []
+            self.vertices = []
             log.debug ('cleared all')
             return results
         if 'tags' in what:
@@ -505,7 +507,7 @@ class Tag(Taggable):
         return 'tag "%s":"%s"' % (unicode(self.name), unicode(self.value))
 
     def clear(self, what=None):
-        '''Clear all the children'''
+        '''Clear values from tag'''
         super(Tag, self).clear()
         log.debug ('cleared values')
         old = self.values
@@ -572,7 +574,7 @@ class Value(object):
     
 
     def __str__ (self):
-        return unicode( self.value )
+        return "<value %s>" % self.value
 
 
 class Vertex(object):
@@ -786,9 +788,17 @@ mapper(TaggableAcl, taggable_acl,)
 ############################
 # Taggable mappers
 
+taggable_discr = case (
+    [(taggable.c.resource_type=='image', "image"),
+     (taggable.c.resource_type=='tag', "tag"),
+     (taggable.c.resource_type=='gobject', "gobject")],
+     else_ = "taggable"
+    )
+     
+
 mapper( Taggable, taggable,
-        #polymorphic_on = taggable.c.resource_type,
-        #polymorphic_identity = '', 
+#        polymorphic_on = taggable_discr,
+#        polymorphic_identity = 'taggable', 
                        properties = {
     'tags' : relation(Taggable, lazy=True, viewonly=True, cascade="all, delete-orphan",
 
@@ -833,16 +843,16 @@ mapper( Taggable, taggable,
         )
 
 mapper( Image, inherits=Taggable,
-        polymorphic_on = taggable.c.resource_type,
+#        polymorphic_on = taggable.c.resource_type,
         polymorphic_identity = 'image',)
 mapper( Tag, inherits=Taggable,
-        polymorphic_on = taggable.c.resource_type,
+#        polymorphic_on = taggable.c.resource_type,
         polymorphic_identity = 'tag',)
 mapper( GObject,  inherits=Taggable,
-        polymorphic_on = taggable.c.resource_type,
+#        polymorphic_on = taggable.c.resource_type,
         polymorphic_identity = 'gobject',)
 mapper(BQUser,  inherits=Taggable,
-       polymorphic_on = taggable.c.resource_type,
+#       polymorphic_on = taggable.c.resource_type,
        polymorphic_identity = 'user',
        properties = { 
         'tguser' : relation(User, uselist=False, 
@@ -910,13 +920,13 @@ def registration_hook(action, **kw):
 
 
 mapper(Template, inherits=Taggable,
-        polymorphic_on = taggable.c.resource_type,
+#        polymorphic_on = taggable.c.resource_type,
         polymorphic_identity = 'template')
 mapper(Module, inherits=Taggable,
-        polymorphic_on = taggable.c.resource_type,
+#        polymorphic_on = taggable.c.resource_type,
         polymorphic_identity = 'module',)
 mapper(ModuleExecution,  inherits=Taggable,
-       polymorphic_on = taggable.c.resource_type,
+#       polymorphic_on = taggable.c.resource_type,
        polymorphic_identity = 'mex',
        properties = {
         #"status":synonym("resource_value"), # map_column=True) ,
@@ -930,10 +940,10 @@ mapper(ModuleExecution,  inherits=Taggable,
                           backref = backref('mex', post_update=True, remote_side=[taggable.c.id])),
         })
 mapper( Dataset,  inherits=Taggable,
-        polymorphic_on = taggable.c.resource_type,
+#        polymorphic_on = taggable.c.resource_type,
         polymorphic_identity = 'dataset',)
 mapper( Service, inherits=Taggable,
-        polymorphic_on = taggable.c.resource_type,
+#        polymorphic_on = taggable.c.resource_type,
         polymorphic_identity = 'service')
 
 #################################################

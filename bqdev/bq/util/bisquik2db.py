@@ -167,29 +167,23 @@ class TagConverter (NodeConverter):
     
 class ValueConverter (NodeConverter):
     def toxmlnode (self, v, parent, baseuri, view):
-
-
-        #if v.type == 'object' and v.value:
-        #    name, dbtype = dbtype_from_name (v.value.table)
-        #    if parent is not None:
-        #        return etree.SubElement (parent, 'resource', type=dbtype.xmltag, uri = baseuri + str(v) )
-        #    else:
-        #        return etree.Element ('resource', type=dbtype.xmltag, uri = baseuri + str(v) )
         n =  self.element  (v, parent, baseuri)
         n.set('type', v.type)
         if v.type == 'object':
-            n.text = baseuri + unicode(v)
+            n.text = baseuri + unicode(v.value)
         else:
-            n.text = unicode(v)
+            n.text = unicode(v.value)
+        log.debug ('valueconverter : %s' % etree.tostring(n))
         return n
 
 
 def toxmlnode(dbo, parent, baseuri, view):
     try:
-        #log.debug ("converter for %s " % type(dbo))
-        return dbo.converter.toxmlnode (dbo, parent, baseuri, view)
-    except:
-        #log.debug ("NodeConverter for %s " % type(dbo))
+        log.debug ("converter for %s " % type(dbo))
+        converter =  dbo.converter
+        return converter.toxmlnode (dbo, parent, baseuri, view)
+    except AttributeError:
+        log.debug ("NodeConverter for %s " % type(dbo))
         return NodeConverter().toxmlnode (dbo, parent, baseuri, view)
 
 Taggable.toxmlnode = toxmlnode
@@ -203,107 +197,6 @@ Value.toxmlnode = toxmlnode
 Vertex.converter = VertexConverter()
 Vertex.toxmlnode = toxmlnode
 
-class NodeFactory(object):
-    '''Create db class based on XML tags and place in proper
-    hierarchy
-    '''
-    @classmethod
-    def load_uri(cls, uri, parent):
-        node =   load_uri(uri)
-        if node is not None and parent is not None:
-            if node.id != parent.id:  # POST /ds/image/1/ <image uri="/ds/image/1" ..>
-                cls.set_parent (node, parent)
-        log.debug ("loading %s->%s" % (uri,node))
-        return node
-
-    @classmethod
-    def new(cls, xmlnode, parent, **kw):
-        xmlname = xmlnode.tag
-        if xmlname in known_gobjects:
-            node = GObject()
-            node.tag_type =  unicode(xmlname)
-            if parent:
-                parent.gobjects.append(node)
-        elif xmlname == "tag":
-            node = Tag()
-            #node.tag_type = "string"
-            if parent:
-                parent.tags.append(node)
-        elif xmlname == "vertex":
-            node = Vertex()
-            parent.vertices.append (node)
-            node.indx = len(parent.vertices)-1 # Default value (maybe overridden)
-        elif xmlname == "value":
-            node = Value()
-            parent.values.append(node)
-            node.indx = len(parent.values)-1   # Default value (maybe overridden)
-        elif xmlname== "request" or xmlname=="response":
-            if parent:
-                node = parent
-            else:
-                node = XMLNode(xmlname)
-        elif xmlname=="resource":
-            xmlname = xmlnode.attrib['type']
-            name, dbtype = dbtype_from_tag(xmlname)
-            #log.debug ('CREATING %s -> %s : %s' % (xmlname, name, dbtype))
-            node = dbtype(xmlname)
-            if parent:
-                parent.kids.append(node)
-        else:
-            name, dbtype = dbtype_from_tag(xmlname)
-            #log.debug ('CREATING %s -> %s : %s' % (xmlname, name, dbtype))
-            node = dbtype(xmlname)
-            if parent:
-                parent.kids.append(node)
-
-        return node
-    @classmethod
-    def set_parent(cls, node, parent):
-        xmlname = node.xmltag
-        if xmlname in known_gobjects:
-            if parent and node not in parent.gobjects:
-                parent.gobjects.append(node)
-        elif xmlname == "tag":
-            if parent and node not in parent.tags:
-                parent.tags.append(node)
-        elif xmlname == "vertex":
-            if parent and node not in parent.vertices:
-                parent.vertices.append (node)
-                node.indx = len(parent.vertices)-1 # Default value (maybe overridden)
-        elif xmlname == "value":
-            if node not in parent.values:
-                parent.values.append(node)
-                node.indx = len(parent.values)-1   # Default value (maybe overridden)
-        elif xmlname== "request" or xmlname=="response":
-            pass
-        #elif xmlname=="resource":
-        else:
-            if parent and node not in parent.kids:
-                parent.kids.append(node)
-
-
-    index_map = dict(vertex=('vertices',Vertex), tag=('tags', Tag))
-    @classmethod
-    def index(cls, node, parent, indx, cleared):
-        xmlname = node.tag
-        #return cls.new(xmlname, parent)
-        array, klass = cls.index_map.get (xmlname, (None,None))
-        if array:
-            objarr =  getattr(parent, array)
-            v = DBSession.query(klass).filter_by(parent_id=parent.id, indx=indx).first()
-            log.debug('indx fetched %s' % v)
-            objarr.extend ([ klass() for x in range(((indx+1)-len(objarr)))])
-            if not v:
-                #objarr.extend ( [ None ] * ((indx+1)-len(objarr)))
-                v = objarr[indx]
-                #if v is None:
-                #    v = ctor()
-                v.indx = indx;
-            else:
-                objarr[indx] = v
-            #log.debug ('fetching %s %s[%d]:%s' %(parent , array, indx, v)) 
-            return v
-
 ##################################################
 # Resource
 class ResourceFactory(object):
@@ -312,11 +205,11 @@ class ResourceFactory(object):
     '''
     @classmethod
     def load_uri(cls, uri, parent):
+        #log.debug('factory.load_uri %s' % uri)
         node =   load_uri(uri)
         if node is not None and parent is not None:
             if node.id != parent.id:  # POST /ds/image/1/ <image uri="/ds/image/1" ..>
                 cls.set_parent (node, parent)
-        log.debug ("loading %s->%s" % (uri,node))
         return node
 
     @classmethod
@@ -350,7 +243,7 @@ class ResourceFactory(object):
             if tag == 'user':
                 node.user = node
 
-        log.debug  ('factor.new %s -> %s ' % (xmlname, node))
+        log.debug  ('factory.new %s -> %s ' % (xmlname, node))
         return node
 
     @classmethod
@@ -383,13 +276,10 @@ class ResourceFactory(object):
         if array:
             objarr =  getattr(parent, array)
             v = DBSession.query(klass).filter_by(resource_parent_id=parent.id, indx=indx).first()
-            log.debug('indx fetched %s' % v)
+            log.debug('indx %s fetched %s ' % (indx, v))
             objarr.extend ([ klass() for x in range(((indx+1)-len(objarr)))])
             if not v:
-                #objarr.extend ( [ None ] * ((indx+1)-len(objarr)))
                 v = objarr[indx]
-                #if v is None:
-                #    v = ctor()
                 v.indx = indx;
             else:
                 objarr[indx] = v
@@ -631,7 +521,7 @@ def db2tree_int(dbo, parent = None, view=None, baseuri=None, endtime=None):
 
 
 def db2node(dbo, parent, view, baseuri, nodes, doc_id):
-    log.debug ("dbo=%s %s" % ( unicode(dbo), view))
+    log.debug ("dbo=%s view=%s" % ( unicode(dbo), view))
     if 'deep' in view:
         n, nodes, doc_id = resource2tree(dbo, parent, view, baseuri, nodes, doc_id)
         return n, nodes, doc_id
@@ -781,7 +671,7 @@ def updateDB(root=None, parent=None, resource = None, factory = ResourceFactory,
                 indx  = attrib.get ('index', None)
                 ts_   = attrib.pop ('ts', None)
 
-                cleared = []
+                #cleared = []
                 if resource is not None:
                     factory.set_parent (resource, parent)
                 elif uri:
@@ -827,11 +717,8 @@ def updateDB(root=None, parent=None, resource = None, factory = ResourceFactory,
                 log.debug ("other node %s" % obj.tag)
                 
     except Exception, e:
-        exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
-
-        log.error (u'Exception while processing %s in parent %s: %s' % (resource, parent, e))
-        log.error (traceback.format_exc () )
-        raise
+        log.exception("during parse of %s in parent %s" % (resource, parent))
+        raise e
             
     return  last_resource
     
