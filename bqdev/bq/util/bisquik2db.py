@@ -671,7 +671,7 @@ def updateDB(root=None, parent=None, resource = None, factory = ResourceFactory,
                 indx  = attrib.get ('index', None)
                 ts_   = attrib.pop ('ts', None)
 
-                #cleared = []
+                cleared = []
                 if resource is not None:
                     factory.set_parent (resource, parent)
                 elif uri:

@@ -659,3 +659,77 @@ SVGRenderer.prototype.select_ellipse = function (state){
     var v   = state.view;
     this.default_select(gob, v);
 }
+
+///////////////////////////////////////
+// LABEL is not really implemented .. need to extend 2D.js
+// with SVG Text tag
+
+SVGRenderer.prototype.label = function ( visitor, gob, viewstate, visibility) {
+
+    // Visibility of this gob (create/destroy gob.shape)
+    // Create or destroy SVGElement for 2D.js
+    // Update SVGElement with current view state ( scaling, etc )
+
+    // viewstate
+    // scale  : double (current scaling factor) 
+    // z, t, ch: current view planes (and channels)
+    // svgdoc : the SVG document 
+    var offset_x  = viewstate.offset_x;
+    var offset_y  = viewstate.offset_y;
+    
+    var pnt = gob.vertices[0] ;
+    var visible = true;
+    if (pnt.z!=null  && viewstate.z != Math.round(pnt.z))
+        visible = false;
+    if (pnt.t!=null && viewstate.t != Math.round(pnt.t))
+        visible = false;
+
+    if (visibility!=undefined)
+    	gob.visible=visibility;
+    else if (gob.visible==undefined)	
+    	gob.visible=true;
+    
+    if (visible && gob.visible) {
+        if (gob.shape == null ) {
+            var rect = document.createElementNS(svgns, "text");
+            //rect.setAttributeNS(null, "x", x -3 + offset_x);
+            //rect.setAttributeNS(null, "y", y -3 + offset_y);
+            rect.setAttributeNS(null, "width", "8");
+            rect.setAttributeNS(null, "height", "8");
+            rect.setAttributeNS(null, "fill", "red");
+            rect.setAttributeNS(null, "display", "none");
+            rect.setAttributeNS(null, 'fill-opacity', 0.7);
+            gob.shape = new Pnt(rect);
+        }
+
+		// scale to size
+        var p = viewstate.transformPoint (pnt.x, pnt.y);
+        var rect = gob.shape.svgNode;
+		rect.setAttributeNS(null, "x", p.x -4);
+		rect.setAttributeNS(null, "y", p.y -4);
+        this.viewShape (viewstate, gob, 
+                        callback(this,"move_label"), 
+                        callback(this,"select_label"));
+
+    } else {
+        this.hideShape (viewstate, gob)
+    }
+}
+
+SVGRenderer.prototype.move_label = function (state){
+    var gob = state.gob;
+    var v   = state.view;
+    //gob.shape.refresh();
+    var x = gob.shape.svgNode.getAttributeNS(null,"x");
+    var y = gob.shape.svgNode.getAttributeNS(null,"y");
+
+    var newpnt = v.inverseTransformPoint (x, y);
+    var pnt = gob.vertices[0] ;
+    pnt.x = newpnt.x;
+    pnt.y = newpnt.y;
+}
+SVGRenderer.prototype.select_label = function (state){
+    var gob = state.gob;
+    var v   = state.view;
+    this.default_select(gob, v);
+}
