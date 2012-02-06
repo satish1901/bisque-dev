@@ -64,7 +64,8 @@ from lxml import etree
 from urllib import urlencode
 from repoze.what import predicates
 from repoze.what.predicates import not_anonymous
-from paste.debug.profile import profile_decorator
+#from paste.debug.profile import profile_decorator
+
 
 from bq.core.identity import get_user_id, get_user_pass
 from bq.core.service import ServiceController, service_registry
