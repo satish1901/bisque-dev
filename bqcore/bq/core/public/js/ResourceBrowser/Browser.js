@@ -309,10 +309,10 @@ Ext.define('Bisque.ResourceBrowser.Browser',
             //this.showGroups is used in LayoutFactory to group resources based on tag order
             this.showGroups = false;
 
-        function loadQueue(datasetCt)
+        function loadQueue(membersTag)
         {
-            if (datasetCt)
-                this.uri.baseURL = datasetCt.uri + '/value'; 
+            if (membersTag)
+                this.uri.baseURL = membersTag.uri + '/value'; 
                 this.browserState['baseURL'] = this.uri.baseURL;                
                 
             for(var param in this.uri)

@@ -348,16 +348,17 @@ Ext.define('Bisque.ResourceTagger',
             {
                 var nodeHash = this.tree.nodeHash, status = false;
 
-                if (this.getRemovedRecords().length>0)
-                    return true;
-
                 for(var node in nodeHash)
                     if(nodeHash[node].dirty)
                     {
                         status = true;
-                        Ext.apply(nodeHash[node].raw, nodeHash[node].getChanges());
+                        Ext.apply(nodeHash[node].raw, {'name': nodeHash[node].get('name'), 'value': nodeHash[node].get('value')});
                         nodeHash[node].commit();
                     }
+
+                if (this.getRemovedRecords().length>0)
+                    return true;
+
                 return status;
             },
 
@@ -511,6 +512,12 @@ Ext.define('Bisque.ResourceTagger',
             var parent = (me.record.parentNode.isRoot()) ? this.resource : me.record.parentNode.raw;
             parent.addtag(newTag);
 
+            if (this.isValidURL(newTag.value))
+            {
+                newTag.type = 'link';
+                me.record.data.type = 'link';
+            }
+                
             if (this.autoSave)
                 this.saveTags(parent, true);
 
@@ -529,10 +536,8 @@ Ext.define('Bisque.ResourceTagger',
             if (!newNode.data.name || (newNode.data.name && newNode.data.value && newNode.name=='' && newNode.value==''))
                 currentItem.removeChild(newNode);
         }, this, {single : true});            
-            
-            
     },
-
+    
     deleteTags : function()
     {
         var selectedItems = this.tree.getSelectionModel().getSelection(), parent;
@@ -676,6 +681,12 @@ Ext.define('Bisque.ResourceTagger',
             // User autentication hasn't been done yet
             BQApp.on('gotuser', Ext.bind(this.testAuth, this));
         }
+    },
+    
+    isValidURL : function(url)
+    {
+        var pattern = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/
+        return pattern.test(url);        
     },
 
     exportToXml : function()
