@@ -258,7 +258,7 @@ Ext.define('Bisque.ResourceBrowser.Browser',
         });
         uri = uri || null;
 
-        if(uri)
+        if (uri)
         {
             if(uri.tag_query == undefined)
                 uri.tag_query = this.browserState.tag_query || '';
@@ -509,5 +509,4 @@ Ext.define('Bisque.ResourceBrowser.Browser',
 
         return uri;
     },
-
 });

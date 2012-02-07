@@ -188,74 +188,23 @@ BQObject.prototype.find_tags  = function (name, deep, found) {
 
 BQObject.prototype.findTags = function(query, params)
 {
-    function isMatch()
+    function isMatch(tag, query)
     {
-        
+        return (tag.name == query.name)
     }
+    
+    var matchedTags = [];
     
     for (var i=0;i<this.tags.length;i++)
     {
-        
-        
-    }
-}
-
-/* 
- * query    : object, can have (name, value, type)
- * params   : object, can have (deep[false], breakOnFirst[false]) 
- * 
- * e.g.
- * var allTags = resource.findTags({
- *                      value : 'Retina'
- *                  }, {
- *                      deep : true,
- *                      breakOnFirst:false
- *                  })
- * 
- */
-
-BQObject.prototype.findTags = function(query, params)
-{
-    function isMatch()
-    {
-        
+        if (isMatch(this.tags[i], query))
+            matchedTags.push(this.tags[i]);
+        if (params.deep)
+            matchedTags = matchedTags.concat(this.tags[i].findTags(query, params));
     }
     
-    for (var i=0;i<this.tags.length;i++)
-    {
-        
-        
-    }
+    return matchedTags;
 }
-
-/* 
- * query    : object, can have (name, value, type)
- * params   : object, can have (deep[false], breakOnFirst[false]) 
- * 
- * e.g.
- * var allTags = resource.findTags({
- *                      value : 'Retina'
- *                  }, {
- *                      deep : true,
- *                      breakOnFirst:false
- *                  })
- * 
- */
-
-BQObject.prototype.findTags = function(query, params)
-{
-    function isMatch()
-    {
-        
-    }
-    
-    for (var i=0;i<this.tags.length;i++)
-    {
-        
-        
-    }
-}
-
 
 
 BQObject.attributes_skip = { 'uri':undefined, 'src':undefined, 'perm':undefined, 
