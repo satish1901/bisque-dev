@@ -70,8 +70,11 @@ BQObject.prototype.initializeXml = function (resource) {
     this.ts   = attribStr(resource,'ts');
     this.owner = attribStr(resource,'owner');
     this.type   = attribStr(resource,'type');
+    this.resource_uniq = attribStr(resource, 'resource_uniq');
     this.name = attribStr(resource,'name');
     this.value = attribStr(resource, 'value');
+    this.resource_uniq = attribStr(resource, 'resource_uniq');
+    
     this.attributes = attribDict (resource);
     this.resource_type = resource.nodeName; //this.xmltag; Utkarsh : Use the unknown resource's xmltag rather than a generic 'resource'
     this.dirty = false;
@@ -167,6 +170,90 @@ BQObject.prototype.find_tags  = function (name, deep, found) {
     if (found.length == 1) 
         return found[0];
     return found;
+}
+
+/* 
+ * query    : object, can have (name, value, type)
+ * params   : object, can have (deep[false], breakOnFirst[false]) 
+ * 
+ * e.g.
+ * var allTags = resource.findTags({
+ *                      value : 'Retina'
+ *                  }, {
+ *                      deep : true,
+ *                      breakOnFirst:false
+ *                  })
+ * 
+ */
+
+BQObject.prototype.findTags = function(query, params)
+{
+    function isMatch()
+    {
+        
+    }
+    
+    for (var i=0;i<this.tags.length;i++)
+    {
+        
+        
+    }
+}
+
+/* 
+ * query    : object, can have (name, value, type)
+ * params   : object, can have (deep[false], breakOnFirst[false]) 
+ * 
+ * e.g.
+ * var allTags = resource.findTags({
+ *                      value : 'Retina'
+ *                  }, {
+ *                      deep : true,
+ *                      breakOnFirst:false
+ *                  })
+ * 
+ */
+
+BQObject.prototype.findTags = function(query, params)
+{
+    function isMatch()
+    {
+        
+    }
+    
+    for (var i=0;i<this.tags.length;i++)
+    {
+        
+        
+    }
+}
+
+/* 
+ * query    : object, can have (name, value, type)
+ * params   : object, can have (deep[false], breakOnFirst[false]) 
+ * 
+ * e.g.
+ * var allTags = resource.findTags({
+ *                      value : 'Retina'
+ *                  }, {
+ *                      deep : true,
+ *                      breakOnFirst:false
+ *                  })
+ * 
+ */
+
+BQObject.prototype.findTags = function(query, params)
+{
+    function isMatch()
+    {
+        
+    }
+    
+    for (var i=0;i<this.tags.length;i++)
+    {
+        
+        
+    }
 }
 
 
@@ -1738,7 +1825,11 @@ BQDataset.prototype.members_loaded = function (cb, dataset_tags) {
     // Called by dataset.load_tags with user cb, and actual tags.
     var members = this.find_tags ('members');
     if (!members) {
-        members = this.addtag ({ name: 'members' })
+        function membersLoaded(dataset, cb) {
+            cb(dataset.find_tags('members'));
+        }
+        members = this.addtag ({ name: 'members' });
+        members.save_('', Ext.bind(membersLoaded, this, [cb], true));
     }
     cb(members);
 }
@@ -1748,7 +1839,9 @@ BQDataset.prototype.setMembers = function (nvs) {
     var members = this.find_tags ('members');
 
     if (!members) {
-        members = this.addtag ({ name: 'members' })
+        members = this.addtag ({ name: 'members' });
+        members.save_();
+        
     }
     members.values = nvs
 }
@@ -1890,34 +1983,6 @@ Ext.define('BQTemplate',
         // ADD FIELD CODE
     }
 });
-
-
-Ext.define('BQField',
-{
-    extend          :   'BQTag',
-    
-    config  :           {},
-    loaded          :   false,
-    template        :   {},
-    
-    /*constructor     :   function(data, properties)
-    {
-        //debugger;
-        
-    },*/
-    
-    setTemplate   :   function(template)
-    {
-        this.properties = properties;
-    },
-    
-    getTemplate   :   function(properties)
-    {
-        return this.properties;
-    }
-});
-
-
 
 //-------------------------------------------------------------------------
 // BQQuery - this is something old that probably should gof
