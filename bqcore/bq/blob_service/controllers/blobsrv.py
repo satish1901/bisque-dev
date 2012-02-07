@@ -9,9 +9,10 @@ from datetime import datetime
 
 
 import tg
-from tg import expose, flash, config
+from tg import expose, flash, config, require, abort
 from tg.controllers import RestController
-
+from paste.fileapp import FileApp
+from pylons.controllers.util import forward
 from repoze.what import predicates 
 
 from bq.core.service import ServiceMixin
@@ -24,6 +25,8 @@ from bq.util.mkdir import _mkdir
 from bq.util.hash import make_uniq_hash
 from bq import data_service
 from bq.data_service.model import Taggable, DBSession
+
+
 
 import blob_storage
 
@@ -77,7 +80,7 @@ def guess_type(filename):
 
 class BlobServer(RestController, ServiceMixin):
     '''Manage a set of blob files'''
-    service_type = "blobs"
+    service_type = "blob_service"
     
     def __init__(self, url ):
         ServiceMixin.__init__(self, url)
@@ -88,21 +91,52 @@ class BlobServer(RestController, ServiceMixin):
         log.info ('configured stores %s' % ','.join( str(x) for x in self.stores))
 
 
+    def check_access(self, ident, action):
+        from bq.data_service.controllers.resource_query import resource_permission
+        query = DBSession.query(Taggable).filter_by (resource_uniq = ident)
+        resource = resource_permission (query, action=action).first()
+        if resource is None:
+            if identity.not_anonymous():
+                abort(403)
+            else:
+                abort(401)
+        return resource
+
     @expose(content_type='text/xml')
     def get_all(self):
         log.info("get_all() called")
         user = identity.get_user_id()
 
+
+
+
     @expose()
     def get_one(self, *args):
-        log.info("get_all() called")
-        user = identity.get_user_id()
+        "Fetch a blob based on uniq ID"
+        log.info("get_one() called %s" % args)
+        from bq.data_service.controllers.resource_query import RESOURCE_READ, RESOURCE_EDIT
+        ident = args[0]
+        self.check_access(ident, RESOURCE_READ)
+        try:
+            localpath = self.localpath(ident)
+            disposition = 'filename="%s"'% self.getBlobFileName(ident)
+
+            return forward(FileApp(localpath,
+                                   content_disposition=disposition,                                   
+                                   ).cache_control (max_age=60*60*24*7*6)) # 6 weeks
+        except IllegalOperation:
+            abort(404)
+
+
 
     @expose(content_type='text/xml')
+    @require(predicates.not_anonymous())
     def post(self, **kwargs):
+        "Create a blob based on unique ID"
         log.info("post() called %s" % kwargs)
         log.info("post() body %s" % tg.request.body_file.read())
         user = identity.get_user_id()
+
 
     # available additional configs:
     # perm
@@ -186,12 +220,12 @@ class BlobServer(RestController, ServiceMixin):
         resource = DBSession.query(Taggable).filter_by (resource_uniq = ident).first()
         return resource
 
-    def getBlobFileName(self, id): 
-        fobj = self.getBlobInfo(id)
+    def getBlobFileName(self, ident): 
+        fobj = self.getBlobInfo(ident)
         fname = str(id)
         if fobj != None and fobj.resource_name != None:
             fname =  fobj.resource_name 
-        log.debug('Blobsrv - original name for id: ' +str(id) +' '+ fname )    
+        log.debug('Blobsrv - original name %s->%s ' % (ident, fname ))
         return fname   
 
     def blobsExist(self, fhashes):
