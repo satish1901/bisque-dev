@@ -22,9 +22,31 @@ function moviePlayer(player_id, resource, flashurl) {
   this.z2 = 0;  
 
   this._player_id    = player_id;
-  this._img_resourceURI = resource;  // main image resource uri, use this to fetch xml
 
-  makeRequest( this._img_resourceURI, callback(this, 'parseImage'), this, "GET", "" );  
+  BQFactory.request( { uri: resource, 
+                       cb: callback(this, 'onimage'), 
+                       errorcb: callback(this, 'onerror'), 
+                       /*uri_params: {view:'deep'},*/  });   
+  
+}
+
+moviePlayer.prototype.onerror = function (error) {
+    var str = error;
+    if (typeof(error)=="object") str = error.message;  
+    BQ.ui.error(str);
+}
+
+moviePlayer.prototype.onimage = function (image) {
+    this.image = image;
+    BQFactory.request( { uri: image.src+'?meta', 
+                         cb: callback(this, 'onmeta'), 
+                         errorcb: callback(this, 'onerror'), 
+                         /*uri_params: {view:'deep'},*/  });       
+}
+
+moviePlayer.prototype.onmeta = function (meta) {
+    this.meta = meta.toDict(true);
+    this.initPlayer();
 }
 
 moviePlayer.prototype.generateVideoUrl = function ( fmt ) {
@@ -87,21 +109,18 @@ function toXmlString(xy,s) {
 }
 */
 
-moviePlayer.prototype.parseImage = function (owner, xml) {
+moviePlayer.prototype.initPlayer = function () {
+  if (!this.image || !this.meta) {
+      BQ.ui.error('Image information could not be retrieved...');
+      return;  
+  } 
   
-  var image = xml.getElementsByTagName("image")[0];
-  
-  if (!image) {
-    alert( "Oops! I can't retrieve image information!\nYou are probably not logged-in or have no rights to read this image..." );   
-    return;
-  }
-
-  this._size_x = image.getAttribute("x");
-  this._size_y = image.getAttribute("y");
-  this._size_c = image.getAttribute("ch");
-  this._size_z = parseInt( image.getAttribute("z") );
-  this._size_t = parseInt( image.getAttribute("t") );
-  this._image_url = image.getAttribute("src");
+  this._size_x = parseInt(this.meta.image_num_x);
+  this._size_y = parseInt(this.meta.image_num_y);
+  this._size_c = parseInt(this.meta.image_num_c);
+  this._size_z = parseInt(this.meta.image_num_z);
+  this._size_t = parseInt(this.meta.image_num_t);
+  this._image_url = this.image.src;
   
   var _num_pages = this._size_t * this._size_z;
   var _bitrate = 1000;  
@@ -297,11 +316,6 @@ moviePlayer.prototype.reloadVideo = function () {
   //mvp.sendEvent("LOAD", this.generateVideoUrl('flv') );
   mvp.sendEvent("LOAD", { file:this.generateVideoUrl('flv'), type:'video' } );
   //mvp.sendEvent("PLAY", "true");
-}
-
-moviePlayer.prototype.backToImage = function () {  
-  var u = '/bisquik/view?resource=' + this._img_resourceURI;
-  window.location = u;
 }
 
 moviePlayer.prototype.downloadAs = function ( fmt ) {  
