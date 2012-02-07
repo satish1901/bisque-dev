@@ -443,8 +443,10 @@ def valnode(val, parent, baseuri, view):
 
 
 def resource2nodes(dbo, parent=None, view=[], baseuri=None,  **kw):
+    from bq.data_service.controllers.resource_query import resource_permission
     doc_id = dbo.document_id
     docnodes = DBSession.query(Taggable).filter(Taggable.document_id == doc_id)
+    docnodes = resource_permission(docnodes)
     docnodes = docnodes.order_by(Taggable.id)
     log.debug('resource2nodes :%s doc %s' % (dbo.id , doc_id))
     nodes = {}
@@ -467,6 +469,8 @@ def resource2nodes(dbo, parent=None, view=[], baseuri=None,  **kw):
 
 
 def resource2tree(dbo, parent=None, view=[], baseuri=None, nodes= {}, doc_id = None, **kw):
+    'load an entire document tree for a particular node'
+
     if doc_id != dbo.document_id:
         nodes, doc_id = resource2nodes(dbo, parent, view, baseuri)
     if parent is not None:
