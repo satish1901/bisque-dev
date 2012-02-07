@@ -21,8 +21,8 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
 			dataHash         :   {},
 			list             :   [],
 			selectedRes      :   {},
-			indRight         :   [],	//Indexes of prefetched items on the right - prefetch cache
-			indLeft          :   [],		//Indexes of prefetched items on the left - prefetch cache
+			indRight         :   [],     //Indexes of prefetched items on the right - prefetch cache
+			indLeft          :   [],     //Indexes of prefetched items on the left - prefetch cache
 			dbOffset         :   {left:0, center:parseInt(config.uri.offset), right:0},
 			currentDirection :   1, // 1=Right, 0=Left
 			

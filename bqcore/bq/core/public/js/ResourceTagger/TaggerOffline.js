@@ -25,10 +25,12 @@ Ext.define('Bisque.ResourceTaggerOffline',
         this.loadResourceTags(this.resource.tags);
     },
     
-    saveTags : Ext.emptyFn,
+    saveTags : function() {
+        this.store.applyModifications();
+    },
     
     getTagDocument : function() {
-        return this.resource && this.resource.tags ? this.resource.tags : [];
+        return (this.resource && this.resource.tags) ? this.resource.tags : [];
     },
 });
 
