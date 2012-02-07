@@ -1893,7 +1893,8 @@ BQSession.prototype.set_timeout  = function (baseurl, opts) {
 
 BQSession.prototype.reset_timeout  = function (){
     clearTimeout (this.current_timer);
-    this.current_timer = setTimeout (this.callback, this.timeout);
+    if (this.timeout)
+        this.current_timer = setTimeout (this.callback, this.timeout);
     //clog ('timeout reset:' + this.timeout);
     BQSession.current_session = this;
 }
