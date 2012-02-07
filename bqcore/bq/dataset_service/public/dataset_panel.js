@@ -85,7 +85,7 @@ Ext.define('BQ.dataset.Panel', {
             BQ.ui.tip(this.btn_modify.getId(), this.status, { anchor:'top', color: 'green', });
 
         this.status += this.dataset ? ' for dataset "<b>'+this.dataset.name+'</b>"':'';
-        this.btn_modify.setTooltip( this.status );        
+        //this.btn_modify.setTooltip( this.status );        
         this.btn_modify.setDisabled(disable);
     },    
 
