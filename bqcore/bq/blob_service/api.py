@@ -4,7 +4,7 @@ from controllers.blobsrv import  guess_type
 from controllers.blob_storage import make_uniq_hash
 
 def find_server():
-    return service_registry.find_service ('blobs')
+    return service_registry.find_service ('blob_service')
 
 def store_blob(filesrc=None, filename=None, url=None, permission='private', **kw):
     server = find_server()
