@@ -118,7 +118,7 @@ class BlobServer(RestController, ServiceMixin):
         ident = args[0]
         self.check_access(ident, RESOURCE_READ)
         try:
-            localpath = self.localpath(ident)
+            localpath = os.path.normpath(self.localpath(ident))
             disposition = 'filename="%s"'% self.getBlobFileName(ident)
 
             return forward(FileApp(localpath,
