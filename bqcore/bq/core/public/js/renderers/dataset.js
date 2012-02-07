@@ -257,12 +257,19 @@ Ext.define('BQ.renderers.dataset', {
     
     remove: function() {   
         if (!this.checkAllowWrites(true)) return;
-        this.resource.delete_();
-        var myMask = new Ext.LoadMask(BQApp.getCenterComponent(), {
-            msg: 'Dataset removed...',
-            msgCls: 'final', 
-        });
-        myMask.show();
+        
+        var text = 'Are you sure you want to delete dataset "'+this.resource.name+'"';
+        Ext.Msg.confirm('Delete dataset', text, function(btn, text) {
+            if (btn != 'yes') return;
+
+            this.resource.delete_();
+            var myMask = new Ext.LoadMask(BQApp.getCenterComponent(), {
+                msg: 'Dataset removed...',
+                msgCls: 'final', 
+            });
+            myMask.show();
+            
+        }, this);        
     },
 
     askRename: function() {   
