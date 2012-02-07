@@ -121,15 +121,27 @@ Ext.define('BQ.Application.Window', {
         
         this.toolbar = Ext.create('BQ.Application.Toolbar', { toolbar_opts: bq.toolbar_opts });
         this.items = [
-                this.toolbar,
-                { region : 'center',
-                  id: 'centerEl',
-                  layout: 'fit',
-                  border : false,
-                  header : false,
-                  contentEl : content,
-                  autoScroll: true,
-                }];
+                this.toolbar, { 
+                    region : 'center',
+                    id: 'centerEl',
+                    layout: 'fit',
+                    flex: 3,
+                    border : false,
+                    header : false,
+                    contentEl : content,
+                    autoScroll: true,
+                }, { 
+                    id: 'help',
+                    region : 'east',
+                    collapsible: true,
+                    split: true,
+                    layout: 'fit',
+                    hidden: true,
+                    cls: 'help',
+                    width: 320,
+                    //flex: 1,
+                    border : false,
+                }, ];
         
         this.callParent();
     },
@@ -153,6 +165,10 @@ Ext.define('BQ.Application.Window', {
         this.removeWindowContent(); 
         this.getComponent('centerEl').add(c);  
     },    
+    
+    getHelpComponent: function() {
+        return this.getComponent('help');  
+    },       
     
 });
 

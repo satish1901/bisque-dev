@@ -12,6 +12,10 @@
   html styles
 -------------------------------------------------------*/
 
+body {
+    background-color: white !important;   
+}
+
 h2 {
   clear: left;
 }
@@ -56,7 +60,7 @@ ol li {
 -------------------------------------------------------*/
 
 .webapp .main {
-  margin-right: 340px;
+  /*margin-right: 340px;*/
 }
 
 .webapp img#thumbnail {
@@ -68,24 +72,52 @@ ol li {
   HELP
 -------------------------------------------------------*/
 
-.webapp .help {
-  float: right;
-  width: 320px;
-  height: 95%;
-  margin: 0px 0px 10px 10px;
-  padding: 10px 10px 10px 10px;
-  background-color: #E1FFE9;
-  border: #CCCCCC solid 1px;
-  border-radius: 5px;
-  -moz-border-radius: 5px;
+.help {
+    padding: 20px 10px 10px 0px;
+    background-color: white;
 }
 
-.webapp .help img {
+.help .x-panel-header {
+    -webkit-border-top-left-radius: 5px;
+    -webkit-border-top-right-radius: 5px;
+    -moz-border-radius-topleft: 5px;
+    -moz-border-radius-topright: 5px;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;    
+}
+
+.x-splitter {
+    background-color: white;
+    /*
+    margin: 22px 0px 20px 0px;
+    background-image: -webkit-gradient(linear, 0% 0%, 100% 0%, from(#FFFFFF), to(#DDDDDD));
+    background-image: -moz-linear-gradient(right, #FFFFFF,#DDDDDD);
+    background-image: linear-gradient(right, #FFFFFF,#DDDDDD); */
+}
+
+.help .help-container {
+    float: right;
+    width: 320px;
+    height: 95%;
+    /*margin: 0px 10px 10px 10px;*/
+    padding: 10px;
+    background-color: #E1FFE9;
+    border: #CCCCCC solid 1px;
+    border-top: none;
+    -webkit-border-bottom-right-radius: 5px;
+    -webkit-border-bottom-left-radius: 5px;
+    -moz-border-radius-bottomright: 5px;
+    -moz-border-radius-bottomleft: 5px;
+    border-bottom-right-radius: 5px;
+    border-bottom-left-radius: 5px;
+}
+
+.help .help-container img {
   border: solid 1px #999999;
   width: 250px;
 }
 
-.webapp .help p {
+.help .help-container p {
   text-align: left;
 }
 
