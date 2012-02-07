@@ -166,7 +166,17 @@
         BQ.Application.on( 'nouser', webapp.onnouser ); 
         
         //var bqmodule = Ext.create('BQ.ModulePanel', { module_uri : '${module_uri}' } );
-        //BQApp.main.getComponent('centerEl').add(bqmodule);        
+        //BQApp.main.getComponent('centerEl').add(bqmodule);   
+        
+        // load help
+        var h = BQApp.main.getHelpComponent();
+        h.setVisible(true);
+        h.add({ xtype: 'container',
+                cls: 'help-container',
+                loader: { url: 'help', renderer: 'html', autoLoad: true },
+                autoScroll: true,
+            });
+             
     });
 </script>
 
@@ -174,18 +184,6 @@
 <body>
 
 <div id="content" class="content webapp">
-
-<!--
-<li py:for="m in module_def">
-    "${m}": "${module_def[m]}"
-</li>
--->
-
-<div class="help" id="help">
-  <iframe src="help" width="100%" height="100%" style="border: none;"></iframe>
-</div>
-
-
 
 
 <div id="webapp_main" class="main">
