@@ -378,6 +378,7 @@ Ext.define('Bisque.Resource.Page',
         
         var resourceTagger = new Bisque.ResourceTagger(
         {
+            itemId : 'resourceTagger',
             title : title,
             resource : this.resource,
             split : true,

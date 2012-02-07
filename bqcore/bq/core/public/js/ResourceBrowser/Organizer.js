@@ -409,7 +409,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
             for( i = 0; i < tagData.tags.length; i++)
                 tagArr.push(
                 {
-                    "name" : tagData.tags[i].name.toString(),
+                    "name" : (tagData.tags[i].name) ? tagData.tags[i].name.toString() : '',
                     "value": 'tag'
                 });
             this.tagArr = tagArr;
