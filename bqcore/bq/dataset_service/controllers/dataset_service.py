@@ -188,16 +188,23 @@ class DatasetServer(ServiceController):
 
         dataset = data_service.get_resource(duri, view='deep')
         members = dataset.xpath('./tag[@name="members"]')[0]
+        for n, val in enumerate(members):
+            val.set('index', str(n))
 
         items = data_service.query (resource_tag, tag_query=tag_query)
+        count = len(members)
         for resource in items:
-            val = etree.Element('resource',
-                                type=resource_tag,
-                                uri=resource.get('uri'))
-            members.append(val)
+            # check  if already there:
+            found = members.xpath('./value[text()="%s"]' % resource.get('uri'))
+            if len(found) == 0:
+                val = etree.SubElement(members, 'value', type='object', index = str(count))
+                val.text =resource.get('uri')
+                count += 1
+
 
         log.debug ("members = %s" % etree.tostring(members))
-        data_service.update(members)
+        r = data_service.update(members)
+        return etree.tostring(r)
 
     @expose(content_type="text/xml")
     @require(predicates.not_anonymous())
