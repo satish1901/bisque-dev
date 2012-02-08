@@ -215,7 +215,11 @@ class ResponseCache(object):
                 log.debug('exact %s <> %s' % (cachename, mn))
 
                 if mn == cachename:
-                    os.unlink (os.path.join(self.cachepath, cf))
+                    try:
+                        os.unlink (os.path.join(self.cachepath, cf))
+                    except OSError:
+                        # File was removed by other process
+                        pass
                     files.remove (cf)
                     log.debug ('cache exact remove %s' % cf)
             return 
@@ -224,7 +228,11 @@ class ResponseCache(object):
             if cachename.startswith('*')\
                and cf.split(',',1)[1].startswith(cachename.split(',',1)[1])\
                or cf.startswith (cachename):
-                os.unlink (os.path.join(self.cachepath, cf))
+                try:
+                    os.unlink (os.path.join(self.cachepath, cf))
+                except OSError:
+                    # File was removed by other process
+                    pass
                 files.remove (cf)
                 log.debug ('cache remove %s' % cf)
 
