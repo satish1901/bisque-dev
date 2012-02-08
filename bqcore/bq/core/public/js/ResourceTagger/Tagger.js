@@ -500,7 +500,7 @@ Ext.define('Bisque.ResourceTagger',
 
         editor.startEdit(newNode, 0);
 
-        editor.on('edit', function(me)
+        function finishEdit(me)
         {
             this.editing = true;
             var newTag = new BQTag();
@@ -529,10 +529,16 @@ Ext.define('Bisque.ResourceTagger',
             me.view.refresh();
 
             BQ.ui.message('Resource tagger - Add', 'New record added!');
-            this.editing=false;
-        }, this, {single : true});
+            this.editing = false;
+        }
+        
+        editor.on('edit', finishEdit, this, {single : true});
             
-        editor.on('canceledit', function(grid, eOpts) {
+        editor.on('canceledit', function(grid, eOpts)
+        {
+            var editor = this.tree.plugins[0];
+            editor.un('edit', finishEdit, this);
+
             if (!newNode.data.name || (newNode.data.name && newNode.data.value && newNode.name=='' && newNode.value==''))
                 currentItem.removeChild(newNode);
         }, this, {single : true});            
@@ -886,7 +892,7 @@ Ext.define('Bisque.ResourceTagger.Editor',
 
     finishEdit : function()
     {
-        if(this.context)
+        if (this.context)
             this.context.grid.getSelectionModel().deselect(this.context.record);
     }
 
