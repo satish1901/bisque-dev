@@ -266,15 +266,14 @@ class import_serviceController(ServiceController):
 #        log.debug('process5Dimage ::::: upload_dir\n %s'% upload_dir )
 #        log.debug('process5Dimage ::::: combined_filename\n %s'% combined_filename )
 #        log.debug('process5Dimage ::::: combined_filepath\n %s'% combined_filepath )
+#        log.debug('process5Dimage ::::: args:\n %s'% kw )
 
         num_pages = len(members)
-        z=0; t=0
-        #if 'number_z' in kw: z = int(kw['number_z'])
-        #if 'number_t' in kw: t = int(kw['number_t'])
-        if 'number-z' in kw: z = int(kw['number-z'])
-        if 'number-t' in kw: t = int(kw['number-t'])            
-        if t==0: t=num_pages; z=1
+        z=None; t=None
+        if 'number_z' in kw: z = int(kw['number_z'])
+        if 'number_t' in kw: t = int(kw['number_t'])            
         if z==0: z=num_pages; t=1
+        if t==0 or z is None or t is None: t=num_pages; z=1
 
         # combine unpacked files into a multipage image file
         self.assemble5DImage(unpack_dir, members, combined_filepath, z=z, t=t, **kw)
@@ -284,7 +283,7 @@ class import_serviceController(ServiceController):
     # dima - add a better sorting algorithm for sorting based on alphanumeric blocks
     def assemble5DImage(self, unpack_dir, members, combined_filepath, **kw):
         geom = {'z':1, 't':1}
-        res = { 'resolution-x':0, 'resolution-y':0, 'resolution-z':0, 'resolution-t':0 }
+        res = { 'resolution_x':0, 'resolution_y':0, 'resolution_z':0, 'resolution_t':0 }
 
         params = geom
         params.update(res)
@@ -299,7 +298,7 @@ class import_serviceController(ServiceController):
         
         # if any resolution value was given, spec the resolution  
         if sum([float(params[k]) for k in res.keys()])>0:
-            extra = '%s -resolution %s,%s,%s,%s'%(extra, params['resolution-x'], params['resolution-y'], params['resolution-z'], params['resolution-t'])        
+            extra = '%s -resolution %s,%s,%s,%s'%(extra, params['resolution_x'], params['resolution_y'], params['resolution_z'], params['resolution_t'])        
             
         log.debug('assemble5DImage ========================== extra: \n%s'% extra )
         imgcnv.convert_list(members, combined_filepath, fmt='ome-tiff', extra=extra )
@@ -547,7 +546,9 @@ class import_serviceController(ServiceController):
         """
         response = etree.Element ('resource', type='uploaded')
         for f in files:
-            response.append(self.process(f))
+            x = self.process(f)
+            if x is not None:
+                response.append(x)
         return response
 
 #------------------------------------------------------------------------------
