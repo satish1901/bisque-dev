@@ -79,6 +79,7 @@ class StagedEnvironment(BaseEnvironment):
                 mex.staging_path = os.path.abspath(os.path.expanduser(
                     os.path.join (staging_base, mex.staging_id)))
 
+            mex.rundir = mex.staging_path
             runner.log ( 'staging_path = %s' % mex.staging_path)
 
     def _staging_setup(self, runner, mex, create=True, **kw):

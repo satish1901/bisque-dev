@@ -116,11 +116,14 @@ def python_setup(scripts,  package_scripts =True, dependency_dir = 'pydist', par
         data['script'] = os.path.join('.', dependency_dir, script_name)
         # THIS os.path.join needs to be replaced by pkg_resources or pkg_util
         # when the toplevel is packaged
-        template = Template(filename=os.path.abspath (os.path.join('..','..', 'config','templates','python_launcher.tmpl')))
-        with open(script_name, 'wb') as f:
-            f.write(template.render(script = data['script']))
-        os.chmod (script_name, 0744)
-        return 0
+        try:
+            template = Template(filename=os.path.abspath (os.path.join('..','..', 'config','templates','python_launcher.tmpl')))
+            with open(script_name, 'wb') as f:
+                f.write(template.render(script = data['script']))
+                os.chmod (script_name, 0744)
+                return 0
+        except Exception,e:
+            print ("Could not create python launcher script %s" % e)
         
 
 def require(expression, params):
