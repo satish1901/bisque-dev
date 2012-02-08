@@ -108,7 +108,7 @@ class MexRunner(object):
         registry = Registry()
         registry.prepare()
         registry.register(session, SessionObject({}))
-        
+        set_admin_mode(True)
 
 
 

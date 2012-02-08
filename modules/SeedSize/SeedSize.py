@@ -12,7 +12,6 @@ from bq.api import BQSession
 from bq.api.util import fetch_dataset, fetch_image_pixels, d2xml
 
 
-logging.basicConfig(level=logging.DEBUG)
 
 EXEC = "./seedSize"
 IMAGE_MAP = "image_map.txt"
@@ -93,8 +92,8 @@ class SeedSize(object):
             if result not in result2url:
                 log.error ("Can't find url for %s given files %s and map %s" % 
                            result, localfile, result2url)
-            mex = { 'module' : self.bq.mex.module,
-                    'status': 'FINISHED', 
+            mex = { 'type' : self.bq.mex.type,
+                    'value': 'FINISHED', 
                     'tag': [ {'name': 'image_url', 'value':  result2url [result]},
                              {'name': 'resource_url', 'value': self.config.resource_url }],
                     'gobject' : { 'name' : 'SeedSize', 'gobject' : gobs },
@@ -176,12 +175,17 @@ class SeedSize(object):
         if command not in ('setup','teardown', 'start'):
             parser.error('Command must be start, setup or teardown')
 
+        logging.basicConfig(level=logging.DEBUG, filename="SeedSize-%s.log" % command)
+
+
         # maltab code requires trailing slash..
         self.images = os.path.join(options.staging_path, 'images') + os.sep
         self.image_map_name = os.path.join(options.staging_path, IMAGE_MAP)
         self.resource_url = options.resource_url
         self.config = options
         self.is_dataset = 'dataset' in self.resource_url
+
+
 
             
         command = getattr(self, command)

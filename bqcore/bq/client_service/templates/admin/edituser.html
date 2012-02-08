@@ -22,7 +22,8 @@
    	<a href="mailto:${user.resource_value}">${user.resource_name}</a>:
    	Total images: ${options['totalimages']} |
     <a href="/admin/confirmdeleteimages/${user.resource_name}">Delete all images</a> |
-    <a href="/admin/confirmdeleteuser/${user.resource_name}">Delete User</a>
+    <a href="/admin/confirmdeleteuser/${user.resource_name}">Delete User</a> |
+    <a href="/admin/loginasuser?user=${user.resource_name}">Login as User</a>
 	</div>
 	
 	<div class="user_box" >
@@ -35,27 +36,18 @@
     <label> E-mail: </label><input type="text" name="email" id="email" value="${user.resource_value}" /><br />
     <input type="submit" name="button" id="button" value="Submit" />
   </form> 
+
+            
+
+
+
+
+
   </div>
 	
-	<!--
 	<div id="image_list">
-		<table cellspacing="0" cellpadding="0" border="0">
-			<tbody>
-				<tr py:for="x in range(0,len(images),5)">
-					<td py:for="i in images[x:x+5]" width="20%" height="150px" valign="bottom" nowrap="" align="center" style="padding:30px">
-						<a href="${i.src}"><img src="${i.src}?thumbnail" /></a><br />
-						${i.ts.strftime(str("%b-%d-%y, %I:%M%p"))} <br />
-						<a style="font-size: 12px" href="/admin/deleteimage/${i.id}">Delete Image</a>
-					</td>
-				</tr>
-			</tbody>
-		</table>
-	</div>
-	-->
-
-	<div id="image_list">
-			<div py:for="i in images[ 0:len(images) ]" style="padding:15px; width: 150px; height: 200px; float: left;">
-				<a href="${i.src}"><img src="${i.src}?thumbnail" /></a><br />
+			<div py:for="i in images" style="padding:15px; width: 150px; height: 200px; float: left;">
+				<a href="/image_service/images/${i.resource_uniq}"><img src="/image_service/images/${i.resource_uniq}?thumbnail" /></a><br />
 				${i.ts.strftime(str("%b-%d-%y, %I:%M%p"))}<br />
 				<a style="font-size: 12px" href="/admin/deleteimage/${i.id}">Delete Image</a>
 			</div>
@@ -66,6 +58,9 @@
 			pg:${options['page']}
 			<a py:if="not options['page'] > (options['totalimages']/20 )" href="/admin/edituser/${user.resource_name}?page=${options['page']+1}"> -&lt;Next&gt;</a>
 	</div>
+
+
+
 
 	
 </div>

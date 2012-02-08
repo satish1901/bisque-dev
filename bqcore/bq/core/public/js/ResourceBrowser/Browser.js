@@ -112,6 +112,19 @@ Ext.define('Bisque.ResourceBrowser.Dialog',
     },
 });
 
+// Bisque.QueryBrowser.Dialog is a query select specialization of Bisque.ResourceBrowser.Dialog
+Ext.define('Bisque.QueryBrowser.Dialog', {
+    extend : 'Bisque.ResourceBrowser.Dialog',
+
+    btnSelect : function() {
+        var query = this.browser.commandBar.getComponent('searchBar').getValue();
+        if (query && query.length>1)
+            this.browser.fireEvent('Select', this, query);
+        else
+            BQ.ui.message('Query is empty!', 'Please type a query or press cancel to abort.');
+    },
+});
+
 // ResourceBrowser in a Ext.Panel container
 Ext.define('Bisque.ResourceBrowser.Browser',
 {

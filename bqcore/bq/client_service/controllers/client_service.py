@@ -134,7 +134,8 @@ class ClientServer(ServiceController):
         if image_count:
             im = random.randint(0, image_count-1)
             #image = aggregate_service.retrieve("image", view=None, wpublic=wpublic)[im]
-            image  = data_service.query('image', tag_query=tag_query, wpublic=wpublic, view=None)[im]
+            image  = data_service.query('image', tag_query=tag_query, wpublic=wpublic, 
+                                        offset = im, limit = 1)[0]
             imageurl = self.viewlink(image.attrib['uri'])
             #thumbnail = image.attrib['src'] +'?thumbnail'
             thumbnail = "/image_service/images/%s?thumbnail" % image.get('resource_uniq')
