@@ -39,6 +39,7 @@ Bisque.ResourceBrowser.DatasetManager = Ext.extend(Ext.Panel,
                 {
                     text : 'Add Dataset',
                     icon : '/js/ResourceBrowser/Images/add.png',
+                    hidden : true,
                     scale : 'medium',
                     iconAlign : 'left',
                     handler : Ext.bind(this.promptDatasetName, this, [false])
@@ -47,6 +48,7 @@ Bisque.ResourceBrowser.DatasetManager = Ext.extend(Ext.Panel,
                     text : 'Delete Dataset',
                     icon : '/js/ResourceBrowser/Images/delete.png',
                     scale : 'medium',
+                    hidden : true,
                     iconAlign : 'left',
                     handler : this.deleteDataset,
                     scope : this
@@ -208,6 +210,7 @@ Bisque.ResourceBrowser.DatasetManager.DatasetTbar = Ext.extend(Ext.Toolbar,
                 text : 'Options',
                 icon : '/js/ResourceBrowser/Images/menu.png',
                 scale : 'medium',
+                hidden : true,
                 iconAlign : 'left',
                 handler : this.showMenu,
                 scope : this

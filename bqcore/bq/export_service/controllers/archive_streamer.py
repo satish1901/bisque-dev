@@ -26,7 +26,7 @@ class ArchiveStreamer():
     
     def stream(self):
         flist = self.fileInfoList(self.fileList, self.datasetList)
-        
+
         for file in flist:
             self.archiver.beginFile(file)
             while not self.archiver.EOF():
@@ -47,7 +47,9 @@ class ArchiveStreamer():
             file_info = {}
             
             xml = data_service.get_resource(uri, view='deep')
+            
             file_info['XML'] = xml
+            file_info['type'] = xml.tag
             file_info['source'] = xml.get('value')
             file_info['name'] = xml.get('name')
             file_info['uniq']  = xml.get('resource_uniq')
@@ -68,7 +70,8 @@ class ArchiveStreamer():
             for uri in fileList:
                 finfo = fileInfo('', uri)
                 flist.append(finfo)      #blank dataset name for orphan files
-                flist.append(xmlInfo(finfo))
+                if finfo.get('type') == 'image':
+                    flist.append(xmlInfo(finfo))
 
         if datasetList != ['']:     # empty datasetList
             for uri in datasetList:
@@ -79,6 +82,7 @@ class ArchiveStreamer():
                 for member in members:
                     finfo = fileInfo(name, member.text)
                     flist.append(finfo)
-                    flist.append(xmlInfo(finfo))
+                    if finfo.get('type') == 'image':
+                        flist.append(xmlInfo(finfo))
 
         return flist

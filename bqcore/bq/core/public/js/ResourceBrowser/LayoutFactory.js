@@ -230,24 +230,28 @@ Ext.define('Bisque.ResourceBrowser.Layout.Base',
 
     noResults : function()
     {
-        var imgNoResults = Ext.create('Ext.Img', 
+        this.imgNoResults = Ext.create('Ext.Img', 
         {
             src : bq.url('/js/ResourceBrowser/Images/no-results.png'),
-            widht: 300,
-            height: 80,
         })
         
         var ct = Ext.create('Ext.panel.Panel', 
         {
             //bodyStyle:  'background:#eee',
-            layout  :   {
-                            type : 'vbox',
-                            pack : 'center',
-                            align: 'center'
-                        },
-            height  :   '100%',
-            width   :   '100%',                        
-            items   :   imgNoResults,
+            border      :   false,
+            layout      :   {
+                                type : 'vbox',
+                                pack : 'center',
+                                align: 'center'
+                            },
+            listeners   :   {
+                                'afterrender'   :   function(me)
+                                {
+                                    me.add(this.imgNoResults);
+                                    
+                                },
+                                scope           :   this
+                            }
         });
 
         this.layout = 'fit';

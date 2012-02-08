@@ -200,7 +200,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 				 		{
 				 			text : 'Datasets',
 				 			icon : bq.url('/js/ResourceBrowser/Images/datasets.png'),
-							hidden : this.viewMgr.cBar.btnDataset,
+							hidden : true,  //this.viewMgr.cBar.btnDataset,
 				 			handler : this.btnDatasetClick,
 				 			scope : this
 				 		},

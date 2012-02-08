@@ -28,6 +28,8 @@ Ext.define('BQ.Export.Panel', {
                 margin: 5,
                 items: 
                 {
+                    xtype: 'splitbutton',
+                    arrowAlign: 'right',
                     text: 'Add Images',
                     scale: 'large',
                     width: 140,
@@ -35,8 +37,18 @@ Ext.define('BQ.Export.Panel', {
                     iconCls: 'add',
                     iconAlign: 'left',
                     iconCls: 'icon-select-images',
+                    resourceType: 'image',
                     handler: this.selectImage,
-                    scope: this
+                    scope: this,
+                    menu:
+                    {
+                        items: [{
+                            resourceType: 'file',
+                            text: 'Add Files',
+                            handler: this.selectImage,
+                            scope: this,
+                        }]
+                    }
                 }
             },
             {
@@ -163,7 +175,7 @@ Ext.define('BQ.Export.Panel', {
                 list.push(this.resourceStore.getAt(index).get('uri'));
                 index++;
             }
-            
+
             return list;
         }
         
@@ -180,7 +192,7 @@ Ext.define('BQ.Export.Panel', {
             },
             {
                 name : 'files',
-                value : findAllbyType.call(this, 'image')
+                value : findAllbyType.call(this, 'image').concat(findAllbyType.call(this, 'file'))
             },
             {
                 name : 'datasets',
@@ -191,18 +203,18 @@ Ext.define('BQ.Export.Panel', {
     
     exportResponse : function(response)
     {
-        //debugger;
     },
 
-    selectImage : function()
+    selectImage : function(me)
     {
         var rbDialog = Ext.create('Bisque.ResourceBrowser.Dialog', {
-            'height' : '85%',
-            'width' :  '85%',
-            wpublic: 'true',
-            listeners : 
+            'height'    : '85%',
+            'width'     : '85%',
+            dataset     : '/data_service/' + me.resourceType,
+            wpublic     : 'true',
+            listeners   : 
             {
-                'Select' : this.addToStore,
+                'Select': this.addToStore,
                 scope: this
             }
         });
@@ -231,20 +243,25 @@ Ext.define('BQ.Export.Panel', {
             return;
         }
 
-        var record = [];
-
+        var record = [], thumbnail, viewPriority;
+        
         if (resource.resource_type=='image')
         {
-            record.push(resource.src);
-            resource.name = resource.name || 'Unknown';
-            record.push(resource.name);
-            record.push(resource.resource_type, resource.ts, resource.perm, resource.uri, 1);
+            thumbnail = resource.src;
+            viewPriority = 1;
         }
         else if (resource.resource_type=='dataset')
         {
-            record.push(bq.url('../export_service/public/images/folder.png'), resource.name, resource.resource_type, resource.ts, resource.perm || '', resource.uri, 0);
+            thumbnail = bq.url('../export_service/public/images/folder.png');
+            viewPriority = 0;
+        }
+        else if (resource.resource_type=='file')
+        {
+            thumbnail = bq.url('../export_service/public/images/file.png');
+            viewPriority = 2;
         }
         
+        record.push(thumbnail, resource.name || '', resource.resource_type, resource.ts, resource.perm || '', resource.uri, viewPriority);
         this.resourceStore.loadData([record], true);
     },
     

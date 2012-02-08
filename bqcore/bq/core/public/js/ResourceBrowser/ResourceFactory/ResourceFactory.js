@@ -369,17 +369,18 @@ Ext.define('Bisque.Resource.List', {
 Ext.define('Bisque.Resource.Page', 
 {
     extend:'Bisque.Resource',
-    
+
     updateContainer : function() 
     {
         var name = this.resource.name || this.resource.uri;
         var type = this.resource.type || this.resource.resource_type;
         var title = "Editing " + type + ' : ' + name;
-        
+
         var resourceTagger = new Bisque.ResourceTagger(
         {
             itemId : 'resourceTagger',
             title : title,
+            frame : true,
             resource : this.resource,
             split : true,
         });
