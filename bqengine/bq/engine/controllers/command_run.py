@@ -208,6 +208,7 @@ class BaseRunner(object):
         self.bisque_token = kw.pop('bisque_token', None)
         # list of dict representing each mex : variables and arguments
         self.mexes = []
+        self.rundir = os.getcwd()
 
         # Add remaining arguments to the executable line
         # Ensure the loaded executable is a list
@@ -219,8 +220,9 @@ class BaseRunner(object):
         topmex.update(dict(named_args={}, 
                            executable=list(executable), 
 #                           arguments = [],
-                           mex_url = self.mex_tree and self.mex_tree.get('uri') or None,
-                           bisque_token = self.bisque_token))
+                           mex_url = self.mex_tree is not None and self.mex_tree.get('uri') or None,
+                           bisque_token = self.bisque_token, 
+                           rundir = self.rundir))
         self.mexes.append(topmex)
 
         # Pull out command line arguments 
@@ -233,6 +235,7 @@ class BaseRunner(object):
                 break
             topmex.named_args[tag] = val
 
+
         # Pull out arguments from mex 
         if self.mex_tree is not None and self.module_tree is not None:
             mexparser = MexParser()
@@ -243,6 +246,7 @@ class BaseRunner(object):
             if argument_style == 'named':
                 topmex.named_args.update ( [x.split('=') for x in mex_inputs] )
             topmex.executable.extend(mex_inputs)
+            topmex.rundir = self.rundir
             
             # Create a nested list of  arguments  (in case of submex)
             submexes = self.mex_tree.xpath('/mex/mex')
@@ -253,7 +257,8 @@ class BaseRunner(object):
 #                                   arguments =list(topmex.arguments),
                                    executable=list(executable), #+ topmex.arguments,
                                    mex_url = mex.get('uri'), 
-                                   bisque_token = self.bisque_token))
+                                   bisque_token = self.bisque_token,
+                                   rundir = self.rundir))
                 #if argument_style == 'named':
                 #    submex.named_args.update ( [x.split('=') for x in sub_inputs] )
                 submex.executable.extend(sub_inputs)
@@ -261,6 +266,8 @@ class BaseRunner(object):
             if len(self.mexes) > 1:
                 topmex.executable = None
         log.info("processing %d mexes -> %s" % (len(self.mexes), self.mexes))
+
+
 
         command = getattr (self, 'command_%s' % self.command, None)
         return command
@@ -349,6 +356,13 @@ class CommandRunner(BaseRunner):
         self.load_section('command', self.module_cfg) # Runner's name
         
     
+    def process_config(self, **kw):
+        super(CommandRunner, self).process_config(**kw)
+        for mex in self.mexes:
+            if not mex.executable:
+                continue
+            mex.log_name = os.path.join(mex.rundir, "%s.log" % mex.executable[0])
+
 
     def execone(self, command_line, stdout = None, stderr=None, cwd = None):
         retcode = subprocess.call(command_line,
@@ -371,17 +385,17 @@ class CommandRunner(BaseRunner):
                 continue
             command_line = list(mex.executable)
             #command_line.extend (mex.arguments)
-            rundir = mex.get('staging_path', os.getcwd())
+            rundir = mex.get('rundir')
             if  self.options.dryrun:
                 self.log( "DryRunning '%s' in %s" % (' '.join(command_line), rundir))
                 continue
 
             self.log( "running '%s' in %s" % (' '.join(command_line), rundir))
             log.info ('mex %s ' % mex)
-            
+
             self.execone(command_line, 
-                         stdout = open("%s.out" % mex.executable[0],'w'),
-                         stderr = open("%s.err" % mex.executable[0],'w'),
+                         stdout = open(mex.log_name,'a'),
+                         stderr = subprocess.STDOUT,
                          cwd = rundir)
         
         return self.command_finish
