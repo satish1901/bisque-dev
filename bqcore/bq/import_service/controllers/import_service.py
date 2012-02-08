@@ -549,6 +549,8 @@ class import_serviceController(ServiceController):
             x = self.process(f)
             if x is not None:
                 response.append(x)
+            else:
+                etree.SubElement(response, 'tag', name="error", value='Error ingesting file' )  
         return response
 
 #------------------------------------------------------------------------------
