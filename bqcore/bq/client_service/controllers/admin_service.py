@@ -53,7 +53,7 @@ DESCRIPTION
 import operator
 from datetime import datetime
 from lxml import etree
-from tg import expose, controllers, flash, url
+from tg import expose, controllers, flash, url, response
 import logging
 from repoze.what.predicates import is_user
 from repoze.what.predicates import not_anonymous
@@ -270,6 +270,15 @@ class AdminController(ServiceController):
         #return ""
         redirect( '/admin/edituser?username='+ str(user_name) )
 
+
+
+    @expose()
+    def loginasuser(self, user):
+        log.debug ('forcing login as user')
+        
+        response.headers = request.environ['repoze.who.plugins']['friendlyform'].remember(request.environ,
+                                                                                          {'repoze.who.userid':user})
+        redirect("/")
 
     @expose('bq.client_service.templates.admin.error')
     def default (*l, **kw):
