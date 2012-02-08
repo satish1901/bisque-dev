@@ -115,7 +115,8 @@ def urlnorm(uri):
 # Cache filename construction (original borrowed from Venus http://intertwingly.net/code/venus/)
 re_url_scheme    = re.compile(r'^\w+://')
 #re_slash         = re.compile(r'[?/:|]+')
-re_slash         = re.compile(r'[/:|]+')
+re_slash         = re.compile(r'[/\:|]+')
+re_reserved      = re.compile(r'[<>"*]+')
 
 def safename(filename, user):
     """Return a filename suitable for the cache.
@@ -138,8 +139,9 @@ def safename(filename, user):
     #filemd5 = md5.new(filename).hexdigest()
     filename = re_url_scheme.sub("", filename)
     filename = re_slash.sub(",", filename)
+    filename = re_reserved.sub('', filename)
+    # This one is special to create cachenames that args can be seperate from requested path
     filename = filename.replace('?', '#')
-    filename = filename.replace('"', '')
 
     # limit length of filename
     if len(filename)>200:
