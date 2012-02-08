@@ -103,6 +103,9 @@ Ext.define('BQ.renderers.dataset', {
             items: [{ itemId: 'menu_images', xtype:'splitbutton', text: 'Add images', iconCls: 'icon_plus',
                       scope: this, tooltip: 'Add resources into the dataset', //cls: 'x-btn-default-medium', 
                       handler: function() { this.browseResources('image'); }, },
+                    //{ itemId: 'menu_query', xtype:'splitbutton', text: 'Add from query', iconCls: 'icon_plus',
+                    //  scope: this, tooltip: 'Add resources into the dataset from query', //cls: 'x-btn-default-medium', 
+                    //  handler: function() { this.browseQuery('image'); }, },                        
                     { itemId: 'menu_delete_selected', text: 'Remove selected', tooltip: 'Remove selected resource from the dataset, keeps the resource untouched',
                       scope: this, iconCls: 'icon_minus', //cls: 'x-btn-default-medium',
                       handler: this.removeSelectedResources, },                        
@@ -134,7 +137,8 @@ Ext.define('BQ.renderers.dataset', {
         this.user_uri = session && session.user_uri?session.user_uri:null;
         if (this.user_uri) return;
         var tb = this.child('#toolbar');
-        tb.child('#menu_images').setDisabled(true);   
+        tb.child('#menu_images').setDisabled(true); 
+        //tb.child('#menu_query').setDisabled(true); 
         tb.child('#menu_delete_selected').setDisabled(true);
         tb.child('#menu_delete').setDisabled(true);                
     },
@@ -147,20 +151,6 @@ Ext.define('BQ.renderers.dataset', {
         BQ.ui.error('Error<br><br>'+panel.getStatus());
     },  
 
-    browseResources: function(resource_type) {
-        if (!this.checkAllowWrites(true)) return;        
-        var resourceDialog = Ext.create('Bisque.ResourceBrowser.Dialog', {
-            'height'  : '85%',
-            'width'   :  '85%',
-            //wpublic   : 'true',
-            dataset   : '/data_service/'+resource_type,
-            listeners : {
-                'Select' : this.addResources,
-                scope: this
-            },
-        });    
-    }, 
-    
     fetchResourceTypes : function() {
         BQFactory.request ({uri : '/data_service/', 
                             cb : callback(this, 'onResourceTypes'),
@@ -168,22 +158,44 @@ Ext.define('BQ.renderers.dataset', {
     }, 
 
     onResourceTypes : function(resource) {
+        //this.addResourceTypes(resource, '#menu_images', 'addResourceTypeMenu');
+        //this.addResourceTypes(resource, '#menu_query', 'addResourceQueryMenu');  
+        this.addResourceTypes(resource, '#menu_images');      
+    },     
+
+    addResourceTypes : function(resource, button_id, f) {
         var ignore = { 'user':null, 'module':null, 'service':null, 'system':null, }; 
         var menu = Ext.create('Ext.menu.Menu');
         var r=null;
         for (var i=0; (r=resource.children[i]); i++) {
             if (r.name in ignore) continue;
+            //this[f](menu, r.name);
             this.addResourceTypeMenu(menu, r.name);
         }
-        this.child('#toolbar').child('#menu_images').menu = menu;
-    },     
+
+        // 
+        menu.add('-');       
+        for (var i=0; (r=resource.children[i]); i++) {
+            if (r.name in ignore) continue;
+            this.addResourceQueryMenu(menu, r.name);
+        }        
+        
+        this.child('#toolbar').child(button_id).menu = menu;
+    },  
 
     addResourceTypeMenu : function(menu, name) {
-        menu.add( {text: 'Add '+name, 
+        menu.add( {text: 'Add <b>'+name+'</b>', 
                    handler: function() { this.browseResources(name); },
                    scope: this,
                   } );
     },     
+
+    addResourceQueryMenu : function(menu, name) {
+        menu.add( {text: 'Add <b>'+name+'</b> from query', 
+                   handler: function() { this.browseQuery(name); },
+                   scope: this,
+                  } );
+    }, 
     
     changedOk : function() {
         this.setLoading(false);
@@ -208,6 +220,20 @@ Ext.define('BQ.renderers.dataset', {
         return this.user_uri;      
     }, 
 
+    browseResources: function(resource_type) {
+        if (!this.checkAllowWrites(true)) return;        
+        var resourceDialog = Ext.create('Bisque.ResourceBrowser.Dialog', {
+            'height'  : '85%',
+            'width'   :  '85%',
+            //wpublic   : 'true',
+            dataset   : '/data_service/'+resource_type,
+            listeners : {
+                'Select' : this.addResources,
+                scope: this
+            },
+        });    
+    }, 
+
     addResources : function(browser, sel) {
         if (!this.checkAllowWrites(true)) return;        
         this.setLoading('Appending resources');
@@ -228,6 +254,35 @@ Ext.define('BQ.renderers.dataset', {
                             callback(this, 'changedOk'),
                             callback(this, 'changedError'));
     },    
+
+    browseQuery: function(resource_type) {
+        if (!this.checkAllowWrites(true)) return;        
+        var resourceDialog = Ext.create('Bisque.QueryBrowser.Dialog', {
+            'height'  : '85%',
+            'width'   :  '85%',
+            //wpublic   : 'true',
+            dataset   : '/data_service/'+resource_type,
+            query_resource_type: resource_type,
+            listeners : {
+                'Select' : this.addQuery,
+                scope: this
+            },
+        });    
+    }, 
+
+    addQuery: function(browser, query) {
+        if (!this.checkAllowWrites(true)) return;   
+        this.setLoading('Adding query to the dataset');
+        var l = [
+            'duri='+encodeURIComponent(this.resource.uri),
+            'resource_tag='+encodeURIComponent(browser.query_resource_type), // dima: set to resource type      
+            'tag_query='+encodeURIComponent(query),    
+        ];
+        var uri = '/dataset_service/add_query?' + l.join('&');            
+        BQFactory.request ({uri : uri, 
+                            cb : callback(this, 'changedOk'),
+                            errorcb: callback(this, 'changedError'), });               
+    }, 
 
     removeSelectedResources : function() {
         if (!this.checkAllowWrites(true)) return;        
@@ -288,6 +343,6 @@ Ext.define('BQ.renderers.dataset', {
                             callback(this, 'changedOk'),
                             callback(this, 'changedError'));
     },
-    
+   
 });
 

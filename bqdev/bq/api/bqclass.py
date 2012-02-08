@@ -278,7 +278,7 @@ class BQTag (BQResource):
 
     def __init__(self, name='', value=None, type=None):
         self.name = name
-        self.values = (value and [value]) or []
+        self.values = (value and [BQValue(value)]) or []
         self.tags =  []
         self.gobjects = []
         
@@ -299,6 +299,8 @@ class BQTag (BQResource):
         else:
             self.values = [ BQValue(v) for v in values ] 
 
+    value = property(get_value, set_value)
+
     def toetree(self, parent, baseuri):
         xmlkids = list(self.xmlkids)
         if len(self.values)<=1:
@@ -312,7 +314,6 @@ class BQTag (BQResource):
                 toxmlnode (x, n, baseuri)
         return n
 
-    value = property(get_value, set_value)
 
 
 

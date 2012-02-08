@@ -40,8 +40,8 @@ def filterfluff(lines):
         line, sep, comment = l.partition ('#')
         while line.endswith("\\"):
             line = line[:-1] + lines.next()
-#        while lines.peek(1, '').startswith(' '):
-#            line = line[:-1] + lines.next()
+        while lines.peek(0, '').startswith( (' ', '\t') ):
+            line = line[:] + lines.next()
         line = line.strip()
         if line:
             yield line
@@ -116,12 +116,18 @@ class ConfigFile(object):
         n = []
         found = False
         for l in s:
+            # Skip continuation lines and comments
+            if l.startswith((' ', '\t' )):
+                #n.append(l)
+                continue
+            # match the key looked for
             k,p,v = l.partition('=')
             if k.strip() == key:
                 if line is not None:
                     n.append(line)
                 found = True
                 continue
+            # append all other lines
             n.append (l)
         if not found and append:
             if line is not None:
@@ -198,8 +204,8 @@ class ConfigFile(object):
             if section != GLOBAL_SECTION:
                 f.write ("[%s]\n" % section)
             s = self.sections[section]
-            #s = "\n".join ( [ l.strip() for l in s ] )
-            s = "\n".join ( s ) 
+            s = "\n".join ( [ l.strip('\n') for l in s ] )
+            #s = "\n".join ( s ) 
             f.write (s)
             f.write ("\n")
 
