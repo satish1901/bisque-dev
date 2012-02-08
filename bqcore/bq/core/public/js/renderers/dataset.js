@@ -241,14 +241,14 @@ Ext.define('BQ.renderers.dataset', {
             sel = [sel];
         }
 
-        var members = [];
+        var m = this.resource.getMembers();
+        var members = m.values; // has to be in two lines, otherwise some optimization happens...
         var r = null;
         for (var i=0; (r=sel[i]); i++) {
             var v = new Value('object', r.uri );
             members.push(v);
         }
         // append elements to current values
-        members = this.resource.getMembers().values.concat(members);
         this.resource.setMembers(members);
         this.resource.save_(undefined, 
                             callback(this, 'changedOk'),
@@ -286,23 +286,19 @@ Ext.define('BQ.renderers.dataset', {
 
     removeSelectedResources : function() {
         if (!this.checkAllowWrites(true)) return;        
-        var d = this.preview.resourceQueue.selectedRes;
-        var l = Ext.Object.getKeys(d);
-        var members = this.resource.getMembers().values;
-        if (!members || l.length<1) return;
+        var sel = this.preview.resourceQueue.selectedRes;
+        var m = this.resource.getMembers();
+        var members = m.values; // has to be in two lines, otherwise some optimization happens...
+        if (!members || members.length<1 || sel.length<1) return;
         
         this.setLoading('Removing selected resources');
-        var uri = null;
-        var m = null;        
-        for (var i=0; (uri=l[i]); i++) {
-            for (var j=0; (m=members[j]); j++) {
-                if (m.value == uri) {
-                   members.splice(j, 1);
-                   break;
-                }
-            }
+        for (var j=members.length-1; j>=0; j--) {
+            var m = members[j];
+            m.index = undefined;
+            if (m.value in sel)
+                members.splice(j, 1);
         }
-        
+
         // dima: this does not work  backend error!!!!!!!!!!!!!
         this.resource.setMembers(members);
         this.resource.save_(undefined, 
