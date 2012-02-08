@@ -104,8 +104,8 @@ def get_user_id():
         if bq_user:
             return bq_user.id
     if current_user:
+        #log.debug ('using current_user %s' %current_user)
         return current_user.id
-    #log.debug ('no user id set')
     return None
 
 def get_user():
@@ -129,11 +129,13 @@ def get_user_pass():
 
 def set_current_user(user=None):
     '''Set the user identity to user. Should be tg_user objects '''
+    global current_user
     current_user = user
 
 
 def set_admin_mode (a):
     if a:
+        get_admin()
         set_current_user (user_admin)
     else:
         set_current_user (None)
