@@ -909,7 +909,7 @@ function parseValueType(v, t) {
 
 function Value (t, v) {
     this.xmltag = "value";
-    this.xmlfields = [ 'type' ];
+    this.xmlfields = [ 'type', 'index' ];
     
     if (t != undefined) this.type = t;
     //if (v != undefined) this.value = v; // dima  
@@ -922,6 +922,7 @@ Value.prototype.initializeXml = function (node){
     this.type = attribStr(node, 'type');
     //this.value = node.textContent; // dima
     this.value = parseValueType(node.textContent, this.type);
+    this.index = attribInt(node, 'index');    
 }
 
 Value.prototype.setParent = function (p){
@@ -1747,7 +1748,6 @@ function BQDataset (){
     BQObject.call(this);
     this.xmltag = "dataset";
     this.xmlfields = [ "uri", "name" ];
-    //this.addtag ({ name: 'members' });
 }
 
 BQDataset.prototype = new BQObject();
@@ -1755,8 +1755,7 @@ BQDataset.prototype.initializeXml = function (mex) {
     this.uri   = attribStr(mex,'uri');
     this.name  = attribStr(mex,'name');
     this.ts    = attribStr(mex,'ts');
-    this.owner =attribStr(mex,'owner');
-    
+    this.owner = attribStr(mex,'owner');
     this.resource_type = this.xmltag;    
 }
 
@@ -1794,6 +1793,7 @@ BQDataset.prototype.setMembers = function (nvs) {
     }
     members.values = nvs
 }
+
 BQDataset.prototype.save_ = function (parenturi, cb, errorcb) {
     this.doc = this
     BQObject.prototype.save_.call(this, parenturi, cb, errorcb);
