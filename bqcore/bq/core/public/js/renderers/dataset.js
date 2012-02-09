@@ -144,7 +144,8 @@ Ext.define('BQ.renderers.dataset', {
         tb.child('#menu_images').setDisabled(true); 
         //tb.child('#menu_query').setDisabled(true); 
         tb.child('#menu_delete_selected').setDisabled(true);
-        tb.child('#menu_delete').setDisabled(true);                
+        tb.child('#menu_delete').setDisabled(true);
+        this.operations.setDisabled(true);               
     },
  
     onDone: function(panel) {

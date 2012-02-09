@@ -91,6 +91,12 @@ Ext.define('BQ.Application', {
         this.main.setCenterComponent(c);  
     },
 
+    setLoading: function(load, targetEl) {
+        if (!this.main) return;
+        var w = this.getCenterComponent() || this.main;
+        w.setLoading(load, targetEl);
+    },
+
 });
 
 //--------------------------------------------------------------------------------------
