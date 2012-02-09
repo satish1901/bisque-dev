@@ -1184,19 +1184,19 @@ Ext.define('BQ.upload.Panel', {
     wrapDataset : function() {
         var members = [];
         this.uploadPanel.items.each( function() { 
-            if (this.resource && this.resource.uri && this.resource.resource_type=='image') {
+            if (this.resource && this.resource.uri) {
                 members.push( new Value( "object", this.resource.uri ) );
             }
         });
         
         var dataset = new BQDataset();
         dataset.name = 'Uploaded on '+(new Date()).toISOString();
-        dataset.setMembers( members );
+        dataset.newMembers( members );
         dataset.save_('/data_service/datasets/', callback(this, 'onCreatedDataset'));        
     },   
     
     onCreatedDataset : function(dataset) {
-        BQ.ui.notification('Dataset created with the name: "'+dataset.name+'"', 10000);
+        BQ.ui.notification('Dataset created: "<a href="/client_service/view?resource='+dataset.uri+'">'+dataset.name+'</a>"', 10000);
         this.fireEvent( 'datasetcreated', dataset);
     },        
     

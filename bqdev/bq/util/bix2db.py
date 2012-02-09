@@ -64,7 +64,6 @@ from bq import data_service
 
 from bq.util.bisquik2db import bisquik2db
 from bq.data_service.model import Image, Tag
-from bq.core import permission
 
 from bq.exceptions import BQException
 BIXLOG='biximport.log'
@@ -79,16 +78,16 @@ log = logging.getLogger('bq.bix2db')
 class BIXImporter(object):
     """Converter class for parsing Bix file and coverting to bisquik tags
     """
-    pmap = {'public': permission.PUBLIC,
-            'private': permission.PRIVATE,
-            'group': permission.PRIVATE }
+    pmap = {'public': 'published',
+            'private': 'private',
+            'group': 'private' }
              
 
 
     def __init__(self, updir, **kw):
         self.upload_dir= updir
         self.flags = kw
-        self.permission_flag = permission.PRIVATE
+        self.permission_flag = 'private'
         self.image_info = {}
 
     def fullname(self, name):
@@ -100,7 +99,7 @@ class BIXImporter(object):
     def save_file (self, fn, **kw):
         '''save a file in the image server and return info'''
         with open(self.fullname(fn), 'rb') as src:
-            return blob_service.store_blob(src, fn, perm = str(self.permission_flag) ) 
+            return blob_service.store_blob(src, fn, permission = str(self.permission_flag) ) 
             
 
     def save_image (self, fn, **kw):
@@ -108,7 +107,7 @@ class BIXImporter(object):
         log.debug ("Store new image: " + fn + " " + str(self.image_info)) 
 
         with open(self.fullname(fn), 'rb') as src:
-            self.resource = blob_service.store_blob(src, fn, perm = str(self.permission_flag)) 
+            self.resource = blob_service.store_blob(src, fn, permission = str(self.permission_flag)) 
 
         if 'uri' in self.resource.attrib:
             self.import_files[fn] = self.resource.get('uri')
@@ -243,7 +242,7 @@ class BIXImporter(object):
         '''set visibability (public, private) for image v'''
         perm = item[1].text
         log.debug ('setting permission by ' + perm)
-        self.permission_flag = BIXImporter.pmap.get(perm, permission.PRIVATE)
+        self.permission_flag = BIXImporter.pmap.get(perm, 'private')
     
     def tag_microtubule_tracks(self, item, **kw):
         self.tag_graphics_annotation(item, **kw)

@@ -127,15 +127,13 @@ imgcnv_needed_version = '1.43'
 # File object 
 #---------------------------------------------------------------------------------------
 
-AccessRights = { 'private': permission.PRIVATE, 'published': permission.PUBLIC }
-
 class UploadedFile:
     """ Object encapsulating upload file """
     filename   = None
     file       = None
     tags       = None
     original   = None
-    permission = permission.PRIVATE
+    permission = 'private'
     
     def __init__(self, path, name, tags=None):
         self.filename = name
@@ -403,7 +401,7 @@ class import_serviceController(ServiceController):
             #tags = f.tags
         
         # check the presense of permission with the file
-        perm = permission.PRIVATE
+        perm = 'private'
         if hasattr(f, 'permission'):             
             perm = f.permission
 
@@ -415,7 +413,8 @@ class import_serviceController(ServiceController):
 
         # try inserting the file in the blob service            
         try:
-            resource = blob_service.store_blob (filesrc=src, filename=filename, perm=perm, tags=tags)
+            log.debug('Inserting blob: [%s] [%s] [%s] [%s]'%(src, filename, perm, tags))
+            resource = blob_service.store_blob (filesrc=src, filename=filename, permission=perm, tags=tags)
         except Exception, e:
             log.exception("Error during store")
             return None
@@ -456,9 +455,9 @@ class import_serviceController(ServiceController):
                 intags = {'type': mime}
         
         # check access permission
-        f.permission = permission.PRIVATE
+        f.permission = 'private'
         if intags is not None and 'permission' in intags:
-            f.permission = AccessRights[intags['permission']]
+            f.permission = intags['permission']
         
         # no processing required        
         if intags is None or 'type' not in intags or intags['type'] not in self.filters:
@@ -484,7 +483,7 @@ class import_serviceController(ServiceController):
             # include the parent file into the database            
             parent_uri = None
             try:
-                resource_parent = blob_service.store_blob (filesrc=f.file, filename=os.path.split(f.filename)[-1], perm=f.permission)
+                resource_parent = blob_service.store_blob (filesrc=f.file, filename=os.path.split(f.filename)[-1], permission=f.permission)
                 parent_uri = resource_parent.get('uri')
             except Exception, e:
                 log.exception("Error during store")  
