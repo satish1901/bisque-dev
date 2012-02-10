@@ -200,7 +200,9 @@ class STemplate (string.Template):
     idpattern = r'[_a-z][._a-z0-9]*'
 
 
-def call(cmd, **kw):
+def call(cmd, echo=False, **kw):
+    if echo:
+        print "Executing '%s'" % ' '.join (cmd)
     if not kw.has_key ('stdout'):
         p = subprocess.Popen(cmd,
                              stdout=subprocess.PIPE,
@@ -530,7 +532,7 @@ def create_postgres (dburl):
     # psql needs a database to connect to even when creating.. use template1
     if dburl.password:
         stdin = StringIO.StringIO(dburl.password)
-    if call (command + ['-c', 'create database %s' % dburl.database, 'template1'],
+    if call (command + ['-c', 'create database %s' % dburl.database, 'template1'], echo=True,
              stdin = stdin) != 0:
         print db_create_error
         return False
@@ -552,11 +554,11 @@ def create_mysql(dburl):
         command.append ('-p%s' % dburl.password)
     
     print "PLEASE ignore 'ERROR (...)Unknown database ..' "
-    if call (command+[dburl.database, '-e', 'quit']) == 0:
+    if call (command+[dburl.database, '-e', 'quit'], echo=True) == 0:
         print "Database exists, not creating"
         return False
 
-    if call (command+['-e', 'create database %s' % dburl.database]) != 0:
+    if call (command+['-e', 'create database %s' % dburl.database], echo=True) != 0:
         print db_create_error
         return False
     return True
@@ -721,7 +723,7 @@ Please resolve the problem(s) and re-run 'bisque-setup --database'.""")
                 try:
                     db_exists = create_db (DBURL)
                 except:
-                    log.warn('Could not create database')
+                    log.exception('Could not create database')
 
     if not db_exists:
         print( """
@@ -996,7 +998,6 @@ def check_condor (params, cfg  = RUNTIME_CFG):
 def install_runtime(params, cfg = RUNTIME_CFG):
     """Check and install runtime control files"""
 
-
     params['runtime.platforms'] = "command"
     check_condor(params, cfg=cfg)
 
@@ -1004,30 +1005,12 @@ def install_runtime(params, cfg = RUNTIME_CFG):
     staging=params['runtime.staging_base'] = os.path.abspath(os.path.expanduser(params['runtime.staging_base']))
 
     update_site_cfg(params, section=None, cfg=cfg)
-
     try:
         if not os.path.exists(staging):
             os.makedirs(staging)
     except OSError,e:
         print "%s does not exist and cannot create: %s" % (staging, e)
 
-    #         #if  os.path.exists(cfg_path):
-    #         #    shutil.copyfile(cfg_path, "%s.old" %cfg_path)
-    #         cfg = ConfigFile (cfg_path)
-    #         if not os.path.exists(cfg_path):
-    #             cfg.edit_config(None, None,
-    #                '# runtime-bisque.cfg created by bisque-setup')
-    #             cfg.edit_config(None, 'module_enabled',
-    #                             'module_enabled=True'  )
-    #         cfg.edit_config(None, 'runtime', 'runtime=%s' % params['runtime.mode'])
-    #         cfg.edit_config(None, 'staging_base', 'staging_base=%s' % params['runtime.staging_base'])
-    #         if params['runtime.matlab_home']:
-    #             cfg.edit_config(None, 'matlab_home', 'matlab_home=%s'%params['runtime.matlab_home'])
-    #         for v, d, h in CONDOR_QUESTIONS:
-    #             if params.get(v, None):
-    #                 cfg.edit_config("condor", v, "%s=%s" % (v, params[v]))
-    #                 print "CONDOR EDIT", v
-    #         cfg.write (open(cfg_path, 'w'))
     return params
     
 
