@@ -31,15 +31,26 @@ class ScriptEnvironment(BaseEnvironment):
         for mex in runner.mexes:
             if mex.executable:
                 script = self.create_script(mex)
-                runner.log ("Execute setup '%s' in %s" % (" ".join (script + ['setup']), os.getcwd()))
-                if subprocess.call(script + ['setup'])!=0:
-                    raise ModuleEnvironmentError("Error during setup")
+                rundir = mex.get('rundir')
+                runner.log ("Execute setup '%s' in %s" % (" ".join (script + ['setup']), rundir))
+                runner.log ("logging to  %s " % mex.log_name)
+                r =  subprocess.call(script + ['setup'], 
+                                     stdout=open(mex.log_name, 'a'),
+                                     stderr = subprocess.STDOUT,
+                                     cwd = rundir)
+                if r != 0:
+                    raise ModuleEnvironmentError("setup returned %s"  % r)
         
     def teardown_environment(self, runner):
         for mex in runner.mexes:
             if mex.executable:
                 script = self.create_script(mex)
-                runner.log ("Execute teardown '%s' in %s" % (" ".join(script+['teardown']), os.getcwd()))
-                if subprocess.call(script + ['teardown'])!= 0:
-                    raise ModuleEnvironmentError("Error during teardown")
+                rundir = mex.get('rundir')
+                runner.log ("Execute teardown '%s' in %s" % (" ".join(script+['teardown']), rundir))
+                r = subprocess.call(script + ['teardown'],
+                                    stdout=open(mex.log_name, 'a'),
+                                    stderr = subprocess.STDOUT,
+                                    cwd = rundir)
+                if r != 0:
+                    raise ModuleEnvironmentError("teardown returned %s"  % r)
             

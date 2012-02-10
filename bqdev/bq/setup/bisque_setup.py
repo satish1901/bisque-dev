@@ -819,7 +819,8 @@ def install_modules(params):
         if os.path.exists(os.path.join(modpath, 'setup.py')):
             cwd = os.getcwd()
             os.chdir (modpath)
-            print ("Running setup.py in %s" % modpath)
+            print("################################")
+            print("Running setup.py in %s" % modpath)
             try:
                 r = call ([PYTHON, '-u', 'setup.py'], env=environ)
                 if r != 0:

@@ -58,6 +58,7 @@ import textwrap
 from tg import config, url
 from datetime import datetime
 from sqlalchemy.sql import select, func, exists, and_, or_, not_, asc, desc
+from sqlalchemy.orm import Query
 
 from bq.core.model import DBSession as session
 #from bq.image_service import image_service
@@ -366,15 +367,17 @@ def prepare_type (resource_type, query = None):
 
 
 def prepare_parent(resource_type, query, parent_query=None):
-    if parent_query:
+    if isinstance(parent_query, Query):
         name, dbtype = resource_type
         subquery = parent_query.with_labels().subquery()
         #parent = parent_query.first()
         #log.debug ("subquery " + str(subquery))
-        log.debug ( "parent %s %s " % ( name , dbtype))
+        log.debug ( "adding parent of %s %s " % ( name , dbtype))
         #query = session.query(dbtype).filter (dbtype.resource_parent_id == subquery.c.taggable_id)
         query  = query.filter(dbtype.resource_parent_id == subquery.c.taggable_id)
         #query  = query.filter(dbtype.resource_parent_id == parent.id)
+    elif isinstance(parent_query, Taggable):
+        query = query.filter_by(resource_parent_id = parent_query.id)
     else:
         query = query.filter_by(resource_parent_id = None)
     return query

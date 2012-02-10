@@ -1769,6 +1769,7 @@ BQDataset.prototype.getMembers = function (cb) {
         return members;
     }
 }
+
 BQDataset.prototype.members_loaded = function (cb, dataset_tags) {
     // Called by dataset.load_tags with user cb, and actual tags.
     var members = this.find_tags ('members');
@@ -1782,6 +1783,7 @@ BQDataset.prototype.members_loaded = function (cb, dataset_tags) {
     cb(members);
 }
 
+// dima: why this save here??? I think this needs rewrite!
 BQDataset.prototype.setMembers = function (nvs) {
     // Tag an array of Value s
     var members = this.find_tags ('members');
@@ -1791,6 +1793,14 @@ BQDataset.prototype.setMembers = function (nvs) {
         members.save_();
         
     }
+    members.values = nvs
+}
+
+// dima: instead of setMembers, until i'll rewrite the thing
+BQDataset.prototype.newMembers = function (nvs) {
+    var members = this.find_tags ('members');
+    if (!members)
+        members = this.addtag ({ name: 'members' });
     members.values = nvs
 }
 

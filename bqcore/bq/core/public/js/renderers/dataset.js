@@ -32,10 +32,14 @@ Ext.define('BQ.renderers.dataset', {
         this.operations = Ext.create('BQ.dataset.Panel', {
             title : 'Operations',     
             dataset : this.resource,       
-            listeners: { 'done': this.onDone, 'error': this.onError, scope: this },               
+            listeners: { 'done': this.onDone, 
+                         'error': this.onError, 
+                         'removed': this.onremoved, 
+                         'chnaged': this.changedOk, 
+                         scope: this },               
         });
         
-        this.mexs = new Bisque.ResourceBrowser.Browser({
+        this.mexs = Ext.create('Bisque.ResourceBrowser.Browser', {
             'layout' : 5,
             'title' : 'Analysis',
             'viewMode' : 'MexBrowser',
@@ -140,7 +144,8 @@ Ext.define('BQ.renderers.dataset', {
         tb.child('#menu_images').setDisabled(true); 
         //tb.child('#menu_query').setDisabled(true); 
         tb.child('#menu_delete_selected').setDisabled(true);
-        tb.child('#menu_delete').setDisabled(true);                
+        tb.child('#menu_delete').setDisabled(true);
+        this.operations.setDisabled(true);               
     },
  
     onDone: function(panel) {
@@ -306,20 +311,22 @@ Ext.define('BQ.renderers.dataset', {
                             callback(this, 'changedError'));
     },  
     
+    onremoved: function() {   
+        var myMask = new Ext.LoadMask(BQApp.getCenterComponent(), {
+            msg: 'Dataset removed, this URL is no longer valid...',
+            msgCls: 'final', 
+        });
+        myMask.show();        
+    },
+    
     remove: function() {   
         if (!this.checkAllowWrites(true)) return;
         
         var text = 'Are you sure you want to delete dataset "'+this.resource.name+'"';
         Ext.Msg.confirm('Delete dataset', text, function(btn, text) {
             if (btn != 'yes') return;
-
             this.resource.delete_();
-            var myMask = new Ext.LoadMask(BQApp.getCenterComponent(), {
-                msg: 'Dataset removed...',
-                msgCls: 'final', 
-            });
-            myMask.show();
-            
+            this.onremoved();
         }, this);        
     },
 

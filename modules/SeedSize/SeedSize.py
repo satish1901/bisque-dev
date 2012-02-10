@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import os
+import sys
 import optparse 
 import subprocess
 import glob
@@ -36,13 +37,14 @@ class SeedSize(object):
 
         with open(self.image_map_name, 'wb') as f:
             pickle.dump(results, f)
+        return 0
         
 
     def start(self):
         self.bq.update_mex('executing')
         # Matlab requires trailing slash
-        subprocess.call([EXEC, 'images/'])
-        
+        r = subprocess.call([EXEC, 'images/'])
+        return r
 
     def teardown(self):
         with  open(self.image_map_name, 'rb') as f:
@@ -77,7 +79,7 @@ class SeedSize(object):
                 tags.append(mexlink)
 
         self.bq.finish_mex(tags = tags, gobjects = gobjects)
-            
+        return 0
 
 
     def _post_submex(self):
@@ -93,6 +95,7 @@ class SeedSize(object):
                 log.error ("Can't find url for %s given files %s and map %s" % 
                            result, localfile, result2url)
             mex = { 'type' : self.bq.mex.type,
+                    'name' : self.bq.mex.name,
                     'value': 'FINISHED', 
                     'tag': [ {'name': 'image_url', 'value':  result2url [result]},
                              {'name': 'resource_url', 'value': self.config.resource_url }],
@@ -175,8 +178,7 @@ class SeedSize(object):
         if command not in ('setup','teardown', 'start'):
             parser.error('Command must be start, setup or teardown')
 
-        logging.basicConfig(level=logging.DEBUG, filename="SeedSize-%s.log" % command)
-
+        logging.basicConfig(level=logging.DEBUG)
 
         # maltab code requires trailing slash..
         self.images = os.path.join(options.staging_path, 'images') + os.sep
@@ -189,9 +191,13 @@ class SeedSize(object):
 
             
         command = getattr(self, command)
-        command()
-
+        try:
+            r = command()
+        except:
+            logging.exception ("problem during %s" % command)
+            sys.exit(1)
         
+        sys.exit(r)
 
 
 
