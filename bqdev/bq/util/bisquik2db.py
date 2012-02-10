@@ -283,6 +283,7 @@ class ResourceFactory(object):
                 v.indx = indx;
             else:
                 objarr[indx] = v
+                v.indx = indx;
             #log.debug ('fetching %s %s[%d]:%s' %(parent , array, indx, v)) 
             return v
 
@@ -610,10 +611,11 @@ def parse_uri(uri):
     url = urlparse.urlsplit(uri)
     parts = url[2].split('/')
     name, ida = parts[-2:]
+    rest = []
     while not ida.isdigit() and len(parts)> 2:
-        parts.pop()
+        rest.append( parts.pop() )
         name,ida = parts[-2:]
-    return url[1], name, ida
+    return url[1], name, ida, rest
 
 def load_uri (uri):
     '''Load the object specified by the root tree and return a rsource
@@ -624,7 +626,7 @@ def load_uri (uri):
     '''
     # Check that we are looking at the right resource.
     
-    net, name, ida = parse_uri(uri)
+    net, name, ida, rest = parse_uri(uri)
     name, dbcls = dbtype_from_tag(name)
     resource = DBSession.query(dbcls).get (ida)
     log.debug("loading uri name/type (%s/%s)(%s) => %s" %(name,  str(dbcls), ida, str(resource)))
