@@ -202,6 +202,14 @@ Ext.define('Bisque.ResourceTagger',
         for(var i=0;i<node.childNodes.length; i++)
             this.checkTree(node.childNodes[i], checked);
     },
+    
+    toggleTree : function(node)
+    {
+        node.set('checked', !node.get('checked'));
+
+        for(var i=0;i<node.childNodes.length; i++)
+            this.toggleTree(node.childNodes[i]);
+    },
 
     getSelModel : function()
     {
@@ -758,33 +766,57 @@ Ext.define('Bisque.GObjectTagger',
         [{
             xtype : 'buttongroup',
             items : [{
-                text : 'Uncheck All',
+                xtype: 'splitbutton',
+                arrowAlign: 'right',
+                text : 'Toggle selection',
                 scale : 'small',
                 iconCls : 'icon-uncheck',
-                handler : this.toggleCheck,
+                handler : this.toggleCheckTree,
+                checked : true,
                 scope : this,
-                checked : true
+                menu:
+                {
+                    items: [{
+                        check: true,
+                        text: 'Check all',
+                        handler: this.toggleCheck,
+                        scope: this,
+                    }, {
+                        check: false,
+                        text: 'Uncheck all',
+                        handler: this.toggleCheck,
+                        scope: this,
+                    }]
+                }
             }]
         }];
         
         return buttons.concat(toolbar);
     },
     
+    toggleCheckTree : function(button)
+    {
+        var rootNode = this.tree.getRootNode(), eventName;
+        button.checked = !button.checked;
+
+        if (button.checked)
+            button.setIconCls('icon-uncheck')
+        else
+            button.setIconCls('icon-check')
+
+        for (var i=0;i<rootNode.childNodes.length;i++)
+        {
+            eventName=(!rootNode.childNodes[i].get('checked'))?'Select':'Deselect';
+            this.fireEvent(eventName, this, rootNode.childNodes[i]);
+        }
+
+        this.toggleTree(rootNode);
+    },
+    
     toggleCheck : function(button)
     {
-        button.checked = !button.checked;
+        button.checked = button.check;
         var rootNode = this.tree.getRootNode(), eventName=(button.checked)?'Select':'Deselect';
-        
-        if (button.checked)
-        {
-            button.setText('Uncheck All')
-            button.setIconCls('icon-uncheck')
-        }
-        else
-        {
-            button.setText('Check All')
-            button.setIconCls('icon-check')
-        }
         
         for (var i=0;i<rootNode.childNodes.length;i++)
             this.fireEvent(eventName, this, rootNode.childNodes[i]);
