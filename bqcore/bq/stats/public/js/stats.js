@@ -4,10 +4,11 @@
 
   @author Dmitry Fedorov  <fedorov@ece.ucsb.edu>   
   
-  Copyright (c) 2011 Dmitry Fedorov, Center for Bio-Image Informatics
+  Copyright (c) 2011-2012 Dmitry Fedorov, Center for Bio-Image Informatics
   
   ver: 1.0 - ExtJS3  
   ver: 2.0 - Update to ExtJS4
+  ver: 3.0 - Update to ExtJS4 plotting
 
 Usage:
 
@@ -144,6 +145,84 @@ function getUrlArgs(d) {
   return s;
 }
 
+//------------------------------------------------------------------------------
+// BQStatisticsAccessor
+//------------------------------------------------------------------------------
+
+function BQStatisticsAccessor( url, xpath, xmap, xreduce, opts ) {
+  this.url     = url;
+  this.xpath   = xpath;
+  this.xmap    = xmap;
+  this.xreduce = xreduce;   
+  this.args    = {}; // additional arguments to pass to statistics service
+  if ('args' in opts) this.args = opts['args'];
+  
+  if (opts['ondone']) this.ondone = opts['ondone'];
+  if (opts['onerror']) this.onerror = opts['onerror'];  
+ 
+  this.fetch();
+}
+
+BQStatisticsAccessor.prototype.fetch = function () {    
+  //escape, encodeURI and encodeURIComponent
+  var stat_url = '/stats/compute';
+  stat_url += '?url='+encodeURIComponent(this.url);
+  stat_url += getUrlArg('xpath', this.xpath);
+  stat_url += getUrlArg('xmap', this.xmap);
+  stat_url += getUrlArg('xreduce', this.xreduce);
+  stat_url += getUrlArgs(this.args);
+  BQFactory.request( { uri: stat_url, cb: callback(this, "onLoad"), errorcb: callback(this, "onError") } );  
+}
+
+BQStatisticsAccessor.prototype.onLoad = function (stats) {
+    if (stats.resource_type != 'resource' || stats.type != 'statistic') {
+        this.onError('Statistics server returned document in unknow format');
+        return;   
+    }
+  
+    // retrieve all the tags available as a result
+    this.results = [];
+    var resource=null;
+    for (var c=0; (resource=stats.children[c]); c++) {  
+        if (resource.resource_type != 'resource') continue;
+        var tags = resource.tags;
+        var result = {};
+        result.uri = resource.uri;
+        var u = splitUrl(result.uri);
+        result.xpath   = u.attrs.xpath;
+        result.xmap    = u.attrs.xmap;
+        result.xreduce = u.attrs.xreduce;
+        
+        for (var i=0; i<tags.length; i++) {
+            if (tags[i] == null) continue;
+            var val_str = tags[i].value;
+            if (val_str == null || val_str == '')
+                val_str = tags[i].values[0].value;
+            result[tags[i].name] = val_str;
+        }
+        
+        // turn all vector tags into arrays
+        for (var k in result) {
+            if (k in STAT_VECTOR_TAGS) {
+                result[k] = result[k].split(',');
+                for (var i=0; i<result[k].length; i++)
+                    result[k][i] = decodeURIComponent(result[k][i]);
+            }
+        }
+        
+        this.results.push(result);
+    }
+
+    //this.results.stats = stats;  
+    if (this.ondone && this.results.length>0) this.ondone(this.results);
+    if (this.results.length<1) this.onError('Statistics server returned no parsable results');
+}
+
+BQStatisticsAccessor.prototype.onError = function (str) {
+  if (this.onerror) this.onerror(str);
+}
+
+
 //******************************************************************************
 // BQStatisticsVisualizer
 //******************************************************************************
@@ -251,78 +330,6 @@ BQStatisticsVisualizer.prototype.onError = function (e) {
   //removeAllChildren(this.surface);
   this.progress.stop();
   this.surface.innerHTML = e.message;  
-}
-
-//------------------------------------------------------------------------------
-// BQStatisticsAccessor
-//------------------------------------------------------------------------------
-
-function BQStatisticsAccessor( url, xpath, xmap, xreduce, opts ) {
-  this.url     = url;
-  this.xpath   = xpath;
-  this.xmap    = xmap;
-  this.xreduce = xreduce;   
-  this.args    = {}; // additional arguments to pass to statistics service
-  if ('args' in opts) this.args = opts['args'];
-  
-  if (opts['ondone']) this.ondone = opts['ondone'];
-  if (opts['onerror']) this.onerror = opts['onerror'];  
- 
-  this.fetch();
-}
-
-BQStatisticsAccessor.prototype.fetch = function () {    
-  //escape, encodeURI and encodeURIComponent
-  var stat_url = '/stats/compute';
-  stat_url += '?url='+encodeURIComponent(this.url);
-  stat_url += getUrlArg('xpath', this.xpath);
-  stat_url += getUrlArg('xmap', this.xmap);
-  stat_url += getUrlArg('xreduce', this.xreduce);
-  stat_url += getUrlArgs(this.args);
-  BQFactory.request( { uri: stat_url, cb: callback(this, "onLoad"), errorcb: callback(this, "onError") } );  
-}
-
-BQStatisticsAccessor.prototype.onLoad = function (stats) {
-  this.results = [];
-  
-  // retrieve all the tags available as a result
-  for (var c=0; c<stats.children.length; c++) {  
-    var resource = stats.children[c];
-    if (resource.xmltag != 'resource') continue;
-    var tags = resource.tags;
-    var result = {};
-    result.uri = resource.uri;
-    var u = splitUrl(result.uri);
-    result.xpath   = u.attrs.xpath;
-    result.xmap    = u.attrs.xmap;
-    result.xreduce = u.attrs.xreduce;
-    
-    for (var i=0; i<tags.length; i++) {
-        if (tags[i] == null) continue;
-        var val_str = tags[i].value;
-        if (val_str == null || val_str == '')
-          val_str = tags[i].values[0].value;
-        result[tags[i].name] = val_str;
-    }
-    
-    // turn all vector tags into arrays
-    for (var k in result) {
-      if (k in STAT_VECTOR_TAGS) {
-        result[k] = result[k].split(',');
-        for (var i=0; i<result[k].length; i++)
-          result[k][i] = decodeURIComponent(result[k][i]);
-      }
-    }
-    
-    this.results.push(result);
-  }
-
-  //this.results.stats = stats;  
-  if (this.ondone) this.ondone(this.results);
-}
-
-BQStatisticsAccessor.prototype.onError = function (str) {
-  if (this.onerror) this.onerror(str);
 }
 
 //------------------------------------------------------------------------------
@@ -1408,7 +1415,11 @@ Ext.define('BQ.stats.Visualizer', {
     },    
 
     ondone: function (results) {
-
+        this.setLoading(false); 
+        if (results.length<1) {
+            BQ.ui.warning('Statistics server did not return any results...');  
+            return;   
+        }
         // create tables and plots here
         if (this.opts.grid == true) {
             this.grids = [];
@@ -1448,8 +1459,6 @@ Ext.define('BQ.stats.Visualizer', {
             //else
             //    this.plotPanel.setVisible(false);
         }        
-        
-        this.setLoading(false);        
     },
 
 });
