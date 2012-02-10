@@ -313,8 +313,8 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
 
             titleCollapse : true,
             collapsible : true,
+            hideCollapseTool : true,
             border : false,
-            title : 'Tag|Value:',
             tools : [
             {
                 type : 'up',
@@ -379,9 +379,9 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
     {
         var tag = this.tag || '';
         tag += this.sortOrder ? ':'+this.sortOrder : '';
-        tag += this.value.length!=0 ? '|'+this.value : '';
+        tag += this.value.length!=0 ? ':'+this.value : '';
         
-        this.setTitle('Tag|Value : <span class="TagStyle">' + tag + '</span>');
+        this.setTitle('<span class="TagStyle">' + tag + '</span>');
     },
 
     SortComboBox : function(dir)

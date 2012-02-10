@@ -207,7 +207,7 @@ Ext.define('Bisque.ResourceBrowser.Layout.Base',
 	            	width: (this.getParentSize().width-30),
 	            	//autoScroll:true,
         	    	padding:0,
-            		title: '<b>Group </b><i>'+currentGrp+'</i>',
+            		title: '<b>Group </b><i>'+Ext.String.ellipsis(currentGrp, 80)+'</i>',
             		collapsible: true,
             		collapsed: false
 				}));
