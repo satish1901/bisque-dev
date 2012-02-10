@@ -235,16 +235,17 @@ class statsController(ServiceController):
     def xml (self, **kw):
 
         d = self.compute_stats(**kw)
-
-        response = etree.Element ('resource')        
-        response.set('uri', '%s/compute?%s'%(self.baseuri, dict2url(kw, ['url'])))
+        
+        url = kw['url']
+        response = etree.Element ('resource', type='statistic')        
+        response.set('uri', '%s/compute?%s'%(self.baseuri, dict2url({'url':url})))
         
         for i in d:
-            r = etree.SubElement (response, 'resource')
             xpath   = i.pop('xpath')
             xmap    = i.pop('xmap')
             xreduce = i.pop('xreduce')
-            r.set('uri', '/stats/compute?%s'%(dict2url({ 'xpath':xpath, 'xmap':xmap, 'xreduce':xreduce })))
+            r = etree.SubElement (response, 'resource', name='%s of %s'%(xreduce, xmap), type=xreduce)            
+            r.set('uri', '/stats/compute?%s'%(dict2url({ 'url':url, 'xpath':xpath, 'xmap':xmap, 'xreduce':xreduce })))
             for k in i:     
                 v = i[k]
                 if hasattr(v, '__iter__') and len(v)>0: 

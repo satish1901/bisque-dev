@@ -11,8 +11,6 @@ def extend_parser(optparse_parser):
                                help='Specify a repository to bootstrap from', 
                                default= False)
 
-def adjust_options(options, args):
-    options.no_site_packages=True
 
 def after_install(options, home_dir):
     if sys.platform == 'win32':
@@ -49,7 +47,7 @@ def bisque_install(options, home_dir, bindir):
     print "**     Fetching bisque        **"
     print "********************************"
     print 
-    subprocess.call([os.path.join(home_dir, bin, 'hg'),
+    subprocess.call([os.path.join(home_dir, bindir, 'hg'),
                      'clone', options.repo, 'tmp'])
     for df in glob.glob('tmp/*') + glob.glob('tmp/.hg*'):
         if not os.path.exists(os.path.basename(df)):
@@ -64,7 +62,7 @@ def bisque_install(options, home_dir, bindir):
     print "paver setup"
     print "bq-admin setup"
 
-    #subprocess.call([os.path.join(home_dir, bin, 'paver'), 'setup'])
+    #subprocess.call([os.path.join(home_dir, bindir, 'paver'), 'setup'])
     print "Please visit http://biodev.ece.ucsb.edu/projects/bisquik/wiki/InstallationInstructions and follow instructions there"
 """))
 

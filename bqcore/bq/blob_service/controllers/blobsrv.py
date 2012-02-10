@@ -176,13 +176,10 @@ class BlobServer(RestController, ServiceMixin):
         # resource creation
         resource_type = guess_type(filename)                  
 
-        if 'perm' in kw:             
-            permision = perm2str.get (kw['perm'], 'private')
-
-        resource = etree.Element( resource_type, permision = permission,
+        resource = etree.Element( resource_type, permission = permission,
                                   resource_uniq = fhash,
                                   resource_name = filename,
-                                  resource_value  = blob_id )
+                                  resource_value = blob_id )
 
         if resource_type == 'image':
             resource.set('src', "/image_service/images/%s" % fhash) # dima: this here is a hack!!!!

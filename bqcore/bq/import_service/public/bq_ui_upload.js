@@ -223,7 +223,7 @@ Ext.define('BQ.upload.ZipAnnotator', {
                 }                
             }, {
                 xtype: 'numberfield',
-                name: 'number-z',
+                name: 'number_z',
                 fieldLabel: 'Number of Z slices',
                 value: 1,
                 minValue: 1,
@@ -231,7 +231,7 @@ Ext.define('BQ.upload.ZipAnnotator', {
                 //maxValue: 50
             }, {
                 xtype: 'numberfield',
-                name: 'number-t',
+                name: 'number_t',
                 fieldLabel: 'Number of T points',
                 value: 1,
                 minValue: 1,
@@ -239,13 +239,13 @@ Ext.define('BQ.upload.ZipAnnotator', {
                 //maxValue: 50
             }, {
                 xtype: 'displayfield',
-                name: 'resolution-title',
+                name: 'resolution_title',
                 html: resolution_question,
                 cls: 'question',
                 hidden: true,                
             }, {
                 xtype: 'numberfield',
-                name: 'resolution-x',
+                name: 'resolution_x',
                 fieldLabel: 'Pixel resolution X in microns',
                 value: 0.0,
                 minValue: 0,
@@ -253,7 +253,7 @@ Ext.define('BQ.upload.ZipAnnotator', {
                 //maxValue: 50
             }, {
                 xtype: 'numberfield',
-                name: 'resolution-y',
+                name: 'resolution_y',
                 fieldLabel: 'Pixel resolution Y in microns',
                 value: 0.0,
                 minValue: 0,
@@ -261,7 +261,7 @@ Ext.define('BQ.upload.ZipAnnotator', {
                 //maxValue: 50
             }, {
                 xtype: 'numberfield',
-                name: 'resolution-z',
+                name: 'resolution_z',
                 fieldLabel: 'Pixel resolution Z in microns',
                 value: 0.0,
                 minValue: 0,
@@ -269,7 +269,7 @@ Ext.define('BQ.upload.ZipAnnotator', {
                 //maxValue: 50
             }, {
                 xtype: 'numberfield',
-                name: 'resolution-t',
+                name: 'resolution_t',
                 fieldLabel: 'Pixel resolution T in seconds',
                 value: 0.0,
                 minValue: 0,
@@ -287,15 +287,15 @@ Ext.define('BQ.upload.ZipAnnotator', {
     },
     
     onTypeSelected: function(combo, records) {
-        var togglable_fileds = { 'number-z':null, 'number-t':null, 'resolution-title':null, 
-            'resolution-x':null, 'resolution-y':null, 'resolution-z':null, 'resolution-t':null };
+        var togglable_fileds = { 'number_z':null, 'number_t':null, 'resolution_title':null, 
+            'resolution_x':null, 'resolution_y':null, 'resolution_z':null, 'resolution_t':null };
         
         var my_types = {
             'zip-multi-file' : {},
-            'zip-time-series': {'resolution-title':null, 'resolution-x':null, 'resolution-y':null, 'resolution-t':null},
-            'zip-z-stack'    : {'resolution-title':null, 'resolution-x':null, 'resolution-y':null, 'resolution-z':null},
-            'zip-5d-image'   : {'number-z':null, 'number-t':null, 'resolution-title':null, 
-                                'resolution-x':null, 'resolution-y':null, 'resolution-z':null, 'resolution-t':null},                        
+            'zip-time-series': {'resolution_title':null, 'resolution_x':null, 'resolution_y':null, 'resolution_t':null},
+            'zip-z-stack'    : {'resolution_title':null, 'resolution_x':null, 'resolution_y':null, 'resolution_z':null},
+            'zip-5d-image'   : {'number_z':null, 'number_t':null, 'resolution_title':null, 
+                                'resolution_x':null, 'resolution_y':null, 'resolution_z':null, 'resolution_t':null},                        
         };
         
         // the default state is false
@@ -339,14 +339,14 @@ Ext.define('BQ.upload.Item', {
     requires: ['Ext.toolbar.Toolbar', 'Ext.tip.QuickTipManager', 'Ext.tip.QuickTip'],
 
     border: 0,
-    height: 110,
+    height: 90,
     closable: true,
     cls: 'uploaditem',
     bodyStyle: 'padding: 10px',
     //autoScroll: true,
     layout: 'anchor',  
     //bodyStyle: 'margin: 15px',
-    defaults: { border: 0, height_normal: 120, hysteresis: 100, }, // hysteresis in ms
+    defaults: { border: 0, height_normal: 90, hysteresis: 100, }, // hysteresis in ms
             
     constructor: function(config) {
         this.addEvents({
@@ -1184,19 +1184,19 @@ Ext.define('BQ.upload.Panel', {
     wrapDataset : function() {
         var members = [];
         this.uploadPanel.items.each( function() { 
-            if (this.resource && this.resource.uri && this.resource.resource_type=='image') {
+            if (this.resource && this.resource.uri) {
                 members.push( new Value( "object", this.resource.uri ) );
             }
         });
         
         var dataset = new BQDataset();
         dataset.name = 'Uploaded on '+(new Date()).toISOString();
-        dataset.setMembers( members );
+        dataset.newMembers( members );
         dataset.save_('/data_service/datasets/', callback(this, 'onCreatedDataset'));        
     },   
     
     onCreatedDataset : function(dataset) {
-        BQ.ui.notification('Dataset created with the name: "'+dataset.name+'"', 10000);
+        BQ.ui.notification('Dataset created: "<a href="/client_service/view?resource='+dataset.uri+'">'+dataset.name+'</a>"', 10000);
         this.fireEvent( 'datasetcreated', dataset);
     },        
     

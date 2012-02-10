@@ -34,6 +34,7 @@ Ext.define('BQ.dataset.Operation', {
     // required !!!!
     title: 'Operation name',
     name: 'idem',
+    finished_event: undefined, // special event to fire on finished
         
     // configs    
     cls: 'selector',
@@ -151,7 +152,8 @@ Ext.define('BQ.dataset.Delete', {
     requires: ['Ext.form.Panel'],
     
     title: 'Delete elements',
-    name: 'delete',    
+    name: 'delete',  
+    finished_event: 'removed',  
 
     initComponent : function() {
       
@@ -197,6 +199,7 @@ Ext.define('BQ.dataset.Edittags', {
     
     title: 'Edit tags',
     name: 'tagedit',      
+    finished_event: 'changed',      
 
     initComponent : function() {
       

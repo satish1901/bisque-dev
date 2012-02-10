@@ -31,6 +31,8 @@ Ext.define('BQ.dataset.Panel', {
         this.addEvents({
             'done'      : true,
             'error'     : true,        
+            'removed'   : true,      
+            'changed'   : true,                              
         });
         this.callParent(arguments);
         return this;
@@ -114,7 +116,9 @@ Ext.define('BQ.dataset.Panel', {
     onDone: function(response) {
         this.btn_modify.setDisabled(false);
         this.setLoading(false);
-        this.fireEvent( 'done', this );               
+        this.fireEvent( 'done', this );  
+        if (this.selected_operation && this.selected_operation.finished_event)
+            this.fireEvent( this.selected_operation.finished_event, this );  
     },    
 
     onError: function(response) {

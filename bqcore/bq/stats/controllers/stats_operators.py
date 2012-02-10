@@ -64,7 +64,7 @@ Operations are added by simply deriving from StatOperator and adding your code h
 
 __module__    = "statistics_service.py"
 __author__    = "Dmitry Fedorov"
-__version__   = "1.0"
+__version__   = "1.1"
 __revision__  = "$Rev$"
 __date__      = "$Date$"
 __copyright__ = "Center for BioImage Informatics, University California, Santa Barbara"
@@ -128,6 +128,14 @@ class StatOperatorTagValue (StatOperator):
             v = BQValue(element=t)
             return v.toString()
         return map(valueSafe, v_in)
+        
+class StatOperatorTagType (StatOperator):
+    '''maps tags into a vector of their types as strings''' 
+    name = 'tag-type'
+    version = '1.0'        
+    def do_map(self, v_in, **kw):
+        def nameSafe(t): return t.get('type', '')
+        return map(nameSafe, v_in)        
         
 class StatOperatorTagNameNumeric (StatOperator):
     '''maps tags into a vector of their names as numbers''' 
