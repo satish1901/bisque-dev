@@ -1928,6 +1928,12 @@ Ext.define('BQTemplate',
 {
     extend      :   'BQResource',
     
+    constructor :   function(config)
+    {
+        Ext.apply(this, config);
+        this.callParent(arguments);
+    },
+    
     addField    :   function(field)
     {
         // ADD FIELD CODE

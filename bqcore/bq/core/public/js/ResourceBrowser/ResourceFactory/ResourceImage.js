@@ -598,6 +598,10 @@ Ext.define('Bisque.Resource.Image.Page',
 {
     extend : 'Bisque.Resource',
     
+    mixins : {
+        'resourcePage' : 'Bisque.Resource.Page'
+    },
+    
     constructor : function()
     {
         Ext.apply(this, {
@@ -620,7 +624,7 @@ Ext.define('Bisque.Resource.Image.Page',
         var embeddedTagger = Ext.create('Bisque.ResourceTagger', {
             resource : this.resource.src + '?meta',
             title : 'Embedded',
-            viewMode : 'ViewerOnly',
+            viewMode : 'ReadOnly',
         });
     
         var mexBrowser = new Bisque.ResourceBrowser.Browser(

@@ -111,6 +111,15 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 					padding : '3 0 3 0',
 					scope : this
 				},'->',
+                {
+                    itemId : 'btnRefresh',
+                    icon : bq.url('/js/ResourceBrowser/Images/refresh.png'),
+                    tooltip : 'Refresh browser',
+                    //hidden : this.viewMgr.cBar.btnTS,
+                    scale : 'large',
+                    handler : this.btnRefresh,
+                    scope : this
+                },
 				{
 					itemId : 'btnTS',
 					icon : bq.url('/js/ResourceBrowser/Images/desc.png'),
@@ -193,7 +202,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 							text : 'Organize',
                             itemId : 'btnOrganize',
 							icon : bq.url('/js/ResourceBrowser/Images/organize.png'),
-							hidden : this.viewMgr.cBar.btnOrganizer,
+							hidden : true,
 				 			handler : this.btnOrganizerClick,
 				 			scope : this
 				 		},
@@ -268,6 +277,11 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 
 	},
 
+    btnRefresh : function()
+    {
+        this.browser.msgBus.fireEvent('Browser_ReloadData', {});
+    },
+    
 	btnTS : function(btn)
 	{
         var tagOrder = cleanTagOrder(this.browser.browserState.tag_order) || '';

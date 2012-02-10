@@ -828,11 +828,23 @@ Ext.define('Bisque.GObjectTagger',
         }
     },
 
-    exportToXml : Ext.emptyFn,
-    exportToGDocs : Ext.emptyFn,
+    exportToXml : function()
+    {
+        this.exportTo('xml');
+        
+    },
+    
+    //exportToGDocs : Ext.emptyFn,
 
     exportToCsv : function()
     {
+        this.exportTo('csv');
+    },
+    
+    exportTo : function(format)
+    {
+        format = format || 'csv';
+        
         var gobject, selection = this.tree.getChecked();
         this.noFiles = 0, this.csvData = '';
         
@@ -851,21 +863,21 @@ Ext.define('Bisque.GObjectTagger',
             if (gobject)
             {
                 Ext.Ajax.request({
-                    url : gobject.uri+'?view=deep&format=csv',
-                    success : Ext.bind(this.saveCSV, this),
+                    url : gobject.uri+'?view=deep&format='+format,
+                    success : Ext.bind(this.saveCSV, this, [format], true),
                     disableCaching : false 
                 });
             }
         }
     },
     
-    saveCSV : function(data)
+    saveCSV : function(data, params, format)
     {
         this.csvData += '\n'+data.responseText;
         this.noFiles--;
         
         if (!this.noFiles)
-            location.href = "data:text/csv," + encodeURIComponent(this.csvData);
+            location.href = "data:text/attachment," + encodeURIComponent(this.csvData);
     },
     
     updateViewState : function(state)
@@ -983,8 +995,8 @@ Ext.define('Bisque.ResourceTagger.viewStateManager',
                 
                 this.state.btnExport = false;
                 this.state.btnCSV = false;
-                //this.state.btnGDocs = false;
-                //this.state.btnXML = false;
+                this.state.btnGDocs = false;
+                this.state.btnXML = false;
                 
                 break;
             }
