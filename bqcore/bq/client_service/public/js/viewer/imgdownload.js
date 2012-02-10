@@ -35,13 +35,14 @@ ImgDownload.prototype.toggleMenu = function () {
         this.menu.className = "imgview_opdiv";
 
         this.createButton('Original image', callback (this, 'downloadOriginal'));
+        /*
         this.createButton('Graphical objects', callback (this, 'downloadGObjects'));
         this.createButton('Graphical objects as CSV', callback (this, 'downloadGObjectsCSV'));        
         this.createButton('Tags', callback (this, 'downloadTags'));
         this.createButton('Tags as CSV', callback (this, 'downloadTagsCSV'));        
         this.createButton('Embedded metadata', callback (this, 'downloadMetadata'));        
         this.createButton('Convert format', callback (this, 'toggleImageConvert'));
-        
+        */
         this.menu.style.display = "none";
         this.viewer.imagediv.appendChild(this.menu);
     } 
