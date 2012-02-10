@@ -52,9 +52,10 @@ def setup():
     sh('easy_install numpy==1.6.0')
     sh('easy_install numpy==1.6.0')
     # End Hack
-    sh('easy_install http://biodev.ece.ucsb.edu/binaries/download/tw.output/tw.output-0.5.0dev-20110906.tar.gz') 
-    #sh('pip install --upgrade -i   http://biodev.ece.ucsb.edu/binaries/depot Paste tgext.registration2')
+    sh('pip install http://biodev.ece.ucsb.edu/binaries/download/tw.output/tw.output-0.5.0dev-20110906.tar.gz') 
+    sh('pip install -i http://biodev.ece.ucsb.edu/binaries/depot tgext.registration2')
     sh('pip install -i http://biodev.ece.ucsb.edu/binaries/depot httplib2')
+    sh('pip install --upgrade -i   http://biodev.ece.ucsb.edu/binaries/depot  Paste')
 
     top = os.getcwd()
     for d in subdirs:

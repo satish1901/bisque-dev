@@ -137,7 +137,7 @@ def irods_fetch_file(url, **kw):
     log.debug( "irods-path %s" %  path)
     localname = irods_cache_fetch(path)
     if localname is None:
-        log.debug( "irods_fetching %s" % url)
+        log.debug( "irods_fetching %s -> %s" % (url, path))
         f = irods.iRodsOpen(conn, path)
         if f:
             localname = irods_cache_save(f, path)

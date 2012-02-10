@@ -65,13 +65,13 @@ from repoze.what import predicates
 
 from bq.core.service import ServiceController
 from bq.data_service.model  import dbtype_from_tag, dbtype_from_name, all_resources
-from bq.util.bisquik2db import bisquik2db, load_uri, db2tree, updateDB
+from bq.util.bisquik2db import bisquik2db, load_uri, db2tree, updateDB, parse_uri
 from bq.exceptions import BadValue
 from bq.core import identity
 from bq.util.paths import data_path
 
 from bisquik_resource import BisquikResource
-from resource_query import resource_query, resource_count, resource_load, resource_delete, resource_types
+from resource_query import resource_query, resource_count, resource_load, resource_delete, resource_types 
 from resource import HierarchicalCache
 from formats import find_formatter
 
@@ -184,7 +184,7 @@ class DataServerController(ServiceController):
         self.cache_invalidate(r.get('uri').rsplit('/', 1)[0])
         return r
 
-    def get_resource(self, resource, **kw):
+    def get_resource(self, resource, view=None, **kw):
         uri = None
         if isinstance (resource, etree._Element):
             uri = resource.get ('uri')
@@ -197,9 +197,15 @@ class DataServerController(ServiceController):
                 xml =  etree.XML (response)
                 return xml
             else:
+                net, name, ida, rest = parse_uri(uri)
                 resource = load_uri (uri)
-        xtree = db2tree(resource, baseuri = self.url, **kw)
-        self.cache_save (xtree.get('uri'), response=etree.tostring(xtree), **kw)
+                if rest:
+                    resource = self.query(rest[-1], view=view, parent=resource)
+                    self.cache_save (uri, response=etree.tostring(resource), view=view, **kw)
+                    return resource
+        xtree = db2tree(resource, baseuri = self.url, view=view, **kw)
+        uri = uri or xtree.get('uri')
+        self.cache_save (uri, response=etree.tostring(xtree), view=view, **kw)
         return xtree
 
 
@@ -215,15 +221,20 @@ class DataServerController(ServiceController):
         self.cache_invalidate(uri)
 
 
-    def query(self, resource_tag, tag_query=None, view=None, **kw):
+    def query(self, resource_tag, tag_query=None, view=None, parent=None,**kw):
         '''Query the local database with expr'''
         resource_type = dbtype_from_tag(resource_tag)
+        if isinstance (parent, etree._Element):
+            parent = parent.get ('uri')
+        if isinstance(parent, basestring):
+            parent = load_uri(parent)
+        
         if view == 'count':
-            count = resource_count (resource_type, tag_query=tag_query, **kw)           
+            count = resource_count (resource_type, tag_query=tag_query, parent=parent,**kw)
             response = etree.Element ('resource')
             etree.SubElement(response, resource_tag, count = str(count))            
         else:    
-            nodelist = resource_query (resource_type, tag_query=tag_query, **kw)
+            nodelist = resource_query (resource_type, tag_query=tag_query, parent=parent, **kw)
             response  = etree.Element ('resource', uri='/data_service/%s' % resource_tag)
             db2tree (nodelist, parent=response,
                      view=view, baseuri = self.url)
