@@ -732,8 +732,9 @@ Ext.define('BQ.upload.Panel', {
         
         // header toolbar's elements
 
-        this.fileChooser = Ext.create('Ext.form.field.File', {
+        this.fileChooser = Ext.create('BQ.upload.File', {
             buttonOnly: true, 
+            multiple: true,
             handler: this.chooseFiles,
             buttonConfig: { scale: 'large', iconCls: 'browse', text: 'Choose files', tooltip: 'Select several local files to upload', },
             listeners: {
@@ -940,11 +941,6 @@ Ext.define('BQ.upload.Panel', {
    
     afterRender : function() {
         this.callParent();
-
-        // make sure input is a multi file select
-        var e = this.fileChooser.fileInputEl;
-        if (e && e.dom)
-            e.dom.multiple = true;
         
         // accept file drag and drop
         var el = this.getEl();
