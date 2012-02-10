@@ -31,6 +31,72 @@ def irods_cleanup():
 
 atexit.register(irods_cleanup)
 
+
+
+class IrodsConnection(object):
+    def __init__(self, url, user=None, host=None, port=None, password = None):
+        irods_url = urlparse.urlparse(url)
+        assert irods_url.scheme == 'irods'
+        env = parse_net.match(irods_url.netloc).groupdict()
+        log.debug ("irods_handler url %s -> env %s" % (url, env))
+
+        self.user  = user or env['user'] or irods_env.getRodsUserName()
+        self.host  = host or env['host'] or irods_env.getRodsHost()
+        self.port  = port or env['port'] or irods_env.getRodsPort() or 1247
+        self.password = password or env['password'] 
+
+        path = ''
+        zone = ''
+        if irods_url.path:
+            path = irods_url.path.split('/')
+            if len(path):
+                zone = path[1]
+            path = '/'.join(path)
+        if not zone:
+            zone = irods_env.getRodsZone()
+
+        self.irods_url = irods_url
+        self.path = path
+        self.zone = zone
+        self.conn = None
+
+    def open(self):
+        conn, err = irods.rcConnect(self.host, self.port, self.user, self.zone)
+        if conn is None:
+            raise IrodsError("Can't create connection to %s " % self.host)
+        if self.password:
+            irods.clientLoginWithPassword(conn, self.password)
+        else:
+            irods.clientLogin(conn)
+
+        coll = irods.irodsCollection(conn)
+        nm = coll.getCollName()
+        
+        self.irods_url = urlparse.urlunparse(list(self.irods_url)[:2] + ['']*4)
+        if self.path in ['', '/']:
+            self.path = nm
+
+        self.conn = conn
+        self.base_dir = nm
+        return self
+        
+    def close(self):
+        if self.conn:
+            self.conn.disconnect()
+            self.conn = None
+
+
+    def __enter__(self):
+        if self.conn is None:
+             self.open()
+        return self
+
+    def __exit__(self, ty, val, tb):
+        self.close()
+        return False
+
+        
+
 def irods_conn(url, user=None, host=None, port=None, password = None):
     global CONNECTION_POOL
 
@@ -80,29 +146,6 @@ def irods_conn(url, user=None, host=None, port=None, password = None):
     return conn, irods_url, nm, path
     
 
-import pdb
-def irods_fetch_dir(url, **kw):
-    
-    conn, base_url, basedir, path = irods_conn(url, **kw)
-    #print 'path1 Null', '\x00' in path
-    coll = irods.irodsCollection(conn)
-    coll.openCollection(path); 
-    # Bug in openCollection (appends \0)
-    path = path.strip('\x00')
-    #print 'path2 Null', '\x00' in path
-
-    result = []
-    # Construct urls for objects contained
-    for nm in coll.getSubCollections():
-        #print " '%s' '%s' '%s' " % (base_url, path, nm)
-        #print 'nm Null', '\x00' in nm
-        #print 'path3 Null', '\x00' in path
-        result.append('/'.join([base_url, path[1:], nm, '']))
-        
-    for nm, resource in  coll.getObjects():
-        result.append( '/'.join([base_url, path[1:], nm]))
-    return result
-
 def irods_cache_name(path):
     cache_filename = os.path.join(IRODS_CACHE, path[1:])
     return cache_filename
@@ -133,32 +176,57 @@ def irods_cache_save(f, path, *dest):
     return cache_filename
     
 def irods_fetch_file(url, **kw):
-    conn, base_url, basedir, path = irods_conn(url, **kw)
-    log.debug( "irods-path %s" %  path)
-    localname = irods_cache_fetch(path)
+    ic = IrodsConnection(url, **kw)
+    #conn, base_url, basedir, path = irods_conn(url, **kw)
+    log.debug( "irods-path %s" %  ic.path)
+    localname = irods_cache_fetch(ic.path)
     if localname is None:
-        log.debug( "irods_fetching %s -> %s" % (url, path))
-        f = irods.iRodsOpen(conn, path)
-        if f:
-            localname = irods_cache_save(f, path)
+        with ic:
+            log.debug( "irods_fetching %s -> %s" % (url, ic.path))
+            f = irods.iRodsOpen(ic.conn, ic.path)
+            if not f:
+                raise IrodsError("can't read from %s" % url)
+            localname = irods_cache_save(f, ic.path)
             f.close()
-            return localname
-        raise IrodsError("can't read from %s" % url)
     return localname
 
 def irods_push_file(fileobj, url, savelocal=True, **kw):
-    conn, base_url, basedir, path = irods_conn(url, **kw)
-    # Hmm .. if an irodsEnv exists then it is used over our login name provided above, 
-    # meaning even though we have logged in as user X we may be the homedir of user Y (in .irodsEnv)
-    #irods.mkCollR(conn, basedir, os.path.dirname(path))
-    irods.mkCollR(conn, '/', os.path.dirname(path))
-    log.debug( "irods-path %s" %  path)
-    f = irods.iRodsOpen(conn, path, 'w')
-    if f:
-        localname = irods_cache_save(fileobj, path, f)
-        f.close()
-        return localname
-    raise IrodsError("can't write irods url %s" % url)
+    #conn, base_url, basedir, path = irods_conn(url, **kw)
+    with IrodsConnection(url, **kw) as ic:
+        # Hmm .. if an irodsEnv exists then it is used over our login name provided above, 
+        # meaning even though we have logged in as user X we may be the homedir of user Y (in .irodsEnv)
+        # irods.mkCollR(conn, basedir, os.path.dirname(path))
+        irods.mkCollR(ic.conn, '/', os.path.dirname(ic.path))
+        log.debug( "irods-path %s" %  ic.path)
+        f = irods.iRodsOpen(ic.conn, ic.path, 'w')
+        if f:
+            localname = irods_cache_save(fileobj, ic.path, f)
+            f.close()
+            return localname
+        raise IrodsError("can't write irods url %s" % url)
+
+
+def irods_fetch_dir(url, **kw):
+
+    #conn, base_url, basedir, path = irods_conn(url, **kw)
+    with IrodsConnection(url, **kw) as ic:
+        coll = irods.irodsCollection(ic.conn)
+        coll.openCollection(ic.path); 
+        # Bug in openCollection (appends \0)
+        path = path.strip('\x00')
+        #print 'path2 Null', '\x00' in path
+
+        result = []
+        # Construct urls for objects contained
+        for nm in coll.getSubCollections():
+            #print " '%s' '%s' '%s' " % (base_url, path, nm)
+            #print 'nm Null', '\x00' in nm
+            #print 'path3 Null', '\x00' in path
+            result.append('/'.join([ic.base_url, ic.path[1:], nm, '']))
+        
+        for nm, resource in  coll.getObjects():
+            result.append( '/'.join([ic.base_url, ic.path[1:], nm]))
+        return result
 
 
 

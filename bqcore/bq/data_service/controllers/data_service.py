@@ -191,7 +191,7 @@ class DataServerController(ServiceController):
         elif isinstance(resource, basestring):
             uri = resource
         if uri is not None:
-            response =  self.cache_check(uri, **kw)
+            response =  self.cache_check(uri, view=view, **kw)
             if response:
                 log.debug ("get_resource:CACHE response")
                 xml =  etree.XML (response)
