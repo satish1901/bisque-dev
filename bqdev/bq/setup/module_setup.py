@@ -16,6 +16,19 @@ import bbfreeze
 BISQUE_DEPS = map (functools.partial(os.path.join, '../../external'), [ "bisque.jar", "jai_codec.jar", "jai_core.jar", "jai_imageio.jar", "clibwrapper_jiio.jar"])
 
 
+class SetupError(Exception):
+    pass
+
+
+
+def ensure_matlab(params):
+    'make sure matlab is enabled and in the path'
+
+    require('runtime.matlab_home', params)
+    matlab_home = params['runtime.matlab_home']
+    if matlab_home not in  os.environ['PATH']:
+        os.environ['PATH'] = os.path.join(matlab_home,'bin') + os.pathsep + os.environ['PATH']
+        print "ADDING MATLAB TO PATH->", os.environ['PATH']
 
 def mcc (command,  *largs, **kw):
     where = kw.pop('where', None)
@@ -38,7 +51,7 @@ def mcc (command,  *largs, **kw):
 
 def matlab (command, where = None, params={ }):
     'run matlab with a command'
-    if not require('matlab_home', params):
+    if not require('runtime.matlab_home', params):
         return False
     if where:
         cwd = os.getcwd()
@@ -60,9 +73,8 @@ def copy_files (files, dest):
 
 def matlab_setup(main_path, files = [], bisque_deps = True, dependency_dir = "mbuild", params = {}, **kw):
     'prepare a matlab script for execution  by compiling with mcc'
-    if not require('runtime.matlab_home', params):
-        print "runtime.matlab_home  not set"
-        return False
+
+    ensure_matlab(params)
     #mcc -m -C -R -nodisplay -R -nojvm -nocache maizeG.m
     #m Macro that generates a C stand-alone application. This is
     #equivalent to the options "-W main -T link:exe", which can be
@@ -126,24 +138,31 @@ def python_setup(scripts,  package_scripts =True, dependency_dir = 'pydist', par
             print ("Could not create python launcher script %s" % e)
         
 
-def require(expression, params):
+def require(expression, params, throws = True):
     """Require everying in expression
 
     Can be in simple variable in params or a callable of
     the form f (params) which returns boolean
     """
 
+    valid = True
     if not isinstance(expression,list):
         expression = [ expression ]
 
     for e in expression:
         if callable(e):
             if not e(params):
-                return False
+                valid = False
+                break
         if isinstance(e, basestring):
             if not bool(params.get(e, False)):
-                return False
-    return True
+                valid = False
+                break
+
+    if not valid and throws:
+        raise SetupError("required expression failed %s" % expression)
+
+    return valid
         
 def read_config(filename):
     return ConfigFile(filename).get (None, asdict = True)

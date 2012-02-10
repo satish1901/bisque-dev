@@ -502,6 +502,12 @@ def modify_site_cfg(qs, bisque_vars, section = BQ_SECTION, append=True, cfg=SITE
 
 ############################################
 #
+db_create_error = """
+*** Database creation failed ***
+Please check your db url to ensure that it is in the correct format.
+Also please ensure that the user specified can actually create/access a database.
+"""
+
 
 def create_postgres (dburl):
     "Check existance of database base and create new if needed"
@@ -526,8 +532,7 @@ def create_postgres (dburl):
         stdin = StringIO.StringIO(dburl.password)
     if call (command + ['-c', 'create database %s' % dburl.database, 'template1'],
              stdin = stdin) != 0:
-
-        print "Database creation failed.. Please check your permissions"
+        print db_create_error
         return False
     
     return True
@@ -552,7 +557,7 @@ def create_mysql(dburl):
         return False
 
     if call (command+['-e', 'create database %s' % dburl.database]) != 0:
-        print "Database creation failed."
+        print db_create_error
         return False
     return True
           
@@ -816,6 +821,9 @@ def install_modules(params):
         modpath = bisque_path('modules', bm)
         environ = dict(os.environ)
         environ.pop ('DISPLAY', None) # Makes matlab hiccup
+        if os.path.isdir(modpath) and os.path.exists(os.path.join(modpath, "runtime-module.cfg")):
+            cfg_path = os.path.join(modpath, 'runtime-bisque.cfg')
+            copy_link(RUNTIME_CFG, cfg_path)
         if os.path.exists(os.path.join(modpath, 'setup.py')):
             cwd = os.getcwd()
             os.chdir (modpath)
@@ -1003,11 +1011,6 @@ def install_runtime(params, cfg = RUNTIME_CFG):
     except OSError,e:
         print "%s does not exist and cannot create: %s" % (staging, e)
 
-    #print params
-    # for bm in os.listdir (bisque_path('modules')):
-    #     modpath = bisque_path('modules', bm)
-    #     if os.path.isdir(modpath) and os.path.exists(os.path.join(modpath, "%s.xml" % bm )):
-    #         cfg_path = os.path.join(modpath, 'runtime-bisque.cfg')
     #         #if  os.path.exists(cfg_path):
     #         #    shutil.copyfile(cfg_path, "%s.old" %cfg_path)
     #         cfg = ConfigFile (cfg_path)
