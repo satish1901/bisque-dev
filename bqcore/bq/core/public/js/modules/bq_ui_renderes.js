@@ -31,10 +31,10 @@ BQ.selectors.parameters = { 'tag'     : 'BQ.selectors.String',
                             'boolean' : 'BQ.selectors.Boolean',
                             'date'    : 'BQ.selectors.Date', };
 
-BQ.renderers.resources  = { 'image'   : 'BQ.renderers.Image', 
-                            'dataset' : 'BQ.renderers.Dataset', 
-                            //'gobject' : 'BQ.renderers.Gobject', 
-                            'tag'     : 'BQ.renderers.Tag', };
+BQ.renderers.resources  = { 'image'    : 'BQ.renderers.Image', 
+                            'dataset'  : 'BQ.renderers.Dataset', 
+                            //'gobject'  : 'BQ.renderers.Gobject', 
+                            'tag'      : 'BQ.renderers.Tag', };
 
 
 /*******************************************************************************
@@ -402,8 +402,8 @@ Ext.define('BQ.selectors.Gobject', {
     initComponent : function() {
         var resource = this.resource;
         var template = resource.template || {};
-        
-        var parameters = { nogobjects:'', nosave:'', alwaysedit:'', onlyedit:'', editprimitives: template.gobject.join(',') };
+        var editprimitives = (template.gobject instanceof Array)? template.gobject.join(','):template.gobject;
+        var parameters = { nogobjects:'', nosave:'', alwaysedit:'', onlyedit:'', editprimitives: editprimitives, };
         this.viewer = Ext.create('BQ.viewer.Image', {
             resource: this.selected_resource || resource.parent.value,
             parameters: parameters,
@@ -893,12 +893,11 @@ Ext.define('BQ.selectors.Date', {
 *******************************************************************************/
 
 
-/*
-Combo templated configs:
 
-    select - combo element
-    editable
-*/
+/*******************************************************************************
+Tag templated configs:
+
+*******************************************************************************/
 
 Ext.define('BQ.renderers.Tag', {
     alias: 'widget.renderertag',    
@@ -1208,4 +1207,5 @@ Ext.define('BQ.renderers.Dataset', {
     },
 
 });
+
 

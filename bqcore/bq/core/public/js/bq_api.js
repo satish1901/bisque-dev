@@ -1703,29 +1703,38 @@ BQMex.prototype.initializeXml = function (mex) {
     this.status =this.value;
 }
 
+BQMex.prototype.hasIterables = function () {
+    if (!this.iterables) return false;
+    return (Object.keys(this.iterables).length>0);
+}
+
+// creates mapping from iterable resources in sub MEXes to their MEXes
+BQMex.prototype.findMexsForIterable = function (name) {
+    if (!name || this.children.length<1) return;
+    this.dict = this.dict || this.toDict(true);
+        
+    this.iterables = this.iterables || {};
+    var dataset = this.dict['inputs/'+name];
+    this.iterables[name] = this.iterables[name] || {};
+    this.iterables[name]['dataset'] = dataset;
+    
+    var o=null;
+    for (var i=0; (o=this.children[i]); i++) {
+        if (o instanceof BQMex) {
+            var resource = o.dict['inputs/'+name];
+            this.iterables[name][resource] = o;
+        }
+    }
+}
+
 BQMex.prototype.afterInitialized = function () {
     //BQObject.prototype.afterInitialized.call ();
     
-    this.dict = this.toDict(true);
-    
-    // check if the mex has iterables and if does create mapping 
-    // from iterable resources in sub MEXes to their MEXes
-    if (this.dict['execute_options/iterable'] && this.children.length>0) {
-        this.iterables = this.iterables || {};
+    this.dict = this.dict || this.toDict(true);
+    // check if the mex has iterables
+    if (this.dict['execute_options/iterable']) {
         var name = this.dict['execute_options/iterable'];
-        var dataset = this.dict['inputs/'+name];
-        
-        this.iterables[name] = this.iterables[name] || {};
-        this.iterables[name]['dataset'] = dataset;
-        
-        var o=null;
-        for (var i=0; (o=this.children[i]); i++) {
-            if (o instanceof BQMex) {
-                var resource = o.dict['inputs/'+name];
-                this.iterables[name][resource] = o;
-            }
-        }
-        
+        this.findMexsForIterable(name);
     }
 }
 

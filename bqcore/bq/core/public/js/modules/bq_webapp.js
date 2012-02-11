@@ -34,6 +34,8 @@ function BQWebApp (urlargs) {
   // arguments that may be defined by inherited classes
   this.module_url = this.module_url || location.pathname;
   this.label_run = this.label_run || "Run analysis";
+  
+  this.renderers = {};  
 
  
   // create ExtJS place holders for controls
@@ -245,23 +247,20 @@ BQWebApp.prototype.load_from_mex = function (mex) {
 
 BQWebApp.prototype.create_renderer = function ( surface, selector, args ) {
     args = args || {};
-    var rr = args.definition || args.resource;
-    rr.renderer = Ext.create(selector, {
+    var renderer = Ext.create(selector, {
           width: '100%',          
           renderTo: surface,
           definition: args.definition,          
           resource: args.resource,          
     });
-    //surface.add(input.renderer);
     
-    var c = rr.renderer;    
     Ext.EventManager.addListener( window, 'resize', function(e) {
             var w = document.getElementById(surface);
             var horizontal_padding = 20;
-            if (w) c.setWidth(w.clientWidth-horizontal_padding);
+            if (w) renderer.setWidth(w.clientWidth-horizontal_padding);
         }, this, { delay: 100, } 
-    );    
-    
+    );   
+    return renderer;
 }
 
 BQWebApp.prototype.setupUI = function () {
@@ -280,10 +279,7 @@ BQWebApp.prototype.setupUI_inputs = function () {
     for (var p=0; (i=inputs[p]); p++) {
         var t = i.type;
         if (t in BQ.selectors.resources)
-            this.create_renderer( 'inputs', BQ.selectors.resources[t], { resource: i,} );
-            
-        //if (renderer && this.holders && this.holders['inputs'])
-            //renderer( this.holders['inputs'], i );
+            i.renderer = this.create_renderer( 'inputs', BQ.selectors.resources[t], { resource: i,} );
     }
 
     // check of there are parameters to acquire
@@ -299,40 +295,68 @@ BQWebApp.prototype.setupUI_inputs = function () {
     for (var p=0; (i=inputs[p]); p++) {
         var t = (i.type || i.resource_type).toLowerCase();
         if (t in BQ.selectors.parameters)
-            this.create_renderer( 'parameters', BQ.selectors.parameters[t], { resource: i,} );
-            
-        //if (renderer && this.holders && this.holders['parameters'])
-            //renderer( this.holders['parameters'], i );
+            i.renderer = this.create_renderer( 'parameters', BQ.selectors.parameters[t], { resource: i,} );
     }
 }
 
-BQWebApp.prototype.setupUI_outputs = function () {
+BQWebApp.prototype.setupUI_outputs = function (key) {
+    key = key || 'outputs';
+    this.renderers[key] = this.renderers[key] || {};
+    var my_renderers = this.renderers[key];
+    
     var outputs_definitions = this.ms.module.outputs;
-    //var mex = this.mex;
     var outputs = this.outputs;
     var outputs_index = this.outputs_index; 
     if (!outputs || !outputs_index) return; 
     if (!outputs_definitions || outputs_definitions.length<=0) return;    
     
-    //if (outputs_definitions && outputs_definitions.length>0)
+    if (outputs_definitions && outputs_definitions.length>0)
     for (var p=0; (i=outputs_definitions[p]); p++) {
         var n = i.name;
-        var t = (i.type || i.resource_type).toLowerCase();
         var r = outputs_index[n];  
+        var t = (r.type || i.type || i.resource_type).toLowerCase();
         if (t in BQ.renderers.resources) {
-            this.create_renderer( 'outputs', BQ.renderers.resources[t], { definition: i, resource: r, } );
+            var conf = { 
+                definition: i, 
+                resource: r, 
+            };
+            
+            // special case if the output is a dataset, we expect sub-Mexs
+            if (r.type=='dataset') {
+                this.mex.findMexsForIterable(n);
+                if (Object.keys(this.mex.iterables[n]).length>1) {
+                    conf.title = 'Pick an element to see individual results:';                  
+                    conf.listeners = { 'selected': function(resource) { 
+                                 var suburl = resource.uri;
+                                 var submex = mex.iterables[n][suburl]; // dima: n may be affected by the for loop!!!!
+                                 this.showOutputs(submex, 'outputs-sub');
+                            }, scope: this };
+                }
+            }
+            
+            my_renderers[n] = this.create_renderer( 'outputs', BQ.renderers.resources[t], conf );
         }
     }
 }
 
-BQWebApp.prototype.clearUI_outputs = function () {
-    var outputs_definitions = this.ms.module.outputs;
-    if (outputs_definitions && outputs_definitions.length>0)
-    for (var p=0; (i=outputs_definitions[p]); p++) {
-        if (i.renderer) {
-            i.renderer.destroy();
-            i.renderer = undefined;
+BQWebApp.prototype.clearUI_outputs = function (key) {
+    key = key || 'outputs'; 
+    if (!this.renderers[key]) return;
+    var my_renderers = this.renderers[key];    
+    for (var p in my_renderers) {
+        var i = my_renderers[p];
+        if (i) {
+            i.destroy();
+            delete my_renderers[p];
         }
+    }
+}
+
+BQWebApp.prototype.clearUI_outputs_all = function () {
+    if (!this.renderers) return;
+    for (var k in this.renderers) {
+        this.clearUI_outputs(k); 
+        delete this.renderers[k];
     }
 }
 
@@ -368,7 +392,7 @@ BQWebApp.prototype.run = function () {
     if (!valid) return;
     
   
-    this.clearUI_outputs();    
+    this.clearUI_outputs_all();    
     this.updateResultsVisibility(false);
 
     var button_run = document.getElementById("webapp_run_button");
@@ -461,7 +485,11 @@ BQWebApp.prototype.parseResults = function (mex) {
     }
 }
 
-BQWebApp.prototype.showOutputs = function (mex) {
+BQWebApp.prototype.showOutputs = function (mex, key) {
+    if (!mex) { 
+        BQ.ui.warning('No outputs to show');
+        return;
+    }
     var outputs = mex.find_tags('outputs');
     if (outputs && outputs.tags) {
         this.outputs = outputs.tags; // dima - this should be children in the future   
@@ -469,7 +497,7 @@ BQWebApp.prototype.showOutputs = function (mex) {
     }   
     
     // setup output renderers
-    this.clearUI_outputs();
-    this.setupUI_outputs();
+    this.clearUI_outputs(key);
+    this.setupUI_outputs(key);
 }
 
