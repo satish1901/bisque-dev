@@ -69,6 +69,7 @@
 
     <!-- Upload stuff: Import Service -->
     <link rel="stylesheet" type="text/css" href="${bq.url('/import_service/public/bq_ui_upload.css')}" />
+    <script type="text/javascript" src="${bq.url('/import_service/public/File.js')}"></script>       
     <script type="text/javascript" src="${bq.url('/import_service/public/bq_file_upload.js')}"></script>    
     <script type="text/javascript" src="${bq.url('/import_service/public/bq_ui_upload.js')}"></script> 
   
@@ -225,7 +226,8 @@
     <div id="outputs" class="box results" >  
         <span id="webapp_results_summary"><h3>No results yet, please run the module first.</h3></span>        
         <div id="webapp_results_dataset"></div>
-    </div>  
+        <div id="outputs-sub" />        
+    </div>    
 
 </div>
 </ol>
