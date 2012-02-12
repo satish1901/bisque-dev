@@ -1187,6 +1187,10 @@ Ext.define('BQ.renderers.Dataset', {
             BQFactory.request( { uri: resource, 
                                  cb:  callback(this, 'initBrowser'), 
                                  uri_params: {view:'deep'}, });
+        } else if (resource.resource_type == 'tag' && resource.type == 'dataset') {
+            BQFactory.request( { uri: resource.value, 
+                                 cb:  callback(this, 'initBrowser'), 
+                                 uri_params: {view:'deep'}, });
         } else {
             this.initBrowser(resource);
         }        
