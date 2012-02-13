@@ -1,18 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
-<module name="RootTipMulti" path="./launch.py" type="runtime" >
-    
+<module name="RootTipMulti" type="runtime" >
     <tag name="inputs">
         <!--
         <tag name="input-formal" value="image_url" type="image" />
         <tag name="input-system" value="mex_url" />
         -->
-        <tag name="image_url"    type="image" />     
+        <tag name="image_url" type="image">
+          <tag name="template" type="template">
+            <tag name="require_geometry">
+              <tag name="t" value="stack" />
+              <tag name="fail_message" value="Need a time-series" />
+            </tag>
+          </tag>
+          <gobject name="tips">
+            <tag name="template" type="template">
+              <tag name="gobject" value="point" />
+              <tag name="amount" value="many" />
+              <tag name="fail_message" value="Requires select of root tips" />
+            </tag>
+          </gobject>
+        </tag>
         <tag name="mex_url"      type="system-input" />
         <tag name="bisque_token" type="system-input" />
     </tag>
     
     <tag name="outputs">
-        <gobject name="results" /> <!-- this is not correct, module needs update -->
+      <tag name="rootimage" type="image">
+        <tag name="template" type="template">
+          <tag name="label" value="Tracked root tips" />
+        </tag>            
+        <gobject name="root_tips" />
+      </tag>
     </tag>    
     
     <tag name="execute_options">
@@ -20,16 +38,18 @@
     </tag>
 
     <tag name="module_options" >
-        <tag name="version" value="2" />
+        <tag name="version" value="3" />
     </tag>   
     
     <tag name="display_options" >
         <tag name="group" value="application" />
     </tag>
     
-    <tag name="interface" type="file" value="public/index.html" />
+<!--    <tag name="interface" type="file" value="public/index.html" /> -->
+    <tag name="title"  value="MultiRoot growth analyzer" />    
     <tag name="help"      type="file" value="public/help.html" />
     <tag name="thumbnail" type="file" value="public/thumbnail.png" />   
-    <tag name="description" type="string" value="This tracks several root tips in a time series image." />          
+    <tag name="description"  value="This tracks several root tips in a time series image." />          
+    <tag name="authors"  value="Nathan Miller, Logan Johnson, Kris Kvilekval and Dmitry Fedorov" />
     
 </module>

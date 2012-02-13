@@ -108,7 +108,8 @@ class BQServer(object):
         headers = self.prepare_headers(headers)
         log.debug("FETCH %s req  header=%s" %  (url, headers))
         header, content = self.http.request(url, headers = headers)
-        log.debug("FETCH resp %s, content=%s" % (header, content))
+        if 'xml' in header.get('content-type', ''):
+            log.debug("FETCH resp %s, content=%s" % (header, content))
         return content
 
     def post(self, url, content=None, files=None, headers=None, method="POST"):
@@ -215,17 +216,19 @@ class BQSession(object):
     ##############################
     # Mex
     ##############################
-    def update_mex(self, status, tags = [], gobjects = [], reload=True):
+    def update_mex(self, status, tags = [], gobjects = [], children=[], reload=True):
         """save an updated mex with the addition
         
         :param status:  The current status of the mex
         :param tags: list of etree.Element|BQTags|dict objects of form { 'name': 'x', 'value':'z' }
         :param gobjects: same as etree.Element|BQGobject|dict objects of form { 'name': 'x', 'value':'z' }
+        :param children: list of tuple (type, obj array) i.e ('mex', dict.. )
         """
         self.mex.value = status
         mex = toXml(self.mex)
-        def append_mex (mex, type_, elems):
-            for tg in elems:
+        def append_mex (mex, type_tup):
+            type_, elems = type_tup
+            for  tg in elems:
                 if isinstance(tg, dict):
                     tg = d2xml({ type_ : tg})
                 elif isinstance(tg, BQNode):
@@ -236,8 +239,10 @@ class BQSession(object):
                     raise BQException('bad values in tag/gobject list %s' % tg)
                 mex.append(tg)
 
-        append_mex(mex, 'tag', tags)
-        append_mex(mex, 'gobject', gobjects)
+        append_mex(mex, ('tag', tags))
+        append_mex(mex, ('gobject', gobjects))
+        for elem in children:
+            append_mex(mex, elem)
 
         #mex = { 'mex' : { 'uri' : self.mex.uri,
         #                  'status' : status,
@@ -249,10 +254,10 @@ class BQSession(object):
             return self.mex
         return None
 
-    def finish_mex(self, status = "FINISHED", tags=[], gobjects=[], msg=None ):
+    def finish_mex(self, status = "FINISHED", tags=[], gobjects=[], children=[], msg=None ):
         if msg is not None:
             tags.append( { 'name':'message', 'value': msg })
-        return self.update_mex(status, tags, gobjects, reload=False)
+        return self.update_mex(status, tags=tags, gobjects=gobjects, children=children, reload=False)
                           
     def fail_mex (self, msg):
         self.finish_mex(status='FAILED', msg=msg)

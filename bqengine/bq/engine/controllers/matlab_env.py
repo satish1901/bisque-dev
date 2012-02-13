@@ -82,7 +82,9 @@ class MatlabEnvironment(BaseEnvironment):
 
     def process_config (self, runner, **kw):
         self.matlab_home = runner.config['runtime.matlab_home']
-        self.matlab_launcher = runner.config.get('runtime.matlab_launcher')
+        self.matlab_launcher = runner.config.get('runtime.matlab_launcher', None)
+        if self.matlab_launcher is not None and not os.path.exists(self.matlab_launcher):
+            raise ModuleEnvironmentError("Can't find matlab script %s" % self.matlab_launcher)
         #if runner.named_args.has_key('matlab_home'):
         #    self.matlab_home = runner.named_args['matlab_home']
 
