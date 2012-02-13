@@ -24,6 +24,7 @@ Ext.define('Bisque.ResourceBrowser.Dialog',
         };
         config.height = config.height || '85%';
         config.width = config.width || '85%';
+        config.selType = 'MULTI';
 
         var bodySz = Ext.getBody().getViewSize();
         var height = parseInt((config.height.toString().indexOf("%") == -1) ? config.height : (bodySz.height * parseInt(config.height) / 100));
@@ -226,7 +227,7 @@ Ext.define('Bisque.ResourceBrowser.Browser',
                 tagQuery : this.browserParams.tagQuery || '',
                 tagOrder : this.browserParams.tagOrder || '"@ts":desc',
                 wpublic : (this.browserParams.wpublic == 'true' ? true : false),
-                selType : (this.browserParams.selType || 'MULTI').toUpperCase()
+                selType : (this.browserParams.selType || 'SINGLE').toUpperCase()
             });
 
             this.browserState['offset'] = this.browserParams.offset;
