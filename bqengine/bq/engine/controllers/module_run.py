@@ -5,6 +5,7 @@ import subprocess
 import logging
 
 from bq.util.configfile import ConfigFile
+from module_env import ModuleEnvironmentError
 from command_run import CommandRunner
 from condor_run import CondorRunner
 
@@ -53,6 +54,8 @@ class ModuleRunner(object):
         log.debug('Path: %s'%os.getcwd())         
             
         runners = cfg.get(None, 'runtime.platforms')
+        if runners is None:
+            raise ModuleEnvironmentError("Must define legal platforms:  runtime.platforms in module config")
         log.debug('Module runners: %s'%runners)
         self.module_runners = [r.strip() for r in runners.split(',')]
 

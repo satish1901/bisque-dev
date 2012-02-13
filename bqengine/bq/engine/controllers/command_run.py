@@ -44,7 +44,15 @@ def config_path(*names):
 
 class RunnerException(Exception):
     """Exception in the runners"""
-    pass
+    def __init__(self, msg =None, mex= {}):
+        super( RunnerException, self).__init__(msg)
+        self.mex = mex
+    def __str__(self):
+        #return "\n".join( [ str (super( RunnerException, self) ) ] +  
+        #                  [ "%s: %s" % (k, self.mex[k]) for k in sorted(self.mex.keys() )] )
+        return "%s env=%s" % (super( RunnerException, self).__str__(), self.mex ) 
+
+
 
 
 class AttrDict(dict):
@@ -335,13 +343,11 @@ class BaseRunner(object):
             return 0
         except ModuleEnvironmentError, e:
             log.exception( "Problem occured in module")
-            raise e
-        except RunnerException, e:
-            log.exception("during the command %s:" % (command))
-            raise e
+            raise RunnerException(str(e), self.mexes)
         except Exception, e:
-            log.exception ("Unknown exeception")
-            raise e
+            log.exception ("Unknown exeception: %s", e)
+            raise RunnerException(str(e), self.mexes)
+
 
         return 1
 

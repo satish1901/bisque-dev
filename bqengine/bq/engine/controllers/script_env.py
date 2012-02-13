@@ -18,6 +18,12 @@ class ScriptEnvironment(BaseEnvironment):
 
     def __init__(self, runner, **kw):
         super(ScriptEnvironment, self).__init__(runner, **kw)
+
+    def process_config(self, runner):
+        for mex in runner.mexes:
+            if not hasattr(mex, 'script'):
+                raise ModuleEnvironmentError('Missing script tag in configuration')
+
         
     def create_script(self, mex):
         """Runs before the normal command but after read the config"""

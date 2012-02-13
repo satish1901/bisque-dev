@@ -149,6 +149,18 @@ class BQResource (BQNode):
         else:
             return results
 
+    def gob(self, name):
+        results = []
+        for tg in self.gobjects:
+            if tg.name == name:
+                results.append(tg)
+        if len(results) == 0:
+            return None
+        elif len(results) == 1:
+            return results[0]
+        else:
+            return results
+
 ################################################################################
 # Image
 ################################################################################
@@ -325,7 +337,7 @@ class BQVertex (BQNode):
     '''gobject vertex'''
     type = 'vertex'
     xmltag = "vertex"
-    xmlfields = ['x', 'y', 'z', 't', 'c']
+    xmlfields = ['x', 'y', 'z', 't', 'c', 'index']
 
     def __init__(self, **kw):
         self.fromObj(**kw)

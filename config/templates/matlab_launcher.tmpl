@@ -15,13 +15,14 @@ $matlabroot/sys/java/jre/glnxa64/jre/lib/amd64/server:\
 $matlabroot/sys/java/jre/glnxa64/jre/lib/amd64:
 XAPPLRESDIR=$matlabroot/X11/app-defaults 
 
-PATH=$PATH:$matlabroot/bin:.
+PATH=.:$matlabroot/bin:$PATH
 HOME=.
-DISPLAY=:0.0
+#DISPLAY=:0.0
+unset DISPLAY
 
-export PATH LD_LIBRARY_PATH HOME DISPLAY  XAPPLRESDIR
+export PATH LD_LIBRARY_PATH HOME #DISPLAY  XAPPLRESDIR
 
-SCRIPT=$1; shift;
+SCRIPT=$1; 
 
 echo "+++BEGIN"
 date
@@ -37,5 +38,5 @@ echo "+++ENVIRONMENT"
 printenv
 
 
-echo "+++EXEC of ./$SCRIPT and $@"
-exec $SCRIPT $@
+echo "+++EXEC of $SCRIPT and $@"
+exec $@

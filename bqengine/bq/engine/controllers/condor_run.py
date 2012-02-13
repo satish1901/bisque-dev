@@ -9,9 +9,6 @@ from bq.util.configfile import ConfigFile
 from command_run import CommandRunner, strtolist, AttrDict, check_exec
 from condor_templates import CondorTemplates
 
-
-
-        
 class CondorRunner (CommandRunner):
     """A Runtime to execute a module on a condor enabled system
 

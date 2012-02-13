@@ -58,37 +58,39 @@ class SeedSize(object):
         # Post all submex for files and return xml list of results
         tags = []
         gobjects = []
+        submexes = []
         if not self.is_dataset:
             localfiles = glob.glob(os.path.join(self.images, '*C.csv'))
             gobs = self._read_results(localfiles[0])
-            gobjects = [ { 'name': 'SeedSize', 'gobject':gobs } ]
             #tags = [{ 'name':'image_url', 'value' : self.resource_url}]
-            tags = summary_tags
+            tags = [{ 'name': 'outputs',
+                      'tag' : [{'name': 'Summary',  'tag' : summary_tags} ,
+                               {'name': 'seed-resource', 'type':'image', 'value':self.resource_url,
+                                'gobject' : [{ 'name': 'seeds', 'gobject':gobs }], }],
+                      }]
         else:
-            mexlist = self._post_submex()
-            tags.extend(summary_tags)
-            for i, submex in enumerate(mexlist):
-                tag, image_url = gettag(submex, 'image_url')
-                gob, gob_url = gettag(submex, 'SeedSize')
-
-                mexlink = { 'name' : 'submex', 
-                            'tag'  : [{ 'name':'mex_url', 'value':submex.get('uri')},
-                                      { 'name':'image_url', 'value' : image_url},
-                                      { 'name':'gobject_url', 'value' : gob.get('uri') } ]
-                            }
-                tags.append(mexlink)
-
-        self.bq.finish_mex(tags = tags, gobjects = gobjects)
+            submexes = self._get_submexes()
+            tags = [{ 'name': 'outputs',
+                      'tag' : [{'name': 'Summary',  'tag' : summary_tags },
+                               {'name': 'seed-resource', 'type':'dataset', 'value':self.resource_url,}]
+                      }]
+            # for i, submex in enumerate(mexlist):
+            #     tag, image_url = gettag(submex, 'image_url')
+            #     gob, gob_url = gettag(submex, 'SeedSize')
+            #     mexlink = { 'name' : 'submex', 
+            #                 'tag'  : [{ 'name':'mex_url', 'value':submex.get('uri')},
+            #                           { 'name':'image_url', 'value' : image_url},
+            #                           { 'name':'gobject_url', 'value' : gob.get('uri') } ]
+            #                 }
+            #     tags.append(mexlink)
+        self.bq.finish_mex(tags = tags, gobjects = gobjects, children= [('mex', submexes)])
         return 0
 
 
-    def _post_submex(self):
+    def _get_submexes(self):
         submex = []
-
         localfiles = glob.glob(os.path.join(self.images, '*C.csv'))
         result2url = dict( (os.path.splitext(f)[0] + 'C.csv', u) for f, u in self.file2url.items())
-        
-
         for result in localfiles:
             gobs = self._read_results(result)
             if result not in result2url:
@@ -97,17 +99,16 @@ class SeedSize(object):
             mex = { 'type' : self.bq.mex.type,
                     'name' : self.bq.mex.name,
                     'value': 'FINISHED', 
-                    'tag': [ {'name': 'image_url', 'value':  result2url [result]},
-                             {'name': 'resource_url', 'value': self.config.resource_url }],
-                    'gobject' : { 'name' : 'SeedSize', 'gobject' : gobs },
-                    
+                    'tag': [{ 'name': 'outputs',
+                              'tag' : [{'name': 'seed-resource', 'type':'image', 'value':  result2url [result],
+                                        'gobject':{ 'name': 'seeds', 'gobject': gobs}, }] }]
                     }
             submex.append (mex)
-        
-        url = self.bq.service_url('data_service', 'mex', query={ 'view' : 'deep' })
-        response = self.bq.postxml(url, d2xml({'request' : {'mex': submex}} ))
+        return submex
 
-        return response
+        #url = self.bq.service_url('data_service', 'mex', query={ 'view' : 'deep' })
+        #response = self.bq.postxml(url, d2xml({'request' : {'mex': submex}} ))
+        #return response
         
 
     def _read_summary(self, csvfile):
@@ -128,7 +129,7 @@ class SeedSize(object):
                          for n in itertools.izip(tag_names, rows.next()) ] 
         f.close()
         
-        return  [ {'name':'summary', 'tag':summary_tags } ]
+        return summary_tags
 
     def _read_results(self, csvfile):
         results  = []

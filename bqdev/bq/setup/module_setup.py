@@ -114,6 +114,7 @@ def python_setup(scripts,  package_scripts =True, dependency_dir = 'pydist', par
     for each script
     """
     f = bbfreeze.Freezer(dependency_dir)
+    f.include_py = False
     if not isinstance(scripts, list):
         scripts = [ scripts ] 
     for script in scripts:
