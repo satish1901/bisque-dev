@@ -61,7 +61,8 @@ Ext.define('Bisque.Resource.Mex.Compact',
         
         var propsGrid=this.GetPropertyGrid({width:270}, tagArr);
         
-        this.ttip.add(propsGrid);
+        if (tagArr.length>0)
+            this.ttip.add(propsGrid);
 		this.ttip.setLoading(false);
 	},
 
@@ -186,7 +187,8 @@ Ext.define('Bisque.Resource.Mex.List',
         
         var propsGrid=this.GetPropertyGrid({width:270}, tagArr);
         
-        this.ttip.add(propsGrid);
+        if (tagArr.length>0)
+            this.ttip.add(propsGrid);
 		this.ttip.setLoading(false);
 	},
     
