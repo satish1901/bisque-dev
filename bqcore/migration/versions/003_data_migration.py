@@ -49,7 +49,7 @@ def upgrade(migrate_engine):
     doc_index.create()
     parent_index = Index('resource_parent_idx', taggable.c.resource_parent_id)
     parent_index.create()
-    type_index = Index('resource_type_idx', taggable.c.resource_type_id)
+    type_index = Index('resource_type_idx', taggable.c.resource_type)
     type_index.create()
 
     services.drop()
