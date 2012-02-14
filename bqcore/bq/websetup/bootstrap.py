@@ -2,8 +2,10 @@
 """Setup the bqcore application"""
 
 import logging
-from tg import config
+from tg import config, session
 from bq.core import model
+from paste.registry import Registry
+from beaker.session import Session, SessionObject
 
 import transaction
 
@@ -13,13 +15,24 @@ def bootstrap(command, conf, vars):
 
     # <websetup.bootstrap.before.auth
     from sqlalchemy.exc import IntegrityError
+    from  bq.data_service.model import Taggable, Tag, BQUser, ModuleExecution
 
+    registry = Registry()
+    registry.prepare()
+    registry.register(session, SessionObject({}))
 
     try:
+        initial_mex = ModuleExecution()
+        initial_mex.mex = initial_mex
+        initial_mex.name = "initialization"
+        initial_mex.type = "initialization"
+        model.DBSession.add(initial_mex)
+        session['mex'] = initial_mex
+
         admin = model.User(
             user_name = u"admin",
-            display_name = u'Example manager',
-            email_address = u'manager@somedomain.com',
+            display_name = config.get('bisque.admin_display_name', 'Bisque admin'),
+            email_address = config.get('bisque.admin_email', 'manager@somedomain.com'),
             password = u'admin')
         model.DBSession.add(admin)
         
@@ -50,24 +63,25 @@ def bootstrap(command, conf, vars):
     try:
         ######
         # 
-        from  bq.data_service.model import Taggable, Tag, BQUser
-        from bq.data_service.model import UniqueName
+        #from bq.data_service.model import UniqueName
 
-        #admin = model.DBSession.query(BQUser).filter_by(username = 'admin').first()
-        #admin.owner_id = admin.id
+        admin = model.DBSession.query(BQUser).filter_by(resource_name = 'admin').first()
+        admin.mex = initial_mex
+        initial_mex.owner = admin
+        session['user'] = admin
         
-        system = model.DBSession.query(Taggable).filter_by (tb_id = UniqueName('system').id).first()
+        system = model.DBSession.query(Taggable).filter_by (resource_type='system').first()
         if system is None:
             system = Taggable(resource_type = 'system')
-            version = Tag ()
+            version = Tag (parent = system)
             version.name ='version'
             version.value  = '0.5'
-            prefs = Tag()
+            prefs = Tag(parent = system)
             prefs.name = 'Preferences'
-            system.tags.append(version)
-            system.tags.append(prefs)
             model.DBSession.add(system)
             transaction.commit()
+
+
     except IntegrityError:
         print 'Warning, there was a problem adding your system object, it may have already been added:'
         #import traceback

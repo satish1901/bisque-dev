@@ -12,7 +12,7 @@ Bisque.ResourceBrowser.DatasetManager = Ext.extend(Ext.Panel,
 
             title : 'Datasets',
             itemId: 'datasetCt',
-            width : 400,
+            width : 300,
             autoScroll : true,
 
             tools : [
@@ -22,7 +22,8 @@ Bisque.ResourceBrowser.DatasetManager = Ext.extend(Ext.Panel,
                 tooltip : 'Collapse dataset panel',
                 handler : function()
                 {
-                    this.parentCt.collapse(Ext.Component.DIRECTION_LEFT, true);
+                    this.parentCt.hideCollapseTool = false;
+                    this.parentCt.collapse();
                 },
 
                 scope:this
@@ -38,6 +39,7 @@ Bisque.ResourceBrowser.DatasetManager = Ext.extend(Ext.Panel,
                 {
                     text : 'Add Dataset',
                     icon : '/js/ResourceBrowser/Images/add.png',
+                    hidden : true,
                     scale : 'medium',
                     iconAlign : 'left',
                     handler : Ext.bind(this.promptDatasetName, this, [false])
@@ -46,6 +48,7 @@ Bisque.ResourceBrowser.DatasetManager = Ext.extend(Ext.Panel,
                     text : 'Delete Dataset',
                     icon : '/js/ResourceBrowser/Images/delete.png',
                     scale : 'medium',
+                    hidden : true,
                     iconAlign : 'left',
                     handler : this.deleteDataset,
                     scope : this
@@ -53,9 +56,7 @@ Bisque.ResourceBrowser.DatasetManager = Ext.extend(Ext.Panel,
             })
         });
 
-        Bisque.ResourceBrowser.DatasetManager.superclass.constructor.apply(
-        this, arguments);
-
+        this.callParent(arguments);
         this.ManageEvents();
 
         this.LoadDSList(false);
@@ -64,7 +65,7 @@ Bisque.ResourceBrowser.DatasetManager = Ext.extend(Ext.Panel,
     LoadDSList : function(loaded, list)
     {
         if (!loaded)
-            BQFactory.load('/data_service/datasets/?view=short', callback(this, 'LoadDSList', true));
+            BQFactory.load('/data_service/dataset/?view=short', callback(this, 'LoadDSList', true));
         else
         {
             for (i = 0; i < list.children.length; i++)
@@ -91,7 +92,7 @@ Bisque.ResourceBrowser.DatasetManager = Ext.extend(Ext.Panel,
             var uri =
             {
                 offset : 0,
-                baseURL : '/data_service/images'
+                baseURL : '/data_service/image'
             };
 
             this.msgBus.fireEvent('Browser_ReloadData', uri);
@@ -111,7 +112,7 @@ Bisque.ResourceBrowser.DatasetManager = Ext.extend(Ext.Panel,
             dataset.name = name;
             dataset.setMembers([]);
             
-            dataset.save_('/data_service/datasets/?view=deep', callback(this, 'addDataset'));
+            dataset.save_('/data_service/dataset/?view=deep', callback(this, 'addDataset'));
         }
     },
 
@@ -127,7 +128,7 @@ Bisque.ResourceBrowser.DatasetManager = Ext.extend(Ext.Panel,
                 var uri =
                 {
                     offset : 0,
-                    baseURL : '/data_service/images'
+                    baseURL : '/data_service/image'
                 };
 
                 document.title='Dataset: Images';
@@ -160,7 +161,7 @@ Bisque.ResourceBrowser.DatasetManager = Ext.extend(Ext.Panel,
             var uri =
             {
                 offset : 0,
-                baseURL : data.uri+'/values'
+                baseURL : data.uri+'/value'
             };
 
             this.msgBus.fireEvent('Browser_ReloadData', uri);
@@ -175,6 +176,7 @@ Bisque.ResourceBrowser.DatasetManager.DatasetTbar = Ext.extend(Ext.Toolbar,
         Ext.apply(this,
         {
             layout:'hbox',
+            height: 44,
             layoutConfig:
             {
                 align:'middle'
@@ -189,7 +191,7 @@ Bisque.ResourceBrowser.DatasetManager.DatasetTbar = Ext.extend(Ext.Toolbar,
                 width : 6
             },
             {
-                text : configOpts.dataset.name,
+                text : Ext.String.ellipsis(configOpts.dataset.name, 35),
                 overCls :'',
                 pressedCls:'',
                 handler : this.datasetLoad,
@@ -208,6 +210,7 @@ Bisque.ResourceBrowser.DatasetManager.DatasetTbar = Ext.extend(Ext.Toolbar,
                 text : 'Options',
                 icon : '/js/ResourceBrowser/Images/menu.png',
                 scale : 'medium',
+                hidden : true,
                 iconAlign : 'left',
                 handler : this.showMenu,
                 scope : this

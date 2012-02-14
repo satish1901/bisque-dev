@@ -1,0 +1,18 @@
+
+1. Install CellProfiler from their website http://www.cellprofiler.org/
+
+2. Create a local Script that is in the Bisque Path i.e. /usr/local/bin/CellProfiler
+
+-----------------------
+cat > /usr/local/bin/CellProfiler <<EOF
+#!/usr/bin/env sh
+unset VIRTUAL_ENV
+JAVA_HOME=/usr/lib/jvm/java-6-sun
+LD_LIBRARY_PATH=/usr/lib/jvm/java-6-sun/jre/lib/amd64/server
+export JAVA_HOME LD_LIBRARY_PATH
+exec /usr/bin/python /usr/local/CellProfiler/CellProfiler.py $*
+EOF
+chmod +x /usr/local/bin/CellProfiler 
+-------------------------
+
+3.  Enjoy.

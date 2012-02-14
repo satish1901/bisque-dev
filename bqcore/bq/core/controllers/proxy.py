@@ -1,3 +1,4 @@
+import socket
 import functools
 import inspect
 import logging
@@ -7,7 +8,7 @@ from urlparse import urlunsplit, urlsplit, urljoin
 from tg import expose, flash, require, url, request, response, redirect, config
 from lxml import etree
 from bq.core.lib.base import BaseController
-from bq.core.exceptions import ConfigurationError, IllegalOperation, RequestError
+from bq.exceptions import ConfigurationError, IllegalOperation, RequestError
 from bq.util.http import http_client 
 
 
@@ -86,11 +87,16 @@ class service_proxy (object):
             
         url = urljoin(self.proxy_url, method + '?' + urlencode(kwargs))
         print ('%s request to %s with %s' % (httpmethod, url, body))
-        headers, content = http_client.xmlrequest (
-            url,
-            method=httpmethod,
-            body = body
-            )
+        try:
+            headers, content = http_client.xmlrequest (
+                url,
+                method=httpmethod,
+                body = body
+                )
+        except socket.error, e:
+            log.exception("in request %s : %s" % (httpmethod, url))
+            raise RequestError("Request Error %s" % url, (None, None))
+
         if not headers['status'].startswith ('200'):
             log.debug ("request result %s \n %s" % (headers, content))
             raise RequestError("Request Error %s" % url, (headers, content))

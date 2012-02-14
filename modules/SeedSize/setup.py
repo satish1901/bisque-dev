@@ -1,12 +1,9 @@
 # Install script for SeedSize
 import sys
-from bq.util.module_setup import matlab_setup, require, read_config
+from bq.setup.module_setup import matlab_setup, python_setup, read_config
 
 def setup(params, *args, **kw):
-    if not require (['matlab_home'], params):
-        print "Skipping.. no matlab"
-        return 1
-    
+    python_setup('SeedSize.py', params=params)
     return matlab_setup('matlab/seedSize', bisque_deps=False, params=params)
     
 if __name__ =="__main__":

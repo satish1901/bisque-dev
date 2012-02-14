@@ -44,7 +44,7 @@ function analysisAction(o, e) {
     
     //var resourceBrowser  = new Bisque.ResourceBrowser.Dialog({    
     var resourceBrowser  = new Bisque.ResourceBrowser.Browser({
-        layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.ICON_LIST,
+        layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.IconList,
         wpublic: true,
         selType: 'SINGLE',        
         viewMode: 'ModuleBrowser',
@@ -89,13 +89,13 @@ Ext.define('BQ.Application.Toolbar', {
     // default toolbar config
     region: 'north', 
     border: false,             
-    layout: { overflowHandler: 'Menu' },
+    layout: { overflowHandler: 'Menu',  },
     defaults: { scale: 'large', },
     cls: 'toolbar_main',
     
     tools_none: [ 'menu_user_signin', 'menu_user_register'],    
     tools_user: ['menu_user_name', 'menu_user_profile', 'menu_user_signout', ],
-    tools_admin: ['menu_user_admin_separator', 'menu_user_admin', 'menu_user_admin_prefs' ],    
+    tools_admin: ['menu_user_admin_separator', 'menu_user_admin', 'menu_user_admin_prefs', ],    
     
     config: {
         title: 'Bisque demo',    
@@ -123,6 +123,7 @@ Ext.define('BQ.Application.Toolbar', {
         //this.menu_services = Ext.create('Ext.menu.Menu');
         this.menu_services = [];
         this.menu_services.push( {text: 'Analysis', handler: analysisAction } );
+        //this.menu_services.push( {text: 'Dataset operations', handler: Ext.Function.pass(pageAction, '/dataset_service/') } );        
         this.menu_services.push( '-' );
         this.menu_services.push( {text: 'Import', handler: Ext.Function.pass(pageAction, '/import/')} );
         this.menu_services.push( {text: 'Export', handler: Ext.Function.pass(pageAction, '/export/')} );
@@ -132,7 +133,7 @@ Ext.define('BQ.Application.Toolbar', {
         
         // Sign in | Register
         this.menu_user = Ext.create('Ext.menu.Menu');
-        this.menu_user.add( {xtype:'tbtext', itemId: 'menu_user_name', text: 'Sign in', indent: true, hidden: true } );
+        this.menu_user.add( {xtype:'tbtext', itemId: 'menu_user_name', text: 'Sign in', indent: true, hidden: true, cls: 'menu-heading', } );
         
         
         this.menu_user.add( {text: 'Profile', itemId: 'menu_user_profile', hidden: true, 
@@ -142,7 +143,10 @@ Ext.define('BQ.Application.Toolbar', {
         this.menu_user.add( {text: 'Website admin', itemId: 'menu_user_admin', hidden: true, 
                                 handler: Ext.Function.pass(pageAction, bq.url('/admin'))} );        
         
-        this.menu_user.add( { text: 'Website preferences', itemId: 'menu_user_admin_prefs', hidden: true, 
+        this.menu_user.add( { text: 'User preferences', itemId: 'menu_user_prefs', 
+                              handler: this.userPrefs, scope: this } );    
+
+        this.menu_user.add( { text: 'System preferences', itemId: 'menu_user_admin_prefs', hidden:true, 
                               handler: this.systemPrefs, scope: this } );    
 
         this.menu_user.add( {text: 'Register new user', itemId: 'menu_user_register', 
@@ -165,6 +169,12 @@ Ext.define('BQ.Application.Toolbar', {
                             handler: Ext.Function.pass(htmlAction, bq.url('/client_service/public/about/privacypolicy.html')) } );
         menu_help.push( {text: 'Terms of use', 
                             handler: Ext.Function.pass(htmlAction, bq.url('/client_service/public/about/termsofuse.html') )} );    
+        menu_help.push( {text: 'License', 
+                            handler: Ext.Function.pass(htmlAction, bq.url('/client_service/public/about/license.html') )} );  
+
+        menu_help.push( '-' );  
+        menu_help.push( {text: 'Usage statistics', 
+                            handler: Ext.Function.pass(pageAction, bq.url('/usage/') )} );  
         
         menu_help.push( '-' );                
         menu_help.push( {text: 'Online Help', 
@@ -174,7 +184,7 @@ Ext.define('BQ.Application.Toolbar', {
                          handler: Ext.Function.pass(urlAction, 'http://www.bioimage.ucsb.edu/downloads/Bisque%20Database') } );   
                              
         menu_help.push( '-' ); 
-        menu_help.push( {xtype:'tbtext', text: 'Problems with Bisque?', indent: true} );
+        menu_help.push( {xtype:'tbtext', text: 'Problems with Bisque?', indent: true, cls: 'menu-heading', } );
         menu_help.push( {text: 'Developers website', 
                          handler: Ext.Function.pass(urlAction, 'http://biodev.ece.ucsb.edu/projects/bisquik')} );
         menu_help.push( {text: 'Submit a bug or suggestion', 
@@ -203,21 +213,41 @@ Ext.define('BQ.Application.Toolbar', {
                  tooltip: '' });
         this.items.push('-');            
 
+
         var browse_vis = (this.toolbar_opts && this.toolbar_opts.browse===false) ? false : true;
-        this.items.push({ text: 'Images', icon: this.images_base_url+'browse.png', hidden: !browse_vis, tooltip: 'Browse images', 
-                handler: function(c){ 
-                  var q = '';
-                  var m = toolbar.child('#menu_query');
-                  if (m && m.value != toolbar.image_query_text) { q = '?tag_query='+escape(m.value); }
-                  document.location = bq.url('/client_service/browser'+q); 
-                },
+        this.items.push({itemId: 'menu_images', 
+                         xtype:'splitbutton', 
+                         text: 'Images', 
+                         icon: this.images_base_url+'browse.png', 
+                         hidden: !browse_vis, 
+                         tooltip: 'Browse images',
+                         //menu: [{text: 'Menu Button 1'}], 
+                         handler: function(c) { 
+                              var q = '';
+                              var m = toolbar.child('#menu_query');
+                              if (m && m.value != toolbar.image_query_text) { q = '?tag_query='+escape(m.value); }
+                              document.location = bq.url('/client_service/browser'+q); 
+                         },
               });
-                
+        this.items.push({itemId: 'menu_resources', 
+                         text: 'Resources', 
+                         icon: this.images_base_url+'browse.png', 
+                         hidden: browse_vis, 
+                         tooltip: 'Browse resources',
+              });
+
+               
         this.items.push({ xtype: 'tbspacer', width: 10, hidden: !browse_vis });    
-        this.items.push({itemId: 'menu_query',  xtype:'textfield', flex: 2, name: 'search', value: this.image_query_text, hidden: !browse_vis,
+        this.items.push({itemId: 'menu_query', xtype:'textfield', flex: 2, name: 'search', value: this.image_query_text, hidden: !browse_vis,
                  tooltip: 'Query for images used Bisque expression',  
+                 enableKeyEvents: true,
                  listeners: {
-                   focus: function(c){ if (c.value == toolbar.image_query_text) c.setValue(''); }
+                   focus: function(c){ if (c.value == toolbar.image_query_text) c.setValue(''); },
+                   specialkey: function(f, e) { 
+                       if (e.getKey()==e.ENTER && f.value!='' && f.value != toolbar.image_query_text) {
+                              document.location = bq.url('/client_service/browser?tag_query='+escape(f.value)); 
+                       }                         
+                   },
                  }
                });
 
@@ -266,8 +296,9 @@ Ext.define('BQ.Application.Toolbar', {
             // hide user menus
             for (var i=0; (p=this.tools_admin[i]); i++)
                 this.menu_user.child('#'+p).setVisible(false);              
-         }, this);  
+        }, this);  
         
+        this.fetchResourceTypes();        
     },
 
     // private
@@ -275,10 +306,130 @@ Ext.define('BQ.Application.Toolbar', {
         this.callParent();
     },
 
-    systemPrefs : function() {
-        var preferences = Ext.create('BQ.Preferences.SystemDialog');
+    userPrefs : function() {
+        var preferences = Ext.create('BQ.Preferences.Dialog');
     },
 
+    systemPrefs : function() {
+        var preferences = Ext.create('BQ.Preferences.Dialog', {prefType:'system'});
+    },
+
+    fetchResourceTypes : function() {
+        BQFactory.request ({uri : '/data_service/', 
+                            cb : callback(this, 'onResourceTypes'),
+                            cache : false});             
+    }, 
+
+    onResourceTypes : function(resource) {
+        var menu = Ext.create('Ext.menu.Menu');
+        var r=null;
+        for (var i=0; (r=resource.children[i]); i++) {
+            var name = r.name;
+            var uri = r.uri;            
+            menu.add( {text: name, handler: Ext.Function.pass(pageAction, '/client_service/browser?resource='+uri)} );
+        }
+        menu.add( '-' );
+        menu.add( {text: 'Create a new resource', 
+                   handler: function() {this.createResource(resource);},
+                   scope: this, });
+        
+        
+        this.child('#menu_images').menu = menu;
+        this.child('#menu_resources').menu = menu;        
+    }, 
+   
+    createResource : function(resource) {
+        var ignore = { 'mex':null, 'user':null, 'image':null, 'module':null, 'service':null, 'system':null, };        
+        var mydata = [];
+        var r=null;
+        for (var i=0; (r=resource.children[i]); i++)
+            if (!(r.name in ignore))
+                mydata.push( [r.name] );       
+        
+        store_types = Ext.create('Ext.data.ArrayStore', {
+            fields: [ {name: 'name',}, ],        
+            data: mydata,
+        });                
+        
+        var formpanel = Ext.create('Ext.form.Panel', {
+            //url:'save-form.php',
+            frame:true,
+            bodyStyle:'padding:5px 5px 0',
+            width: 350,
+            fieldDefaults: {
+                msgTarget: 'side',
+                labelWidth: 75
+            },
+            defaultType: 'textfield',
+            defaults: {
+                anchor: '100%'
+            },
+    
+            items: [{
+                xtype : 'combobox',
+                fieldLabel: 'Type',
+                name: 'type',
+                allowBlank: false,
+                
+                store     : store_types,
+                displayField: 'name',
+                valueField: 'name',
+                queryMode : 'local',
+                
+                invalidText: 'This type is not allowed for creation!',
+                validator: function(value) { return !(value in ignore) },
+            },{
+                fieldLabel: 'Name',
+                name: 'name',
+                allowBlank: false,                
+            }],
+    
+        });
+        
+        var w = Ext.create('Ext.window.Window', {
+            layout : 'fit',
+            modal : true,
+            border : false,
+            title: 'Create new resource',
+            buttonAlign: 'center',
+            items: formpanel,
+            buttons: [{
+                text: 'Save',
+                scope: this,
+                handler: function () {
+                    var form = formpanel.getForm();
+                    if (form.isValid()) {
+                        var v = form.getValues()
+                        var resource = BQFactory.make(v.type, undefined, v.name);
+                        
+                        // dima: temporary hack to fix the dataset memebers tag problem
+                        if (v.type == 'dataset')
+                             resource.addtag ({name: 'members'});
+                        
+                        resource.save_('/data_service/'+v.type, 
+                                       callback(this, this.onResourceCreated), 
+                                       callback(this, this.onResourceError));
+                        formpanel.ownerCt.hide();                    
+                    };                    
+                }
+            }, {
+                text: 'Cancel',
+                //scope: this,
+                handler: function (me) {
+                    formpanel.ownerCt.hide();
+                }
+            }]            
+            
+        }).show();
+    },    
+
+    onResourceCreated: function(resource) {
+        document.location = '/client_service/view?resource='+resource.uri;
+    },
+
+    onResourceError: function(message) {
+        BQ.ui.error('Error creating resource: <br>'+message);
+    },
    
 });
 

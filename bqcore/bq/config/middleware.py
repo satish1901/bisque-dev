@@ -6,7 +6,8 @@ import pkg_resources
 #from webtest import TestApp
 
 from paste.httpexceptions import HTTPNotFound
-from paste.cascade import Cascade
+#from paste.cascade import Cascade
+from direct_cascade import DirectCascade
 from paste.fileapp import FileApp
 from paste.urlparser import StaticURLParser
 from paste.httpheaders import ETAG
@@ -21,7 +22,7 @@ from bq.util.paths import site_cfg_path
 
 __all__ = ['make_app', 'bisque_app']
 
-log = logging.getLogger("bq.core.middleware")
+log = logging.getLogger("bq.config.middleware")
 
 # Use base_config to setup the necessary PasteDeploy application factory. 
 # make_base_app will wrap the TG2 app with all the middleware it needs. 
@@ -31,6 +32,7 @@ make_base_app = base_config.setup_tg_wsgi_app(load_environment)
 
 public_file_filter = None
 bisque_app = None
+
 class BQStaticURLParser (object):
 
     def __init__(self):
@@ -57,13 +59,13 @@ class BQStaticURLParser (object):
     
     def __call__(self, environ, start_response):
         path_info = environ['PATH_INFO']
-        log.debug ('static search for %s' % path_info)
+        #log.debug ('static search for %s' % path_info)
         if path_info in self.files:
             path, app = self.files.get(path_info)
             if not app:
                 app = FileApp (path).cache_control (max_age=60*60*24*7*6) #6 weeks
                 self.files[path_info] = (path, app)
-            log.info ( "STATIC %s" %  path_info)
+            log.info ( "STATIC REQ %s" %  path_info)
             if_none_match = environ.get('HTTP_IF_NONE_MATCH')
             if if_none_match:
                 mytime = os.stat(path).st_mtime
@@ -140,7 +142,7 @@ def make_app(global_conf, full_stack=True, **app_conf):
         #    staticfilters.append (static_app)
     #cascade = staticfilters + [app]
     #print ("CASCADE", cascade)
-    app = Cascade([static_app, app])
+    app = DirectCascade([static_app, app])
     bisque_app = app
 
     log.info( "END STATICS: discovered %s static files " % len(static_app.files.keys()))

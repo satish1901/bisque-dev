@@ -56,13 +56,15 @@ import tempfile
 from tg import config
 from lxml import etree
 from StringIO import StringIO
+from subprocess import call, PIPE, Popen, STDOUT
 
-from bq.core import identity
-from bq.core.exceptions import EngineError
-from base_adapter import BaseAdapter
+from bq.exceptions import EngineError
 from bq.util.paths import bisque_path
 
-from subprocess import call, PIPE, Popen, STDOUT
+from base_adapter import BaseAdapter
+from bq.engine.controllers.module_run import ModuleRunner
+from bq.core import identity
+
 
 MODULE_BASE = config.get('bisque.engine_service.local_modules', bisque_path('modules'))
 log = logging.getLogger('bq.engine_service.adapters.runtime')
@@ -75,12 +77,12 @@ class RuntimeAdapter(BaseAdapter):
     def __init__(self):
         pass
     def check(self, module):
-        module_name = module.get('name')
-        module_path = module.get('path').split(' ')[-1]
-        command = os.path.join(MODULE_BASE, module_name, module_path)
-        if not os.path.exists (command):
-            log.debug ("Failed to find module at %s" % command)
-            return False
+        #module_name = module.get('name')
+        #module_path = module.get('path').split(' ')[-1]
+        #command = os.path.join(MODULE_BASE, module_name, module_path)
+        #if not os.path.exists (command):
+        #    log.debug ("Failed to find module at %s" % command)
+        #    return False
         
         async =  module.xpath('//tag[@name="asynchronous"]')
         if len(async):
@@ -98,52 +100,48 @@ class RuntimeAdapter(BaseAdapter):
         # Pass through module definition looking for inputs
         # for each input find the corresponding tag in the mex
         # Warn about missing inputs
-        
-        input_nodes = self.prepare_inputs(module=module, mex=mex)
-        options= self.prepare_options (module=module, mex=mex)
 
-        #up = identity.get_user_pass()
-        #if up[0] is not None:
-        #    for k,v in zip(['user','password'], up):
-        #        input_nodes.append (etree.Element('tag', name=k, value=v))
-        #input_nodes.append(etree.Element('tag', name='mex_url',
-        #                                 value=mex.get('uri')))
-        #params.append ( identity.mex_authorization_token() )
-        
-        arguments = options.get("argument_style", None)
-        if arguments is not None and arguments.get('value') == 'named':
-            params = ['%s=%s'%(i.get('name'), i.get('value')) for i in input_nodes]
-        else:
-            params = [ i.get('value') for i in input_nodes ]
+        params = []
+        #input_nodes = self.prepare_inputs(module=module, mex=mex)
+        #options= self.prepare_options (module=module, mex=mex)
+        #arguments = options.get("argument_style", None)
+        #if arguments is not None and arguments.get('value') == 'named':
+        #    params = ['%s=%s'%(i.get('name'), i.get('value')) for i in input_nodes]
+        #else:
+        #    params = [ i.get('value') for i in input_nodes ]
 
-        #xml_module_path = local_xml_copy(module)
-        #xml_mex_path    = local_xml_copy(mex)
-        params.append ('mex_url=%s' % mex.get('uri'))
-        params.append ('module_url=%s' % module.get('uri'))
-        
         params.append ('start')
-
-        module_dir = os.path.join(MODULE_BASE, module_name)
-            
         #command = os.path.join(module_dir, module_path)
-        command_line = module_path.split(' ')
+        #command_line = module_path.split(' ')
+        command_line = []
         command_line.append('-d')
         command_line.extend (params)
         
+        module_dir = os.path.join(MODULE_BASE, module_name)
+        current_dir = os.getcwd()
         try:
-            log.debug ("Exec in %s" % os.getcwd())
-            log.debug ("Exec of '%s' in %s " % (' '.join(command_line), module_dir))
-            process = Popen(command_line, cwd=module_dir, stdout=PIPE, stderr=PIPE)
-            stdout,stderr = process.communicate()
-            log.debug ("Process ID: %s " %(process.pid))
-            if process.returncode != 0:
-                raise EngineError("Non-zero exit code", 
-                                  stdout = stdout,
-                                  stderr = stderr)
-            return process.pid
+            log.info ("Currently in %s" % os.getcwd())
+            log.info ("Exec of %s '%s' in %s " % (module_name, ' '.join(command_line), module_dir))
+
+            os.chdir(module_dir)
+            m = ModuleRunner()
+            m.main(arguments=command_line, 
+                   mex_tree=mex, 
+                   module_tree=module, 
+                   bisque_token = identity.mex_authorization_token())
+            os.chdir(current_dir)
+            #process = Popen(command_line, cwd=module_dir, stdout=PIPE, stderr=PIPE)
+            #stdout,stderr = process.communicate()
+            #log.debug ("Process ID: %s " %(process.pid))
+            #if process.returncode != 0:
+            #    raise EngineError("Non-zero exit code", 
+            #                      stdout = stdout,
+            #                      stderr = stderr)
+            #return process.pid
         except Exception, e:
+            os.chdir(current_dir)
             log.exception ("During exec of %s: %s" % (command_line, e))
-            mex.set ('status', 'FAILED')
+            mex.set ('value', 'FAILED')
             etree.SubElement(mex, 'tag',
                              name = "ERROR",
                              value = "During exec of %s: %s" % (command_line, e))
@@ -151,8 +149,8 @@ class RuntimeAdapter(BaseAdapter):
                 raise
             else:
                 raise EngineError('Exception in module: %s' % command_line, 
-                                  stdout = stdout,
-                                  stderr = stderr,
+                                  #stdout = stdout,
+                                  #stderr = stderr,
                                   exc = e)
         
         

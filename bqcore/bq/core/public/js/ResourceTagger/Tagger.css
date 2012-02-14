@@ -23,6 +23,14 @@
 	background-image: url('../ResourceTagger/Images/save.png') !important;
 }
 
+.icon-check {
+    background-image: url('../ResourceTagger/Images/check.png') !important;
+}
+
+.icon-uncheck {
+    background-image: url('../ResourceTagger/Images/uncheck.png') !important;
+}
+
 .icon-import {
     background-image: url('../ResourceTagger/Images/import.png') !important;
 }
@@ -30,6 +38,21 @@
 .icon-export {
     background-image: url('../ResourceTagger/Images/export.png') !important;
 }
+
+
+.icon-add-large {
+    background-image: url('../ResourceTagger/Images/add.png') !important;
+}
+
+.icon-delete-large {
+    background-image: url('../ResourceTagger/Images/delete.gif') !important;
+}
+
+.icon-save-large {
+    background-image: url('../ResourceTagger/Images/save.png') !important;
+}
+
+
 
 .editGrid {
 	color: #444;

@@ -4,7 +4,7 @@
 
 from tg import request
 import logging
-from bq.core.exceptions import BQException
+from bq.exceptions import BQException
 from bq.core.model import DBSession, User
 
 user_admin = None
@@ -29,25 +29,44 @@ class Identity(object):
         if request_valid():
             return request.identity['repoze.who.userid']
         return None
-    user_name = property(get_username)
+    def set_username (self, v):
+        if request_valid():
+            request.identity['repoze.who.userid'] = v
+    user_name = property(get_username, set_username)
 
     def get_user(self):
+        if not request_valid():
+            return None
+
+        user = request.identity.get ('bq.user')
+        if user:
+            return user
         user_name = self.user_name
         if user_name is None:
             return None
-        return DBSession.query (User).filter_by(user_name = user_name).first()
+        user = DBSession.query (User).filter_by(user_name = user_name).first()
+        request.identity['bq.user'] = user
+        return user
     user = property(get_user)
 
     def get_bq_user(self):
         from bq.data_service.model.tag_model import BQUser
+
+        if not request_valid():
+            return None
+        bquser = request.identity.get ('bq.bquser')
+        if bquser:
+            return bquser
+
         user_name = self.user_name
         log.debug ("bq user = %s" % user_name)
         if user_name is None:
             return None
-        user =  DBSession.query (BQUser).filter_by(user_name = user_name).first()
+        bquser =  DBSession.query (BQUser).filter_by(resource_name = user_name).first()
+        request.identity['bq.bquser'] = bquser
         #log.debug ("bq user = %s" % user)
-        log.debug ('user %s -> %s' % (user_name, user))
-        return user
+        log.debug ('user %s -> %s' % (user_name, bquser))
+        return bquser
     
 current  = Identity()
 
@@ -59,16 +78,21 @@ def get_admin():
     global user_admin
     if user_admin is None:
         from bq.data_service.model.tag_model import BQUser
-        user_admin = DBSession.query(BQUser).filter_by(user_name=u'admin').first()
+        user_admin = DBSession.query(BQUser).filter_by(resource_name=u'admin').first()
     else:
         user_admin = DBSession.merge (user_admin)
     return user_admin
 
 def anonymous():
-    return request.identity is None
+    try:
+        return request.identity is None
+    except (TypeError, AttributeError):
+        return True
+    
 
 def not_anonymous():
-    return request.identity is not None
+    return not anonymous()
+
 #     if request_available():
 #         return identity.not_anonymous()
 #     return current_user
@@ -80,8 +104,8 @@ def get_user_id():
         if bq_user:
             return bq_user.id
     if current_user:
+        #log.debug ('using current_user %s' %current_user)
         return current_user.id
-    #log.debug ('no user id set')
     return None
 
 def get_user():
@@ -105,11 +129,13 @@ def get_user_pass():
 
 def set_current_user(user=None):
     '''Set the user identity to user. Should be tg_user objects '''
+    global current_user
     current_user = user
 
 
 def set_admin_mode (a):
     if a:
+        get_admin()
         set_current_user (user_admin)
     else:
         set_current_user (None)

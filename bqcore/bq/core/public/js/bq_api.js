@@ -48,6 +48,7 @@ BQXml.prototype.xmlNode = function (content) {
 
 function BQObject (uri, doc){
     BQXml.call(this, uri, doc);
+    this.readonly = false;
     this.uri = uri;
     this.children = [];
     this.tags = [];
@@ -59,7 +60,7 @@ function BQObject (uri, doc){
     this.created = true;
     this.mex = null;
     this.xmltag = "resource";
-    this.xmlfields  = [ 'type', 'uri', 'src', 'perm'];
+    this.xmlfields  = [ 'type', 'uri', 'src', 'perm', 'resource_uniq', 'resource_name'];
 }
 BQObject.prototype = new BQXml();
 
@@ -69,17 +70,41 @@ BQObject.prototype.initializeXml = function (resource) {
     this.ts   = attribStr(resource,'ts');
     this.owner = attribStr(resource,'owner');
     this.type   = attribStr(resource,'type');
+    this.resource_uniq = attribStr(resource, 'resource_uniq');
+    this.name = attribStr(resource,'name');
+    this.value = attribStr(resource, 'value');
+    this.resource_uniq = attribStr(resource, 'resource_uniq');
+    
     this.attributes = attribDict (resource);
-    this.resource_type = this.xmltag;
+    this.resource_type = resource.nodeName; //this.xmltag; Utkarsh : Use the unknown resource's xmltag rather than a generic 'resource'
     this.dirty = false;
     this.created = false;
+    this.template = {};
 }
+
+BQObject.prototype.afterInitialized = function () {
+    var ta = this.find_tags('template');
+
+    if (ta && ta.resource_type == 'tag')
+        this.template = ta.toDict(true);
+    else if (ta && ta.length>0)
+        this.template = ta[0].toDict(true);
+}
+
+BQObject.prototype.testReadonly = function () {
+  if (this.readonly)
+      throw "This object is read only!";
+}
+
 BQObject.prototype.setParent = function (p) {
     if (p instanceof BQTag)
         p.values.push (this);
-    else
+    else {
         p.children.push (this);
+        this.parent = p;
+    }
 }
+
 BQObject.prototype.getkids = function (){
     // Note concat make new array
     var allkids = this.children.concat( this.tags, this.gobjects);
@@ -115,16 +140,16 @@ BQObject.prototype.toXML = function (){
     return this.xmlNode (xmlrep);
 }
 
-BQObject.prototype.delete_ = function (cb) {
+BQObject.prototype.delete_ = function (cb, errorcb) {
+    this.testReadonly();
     // Delete object from db
     if (this.uri != null) {
-        makeRequest(this.uri, callback(this, 'response_', 'delete'), 
-                    cb, 'delete');
+        xmlrequest(this.uri, callback(this, 'response_', 'delete', errorcb, cb), 'delete', null, errorcb);
     }
 }
 
-BQObject.prototype.deleteTag = function(childTag)
-{
+BQObject.prototype.deleteTag = function(childTag) {
+    
 	if (childTag instanceof BQTag)
 		this.remove(childTag);
 	else
@@ -147,38 +172,158 @@ BQObject.prototype.find_tags  = function (name, deep, found) {
     return found;
 }
 
+/* 
+ * query    : object, can have (name, value, type)
+ * params   : object, can have (deep[false], breakOnFirst[false]) 
+ * 
+ * e.g.
+ * var allTags = resource.findTags({
+ *                      value : 'Retina'
+ *                  }, {
+ *                      deep : true,
+ *                      breakOnFirst:false
+ *                  })
+ * 
+ */
+
+BQObject.prototype.findTags = function(query, params)
+{
+    function isMatch(tag, query)
+    {
+        return (tag.name == query.name)
+    }
+    
+    var matchedTags = [];
+    
+    for (var i=0;i<this.tags.length;i++)
+    {
+        if (isMatch(this.tags[i], query))
+            matchedTags.push(this.tags[i]);
+        if (params.deep)
+            matchedTags = matchedTags.concat(this.tags[i].findTags(query, params));
+    }
+    
+    return matchedTags;
+}
+
+
+BQObject.attributes_skip = { 'uri':undefined, 'src':undefined, 'perm':undefined, 
+                             'ts':undefined, 'owner':undefined, 'parent':undefined, 
+                             'doc':undefined, 'mex':undefined,  };
+BQObject.types_skip = { 'template':undefined, };
+
+function clean_resources(resource, skiptemplate) {
+    // remove undesired attributes
+    for (var i in resource)
+        if (i in BQObject.attributes_skip || (skiptemplate && i=='template'))
+            delete resource[i];
+
+    // remove template
+    if (skiptemplate && resource.tags) {
+        var p=resource.tags.length-1;
+        while (p>=0) {
+            var t = resource.tags[p];
+            if (t.type in BQObject.types_skip)
+                resource.tags.splice(p, 1);
+            p--;
+        }
+    }
+    
+    var r = undefined;
+    for (var p=0; (r=resource.tags[p]); p++)
+        clean_resources(r, skiptemplate);
+    
+    for (var p=0; (r=resource.gobjects[p]); p++)
+        clean_resources(r, skiptemplate);
+    
+    for (var p=0; (r=resource.children[p]); p++)
+        clean_resources(r, skiptemplate);        
+}
+
+BQObject.prototype.clone = function (skiptemplate) {
+    var resource = Ext.clone(this);
+    clean_resources(resource, skiptemplate);
+    return resource;
+}
+
 BQObject.prototype.toDict  = function (deep, found, prefix) {
     deep = deep || false;
     found = found || {};
-    prefix = prefix || '';   
-    for (var i=0; i < this.tags.length; i++) {
-        var t = this.tags[i];
-        if (!(prefix+t.name in found))    
-            found[prefix+t.name] = t.value;
-        else
-            if (typeof found[prefix+t.name] == 'string')
-                found[prefix+t.name] = [ found[prefix+t.name], t.value ];
-            else
-                found[prefix+t.name].push(t.value);        
+    prefix = prefix || '';
+    
+    var t=null;
+    for (var p=0; (t=this.tags[p]); p++) {
+        
+        var values = undefined;
+        if (t.values && t.values.length>0) {
+            values = [];
+            for (var i=0; (v=t.values[i]); i++)
+               values.push(v.value);
+        }
+        
+        if (!(prefix+t.name in found)) {   
+            found[prefix+t.name] = values?values:t.value;
+        } else {
+            if (found[prefix+t.name] instanceof Array) {
+                if (!values) 
+                    found[prefix+t.name].push(t.value);
+                else
+                    found[prefix+t.name] = found[prefix+t.name].concat(values);
+            } else {
+                if (!values)             
+                    found[prefix+t.name] = [ found[prefix+t.name], t.value ];
+                else {
+                    found[prefix+t.name] = [ found[prefix+t.name] ];                    
+                    found[prefix+t.name] = found[prefix+t.name].concat(values);
+                }                    
+            }
+        }
+                                        
         if (deep && t.tags.length >0 ) 
             t.toDict (deep, found, prefix+t.name+'/');
     }
     return found;
 }
 
-BQObject.prototype.toNestedDict  = function (deep)
+BQObject.prototype.toNestedDict = function(deep)
 {
     var dict = {}, tag;
-    
-    for (var i=0;i<this.tags.length;i++)
+    for(var i = 0; i < this.tags.length; i++)
     {
         tag = this.tags[i];
-        dict[tag.name] = (deep && tag.tags.length>0) ? tag.toNestedDict(deep) : (tag.value || '');
+        dict[tag.name] = (deep && tag.tags.length > 0) ? tag.toNestedDict(deep) : (tag.value || '');
     }
-    
     return dict;
 }
 
+BQObject.prototype.fromNestedDict = function(dict)
+{
+    var value;
+    
+    for (var tag in dict)
+    {
+        value = dict[tag];
+        if (value instanceof Object)
+            this.addtag({name:tag}).fromNestedDict(value);
+        else
+            this.addtag({name:tag, value:value});
+    }
+} 
+
+BQObject.prototype.create_flat_index = function ( index, prefix ) {
+    index = index || {};
+    prefix = prefix || '';
+    
+    var t=null;
+    for (var p=0; (t=this.tags[p]); p++) {
+        if (!(prefix+t.name in index))    
+            index[prefix+t.name] = t;
+        
+        if (t.tags.length >0) 
+            index = t.create_flat_index(index, prefix+t.name+'/');
+    }
+    return index;
+} 
 
 BQObject.prototype.find_resource  = function (ty) {
     for (var i=0; i < this.children.length; i++) 
@@ -221,13 +366,14 @@ BQObject.prototype.remove  = function (o) {
 //     }
 // }
 BQObject.prototype.save_ = function (parenturi, cb, errorcb) {
+    this.testReadonly();    
     var docobj = this.doc;
     var req = docobj.toXML();
     //errorcb = errorcb || default_error_callback;
     if (docobj.uri  ) {
-        makeRequest(docobj.uri, callback(docobj, 'response_', 'update', errorcb), cb, 'put', req, errorcb);
+        xmlrequest(docobj.uri, callback(docobj, 'response_', 'update', errorcb, cb),'put', req, errorcb);
     } else {
-        makeRequest(parenturi, callback(docobj, 'response_', 'created', errorcb), cb, 'post', req, errorcb);
+        xmlrequest(parenturi, callback(docobj, 'response_', 'created', errorcb, cb),'post', req, errorcb);
     }
 }
 
@@ -263,7 +409,7 @@ BQObject.prototype.response_ = function (code, errorcb, cb, xmldoc) {
 BQObject.prototype.load_tags = function (cb, url, progress) {
     if (!url) {
         if (this.uri)
-            url = this.uri + "/tags";
+            url = this.uri + "/tag";
         else {
             if (cb) cb();
             return;
@@ -276,17 +422,20 @@ BQObject.prototype.load_tags = function (cb, url, progress) {
 }
 
 
-// loadTags : function to facilitate progressive fetching of tags/gobjects etc. 
+// load_children : function to facilitate progressive fetching of tags/gobjects etc. 
 // config params - 
+// attrib -- filter tag or gobject usually
+// vector -- where the item are store .. tags, gobjects, or kids
 // cb : callback
 // progress : progress callback
 // depth : 'full', 'deep', 'short' etc.
-BQObject.prototype.loadTags = function (config)
+BQObject.prototype.load_children = function (config)
 {
     Ext.apply(config, 
     {
-        attrib : config.attrib || 'tags',
+        attrib : config.attrib || 'tag',
         depth : config.depth || 'deep',
+        vector : config.vector || 'tags',
         cb : config.cb || Ext.emptyFn
     })
     
@@ -302,17 +451,24 @@ BQObject.prototype.loadTags = function (config)
         uri : config.uri+'?view='+config.depth,
         cb : Ext.bind(function(resource, config)
         {
-            this[config.attrib] = resource[config.attrib];
-            config.cb(resource[config.attrib]);
+            this[config.vector] = resource[config.vector];
+            config.cb(resource[config.vector]);
         }, this, [config], true), 
         progresscb : config.progress
     });
 }
 
+BQObject.prototype.loadTags = function (config)
+{
+    config.attrib='tag';
+    config.vector='tags';
+    BQObject.prototype.load_children.call(this, config);
+}
 BQObject.prototype.loadGObjects = function (config)
 {
-    config.attrib='gobjects';
-    BQObject.prototype.loadTags.call(this, config);
+    config.attrib='gobject';
+    config.vector='gobjects';
+    BQObject.prototype.load_children.call(this, config);
 }
 
 BQObject.prototype.loaded_tags = function (cb, resource) {
@@ -321,7 +477,7 @@ BQObject.prototype.loaded_tags = function (cb, resource) {
 }
 
 BQObject.prototype.load_gobjects = function (cb, url, progress) {
-    if (!url) url = this.uri + "/gobjects";
+    if (!url) url = this.uri + "/gobject";
     this.remove_resource (url);
     BQFactory.load (url + "?view=deep", 
                     callback(this, 'loaded_gobjects', cb), 
@@ -334,15 +490,17 @@ BQObject.prototype.loaded_gobjects = function (cb, resource) {
 }
 
 BQObject.prototype.save_gobjects = function (cb, url, progress, errorcb) {
+    this.testReadonly();    
     if (!url) url = this.uri;
-    var resource = new BQResource (url + "/gobjects");
+    var resource = new BQResource (url + "/gobject");
     resource.gobjects = this.gobjects;
     resource.created = false;   // HACK 
     resource.save_(resource.uri, cb, errorcb);
 }
 BQObject.prototype.save_tags = function (cb, url, progress, errorcb) {
+    this.testReadonly();    
     if (!url) url = this.uri;
-    var resource = new BQResource (url + "/tags");
+    var resource = new BQResource (url + "/tag");
     resource.tags = this.tags;
     resource.created = false;   // HACK 
     resource.save_(resource.uri, cb, errorcb);
@@ -386,7 +544,8 @@ BQObject.prototype.addgobjects=function (gob){
     this.dirty = true;
     return gob;
 }
-BQObject.prototype.addchild=function (kid){
+
+BQObject.prototype.addchild = function (kid) {
     kid.setParent(this);
     kid.doc = this.doc;
     this.dirty = true;
@@ -419,7 +578,7 @@ BQObject.prototype.convert_tags=function (){
 function BQResource (uri, doc) {
     BQObject.call(this, uri, doc);
     this.xmltag = "resource";
-    this.xmlfields = [ 'uri',  'type' ];
+    this.xmlfields = [ 'uri',  'type', 'name' ];
 }
 BQResource.prototype = new BQObject();
 //classExtend (BQObject, BQResource);
@@ -454,6 +613,7 @@ BQFactory.ctormap =  { vertex  : Vertex,
                        polygon  :BQGObject,
                        polyline :BQGObject,
                        circle   :BQGObject,
+                       label    :BQGObject,
                        module   :BQModule,
                        mex      :BQMex,
                        session  :BQSession,
@@ -480,11 +640,15 @@ BQFactory.escapeXML = function(xml) {
 
 BQFactory.session = {};
 
-BQFactory.make = function(ty, uri) {
-    var ctor = BQObject;
+BQFactory.make = function(ty, uri, name, value) {
+    var ctor = BQResource;
     if (ty in BQFactory.ctormap) 
         ctor = BQFactory.ctormap[ty];
-    return new ctor(uri);
+    o =  new ctor(uri);
+    if (ctor == BQResource) o.xmltag = ty;
+    o.name = name;
+    o.value = value;
+    return o;
 }
 BQFactory.createFromXml = function(xmlResource, resource, parent) {
     var stack = [];
@@ -519,7 +683,15 @@ BQFactory.createFromXml = function(xmlResource, resource, parent) {
             //    clog ("Got Node type" + k.nodeType + " for " + k.text);
         }
     }
-    return resources[0];
+
+    response = resources[0];
+
+    // dima: do some additional processing after you inited elements    
+    var rr = resources.reverse();       
+    for (var p=0; (r=rr[p]); p++)
+        if (r.afterInitialized) r.afterInitialized(); 
+    
+    return response;
 }
 
 
@@ -697,43 +869,66 @@ BQFactory.parseBQDocument = function (xmltxt) {
 function BQImage (uri){
     BQObject.call(this, uri);
     this.xmltag = "image";
-    this.xmlfields = [ "uri", "perm", "type",
-                       "src", "x", "y","z", "t", "ch" ] ;
+    this.xmlfields = [ "uri", "perm", "type", ] ;
+                        
+//                       "src", "x", "y","z", "t", "ch" ] ;
 
 }
 BQImage.prototype = new BQObject();
 //extend(BQImage, BQObject);
+
 BQImage.prototype.initializeXml = function (image) {
     this.uri = attribStr(image,'uri');
-    this.perm = attribInt(image,'perm');
+    this.permission = attribStr(image,'permission');
     this.ts   = attribStr(image,'ts');
     this.type   = attribStr(image,'type');
     this.owner   = attribStr(image,'owner');
+    this.name  = attribStr(image,'name');
     this.resource_type = this.xmltag;
 
-    this.src  = attribStr(image,'src');
-    this.x    = attribInt(image,'x');
-    this.y    = attribInt(image,'y');
-    this.z    = attribInt(image,'z');
-    this.t    = attribInt(image,'t');
-    this.ch   = attribInt(image,'ch');
+    this.src  = '/image_service/images/' + attribStr(image,'resource_uniq');
+    // in the case the the data is coming from another server, make sure to load proper URL
+    this.src = this.uri.replace(/\/data_service\/.*$/i, this.src);
+    
+//    this.x    = attribInt(image,'x');
+//    this.y    = attribInt(image,'y');
+//    this.z    = attribInt(image,'z');
+//    this.t    = attribInt(image,'t');
+//    this.ch   = attribInt(image,'ch');
 }
-
 
 ////////////////////////////////////////////////
+
+function parseValueType(v, t) {
+    try {
+        if (t && t == 'number') 
+            return parseFloat(v);
+        else if (t && t == 'boolean') 
+            return (v=='true') ? true : false;
+    } catch(err) {
+        return v;          
+    }
+    return v;    
+}
+
 function Value (t, v) {
     this.xmltag = "value";
-    this.xmlfields = [ 'type' ];
+    this.xmlfields = [ 'type', 'index' ];
     
     if (t != undefined) this.type = t;
-    if (v != undefined) this.value = v;    
+    //if (v != undefined) this.value = v; // dima  
+    if (v != undefined) this.value = parseValueType(v, this.type);    
 }
+
 Value.prototype = new BQXml();
 Value.prototype.initializeXml = function (node){
     //this.value = node.text;
     this.type = attribStr(node, 'type');
-    this.value = node.textContent;
+    //this.value = node.textContent; // dima
+    this.value = parseValueType(node.textContent, this.type);
+    this.index = attribInt(node, 'index');    
 }
+
 Value.prototype.setParent = function (p){
     p.values.push (this);
 }
@@ -762,8 +957,9 @@ BQTag.prototype.initializeXml = function (node) {
 
     this.index = attribInt(node, 'index');
     this.name = attribStr(node, 'name');
-    this.value = attribStr(node, 'value');
     this.type =  attribStr(node,'type');
+    //this.value = attribStr(node, 'value'); // dima
+    this.value = parseValueType(attribStr(node, 'value'), this.type);
     this.resource_type = this.xmltag;
 }
 BQTag.prototype.setParent = function (p) {
@@ -774,6 +970,7 @@ BQTag.prototype.setParent = function (p) {
         p.tags.push (this);
 //        this.index = p.tags.length
 //    }
+    this.parent = p;
 }
 
 // BQTag.prototype.xmlNode = function (content) {
@@ -846,7 +1043,7 @@ Vertex.prototype.initializeXml = function (node) {
 
 function BQGObject(ty, uri){
     BQObject.call(this, uri);
-  this.type = ty;           // one of our registeredTypes: point, polygon, etc.
+    this.type = ty;           // one of our registeredTypes: point, polygon, etc.
     this.uri=null;
     this.name = null;
     this.vertices = [];
@@ -857,7 +1054,9 @@ BQGObject.prototype = new BQObject();
 //extend(BQGObject,BQObject)
 
 BQGObject.prototype.initializeXml = function (node) {
-    this.type = attribStr(node, 'type');
+    this.type  = node.nodeName;
+    if (this.type == 'gobject') 
+        this.type = attribStr(node, 'type');
     this.name = attribStr(node, 'name');
     this.uri =  attribStr(node, 'uri');
     this.resource_type = this.xmltag;
@@ -865,6 +1064,7 @@ BQGObject.prototype.initializeXml = function (node) {
 
 BQGObject.prototype.setParent = function (p) {
     p.gobjects.push (this);
+    this.parent = p;    
 }
 
 // BQGObject.prototype.xmlNode =  function ( ) {
@@ -1035,12 +1235,12 @@ function BQImagePhys(bqimage) {
     this.ds_done = false; 
     this.loadcallback = null;
     this.image = bqimage;
-    this.init();
+    //this.init();
 }
 
 BQImagePhys.prototype.init = function () {
   if (!this.image) return;
-  this.num_channels = this.image.ch;
+  this.num_channels = this.ch || this.image.ch;
 
   //-------------------------------------------------------
   // image physical sizes
@@ -1071,9 +1271,10 @@ BQImagePhys.prototype.init = function () {
 }
 
 function combineValue( v1, v2, def ) {
-  if (v1 && v1 != undefined && v1 != NaN && v1 != '') return v1;  
-  if (v2 && v2 != undefined && v2 != NaN && v2 != '') return v2;  
-  return def;  
+  //if (v1 && v1 != undefined && v1 != NaN && v1 != '') return v1;  
+  //if (v2 && v2 != undefined && v2 != NaN && v2 != '') return v2;  
+  //return def;  
+  return v1 || v2 || def;
 }
 
 BQImagePhys.prototype.normalizeMeta = function() {
@@ -1113,7 +1314,7 @@ BQImagePhys.prototype.onload = function() {
 }
 
 BQImagePhys.prototype.onloadIS = function (image) {
-  clog ("BQImagePhys: Got metadata from IS");    
+  clog ("BQImagePhys: Got metadata from IS");   
   var hash = {};
   for (var t in image.tags ) 
       hash[image.tags[t].name] = image.tags[t].value;
@@ -1124,6 +1325,13 @@ BQImagePhys.prototype.onloadIS = function (image) {
   this.pixel_size_is[1] = hash['pixel_resolution_y'];
   this.pixel_size_is[2] = hash['pixel_resolution_z'];
   this.pixel_size_is[3] = hash['pixel_resolution_t'];
+  this.x  = hash['image_num_x'];
+  this.y  = hash['image_num_y'];
+  this.z  = hash['image_num_z'];
+  this.t  = hash['image_num_t'];
+  this.ch  = hash['image_num_c'];
+  
+  this.init();   
 
   //-------------------------------------------------------  
   // units
@@ -1237,16 +1445,16 @@ BQImagePhys.prototype.getPixelInfoT = function () {
 /* parseUri JS v0.1, by Steven Levithan (http://badassery.blogspot.com)
 Splits any well-formed URI into the following parts (all are optional):
 ----------------------
-� source (since the exec() method returns backreference 0 [i.e., the entire match] as key 0, we might as well use it)
-� protocol (scheme)
-� authority (includes both the domain and port)
-    � domain (part of the authority; can be an IP address)
-    � port (part of the authority)
-� path (includes both the directory path and filename)
-    � directoryPath (part of the path; supports directories with periods, and without a trailing backslash)
-    � fileName (part of the path)
-� query (does not include the leading question mark)
-� anchor (fragment)
+* source (since the exec() method returns backreference 0 [i.e., the entire match] as key 0, we might as well use it)
+* protocol (scheme)
+* authority (includes both the domain and port)
+    * domain (part of the authority; can be an IP address)
+    * port (part of the authority)
+* path (includes both the directory path and filename)
+    * directoryPath (part of the path; supports directories with periods, and without a trailing backslash)
+    * fileName (part of the path)
+* query (does not include the leading question mark)
+* anchor (fragment)
 */
 function parseUri(sourceUri){
     var uriPartNames = ["source","protocol","authority","domain","port","path","directoryPath","fileName","query","anchor"];
@@ -1291,14 +1499,26 @@ BQUser.prototype = new BQObject();
 //extend(BQImage, BQObject);
 
 BQUser.prototype.initializeXml = function (user) {
-    this.uri = attribStr(user,'uri');
-    this.display_name = attribStr(user,'display_name');
-    this.user_name = attribStr(user,'user_name');
-    //this.password  = attribStr(user,'password');    
-    this.email_address = attribStr (user, 'email_address');
     this.resource_type = this.xmltag;
+    this.uri = attribStr(user,'uri');
+
+    //this.display_name = attribStr(user,'display_name');
+    //this.password  = attribStr(user,'password');  
+    //this.email_address = attribStr (user, 'email_address');
+
+    this.user_name = attribStr(user,'name');
+    this.name = attribStr(user,'name');
+    this.value = attribStr(user,'value');
+    this.display_name = this.user_name;
+  
+    this.email = attribStr(user, 'value');
+    this.email_address = this.email;
 }
 
+BQUser.prototype.afterInitialized = function () {
+    var display_name  = this.find_tags('display_name');
+    this.display_name = (display_name && display_name.value)?display_name.value:this.user_name;
+}
 
 BQUser.prototype.get_credentials = function( cb) {
     var u = new BQUrl(this.uri);
@@ -1335,57 +1555,25 @@ BQAuth.prototype.initializeXml = function (auth) {
 }
 
 
-
-//------------------------------------------------------------------------------
-// BQModuleParameters
-//------------------------------------------------------------------------------
-function BQModuleParameters( element ) {
-    this.name = null;
-    this.type = null;
-    this.defaultValue = null;
-    this.index = null;
-    if (element) this.fromElement(element);
-}
-
-BQModuleParameters.prototype.isSystemVariable = function () {
-  return (this.name.indexOf('$') == 0); 
-}
-
-BQModuleParameters.prototype.parseValue = function (val) {
-    var value = val;
-    if (value.indexOf(':')!=-1) {
-        var tab = value.split(':');
-        this.name = tab[0];
-        this.type = tab[1];
-        if(this.type.indexOf('=')!=-1) {
-            var tab = this.type.split('=');
-            this.type = tab[0];
-            tab = tab[1];
-            this.defaultValue = tab.substring(1,tab.length-1);
-        }
-    } else {
-        this.type = 'string';
-        if(value.indexOf('=')!=-1) {
-            var tab = value.split('=');
-            this.name = tab[0];
-            tab = tab[1];
-            this.defaultValue = tab.substring(1,tab.length-1);
-        }
-    }
-}
-
-BQModuleParameters.prototype.fromElement = function (element) {
-    this.name = element.getAttribute("name");
-    this.index = element.getAttribute("index");
-    this.type = 'string';
-    this.parseValue( element.getAttribute("value") );
-}
-
 //-------------------------------------------------------------------------------
 // BQModule
+// dima: should produce MEX from inputs section, have both input and output trees
+// have them indexed in a flat way for easy access to elements
+// template parsing?
 //-------------------------------------------------------------------------------
 
-function BQModule (){
+function BQModule () {
+    this.readonly = true;
+    this.reserved_io_types = {'system-input':null, 'template':null, };
+    this.configs = { 'help': 'help', 
+                     'thumbnail': 'thumbnail', 
+                     'title': 'title', 
+                     'authors': 'authors', 
+                     'description': 'description',
+                     'display_options/group': 'group', 
+                     'module_options/version': 'version',   
+                   };
+
     BQObject.call(this);
     this.xmltag = "module";
 }
@@ -1397,71 +1585,104 @@ BQModule.prototype.initializeXml = function (node) {
     this.type    = attribStr(node,'type');
     this.ts      = attribStr(node,'ts');
     this.owner   = attribStr(node, 'owner');
-    this.group   = null;
-    this.help    = null;    
-    this.inputs  = [];
-    this.outputs = [];
+    this.value   = attribStr(node, 'value');
     this.resource_type = this.xmltag;
-        
-    var tags = node.getElementsByTagName("tag");
-    for (var i=0; i<tags.length; i++) {      
-      var n = attribStr(tags[i], 'name');
-      var v = attribStr(tags[i], 'value');
-      
-      if (n == 'group') this.group = v;
-      if (n == 'help')  this.help = v;
-      if (n == 'inputs'||n=='outputs') continue;
-      if (n == 'formal-input' || n.startswith('input')) this.inputs.push(v);
-      if (n == 'formal-output'|| n.startswith('output')) this.outputs.push(v);
+}
+
+BQModule.prototype.afterInitialized = function () {
+    
+    // now copy over all other config params
+    var dict = this.toDict(true);
+    for (var i in this.configs) {
+        if (i in dict && !(i in this))
+            this[this.configs[i]] = dict[i];
+    }    
+    
+    // define inputs and outputs    
+    //BQObject.prototype.afterInitialized.call ();
+    var inputs  = this.find_tags('inputs');
+    var outputs = this.find_tags('outputs');
+    
+    if (inputs && inputs.tags) {
+        this.inputs = inputs.tags; // dima - this should be children in the future
+        this.inputs_index  = inputs.create_flat_index();    
+    }
+    if (outputs && outputs.tags) {
+        this.outputs = outputs.tags; // dima - this should be children in the future   
+        this.outputs_index  = outputs.create_flat_index();          
+    }
+    this.updateTemplates();
+}
+
+BQModule.prototype.updateTemplates = function () {
+    // create iterable dict
+    var iterable_names = [];
+    var iterable_recources = {};
+    
+    // create accepted_type
+    // unfortunately there's no easy way to test if JS vector has an element
+    // change the accepted_type to an object adding the type of the resource
+    for (var i in this.inputs_index) {
+        var e = this.inputs_index[i]; 
+        if (e.template) {
+            var act = {};
+            if (e.type) act[e.type] = e.type;
+            if (e.template.accepted_type)
+            for (var p=0; (t=e.template.accepted_type[p]); p++) {
+                act[t] = t;
+            }
+            e.template.accepted_type = act;
+            
+            if ('iterable' in e.template) {
+                iterable_names.push(e.template.iterable);
+                iterable_recources[e.template.iterable] = e;
+            }
+        }
+    }
+    
+    // create sorted iterable resource names
+    if (iterable_names.length>0) {
+        iterable_names = iterable_names.sort();
+        this.iterables = [];
+        var n = null;
+        for (var i=0; (n=iterable_names[i]); i++)
+            this.iterables.push( iterable_recources[n] );
     }
 }
+
 
 BQModule.prototype.fromNode = function (node) {
     this.initializeXml(node);
 }
 
-BQModule.prototype.toHTML = function ( parent_node ) {
-  var opt = document.createElement('li');
-  var optLink = document.createElement('a');
-  var text = '<a href="'+ this.uri +'">' + this.name + '</a>';
-  if (this.group != null) text += ' for ' + this.group + ', ';
-  if (this.type != null) text += ' in ' + this.type;
-  opt.innerHTML = text;
-  parent_node.appendChild(opt);
-}
+BQModule.prototype.createMEX = function( ) {
+    var mex = new BQMex();
+    //mex.status = 'PENDING';
+    //mex.module = this.URI; //this.module.uri;
+    //mex.addtag ({name:'client_server', value:client_server});
 
-BQModule.queryModuleByName = function (name, cb) {
-    if (!BQModule.module_list)  {
-        BQModule.module_list = new BQModuleList();
-        
-        BQModule.module_list.load ('/ms/', callback(this, 'new_module_list', name, cb));
-        return
+    // create INPUTS block
+    var tag_inputs = mex.addtag ({name:'inputs'});
+    var i = undefined;
+    for (var p=0; (i=this.inputs[p]); p++) {
+        var r = i.clone(true);
+        tag_inputs.addchild(r);
     }
 
-    BQModule.filter_module(name, cb)
-}
-BQModule.new_module_list = function  (name, cb, resource) {
-    // Resource is a set of module definitions
-    this.module_list = resource;
-    BQModule.filter_module(name, cb)
-}
-
-BQModule.filter_module = function (name, cb) {
-    var module =  this.module_list.findModuleByName(name);
-    if (cb) {
-        cb(module);
+    // create OUTPUTS block
+    //var tag_outputs = mex.addtag ({name:'outputs'}); // dima: the outputs tag will be created by the module?
+    
+    // create execute_options block
+    if (this.iterables && this.iterables.length>0) {
+        var tag_execute = mex.addtag ({name:'execute_options'});
+        var i = undefined;
+        for (var p=0; (i=this.iterables[p]); p++) {
+            if (i.type == 'dataset')
+                tag_execute.addtag({name:'iterable', value:i.name});
+        }
     }
-}
-function BQModuleList(URI) {
-    BQObject.call(this, URI);
-}
-BQModuleList.prototype = new BQObject();
-BQModuleList.prototype.findModuleByName = function (name) {
-    for(var i=0; i<this.children.length; i++) {
-        if(this.children[i].name == name) 
-        return  this.children[i];
-    }
-    return null;
+    
+    return mex;
 }
 
 
@@ -1471,16 +1692,55 @@ BQModuleList.prototype.findModuleByName = function (name) {
 function BQMex (){
     BQObject.call(this);
     this.xmltag = "mex";
-    this.xmlfields = [ "uri", "status", "module" ] ;
+    this.xmlfields = [ "uri", "name", "value", "type" ] ;
 }
 
 BQMex.prototype = new BQObject();
 BQMex.prototype.initializeXml = function (mex) {
     this.uri = attribStr(mex,'uri');
-    this.status = attribStr(mex,'status');
-    this.module = attribStr(mex,'module');
+    this.name = attribStr(mex,'name');
+    this.value = attribStr(mex,'value');
+    this.type  = attribStr(mex,'type');
     this.ts     = attribStr(mex,'ts');
     this.resource_type = this.xmltag;
+
+    this.status =this.value;
+}
+
+BQMex.prototype.hasIterables = function () {
+    if (!this.iterables) return false;
+    return (Object.keys(this.iterables).length>0);
+}
+
+// creates mapping from iterable resources in sub MEXes to their MEXes
+BQMex.prototype.findMexsForIterable = function (name, root) {
+    root = root || 'inputs/';
+    if (!name || this.children.length<1) return;
+    this.dict = this.dict || this.toDict(true);
+        
+    this.iterables = this.iterables || {};
+    var dataset = this.dict[root+name];
+    this.iterables[name] = this.iterables[name] || {};
+    this.iterables[name]['dataset'] = dataset;
+    
+    var o=null;
+    for (var i=0; (o=this.children[i]); i++) {
+        if (o instanceof BQMex) {
+            var resource = o.dict[root+name];
+            this.iterables[name][resource] = o;
+        }
+    }
+}
+
+BQMex.prototype.afterInitialized = function () {
+    //BQObject.prototype.afterInitialized.call ();
+    
+    this.dict = this.dict || this.toDict(true);
+    // check if the mex has iterables
+    if (this.dict['execute_options/iterable']) {
+        var name = this.dict['execute_options/iterable'];
+        this.findMexsForIterable(name, 'inputs/');
+    }
 }
 
 
@@ -1501,8 +1761,7 @@ BQMex.prototype.initializeXml = function (mex) {
 function BQDataset (){
     BQObject.call(this);
     this.xmltag = "dataset";
-    this.xmlfields = [ "uri", "name" ] ;
-    //this.addtag ({ name: 'members' });
+    this.xmlfields = [ "uri", "name" ];
 }
 
 BQDataset.prototype = new BQObject();
@@ -1510,8 +1769,7 @@ BQDataset.prototype.initializeXml = function (mex) {
     this.uri   = attribStr(mex,'uri');
     this.name  = attribStr(mex,'name');
     this.ts    = attribStr(mex,'ts');
-    this.owner =attribStr(mex,'owner');
-    
+    this.owner = attribStr(mex,'owner');
     this.resource_type = this.xmltag;    
 }
 
@@ -1525,24 +1783,41 @@ BQDataset.prototype.getMembers = function (cb) {
         return members;
     }
 }
+
 BQDataset.prototype.members_loaded = function (cb, dataset_tags) {
     // Called by dataset.load_tags with user cb, and actual tags.
     var members = this.find_tags ('members');
     if (!members) {
-        members = this.addtag ({ name: 'members' })
+        function membersLoaded(dataset, cb) {
+            cb(dataset.find_tags('members'));
+        }
+        members = this.addtag ({ name: 'members' });
+        members.save_('', Ext.bind(membersLoaded, this, [cb], true));
     }
-    cb(members)
+    cb(members);
 }
 
+// dima: why this save here??? I think this needs rewrite!
 BQDataset.prototype.setMembers = function (nvs) {
     // Tag an array of Value s
     var members = this.find_tags ('members');
 
     if (!members) {
-        members = this.addtag ({ name: 'members' })
+        members = this.addtag ({ name: 'members' });
+        members.save_();
+        
     }
     members.values = nvs
 }
+
+// dima: instead of setMembers, until i'll rewrite the thing
+BQDataset.prototype.newMembers = function (nvs) {
+    var members = this.find_tags ('members');
+    if (!members)
+        members = this.addtag ({ name: 'members' });
+    members.values = nvs
+}
+
 BQDataset.prototype.save_ = function (parenturi, cb, errorcb) {
     this.doc = this
     BQObject.prototype.save_.call(this, parenturi, cb, errorcb);
@@ -1554,7 +1829,6 @@ BQDataset.prototype.appendMembers = function (newmembers, cb) {
 BQDataset.prototype.appendMembersResp = function (newmembers, cb, members_tag) {
     var members = members_tag.values.concat(newmembers)
     this.setMembers (members)
-
     if (cb) cb();
 }
 
@@ -1566,27 +1840,29 @@ function BQSession () {
     this.current_timer = null;
     this.timeout = null;
     this.expires = null;
-    this.user = null;
+    this.user = undefined;
+    this.user_uri = undefined;    
 }
 
 BQSession.prototype= new BQObject();
+BQSession.current_session = undefined;
 
-BQSession.current_session = null
 BQSession.reset_timeout  = function (){
-    if (BQSession.current_session )
+    if (BQSession.current_session)
         BQSession.current_session.reset_timeout();
 }
 BQSession.initialize_timeout = function (baseurl, opts) {
-  BQFactory.load (baseurl + bq.url("/auth_service/session"), 
+    BQFactory.load (baseurl + bq.url("/auth_service/session"), 
                     function (session) {
+                        BQSession.current_session = session;
                         session.set_timeout (baseurl, opts);
                         if (session.onsignedin) session.onsignedin(session); 
                     }, null, false);
 }
 BQSession.clear_timeout = function (baseurl) {
-    if (BQSession.current_session ){
+    if (BQSession.current_session) {
         clearTimeout(BQSession.current_session.current_timer);
-        BQSession.current_session = null;
+        BQSession.current_session = undefined;
     }
 }
 
@@ -1600,22 +1876,24 @@ BQSession.prototype.parseTags  = function (){
     }
     var user = this.find_tags ('user');
     if (user) {
-        var sess = this;
-        BQFactory.load(user.value, function (user) {
-                         sess.user = user;
-                         if (sess.ongotuser) sess.ongotuser(sess.user);   
-                       } );
+        this.user_uri = user.value;        
+        BQFactory.request({uri: user.value, cb: callback(this, 'setUser'), cache: false, uri_params: {view:'full'}});
     } else {
+        this.user = null;
+        this.user_uri = null;        
         var sess = this;        
         if (sess.onnouser) sess.onnouser();    
     } 
 }
 
-BQSession.prototype.hasUser = function (){
-    if (this.user) 
-        return true;
-    else
-        return false;
+BQSession.prototype.hasUser = function () {
+    return this.user ? true : false;
+}
+
+BQSession.prototype.setUser = function (user) {
+    this.user = user;
+    if (this.ongotuser) 
+        this.ongotuser(this.user);   
 }
 
 BQSession.prototype.set_timeout  = function (baseurl, opts) {
@@ -1639,7 +1917,8 @@ BQSession.prototype.set_timeout  = function (baseurl, opts) {
 
 BQSession.prototype.reset_timeout  = function (){
     clearTimeout (this.current_timer);
-    this.current_timer = setTimeout (this.callback, this.timeout);
+    if (this.timeout)
+        this.current_timer = setTimeout (this.callback, this.timeout);
     //clog ('timeout reset:' + this.timeout);
     BQSession.current_session = this;
 }
@@ -1668,5 +1947,40 @@ BQSession.prototype.session_timeout = function (baseurl) {
     //alert("Your session has  timed out");
 }
 
+
+Ext.define('BQTemplate',
+{
+    extend      :   'BQResource',
+    
+    constructor :   function(config)
+    {
+        Ext.apply(this, config);
+        this.callParent(arguments);
+    },
+    
+    addField    :   function(field)
+    {
+        // ADD FIELD CODE
+    }
+});
+
+//-------------------------------------------------------------------------
+// BQQuery - this is something old that probably should gof
+//-------------------------------------------------------------------------
+
+function BQQuery(uri, parent, callback) {
+    this.parent = parent;
+    this.tags = new Array();
+    this.callback = callback;  
+    makeRequest( uri, this.parseResponse, this , "GET", null ); 
+} 
+
+BQQuery.prototype.parseResponse = function(o, data) {
+    var tags = data.getElementsByTagName("tag");
+    for(var i=0; i<tags.length; i++) {
+        o.tags[i] = tags[i].getAttribute('value');
+    }
+    o.callback(o);
+}
 
 

@@ -1,7 +1,7 @@
 /* Abstract Mex resource definition (inherits from Resource abstract class) */
-Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResource',
+Ext.define('Bisque.Resource.Mex',
 {
-    extend:'Bisque.ResourceBrowser.ResourceFactory.Resource',
+    extend:'Bisque.Resource',
 
     afterRenderFn : function()
     {
@@ -12,9 +12,9 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResource',
     },
 });
 
-Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceCompact',
+Ext.define('Bisque.Resource.Mex.Compact',
 {
-    extend : 'Bisque.ResourceBrowser.ResourceFactory.MexResource',
+    extend : 'Bisque.Resource.Mex',
     
    	constructor : function()
 	{
@@ -26,37 +26,15 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceCompact',
             	align:'stretch'	
             }
         });
-		
-		Bisque.ResourceBrowser.ResourceFactory.MexResourceCompact.superclass.constructor.apply(this, arguments);
+		this.callParent(arguments);
+		this.addCls('compact');		
 	},
 	
-    afterRenderFn : function(me)
-    {
-    	if (!this.ttip)
-    	{
-	    	this.ttip=Ext.create('Ext.tip.ToolTip', 
-	    	{
-	    		target: me.id,
-	    		width:278,
-	    		cls:'LightShadow',
-	    		style:'background-color:#FAFAFA;border: solid 3px #E0E0E0;',
-	    		layout:'hbox',
-	    		listeners : 
-	    		{
-	    			"afterrender" : function(me){if (!this.tagsLoaded) me.setLoading({msg:''})},
-	    			scope : this
-	    		}
-	    	});
-    	}
-    	
-    	this.callParent(arguments);
-    },
-    
     onMouseEnter : function()
     {
     	if (!this.tagsLoaded)
     	{
-    		BQFactory.request({uri: this.resource.uri + '/tags', cb: Ext.bind(this.tagData, this)});
+    		BQFactory.request({uri: this.resource.uri + '/tag', cb: Ext.bind(this.tagData, this)});
     	}
     	this.callParent(arguments);
     },
@@ -83,7 +61,8 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceCompact',
         
         var propsGrid=this.GetPropertyGrid({width:270}, tagArr);
         
-        this.ttip.add(propsGrid);
+        if (tagArr.length>0)
+            this.ttip.add(propsGrid);
 		this.ttip.setLoading(false);
 	},
 
@@ -92,18 +71,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceCompact',
         if (!this.getData('fetched'))
         {
             this.setData('fetched', -1);	//Loading
-
-			/*if (this.resource.module.indexOf(window.location.host)!=-1)	// Load module names if running on
-			{
-				BQFactory.request(
-				{
-					uri:this.resource.module,
-					cb:Ext.bind(this.loadResource, this),
-					errorcb:Ext.emptyFn
-				});
-			}
-			else*/
-				this.loadResource({name:'Module.NoName'});
+            this.loadResource({name:'Module.NoName'});
 		}
     },
     
@@ -119,34 +87,29 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceCompact',
     
     updateContainer : function()
     {
-		var mexName=new Ext.form.Label({
-			text:this.getData('module'),
-			padding:5,
-			cls:'lblModuleName',
-		})
+        var name = Ext.create('Ext.container.Container', {
+            cls : 'lblHeading1',
+            html : Ext.String.ellipsis(this.resource.name || 'undefined', 24),
+        })
 
-		var mexStatus=new Ext.form.Label({
-			text:this.resource.status,
-			padding:'0 0 0 5',
-			cls:'lblModuleOwner'
-		})
+        var type = Ext.create('Ext.container.Container', {
+            cls : 'lblHeading2',
+            html : Ext.Date.format(Ext.Date.parse(this.resource.ts, 'Y-m-d H:i:s.u'), "m-d-Y g:i:s a"),
+        })
 
-		var date=Ext.Date.parse(this.resource.ts, 'Y-m-d H:i:s.u');
-		
-		var mexDate=new Ext.form.Label({
-			text:Ext.Date.format(date, "F j, Y g:i:s a"),
-			padding:5,
-			style:'color:#444'
-		})
+        var value = Ext.create('Ext.container.Container', {
+            cls : 'lblContent',
+            html : this.resource.value,
+        })
 
-		this.add([mexName, mexStatus, mexDate]);
+        this.add([name, type, value]);
         this.setLoading(false);
     },
 });
 
-Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceList',
+Ext.define('Bisque.Resource.Mex.List',
 {
-    extend : 'Bisque.ResourceBrowser.ResourceFactory.MexResource',
+    extend : 'Bisque.Resource.Mex',
     
    	constructor : function()
 	{
@@ -158,8 +121,8 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceList',
             	align:'middle'	
             }
         });
-		
 		this.callParent(arguments);
+		this.addCls('list');			
 	},
 
     afterRenderFn : function(me)
@@ -173,6 +136,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceList',
 	    		cls:'LightShadow',
 	    		style:'background-color:#FAFAFA;border: solid 3px #E0E0E0;',
 	    		layout:'hbox',
+                //autoHide : false,
 	    		listeners : 
 	    		{
 	    			"afterrender" : function(me){if (!this.tagsLoaded) me.setLoading({msg:''})},
@@ -181,8 +145,8 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceList',
 	    	});
     	}
         // HACK to hide session "mex". Come up with better strategy in future
-        if (this.resource.status=='SESSION')
-            this.setVisible(false);
+        //if (this.resource.status=='SESSION')
+        //    this.setVisible(false);
 
     	this.callParent(arguments);
     },
@@ -191,10 +155,17 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceList',
     {
     	if (!this.tagsLoaded)
     	{
-    		BQFactory.request({uri: this.resource.uri + '/tags', cb: Ext.bind(this.tagData, this)});
+    		BQFactory.request({uri: this.resource.uri + '/tag', cb: Ext.bind(this.tagData, this)});
     	}
     	this.callParent(arguments);
     },
+    
+    onMouseLeave : function(e)
+    {
+        this.mouseIn=false;
+        this.callParent(arguments);
+    },
+    
     
 	tagData : function(data)
 	{
@@ -216,7 +187,8 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceList',
         
         var propsGrid=this.GetPropertyGrid({width:270}, tagArr);
         
-        this.ttip.add(propsGrid);
+        if (tagArr.length>0)
+            this.ttip.add(propsGrid);
 		this.ttip.setLoading(false);
 	},
     
@@ -244,7 +216,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceList',
 
 	loadResource : function(moduleInfo)
     {
-		this.setData('module', moduleInfo.name);
+		this.setData('module', this.resource.name);
 		this.setData('fetched', 1);	//Loaded
 
         var renderedRef=this.getData('renderedRef')
@@ -255,7 +227,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceList',
     updateContainer : function()
     {
 		var mexName=new Ext.form.Label({
-			text:' '+this.getData('module')+' ',
+			text:' '+Ext.String.ellipsis(this.resource.name, 22)+' ',
 			padding:'0 8 0 8',
 			cls:'lblModuleName',
 		})
@@ -271,11 +243,12 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.MexResourceList',
 		var mexDate=new Ext.form.Label({
 			text:Ext.Date.format(date, "F j, Y g:i:s a"),
 			padding:'0 0 0 8',
-			style:'color:#444;font-size:11px;font-family: tahoma, arial, verdana, sans-serif !important;'
+			//style:'color:#444;font-size:11px;font-family: tahoma, arial, verdana, sans-serif !important;'
+			cls: 'lblModuleDate',
+			flex: 1,			
 		})
 
 		this.add([mexName, mexStatus, mexDate]);
         this.setLoading(false);
     },
 });
-

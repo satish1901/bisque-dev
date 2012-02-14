@@ -1,7 +1,7 @@
 /* Abstract Module resource definition (inherits from Resource abstract class) */
-Ext.define('Bisque.ResourceBrowser.ResourceFactory.ModuleResource',
+Ext.define('Bisque.Resource.Module',
 {
-    extend:'Bisque.ResourceBrowser.ResourceFactory.Resource',
+    extend:'Bisque.Resource',
 
     afterRenderFn : function()
     {
@@ -12,9 +12,9 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ModuleResource',
     },
 });
 
-Ext.define('Bisque.ResourceBrowser.ResourceFactory.ModuleResourceCompact',
+Ext.define('Bisque.Resource.Module.Compact',
 {
-    extend : 'Bisque.ResourceBrowser.ResourceFactory.ModuleResource',
+    extend : 'Bisque.Resource.Module',
     
    	constructor : function()
 	{
@@ -26,8 +26,9 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ModuleResourceCompact',
             	align:'stretch'	
             }
         });
-		
-		Bisque.ResourceBrowser.ResourceFactory.ModuleResourceCompact.superclass.constructor.apply(this, arguments);
+	
+		this.callParent(arguments);
+        this.addCls('compact');		
 	},
 
     prefetch : function()
@@ -55,32 +56,29 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ModuleResourceCompact',
     
     updateContainer : function()
     {
-		var moduleName=new Ext.form.Label({
-			text:this.resource.name,
-			padding:5,
-			cls:'lblModuleName',
-		})
-		
-		var moduleOwner=new Ext.form.Label({
-			text:this.getData('owner'),
-			padding:'0 0 0 5',
-			cls:'lblModuleOwner'
-		})
+        var name = Ext.create('Ext.container.Container', {
+            cls : 'lblHeading1',
+            html : this.resource.name,
+        })
 
-		var moduleType=new Ext.form.Label({
-			text:this.resource.type,
-			padding:5,
-			style:'color:#444'
-		})
+        var type = Ext.create('Ext.container.Container', {
+            cls : 'lblHeading2',
+            html : this.getData('owner'),
+        })
 
-		this.add([moduleName, moduleOwner, moduleType]);
+        var value = Ext.create('Ext.container.Container', {
+            cls : 'lblContent',
+            html : this.resource.value,
+        })
+
+        this.add([name, type, value]);
         this.setLoading(false);
     },
 });
 
-Ext.define('Bisque.ResourceBrowser.ResourceFactory.ModuleResourceList',
+Ext.define('Bisque.Resource.Module.List',
 {
-    extend : 'Bisque.ResourceBrowser.ResourceFactory.ModuleResource',
+    extend : 'Bisque.Resource.Module',
     
    	constructor : function()
 	{
@@ -93,7 +91,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ModuleResourceList',
             }
         });
 		
-		Bisque.ResourceBrowser.ResourceFactory.ModuleResourceList.superclass.constructor.apply(this, arguments);
+		this.callParent(arguments);
 	},
     
     afterRenderFn : function(me)
@@ -107,6 +105,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ModuleResourceList',
 	    		cls:'LightShadow',
 	    		style:'background-color:#FAFAFA;border: solid 3px #E0E0E0;',
 	    		layout:'hbox',
+                autoHide : false,
 	    		listeners : 
 	    		{
 	    			"afterrender" : function(me){if (!this.tagsLoaded) me.setLoading({msg:''})},
@@ -123,7 +122,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ModuleResourceList',
     {
     	if (!this.tagsLoaded)
     	{
-    		BQFactory.request({uri: this.resource.uri + '/tags', cb: Ext.bind(this.tagData, this)});
+    		BQFactory.request({uri: this.resource.uri + '/tag', cb: Ext.bind(this.tagData, this)});
     	}
     	this.callParent(arguments);
     },
@@ -195,13 +194,13 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ModuleResourceList',
     {
 		var moduleName=new Ext.form.Label({
 			text:' '+this.resource.name+' ',
-			padding:5,
+			//padding:5,
 			cls:'lblModuleName',
 		})
 
 		var moduleOwner=new Ext.form.Label({
 			text:this.getData('owner'),
-			padding:'0 0 0 5',
+			//padding:'0 0 0 5',
 			cls:'lblModuleOwner'
 		})
 
@@ -216,9 +215,14 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ModuleResourceList',
     },
 });
 
-Ext.define('Bisque.ResourceBrowser.ResourceFactory.ModuleResourceIconList',
+Ext.define('Bisque.Resource.Module.IconList',
 {
-    extend : 'Bisque.ResourceBrowser.ResourceFactory.ModuleResourceList',
+    extend : 'Bisque.Resource.Module.List',
+
+    initComponent : function() {
+        this.addCls('icon-list');
+        this.callParent();
+    },	    
     
     afterRenderFn : function()
     {
@@ -246,13 +250,13 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ModuleResourceIconList',
 
         var moduleName=new Ext.form.Label({
             text:this.resource.name,
-            padding:'0 0 1 3',
+            //padding:'0 0 1 3',
             cls:'lblModuleName',
         })
 
         var moduleInfo=new Ext.form.Label({
             html: this.getData('owner')!=0 ? 'Owner: '+this.getData('owner'):'',
-            padding:'0 0 0 3',
+            //padding:'0 0 0 3',
             maxHeight:18,
             cls:'lblModuleOwner'
         })
@@ -260,7 +264,6 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.ModuleResourceIconList',
         var moduleDesc=new Ext.form.Label({
             html:description,
             padding:'7 2 0 3',
-            //style:'color:#555'
         })
         
         var rightCt=Ext.create('Ext.container.Container',

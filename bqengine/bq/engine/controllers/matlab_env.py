@@ -81,15 +81,21 @@ class MatlabEnvironment(BaseEnvironment):
     matlab_launcher = ""
 
     def process_config (self, runner, **kw):
-        self.matlab_home = runner.matlab_home
-        if runner.named_args.has_key('matlab_home'):
-            self.matlab_home = runner.named_args['matlab_home']
+        self.matlab_home = runner.config['runtime.matlab_home']
+        self.matlab_launcher = runner.config.get('runtime.matlab_launcher', None)
+        if self.matlab_launcher is not None and not os.path.exists(self.matlab_launcher):
+            raise ModuleEnvironmentError("Can't find matlab script %s" % self.matlab_launcher)
+        #if runner.named_args.has_key('matlab_home'):
+        #    self.matlab_home = runner.named_args['matlab_home']
 
     def setup_environment(self, runner):
         # Construct a special environment script
-        condor_matlab = self.create_matlab_launcher(runner.staging_path)
-        condor_matlab = os.path.join('.', os.path.basename(condor_matlab))
-        runner.executable.insert(0, condor_matlab)
+        for mex in runner.mexes:
+            #if mex.executable:
+            condor_matlab = self.create_matlab_launcher(mex.staging_path)
+            condor_matlab = os.path.join('.', os.path.basename(condor_matlab))
+            if mex.executable:
+                mex.executable.insert(0, condor_matlab)
 
     def create_matlab_launcher(self, dest):
         matlab_launcher = MATLAB_LAUNCHER

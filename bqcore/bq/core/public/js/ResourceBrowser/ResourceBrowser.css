@@ -55,7 +55,7 @@
 
 .ResourceList {
     margin: 4px;
-    height: 28px;
+    height: 34px;
     width : 98%;
     background-color: #F9F9F9;
     border: solid 2px #E0E0E0;
@@ -192,7 +192,6 @@
 	border-left:0;
 	border-right:0;
 	border-bottom:0;
-	background-color:#FCFCFC;
 }
 
 .lblModuleName {
@@ -202,6 +201,15 @@
 	font-size: 14px;
     font-weight:bold;
     font-family: tahoma, arial, verdana, sans-serif !important;
+    padding: 5px;    
+}
+
+.compact .lblModuleName {
+    padding: 5px;
+}
+
+.icon-list .lblModuleName {
+    padding: 0px 0px 1px 3px;
 }
 
 .lblModuleOwner {
@@ -209,8 +217,16 @@
 	text-shadow: 0px 1px 1px #DDD;
 	font-size: 11px;
     font-family: tahoma, arial, verdana, sans-serif !important;
+    padding: 5px;    
 }
 
+.compact .lblModuleOwner {
+    padding: 0px 0px 0px 5px;
+}
+
+.icon-list .lblModuleOwner {
+    padding: 0px 0px 0px 3px;
+}
 
 .lblModuleOwnerFin {
     color: #07AD0C !important;
@@ -230,6 +246,51 @@
     font-family: tahoma, arial, verdana, sans-serif !important;
 }
 
+.lblModuleDate {
+    padding: 8px 8px 8px 5px;
+    color: #444;
+    font-size: 11px;
+    text-align: right;
+}
+
+.lblBig {
+    color: #BABABA;
+    font-size: 36px;
+    font-family: tahoma, arial, verdana, sans-serif !important;
+}
+
+.compact .lblModuleDate {
+    padding: 8px 8px 8px 5px;
+}
+
+.list .lblModuleDate {
+    padding: 0px 0px 0px 8px;    
+    font-family: tahoma, arial, verdana, sans-serif !important;
+}
+
+.lblHeading1{
+    color: #555;
+    background:#f4f4f4;
+    text-shadow: 1px 1px 1px #CCC;
+    font-weight:bold;
+    font-family: tahoma, arial, verdana, sans-serif !important;
+    word-wrap: break-word;
+    padding: 3px;    
+}
+
+.lblHeading2{
+    color: #07AD0C;
+    background:#f4f4f4;
+    text-shadow: 1px 1px 1px #CCC;
+    font-family: tahoma, arial, verdana, sans-serif !important;
+    word-wrap: break-word;
+    padding: 3px;    
+}
+
+.lblContent{
+    padding: 5px;
+    word-wrap: break-word;
+}
 
 .textOnImage {
 	color: #FFF;

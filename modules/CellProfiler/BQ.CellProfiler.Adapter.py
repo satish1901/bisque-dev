@@ -62,7 +62,6 @@ class CPShape(BQGObject):
         ellipse.addGObject(gob=vMajor)
         
         
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - # 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
 
 
@@ -166,7 +165,9 @@ class CellProfiler():
             fileList.extend(glob(os.path.join(self.outputDir, fmt)))
         for file in fileList:
             content = save_image_pixels(self.bqSession, file)
+            
             if content is not None:
+                print 'chuck testa'
                 uri = etree.XML(content).xpath('//image[@uri]/@uri')[0] or "BQ.CellProfiler.Adapter: Upload Error!"
                 fileName = os.path.split(file)[1]
                 tempTag = BQTag(name=fileName, value=uri, type='resource')

@@ -19,3 +19,12 @@
 .toolbar_main a:hover {
 	color: #C60;
 }
+
+.x-menu-body .menu-heading {
+    padding: 5px 0px 5px 0px;
+    font-family: Georgia, serif;
+}
+
+.toolbar_main .x-box-menu-right {
+    /*height: 32px;  */
+}

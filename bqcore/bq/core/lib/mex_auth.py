@@ -1,6 +1,7 @@
 import logging
 from repoze.who.interfaces import IIdentifier
 from zope.interface import implements
+from tg import session
 
 from bq.core.model import DBSession
 from bq.data_service.model import ModuleExecution
@@ -24,17 +25,22 @@ class MexAuthenticatePlugin(object):
         pass
     def authenticate(self, environ, identity):
         try:
-            log.debug("MexAuthenticate:auth %s" % (identity))
             mexid = identity['Mex']
         except KeyError:
             return None
+        log.debug("MexAuthenticate:auth %s" % (identity))
         mex = DBSession.query(ModuleExecution).get (mexid)
+        #session['mex_id'] = mexid
+
         #if  mex.closed():
         #    log.warn ('attempt with  closed mex %s' % mexid)
         #    return None
-        owner = mex.owner.tguser
-        log.info ("MEX_IDENTITY %s->%s" % (mexid, owner.user_name))
-        return owner.user_name
+        if mex:
+            owner = mex.owner.tguser
+            log.info ("MEX_IDENTITY %s->%s" % (mexid, owner.user_name))
+            return owner.user_name
+        log.warn("Mex authentication failed due to invalid mex %s" % mexid)
+        return None
             
     #def challenge(self, environ, status, app_headers, forget_headers):
     #    pass

@@ -75,21 +75,19 @@ BQProgressBar.prototype.spinner = function (holderid, R1, R2, count, stroke_widt
         beta = 2 * Math.PI / sectorsCount,
         pathParams = {stroke: color, "stroke-width": width, "stroke-linecap": "round"};
         
-        //r = Raphael(holderid, r2 * 2 + width * 2, r2 * 2 + width * 2),
-        r = Raphael(holderid, "100%", "100%");
-        this.r = r;
-        Raphael.getColor.reset();
+    //r = Raphael(holderid, r2 * 2 + width * 2, r2 * 2 + width * 2),
+    var r = Raphael(holderid, "100%", "100%");
+    this.r = r;
+    Raphael.getColor.reset();
         
-        var bckg = r.rect(0, 0, '100%', '100%', 5);
-        bckg.attr({fill: "#000", opacity: 0.6});
-        var ox = this.surface.offsetWidth/2 - (r2 + width);
-        var oy = this.surface.offsetHeight/2 - (r2 + width);
+    var bckg = r.rect(0, 0, '100%', '100%', 5);
+    bckg.attr({fill: "#000", opacity: 0.6});
+    var ox = this.surface.offsetWidth/2 - (r2 + width);
+    var oy = this.surface.offsetHeight/2 - (r2 + width);
         
-        if (this.title)
-          this.t = r.text(ox+(r2 + width), oy+3*(r2 + width), this.title).attr(
+    if (this.title)
+        this.t = r.text(ox+(r2 + width), oy+3*(r2 + width), this.title).attr(
             {font: '100 12px "Helvetica Neue", Helvetica, "Arial Unicode MS", Arial, sans-serif', fill: "#fff"});
-  
-        
     for (var i = 0; i < sectorsCount; i++) {
         var alpha = beta * i - Math.PI / 2,
             cos = Math.cos(alpha),

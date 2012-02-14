@@ -27,15 +27,15 @@ def bisque_challenge_decider(environ, status, headers):
         #log.debug ('401 INFO header=%s environ=%s' % (headers, environ))
 
         req_content = request.headers['content-type']
-        accept = request.headers['accept']
-        content_type = response.headers['content-type']
+        accept = request.headers.get('accept')
+        content_type = response.headers.get('content-type')
 
         # By default several browser send accept : application/xml
         # http://www.grauw.nl/blog/entry/470
-        if 'text/xml' in accept: #or 'application/xml' in accept:
+        if accept and 'text/xml' in accept: #or 'application/xml' in accept:
             return False
 
-        if 'text/xml' in content_type \
+        if content_type and 'text/xml' in content_type \
             or 'application/xml' in content_type \
             or 'text/xml' in req_content \
             or 'application/xml' in req_content:

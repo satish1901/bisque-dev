@@ -1,0 +1,56 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"
+      xmlns:py="http://genshi.edgewall.org/"
+      xmlns:xi="http://www.w3.org/2001/XInclude">
+
+<xi:include href="master.html" />
+
+<link rel="stylesheet" type="text/css" href="/client_service/public/css/admin.css" />
+
+<head/>
+
+<body>
+<div py:match="datasets" />
+<div py:match="organizer" />
+<div class="maindiv" >
+<p><a href="/admin">Back to /admin</a></p>
+ 
+<div class="admin_box">
+<h3>Bisque users:</h3> 
+<table border="1" class="admin_table" >
+   <tr align="left" >
+     <th><a href="/admin/users?order=id">ID</a></th>
+     <th><a href="/admin/users?order=user_name">User Name</a></th>
+<!--     <th><a href="/admin/users?order=display_name">Real Name</a></th> -->
+     <th><a href="/admin/users?order=email_address">Email</a></th>
+     <th><a href="/admin/users?order=images">Images</a></th><th>Operations</th>
+   </tr>
+   
+   <tr py:for="u in users"> 
+     <td><a href="/ds/users/${u[0].id}"> ${u[0].id} </a></td>
+     <td><a href="/admin/edituser/${u[0].resource_name}?page=1">${u[0].resource_name}</a></td>
+<!--     <td>${u[0].display_name}</td> -->
+     <td>${u[0].resource_value}</td>
+     <td><b>${u[1]}</b></td>
+     <td><a href="/admin/edituser/${u[0].resource_name}?page=1">Edit</a> |
+         <a href="/admin/confirmdeleteuser/${u[0].resource_name}">Delete</a> |
+         <a href="/admin/loginasuser?user=${u[0].resource_name}">Login </a></td>     
+     </tr>
+</table> 
+</div>
+ 
+<div class="admin_box" >
+  <h3>Create a new user:</h3> 
+  <form action="/admin/adduser" method="post" enctype="application/x-www-form-urlencoded" class="admin_form" >
+    <label> User name: </label><input type="text" name="user_name" id="user_name" value="" /><br />
+    <label> User password: </label><input type="password" name="user_password" id="user_password" value="" /><br />
+    <label> Display name: </label><input type="text" name="display_name" id="display_name" value="" /><br />
+    <label> E-mail: </label><input type="text" name="email" id="email" value="" /><br />
+    <input type="submit" name="button" id="button" value="Submit" />
+  </form> 
+</div>
+ 
+</div>
+</body>
+</html>

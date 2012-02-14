@@ -1,0 +1,103 @@
+<!DOCTYPE html PUBLIC
+  "-//W3C//DTD XHTML 1.1 plus MathML 2.0 plus SVG 1.1//EN"
+  "http://www.w3.org/2002/04/xhtml-math-svg/xhtml-math-svg.dtd">
+
+<html  xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" 
+  xmlns:svg="http://www.w3.org/2000/svg"
+  xmlns:xlink="http://www.w3.org/1999/xlink"
+  xmlns:py="http://genshi.edgewall.org/" 
+  xmlns:xi="http://www.w3.org/2001/XInclude">
+
+<xi:include href="master.html" />
+<head>
+    <title>Resource viewer</title>   
+    
+    <!-- PanoJS3 -->
+    <meta http-equiv="imagetoolbar" content="no" />
+    <link rel="stylesheet" type="text/css" href="/client_service/public/panojs3/styles/panojs.css" />
+    
+    <script type="text/javascript" src="/client_service/public/panojs3/panojs/utils.js"></script>    
+    <script type="text/javascript" src="/client_service/public/panojs3/panojs/PanoJS.js"></script>
+    <script type="text/javascript" src="/client_service/public/panojs3/panojs/controls.js"></script>
+    <script type="text/javascript" src="/client_service/public/panojs3/panojs/pyramid_Bisque.js"></script>
+    <script type="text/javascript" src="/client_service/public/panojs3/panojs/control_thumbnail.js"></script>
+    <script type="text/javascript" src="/client_service/public/panojs3/panojs/control_info.js"></script>
+    <script type="text/javascript" src="/client_service/public/panojs3/panojs/control_svg.js"></script>
+    
+    <!-- Image Viewer -->
+    <link rel="stylesheet" type="text/css" href="/client_service/public/js/slider/slider.css" />
+    <script type="text/javascript" src="/client_service/public/js/slider/inversible.js"></script>
+    <script type="text/javascript" src="/client_service/public/js/slider/slider.js"></script>
+    <script type="text/javascript" src="/client_service/public/js/slider/tslider.js"></script>
+    <script type="text/javascript" src="/client_service/public/js/slider/zslider.js"></script>
+    
+    
+    <link rel="stylesheet" type="text/css" href="/client_service/public/css/imgview.css" />
+    
+    <script type="text/javascript" src="/client_service/public/js/viewer/scalebar.js"></script>
+    <script type="text/javascript" src="/client_service/public/js/viewer/2D.js"></script> 
+    
+    <script type="text/javascript" src="/client_service/public/js/viewer/imageconverter.js"></script> 
+    <script type="text/javascript" src="/client_service/public/js/viewer/imgview.js"></script>
+    <script type="text/javascript" src="/client_service/public/js/viewer/imgops.js"></script> 
+    <script type="text/javascript" src="/client_service/public/js/viewer/imgslicer.js"></script>
+    <script type="text/javascript" src="/client_service/public/js/viewer/imgperm.js"></script>
+    <script type="text/javascript" src="/client_service/public/js/viewer/imgstats.js"></script>
+    <script type="text/javascript" src="/client_service/public/js/viewer/listner_zoom.js"></script>
+    <script type="text/javascript" src="/client_service/public/js/viewer/tilerender.js"></script>
+    <script type="text/javascript" src="/client_service/public/js/viewer/svgrender.js"></script>
+    <script type="text/javascript" src="/client_service/public/js/viewer/imgedit.js"></script>
+    <script type="text/javascript" src="/client_service/public/js/viewer/imgdownload.js"></script>
+    <script type="text/javascript" src="/client_service/public/js/viewer/imgmovie.js"></script>
+    <script type="text/javascript" src="/client_service/public/js/viewer/imgexternal.js"></script>
+    <script type="text/javascript" src="/client_service/public/js/viewer/imgshare.js"></script>
+    <script type="text/javascript" src="/client_service/public/js/viewer/imgscalebar.js"></script>
+    <script type="text/javascript" src="/client_service/public/js/viewer/imginfobar.js"></script>
+    <script type="text/javascript" src="/client_service/public/js/viewer/progressbar.js"></script>
+    <script type="text/javascript" src="/client_service/public/js/viewer/widget_extjs.js"></script>
+    
+    <!-- Plotting stuff, use Raphael now -->
+    <script src="/raphael/raphael.js" type="text/javascript" charset="utf-8"></script>
+    <script src="/raphael/g.raphael-min.js" type="text/javascript" charset="utf-8"></script>
+    <script src="/raphael/g.line.js" type="text/javascript" charset="utf-8"></script>
+    <script src="/raphael/g.bar.js" type="text/javascript" charset="utf-8"></script>
+    <script src="/raphael/g.dot-min.js" type="text/javascript" charset="utf-8"></script>
+    <script src="/raphael/g.pie-min.js" type="text/javascript" charset="utf-8"></script>
+    
+    <script src="/stats/public/js/stats.js" type="text/javascript" charset="utf-8"></script>
+    
+    <script type="text/javascript" src="/js/bq_ui_progress.js" charset="utf-8"></script>
+    
+    
+    <!-- GMaps API -->
+    <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?sensor=false"></script>
+    <script type="text/javascript" src="/client_service/public/js/map/gmapPanel3.js"></script>
+
+    <!-- Resource dispatch -->
+    <link rel="stylesheet" type="text/css" href="${bq.url('/dataset_service/public/dataset_panel.css')}" />
+    <script type="text/javascript" src="${bq.url('/dataset_service/public/dataset_operations.js')}"></script>    
+    <script type="text/javascript" src="${bq.url('/dataset_service/public/dataset_panel.js')}"></script>       
+    
+    <link rel="stylesheet" type="text/css" href="${bq.url('/js/renderers/dataset.css')}" />
+    <script type="text/javascript" src="${bq.url('/js/renderers/dataset.js')}"></script>
+    <script type="text/javascript" src="${bq.url('/client_service/public/js/resourceview.js')}"></script>
+
+
+  
+    <!-- Fix for templates that do not create html in the body -->
+    <style type="text/css">
+    #content { margin: 0px; }
+    </style>
+    
+    <script type="text/javascript">
+    Ext.onReady(function() {
+        var _SB = BQ.ResourceViewer.dispatch('${resource}');
+    });
+    </script>
+
+</head>
+
+<body>
+</body>
+</html>
+
