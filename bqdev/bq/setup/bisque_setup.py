@@ -766,7 +766,7 @@ def install_matlab(params, cfg = RUNTIME_CFG):
     matlab_home = which('matlab') 
     if matlab_home:
         params['runtime.matlab_home'] = os.path.abspath(os.path.join (matlab_home, '../..'))
-    for f in ['runtime.matlab_launcher' ] 
+    for f in ['runtime.matlab_launcher' ] :
         if os.path.exists(params[f]):
             params[f] = os.path.abspath(params[f])
     params = modify_site_cfg(MATLAB_QUESTIONS, params, section=None, cfg=cfg)
