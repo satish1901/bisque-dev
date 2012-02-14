@@ -1,0 +1,9 @@
+setup.cfg
+setup.py
+bqserver/__init__.py
+bqserver.egg-info/PKG-INFO
+bqserver.egg-info/SOURCES.txt
+bqserver.egg-info/dependency_links.txt
+bqserver.egg-info/entry_points.txt
+bqserver.egg-info/not-zip-safe
+bqserver.egg-info/top_level.txt
