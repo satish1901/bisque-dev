@@ -7,19 +7,20 @@ setup(name='bqserver',
       version=version,
       description="Main Bisque server",
       long_description="""\
+The bisque server
 """,
       classifiers=[], # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
-      keywords='',
-      author='',
-      author_email='',
-      url='',
-      license='',
+      keywords='bioinformatics, image, database',
+      author='Center for Bioinformatics',
+      author_email='cbi@biodev.ece.ucsb.edu',
+      url='http://bioimage.ucsb.edu',
+      license='BSD',
       packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
       include_package_data=True,
       zip_safe=False,
       install_requires=[
           # -*- Extra requirements: -*-
-        "bqcore",
+#        "bqcore",
         "ply",
         "gdata",
         "Turbomail",
@@ -34,7 +35,6 @@ setup(name='bqserver',
       ],
       entry_points="""
       # -*- Entry points: -*-
-
     [bisque.services]
     client_service   = bq.client_service.controllers.service
     auth_service     = bq.client_service.controllers.auth_service
@@ -52,6 +52,5 @@ setup(name='bqserver',
     ingest_service   = bq.ingest.controllers.ingest_server
     dataset_service  = bq.dataset_service.controllers.dataset_service
     usage            = bq.usage.controllers.usage
-
       """,
       )
