@@ -44,7 +44,7 @@ options(
     ),
 )
 
-subdirs=['bqdev', 'bqcore', 'bqengine' ]
+subdirs=['bqcore', 'bqserver', 'bqengine' ]
 
 @task
 def setup():
