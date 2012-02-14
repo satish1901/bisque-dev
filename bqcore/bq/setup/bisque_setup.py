@@ -373,10 +373,10 @@ CONDOR_QUESTIONS =[
 # Installer routines
 
 
-def install_cfg (site_cfg, default_cfg ):
+def install_cfg (site_cfg, section, default_cfg):
     if not os.path.exists (site_cfg):
         shutil.copyfile(default_cfg, site_cfg)
-    params = read_site_cfg(cfg=site_cfg)
+    params = read_site_cfg(cfg=site_cfg, section=section)
     return params
 
 def install_site(params):
@@ -458,7 +458,7 @@ def update_variables (qs, store):
 #######################################################
 #
 BQ_SECTION="app:main"
-def read_site_cfg(section = BQ_SECTION, cfg = SITE_CFG ):
+def read_site_cfg(cfg , section):
     bisque_vars = {}
     
     # first pull initial values from config files
@@ -984,7 +984,7 @@ def check_condor (params, cfg  = RUNTIME_CFG):
         Please check the wiki at biodev.ece.ucsb.edu/projects/bisquik/wiki/AdvancedInstalls#CondorConfiguration
         """
 
-        params = read_site_cfg(section='condor', cfg=cfg)
+        params = read_site_cfg(cfg=cfg, section='condor', )
         params['condor.enabled'] = "True"
         print params
         if getanswer("Advanced Bisque-Condor configuration", "N",
@@ -1346,14 +1346,14 @@ def bisque_installer(options, args):
     #install_scripts()
     params = {}
     if not os.path.exists (SITE_CFG): 
-        params = install_cfg(SITE_CFG, cfg_map[system_type])
+        params = install_cfg(SITE_CFG, section=BQ_SECTION, default_cfg=cfg_map[system_type] )
     else:
-        params = read_site_cfg()
+        params = read_site_cfg(cfg = SITE_CFG, section=BQ_SECTION)
 
     if not os.path.exists(RUNTIME_CFG):
-        runtime_params = install_cfg(RUNTIME_CFG, config_path('runtime-bisque.default'))
+        runtime_params = install_cfg(RUNTIME_CFG, section=None, default_cfg=config_path('runtime-bisque.default'))
     else:
-        runtime_params = read_site_cfg(section=None, cfg=RUNTIME_CFG)
+        runtime_params = read_site_cfg(cfg=RUNTIME_CFG, section = None)
     
     params['bisque.installed'] = "inprogress"
     if 'site' in installer:
@@ -1456,7 +1456,7 @@ def setup(options, args):
         #print "RETURN is ", r
         if not cancelled:
             end_install = datetime.datetime.now()
-            params = read_site_cfg()
+            params = read_site_cfg(cfg= SITE_CFG, section=BQ_SECTION)
             params['install_started'] = begin_install 
             params['duration'] = str(end_install-begin_install)
             print "got ", r
