@@ -58,13 +58,14 @@ from StringIO import StringIO
 from datetime import datetime, time, date
 from lxml import etree
 
+from bq import blob_service
 from bq import image_service 
 from bq import data_service
+
 from bq.util.bisquik2db import bisquik2db
 from bq.data_service.model import Image, Tag
-from bq.core import permission
 
-from bq.core.exceptions import BQException
+from bq.exceptions import BQException
 BIXLOG='biximport.log'
 
 
@@ -77,22 +78,19 @@ log = logging.getLogger('bq.bix2db')
 class BIXImporter(object):
     """Converter class for parsing Bix file and coverting to bisquik tags
     """
-    pmap = {'public': permission.PUBLIC,
-            'private': permission.PRIVATE,
-            'group': permission.PRIVATE }
+    pmap = {'public': 'published',
+            'private': 'private',
+            'group': 'private' }
              
 
 
     def __init__(self, updir, **kw):
         self.upload_dir= updir
         self.flags = kw
-        self.permission_flag = permission.PRIVATE
+        self.permission_flag = 'private'
         self.image_info = {}
 
     def fullname(self, name):
-        if self.flags.get('reimport', False):
-            return image_service.local_path (self.import_files[name])
-
         if name[0] != '/':
             return '/'.join([self.upload_dir, name])
         return name
@@ -100,38 +98,22 @@ class BIXImporter(object):
 
     def save_file (self, fn, **kw):
         '''save a file in the image server and return info'''
-        if self.flags.get('reimport', False):
-            # lookup filename and request info
-            local_src = self.import_files [fn]
-            return dict(src = local_src)
-        # Normal import
-        info =  image_service.new_file(src=open(self.fullname(fn), 'rb'),
-                                       name=fn,
-                                       userPerm = self.permission_flag)
-        self.import_files[fn] = info['src']
-        return info
+        with open(self.fullname(fn), 'rb') as src:
+            return blob_service.store_blob(src, fn, permission = str(self.permission_flag) ) 
             
 
     def save_image (self, fn, **kw):
         '''save a file in the image server and return info'''
-        if self.flags.get('reimport', False):
-            # lookup filename and request info
-            local_src = self.import_files [fn]
-            return image_service.info(local_src)
-        
-        # Normal import
         log.debug ("Store new image: " + fn + " " + str(self.image_info)) 
-        info =  image_service.new_image(src=open(self.fullname(fn), 'rb'),
-                                        name=fn,
-                                        userPerm = self.permission_flag,
-                                        **(self.image_info) )
-        if 'src' in  info:
-            self.import_files[fn] = info['src']
-            self.image_uri = info['src']
-            return info
+
+        with open(self.fullname(fn), 'rb') as src:
+            self.resource = blob_service.store_blob(src, fn, permission = str(self.permission_flag)) 
+
+        if 'uri' in self.resource.attrib:
+            self.import_files[fn] = self.resource.get('uri')
         else:
+            log.debug ("Image service could not create image %s" % fn) 
             raise BIXError ("Image service could not create image %s" % fn)
-        
 
 
     def process_bix(self, bixfile, name_map = {} ):
@@ -151,17 +133,19 @@ class BIXImporter(object):
                 log.debug ('trying tag:' + tag)
                 items = et.getroot().xpath ('./item[name="%s"]' % tag )
                 log.debug ('got ' + str(items))
-                if items:
+                if items and hasattr(self, 'tag_' + tag):
                     handler = getattr(self, 'tag_' + tag)
                     handler(items[0])
 
-            bixinfo = self.save_file (bixfile)
-            self.import_files[bixfile] = bixinfo['src']
-            self.import_files['BIX'] = bixinfo['src']
+            rr = self.save_file (bixfile)
+            self.import_files[bixfile] = rr.get('uri')
+            self.import_files['BIX'] = rr.get('uri')
+            
+            
 
             e = etree.SubElement(self.resource, 'tag', name = 'attached-file')
             etree.SubElement (e, 'tag', name='original-name', value = bixfile)
-            etree.SubElement (e, 'tag', name='url', type='file', value = bixinfo['src'])
+            etree.SubElement (e, 'tag', name='url', type='file', value = rr.get('uri') )
 
             # Process all other nodes
             for config in et.getroot().getiterator('config'):
@@ -184,35 +168,28 @@ class BIXImporter(object):
                                          name=name,
                                          value=value)
                     log.debug ('tag ' + name +':' + value)
-                    #print name, str(value)
-                    #self.resource.addTag(name, str(value))
-            #if self.resource in session:
+
             #  Should check if we have local changes (redirect to DS)
             log.debug ("update image" + etree.tostring(self.resource))
             data_service.update (self.resource)
         except BIXError, e:
             log.error ("Exception" + e)
         except:
-            excType, excVal, excTrace  = sys.exc_info()
-            log.error ("BixImport:\n"
-                       + "   Exception:\n"
-                       + "   ".join(traceback.format_exception(excType,excVal, excTrace))
-                       )
+            log.exception ("BixImport")
         if  self.resource is None:
             return '', ''
 
-        try:
-            bixlog = open(BIXLOG, 'a+')
-            bixlog.write(str(self.import_files))
-            bixlog.write("\n")
-            bixlog.close()
-        except IOError, (errno, strerr):
-            log.error ("can't append to bixlog: %s" % (strerr) )
-        except:
-            log.error ("Upexpected %s " % ( sys.exc_info()[0]))
+        #try:
+        #    bixlog = open(BIXLOG, 'a+')
+        #    bixlog.write(str(self.import_files))
+        #    bixlog.write("\n")
+        #    bixlog.close()
+        #except IOError, (errno, strerr):
+        #    log.error ("can't append to bixlog: %s" % (strerr) )
+        #except:
+        #    log.error ("Upexpected %s " % ( sys.exc_info()[0]))
         del et
-        
-        return self.filename, self.resource.get('uri')
+        return self.resource.get('name'), self.resource.get('uri')
             
     def parseValue(self, vs):
         if not len(vs): return vs.text
@@ -259,17 +236,13 @@ class BIXImporter(object):
         fn = item[1].text
         log.debug ("filename: " + fn + ':')
         self.filename = fn
-        info = self.save_image(fn)
-        if info is not None:
-            info['perm'] = self.permission_flag
-            self.resource = data_service.new_image(**info)
-            etree.SubElement(self.resource, 'tag', name = 'filename', value = str(fn))
+        self.save_image(fn)
 
     def tag_image_visibility(self, item, **kw):
         '''set visibability (public, private) for image v'''
         perm = item[1].text
         log.debug ('setting permission by ' + perm)
-        self.permission_flag = BIXImporter.pmap.get(perm, permission.PRIVATE)
+        self.permission_flag = BIXImporter.pmap.get(perm, 'private')
     
     def tag_microtubule_tracks(self, item, **kw):
         self.tag_graphics_annotation(item, **kw)
@@ -284,25 +257,25 @@ class BIXImporter(object):
                 log.debug ("adding to " + str(type(self.resource)))
                 data_service.append_resource(self.resource, tree = g)
 
-    def tag_microtubule_track_file(self, item, **kw):
-        '''special uploaded files manual mt tracks'''
-        v = item[1].text
-        if v:
-            import bisquik.importer.trackimport as trackimport
-            imagemeta = self.parse_image_meta()
-            files = v.split(';')
-            filepaths = []
-            for f in files:
-                path = self.fullname(f)
-                filepaths.append(path)
-                info = self.save_file(f)
-                
-            bfis, missing = trackimport.trackimport(filepaths, imagemeta)
-            for bfi in bfis:
-                for tb in bfi:
-                    data_service.append_resource(self.resource, tree = tb)
-                    #log.debug ("BIX: adding tube" + tube.name)
-                    #tube.save()
+#    def tag_microtubule_track_file(self, item, **kw):
+#        '''special uploaded files manual mt tracks'''
+#        v = item[1].text
+#        if v:
+#            import bisquik.importer.trackimport as trackimport
+#            imagemeta = self.parse_image_meta()
+#            files = v.split(';')
+#            filepaths = []
+#            for f in files:
+#                path = self.fullname(f)
+#                filepaths.append(path)
+#                info = self.save_file(f)
+#                
+#            bfis, missing = trackimport.trackimport(filepaths, imagemeta)
+#            for bfi in bfis:
+#                for tb in bfi:
+#                    data_service.append_resource(self.resource, tree = tb)
+#                    #log.debug ("BIX: adding tube" + tube.name)
+#                    #tube.save()
 
     def tag_attachments(self, items, **kw):
         attachments = items[1].text
@@ -312,11 +285,11 @@ class BIXImporter(object):
             for f in files:
                 path = self.fullname(f)
                 filepaths.append(path)
-                info = self.save_file(f)
+                rr = self.save_file(f)
 
                 e = etree.Element('tag', name = 'attached-file')
                 etree.SubElement (e, 'tag', name='original-name', value = str(f))
-                etree.SubElement (e, 'tag', name='url', type='file', value = info['src'])
+                etree.SubElement (e, 'tag', name='url', type='file', value = rr.get('uri'))
                 
                 data_service.append_resource(self.resource, tree=e)
                 

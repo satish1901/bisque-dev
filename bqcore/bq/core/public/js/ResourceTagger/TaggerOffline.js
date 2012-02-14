@@ -5,21 +5,32 @@ Ext.define('Bisque.ResourceTaggerOffline',
     constructor : function(config)
     {
         config = config || {};
-        config.viewMode = 'Offline';
+        
+        Ext.apply(config, 
+        {
+            viewMode    :   'Offline',
+            tree        :   {
+                                btnAdd : false,
+                                btnDelete : false,
+                                btnImport : false
+                            }
+        });
         
         this.callParent([config]);
     },
     
     setResource : function(resource)
     {
-        this.resource = resource || new BQResource();  
+        this.resource = resource || new BQResource();
         this.loadResourceTags(this.resource.tags);
     },
     
-    saveTags : Ext.emptyFn,
+    saveTags : function() {
+        this.store.applyModifications();
+    },
     
     getTagDocument : function() {
-        return this.resource && this.resource.tags ? this.resource.tags : [];
+        return (this.resource && this.resource.tags) ? this.resource.tags : [];
     },
 });
 

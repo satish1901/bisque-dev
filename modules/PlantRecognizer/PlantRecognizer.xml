@@ -2,11 +2,21 @@
 <module name="PlantRecognizer"  path="launch.py" type="runtime" >
 
     <tag name="inputs">
+        <!--
         <tag name="input-system" value="client_server" index="0" />
         <tag name="input-system" value="mex_url" index="1" />
         <tag name="input-system" value="image_url" index="2" />
         <tag name="input-system" value="bisque_token"  index="3" />
+        -->
+        <tag name="client_server" type="system-input" />        
+        <tag name="mex_url"       type="system-input" />
+        <tag name="image_url"     type="image" />     
+        <tag name="bisque_token"  type="system-input" />           
     </tag>
+  
+    <tag name="outputs">
+        <tag name="summary" /> <!-- this is not correct, module needs update -->
+    </tag>       
   
     <tag name="execute_options">
         <tag name="argument_style" value="position" />

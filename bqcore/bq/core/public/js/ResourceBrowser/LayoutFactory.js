@@ -1,48 +1,52 @@
+Ext.define('Bisque.ResourceBrowser.LayoutFactory', {
 
-//Ext.namespace('Bisque.ResourceBrowser');
+    statics : {
 
-Bisque.ResourceBrowser.LayoutFactory = function(configOpts) {
-	try {
-		switch (configOpts.browser.layoutKey) {
-			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.COMPACT :
-				return new Bisque.ResourceBrowser.LayoutFactory.CompactLayout(configOpts);
-				break;
-			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.CARD :
-				return new Bisque.ResourceBrowser.LayoutFactory.CardLayout(configOpts);
-				break;
-			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PSTRIP :
-				return new Bisque.ResourceBrowser.LayoutFactory.PhotoStripLayout(configOpts);
-				break;
-			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.FULL :
-				return new Bisque.ResourceBrowser.LayoutFactory.FullLayout(configOpts);
-				break;
-			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.LIST :
-				return new Bisque.ResourceBrowser.LayoutFactory.ListLayout(configOpts);
-				break;
-            case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.ICON_LIST :
-                return new Bisque.ResourceBrowser.LayoutFactory.IconListLayout(configOpts);
-                break;
-			default :
-				throw new Error('LayoutFactory: Unrecognized layout key - '
-						+ configOpts.layoutKey);
-		}
-	} catch (error) {
-		console.log(error.message);
-	}
-}
+        baseClass : 'Bisque.ResourceBrowser.Layout',
+
+        getClass : function(layout) {
+            var layoutKey = Ext.Object.getKey(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS, layout);
+            var className = Bisque.ResourceBrowser.LayoutFactory.baseClass + '.' + layoutKey;
+            
+            return className;
+        },
+        
+        getLayout : function(config) {
+            var className = this.getClass(config.browser.layoutKey);
+            
+            if (Ext.ClassManager.get(className))
+                return Ext.create(className, config);
+            else
+            {
+                Ext.log({
+                    msg     :   Ext.String.format('Unknown layout: {0}', className),
+                    level   :   'warn',
+                    stack   :   true
+                });
+                return Ext.create(Bisque.ResourceBrowser.Layout+'.Base', config);
+            }
+        }
+    }
+})
+
 
 // Available layout enumerations
 Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS = {
-	"COMPACT" : 1,
-	"CARD" : 2,
-	"PSTRIP" : 3,
-	"PSTRIP_BIG" : 3.1,
-	"FULL" : 4,
-	"LIST" : 5,
-	"ICON_LIST" : 6
+	"Compact"    :   1,
+	"Card"       :   2,
+	"PStrip"     :   3,
+	"PStripBig"  :   3.1,
+	"Full"       :   4,
+	"List"       :   5,
+	"IconList"   :   6,
+	'Page'       :   7,
+
+    // for backwards compatibility
+    "COMPACT"    :   1,
+    "CARD"       :   2,
 };
 
-Bisque.ResourceBrowser.LayoutFactory.DEFAULT_LAYOUT = Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.COMPACT;
+Bisque.ResourceBrowser.LayoutFactory.DEFAULT_LAYOUT = Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Compact;
 
 /**
  * BaseLayout: Abstract base layout from which all other layouts derive
@@ -50,11 +54,41 @@ Bisque.ResourceBrowser.LayoutFactory.DEFAULT_LAYOUT = Bisque.ResourceBrowser.Lay
  * @param {}
  *            configOpts : Layout related options such as type, size etc.
  */
-Ext.define('Bisque.ResourceBrowser.LayoutFactory.BaseLayout',
+Ext.define('Bisque.ResourceBrowser.Layout.Base',
 {
 	extend : 'Ext.panel.Panel',
-
-	getLayoutCSS : Ext.emptyFn,
+	
+	inheritableStatics : 
+	{
+	    layoutCSS : null,
+        readCSS : function()
+        {
+            var me = {};
+            
+            me.layoutCSS = this.layoutCSS;
+            me.layoutEl = {
+                width   :   null,
+                height  :   null
+            };
+            
+            if (me.layoutCSS)
+            {
+                me.css=Ext.util.CSS.getRule('.'+me.layoutCSS).style;
+                
+                me.layoutEl.padding=parseInt(me.css['padding']);
+                me.layoutEl.margin=parseInt(me.css['margin']);
+                me.layoutEl.border=parseInt(me.css['borderWidth']);
+                
+                me.layoutEl.width=(me.css['width'].indexOf('%')==-1)?parseInt(me.css['width']):me.css['width'];
+                me.layoutEl.height=(me.css['height'].indexOf('%')==-1)?parseInt(me.css['height']):me.css['height'];
+        
+                me.layoutEl.outerWidth=me.layoutEl.width+(me.layoutEl.padding+me.layoutEl.border+2*me.layoutEl.margin);
+                me.layoutEl.outerHeight=me.layoutEl.height+(me.layoutEl.padding+me.layoutEl.border+2*me.layoutEl.margin);
+            }
+            
+            return me;
+        }
+	},
 	
 	constructor : function(configOpts)
 	{
@@ -67,17 +101,17 @@ Ext.define('Bisque.ResourceBrowser.LayoutFactory.BaseLayout',
 			parentCt : configOpts.browser.centerPanel,
 			msgBus : configOpts.browser.msgBus,
 			showGroups : configOpts.browser.showGroups,
+			//bodyStyle : 'background: #AFA',
 			
 			resQ : [],
 			layoutEl :{},
-			
 			border : false,
 			autoScroll : true
 		});
 		
-		Bisque.ResourceBrowser.LayoutFactory.BaseLayout.superclass.constructor.apply(this, arguments);
-
-		this.readCSSSettings();
+		this.callParent(arguments);
+		
+        Ext.apply(this, Ext.ClassManager.getClass(this).readCSS());
 		this.manageEvents();
 	},
 	
@@ -108,7 +142,7 @@ Ext.define('Bisque.ResourceBrowser.LayoutFactory.BaseLayout',
 			{
 				'select' : function(resCt)
 				{
-					this.browser.resourceQueue.selectedRes[resCt.resource.uri]=1;
+					this.browser.resourceQueue.selectedRes[resCt.resource.uri]=resCt.resource;
 					var selRes=this.browser.resourceQueue.selectedRes;
 					var keys=Ext.Object.getKeys(selRes); var selection = [];
 		
@@ -134,21 +168,6 @@ Ext.define('Bisque.ResourceBrowser.LayoutFactory.BaseLayout',
 			});
 	},
 	
-	readCSSSettings : function()
-	{
-		this.css=Ext.util.CSS.getRule('.'+this.getLayoutCSS()).style;
-		
-		this.layoutEl.padding=parseInt(this.css['padding']);
-		this.layoutEl.margin=parseInt(this.css['margin']);
-		this.layoutEl.border=parseInt(this.css['borderWidth']);
-		
-		this.layoutEl.width=(this.css['width'].indexOf('%')==-1)?parseInt(this.css['width']):this.css['width'];
-		this.layoutEl.height=(this.css['height'].indexOf('%')==-1)?parseInt(this.css['height']):this.css['height'];
-
-		this.layoutEl.outerWidth=this.layoutEl.width+(this.layoutEl.padding+this.layoutEl.border+2*this.layoutEl.margin);
-		this.layoutEl.outerHeight=this.layoutEl.height+(this.layoutEl.padding+this.layoutEl.border+2*this.layoutEl.margin);
-	},
-	
 	Init : function(resourceQueue, thisCt) 
 	{
 		this.resQ = resourceQueue;
@@ -156,6 +175,13 @@ Ext.define('Bisque.ResourceBrowser.LayoutFactory.BaseLayout',
 			thisCt=this;
 		
 		var resCt=[],resCtSub=[], i=0, currentGrp;
+		
+		// if no results were obtained for a given query, show a default no-results message
+		if (this.resQ.length==0)
+		{
+            this.noResults();
+            return;
+		}
 		
 		// Avoid 'if' in for loop for speed
 		if (this.showGroups)
@@ -167,7 +193,7 @@ Ext.define('Bisque.ResourceBrowser.LayoutFactory.BaseLayout',
 				while(i<this.resQ.length && (this.getGroup(this.resQ[i])==currentGrp))
 				{
 					this.resQ[i].setSize({width:this.layoutEl.width, height:this.layoutEl.height});
-					this.resQ[i].addCls(this.getLayoutCSS());
+					this.resQ[i].addCls(this.layoutCSS);
 					resCtSub.push(this.resQ[i]);
 					this.relayEvents(this.resQ[i], ['select', 'unselect']);
 					
@@ -178,10 +204,10 @@ Ext.define('Bisque.ResourceBrowser.LayoutFactory.BaseLayout',
 					items:resCtSub,
 					cls:'fieldSet',
 	            	margin:'8 0 0 8',
-	            	width: (this.getParentSize().width*0.97)-15,
+	            	width: (this.getParentSize().width-30),
 	            	//autoScroll:true,
         	    	padding:0,
-            		title: '<b>Group </b><i>'+currentGrp+'</i>',
+            		title: '<b>Group </b><i>'+Ext.String.ellipsis(currentGrp, 80)+'</i>',
             		collapsible: true,
             		collapsed: false
 				}));
@@ -194,13 +220,43 @@ Ext.define('Bisque.ResourceBrowser.LayoutFactory.BaseLayout',
 			for (var i=0; i<this.resQ.length; i++)
 			{
 				this.resQ[i].setSize({width:this.layoutEl.width, height:this.layoutEl.height});
-				this.resQ[i].addCls(this.getLayoutCSS());
+				this.resQ[i].addCls(this.layoutCSS);
 				resCt.push(this.resQ[i]);
 				this.relayEvents(this.resQ[i], ['select', 'unselect']);
 			}
 		}
 		thisCt.add(resCt);
 	},
+
+    noResults : function()
+    {
+        this.imgNoResults = Ext.create('Ext.Img', 
+        {
+            src : bq.url('/js/ResourceBrowser/Images/no-results.png'),
+        })
+        
+        var ct = Ext.create('Ext.panel.Panel', 
+        {
+            //bodyStyle:  'background:#eee',
+            border      :   false,
+            layout      :   {
+                                type : 'vbox',
+                                pack : 'center',
+                                align: 'center'
+                            },
+            listeners   :   {
+                                'afterrender'   :   function(me)
+                                {
+                                    me.add(this.imgNoResults);
+                                    
+                                },
+                                scope           :   this
+                            }
+        });
+
+        this.layout = 'fit';
+        this.add(ct);     // add calls doLayout internally so 'fit' will be applied
+    },
 	
 	getParentSize : function() 
 	{
@@ -250,14 +306,18 @@ Ext.define('Bisque.ResourceBrowser.LayoutFactory.BaseLayout',
 	
 	getGroup : function(res)
 	{
-		var grp='', tagHash={};
+		var grp='', tagHash={}, value;
 		var tagRef=res.resource.tags;
+		var value;
 		
 		for (var i=0;i<tagRef.length;i++)
 			tagHash[tagRef[i].name]=tagRef[i].value;
 			
 		for (var k=0;k<this.showGroups.tags.length;k++)
-			grp+=this.showGroups.tags[k]+':'+tagHash[this.showGroups.tags[k]]+', ';
+		{
+		    value = tagHash[this.showGroups.tags[k]];
+            grp+=this.showGroups.tags[k]+(value?':'+value:'')+', ';
+		}
 		
 		return grp.substring(0, grp.length-2);
 	},
@@ -317,49 +377,53 @@ Ext.define('Bisque.ResourceBrowser.LayoutFactory.BaseLayout',
 });
 
 // Compact Layout: Shows resources as thumbnails
-Ext.define('Bisque.ResourceBrowser.LayoutFactory.CompactLayout',
+Ext.define('Bisque.ResourceBrowser.Layout.Compact',
 {
-	extend : 'Bisque.ResourceBrowser.LayoutFactory.BaseLayout',	
+	extend : 'Bisque.ResourceBrowser.Layout.Base',	
+
+    inheritableStatics : {
+        layoutCSS : 'ImageCompact'
+    },
+
 	constructor : function()
 	{
-		Bisque.ResourceBrowser.LayoutFactory.CompactLayout.superclass.constructor.call(this, arguments[0]);
+		this.callParent(arguments);
 		this.layoutEl.imageWidth=150;
 		this.layoutEl.imageHeight=150;
-	},
-	
-	getLayoutCSS : function()
-	{
-		return 'ImageCompact';
 	}
 });
 
 // Card Layout: Shows resources as cards (thumbnail + tag/value pairs)
-Ext.define('Bisque.ResourceBrowser.LayoutFactory.CardLayout',
+Ext.define('Bisque.ResourceBrowser.Layout.Card',
 {
-	extend : 'Bisque.ResourceBrowser.LayoutFactory.BaseLayout',
+	extend : 'Bisque.ResourceBrowser.Layout.Base',
+
+    inheritableStatics : {
+        layoutCSS : 'ImageCard'
+    },
+
 	constructor : function()
 	{
-		Bisque.ResourceBrowser.LayoutFactory.CardLayout.superclass.constructor.call(this, arguments[0]);
+		this.callParent(arguments);
 		this.layoutEl.imageWidth=140;
 		this.layoutEl.imageHeight=115;
-	},
-	
-	getLayoutCSS : function()
-	{
-		return 'ImageCard';
 	}
 });
 
 
 // PhotoStrip Layout: Shows resources in a photostrip
-Ext.define('Bisque.ResourceBrowser.LayoutFactory.PhotoStripLayout', 
+Ext.define('Bisque.ResourceBrowser.Layout.PStrip', 
 {
-	extend : 'Bisque.ResourceBrowser.LayoutFactory.BaseLayout',
+	extend : 'Bisque.ResourceBrowser.Layout.Base',
 	
+    inheritableStatics : {
+        layoutCSS : 'ImagePStripSmall'
+    },
+
 	constructor : function() 
 	{
 		Ext.apply(this, {layout:{type:'vbox', align:'stretch'}});
-		Bisque.ResourceBrowser.LayoutFactory.PhotoStripLayout.superclass.constructor.call(this, arguments[0]);
+		this.callParent(arguments);
 
 		this.layoutEl.imageWidth=150;
 		this.layoutEl.imageHeight=150;
@@ -370,6 +434,13 @@ Ext.define('Bisque.ResourceBrowser.LayoutFactory.PhotoStripLayout',
 	Init : function(resourceQueue) 
 	{
 		this.resQ = resourceQueue;
+
+        // if no results were obtained for a given query, show a default no-results message
+        if (this.resQ.length==0)
+        {
+            this.noResults();
+            return;
+        }
 		
 		this.proxyPnl = new Ext.Panel({border:false, flex:1, autoScroll:true, layout:{type:'hbox', align:'middle',  pack:'center'}});
 		var psPnl = new Ext.Panel({border:false});
@@ -378,7 +449,7 @@ Ext.define('Bisque.ResourceBrowser.LayoutFactory.PhotoStripLayout',
 		for (var i=0; i<this.resQ.length; i++)
 		{
 			this.resQ[i].setSize({width:this.layoutEl.width, height:this.layoutEl.height});
-			this.resQ[i].addCls(this.getLayoutCSS());
+			this.resQ[i].addCls(this.layoutCSS);
 			psPnl.add(this.resQ[i]);
 			this.relayEvents(this.resQ[i], ['select', 'unselect']);
 		}
@@ -397,21 +468,17 @@ Ext.define('Bisque.ResourceBrowser.LayoutFactory.PhotoStripLayout',
 		return nCol;
 	},
 	
-	getLayoutCSS : function()
-	{
-		return 'ImagePStripSmall';
-	},
-
 	// Private member
 	CreateBigResource : function(resource, layoutMgr) 
 	{
-		var res = Bisque.ResourceBrowser.ResourceFactory({
-			resource : resource,
-			browser : layoutMgr.browser,
-			layoutKey : Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PSTRIP_BIG,
-			msgBus : layoutMgr.msgBus,
-			bigPanel : layoutMgr.proxyPnl 
-		});
+		var res = Bisque.ResourceFactory.getResource(
+		    {
+    			resource  :  resource,
+    			browser   :  layoutMgr.browser,
+    			layoutKey :  Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PStripBig,
+    			msgBus    :  layoutMgr.msgBus,
+    			bigPanel  :  layoutMgr.proxyPnl 
+    		});
 		
 		layoutMgr.proxyPnl.add(0, res);
 		layoutMgr.proxyPnl.animate(
@@ -422,50 +489,28 @@ Ext.define('Bisque.ResourceBrowser.LayoutFactory.PhotoStripLayout',
 			duration: 180,
 		});
 		
-		res.setLoading({msg:''});
-		
 		if (layoutMgr.proxyPnl.items.length>1)
 			layoutMgr.proxyPnl.getComponent(layoutMgr.proxyPnl.items.length-1).destroy();
 	},
 });
 
 // Full Layout: Shows all the tags assosiated with a resource
-Ext.define('Bisque.ResourceBrowser.LayoutFactory.FullLayout',
+Ext.define('Bisque.ResourceBrowser.Layout.Full',
 {
-	extend : 'Bisque.ResourceBrowser.LayoutFactory.BaseLayout',
+	extend : 'Bisque.ResourceBrowser.Layout.Base',
+
+    inheritableStatics : {
+        layoutCSS : 'ImageFull'
+    },
 
 	constructor : function()
 	{
-		Bisque.ResourceBrowser.LayoutFactory.FullLayout.superclass.constructor.call(this, arguments[0]);
+		this.callParent(arguments);
+
 		this.layoutEl.imageHeight=275;
 		this.layoutEl.imageWidth=280;
-		
-		var size=this.getParentSize();
-		this.setSize({height:size.height, width:size.width+31});
 	},
 	
-	Init : function(resourceQueue) 
-	{
-		var proxyPnl=new Ext.panel.Panel({border:false, autoScroll:true});
-
-		Bisque.ResourceBrowser.LayoutFactory.FullLayout.superclass.Init.call(this, arguments[0], proxyPnl);
-		
-		this.add(proxyPnl);
-	},
-	
-	getParentSize : function() 
-	{
-		var size = this.browser.centerPanel.getSize();
-		size.width=size.width-31;
-		
-		return size;
-	},
-	
-	getLayoutCSS : function()
-	{
-		return 'ImageFull';
-	},
-
 	getVisibleElements : function() 
 	{
 		return 10;
@@ -473,33 +518,13 @@ Ext.define('Bisque.ResourceBrowser.LayoutFactory.FullLayout',
 });
 
 // List Layout: Lists the basic information about each resource
-Ext.define('Bisque.ResourceBrowser.LayoutFactory.ListLayout',
+Ext.define('Bisque.ResourceBrowser.Layout.List',
 {
-	extend : 'Bisque.ResourceBrowser.LayoutFactory.BaseLayout',
+	extend : 'Bisque.ResourceBrowser.Layout.Full',
 
-	constructor : function()
-	{
-		Bisque.ResourceBrowser.LayoutFactory.FullLayout.superclass.constructor.call(this, arguments[0]);
-		//this.layoutEl.iconHeight=72;
-		//this.layoutEl.iconWidth=72;
-		
-		var size=this.getParentSize();
-		this.setSize({height:size.height, width:size.width});
-	},
-	
-	Init : function(resourceQueue) 
-	{
-		var proxyPnl=new Ext.panel.Panel({border:false, autoScroll:true});
-
-		Bisque.ResourceBrowser.LayoutFactory.FullLayout.superclass.Init.call(this, arguments[0], proxyPnl);
-		
-		this.add(proxyPnl);
-	},
-	
-	getLayoutCSS : function()
-	{
-		return 'ResourceList';
-	},
+    inheritableStatics : {
+        layoutCSS : 'ResourceList'
+    },
 
 	getVisibleElements : function() 
 	{
@@ -508,10 +533,14 @@ Ext.define('Bisque.ResourceBrowser.LayoutFactory.ListLayout',
 });
 
 // IconList Layout: Lists the basic information about each resource along with an icon
-Ext.define('Bisque.ResourceBrowser.LayoutFactory.IconListLayout',
+Ext.define('Bisque.ResourceBrowser.Layout.IconList',
 {
-    extend : 'Bisque.ResourceBrowser.LayoutFactory.ListLayout',
+    extend : 'Bisque.ResourceBrowser.Layout.List',
 
+    inheritableStatics : {
+        layoutCSS : 'ResourceIconList'
+    },
+    
     constructor : function()
     {
         this.callParent(arguments);
@@ -520,14 +549,19 @@ Ext.define('Bisque.ResourceBrowser.LayoutFactory.IconListLayout',
         this.layoutEl.iconWidth=110;
     },
     
-    getLayoutCSS : function()
-    {
-        return 'ResourceIconList';
-    },
-    
     getVisibleElements : function() 
     {
         return 3500;
     }
 });
+
+Ext.define('Bisque.ResourceBrowser.Layout.Page',
+{
+    extend : 'Bisque.ResourceBrowser.Layout.Base',  
+
+    inheritableStatics : {
+        layoutCSS : null
+    },
+});
+
 

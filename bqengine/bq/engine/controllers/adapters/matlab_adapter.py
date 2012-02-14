@@ -59,8 +59,7 @@ import itertools
 import logging
 import thread
 from lxml import etree
-from bq.core.exceptions import EngineError
-from bq.core import identity
+from bq.exceptions import EngineError
 from bq.util.paths import bisque_path
 
 from base_adapter import BaseAdapter

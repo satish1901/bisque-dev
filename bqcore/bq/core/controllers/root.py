@@ -71,7 +71,7 @@ from tg.controllers import CUSTOM_CONTENT_TYPE
 from bq.core import model
 from bq.core.model import DBSession
 from bq.core.lib.base import BaseController
-from bq.core.exceptions import ConfigurationError, RequestError
+from bq.exceptions import ConfigurationError, RequestError
 from bq.core.controllers.proxy import ProxyController, service_proxy
 from bq.core.service import ServiceController, service_registry
 from bq.core.service import load_services, mount_services, start_services
@@ -162,7 +162,11 @@ class RootController(BaseController):
         log.debug ("loading services")
         cls.services = ServiceRegistryController(root + "/services/")
         load_services ()
-        mount_services (root, wanted, unwanted)
+        for name, service in mount_services (root, wanted, unwanted):
+          # This will circumvent the use of lookup below by
+          # directly mount the services on the root class controller
+          #setattr(cls, name, service)
+          pass
 
 
                  
@@ -258,7 +262,7 @@ def startup():
     enabled  = enabled and [ x.strip() for x in enabled.split(',') ] or []
     disabled = disabled and [ x.strip() for x in disabled.split(',') ] or []
 
-    log.debug ('using root=%s proxy=%s with services=%s - %s'
+    log.info ('using root=%s proxy=%s with services=%s - %s'
                % (root, proxy, enabled, disabled))
 
     RootController.mount_local_services(root, enabled, disabled)

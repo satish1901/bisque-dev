@@ -218,7 +218,7 @@ BQWebApp.prototype.onResourceSelected = function (R) {
 
     var e = document.getElementById("webapp_input_description");    
     if (R.resource_type == 'image') {
-        var s = '<p>You have selected an individual "<a href="'+R.uri+'">image</a>"</p>';
+        var s = '<p>You have selected an individual <a target="_blank" href="/client_service/view?resource='+R.uri+'">image</a></p>';
         e.innerHTML = s; 
         this.bq_image = R;
         
@@ -232,7 +232,7 @@ BQWebApp.prototype.onResourceSelected = function (R) {
             return;
         }
         
-        var s = '<p>You have selected a "<a href="'+R.uri+'">group of images</a>" or a dataset. ';
+        var s = '<p>You have selected a <a target="_blank" href="/client_service/view?resource='+R.uri+'">group of images</a> or a dataset. ';
         s += 'This means that all the images will be used for this execution.</p>';
         e.innerHTML = s;    
         
@@ -246,7 +246,7 @@ BQWebApp.prototype.onResourceSelected = function (R) {
         var e = document.getElementById("webapp_input_thumbnail");
         e.style.display = '';        
         if (this.resourceContainer) { this.resourceContainer.destroy(); }
-        this.resourceContainer = Bisque.ResourceBrowser.ResourceFactoryWrapper( {resource:R} );
+        this.resourceContainer = Bisque.ResourceFactoryWrapper.getResource( {resource:R} );
         this.holder_selection.add(this.resourceContainer);
     }
         
@@ -262,7 +262,7 @@ BQWebApp.prototype.onResourceSelected = function (R) {
         var viewer_params = {'nogobjects':'', 'nosave':'', 'alwaysedit':'', 'onlyedit':''};
         if (this.require_gobjects.gobject)
             viewer_params.editprimitives = this.require_gobjects.gobject;
-        this.image_viewer = new ImgViewer ("webapp_input_viewer", this.bq_resource, this.bq_user.user_name, viewer_params );
+        this.image_viewer = new ImgViewer ("webapp_input_viewer", this.bq_resource, viewer_params );
     } 
 }
 
@@ -358,8 +358,8 @@ BQWebApp.prototype.updateResultsVisibility = function (vis, onlybuttons) {
 BQWebApp.prototype.progress_check = function (mex) {
     if (!mex) return;
     var button_run = document.getElementById("webapp_run_button");    
-    if (mex.status != "FINISHED" && mex.status != "FAILED") {
-        button_run.childNodes[0].nodeValue = "Progress: " + mex.status;
+    if (mex.value != "FINISHED" && mex.value != "FAILED") {
+        button_run.childNodes[0].nodeValue = "Progress: " + mex.value;
         button_run.disabled = true;
     }
 }
@@ -371,7 +371,7 @@ BQWebApp.prototype.load_from_mex = function (mex) {
     // fetch requested mex
     this.mexdict = mex.toDict(true);       
     var me = this;
-    BQFactory.request( { uri: this.mexdict['image_url'], 
+    BQFactory.request( { uri: this.mexdict['inputs/image_url'], 
                          uri_params: {view:'deep'}, 
                          cb: function (r) { me.bq_resource = r; me.done(mex); } });
 }
@@ -383,7 +383,7 @@ BQWebApp.prototype.done = function (mex) {
     button_run.disabled = false;
     this.mexdict = mex.toDict(true);       
       
-    if (mex.status == "FINISHED") {
+    if (mex.value == "FINISHED") {
         this.parseResults(mex);
     } else {
         if ('message' in this.mexdict) 
@@ -458,7 +458,7 @@ BQWebApp.prototype.parseResults = function (mex) {
             if (this.resultantResourcesBrowser) this.resultantResourcesBrowser.destroy();
             this.resultantResourcesBrowser = new Bisque.ResourceBrowser.Browser({
                 //dataset: this.bq_resource.tags[0].uri+'/values',
-                dataset: this.bq_resource.getMembers().uri+'/values',
+                dataset: this.bq_resource.getMembers().uri+'/value',
                 height: '100%',   
                 selType: 'SINGLE',
                 viewMode : 'ViewerOnly',
@@ -481,8 +481,8 @@ BQWebApp.prototype.parseResults = function (mex) {
 
 BQWebApp.prototype.selectResultantResource = function (resource) {
 
-    var md = resource.toDict();
-    this.bq_image = md['image_url'];
+    var md = resource.toDict(true);
+    this.bq_image = md['inputs/image_url'] || md['image_url'];
 
     this.gobjectURL = null;
     document.getElementById("webapp_results_viewer").style.display = 'none'; 
@@ -570,7 +570,7 @@ BQWebApp.prototype.view = function() {
         }
         
         var viewer_params = {'gobjects':this.gobjectURL, 'simpleview':''};          
-        this.result_viewer = new ImgViewer ("webapp_results_viewer", this.bq_image, this.bq_user.user_name, viewer_params );
+        this.result_viewer = new ImgViewer ("webapp_results_viewer", this.bq_image, viewer_params );
     } else {
         viewer_div.style.display = 'none'; 
     }

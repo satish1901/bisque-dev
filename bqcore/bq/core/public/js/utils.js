@@ -82,6 +82,51 @@ function callback (obj, method) {
     };
 }
 
+
+function parseXML(txt) {
+    var xmlDoc=null;
+    if (window.DOMParser) {
+        parser=new DOMParser();
+        xmlDoc = parser.parseFromString(txt, "text/xml");
+    } else { // Internet Explorer
+        xmlDoc = new ActiveXObject("Microsoft.XMLDOM");
+        xmlDoc.async="false";
+        xmlDoc.loadXML(txt); 
+    }
+    return xmlDoc; 
+}
+
+function evalXpath(node, expression) {
+    var xpe = new XPathEvaluator();
+    var nsResolver = xpe.createNSResolver(node.ownerDocument == null ? node.documentElement : node.ownerDocument.documentElement);    
+    return xpe.evaluate( expression, node, nsResolver, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null );     
+}
+
+function domTagsToDict(node, deep, found, prefix) {
+    deep = deep || false;
+    found = found || {};
+    prefix = prefix || '';   
+    
+    var tags = node.getElementsByTagName("tag");
+    for (var i=0; i<tags.length; i++) {       
+        var name  = attribStr(tags[i], 'name');
+        var value = attribStr(tags[i], 'value');
+        if (!(prefix+name in found) && value)    
+            found[prefix+name] = value;
+        else
+            if (!found[prefix+name])
+                found[prefix+name] = [ value ];            
+            else if (typeof found[prefix+name] == 'string')
+                found[prefix+name] = [ found[prefix+name], value ];
+            else
+                found[prefix+name].push(value);
+        if (deep) 
+            domTagsToDict (tags[i], deep, found, prefix+name+'/');
+    }
+    return found;
+}
+
+
 // this is needed by selector and region selector to get events 
 function createMethodReference(object, methodName) {
   return function (event) {
@@ -391,21 +436,26 @@ function xmlrequest ( url, cb,  method, postdata, errorcb ){
                 window.location ="/auth_service/login?came_from=" + window.location;
             } else if (ajaxRequest.status==403 ) {
                 alert ("You do not have permission for that operation");
-            } else if (ajaxRequest.status == 404 )
+            } else if (ajaxRequest.status == 404 ) {
                 alert ("You do not have permission for that operation\n(Are you logged in?)");
             } else {
-                var error_short = ("There was a problem with the request:\n" + 
-                                   ajaxRequest.status + ":\t" + ajaxRequest.statusText + "\n");
+                var error_short = "There was a problem with the request:\n"; 
+                if (ajaxRequest.request_url) error_short += 'URL: ' + ajaxRequest.request_url+'\n';             
+                error_short += 'Status: ' + ajaxRequest.status+'\n';                                    
+                error_short += 'Message: ' + ajaxRequest.statusText+'\n';  
+                                   
                 var error_str = (error_short + ajaxRequest.responseText);
                 if (ajaxRequest.errorcallback) {
                     ajaxRequest.errorcallback({ request : ajaxRequest,
-                                                message : error_str, message_short: error_short});
+                                                message : error_str, 
+                                                message_short: error_short});
                 } else {
                     showerror (error_str);
                 }
                 throw(error_str);                
             }
         }
+    }
 
     try {
   
@@ -416,6 +466,7 @@ function xmlrequest ( url, cb,  method, postdata, errorcb ){
             ajaxRequest.onreadystatechange = checkResponse;
             ajaxRequest.callback = cb;
             ajaxRequest.errorcallback = errorcb;
+            ajaxRequest.request_url = url;
             method = method || "get";
             ajaxRequest.open(method, url , true);
             ajaxRequest.setRequestHeader('Accept', 'text/xml');

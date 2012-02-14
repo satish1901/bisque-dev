@@ -28,6 +28,8 @@ import bq
 from bq.core import model
 from bq.core.lib import app_globals, helpers
 from bq.util.etreerender import render_etree
+from direct_cascade import DirectCascade
+from paste.urlparser import StaticURLParser
 
 log = logging.getLogger("bq.config")
 
@@ -82,8 +84,12 @@ class BisqueAppConfig(AppConfig):
         "after config"
         config['pylons.response_options']['headers'].pop('Cache-Control', None)
         config['pylons.response_options']['headers'].pop('Pragma', None)
-        
-        
+    
+    #kage - patch to use direct cascade
+    def add_static_file_middleware(self, app):
+        static_app = StaticURLParser(config['pylons.paths']['static_files'])
+        app = DirectCascade([static_app, app])
+        return app
 
 base_config = BisqueAppConfig()
 
@@ -182,3 +188,5 @@ base_config.sa_auth.permission_class = model.Permission
 # on logout:
 #base_config.sa_auth.post_logout_url = '/auth_service/post_logout'
 #base_config.sa_auth.login_url = "/auth_service/login"
+
+

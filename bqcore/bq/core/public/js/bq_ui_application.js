@@ -58,21 +58,25 @@ Ext.define('BQ.Application', {
     },
     
     onSignedIn: function() {
+        this.session = BQSession.current_session;
         this.fireEvent( 'signedin', BQSession.current_session);
     },
     
     onSignedOut: function() {
+        this.session = undefined;
         this.fireEvent( 'signedout');
         alert("Your session has  timed out");
         window.location = this.url( "/auth_service/logout" );
     },
     
     onGotUser: function() {
+        this.user = BQSession.current_session.user;
         this.fireEvent( 'gotuser', BQSession.current_session.user);
         BQ.Preferences.loadUser(BQSession.current_session.user, 'INIT');
     }, 
 
     onNoUser: function() {
+        this.user = null;
         this.fireEvent( 'nouser');
         BQ.Preferences.loadUser(null, 'LOADED');
     }, 
@@ -85,6 +89,12 @@ Ext.define('BQ.Application', {
     setCenterComponent: function(c) {
         if (!this.main) return;
         this.main.setCenterComponent(c);  
+    },
+
+    setLoading: function(load, targetEl) {
+        if (!this.main) return;
+        var w = this.getCenterComponent() || this.main;
+        w.setLoading(load, targetEl);
     },
 
 });
@@ -117,15 +127,27 @@ Ext.define('BQ.Application.Window', {
         
         this.toolbar = Ext.create('BQ.Application.Toolbar', { toolbar_opts: bq.toolbar_opts });
         this.items = [
-                this.toolbar,
-                { region : 'center',
-                  id: 'centerEl',
-                  layout: 'fit',
-                  border : false,
-                  header : false,
-                  contentEl : content,
-                  autoScroll: true,
-                }];
+                this.toolbar, { 
+                    region : 'center',
+                    id: 'centerEl',
+                    layout: 'fit',
+                    flex: 3,
+                    border : false,
+                    header : false,
+                    contentEl : content,
+                    autoScroll: true,
+                }, { 
+                    id: 'help',
+                    region : 'east',
+                    collapsible: true,
+                    split: true,
+                    layout: 'fit',
+                    hidden: true,
+                    cls: 'help',
+                    width: 320,
+                    //flex: 1,
+                    border : false,
+                }, ];
         
         this.callParent();
     },
@@ -149,6 +171,10 @@ Ext.define('BQ.Application.Window', {
         this.removeWindowContent(); 
         this.getComponent('centerEl').add(c);  
     },    
+    
+    getHelpComponent: function() {
+        return this.getComponent('help');  
+    },       
     
 });
 

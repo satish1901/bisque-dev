@@ -58,6 +58,8 @@ full_stack = true
 bisque.organization = ORG
 bisque.title = BioImage Repository
 bisque.admin_email = admin@nowhere.com
+bisque.welcome_message = Welcome to the Bisque database
+#bisque.background_query = welcome_background:
 
 # tags used by the front page for site contents overview
 bisque.welcome_tags=Types of images:image_type;Experimenters:experimenter;Species:species;
@@ -65,7 +67,8 @@ bisque.welcome_tags=Types of images:image_type;Experimenters:experimenter;Specie
 # server defaults
 bisque.root = http://localhost:8080
 bisque.server = http://localhost:8080
-bisque.services_enabled = client_service
+bisque.services_disabled = engine_service
+#bisque.services_enabled = client_service
 bisque.proxy =
 bisque.installed = pending
 bisque.paths.root  = 
@@ -73,16 +76,24 @@ bisque.paths.root  =
 #bisque.paths.config  = installationdir/config
 
 
+# Blobservice
+# Ordered list of stores .. path is created based on template
+bisque.blob_service.stores=file:$datadir/imagedir/$user/$dirhash/$filehash-$filename
+#bisque.blob_service.stores=
+# irods://winwood.iplantcollaborative.org/iplant/home/$user/bisque_data/uploads/$dirhash/$filehash-$filename, 
+# file:$datadir/imagedir/$user/$dirhash/$filehash-$filename
+#bisque.blob_service.file.dir = file:$datadir/imagedir
+#bisque.blob_service.irods.user = 
+#bisque.blob_service.irods.password = 
 # Data service
 #bisque.data_service.caching=true
 #bisque.data_service.server_cache=.server_cache
 #bisque.data_service.max_response_time = 0
 # Module Service
-#bisque.module_service.queue_wait =  20
+#bisque.module_service.queue_wait =  5
 # Engine Service
 #bisque.engine_service.local_modules = modules
 # Image Service
-#bisque.image_service.local_dir = ./data/imagedir
 #bisque.image_service.work_dir  = ./data//workdir
 #bisque.image_service.upload_dir  = ./data/uploads
 #bisque.image_service.thumbnail_command = -depth 8,d -page 1 -display

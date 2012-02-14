@@ -6,28 +6,28 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
 
 		Ext.apply(this,
 		{
-			browser:config.browser,
-			layoutKey:config.browser.layoutKey,
-			msgBus:config.browser.msgBus,
-			uri:config.uri,
-			callBack:config.callBack,
+			browser          :   config.browser,
+			layoutKey        :   config.browser.layoutKey,
+			msgBus           :   config.browser.msgBus,
+			uri              :   config.uri,
+			callBack         :   config.callBack,
 			
-			prefetchFactor: 1,	// (prefetchFactor X visibileElements) elements are prefetched 
-			dataLimit: 500,	// Number of resource URIs fetched
-			noUnloadClicks : 5, // Cache of the opposite direction will be unloaded after these many clicks in a given direction (right or left) 
+			prefetchFactor   :   1,	// (prefetchFactor X visibileElements) elements are prefetched 
+			dataLimit        :   500,	// Number of resource URIs fetched
+			noUnloadClicks   :   5, // Cache of the opposite direction will be unloaded after these many clicks in a given direction (right or left) 
 			
-			hasMoreData: {left:true, right:true},
-			loading: {left:false, right:false},
-			dataHash:{},
-			list:[],
-			selectedRes:{},
-			indRight:[],	//Indexes of prefetched items on the right - prefetch cache
-			indLeft:[],		//Indexes of prefetched items on the left - prefetch cache
-			dbOffset:{left:0, center:parseInt(config.uri.offset), right:0},
-			currentDirection: 1, // 1=Right, 0=Left
+			hasMoreData      :   {left:true, right:true},
+			loading          :   {left:false, right:false},
+			dataHash         :   {},
+			list             :   [],
+			selectedRes      :   {},
+			indRight         :   [],     //Indexes of prefetched items on the right - prefetch cache
+			indLeft          :   [],     //Indexes of prefetched items on the left - prefetch cache
+			dbOffset         :   {left:0, center:parseInt(config.uri.offset), right:0},
+			currentDirection :   1, // 1=Right, 0=Left
 			
-			clicks: {right:0, left:0},
-			rqOffset:0
+			clicks           :   {right:0, left:0},
+			rqOffset         :   0
 		});
 		
 		this.loadData();
@@ -54,7 +54,14 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
 		this.dbOffset.right=this.dbOffset.left+resourceData.children.length;
 		
 		for(var i=0;i<resourceData.children.length;i++)
-			this.push(Bisque.ResourceBrowser.ResourceFactory({resource:resourceData.children[i], layoutKey:this.layoutKey, msgBus:this.msgBus, resQ:this, browser:this.browser}));
+			this.push(Bisque.ResourceFactory.getResource(
+			    {
+                    resource    :   resourceData.children[i],
+    			    layoutKey   :   this.layoutKey,
+    			    msgBus      :   this.msgBus, 
+    			    resQ        :   this, 
+    			    browser     :   this.browser
+                }));
 
 		this.hasMoreData.left=(this.dbOffset.left>0)?true:false;
 		this.hasMoreData.right=((this.dbOffset.right-this.dbOffset.center)==this.dataLimit)?true:false;
@@ -69,7 +76,7 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
 			this.loading.right=true;
 			var uri=this.browser.getURIFromState();
 			uri.offset=this.dbOffset.right;
-			uri.limit=2*this.dataLimit;
+			uri.limit=this.dataLimit;
 			
 			BQFactory.request({
 				uri:this.generateURI(uri),
@@ -87,10 +94,11 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
 
 			this.dbOffset.right+=data.children.length;
 			for(var i=0;i<data.children.length;i++)
-				this.push(Bisque.ResourceBrowser.ResourceFactory({resource:data.children[i], layoutKey:this.layoutKey, msgBus:this.msgBus, resQ:this, browser:this.browser}));
+				this.push(Bisque.ResourceFactory.getResource({resource:data.children[i], layoutKey:this.layoutKey, msgBus:this.msgBus, resQ:this, browser:this.browser}));
 			
-			this.hasMoreData.right=(data.children.length==2*this.dataLimit)?true:false;
+			this.hasMoreData.right=(data.children.length==this.dataLimit)?true:false;
 			this.loading.right=false;
+            this.browser.changeLayoutThrottled(this.browser.layoutKey, 'Right');
 		}
 	},
 
@@ -100,7 +108,7 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
 		{
 			this.loading.left=true;
 			var oldLeft=this.dbOffset.left;
-			this.dbOffset.left=((this.dbOffset.left-2*this.dataLimit)>=0)?this.dbOffset.left-2*this.dataLimit:0;
+			this.dbOffset.left=((this.dbOffset.left-this.dataLimit)>=0)?this.dbOffset.left-this.dataLimit:0;
 			
 			var uri=this.browser.getURIFromState();
 			uri.offset=this.dbOffset.left;
@@ -121,9 +129,10 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
 			this.browser.commandBar.getComponent('btnLeft').setLoading(false);
 
 			for(var i=0;i<data.children.length;i++)
-				this.unshift(Bisque.ResourceBrowser.ResourceFactory({resource:data.children[i], layoutKey:this.layoutKey, msgBus:this.msgBus, resQ:this, browser:this.browser}));
-			this.hasMoreData.left=(data.children.length==2*this.dataLimit)?true:false;
+				this.unshift(Bisque.ResourceFactory.getResource({resource:data.children[i], layoutKey:this.layoutKey, msgBus:this.msgBus, resQ:this, browser:this.browser}));
+			this.hasMoreData.left=(data.children.length==this.dataLimit)?true:false;
 			this.loading.left=false;
+            this.browser.changeLayoutThrottled(this.browser.layoutKey, 'Left');
 		}
 	},
 
@@ -204,13 +213,13 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
 	{
 		if (this.clicks.left==this.noUnloadClicks)
 		{
-			console.time("unloadRight");
+			//console.time("unloadRight");
 			this.clicks.left=0;	
 			var len=Math.floor(this.indRight.length/2)
 			for (var i=0;i<len;i++)
 				this.dataHash[this.indRight.shift()]={};
 		
-			console.timeEnd("unloadRight");
+			//console.timeEnd("unloadRight");
 		}
 	},
 
@@ -218,25 +227,25 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
     {
         if (this.clicks.right==this.noUnloadClicks)
         {
-            console.time("unloadLeft");
+            //console.time("unloadLeft");
             this.clicks.right=0;
             var len=Math.floor(this.indLeft.length/2);  
             for (var i=0;i<len;i++)
                 this.dataHash[this.indLeft.shift()]={};
             
-            console.timeEnd("unloadLeft");
+            //console.timeEnd("unloadLeft");
         }
     },
 
 	prefetch : function(layoutMgr)
 	{
-		console.time("prefetch");
+		//console.time("prefetch");
 		
 		this.list=this.slice(this.rqOffset, this.rqOffset+this.visLimit);
 
 		for(var i=0;i<this.list.length;i++)
 		{
-			this.splice(i+this.rqOffset, 1, Bisque.ResourceBrowser.ResourceFactory({resource:this[i+this.rqOffset].resource, layoutKey:this.layoutKey, msgBus:this.msgBus, resQ:this, browser:this.browser}))
+			this.splice(i+this.rqOffset, 1, Bisque.ResourceFactory.getResource({resource:this[i+this.rqOffset].resource, layoutKey:this.layoutKey, msgBus:this.msgBus, resQ:this, browser:this.browser}))
 			this.list[i].prefetch(layoutMgr);
 		}
 
@@ -245,7 +254,7 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
 		else
 			window.setTimeout(Ext.bind(this.prefetchPrev, this, [layoutMgr]), 400);
 
-		console.timeEnd("prefetch");
+		//console.timeEnd("prefetch");
 		return this.list;
 	},
 	
@@ -272,7 +281,7 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
 
 	changeLayout : function(layoutObj)
 	{
-		console.time("resourceQueue - changeLayout");
+		//console.time("resourceQueue - changeLayout");
 		
 		if (this.layoutKey!=layoutObj.key)
 		{
@@ -280,10 +289,10 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
 			this.dataHash={};
 		
 			for(i=0;i<this.length;i++)
-				this.splice(i, 1, Bisque.ResourceBrowser.ResourceFactory({resource:this[i].resource, layoutKey:this.layoutKey, msgBus:this.msgBus, resQ:this, browser:this.browser}))
+				this.splice(i, 1, Bisque.ResourceFactory.getResource({resource:this[i].resource, layoutKey:this.layoutKey, msgBus:this.msgBus, resQ:this, browser:this.browser}))
 		}
 
-		console.timeEnd("resourceQueue - changeLayout");
+		//console.timeEnd("resourceQueue - changeLayout");
 	},
 	
 	/* Utility functions */
@@ -336,9 +345,11 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
 			uriObj.view=tags.join(',');
 		}
 
-		
 		for (var param in uriObj)
-			uri+='&'+param+'='+uriObj[param];
+            if(uriObj[param].length == 0)
+                delete uriObj[param];
+            else
+                uri+='&'+param+'='+uriObj[param];
 		
 		return (baseURL+(uri==''?uri:'?'+uri.substring(1,uri.length)));
 	},

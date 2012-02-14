@@ -74,15 +74,16 @@ from repoze.what import predicates
 
 from bq import  module_service
 from bq.core.service import ServiceController, BaseController
-from bq.core.exceptions import EngineError, RequestError
-from bq.core.identity  import get_user_pass
+from bq.exceptions import EngineError, RequestError
+#from bq.core.identity  import get_user_pass
 #from bq.core.proxy import ProxyRewriteURL
-from bq.core.commands.configfile import ConfigFile
 
+from bq.util.configfile import ConfigFile
 from bq.util.hostutils import same_host
 from bq.util import http
 from bq.util.http.thread_pool import ThreadPool, makeRequests
-from bq.util.paths import bisque_path
+from bq.util.paths import bisque_path, config_path
+from bq.util.copylink import copy_link
 
 from adapters import MatlabAdapter, PythonAdapter, ShellAdapter, RuntimeAdapter
 
@@ -245,13 +246,13 @@ def initialize_available_modules(engines):
         #xmlfile = MODULE_PATH +'/'+ g + '/' + g + '.xml'
 
         ### Check that we are in a module and it is enabled.
-        cfg = os.path.join(MODULE_PATH, g, 'runtime-bisque.cfg')
+        cfg = os.path.join(MODULE_PATH, g, 'runtime-module.cfg')
         if not os.path.exists(cfg):
-            log.debug ("Skipping %s (%s) : no runtime-bisque.cfg" % (g, cfg))
+            log.debug ("Skipping %s (%s) : no runtime-module.cfg" % (g, cfg))
             continue
         cfg = ConfigFile (cfg)
         mod_vars = cfg.get (None, asdict = True)
-        enabled = mod_vars.get('module_enabled', 'False') == "True"
+        enabled = mod_vars.get('module_enabled', 'true').lower() == "true"
         status = (enabled and 'enabled') or 'disabled'
         if not enabled :
             log.debug ("Skipping %s : disabled" % g)
@@ -266,7 +267,13 @@ def initialize_available_modules(engines):
         except etree.XMLSyntaxError:
             log.exception ('while parsing %s' % xmlfile)
             continue
+        bisque_cfg = os.path.join(MODULE_PATH, g, 'runtime-bisque.cfg')
 
+        #if  os.path.exists(bisque_cfg):
+        #    os.unlink (bisque_cfg)
+        #os.link (config_path('runtime-bisque.cfg'), bisque_cfg)
+        copy_link (config_path('runtime-bisque.cfg'), bisque_cfg)
+        
         ts = os.stat(xmlfile)
         # for elem in module_root:
         if module_root.tag == "module":
@@ -436,27 +443,26 @@ class AsyncRequest:
 
 
 
-class RemoteEngineServer(object):
-    def __init__(self):
-        #self.url = serverurl
-        self.async = AsyncRequest(5)
-        
-        
-    def execute(self, mextree, server_url, callback=None, calldata=None, up=None):
-        if not up:
-            up = get_user_pass ()
-        log.debug ('user_pass' + str(up))
+# class RemoteEngineServer(object):
+#     def __init__(self):
+#         #self.url = serverurl
+#         self.async = AsyncRequest(5)
+#     def execute(self, mextree, server_url, callback=None, calldata=None, up=None):
+#         if not up:
+#             up = get_user_pass ()
+#         log.debug ('user_pass' + str(up))
+#         body = ProxyRewriteURL.for_output(etree.tostring(mextree))
+#         log.debug ("POST " + body)
+#         self.async.request(server_url+'/mex_execute',
+#                            "POST", 
+#                            body,
+#                            {'content-type':'text/xml' },
+#                            callback,
+#                            calldata,
+#                            user_pass= up)
 
-        body = ProxyRewriteURL.for_output(etree.tostring(mextree))
-        log.debug ("POST " + body)
-        self.async.request(server_url+'/mex_execute',
-                           "POST", 
-                           body,
-                           {'content-type':'text/xml' },
-                           callback,
-                           calldata,
-                           user_pass= up)
 
+reserved_io_types = ['system-input']
 
 from tg import require
 from repoze.what.predicates import not_anonymous
@@ -480,6 +486,7 @@ class EngineModuleResource(BaseController):
         self.module_xml = module_xml
         self.module_uri = module_xml.get('uri')
         self.name       = module_xml.get('name')
+        self.define_io() # this should produce lists on required inputs and outputs
 
         static_path = os.path.join (MODULE_PATH, self.name, 'public')
         if os.path.exists(static_path):
@@ -524,9 +531,9 @@ class EngineModuleResource(BaseController):
         def _xml2d(e, d, path=''):
             for child in e:
                 name  = '%s%s'%(path, child.get('name', ''))
+                ttype = child.get('type', None) 
                 value = child.get('value', None) 
-                ttype = child.get('type', None)                 
-                if not value is None:
+                if value is not None:
                     if not name in d:
                         d[name] = value
                     else:
@@ -534,8 +541,9 @@ class EngineModuleResource(BaseController):
                             d[name].append(value)
                         else:
                             d[name] = [d[name], value]
-                    if not ttype is None:
-                        d['%s.type'%name] = ttype
+                    #if not ttype is None:
+                    #    d['%s.type'%name] = ttype
+                        
                 d = _xml2d(child, d, path='%s%s/'%(path, child.get('name', '')))
             return d
 
@@ -544,6 +552,60 @@ class EngineModuleResource(BaseController):
         d['module/uri']  = self.module_uri 
         if not 'title' in d: d['title'] = self.name
         return d
+
+
+
+#    <tag name="inputs">
+#        <tag name="image_url"    type="image" />
+#        <tag name="resource_url" type="resource">
+#            <tag name="template" type="template">
+#                <tag name="type" value="image" />
+#                <tag name="type" value="dataset" />
+#                <tag name="selector" value="image" />
+#                <tag name="selector" value="dataset" />
+#            </tag>            
+#        </tag>      
+#        <tag name="mex_url"      type="system-input" />
+#        <tag name="bisque_token" type="system-input" />
+#    </tag>
+#    
+#    <tag name="outputs">
+#         <tag name="MetaData" type="tag" />
+#         <gobject name="Gobjects" />
+#    </tag>
+
+
+    def define_io(self):
+        
+        def define_tempalte(xs):
+            l = []
+            for i in xs:
+                r = i.tag
+                n = i.get('name', None) 
+                v = i.get('value', None)
+                t = i.get('type', None)
+                if t in reserved_io_types: continue
+                x = { 'resource_type': r, 'name': n, 'value': v, 'type': t, }    
+
+                tmpl = i.xpath('tag[@name="template" and @type="template"]/tag')
+                for c in tmpl:
+                    nn = c.get('name', None) 
+                    vv = c.get('value', None)
+                    if not nn in x:
+                        x[nn] = vv
+                    else:
+                        if isinstance(x[nn], list):
+                            x[nn].append(vv)
+                        else:
+                            x[nn] = [x[nn], vv]
+                #if 'label' not in x: x['label'] = n
+                l.append(x)
+            return l        
+        
+        self.inputs  = define_tempalte( self.module_xml.xpath('//tag[@name="inputs"]/*') )
+        self.outputs = define_tempalte( self.module_xml.xpath('//tag[@name="outputs"]/*') )
+        log.debug(str(self.inputs))
+        log.debug(str(self.outputs))
         
 
     @expose()
@@ -558,7 +620,12 @@ class EngineModuleResource(BaseController):
             override_template(self.index, "genshi:bq.engine.templates.default_module")
             return dict (module_uri  = self.module_uri,
                          module_name = self.name,
-                        module_def = self.definition_as_dict(),
+                         module_def  = self.definition_as_dict(),
+                         module_xml  = etree.tostring(self.module_xml),
+                         
+                         inputs  = self.inputs,
+                         outputs = self.outputs,
+                         
                          extra_args  = kw
                          )
         return self.serve_entry_point(node)        
@@ -571,7 +638,12 @@ class EngineModuleResource(BaseController):
             override_template(self.interface, "genshi:bq.engine.templates.default_module")
             return dict (module_uri  = self.module_uri,
                          module_name = self.name,
-                         module_def = self.definition_as_dict(),                         
+                         module_def  = self.definition_as_dict(),      
+                         module_xml  = etree.tostring(self.module_xml),   
+                         
+                         inputs  = self.inputs,
+                         outputs = self.outputs,                       
+                                         
                          extra_args  = kw
                          )
         return self.serve_entry_point(node)
@@ -655,10 +727,8 @@ class EngineModuleResource(BaseController):
         module = self.module_xml
         try:
             try:
-                #up = get_user_pass ()
-                #log.debug ('user_pass' + str(up))
                 self.running [mexid] = mextree
-                mex_moduleuri = mextree.get ('module')
+                mex_moduleuri = mextree.get ('type')
                 log.debug ('moduleuri ' + str(mex_moduleuri))
                 #if mex_moduleuri != module.get ('uri'):
                 #    return None
@@ -667,7 +737,7 @@ class EngineModuleResource(BaseController):
                 if not adapter:
                     log.debug ('No adaptor for type %s' % (adapter_type))
                     raise EngineError ('No adaptor for type %s' % (adapter_type))
-                exec_id = adapter.execute (module, mextree)
+                exec_id = adapter.execute(module, mextree)
                 mextree.append(etree.Element('tag', name='execution_id', value=str(exec_id)))
                 
                 #if not mextree.get ('asynchronous'):
@@ -675,13 +745,13 @@ class EngineModuleResource(BaseController):
 
             except EngineError, e:
                 log.exception ("EngineError")
-                mextree.set('status', 'FAILED')
+                mextree.set('value', 'FAILED')
                 mextree.append(etree.Element('tag', name='error_message', value=str(e)))
                 log.debug ('QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ' + str(e))
                 tg.response.status_int = 500
             except:
                 log.exception ("Execption in adaptor:" )
-                mextree.set('status', 'FAILED')
+                mextree.set('value', 'FAILED')
                 excType, excVal, excTrace  = sys.exc_info()
                 trace =  " ".join(traceback.format_exception(excType,excVal, excTrace))
                 mextree.append (etree.Element ('tag',name='execption_trace', value=str(trace)))
@@ -711,9 +781,9 @@ def initialize(uri=None):
         server = EngineServer(server_url)
         _preferred = _servers[server_url] = server
     
-    else:
-        server = RemoteEngineServer()
-        _preferred = server
+    #else:
+    #    server = RemoteEngineServer()
+    #    _preferred = server
         
     #server_url = config.get('bisquik.engine_service.remote', None)
     #if server_url:

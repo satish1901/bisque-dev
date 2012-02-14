@@ -22,13 +22,11 @@
     <script type="text/javascript" src="${bq.url('/js/bq_api.js')}"></script>
     <script type="text/javascript" src="${bq.url('/js/bq_ui_application.js')}"></script>
     <script type="text/javascript" src="${bq.url('/js/bq_ui_toolbar.js')}"></script>
-    <script type="text/javascript" src="${bq.url('/js/BQ.Preferences.js')}" />
 
     
     <!-- ResourceBrowser -->
     <link rel="stylesheet" href="${bq.url('/js/ResourceBrowser/ResourceBrowser.css')}" type="text/css"/>
 
-    <script type="text/javascript" src="${bq.url('/js/ResourceBrowser/PreferencesWindow.js')}"></script>    
     <script type="text/javascript" src="${bq.url('/js/ResourceBrowser/Browser.js')}"></script>
     <script type="text/javascript" src="${bq.url('/js/ResourceBrowser/LayoutFactory.js')}"></script>
     <script type="text/javascript" src="${bq.url('/js/ResourceBrowser/Organizer.js')}"></script>
@@ -61,11 +59,17 @@
     <script type="text/javascript" src="${bq.url('/js/ResourceTagger/TaggerOffline.js')}"></script> 
     <script type="text/javascript" src="${bq.url('/js/ResourceTagger/ResourceRenderers/BaseRenderer.js')}"></script>
 
+    <!-- Preferences -->
+    <script type="text/javascript" src="${bq.url('/js/Preferences/BQ.Preferences.js')}" />
+    <script type="text/javascript" src="${bq.url('/js/Preferences/PreferenceViewer.js')}" />
+    <script type="text/javascript" src="${bq.url('/js/Preferences/PreferenceTagger.js')}" />
+
     <!-- Upload stuff: Image Service -->
     <script type="text/javascript" src="${bq.url('/image_service/public/bq_is_formats.js')}"></script>
 
     <!-- Upload stuff: Import Service -->
     <link rel="stylesheet" type="text/css" href="${bq.url('/import_service/public/bq_ui_upload.css')}" />
+    <script type="text/javascript" src="${bq.url('/import_service/public/File.js')}"></script>       
     <script type="text/javascript" src="${bq.url('/import_service/public/bq_file_upload.js')}"></script>    
     <script type="text/javascript" src="${bq.url('/import_service/public/bq_ui_upload.js')}"></script> 
   
@@ -109,7 +113,8 @@
     <script type="text/javascript" src="/client_service/public/js/viewer/imgscalebar.js"></script>
     <script type="text/javascript" src="/client_service/public/js/viewer/imginfobar.js"></script>
     <script type="text/javascript" src="/client_service/public/js/viewer/progressbar.js"></script>
-    
+    <script type="text/javascript" src="/client_service/public/js/viewer/widget_extjs.js"></script>
+        
     
     <!-- Plotting stuff, use Raphael now -->
     <script src="/raphael/raphael.js" type="text/javascript" charset="utf-8"></script>
@@ -123,8 +128,8 @@
     <script type="text/javascript" src="/js/bq_ui_progress.js" charset="utf-8"></script>
     
     <!-- Statistics -->
+    <link rel="stylesheet" type="text/css" href="${tg.url('/stats/public/stats.css')}" />
     <script src="/stats/public/js/stats.js" type="text/javascript" charset="utf-8"></script>
-  
 
 
     <!-- WebApp stuff -->
@@ -133,12 +138,14 @@
     <link rel="stylesheet" type="text/css" href="/js/bq_ui_misc.css" />
     <script type="text/javascript" src="/js/bq_ui_misc.js"></script>
     
-    <link rel="stylesheet" type="text/css" href="${bq.url('/js/modules/bq_module_webapp.css')}" />     
-    <script type="text/javascript" src="${bq.url('/js/modules/bq_module_service.js')}"></script>   
-    <script type="text/javascript" src="${bq.url('/js/modules/bq_module_webapp.js')}"></script>  
+    <link rel="stylesheet" type="text/css" href="${bq.url('/js/modules/bq_webapp.css')}" />     
+    <script type="text/javascript" src="${bq.url('/js/modules/bq_webapp_service.js')}"></script>   
+    <script type="text/javascript" src="${bq.url('/js/modules/bq_webapp.js')}"></script>  
     <script type="text/javascript" src="${bq.url('/js/modules/bq_module_webapp_default.js')}"></script>      
     <script type="text/javascript" src="${bq.url('/js/modules/bq_ui_module.js')}"></script>    
-    
+
+    <link rel="stylesheet" type="text/css" href="${bq.url('/js/modules/bq_ui_renderes.css')}" /> 
+    <script type="text/javascript" src="${bq.url('/js/modules/bq_ui_renderes.js')}"></script> 
     
     <!--<link rel="stylesheet" type="text/css" href="css/webapp.css" />
     <script type="text/javascript" src="js/webapp.js"></script>-->
@@ -146,7 +153,7 @@
     <title>${module_name}</title>
 
 <script type="text/javascript" >
-    //var module_url = ${module_def['description']};
+    var module_definition_xml = '${Markup(module_xml.replace('\'', '\\\'').replace('\n', ''))}'; 
 </script>
 
 
@@ -160,7 +167,17 @@
         BQ.Application.on( 'nouser', webapp.onnouser ); 
         
         //var bqmodule = Ext.create('BQ.ModulePanel', { module_uri : '${module_uri}' } );
-        //BQApp.main.getComponent('centerEl').add(bqmodule);        
+        //BQApp.main.getComponent('centerEl').add(bqmodule);   
+        
+        // load help
+        var h = BQApp.main.getHelpComponent();
+        h.setVisible(true);
+        h.add({ xtype: 'container',
+                cls: 'help-container',
+                loader: { url: 'help', renderer: 'html', autoLoad: true },
+                autoScroll: true,
+            });
+             
     });
 </script>
 
@@ -170,118 +187,54 @@
 <div id="content" class="content webapp">
 
 
-<div class="help" id="help">
-  <iframe src="help" width="100%" height="100%" style="border: none;"></iframe>
-</div>
-
-
-
-
 <div id="webapp_main" class="main">
 
-<h1 py:if="'title' in module_def">${module_def['title']}</h1>
-
-<p><span py:if="'module_options/version' in module_def">Version: ${module_def['module_options/version']},</span> 
-   <span py:if="'authors' in module_def">Authors: ${module_def['authors']}</span></p>
-
-<p py:if="'description' in module_def"><em>${module_def['description']}</em></p>
+<img id="thumbnail" py:if="'thumbnail' in module_def" width="150" alt="Thumnail" src="thumbnail" />
+<h1 id="title"></h1>
 
 
+<p><span id="version" py:if="'module_options/version' in module_def">Version: ${module_def['module_options/version']},</span> 
+   <span id="authors" py:if="'authors' in module_def">Authors: ${module_def['authors']}</span></p>
+
+<p py:if="'description' in module_def"><em id="description">${module_def['description']}</em></p>
+
+<ol class="method-steps">
 <div id="webapp_input">
-    <h2>1. Select data for processing:</h2>
-
-    <div class="box input">
-        <span py:if="'inputs/input-formal.type' in module_def and 'image' in module_def['inputs/input-formal.type']"> 
-            <button onclick="webapp.selectImage('/data_service/images')" >Select an Image</button>
-        </span>            
-        <span py:if="'inputs/input-formal.type' in module_def and 'dataset' in module_def['inputs/input-formal.type']"> 
-            or <button onclick="webapp.selectDataset('/data_service/images')" >Select a Dataset</button> 
-        </span>
-
-        <span py:if="'inputs/input-formal.type' in module_def">
-        <!-- or <button onclick="webapp.selectExample('${module_def['example_query']}')" disabled='' >Select an example</button>
-        or <button onclick="webapp.selectFile()" disabled='' >Upload local images</button>
-        or even <button onclick="webapp.selectZip()" disabled='' >Upload local image (separate Ts in a ZIP)</button> -->
-        </span>
-    </div>
-  
+    <li class="heading-2">Select data for processing:</li>
+    <div id="inputs" class="input box"></div>
 </div>
 
 
-
-<div id="webapp_parameters">
-    <h2>2. Parameters:</h2>
-    
-    <div class="box parameters" >
-        <div id="webapp_input_description">
-          <h3>Nothing is yet selected, first select an image or a dataset from the database or upload one from your local machine...</h3>  
-        </div>
-        <div id="webapp_input_thumbnail" class="thumbnail" style="display:none;"></div>
-        <div id="webapp_input_viewer" class="imageviewer" style="display:none;" ></div>
-    </div>
-    
+<div id="webapp_parameters" style="display:none;">
+    <li class="heading-2">Parameters:</li>
+    <div id="parameters" class="parameters box"></div>
 </div>
-
 
 
 <div id="webapp_run" >    
-    <h2>3. Run algorithm:</h2>
+    <li class="heading-2">Run algorithm:</li>
     <div class="box run">
         <p><button id="webapp_run_button" onclick="webapp.run()" >Run</button>  
           This may take some time, progress will be shown on the button.</p>
     </div>
 </div>
 
-<!--
 
-<div id="webapp_results">
-    <h2>4. Results:</h2>  
+<div id="webapp_results" py:if="outputs is not None and len(outputs)>0">
+    <li class="heading-2">Results:</li>  
   
-    <div class="box results" >  
-  
-        <p>Detected seeds are stored as graphical annotations on the image and are referenced by a tag. You can always verify this results later by accessing the image and checking the tag corresponding to current date and time.</p>
-    
-        <span id="webapp_results_summary"><h3>No detected seeds yet, please run the detector first.</h3></span>        
+    <div id="outputs" class="box results" >  
+        <span id="webapp_results_summary"><h3>No results yet, please run the module first.</h3></span>        
         <div id="webapp_results_dataset"></div>
-    
-        <div id="webapp_results_content" >
-            
-            <span id="webapp_result_description"></span>        
-            
-            <p>View:  
-            <button id="webapp_result_view" onclick="webapp.view()" disabled="true">View detected seeds</button>
-            <button id="webapp_result_plot" onclick="webapp.plot()" disabled="true">Plot distributions (areas and axis)</button>        
-            </p>
-    
-            <p>View as a Movie: 
-            <button id="webapp_result_movie" onclick="webapp.exportToMovie()" disabled="true">Overlay tips on an image</button>
-            </p>
-    
-            <p>Export Area, Major and Minor axis: 
-            <button id="webapp_result_csv" onclick="webapp.exportToCSV()" disabled="true">Export as CSV</button>
-            </p>
-            
-            <p>Export full document: 
-            <button id="webapp_result_xml" onclick="webapp.exportToXML()" disabled="true">Export as XML</button>
-            <button id="webapp_result_excel" onclick="webapp.exportToExcel()" disabled="true">Export as Excel (CSV)</button>
-            <button id="webapp_result_gdocs" onclick="webapp.exportToGDocs()" disabled="true">Export to Google Docs</button>
-            </p>
-            
-        </div>
-    </div>  
-    
-    <div id="webapp_results_viewer" class="imageviewer" style="display:none;"></div>
-    <div id="webapp_results_plotter" class="plotter" style="display:none;"></div>      
+        <div id="outputs-sub" />        
+    </div>    
+
 </div>
+</ol>
 
-
-<div style="height: 50px;"></div>
-
--->
+<div style="height: 20px;"></div>
 
 </div> <!-- main -->
 </div> <!-- webapp -->
-
-
 </body>
 </html>

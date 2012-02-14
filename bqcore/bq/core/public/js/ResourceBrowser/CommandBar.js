@@ -111,12 +111,21 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 					padding : '3 0 3 0',
 					scope : this
 				},'->',
+                {
+                    itemId : 'btnRefresh',
+                    icon : bq.url('/js/ResourceBrowser/Images/refresh.png'),
+                    tooltip : 'Refresh browser',
+                    //hidden : this.viewMgr.cBar.btnTS,
+                    scale : 'large',
+                    handler : this.btnRefresh,
+                    scope : this
+                },
 				{
 					itemId : 'btnTS',
-					icon : bq.url('/js/ResourceBrowser/Images/asc.png'),
-					tooltip : 'Sort data descending by timestamp (current: ascending)',
+					icon : bq.url('/js/ResourceBrowser/Images/desc.png'),
+					tooltip : 'Sort data ascending by timestamp (current: descending)',
 					hidden : this.viewMgr.cBar.btnTS,
-					sortState : 'ASC',
+					sortState : 'DESC',
 					scale : 'large',
 					handler : this.btnTS,
 					scope : this
@@ -191,15 +200,16 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 				 		},'-',
 						{
 							text : 'Organize',
+                            itemId : 'btnOrganize',
 							icon : bq.url('/js/ResourceBrowser/Images/organize.png'),
-							hidden : this.viewMgr.cBar.btnOrganizer,
+							hidden : true,
 				 			handler : this.btnOrganizerClick,
 				 			scope : this
 				 		},
 				 		{
 				 			text : 'Datasets',
 				 			icon : bq.url('/js/ResourceBrowser/Images/datasets.png'),
-							hidden : this.viewMgr.cBar.btnDataset,
+							hidden : true,  //this.viewMgr.cBar.btnDataset,
 				 			handler : this.btnDatasetClick,
 				 			scope : this
 				 		},
@@ -223,25 +233,6 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 				 					value : val
 				 				});
 				 			}
-				 		},'-',
-				 		{
-                            text : 'Preferences',
-                            icon : bq.url('/js/ResourceBrowser/Images/preferences.png'),
-                            hidden : this.viewMgr.cBar.btnPreferences,
-                            handler : function()
-                            {
-                                if (!this.browser.prefWindow)
-                                    var prefWindow = Ext.create('Bisque.ResourceBrowser.PreferencesWindow',
-                                    {
-                                        height: 500,
-                                        width: 500,
-                                        modal: true,
-                                        browser: this.browser
-                                    });
-                                else
-                                    this.browser.prefWindow.show();
-                            },
-                            scope : this
 				 		}]
 					}
 				},
@@ -262,29 +253,35 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 	{
 		this.msgBus.on('SearchBar_Query', function(query)
 		{
-			this.getComponent('searchBar').setValue(query);
+			this.getComponent('searchBar').setValue(decodeURIComponent(query));
 		}, this);
 		
 		this.mon(this, 'afterlayout', this.toggleLayoutBtn, this);
 		
-		this.slider.on('buttonClick', Ext.Function.createThrottled(function(newOffset)
-		{
-			var oldOffset=this.browser.resourceQueue.rqOffset+this.browser.resourceQueue.dbOffset.left;
-			var diff=newOffset-oldOffset;
+        this.slider.on('buttonClick', Ext.Function.createThrottled(function(newOffset)
+        {
+            var oldOffset = this.browser.resourceQueue.rqOffset + this.browser.resourceQueue.dbOffset.left;
+            var diff = newOffset - oldOffset;
 
-			if (diff>0)
-			{
-				this.browser.resourceQueue.loadNext(diff);
-				this.browser.changeLayoutThrottled(this.browser.layoutKey, 'Right');
-			}
-			else if (diff<0)
-			{
-				this.browser.resourceQueue.loadPrev(-1*diff);
-				this.browser.changeLayoutThrottled(this.browser.layoutKey, 'Left');
-			}
-		}, 400, this), this);
+            if(diff > 0)
+            {
+                this.browser.resourceQueue.loadNext(diff);
+                this.browser.changeLayoutThrottled(this.browser.layoutKey, 'Right');
+            }
+            else if(diff < 0)
+            {
+                this.browser.resourceQueue.loadPrev(-1 * diff);
+                this.browser.changeLayoutThrottled(this.browser.layoutKey, 'Left');
+            }
+        }, 400, this), this);
+
 	},
 
+    btnRefresh : function()
+    {
+        this.browser.msgBus.fireEvent('Browser_ReloadData', {});
+    },
+    
 	btnTS : function(btn)
 	{
         var tagOrder = cleanTagOrder(this.browser.browserState.tag_order) || '';
@@ -361,6 +358,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
             parentCt : this.westPanel,
             dataset : this.browser.browserState['baseURL'],
             wpublic : this.browser.browserParams.wpublic,
+            browser : this.browser,
             msgBus : this.msgBus
         });
         
@@ -374,16 +372,16 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 		switch (item.itemId)
 		{
 			case 'btnThumb' :
-				this.browser.changeLayoutThrottled(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.COMPACT);
+				this.browser.changeLayoutThrottled(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Compact);
 				break;
 			case 'btnCard' :
-				this.browser.changeLayoutThrottled(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.CARD);
+				this.browser.changeLayoutThrottled(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Card);
 				break;
 			case 'btnPStrip' :
-				this.browser.changeLayoutThrottled(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PSTRIP);
+				this.browser.changeLayoutThrottled(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PStrip);
 				break;
 			case 'btnFull' :
-				this.browser.changeLayoutThrottled(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.FULL);
+				this.browser.changeLayoutThrottled(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Full);
 				break;
 		}
 	},
@@ -392,16 +390,16 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 	{
 		switch(this.browser.layoutKey)
 		{
-			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.COMPACT :
+			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Compact :
 				this.getComponent('btnThumb').toggle(true, false);
 				break;
-			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.CARD :
+			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Card :
 				this.getComponent('btnCard').toggle(true, false);
 				break;
-			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PSTRIP :
+			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PStrip :
 				this.getComponent('btnPStrip').toggle(true, false);
 				break;
-			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.FULL :
+			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Full :
 				this.getComponent('btnFull').toggle(true, false);
 				break;
 		}
@@ -429,7 +427,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 	
 	btnSearchSetState : function(tagQuery)
 	{
-	    this.getComponent('searchBar').setValue(tagQuery);
+	    this.getComponent('searchBar').setValue(decodeURIComponent(tagQuery));
 	},
 	
 	setStatus : function(status)
@@ -441,9 +439,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 	applyPreferences : function()
 	{
 	    if (this.rendered)
-	    {
             this.toggleLayoutBtn();
-            this.getComponent('btnGear').menu.getComponent('btnWpublic').setChecked(this.browser.browserParams.wpublic, true);
-	    }
+        this.getComponent('btnGear').menu.getComponent('btnWpublic').setChecked(this.browser.browserParams.wpublic, true);
 	}
 })

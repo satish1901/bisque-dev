@@ -58,7 +58,6 @@ import logging
 from tg import config
 from lxml import etree
 
-from bq.core import identity
 from bq.util.paths import bisque_path
 from base_adapter import BaseAdapter
 
@@ -109,7 +108,7 @@ class PythonAdapter(BaseAdapter):
             for c in commands:
                 log.debug ("python: "+c )
                 exec (c) in locals()
-            mex.set('status', 'FINISHED')
+            mex.set('value', 'FINISHED')
             # FOR Some reason cannot us result for values
             #if result != "OK"
             #  mex.set ('status', 'FAILED')
@@ -117,7 +116,7 @@ class PythonAdapter(BaseAdapter):
                 
         except:
             log.warn ("Python module FAILED")
-            mex.set('status', 'FAILED')
+            mex.set('value', 'FAILED')
             excType, excVal, excTrace  = sys.exc_info()
             msg = (" Execption in adaptor:" + str (excVal) 
                    + "   Exception:\n"

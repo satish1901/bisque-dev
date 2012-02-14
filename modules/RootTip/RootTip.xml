@@ -2,9 +2,31 @@
 <module name="RootTip" path="./launch.py" type="runtime" >
     
     <tag name="inputs">
+        <!--
         <tag name="input-system" value="image_url"  />
         <tag name="input-system" value="mex_url" />
+        -->
+        <tag name="image_url"    type="image" > 
+           <tag name="template" type="template">
+             <tag name="require_gemetry" >
+               <tag name="t" value="stack" />
+               <tag name="fail_message" value="we need time a series image" />
+             </tag>
+             <tag name="iterable" value="iterable-001" />
+           </tag>
+        </tag>
+        <tag name="mex_url"      type="system-input" />
+        <tag name="bisque_token" type="system-input" />        
     </tag>
+    
+    <tag name="outputs">
+      <tag name='roots' type="image">
+          <tag name="template" type="template" >
+              <tag name="label" value="Detected Root Tips" />
+          </tag>
+          <gobject name="root_tips" /> 
+      </tag>
+    </tag>      
 
     <tag name="execute_options">
         <tag name="argument_style" value="named" />
@@ -18,6 +40,8 @@
         <tag name="group" value="Root Analysis" />
     </tag>
   
+    <tag name="title" value="RootTip" /> 
+    <tag name="authors" value="Nathan Miller" />
     <tag name="help"      type="file" value="public/help.html" />
     <tag name="thumbnail" type="file" value="public/thumbnail.png" />   
     <tag name="description" type="string" value="This module tracks root tip in a time sequence image." />     

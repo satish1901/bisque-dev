@@ -1,19 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
-<module name="MetaData" path="./MetaData" type="python">
+<module name="MetaData" path="./MetaData" type="runtime">
 
    <!-- Comments are OK -->  
     <tag name="inputs">
-        <tag name="input-formal" value="image_url" type="image" />
-        <tag name="input-system" value="mex_url"  />
-        <tag name="input-system" value="bisque_token"  />
+        <tag name="image_url" type="image">
+            <tag name="template" type="template">
+                <tag name="label" value="Image to extract metadata" />
+                <tag name="prohibit_upload" value="true" type="boolean" />
+                <tag name="iterable" value="iterable-001" />
+            </tag>
+        </tag> 
+                        
+        <tag name="mex_url"  type="system-input" />
+        <tag name="bisque_token"  type="system-input" />
     </tag>
     
     <tag name="outputs">
-         <tag name="output-formal" value="MetaData" type="tag" />
+         <tag name="metadata" type="tag">
+            <tag name="template" type="template">
+                <tag name="label" value="Extracted metadata" />
+            </tag>             
+         </tag>          
     </tag>
     
     <tag name="module_options" >
-        <tag name="version" value="2" />
+        <tag name="version" value="3" />
     </tag>
     
     <tag name="display_options" >

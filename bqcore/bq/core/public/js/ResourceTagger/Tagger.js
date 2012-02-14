@@ -1,6 +1,6 @@
 Ext.define('Bisque.ResourceTagger',
 {
-    extend : 'Ext.container.Container',
+    extend : 'Ext.panel.Panel',
 
     constructor : function(config)
     {
@@ -11,11 +11,16 @@ Ext.define('Bisque.ResourceTagger',
             layout : 'fit',
             padding : '0 1 0 0',
             style : 'background-color:#FFF',
+            border : false,
 
             rootProperty : config.rootProperty || 'tags',
             autoSave : (config.autoSave==undefined) ? true : false,
             resource : {},
-            tree : {},
+            tree : config.tree || {
+                btnAdd : true,
+                btnDelete : true,
+                btnImport : true
+            },
             store : {},
             dirtyRecords : []
         });
@@ -30,6 +35,7 @@ Ext.define('Bisque.ResourceTagger',
                 fields : [ {name: 'value', mapping: '@value' } ],
             });
         }
+        
         this.store_values = Ext.create('Ext.data.Store', {
             model : 'TagValues', 
             autoLoad : true,
@@ -42,7 +48,7 @@ Ext.define('Bisque.ResourceTagger',
                 pageParam: undefined,
                 startParam: undefined,
                 
-                //url : '/data_service/images?tag_values=mytag',
+                //url : '/data_service/image?tag_values=mytag',
                 url: '/xml/dummy_tag_values.xml', // a dummy document just to inhibit initial complaining
                 reader : {
                     type :  'xml',
@@ -53,6 +59,35 @@ Ext.define('Bisque.ResourceTagger',
              
         });
 
+        // dima - datastore for the tag name combo box
+        var TagNames = Ext.ModelManager.getModel('TagNames');
+        if (!TagNames) {
+            Ext.define('TagNames', {
+                extend : 'Ext.data.Model',
+                fields : [ {name: 'name', mapping: '@name' } ],
+            });
+        }
+        this.store_names = Ext.create('Ext.data.Store', {
+            model : 'TagNames', 
+            autoLoad : true,
+            autoSync : false,
+            
+            proxy: {
+                noCache : false,
+                type: 'ajax',
+                limitParam : undefined,
+                pageParam: undefined,
+                startParam: undefined,
+                
+                url : '/data_service/image/?tag_names=1',
+                reader : {
+                    type :  'xml',
+                    root :  'resource',
+                    record: 'tag', 
+                },
+            },
+             
+        });
 
         this.callParent([config]);
         this.setResource(config.resource);
@@ -78,13 +113,15 @@ Ext.define('Bisque.ResourceTagger',
         this.fireEvent('beforeload', this, resource);
 
         this.resource = resource;
+        this.testAuth(BQApp.user);
+        
         if(this.resource.tags.length > 0)
             this.loadResourceTags(this.resource.tags);
         else
             this.resource.loadTags(
             {
                 cb: callback(this, "loadResourceTags"),
-                //depth: 'full'
+                depth: 'deep&wpublic=1'
             });
     },
 
@@ -140,7 +177,6 @@ Ext.define('Bisque.ResourceTagger',
             selModel : this.getSelModel(),
             plugins : (this.viewMgr.state.editable) ? [rowEditor] : null,
             
-
             listeners :
             {
                 'checkchange' : function(node, checked)
@@ -166,6 +202,14 @@ Ext.define('Bisque.ResourceTagger',
         for(var i=0;i<node.childNodes.length; i++)
             this.checkTree(node.childNodes[i], checked);
     },
+    
+    toggleTree : function(node)
+    {
+        node.set('checked', !node.get('checked'));
+
+        for(var i=0;i<node.childNodes.length; i++)
+            this.toggleTree(node.childNodes[i]);
+    },
 
     getSelModel : function()
     {
@@ -173,7 +217,7 @@ Ext.define('Bisque.ResourceTagger',
     },
 
     updateQueryTagValues: function(tag_name) {
-        var url = '/data_service/images?tag_values='+encodeURIComponent(tag_name);
+        var url = '/data_service/image?tag_values='+encodeURIComponent(tag_name);
         var proxy = this.store_values.getProxy();
         proxy.url = url;
         this.store_values.load();
@@ -188,19 +232,36 @@ Ext.define('Bisque.ResourceTagger',
             flex : 0.8,
             sortable : true,
             field : {
+                // dima: combo box instead of the normal text edit that will be populated with existing tag names
+                xtype     : 'bqcombobox',
+                tabIndex: 0,  
+                
+                store     : this.store_names,
+                displayField: 'name',
+                valueField: 'name',
+                queryMode : 'local',
+                                
                 allowBlank: false,
                 //fieldLabel: this.colNameText || 'Name',
                 //labelAlign: 'top',    
-                tabIndex: 0,            
-                
+
                 validateOnChange: false,
                 blankText: 'Tag name is required!',
                 msgTarget : 'none',
                 
                 listeners: {
-                    'change': function( field, newValue, oldValue, eOpts ) {
-                        this.updateQueryTagValues(newValue);
+                    'change': {
+                        fn: function( field, newValue, oldValue, eOpts ) {
+                                this.updateQueryTagValues(newValue);
+                            },
+                        buffer: 250,
                     },
+                   
+                    // dima: does not work at the init, so the values are not inited, no other 
+                    // event seems to do it actually, so back to change!
+                    //'blur': function( field, eOpts ) {
+                    //    this.updateQueryTagValues(field.getValue());
+                    //},
                    
                     scope: this,
                 },                 
@@ -215,13 +276,11 @@ Ext.define('Bisque.ResourceTagger',
                 // dima: combo box instead of the normal text edit that will be populated with existing tag values
                 xtype     : 'bqcombobox',
                 tabIndex: 1,                
-                
+
                 store     : this.store_values,
                 displayField: 'value',
                 valueField: 'value',
-                
-                queryMode : 'local',
-                //queryMode : 'remote',
+                queryMode : 'local',                
                                 
                 minChars: 1,
                 allowBlank : true,   
@@ -297,16 +356,17 @@ Ext.define('Bisque.ResourceTagger',
             {
                 var nodeHash = this.tree.nodeHash, status = false;
 
+                for(var node in nodeHash)
+                    if(nodeHash[node].dirty)
+                    {
+                        status = true;
+                        Ext.apply(nodeHash[node].raw, {'name': nodeHash[node].get('name'), 'value': nodeHash[node].get('value')});
+                        nodeHash[node].commit();
+                    }
+
                 if (this.getRemovedRecords().length>0)
                     return true;
 
-                for(var node in nodeHash)
-                if(nodeHash[node].dirty)
-                {
-                    status = true;
-                        Ext.apply(nodeHash[node].raw, nodeHash[node].getChanges());
-                    nodeHash[node].commit();
-                }
                 return status;
             },
 
@@ -344,35 +404,43 @@ Ext.define('Bisque.ResourceTagger',
         var tbar = [
         {
             xtype : 'buttongroup',
+            itemId : 'grpAddDelete',
             hidden : (this.viewMgr.state.btnAdd && this.viewMgr.state.btnDelete),
             items : [
             {
+                itemId : 'btnAdd', 
                 text : 'Add',
                 hidden : this.viewMgr.state.btnAdd,
                 scale : 'small',
                 iconCls : 'icon-add',
                 handler : this.addTags,
+                disabled : this.tree.btnAdd,
                 scope : this
             },
             {
+                itemId : 'btnDelete', 
                 text : 'Delete',
                 hidden : this.viewMgr.state.btnDelete,
                 scale : 'small',
                 iconCls : 'icon-delete',
                 handler : this.deleteTags,
+                disabled : this.tree.btnDelete,
                 scope : this
             }]
         },
         {
             xtype : 'buttongroup',
+            itemId : 'grpImportExport',
             hidden : (this.viewMgr.state.btnImport && this.viewMgr.state.btnExport),
             items : [
             {
+                itemId : 'btnImport', 
                 text : 'Import',
                 hidden : this.viewMgr.state.btnImport,
                 scale : 'small',
                 iconCls : 'icon-import',
                 handler : this.importTags,
+                disabled : this.tree.btnImport,
                 scope : this
             },
             {
@@ -386,16 +454,19 @@ Ext.define('Bisque.ResourceTagger',
                     {
                         text : 'as XML',
                         handler : this.exportToXml,
+                        hidden : this.viewMgr.state.btnXML,
                         scope : this
                     },
                     {
                         text : 'as CSV',
                         handler : this.exportToCsv,
+                        hidden : this.viewMgr.state.btnCSV,
                         scope : this
                     },
                     {
                         text : 'to Google Docs',
                         handler : this.exportToGDocs,
+                        hidden : this.viewMgr.state.btnGDocs,
                         scope : this
                     }]
                 }
@@ -417,7 +488,7 @@ Ext.define('Bisque.ResourceTagger',
 
         return tbar;
     },
-
+    
     addTags : function()
     {
         var currentItem = this.tree.getSelectionModel().getSelection();
@@ -437,18 +508,24 @@ Ext.define('Bisque.ResourceTagger',
 
         editor.startEdit(newNode, 0);
 
-        editor.on('edit', function(me)
+        function finishEdit(me)
         {
             this.editing = true;
             var newTag = new BQTag();
             newTag = Ext.apply(newTag,
             {
                 name : me.record.data.name,
-                value : me.record.data.value
+                value : me.record.data.value,
             });
             var parent = (me.record.parentNode.isRoot()) ? this.resource : me.record.parentNode.raw;
             parent.addtag(newTag);
 
+            if (this.isValidURL(newTag.value))
+            {
+                newTag.type = 'link';
+                me.record.data.type = 'link';
+            }
+                
             if (this.autoSave)
                 this.saveTags(parent, true);
 
@@ -460,17 +537,21 @@ Ext.define('Bisque.ResourceTagger',
             me.view.refresh();
 
             BQ.ui.message('Resource tagger - Add', 'New record added!');
-            this.editing=false;
-        }, this, {single : true});
+            this.editing = false;
+        }
+        
+        editor.on('edit', finishEdit, this, {single : true});
             
-        editor.on('canceledit', function(grid, eOpts) {
+        editor.on('canceledit', function(grid, eOpts)
+        {
+            var editor = this.tree.plugins[0];
+            editor.un('edit', finishEdit, this);
+
             if (!newNode.data.name || (newNode.data.name && newNode.data.value && newNode.name=='' && newNode.value==''))
                 currentItem.removeChild(newNode);
         }, this, {single : true});            
-            
-            
     },
-
+    
     deleteTags : function()
     {
         var selectedItems = this.tree.getSelectionModel().getSelection(), parent;
@@ -590,6 +671,37 @@ Ext.define('Bisque.ResourceTagger',
             this.tree.getView().refresh();
         }
     },
+    
+    testAuth : function(user)
+    {
+        if (user && (user.uri==this.resource.owner))
+        {
+            // user is autorized to edit tags
+            this.tree.btnAdd = false;
+            this.tree.btnDelete = false;
+            this.tree.btnImport = false;
+            
+            if (this.tree.rendered)
+            {
+                var tbar = this.tree.getDockedItems('toolbar')[0];
+
+                tbar.getComponent('grpAddDelete').getComponent('btnAdd').setDisabled(false);
+                tbar.getComponent('grpAddDelete').getComponent('btnDelete').setDisabled(false);
+                tbar.getComponent('grpImportExport').getComponent('btnImport').setDisabled(false);
+            }
+        }
+        else if (user===undefined)
+        {
+            // User autentication hasn't been done yet
+            BQApp.on('gotuser', Ext.bind(this.testAuth, this));
+        }
+    },
+    
+    isValidURL : function(url)
+    {
+        var pattern = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/
+        return pattern.test(url);        
+    },
 
     exportToXml : function()
     {
@@ -610,7 +722,6 @@ Ext.define('Bisque.ResourceTagger',
         var url = '/export/to_gdocs?url=' + encodeURIComponent(this.resource.uri);
         window.open(url);
     },
-
 });
 
 Ext.define('Bisque.GObjectTagger',
@@ -634,7 +745,7 @@ Ext.define('Bisque.GObjectTagger',
         this.resource.loadGObjects(
         {
             cb: callback(this, "loadResourceTags"),
-            //depth: 'full'
+            depth: 'deep&wpublic=1'
         });
     },
 
@@ -647,19 +758,163 @@ Ext.define('Bisque.GObjectTagger',
         }
     },
     
-    appendFromMex : function(resQ)
+    getToolbar : function()
     {
-        for (var i=0;i<resQ.length;i++)
-            resQ[i].resource.loadGObjects({cb: callback(this, "appendGObjects")});
+        var toolbar = this.callParent(arguments);
+        
+        var buttons =  
+        [{
+            xtype : 'buttongroup',
+            items : [{
+                xtype: 'splitbutton',
+                arrowAlign: 'right',
+                text : 'Toggle selection',
+                scale : 'small',
+                iconCls : 'icon-uncheck',
+                handler : this.toggleCheckTree,
+                checked : true,
+                scope : this,
+                menu:
+                {
+                    items: [{
+                        check: true,
+                        text: 'Check all',
+                        handler: this.toggleCheck,
+                        scope: this,
+                    }, {
+                        check: false,
+                        text: 'Uncheck all',
+                        handler: this.toggleCheck,
+                        scope: this,
+                    }]
+                }
+            }]
+        }];
+        
+        return buttons.concat(toolbar);
     },
     
-    appendGObjects : function(data)
+    toggleCheckTree : function(button)
+    {
+        var rootNode = this.tree.getRootNode(), eventName;
+        button.checked = !button.checked;
+
+        if (button.checked)
+            button.setIconCls('icon-uncheck')
+        else
+            button.setIconCls('icon-check')
+
+        for (var i=0;i<rootNode.childNodes.length;i++)
+        {
+            eventName=(!rootNode.childNodes[i].get('checked'))?'Select':'Deselect';
+            this.fireEvent(eventName, this, rootNode.childNodes[i]);
+        }
+
+        this.toggleTree(rootNode);
+    },
+    
+    toggleCheck : function(button)
+    {
+        button.checked = button.check;
+        var rootNode = this.tree.getRootNode(), eventName=(button.checked)?'Select':'Deselect';
+        
+        for (var i=0;i<rootNode.childNodes.length;i++)
+            this.fireEvent(eventName, this, rootNode.childNodes[i]);
+
+        this.checkTree(rootNode, button.checked);
+    },
+    
+    appendFromMex : function(resQ)
+    {
+        // Only look for gobjects in tags which have value = image_url 
+        for (var i=0;i<resQ.length;i++)
+        {
+            var outputsTag = resQ[i].resource.find_tags('outputs');
+            
+            if (outputsTag)
+                this.appendGObjects(this.findGObjects(outputsTag, this.resource.uri), resQ[i].resource);
+            else
+                resQ[i].resource.loadGObjects({cb: Ext.bind(this.appendGObjects, this, [resQ[i].resource], true)});    
+        }
+    },
+    
+    findGObjects : function(resource, imageURI)
+    {
+        if (resource.value == imageURI)
+            return resource.gobjects;
+            
+        var gobjects = null;
+        
+        for (var i=0; i<=resource.tags.length, !gobjects; i++)
+            gobjects = this.findGObjects(resource.tags[i], imageURI); 
+
+        return gobjects;
+    },
+    
+    appendGObjects : function(data, mex)
     {
         if (data.length>0)
         {
-            this.addNode(this.tree.getRootNode(), {name:data[0].name, value:Ext.Date.format(Ext.Date.parse(this.resource.ts, 'Y-m-d H:i:s.u'), "F j, Y g:i:s a"), gobjects:data});
+            this.addNode(this.tree.getRootNode(), {name:data[0].name, value:Ext.Date.format(Ext.Date.parse(mex.ts, 'Y-m-d H:i:s.u'), "F j, Y g:i:s a"), gobjects:data});
             this.fireEvent('onappend', this, data);
         }
+    },
+
+    exportToXml : function()
+    {
+        this.exportTo('xml');
+        
+    },
+    
+    //exportToGDocs : Ext.emptyFn,
+
+    exportToCsv : function()
+    {
+        this.exportTo('csv');
+    },
+    
+    exportTo : function(format)
+    {
+        format = format || 'csv';
+        
+        var gobject, selection = this.tree.getChecked();
+        this.noFiles = 0, this.csvData = '';
+        
+        function countGObjects(node, i)
+        {
+            if (node.raw)
+                this.noFiles++;
+        }
+        
+        selection.forEach(Ext.bind(countGObjects, this));
+        
+        for (var i=0;i<selection.length;i++)
+        {
+            gobject = selection[i].raw;
+
+            if (gobject)
+            {
+                Ext.Ajax.request({
+                    url : gobject.uri+'?view=deep&format='+format,
+                    success : Ext.bind(this.saveCSV, this, [format], true),
+                    disableCaching : false 
+                });
+            }
+        }
+    },
+    
+    saveCSV : function(data, params, format)
+    {
+        this.csvData += '\n'+data.responseText;
+        this.noFiles--;
+        
+        if (!this.noFiles)
+            location.href = "data:text/attachment," + encodeURIComponent(this.csvData);
+    },
+    
+    updateViewState : function(state)
+    {
+        
     }
 });
 
@@ -681,7 +936,7 @@ Ext.define('Bisque.ResourceTagger.Editor',
 
     finishEdit : function()
     {
-        if(this.context)
+        if (this.context)
             this.context.grid.getSelectionModel().deselect(this.context.record);
     }
 
@@ -712,8 +967,13 @@ Ext.define('Bisque.ResourceTagger.viewStateManager',
         btnAdd : true,
         btnDelete : true,
         
+        btnToggleCheck : true,
+        
         btnImport : true,
         btnExport : true,
+        btnXML : true,
+        btnCSV : true,
+        btnGDocs : true,
     
         btnSave : true,
         editable : true,
@@ -733,7 +993,6 @@ Ext.define('Bisque.ResourceTagger.viewStateManager',
         
         switch(mode)
         {
-
             case 'ViewerOnly':
             {
                 // all the buttons are hidden
@@ -741,11 +1000,36 @@ Ext.define('Bisque.ResourceTagger.viewStateManager',
                 this.state.editable = false;
                 break;
             }
+            case 'PreferenceTagger':
+            {
+                break;
+            }
+            case 'ReadOnly':
+            {
+                this.state.btnExport = false;
+                this.state.btnXML = false;
+                this.state.btnCSV = false;
+                this.state.btnGDocs = false;
+                break;
+            }
             case 'Offline':
             {
                 this.state.btnAdd = false;
                 this.state.btnDelete = false;
                 this.state.btnImport = false;
+                break;
+            }
+            case 'GObjectTagger':
+            {
+                // all the buttons are hidden except export
+                this.state = setHidden(this.state, true);
+                this.state.editable = false;
+                
+                this.state.btnExport = false;
+                this.state.btnCSV = false;
+                this.state.btnGDocs = false;
+                this.state.btnXML = false;
+                
                 break;
             }
             default:

@@ -1,7 +1,7 @@
 /* Abstract Dataset resource definition (inherits from Resource abstract class) */
-Ext.define('Bisque.ResourceBrowser.ResourceFactory.DatasetResource',
+Ext.define('Bisque.Resource.Dataset',
 {
-    extend:'Bisque.ResourceBrowser.ResourceFactory.Resource',
+    extend:'Bisque.Resource',
 
     afterRenderFn : function()
     {
@@ -12,9 +12,9 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.DatasetResource',
     },
 });
 
-Ext.define('Bisque.ResourceBrowser.ResourceFactory.DatasetResourceCompact',
+Ext.define('Bisque.Resource.Dataset.Compact',
 {
-    extend : 'Bisque.ResourceBrowser.ResourceFactory.DatasetResource',
+    extend : 'Bisque.Resource.Dataset',
     
    	constructor : function()
 	{
@@ -26,8 +26,8 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.DatasetResourceCompact',
             	align:'stretch'	
             }
         });
-		
 		this.callParent(arguments);
+        this.addCls('compact');				
 	},
     
     prefetch : function()
@@ -57,34 +57,29 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.DatasetResourceCompact',
     
     updateContainer : function()
     {
-		var datasetName=new Ext.form.Label({
-			text:' '+this.resource.name+' ',
-			padding:'8 8 8 5',
-			cls:'lblModuleName',
-		})
-		
-		var datasetOwner=new Ext.form.Label({
-			text:this.getData('owner'),
-			padding:5,
-			cls:'lblModuleOwner'
-		})
+        var name = Ext.create('Ext.container.Container', {
+            cls : 'lblHeading1',
+            html : Ext.String.ellipsis(this.resource.name || 'undefined', 24),
+        })
 
-		var date=Ext.Date.parse(this.resource.ts, 'Y-m-d H:i:s.u');
-		
-		var datasetDate=new Ext.form.Label({
-			text:Ext.Date.format(date, "F j, Y g:i:s a"),
-			padding:'8 8 8 5',
-			style:'color:#444;font-size:11px'
-		})
+        var type = Ext.create('Ext.container.Container', {
+            cls : 'lblHeading2',
+            html : Ext.Date.format(Ext.Date.parse(this.resource.ts, 'Y-m-d H:i:s.u'), "m-d-Y g:i:s a"),
+        })
 
-		this.add([datasetName, datasetOwner, datasetDate]);
+        var value = Ext.create('Ext.container.Container', {
+            cls : 'lblContent',
+            html : this.getData('owner'),
+        })
+
+        this.add([name, type, value]);
         this.setLoading(false);
     },
 });
 
-Ext.define('Bisque.ResourceBrowser.ResourceFactory.DatasetResourceList',
+Ext.define('Bisque.Resource.Dataset.List',
 {
-    extend : 'Bisque.ResourceBrowser.ResourceFactory.DatasetResourceCompact',
+    extend : 'Bisque.Resource.Dataset.Compact',
     
    	constructor : function()
 	{
@@ -98,6 +93,7 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.DatasetResourceList',
             	align:'middle'	
             }
         });
+        this.addCls('list');        
 	},
 	
     updateContainer : function()
@@ -111,15 +107,17 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.DatasetResourceList',
 		var datasetOwner=new Ext.form.Label({
 			text:this.getData('owner'),
 			padding:'0 0 0 4',
-			cls:'lblModuleOwner'
+			cls:'lblModuleOwner',
 		})
 
 		var date=Ext.Date.parse(this.resource.ts, 'Y-m-d H:i:s.u');
 		
 		var datasetDate=new Ext.form.Label({
 			text:Ext.Date.format(date, "F j, Y g:i:s a"),
-			padding:'0 0 0 8',
-            style:'color:#444;font-size:11px;font-family: tahoma, arial, verdana, sans-serif !important;'
+			cls: 'lblModuleDate',	
+			flex: 1,		
+			//padding:'0 0 0 8',
+            //style:'color:#444;font-size:11px;font-family: tahoma, arial, verdana, sans-serif !important;'
 		})
 
 		this.add([datasetName, datasetOwner, datasetDate]);
@@ -127,4 +125,28 @@ Ext.define('Bisque.ResourceBrowser.ResourceFactory.DatasetResourceList',
     },
 });
 
-
+// Page view for a dataset
+Ext.define('Bisque.Resource.Dataset.Page',
+{
+    extend : 'Bisque.Resource',
+    
+    constructor : function()
+    {
+        Ext.apply(this, {
+            layout:'fit',
+        });
+        
+        this.callParent(arguments);
+    },
+    
+    updateContainer : function()
+    {
+        this.setLoading(false);
+    
+        var renderer = Ext.create('BQ.renderers.dataset', {
+            resource: this.resource,
+        });
+        
+        this.add(renderer);
+    }
+});

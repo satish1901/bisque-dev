@@ -1,12 +1,9 @@
 # Install script for RootTip
 import sys
-from bq.util.module_setup import matlab_setup, require, read_config
+from bq.setup.module_setup import matlab_setup, read_config, python_setup
 
 def setup(*args, **kw):
-    if not require (['matlab_home'], params):
-        print "Skipping.. no matlab"
-        return 1
-
+    python_setup('RootTip.py', params=params)
     return matlab_setup('matlab/araGT.m', bisque_deps = False, params=params)
     
 if __name__ =="__main__":

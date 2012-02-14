@@ -58,7 +58,7 @@ class CASPlugin(object):
     
     # IChallenger
     def challenge(self, environ, status, app_headers, forget_headers):
-        log.debug ('challenge')
+        log.debug ('cas:challenge')
         request = Request(environ, charset="utf8")
         service_url = request.url
 
@@ -75,15 +75,11 @@ class CASPlugin(object):
         #         destination = came_from or script_name or '/' 
         # else:
         if login_type == 'cas':
+            log.debug ('CAS challenge redirect to %s' % self.cas_login_url)
             destination =  "%s?service=%s" % (self.cas_login_url, quote_plus(service_url))
             return HTTPFound(location=destination)
-        return None
 
-        # redirect to login_form
-        #res = Response()
-        #res.status = 302
-        #res.location = "%s?came_from=%s" % (self.login_form , request.url)
-        #return res
+        return None
 
     def _get_rememberer(self, environ):
         rememberer = environ['repoze.who.plugins'][self.rememberer_name]
@@ -92,7 +88,7 @@ class CASPlugin(object):
     # IIdentifier
     def remember(self, environ, identity):
         """remember the openid in the session we have anyway"""
-        log.debug("remember")
+        log.debug("cas:remember")
         rememberer = self._get_rememberer(environ)
         r = rememberer.remember(environ, identity)
         return r
@@ -100,32 +96,41 @@ class CASPlugin(object):
     # IIdentifier
     def forget(self, environ, identity):
         """forget about the authentication again"""
-        log.debug("forget")
+        log.debug("cas:forget")
         rememberer = self._get_rememberer(environ)
         return rememberer.forget(environ, identity)
     
     # IIdentifier
     def identify(self, environ):
-        #if environ['repoze.who.logger'] is not None:
-        log.debug ('identify')
-
         request = Request(environ)
 
         # first test for logout as we then don't need the rest
         if request.path == self.logout_path:
 
-            userdata = environ.get('REMOTE_USER_DATA', '')
-            cas_ticket = userdata.startswith('cas:') and userdata[4:]
+            log.debug ("cas logout:  %s " % environ)
+            tokens = environ.get('REMOTE_USER_TOKENS', '')
+            cas_ticket = None
+            for token in tokens:
+                cas_ticket = token.startswith('cas:') and token[4:]
+                break
             log.debug ("logout cas ticket %s" % cas_ticket)
             if cas_ticket:
                 res = Response()
                 # set forget headers
+                #headers = self.forget(environ, {})
+                #destination = 'http://%s%s' % (environ['HTTP_HOST'], self.post_logout)
+                #destination = self.post_logout
+                #app = HTTPFound(location = destination, headers=headers)
+                #environ['repoze.who.application'] = app
+                # The above doesn't work
+                
                 for a,v in self.forget(environ,{}):
                     res.headers.add(a,v)
-                    res.status = 302
-                    res.location = "%s?url=%s" % (self.cas_logout_url, self.post_logout)
-                    environ['repoze.who.application'] = res
-                return {}
+                res.status = 302
+                logout_url = 'http://%s%s' % (environ['HTTP_HOST'], self.post_logout)
+                res.location = "%s?url=%s" % (self.cas_logout_url, logout_url)
+                environ['repoze.who.application'] = res
+            return {}
 
         identity = {}
 
@@ -138,7 +143,7 @@ class CASPlugin(object):
             log.debug ("login_path ticket=%s" % ticket)
             environ['repoze.who.plugins.cas'] = True
             if ticket is not None:
-                identity['userdata'] = "cas:%s" % ticket
+                identity['tokens'] =  "cas:%s" % ticket
                 identity['repoze.who.plugins.cas.ticket' ] = ticket
                 del environ['repoze.who.plugins.cas']
                 return identity
@@ -191,18 +196,20 @@ class CASPlugin(object):
     #IAuthenticator
     def authenticate(self, environ, identity):
         ''
-        log.debug ('authenticate')
         user_id = None
         if self.cas_saml_validate:
             user_id =  self._validate_saml(environ, identity)
+            if user_id:
+                log.debug ('CAS authenticate : %s' % user_id)
         #else:
         #    return self._validate_simple(environ, identity)
 
         try:
             if self.auto_register and user_id:
+                log.debug ('CAS autoregister')
                 user_id = self._auto_register(environ, identity, user_id)
         except:
-            log.error ("couldn't authenticate %s"  % user_id)
+            log.exception ("couldn't authenticate %s"  % user_id)
             return None
 
         return user_id
@@ -214,6 +221,8 @@ class CASPlugin(object):
         
         if registration:
             user_name = identity["repoze.who.plugins.cas.user_id"]
+            name  = user_name
+            email = '%s@nowhere.org' % name
 
             if identity.has_key('repoze.who.plugins.cas.firstName'):
                 name = identity["repoze.who.plugins.cas.firstName"]
@@ -221,7 +230,6 @@ class CASPlugin(object):
             if identity.has_key('repoze.who.plugins.cas.lastName'):
                 name = "%s %s" % (name, identity["repoze.who.plugins.cas.lastName"])
 
-            email = 'unknown@nowhere.org'
             if identity.has_key('repoze.who.plugins.cas.email'):
                 email =  identity["repoze.who.plugins.cas.email"]
             return registration.register_user(user_name, values = {
@@ -230,7 +238,7 @@ class CASPlugin(object):
                     #password =  illegal password so all authentication goes through openid
                     })
         else:
-            log.debug('%s not found in %s' % (self.auto_register, environ['repoze.who.plugins']))
+            log.debug('%s not found in %s. Ensure autoreg is enabled' % (self.auto_register, environ['repoze.who.plugins']))
         return user_id
 
 
