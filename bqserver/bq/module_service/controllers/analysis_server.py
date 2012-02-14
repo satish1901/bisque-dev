@@ -134,7 +134,7 @@ class AnalysisServer(ServiceController):
 __controller__ = AnalysisServer
 def get_static_dirs():
     """Return the static directories for this server"""
-    package = pkg_resources.Requirement.parse ("bqcore")
+    package = pkg_resources.Requirement.parse ("bqserver")
     package_path = pkg_resources.resource_filename(package,'bq')
     return [(package_path, os.path.join(package_path, 'module_service', 'public'))]
 
