@@ -1,1 +1,1 @@
-bqserver
+bq

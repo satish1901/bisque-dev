@@ -769,10 +769,18 @@ def install_matlab(params, cfg = RUNTIME_CFG):
     for f in ['runtime.matlab_launcher' ] :
         if os.path.exists(params[f]):
             params[f] = os.path.abspath(params[f])
-    params = modify_site_cfg(MATLAB_QUESTIONS, params, section=None, cfg=cfg)
-    if not os.path.exists(params['runtime.matlab_home']):
+
+    while True:
+        params = modify_site_cfg(MATLAB_QUESTIONS, params, section=None, cfg=cfg)
+        if  os.path.exists(params['runtime.matlab_home']):
+            break
+        if  getanswer("Matlab not found: Try again", 'Y', 
+                      "Matlab (and compile) is needed for many modules") == 'Y':
+            continue
         print "Matlab must be provided to install modules"
         params['matlab_installed'] = False
+        break
+        
 
     #install_matlabwrap(params)
     return params
@@ -1357,10 +1365,10 @@ def bisque_installer(options, args):
     if 'binaries'  in installer:
         fetch_external_binaries()
         install_dependencies()
-    if 'database'  in installer:
-        params = install_database(params)
     if 'bioformats'  in installer:
         install_bioformats(params)
+    if 'database'  in installer:
+        params = install_database(params)
     if 'matlab'  in installer:
         runtime_params = install_matlab(runtime_params)
     if 'runtime'  in installer:
