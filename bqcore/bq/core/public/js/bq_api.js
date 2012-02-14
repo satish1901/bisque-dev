@@ -876,6 +876,7 @@ function BQImage (uri){
 }
 BQImage.prototype = new BQObject();
 //extend(BQImage, BQObject);
+
 BQImage.prototype.initializeXml = function (image) {
     this.uri = attribStr(image,'uri');
     this.permission = attribStr(image,'permission');
@@ -886,6 +887,9 @@ BQImage.prototype.initializeXml = function (image) {
     this.resource_type = this.xmltag;
 
     this.src  = '/image_service/images/' + attribStr(image,'resource_uniq');
+    // in the case the the data is coming from another server, make sure to load proper URL
+    this.src = this.uri.replace(/\/data_service\/.*$/i, this.src);
+    
 //    this.x    = attribInt(image,'x');
 //    this.y    = attribInt(image,'y');
 //    this.z    = attribInt(image,'z');
@@ -1709,19 +1713,20 @@ BQMex.prototype.hasIterables = function () {
 }
 
 // creates mapping from iterable resources in sub MEXes to their MEXes
-BQMex.prototype.findMexsForIterable = function (name) {
+BQMex.prototype.findMexsForIterable = function (name, root) {
+    root = root || 'inputs/';
     if (!name || this.children.length<1) return;
     this.dict = this.dict || this.toDict(true);
         
     this.iterables = this.iterables || {};
-    var dataset = this.dict['inputs/'+name];
+    var dataset = this.dict[root+name];
     this.iterables[name] = this.iterables[name] || {};
     this.iterables[name]['dataset'] = dataset;
     
     var o=null;
     for (var i=0; (o=this.children[i]); i++) {
         if (o instanceof BQMex) {
-            var resource = o.dict['inputs/'+name];
+            var resource = o.dict[root+name];
             this.iterables[name][resource] = o;
         }
     }
@@ -1734,7 +1739,7 @@ BQMex.prototype.afterInitialized = function () {
     // check if the mex has iterables
     if (this.dict['execute_options/iterable']) {
         var name = this.dict['execute_options/iterable'];
-        this.findMexsForIterable(name);
+        this.findMexsForIterable(name, 'inputs/');
     }
 }
 
