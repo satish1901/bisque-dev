@@ -1205,7 +1205,11 @@ Ext.define('BQ.renderers.Dataset', {
             height: '100%',
             cls: 'bordered',
             viewMode : 'ViewerOnly',
-            listeners: { 'Select': function(me, resource) { this.fireEvent( 'selected', resource); }, scope: this },
+            listeners: { 'Select': function(me, resource) { 
+                           this.fireEvent( 'selected', resource); 
+                           }, 
+                        scope: this 
+            },
         }); 
         this.add(this.browser);              
     },

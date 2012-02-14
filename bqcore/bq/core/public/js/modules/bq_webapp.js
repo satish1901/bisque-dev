@@ -245,14 +245,10 @@ BQWebApp.prototype.load_from_mex = function (mex) {
 // Selections of resources
 //------------------------------------------------------------------------------
 
-BQWebApp.prototype.create_renderer = function ( surface, selector, args ) {
-    args = args || {};
-    var renderer = Ext.create(selector, {
-          width: '100%',          
-          renderTo: surface,
-          definition: args.definition,          
-          resource: args.resource,          
-    });
+BQWebApp.prototype.create_renderer = function ( surface, selector, conf ) {
+    conf = conf || {};
+    Ext.apply(conf, { width: '100%', renderTo: surface,});
+    var renderer = Ext.create(selector, conf);
     
     Ext.EventManager.addListener( window, 'resize', function(e) {
             var w = document.getElementById(surface);
@@ -264,7 +260,7 @@ BQWebApp.prototype.create_renderer = function ( surface, selector, args ) {
 }
 
 BQWebApp.prototype.setupUI = function () {
-    setInnerHtml('title',       this.ms.module.title);
+    setInnerHtml('title',       this.ms.module.title || this.ms.module.name);
     setInnerHtml('description', this.ms.module.description);
     setInnerHtml('authors',     'Authors: '+this.ms.module.authors);
     setInnerHtml('version',     'Version: '+this.ms.module.version);
@@ -299,6 +295,35 @@ BQWebApp.prototype.setupUI_inputs = function () {
     }
 }
 
+// this function needed for proper closure creation
+BQWebApp.prototype.setupUI_output = function (i, outputs_index, my_renderers) {
+    var n = i.name;
+    var r = outputs_index[n]; 
+    if (!r) return;
+    var t = (r.type || i.type || i.resource_type).toLowerCase();
+    if (t in BQ.renderers.resources) {
+        var conf = { 
+            definition: i, 
+            resource: r, 
+        };
+        
+        // special case if the output is a dataset, we expect sub-Mexs
+        if (r.type=='dataset') {
+            this.mex.findMexsForIterable(n, 'outputs/');
+            if (Object.keys(this.mex.iterables[n]).length>1) {
+                conf.title = 'Pick an element to see individual results:';                  
+                conf.listeners = { 'selected': function(resource) { 
+                             var suburl = resource.uri;
+                             var submex = this.mex.iterables[n][suburl]; // dima: n may be affected by the for loop!!!!
+                             this.showOutputs(submex, 'outputs-sub');
+                        }, scope: this };
+            }
+        }
+        
+        my_renderers[n] = this.create_renderer( 'outputs', BQ.renderers.resources[t], conf );
+    }
+}
+
 BQWebApp.prototype.setupUI_outputs = function (key) {
     key = key || 'outputs';
     this.renderers[key] = this.renderers[key] || {};
@@ -312,30 +337,7 @@ BQWebApp.prototype.setupUI_outputs = function (key) {
     
     if (outputs_definitions && outputs_definitions.length>0)
     for (var p=0; (i=outputs_definitions[p]); p++) {
-        var n = i.name;
-        var r = outputs_index[n];  
-        var t = (r.type || i.type || i.resource_type).toLowerCase();
-        if (t in BQ.renderers.resources) {
-            var conf = { 
-                definition: i, 
-                resource: r, 
-            };
-            
-            // special case if the output is a dataset, we expect sub-Mexs
-            if (r.type=='dataset') {
-                this.mex.findMexsForIterable(n);
-                if (Object.keys(this.mex.iterables[n]).length>1) {
-                    conf.title = 'Pick an element to see individual results:';                  
-                    conf.listeners = { 'selected': function(resource) { 
-                                 var suburl = resource.uri;
-                                 var submex = mex.iterables[n][suburl]; // dima: n may be affected by the for loop!!!!
-                                 this.showOutputs(submex, 'outputs-sub');
-                            }, scope: this };
-                }
-            }
-            
-            my_renderers[n] = this.create_renderer( 'outputs', BQ.renderers.resources[t], conf );
-        }
+        this.setupUI_output(i, outputs_index, my_renderers);
     }
 }
 
