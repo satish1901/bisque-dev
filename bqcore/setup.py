@@ -60,17 +60,8 @@ setup(
         #########################
         # Bisque dependencies
         "lxml",
-        "ply",
-        "gdata",
-        "Turbomail",
-        "genshi",
-        "TGScheduler",
-        "boto",
-        "numpy==1.6.0",
-        # Installed from http://biodev.ece.ucsb.edu/binaries/depot
-        "tw.recaptcha",
-        "tgext.registration2",
-        "tw.output", #https://bitbucket.org/alexbodn/twoutput/get/af6904c504cf.zip
+        "virtualenv",
+        "poster"
         ],
     setup_requires=["PasteScript >= 1.7"],
     paster_plugins=['PasteScript', 'Pylons', 'TurboGears2'],
@@ -107,23 +98,25 @@ setup(
     [paste.app_install]
     main = pylons.util:PylonsInstaller
 
+      [console_scripts]
+      bq-admin = bq.commands.admin:main
+      mexrunner = bq.commands.mexrunner:main
 
-    [bisque.services]
-    client_service   = bq.client_service.controllers.service
-    auth_service     = bq.client_service.controllers.auth_service
-    admin            = bq.client_service.controllers.admin_service
-    notebook_service = bq.client_service.controllers.dn_service
-    data_service     = bq.data_service.controllers.data_service
-    blob_service     = bq.blob_service.controllers.blobsrv
-    image_service    = bq.image_service.controllers.service
-    stats            = bq.stats.controllers.stats_server
-    analysis         = bq.module_service.controllers.analysis_server
-    module_service   = bq.module_service
-    export           = bq.export_service.controllers.export_service
-    import           = bq.import_service.controllers.import_service
-    registration     = bq.registration.controllers.registration_service
-    ingest_service   = bq.ingest.controllers.ingest_server
-    dataset_service  = bq.dataset_service.controllers.dataset_service
-    usage            = bq.usage.controllers.usage
+      [bq.commands]
+      create-core    = bq.commands.create:createCoreService
+      create-service = bq.commands.create:createService
+      create-module = bq.commands.create:createModule
+      create-bootstrap = bq.commands.create_bootstrap:make_bootstrap
+      server = bq.commands.admin:server
+      engine = bq.commands.admin:engine
+      setup   = bq.commands.admin:setup
+      sql     = bq.commands.admin:sql
+      preferences= bq.commands.admin:preferences
+      
+      [paste.paster_create_template]
+      bisque_core = bq.bisque_template:CoreServiceTemplate
+      bisque_service = bq.bisque_template:ServiceTemplate
+      bisque_module = bq.bisque_template:ModuleTemplate
+
     """,
 )
