@@ -6,7 +6,7 @@ runtime.platforms = command
 # Where staging directory are createed
 runtime.staging_base = ~/staging
 runtime.matlab_home = 
-runtime.matlab_launcher = config/templates/matlab_lancher.tmpl
+runtime.matlab_launcher = config/templates/matlab_launcher.tmpl
 
 [condor]
 condor.enabled = False
