@@ -316,7 +316,7 @@ DB_QUESTIONS = [
                   A SQLAlchemy DBURI (see http://www.sqlalchemy.org/).
                   Examples of typical DB URI:
                       sqlite:///bisque.db
-                      postgres://localhost:5432/bisque
+                      postgresql://localhost:5432/bisque
                       mysql://user:pass@localhost/bisque
                       mysql://user:pass@localhost/bisque?unix_socket=/bisque-data/mysql-db/mysql-socket.sock
                   """),
