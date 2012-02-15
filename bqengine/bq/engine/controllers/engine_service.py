@@ -616,7 +616,8 @@ class EngineModuleResource(BaseController):
         module itself.
         """
         node = self.module_xml.xpath('//tag[@name="interface"]')
-        if not node:
+        log.debug('Interface node: '%node)
+        if not node or not node[0].get('value', None):
             override_template(self.index, "genshi:bq.engine.templates.default_module")
             return dict (module_uri  = self.module_uri,
                          module_name = self.name,
@@ -634,7 +635,8 @@ class EngineModuleResource(BaseController):
     def interface(self, **kw):
         """Provide Generate a module interface to be used"""
         node = self.module_xml.xpath('//tag[@name="interface"]')
-        if not node:
+        log.debug('Interface node: '%node)
+        if not node or not node[0].get('value', None):
             override_template(self.interface, "genshi:bq.engine.templates.default_module")
             return dict (module_uri  = self.module_uri,
                          module_name = self.name,
