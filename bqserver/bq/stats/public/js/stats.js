@@ -155,10 +155,11 @@ function BQStatisticsAccessor( url, xpath, xmap, xreduce, opts ) {
   this.xmap    = xmap;
   this.xreduce = xreduce;   
   this.args    = {}; // additional arguments to pass to statistics service
-  if ('args' in opts) this.args = opts['args'];
-  
-  if (opts['ondone']) this.ondone = opts['ondone'];
-  if (opts['onerror']) this.onerror = opts['onerror'];  
+
+  this.opts = opts || {};   
+  if ('args' in opts) this.args = opts['args'];  
+  if (this.opts['ondone']) this.ondone = this.opts['ondone'];
+  if (this.opts['onerror']) this.onerror = this.opts['onerror'];  
  
   this.fetch();
 }
@@ -166,6 +167,7 @@ function BQStatisticsAccessor( url, xpath, xmap, xreduce, opts ) {
 BQStatisticsAccessor.prototype.fetch = function () {    
   //escape, encodeURI and encodeURIComponent
   var stat_url = '/stats/compute';
+  if (this.opts.root) stat_url = this.opts.root+'/stats/compute';
   stat_url += '?url='+encodeURIComponent(this.url);
   stat_url += getUrlArg('xpath', this.xpath);
   stat_url += getUrlArg('xmap', this.xmap);
@@ -1406,6 +1408,7 @@ Ext.define('BQ.stats.Visualizer', {
         var m = this.setLoading('Fetching data');
         var opts = { 'ondone': callback(this, 'ondone'), 'onerror': callback(this, 'onerror') };
         if ('args' in opts) opts.args = this.opts.args;
+        if (this.root) opts.root = this.root;
         this.accessor = new BQStatisticsAccessor( this.url, this.xpath, this.xmap, this.xreduce, opts );        
     },       
     

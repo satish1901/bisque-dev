@@ -289,15 +289,31 @@ Ext.define('BQ.selectors.Resource', {
         });        
     },
     
+    onerror: function(message) {
+        BQ.ui.error('Error fethnig resource:<br>' + message); 
+    },    
+    
     select: function(resource) {
-        if (typeof resource != 'string')
+        // if the input resource is a reference to an image with wrapped gobjects
+        if (resource instanceof BQTag) {
+            this.gobs = resource.gobjects;
+            BQFactory.request( { uri: resource.value, 
+                                 cb: callback(this, 'onfetched'), 
+                                 errorcb: callback(this, 'onerror'), 
+                               });               
+        } else if (typeof resource != 'string')
             this.onselected(resource);
         else
             BQFactory.request( { uri: resource, 
                                  cb: callback(this, 'onselected'), 
-                                 //errorcb: callback(this, 'onerror'), 
+                                 errorcb: callback(this, 'onerror'), 
                                });         
     },    
+
+    onfetched: function(R) {
+        R.gobjects = this.gobs;
+        this.onselected(R);
+    },
     
     onselected: function(R) {
         this.selected_resource = R;
@@ -404,6 +420,7 @@ Ext.define('BQ.selectors.Gobject', {
         var template = resource.template || {};
         var editprimitives = (template.gobject instanceof Array)? template.gobject.join(','):template.gobject;
         var parameters = { nogobjects:'', nosave:'', alwaysedit:'', onlyedit:'', editprimitives: editprimitives, };
+        if (this.selected_resource && this.selected_resource.gobjects) parameters.gobjects = this.selected_resource.gobjects;
         this.viewer = Ext.create('BQ.viewer.Image', {
             resource: this.selected_resource || resource.parent.value,
             parameters: parameters,
@@ -938,14 +955,18 @@ Ext.define('BQ.renderers.Tag', {
 Image templated configs:
 
 *******************************************************************************/
+function createArgs(command, values) {
+    if (typeof(values)=='string') return '&'+command+'='+escape(values);
+    var s='';
+    for (var i=0; i<values.length; i++)
+        s += '&'+command+(i==0?'':i)+'='+escape(values[i]);
+    return s;    
+}
+
 function createStatsArgs(command, template, name) {
     var c = template[name+'/'+command];
     if (!c) return '';
-    if (typeof(c)=='string') return '&'+command+'='+escape(c);
-    var s='';
-    for (var i=0; i<c.length; i++)
-        s += '&'+command+(i==0?'':i)+'='+escape(c[i]);
-    return s;    
+    return createArgs(command, c);
 }
 
 Ext.define('BQ.renderers.Image', {
@@ -1023,6 +1044,9 @@ Ext.define('BQ.renderers.Image', {
         this.items.push( {xtype: 'label', html:(template.label?template.label:resource.name), } );        
         if (tool_items.length>0) this.items.push( {xtype: 'toolbar', items: tool_items, defaults: { scale: 'medium' }, } );               
         this.items.push(this.viewer);        
+
+        // find image host root to use to form stats requests 
+        this.root = this.resource.uri.replace(/\/data_service\/.*$/i, '');  
                
         this.callParent();
     },
@@ -1044,6 +1068,7 @@ Ext.define('BQ.renderers.Image', {
                     xreduce : template[name+'/xreduce'],
                     title   : title,
                     opts    : opts,
+                    root    : this.root,
                 });
             },
         });          
@@ -1069,6 +1094,7 @@ Ext.define('BQ.renderers.Image', {
             scope: this,
             handler: function() {
                 var url = '/stats/csv?url=' + this.gobjects[0].uri;
+                if (this.root) url = this.root + url;
                 url += createStatsArgs('xpath', template, name);
                 url += createStatsArgs('xmap', template, name);
                 url += createStatsArgs('xreduce', template, name);                                        

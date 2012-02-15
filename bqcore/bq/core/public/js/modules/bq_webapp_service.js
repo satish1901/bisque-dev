@@ -42,7 +42,7 @@ function ModuleService(module_URI, conf) {
     this.conf = conf || {};
    
     // this global variable may be defined by the template and contain the module definition XML
-    if (module_definition_xml) {
+    if (typeof module_definition_xml != 'undefined') {
         this.setModule( BQFactory.parseBQDocument(module_definition_xml) );
     } else {
         // fetch it otherwise

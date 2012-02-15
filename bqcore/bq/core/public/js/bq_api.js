@@ -1609,7 +1609,7 @@ BQModule.prototype.afterInitialized = function () {
     }
     if (outputs && outputs.tags) {
         this.outputs = outputs.tags; // dima - this should be children in the future   
-        this.outputs_index  = outputs.create_flat_index();          
+        this.outputs_index  = outputs.create_flat_index();
     }
     this.updateTemplates();
 }
@@ -1741,6 +1741,18 @@ BQMex.prototype.afterInitialized = function () {
         var name = this.dict['execute_options/iterable'];
         this.findMexsForIterable(name, 'inputs/');
     }
+    
+    var inputs  = this.find_tags('inputs');
+    if (inputs && inputs.tags) {
+        this.inputs = inputs.tags; // dima - this should be children in the future
+        this.inputs_index  = inputs.create_flat_index();    
+    }
+    
+    var outputs = this.find_tags('outputs');    
+    if (outputs && outputs.tags) {
+        this.outputs = outputs.tags; // dima - this should be children in the future   
+        this.outputs_index  = outputs.create_flat_index();
+    }    
 }
 
 

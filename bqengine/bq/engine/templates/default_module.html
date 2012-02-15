@@ -146,9 +146,10 @@
 
     <link rel="stylesheet" type="text/css" href="${bq.url('/js/modules/bq_ui_renderes.css')}" /> 
     <script type="text/javascript" src="${bq.url('/js/modules/bq_ui_renderes.js')}"></script> 
-    
-    <!--<link rel="stylesheet" type="text/css" href="css/webapp.css" />
-    <script type="text/javascript" src="js/webapp.js"></script>-->
+
+    <!-- Additional includes from the module -->    
+    <link py:if="'interface/css' in module_def" rel="stylesheet" type="text/css" href="${module_def['interface/css']}" />
+    <script py:if="'interface/javascript' in module_def" type="text/javascript" src="${module_def['interface/javascript']}"></script>
     
     <title>${module_name}</title>
 
@@ -165,9 +166,6 @@
         webapp = new WebApp();
         Ext.util.Observable.observe(BQ.Application);        
         BQ.Application.on( 'nouser', webapp.onnouser ); 
-        
-        //var bqmodule = Ext.create('BQ.ModulePanel', { module_uri : '${module_uri}' } );
-        //BQApp.main.getComponent('centerEl').add(bqmodule);   
         
         // load help
         var h = BQApp.main.getHelpComponent();

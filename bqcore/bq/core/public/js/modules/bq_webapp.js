@@ -37,23 +37,10 @@ function BQWebApp (urlargs) {
   
   this.renderers = {};  
 
- 
-  // create ExtJS place holders for controls
-  //this.ui_create_holder('inputs');  
-  //this.ui_create_holder('parameters');  
+  // parse URL arguments
+  if (!urlargs) urlargs = document.URL;
+  this.args = parseUrlArguments(urlargs);   
 
-  if (this.module_url)  
-      this.ms = new ModuleService(this.module_url, {
-          ondone     : callback(this, 'done'), 
-          onstarted  : callback(this, 'onstarted'),           
-          onprogress : callback(this, 'onprogress'), 
-          onerror    : callback(this, 'onerror'),
-          onloaded   : callback(this, 'onmoduleloaded'),
-      });  
-  this.module_defined = true;
-  if (this.ms.module) this.setupUI();
-  
- 
   // construct holders for ExtJs components
   if (document.getElementById("webapp_results_dataset")) {
       this.holder_result = Ext.create('Ext.container.Container', {
@@ -70,16 +57,28 @@ function BQWebApp (urlargs) {
       }, this, { delay: 100 } );
   }
 
-  if (this.ms.module) this.setupUI_inputs();
- 
-  // parse URL arguments
-  if (!urlargs) urlargs = document.URL;
-  var args = parseUrlArguments(urlargs);   
+  if (this.module_url)  
+  this.ms = new ModuleService(this.module_url, {
+      ondone     : callback(this, 'done'), 
+      onstarted  : callback(this, 'onstarted'),           
+      onprogress : callback(this, 'onprogress'), 
+      onerror    : callback(this, 'onerror'),
+      onloaded   : callback(this, 'init'),
+  }); 
+  
+}
+
+BQWebApp.prototype.init = function (ms) {
+    if (ms) this.ms = ms;
+    if (!this.ms.module) return;
+  
+    this.setupUI();
+    this.setupUI_inputs();
  
   // process arguments
-  if ('mex' in args) {
+  if ('mex' in this.args) {
       this.showProgress(null, 'Fetching module execution document');
-      BQFactory.request( { uri: args.mex, 
+      BQFactory.request( { uri: this.args.mex, 
                            cb: callback(this, 'load_from_mex'), 
                            errorcb: callback(this, 'onerror'), 
                            uri_params: {view:'deep'}  }); 
@@ -87,12 +86,12 @@ function BQWebApp (urlargs) {
   }
  
   // loading resource requires initied input UI renderers
-  if ('resource' in args)
-      BQFactory.request( { uri:     args.resource, 
+  if ('resource' in this.args)
+      BQFactory.request( { uri:     this.args.resource, 
                            cb:      callback(this, 'load_from_resource'),
                            errorcb: callback(this, 'onerror'), });
-  
 }
+
 
 //------------------------------------------------------------------------------
 // Misc
@@ -187,13 +186,6 @@ BQWebApp.prototype.onerror = function (error) {
         result_label.innerHTML = '<h3 class="error">'+str+'</h3>';    
 }
 
-BQWebApp.prototype.onmoduleloaded = function (module) {
-    if (this.module_defined) {
-        this.setupUI();
-        this.setupUI_inputs();
-    }
-}
-
 //------------------------------------------------------------------------------
 // loading from
 //------------------------------------------------------------------------------
@@ -220,8 +212,20 @@ BQWebApp.prototype.load_from_resource = function (R) {
 
 BQWebApp.prototype.inputs_from_mex = function (mex) {
     var inputs = this.ms.module.inputs_index;
-    var dmex = mex.dict;
+    //var dmex = mex.dict;
+    var inputs_mex = mex.inputs_index;
     
+    for (var n in inputs_mex) {
+        if (!(n in inputs)) continue;
+        var renderer = inputs[n].renderer;
+        var v = inputs_mex[n];  
+        if (v.type != 'image') v = v.value;              
+        if (renderer && renderer.select)
+            renderer.select(v);
+    }
+
+/*   
+    var dmex = mex.dict; 
     for (var i in dmex) {
         if (i.indexOf('inputs/')!=0) continue;
         var n = i.replace('inputs/', '');
@@ -230,7 +234,8 @@ BQWebApp.prototype.inputs_from_mex = function (mex) {
         var renderer = inputs[n].renderer;
         if (renderer && renderer.select)
             renderer.select(v);
-    }
+    }    
+*/    
 }
 
 BQWebApp.prototype.load_from_mex = function (mex) {
