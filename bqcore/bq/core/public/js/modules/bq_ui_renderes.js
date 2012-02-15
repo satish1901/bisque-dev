@@ -447,7 +447,7 @@ Ext.define('BQ.selectors.Gobject', {
         
         // if requested, check if gobjects are present 
         if ('require_gobjects' in template) {
-            var gobs = this.viewer.viewer ? this.viewer.viewer.gobjects() : null;
+            var gobs = this.viewer ? this.viewer.getGobjects() : null;
             if (!gobs || // gobs.length<=0 || 
                 ( 'require_gobjects/amount' in template && template['require_gobjects/amount']=='single'    && gobs.length!=1 ) ||
                 ( 'require_gobjects/amount' in template && template['require_gobjects/amount']=='many'      && gobs.length<1 ) ||

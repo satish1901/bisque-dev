@@ -16,13 +16,13 @@
     gobjects       - load gobjects from the givel URL, 'gobjects':'http://gobejcts_url'
 
     noedit         - read-only view for gobjects
-	  alwaysedit     - instantiates editor right away and disables hiding it
-	  nosave         - disables saving gobjects
-	  editprimitives - only load edit for given primitives, 'editprimitives':'point,polyline'
-	                   can be one of: 'Point,Rectangle,Polyline,Polygon,Circle'
-	                       
+      alwaysedit     - instantiates editor right away and disables hiding it
+      nosave         - disables saving gobjects
+      editprimitives - only load edit for given primitives, 'editprimitives':'point,polyline'
+                       can be one of: 'Point,Rectangle,Polyline,Polygon,Circle'
+                           
     gobjectschanged - callback to call when graphical objects have changed
-	                   
+                       
 */
 
 
@@ -252,10 +252,10 @@ ViewerPlugin.prototype.updatePosition = function (){
 
 ViewerPlugin.prototype.setSize = function (size)
 {
-	if (size.height)
-		this.imagediv.style.height = size.height+"px";
-	if (size.width)
-		this.imagediv.style.width = size.width+"px";
+    if (size.height)
+        this.imagediv.style.height = size.height+"px";
+    if (size.width)
+        this.imagediv.style.width = size.width+"px";
 }
 
 ////////////////////////////////////////////////////////////
@@ -508,12 +508,12 @@ ImgViewer.prototype.view = function  () {
  };
 
 ImgViewer.prototype.resize = function  (sz) {
-	if (sz && sz.height)
-		//this.imagediv.style.height = (sz.height-this.menudiv.clientHeight)+"px";
-		this.imagediv.style.height = sz.height+"px";
-		
-	if (sz && sz.width)
-		this.imagediv.style.width = sz.width+"px";    
+    if (sz && sz.height)
+        //this.imagediv.style.height = (sz.height-this.menudiv.clientHeight)+"px";
+        this.imagediv.style.height = sz.height+"px";
+        
+    if (sz && sz.width)
+        this.imagediv.style.width = sz.width+"px";    
     
   if ('tiles' in this.plugins_by_name)
     this.plugins_by_name['tiles'].resize();
@@ -608,7 +608,8 @@ ImgViewer.prototype.findPlugin = function(name) {
 }
 
 ImgViewer.prototype.gobjects = function() {
-	return this.gObjects || this.plugins_by_name['edit'].gobjects || [];
+    if (this.gObjects && this.gObjects.length>0) return this.gObjects;
+    return this.plugins_by_name['edit'].gobjects || [];
 }
 
 ImgViewer.prototype.loadGObjects = function(gObjects, renderWhileLoading) 
@@ -619,68 +620,68 @@ ImgViewer.prototype.loadGObjects = function(gObjects, renderWhileLoading)
 
     if (gObjects instanceof Array )
     {
-    	this.image.gobjects=gObjects;
-    	this.gobjectsLoaded(true, gObjects);
+        this.image.gobjects=gObjects;
+        this.gobjectsLoaded(true, gObjects);
     }
     else if (gObjects instanceof BQGObject)
     {
-    	this.image.gobjects=[gObjects];
-    	this.gobjectsLoaded(true, gObjects);
+        this.image.gobjects=[gObjects];
+        this.gobjectsLoaded(true, gObjects);
     }
     else if (typeof gObjects =='string'){
-    	this.start_wait({op: 'gobjects', message: 'Fetching gobjects'});
+        this.start_wait({op: 'gobjects', message: 'Fetching gobjects'});
         //BQFactory.load (gObjects + '?view=deep', callback(this, 'gobjectsLoaded', true));
         BQFactory.request ({ uri :  gObjects, 
                              uri_params: { view : 'deep'}, 
                              cache:false,
                              cb: callback(this, 'gobjectsLoaded', true)});
     }else {
-    	this.start_wait({op: 'gobjects', message: 'Fetching gobjects'});
-		this.image.load_gobjects(callback(this, 'gobjectsLoaded'), gObjects, callback(this, 'gobjectsLoadProgress'));
+        this.start_wait({op: 'gobjects', message: 'Fetching gobjects'});
+        this.image.load_gobjects(callback(this, 'gobjectsLoaded'), gObjects, callback(this, 'gobjectsLoadProgress'));
     }
 }
 
 ImgViewer.prototype.gobjectsLoadProgress = function(gObj)
 {
-	if (this.renderWhileLoading)
-	{
-		this.visit_render.visitall(gObj, [this.current_view]);
-		this.gObjects.push(gObj);
-	}
+    if (this.renderWhileLoading)
+    {
+        this.visit_render.visitall(gObj, [this.current_view]);
+        this.gObjects.push(gObj);
+    }
 }
 
 ImgViewer.prototype.gobjectsLoaded = function(render, gObjects)
 {
-	//this.gObjects = [ gObjects ] ; //this.image.gobjects;
+    //this.gObjects = [ gObjects ] ; //this.image.gobjects;
     if (gObjects instanceof Array) 
         Ext.Array.insert(this.gObjects, 0, gObjects);
     else 
         Ext.Array.insert(this.gObjects, 0, [gObjects]);
 
-	this.end_wait({op: 'gobjects', message: 'Fetching gobjects'});
-	
+    this.end_wait({op: 'gobjects', message: 'Fetching gobjects'});
+    
     // Update editPlugin's gobjects array
     var editPlgin = this.findPlugin('edit');
     if (editPlgin)
-    	Ext.Array.insert(editPlgin.gobjects, 0, this.gObjects);
+        Ext.Array.insert(editPlgin.gobjects, 0, this.gObjects);
     if (render)
         this.showGObjects(this.gObjects);
 } 
 
 ImgViewer.prototype.showGObjects = function(gObjects)
 {
-	if (gObjects instanceof Array)
-		this.visit_render.visit_array(gObjects, [this.current_view, true]);
-	else
-		this.visit_render.visitall(gObjects, [this.current_view, true]);
+    if (gObjects instanceof Array)
+        this.visit_render.visit_array(gObjects, [this.current_view, true]);
+    else
+        this.visit_render.visitall(gObjects, [this.current_view, true]);
 }
 
 ImgViewer.prototype.hideGObjects = function(gObjects)
 {
-	if (gObjects instanceof Array)
-		this.visit_render.visit_array(gObjects, [this.current_view, false]);
-	else
-		this.visit_render.visitall(gObjects, [this.current_view, false]);
+    if (gObjects instanceof Array)
+        this.visit_render.visit_array(gObjects, [this.current_view, false]);
+    else
+        this.visit_render.visitall(gObjects, [this.current_view, false]);
 }
 
 ImgViewer.prototype.start_wait = function (o) {
