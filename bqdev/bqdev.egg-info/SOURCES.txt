@@ -1,0 +1,15 @@
+setup.cfg
+setup.py
+bq/__init__.py
+bq/api/__init__.py
+bq/api/bqclass.py
+bq/api/comm.py
+bq/api/util.py
+bq/api/xmldict.py
+bqdev/__init__.py
+bqdev.egg-info/PKG-INFO
+bqdev.egg-info/SOURCES.txt
+bqdev.egg-info/dependency_links.txt
+bqdev.egg-info/entry_points.txt
+bqdev.egg-info/not-zip-safe
+bqdev.egg-info/top_level.txt
