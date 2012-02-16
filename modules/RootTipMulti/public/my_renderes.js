@@ -40,6 +40,11 @@ Ext.define('BQ.renderers.multiroot.Image', {
     
     doPlot : function(results) {
         this.setLoading(false);
+        if (!results || results.length<1) {
+            BQ.ui.warning('Statistics service did not return any results');
+            this.accessor = undefined;
+            return;
+        }
         var xpath = [];
         var titles = [];  
         for (var i=0; i<results[0].vector.length; i++) {
@@ -86,7 +91,12 @@ Ext.define('BQ.renderers.multiroot.Image', {
     }, 
     
     doCSV : function(results) {
-        this.setLoading(false);        
+        this.setLoading(false);
+        if (!results || results.length<1) {
+            BQ.ui.warning('Statistics service did not return any results');
+            this.accessor = undefined;
+            return;
+        }                
         var xpath = [];
         for (var i=0; i<results[0].vector.length; i++) {
             if (!results[0].vector[i] || results[0].vector[i]=='') continue;

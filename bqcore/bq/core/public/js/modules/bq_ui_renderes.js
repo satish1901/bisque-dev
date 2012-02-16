@@ -1046,7 +1046,7 @@ Ext.define('BQ.renderers.Image', {
         this.items.push(this.viewer);        
 
         // find image host root to use to form stats requests 
-        this.root = this.resource.uri.replace(/\/data_service\/.*$/i, '');  
+        //this.root = this.resource.uri.replace(/\/data_service\/.*$/i, '');  
                
         this.callParent();
     },
