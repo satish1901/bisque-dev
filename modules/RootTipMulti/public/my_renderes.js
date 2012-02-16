@@ -28,7 +28,7 @@ Ext.define('BQ.renderers.multiroot.Image', {
         this.setLoading('Analysing outputs');
 
         var url = this.gobjects[0].uri;
-        var xpath = '/gobject[@name]/gobject[@name]|/*/gobject[@name]/gobject[@name]';
+        var xpath = '/gobject/gobject[@name]|/*/gobject/gobject[@name]';
         var xmap = 'gobject-name';
         var xreduce = 'vector';
     
