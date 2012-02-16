@@ -38,13 +38,8 @@ Ext.define('BQ.renderers.multiroot.Image', {
                                                     root: this.root, } );
     },
     
-    doPlot : function() {
-        this.setLoading(false);        
-        if (!this.accessor || !this.accessor.results) {
-            this.onerror('Plotting data was not fetched');
-            return;   
-        }
-        var results = this.accessor.results;
+    doPlot : function(results) {
+        this.setLoading(false);
         var xpath = [];
         var titles = [];  
         for (var i=0; i<results[0].vector.length; i++) {
@@ -77,7 +72,7 @@ Ext.define('BQ.renderers.multiroot.Image', {
 
     getPlot : function() {
         if (this.accessor) 
-            this.doPlot();
+            this.doPlot(this.accessor.results);
         else
             this.fetchRoots('doPlot');
     },
@@ -90,13 +85,8 @@ Ext.define('BQ.renderers.multiroot.Image', {
         }); 
     }, 
     
-    doCSV : function() {
+    doCSV : function(results) {
         this.setLoading(false);        
-        if (!this.accessor || !this.accessor.results) {
-            this.onerror('Export data was not fetched');
-            return;   
-        }
-        var results = this.accessor.results;
         var xpath = [];
         for (var i=0; i<results[0].vector.length; i++) {
             if (!results[0].vector[i] || results[0].vector[i]=='') continue;
@@ -120,7 +110,7 @@ Ext.define('BQ.renderers.multiroot.Image', {
 
     getCSV : function() {
         if (this.accessor) 
-            this.doCSV();
+            this.doCSV(this.accessor.results);
         else
             this.fetchRoots('doCSV');
     },
