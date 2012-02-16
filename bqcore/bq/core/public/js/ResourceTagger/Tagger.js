@@ -312,8 +312,9 @@ Ext.define('Bisque.ResourceTagger',
             {
                 name : 'name',
                 type : 'string',
-                convert : function(value, record)
-                {
+                convert : function(value, record) {
+                    if (record.raw instanceof BQGObject)
+                        return record.raw.type + ": " + record.raw.name;
                     return value || record.data.type;
                 }
             },
@@ -340,8 +341,9 @@ Ext.define('Bisque.ResourceTagger',
             {
                 name : 'qtip',
                 type : 'string',
-                convert : function(value, record)
-                {
+                convert : function(value, record) {
+                    if (record.raw instanceof BQGObject)
+                        return record.raw.type + ": " + record.raw.name;                    
                     return record.data.name + ' : ' + record.data.value;
                 }
 
