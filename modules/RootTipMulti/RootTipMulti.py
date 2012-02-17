@@ -51,7 +51,7 @@ class RootTip(object):
         gobjects = self._read_results()
         tags = [{ 'name': 'outputs',
                   'tag' : [{'name': 'rootimage', 'type':'image', 'value':self.resource_url,
-                            'gobject' : [{ 'name': 'root_tips', 'gobject' : gobjects }] }]
+                            'gobject' : [{ 'name': 'root_tips', 'type': 'root_tips', 'gobject' : gobjects }] }]
                   }]
         self.bq.finish_mex(tags = tags)
 
@@ -87,7 +87,7 @@ class RootTip(object):
                                   'y': str(tips[t_plane][pt*2+1]) }]
                                }]
                      })
-            tracks.append({'name': 'tip-%s' % pt, 'gobject': gobs})
+            tracks.append({'name': 'tip-%s' % pt, 'type': 'roottip', 'gobject': gobs})
 
         return tracks
 

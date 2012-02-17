@@ -66,7 +66,7 @@ class SeedSize(object):
             tags = [{ 'name': 'outputs',
                       'tag' : [{'name': 'Summary',  'tag' : summary_tags} ,
                                {'name': 'seed-resource', 'type':'image', 'value':self.resource_url,
-                                'gobject' : [{ 'name': 'seeds', 'gobject':gobs }], }],
+                                'gobject' : [{ 'name': 'seeds', 'type' : 'seedsize', 'gobject':gobs }], }],
                       }]
         else:
             submexes = self._get_submexes()
@@ -101,7 +101,7 @@ class SeedSize(object):
                     'value': 'FINISHED', 
                     'tag': [{ 'name': 'outputs',
                               'tag' : [{'name': 'seed-resource', 'type':'image', 'value':  result2url [result],
-                                        'gobject':{ 'name': 'seeds', 'gobject': gobs}, }] }]
+                                        'gobject':{ 'name': 'seeds', 'type': 'seedsize', 'gobject': gobs}, }] }]
                     }
             submex.append (mex)
         return submex

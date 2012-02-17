@@ -44,7 +44,7 @@ class RootTip(object):
         gobjects = self._read_results()
         tags = [{ 'name': 'outputs',
                   'tag' : [{'name': 'roots', 'type':'image', 'value':self.resource_url,
-                            'gobject' : [{ 'name': 'root_tips', 'gobject' : gobjects }] }]
+                            'gobject' : [{ 'name': 'root_tips', 'type': 'root_tips', 'gobject' : gobjects }] }]
                   }]
         self.bq.finish_mex(tags = tags)
 
