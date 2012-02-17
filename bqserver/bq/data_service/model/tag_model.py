@@ -222,7 +222,7 @@ vertices = Table ('vertices', metadata,
 taggable_acl = Table('taggable_acl', metadata,
                      Column('taggable_id', Integer, ForeignKey('taggable.id'), primary_key=True),
                      Column('user_id', Integer, ForeignKey('taggable.id'),primary_key=True),
-                     Column('permission', Integer),
+                     Column('permission', Integer, key="action_code"),
                      )
 
 
@@ -746,9 +746,9 @@ class TaggableAcl(object):
 
 
     def setaction(self, perm):
-        self.permission = { "read":0, "edit":1 } .get(perm, 0)
+        self.action_code = { "read":0, "edit":1 } .get(perm, 0)
     def getaction(self):
-        return [ "read", "edit"] [self.permission]
+        return [ "read", "edit"] [self.action_code]
         
     action = property(getaction, setaction)
     
