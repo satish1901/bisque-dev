@@ -24,7 +24,41 @@
           <tag name="template" type="template" >
               <tag name="label" value="Detected Root Tips" />
           </tag>
-          <gobject name="root_tips" /> 
+          <gobject name="root_tips">
+            <tag name="template" type="template">
+
+                <tag name="plot" value="true"  type="boolean">
+                    <tag name="label" value="Tip angles and growth" />
+                    <tag name="title" value="Tip angles and growth" />
+                    <tag name="titles">
+                        <value>Angles</value>
+                        <value>Growth</value>
+                    </tag>
+                    <tag name="xmap" value="tag-value-number" />
+                    <tag name="xreduce" value="vector" />
+                    <tag name="xpath">
+                        <value>//gobject[@type="tipangle"]/tag[@name="angle"]</value>
+                        <value>//gobject[@type="tipangle"]/tag[@name="growth"]</value>                        
+                    </tag>                        
+                </tag>
+
+                <tag name="export_csv" value="true" type="boolean">
+                    <tag name="label" value="Tip angles and growth as CSV" />
+                    <tag name="xmap" value="tag-value-number" />
+                    <tag name="xreduce" value="vector" />
+                    <tag name="xpath">
+                        <value>//gobject[@type="tipangle"]/tag[@name="angle"]</value>
+                        <value>//gobject[@type="tipangle"]/tag[@name="growth"]</value>    
+                    </tag>                        
+                </tag>                      
+
+                <tag name="export_xml"    value="true"  type="boolean" />
+                <tag name="export_excel"  value="false" type="boolean" />
+                <tag name="export_gdocs"  value="false" type="boolean" />
+                <tag name="preview_movie" value="false" type="boolean" />
+            </tag>                  
+          </gobject>              
+             
       </tag>
     </tag>      
 
