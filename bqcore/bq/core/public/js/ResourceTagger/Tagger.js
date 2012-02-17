@@ -167,6 +167,7 @@ Ext.define('Bisque.ResourceTagger',
             rowLines : true,
             lines : true,
             iconCls : 'icon-grid',
+            animate: this.animate,
             //title : 'Resource tagger - '+'<span style="font-weight:normal">'+this.resource.uri.replace(window.location.origin,"")+'</span>',
 
             store : this.getTagStore(data),
@@ -313,8 +314,13 @@ Ext.define('Bisque.ResourceTagger',
                 name : 'name',
                 type : 'string',
                 convert : function(value, record) {
-                    if (record.raw instanceof BQGObject)
-                        return record.raw.type + ": " + record.raw.name;
+                    // dima: show type and name for gobjects
+                    if (record.raw instanceof BQGObject) {
+                        var txt = [];
+                        if (record.raw.type && record.raw.type != 'gobject') txt.push(record.raw.type);
+                        if (record.raw.name) txt.push(record.raw.name); 
+                        if (txt.length>0) return txt.join(': ');
+                    }
                     return value || record.data.type;
                 }
             },
@@ -342,8 +348,13 @@ Ext.define('Bisque.ResourceTagger',
                 name : 'qtip',
                 type : 'string',
                 convert : function(value, record) {
-                    if (record.raw instanceof BQGObject)
-                        return record.raw.type + ": " + record.raw.name;                    
+                    // dima: show type and name for gobjects                    
+                    if (record.raw instanceof BQGObject) {
+                        var txt = [];
+                        if (record.raw.type && record.raw.type != 'gobject') txt.push(record.raw.type);
+                        if (record.raw.name) txt.push(record.raw.name);                        
+                        if (txt.length>0) return txt.join(': ');
+                    }    
                     return record.data.name + ' : ' + record.data.value;
                 }
 
@@ -729,6 +740,7 @@ Ext.define('Bisque.ResourceTagger',
 Ext.define('Bisque.GObjectTagger',
 {
     extend : 'Bisque.ResourceTagger',
+    animate: false,
 
     constructor : function(config)
     {
