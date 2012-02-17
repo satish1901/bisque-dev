@@ -320,7 +320,7 @@ class statsController(ServiceController):
         # TODO: Vey inefficient now, need to request queries to the DB!!!!!!!!!!!!!!
         #request = etree.parse('F:\dima\develop\python\dataset.xml')
         request = data_service.get_resource(url, view='deep')
-        
+
         # if the resource is a dataset, fetch contents of documents linked in it
         if request.tag == 'dataset' and not setmode: 
             members = request.xpath("tag[@name='members']")
@@ -337,7 +337,7 @@ class statsController(ServiceController):
             # -----------------------------------------------------
             objects = request.xpath(xpath[i])
             if len(objects)<1: 
-                log.warning('Request stopped: XPath expression did not return any results')                  
+                log.warning('Request stopped: XPath expression %s did not return any results' % xpath[i])
                 abort(500, 'XPath expression did not return any results') 
             
             # -----------------------------------------------------
@@ -345,7 +345,7 @@ class statsController(ServiceController):
             # -----------------------------------------------------
             vector_alpha_num = self.operators[xmap[i]](objects, **kw)
             if len(vector_alpha_num)<1:
-                log.warning('Request stopped: Map operation did not return any results')                    
+                log.warning('Request stopped: Map operation did not return any results')
                 abort(500, 'Map operation did not return any results')             
             
             # -----------------------------------------------------

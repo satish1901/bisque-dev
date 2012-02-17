@@ -55,6 +55,7 @@ import sys, traceback
 import itertools
 import urlparse
 import time
+import copy
 
 from lxml import etree
 from datetime import datetime
@@ -359,7 +360,7 @@ mapping_fields = {
     'user_id' : get_email,
     'user'    : make_user,
     'taggable_id': None,
-    #'permission': 'action',
+    'action_code': 'action',
     'resource': None,
     'xmltag': None,
 
@@ -477,7 +478,11 @@ def resource2tree(dbo, parent=None, view=[], baseuri=None, nodes= {}, doc_id = N
     if parent is not None:
         log.debug ("parent %s + %s" % (parent, nodes[dbo.id]))
         parent.append ( nodes[dbo.id])
-    return nodes[dbo.id], nodes, doc_id
+    # Make a copy of the document from the request position to e
+    if dbo.document_id != dbo.id:
+        return copy.deepcopy(nodes[dbo.id]), nodes, doc_id
+    else:
+        return nodes[dbo.id], nodes, doc_id
     #return root
 
 

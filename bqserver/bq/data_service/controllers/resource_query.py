@@ -323,7 +323,7 @@ def prepare_permissions (query, user_id, with_public, action = RESOURCE_READ):
             visibility = or_(visibility, Taggable.perm == PUBLIC)
         visibility = or_(visibility,
                          Taggable.acl.any(and_(TaggableAcl.user_id == user_id,
-                                               TaggableAcl.permission >= action)))
+                                               TaggableAcl.action_code >= action)))
                                                        
     else:
         visibility = (Taggable.perm == PUBLIC)
