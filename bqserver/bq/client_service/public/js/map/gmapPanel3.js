@@ -68,7 +68,7 @@ Ext.define('BQ.gmap.GMapPanel3', {
                 this.gmap.setZoom(this.zoomLevel);
                 this.addMarker(center);
             }else{
-                Ext.Msg.alert('Boo','GPS coordinates unavailable');
+                //Ext.Msg.alert('Boo','GPS coordinates unavailable');
                 //var myMask = new Ext.Mask(Ext.getBody(), {msg:"Please wait..."},{renderTo:this.gmap});
                 //myMask.show();
             }
@@ -123,7 +123,8 @@ Ext.define('BQ.gmap.GMapPanel3', {
         infoWindow.open(this.getMap(), marker);
     },
     
-    gpsParser : function(gpsString, direction){
+    gpsParser : function(gpsString, direction) {
+        if (!gpsString || gpsString.length<1) return null;
         var coordinates=gpsString[0].value.match(/[\d\.]+/g);  
         var Deg = parseInt(coordinates[0]);
         var Min = parseFloat(coordinates[1]);
@@ -146,6 +147,7 @@ Ext.define('BQ.gmap.GMapPanel3', {
         
         var thelat = this.gpsParser(latitude, latituderef);
         var thelon = this.gpsParser(longitude, longituderef);
+        if (!thelat || !thelon) return;
         
         point = new google.maps.LatLng(thelat,thelon);
         return point;}
