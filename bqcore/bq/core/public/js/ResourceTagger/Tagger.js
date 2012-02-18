@@ -850,9 +850,10 @@ Ext.define('Bisque.GObjectTagger',
             // the mex may have sub mexs
             if (resQ[i].resource.children && resQ[i].resource.children.length>0) {
                 for (var k=0; k<resQ[i].resource.children.length; k++)
-                    if (resQ[i].resource instanceof BQMex)
+                    if (resQ[i].resource instanceof BQMex) {
                         var rr = Ext.create('Bisque.Resource.Mex', { resource : resQ[i].resource.children[k], });
                         resQ.push(rr);
+                    }
                 continue;
             }
                 
