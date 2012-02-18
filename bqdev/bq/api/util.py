@@ -110,6 +110,15 @@ def fetch_image_planes(session, uri, dest, uselocalpath=False):
 
     return files
 
+
+def next_name (name):
+    count = 0
+    while os.path.exists("%s-%.5d.TIF" % (name, count)):
+        count = count + 1
+    return "%s-%.5d.TIF" % (name, count)
+    
+                             
+
 def fetch_image_pixels(session, uri, dest, uselocalpath=False):
     """fetch original image locally as tif
     @param session: the bqsession
@@ -118,12 +127,16 @@ def fetch_image_pixels(session, uri, dest, uselocalpath=False):
     @param uselocalpath: true when routine is run on same host as server
     """
     image = session.load (uri)
+    name = image.name or next_name ("image")
     ip = image.pixels().format('tiff')
     if uselocalpath:
         ip = ip.localpath()
     pixels = ip.fetch()
     if os.path.isdir(dest):
-        dest = os.path.join (dest, "0.TIF")
+        dest = os.path.join (dest, os.path.basename(name))
+    else:
+        dest = os.path.join ('.', os.path.basename(name))
+        
 
     if uselocalpath:
         path = ET.XML(pixels).xpath('/resource/@src')[0]
@@ -152,10 +165,10 @@ def fetch_dataset(session, uri, dest, uselocalpath=False):
     for i, imgxml in enumerate(members):
         uri =  imgxml.text   #imgxml.get('uri')
         print "FETCHING", uri
-        fname = os.path.join (dest, "%.5d.tif" % i)
-        fetch_image_pixels (session, uri,
-                            fname, uselocalpath=uselocalpath)
-        results[uri] = fname
+        #fname = os.path.join (dest, "%.5d.tif" % i)
+        x = fetch_image_pixels (session, uri,
+                            dest, uselocalpath=uselocalpath)
+        results.update (x)
     return results
         
         
