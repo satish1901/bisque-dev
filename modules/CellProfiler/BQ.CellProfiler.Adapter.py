@@ -11,7 +11,7 @@ from shutil import copy2
 from glob import glob
 from optparse import OptionParser
 from bq.api import BQSession, BQTag, BQGObject, BQEllipse, BQVertex
-from bq.api.util import fetchImage, fetchDataset, save_image_pixels
+from bq.api.util import fetch_image_pixels, fetch_dataset, save_image_pixels
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -101,9 +101,9 @@ class CellProfiler():
         
         # fetch the input image
         if self.options.isDataset:
-            results = fetchDataset(self.bqSession, self.options.resourceURL, self.inputDir, True)
+            results = fetch_dataset(self.bqSession, self.options.resourceURL, self.inputDir, True)
         else:
-            results = fetchImage(self.bqSession, self.options.resourceURL, self.inputDir, True) 
+            results = fetch_image_pixels(self.bqSession, self.options.resourceURL, self.inputDir, True) 
         
         
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #

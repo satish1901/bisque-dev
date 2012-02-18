@@ -7,6 +7,8 @@ Ext.define('Bisque.Module.CellProfiler',
 
     plot : function()
     {
+        if (this.plotter1) return;
+
         var plotter_div = document.getElementById("webapp_results_plotter");
         plotter_div.style.display = '';
     
@@ -31,7 +33,9 @@ Ext.define('Bisque.Module.CellProfiler',
     
     tagger : function()
     {
-        var tagger = Ext.create('Bisque.ResourceTagger',
+        if ( this.tagger1) return;
+        
+        this.tagger1 = Ext.create('Bisque.ResourceTagger',
         {
             resource : this.mexURI,
             title : 'CellProfiler: Tags',
@@ -43,6 +47,8 @@ Ext.define('Bisque.Module.CellProfiler',
     
     view : function()
     {
+        if (this.imgViewer) return;
+
         document.getElementById("webapp_results_viewer").style.display = ''; 
 
         var parameters = {    
@@ -50,7 +56,7 @@ Ext.define('Bisque.Module.CellProfiler',
                              gobjects: this.gobjectURL
                          };
 
-        var imgViewer = Ext.create('BQ.viewer.Image',
+        this.imgViewer = Ext.create('BQ.viewer.Image',
         {
             renderTo: 'webapp_results_viewer',
             resource: this.bq_resource,
