@@ -858,9 +858,9 @@ Ext.define('Bisque.GObjectTagger',
             return resource.gobjects;
             
         var gobjects = null;
-        
-        for (var i=0; i<=resource.tags.length, !gobjects; i++)
-            gobjects = this.findGObjects(resource.tags[i], imageURI); 
+        var t = null;
+        for (var i=0; (t=resource.tags[i]), !gobjects; i++)
+            gobjects = this.findGObjects(t, imageURI); 
 
         return gobjects;
     },
