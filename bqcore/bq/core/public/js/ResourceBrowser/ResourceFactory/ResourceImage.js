@@ -614,6 +614,9 @@ Ext.define('Bisque.Resource.Image.Page',
     updateContainer : function()
     {
         this.setLoading(false);
+        this.root = '';
+        if (this.resource && this.resource.uri)
+            this.root = this.resource.uri.replace(/\/data_service\/.*$/i, '');  
         
         var resourceTagger = Ext.create('Bisque.ResourceTagger', 
         {
@@ -632,7 +635,7 @@ Ext.define('Bisque.Resource.Image.Page',
             'layout' : 5,
             'title' : 'Analysis',
             'viewMode' : 'MexBrowser',
-            'dataset' : '/data_service/mex',
+            'dataset' : this.root+'/data_service/mex',
             'tagQuery' : '"'+this.resource.uri+'"&view=deep',
             'wpublic' : true,
     
