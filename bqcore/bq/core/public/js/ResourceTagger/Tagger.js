@@ -854,7 +854,7 @@ Ext.define('Bisque.GObjectTagger',
     
     findGObjects : function(resource, imageURI)
     {
-        if (resource.value == imageURI)
+        if (resource.value && resource.value == imageURI)
             return resource.gobjects;
             
         var gobjects = null;
