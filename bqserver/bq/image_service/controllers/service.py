@@ -48,7 +48,8 @@ def get_format_map():
         codec = ex.getparent().get('name')
         for ext in ex.get('value').split('|'):
             formats.setdefault(ext, []).append(codec)
-    del formats['zip'] # zip should not be accepted as an image format
+    if 'zip' in formats:
+        del formats['zip'] # zip should not be accepted as an image format
     return formats
 
 

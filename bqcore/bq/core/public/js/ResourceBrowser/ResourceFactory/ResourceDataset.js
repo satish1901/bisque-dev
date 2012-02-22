@@ -64,7 +64,7 @@ Ext.define('Bisque.Resource.Dataset.Compact',
 
         var type = Ext.create('Ext.container.Container', {
             cls : 'lblHeading2',
-            html : Ext.Date.format(Ext.Date.parse(this.resource.ts, 'Y-m-d H:i:s.u'), "m-d-Y g:i:s a"),
+            html : Ext.Date.format(new Date(this.resource.ts), "m-d-Y g:i:s a"),
         })
 
         var value = Ext.create('Ext.container.Container', {
@@ -110,7 +110,7 @@ Ext.define('Bisque.Resource.Dataset.List',
 			cls:'lblModuleOwner',
 		})
 
-		var date=Ext.Date.parse(this.resource.ts, 'Y-m-d H:i:s.u');
+		var date=new Date(this.resource.ts);
 		
 		var datasetDate=new Ext.form.Label({
 			text:Ext.Date.format(date, "F j, Y g:i:s a"),
