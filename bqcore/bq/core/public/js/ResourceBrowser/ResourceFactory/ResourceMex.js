@@ -94,7 +94,7 @@ Ext.define('Bisque.Resource.Mex.Compact',
 
         var type = Ext.create('Ext.container.Container', {
             cls : 'lblHeading2',
-            html : Ext.Date.format(Ext.Date.parse(this.resource.ts, 'Y-m-d H:i:s.u'), "m-d-Y g:i:s a"),
+            html : Ext.Date.format(new Date(this.resource.ts), "m-d-Y g:i:s a"),
         })
 
         var value = Ext.create('Ext.container.Container', {
@@ -238,7 +238,7 @@ Ext.define('Bisque.Resource.Mex.List',
 			cls: this.resource.status=='FINISHED'?'lblModuleOwnerFin':(this.resource.status=='FAILED'?'lblModuleOwnerFail':'lblModuleOwner')
 		})
 
-		var date=Ext.Date.parse(this.resource.ts, 'Y-m-d H:i:s.u');
+		var date=new Date(this.resource.ts);
 		
 		var mexDate=new Ext.form.Label({
 			text:Ext.Date.format(date, "F j, Y g:i:s a"),
