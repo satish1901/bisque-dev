@@ -13,7 +13,7 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
 			callBack         :   config.callBack,
 			
 			prefetchFactor   :   1,	// (prefetchFactor X visibileElements) elements are prefetched 
-			dataLimit        :   500,	// Number of resource URIs fetched
+			dataLimit        :   350,	// Number of resource URIs fetched
 			noUnloadClicks   :   5, // Cache of the opposite direction will be unloaded after these many clicks in a given direction (right or left) 
 			
 			hasMoreData      :   {left:true, right:true},
@@ -37,9 +37,9 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
 	{
 		this.dbOffset.left=((this.dbOffset.center-this.dataLimit)>=0)?this.dbOffset.center-this.dataLimit:0;
 
-		var uri=this.uri;
-		uri.offset=this.dbOffset.left;
-		uri.limit=this.dataLimit;
+		var uri = this.uri;
+		uri.offset = this.dbOffset.left;
+		uri.limit = 2*this.dataLimit;
 
 		BQFactory.request({
 			uri:this.generateURI(uri),
@@ -64,7 +64,7 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
                 }));
 
 		this.hasMoreData.left=(this.dbOffset.left>0)?true:false;
-		this.hasMoreData.right=((this.dbOffset.right-this.dbOffset.center)==this.dataLimit)?true:false;
+        this.hasMoreData.right = ((this.dbOffset.right - this.dbOffset.center) >= this.dataLimit) ? true : false;
 		
 		this.callBack();
 	},
@@ -112,7 +112,7 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
 			
 			var uri=this.browser.getURIFromState();
 			uri.offset=this.dbOffset.left;
-			uri.limit=oldLeft;
+			uri.limit=oldLeft-this.dbOffset.left;
 			
 			BQFactory.request({
 				uri:this.generateURI(uri),
@@ -130,8 +130,11 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
 
 			for(var i=0;i<data.children.length;i++)
 				this.unshift(Bisque.ResourceFactory.getResource({resource:data.children[i], layoutKey:this.layoutKey, msgBus:this.msgBus, resQ:this, browser:this.browser}));
+			
 			this.hasMoreData.left=(data.children.length==this.dataLimit)?true:false;
 			this.loading.left=false;
+            this.rqOffset = this.rqOffset + data.children.length;
+            
             this.browser.changeLayoutThrottled(this.browser.layoutKey, 'Left');
 		}
 	},
