@@ -1,43 +1,11 @@
+-- Add constraints to a DB that was Isam
 
-
-Notes for mysql
-===============
-
-
-InnoDB is required for Bisque.  You need to change the default table type 
-in /etc/mysql/my.cnf 
-
-[mysqld]
-# Default to innodb
-default-table-type=innodb
-
-
-
-2. Converting from an old database 
-
-
-2.a  Convert tables to innodb
-
-Generate the proper alter statement
-
-$ mysql -p  --database=<DB> -e "show tables;" | tail --lines=+2 | xargs -i echo "ALTER TABLE \`{}\` ENGINE=INNODB;" > alter_table.sql
-$ mysql --database=<DATABASE_NAME> -p < alter_table.sql
-
-
-
-2.b Add the foriegn key contraints 
-
-Some of the contraints may fail 
-For example:
-  1.   find all tags without a taggable;
-       select * from tags where id not in (select id from taggable);
-       delete from tags where id not in (select id from taggable);
-
-  2. All values that no longer exits
-     select * from `values` where parent_id not in (select id from taggable);
-     delete from   `values` where parent_id not in (select id from taggable);
-     delete from   `values` where valobj not in (select id from taggable);
-
+BEGIN;
+-- Clean out bad data from before 
+delete from tags where id not in (select id from taggable);
+delete from `values` where parent_id not in (select id from taggable);
+delete from `values` where valobj not in (select id from taggable);
+-- Add constraints
 
 ALTER TABLE taggable ADD CONSTRAINT  FOREIGN KEY (tb_id) REFERENCES names(id);
 ALTER TABLE taggable ADD CONSTRAINT  FOREIGN KEY (owner_id) REFERENCES taggable(id);
@@ -73,3 +41,4 @@ ALTER TABLE `values` ADD CONSTRAINT FOREIGN KEY (valobj) REFERENCES taggable(id)
 ALTER TABLE `values` ADD CONSTRAINT FOREIGN KEY (parent_id) REFERENCES taggable(id);
 ALTER TABLE vertices ADD CONSTRAINT FOREIGN KEY (parent_id) REFERENCES taggable(id);
 
+COMMIT;
