@@ -1,9 +1,9 @@
-%  bq.addTag(doc, node, name, value, type)
-%  addTag - appends a newly created tag node to the node or document
+%  [t] = bq.addTag(doc, node, name, value, type)
+%  addTag - appends a newly created tag to the node or document
 %
 %   INPUT:
 %     doc   - XML DOM document
-%     node  - Optional: XML DOM element, if [] root element will be used
+%     node  - Optional: parent XML DOM element, if [] root element will be used
 %     name  - string with tag name
 %     value - string with tag value
 %     type  - string with tag type
@@ -12,7 +12,7 @@
 %       Dmitry Fedorov, www.dimin.net
 %
 %   VERSION:
-%       1 - 2011-03-29 First implementation 
+%       1: 2011-03-29 First implementation 
 %
 
 function [t] = addTag(doc, node, name, value, type)
@@ -22,11 +22,17 @@ function [t] = addTag(doc, node, name, value, type)
     end
     t = doc.createElement('tag');
     t.setAttribute('name', name);
-    if ~isempty(value),
+    
+    if nargin>3 && ~isempty(value),
+        if isa(value, 'numeric'),
+            value = num2str(value);
+        end        
         t.setAttribute('value', value);
     end
-    if ~isempty(type),
+    
+    if nargin>4 && ~isempty(type),
         t.setAttribute('type', type);
     end
+    
     node.appendChild(t); 
 end 
