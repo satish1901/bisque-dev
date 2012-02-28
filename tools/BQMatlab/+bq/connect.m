@@ -75,7 +75,8 @@ function [output, info] = connect(method, url, location, input, user, password)
     %connection.setReadTimeout(3000);
     connection.setRequestMethod(method);
     connection.setRequestProperty('Connection', 'Keep-Alive');
-    
+    connection.setRequestProperty('Content-Type', 'text/xml');    
+        
     if strcmpi(method, 'GET'),
         connection.setUseCaches(true);
         connection.setDoInput(true);
@@ -83,8 +84,12 @@ function [output, info] = connect(method, url, location, input, user, password)
         connection.setDoInput(true);
         connection.setDoOutput(true);
         connection.setUseCaches(false);        
+        if ~ischar(input),
+            input = bq.xml2str(input);
+        end        
+        connection.setRequestProperty('Content-Length', int2str(length(input)));        
     end
-
+    
     if exist('user', 'var') && exist('password', 'var') && ...
        ~isempty(user) && ~isempty(password),
         if ~strcmpi(user, 'Mex') ,
@@ -97,9 +102,6 @@ function [output, info] = connect(method, url, location, input, user, password)
     connection.connect();
     
     if strcmpi(method, 'POST') || strcmpi(method, 'PUT'),
-        if ~ischar(input),
-            input = bq.xml2str(input);
-        end
         out = java.io.OutputStreamWriter(connection.getOutputStream(), 'UTF-8');
         out.write(input);
         out.flush();    
@@ -110,6 +112,7 @@ function [output, info] = connect(method, url, location, input, user, password)
 
     if info.status>=300,
         output = [];
+        error(['Bisque Connect error: ' info.error '\nMethod: ' method '\nURL: ' url]); % dima: not sure if this should be here
     elseif exist('location', 'var') && ~isempty(location),    
         output = stream2file(connection.getInputStream(), location);        
         %output = stream2file( java.io.BufferedInputStream(connection.getInputStream(), 4*1024), location);
