@@ -70,7 +70,8 @@ classdef Session < handle
             end
             self.bisque_root = bisque_root;   
             
-            self.mex = bq.get_xml( [self.mex_url '?view=full'], self.user, self.password );
+            self.mex = bq.get_xml( [self.mex_url '?view=deep'], self.user, self.password );
+            self.mex = bq.Node(self.mex);
         end % init
     
         function update(self, status)
@@ -80,8 +81,7 @@ classdef Session < handle
             end
             
             % update MEX document in memory
-            m = self.mex.getDocumentElement();
-            m.setAttribute('value', status);
+            self.mex.setAttribute('value', status);
             
             % update the document on the server
             input = sprintf('<mex uri="%s" value="%s" />', self.mex_url, status);
@@ -95,12 +95,11 @@ classdef Session < handle
             status = 'FAILED';
             
             % update MEX document in memory
-            m = self.mex.getDocumentElement();
-            m.setAttribute('value', status);
-            bq.addTag(self.mex, m, 'message', message);
+            self.mex.setAttribute('value', status);
+            self.mex.addTag('message', message);
             
             % update the document on the server
-            bq.put(self.mex_url, self.mex, self.user, self.password);
+            bq.put(self.mex_url, self.mex.doc, self.user, self.password);
         end % fail           
 
         function finish(self, outputs)
@@ -110,22 +109,22 @@ classdef Session < handle
             status = 'FINISHED';
             
             % update MEX document in memory
-            m = self.mex.getDocumentElement();
-            m.setAttribute('value', status);
+            self.mex.setAttribute('value', status);
             
             %append outputs
-            if isa(outputs, 'org.apache.xerces.dom.ElementImpl') ||...
-               isa(outputs, 'org.apache.xerces.dom.DeferredElementImpl'),
-                root = self.mex.getDocumentElement();
-                root.appendChild(outputs);
-            elseif iscell(outputs),
-                t = bq.addTag(self.mex, m, 'outputs');
-                % iterate over cell and create all XML elements
-                % dima: implement
-            end            
+            if nargin==2,
+                if isa(outputs, 'org.apache.xerces.dom.ElementImpl') ||...
+                   isa(outputs, 'org.apache.xerces.dom.DeferredElementImpl'),
+                       self.mex.element.appendChild(outputs);
+                elseif iscell(outputs),
+                    %t = bq.addTag(self.mex, m, 'outputs');
+                    % iterate over cell and create all XML elements
+                    % dima: implement
+                end            
+            end
             
             % update the document on the server
-            bq.put(self.mex_url, self.mex, self.user, self.password);
+            bq.put(self.mex_url, self.mex.doc, self.user, self.password);
         end % finish 
 
     end% methods
