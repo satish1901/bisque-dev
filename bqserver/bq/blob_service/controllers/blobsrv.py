@@ -102,13 +102,6 @@ class BlobServer(RestController, ServiceMixin):
                 abort(401)
         return resource
 
-    @expose(content_type='text/xml')
-    def get_all(self):
-        log.info("get_all() called")
-        user = identity.get_user_id()
-
-
-
 
     @expose()
     def get_one(self, *args):
@@ -134,9 +127,34 @@ class BlobServer(RestController, ServiceMixin):
     def post(self, **kwargs):
         "Create a blob based on unique ID"
         log.info("post() called %s" % kwargs)
-        log.info("post() body %s" % tg.request.body_file.read())
-        user = identity.get_user_id()
+        #log.info("post() body %s" % tg.request.body_file.read())
+        return self.storeBlob(flosrc = tg.request.body_file)
 
+    
+    @expose()
+    @require(predicates.not_anonymous())
+    def delete(self, *args, **kwargs):
+        ' Delete the resource  '
+        ident = args[0]
+        log.info("get_one() called %s" % args)
+        from bq.data_service.controllers.resource_query import resource_delete
+        resource = self.getBlobInfo(ident)
+        resource_delete(resource)
+
+    @expose()
+    @require(predicates.not_anonymous())
+    def move(self, src, dst, *args,  **kwargs):
+        ' Move a resource identified by path  '
+        log.info("get_one() called %s" % args)
+        from bq.data_service.controllers.resource_query import resource_permission
+        from bq.data_service.controllers.resource_query import RESOURCE_READ, RESOURCE_EDIT
+        query = DBSession.query(Taggable).filter_by (resource_value=src,resource_parent=None)
+        resource = resource_permission(query, RESOURCE_EDIT).first()
+        if resource:
+            resource.resource_value = dst
+        return resource
+
+        
 
     # available additional configs:
     # perm
