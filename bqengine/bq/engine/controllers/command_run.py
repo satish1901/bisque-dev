@@ -28,7 +28,6 @@ log = logging.getLogger('bq.runtime')
 def check_exec (path, fix = True):
     if os.access (path, os.X_OK):
         return
-    print "%s is not executable"
     if fix:
         os.chmod (path, 0744)
 

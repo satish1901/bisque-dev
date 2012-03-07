@@ -42,13 +42,13 @@ class ModuleRunner(object):
                     # Given launcher
                     cmd = launcher.split(' ')
                     cmd.extend (sys.argv[1:])
-                    print "Calling %s" % cmd
+                    log.debug( "Calling %s" % cmd )
                     subprocess.call (cmd)
                     return None
-                print "Missing launcher: %s" % launcher
+                log.warn( "Missing launcher: %s" % launcher)
                 return None
         else:
-            print "Missing runtime-module.cfg"
+            log.error( "Missing runtime-module.cfg" )
             return None            
             
         log.debug('Path: %s'%os.getcwd())         
@@ -70,7 +70,7 @@ class ModuleRunner(object):
         # of preference based on the system preferences
         for run_platform in self.system_runners:
             if run_platform in self.module_runners:
-                print "Choosing Runtime Platform: %s" % run_platform
+                log.info( "Choosing Runtime Platform: %s" % run_platform)
                 return RUNNER_MAP[run_platform]
         return None
 
@@ -80,7 +80,7 @@ class ModuleRunner(object):
         runner_class = self.choose_runner()
         if runner_class is not None:
             runner = runner_class(**kw)
-            print "ModuleRunner.Main"
+            log.debug( "ModuleRunner.Main")
             return runner.main(**kw)
 
 if __name__ == "__main__":
