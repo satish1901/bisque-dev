@@ -205,7 +205,7 @@ class RootController(BaseController):
 
     @expose()
     def index(self):
-        redirect ("/client_service/")
+        redirect (config.get('bisque.root') + "/client_service/")
 
 
 def register_proxy_services (proxy):
