@@ -157,13 +157,10 @@ class CondorTemplates(object):
         self.template = {}
         for x in CONDOR_TEMPLATES.keys():
             path = cfg.get (x)
-            print "CONDOR_TEMPLATE %s = %s" % (x, path)
             if path and os.path.exists(path):
                 self.template[x] = open (path).read()
-                print "CONDOR_TEMPLATE using file"
             else:
                 self.template[x] = CONDOR_TEMPLATES[x]
-                print "CONDOR_TEMPLATE using default"
             
 
     def create_file(self,output_path, template, mapping):

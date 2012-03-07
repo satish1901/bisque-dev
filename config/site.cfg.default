@@ -216,6 +216,7 @@ keys = root, bq, sqlalchemy, auth
 keys = console
 
 [formatters]
+#keys = generic, syslog
 keys = generic
 
 # If you create additional loggers, add them as a key to [loggers]
@@ -259,6 +260,8 @@ level = INFO
 handlers =
 qualname = auth
 
+#######################################
+# Handlers
 # If you create additional handlers, add them as a key to [handlers]
 [handler_console]
 class = StreamHandler
@@ -268,15 +271,19 @@ formatter = generic
 
 
 #[handler_syslog]
-#class:handlers.SysLogHandler
+#class=handlers.SysLogHandler
 #level=NOTSET
-#args:('/dev/log',handlers.SysLogHandler.LOG_LOCAL1)
-#formatter: generic
+#args=(('localhost', handlers.SYSLOG_UDP_PORT), handlers.SysLogHandler.LOG_LOCAL1)
+#args=('/dev/log',handlers.SysLogHandler.LOG_LOCAL1)
+#formatter= generic
 
-#Change args to:
-
-
+#########################################
+# Formatters
 # If you create additional formatters, add them as a key to [formatters]
 [formatter_generic]
 format = %(asctime)s,%(msecs)03d %(levelname)-5.5s [%(name)s] %(message)s
 datefmt = %H:%M:%S
+
+[formatter_syslog]
+format = %(levelname)s [%(name)s] %(message)s
+
