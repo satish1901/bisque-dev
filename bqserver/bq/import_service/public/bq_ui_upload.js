@@ -1188,7 +1188,7 @@ Ext.define('BQ.upload.Panel', {
         var dataset = new BQDataset();
         dataset.name = 'Uploaded on '+(new Date()).toISOString();
         dataset.newMembers( members );
-        dataset.save_('/data_service/datasets/', callback(this, 'onCreatedDataset'));        
+        dataset.save_('/data_service/dataset/', callback(this, 'onCreatedDataset'));        
     },   
     
     onCreatedDataset : function(dataset) {
