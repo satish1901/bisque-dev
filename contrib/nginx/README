@@ -1,0 +1,53 @@
+Example nginx config
+
+This example uses ngnix to run the bisque
+client interface via uwsgi nstead of Paster.
+
+1. Configure and install uwsgi
+Activate the bqenv virtual environment and run
+easy_install uwsgi
+to install the python uwsgi wrapper ad the uwsgi server
+
+2. Configure and install nginx
+Inorder to run uwsgi behind nginx, you need to 
+install nginx with the uwsgi module integrated
+on Debian:
+sudo apt-get install nginx-extras
+or
+sudo apt-get install nginx-full
+
+3.Configure Bisque to run via uwsgi
+uwsgi can use a paste deploy configuration to load up a
+wsgi app with minimal reconfiguration
+
+an example use of uwsgi:
+activate the bqenv virtual environment. in the bisque
+root directory, run
+
+uwsgi --paste config:<path_to_site_cfg> --socket :3031 -H <path_to_bqenv_directory> -d <path_uwsgi_log> --processes 4 --threads 8
+
+uwsgi supports a host of custimisation options. the 
+comprehensive list of options is available at
+http://projects.unbit.it/uwsgi/wiki/Doc
+
+4.Configure nginx to proxy requests to uwsgi
+copy the given sample nginx config to /etc/nginx and
+edit the following directives
+server_name  <dns_name_of_your_server>;
+root <path_to_client_service_public_directory>; #for static content
+
+refer to the nginx documentation on configuration:
+http://wiki.nginx.org/Configuration
+for more configuration options and customization
+
+Run Nginx via:
+sudo /etc/init.d/nginx start
+
+you can stop nginx by using
+sudo /etc/init.d/nginx stop
+
+and restart it using
+sudo /etc/init.d/nginx restart
+
+Notes: to restart the uwsgi process, you have to kill the uwsgi daemon
+
