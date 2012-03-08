@@ -86,7 +86,8 @@ class service_proxy (object):
             httpmethod = "POST"
             
         url = urljoin(self.proxy_url, method + '?' + urlencode(kwargs))
-        log.debug('%s request to %s with %s' % (httpmethod, url, body))
+        
+        log.debug('%s request to %s with %s' % (httpmethod, url, body[:30]+".."+body[len(body)-30:] if body is not None else None))
         try:
             headers, content = http_client.xmlrequest (
                 url,
