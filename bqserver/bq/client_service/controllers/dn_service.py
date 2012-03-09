@@ -58,6 +58,7 @@ import logging
 import urlparse
 import shutil
 import tg
+from pylons.controllers.util import abort
 from tg import expose, redirect, response
 from tg import config
 from lxml import etree
@@ -175,22 +176,20 @@ class DNServer(ServiceController):
             but is known by the server and thus should be ignored here
         '''
         userpwd = get_user_pass()
-        log.debug( 'notify - username: ' + str(userpwd[0]) )
-        if userpwd[0] == None or not not_anonymous():
-            response.status_int = 401  
-            log.debug( 'Access denied' )               
-            return "Access denied"        
+        #log.debug( 'notify - username: ' + str(userpwd) )
+        if userpwd is None or not not_anonymous():
+            log.debug( 'notify needs credentialed user' )               
+            abort(401)
 
         log.debug( 'notify - args: ' + str(kw) )
         
         username   = str(userpwd[0])
-        password   = str(userpwd[1])
         bixfiles   = kw.pop('bixfiles', [])
         imagefiles = kw.pop('imagefiles', [])
         upload_dir = kw.pop('uploaddir', None)
         if (upload_dir == None):
             uploadroot = config.get('bisque.image_service.upload_dir', data_path('uploads'))
-            upload_dir = uploadroot+'/'+ str(userpwd[0])     
+            upload_dir = os.path.join(uploadroot,username)
             #upload_dir = uploadroot+'/'+ str(identity.current.user_name)     
 
         remove_uploads = config.get('bisque.image_service.remove_uploads', False)

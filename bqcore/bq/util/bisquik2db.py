@@ -174,17 +174,17 @@ class ValueConverter (NodeConverter):
             n.text = baseuri + unicode(v.value)
         else:
             n.text = unicode(v.value)
-        log.debug ('valueconverter : %s' % etree.tostring(n))
+        #log.debug ('valueconverter : %s' % etree.tostring(n))
         return n
 
 
 def toxmlnode(dbo, parent, baseuri, view):
     try:
-        log.debug ("converter for %s " % type(dbo))
+        #log.debug ("converter for %s " % type(dbo))
         converter =  dbo.converter
         return converter.toxmlnode (dbo, parent, baseuri, view)
     except AttributeError:
-        log.debug ("NodeConverter for %s " % type(dbo))
+        #log.debug ("NodeConverter for %s " % type(dbo))
         return NodeConverter().toxmlnode (dbo, parent, baseuri, view)
 
 Taggable.toxmlnode = toxmlnode
@@ -277,7 +277,7 @@ class ResourceFactory(object):
         if array:
             objarr =  getattr(parent, array)
             v = DBSession.query(klass).filter_by(resource_parent_id=parent.id, indx=indx).first()
-            log.debug('indx %s fetched %s ' % (indx, v))
+            #log.debug('indx %s fetched %s ' % (indx, v))
             objarr.extend ([ klass() for x in range(((indx+1)-len(objarr)))])
             if not v:
                 v = objarr[indx]
