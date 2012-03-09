@@ -59,14 +59,8 @@ classdef Session < handle
 
             % if Bisque root isn't given, try to parse from mex url
             if ~exist('bisque_root', 'var'),
-                pattern = [ '^(?<scheme>\w+)://'...
-                            '(?<auth>\w+:\w+@)?'...
-                            '(?<authority>[\w\.:]+)/'...
-                            '(?<path>[-\w~!$+|.,=/]+)'...
-                            '(?<query>\?[\w!$+|.,-=/]+)?'...
-                            '(?<fragment>#[\w!$+|.,-=/]+)?'];
-                PURL = regexp(self.mex_url, pattern, 'names');
-                bisque_root = PURL.authority;
+                purl = bq.Url(self.mex_url);
+                bisque_root = purl.getRoot();
             end
             self.bisque_root = bisque_root;   
             
@@ -127,5 +121,21 @@ classdef Session < handle
             bq.put(self.mex_url, self.mex.doc, self.user, self.password);
         end % finish 
 
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % helper functions for reading objects from Bisque servers
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+       
+        function info = iminfo(self, url)
+            info = bq.iminfo(url, self.user, self.password);
+        end  
+        
+        function I = imread(self, url)
+            I = bq.imreadND(url, self.user, self.password);
+        end
+        
+        function res = resread(self, url)
+            res = bq.Node(url, [], self.user, self.password );            
+        end
+        
     end% methods
 end% classdef

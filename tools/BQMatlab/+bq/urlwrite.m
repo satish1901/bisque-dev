@@ -32,11 +32,14 @@ function [output, info] = urlwrite(url, location, user, password)
     if nargin==3,
         error('bq.urread:InvalidInput', 'You must provide both user name and password');
     end
-
-    if nargin<3, 
+    
+    if nargin<2,
+        [output, info] = bq.get(url);      
+    elseif nargin<3,
         [output, info] = bq.get(url, location);
     else
         [output, info] = bq.get(url, location, user, password);
     end
+    
 end
 

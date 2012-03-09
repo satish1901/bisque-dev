@@ -27,25 +27,27 @@
 
 function I = imreadND(url, user, password)
 
-    %% parse the url
-    if strfind(url, '@'),
-        expression = '(?<scheme>\w+)://(?<user>\w+):(?<password>\w+)@(?<path>\S+)';
-        R = regexp(url, expression, 'names');
-        user = R.user;
-        password = R.password;        
-    end    
+    % default to Matlab if it's a local path
+    if ~strfind(url, '://'),
+        I = imread(url);
+        return;
+    end
 
-    %% import necessary XPath includes
-    import javax.xml.xpath.*
-    factory = XPathFactory.newInstance;
-    xpath = factory.newXPath;
+    %% parse the url
+    purl = bq.Url(url);
+    if purl.hasUser() && purl.hasPassword(),
+        user = purl.getUser();
+        password = purl.getPassword();        
+    end        
     
     %% fetch metadata from image service
+    purl.pushQuery('dims');     
     if exist('user', 'var') && exist('password', 'var'),
-        doc = bq.get_xml( [url '&dims'], user, password );
+        doc = bq.get_xml( purl.toString(), user, password );
     else
-        doc = bq.get_xml( [url '&dims'] );    
-    end    
+        doc = bq.get_xml( purl.toString() );
+    end 
+    
     template = '//image/tag[@name=''%s'']';
     tags = { 'zsize',       'int'; 
              'tsize',       'int';              
@@ -57,9 +59,16 @@ function I = imreadND(url, user, password)
              'pixelFormat', 'str';
            };
     info = bq.parsetags(doc, tags, template);
+    purl.popQuery();    
+    
 
     %% fetch image data stream and reshape it
-    [I, res] = bq.get([url '&format=raw'], [], user, password);
+    purl.pushQuery('format', 'raw');
+    if exist('user', 'var') && exist('password', 'var'),
+        [I, res] = bq.get(purl.toString(), [], user, password);
+    else
+        [I, res] = bq.get(purl.toString());
+    end  
     I = typecast(I, info.pixelFormat);
     I = squeeze(reshape(I, info.height, info.width, info.channels, info.zsize, info.tsize)); 
     

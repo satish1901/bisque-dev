@@ -43,5 +43,11 @@ function [output, info] = get(url, location, user, password)
     %    error('bq.urread:InvalidInput', 'You must provede user credentials if the URL does not contain them.');
     %end
 
-    [output, info] = bq.connect('GET', url, location, [], user, password);    
+    if nargin<2,
+        [output, info] = bq.connect('GET', url);        
+    elseif nargin==2,
+        [output, info] = bq.connect('GET', url, location);    
+    else
+        [output, info] = bq.connect('GET', url, location, [], user, password);    
+    end    
 end
