@@ -25,11 +25,10 @@
 function info = iminfo(url, user, password)
 
     %% parse the url
-    if strfind(url, '@'),
-        expression = '(?<scheme>\w+)://(?<user>\w+):(?<password>\w+)@(?<path>\S+)';
-        R = regexp(url, expression, 'names');
-        user = R.user;
-        password = R.password;        
+    purl = bq.Url(url);
+    if purl.hasUser() && purl.hasPassword(),
+        user = purl.getUser();
+        password = purl.getPassword();        
     end    
 
     %% import necessary XPath includes
@@ -48,7 +47,8 @@ function info = iminfo(url, user, password)
     image = exp_image.evaluate(doc, XPathConstants.NODE);
     
     info = struct();
-    info.src = char(image.getAttribute('src'));    
+    info.unique = char(image.getAttribute('resource_uniq'));    
+    info.src = [purl.getRoot() '/image_service/' info.unique];       
     
     %% fetch metadata from image service
     if exist('user', 'var') && exist('password', 'var'),
@@ -70,7 +70,7 @@ function info = iminfo(url, user, password)
              'pixel_resolution_z', 'double';
              'pixel_resolution_t', 'double';
            };
-    info = parsetags(info, doc_meta, tags, template);
+    info = bq.parsetags(doc_meta, tags, template, info);
     
     %% parse image resource tags overwriting some tag values
     template = '//image/tag[@name=''%s'']';
@@ -81,50 +81,5 @@ function info = iminfo(url, user, password)
              'pixel_resolution_z',   'double';
              'pixel_resolution_t',   'double';
            };
-    info = parsetags(info, doc, tags, template);
-    
+    info = bq.parsetags(doc, tags, template, info);
 end
-
-function s = parsetags(s, doc, tags, template)
-    import javax.xml.xpath.*;
-    factory = XPathFactory.newInstance;
-    xpath = factory.newXPath;    
-    
-    for i=1:size(tags,1),
-        name = tags{i,1};
-        type = tags{i,2};        
-        expression = sprintf(template, name);
-        t = xpath.evaluate(expression, doc, XPathConstants.NODE);    
-
-        if ~isempty(t) && strcmp(type, 'double'), 
-            s.(name) = str2double(t.getAttribute('value')); 
-        elseif ~isempty(t) && strcmp(type, 'int'), 
-            s.(name) = str2num(t.getAttribute('value')); 
-        elseif ~isempty(t), 
-            s.(name) = char(t.getAttribute('value')); 
-        end
-    end
-end
-
-% old implementation using BQJavaLib
-%     % this requires: javaaddpath('./bisque.jar'); import bisque.*
-%     BQ = bisque.BQMatlab;
-% 
-%     image = BQ.loadImage( [url '?view=full'] );
-%     src = image.src;
-% 
-%     % get image geometry
-%     info = struct();
-%     info.x = image.x;
-%     info.y = image.y;
-%     info.z = image.z;
-%     info.t = image.t;
-%     info.ch = image.ch;
-%     info.pixelDepth = image.d;
-%     info.pixelFormat = image.f;
-% 
-%     % get image tags
-%     %t = image.findTag('pixel_resolution_x_y');
-%     %if ~isempty(t),
-%     %  resolutionXY = str2double(char(t.getValue()));
-%     %end

@@ -19,7 +19,7 @@
 function doc = get_xml(url, user, password)
     error(nargchk(1,3,nargin));
 
-    if nargin<3,
+    if nargin<2,
         [str, info] = bq.get(url);
     else
         [str, info] = bq.get(url, [], user, password);

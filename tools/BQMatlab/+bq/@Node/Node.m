@@ -1,6 +1,11 @@
 % bq.Node
 % A class wrapping a DOM XML node with Bisque functionality
-%
+%   Constructor:
+%       Node(doc, element, user, password)
+%           doc      - either an XML DOM document or a URL string
+%           element  - optional: parent elemnt, only used if doc is DOM
+%           user     - optional: user name if doc is a URL
+%           password - optional: user password if doc is a URL
 %   
 %   AUTHOR:
 %       Dmitry Fedorov, www.dimin.net
@@ -18,8 +23,16 @@ classdef Node < handle
     
     methods
         
-        function [self] = Node(doc, element)
-            self.doc = doc;
+        function [self] = Node(doc, element, user, password)
+            self.doc = doc;            
+            if ischar(doc),
+                if exist('user', 'var') && exist('password', 'var'),
+                    self.doc = bq.get_xml( doc, user, password );
+                else
+                    self.doc = bq.get_xml( doc );    
+                end                    
+            end
+            
             if nargin>1 && ~isempty(element),
                 self.element = element;  
             else

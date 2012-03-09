@@ -20,12 +20,16 @@
 %   VERSION:
 %       0.1 - 2011-06-27 First implementation
 %
-function s = parsetags(doc, tags, template)
+
+function s = parsetags(doc, tags, template, s)
     import javax.xml.xpath.*;
     factory = XPathFactory.newInstance;
     xpath = factory.newXPath;    
     
-    s = struct;
+    if ~exist('s', 'var')
+        s = struct;
+    end
+    
     for i=1:size(tags,1),
         name = tags{i,1};
         type = tags{i,2};        
