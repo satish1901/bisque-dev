@@ -44,7 +44,7 @@ Ext.define('BQ.renderers.dataset', {
             'title' : 'Analysis',
             'viewMode' : 'MexBrowser',
             'dataset' : '/data_service/mex',
-            'tagQuery' : '"'+this.resource.uri,
+            'tagQuery' : '"'+this.resource.uri+'"',
             'wpublic' : true,
             mexLoaded : false,
             listeners : {
