@@ -170,7 +170,7 @@ class HeartBeat (threading.Thread):
             except (socket.error, RequestError), val:
                 log.debug ("Caught error in heartbeat: %s" % val)
                 self.requests.put ( (func, data, respfunc), block=True)
-                log.debug ("                         : %s retry in 5 ", func)
+                log.debug ("                         : %s retry in 5 " % func)
                 time.sleep(5)
                 
             except:
