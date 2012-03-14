@@ -1294,9 +1294,11 @@ BQImagePhys.prototype.normalizeMeta = function() {
     this.display_channels[i] = combineValue( this.display_channels_ds[i], this.display_channels_is[i], this.display_channels[i] );      
     this.display_channels[i] = parseInt( this.display_channels[i] );      
   }
+  this.initialized = true;  
 }
 
 BQImagePhys.prototype.load = function(cb) {
+    this.initialized = undefined;
     this.loadcallback = cb;   
     BQFactory.load (this.image.src + "?meta", callback(this, 'onloadIS'));
     if (this.image.tags.length==0)
