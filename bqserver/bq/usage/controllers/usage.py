@@ -57,10 +57,10 @@ class usageController(ServiceController):
         now = datetime.now() 
         counts = []
         days = []
-        for i in range(31): 
+        for i in range(num_days): 
             d1 = now - timedelta(days=i)
             d2 = now - timedelta(days=i+1)
-            ts = ['>%s'%d2.isoformat(), '<%s'%d1.isoformat()]
+            ts = ['>%s'%d2.isoformat(), '<=%s'%d1.isoformat()]
             days.append(d2.isoformat(' '))
             req = data_service.query(resource_type, view='count', ts=ts, welcome=True)
             log.debug('=============================== %s'%etree.tostring(req))

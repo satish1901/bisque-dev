@@ -1,6 +1,7 @@
 /*******************************************************************************
 
-  BQ.selectors  - 
+  BQ.selectors - selectors of inputs for module runs
+  BQ.renderers - renderers of outputs for module runs
 
   Author: Dima Fedorov
 
@@ -19,22 +20,25 @@
 Ext.namespace('BQ.selectors');
 Ext.namespace('BQ.renderers');
 
-BQ.selectors.resources  = { 'image'   : 'BQ.selectors.Resource', 
-                            'dataset' : 'BQ.selectors.Resource', 
-                            'resource': 'BQ.selectors.Resource', 
-                            'gobject' : 'BQ.selectors.Gobject', };
+BQ.selectors.resources  = { 'image'            : 'BQ.selectors.Resource', 
+                            'dataset'          : 'BQ.selectors.Resource', 
+                            'resource'         : 'BQ.selectors.Resource', 
+                            'gobject'          : 'BQ.selectors.Gobject', };
 
-BQ.selectors.parameters = { 'tag'     : 'BQ.selectors.String', 
-                            'string'  : 'BQ.selectors.String', 
-                            'number'  : 'BQ.selectors.Number', 
-                            'combo'   : 'BQ.selectors.Combo',
-                            'boolean' : 'BQ.selectors.Boolean',
-                            'date'    : 'BQ.selectors.Date', };
+BQ.selectors.parameters = { 'tag'              : 'BQ.selectors.String', 
+                            'string'           : 'BQ.selectors.String', 
+                            'number'           : 'BQ.selectors.Number', 
+                            'combo'            : 'BQ.selectors.Combo',
+                            'boolean'          : 'BQ.selectors.Boolean',
+                            'date'             : 'BQ.selectors.Date', 
+                            'image_channel'    : 'BQ.selectors.ImageChannel', 
+                            'pixel_resolution' : 'BQ.selectors.PixelResolution', 
+                          };
 
-BQ.renderers.resources  = { 'image'    : 'BQ.renderers.Image', 
-                            'dataset'  : 'BQ.renderers.Dataset', 
-                            //'gobject'  : 'BQ.renderers.Gobject', 
-                            'tag'      : 'BQ.renderers.Tag', };
+BQ.renderers.resources  = { 'image'            : 'BQ.renderers.Image', 
+                            'dataset'          : 'BQ.renderers.Dataset', 
+                          //'gobject'          : 'BQ.renderers.Gobject', 
+                            'tag'              : 'BQ.renderers.Tag', };
 
 
 /*******************************************************************************
@@ -142,7 +146,6 @@ Ext.define('BQ.selectors.Selector', {
 
     // implement: you need to provide a way to programmatically select an element
     select: function(new_resource) {
-        
         BQ.ui.warning('Programmatic select is not implemented in this selector');
     },
 
@@ -319,7 +322,6 @@ Ext.define('BQ.selectors.Resource', {
         this.selected_resource = R;
         this.resource.value = R.uri;
         this.resource.type = R.resource_type;
-        if (!this.validate()) return;
        
         // !!!!!!!!!!!!!!!!!!!!!!!!
         // dima: here I probably need to iterate over all children and run proper selectors
@@ -344,8 +346,18 @@ Ext.define('BQ.selectors.Resource', {
             });            
         } 
         
+        // fetch image physics 
+        this.phys = undefined;
+        if (this.selected_resource instanceof BQImage) {
+            this.phys = new BQImagePhys(this.selected_resource);
+            this.phys.load(callback(this, this.onPhys));
+        }
+        
         this.add(this.resourcePreview);
         this.setHeight( this.getHeight() + this.resourcePreview.getHeight() + increment );
+
+        if (!this.validate()) return;
+        this.fireEvent( 'changed', this, this.selected_resource );
     },
 
     isValid: function() {
@@ -365,18 +377,18 @@ Ext.define('BQ.selectors.Resource', {
         
         // check for image geometry if requested    
         // we don't have image config right in the resource for, skip this for now
-        /*
-        if ( this.selected_resource.resource_type == 'image' && 'require_geometry' in template && (
-             (template['require_geometry/z'] && template['require_geometry/z']=='single' && this.selected_resource.z>1) ||
-             (template['require_geometry/z'] && template['require_geometry/z']=='stack'  && this.selected_resource.z<=1) ||
-             (template['require_geometry/t'] && template['require_geometry/t']=='single' && this.selected_resource.t>1) ||
-             (template['require_geometry/t'] && template['require_geometry/t']=='stack'  && this.selected_resource.t<=1)
+        if ( this.phys && this.phys.initialized && 
+             this.selected_resource.resource_type == 'image' && 'require_geometry' in template && (
+             (template['require_geometry/z'] && template['require_geometry/z']=='single' && this.phys.z>1) ||
+             (template['require_geometry/z'] && template['require_geometry/z']=='stack'  && this.phys.z<=1) ||
+             (template['require_geometry/t'] && template['require_geometry/t']=='single' && this.phys.t>1) ||
+             (template['require_geometry/t'] && template['require_geometry/t']=='stack'  && this.phys.t<=1)
         )) {
             var msg = template['require_geometry/fail_message'] || 'Image geometry check failed!';
-            BQ.ui.attention(msg);
+            //BQ.ui.attention(msg);
             BQ.ui.tip(this.getId(), msg); // dima: maybe i need to give dom object id for this one, instead of this        
             return false;
-        } */      
+        }
         
         //if (this.selector_gobs) 
         //    return this.selector_gobs.validate();
@@ -387,9 +399,17 @@ Ext.define('BQ.selectors.Resource', {
         return true;
     },
 
+    onPhys: function() {
+        if (this.isValid())
+            this.fireEvent( 'gotPhys', this, this.phys );
+    },
+
 });
 
 /*******************************************************************************
+BQ.selectors.Gobject relies on BQ.selectors.Resource in that it's
+not intended to be instantiated directly but only within BQ.selectors.Resource
+
 Gobject templated configs:
 accepted_type
 
@@ -467,6 +487,303 @@ Ext.define('BQ.selectors.Gobject', {
 });
 
 
+/*******************************************************************************
+BQ.selectors.ImageChannel relies on BQ.selectors.Resource and altough
+it is instantiated directly it needs existing BQ.selectors.Resource to listen to
+and read data from!
+
+Image Channel templated configs:
+
+<tag name="nuclear_channel" value="1" type="image_channel">
+    <tag name="template" type="template">
+        <tag name="label" value="Nuclear channel" />
+        <tag name="reference" value="image_url" />
+        <tag name="guess" value="nuc|Nuc|dapi|DAPI|405|dna|DNA|Cy3" />
+    </tag>
+</tag>
+*******************************************************************************/
+
+Ext.define('BQ.selectors.ImageChannel', {
+    alias: 'widget.selectorchannel',    
+    extend: 'BQ.selectors.Selector',
+    requires: ['Ext.form.field.Number', 'Ext.data.Store', 'Ext.form.field.ComboBox'],
+
+    height: 30,
+    layout: 'hbox',
+
+    initComponent : function() {
+        var resource = this.resource;
+        var template = resource.template || {};
+        var reference = this.module.inputs_index[template.reference];
+        if (reference && reference.renderer) {
+            this.reference = reference.renderer;
+            this.reference.on( 'changed', function(sel, res) { this.onNewResource(sel, res); }, this );
+            this.reference.on( 'gotPhys', function(sel, phys) { this.onPhys(sel, phys); }, this );            
+        }
+        
+        this.items = [];        
+
+        // create numeric channel selector
+        var label = template.label?template.label:undefined;
+        this.numfield = Ext.create('Ext.form.field.Number', {
+            //flex: 1,
+            cls: 'number',
+            name: resource.name,
+            labelWidth: 200,
+            labelAlign: 'right',
+            fieldLabel: label,
+            value: resource.value!=undefined?parseInt(resource.value):undefined,
+            minValue: 1,
+            maxValue: 100,
+            allowDecimals: false,
+            step: 1,
+            
+            listeners: {
+                change: function(field, value) {
+                    this.resource.value = String(value);
+                }, scope: this,
+            },
+            
+        });
+        this.items.push(this.numfield);
+       
+        // create combo box selector
+        this.store = Ext.create('Ext.data.Store', {
+            fields: ['name', 'channel'],
+        });
+        
+        this.combo = Ext.create('Ext.form.field.ComboBox', {       
+            itemId: 'combobox',
+            //flex: 1,
+            name: resource.name+'_combo',
+            labelWidth: 200,
+            labelAlign: 'right',
+            hidden: true,
+            
+            fieldLabel: label,
+            //value: resource.value,
+            multiSelect: false,
+            store: this.store,
+            queryMode: 'local',
+            displayField: 'name',
+            valueField: 'channel', 
+            
+            forceSelection : true,  
+            editable : false, 
+
+            listeners: {
+                select: function(field, value) {
+                    this.resource.value = field.getValue();
+                }, scope: this,
+            },
+            
+        });       
+        this.items.push(this.combo);        
+        
+        this.callParent();
+    },
+
+    onNewResource : function(sel, res) {
+        var resource = this.resource;
+        var template = resource.template || {};
+        this.numfield.setVisible(true);
+        this.combo.setVisible(false);
+        
+        if (res instanceof BQDataset) {
+            var msg = 'You have selected a dataset, this module will only work correctly if all images have the same channel structure!';
+            BQ.ui.tip(this.numfield.getId(), msg, {anchor:'left', timeout: 30000, });
+        }
+    },
+
+    onPhys : function(sel, phys) {
+        var resource = this.resource;
+        var template = resource.template || {};
+        var guess = template.guess || '';
+                
+        // create channel combo
+        var selected = 1;
+        var a = [];
+        var i=undefined;
+        for (var p=0; (i=phys.channel_names[p]); p++) {
+            i = String(i);
+            a.push({ 'name': ''+(p+1)+': '+i, 'channel': p+1, });  
+            if (i.match(guess))
+                selected = p+1; 
+        }
+        this.store.removeAll(true);                      
+        this.store.add(a);
+        this.combo.setValue(selected);
+
+        this.numfield.setVisible(false);
+        this.combo.setVisible(true);
+      
+    },
+
+    select: function(value) {
+        this.numfield.setValue( value );
+        this.combo.setValue( value );        
+    }, 
+
+    isValid: function() {
+        if (!this.resource.value) {
+            var template = resource.template || {};
+            var msg = template.fail_message || 'You need to select an option!';
+            BQ.ui.tip(this.getId(), msg, {anchor:'left',});
+            return false;               
+        }        
+        return true;
+    },
+
+});
+
+/*******************************************************************************
+BQ.selectors.PixelResolution relies on BQ.selectors.Resource and altough
+it is instantiated directly it needs existing BQ.selectors.Resource to listen to
+and read data from!
+
+Pixel Resolution templated configs:
+
+<tag name="pixel_resolution" type="pixel_resolution">
+    <value>0</value>
+    <value>0</value>
+    <value>0</value>             
+    <value>0</value>               
+    <tag name="template" type="template">
+        <tag name="label" value="Voxel resolution" />
+        <tag name="reference" value="image_url" />
+        <tag name="units" value="microns" />        
+    </tag>
+</tag>
+*******************************************************************************/
+
+Ext.define('BQ.selectors.PixelResolution', {
+    alias: 'widget.selectorresolution',    
+    extend: 'BQ.selectors.Selector',
+    requires: ['Ext.form.field.Number'],
+
+    height: 30,
+    layout: 'hbox',
+
+    initComponent : function() {
+        var resource = this.resource;
+        var template = resource.template || {};
+        var reference = this.module.inputs_index[template.reference];
+        if (reference && reference.renderer) {
+            this.reference = reference.renderer;
+            this.reference.on( 'changed', function(sel, res) { this.onNewResource(sel, res); }, this );
+            this.reference.on( 'gotPhys', function(sel, phys) { this.onPhys(sel, phys); }, this );            
+        }
+
+        Ext.tip.QuickTipManager.init();
+        
+        if (!resource.values) 
+            resource.values = []; 
+        if (resource.values.length<4)
+            resource.values.length = 4;
+        // dima, here i need to instantiate Value objects
+
+        this.items = [];        
+        var label = template.label?template.label:undefined;  
+        var labels = [label+' X', 'Y', 'Z', 'T'];      
+
+        // create resolution pickers        
+        this.field_res = [];
+        for (var i=0; i<4; i++) {
+
+            this.field_res[i] = Ext.create('Ext.form.field.Number', {
+                //flex: 1,
+                cls: 'number',
+                name: resource.name+String(i),
+                value_index: i,
+                
+                labelAlign: 'right',
+                width: i==0?270:80,
+                labelWidth: i==0?200:10,
+                fieldLabel: labels[i],
+                
+                value: parseFloat(resource.values[i].value),
+                minValue: 0,
+                maxValue: 33,
+                allowDecimals: true,
+                decimalPrecision: 4,
+                step: 0.01,
+                
+                listeners: {
+                    change: function(field, value) {
+                        resource.values[field.value_index].value = String(value);
+                    }, scope: this,
+                },
+            });
+            
+            if (template.description)
+            Ext.tip.QuickTipManager.register({
+                target: this.field_res[i],
+                //title: 'My Tooltip',
+                text: template.description,
+                width: 200,
+                dismissDelay: 10000, // Hide after 10 seconds hover
+            });            
+            
+            this.items.push(this.field_res[i]);
+        }
+        
+        if (template.units)
+            this.items.push({ xtype: 'container', html:'<label>'+template.units+'</label>', cls: 'units', });        
+        
+        this.callParent();
+    },
+
+    onNewResource : function(sel, res) {
+        var resource = this.resource;
+        var template = resource.template || {};
+        
+        var p=null;
+        for (var i=0; (p=this.field_res[i]); i++) { 
+            p.setVisible(true);
+            // probably should not force the reset of resolution here,
+            //resource.values[i].value = 0.0;
+            //p.setValue(0.0);            
+        }
+        
+        if (res instanceof BQDataset) {
+            var msg = 'You have selected a dataset, this module will only work correctly if all images have the same pixel resolution!';
+            BQ.ui.tip(this.getId(), msg, {anchor:'left', timeout: 30000, });
+        }
+    },
+
+    onPhys : function(sel, phys) {
+        var resource = this.resource;
+        var template = resource.template || {};
+
+        for (var i=0; i<4; i++)
+            this.field_res[i].setValue( phys.pixel_size[i] );
+        
+        if (phys.t>1)
+            this.field_res[3].setVisible(true);
+        else {
+            this.field_res[3].setVisible(false);            
+            resource.values[3].value = 1.0;
+        }
+    },
+
+    select: function(value) {
+        //this.numfield.setValue( value );
+    }, 
+
+    isValid: function() {
+        if (!this.resource.values || 
+            resource.values[0].value<=0 || resource.values[1].value<=0 || resource.values[2].value<=0 || resource.values[3].value<=0) {
+            var template = resource.template || {};
+            var msg = template.fail_message || 'You need to select an option!';
+            BQ.ui.tip(this.getId(), msg, {anchor:'left',});
+            return false;               
+        }        
+        return true;
+    },
+
+});
+
+
 
 
 /*******************************************************************************
@@ -512,7 +829,7 @@ Ext.define('BQ.selectors.Number', {
         
         if (this.multivalue || template.showSlider != false)
         this.slider = Ext.create('Ext.slider.Multi', {        
-            flex: 1,
+            flex: 3,
             name: resource.name+'-slider',
             
             labelAlign: 'right',
@@ -568,7 +885,7 @@ Ext.define('BQ.selectors.Number', {
         if (this.numfield) this.items.push(this.numfield);
         if (this.slider) this.items.push(this.slider);
         if (template.units)
-            this.items.push({ xtype: 'container', html:'<label>'+template.units+'</label>', cls: 'units', });        
+            this.items.push({ xtype: 'container', html:'<label>'+template.units+'</label>', cls: 'units', flex: 1, });        
             
         this.callParent();
     },
@@ -894,6 +1211,7 @@ Ext.define('BQ.selectors.Date', {
     },
 
 });
+
 
 
 /*******************************************************************************

@@ -254,13 +254,16 @@ BQWebApp.prototype.create_renderer = function ( surface, selector, conf ) {
     conf = conf || {};
     Ext.apply(conf, { width: '100%', renderTo: surface,});
     var renderer = Ext.create(selector, conf);
+    var horizontal_padding = 20;
     
-    Ext.EventManager.addListener( window, 'resize', function(e) {
+    var do_resize = function() {
             var w = document.getElementById(surface);
-            var horizontal_padding = 20;
             if (w) renderer.setWidth(w.clientWidth-horizontal_padding);
-        }, this, { delay: 100, } 
-    );   
+    };
+    
+    Ext.EventManager.addListener( window, 'resize', do_resize, this, { delay: 100, }  );   
+    setTimeout(do_resize, 250);    
+    
     return renderer;
 }
 
@@ -271,7 +274,10 @@ BQWebApp.prototype.setupUI = function () {
     setInnerHtml('version',     'Version: '+this.ms.module.version);
 }
 
-BQWebApp.prototype.setupUI_inputs = function () {
+BQWebApp.prototype.setupUI_inputs = function (my_renderers) {
+    //key = key || 'inputs';
+    //this.renderers[key] = this.renderers[key] || {};
+    //var my_renderers = this.renderers[key];    
 
     // render input resource pickers
     var inputs = this.ms.module.inputs;
@@ -280,10 +286,11 @@ BQWebApp.prototype.setupUI_inputs = function () {
     for (var p=0; (i=inputs[p]); p++) {
         var t = i.type;
         if (t in BQ.selectors.resources)
-            i.renderer = this.create_renderer( 'inputs', BQ.selectors.resources[t], { resource: i,} );
+            i.renderer = this.create_renderer( 'inputs', BQ.selectors.resources[t], { resource: i, module: this.ms.module, } );
+            //if (my_renderers) my_renderers(i.name) = i.renderer;
     }
 
-    // check of there are parameters to acquire
+    // check if there are parameters to acquire
     for (var p=0; (i=inputs[p]); p++) {
         var t = (i.type || i.resource_type).toLowerCase();
         if (t in BQ.selectors.parameters) {
@@ -296,7 +303,8 @@ BQWebApp.prototype.setupUI_inputs = function () {
     for (var p=0; (i=inputs[p]); p++) {
         var t = (i.type || i.resource_type).toLowerCase();
         if (t in BQ.selectors.parameters)
-            i.renderer = this.create_renderer( 'parameters', BQ.selectors.parameters[t], { resource: i,} );
+            i.renderer = this.create_renderer( 'parameters', BQ.selectors.parameters[t], { resource: i, module: this.ms.module, } );
+            //if (my_renderers) my_renderers(i.name) = i.renderer;
     }
 }
 
