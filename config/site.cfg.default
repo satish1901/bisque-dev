@@ -81,10 +81,15 @@ bisque.paths.root  =
 bisque.blob_service.stores=file:$datadir/imagedir/$user/$dirhash/$filehash-$filename
 #bisque.blob_service.stores=
 # irods://winwood.iplantcollaborative.org/iplant/home/$user/bisque_data/uploads/$dirhash/$filehash-$filename, 
-# file:$datadir/imagedir/$user/$dirhash/$filehash-$filename
+# file:$datadir/imagedir/$user/$dirhash/$filehash-$filename,
+# s3://$user-$filehash-$filename
 #bisque.blob_service.file.dir = file:$datadir/imagedir
 #bisque.blob_service.irods.user = 
 #bisque.blob_service.irods.password = 
+#S3 Storage
+#bisque.blob_service.s3.access_key = 
+#bisque.blob_service.s3.secret_key =
+#bisque.blob_service.s3.bucket_id = 
 # Data service
 #bisque.data_service.caching=true
 #bisque.data_service.server_cache=.server_cache
