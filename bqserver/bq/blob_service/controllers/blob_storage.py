@@ -24,6 +24,7 @@ except ImportError:
 
 try:
     import boto
+    from bq.util import s3_handler
     supported_storage_schemes.append('s3')
 except ImportError:
     log.warn ("Can't import boto:  S3  Storage not supported")
@@ -37,9 +38,9 @@ def randomPath (format_path, user, filename, **params):
     rand_hash = make_uniq_hash(filename)
     #return "%s/%s/%s/%s-%s" % (top, user, rand_hash[0], rand_hash, os.path.basename(filename))
     return string.Template(format_path).substitute(
-        user=user, 
-        dirhash=rand_hash[0], 
-        filehash=rand_hash, 
+        user=user,
+        dirhash=rand_hash[0],
+        filehash=rand_hash,
         filename=os.path.basename(filename), **params)
 
 
@@ -48,7 +49,7 @@ class BlobStorage(object):
     scheme = "scheme"
     format_path = "unassigned format_path"
     def __str__(self):
-        return "<%s>" %(self.format_path)
+        return "<%s>" % (self.format_path)
 
     def valid(self, ident):
         'determine whether this store can access the identified file'
@@ -65,9 +66,9 @@ class LocalStorage(BlobStorage):
     scheme = 'file'
 
     def __init__(self, format_path):
-        self.top = config.get('bisque.blob_service.file.dir',  data_path('imagedir'))
+        self.top = config.get('bisque.blob_service.file.dir', data_path('imagedir'))
         self.top = string.Template(self.top).safe_substitute(datadir=data_path())
-        self.format_path = string.Template(format_path).safe_substitute ( datadir = data_path() )
+        self.format_path = string.Template(format_path).safe_substitute (datadir=data_path())
         if self.format_path.startswith('file:') and not self.top.startswith('file:'):
             self.top = 'file:' + self.top
         if not self.format_path.startswith(self.top):
@@ -78,20 +79,20 @@ class LocalStorage(BlobStorage):
     def valid(self, ident):
         return os.path.exists(self.localpath(ident))
 
-    def write(self, fp,  name, user_name = ''):
+    def write(self, fp, name, user_name=''):
         'store blobs given local path'
         if not fp and name:
-            src = open(name,'rb')
+            src = open(name, 'rb')
         else:
-            src=fp
+            src = fp
             src.seek(0)
 
         filepath = self.nextEmptyBlob(user_name, name)
-        localpath =urlparse.urlparse(filepath).path 
-        log.debug('local.write: %s -> %s' % (name,localpath))
+        localpath = urlparse.urlparse(filepath).path 
+        log.debug('local.write: %s -> %s' % (name, localpath))
         with  open(localpath, 'wb') as trg:
             shutil.copyfileobj(src, trg)
-        ident  = filepath[len(self.top)+1:]
+        ident = filepath[len(self.top) + 1:]
         return ident, localpath
 
     def localpath(self, ident):
@@ -127,12 +128,12 @@ class iRodsStorage(BlobStorage):
 
     def write(self, fp, filename, user_name=None):
         blob_ident = randomPath(self.format_path, user_name, filename)
-        log.debug('irods.write: %s -> %s' % (filename,blob_ident))
-        flocal = irods_handler.irods_push_file(fp, blob_ident, user=self.user, password = self.password)
+        log.debug('irods.write: %s -> %s' % (filename, blob_ident))
+        flocal = irods_handler.irods_push_file(fp, blob_ident, user=self.user, password=self.password)
         return blob_ident, flocal
 
     def localpath(self, irods_ident):
-        path = irods_handler.irods_fetch_file(irods_ident, user=self.user, password = self.password)
+        path = irods_handler.irods_fetch_file(irods_ident, user=self.user, password=self.password)
         return  path
 
 
@@ -142,21 +143,51 @@ class S3Storage(BlobStorage):
     scheme = 's3'
 
     def __init__(self, format_path):
+        
+        from boto.s3.connection import S3Connection, Location
+                
         self.format_path = format_path
-        self.top = config.get('bisque.blob_service.s3')
-        raise ConfigurationError('bisque.blob_service.s3 not implemented')
+        self.access_key = config.get('bisque.blob_service.s3.access_key')
+        self.secret_key = config.get('bisque.blob_service.s3.secret_key')
+        self.bucket_id = config.get('bisque.blob_service.s3.bucket_id')
+        self.bucket = None
+        
+        if self.access_key is None or self.secret_key is None or self.bucket_id is None:
+            raise ConfigurationError('bisque.blob_service.s3 incomplete config')
+        
+        self.conn = S3Connection(self.access_key, self.secret_key)
+        
+        try:
+            self.bucket = self.conn.get_bucket(self.bucket_id)
+        except:
+            try:
+                self.bucket = self.conn.create_bucket(self.bucket_id, location=Location.USWest)
+            except boto.exception.S3CreateError:
+                raise ConfigurationError('bisque.blob_service.s3.bucket_id already owned by someone else. Please use a different bucket_id')
+            except:
+                raise ServiceError('error while creating bucket in s3 blob storage')
+        
+        log.info('s3 instantiated successfully')
+        
+    def valid(self, s3_ident):
+        return s3_ident and s3_ident.startswith('s3://')
 
-    def valid(self, irods_ident):
-        return False
-
-    def write(self, fp,  filename, user_name=None):
+    def write(self, fp, filename, user_name=None):
         'write a file to s3'
+        blob_ident = randomPath(self.format_path, user_name, filename)
+        log.debug('s3.write: %s -> %s' % (filename, blob_ident))
+        s3_key = blob_ident.replace("s3://","")
+        flocal = s3_handler.s3_push_file(fp, self.bucket , s3_key)
+        return blob_ident, flocal
 
     def localpath(self, s3_ident):
-        'return path to  local copy of the s3'
+        'return path to local copy of the s3 resource'
+        s3_key = s3_ident.replace("s3://","")
+        path = s3_handler.s3_fetch_file(self.bucket, s3_key)
+        return  path
+        
 
 
-   
 def make_driver(storage_url):
     storage_drivers = {
         'file' : LocalStorage,
