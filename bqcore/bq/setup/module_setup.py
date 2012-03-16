@@ -71,7 +71,7 @@ def copy_files (files, dest):
         copy_link (f, dest)
     
 
-def matlab_setup(main_path, files = [], bisque_deps = True, dependency_dir = "mbuild", params = {}, **kw):
+def matlab_setup(main_path, files = [], bisque_deps = False, dependency_dir = "mbuild", params = {}, **kw):
     'prepare a matlab script for execution  by compiling with mcc'
 
     ensure_matlab(params)

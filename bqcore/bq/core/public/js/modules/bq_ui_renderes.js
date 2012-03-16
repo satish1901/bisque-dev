@@ -771,7 +771,8 @@ Ext.define('BQ.selectors.PixelResolution', {
     }, 
 
     isValid: function() {
-        if (!this.resource.values || 
+        var resource = this.resource;
+        if (!resource.values || 
             resource.values[0].value<=0 || resource.values[1].value<=0 || resource.values[2].value<=0 || resource.values[3].value<=0) {
             var template = resource.template || {};
             var msg = template.fail_message || 'You need to select an option!';
@@ -1292,7 +1293,7 @@ Ext.define('BQ.renderers.Image', {
     extend: 'BQ.renderers.Renderer',
     requires: ['BQ.viewer.Image'],
     
-    height: 450,
+    height: 500,
     layout: {
         type: 'vbox',
         align : 'stretch',

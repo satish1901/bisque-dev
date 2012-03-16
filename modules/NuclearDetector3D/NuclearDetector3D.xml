@@ -1,44 +1,148 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- <module name="NucleiDetector3D"  path="NucleiDetector3D.py" type="shell" > -->
-<module name="NucleiDetector3D"  path="launch3D.py" type="runtime" >
+<module name="NuclearDetector3D" type="runtime" >
   
     <tag name="inputs">
-        <tag name="input-system" value="client_server"  />
-        <tag name="input-system" value="mex_url"  />
-        <tag name="input-formal" value="image_url" type="resource"  />
-        <tag name="input-formal" value="nuclear_size:number='2.4'" >
-            <tag name="value-default" value="2.4" />
-            <tag name="value-min" value="0.0000001" />
-            <tag name="value-units" value="pixels" />
-            <tag name="units" value="microns,pixels" />
-        </tag>
-        <tag name="input-formal" value="nuclear_channel:channel='1'" type="channel">
-            <tag name="value-default" value="1" />        
+        <tag name="mex_url"      type="system-input" />
+        <tag name="bisque_token" type="system-input" />
+        
+        <tag name="image_url" type="image">
+          <tag name="template" type="template">
+            <tag name="iterable" value="iterable-001" />            
+            <tag name="require_geometry">
+              <tag name="z" value="stack" />
+              <tag name="fail_message" value="Requires a Z stack" />
+            </tag>
+          </tag>
         </tag>        
-        <tag name="input-system" value="bisque_token"  />
+        
+        <tag name="nuclear_channel" value="1" type="image_channel">
+            <tag name="template" type="template">
+                <tag name="label" value="Nuclear channel" />
+                <tag name="reference" value="image_url" />
+                <tag name="guess" value="nuc|Nuc|dapi|DAPI|405|dna|DNA|Cy3" />
+            </tag>
+        </tag>
+        
+        <tag name="nuclear_size" value="2.4" type="number" >
+            <tag name="template" type="template">
+                <tag name="label" value="Nuclear diameter" />
+                <tag name="minValue" value="0.00001" type="number" />
+                <tag name="maxValue" value="33" type="number" />
+                <tag name="allowDecimals" value="true" type="boolean" />
+                <tag name="decimalPrecision" value="4" type="number" />
+                <tag name="step" value="0.1" type="number" />
+                <tag name="units" value="microns" />
+            </tag>             
+        </tag>        
+
+        <tag name="pixel_resolution" type="pixel_resolution">
+            <value>0</value>
+            <value>0</value>
+            <value>0</value>             
+            <value>0</value>               
+            <tag name="template" type="template">
+                <tag name="label" value="Voxel resolution" />
+                <tag name="reference" value="image_url" />
+                <tag name="units" value="microns" />                
+                <tag name="description" value="This is a default voxel resolution and is only used during the dataste run if the image does not have one." />   
+            </tag>
+        </tag>
+        
     </tag>
+
     
     <tag name="outputs">
-        <tag name="output-formal" value="gobject_url:string" />
-        <tag name="output-formal" value="nuclei_count:number" />
-    </tag>
+        <tag name="summary">
+            <tag name="template" type="template">
+                <tag name="label" value="Detection summary" />
+            </tag>
+        </tag>              
+        <tag name="MyImage" type="image">
+            <tag name="template" type="template">
+                <tag name="label" value="Detected nuclear centroids" />
+            </tag>            
+            <gobject name="nuclear_centroids">
+                <tag name="template" type="template">
+                    
+                    <tag name="plot" value="true"  type="boolean">
+                        <tag name="label" value="Distributions of seed areas, major and minor axis" />
+                        <tag name="title">
+                            <value>Distribution of seed areas</value>
+                            <value>Distribution of major axis</value>
+                            <value>Distribution of minor axis</value>                                                        
+                        </tag>                           
+                        <tag name="xmap" value="tag-value-number" />
+                        <tag name="xreduce" value="histogram" />
+                        <tag name="xpath">
+                            <value>//tag[@name="color"]</value>
+                            <value>//tag[@name="shape"]</value>    
+                            <value>//tag[@name="line_width"]</value>
+                        </tag>                        
+                        <tag name="args">
+                            <tag name="numbins" value="18" type="number" />
+                        </tag>                        
+                    </tag>
+
+                    <tag name="plot1" value="true"  type="boolean">
+                        <tag name="label" value="Distribution of seed areas" />
+                        <tag name="title" value="Distribution of seed areas" />
+                        <tag name="xmap" value="tag-value-number" />
+                        <tag name="xreduce" value="histogram" />
+                        <tag name="xpath">
+                            <value>//tag[@name="color"]</value>
+                        </tag>                        
+                        <tag name="args">
+                            <tag name="numbins" value="18" type="number" />
+                        </tag>                        
+                    </tag>
+                    
+                    <tag name="export_csv" value="true" type="boolean">
+                        <tag name="label" value="Area, Major and Minor axis as CSV" />
+                        <tag name="xmap" value="tag-value-number" />
+                        <tag name="xreduce" value="vector" />
+                        <tag name="xpath">
+                            <value>//tag[@name='color']</value>
+                            <value>//tag[@name='shape']</value>
+                            <value>//tag[@name='line_width']</value>
+                        </tag>                        
+                    </tag>                      
+
+                    <tag name="export_csv1" value="true" type="boolean">
+                        <tag name="label" value="Color, Shape, Line width as CSV" />
+                        <tag name="xmap" value="tag-value-number" />
+                        <tag name="xreduce" value="vector" />
+                        <tag name="xpath">
+                            <value>//tag[@name='color']</value>
+                            <value>//tag[@name='shape']</value>
+                            <value>//tag[@name='line_width']</value>
+                        </tag>                        
+                    </tag>   
+
+                    <tag name="export_xml"    value="true"  type="boolean" />
+                    <tag name="export_excel"  value="false" type="boolean" />
+                    <tag name="export_gdocs"  value="true"  type="boolean" />
+                    <tag name="preview_movie" value="false" type="boolean" />
+                </tag>                  
+            </gobject>
+        </tag>
+    </tag>    
     
     <tag name="execute_options">
         <tag name="argument_style" value="position" />
     </tag> 
 
     <tag name="module_options" >
-        <tag name="version" value="2" />
+        <tag name="version" value="3" />
     </tag>   
        
     <tag name="display_options" >
-        <tag name="group" value="application" />
+        <tag name="group" value="Nuclear analysis" />
     </tag>
-    
-    <tag name="interface" type="file" value="public/index.html" />
+
+    <tag name="title" value="Detector of nuclei in 3D/4D" /> 
+    <tag name="authors" value="Dmitry Fedorov and Boguslaw Obara" />    
     <tag name="help"      type="file" value="public/help.html" />
     <tag name="thumbnail" type="file" value="public/thumbnail.png" />   
-    <tag name="description" type="string" value="This module detects nuclei centroids in 3D/4D fluorescence images." />      
-    
+    <tag name="description" type="string" value="This module detects centroids of nuclei in 3D/4D fluorescence images." />      
     
 </module>

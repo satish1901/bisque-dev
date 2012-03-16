@@ -172,7 +172,7 @@ class MexParser(object):
         if arguments is not None and arguments == 'named':
             params = ['%s=%s'%(i.get('name'), i.get('value')) for i in input_nodes]
         else:
-            params = [ i.get('value') for i in input_nodes ]
+            params = [ i.get('value', '') for i in input_nodes ]
         return params
 
     def prepare_submexes(self, module, mex):
