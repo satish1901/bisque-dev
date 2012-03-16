@@ -6,13 +6,20 @@
         <tag name="bisque_token" type="system-input" />
         
         <tag name="image_url" type="image">
-          <tag name="template" type="template">
+            <tag name="template" type="template">
             <tag name="iterable" value="iterable-001" />            
-            <tag name="require_geometry">
-              <tag name="z" value="stack" />
-              <tag name="fail_message" value="Requires a Z stack" />
+                <tag name="require_geometry">
+                    <tag name="z" value="stack" />
+                    <tag name="fail_message" value="Requires a Z stack" />
+                </tag>
             </tag>
-          </tag>
+            
+            <gobject name="roi">
+                <tag name="template" type="template">
+                    <tag name="gobject" value="line" />
+                    <tag name="gobject" value="polygon" />
+                </tag>
+            </gobject>            
         </tag>        
         
         <tag name="nuclear_channel" value="1" type="image_channel">
@@ -65,58 +72,36 @@
                 <tag name="template" type="template">
                     
                     <tag name="plot" value="true"  type="boolean">
-                        <tag name="label" value="Distributions of seed areas, major and minor axis" />
-                        <tag name="title">
-                            <value>Distribution of seed areas</value>
-                            <value>Distribution of major axis</value>
-                            <value>Distribution of minor axis</value>                                                        
-                        </tag>                           
+                        <tag name="label" value="Distribution of detection confidence" />
+                        <tag name="title" value="Distribution of detection confidence" />
                         <tag name="xmap" value="tag-value-number" />
                         <tag name="xreduce" value="histogram" />
                         <tag name="xpath">
-                            <value>//tag[@name="color"]</value>
-                            <value>//tag[@name="shape"]</value>    
-                            <value>//tag[@name="line_width"]</value>
+                            <value>//tag[@name="confidence"]</value>
                         </tag>                        
                         <tag name="args">
-                            <tag name="numbins" value="18" type="number" />
+                            <tag name="numbins" value="20" type="number" />
                         </tag>                        
                     </tag>
 
-                    <tag name="plot1" value="true"  type="boolean">
-                        <tag name="label" value="Distribution of seed areas" />
-                        <tag name="title" value="Distribution of seed areas" />
-                        <tag name="xmap" value="tag-value-number" />
-                        <tag name="xreduce" value="histogram" />
-                        <tag name="xpath">
-                            <value>//tag[@name="color"]</value>
-                        </tag>                        
-                        <tag name="args">
-                            <tag name="numbins" value="18" type="number" />
-                        </tag>                        
-                    </tag>
-                    
                     <tag name="export_csv" value="true" type="boolean">
-                        <tag name="label" value="Area, Major and Minor axis as CSV" />
-                        <tag name="xmap" value="tag-value-number" />
-                        <tag name="xreduce" value="vector" />
+                        <tag name="label" value="Nuclear centroid coordinates and confidence as CSV" />
                         <tag name="xpath">
-                            <value>//tag[@name='color']</value>
-                            <value>//tag[@name='shape']</value>
-                            <value>//tag[@name='line_width']</value>
-                        </tag>                        
+                            <value>//point|//gobject[@type='point']</value>
+                            <value>//point|//gobject[@type='point']</value>
+                            <value>//point|//gobject[@type='point']</value>
+                            <value>//point|//gobject[@type='point']</value>
+                            <value>//tag[@name='confidence']</value>
+                        </tag> 
+                        <tag name="xmap">
+                            <value>gobject-vertex-x</value>
+                            <value>gobject-vertex-y</value>
+                            <value>gobject-vertex-z</value>
+                            <value>gobject-vertex-t</value>
+                            <value>tag-value-number</value>
+                        </tag>                           
+                        <tag name="xreduce" value="vector" />
                     </tag>                      
-
-                    <tag name="export_csv1" value="true" type="boolean">
-                        <tag name="label" value="Color, Shape, Line width as CSV" />
-                        <tag name="xmap" value="tag-value-number" />
-                        <tag name="xreduce" value="vector" />
-                        <tag name="xpath">
-                            <value>//tag[@name='color']</value>
-                            <value>//tag[@name='shape']</value>
-                            <value>//tag[@name='line_width']</value>
-                        </tag>                        
-                    </tag>   
 
                     <tag name="export_xml"    value="true"  type="boolean" />
                     <tag name="export_excel"  value="false" type="boolean" />

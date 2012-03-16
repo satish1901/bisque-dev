@@ -2,7 +2,6 @@ function NuclearDetector3D(mex_url, access_token, image_url, nuclear_channel, nu
     session = bq.Session(mex_url, access_token);
     try
         %% Load data
-        session.update('0% - fetching image');
         info = session.iminfo(image_url);
         url = bq.Url(info.pixles_url);
 
@@ -26,22 +25,26 @@ function NuclearDetector3D(mex_url, access_token, image_url, nuclear_channel, nu
             res(4) = getfield(info, 'pixel_resolution_t');
         end
 
-        url.pushQuery('slice', ',,,1'); % fetch first T slice
-        url.pushQuery('remap', int2str(nuclear_channel));
-        imn = session.imread(url.toString());        
         
-        
-        %% Run
-        ns =  (nuclear_diameter/2.0) ./ res;
+        number_t = max(1, info.image_num_t);
+        np = cell(number_t, 1);
+        for current_t=1:number_t,
+            session.update(sprintf('Time %d: 0% - fetching image', current_t));        
+            url.pushQuery('slice', sprintf(',,,%d', current_t)); % fetch first T slice
+            url.pushQuery('remap', int2str(nuclear_channel));
+            imn = session.imread(url.toString());        
 
-        t = 0.025:0.025:0.5;
-        if isinteger(imn),
-           t = t * double(intmax(class(imn)));
+            %% Run
+            ns =  (nuclear_diameter/2.0) ./ res;
+
+            t = 0.025:0.025:0.5;
+            if isinteger(imn),
+               t = t * double(intmax(class(imn)));
+            end
+
+            session.update(sprintf('Time %d: 10% - detecting', current_t));
+            np{current_t} = BONuclearDetector3D(imn, [], ns, t, session);    
         end
-
-        session.update('10% - starting detection');    
-        np = BONuclearDetector3D(imn, [], ns, t, session);    
-
         
         %% Store results
         session.update('90% - storing results');    
@@ -53,11 +56,13 @@ function NuclearDetector3D(mex_url, access_token, image_url, nuclear_channel, nu
         imref = outputs.addTag('MyImage', image_url, 'image'); 
         g = imref.addGobject('nuclear_centroids', 'nuclear_centroids');
 
-        for i=1:length(np),       
-            p = g.addGobject('nucleus', int2str(i));        
-            v = [np(i,2)-1, np(i,1)-1, np(i,3)-1, 0.0];
-            p.addGobject('point', 'centroid', v );
-            p.addTag('confidence', np(i,5), 'number'); 
+        for j=1:length(np),        
+            for i=1:length(np{j}),       
+                p = g.addGobject('nucleus', int2str(j*i));        
+                v = [np{j}(i,2)-1, np{j}(i,1)-1, np{j}(i,3)-1, j-1.0];
+                p.addGobject('point', 'centroid', v );
+                p.addTag('confidence', np{j}(i,5), 'number'); 
+            end
         end
         
         session.finish();

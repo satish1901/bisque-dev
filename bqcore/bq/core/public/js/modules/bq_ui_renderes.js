@@ -337,7 +337,7 @@ Ext.define('BQ.selectors.Resource', {
         
         // show the preview thumbnail of the selected resource, 
         // if gobjects are required the image viewer will be shown, so no need for the preview
-        if (this.resource.gobjects.length<1) {    
+        if (!(this.selected_resource instanceof BQImage) || this.resource.gobjects.length<1) {    
             this.resourcePreview = Bisque.ResourceFactoryWrapper.getResource( {resource:R} );
         } else {
             this.resourcePreview = Ext.create('BQ.selectors.Gobject', {
@@ -370,10 +370,10 @@ Ext.define('BQ.selectors.Resource', {
             return false;
         }
 
-        if (this.selected_resource.resource_type == 'dataset' && this.resource.gobjects.length>0) {
-            BQ.ui.error('Improper module configuration, graphical annotations cannont be required on a dataset!'); 
-            return false;            
-        } 
+        //if (this.selected_resource.resource_type == 'dataset' && this.resource.gobjects.length>0) {
+        //    BQ.ui.error('Improper module configuration, graphical annotations cannont be required on a dataset!'); 
+        //    return false;            
+        //} 
         
         // check for image geometry if requested    
         // we don't have image config right in the resource for, skip this for now
@@ -433,7 +433,7 @@ Ext.define('BQ.selectors.Gobject', {
     
     cls: '',
     layout: 'fit',
-    height: 450,
+    height: 500,
 
     initComponent : function() {
         var resource = this.resource;
