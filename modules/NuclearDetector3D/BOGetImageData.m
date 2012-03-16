@@ -1,6 +1,9 @@
 function [image imageNuclei imageMembrane resolutionXY resolutionZ] = ...
-            BOGetImageData(BQ, image_url, channel_Nuclei, channel_Membrane)
+            BOGetImageData(image_url, channel_Nuclei, channel_Membrane)
 
+    % this requires: javaaddpath('./bisque.jar'); import bisque.*
+    BQ = bisque.BQMatlab;
+        
     imageNuclei = [];
     imageMembrane = [];
     resolutionXY = 1.0;    

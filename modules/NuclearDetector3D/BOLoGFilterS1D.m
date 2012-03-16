@@ -1,4 +1,3 @@
-function [LoG1,LoG2] = BOLoGFilterS1D(s)
 %%  BOLoGFilterS1D - separable Laplacian of Gaussian filter
 %   
 %   REFERENCE:
@@ -34,10 +33,12 @@ function [LoG1,LoG2] = BOLoGFilterS1D(s)
 %
 %   VERSION:
 %       0.1 - 03/06/2010 First implementation
+%%
 
-%% Grid coordinates
-x = (-3*s:3*s)';
-%% LoG
-LoG1 = (1/(sqrt(2*pi)*s)) * (1 - x.^2/s^2 ) .* exp(-x.^2/(2*s^2));
-LoG2 = (1/(sqrt(2*pi)*s)) * exp(-x.^2/(2*s^2));
+function [LoG1,LoG2] = BOLoGFilterS1D(s)
+    %% Grid coordinates
+    x = (-3*s:3*s)';
+    %% LoG
+    LoG1 = (1/(sqrt(2*pi)*s)) * (1 - x.^2/s^2 ) .* exp(-x.^2/(2*s^2));
+    LoG2 = (1/(sqrt(2*pi)*s)) * exp(-x.^2/(2*s^2));
 end
