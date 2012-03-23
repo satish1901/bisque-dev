@@ -38,7 +38,8 @@ BQ.selectors.parameters = { 'tag'              : 'BQ.selectors.String',
 BQ.renderers.resources  = { 'image'            : 'BQ.renderers.Image', 
                             'dataset'          : 'BQ.renderers.Dataset', 
                           //'gobject'          : 'BQ.renderers.Gobject', 
-                            'tag'              : 'BQ.renderers.Tag', };
+                            'tag'              : 'BQ.renderers.Tag', 
+                            'mex'              : 'BQ.renderers.Mex', };
 
 
 /*******************************************************************************
@@ -1270,8 +1271,9 @@ Ext.define('BQ.renderers.Tag', {
 
 });
 
+
 /*******************************************************************************
-Image templated configs:
+ Abstract class for renderer with Tools - export and plot
 
 *******************************************************************************/
 function createArgs(command, values) {
@@ -1288,17 +1290,8 @@ function createStatsArgs(command, template, name) {
     return createArgs(command, c);
 }
 
-Ext.define('BQ.renderers.Image', {
-    alias: 'widget.rendererimage',    
+Ext.define('BQ.renderers.RendererWithTools', {
     extend: 'BQ.renderers.Renderer',
-    requires: ['BQ.viewer.Image'],
-    
-    height: 500,
-    layout: {
-        type: 'vbox',
-        align : 'stretch',
-        pack  : 'start',
-    },    
 
 /*
     tools: {
@@ -1323,6 +1316,164 @@ Ext.define('BQ.renderers.Image', {
         'export_gdocs'  : 'createMenuExportGdocs',
     },
 
+    createTools : function() {
+        // create tools menus
+        var plotMenu = Ext.create('Ext.menu.Menu');
+        for (var i in this.toolsPlot)
+            if (this.toolsPlot[i] in this)
+                this[this.toolsPlot[i]](plotMenu);
+
+        var previewMenu = Ext.create('Ext.menu.Menu');
+        for (var i in this.toolsPreview)
+            if (this.toolsPreview[i] in this)        
+                this[this.toolsPreview[i]](previewMenu);
+
+        var exportMenu = Ext.create('Ext.menu.Menu');                
+        for (var i in this.toolsExport)
+            if (this.toolsExport[i] in this)          
+                this[this.toolsExport[i]](exportMenu);     
+
+        var tool_items = [];                
+        if (plotMenu.items.getCount()>0)    tool_items.push( { text : 'Plot',    menu: plotMenu, } );
+        if (previewMenu.items.getCount()>0) tool_items.push( { text : 'Preview', menu: previewMenu, } );
+        if (exportMenu.items.getCount()>0)  tool_items.push( { text : 'Export',  menu: exportMenu, } ); 
+        return tool_items;
+    },
+
+    createPlot : function(menu, name, template) {
+        if (!this.res_uri_for_tools) return;
+        menu.add({
+            text: template[name+'/label']?template[name+'/label']:'Plot',
+            scope: this,
+            handler: function() {
+                var title = template[name+'/title'];
+                if (title instanceof Array) title = title.join(', ');
+                var titles = template[name+'/title'];
+                if (!(titles instanceof Array)) titles = [titles];
+                var opts = { args: {numbins: template[name+'/args/numbins']}, titles: titles, };
+                this.plotter = Ext.create('BQ.stats.Dialog', {
+                    url     : this.res_uri_for_tools,
+                    xpath   : template[name+'/xpath'],
+                    xmap    : template[name+'/xmap'],
+                    xreduce : template[name+'/xreduce'],
+                    title   : title,
+                    opts    : opts,
+                    root    : this.root,
+                });
+            },
+        });          
+    },
+
+    createMenuPlot : function(menu) {
+        if (!this.res_uri_for_tools) return;
+        if (!this.template_for_tools) return;
+        var template = this.template_for_tools || {};
+        if ('plot' in template && template['plot']==false) return;
+        
+        var name = 'plot';
+        for (var i=0; i<20; i++) {
+            if (i>0) name = 'plot' + i;
+            if (!(name in template)) break;        
+            this.createPlot(menu, name, template);
+        }
+            
+    }, 
+
+    createExportCsv : function(menu, name, template) {
+        if (!this.res_uri_for_tools) return;        
+        menu.add({
+            text: template[name+'/label']?template[name+'/label']:'as CSV',
+            scope: this,
+            handler: function() {
+                var url = '/stats/csv?url=' + this.res_uri_for_tools;
+                if (this.root) url = this.root + url;
+                url += createStatsArgs('xpath', template, name);
+                url += createStatsArgs('xmap', template, name);
+                url += createStatsArgs('xreduce', template, name);                                        
+                window.open(url);                
+            },
+        });         
+    },
+
+    createMenuExportCsv : function(menu) {
+        if (!this.res_uri_for_tools) return;
+        if (!this.template_for_tools) return;
+        var template = this.template_for_tools || {};
+        if ('export_csv' in template && template['export_csv']==false) return;
+        
+        var name = 'export_csv';
+        for (var i=0; i<20; i++) {
+            if (i>0) name = 'export_csv' + i;
+            if (!(name in template)) break;            
+            this.createExportCsv(menu, name, template);
+        }
+    }, 
+
+    createMenuExportXml : function(menu) {
+        if (!this.res_uri_for_tools) return;
+        if (!this.template_for_tools) return;
+        var template = this.template_for_tools || {};
+        if ('export_xml' in template && template['export_xml']==false) return; 
+        menu.add({
+            text: 'complete document as XML',
+            scope: this,
+            handler: function() {
+                window.open(this.res_uri_for_tools + '?view=deep');
+            },
+        }); 
+    }, 
+
+    createMenuExportExcel : function(menu) {
+        if (!this.res_uri_for_tools) return;
+        if (!this.template_for_tools) return;
+        var template = this.template_for_tools || {};
+        if ('export_excel' in template && template['export_excel']==false) return; 
+        menu.add({
+            text: 'complete document as CSV',
+            scope: this,
+            handler: function() {
+                window.open(this.res_uri_for_tools + '?view=deep&format=csv');
+            },
+        });      
+    }, 
+
+    createMenuExportGdocs : function(menu) {
+        if (!this.res_uri_for_tools) return;
+        if (!this.template_for_tools) return;
+        var template = this.template_for_tools || {};
+        if ('export_gdocs' in template && template['export_gdocs']==false) return; 
+        menu.add({
+            text: 'complete document to Google Docs',
+            scope: this,
+            handler: function() {
+                window.open('/export/to_gdocs?url='+this.res_uri_for_tools);
+            },
+        });        
+    }, 
+
+
+});
+
+
+
+
+/*******************************************************************************
+Image templated configs:
+
+*******************************************************************************/
+
+Ext.define('BQ.renderers.Image', {
+    alias: 'widget.rendererimage',    
+    extend: 'BQ.renderers.RendererWithTools',
+    requires: ['BQ.viewer.Image'],
+    
+    height: 500,
+    layout: {
+        type: 'vbox',
+        align : 'stretch',
+        pack  : 'start',
+    },    
+
     initComponent : function() {
         var definition = this.definition;
         var template = definition.template || {};
@@ -1339,25 +1490,13 @@ Ext.define('BQ.renderers.Image', {
         });
 
         // create tools menus
-        var tool_items = [];                
+        var tool_items = [];
         if (this.gobjects.length>0) {
-
-            var plotMenu = Ext.create('Ext.menu.Menu');
-            for (var i in this.toolsPlot)
-                this[this.toolsPlot[i]](plotMenu);
-
-            var previewMenu = Ext.create('Ext.menu.Menu');
-            for (var i in this.toolsPreview)
-                this[this.toolsPreview[i]](previewMenu);
-
-            var exportMenu = Ext.create('Ext.menu.Menu');                
-            for (var i in this.toolsExport)
-                this[this.toolsExport[i]](exportMenu);     
-    
-            if (plotMenu.items.getCount()>0)    tool_items.push( { text : 'Plot',    menu: plotMenu, } );
-            if (previewMenu.items.getCount()>0) tool_items.push( { text : 'Preview', menu: previewMenu, } );
-            if (exportMenu.items.getCount()>0)  tool_items.push( { text : 'Export',  menu: exportMenu, } ); 
-        }               
+            this.res_uri_for_tools = this.gobjects[0].uri;
+            var gobs = this.definition.gobjects[0];
+            this.template_for_tools = (gobs?gobs.template:{}) || {};
+            tool_items = this.createTools();
+        }
 
         this.items = [];
         this.items.push( {xtype: 'label', html:(template.label?template.label:resource.name), } );        
@@ -1369,110 +1508,6 @@ Ext.define('BQ.renderers.Image', {
                
         this.callParent();
     },
-
-    createPlot : function(menu, name, template) {
-        menu.add({
-            text: template[name+'/label']?template[name+'/label']:'Plot',
-            scope: this,
-            handler: function() {
-                var title = template[name+'/title'];
-                if (title instanceof Array) title = title.join(', ');
-                var titles = template[name+'/title'];
-                if (!(titles instanceof Array)) titles = [titles];
-                var opts = { args: {numbins: template[name+'/args/numbins']}, titles: titles, };
-                this.plotter = Ext.create('BQ.stats.Dialog', {
-                    url     : this.gobjects[0].uri,
-                    xpath   : template[name+'/xpath'],
-                    xmap    : template[name+'/xmap'],
-                    xreduce : template[name+'/xreduce'],
-                    title   : title,
-                    opts    : opts,
-                    root    : this.root,
-                });
-            },
-        });          
-    },
-
-    createMenuPlot : function(menu) {
-        var gobs = this.definition.gobjects[0];
-        var template = (gobs?gobs.template:{}) || {};
-        if ('plot' in template && template['plot']==false) return;
-        
-        var name = 'plot';
-        for (var i=0; i<20; i++) {
-            if (i>0) name = 'plot' + i;
-            if (!(name in template)) break;        
-            this.createPlot(menu, name, template);
-        }
-            
-    }, 
-
-    createExportCsv : function(menu, name, template) {
-        menu.add({
-            text: template[name+'/label']?template[name+'/label']:'as CSV',
-            scope: this,
-            handler: function() {
-                var url = '/stats/csv?url=' + this.gobjects[0].uri;
-                if (this.root) url = this.root + url;
-                url += createStatsArgs('xpath', template, name);
-                url += createStatsArgs('xmap', template, name);
-                url += createStatsArgs('xreduce', template, name);                                        
-                window.open(url);                
-            },
-        });         
-    },
-
-    createMenuExportCsv : function(menu) {
-        var gobs = this.definition.gobjects[0];
-        var template = (gobs?gobs.template:{}) || {};
-        if ('export_csv' in template && template['export_csv']==false) return;
-        
-        var name = 'export_csv';
-        for (var i=0; i<20; i++) {
-            if (i>0) name = 'export_csv' + i;
-            if (!(name in template)) break;            
-            this.createExportCsv(menu, name, template);
-        }
-    }, 
-
-    createMenuExportXml : function(menu) {
-        var gobs = this.definition.gobjects[0];
-        var template = (gobs?gobs.template:{}) || {};
-        if ('export_xml' in template && template['export_xml']==false) return; 
-        menu.add({
-            text: 'complete document as XML',
-            scope: this,
-            handler: function() {
-                window.open(this.gobjects[0].uri + '?view=deep');
-            },
-        }); 
-    }, 
-
-    createMenuExportExcel : function(menu) {
-        var gobs = this.definition.gobjects[0];
-        var template = (gobs?gobs.template:{}) || {};
-        if ('export_excel' in template && template['export_excel']==false) return; 
-        menu.add({
-            text: 'complete document as CSV',
-            scope: this,
-            handler: function() {
-                window.open(this.gobjects[0].uri + '?view=deep&format=csv');
-            },
-        });      
-    }, 
-
-    createMenuExportGdocs : function(menu) {
-        var gobs = this.definition.gobjects[0];
-        var template = (gobs?gobs.template:{}) || {};
-        if ('export_gdocs' in template && template['export_gdocs']==false) return; 
-        menu.add({
-            text: 'complete document to Google Docs',
-            scope: this,
-            handler: function() {
-                window.open('/export/to_gdocs?url='+this.gobjects[0].uri);
-            },
-        });        
-    }, 
 
     createMenuPreviewMovie : function(menu) {
         var gobs = this.definition.gobjects[0];
@@ -1561,4 +1596,40 @@ Ext.define('BQ.renderers.Dataset', {
 
 });
 
+/*******************************************************************************
+Mex templated configs:
 
+*******************************************************************************/
+
+Ext.define('BQ.renderers.Mex', {
+    alias: 'widget.renderermex',    
+    extend: 'BQ.renderers.RendererWithTools',
+    
+    height: 50,
+    layout: {
+        type: 'vbox',
+        align : 'stretch',
+        pack  : 'start',
+    },    
+
+    initComponent : function() {
+        var definition = this.definition;
+        var template = definition.template || {};
+        var resource = this.resource;
+        if (!definition || !resource) return;
+        
+        // create tools menus
+        var tool_items = [];
+        this.res_uri_for_tools = resource.value; // dima: resource.value ???
+        this.template_for_tools = template;
+        tool_items = this.createTools();
+
+        this.items = [];
+        this.items.push( {xtype: 'label', html:(template.label?template.label:resource.name), } );        
+        if (tool_items.length>0) 
+            this.items.push( {xtype: 'toolbar', items: tool_items, defaults: { scale: 'medium' }, } );               
+               
+        this.callParent();
+    },
+
+});

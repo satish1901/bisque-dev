@@ -83,12 +83,23 @@ BQObject.prototype.initializeXml = function (resource) {
 }
 
 BQObject.prototype.afterInitialized = function () {
-    var ta = this.find_tags('template');
-
-    if (ta && ta.resource_type == 'tag')
-        this.template = ta.toDict(true);
-    else if (ta && ta.length>0)
+    // try to set template
+    
+    // first try to find a resource "template"
+    var ta = this.find_children('template');
+    if (ta && ta instanceof Array && ta.length>0)
         this.template = ta[0].toDict(true);
+    else if (ta)
+        this.template = ta.toDict(true);
+    
+    if (this.template) return;
+
+    // then look for tags "template" - old style
+    ta = this.find_tags('template');
+    if (ta && ta instanceof Array && ta.length>0)
+        this.template = ta[0].toDict(true);
+    else if (ta)
+        this.template = ta.toDict(true);
 }
 
 BQObject.prototype.testReadonly = function () {
@@ -164,6 +175,22 @@ BQObject.prototype.find_tags  = function (name, deep, found) {
             found.push( t );
         if (deep && t.tags.length >0 ) 
             t.find_tags (name, deep, found);
+    }
+    if (found.length == 0) 
+        return null;
+    if (found.length == 1) 
+        return found[0];
+    return found;
+}
+
+BQObject.prototype.find_children  = function (type, name, deep, found) {
+    found = found || [];
+    for (var i=0; i < this.children.length; i++) {
+        var t = this.children[i];
+        if (t.resource_type == type && (!name || name && t.name == name))
+            found.push( t );
+        if (deep && t.children.length >0 ) 
+            t.find_children (type, name, deep, found);
     }
     if (found.length == 0) 
         return null;
@@ -597,9 +624,26 @@ BQResource.prototype = new BQObject();
 //      return xmlrep;
 //  }
 
+//-----------------------------------------------------------------------------
+// BQTemplate
+//-----------------------------------------------------------------------------
 
-///////////////////////////////////////////////////
+function BQTemplate (uri, doc) {
+    BQObject.call(this, uri, doc);
+    this.xmltag = 'template';
+    this.xmlfields = [ 'uri', 'type', 'name' ];
+}
+BQTemplate.prototype = new BQObject();
+
+BQTemplate.prototype.setParent = function (p) {
+    p.children.push (this);
+    this.parent = p;    
+}
+
+//-----------------------------------------------------------------------------
 // BQFactory for creating Bisque Objects
+//-----------------------------------------------------------------------------
+
 function BQFactory (){}
 BQFactory.ctormap =  { vertex  : Vertex,
                        value   : Value,
@@ -621,6 +665,7 @@ BQFactory.ctormap =  { vertex  : Vertex,
                        auth     :BQAuth,
                        dataset  :BQDataset,
                        resource :BQResource,
+                       template :BQTemplate,
 
 };
 BQFactory.escapeXML = function(xml) {
@@ -1603,23 +1648,29 @@ BQModule.prototype.afterInitialized = function () {
     // define inputs and outputs    
     //BQObject.prototype.afterInitialized.call ();
     var inputs  = this.find_tags('inputs');
-    var outputs = this.find_tags('outputs');
-    
     if (inputs && inputs.tags) {
         this.inputs = inputs.tags; // dima - this should be children in the future
         this.inputs_index  = inputs.create_flat_index();    
     }
+
+    var outputs = this.find_tags('outputs');
     if (outputs && outputs.tags) {
         this.outputs = outputs.tags; // dima - this should be children in the future   
         this.outputs_index  = outputs.create_flat_index();
     }
+    
+    var template = this.find_children('template', 'iterable');
+    if (template && template.tags) {
+        this.template_index  = template.create_flat_index();
+    }    
+    
     this.updateTemplates();
 }
 
 BQModule.prototype.updateTemplates = function () {
     // create iterable dict
-    var iterable_names = [];
-    var iterable_recources = {};
+    //var iterable_names = [];
+    //var iterable_recources = {};
     
     // create accepted_type
     // unfortunately there's no easy way to test if JS vector has an element
@@ -1635,13 +1686,17 @@ BQModule.prototype.updateTemplates = function () {
             }
             e.template.accepted_type = act;
             
+            /*
+            // dima: old-style iterable
             if ('iterable' in e.template) {
                 iterable_names.push(e.template.iterable);
                 iterable_recources[e.template.iterable] = e;
-            }
+            }*/
         }
     }
     
+    /*
+    // dima: old-style iterable
     // create sorted iterable resource names
     if (iterable_names.length>0) {
         iterable_names = iterable_names.sort();
@@ -1650,6 +1705,19 @@ BQModule.prototype.updateTemplates = function () {
         for (var i=0; (n=iterable_names[i]); i++)
             this.iterables.push( iterable_recources[n] );
     }
+    */
+    
+    // new style - simple one iterable element def
+    if (this.template && this.template.inputs && this.template['inputs/iterable']) {
+        var n = this.template['inputs/iterable'];
+        var r = this.inputs_index[n];
+        if (r) {
+            this.iterables = [r];
+            r.template = r.template || {};
+            r.template.iterable = true; // set iterable template in the resource for renderer
+        }
+    }
+ 
 }
 
 
@@ -1674,6 +1742,8 @@ BQModule.prototype.createMEX = function( ) {
     // create OUTPUTS block
     //var tag_outputs = mex.addtag ({name:'outputs'}); // dima: the outputs tag will be created by the module?
     
+    /*
+    // dima: old style
     // create execute_options block
     if (this.iterables && this.iterables.length>0) {
         var tag_execute = mex.addtag ({name:'execute_options'});
@@ -1683,6 +1753,18 @@ BQModule.prototype.createMEX = function( ) {
                 tag_execute.addtag({name:'iterable', value:i.name});
         }
     }
+    */
+    
+    // create iterable block
+    if (this.iterables && this.iterables.length>0) {
+        var tag_iterable = mex.addtag ({name:'iterable'});
+        var tag_inputs   = tag_iterable.addtag ({name:'inputs'});        
+        var i = undefined;
+        for (var p=0; (i=this.iterables[p]); p++) {
+            if (i.type == 'dataset')
+                tag_inputs.addtag({name:'iterable', value:i.name});
+        }
+    }    
     
     return mex;
 }
@@ -1738,8 +1820,13 @@ BQMex.prototype.afterInitialized = function () {
     //BQObject.prototype.afterInitialized.call ();
     
     this.dict = this.dict || this.toDict(true);
-    // check if the mex has iterables
-    if (this.dict['execute_options/iterable']) {
+    
+    // check if the mex has iterables - new style
+    if (this.dict['template/inputs/iterable']) {
+        var name = this.dict['template/inputs/iterable'];
+        this.findMexsForIterable(name, 'inputs/');
+    } else
+    if (this.dict['execute_options/iterable']) { // old style
         var name = this.dict['execute_options/iterable'];
         this.findMexsForIterable(name, 'inputs/');
     }
