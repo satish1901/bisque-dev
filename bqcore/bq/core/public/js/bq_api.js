@@ -4,6 +4,8 @@
 BQTypeError = new Error("Bisque type error");
 BQOperationError = new Error("Bisque operation error");
 
+
+
 classExtend = function(subClass, baseClass) {
    function inheritance() {}
    inheritance.prototype = baseClass.prototype;
@@ -601,7 +603,8 @@ BQResource.prototype = new BQObject();
 ///////////////////////////////////////////////////
 // BQFactory for creating Bisque Objects
 function BQFactory (){}
-BQFactory.ctormap =  { vertex  : Vertex,
+BQFactory.ctormap =  { 
+    //vertex  : Vertex,
                        value   : Value,
                        tag     : BQTag,
                        image   : BQImage,
@@ -621,8 +624,12 @@ BQFactory.ctormap =  { vertex  : Vertex,
                        auth     :BQAuth,
                        dataset  :BQDataset,
                        resource :BQResource,
-
 };
+
+BQFactory.ignored = {
+    vertex  : Vertex,
+}
+
 BQFactory.escapeXML = function(xml) {
     var specials = [ [ /</g,  "&lt;"],
                      [ />/g,  "&gt;"],
@@ -650,6 +657,8 @@ BQFactory.make = function(ty, uri, name, value) {
     o.value = value;
     return o;
 }
+
+
 BQFactory.createFromXml = function(xmlResource, resource, parent) {
     var stack = [];
     var resources = [];
@@ -677,7 +686,7 @@ BQFactory.createFromXml = function(xmlResource, resource, parent) {
         }
         for (var i=0; i < node.childNodes.length; i++ ) {
             var k = node.childNodes[i];
-            if (k.nodeType == 1) // Element nodes ONLY
+            if (k.nodeType == 1 &&  ! (k.nodeName in BQFactory.ignored)) // Element nodes ONLY
                 stack.push ( [ k, null, resource ]);
             //else
             //    clog ("Got Node type" + k.nodeType + " for " + k.text);
@@ -1060,6 +1069,20 @@ BQGObject.prototype.initializeXml = function (node) {
     this.name = attribStr(node, 'name');
     this.uri =  attribStr(node, 'uri');
     this.resource_type = this.xmltag;
+
+    var x = document.evaluate('./vertex', node, null, XPathResult.ANY_TYPE, null);
+    
+    this.vertices = [];
+    var y = x.iterateNext();
+    while (y) {
+        //this.vertices.push([attribFloat(y, 'x'),  attribFloat(y, 'y'), attribFloat(y, 'z'), 
+        //attribFloat(y, 't'), attribFloat(y, 'ch') ]);
+        var v = new Vertex();
+        v.initializeXml(y);
+        this.vertices.push(v);
+        y = x.iterateNext();
+    }
+      
 }
 
 BQGObject.prototype.setParent = function (p) {

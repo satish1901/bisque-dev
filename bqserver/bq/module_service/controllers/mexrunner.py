@@ -206,16 +206,21 @@ class MexRunner(object):
         self.session.refresh(mex)
 
         content = response.body
+        mextree = None
         try:
             if response.status in ( 200, 500):
                 mextree = etree.XML(content)
                 if  mextree.tag == 'response':
                     mextree = mextree[0]
+                if mextree[0].tag != "mex":
+                    mextree = None
             else:
                 mextree = response.request.mextree
         except etree.ParseError:
-            mextree = etree.Element ('mex', value='FAILED')
             log.warn("Bad Mex Content %s" % content)
+
+        if mextree is None:
+            mextree = etree.Element ('mex', value='FAILED')
 
         if mextree.get ('uri', None) != mexuri:
             log.error ("wrong mex returned %s" % mextree.get ('uri'))
