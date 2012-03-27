@@ -1,0 +1,19 @@
+server {
+    listen       11000;
+    server_name  water.ece.ucsb.edu;
+    root /home/kage/bq051/bqcore/bq/client_service/public;
+
+    charset utf-8;
+
+    location / {
+        uwsgi_pass 0.0.0.0:3052;
+        include uwsgi_params;
+        uwsgi_param SCRIPT_NAME "";
+    }
+
+    error_page   500 502 503 504  /50x.html;
+    location = /50x.html {
+        root   html;
+    }
+}
+
