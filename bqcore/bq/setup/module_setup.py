@@ -71,7 +71,7 @@ def copy_files (files, dest):
         copy_link (f, dest)
     
 
-def matlab_setup(main_path, files = [], bisque_deps = True, dependency_dir = "mbuild", params = {}, **kw):
+def matlab_setup(main_path, files = [], bisque_deps = False, dependency_dir = "mbuild", params = {}, **kw):
     'prepare a matlab script for execution  by compiling with mcc'
 
     ensure_matlab(params)
@@ -97,7 +97,7 @@ def matlab_setup(main_path, files = [], bisque_deps = True, dependency_dir = "mb
     if len(files):
         copy_files (files, '.')
     if not os.path.exists (dependency_dir): os.mkdir (dependency_dir)
-    if mcc(main_path + '.m', '-d', dependency_dir, '-m', '-C', '-R', '-nodisplay'):
+    if mcc(main_path + '.m', '-d', dependency_dir, '-m', '-C', '-R', '-nodisplay', '-R', '-nosplash'):
         main = main_name + ext_map.get(os.name, '')
         ctf  = main_name + '.ctf'
         shutil.copyfile(os.path.join(dependency_dir, main), main)

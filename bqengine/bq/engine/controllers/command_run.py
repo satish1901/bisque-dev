@@ -28,7 +28,6 @@ log = logging.getLogger('bq.runtime')
 def check_exec (path, fix = True):
     if os.access (path, os.X_OK):
         return
-    print "%s is not executable"
     if fix:
         os.chmod (path, 0744)
 
@@ -345,7 +344,7 @@ class BaseRunner(object):
             log.exception( "Problem occured in module")
             raise RunnerException(str(e), self.mexes)
         except Exception, e:
-            log.exception ("Unknown exeception: %s", e)
+            log.exception ("Unknown exeception: %s" % e)
             raise RunnerException(str(e), self.mexes)
 
 

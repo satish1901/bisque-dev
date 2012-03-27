@@ -17,4 +17,5 @@ condor.dag_config_template = config/templates/condor_dag_conf.tmpl
 [condor_submit]
 request_cpus = 1
 request_memory = 2000
+match_list_length = 3
 requirements = (Arch == "x86_64") && (TARGET.Name =!= LastMatchName1) && (OpSys == "LINUX") 
