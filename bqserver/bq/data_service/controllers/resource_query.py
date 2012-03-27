@@ -91,6 +91,18 @@ PRIVATE=1
 RESOURCE_READ=0
 RESOURCE_EDIT=1
 
+# Legal attributes for Taggable
+LEGAL_ATTRIBUTES = {
+     'name': 'resource_name',  'resource_name' : 'resource_name',
+     'type': 'resource_user_type', 'resource_user_type': 'resource_user_type', 
+     'value': 'resource_value', 'resource_value' : 'resource_value', 
+     'hidden': 'resource_hidden', 'resource_hidden': 'resource_hidden', 
+     'ts': 'ts', 'created': 'created', 
+     }
+    
+
+#####################################################
+# tag_query parser
 report_errors = True
 
 try:
@@ -99,11 +111,11 @@ try:
 except:
     import yacc as yacc
     import lex as lex
- 
+
+
+# Lexer 
 tokens = ('TAGVAL',  'SEP', 'TYSEP', 'AND', 'OR', 'LP', 'RP', 'QUOTED')
-reserved = { 'and': 'AND', 'AND': 'AND',
-             'or' : 'OR', 'OR' : 'OR', 
-             }
+reserved = { 'and':'AND', 'AND':'AND', 'or':'OR', 'OR':'OR', }
 
 #t_TAGVAL   = r'\w+\*?'
 t_TYSEP = r'::'
@@ -113,14 +125,12 @@ t_OR    = r'\|'
 t_LP    = r'\('
 t_RP    = r'\)'
 #t_REL   = r'<|>|<=|>='
-
-
 #t_VALEXP= r'\w+\*'
 
 t_ignore = r' '
 
 def t_QUOTED(t):
-    r'(?P<quote>["\'])(?:\\?.)*?(?P=quote)'
+    r'(?s)(?P<quote>["\'])(?:\\?.)*?(?P=quote)'
     t.type = 'TAGVAL'
     t.value = t.value[1:-1]
     return t
@@ -148,21 +158,13 @@ def t_error(t):
 
 lex.lex() 
 
+# End Lexer
 #############
 
 
 def p_query_simple(p):
     '''query : expr'''
     p[0] = p[1]
-#def p_query_list(p):
-#    '''query : query term'''
-#    if p[2]:
-#        p[0] = and_(p[1], p[2])
-#    else:
-#        p[0] = p[1]
-#def p_query_empty(p):
-#    '''query: '''
-#    p[0] = None
 
 def p_expr_binop(p):
     ''' expr : expr AND term
@@ -185,48 +187,6 @@ def p_expr_term(p):
     '''expr : term'''
     #p[0] = Taggable.id.in_ (select([Taggable.id], p[1]).correlate(None))
     p[0] = p[1]
-
-# def p_term_tagval(p):
-#     '''term : tagval SEP tagval'''
-#     vals= values.alias()
-#     tag = taggable.alias ()
-#     if p[1].count('*'):
-#         namexpr = tag.c.resource_name.ilike (p[1].replace('*', '%'))
-#     else:
-#         namexpr = tag.c.resource_name == p[1]
-#     v = p[3].lower()
-#     if p[3].count('*'):
-#         v = v.replace('*', '%')
-#         valexpr = tag.c.resource_value.ilike(v)
-#     else:
-#         valexpr = (func.lower(tag.c.resource_value) == v)
-#     p[0] = exists([tag.c.id]).where(
-#         and_(namexpr, valexpr, tag.c.document_id == taggable.c.id))
-
-# def p_term_tag(p):
-#     '''term : tagval'''
-#     vals= values.alias()
-#     tag = taggable.alias()
-#     v = p[1].lower()
-#     if p[1].count('*'):
-#         valexpr = (func.lower(tag.c.resource_value).ilike(v))
-#     else:
-#         #q1 = session.query(Tag).filter(and_(
-#         #        Tag.id == vals.c.parent_id, 
-#         #        func.lower(vals.c.valstr) == v))
-#         #q2 = session.query(Tag).filter(func.lower(Tag.resource_value) == 'f.tiff')
-#         #sq = q1.union(q2).subquery()
-#         # exists([taggable.id]).where(taggable.c.id == sq.c.taggable_document_id)
-#         valexpr = (func.lower(tag.c.resource_value) == v)
-#     p[0] = exists([tag.c.id]).where (and_(valexpr, tag.c.document_id == taggable.c.document_id))
-# def p_tagval_norm (p):
-#     '''tagval : TAGVAL'''
-#     p[0] = p[1]
-# def p_tagval_quote (p):
-#     '''tagval : QUOTED'''
-#     p[0] = p[1]
-
-
 
 
 def p_term_tagvaltype(p):
@@ -267,16 +227,19 @@ def p_term_tagvaltype(p):
 
 
 
-
-def p_tagval_val(p):
+### Parsing
+#   [[TYPE ::]NAME:]VALUE
+def p_sexpr_val(p):
     '''sexpr : tagval'''
+    # return (name,value,type)
     p[0] = (None, p[1], None)
-def p_tagval_nameval (p):
+def p_sexpr_nameval (p):
     '''sexpr : tagval SEP tagval'''
+    # return (name,value,type)
     p[0] = (p[1], p[3], None)
-def p_tagval_namevaltype (p):
-    '''sexpr : tagval TYSEP sexpr
-    '''
+def p_sexpr_namevaltype (p):
+    '''sexpr :  tagval TYSEP sexpr '''
+    # return (name,value,type)
     p[0] = (p[3][0], p[3][1], p[1])
 
 
@@ -302,6 +265,8 @@ def p_error(p):
 #_mkdir("generated")
 yacc.yacc(outputdir=data_path(), debug= 1)
 
+# End Parser 
+#############################################################
 
 def prepare_permissions (query, user_id, with_public, action = RESOURCE_READ):
     # get system supplied user ID
@@ -395,7 +360,10 @@ def prepare_order_expr (query, tag_order, **kw):
             log.debug ("tag_order: %s" % (order))
             
             if order.startswith('@'):
-                query = query.order_by(ordering(getattr(Taggable, order[1:])))
+                # skip illegal attributes
+                attribute = LEGAL_ATTRIBUTES.get(order[1:])
+                if attribute:
+                    query = query.order_by(ordering(getattr(Taggable, attribute)))
                 continue
             ordertags = taggable.alias()
             ordervals = values.alias()
@@ -696,16 +664,9 @@ def resource_query(resource_type,
         query = query.filter(Taggable.resource_hidden == None)
 
 
-    legal_attributes= {'ts':'ts', 
-                       'hidden': 'resource_hidden', 
-                       'resouce_hidden': 'resource_hidden', 
-                       'created':'created', 
-                       'name' : 'resource_name',
-                       'resource_name' : 'resource_name',
-                       }
     for ky,v in kw.items():
         #log.debug ("extra " + str(k) +'=' + str(v))
-        k = legal_attributes.get(ky)
+        k = LEGAL_ATTRIBUTES.get(ky)
         if k and hasattr(dbtype, k):
             if not hasattr(v, '__iter__'):
                 v = [v] 
