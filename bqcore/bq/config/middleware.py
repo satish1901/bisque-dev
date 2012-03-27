@@ -82,6 +82,22 @@ class BQStaticURLParser (object):
         #return StaticURLParser.__call__(self, environ, start_response)
 
 
+class LogWSGIErrors(object):
+    def __init__(self, app, logger, level):
+        self.app = app
+        self.logger = logger
+        self.level = level
+
+    def __call__(self, environ, start_response):
+        environ['wsgi.errors' ] = self
+        return self.app(environ, start_response)
+
+    def write(self, message):
+        if message != '\n':
+            self.logger.log(self.level, message)
+
+
+
 def make_app(global_conf, full_stack=True, **app_conf):
     """
     Set bqcore up with the settings found in the PasteDeploy configuration
@@ -152,6 +168,7 @@ def make_app(global_conf, full_stack=True, **app_conf):
     root.startup()
     log.info ("Root-Controller: startup complete")
 
+    app = LogWSGIErrors(app, logging.getLogger('bq.server'), logging.INFO)
     
     return app
 

@@ -81,10 +81,15 @@ bisque.paths.root  =
 bisque.blob_service.stores=file:$datadir/imagedir/$user/$dirhash/$filehash-$filename
 #bisque.blob_service.stores=
 # irods://winwood.iplantcollaborative.org/iplant/home/$user/bisque_data/uploads/$dirhash/$filehash-$filename, 
-# file:$datadir/imagedir/$user/$dirhash/$filehash-$filename
+# file:$datadir/imagedir/$user/$dirhash/$filehash-$filename,
+# s3://$user-$filehash-$filename
 #bisque.blob_service.file.dir = file:$datadir/imagedir
 #bisque.blob_service.irods.user = 
 #bisque.blob_service.irods.password = 
+#S3 Storage
+#bisque.blob_service.s3.access_key = 
+#bisque.blob_service.s3.secret_key =
+#bisque.blob_service.s3.bucket_id = 
 # Data service
 #bisque.data_service.caching=true
 #bisque.data_service.server_cache=.server_cache
@@ -212,13 +217,17 @@ toscawidgets.framework.resource_variant=debug
 keys = root, bq, sqlalchemy, auth
 
 [handlers]
-#keys = console, syslog
+#keys = console, syslog, file, timedfile, pylog
 keys = console
 
 [formatters]
+#keys = generic, syslog, full
 keys = generic
 
-# If you create additional loggers, add them as a key to [loggers]
+###########################
+# Loggers 
+# If you create additional loggers, add them as a key to [loggers] above
+
 [logger_root]
 level = INFO
 #handlers = console, syslog
@@ -259,6 +268,8 @@ level = INFO
 handlers =
 qualname = auth
 
+#######################################
+# Handlers
 # If you create additional handlers, add them as a key to [handlers]
 [handler_console]
 class = StreamHandler
@@ -266,17 +277,46 @@ args = (sys.stderr,)
 level = NOTSET
 formatter = generic
 
+#[handler_file]
+#class=handlers.RotatingFileHandler
+#level=NOTSET
+#formatter=generic
+## Create bisque.log with 100MB max size and keeps 14 previous version
+#args=('bisque.log', 'a', 100*1024*1024, 14)
+
+#[handler_timedfile]
+#class=handlers.TimedRotatingFileHandler
+#level=NOTSET
+#formatter=generic
+## Create bisque.log with 7 days/log and 14 weeks of backups
+#args=('bisque.log', 'D', 7, 14)
 
 #[handler_syslog]
-#class:handlers.SysLogHandler
+#class=handlers.SysLogHandler
 #level=NOTSET
-#args:('/dev/log',handlers.SysLogHandler.LOG_LOCAL1)
-#formatter: generic
+#args=(('localhost', handlers.SYSLOG_UDP_PORT), handlers.SysLogHandler.LOG_LOCAL1)
+#args=('/dev/log',handlers.SysLogHandler.LOG_LOCAL1)
+#formatter= generic
 
-#Change args to:
 
+#[handler_pylog]
+## Install a SocketListener like python-loggingserver 
+#class= handlers.SocketHandler
+#level=INFO
+#formatter=generic
+#args=('localhost', handlers.DEFAULT_TCP_LOGGING_PORT)
 
+#########################################
+# Formatters
 # If you create additional formatters, add them as a key to [formatters]
 [formatter_generic]
 format = %(asctime)s,%(msecs)03d %(levelname)-5.5s [%(name)s] %(message)s
 datefmt = %H:%M:%S
+
+#[formatter_full]
+#format = %(asctime)s,%(msecs)03d:%(process)d-%(thread)x: %(levelname)-5.5s [%(name)s] %(message)s
+#datefmt = %H:%M:%S
+
+#[formatter_syslog]
+#format = %(levelname)s [%(name)s] %(message)s
+

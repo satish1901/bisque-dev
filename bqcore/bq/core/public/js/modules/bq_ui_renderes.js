@@ -1,6 +1,7 @@
 /*******************************************************************************
 
-  BQ.selectors  - 
+  BQ.selectors - selectors of inputs for module runs
+  BQ.renderers - renderers of outputs for module runs
 
   Author: Dima Fedorov
 
@@ -19,22 +20,26 @@
 Ext.namespace('BQ.selectors');
 Ext.namespace('BQ.renderers');
 
-BQ.selectors.resources  = { 'image'   : 'BQ.selectors.Resource', 
-                            'dataset' : 'BQ.selectors.Resource', 
-                            'resource': 'BQ.selectors.Resource', 
-                            'gobject' : 'BQ.selectors.Gobject', };
+BQ.selectors.resources  = { 'image'            : 'BQ.selectors.Resource', 
+                            'dataset'          : 'BQ.selectors.Resource', 
+                            'resource'         : 'BQ.selectors.Resource', 
+                            'gobject'          : 'BQ.selectors.Gobject', };
 
-BQ.selectors.parameters = { 'tag'     : 'BQ.selectors.String', 
-                            'string'  : 'BQ.selectors.String', 
-                            'number'  : 'BQ.selectors.Number', 
-                            'combo'   : 'BQ.selectors.Combo',
-                            'boolean' : 'BQ.selectors.Boolean',
-                            'date'    : 'BQ.selectors.Date', };
+BQ.selectors.parameters = { 'tag'              : 'BQ.selectors.String', 
+                            'string'           : 'BQ.selectors.String', 
+                            'number'           : 'BQ.selectors.Number', 
+                            'combo'            : 'BQ.selectors.Combo',
+                            'boolean'          : 'BQ.selectors.Boolean',
+                            'date'             : 'BQ.selectors.Date', 
+                            'image_channel'    : 'BQ.selectors.ImageChannel', 
+                            'pixel_resolution' : 'BQ.selectors.PixelResolution', 
+                          };
 
-BQ.renderers.resources  = { 'image'    : 'BQ.renderers.Image', 
-                            'dataset'  : 'BQ.renderers.Dataset', 
-                            //'gobject'  : 'BQ.renderers.Gobject', 
-                            'tag'      : 'BQ.renderers.Tag', };
+BQ.renderers.resources  = { 'image'            : 'BQ.renderers.Image', 
+                            'dataset'          : 'BQ.renderers.Dataset', 
+                          //'gobject'          : 'BQ.renderers.Gobject', 
+                            'tag'              : 'BQ.renderers.Tag', 
+                            'mex'              : 'BQ.renderers.Mex', };
 
 
 /*******************************************************************************
@@ -142,7 +147,6 @@ Ext.define('BQ.selectors.Selector', {
 
     // implement: you need to provide a way to programmatically select an element
     select: function(new_resource) {
-        
         BQ.ui.warning('Programmatic select is not implemented in this selector');
     },
 
@@ -319,7 +323,6 @@ Ext.define('BQ.selectors.Resource', {
         this.selected_resource = R;
         this.resource.value = R.uri;
         this.resource.type = R.resource_type;
-        if (!this.validate()) return;
        
         // !!!!!!!!!!!!!!!!!!!!!!!!
         // dima: here I probably need to iterate over all children and run proper selectors
@@ -335,7 +338,7 @@ Ext.define('BQ.selectors.Resource', {
         
         // show the preview thumbnail of the selected resource, 
         // if gobjects are required the image viewer will be shown, so no need for the preview
-        if (this.resource.gobjects.length<1) {    
+        if (!(this.selected_resource instanceof BQImage) || this.resource.gobjects.length<1) {    
             this.resourcePreview = Bisque.ResourceFactoryWrapper.getResource( {resource:R} );
         } else {
             this.resourcePreview = Ext.create('BQ.selectors.Gobject', {
@@ -344,8 +347,18 @@ Ext.define('BQ.selectors.Resource', {
             });            
         } 
         
+        // fetch image physics 
+        this.phys = undefined;
+        if (this.selected_resource instanceof BQImage) {
+            this.phys = new BQImagePhys(this.selected_resource);
+            this.phys.load(callback(this, this.onPhys));
+        }
+        
         this.add(this.resourcePreview);
         this.setHeight( this.getHeight() + this.resourcePreview.getHeight() + increment );
+
+        if (!this.validate()) return;
+        this.fireEvent( 'changed', this, this.selected_resource );
     },
 
     isValid: function() {
@@ -358,25 +371,25 @@ Ext.define('BQ.selectors.Resource', {
             return false;
         }
 
-        if (this.selected_resource.resource_type == 'dataset' && this.resource.gobjects.length>0) {
-            BQ.ui.error('Improper module configuration, graphical annotations cannont be required on a dataset!'); 
-            return false;            
-        } 
+        //if (this.selected_resource.resource_type == 'dataset' && this.resource.gobjects.length>0) {
+        //    BQ.ui.error('Improper module configuration, graphical annotations cannont be required on a dataset!'); 
+        //    return false;            
+        //} 
         
         // check for image geometry if requested    
         // we don't have image config right in the resource for, skip this for now
-        /*
-        if ( this.selected_resource.resource_type == 'image' && 'require_geometry' in template && (
-             (template['require_geometry/z'] && template['require_geometry/z']=='single' && this.selected_resource.z>1) ||
-             (template['require_geometry/z'] && template['require_geometry/z']=='stack'  && this.selected_resource.z<=1) ||
-             (template['require_geometry/t'] && template['require_geometry/t']=='single' && this.selected_resource.t>1) ||
-             (template['require_geometry/t'] && template['require_geometry/t']=='stack'  && this.selected_resource.t<=1)
+        if ( this.phys && this.phys.initialized && 
+             this.selected_resource.resource_type == 'image' && 'require_geometry' in template && (
+             (template['require_geometry/z'] && template['require_geometry/z']=='single' && this.phys.z>1) ||
+             (template['require_geometry/z'] && template['require_geometry/z']=='stack'  && this.phys.z<=1) ||
+             (template['require_geometry/t'] && template['require_geometry/t']=='single' && this.phys.t>1) ||
+             (template['require_geometry/t'] && template['require_geometry/t']=='stack'  && this.phys.t<=1)
         )) {
             var msg = template['require_geometry/fail_message'] || 'Image geometry check failed!';
-            BQ.ui.attention(msg);
+            //BQ.ui.attention(msg);
             BQ.ui.tip(this.getId(), msg); // dima: maybe i need to give dom object id for this one, instead of this        
             return false;
-        } */      
+        }
         
         //if (this.selector_gobs) 
         //    return this.selector_gobs.validate();
@@ -387,9 +400,17 @@ Ext.define('BQ.selectors.Resource', {
         return true;
     },
 
+    onPhys: function() {
+        if (this.isValid())
+            this.fireEvent( 'gotPhys', this, this.phys );
+    },
+
 });
 
 /*******************************************************************************
+BQ.selectors.Gobject relies on BQ.selectors.Resource in that it's
+not intended to be instantiated directly but only within BQ.selectors.Resource
+
 Gobject templated configs:
 accepted_type
 
@@ -413,7 +434,7 @@ Ext.define('BQ.selectors.Gobject', {
     
     cls: '',
     layout: 'fit',
-    height: 450,
+    height: 500,
 
     initComponent : function() {
         var resource = this.resource;
@@ -467,6 +488,304 @@ Ext.define('BQ.selectors.Gobject', {
 });
 
 
+/*******************************************************************************
+BQ.selectors.ImageChannel relies on BQ.selectors.Resource and altough
+it is instantiated directly it needs existing BQ.selectors.Resource to listen to
+and read data from!
+
+Image Channel templated configs:
+
+<tag name="nuclear_channel" value="1" type="image_channel">
+    <tag name="template" type="template">
+        <tag name="label" value="Nuclear channel" />
+        <tag name="reference" value="image_url" />
+        <tag name="guess" value="nuc|Nuc|dapi|DAPI|405|dna|DNA|Cy3" />
+    </tag>
+</tag>
+*******************************************************************************/
+
+Ext.define('BQ.selectors.ImageChannel', {
+    alias: 'widget.selectorchannel',    
+    extend: 'BQ.selectors.Selector',
+    requires: ['Ext.form.field.Number', 'Ext.data.Store', 'Ext.form.field.ComboBox'],
+
+    height: 30,
+    layout: 'hbox',
+
+    initComponent : function() {
+        var resource = this.resource;
+        var template = resource.template || {};
+        var reference = this.module.inputs_index[template.reference];
+        if (reference && reference.renderer) {
+            this.reference = reference.renderer;
+            this.reference.on( 'changed', function(sel, res) { this.onNewResource(sel, res); }, this );
+            this.reference.on( 'gotPhys', function(sel, phys) { this.onPhys(sel, phys); }, this );            
+        }
+        
+        this.items = [];        
+
+        // create numeric channel selector
+        var label = template.label?template.label:undefined;
+        this.numfield = Ext.create('Ext.form.field.Number', {
+            //flex: 1,
+            cls: 'number',
+            name: resource.name,
+            labelWidth: 200,
+            labelAlign: 'right',
+            fieldLabel: label,
+            value: resource.value!=undefined?parseInt(resource.value):undefined,
+            minValue: 1,
+            maxValue: 100,
+            allowDecimals: false,
+            step: 1,
+            
+            listeners: {
+                change: function(field, value) {
+                    this.resource.value = String(value);
+                }, scope: this,
+            },
+            
+        });
+        this.items.push(this.numfield);
+       
+        // create combo box selector
+        this.store = Ext.create('Ext.data.Store', {
+            fields: ['name', 'channel'],
+        });
+        
+        this.combo = Ext.create('Ext.form.field.ComboBox', {       
+            itemId: 'combobox',
+            //flex: 1,
+            name: resource.name+'_combo',
+            labelWidth: 200,
+            labelAlign: 'right',
+            hidden: true,
+            
+            fieldLabel: label,
+            //value: resource.value,
+            multiSelect: false,
+            store: this.store,
+            queryMode: 'local',
+            displayField: 'name',
+            valueField: 'channel', 
+            
+            forceSelection : true,  
+            editable : false, 
+
+            listeners: {
+                select: function(field, value) {
+                    this.resource.value = field.getValue();
+                }, scope: this,
+            },
+            
+        });       
+        this.items.push(this.combo);        
+        
+        this.callParent();
+    },
+
+    onNewResource : function(sel, res) {
+        var resource = this.resource;
+        var template = resource.template || {};
+        this.numfield.setVisible(true);
+        this.combo.setVisible(false);
+        
+        if (res instanceof BQDataset) {
+            var msg = 'You have selected a dataset, this module will only work correctly if all images have the same channel structure!';
+            BQ.ui.tip(this.numfield.getId(), msg, {anchor:'left', timeout: 30000, });
+        }
+    },
+
+    onPhys : function(sel, phys) {
+        var resource = this.resource;
+        var template = resource.template || {};
+        var guess = template.guess || '';
+                
+        // create channel combo
+        var selected = 1;
+        var a = [];
+        var i=undefined;
+        for (var p=0; (i=phys.channel_names[p]); p++) {
+            i = String(i);
+            a.push({ 'name': ''+(p+1)+': '+i, 'channel': p+1, });  
+            if (i.match(guess))
+                selected = p+1; 
+        }
+        this.store.removeAll(true);                      
+        this.store.add(a);
+        this.combo.setValue(selected);
+
+        this.numfield.setVisible(false);
+        this.combo.setVisible(true);
+      
+    },
+
+    select: function(value) {
+        this.numfield.setValue( value );
+        this.combo.setValue( value );        
+    }, 
+
+    isValid: function() {
+        if (!this.resource.value) {
+            var template = resource.template || {};
+            var msg = template.fail_message || 'You need to select an option!';
+            BQ.ui.tip(this.getId(), msg, {anchor:'left',});
+            return false;               
+        }        
+        return true;
+    },
+
+});
+
+/*******************************************************************************
+BQ.selectors.PixelResolution relies on BQ.selectors.Resource and altough
+it is instantiated directly it needs existing BQ.selectors.Resource to listen to
+and read data from!
+
+Pixel Resolution templated configs:
+
+<tag name="pixel_resolution" type="pixel_resolution">
+    <value>0</value>
+    <value>0</value>
+    <value>0</value>             
+    <value>0</value>               
+    <tag name="template" type="template">
+        <tag name="label" value="Voxel resolution" />
+        <tag name="reference" value="image_url" />
+        <tag name="units" value="microns" />        
+    </tag>
+</tag>
+*******************************************************************************/
+
+Ext.define('BQ.selectors.PixelResolution', {
+    alias: 'widget.selectorresolution',    
+    extend: 'BQ.selectors.Selector',
+    requires: ['Ext.form.field.Number'],
+
+    height: 30,
+    layout: 'hbox',
+
+    initComponent : function() {
+        var resource = this.resource;
+        var template = resource.template || {};
+        var reference = this.module.inputs_index[template.reference];
+        if (reference && reference.renderer) {
+            this.reference = reference.renderer;
+            this.reference.on( 'changed', function(sel, res) { this.onNewResource(sel, res); }, this );
+            this.reference.on( 'gotPhys', function(sel, phys) { this.onPhys(sel, phys); }, this );            
+        }
+
+        Ext.tip.QuickTipManager.init();
+        
+        if (!resource.values) 
+            resource.values = []; 
+        if (resource.values.length<4)
+            resource.values.length = 4;
+        // dima, here i need to instantiate Value objects
+
+        this.items = [];        
+        var label = template.label?template.label:undefined;  
+        var labels = [label+' X', 'Y', 'Z', 'T'];      
+
+        // create resolution pickers        
+        this.field_res = [];
+        for (var i=0; i<4; i++) {
+
+            this.field_res[i] = Ext.create('Ext.form.field.Number', {
+                //flex: 1,
+                cls: 'number',
+                name: resource.name+String(i),
+                value_index: i,
+                
+                labelAlign: 'right',
+                width: i==0?270:80,
+                labelWidth: i==0?200:10,
+                fieldLabel: labels[i],
+                
+                value: parseFloat(resource.values[i].value),
+                minValue: 0,
+                maxValue: 33,
+                allowDecimals: true,
+                decimalPrecision: 4,
+                step: 0.01,
+                
+                listeners: {
+                    change: function(field, value) {
+                        resource.values[field.value_index].value = String(value);
+                    }, scope: this,
+                },
+            });
+            
+            if (template.description)
+            Ext.tip.QuickTipManager.register({
+                target: this.field_res[i],
+                //title: 'My Tooltip',
+                text: template.description,
+                width: 200,
+                dismissDelay: 10000, // Hide after 10 seconds hover
+            });            
+            
+            this.items.push(this.field_res[i]);
+        }
+        
+        if (template.units)
+            this.items.push({ xtype: 'container', html:'<label>'+template.units+'</label>', cls: 'units', });        
+        
+        this.callParent();
+    },
+
+    onNewResource : function(sel, res) {
+        var resource = this.resource;
+        var template = resource.template || {};
+        
+        var p=null;
+        for (var i=0; (p=this.field_res[i]); i++) { 
+            p.setVisible(true);
+            // probably should not force the reset of resolution here,
+            //resource.values[i].value = 0.0;
+            //p.setValue(0.0);            
+        }
+        
+        if (res instanceof BQDataset) {
+            var msg = 'You have selected a dataset, this module will only work correctly if all images have the same pixel resolution!';
+            BQ.ui.tip(this.getId(), msg, {anchor:'left', timeout: 30000, });
+        }
+    },
+
+    onPhys : function(sel, phys) {
+        var resource = this.resource;
+        var template = resource.template || {};
+
+        for (var i=0; i<4; i++)
+            this.field_res[i].setValue( phys.pixel_size[i] );
+        
+        if (phys.t>1)
+            this.field_res[3].setVisible(true);
+        else {
+            this.field_res[3].setVisible(false);            
+            resource.values[3].value = 1.0;
+        }
+    },
+
+    select: function(value) {
+        //this.numfield.setValue( value );
+    }, 
+
+    isValid: function() {
+        var resource = this.resource;
+        if (!resource.values || 
+            resource.values[0].value<=0 || resource.values[1].value<=0 || resource.values[2].value<=0 || resource.values[3].value<=0) {
+            var template = resource.template || {};
+            var msg = template.fail_message || 'You need to select an option!';
+            BQ.ui.tip(this.getId(), msg, {anchor:'left',});
+            return false;               
+        }        
+        return true;
+    },
+
+});
+
+
 
 
 /*******************************************************************************
@@ -512,7 +831,7 @@ Ext.define('BQ.selectors.Number', {
         
         if (this.multivalue || template.showSlider != false)
         this.slider = Ext.create('Ext.slider.Multi', {        
-            flex: 1,
+            flex: 3,
             name: resource.name+'-slider',
             
             labelAlign: 'right',
@@ -568,7 +887,7 @@ Ext.define('BQ.selectors.Number', {
         if (this.numfield) this.items.push(this.numfield);
         if (this.slider) this.items.push(this.slider);
         if (template.units)
-            this.items.push({ xtype: 'container', html:'<label>'+template.units+'</label>', cls: 'units', });        
+            this.items.push({ xtype: 'container', html:'<label>'+template.units+'</label>', cls: 'units', flex: 1, });        
             
         this.callParent();
     },
@@ -896,6 +1215,7 @@ Ext.define('BQ.selectors.Date', {
 });
 
 
+
 /*******************************************************************************
   Output renderers - dima: name is used for unique ID, should be changed
   
@@ -951,8 +1271,9 @@ Ext.define('BQ.renderers.Tag', {
 
 });
 
+
 /*******************************************************************************
-Image templated configs:
+ Abstract class for renderer with Tools - export and plot
 
 *******************************************************************************/
 function createArgs(command, values) {
@@ -969,17 +1290,8 @@ function createStatsArgs(command, template, name) {
     return createArgs(command, c);
 }
 
-Ext.define('BQ.renderers.Image', {
-    alias: 'widget.rendererimage',    
+Ext.define('BQ.renderers.RendererWithTools', {
     extend: 'BQ.renderers.Renderer',
-    requires: ['BQ.viewer.Image'],
-    
-    height: 450,
-    layout: {
-        type: 'vbox',
-        align : 'stretch',
-        pack  : 'start',
-    },    
 
 /*
     tools: {
@@ -1004,6 +1316,164 @@ Ext.define('BQ.renderers.Image', {
         'export_gdocs'  : 'createMenuExportGdocs',
     },
 
+    createTools : function() {
+        // create tools menus
+        var plotMenu = Ext.create('Ext.menu.Menu');
+        for (var i in this.toolsPlot)
+            if (this.toolsPlot[i] in this)
+                this[this.toolsPlot[i]](plotMenu);
+
+        var previewMenu = Ext.create('Ext.menu.Menu');
+        for (var i in this.toolsPreview)
+            if (this.toolsPreview[i] in this)        
+                this[this.toolsPreview[i]](previewMenu);
+
+        var exportMenu = Ext.create('Ext.menu.Menu');                
+        for (var i in this.toolsExport)
+            if (this.toolsExport[i] in this)          
+                this[this.toolsExport[i]](exportMenu);     
+
+        var tool_items = [];                
+        if (plotMenu.items.getCount()>0)    tool_items.push( { text : 'Plot',    menu: plotMenu, } );
+        if (previewMenu.items.getCount()>0) tool_items.push( { text : 'Preview', menu: previewMenu, } );
+        if (exportMenu.items.getCount()>0)  tool_items.push( { text : 'Export',  menu: exportMenu, } ); 
+        return tool_items;
+    },
+
+    createPlot : function(menu, name, template) {
+        if (!this.res_uri_for_tools) return;
+        menu.add({
+            text: template[name+'/label']?template[name+'/label']:'Plot',
+            scope: this,
+            handler: function() {
+                var title = template[name+'/title'];
+                if (title instanceof Array) title = title.join(', ');
+                var titles = template[name+'/title'];
+                if (!(titles instanceof Array)) titles = [titles];
+                var opts = { args: {numbins: template[name+'/args/numbins']}, titles: titles, };
+                this.plotter = Ext.create('BQ.stats.Dialog', {
+                    url     : this.res_uri_for_tools,
+                    xpath   : template[name+'/xpath'],
+                    xmap    : template[name+'/xmap'],
+                    xreduce : template[name+'/xreduce'],
+                    title   : title,
+                    opts    : opts,
+                    root    : this.root,
+                });
+            },
+        });          
+    },
+
+    createMenuPlot : function(menu) {
+        if (!this.res_uri_for_tools) return;
+        if (!this.template_for_tools) return;
+        var template = this.template_for_tools || {};
+        if ('plot' in template && template['plot']==false) return;
+        
+        var name = 'plot';
+        for (var i=0; i<20; i++) {
+            if (i>0) name = 'plot' + i;
+            if (!(name in template)) break;        
+            this.createPlot(menu, name, template);
+        }
+            
+    }, 
+
+    createExportCsv : function(menu, name, template) {
+        if (!this.res_uri_for_tools) return;        
+        menu.add({
+            text: template[name+'/label']?template[name+'/label']:'as CSV',
+            scope: this,
+            handler: function() {
+                var url = '/stats/csv?url=' + this.res_uri_for_tools;
+                if (this.root) url = this.root + url;
+                url += createStatsArgs('xpath', template, name);
+                url += createStatsArgs('xmap', template, name);
+                url += createStatsArgs('xreduce', template, name);                                        
+                window.open(url);                
+            },
+        });         
+    },
+
+    createMenuExportCsv : function(menu) {
+        if (!this.res_uri_for_tools) return;
+        if (!this.template_for_tools) return;
+        var template = this.template_for_tools || {};
+        if ('export_csv' in template && template['export_csv']==false) return;
+        
+        var name = 'export_csv';
+        for (var i=0; i<20; i++) {
+            if (i>0) name = 'export_csv' + i;
+            if (!(name in template)) break;            
+            this.createExportCsv(menu, name, template);
+        }
+    }, 
+
+    createMenuExportXml : function(menu) {
+        if (!this.res_uri_for_tools) return;
+        if (!this.template_for_tools) return;
+        var template = this.template_for_tools || {};
+        if ('export_xml' in template && template['export_xml']==false) return; 
+        menu.add({
+            text: 'complete document as XML',
+            scope: this,
+            handler: function() {
+                window.open(this.res_uri_for_tools + '?view=deep');
+            },
+        }); 
+    }, 
+
+    createMenuExportExcel : function(menu) {
+        if (!this.res_uri_for_tools) return;
+        if (!this.template_for_tools) return;
+        var template = this.template_for_tools || {};
+        if ('export_excel' in template && template['export_excel']==false) return; 
+        menu.add({
+            text: 'complete document as CSV',
+            scope: this,
+            handler: function() {
+                window.open(this.res_uri_for_tools + '?view=deep&format=csv');
+            },
+        });      
+    }, 
+
+    createMenuExportGdocs : function(menu) {
+        if (!this.res_uri_for_tools) return;
+        if (!this.template_for_tools) return;
+        var template = this.template_for_tools || {};
+        if ('export_gdocs' in template && template['export_gdocs']==false) return; 
+        menu.add({
+            text: 'complete document to Google Docs',
+            scope: this,
+            handler: function() {
+                window.open('/export/to_gdocs?url='+this.res_uri_for_tools);
+            },
+        });        
+    }, 
+
+
+});
+
+
+
+
+/*******************************************************************************
+Image templated configs:
+
+*******************************************************************************/
+
+Ext.define('BQ.renderers.Image', {
+    alias: 'widget.rendererimage',    
+    extend: 'BQ.renderers.RendererWithTools',
+    requires: ['BQ.viewer.Image'],
+    
+    height: 500,
+    layout: {
+        type: 'vbox',
+        align : 'stretch',
+        pack  : 'start',
+    },    
+
     initComponent : function() {
         var definition = this.definition;
         var template = definition.template || {};
@@ -1020,25 +1490,13 @@ Ext.define('BQ.renderers.Image', {
         });
 
         // create tools menus
-        var tool_items = [];                
+        var tool_items = [];
         if (this.gobjects.length>0) {
-
-            var plotMenu = Ext.create('Ext.menu.Menu');
-            for (var i in this.toolsPlot)
-                this[this.toolsPlot[i]](plotMenu);
-
-            var previewMenu = Ext.create('Ext.menu.Menu');
-            for (var i in this.toolsPreview)
-                this[this.toolsPreview[i]](previewMenu);
-
-            var exportMenu = Ext.create('Ext.menu.Menu');                
-            for (var i in this.toolsExport)
-                this[this.toolsExport[i]](exportMenu);     
-    
-            if (plotMenu.items.getCount()>0)    tool_items.push( { text : 'Plot',    menu: plotMenu, } );
-            if (previewMenu.items.getCount()>0) tool_items.push( { text : 'Preview', menu: previewMenu, } );
-            if (exportMenu.items.getCount()>0)  tool_items.push( { text : 'Export',  menu: exportMenu, } ); 
-        }               
+            this.res_uri_for_tools = this.gobjects[0].uri;
+            var gobs = this.definition.gobjects[0];
+            this.template_for_tools = (gobs?gobs.template:{}) || {};
+            tool_items = this.createTools();
+        }
 
         this.items = [];
         this.items.push( {xtype: 'label', html:(template.label?template.label:resource.name), } );        
@@ -1050,110 +1508,6 @@ Ext.define('BQ.renderers.Image', {
                
         this.callParent();
     },
-
-    createPlot : function(menu, name, template) {
-        menu.add({
-            text: template[name+'/label']?template[name+'/label']:'Plot',
-            scope: this,
-            handler: function() {
-                var title = template[name+'/title'];
-                if (title instanceof Array) title = title.join(', ');
-                var titles = template[name+'/title'];
-                if (!(titles instanceof Array)) titles = [titles];
-                var opts = { args: {numbins: template[name+'/args/numbins']}, titles: titles, };
-                this.plotter = Ext.create('BQ.stats.Dialog', {
-                    url     : this.gobjects[0].uri,
-                    xpath   : template[name+'/xpath'],
-                    xmap    : template[name+'/xmap'],
-                    xreduce : template[name+'/xreduce'],
-                    title   : title,
-                    opts    : opts,
-                    root    : this.root,
-                });
-            },
-        });          
-    },
-
-    createMenuPlot : function(menu) {
-        var gobs = this.definition.gobjects[0];
-        var template = (gobs?gobs.template:{}) || {};
-        if ('plot' in template && template['plot']==false) return;
-        
-        var name = 'plot';
-        for (var i=0; i<20; i++) {
-            if (i>0) name = 'plot' + i;
-            if (!(name in template)) break;        
-            this.createPlot(menu, name, template);
-        }
-            
-    }, 
-
-    createExportCsv : function(menu, name, template) {
-        menu.add({
-            text: template[name+'/label']?template[name+'/label']:'as CSV',
-            scope: this,
-            handler: function() {
-                var url = '/stats/csv?url=' + this.gobjects[0].uri;
-                if (this.root) url = this.root + url;
-                url += createStatsArgs('xpath', template, name);
-                url += createStatsArgs('xmap', template, name);
-                url += createStatsArgs('xreduce', template, name);                                        
-                window.open(url);                
-            },
-        });         
-    },
-
-    createMenuExportCsv : function(menu) {
-        var gobs = this.definition.gobjects[0];
-        var template = (gobs?gobs.template:{}) || {};
-        if ('export_csv' in template && template['export_csv']==false) return;
-        
-        var name = 'export_csv';
-        for (var i=0; i<20; i++) {
-            if (i>0) name = 'export_csv' + i;
-            if (!(name in template)) break;            
-            this.createExportCsv(menu, name, template);
-        }
-    }, 
-
-    createMenuExportXml : function(menu) {
-        var gobs = this.definition.gobjects[0];
-        var template = (gobs?gobs.template:{}) || {};
-        if ('export_xml' in template && template['export_xml']==false) return; 
-        menu.add({
-            text: 'complete document as XML',
-            scope: this,
-            handler: function() {
-                window.open(this.gobjects[0].uri + '?view=deep');
-            },
-        }); 
-    }, 
-
-    createMenuExportExcel : function(menu) {
-        var gobs = this.definition.gobjects[0];
-        var template = (gobs?gobs.template:{}) || {};
-        if ('export_excel' in template && template['export_excel']==false) return; 
-        menu.add({
-            text: 'complete document as CSV',
-            scope: this,
-            handler: function() {
-                window.open(this.gobjects[0].uri + '?view=deep&format=csv');
-            },
-        });      
-    }, 
-
-    createMenuExportGdocs : function(menu) {
-        var gobs = this.definition.gobjects[0];
-        var template = (gobs?gobs.template:{}) || {};
-        if ('export_gdocs' in template && template['export_gdocs']==false) return; 
-        menu.add({
-            text: 'complete document to Google Docs',
-            scope: this,
-            handler: function() {
-                window.open('/export/to_gdocs?url='+this.gobjects[0].uri);
-            },
-        });        
-    }, 
 
     createMenuPreviewMovie : function(menu) {
         var gobs = this.definition.gobjects[0];
@@ -1242,4 +1596,40 @@ Ext.define('BQ.renderers.Dataset', {
 
 });
 
+/*******************************************************************************
+Mex templated configs:
 
+*******************************************************************************/
+
+Ext.define('BQ.renderers.Mex', {
+    alias: 'widget.renderermex',    
+    extend: 'BQ.renderers.RendererWithTools',
+    
+    height: 50,
+    layout: {
+        type: 'vbox',
+        align : 'stretch',
+        pack  : 'start',
+    },    
+
+    initComponent : function() {
+        var definition = this.definition;
+        var template = definition.template || {};
+        var resource = this.resource;
+        if (!definition || !resource) return;
+        
+        // create tools menus
+        var tool_items = [];
+        this.res_uri_for_tools = resource.value; // dima: resource.value ???
+        this.template_for_tools = template;
+        tool_items = this.createTools();
+
+        this.items = [];
+        this.items.push( {xtype: 'label', html:(template.label?template.label:resource.name), } );        
+        if (tool_items.length>0) 
+            this.items.push( {xtype: 'toolbar', items: tool_items, defaults: { scale: 'medium' }, } );               
+               
+        this.callParent();
+    },
+
+});

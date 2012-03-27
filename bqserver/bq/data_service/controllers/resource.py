@@ -553,7 +553,7 @@ class Resource(ServiceController):
         log.debug ("Dispatch for %s", method_name)
         try:
             if http_method in ('post', 'put'):
-                clen = int(request.headers.get('Content-Length')) or 0
+                clen = int(request.headers.get('Content-Length', 0))
                 content = request.headers.get('Content-Type')
                 if content.startswith('text/xml') or \
                        content.startswith('application/xml'):
