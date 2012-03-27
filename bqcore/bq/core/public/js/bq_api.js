@@ -628,7 +628,7 @@ BQFactory.ctormap =  {
 
 BQFactory.ignored = {
     vertex  : Vertex,
-}
+};
 
 BQFactory.escapeXML = function(xml) {
     var specials = [ [ /</g,  "&lt;"],
