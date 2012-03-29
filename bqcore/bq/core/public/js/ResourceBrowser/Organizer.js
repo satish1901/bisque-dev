@@ -14,7 +14,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
             tag_order : arguments[0].browser.uri.tag_order || '',
             tag_query : arguments[0].browser.uri.tag_query || '',
 
-            title : 'Tag Filters',
+            title : 'Organizer',
             width : 300,
             itemId : 'organizerCt',
             layout : 'accordion',
