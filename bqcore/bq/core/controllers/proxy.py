@@ -87,7 +87,8 @@ class service_proxy (object):
             
         url = urljoin(self.proxy_url, method + '?' + urlencode(kwargs))
         
-        log.debug('%s request to %s with %s' % (httpmethod, url, body[:30]+".."+body[len(body)-30:] if body is not None else None))
+        #log.debug('%s request to %s with %s' % (httpmethod, url, body[:80]+".."+body[len(body)-80:] if body is not None else None))
+        #log.debug('%s request to %s with %s ...' % (httpmethod, url, body))
         try:
             headers, content = http_client.xmlrequest (
                 url,

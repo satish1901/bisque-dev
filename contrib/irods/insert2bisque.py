@@ -1,4 +1,7 @@
-#!/usr/bin/env python                                                                                                        
+#!/usr/bin/env python
+## insert2bisque.py
+## This file lives in IRODSHOME/server/bin/cmd/insert2bisque.py
+##       
 import sys
 import shlex
 import urllib
