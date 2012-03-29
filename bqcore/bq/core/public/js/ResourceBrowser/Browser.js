@@ -195,12 +195,12 @@ Ext.define('Bisque.ResourceBrowser.Browser',
         });
         this.tbar = this.commandBar;
 
+        this.callParent([arguments]);
+
         this.loadPreferences();
 
         if(Ext.supports.Touch)
             this.gestureMgr = new Bisque.Misc.GestureManager();
-
-        this.callParent([arguments]);
     },
 
     loadPreferences : function(preferences, tag)
@@ -266,6 +266,11 @@ Ext.define('Bisque.ResourceBrowser.Browser',
 
     loadData : function(uri)
     {
+        this.loading = true;
+        this.on('afterlayout', function(me){
+            me.centerPanel.setLoading(me.loading);
+        });
+        
         this.centerPanel.setLoading(
         {
             msg : ''
@@ -373,8 +378,10 @@ Ext.define('Bisque.ResourceBrowser.Browser',
     ChangeLayout : function(newLayoutKey, direction)
     {
         //console.time("Browser - ChangeLayout");
+        this.loading = false;
+        this.centerPanel.setLoading(this.loading);
+
         direction = direction || 'none';
-        this.centerPanel.setLoading(false);
 
         if(this.layoutMgr)
             this.layoutMgr.destroy();
