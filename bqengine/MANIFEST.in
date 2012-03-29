@@ -1,2 +1,4 @@
-recursive-include bq/engine/templates *
-recursive-include bq/engine/public *
+recursive-include bq *
+global-exclude *.pyc
+
+

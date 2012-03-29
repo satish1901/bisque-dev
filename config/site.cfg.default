@@ -142,8 +142,11 @@ beaker.session.key = bq
 beaker.session.secret = somesecret
 
 # Paster  Config
-smtp_server = localhost
-error_email_from = paste@localhost
+error_email_from=bisque@loup.ece.ucsb.edu
+email_to=bisque-dev@biodev.ece.ucsb.edu
+error_subject_prefix=Bisque Error:
+error_message = An Unexpected exception:
+smtp_server=localhost
 
 # TGExt.Registration2 Config
 registration_config = %(here)s/registration.cfg
@@ -156,8 +159,6 @@ mail.on = false
 mail.smtp.server = localhost
 mail.manager = immediate
 mail.transport = smtp
-
-
 
 # SQLAlchemy
 sqlalchemy.url = sqlite:///bisque.db
@@ -176,7 +177,8 @@ who.log_stream = stdout
 # WARNING: *THE LINE BELOW MUST BE UNCOMMENTED ON A PRODUCTION ENVIRONMENT*
 # Debug mode will enable the interactive debugging tool, allowing ANYONE to
 # execute malicious code after an exception is raised.
-set debug = true
+set debug = false
+
 # if you are using Mako and want to be able to reload
 # the mako template from disk during the development phase
 # you should say 'true' here
