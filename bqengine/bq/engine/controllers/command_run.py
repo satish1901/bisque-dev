@@ -254,6 +254,7 @@ class BaseRunner(object):
                 topmex.named_args.update ( [x.split('=') for x in mex_inputs] )
             topmex.executable.extend(mex_inputs)
             topmex.rundir = self.rundir
+            topmex.options = module_options
             
             # Create a nested list of  arguments  (in case of submex)
             submexes = self.mex_tree.xpath('/mex/mex')
@@ -270,11 +271,14 @@ class BaseRunner(object):
                 #    submex.named_args.update ( [x.split('=') for x in sub_inputs] )
                 submex.executable.extend(sub_inputs)
                 self.mexes.append(submex)
+            # Submex's imply that we are iterated.
+            # We can set up some options here and remove any execution 
+            # for the top mex.
             if len(self.mexes) > 1:
                 topmex.executable = None
+                topmex.iterables = mexparser.process_iterables(self.module_tree, self.mex_tree)
+
         log.info("processing %d mexes -> %s" % (len(self.mexes), self.mexes))
-
-
 
         command = getattr (self, 'command_%s' % self.command, None)
         return command
@@ -317,7 +321,16 @@ class BaseRunner(object):
         if len(self.mexes) > 1:
             if self.session is None:
                 self.session = BQSession().init_mex(self.mexes[0].mex_url, self.mexes[0].bisque_token)
-            self.session.finish_mex()
+            # outputs 
+            #   mex_rul
+            #   dataset_url
+            tags = None
+            if 'iterables' in self.mexes[0] and self.mexes[0].iterables is not None:
+                iter_name, iter_val = self.mexes[0].iterables
+                tags = [ { 'name' : 'outputs',
+                           'tag' : [ { 'name': iter_name, 'value': iter_value },
+                                     { 'name': 'mex_url', 'value': self.mexes[0].mex_url },]}]
+            self.session.finish_mex(tags = tags)
         return None
 
     def command_kill(self, **kw):
