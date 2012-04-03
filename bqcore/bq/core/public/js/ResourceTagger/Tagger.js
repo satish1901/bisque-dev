@@ -138,8 +138,9 @@ Ext.define('Bisque.ResourceTagger',
 
     getTagTree : function(data)
     {
-        var rowEditor = Ext.create('Bisque.ResourceTagger.Editor',
+        this.rowEditor = Ext.create('Bisque.ResourceTagger.Editor',
         {
+            editable : false,
             clicksToMoveEditor : 1,
             errorSummary : false,
             listeners : 
@@ -154,6 +155,9 @@ Ext.define('Bisque.ResourceTagger',
                         }
                 },
                 scope : this
+            },
+            beforeEdit : function() {
+                return this.editable;
             }
         });
         
@@ -176,7 +180,7 @@ Ext.define('Bisque.ResourceTagger',
             columns : this.getTreeColumns(),
 
             selModel : this.getSelModel(),
-            plugins : (this.viewMgr.state.editable) ? [rowEditor] : null,
+            plugins : (this.viewMgr.state.editable) ? [this.rowEditor] : null,
             
             listeners :
             {
@@ -701,6 +705,8 @@ Ext.define('Bisque.ResourceTagger',
                 tbar.getComponent('grpAddDelete').getComponent('btnAdd').setDisabled(false);
                 tbar.getComponent('grpAddDelete').getComponent('btnDelete').setDisabled(false);
                 tbar.getComponent('grpImportExport').getComponent('btnImport').setDisabled(false);
+                
+                this.rowEditor.editable = true;
             }
         }
         else if (user===undefined)
