@@ -328,7 +328,7 @@ class BaseRunner(object):
             if 'iterables' in self.mexes[0] and self.mexes[0].iterables is not None:
                 iter_name, iter_val = self.mexes[0].iterables
                 tags = [ { 'name' : 'outputs',
-                           'tag' : [ { 'name': iter_name, 'value': iter_value },
+                           'tag' : [ { 'name': iter_name, 'value': iter_val },
                                      { 'name': 'mex_url', 'value': self.mexes[0].mex_url },]}]
             self.session.finish_mex(tags = tags)
         return None
