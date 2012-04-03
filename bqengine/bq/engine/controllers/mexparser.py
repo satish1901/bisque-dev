@@ -156,7 +156,7 @@ class MexParser(object):
         options = {}
         for x in (module, mex):
             execute = x.xpath ('./tag[@name="execute_options"]')
-            execute = len(execute) and execute[0]
+            execute = execute  and execute[0]
             log.debug ("options %s" % execute )
             for opt in execute:
 
