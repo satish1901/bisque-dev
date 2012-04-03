@@ -992,11 +992,14 @@ Value.prototype.xmlNode = function (){
 
 ////////////////////////////////////////////////
 
-function BQTag (uri){
+function BQTag (uri, name, value, type) {
     BQObject.call(this, uri);
     this.values = [];
     this.xmltag = "tag";
     this.xmlfields = [ 'uri', 'name', 'type', 'value', 'index', 'perm'];
+    this.name  = name;
+    this.value = value;
+    this.type  = type;
 }
 BQTag.prototype = new BQObject();
 //extend(BQTag, BQObject);
@@ -1796,13 +1799,7 @@ BQMex.prototype.afterInitialized = function () {
     //BQObject.prototype.afterInitialized.call ();
     
     this.dict = this.dict || this.toDict(true);
-    
-    // check if the mex has iterables
-    if (this.dict['execute_options/iterable']) {
-        var name = this.dict['execute_options/iterable'];
-        this.findMexsForIterable(name, 'inputs/');
-    }
-    
+  
     var inputs  = this.find_tags('inputs');
     if (inputs && inputs.tags) {
         this.inputs = inputs.tags; // dima - this should be children in the future
@@ -1813,6 +1810,20 @@ BQMex.prototype.afterInitialized = function () {
     if (outputs && outputs.tags) {
         this.outputs = outputs.tags; // dima - this should be children in the future   
         this.outputs_index  = outputs.create_flat_index();
+    }    
+    
+    // check if the mex has iterables
+    if (this.dict['execute_options/iterable']) {
+        var name = this.dict['execute_options/iterable'];
+        this.findMexsForIterable(name, 'inputs/');
+        // if the main output does not have a dataset resource, create one
+        this.outputs = this.outputs || [];
+        this.outputs_index = this.outputs_index || {};        
+        if (!(name in this.outputs_index)) {
+            var r = new BQTag(undefined, name, this.iterables[name]['dataset'], 'dataset');
+            this.outputs.push(r);
+            this.outputs_index[name] = r;   
+        }
     }    
 }
 
