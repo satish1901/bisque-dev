@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <module name="MetaData" path="./MetaData" type="runtime">
 
-   <!-- Comments are OK -->  
+    <!-- Comments are OK -->  
     <tag name="inputs">
         <tag name="image_url" type="resource">
             <tag name="template" type="template">
                 <tag name="accepted_type" value="image" />
-                <tag name="accepted_type" value="dataset" />                   
+                <tag name="accepted_type" value="dataset" />
                 <tag name="label" value="Image to extract metadata" />
                 <tag name="prohibit_upload" value="true" type="boolean" />
             </tag>
@@ -21,7 +21,10 @@
             <tag name="template" type="template">
                 <tag name="label" value="Extracted metadata" />
             </tag>             
-         </tag>          
+         </tag>   
+         
+        <!-- Iterated outputs -->
+        <tag name="resource_url" type="dataset" />
     </tag>
     
     <tag name="execute_options">

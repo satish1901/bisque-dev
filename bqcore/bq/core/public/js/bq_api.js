@@ -1735,7 +1735,8 @@ BQModule.prototype.createMEX = function( ) {
         var tag_execute = mex.addtag ({name:'execute_options'});
         var iterable_name = undefined;
         for (var p=0; (iterable_name=this.iterables[p]); p++) {
-            var i = this.inputs_index['inputs/'+iterable_name];
+            var i = this.inputs_index[iterable_name];
+            if (!i) continue;
             if (i.type == 'dataset')
                 tag_execute.addtag({ name:'iterable', value:i.name, type: i.type, });
         }
