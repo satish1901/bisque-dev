@@ -189,5 +189,5 @@ class MexParser(object):
             mex_inputs = mex.xpath('./tag[@name="inputs"]')[0]
             iterable_tag_name = iterable[0].get('value')
             dataset_tag = mex_inputs.xpath('./tag[@name="%s"]' % iterable_tag_name)[0]
-            return ( iterable_tag_name, dataset_tag.get('value'))
+            return ( iterable_tag_name, dataset_tag.get('value'), dataset_tag.get('type'))
         return None

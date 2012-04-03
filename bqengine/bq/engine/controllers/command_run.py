@@ -326,10 +326,10 @@ class BaseRunner(object):
             #   dataset_url
             tags = None
             if 'iterables' in self.mexes[0] and self.mexes[0].iterables is not None:
-                iter_name, iter_val = self.mexes[0].iterables
+                iter_name, iter_val, iter_type = self.mexes[0].iterables
                 tags = [ { 'name' : 'outputs',
-                           'tag' : [ { 'name': iter_name, 'value': iter_val },
-                                     { 'name': 'mex_url', 'value': self.mexes[0].mex_url },]}]
+                           'tag' : [ { 'name': iter_name, 'value': iter_val, 'type': iter_type },
+                                     { 'name': 'mex_url', 'value': self.mexes[0].mex_url, 'type' : 'mex' },]}]
             self.session.finish_mex(tags = tags)
         return None
 
