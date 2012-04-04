@@ -119,7 +119,7 @@
         <!-- Iterated outputs -->     
         <tag name="mex_url" type="mex">
             <template>
-                <tag name="label" value="Overall results" />
+                <tag name="label" value="Results for all images in the dataset" />
                 <tag name="plot" value="true"  type="boolean">
                     <tag name="label" value="Distribution of detection confidence" />
                     <tag name="title" value="Distribution of detection confidence" />
@@ -158,7 +158,11 @@
             </template> 
         </tag>
               
-        <tag name="resource_url" type="dataset" />                
+        <tag name="resource_url" type="dataset">
+            <template>
+                <tag name="label" value="Pick an image to see individual results" />
+            </template> 
+        </tag>                            
         
     </tag>    
     

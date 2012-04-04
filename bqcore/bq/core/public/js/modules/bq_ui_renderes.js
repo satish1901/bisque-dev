@@ -1605,7 +1605,7 @@ Ext.define('BQ.renderers.Mex', {
     alias: 'widget.renderermex',    
     extend: 'BQ.renderers.RendererWithTools',
     
-    height: 50,
+    height: 80,
     layout: {
         type: 'vbox',
         align : 'stretch',
@@ -1617,6 +1617,7 @@ Ext.define('BQ.renderers.Mex', {
         var template = definition.template || {};
         var resource = this.resource;
         if (!definition || !resource) return;
+        template.label = template.label || 'Summary of this analysis';
         
         // create tools menus
         var tool_items = [];
@@ -1625,7 +1626,7 @@ Ext.define('BQ.renderers.Mex', {
         tool_items = this.createTools();
 
         this.items = [];
-        this.items.push( {xtype: 'label', html:(template.label?template.label:resource.name), } );        
+        this.items.push( {xtype: 'label', html: template.label, } );        
         if (tool_items.length>0) 
             this.items.push( {xtype: 'toolbar', items: tool_items, defaults: { scale: 'medium' }, } );               
                

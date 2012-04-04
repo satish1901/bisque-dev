@@ -1683,15 +1683,17 @@ BQModule.prototype.afterInitialized = function () {
         this.outputs_index  = outputs.create_flat_index();
     }
     
-    /*
-    var template = this.find_children('template', 'iterable');
-    if (template && template.tags) {
-        this.template_index  = template.create_flat_index();
-    } */   
-
     // create sorted iterable resource names
-    if ('execute_options/iterable' in dict)
+    if ('execute_options/iterable' in dict) {
         this.iterables = [ dict['execute_options/iterable'] ];
+        // make sure dataset renderer is there
+        var name = this.iterables[0];
+        if (!(name in this.outputs_index)) {
+            var r = new BQTag(undefined, name, undefined, 'dataset');
+            this.outputs.push(r);
+            this.outputs_index[name] = r;               
+        }
+    }
     
     this.updateTemplates();
 }
