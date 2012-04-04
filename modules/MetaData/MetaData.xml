@@ -4,12 +4,12 @@
     <!-- Comments are OK -->  
     <tag name="inputs">
         <tag name="image_url" type="resource">
-            <tag name="template" type="template">
+            <template>
                 <tag name="accepted_type" value="image" />
                 <tag name="accepted_type" value="dataset" />
                 <tag name="label" value="Image to extract metadata" />
                 <tag name="prohibit_upload" value="true" type="boolean" />
-            </tag>
+            </template>
         </tag> 
                         
         <tag name="mex_url"  type="system-input" />
@@ -18,13 +18,10 @@
     
     <tag name="outputs">
          <tag name="metadata" type="tag">
-            <tag name="template" type="template">
+            <template>
                 <tag name="label" value="Extracted metadata" />
-            </tag>             
+            </template>             
          </tag>   
-         
-        <!-- Iterated outputs -->
-        <tag name="resource_url" type="dataset" />
     </tag>
     
     <tag name="execute_options">

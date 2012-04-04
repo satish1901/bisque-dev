@@ -321,13 +321,13 @@ BQWebApp.prototype.setupUI_output = function (i, outputs_index, my_renderers) {
         };
         
         // special case if the output is a dataset, we expect sub-Mexs
-        if (r.type=='dataset') {
+        if (n in this.mex.iterables && r.type=='dataset') {
             this.mex.findMexsForIterable(n, 'outputs/');
             if (Object.keys(this.mex.iterables[n]).length>1) {
-                conf.title = 'Pick an element to see individual results:';                  
+                conf.title = 'Select a thumbnail to see individual results:';                  
                 conf.listeners = { 'selected': function(resource) { 
                              var suburl = resource.uri;
-                             var submex = this.mex.iterables[n][suburl]; // dima: n may be affected by the for loop!!!!
+                             var submex = this.mex.iterables[n][suburl];
                              this.showOutputs(submex, 'outputs-sub');
                         }, scope: this };
             }
@@ -347,13 +347,6 @@ BQWebApp.prototype.setupUI_outputs = function (key) {
     var outputs_index = this.outputs_index; 
     if (!outputs || !outputs_index) return; 
     if (!outputs_definitions || outputs_definitions.length<=0) return;    
-    
-    // if module has iterable outputs - create mex overall renderer
-    if (key == 'outputs' && this.mex.hasIterables() && 
-        this.ms.module.template_index && this.ms.module.template_index['outputs/mex_url']) {
-            var r = this.ms.module.template_index['outputs/mex_url'];
-            this.setupUI_output(r, outputs_index, my_renderers);
-    }
     
     // create renderers for each outputs element
     if (outputs_definitions && outputs_definitions.length>0)
@@ -486,26 +479,7 @@ BQWebApp.prototype.parseResults = function (mex) {
     }
     if (!this.mex_mode) BQ.ui.notification('Analysis done! Verify results...');
 
-    // if mex contains sub-runs, show dataset picker
-    if (mex.iterables) {
-        if (this.holder_result) {
-            var name = mex.dict['execute_options/iterable'];              
-            this.holder_result.show();        
-            if (this.resultantResourcesBrowser) this.resultantResourcesBrowser.destroy();
-            this.resultantResourcesBrowser = Ext.create('BQ.renderers.Dataset', {
-                resource: mex.iterables[name]['dataset'],
-                title: 'This module ran in parallel over the following dataset, pick an element to see individual results:',
-                listeners: { 'selected': function(resource) { 
-                                 var suburl = resource.uri;
-                                 var submex = mex.iterables[name][suburl];
-                                 this.showOutputs(submex);
-                             }, scope: this },
-            });    
-            this.holder_result.add(this.resultantResourcesBrowser);          
-        }    
-    } else {
-        this.showOutputs(mex);
-    }
+    this.showOutputs(mex);
 }
 
 BQWebApp.prototype.showOutputs = function (mex, key) {
