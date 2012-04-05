@@ -137,6 +137,7 @@ class database(object):
     def run(self):
         ''
             
+
         
 class setup(object):
     desc = 'Setup or update a bisque server'
@@ -161,6 +162,47 @@ class setup(object):
         r = bisque_setup.setup( self.options, self.args )
         sys.exit(r)
 
+class deploy(object):
+    desc = 'Advanced deployment options: public'
+    def __init__(self, version):
+        parser = optparse.OptionParser(
+                    usage="%prog deploy [public]",
+                    version="%prog " + version)
+        options, args = parser.parse_args()
+        self.args = args
+        self.options = options
+
+    def run(self):
+        if 'public' in self.args:
+            self.deploy_public()
+
+    def deploy_public(self):
+        ''
+        import pkg_resources
+        if not os.path.exists('public'):
+            os.makedirs ('public')
+        for x in pkg_resources.iter_entry_points ("bisque.services"):
+            try:
+                #print ('found static service: ' + str(x))
+                service = x.load()
+                if not hasattr(service, 'get_static_dirs'):
+                    continue
+                staticdirs  = service.get_static_dirs()
+                for d,r in staticdirs:
+                    #print ( "adding static: %s %s" % ( d,r ))
+                    static_path =  r[len(d)+1:]
+                    #print "path =", os.path.dirname(static_path)
+                    os.makedirs (os.path.join('public', os.path.dirname(static_path)))
+                    #print "link ", (r, os.path.join('public', static_path))
+                    os.symlink (r, os.path.join('public', static_path))
+                    print "Deployed ", r
+            except Exception, e:
+                #print "Exception: ", e
+                pass
+        # Link all core dirs
+        import glob
+        for l in glob.glob('bqcore/bq/core/public/*'):
+            os.symlink (os.path.join('..', l), os.path.join('public', os.path.basename(l)))
 
 
 class preferences (object):

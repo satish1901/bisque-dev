@@ -142,7 +142,7 @@ beaker.session.key = bq
 beaker.session.secret = somesecret
 
 # Paster  Config
-error_email_from=bisque@loup.ece.ucsb.edu
+error_email_from=bisque@localhost
 email_to=bisque-dev@biodev.ece.ucsb.edu
 error_subject_prefix=Bisque Error:
 error_message = An Unexpected exception:
