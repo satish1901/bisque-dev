@@ -1116,7 +1116,7 @@ BQGObject.prototype.initializeXml = function (node) {
     this.uri =  attribStr(node, 'uri');
     this.resource_type = this.xmltag;
 
-    var x = document.evaluate('./vertex', node, null, XPathResult.ANY_TYPE, null);
+    var x = node.ownerDocument.evaluate('./vertex', node, null, XPathResult.ANY_TYPE, null);
     
     this.vertices = [];
     var y = x.iterateNext();
