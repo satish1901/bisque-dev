@@ -113,6 +113,7 @@ setup(
       server = bq.commands.admin:server
       engine = bq.commands.admin:engine
       setup   = bq.commands.admin:setup
+      deploy   = bq.commands.admin:deploy
       sql     = bq.commands.admin:sql
       preferences= bq.commands.admin:preferences
       

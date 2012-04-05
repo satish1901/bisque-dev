@@ -321,7 +321,7 @@ BQWebApp.prototype.setupUI_output = function (i, outputs_index, my_renderers) {
         };
         
         // special case if the output is a dataset, we expect sub-Mexs
-        if (n in this.mex.iterables && r.type=='dataset') {
+        if (this.mex.iterables && n in this.mex.iterables && r.type=='dataset') {
             this.mex.findMexsForIterable(n, 'outputs/');
             if (Object.keys(this.mex.iterables[n]).length>1) {
                 conf.title = 'Select a thumbnail to see individual results:';                  

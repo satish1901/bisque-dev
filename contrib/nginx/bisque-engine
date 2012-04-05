@@ -1,7 +1,8 @@
+#
+# Bisque -engine  config
 server {
     listen       11000;
-    server_name  water.ece.ucsb.edu;
-    root /home/kage/bq051/bqcore/bq/client_service/public;
+    root <YOUR_BISQUE_DIR>/public;
 
     charset utf-8;
 
