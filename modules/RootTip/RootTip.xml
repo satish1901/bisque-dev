@@ -64,20 +64,15 @@
                 <tag name="plot" value="true"  type="boolean">
                     <tag name="label" value="Tip angles and growth" />
                     <tag name="title" value="Tip angles and growth" />
-                    <tag name="titles">
-                        <value>Angles</value>
-                        <value>Growth</value>
-                    </tag>
-                    <tag name="xmap" value="tag-value-number" />
-                    <tag name="xreduce" value="vector" />
-                    <tag name="xpath">
-                        <value>//gobject[@type="tipangle"]/tag[@name="angle"]</value>
-                        <value>//gobject[@type="tipangle"]/tag[@name="growth"]</value>                        
-                    </tag>                        
+                    <!-- everything else is defined in the custom script -->
                 </tag>
             
                 <tag name="export_csv" value="true" type="boolean">
                     <tag name="label" value="Tip angles and growth as CSV" />
+                    <tag name="titles">
+                        <value>Angles</value>
+                        <value>Growth</value>
+                    </tag>                    
                     <tag name="xmap" value="tag-value-number" />
                     <tag name="xreduce" value="vector" />
                     <tag name="xpath">
@@ -109,6 +104,9 @@
         <tag name="group" value="Root Analysis" />
     </tag>
   
+    <tag name="interface">        
+        <tag name="javascript" type="file" value="my_renderes.js" />
+    </tag>  
     <tag name="title" value="RootTip" /> 
     <tag name="authors" value="Nathan Miller" />
     <tag name="help"      type="file" value="public/help.html" />

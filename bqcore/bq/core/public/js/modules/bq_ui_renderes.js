@@ -1348,7 +1348,7 @@ Ext.define('BQ.renderers.RendererWithTools', {
             handler: function() {
                 var title = template[name+'/title'];
                 if (title instanceof Array) title = title.join(', ');
-                var titles = template[name+'/title'];
+                var titles = template[name+'/titles'];
                 if (!(titles instanceof Array)) titles = [titles];
                 var opts = { args: {numbins: template[name+'/args/numbins']}, titles: titles, };
                 this.plotter = Ext.create('BQ.stats.Dialog', {
