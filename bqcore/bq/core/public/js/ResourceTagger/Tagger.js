@@ -16,6 +16,7 @@ Ext.define('Bisque.ResourceTagger',
             rootProperty : config.rootProperty || 'tags',
             autoSave : (config.autoSave==undefined) ? true : false,
             resource : {},
+            editable : true,
             tree : config.tree || {
                 btnAdd : true,
                 btnDelete : true,
@@ -113,6 +114,7 @@ Ext.define('Bisque.ResourceTagger',
         this.fireEvent('beforeload', this, resource);
 
         this.resource = resource;
+        this.editable = false;
         this.testAuth(BQApp.user);
         
         if(this.resource.tags.length > 0)
@@ -140,8 +142,8 @@ Ext.define('Bisque.ResourceTagger',
     {
         this.rowEditor = Ext.create('Bisque.ResourceTagger.Editor',
         {
-            editable : false,
             clicksToMoveEditor : 1,
+            tagger : this,
             errorSummary : false,
             listeners : 
             {
@@ -157,7 +159,7 @@ Ext.define('Bisque.ResourceTagger',
                 scope : this
             },
             beforeEdit : function() {
-                return this.editable;
+                return this.tagger.editable;
             }
         });
         
@@ -697,6 +699,8 @@ Ext.define('Bisque.ResourceTagger',
             this.tree.btnAdd = false;
             this.tree.btnDelete = false;
             this.tree.btnImport = false;
+
+            this.editable = true;
             
             if (this.tree.rendered)
             {
@@ -705,8 +709,6 @@ Ext.define('Bisque.ResourceTagger',
                 tbar.getComponent('grpAddDelete').getComponent('btnAdd').setDisabled(false);
                 tbar.getComponent('grpAddDelete').getComponent('btnDelete').setDisabled(false);
                 tbar.getComponent('grpImportExport').getComponent('btnImport').setDisabled(false);
-                
-                this.rowEditor.editable = true;
             }
         }
         else if (user===undefined)
