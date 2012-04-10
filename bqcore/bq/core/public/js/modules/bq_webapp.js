@@ -212,30 +212,16 @@ BQWebApp.prototype.load_from_resource = function (R) {
 
 BQWebApp.prototype.inputs_from_mex = function (mex) {
     var inputs = this.ms.module.inputs_index;
-    //var dmex = mex.dict;
     var inputs_mex = mex.inputs_index;
     
     for (var n in inputs_mex) {
         if (!(n in inputs)) continue;
         var renderer = inputs[n].renderer;
-        var v = inputs_mex[n];  
-        if (v.type != 'image') v = v.value;              
-        if (renderer && renderer.select)
-            renderer.select(v);
+        var r = inputs_mex[n];  
+        if (r && renderer && renderer.select)
+            renderer.select(r);
     }
-
-/*   
-    var dmex = mex.dict; 
-    for (var i in dmex) {
-        if (i.indexOf('inputs/')!=0) continue;
-        var n = i.replace('inputs/', '');
-        var v = dmex[i];        
-        if (!(n in inputs)) continue;
-        var renderer = inputs[n].renderer;
-        if (renderer && renderer.select)
-            renderer.select(v);
-    }    
-*/    
+  
 }
 
 BQWebApp.prototype.load_from_mex = function (mex) {

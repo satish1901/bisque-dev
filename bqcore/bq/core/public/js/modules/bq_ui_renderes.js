@@ -613,14 +613,17 @@ Ext.define('BQ.selectors.ImageChannel', {
         }
         this.store.removeAll(true);                      
         this.store.add(a);
-        this.combo.setValue(selected);
+        this.combo.setValue(this.selected_value || selected);
+        this.selected_value = undefined;
 
         this.numfield.setVisible(false);
         this.combo.setVisible(true);
       
     },
 
-    select: function(value) {
+    select: function(resource) {
+        var value = parseInt(resource.value);
+        this.selected_value = value;
         this.numfield.setValue( value );
         this.combo.setValue( value );        
     }, 
@@ -756,8 +759,11 @@ Ext.define('BQ.selectors.PixelResolution', {
         var resource = this.resource;
         var template = resource.template || {};
 
-        for (var i=0; i<4; i++)
-            this.field_res[i].setValue( phys.pixel_size[i] );
+        if (this.selected_value)
+            this.selected_value = undefined;
+        else
+            for (var i=0; i<4; i++)
+                this.field_res[i].setValue( phys.pixel_size[i] );
         
         if (phys.t>1)
             this.field_res[3].setVisible(true);
@@ -767,8 +773,14 @@ Ext.define('BQ.selectors.PixelResolution', {
         }
     },
 
-    select: function(value) {
-        //this.numfield.setValue( value );
+    select: function(resource) {
+        var value = resource.value==undefined?resource.values:resource.value;
+        this.selected_value = value;
+        if (value instanceof Array)
+            for (var i=0; i<value.length; i++)
+                this.field_res[i].setValue( value[i].value );
+        else
+            this.field_res[0].setValue( value ); 
     }, 
 
     isValid: function() {
@@ -879,6 +891,7 @@ Ext.define('BQ.selectors.Number', {
             listeners: {
                 change: function(field, value) {
                     this.resource.value = String(value);
+                    if (this.slider && this.slider.getValue(0)!=value) this.slider.setValue(0, value);
                 }, scope: this,
             },
             
@@ -892,11 +905,12 @@ Ext.define('BQ.selectors.Number', {
         this.callParent();
     },
 
-    select: function(value) {
+    select: function(resource) {
+        var value = resource.value==undefined?resource.values:resource.value;        
         if (this.slider) {
             if (value instanceof Array)
                 for (var i=0; i<value.length; i++)
-                    this.slider.setValue( i, value[i] );
+                    this.slider.setValue( i, value[i].value );
             else
                 this.slider.setValue( 0, value ); 
         } else {
@@ -977,8 +991,8 @@ Ext.define('BQ.selectors.String', {
         this.callParent();
     },
 
-    select: function(value) {
-        this.child('#textfield').setValue( value );
+    select: function(resource) {
+        this.child('#textfield').setValue( resource.value );
     }, 
 
     isValid: function() {
@@ -1058,8 +1072,8 @@ Ext.define('BQ.selectors.Combo', {
         this.callParent();
     },
 
-    select: function(value) {
-        this.child('#combobox').setValue( value );
+    select: function(resource) {
+        this.child('#combobox').setValue( resource.value );
     }, 
 
     isValid: function() {
@@ -1115,8 +1129,8 @@ Ext.define('BQ.selectors.Boolean', {
         this.callParent();
     },
 
-    select: function(value) {
-        this.child('#checkbox').setValue( value );
+    select: function(resource) {
+        this.child('#checkbox').setValue( resource.value );
     }, 
 
     isValid: function() {
