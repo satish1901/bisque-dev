@@ -58,9 +58,9 @@ function NuclearDetector3D(mex_url, access_token, image_url, nuclear_channel, nu
 
         for j=1:length(np),        
             for i=1:length(np{j}),       
-                p = g.addGobject('nucleus', int2str(j*i));        
+                n = g.addGobject('nucleus', int2str(j*i));        
                 v = [np{j}(i,2)-1, np{j}(i,1)-1, np{j}(i,3)-1, j-1.0];
-                p.addGobject('point', 'centroid', v );
+                p = n.addGobject('point', 'centroid', v );
                 p.addTag('confidence', np{j}(i,5)*100, 'number'); 
             end
         end
