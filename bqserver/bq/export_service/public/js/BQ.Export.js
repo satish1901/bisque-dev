@@ -261,7 +261,7 @@ Ext.define('BQ.Export.Panel', {
             viewPriority = 2;
         }
         
-        record.push(thumbnail, resource.name || '', resource.resource_type, resource.ts, resource.perm || '', resource.uri, viewPriority);
+        record.push(thumbnail, resource.name || '', resource.resource_type, resource.ts, resource.permission || '', resource.uri, viewPriority);
         this.resourceStore.loadData([record], true);
     },
     
@@ -364,7 +364,7 @@ Ext.define('BQ.Export.Panel', {
                 'name',
                 {name: 'type', convert: function(value){return Ext.String.capitalize(value)}},  
                 {name: 'ts', convert: function(value){return Ext.Date.format(Ext.Date.parse(value, 'Y-m-d H:i:s.u'), "F j, Y g:i:s a")}},
-                {name: 'public', convert: function(value){return (value==0)?'Yes':'No'}},
+                {name: 'public', convert: function(value){return (value=='published')?'Yes':'No'}},
                 'uri',
                 'viewPriority'
             ],
