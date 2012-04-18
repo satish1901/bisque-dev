@@ -4,8 +4,6 @@
 BQTypeError = new Error("Bisque type error");
 BQOperationError = new Error("Bisque operation error");
 
-
-
 classExtend = function(subClass, baseClass) {
    function inheritance() {}
    inheritance.prototype = baseClass.prototype;
@@ -994,11 +992,14 @@ Value.prototype.xmlNode = function (){
 
 ////////////////////////////////////////////////
 
-function BQTag (uri){
+function BQTag (uri, name, value, type) {
     BQObject.call(this, uri);
     this.values = [];
     this.xmltag = "tag";
     this.xmlfields = [ 'uri', 'name', 'type', 'value', 'index', 'perm', 'owner'];
+    this.name  = name;
+    this.value = value;
+    this.type  = type;
 }
 BQTag.prototype = new BQObject();
 //extend(BQTag, BQObject);
@@ -1116,7 +1117,7 @@ BQGObject.prototype.initializeXml = function (node) {
     this.owner = attribStr(node, 'owner');
     this.resource_type = this.xmltag;
 
-    var x = document.evaluate('./vertex', node, null, XPathResult.ANY_TYPE, null);
+    var x = node.ownerDocument.evaluate('./vertex', node, null, XPathResult.ANY_TYPE, null);
     
     this.vertices = [];
     var y = x.iterateNext();
@@ -1685,19 +1686,22 @@ BQModule.prototype.afterInitialized = function () {
         this.outputs_index  = outputs.create_flat_index();
     }
     
-    var template = this.find_children('template', 'iterable');
-    if (template && template.tags) {
-        this.template_index  = template.create_flat_index();
-    }    
+    // create sorted iterable resource names
+    if ('execute_options/iterable' in dict) {
+        this.iterables = [ dict['execute_options/iterable'] ];
+        // make sure dataset renderer is there
+        var name = this.iterables[0];
+        if (!(name in this.outputs_index)) {
+            var r = new BQTag(undefined, name, undefined, 'dataset');
+            this.outputs.push(r);
+            this.outputs_index[name] = r;               
+        }
+    }
     
     this.updateTemplates();
 }
 
 BQModule.prototype.updateTemplates = function () {
-    // create iterable dict
-    //var iterable_names = [];
-    //var iterable_recources = {};
-    
     // create accepted_type
     // unfortunately there's no easy way to test if JS vector has an element
     // change the accepted_type to an object adding the type of the resource
@@ -1711,39 +1715,8 @@ BQModule.prototype.updateTemplates = function () {
                 act[t] = t;
             }
             e.template.accepted_type = act;
-            
-            /*
-            // dima: old-style iterable
-            if ('iterable' in e.template) {
-                iterable_names.push(e.template.iterable);
-                iterable_recources[e.template.iterable] = e;
-            }*/
         }
     }
-    
-    /*
-    // dima: old-style iterable
-    // create sorted iterable resource names
-    if (iterable_names.length>0) {
-        iterable_names = iterable_names.sort();
-        this.iterables = [];
-        var n = null;
-        for (var i=0; (n=iterable_names[i]); i++)
-            this.iterables.push( iterable_recources[n] );
-    }
-    */
-    
-    // new style - simple one iterable element def
-    if (this.template && this.template.inputs && this.template['inputs/iterable']) {
-        var n = this.template['inputs/iterable'];
-        var r = this.inputs_index[n];
-        if (r) {
-            this.iterables = [r];
-            r.template = r.template || {};
-            r.template.iterable = true; // set iterable template in the resource for renderer
-        }
-    }
- 
 }
 
 
@@ -1753,9 +1726,6 @@ BQModule.prototype.fromNode = function (node) {
 
 BQModule.prototype.createMEX = function( ) {
     var mex = new BQMex();
-    //mex.status = 'PENDING';
-    //mex.module = this.URI; //this.module.uri;
-    //mex.addtag ({name:'client_server', value:client_server});
 
     // create INPUTS block
     var tag_inputs = mex.addtag ({name:'inputs'});
@@ -1768,29 +1738,17 @@ BQModule.prototype.createMEX = function( ) {
     // create OUTPUTS block
     //var tag_outputs = mex.addtag ({name:'outputs'}); // dima: the outputs tag will be created by the module?
     
-    /*
-    // dima: old style
     // create execute_options block
     if (this.iterables && this.iterables.length>0) {
         var tag_execute = mex.addtag ({name:'execute_options'});
-        var i = undefined;
-        for (var p=0; (i=this.iterables[p]); p++) {
+        var iterable_name = undefined;
+        for (var p=0; (iterable_name=this.iterables[p]); p++) {
+            var i = this.inputs_index[iterable_name];
+            if (!i) continue;
             if (i.type == 'dataset')
-                tag_execute.addtag({name:'iterable', value:i.name});
+                tag_execute.addtag({ name:'iterable', value:i.name, type: i.type, });
         }
     }
-    */
-    
-    // create iterable block
-    if (this.iterables && this.iterables.length>0) {
-        var tag_iterable = mex.addtag ({name:'iterable'});
-        var tag_inputs   = tag_iterable.addtag ({name:'inputs'});        
-        var i = undefined;
-        for (var p=0; (i=this.iterables[p]); p++) {
-            if (i.type == 'dataset')
-                tag_inputs.addtag({name:'iterable', value:i.name});
-        }
-    }    
     
     return mex;
 }
@@ -1847,17 +1805,7 @@ BQMex.prototype.afterInitialized = function () {
     //BQObject.prototype.afterInitialized.call ();
     
     this.dict = this.dict || this.toDict(true);
-    
-    // check if the mex has iterables - new style
-    if (this.dict['template/inputs/iterable']) {
-        var name = this.dict['template/inputs/iterable'];
-        this.findMexsForIterable(name, 'inputs/');
-    } else
-    if (this.dict['execute_options/iterable']) { // old style
-        var name = this.dict['execute_options/iterable'];
-        this.findMexsForIterable(name, 'inputs/');
-    }
-    
+  
     var inputs  = this.find_tags('inputs');
     if (inputs && inputs.tags) {
         this.inputs = inputs.tags; // dima - this should be children in the future
@@ -1868,6 +1816,20 @@ BQMex.prototype.afterInitialized = function () {
     if (outputs && outputs.tags) {
         this.outputs = outputs.tags; // dima - this should be children in the future   
         this.outputs_index  = outputs.create_flat_index();
+    }    
+    
+    // check if the mex has iterables
+    if (this.dict['execute_options/iterable']) {
+        var name = this.dict['execute_options/iterable'];
+        this.findMexsForIterable(name, 'inputs/');
+        // if the main output does not have a dataset resource, create one
+        this.outputs = this.outputs || [];
+        this.outputs_index = this.outputs_index || {};        
+        if (!(name in this.outputs_index)) {
+            var r = new BQTag(undefined, name, this.iterables[name]['dataset'], 'dataset');
+            this.outputs.push(r);
+            this.outputs_index[name] = r;   
+        }
     }    
 }
 

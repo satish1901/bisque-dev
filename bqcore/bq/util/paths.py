@@ -1,22 +1,27 @@
 import os
 from tg import config
 
+
+def bisque_root():
+    root = os.getenv('BISQUE_ROOT')
+    return root or config.get('bisque.paths.root')
+
 def bisque_path(*names):
     'return a path constructed from the installation path'
-    root = config.get('bisque.paths.root')
+    root = bisque_root()
     return os.path.join(root, *names)
     
 def data_path(*names):
     'return a path constructed from the data directory path'
     data = config.get('bisque.paths.data')
-    data = data or os.path.join(config.get('bisque.paths.root'), 'data')
+    data = data or os.path.join(bisque_root(), 'data')
     return os.path.join(data, *names)
     
 
 def config_path(*names):
     'return a path constructed from the config directory path'
     conf = config.get('bisque.paths.config')
-    conf = conf or os.path.join(config.get('bisque.paths.root'), 'config')
+    conf = conf or os.path.join(bisque_root(), 'config')
     return os.path.join(conf, *names)
 
 

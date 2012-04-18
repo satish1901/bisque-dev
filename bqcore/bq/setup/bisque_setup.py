@@ -830,6 +830,11 @@ def install_modules(params):
     if getanswer( "Try to setup modules", 'Y',
                   "Run the installation scripts on the modules. Some of these require local compilations and have outside dependencies. Please monitor carefullly") != 'Y':
         return
+    if not os.path.exists(bisque_path('modules')):
+        os.makedirs (bisque_path('modules'))
+        print "No modules were found on the system. Please install sample modules from http://biodev.ece.ucsb.edu/binaries/depot/bisque-modules.tgz"
+        return
+                   
 
     for bm in os.listdir (bisque_path('modules')):
         modpath = bisque_path('modules', bm)
@@ -1260,19 +1265,19 @@ def send_installation_report(params):
 
 start_msg = """
 You can start bisque with
-
-   bq-admin servers start
-
+   $ bq-admin servers start
 then point your browser to
-
     ${bisque.root}
-
 If you need to shutdown the servers, then use
-
-   bq-admin servers stop
-
+   $ bq-admin servers stop
 You can login as admin and change the default password.
+"""
 
+engine_msg="""
+You can start a bisque module engine with
+   $ bq-admin servers start
+which will register any module with
+    ${bisque.root}
 """
 
 install_options= [
@@ -1387,6 +1392,11 @@ def bisque_installer(options, args):
     if installer == install_options:
         print STemplate(start_msg).substitute(params)
         return 0
+
+    if installer == engine_options:
+        print STemplate(engine_msg).substitute(params)
+        return 0
+
 
     return -1
 

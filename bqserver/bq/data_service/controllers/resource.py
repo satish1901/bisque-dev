@@ -211,8 +211,7 @@ class ResponseCache(object):
             #     ,data_service/images,1#view=deep == ,data_service/images,1,#view=deep 
             cachename = cachename.split('#',1)[0].split(',',1)[1].strip(',')
             for mn, cf in [ (fn.split('#',1)[0].split(',',1)[1].strip(','), fn) for fn in files ] :
-
-                log.debug('exact %s <> %s' % (cachename, mn))
+                #log.debug('exact %s <> %s' % (cachename, mn))
 
                 if mn == cachename:
                     try:
@@ -224,7 +223,7 @@ class ResponseCache(object):
                     log.debug ('cache exact remove %s' % cf)
             return 
         for cf in files[:]:
-            log.debug ("checking %s" % cf)
+            #log.debug ("checking %s" % cf)
             if cachename.startswith('*')\
                and cf.split(',',1)[1].startswith(cachename.split(',',1)[1])\
                or cf.startswith (cachename):

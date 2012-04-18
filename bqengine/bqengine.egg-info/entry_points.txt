@@ -1,4 +1,0 @@
-
-    [bisque.services]
-    engine_service = bq.engine.controllers.engine_service
-    

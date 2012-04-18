@@ -77,14 +77,17 @@ class BQServer(object):
     def __init__(self):
         self.http = httplib2.Http()
         self.auth = {}
+        self.root = None
 
-    def authenticate_mex(self, token):
+    def authenticate_mex(self, token, root):
         self.auth = { 'Mex' : token}
+        self.root = root
 
-    def authenticate_basic(self, user, pwd):
+    def authenticate_basic(self, user, pwd, root):
         import base64
         auth = "Basic " + base64.encodestring("%s:%s" % (user, pwd) ).strip()
         self.auth = { 'Authorization' : auth }
+        self.root = root
 
     def prepare_headers(self, user_headers):
         """
@@ -96,7 +99,11 @@ class BQServer(object):
         return headers
 
     def prepare_url (self, url, **params):
+        if self.root:
+            url  = urlparse.urljoin(self.root, url)
         split_url = list( urlparse.urlsplit(url))
+        # scheme and netloc
+
         p = parse_qs(split_url[3])
         # Needs to be a list of values i.e. { k:[v] }
         p.update(dict([ (k,[v]) for k,v in params.items()]))
@@ -139,35 +146,39 @@ class BQSession(object):
         
     ############################
     # Establish a bisque session
-    def init_local(self, user, pwd, moduleuri=None, bisque_root=None):
+    def init_local(self, user, pwd, moduleuri=None, bisque_root=None, create_mex=True):
         """Create a session mex """
         self.bisque_root = bisque_root
-
-        self.c.authenticate_basic(user, pwd)
+        self.c.authenticate_basic(user, pwd, bisque_root)
         self._load_services()
 
-        
-        mex = BQMex()
-        mex.module = moduleuri
-        mex.status = 'RUNNING'
-        self.mex = self.save(mex, url=self.service_url('module_service', 'mex'))
+        self.mex = None
+        if create_mex:
+            mex = BQMex()
+            mex.module = moduleuri
+            mex.status = 'RUNNING'
+            self.mex = self.save(mex, url=self.service_url('module_service', 'mex'))
 
         return self
 
     def init_mex(self, mex_url, auth_token, bisque_root= None):
-        self.c.authenticate_mex(auth_token)
         if bisque_root is None:
+            # This assumes that bisque_root is http://host.org:port/
             mex_tuple = list(urlparse.urlparse (mex_url))
             mex_tuple[2:5] = '','',''
             bisque_root = urlparse.urlunparse(mex_tuple)
-            
+
         self.bisque_root = bisque_root
+        self.c.authenticate_mex(auth_token, bisque_root)
         self._load_services()
+
         self.mex = self.load (mex_url, view='deep')
         return self
 
     def close(self):
         pass
+
+        
 
     def fetchxml (self, url, **params):
         """Fetch an xml object from the url

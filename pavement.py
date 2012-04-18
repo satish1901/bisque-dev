@@ -7,12 +7,11 @@ from urlparse import urlparse
 from paver.easy import *
 from paver.setuputils import find_packages, find_package_data
 import paver.misctasks
-import paver.virtual
 
 from paver.setuputils import install_distutils_tasks
 install_distutils_tasks()
 
-VERSION = '0.5.0'
+VERSION = '0.5.1'
 
 
 options(
@@ -22,8 +21,16 @@ options(
         author="Center for BioImage Informatics, UCSB"
         ),
 
-    package_data=find_package_data(),
-    packages=find_packages(exclude=['ez_setup']),
+    classifiers = [
+        "Development Status :: 5 - Production/Stable",
+        "Framework :: TurboGears :: Applications",
+        "Topic :: Scientific/Engineering :: Bio-Informatics",
+        "License :: OSI Approved :: BSD License",
+        ],
+    #package_data=find_package_data(),
+    #packages=find_packages(exclude=['ez_setup']),
+    #packages=["bqcore/bq"],
+    
     build_top=path("build"),
     build_dir=lambda: options.build_top / "bisque05",
     license=Bunch(
@@ -46,8 +53,11 @@ options(
 
 subdirs=['bqdev', 'bqcore', 'bqserver', 'bqengine' ]
 
+
+
 @task
 def setup():
+    'install local version and setup local packages'
     # Hack as numpy fails to install when in setup.py dependencies
     sh('easy_install numpy==1.6.0')
     sh('easy_install numpy==1.6.0')
@@ -60,12 +70,36 @@ def setup():
     top = os.getcwd()
     for d in subdirs:
         app_dir = path('.') / d
-        os.chdir(app_dir)
-        sh('python setup.py develop')
-        os.chdir(top)
+        if os.path.exists(app_dir):
+            os.chdir(app_dir)
+            sh('python setup.py develop')
+            os.chdir(top)
+
+@task
+@needs('generate_setup', 'minilib', 'setuptools.command.sdist')
+def sdist():
+    """Overrides sdist to make sure that our setup.py is generated."""
+    sh('tar -czf dist/bisque-modules-%s.tgz --exclude="*.pyc" --exclude="*~" --exclude="*.ctf" --exclude="*pydist" --exclude="UNPORTED" modules' % VERSION)
+
+
+@task
+@needs('setuptools.command.install')
+def install():
+    setup()
 
 @task
 def test():
     os.chdir('bqcore')
     sh('python setup.py test')
     
+
+@task
+def distclean():
+    'clean out all pyc and backup files'
+    sh('find . -name "*.pyc" | xargs rm ')
+    sh('find . -name "*~" | xargs rm ')
+
+@task
+def package():
+    'create distributable packages'
+    pass

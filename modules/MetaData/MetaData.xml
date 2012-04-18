@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <module name="MetaData" path="./MetaData" type="runtime">
 
-   <!-- Comments are OK -->  
+    <!-- Comments are OK -->  
     <tag name="inputs">
-        <tag name="image_url" type="image">
-            <tag name="template" type="template">
+        <tag name="image_url" type="resource">
+            <template>
+                <tag name="accepted_type" value="image" />
+                <tag name="accepted_type" value="dataset" />
                 <tag name="label" value="Image to extract metadata" />
                 <tag name="prohibit_upload" value="true" type="boolean" />
-                <tag name="iterable" value="iterable-001" />
-            </tag>
+            </template>
         </tag> 
                         
         <tag name="mex_url"  type="system-input" />
@@ -17,11 +18,15 @@
     
     <tag name="outputs">
          <tag name="metadata" type="tag">
-            <tag name="template" type="template">
+            <template>
                 <tag name="label" value="Extracted metadata" />
-            </tag>             
-         </tag>          
+            </template>             
+         </tag>   
     </tag>
+    
+    <tag name="execute_options">
+        <tag name="iterable" value="image_url" type="dataset" />
+    </tag>    
     
     <tag name="module_options" >
         <tag name="version" value="3" />
