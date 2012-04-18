@@ -793,10 +793,17 @@ Ext.define('BQ.upload.Panel', {
             tooltip: 'Wrap all uploaded images into a dataset, if selected all images will be added into a dataset after upload',   
             
             handler: function(){ 
-                if (this.pressed)
-                    BQ.ui.notification('All images will be wraped in a dataset', 1000);
-                else 
-                    BQ.ui.notification('Dataset will not be created', 1000);                    
+                if (!this.pressed)
+                    BQ.ui.notification('Dataset will not be created', 1000); 
+                else {
+                    //BQ.ui.notification('All images will be wraped in a dataset', 1000);
+                    this.dataset_name = 'Uploaded on '+(new Date()).toISOString();                    
+                    Ext.Msg.prompt('Dataset name', 'Please enter a dataset name:', function(btn, text) {
+                        if (btn == 'ok') {
+                            this.dataset_name = text;
+                        }
+                    }, this, false, this.dataset_name);                         
+                }
             },
         });
         
@@ -1186,7 +1193,7 @@ Ext.define('BQ.upload.Panel', {
         });
         
         var dataset = new BQDataset();
-        dataset.name = 'Uploaded on '+(new Date()).toISOString();
+        dataset.name = this.dataset_name || 'Uploaded on '+(new Date()).toISOString();
         dataset.newMembers( members );
         dataset.save_('/data_service/dataset/', callback(this, 'onCreatedDataset'));        
     },   

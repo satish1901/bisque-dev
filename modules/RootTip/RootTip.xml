@@ -2,48 +2,77 @@
 <module name="RootTip" path="./launch.py" type="runtime" >
     
     <tag name="inputs">
-        <!--
-        <tag name="input-system" value="image_url"  />
-        <tag name="input-system" value="mex_url" />
-        -->
-        <tag name="image_url"    type="image" > 
-           <tag name="template" type="template">
-             <tag name="require_gemetry" >
-               <tag name="t" value="stack" />
-               <tag name="fail_message" value="we need time a series image" />
-             </tag>
-             <tag name="iterable" value="iterable-001" />
-           </tag>
+        <tag name="image_url" type="image" > 
+            <template>
+                <tag name="accepted_type" value="image" />
+                <tag name="accepted_type" value="dataset" />            
+                <tag name="require_gemetry" >
+                    <tag name="t" value="stack" />
+                    <tag name="fail_message" value="we need time a series image" />
+                </tag>
+            </template>
         </tag>
         <tag name="mex_url"      type="system-input" />
         <tag name="bisque_token" type="system-input" />        
     </tag>
     
     <tag name="outputs">
-      <tag name='roots' type="image">
-          <tag name="template" type="template" >
-              <tag name="label" value="Detected Root Tips" />
-          </tag>
-          <gobject name="root_tips">
-            <tag name="template" type="template">
-
+        <tag name="roots" type="image">
+            <template>
+                <tag name="label" value="Detected Root Tips" />
+            </template>
+            <gobject name="root_tips">
+                <template>
+                    <tag name="plot" value="true"  type="boolean">
+                        <tag name="label" value="Tip angles and growth" />
+                        <tag name="title" value="Tip angles and growth" />
+                        <tag name="titles">
+                            <value>Angles</value>
+                            <value>Growth</value>
+                        </tag>
+                        <tag name="xmap" value="tag-value-number" />
+                        <tag name="xreduce" value="vector" />
+                        <tag name="xpath">
+                            <value>//gobject[@type="tipangle"]/tag[@name="angle"]</value>
+                            <value>//gobject[@type="tipangle"]/tag[@name="growth"]</value>                        
+                        </tag>                        
+                    </tag>
+                
+                    <tag name="export_csv" value="true" type="boolean">
+                        <tag name="label" value="Tip angles and growth as CSV" />
+                        <tag name="xmap" value="tag-value-number" />
+                        <tag name="xreduce" value="vector" />
+                        <tag name="xpath">
+                            <value>//gobject[@type="tipangle"]/tag[@name="angle"]</value>
+                            <value>//gobject[@type="tipangle"]/tag[@name="growth"]</value>    
+                        </tag>                        
+                    </tag>                      
+                
+                    <tag name="export_xml"    value="true"  type="boolean" />
+                    <tag name="export_excel"  value="false" type="boolean" />
+                    <tag name="export_gdocs"  value="false" type="boolean" />
+                    <tag name="preview_movie" value="false" type="boolean" />
+                </template>                  
+            </gobject>              
+        </tag>
+      
+        <!-- Iterated outputs -->
+        <!-- Plots and exports for the whole dataset -->
+        <tag name="mex_url" type="mex">
+            <template>
+                <tag name="label" value="Summary for the dataset" />
                 <tag name="plot" value="true"  type="boolean">
                     <tag name="label" value="Tip angles and growth" />
                     <tag name="title" value="Tip angles and growth" />
+                    <!-- everything else is defined in the custom script -->
+                </tag>
+            
+                <tag name="export_csv" value="true" type="boolean">
+                    <tag name="label" value="Tip angles and growth as CSV" />
                     <tag name="titles">
                         <value>Angles</value>
                         <value>Growth</value>
-                    </tag>
-                    <tag name="xmap" value="tag-value-number" />
-                    <tag name="xreduce" value="vector" />
-                    <tag name="xpath">
-                        <value>//gobject[@type="tipangle"]/tag[@name="angle"]</value>
-                        <value>//gobject[@type="tipangle"]/tag[@name="growth"]</value>                        
-                    </tag>                        
-                </tag>
-
-                <tag name="export_csv" value="true" type="boolean">
-                    <tag name="label" value="Tip angles and growth as CSV" />
+                    </tag>                    
                     <tag name="xmap" value="tag-value-number" />
                     <tag name="xreduce" value="vector" />
                     <tag name="xpath">
@@ -51,19 +80,20 @@
                         <value>//gobject[@type="tipangle"]/tag[@name="growth"]</value>    
                     </tag>                        
                 </tag>                      
-
+            
                 <tag name="export_xml"    value="true"  type="boolean" />
                 <tag name="export_excel"  value="false" type="boolean" />
                 <tag name="export_gdocs"  value="false" type="boolean" />
                 <tag name="preview_movie" value="false" type="boolean" />
-            </tag>                  
-          </gobject>              
-             
-      </tag>
+            </template>           
+        </tag> 
+        <!-- Dataset browser to choose individual results -->     
+        <tag name="image_url" type="dataset" />         
     </tag>      
 
     <tag name="execute_options">
         <tag name="argument_style" value="named" />
+        <tag name="iterable" value="image_url" type="dataset" />        
     </tag> 
     
     <tag name="module_options" >
@@ -74,6 +104,9 @@
         <tag name="group" value="Root Analysis" />
     </tag>
   
+    <tag name="interface">        
+        <tag name="javascript" type="file" value="my_renderes.js" />
+    </tag>  
     <tag name="title" value="RootTip" /> 
     <tag name="authors" value="Nathan Miller" />
     <tag name="help"      type="file" value="public/help.html" />

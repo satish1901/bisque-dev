@@ -154,11 +154,13 @@ class MexParser(object):
         available as a dict
         """
         options = {}
-        execute = module.xpath ('./tag[@name="execute_options"]')
-        execute = execute and execute[0]
-        log.debug ("options %s" % execute )
-        for opt in execute:
-            options[opt.get('name')]= opt.get('value')
+        for x in (module, mex):
+            execute = x.xpath ('./tag[@name="execute_options"]')
+            execute = execute  and execute[0]
+            log.debug ("options %s" % execute )
+            for opt in execute:
+
+                options[opt.get('name')] = opt.get('value')
 
         log.debug("options=%s" % options)
         return options
@@ -179,7 +181,13 @@ class MexParser(object):
         "Find and return list  of toplevel submex"
         mexes = mex.xpath('/mex/mex')
         return [ self.prepare_mex_params(module, mx) for mx in mexes ] 
-            
-        
-        
 
+    def process_iterables(self, module, mex):
+        'extract iterables from the mex as tuple i.e.  iterable_tag_name, dataset_url'
+        iterable = mex.xpath('./tag[@name="execute_options"]/tag[@name="iterable"]')
+        if len(iterable):
+            mex_inputs = mex.xpath('./tag[@name="inputs"]')[0]
+            iterable_tag_name = iterable[0].get('value')
+            dataset_tag = mex_inputs.xpath('./tag[@name="%s"]' % iterable_tag_name)[0]
+            return ( iterable_tag_name, dataset_tag.get('value'), dataset_tag.get('type'))
+        return None

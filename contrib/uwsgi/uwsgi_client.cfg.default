@@ -27,7 +27,7 @@ bisque.proxyroot = $proxyroot
 socket = $server
 
 #number of worker processes to run
-processes = 4
+processes = 8
 
 #number of threads per worker process
 threads = 8

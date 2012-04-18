@@ -1414,7 +1414,8 @@ Ext.define('BQ.stats.Visualizer', {
     
     onerror: function (e) {
         this.setLoading(false);
-        BQ.ui.error(e.message);  
+        var message = typeof(e)=='string'?e:e.message;
+        BQ.ui.error(message);  
     },    
 
     ondone: function (results) {
