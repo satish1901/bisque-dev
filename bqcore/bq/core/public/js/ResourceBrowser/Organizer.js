@@ -192,7 +192,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
         {
             child.grid.setLoading({msg:''});
             var query = this.GetTagQuery();
-            var uri = this.dataset + '?{0}=' + child.tag + '&wpublic=' + this.parent.wpublic + (query.length?'&tag_query='+query:'');
+            var uri = this.dataset + '?{0}=' + child.tag + '&wpublic=' + this.browser.browserParams.wpublic + (query.length?'&tag_query='+query:'');
             var uri = Ext.String.format(uri, (child.tagType=='tag'?'tag_values':'gob_names'));
             
             BQFactory.load(uri, callback(this, 'PopulateGrid', true, child));
@@ -397,7 +397,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
             
             var uri = this.parent.dataset 
                       + '?{0}=1&wpublic=' 
-                      + this.parent.wpublic
+                      + this.parent.browser.browserParams.wpublic
                       + (query.length?'&tag_query='+query:''); 
             
             BQFactory.load(Ext.String.format(uri, 'tag_names'), Ext.bind(this.GetTagList, this, [true, 'tag'], 0));
