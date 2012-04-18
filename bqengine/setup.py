@@ -1,9 +1,5 @@
-try:
-    from setuptools import setup, find_packages
-except ImportError:
-    from ez_setup import use_setuptools
-    use_setuptools()
-    from setuptools import setup, find_packages
+
+from setuptools import setup, find_packages
 
 setup(
     name='bqengine',
@@ -18,14 +14,13 @@ setup(
                       ],
     setup_requires=["PasteScript>=1.6.3"],
     paster_plugins=['PasteScript', 'Pylons' ],
-    packages=find_packages(exclude=['ez_setup']),
+    packages= find_packages(),
     namespace_packages = ['bq'],
     zip_safe = False,
-    include_package_data=True,
+    #include_package_data=True,
     test_suite='nose.collector',
     tests_require=['WebTest', 'BeautifulSoup'],
-    package_data={'bq': ['i18n/*/LC_MESSAGES/*.mo',
-                         'templates/*',]},
+    package_data={'': ['*.html',]},
     message_extractors = {'bq': [
             ('**.py', 'python', None),
             ('templates/**.mako', 'mako', None),
