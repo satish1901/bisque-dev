@@ -432,6 +432,9 @@ Ext.define('Bisque.ResourceBrowser.Browser',
 
             'Browser_ReloadData' : function(uri)
             {
+                var btnOrganize = this.commandBar.getComponent("btnGear").menu.getComponent("btnOrganize");
+                this.showOrganizer?btnOrganize.handler.call(this.commandBar, true):'';
+
                 if(uri == "")
                 {
                     this.resourceQueue = new Bisque.ResourceBrowser.ResourceQueue(
