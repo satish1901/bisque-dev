@@ -2,12 +2,15 @@ import os
 import tarfile
 import copy
 import string
-from tg import response, expose
+import logging
+
+from tg import request, response, expose
 from lxml import etree
 from cStringIO import StringIO
 from bq import data_service, image_service, blob_service
 from bq.export_service.controllers.archiver.archiver_factory import ArchiverFactory
 
+log = logging.getLogger("bq.export_service.archive_streamer")
 
 class ArchiveStreamer():
     
@@ -25,8 +28,8 @@ class ArchiveStreamer():
         response.headers['Content-Disposition'] = 'attachment;filename="' + archiveName + self.archiver.getFileExtension() + '"'
     
     def stream(self):
+        log.debug ("BEGIN STREAM %s" % request.url)
         flist = self.fileInfoList(self.fileList, self.datasetList)
-
         for file in flist:
             self.archiver.beginFile(file)
             while not self.archiver.EOF():
@@ -35,6 +38,7 @@ class ArchiveStreamer():
 
         yield self.archiver.readEnding()
         self.archiver.close()
+        log.debug ("END STREAM %s" % request.url)
 
     # ------------------------------------------------------------------------------------------
     # Utility functions 

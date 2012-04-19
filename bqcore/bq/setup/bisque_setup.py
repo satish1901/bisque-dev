@@ -1265,17 +1265,17 @@ def send_installation_report(params):
 
 start_msg = """
 You can start bisque with
-   $ bq-admin servers start
+   $$ bq-admin server start
 then point your browser to
     ${bisque.root}
 If you need to shutdown the servers, then use
-   $ bq-admin servers stop
+   $$ bq-admin server stop
 You can login as admin and change the default password.
 """
 
 engine_msg="""
 You can start a bisque module engine with
-   $ bq-admin servers start
+   $$ bq-admin server start
 which will register any module with
     ${bisque.root}
 """

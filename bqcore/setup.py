@@ -25,7 +25,7 @@ setup(
         "Pylons==1.0",
         "WebOb==1.0.8",
         "decorator>=3.3",
-        "TurboGears2==2.1.4",
+        "TurboGears2==2.1.5",
         "Genshi",
         "zope.sqlalchemy >= 0.4",
         "repoze.tm2 >= 1.0a5",
