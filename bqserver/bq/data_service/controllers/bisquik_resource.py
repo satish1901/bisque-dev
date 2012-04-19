@@ -60,7 +60,7 @@ from pylons.controllers.util import abort
 from sqlalchemy import desc
 from sqlalchemy.orm import Query
 import tg
-from tg import controllers, redirect, expose, response
+from tg import controllers, redirect, expose, response, request
 from tg import require
 from tg.controllers import CUSTOM_CONTENT_TYPE
 
@@ -168,7 +168,7 @@ class BisquikResource(Resource):
         return resource_load(self.resource_type, id=int(token), action=RESOURCE_READ)
 
     def load_parent(self, parent = None, action=RESOURCE_READ):
-        parent = getattr(self, 'parent', parent)
+        parent = getattr(request.bisque, 'parent', parent)
         return self.force_dbload(parent)
 
     def check_access(self, query, action=RESOURCE_READ):
@@ -226,14 +226,15 @@ class BisquikResource(Resource):
         offset = int(kw.get ('offset', 0))
         progressive = kw.pop('progressive', False)
         #limit = kw.pop('limit', None) 
-        log.info ('DIR  %s' % (self.browser_url))
+        log.info ('DIR  %s' % (request.url))
         #  Do not use loading 
-        parent = getattr(self,'parent', None)
+        parent = getattr(request.bisque,'parent', None)
+        user_id = request.bisque.user_id
 
         if view=='count':
             count = resource_count(self.resource_type,
                                    parent = parent,
-                                   user_id = self.user_id,
+                                   user_id = user_id,
                                    tag_query = tag_query,
                                    tag_order = tag_order,
                                    wpublic = wpublic,
@@ -248,14 +249,14 @@ class BisquikResource(Resource):
             #    limit = 1000
             resources = resource_query (self.resource_type,
                                         parent=parent,
-                                        user_id=self.user_id,
+                                        user_id= user_id,
                                         tag_query = tag_query,
                                         tag_order = tag_order,
                                         wpublic = wpublic,
                                         #limit = limit,
                                         **kw)
             #log.debug ("DIR query " + str(resources))
-            response = etree.Element('resource', uri=str(tg.request.url))
+            response = etree.Element('resource', uri=str(request.url))
             db2tree (resources,
                      parent=response,
                      view=view,
@@ -281,7 +282,7 @@ class BisquikResource(Resource):
         """
         view=kw.pop('view', None)
         format = kw.pop('format', None)
-        log.info ("NEW: %s %s " %(self.browser_url, xml) )
+        log.info ("NEW: %s %s " %(request.url, xml) )
         
         # Create a DB object from the document.
         if  not identity.not_anonymous():
@@ -302,7 +303,7 @@ class BisquikResource(Resource):
     def replace_all(self, resource,  xml, **kw):
         '''PUT /ds/image/1/gobjects  --> Replace contents of gobjects with doc
         '''
-        log.info ('REPLACE_ALL %s %s' % (self.browser_url, xml))
+        log.info ('REPLACE_ALL %s %s' % (request.url, xml))
         resource = self.check_access(resource, RESOURCE_EDIT)
         parent = self.load_parent()
         if parent:
@@ -320,7 +321,7 @@ class BisquikResource(Resource):
         """delete a container of objects
         DELETE /ds/images/1/gobjects
         """
-        log.info ('DELETE_ALL %s' % (self.browser_url))
+        log.info ('DELETE_ALL %s' % (request.url))
         resource = self.check_access(resource, RESOURCE_EDIT)
 
         parent = self.load_parent()
@@ -332,7 +333,7 @@ class BisquikResource(Resource):
     def get(self, resource, **kw):
         """GET /ds/images/1 : fetch the resource
         """
-        log.info ('GET  %s' % (self.browser_url))
+        log.info ('GET  %s' % (request.url))
         view=kw.pop('view', None)
         format = kw.pop('format', None)
         resource = self.check_access(resource)
@@ -346,7 +347,7 @@ class BisquikResource(Resource):
         '''PUT /ds/image/1  --> Replace all contents with doc
         '''
         view=kw.pop('view', None)
-        log.info ('MODIFY %s %s' % (self.browser_url, xml))
+        log.info ('MODIFY %s %s' % (request.url, xml))
         resource = self.check_access(resource, RESOURCE_EDIT)
 
         DBSession.autoflush = False
@@ -363,7 +364,7 @@ class BisquikResource(Resource):
         '''POST /ds/images/1/  : append the document to the resource
         Append value of the resource based on the args
         '''
-        log.info ('APPEND %s %s' % (self.browser_url, xml))
+        log.info ('APPEND %s %s' % (request.url, xml))
         resource = self.check_access(resource, RESOURCE_EDIT)
         #parent = self.load_parent()
         resource = bisquik2db (doc=xml, parent=resource) #, resource = resource)
@@ -375,9 +376,9 @@ class BisquikResource(Resource):
     def delete(self, resource, **kw):
         """DELETE /ds/images/1/tags/2 : delete a specific resource
         """
-        log.info ('DELETE %s' % (self.browser_url))
+        log.info ('DELETE %s' % (request.url))
         resource = self.check_access(resource)
-        response = resource_delete(resource, user_id = self.user_id)
+        response = resource_delete(resource, user_id = request.bisque.user_id)
         return "<resource/>"
 
 

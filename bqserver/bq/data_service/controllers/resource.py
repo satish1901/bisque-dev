@@ -69,7 +69,7 @@ from pylons.controllers.util import abort
 
 import tg
 from tg import redirect, expose, request
-from tg import config
+from tg.configuration import  Bunch, config
 #from tg.controllers import CUSTOM_CONTENT_TYPE
 
 from bq.core import identity
@@ -211,8 +211,7 @@ class ResponseCache(object):
             #     ,data_service/images,1#view=deep == ,data_service/images,1,#view=deep 
             cachename = cachename.split('#',1)[0].split(',',1)[1].strip(',')
             for mn, cf in [ (fn.split('#',1)[0].split(',',1)[1].strip(','), fn) for fn in files ] :
-
-                log.debug('exact %s <> %s' % (cachename, mn))
+                #log.debug('exact %s <> %s' % (cachename, mn))
 
                 if mn == cachename:
                     try:
@@ -224,7 +223,7 @@ class ResponseCache(object):
                     log.debug ('cache exact remove %s' % cf)
             return 
         for cf in files[:]:
-            log.debug ("checking %s" % cf)
+            #log.debug ("checking %s" % cf)
             if cachename.startswith('*')\
                and cf.split(',',1)[1].startswith(cachename.split(',',1)[1])\
                or cf.startswith (cachename):
@@ -418,7 +417,7 @@ class Resource(ServiceController):
 
     def check_cache_header(self, resource):
         if not CACHING: return
-        etag_check = self.request.headers.get('If-None-Match', None)
+        etag_check = tg.request.headers.get('If-None-Match', None)
         if etag_check:
             etag = self.get_entity_tag(resource)
             if etag:
@@ -426,7 +425,7 @@ class Resource(ServiceController):
                     abort(304)
 
         if not etag_check or not etag:
-            modified_check = self.request.headers.get('If-Modified-Since', None)
+            modified_check = tg.request.headers.get('If-Modified-Since', None)
             modified_check = parse_http_date(modified_check)
             if modified_check is not None:
                 last_modified = self.get_last_modified_date(resource)
@@ -436,10 +435,10 @@ class Resource(ServiceController):
 
     def add_cache_header(self, resource):
         if not CACHING: return
-        self.response.headers['Cache-Control'] = 'public'
+        tg.response.headers['Cache-Control'] = 'public'
         etag = self.get_entity_tag(resource)
         if etag:
-            self.response.headers['ETag'] = etag
+            tg.response.headers['ETag'] = etag
             return
        
         last_modified = self.get_last_modified_date(resource)
@@ -447,7 +446,7 @@ class Resource(ServiceController):
         if last_modified is None:
             last_modified = datetime(*gmtime()[:6])
 
-            self.response.headers['Last-Modified'] = ( 
+            tg.response.headers['Last-Modified'] = ( 
                 datetime.strftime(last_modified, "%a, %d %b %Y %H:%M:%S GMT"))
 
     def invalidate(self, url):
@@ -458,15 +457,20 @@ class Resource(ServiceController):
 
     @expose()
     def default(self, *path, **kw):
-        self.request = request
-        self.response = tg.response
+        request = tg.request
+        response = tg.response
         path = list(path)
         resource = None
-        self.path = path
-        self.user_id = None
-        self.browser_url = request.url
-        if identity.not_anonymous():
-            self.user_id = identity.current.get_bq_user().id
+        user_id = None
+        if not hasattr(request, 'bisque'):
+            bisque = Bunch()
+            request.bisque = bisque
+        bisque = request.bisque 
+        if not hasattr(bisque, 'user_id'):
+            if identity.not_anonymous():
+                user_id = identity.current.get_bq_user().id
+            bisque.user_id = user_id
+        user_id = bisque.user_id 
 
 
         http_method = request.method.lower()
@@ -491,22 +495,22 @@ class Resource(ServiceController):
             elif http_method == 'get':
                 #If the method is a get, call the self.index method, which
                 #should list the contents of the collection.
-                headers, response = self.server_cache.fetch(tg.request.url, user=self.user_id)
-                if response:
-                    pylons.response.headers.update(headers) # cherrypy.response.headers.update (headers)
+                headers, value = self.server_cache.fetch(request.url, user=user_id)
+                if value:
+                    response.headers.update(headers) # cherrypy.response.headers.update (headers)
                 else:
                     #self.add_cache_header(None)
-                    response =  self.dir(**kw)
-                    self.server_cache.save (tg.request.url,
-                                            tg.response.headers,
-                                            response, user=self.user_id)
+                    value =  self.dir(**kw)
+                    self.server_cache.save (request.url,
+                                            response.headers,
+                                            value, user=user_id)
                 self.add_cache_header(resource)
-                return response
+                return value
             elif http_method == 'put':
-                resource = self.parent
+                resource = bisque.parent
                 method_name = 'replace_all'
             elif http_method == 'delete':
-                resource = self.parent
+                resource = bisque.parent
                 method_name = 'delete_all'
             elif http_method == 'head':
                 # Determine whether the collection has changed
@@ -523,7 +527,7 @@ class Resource(ServiceController):
             resource = self.load(token)
             if resource is None:
                 #No resource found?
-                if self.user_id is None:
+                if user_id is None:
                     abort(401)
                 abort(404)
 
@@ -534,7 +538,7 @@ class Resource(ServiceController):
             #log.debug('Token: ' + str(token))
             child = self.get_child_resource(token)
             if child is not None:
-                child.parent = resource
+                bisque.parent = resource
                 #call down into the child resource.
                 return child.default(*path, **kw)
 
@@ -560,32 +564,32 @@ class Resource(ServiceController):
                     data = request.body_file.read(clen)
                     #log.debug('POST '+ data)
                     #kw['xml_text'] = data
-                    response = method(resource, xml=data, **kw)
+                    value = method(resource, xml=data, **kw)
                 else:
                     #response = method(resource, doc = None, **kw)
                     # Raise illegal operation (you should provide XML)
                     log.debug ("Bad media type in post/put:" + content)
                     redirect("", 415)
-                self.server_cache.invalidate(tg.request.url, user=self.user_id)
+                self.server_cache.invalidate(request.url, user=user_id)
             elif http_method == 'delete':
-                self.server_cache.invalidate(tg.request.url, user=self.user_id)
+                self.server_cache.invalidate(request.url, user=user_id)
                 response = method(resource, **kw)
             else:  # http_method is in ('get', 'head')
-                headers, response = self.server_cache.fetch(tg.request.url, user=self.user_id)
-                if response:
-                    tg.response.headers.update (headers)
+                headers, value = self.server_cache.fetch(request.url, user=user_id)
+                if value:
+                    response.headers.update (headers)
                 else:
                     #run the requested method, passing it the resource
-                    response = method(resource, **kw)
-                    self.server_cache.save (tg.request.url,
-                                            tg.response.headers,
-                                            response, user=self.user_id)
+                    value = method(resource, **kw)
+                    self.server_cache.save (request.url,
+                                            response.headers,
+                                            value, user=user_id)
                     
             #set the last modified date header for the response
             self.add_cache_header(resource)
-            return response
+            return value
         except identity.BQIdentityException:
-            tg.response.status_int = 401    
+            response.status_int = 401    
             return "<response>FAIL</response>"
 
 
@@ -593,20 +597,20 @@ class Resource(ServiceController):
         """
         returns the Etag for the collection (resource=None) or the resource
         """
-        log.debug ("ETAG: %s " %self.browser_url)
+        log.debug ("ETAG: %s " %tg.request.url)
         if self.cache:
-            return self.server_cache.etag (self.browser_url,
-                                           self.user_id)
+            return self.server_cache.etag (tg.request.url,
+                                           tg.request.bisque.user_id)
         return None
     def get_last_modified_date(self, resource):
         """
         returns the last modified date of the resource.
         """
-        log.debug ("MODFIED: %s " %self.browser_url)
+        log.debug ("MODFIED: %s " %tg.request.url)
 
         if self.cache:
-            return self.server_cache.modified (self.browser_url,
-                                               self.user_id)
+            return self.server_cache.modified (tg.request.url,
+                                               tg.request.bisque.user_id)
         return None
 
     def dir(self, **kw):
