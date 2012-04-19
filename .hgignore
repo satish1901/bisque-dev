@@ -22,6 +22,7 @@ bqcore/doc/generated/*
 bqcore/bq/core/public/extjs/*
 *_mcr/
 local-packages/*
+pydist/*
 
 syntax: regexp
 .*\#.*\#$

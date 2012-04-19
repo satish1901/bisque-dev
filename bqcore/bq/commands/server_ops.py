@@ -246,8 +246,8 @@ def operation(command, options, mexrun=True, cfg_file=SITE_CFG, *args):
         verbose("using backend: " + str(backend))
         
         if backend == None:
-            print "Backend not configured. Please choose a valid backend"
-            return
+            verbose("Backend not configured. defaulting to paster")
+            backend = 'paster'
 
         for key, serverspec in sorted(config['servers'].items()):
             cfgopt['server'] = serverspec.pop('server', None)

@@ -29,9 +29,10 @@ For details on notation and configuration:
         <tag name="bisque_token" type="system-input" />
 
         <tag name="main_resource" type="image" >
-            <tag name="template" type="template">
+            <template>
                 <!-- Iterable will allow this module to run as a batch -->
-                <tag name="iterable" value="iterable-001" />
+                <tag name="accepted_type" value="image" />
+                <tag name="accepted_type" value="dataset" />                
                 
                 <tag name="label" value="Select an image or a set of images" />
                 <tag name="require_geometry">
@@ -39,11 +40,11 @@ For details on notation and configuration:
                     <tag name="t" value="single" />
                     <tag name="fail_message" value="Only supports 3D images!" />
                 </tag>                
-            </tag> 
+            </template> 
         </tag> 
 
         <tag name="image_url"    type="image" >
-            <tag name="template" type="template">
+            <template>
                 <tag name="label" value="Select input image" />
                 <tag name="prohibit_upload" value="true" type="boolean" />
                 <tag name="require_geometry">
@@ -51,49 +52,49 @@ For details on notation and configuration:
                     <tag name="t" value="single" />
                     <tag name="fail_message" value="Only supports 3D images!" />
                 </tag>                
-            </tag> 
+            </template> 
             
             <gobject name="MyGobjects">
-                <tag name="template" type="template">
+                <template>
                     <tag name="gobject" value="point" />
                     <tag name="gobject" value="polygon" />
                     <tag name="amount" value="single" />
                     <tag name="fail_message" value="Requires at least one point" />
-                </tag> 
+                </template> 
             </gobject>
         </tag> 
         
         <tag name="resource_url" type="resource">
-            <tag name="template" type="template">
+            <template>
                 <tag name="accepted_type" value="image" />
                 <tag name="accepted_type" value="dataset" />
                 <tag name="label" value="Select input resource" />
-            </tag>            
+            </template>            
         </tag>   
         
         
         <tag name="my_image" type="image" >
-            <tag name="template" type="template">
+            <template>
                 <tag name="label" value="Select input image" />
                 <tag name="require_geometry">
                     <tag name="t" value="stack" />
                     <tag name="z" value="single" />
                     <tag name="fail_message" value="Only supports time series images!" />
                 </tag>                
-            </tag> 
+            </template> 
             
             <gobject name="MyOtherGobjects">
-                <tag name="template" type="template">
+                <template>
                     <tag name="gobject" value="point" />
                     <tag name="gobject" value="polygon" />
                     <tag name="amount" value="many" />
                     <tag name="fail_message" value="Requires at least one point" />
-                </tag> 
+                </template> 
             </gobject>
         </tag>     
         
         <tag name="radius" value="5.6" type="number" >
-            <tag name="template" type="template">
+            <template>
                 <tag name="label" value="Radius" />
                 <tag name="minValue" value="-10" type="number" />
                 <tag name="maxValue" value="33" type="number" />
@@ -101,11 +102,11 @@ For details on notation and configuration:
                 <tag name="decimalPrecision" value="4" type="number" />
                 <tag name="step" value="1" type="number" />
                 <tag name="units" value="microns" />
-            </tag>             
+            </template>             
         </tag>
 
         <tag name="mynumber" type="number" >
-            <tag name="template" type="template">
+            <template>
                 <tag name="label" value="My number with no default" />
                 <tag name="minValue" value="-10" type="number" />
                 <tag name="maxValue" value="33" type="number" />
@@ -114,12 +115,12 @@ For details on notation and configuration:
                 <tag name="step" value="1" type="number" />
                 <tag name="units" value="microns" />
                 <tag name="showSlider" value="false" type="boolean" />
-            </tag>             
+            </template>             
         </tag>
         
         <tag name="myfloat2" type="number" >
             <value>0.5</value>
-            <tag name="template" type="template">
+            <template>
                 <tag name="label" value="My floating point number" />
                 <tag name="minValue" value="0" type="number" />
                 <tag name="maxValue" value="1" type="number" />
@@ -129,14 +130,14 @@ For details on notation and configuration:
                 <tag name="units" value="microns" />
                 <tag name="showSlider" value="true" type="boolean" />
                 <tag name="hideNumberPicker" value="true" type="boolean" />
-            </tag>             
+            </template>             
         </tag>           
         
         <tag name="myrange_int" type="number" >
             <value>5</value>
             <value>12</value>
             <value>14</value>                        
-            <tag name="template" type="template">
+            <template>
                 <tag name="label" value="My integer multi slider" />
                 <tag name="minValue" value="-10" type="number" />
                 <tag name="maxValue" value="33" type="number" />
@@ -144,14 +145,14 @@ For details on notation and configuration:
                 <tag name="decimalPrecision" value="0" type="number" />
                 <tag name="step" value="1" type="number" />
                 <tag name="units" value="microns" />
-            </tag>             
+            </template>             
         </tag>        
         
         <tag name="myrange_float" type="number" >
             <value>5.6</value>
             <value>12</value>
             <value>14</value>                        
-            <tag name="template" type="template">
+            <template>
                 <tag name="label" value="My float multi slider" />
                 <tag name="minValue" value="-10" type="number" />
                 <tag name="maxValue" value="33" type="number" />
@@ -159,31 +160,31 @@ For details on notation and configuration:
                 <tag name="decimalPrecision" value="2" type="number" />
                 <tag name="step" value="0.1" type="number" />
                 <tag name="units" value="microns" />
-            </tag>             
+            </template>             
         </tag>  
 
         <tag name="mystring" value="nothing" type="string" >
-            <tag name="template" type="template">
+            <template>
                 <tag name="label" value="Some text here" />
                 <tag name="minLength" value="0" type="number" />
                 <tag name="maxLength" value="100" type="number" />
                 <tag name="allowBlank" value="true" type="boolean" />
                 <tag name="regex" value="" />
-            </tag>             
+            </template>             
         </tag>           
         
         <tag name="mycombo" value="choice1" type="combo" >
-            <tag name="template" type="template">
+            <template>
                 <tag name="label" value="My combo" />
                 <tag name="select" value="choice1" />
                 <tag name="select" value="choice2" />
                 <tag name="select" value="choice3" />
                 <tag name="editable" value="false" type="boolean" />             
-            </tag>             
+            </template>             
         </tag>                
 
         <tag name="newcombo" value="choice1" type="combo" >
-            <tag name="template" type="template">
+            <template>
                 <tag name="label" value="New combo" />
                 <tag name="select">
                     <value>choice1</value>
@@ -192,25 +193,25 @@ For details on notation and configuration:
                 </tag>
                                 
                 <tag name="editable" value="false" type="boolean" />             
-            </tag>             
+            </template>             
         </tag>  
 
         <tag name="mycheck" value="true" type="boolean" >
-            <tag name="template" type="template">
+            <template>
                 <tag name="label" value="My check" />
-            </tag>             
+            </template>             
         </tag>        
 
         <tag name="mydate" type="date" >
-            <tag name="template" type="template">
+            <template>
                 <tag name="label" value="My date" />
-            </tag>             
+            </template>             
         </tag>  
         
         <tag name="mytime" type="time" >
-            <tag name="template" type="template">
+            <template>
                 <tag name="label" value="My time" />
-            </tag>             
+            </template>             
         </tag>                  
         
     </tag>
@@ -234,16 +235,16 @@ For details on notation and configuration:
     <tag name="outputs">
         <tag name="MyData" />
         <tag name="MyTable">
-            <tag name="template" type="template">
+            <template>
                 <tag name="label" value="Another set of tags with a custom label" />
-            </tag>
+            </template>
         </tag>              
         <tag name="MyImage" type="image">
-            <tag name="template" type="template">
+            <template>
                 <tag name="label" value="Custom image label" />
-            </tag>            
+            </template>            
             <gobject name="MyAnnotation">
-                <tag name="template" type="template">
+                <template>
                     
                     <tag name="plot" value="true"  type="boolean">
                         <tag name="label" value="Distributions of seed areas, major and minor axis" />
@@ -303,13 +304,17 @@ For details on notation and configuration:
                     <tag name="export_excel"  value="false" type="boolean" />
                     <tag name="export_gdocs"  value="true"  type="boolean" />
                     <tag name="preview_movie" value="false" type="boolean" />
-                </tag>                  
+                </template>                  
             </gobject>
         </tag>
     </tag>
 
 
     <!--  Module parameters and general configuration -->    
+
+    <tag name="execute_options">
+        <tag name="iterable" value="main_resource" type="dataset" />
+    </tag>  
 
     <tag name="module_options" >
         <tag name="version" value="2" />

@@ -728,7 +728,7 @@ def updateDB(root=None, parent=None, resource = None, factory = ResourceFactory,
                 log.debug ("other node %s" % obj.tag)
                 
     except Exception, e:
-        log.exception("during parse of %s in parent %s" % (resource, parent))
+        log.exception("during parse of %s " % (etree.tostring(root, pretty_print=True)))
         raise e
             
     return  last_resource
@@ -749,7 +749,8 @@ def bisquik2db(doc= None, parent=None, resource = None, xmlschema=None, replace=
             inputs = list (doc.getroot())
     else:
         inputs = [ doc ] 
-        
+
+    DBSession.autoflush = False
     results = []
     for el in inputs:
         node = updateDB(root=el, parent = parent, resource=resource, replace=replace)
