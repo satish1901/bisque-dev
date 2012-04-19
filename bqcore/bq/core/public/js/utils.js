@@ -1,4 +1,9 @@
 // <![CDATA[
+// globals.
+var pic_dir = '/static/pics/';
+var svgns  = "http://www.w3.org/2000/svg";
+var xlinkns  = "http://www.w3.org/1999/xlink";
+var xhtmlns = 'http://www.w3.org/1999/xhtml';
 
 // adding it as a prototype object enables it to be used from any array
 Array.prototype.removeItems = function(itemsToRemove) {

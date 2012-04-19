@@ -168,7 +168,7 @@ def make_app(global_conf, full_stack=True, **app_conf):
     root.startup()
     log.info ("Root-Controller: startup complete")
 
-    app = LogWSGIErrors(app, logging.getLogger('bq.server'), logging.INFO)
+    app = LogWSGIErrors(app, logging.getLogger('bq.middleware'), logging.ERROR)
     
     return app
 

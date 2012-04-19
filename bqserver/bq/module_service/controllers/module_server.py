@@ -249,15 +249,16 @@ def create_mex(module_url, name, mex = None, **kw):
         iterable = mex.xpath('./tag[@name="execute_options"]/tag[@name="iterable"]')
         if len(iterable):
             #mex.set('value', 'SUPER')
-            inputs = mex.xpath('./tag[@name="inputs"]')[0]
-            #mex.remove(inputs)
+            mex_inputs = mex.xpath('./tag[@name="inputs"]')[0]
+            #mex.remove(mex_inputs)
             iterable_tag_name = iterable[0].get('value')
-            dataset_tag = inputs.xpath('./tag[@name="%s"]' % iterable_tag_name)[0]
+            dataset_tag = mex_inputs.xpath('./tag[@name="%s"]' % iterable_tag_name)[0]
             #inputs.remove(dataset_tag)
             dataset = data_service.get_resource(dataset_tag.get('value'), view='full')
             members = dataset.xpath('/dataset/tag[@name="members"]')[0]
             for resource in members:
-                subinputs = copy.deepcopy(inputs)
+                # Create SubMex section with original parameters replaced with dataset members
+                subinputs = copy.deepcopy(mex_inputs)
                 resource_tag = subinputs.xpath('./tag[@name="%s"]' % iterable_tag_name)[0]
                 #resource_tag.set('value', resource.text)
                 subinputs.remove (resource_tag)
@@ -265,6 +266,7 @@ def create_mex(module_url, name, mex = None, **kw):
                 submex = etree.Element('mex', name=name, type=module_url)
                 submex.append(subinputs)
                 mex.append(submex)
+
             log.info('mex rewritten-> %s' % etree.tostring(mex))
             
     return mex

@@ -22,11 +22,14 @@ setup(
     author_email='',
     #url='',
     install_requires=[
-        "TurboGears2 >= 2.1.1",
+        "Pylons==1.0",
+        "WebOb==1.0.8",
+        "decorator>=3.3",
+        "TurboGears2==2.1.4",
         "Genshi",
         "zope.sqlalchemy >= 0.4",
         "repoze.tm2 >= 1.0a5",
-        "sqlalchemy",
+        "SQLAlchemy==0.7.6",
         "sqlalchemy-migrate",
         "repoze.what-quickstart",
         "repoze.what >= 1.0.8",
@@ -110,6 +113,7 @@ setup(
       server = bq.commands.admin:server
       engine = bq.commands.admin:engine
       setup   = bq.commands.admin:setup
+      deploy   = bq.commands.admin:deploy
       sql     = bq.commands.admin:sql
       preferences= bq.commands.admin:preferences
       

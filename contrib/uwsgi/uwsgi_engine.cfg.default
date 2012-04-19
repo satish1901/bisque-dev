@@ -32,7 +32,7 @@ socket = $server
 processes = 1
 
 #number of threads per worker process
-threads = 1
+threads = 8
 
 #path to the uwsgi log file
 daemonize = $logfile
@@ -49,16 +49,16 @@ virtualenv = $virtualenv
 #limits
 
 #brutally kill workers that will not terminate within 10 seconds during graceful reload
-#reload-mercy = 10
+reload-mercy = 10
 
-#recycle a worker every 1000 requests
-#max-requests = 1000
+#recycle a worker every 10000 requests
+max-requests = 10000
 
 #recycle a worker if it consumes more than 4 GB of virtual address space
-#reload-on-as = 4096
+reload-on-as = 4096
 
 #recycle a worker if it consumers more than 2 GB of physical unshared address space
-#reload-on-rss = 2048
+reload-on-rss = 2048
 
 #destroy workers after 900 seconds of inactivity (dont start new worker till a request arrives)
 #idle = 900
@@ -69,7 +69,7 @@ virtualenv = $virtualenv
 auto-procname = true
 
 #prefix of the uwsgi process name
-procname-prefix = bisque_
+procname-prefix = bisque_engine_
 
 #automatically kill workers without a master process
 no-orphans = true
