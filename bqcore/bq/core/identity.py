@@ -83,6 +83,14 @@ def get_admin():
         user_admin = DBSession.merge (user_admin)
     return user_admin
 
+user_admin_id = None
+def get_admin_id():
+    global user_admin_id
+    if user_admin_id is None:
+        user_admin_id = get_admin().id
+    return user_admin_id
+
+
 def anonymous():
     try:
         return request.identity is None

@@ -342,12 +342,14 @@ class Resource(ServiceController):
     '''
     Base class to create a REST like resource for turbogears:
 
-    Addresses are of the form:
+    Addresses are of the form::
+
       /Resource
       /Resource/#ID
       /Resource/#ID[/ChildResource/#ID]*
 
-    Operations:
+    Operations::
+
       Target    METHOD: Descritption  method on resource object
       ../Resource : Collection
                 GET   : list elements -> dir
@@ -355,7 +357,7 @@ class Resource(ServiceController):
                 PUT   : replace all elements given -> replace_all(resource, doc)
                 DELETE: delete all elements denoted -> delete_all(resource)
 
-        Examples:
+      Examples::
              /ds/images
                   GET : list all element of images
                   POST: create a new image
@@ -369,7 +371,7 @@ class Resource(ServiceController):
                            ...
                   DELETE : delete collection of tags
                   
-      ../Resource/#ID : Element 
+      ../Resource/#ID : Element ::
                 GET   : get value     -> get (resource)
                 POST  : add element to resource -> append(resource, doc)
                 /ds/images/1
@@ -475,6 +477,7 @@ class Resource(ServiceController):
 
         http_method = request.method.lower()
         log.info ('Request "%s" with %s?%s'%(http_method,str(request.path),str(kw)))
+        log.debug ('Request "%s" '%(path))
 
         #check the http method is supported.
         try:
@@ -539,6 +542,7 @@ class Resource(ServiceController):
             child = self.get_child_resource(token)
             if child is not None:
                 bisque.parent = resource
+                #log.debug ("parent = %s" % resource)
                 #call down into the child resource.
                 return child.default(*path, **kw)
 

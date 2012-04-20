@@ -97,7 +97,7 @@ class ResourceAuth(Resource):
     def dir(self, **kw):
         format = kw.pop('format', None)
         view = kw.pop('view', None)
-        resource = self.force_dbload(self.parent)
+        resource = self.force_dbload(request.bisque.parent)
         log.info ("AUTH %s" % resource)
         auth = resource_auth (resource, parent = None)
         response = etree.Element('resource', uri="%s%s/auth" % (self.baseuri, resource.uri))
@@ -115,7 +115,7 @@ class ResourceAuth(Resource):
     
     def new(self, factory,  xml, **kw):
         format = None
-        resource = self.force_dbload(self.parent)
+        resource = self.force_dbload(request.bisque.parent)
         log.debug ("AUTH %s with %s" % (resource, xml))
         resource = self.force_dbload(resource)
         resource = resource_auth (resource, parent = None, action=RESOURCE_EDIT, newauth=etree.XML(xml))
