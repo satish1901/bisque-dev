@@ -418,12 +418,14 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
         else if (type=='gobject')
         {
             var gobArr = [];
-            for( i = 0; i < tagData.gobjects.length; i++)
+            for( i = 0; i < tagData.gobjects.length; i++){
+                var name = tagData.gobjects[i].type || '';
                 gobArr.push(
                 {
-                    "name" : tagData.gobjects[i].type.toString(),
+                    "name" : name.toString(),
                     "value": 'gobject'
                 });
+            }
             this.gobArr = gobArr;
             this.gobArrLoaded = true;
         }

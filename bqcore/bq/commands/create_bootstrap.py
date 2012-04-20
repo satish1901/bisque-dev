@@ -16,9 +16,9 @@ def after_install(options, home_dir):
        bindir = 'bin'
     
     subprocess.call([os.path.join(home_dir, bindir, 'easy_install'), 'paver'])
-    #subprocess.call([os.path.join(home_dir, bindir, 'easy_install'),
-    #                 '-i', 'http://www.turbogears.org/2.1/downloads/current/index',
-    #                 'tg.devtools'])
+    subprocess.call([os.path.join(home_dir, bindir, 'easy_install'),
+                     '-i', 'http://www.turbogears.org/2.1/downloads/current/index',
+                     'tg.devtools'])
 
     bisque_install(options, home_dir, bindir)
 

@@ -58,7 +58,7 @@ import textwrap
 from tg import config, url
 from datetime import datetime
 from sqlalchemy.sql import select, func, exists, and_, or_, not_, asc, desc
-from sqlalchemy.orm import Query
+from sqlalchemy.orm import Query, aliased
 
 from bq.core.model import DBSession as session
 #from bq.image_service import image_service
@@ -73,8 +73,7 @@ from bq.data_service.model import Value, values
 from bq.data_service.model import dbtype_from_tag
 
 from bq.core import identity
-from bq.core.identity import get_admin
-from bq.core.identity import get_user_id
+from bq.core.identity import get_user_id, get_admin_id
 from bq.core.model import User
 from bq.util.mkdir import _mkdir
 from bq.util.paths import data_path
@@ -278,7 +277,8 @@ def prepare_permissions (query, user_id, with_public, action = RESOURCE_READ):
     if not user_id:
         user_id = identity.get_user_id()
 
-    if user_id == get_admin().id:
+    if user_id == get_admin_id():
+        log.debug('user (%s) =admin skipping protection filters' % (user_id))
         return query
 
     # Check if logged in, else just check for public items.
@@ -289,7 +289,6 @@ def prepare_permissions (query, user_id, with_public, action = RESOURCE_READ):
         visibility = or_(visibility,
                          Taggable.acl.any(and_(TaggableAcl.user_id == user_id,
                                                TaggableAcl.action_code >= action)))
-                                                       
     else:
         visibility = (Taggable.perm == PUBLIC)
 
@@ -624,6 +623,8 @@ def resource_query(resource_type,
 
     query = prepare_parent(resource_type, query, parent)
 
+    # This converts an request for values to the actual
+    # objects represented by those values;  :o
     if dbtype == Value:
         sq1 = query.with_labels().subquery()
         query = session.query (Taggable).filter (Taggable.id == sq1.c.values_valobj)
@@ -738,7 +739,7 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
         user_id = get_user_id()
     # If you are amin or have edit permission then you can see other
     # user that have permission over this resource
-    if resource.owner_id != user_id and user_id != get_admin().id:
+    if resource.owner_id != user_id and user_id != get_admin_id():
         q = q.filter (TaggableAcl.user_id == user_id)
         
     if action==RESOURCE_READ:
@@ -879,7 +880,7 @@ def resource_delete(resource, user_id=None):
     log.info('resource_delete %s' % resource)
     if  user_id is None:
         user_id = get_user_id()
-    if resource.owner_id != user_id and user_id != get_admin().id:
+    if resource.owner_id != user_id and user_id != get_admin_id():
         # Remove the ACL only
         q = session.query (TaggableAcl).filter_by (taggable_id = resource.id)
         q = q.filter (TaggableAcl.user_id == user_id)

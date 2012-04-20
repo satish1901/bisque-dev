@@ -7,11 +7,12 @@
 # Allow site admins to configure a number of parallel servers
 # per machine.  Can be used with proxying server such as
 # apache, haproxy, nginx etc..
+backend = paster
+# backend = uwsgi
 
 # control which servers are active 
 #servers = h1,h2,h3,h4,e1
 servers = h1
-# backend = uwsgi
 # Server definitions 
 # url = full url to proxy server 
 # services_enabled  = list of bisque_service to enable
