@@ -1,7 +1,27 @@
+imurl = 'http://bisque.ece.ucsb.edu/data_service/image/161855';
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% using bq.Image
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% fetch image a matrix
+image = bq.Factory.make(imurl);
+im1 = image.remap(1).fetch();
+im2 = image.remap(2).fetch();
+figure; imagesc(im1(:,:,6));
+figure; imagesc(im2(:,:,6));
+
+
+% fetch image into a file using its original name
+image = bq.Factory.make(imurl);
+filename = image.fetch([]);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% lower level API
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % direct reading of a public image by its image service URL
 %3D image 512x512x13Zx2C: http://bisque.ece.ucsb.edu/data_service/image/161855
-imurl = 'http://bisque.ece.ucsb.edu/data_service/image/161855';
 info = bq.iminfo(imurl);
 url = bq.Url(info.src);
 

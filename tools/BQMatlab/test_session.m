@@ -15,8 +15,12 @@ mytags = s.mex.findNameValueMap(tags, '//tag[@name="inputs"]/tag[@name=''%s'']')
 mym = [mytags.keys; mytags.values]';
 
 % fetch some input tag as a bq.Node
-t = s.mex.findNode('//tag[@name="inputs"]/tag[@name="image_url"]');
-imageurl = t.getAttribute('value');
+imageurl = s.mex.findValue('//tag[@name="inputs"]/tag[@name="image_url"]');
+% fetch first plane of the first channel
+image = s.load(imageurl);
+im = image.slice(1,1).remap(1).fetch();
+imagesc(im);
+
 
 % fetch some input tags as a cell of bq.Node
 ts = s.mex.findNodes('//tag[@name="inputs"]/tag');

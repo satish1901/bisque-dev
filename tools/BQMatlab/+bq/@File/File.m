@@ -1,0 +1,77 @@
+% bq.File
+% A class wrapping a Bisque file resource giving ability to fetch and store
+%   Constructor:
+%       File(doc, element, user, password)
+%         doc      - URL string or DOM document
+%         element  - optional: DOM element
+%         user     - optional: string
+%         password - optional: string
+%   
+%   AUTHOR:
+%       Dmitry Fedorov, www.dimin.net
+%
+%   VERSION:
+%       0.1 - 2011-06-27 First implementation
+%
+
+classdef File < bq.Node
+    
+    methods
+
+        % doc      - URL string or DOM document
+        % element  - optional: DOM element
+        % user     - optional: string
+        % password - optional: string
+        function [self] = File(doc, element, user, password)
+            supargs = {};
+            if exist('doc', 'var'), supargs{1} = doc; end
+            if exist('element', 'var'), supargs{2} = element; end            
+            if exist('user', 'var'), supargs{3} = user; end 
+            if exist('password', 'var'), supargs{4} = password; end             
+            self = self@bq.Node(supargs{:});            
+        end % constructor
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Blob access
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        % filename - optional: if given and not empty represents a filename to save the stream into
+        %                      if given but is empty instructs to use resources name
+        % blob - the actual blob data if no filename was provided or 
+        %        the filename where the blob was stored
+        function blob = fetch(self, filename)
+
+            if isempty(self.doc) || ~self.hasAttribute('resource_uniq'),
+                error('bq.File.fetch:InvalidResource', 'This resource is invalid');
+            end
+            uri = bq.Url(self.getAttribute('uri')); 
+            source_url = [uri.getRoot() '/blob_service/' self.getAttribute('resource_uniq')];
+            
+            supargs{1} = 'GET';
+            supargs{2} = source_url;
+            if exist('filename', 'var') && ~isempty(filename), 
+                supargs{3} = filename; 
+            end
+            if exist('filename', 'var') && isempty(filename), 
+                supargs{3} = self.getAttribute('name'); 
+            end            
+            supargs{4} = [];             
+            if ~isempty(self.user) && ~isempty(self.password),
+                supargs{5} = self.user; 
+                supargs{6} = self.password;                 
+            end            
+
+            [blob, ~] = bq.connect(supargs{:});    
+        end % fetch   
+        
+    end % methods
+    
+    methods (Static)    
+        % filename - given to save the stream into a file
+        % f        - bq.File object from create file
+        function f = store(self, filename)
+            f = [];
+        end % store          
+    end % static methods
+    
+end% classdef

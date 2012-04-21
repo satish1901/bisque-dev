@@ -8,7 +8,8 @@
 %       0.1 - 2011-06-27 First implementation
 %
 
-classdef Url < handle
+%classdef Url < handle
+classdef Url < matlab.mixin.Copyable
     
     properties
         url = [];

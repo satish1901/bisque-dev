@@ -14,18 +14,29 @@
 %       0.1 - 2011-06-27 First implementation
 %
 
-classdef Node < handle
+%classdef Node < handle
+classdef Node < matlab.mixin.Copyable
     
     properties
         doc = [];
-        element = [];        
+        element = [];  
+        user = [];
+        password = [];
     end % properties
     
     methods
         
+        % doc      - URL string or DOM document
+        % element  - optional: DOM element
+        % user     - optional: string
+        % password - optional: string
         function [self] = Node(doc, element, user, password)
-            self.doc = doc;            
-            if ischar(doc),
+            if exist('doc', 'var'), self.doc = doc; end            
+            if exist('user', 'var'), self.user = user; end
+            if exist('password', 'var'), self.password = password; end
+            
+            % if doc is a URL then fetch it
+            if exist('doc', 'var') && ischar(doc),
                 if exist('user', 'var') && exist('password', 'var'),
                     self.doc = bq.get_xml( doc, user, password );
                 else
@@ -33,24 +44,32 @@ classdef Node < handle
                 end                    
             end
             
-            if nargin>1 && ~isempty(element),
+            if exist('element', 'var') && ~isempty(element),
                 self.element = element;  
-            else
+            elseif exist('self.doc', 'var') && ~isempty(self.doc),
                 self.element = self.doc.getDocumentElement();
             end            
         end % constructor
-
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % Access elements
+        % Access attributes
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
         function value = getAttribute(self, name)
             value = char(self.element.getAttribute(name));
         end % getAttribute        
         
         function setAttribute(self, name, value)
             self.element.setAttribute(name, value);
-        end % setAttribute              
+        end % setAttribute  
+        
+        function v = hasAttribute(self, name)
+            v = self.element.hasAttribute(name);
+        end % getAttribute             
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Access values
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%        
         
         function value = getValue(self)
             type = '';
@@ -104,9 +123,8 @@ classdef Node < handle
         end % getValues            
         
         function value = setValues(self)
-            
-            
-            value = char(self.element.getAttribute(name));
+            % not yet implemented
+            %value = char(self.element.getAttribute(name));
         end % setValues                  
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -139,8 +157,18 @@ classdef Node < handle
             xpath = factory.newXPath;    
             %xn = xpath.evaluate(expression, self.doc, XPathConstants.NODE);
             xn = xpath.evaluate(expression, self.element, XPathConstants.NODE);
-            node = bq.Node(self.doc, xn);
+            %node = bq.Node(self.doc, xn);
+            node = bq.Factory.make(self.doc, xn);
         end             
+        
+        function v = findValue(self, expression)
+            v = [];
+            t = self.findNode(expression);
+            if ~isempty(t),
+                v = t.getValue();            
+            end
+        end           
+        
         
         % Returns a vector of bq.Node found with xpath expression
         %
@@ -164,7 +192,8 @@ classdef Node < handle
             end            
             nodes = cell(xnodes.getLength(),1);
             for i=1:xnodes.getLength(),
-                nodes{i} = bq.Node(self.doc, xnodes.item(i-1));
+                %nodes{i} = bq.Node(self.doc, xnodes.item(i-1));
+                nodes{i} = bq.Factory.make(self.doc, xnodes.item(i-1));
             end
         end         
         
@@ -262,7 +291,8 @@ classdef Node < handle
             end
 
             self.element.appendChild(r); 
-            resource = bq.Node(self.doc, r);
+            %resource = bq.Node(self.doc, r);
+            resource = bq.Factory.make(self.doc, r);
         end % add
         
         function tag = addTag(self, name, value, type)
@@ -311,7 +341,8 @@ classdef Node < handle
             end
 
             self.element.appendChild(g); 
-            gob = bq.Node(self.doc, g);
+            %gob = bq.Node(self.doc, g);
+            gob = bq.Factory.make(self.doc, g);
         end % addGobject 
 
        
