@@ -15,7 +15,7 @@ classdef Factory
     properties (Constant)
         resources = containers.Map( ...
             {'node', 'image', 'file'}, ... % types
-            {'bq.Node', 'bq.Image', 'bq.File'} ... % classes
+            {@bq.Node, @bq.Image, @bq.File} ... % classes
         )
     end % constant properties
     
@@ -50,12 +50,12 @@ classdef Factory
             end
             
             % get class and instantiate it
-            classname = bq.Factory.resources(tag);
+            myclass = bq.Factory.resources(tag);
             try
                 if creds,
-                    node = feval(classname, doc, element, user, password );
+                    node = myclass(doc, element, user, password );
                 else
-                    node = feval(classname, doc, element);
+                    node = myclass(doc, element);
                 end                  
             catch error
                 warning(error.identifier, error.message);
