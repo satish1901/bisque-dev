@@ -1,4 +1,4 @@
-# Install script for Nuclie Detector 
+# Install script for NuclearDetector3D
 import sys
 from bq.setup.module_setup import matlab_setup, read_config
 
