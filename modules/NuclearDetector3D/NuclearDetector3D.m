@@ -2,8 +2,7 @@ function NuclearDetector3D(mex_url, access_token, image_url, nuclear_channel, nu
     session = bq.Session(mex_url, access_token);
     try
         %% Load data
-        info = session.iminfo(image_url);
-        url = bq.Url(info.pixles_url);
+        image = session.load(image_url);
 
         nuclear_channel  = str2num(nuclear_channel);
         nuclear_diameter = str2num(nuclear_diameter);
@@ -12,27 +11,26 @@ function NuclearDetector3D(mex_url, access_token, image_url, nuclear_channel, nu
         res =  cell2mat(t.getValues('number'));
         %res = [0.439453, 0.439453, 1.0, 1.0]; % image resolution in microns per pixel
 
-        if isfield(info, 'pixel_resolution_x'),
-            res(1) = getfield(info, 'pixel_resolution_x');
+        if isfield(image.info, 'pixel_resolution_x'),
+            res(1) = getfield(image.info, 'pixel_resolution_x');
         end
-        if isfield(info, 'pixel_resolution_y'),
-            res(2) = getfield(info, 'pixel_resolution_y');
+        if isfield(image.info, 'pixel_resolution_y'),
+            res(2) = getfield(image.info, 'pixel_resolution_y');
         end    
-        if isfield(info, 'pixel_resolution_z'),
-            res(3) = getfield(info, 'pixel_resolution_z');
+        if isfield(image.info, 'pixel_resolution_z'),
+            res(3) = getfield(image.info, 'pixel_resolution_z');
         end    
-        if isfield(info, 'pixel_resolution_t'),
-            res(4) = getfield(info, 'pixel_resolution_t');
+        if isfield(image.info, 'pixel_resolution_t'),
+            res(4) = getfield(image.info, 'pixel_resolution_t');
         end
 
         
-        number_t = max(1, info.image_num_t);
+        number_t = max(1, image.info.image_num_t);
         np = cell(number_t, 1);
+        count = 0;
         for current_t=1:number_t,
-            session.update(sprintf('Time %d: 0% - fetching image', current_t));        
-            url.pushQuery('slice', sprintf(',,,%d', current_t)); % fetch first T slice
-            url.pushQuery('remap', int2str(nuclear_channel));
-            imn = session.imread(url.toString());        
+            session.update(sprintf('Time %d: 0% - fetching image', current_t));   
+            imn = image.slice([],current_t).remap(nuclear_channel).fetch();
 
             %% Run
             ns =  (nuclear_diameter/2.0) ./ res;
@@ -43,7 +41,8 @@ function NuclearDetector3D(mex_url, access_token, image_url, nuclear_channel, nu
             end
 
             session.update(sprintf('Time %d: 10% - detecting', current_t));
-            np{current_t} = BONuclearDetector3D(imn, [], ns, t, session);    
+            np{current_t} = BONuclearDetector3D(imn, [], ns, t, session);   
+            count = count + length(np{current_t});
         end
         
         %% Store results
@@ -51,7 +50,7 @@ function NuclearDetector3D(mex_url, access_token, image_url, nuclear_channel, nu
         outputs = session.mex.addTag('outputs');
         
         summary = outputs.addTag('summary');
-        summary.addTag('count', length(np));
+        summary.addTag('count', count);
 
         imref = outputs.addTag('MyImage', image_url, 'image'); 
         g = imref.addGobject('nuclear_centroids', 'nuclear_centroids');
