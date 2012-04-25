@@ -256,7 +256,7 @@ Ext.define('BQ.selectors.Resource', {
     },
     
     selectImage: function() {
-        var rb  = new Bisque.ResourceBrowser.Dialog({
+        var browser  = new Bisque.ResourceBrowser.Dialog({
             'height' : '85%',
             'width' :  '85%',
             listeners: {  'Select': function(me, resource) { 
@@ -265,25 +265,34 @@ Ext.define('BQ.selectors.Resource', {
             
         });        
     },
+
+    selectExample: function() {
+        var template = this.resource.template || {};
+        var browser  = new Bisque.ResourceBrowser.Dialog({
+            'height' : '85%',
+            'width'  : '85%',
+            selType  : 'SINGLE',
+            viewMode : 'ViewerOnly',
+            tagQuery : template.example_query, 
+            wpublic  : 'true',            
+            listeners: {  'Select': function(me, resource) { 
+                           this.onselected(resource);
+                    }, scope: this },
+        });                
+    },
     
-    selectDataset: function(r) {
-        var rb  = new Bisque.DatasetBrowser.Dialog({
+    selectDataset: function() {
+        var browser  = new Bisque.DatasetBrowser.Dialog({
             'height' : '85%',
             'width' :  '85%',
             listeners: {  'DatasetSelect': function(me, resource) { 
-                           //this.onResourceSelected(resource);
-                           // onResourceSelected dies and so browser is never closed
                            var i = this; var r = resource;
                            setTimeout(function() { i.onselected(r); }, 100);
                     }, scope: this },
         });        
     },
-    
-    selectExample: function(r) {
-        
-    },
-    
-    selectFile: function(r) {
+   
+    selectFile: function() {
         var uploader = Ext.create('BQ.upload.Dialog', {   
             //title: 'my upload',
             //maxFiles: 1,
@@ -1690,6 +1699,7 @@ Ext.define('BQ.renderers.Browser', {
             selType: 'SINGLE',
             viewMode : 'ViewerOnly',
             tagQuery : resource.value, 
+            wpublic  : 'true',
             height: '100%',
             cls: 'bordered',
             listeners: { 'Select': function(me, resource) { 

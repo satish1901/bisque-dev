@@ -8,10 +8,12 @@
         <tag name="image_url" type="image">     
             <template>
                 <tag name="label" value="Select an input image" />
+                <tag name="example_query" value="example:Botanicam" />
             </template>
             
             <gobject name="roi">
                 <template>
+                    <tag name="label" value="When an input image is selected, you may want to select a sub-region using the 'rectangle' tool if the image has too much background..." />
                     <tag name="gobject" value="rectangle" />
                 </template>
             </gobject>            
@@ -51,11 +53,11 @@
         <tag name="css" type="file" value="webapp.css" />
     </tag>    
     
-    <tag name="title" value="Plant recognizer" /> 
-    <tag name="authors" value="Golnaz Abdollahian and Dmitry Fedorov" />    
+    <tag name="title" value="Botanicam: The Plant Recognizer" /> 
+    <tag name="authors" value="&lt;a href=&quot;mailto:golnaz.ab@gmail.com&quot;&gt;Golnaz Abdollahian&lt;/a&gt;, Kris Kvilekval and Dmitry Fedorov" />    
     <tag name="help"      type="file" value="public/help.html" />
     <tag name="thumbnail" type="file" value="public/thumbnail.png" />   
-    <tag name="description" type="string" value="This module recognizes plants in images acquired on mobile devices." />          
+    <tag name="description" type="string" value="This app accepts images of local Santa Barbara plants as input and automatically recognizes their species." />          
     
 
 </module>

@@ -15,7 +15,7 @@ function PlantRecognizer(mex_url, access_token, image_url)
         session.update('0% - fetching image');   
         image = session.load(image_url); 
         if isempty(rect),
-            im = image.slice(1,1).depth(8,'d').resize(1024, 1024, 'BC', 'MX').default().fetch();
+            im = image.slice(1,1).depth(8,'d').resize(2000, 2000, 'BC', 'MX').default().fetch();
         else
             im = image.slice(1,1).depth(8,'d');
             im = im.roi(rect(1,2),rect(1,1),rect(2,2),rect(2,1));

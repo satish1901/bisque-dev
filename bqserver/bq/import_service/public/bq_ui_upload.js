@@ -791,13 +791,13 @@ Ext.define('BQ.upload.Panel', {
             hidden: !dataset_btn_visible,
             cls: 'x-btn-default-large', 
             tooltip: 'Wrap all uploaded images into a dataset, if selected all images will be added into a dataset after upload',   
-            
-            handler: function(){ 
-                if (!this.pressed)
+            scope: this,
+            handler: function(me) { 
+                if (!me.pressed)
                     BQ.ui.notification('Dataset will not be created', 1000); 
                 else {
                     //BQ.ui.notification('All images will be wraped in a dataset', 1000);
-                    this.dataset_name = 'Uploaded on '+(new Date()).toISOString();                    
+                    this.dataset_name = this.dataset_name || ('Uploaded on '+(new Date()).toISOString());                    
                     Ext.Msg.prompt('Dataset name', 'Please enter a dataset name:', function(btn, text) {
                         if (btn == 'ok') {
                             this.dataset_name = text;
@@ -1193,7 +1193,7 @@ Ext.define('BQ.upload.Panel', {
         });
         
         var dataset = new BQDataset();
-        dataset.name = this.dataset_name || 'Uploaded on '+(new Date()).toISOString();
+        dataset.name = this.dataset_name || ('Uploaded on '+(new Date()).toISOString());
         dataset.newMembers( members );
         dataset.save_('/data_service/dataset/', callback(this, 'onCreatedDataset'));        
     },   
