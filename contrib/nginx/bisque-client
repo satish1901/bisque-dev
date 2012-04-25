@@ -1,32 +1,19 @@
-##
-## bisque configuration for NGINX and UWSGI
-## https://calomel.org/nginx.html
 server {
-    listen       80;
+    listen       8000;
+    root <bisque_install_dir>/bqcore/bq/client_service/public;
     charset utf-8;
-    root <YOUR_BISQUE_DIR>/public
 
-
-
-    ## Deny illegal Host headers. 
-    # if ($host !~* ^(mydomain.com|www.mydomain.com)$ ) {
-    #  return 405;
-    # }
-
-    # Try to serve static content with a 7 day expiration
     location ~* ^.+\.(jpg|jpeg|gif|png|ico|css|zip|tgz|gz|rar|bz2|pdf|txt|tar|wav|bmp|rtf|js|flv|swf|html|htm)$ {
       try_files $uri  @bisque;
       expires 7d;
     }
 
-   # Try any other file, then default to bisque server
    location / {
       try_files $uri  @bisque;
     }
 
-
     location @bisque {
-        uwsgi_pass 0.0.0.0:3031;
+        uwsgi_pass unix://<bisque_install_dir>/tmp/client.sock;
         include uwsgi_params;
         uwsgi_param SCRIPT_NAME "";
         uwsgi_read_timeout 600;
@@ -37,5 +24,6 @@ server {
     location = /50x.html {
         root   html;
     }
+ 
 }
 
