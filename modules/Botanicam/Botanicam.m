@@ -1,4 +1,4 @@
-function PlantRecognizer(mex_url, access_token, image_url)
+function Botanicam(mex_url, access_token, image_url)
     try
         session = bq.Session(mex_url, access_token);        
 
