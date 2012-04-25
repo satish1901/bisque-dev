@@ -577,7 +577,7 @@ class Resource(ServiceController):
                 self.server_cache.invalidate(request.url, user=user_id)
             elif http_method == 'delete':
                 self.server_cache.invalidate(request.url, user=user_id)
-                response = method(resource, **kw)
+                value = method(resource, **kw)
             else:  # http_method is in ('get', 'head')
                 headers, value = self.server_cache.fetch(request.url, user=user_id)
                 if value:
@@ -610,7 +610,7 @@ class Resource(ServiceController):
         """
         returns the last modified date of the resource.
         """
-        log.debug ("MODFIED: %s " %tg.request.url)
+        log.debug ("CHECK MODFIED: %s " %tg.request.url)
 
         if self.cache:
             return self.server_cache.modified (tg.request.url,

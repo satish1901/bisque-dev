@@ -818,14 +818,17 @@ mapper( Taggable, taggable,
                           backref = backref('parent', enable_typechecks=False, remote_side = [ taggable.c.id]),
                           primaryjoin = (taggable.c.id == taggable.c.resource_parent_id)),
     'values' : relation(Value,  lazy=True, cascade="all, delete-orphan",
+                        order_by=[values.c.indx],
                         primaryjoin =(taggable.c.id == values.c.resource_parent_id),
                         backref = backref('parent', enable_typechecks = False, remote_side=[taggable.c.id])
                         #foreign_keys=[values.c.parent_id]
                         ),
-    'vertices' : relation(Vertex, lazy=True, cascade="all, delete-orphan",
-                          primaryjoin =(taggable.c.id == vertices.c.resource_parent_id),
-                          #foreign_keys=[vertices.c.resource_parent_id]
-                          ),
+    'vertices':relation(Vertex, lazy=True, cascade="all, delete-orphan",
+                        order_by=[vertices.c.indx],
+                        primaryjoin =(taggable.c.id == vertices.c.resource_parent_id),
+                        backref = backref('parent', enable_typechecks=False, remote_side=[taggable.c.id]),
+                        #foreign_keys=[vertices.c.resource_parent_id]
+                        ),
 
     'tagq' : relation(Taggable, lazy='dynamic',
                       primaryjoin= and_(taggable.c.resource_parent_id==taggable.c.id,
