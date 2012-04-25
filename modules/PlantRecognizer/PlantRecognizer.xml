@@ -1,21 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
-<module name="PlantRecognizer"  path="launch.py" type="runtime" >
+<module name="PlantRecognizer" type="runtime" >
 
     <tag name="inputs">
-        <!--
-        <tag name="input-system" value="client_server" index="0" />
-        <tag name="input-system" value="mex_url" index="1" />
-        <tag name="input-system" value="image_url" index="2" />
-        <tag name="input-system" value="bisque_token"  index="3" />
-        -->
-        <tag name="client_server" type="system-input" />        
-        <tag name="mex_url"       type="system-input" />
-        <tag name="image_url"     type="image" />     
-        <tag name="bisque_token"  type="system-input" />           
+        <tag name="mex_url"      type="system-input" />
+        <tag name="bisque_token" type="system-input" />
+                
+        <tag name="image_url" type="image">     
+            <template>
+                <tag name="label" value="Select an input image" />
+            </template>
+            
+            <gobject name="roi">
+                <template>
+                    <tag name="gobject" value="rectangle" />
+                </template>
+            </gobject>            
+        </tag>           
     </tag>
   
     <tag name="outputs">
-        <tag name="summary" /> <!-- this is not correct, module needs update -->
+        <tag name="summary">
+            <template>
+                <tag name="label" value="Detection summary" />
+            </template>
+        </tag>        
+        
+        <tag name="similar_images" type="browser">
+            <template>
+                <tag name="label" value="Similar images" />
+                <tag name="path" value="/data_service/image/" />
+                <tag name="value_action" value="query" />
+            </template>
+        </tag>           
     </tag>       
   
     <tag name="execute_options">
@@ -23,16 +39,23 @@
     </tag>
 
     <tag name="module_options" >
-        <tag name="version" value="2" />
+        <tag name="version" value="3" />
     </tag>   
 
     <tag name="display_options" >
-        <tag name="group" value="application" />
+        <tag name="group" value="Plant analysis" />
     </tag>
     
-    <tag name="interface" type="file" value="public/index.html" />
+    <tag name="interface">        
+        <tag name="javascript" type="file" value="webapp.js" />
+        <tag name="css" type="file" value="webapp.css" />
+    </tag>    
+    
+    <tag name="title" value="Plant recognizer" /> 
+    <tag name="authors" value="Golnaz Abdollahian and Dmitry Fedorov" />    
     <tag name="help"      type="file" value="public/help.html" />
     <tag name="thumbnail" type="file" value="public/thumbnail.png" />   
-    <tag name="description" type="string" value="This module recognizes plants in images acquired on mobile devices." /> 
+    <tag name="description" type="string" value="This module recognizes plants in images acquired on mobile devices." />          
+    
 
 </module>

@@ -39,7 +39,8 @@ BQ.renderers.resources  = { 'image'            : 'BQ.renderers.Image',
                             'dataset'          : 'BQ.renderers.Dataset', 
                           //'gobject'          : 'BQ.renderers.Gobject', 
                             'tag'              : 'BQ.renderers.Tag', 
-                            'mex'              : 'BQ.renderers.Mex', };
+                            'mex'              : 'BQ.renderers.Mex', 
+                            'browser'          : 'BQ.renderers.Browser', };
 
 
 /*******************************************************************************
@@ -1644,6 +1645,60 @@ Ext.define('BQ.renderers.Mex', {
         if (tool_items.length>0) 
             this.items.push( {xtype: 'toolbar', items: tool_items, defaults: { scale: 'medium' }, } );               
                
+        this.callParent();
+    },
+
+});
+
+/*******************************************************************************
+Mex templated configs:
+
+*******************************************************************************/
+
+Ext.define('BQ.renderers.Browser', {
+    alias: 'widget.rendererbrowser',    
+    extend: 'BQ.renderers.Renderer',
+    requires: ['Bisque.ResourceBrowser.Browser'],
+    
+    height: 400,
+    layout: {
+        type: 'vbox',
+        align : 'stretch',
+        pack  : 'start',
+    },    
+
+    constructor: function(config) {
+        this.addEvents({
+            'selected' : true,
+        });
+        this.callParent(arguments);
+        return this;
+    },
+
+    initComponent : function() {
+        var definition = this.definition;
+        var template = definition ? definition.template||{} : {};
+        var resource = this.resource;
+        
+        var heading = this.title?this.title:(template.label?template.label:resource.name); 
+
+        this.items = [];
+        this.items.push( {xtype: 'label', html: heading, } );        
+
+        this.browser = Ext.create('Bisque.ResourceBrowser.Browser', {
+            dataset: template.path,
+            selType: 'SINGLE',
+            viewMode : 'ViewerOnly',
+            tagQuery : resource.value, 
+            height: '100%',
+            cls: 'bordered',
+            listeners: { 'Select': function(me, resource) { 
+                           window.open(bq.url('/client_service/view?resource='+resource.uri)); 
+                           }, 
+                        scope: this 
+            },
+        }); 
+        this.items.push(this.browser);                     
         this.callParent();
     },
 

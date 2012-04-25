@@ -158,7 +158,11 @@ classdef Node < matlab.mixin.Copyable
             %xn = xpath.evaluate(expression, self.doc, XPathConstants.NODE);
             xn = xpath.evaluate(expression, self.element, XPathConstants.NODE);
             %node = bq.Node(self.doc, xn);
-            node = bq.Factory.make(self.doc, xn);
+            if ~isempty(xn),
+                node = bq.Factory.make(self.doc, xn);
+            else
+                node = [];
+            end
         end             
         
         function v = findValue(self, expression)

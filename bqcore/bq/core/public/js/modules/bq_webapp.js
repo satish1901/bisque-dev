@@ -445,16 +445,20 @@ BQWebApp.prototype.done = function (mex) {
 }
 
 BQWebApp.prototype.getRunTimeString = function (tags) {
-  var time_string='a couple of moments';
-  if (tags['start-time'] && tags['end-time']) {
+    if (!tags['start-time'] || !tags['end-time']) 
+        return 'a couple of moments';
+    
+    var t1 = tags['start-time'];
+    var t2 = tags['end-time'];
+    if (t1 instanceof Array) t1 = t1[0];
+    if (t2 instanceof Array) t2 = t2[0];    
+    
     var start = new Date();
     var end   = new Date();    
-    start.setISO8601(tags['start-time']);
-    end.setISO8601(tags['end-time']);      
+    start.setISO8601(t1);
+    end.setISO8601(t2);      
     var elapsed = new DateDiff(end - start);
-    time_string = elapsed.toString();
-  }
-  return time_string;
+    return elapsed.toString();
 }
 
 BQWebApp.prototype.parseResults = function (mex) {
