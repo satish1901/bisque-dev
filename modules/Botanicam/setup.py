@@ -1,9 +1,9 @@
-# Install script for PlantRecognizer
+# Install script for Botanicam
 import sys
 from bq.setup.module_setup import matlab_setup, read_config
 
 def setup(params, *args, **kw):
-    return matlab_setup('PlantRecognizer', params=params)
+    return matlab_setup('Botanicam', params=params)
     
 if __name__ =="__main__":
     params = read_config('runtime-bisque.cfg')
