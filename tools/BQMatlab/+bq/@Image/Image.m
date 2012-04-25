@@ -94,6 +94,31 @@ classdef Image < bq.File
             imo = self.command('remap', params);
         end % command         
         
+        % d - depth: 8|16|32|64
+        % m - mode: f|F|d|D|t|T|e|E
+        function imo = depth(self, d, m)
+            params = sprintf('%d,%s', d, m);
+            imo = self.command('depth', params);
+        end % depth          
+        
+        % w,h - width/height
+        % m - method: NN or BL, or BC (Nearest neighbor, Bilinear, Bicubic respectively)
+        % a - arguments: 'AR' or 'MX' or ''
+        function imo = resize(self, w, h, m, a)
+            params = sprintf('%d,%d,%s,%s', w, h, m, a);
+            imo = self.command('resize', params);
+        end % resize          
+        
+        % returns an RGB image
+        function imo = default(self)
+            imo = self.command('default', '');
+        end % depth              
+        
+        function imo = roi(self, x1,y1,x2,y2)
+            params = sprintf('%d,%d,%d,%d', x1,y1,x2,y2);
+            imo = self.command('roi', params);
+        end % roi            
+        
     end% methods
     
     methods(Access = protected)
