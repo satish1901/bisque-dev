@@ -1,16 +1,13 @@
-#
-# Bisque -engine  config
 server {
-    listen       11000;
-    root <YOUR_BISQUE_DIR>/public;
-
+    listen       8081;
+    root <bisque_install_dir>/bqcore/bq/client_service/public;
     charset utf-8;
 
     location / {
-        uwsgi_pass 0.0.0.0:3052;
+        uwsgi_pass unix://<bisque_install_dir>/tmp/engine.sock; 
         include uwsgi_params;
         uwsgi_param SCRIPT_NAME "";
-        uwsgi_read_timeout 600;
+	uwsgi_read_timeout 600;
         uwsgi_send_timeout 600;
     }
 

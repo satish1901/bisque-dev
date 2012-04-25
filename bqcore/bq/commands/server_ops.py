@@ -273,6 +273,9 @@ def operation(command, options, mexrun=True, cfg_file=SITE_CFG, *args):
                 processes = []
 
             if command in ('start', 'restart'):
+                if os.path.exists(cfgopt['pidfile']):
+                    print 'old pid file: %s exists! exiting...' % cfgopt['pidfile']
+                    exit(0)
                 if backend == 'uwsgi':
                     if cfgopt['services_enabled'] == 'engine_service':
                         def_cfg = UWSGI_ENGINE_CFG
