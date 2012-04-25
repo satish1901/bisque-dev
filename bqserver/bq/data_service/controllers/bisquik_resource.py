@@ -305,12 +305,13 @@ class BisquikResource(Resource):
         '''
         log.info ('REPLACE_ALL %s %s' % (request.url, xml))
         resource = self.check_access(resource, RESOURCE_EDIT)
+        DBSession.autoflush = False
         parent = self.load_parent()
         if parent:
             log.info('REPLACE ' + self.resource_name + " in " + str(parent))
             parent.clear([ self.resource_name ])
             log.debug ("replace: %s => %s" %(xml, str(resource)))
-            resource = bisquik2db(doc=xml, parent = parent)
+            resource = bisquik2db(doc=xml,  parent=parent, replace=True)
             if resource is not None:
                 return self.resource_output(resource, **kw)
         return "<response>FAIL</response>"
@@ -349,11 +350,10 @@ class BisquikResource(Resource):
         view=kw.pop('view', None)
         log.info ('MODIFY %s %s' % (request.url, xml))
         resource = self.check_access(resource, RESOURCE_EDIT)
-
+        parent = self.load_parent()
         DBSession.autoflush = False
         old = resource.clear()
         #pdb.set_trace()
-        parent = self.load_parent()
         resource = bisquik2db (doc=xml, resource=resource, parent=parent, replace=True)
         log.info ('MODIFY: ==> %s ' %(resource))
         return self.resource_output (resource, view=view)

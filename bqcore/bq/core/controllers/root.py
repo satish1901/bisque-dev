@@ -180,7 +180,7 @@ class RootController(BaseController):
         URL are formed with
         <service_type>/<path>?arguments
         """
-        log.info ('Request  %s' % (request.url))
+        log.info ('%s  %s' % (request.method, request.url))
         if service_type in oldnames:
             log.warn ('found oldname( %s ) in request' % (service_type))
             service_type = oldnames[service_type]

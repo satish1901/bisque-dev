@@ -276,17 +276,22 @@ class ResourceFactory(object):
         array, klass = cls.index_map.get (xmlname, (None,None))
         if array:
             objarr =  getattr(parent, array)
-            v = DBSession.query(klass).filter_by(resource_parent_id=parent.id, indx=indx).first()
-            #log.debug('indx %s fetched %s ' % (indx, v))
+            # If values have been 'cleared', then arrary will be empty
+            # this will get the 
+            log.debug ("CURRENTLEN = %s " % (len(objarr)))
             objarr.extend ([ klass() for x in range(((indx+1)-len(objarr)))])
-            if not v:
-                v = objarr[indx]
-                v.indx = indx;
-            else:
+            for x in range(len(objarr), indx+1):
+                    objarr[indx].indx = x
+
+            v = DBSession.query(klass).get( (parent.id, indx) )
+            log.debug('indx %s fetched %s ' % (indx, v))
+            #objarr.extend ([ klass() for x in range(((indx+1)-len(objarr)))])
+            if v is not None:
                 objarr[indx] = v
-                v.indx = indx;
+            log.debug('ARRAY = %s' % [ str(x) for x in objarr ])
+            #    v.indx = indx;
             #log.debug ('fetching %s %s[%d]:%s' %(parent , array, indx, v)) 
-            return v
+            return objarr[indx]
 
 
 
@@ -772,10 +777,7 @@ def bisquik2db(doc= None, parent=None, resource = None, xmlschema=None, replace=
             return node
         return results
     except Exception, e:
-        exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
-
-        log.error (u'Exception in save resource-%s pareent-%s,exception-%s ' % (resource, parent, e))
-        log.error (traceback.format_exc () )
+        log.exception (u'Exception in save resource-%s pareent-%s' % (resource, parent))
         raise
 
 

@@ -198,7 +198,7 @@ class BQSession(object):
     
     def postxml(self, url, xml, method="POST", **params):
         log.debug('postxml %s  content %s ' % (url, xml))
-        content = etree.tostring(xml)
+        content = etree.tostring(xml, pretty_print=True)
         url = self.c.prepare_url(url, **params)
         try:
             content =  self.c.post(url, content=content, method=method,
