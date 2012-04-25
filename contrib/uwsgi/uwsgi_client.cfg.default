@@ -24,10 +24,10 @@ bisque.proxyroot = $proxyroot
 #main options
 
 #socket on which uwsgi listens
-socket = $server
+socket = tmp/$server.sock
 
 #number of worker processes to run
-processes = 8
+processes = 4
 
 #number of threads per worker process
 threads = 8
@@ -67,7 +67,7 @@ reload-on-rss = 2048
 auto-procname = true
 
 #prefix of the uwsgi process name
-procname-prefix = bisque_client_
+procname-prefix = uwsgi_bisque_client_
 
 #automatically kill workers without a master process
 no-orphans = true
