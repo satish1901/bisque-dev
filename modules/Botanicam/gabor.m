@@ -11,7 +11,7 @@
 %             0 -> not to remove
 %----------------------------------------------------------------------
 
-function [Gr,Gi] = Gabor(N,index,freq,partition,flag)
+function [Gr,Gi] = gabor(N,index,freq,partition,flag)
 
 % get parameters
 

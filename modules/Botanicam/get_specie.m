@@ -1,4 +1,10 @@
-function [genus,specie, commonName ,url]=get_specie(tag)
+function [genus, specie, commonName, url] = get_specie(tag)
+
+genus='Unknown';
+specie='Unknown';
+commonName='Unknown';
+url='Unknown';
+
 switch tag
     case 1
         genus='Baccharis';

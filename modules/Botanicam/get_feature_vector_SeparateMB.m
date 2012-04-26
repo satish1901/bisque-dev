@@ -14,7 +14,7 @@ j = sqrt(-1);
 
 for s = 1:scale,
     for n = 1:orientation,
-        [Gr,Gi] = Gabor(Nf,[s n],freq,[scale orientation],flag);
+        [Gr,Gi] = gabor(Nf,[s n],freq,[scale orientation],flag);
         F = fft2(Gr+j*Gi);
         F(1,1) = 0;
         GW(Nf*(s-1)+1:Nf*s,Nf*(n-1)+1:Nf*n) = F;
