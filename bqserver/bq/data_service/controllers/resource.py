@@ -576,8 +576,8 @@ class Resource(ServiceController):
                     redirect("", 415)
                 self.server_cache.invalidate(request.url, user=user_id)
             elif http_method == 'delete':
-                self.server_cache.invalidate(request.url, user=user_id)
                 value = method(resource, **kw)
+                self.server_cache.invalidate(request.url, user=user_id)
             else:  # http_method is in ('get', 'head')
                 headers, value = self.server_cache.fetch(request.url, user=user_id)
                 if value:
