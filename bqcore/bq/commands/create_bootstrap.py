@@ -8,6 +8,9 @@ def extend_parser(optparse_parser):
     optparse_parser.add_option('--repo', help='Specify a repository to bootstrap from', 
                                default= 'http://biodev.ece.ucsb.edu/hg/bisque-stable')
 
+    optparse_parser.add_option('--tg', help='Specify turbogears repo to bootstrap', 
+                                default = 'http://www.turbogears.org/2.1/downloads/current/index',)
+
 
 def after_install(options, home_dir):
     if sys.platform == 'win32':
