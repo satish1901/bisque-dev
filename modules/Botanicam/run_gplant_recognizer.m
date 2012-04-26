@@ -29,14 +29,13 @@ svmOutput='SVMoutput';
 
 
 % %linux
-% system(sprintf('./svm-scale -r g_range %s > %sS',svmFeatFile,svmFeatFile));
-% system(sprintf('./svm-predict -b 1 %sS  gtrain.model %s', svmFeatFile, svmOutput));
-%  
-
+system(sprintf('./svm-scale -r g_range %s > %sS',svmFeatFile,svmFeatFile));
+system(sprintf('./svm-predict -b 1 %sS  gtrain.model %s', svmFeatFile, svmOutput));
 
 %windows
-system(sprintf('svm-scale -r g_range %s > %sS',svmFeatFile,svmFeatFile));
-system(sprintf('svm-predict -b 1 %sS  gtrain.model %s', svmFeatFile, svmOutput));
+%system(sprintf('svm-scale -r g_range %s > %sS',svmFeatFile,svmFeatFile));
+%system(sprintf('svm-predict -b 1 %sS  gtrain.model %s', svmFeatFile, svmOutput));
+
 %...............................................................
 %get the final tag prediction from the SVM results
 
