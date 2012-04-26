@@ -122,39 +122,8 @@ taggable = Table('taggable', metadata,
                  Column('resource_value',  UnicodeText),
                  Column('resource_parent_id', Integer, ForeignKey('taggable.id'), index=True),
                  Column('document_id', Integer, ForeignKey('taggable.id'), index=True), # Unique Element
-                 
-
                  )
 
-# images= Table ('images', metadata,
-#                Column('id', Integer, ForeignKey('taggable.id'),primary_key=True),
-#                Column('src', Text),
-#                Column('x', Integer),
-#                Column('y', Integer),
-#                Column('z', Integer),
-#                Column('t', Integer),
-#                Column('ch', Integer))
-
-#tags = Table ('tags', metadata,
-#              Column('id',  Integer, ForeignKey('taggable.id'), primary_key=True),
-#              Column('parent_id', Integer, ForeignKey('taggable.id'), index=True),
-#              Column('type_id',  Integer, ForeignKey('names.id')),
-#              Column('name_id', Integer, ForeignKey('names.id'), index=True),
-#              Column('indx', Integer),
-#              )
-
-# gobjects = Table ('gobjects', metadata,
-#               Column('id', Integer, ForeignKey('taggable.id'), primary_key=True),
-#               Column('parent_id', Integer, ForeignKey('taggable.id'), index=True),
-#               Column('type_id',  Integer, ForeignKey('names.id')),
-#               Column('name_id', Integer, ForeignKey('names.id')),
-#               Column('indx', Integer),
-#               )
-
-
-              
-#simplevalues = Table ('simplevalues', metadata,
-#          Column('id',  Integer, ForeignKey('taggable.id'), primary_key=True),
 values = Table ('values', metadata,
           Column('resource_parent_id',Integer, ForeignKey('taggable.id'),primary_key=True),
           Column('document_id',Integer, ForeignKey('taggable.id')),
@@ -165,15 +134,20 @@ values = Table ('values', metadata,
                       )
 
 vertices = Table ('vertices', metadata,
-#                Column('id', Integer, ForeignKey('taggable.id'), primary_key=True),
                 Column('resource_parent_id',Integer, ForeignKey('taggable.id'), primary_key=True),
-#                Column('document_id',Integer, ForeignKey('taggable.id')),
+                Column('document_id',Integer, ForeignKey('taggable.id')),
                 Column('indx', Integer, primary_key=True, autoincrement=False),
                 Column('x', Float),
                 Column('y', Float),
                 Column('z', Float),
                 Column('t', Float),
                 Column('ch', Integer))
+taggable_acl = Table('taggable_acl', metadata,
+                     Column('taggable_id', Integer, ForeignKey('taggable.id'), primary_key=True),
+                     Column('user_id', Integer, ForeignKey('taggable.id'),primary_key=True),
+                     Column('permission', Integer, key="action_code"),
+                     )
+
 
 
 
@@ -218,12 +192,6 @@ vertices = Table ('vertices', metadata,
 #                  Column('id', Integer, ForeignKey('taggable.id'), primary_key=True),
 #                  Column('name', Text),
 #                  )
-
-taggable_acl = Table('taggable_acl', metadata,
-                     Column('taggable_id', Integer, ForeignKey('taggable.id'), primary_key=True),
-                     Column('user_id', Integer, ForeignKey('taggable.id'),primary_key=True),
-                     Column('permission', Integer, key="action_code"),
-                     )
 
 
 #dataset_members = Table ('dataset_member',
@@ -346,12 +314,12 @@ class Taggable(object):
     uri = property(uri)
 
 
-    @validates('owner')
-    def validate_owner (self, key, owner):
-        if isinstance(owner, basestring) and owner.startswith ('http'):
-            log.warn ("validating owner  %s" % owner)
-            return map_url (owner)
-        return owner
+    #@validates('owner')
+    #def validate_owner (self, key, owner):
+    #    if isinstance(owner, basestring) and owner.startswith ('http'):
+    #        log.warn ("validating owner  %s" % owner)
+    #        return map_url (owner)
+    #    return owner
         
 
 #    def get_owner (self):
@@ -373,12 +341,12 @@ class Taggable(object):
             self.vertices = []
             log.debug ('cleared all')
             return results
-        if 'tags' in what:
+        if 'tag' in what:
             results.extend(self.tags)
             self.children = list (set(self.children) - set(self.tags))
             self.tags = []
             log.debug ('cleared tags')
-        if 'gobjects' in what:
+        if 'gobject' in what:
             results.extend(self.gobjects)
             self.children = list (set(self.children) - set(self.gobjects))
             self.gobjects = []
@@ -445,42 +413,44 @@ class Taggable(object):
     hidden = property(get_hidden, set_hidden)
 
     # Tag.value helper functions
-    def newval(self, v, i = 0):
-        if isinstance(v,basestring):
-            v = Value(i, s = v)
-        elif type(v) == int or type(v) == float:
-            v = Value(i, n = v)
-        elif isinstance(v, Taggable):
-            v = Value(i, o = v)
-        else:
-            raise BadValue("Tag "+self.name, v)
-        return v
-    def getvalue(self):
-        if self.resource_value is not None:
-            return self.resource_value
-        else:
-            # call SimpleValue decoder
-            values =  [ v.value for v in self.values ] 
-            if len(values) == 0:
-                return None
-            return values
+    # def newval(self, v, i = 0):
+    #     if isinstance(v,basestring):
+    #         v = Value(i, s = v)
+    #     elif type(v) == int or type(v) == float:
+    #         v = Value(i, n = v)
+    #     elif isinstance(v, Taggable):
+    #         v = Value(i, o = v)
+    #     else:
+    #         raise BadValue("Tag "+self.name, v)
+    #     return v
+    # def getvalue(self):
+    #     if self.resource_value is not None:
+    #         return self.resource_value
+    #     else:
+    #         # call SimpleValue decoder
+    #         values =  [ v.value for v in self.values ] 
+    #         if len(values) == 0:
+    #             return None
+    #         return values
+    # def setvalue(self, v):
+    #     self.resource_value = None
+    #     if isinstance(v, list):
+    #         l = [ self.newval(v[i], i) for i in xrange(len(v)) ]
+    #         self.values = l
+    #     elif isinstance(v, basestring):
+    #         self.resource_value = v
+    #     else:
+    #         l = [ self.newval(v, 0) ]
+    #         self.values = l
+    # value = property(fget=getvalue,
+    #                  fset=setvalue,
+    #                  doc="resource_value")
 
-    def setvalue(self, v):
-        self.resource_value = None
-        if isinstance(v, list):
-            l = [ self.newval(v[i], i) for i in xrange(len(v)) ]
-            self.values = l
-        elif isinstance(v, basestring):
-            self.resource_value = v
-        else:
-            l = [ self.newval(v, 0) ]
-            self.values = l
-            
-
-    value = property(fget=getvalue,
-                     fset=setvalue,
-                     doc="resource_value")
-
+    def getval(self):
+        return self.resource_value
+    def setval(self, v):
+        self.resource_value = v
+    value = property(getval, setval, doc='resource_value')
 
     #def __repr__(self):
     #    return u"<%s: %s=%s>" % (self.resource_type, self.resource_name, self.resource_value)
@@ -842,7 +812,24 @@ mapper( Taggable, taggable,
                          primaryjoin = (taggable.c.id == taggable.c.document_id),
                          backref = backref('document', post_update=True, 
                                            enable_typechecks=False, remote_side=[taggable.c.id]),
-                         )
+                         ),
+
+    'docvalues' : relation (Value, lazy=True, 
+                         cascade = "all, delete-orphan",
+                         enable_typechecks = False, 
+                         post_update=True,
+                         primaryjoin = (taggable.c.id == values.c.document_id),
+                         backref = backref('document', post_update=True, 
+                                           enable_typechecks=False, remote_side=[taggable.c.id]),
+                          ),
+    'docvertices' : relation (Vertex, lazy=True, 
+                         cascade = "all, delete-orphan",
+                         enable_typechecks = False, 
+                         post_update=True,
+                         primaryjoin = (taggable.c.id == vertices.c.document_id),
+                         backref = backref('document', post_update=True, 
+                                           enable_typechecks=False, remote_side=[taggable.c.id]),
+                          ),
     }
         )
 
