@@ -50,7 +50,8 @@ pc2=pc; pc2(tag)=0;
 confidence=prob_tag/(prob_tag+prob_tag2);
 %...............................................................
 %Display the final results
-[genus,specie, commonName ,url]=get_specie(tag);
+fprintf('Getting specie for tag: %d', tag);
+[genus, specie, commonName, url] = get_specie(tag);
 % % clc;
 % % disp('.............................................................................');
 % % disp(sprintf('The plant is idenified as %s with confidence %f',specie, confidence));
