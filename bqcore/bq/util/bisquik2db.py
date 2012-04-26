@@ -224,10 +224,12 @@ class ResourceFactory(object):
             node = Vertex()
             parent.vertices.append (node)
             node.indx = len(parent.vertices)-1 # Default value (maybe overridden)
+            node.document = parent.document
         elif xmlname == "value":
             node = Value()
             parent.values.append(node)
             node.indx = len(parent.values)-1   # Default value (maybe overridden)
+            node.document = parent.document
         elif xmlname== "request" or xmlname=="response":
             if parent:
                 node = parent
@@ -282,12 +284,15 @@ class ResourceFactory(object):
             objarr.extend ([ klass() for x in range(((indx+1)-len(objarr)))])
             for x in range(len(objarr), indx+1):
                     objarr[indx].indx = x
+                    objarr[indx].document = parent.document
+                    
 
             v = DBSession.query(klass).get( (parent.id, indx) )
             log.debug('indx %s fetched %s ' % (indx, v))
             #objarr.extend ([ klass() for x in range(((indx+1)-len(objarr)))])
             if v is not None:
                 objarr[indx] = v
+            objarr[indx].document = parent.document
             log.debug('ARRAY = %s' % [ str(x) for x in objarr ])
             #    v.indx = indx;
             #log.debug ('fetching %s %s[%d]:%s' %(parent , array, indx, v)) 
@@ -328,6 +333,8 @@ mapping_fields = {
     'parent_id':None,
     'children': None,
     'docnodes': None,
+    'docvalues':None,
+    'docvertices': None,
 #    'type' : 'resource_user_type',
 #    'name' : 'resource_name',
 #    'value': 'resoruce_value',
@@ -423,19 +430,19 @@ def xmlnode(dbo, parent, baseuri, view, **kw):
     rtype = getattr(dbo, 'resource_type', None)
     if  rtype == 'tag':
         elem = xmlelement (dbo, parent, baseuri)
-        if  dbo.resource_value is None:        
-            [ toxmlnode (x, parent = elem, baseuri=baseuri, view=view) for x in dbo.values ]
-            if elem.attrib.has_key('value'):
-                del elem.attrib['value']
+        #if  dbo.resource_value is None:        
+        #    [ toxmlnode (x, parent = elem, baseuri=baseuri, view=view) for x in dbo.values ]
+        #    if elem.attrib.has_key('value'):
+        #        del elem.attrib['value']
     elif  rtype == 'gobject':
         if 'canonical' not in view and dbo.type in known_gobjects:
             elem = xmlelement (dbo, parent, baseuri, xtag=dbo.type)
         else:
             elem = xmlelement (dbo, parent, baseuri)
-        if  dbo.resource_value is None:
-            [ toxmlnode (x, parent = elem, baseuri=baseuri, view=view) for x in dbo.vertices ]
-            if elem.attrib.has_key('value'):
-                del elem.attrib['value']
+        #if  dbo.resource_value is None:
+        #    [ toxmlnode (x, parent = elem, baseuri=baseuri, view=view) for x in dbo.vertices ]
+        #    if elem.attrib.has_key('value'):
+        #        del elem.attrib['value']
     else:
         elem = xmlelement (dbo, parent, baseuri)
 
@@ -450,6 +457,7 @@ def valnode(val, parent, baseuri, view):
 
 
 def resource2nodes(dbo, parent=None, view=[], baseuri=None,  **kw):
+    'load every element associated with dbo i.e load the document'
     from bq.data_service.controllers.resource_query import resource_permission
     doc_id = dbo.document_id
     docnodes = DBSession.query(Taggable).filter(Taggable.document_id == doc_id)
@@ -467,6 +475,15 @@ def resource2nodes(dbo, parent=None, view=[], baseuri=None,  **kw):
             #elem = root = etree.Element(node.resource_type)
             elem = root = xmlnode(node, None, baseuri, view)
             nodes[node.id] = elem
+
+    vnodes = DBSession.query(Value).filter(Value.document_id == doc_id)
+    for v in vnodes:
+        xmlnode (v, parent = nodes[v.resource_parent_id], baseuri=baseuri, view=view)
+    vnodes = DBSession.query(Vertex).filter(Vertex.document_id == doc_id)
+    for v in vnodes:
+        xmlnode (v, parent = nodes[v.resource_parent_id], baseuri=baseuri, view=view)
+
+    
     #vals = DBSession.query(Values).filter(Value.value_document_id == doc_id)
     #for val in vals:
     #    parent = nodes[val.parent_id]
