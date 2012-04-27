@@ -13,6 +13,8 @@ build/*
 data/*
 config/*.ini
 bqenv/*
+doc/build/*
+doc/data/*
 external/*
 bqcore/parser.out
 bqcore/parsetab.*
