@@ -4,7 +4,9 @@ body {
 	font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 1.0em;
 	border:0.0em;
 	margin:0.0em;*/
-  font-size: 14px;	
+    font-size: 14px;	
+    /*background-color: white !important;*/
+    background-color: #DFE9F5 !important;
 }
 
 a { text-decoration: none; color: #0000FF; letter-spacing:0.07em;}

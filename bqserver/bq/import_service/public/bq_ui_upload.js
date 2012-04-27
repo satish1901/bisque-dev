@@ -736,7 +736,8 @@ Ext.define('BQ.upload.Panel', {
             buttonOnly: true, 
             multiple: true,
             handler: this.chooseFiles,
-            buttonConfig: { scale: 'large', iconCls: 'browse', text: 'Choose files', tooltip: 'Select several local files to upload', },
+            buttonConfig: { scale: 'large', iconCls: 'browse', text: 'Choose files', 
+                            tooltip: 'Select several local files to upload', cls: 'x-btn-default-large', },
             listeners: {
                     change: this.chooseFiles,
                     scope: this,
@@ -873,6 +874,7 @@ Ext.define('BQ.upload.Panel', {
             defaults: { scale: 'large'  },
             allowBlank: false,
             cls: 'tools', 
+            border: 0,
             layout: {
                 overflowHandler: 'Menu'
             },            
@@ -924,7 +926,8 @@ Ext.define('BQ.upload.Panel', {
             xtype: 'toolbar',
             dock: 'bottom',
             //ui: 'footer',
-            cls: 'footer',   
+            cls: 'footer', 
+            border: 0,  
             defaults: { scale: 'large', cls: 'x-btn-default-large', },  
             items: [ this.btn_dataset, this.btn_upload, this.btn_cancel, this.btn_reupload, this.progress, ]            
         }];    
