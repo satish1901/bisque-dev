@@ -272,6 +272,9 @@ class BlobServer(RestController, ServiceMixin):
             return fileName and os.path.exists(fileName)
         except IllegalOperation,e:
             return False
+        except Exception, e:
+            log.exception('cannot load resource_uniq %s' % id)
+            return False
 
     def geturi(self, id):
         return self.url + '/' + str(id)
