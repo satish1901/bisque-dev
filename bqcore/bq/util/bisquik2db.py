@@ -427,25 +427,31 @@ def xmlelement(dbo, parent, baseuri, **kw):
 
 
 def xmlnode(dbo, parent, baseuri, view, **kw):
-    rtype = getattr(dbo, 'resource_type', None)
-    if  rtype == 'tag':
+    #rtype = getattr(dbo, 'resource_type', None)
+    rtype = dbo.xmltag
+    if rtype == 'tag':
         elem = xmlelement (dbo, parent, baseuri)
-        #if  dbo.resource_value is None:        
-        #    [ toxmlnode (x, parent = elem, baseuri=baseuri, view=view) for x in dbo.values ]
-        #    if elem.attrib.has_key('value'):
-        #        del elem.attrib['value']
-    elif  rtype == 'gobject':
+        if 'deep' not in view and dbo.resource_value == None:
+            junk = [ xmlnode(x, elem, baseuri, view) for x in dbo.values ]
+        return elem
+    if  rtype == 'gobject':
         if 'canonical' not in view and dbo.type in known_gobjects:
             elem = xmlelement (dbo, parent, baseuri, xtag=dbo.type)
         else:
             elem = xmlelement (dbo, parent, baseuri)
-        #if  dbo.resource_value is None:
-        #    [ toxmlnode (x, parent = elem, baseuri=baseuri, view=view) for x in dbo.vertices ]
-        #    if elem.attrib.has_key('value'):
-        #        del elem.attrib['value']
-    else:
+        if 'deep' not in view:
+            junk = [ xmlnode(x, elem, baseuri, view) for x in dbo.vertices ]
+        return elem
+    if rtype=='value':
         elem = xmlelement (dbo, parent, baseuri)
+        elem.set('type', dbo.type)
+        if dbo.type == 'object':
+            elem.text = baseuri + unicode(dbo.value)
+        else:
+            elem.text = unicode(dbo.value)
+        return elem
 
+    elem = xmlelement (dbo, parent, baseuri)
     return elem
 
 def valnode(val, parent, baseuri, view):
@@ -478,10 +484,12 @@ def resource2nodes(dbo, parent=None, view=[], baseuri=None,  **kw):
 
     vnodes = DBSession.query(Value).filter(Value.document_id == doc_id)
     for v in vnodes:
-        xmlnode (v, parent = nodes[v.resource_parent_id], baseuri=baseuri, view=view)
+        if v.resource_parent_id in nodes and nodes[v.resource_parent_id].get('value') is None:
+            xmlnode (v, parent = nodes[v.resource_parent_id], baseuri=baseuri, view=view)
     vnodes = DBSession.query(Vertex).filter(Vertex.document_id == doc_id)
     for v in vnodes:
-        xmlnode (v, parent = nodes[v.resource_parent_id], baseuri=baseuri, view=view)
+        if v.resource_parent_id in nodes:
+            xmlnode (v, parent = nodes[v.resource_parent_id], baseuri=baseuri, view=view)
 
     
     #vals = DBSession.query(Values).filter(Value.value_document_id == doc_id)
@@ -551,6 +559,29 @@ def db2tree_int(dbo, parent = None, view=None, baseuri=None, endtime=None):
     return True, n
 
 
+def db2node_SLOW(dbo, parent, view, baseuri, nodes, doc_id):
+    log.debug ("dbo=%s view=%s" % ( unicode(dbo), view))
+
+    if view is None or len(view)==0 or 'short' in view:
+        n = xmlnode(dbo, parent, baseuri, view)
+        return n, nodes, doc_id
+
+    n, nodes, doc_id = resource2tree(dbo, parent, view, baseuri, nodes, doc_id)
+    if 'deep' in view:
+        return n, nodes, doc_id
+
+    if "full" in view:
+        for kid in list(n):
+            if len(kid):
+                for subkid in list(kid):
+                    kid.remove(subkid)
+        return n, nodes, doc_id
+                    
+    v = filter(lambda x: x not in ('full','deep','short', 'canonical'), view)
+    for kid in list(n):
+        if kid.get('name') not in v:
+            n.remove(kid)
+    return n, nodes, doc_id
 
 def db2node(dbo, parent, view, baseuri, nodes, doc_id):
     log.debug ("dbo=%s view=%s" % ( unicode(dbo), view))
@@ -560,7 +591,7 @@ def db2node(dbo, parent, view, baseuri, nodes, doc_id):
 
     node = xmlnode(dbo, parent, baseuri, view)
     if "full" in view :
-         v = list(itertools.ifilter (lambda x: x != 'full', view))
+         v = filter (lambda x: x != 'full', view)
          tl = [ db2tree_int(x, node, view=v, baseuri=baseuri) for x in dbo.children ] 
          #gl = [ db2tree_int(x, node, view=v, baseuri=baseuri) for x in dbo.gobjects ]
 #    elif "deep" in view:
@@ -571,7 +602,7 @@ def db2node(dbo, parent, view, baseuri, nodes, doc_id):
     else:
         # Allow a list of tags to be specified in the view parameter which 
         # will be included the object
-         v = list(itertools.ifilter (lambda x: x not in ('full','deep','short', 'canonical'), view))
+         v = filter (lambda x: x not in ('full','deep','short', 'canonical'), view)
          #log.debug ("TAG VIEW=%s", v)
          #tl = [ db2tree_int(x, node, v, baseuri) for x in dbo.tags if x.resource_name in v ] 
          for tag_name in v:
@@ -703,6 +734,8 @@ def updateDB(root=None, parent=None, resource = None, factory = ResourceFactory,
                 type_ = attrib.get ('type', None)
                 indx  = attrib.get ('index', None)
                 ts_   = attrib.pop ('ts', None)
+                owner = attrib.pop ('owner', None)
+                uniq  = attrib.pop ('resource_uniq', None)
 
                 cleared = []
                 if resource is not None:
