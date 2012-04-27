@@ -162,7 +162,7 @@ Ext.define('BQ.Application.Toolbar', {
     
         
         var menu_help = [];
-        menu_help.push( { xtype:'tbtext', html: '<img src="'+this.images_base_url+'bisque_logo_white_170.png" style="width: 96px; height: 77px; margin: 10px; margin-left: 30px;" />', indent: true } );
+        menu_help.push( { xtype:'tbtext', text: '<img src="'+this.images_base_url+'bisque_logo_white_170.png" style="width: 96px; height: 77px; margin: 10px; margin-left: 30px;" />', indent: true } );
         menu_help.push( {text: 'About Bisque', 
                             handler: Ext.Function.pass(htmlAction, [bq.url('/client_service/public/about/about.html'), 'About Bisque'] ) } );    
         menu_help.push( {text: 'Privacy policy', 
@@ -198,8 +198,8 @@ Ext.define('BQ.Application.Toolbar', {
         //-------------------------------------------------------------------------------------- 
         if (!this.items) this.items = [];
 
-        this.items.push({ xtype:'tbtext', html: '<img src="'+this.images_base_url+'bisque_logo_100px.png" style="width: 58px; height: 38px; margin-right: 5px; margin-left: 5px;" />' });
-        this.items.push({ xtype:'tbtext', html: '<h3><a href="/">'+this.title+'</a></h3>' });
+        this.items.push({ xtype:'tbtext', text: '<img src="'+this.images_base_url+'bisque_logo_100px.png" style="width: 58px; height: 38px; margin-right: 5px; margin-left: 5px;" />' });
+        this.items.push({ xtype:'tbtext', text: '<h3><a href="/">'+this.title+'</a></h3>', });        
         this.items.push({ xtype: 'tbspacer', width: 40 });        
         
         this.items.push({ menu: this.menu_services, icon: this.images_base_url+'services.png', text: 'Services', tooltip: '' });
@@ -239,6 +239,7 @@ Ext.define('BQ.Application.Toolbar', {
                
         this.items.push({ xtype: 'tbspacer', width: 10, hidden: !browse_vis });    
         this.items.push({itemId: 'menu_query', xtype:'textfield', flex: 2, name: 'search', value: this.image_query_text, hidden: !browse_vis,
+                 minWidth: 60,
                  tooltip: 'Query for images used Bisque expression',  
                  enableKeyEvents: true,
                  listeners: {

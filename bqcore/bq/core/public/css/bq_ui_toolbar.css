@@ -3,7 +3,9 @@
 /**************************************************************************/
 
 .toolbar_main {
-  
+    background-image: -webkit-linear-gradient(top, rgba(233, 243, 255, 1), rgba(158, 179, 235, 0.92), rgba(119, 168, 226, 0) );
+    background-color: transparent;
+    border: 0px;
 }
 
 .toolbar_main h3 {
@@ -28,3 +30,8 @@
 .toolbar_main .x-box-menu-right {
     /*height: 32px;  */
 }
+
+.toolbar_main .x-btn-default-toolbar-large .x-btn-inner {
+    font-size: 12px;
+}
+

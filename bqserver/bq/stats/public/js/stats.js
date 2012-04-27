@@ -1462,7 +1462,8 @@ Ext.define('BQ.stats.Visualizer', {
                 this.plotPanel.add(this.plotter);
             //else
             //    this.plotPanel.setVisible(false);
-        }        
+        }     
+          
     },
 
 });
@@ -1481,8 +1482,11 @@ Ext.define('BQ.stats.Dialog', {
     layout : 'fit',
     modal : true,
     border : false,
-    width : '85%',
-    height : '85%',
+    //width : '85%',
+    //height : '85%',
+
+    width : 800,
+    height : 600,
     
     constructor : function(config) {
 
