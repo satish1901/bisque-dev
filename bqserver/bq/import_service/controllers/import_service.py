@@ -415,6 +415,7 @@ class import_serviceController(ServiceController):
         try:
             log.debug('Inserting blob: [%s] [%s] [%s] [%s]'%(src, filename, perm, tags))
             resource = blob_service.store_blob (filesrc=src, filename=filename, permission=perm, tags=tags)
+            # Add specific image tags here:
         except Exception, e:
             log.exception("Error during store")
             return None
@@ -648,9 +649,7 @@ class import_serviceController(ServiceController):
         """
         if 'file' not in kw:
             return dict(error='No file uploaded...')
-
         resource = self.process( kw['file'] )
-        
         if resource is not None and resource.get('uri') is None:
             # try to define the error
             t=resource.xpath('//tag[@name="error"]')

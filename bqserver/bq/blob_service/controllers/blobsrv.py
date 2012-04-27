@@ -170,6 +170,7 @@ class BlobServer(RestController, ServiceMixin):
         """
         user_name = identity.current.user_name
         blob_id = None
+        flocal = None
         if flosrc is not None:
             for store in self.stores:
                 try:
@@ -181,16 +182,16 @@ class BlobServer(RestController, ServiceMixin):
             if blob_id is None:
                 log.error('Could not store %s on any %s' %(filename, self.stores))
                 return None
-            fhash = file_hash_SHA1( flocal )
         elif url is not None:
             if filename is None:
                 filename  = url.rsplit('/',1)[1]
             blob_id = url
-            fhash   = make_uniq_hash(filename)
         else:
             log.error("blobStore without URL or file: nothing to do")
             return None
 
+        # hashed filename + stuff
+        fhash = make_uniq_hash (filename)
         # resource creation
         resource_type = guess_type(filename)                  
 
@@ -199,11 +200,15 @@ class BlobServer(RestController, ServiceMixin):
                                   resource_name = filename,
                                   resource_value = blob_id )
 
-        if resource_type == 'image':
-            resource.set('src', "/image_service/images/%s" % fhash) # dima: this here is a hack!!!!
-
         etree.SubElement(resource, 'tag', name="filename", value=filename)
         etree.SubElement(resource, 'tag', name="upload_datetime", value=datetime.now().isoformat(' '), type='datetime' ) 
+
+        if resource_type == 'image':
+            #resource.set('src', "/image_service/images/%s" % fhash) # dima: this here is a hack!!!!
+            pass
+        #if flocal is not None:
+        #    etree.SubElement(resource, 'tag', name='sha1', value=file_hash_SHA1(flocal))
+
 
         # ingest extra tags
         if 'tags' in kw and kw['tags'] is not None:
@@ -262,8 +267,14 @@ class BlobServer(RestController, ServiceMixin):
         
     def fileExists(self, id):
         if id==None: return False      
-        fileName = self.localpath(id)    
-        return fileName and os.path.exists(fileName)
+        try:
+            fileName = self.localpath(id)    
+            return fileName and os.path.exists(fileName)
+        except IllegalOperation,e:
+            return False
+        except Exception, e:
+            log.exception('cannot load resource_uniq %s' % id)
+            return False
 
     def geturi(self, id):
         return self.url + '/' + str(id)

@@ -309,9 +309,11 @@ class BisquikResource(Resource):
         parent = self.load_parent()
         if parent:
             log.info('REPLACE ' + self.resource_name + " in " + str(parent))
-            parent.clear([ self.resource_name ])
             log.debug ("replace: %s => %s" %(xml, str(resource)))
-            resource = bisquik2db(doc=xml,  parent=parent, replace=True)
+            # Here we clear the specific type (tag,gobject) etc. and 
+            
+            parent.clear([ self.resource_name ])
+            resource = bisquik2db(doc=xml,  parent=parent,  )
             if resource is not None:
                 return self.resource_output(resource, **kw)
         return "<response>FAIL</response>"
