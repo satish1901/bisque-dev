@@ -51,6 +51,12 @@ classdef Node < matlab.mixin.Copyable
             end            
         end % constructor
         
+        function save(self)
+            url = self.getAttribute('uri');
+            bq.put(url, self.doc, self.user, self.password);
+        end % save          
+        
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Access attributes
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
