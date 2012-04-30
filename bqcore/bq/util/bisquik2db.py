@@ -735,7 +735,7 @@ def updateDB(root=None, parent=None, resource = None, factory = ResourceFactory,
                 indx  = attrib.get ('index', None)
                 ts_   = attrib.pop ('ts', None)
                 owner = attrib.pop ('owner', None)
-                uniq  = attrib.pop ('resource_uniq', None)
+                #uniq  = attrib.pop ('resource_uniq', None)
 
                 cleared = []
                 if resource is not None:
