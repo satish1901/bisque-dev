@@ -148,7 +148,7 @@ class image_serviceController(ServiceController):
 
     @expose()
     #@identity.require(identity.not_anonymous())    
-    def default(self, *path, **kw):
+    def _default(self, *path, **kw):
         #path = cherrypy.request.path+'?'+cherrypy.request.query_string
         id = path[0]
         return self.images(id, **kw)

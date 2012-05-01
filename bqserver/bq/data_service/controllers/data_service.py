@@ -107,13 +107,13 @@ class DataServerController(ServiceController):
         return etree.tostring(resource)
         
     @expose()
-    def default(self, *path, **kw):
+    def _default(self, *path, **kw):
         #log.debug ('headers:'+ str(cherrypy.request.headers))
         path = list(path)
         log.info ("path = %s %s " % (path, kw))
         token = path.pop(0)
         resource_controller = self.get_child_resource (token)
-        return resource_controller.default (*path, **kw)
+        return resource_controller._default (*path, **kw)
             
 
     #################################################################
