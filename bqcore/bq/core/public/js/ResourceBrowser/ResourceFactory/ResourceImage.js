@@ -263,7 +263,7 @@ Ext.define('Bisque.Resource.Image.Compact',
     {
         var text = Ext.String.ellipsis(this.resource.name, 25) || '';
         this.update('<div class="textOnImage" style="width:'+this.layoutMgr.layoutEl.width+'px;">'+text+'</div>'+this.getData('image'));
-        this.setLoading(false);
+        this.setLoading(true);
         
         /*this.resizer = Ext.create('Ext.resizer.Resizer', {
             target : this,
@@ -567,8 +567,8 @@ Ext.define('Bisque.Resource.Image.Full',
 
         this.add(new Ext.Panel(
         {
-            layout:'border',
-            border:false,
+            layout: 'border',
+            border: false,
             items:[new Ext.Container(
             {
                 region:'west',
@@ -598,7 +598,7 @@ Ext.define('Bisque.Resource.Image.Page',
 {
     extend : 'Bisque.Resource.Page',
     
-    updateContainer : function()
+    onResourceRender : function()
     {
         this.setLoading(false);
         this.root = '';
@@ -639,7 +639,7 @@ Ext.define('Bisque.Resource.Image.Page',
                 scope:this
             },
         });
-    
+        
         var resTab = Ext.create('Ext.tab.Panel',
         {
             title : 'Metadata',
@@ -716,7 +716,7 @@ Ext.define('Bisque.Resource.Image.Page',
             }
         });
         resTab.add(gobjectTagger);
-       
+
         var map = Ext.create('BQ.gmap.GMapPanel3',  {
             title: 'Map',
             url: this.resource.src+'?meta',
@@ -725,5 +725,7 @@ Ext.define('Bisque.Resource.Image.Page',
             autoShow: true,
         });
         resTab.add(map);
+
+        this.setLoading(false);
     }
 });

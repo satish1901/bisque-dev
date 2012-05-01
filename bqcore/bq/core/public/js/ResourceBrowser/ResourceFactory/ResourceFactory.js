@@ -372,24 +372,37 @@ Ext.define('Bisque.Resource.Page',
     
     constructor : function(config)
     {
+        var name = config.resource.name || config.resource.uri;
+        var type = config.resource.type || config.resource.resource_type;
+
         Ext.apply(this,
         {
-            layout      :   'fit',
-            loadingMsg  :   'Loading...',
-            listeners   :   {
-                                'afterlayout'   :   function(me)
-                                {
-                                    me.setLoading(me.loadingMsg);
-                                }
-                            }
+            layout  :   'fit',
+            border  :   false,
+            
+            tbar    :   new Ext.create('Ext.toolbar.Toolbar', 
+                        {
+                            defaults    :   {scale:'medium'},
+                            items   :   [{
+                                            text    :   'Operations',
+                                            iconCls :   'icon-lightning',
+                                            menu    :   this.getOperations()  
+                                        }, '->', {
+                                            text    :   type + ': <b>' + name + '</b',
+                                            handler :   this.promptName,
+                                            scope   :   this
+                                        }]
+                        }),
         }, config);
         
         this.callParent(arguments);
+        this.toolbar = this.getDockedComponent(0);
+        this.addListener('afterlayout', this.onResourceRender, this, {single:true});        
     },
 
-    initComponent : function() 
+    onResourceRender : function() 
     {
-        this.callParent(arguments);
+        this.setLoading(true);
 
         var name = this.resource.name || this.resource.uri;
         var type = this.resource.type || this.resource.resource_type;
@@ -397,17 +410,63 @@ Ext.define('Bisque.Resource.Page',
 
         var resourceTagger = new Bisque.ResourceTagger(
         {
-            itemId : 'resourceTagger',
-            title : title,
-            frame : true,
-            resource : this.resource,
-            split : true,
+            itemId  : 'resourceTagger',
+            title   : title,
+            frame   : true,
+            resource: this.resource,
+            split   : true,
         });
 
         this.add(resourceTagger);
+        this.setLoading(false);
+    },
+    
+    getOperations : function()
+    {
+        this.operations = [{
+            name    :   'Delete',
+            iconCls :   'icon-delete'
+        },{
+            name    :   'Rename',
+        }];
         
-        //this.loadingMsg = false;
-        //this.setLoading(this.loadingMsg);
+        var operations=[];
+        
+        for (var i=0;i<this.operations.length;i++)
+        {
+            operations.push({
+                text    :   this.operations[i].name,
+                iconCls :   this.operations[i].iconCls  ||  'icon-cog'
+            });
+        }
+        
+        return operations;
+    },
+    
+    promptName : function(btn)
+    {
+        Ext.MessageBox.prompt('Rename ' + this.resource.name, 'Enter new name:', this.renameResource, this);
+    },
+
+    renameResource : function(btn, name, authRecord)
+    {
+        if (btn == 'ok')
+        {
+            var user = BQSession.current_session.user_uri;
+            var successMsg = 'Resource <b>' + this.resource.name + '</b> renamed to <b>' + name + '</b>.';
+            this.resource.name = name;
+            this.resource.save_(undefined, Ext.bind(this.success, this, [successMsg], true), Ext.bind(this.failure, this));
+        }
+    },
+    
+    success : function(resource, msg)
+    {
+        BQ.ui.notification(msg || 'Operation successful.');
+    },
+    
+    failure : function()
+    {
+        BQ.ui.error('Operation failed!');
     },
     
     prefetch : Ext.emptyFn

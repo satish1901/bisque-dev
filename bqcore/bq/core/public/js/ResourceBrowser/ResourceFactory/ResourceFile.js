@@ -3,26 +3,18 @@ Ext.define('Bisque.Resource.File.Page',
 {
     extend : 'Bisque.Resource.Page',
     
-    updateContainer : function() 
+    onResourceRender : function()
     {
         this.callParent(arguments);
         
-        var tagger = this.getComponent('resourceTagger');
-        var toolbar = tagger.tree.getDockedItems('toolbar')[0];
-        
-        toolbar.add({
-            xtype : 'buttongroup',
-            items : [
-            {
-                text : 'Download',
-                scale : 'small',
-                iconCls : 'icon-save',
-                handler : this.downloadFile,
-                scope : this
-            }]
+        this.toolbar.insert(0, {
+            text : 'Download',
+            iconCls : 'icon-save',
+            handler : this.downloadFile,
+            scope : this
         });
     },
-    
+
     downloadFile : function()
     {
         var pathToFile = bq.url('/blob_service/' + this.resource.resource_uniq);
