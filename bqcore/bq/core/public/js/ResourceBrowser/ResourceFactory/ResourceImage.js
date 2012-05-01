@@ -264,6 +264,9 @@ Ext.define('Bisque.Resource.Image.Compact',
         var text = Ext.String.ellipsis(this.resource.name, 25) || '';
         this.update('<div class="textOnImage" style="width:'+this.layoutMgr.layoutEl.width+'px;">'+text+'</div>'+this.getData('image'));
         this.setLoading(true);
+        this.root = '';
+        if (this.resource && this.resource.uri)
+            this.root = this.resource.uri.replace(/\/data_service\/.*$/i, '');  
         
         /*this.resizer = Ext.create('Ext.resizer.Resizer', {
             target : this,
