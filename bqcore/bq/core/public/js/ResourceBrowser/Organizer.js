@@ -194,7 +194,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
         {
             child.grid.setLoading({msg:''});
             var query = this.GetTagQuery();
-            var uri = this.dataset + '?{0}=' + child.tag + '&wpublic=' + this.browser.browserParams.wpublic + (query.length?'&tag_query='+query:'');
+            var uri = Ext.String.urlAppend(this.dataset, '{0}=' + child.tag + '&wpublic=' + this.browser.browserParams.wpublic + (query.length?'&tag_query='+query:''));
             var uri = Ext.String.format(uri, (child.tagType=='tag'?'tag_values':'gob_names'));
             
             BQFactory.load(uri, callback(this, 'PopulateGrid', true, child));
@@ -311,12 +311,13 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
             value : new Array(),
             tagCombo : [],
             grid : [],
-            frame : true,
-
+            
+            //bodyStyle : 'background : #D9E7F8',
             titleCollapse : true,
             collapsible : true,
             hideCollapseTool : true,
-            margin: '2 2 2 2',
+            frame : true,
+            border : false,
             tools : [
             {
                 type : 'up',
@@ -397,10 +398,10 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
         {
             var query = this.parent.GetTagQuery();
             
-            var uri = this.parent.dataset 
-                      + '?{0}=1&wpublic=' 
+            var uri = Ext.String.urlAppend(this.parent.dataset,  
+                        '{0}=1&wpublic=' 
                       + this.parent.browser.browserParams.wpublic
-                      + (query.length?'&tag_query='+query:''); 
+                      + (query.length?'&tag_query='+query:'')); 
             
             BQFactory.load(Ext.String.format(uri, 'tag_names'), Ext.bind(this.GetTagList, this, [true, 'tag'], 0));
             BQFactory.load(Ext.String.format(uri, 'gob_types'), Ext.bind(this.GetTagList, this, [true, 'gobject'], 0));
@@ -479,12 +480,10 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
             {
                 model : 'Ext.grid.property.Property'
             }),
-            border : false,
             hideHeaders : true,
             multiSelect : true,
             //bodyStyle : 'background:#99e',
             flex : 1,
-            //bodyStyle : 'background:#99e',
             flex : 1,
 
             viewConfig :

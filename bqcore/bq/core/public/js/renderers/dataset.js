@@ -20,6 +20,7 @@ Ext.define('BQ.renderers.dataset', {
     autoScroll: true,
     layout : 'border',   
     heading: 'Dataset',
+    cls : 'bq-dataset',
     defaults: { border: 0, },
 
     initComponent : function() {

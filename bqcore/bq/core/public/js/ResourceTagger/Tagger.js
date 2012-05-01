@@ -9,7 +9,7 @@ Ext.define('Bisque.ResourceTagger',
         Ext.apply(this,
         {
             layout : 'fit',
-            padding : '0 1 0 0',
+            //padding : '0 1 0 0',
             style : 'background-color:#FFF',
             border : false,
 
@@ -20,14 +20,22 @@ Ext.define('Bisque.ResourceTagger',
             tree : config.tree || {
                 btnAdd : true,
                 btnDelete : true,
-                btnImport : true
+                btnImport : true,
+                btnExport : true,
             },
             store : {},
             dirtyRecords : []
         });
 
         this.viewMgr = new Bisque.ResourceTagger.viewStateManager(config.viewMode);;
-
+        this.populateComboStore();
+        
+        this.callParent([config]);
+        this.setResource(config.resource);
+    },
+    
+    populateComboStore : function()
+    {
         // dima - datastore for the tag value combo box
         var TagValues = Ext.ModelManager.getModel('TagValues');
         if (!TagValues) {
@@ -87,11 +95,7 @@ Ext.define('Bisque.ResourceTagger',
                     record: 'tag', 
                 },
             },
-             
         });
-
-        this.callParent([config]);
-        this.setResource(config.resource);
     },
 
     setResource : function(resource)
@@ -136,8 +140,19 @@ Ext.define('Bisque.ResourceTagger',
         
         this.add(this.getTagTree(root));
         this.fireEvent('onload', this, this.resource);
+        this.relayEvents(this.tree, ['itemclick']);
     },
 
+    onEdit : function(me)
+    {
+        if (me.record.raw)
+            if (this.autoSave)
+            {
+                this.saveTags(me.record.raw, true);
+                me.record.commit();
+            }
+    },
+    
     getTagTree : function(data)
     {
         this.rowEditor = Ext.create('Bisque.ResourceTagger.Editor',
@@ -147,15 +162,7 @@ Ext.define('Bisque.ResourceTagger',
             errorSummary : false,
             listeners : 
             {
-                'edit' : function(me)
-                {
-                    if (me.record.raw)
-                        if (this.autoSave)
-                        {
-                            this.saveTags(me.record.raw, true);
-                            me.record.commit();
-                        }
-                },
+                'edit' : this.onEdit,
                 scope : this
             },
             beforeEdit : function() {
@@ -168,13 +175,12 @@ Ext.define('Bisque.ResourceTagger',
             useArrows : true,
             rootVisible : false,
             border : false,
-            padding : 1,
+            //padding : 1,
             columnLines : true,
             rowLines : true,
             lines : true,
             iconCls : 'icon-grid',
             animate: this.animate,
-            //title : 'Resource tagger - '+'<span style="font-weight:normal">'+this.resource.uri.replace(window.location.origin,"")+'</span>',
 
             store : this.getTagStore(data),
             multiSelect : true,
@@ -264,12 +270,6 @@ Ext.define('Bisque.ResourceTagger',
                         buffer: 250,
                     },
                    
-                    // dima: does not work at the init, so the values are not inited, no other 
-                    // event seems to do it actually, so back to change!
-                    //'blur': function( field, eOpts ) {
-                    //    this.updateQueryTagValues(field.getValue());
-                    //},
-                   
                     scope: this,
                 },                 
                 
@@ -353,17 +353,7 @@ Ext.define('Bisque.ResourceTagger',
             {
                 name : 'qtip',
                 type : 'string',
-                convert : function(value, record) {
-                    // dima: show type and name for gobjects                    
-                    if (record.raw instanceof BQGObject) {
-                        var txt = [];
-                        if (record.raw.type && record.raw.type != 'gobject') txt.push(record.raw.type);
-                        if (record.raw.name) txt.push(record.raw.name);                        
-                        if (txt.length>0) return txt.join(': ');
-                    }    
-                    return record.data.name + ' : ' + record.data.value;
-                }
-
+                convert : this.getTooltip
             }, this.getStoreFields()],
 
             indexOf : function(record)
@@ -390,7 +380,7 @@ Ext.define('Bisque.ResourceTagger',
             },
 
             /* Modified function so as to not delete the root nodes */
-            onNodeAdded : function(parent, node)
+            /*onNodeAdded : function(parent, node)
             {
                 var proxy = this.getProxy(), reader = proxy.getReader(), data = node.raw || node.data, dataRoot, children;
 
@@ -406,11 +396,24 @@ Ext.define('Bisque.ResourceTagger',
                         //delete data[reader.root];
                     }
                 }
-            }
+            }*/
 
         });
 
         return this.store;
+    },
+    
+    getTooltip : function(value, record)
+    {
+        if (record.raw instanceof BQGObject)
+        {
+            var txt = [];
+            if (record.raw.type && record.raw.type != 'gobject') txt.push(record.raw.type);
+            if (record.raw.name) txt.push(record.raw.name);                        
+            if (txt.length>0) return txt.join(' : ');
+        }    
+        
+        return record.data.name + ' : ' + record.data.value;
     },
 
     getStoreFields : function()
@@ -466,6 +469,7 @@ Ext.define('Bisque.ResourceTagger',
                 text : 'Export',
                 scale : 'small',
                 hidden : this.viewMgr.state.btnExport,
+                disabled : this.tree.btnExport,
                 iconCls : 'icon-export',
                 menu :
                 {
@@ -519,56 +523,68 @@ Ext.define('Bisque.ResourceTagger',
             currentItem = this.tree.getRootNode();
         
         // Adding new tag to tree
-        var child = { name : '', value : '' };
-        
+        var child = { name : this.defaultTagName || '', value : this.defaultTagValue || '' };
         child[this.rootProperty] = [];
-        var newNode = currentItem.appendChild(child);
-        currentItem.expand();
 
+        var newNode = currentItem.appendChild(child);
+        this.newNode = newNode;
+        currentItem.expand();
         editor.startEdit(newNode, 0);
 
-        function finishEdit(me)
+        editor.addListener(
         {
-            this.editing = true;
-            var newTag = new BQTag();
-            newTag = Ext.apply(newTag,
-            {
-                name : me.record.data.name,
-                value : me.record.data.value,
-            });
-            var parent = (me.record.parentNode.isRoot()) ? this.resource : me.record.parentNode.raw;
-            parent.addtag(newTag);
+            'edit'          :   {
+                                    fn      :   this.finishEdit,
+                                    single  :   true
+                                },
+            'cancelEdit'    :   {
+                                    fn      :   this.cancelEdit,
+                                    valg    :   'abc',
+                                    single  :   true,
+                                },
+            scope           :   this,
+        });            
+    },
+    
+    cancelEdit : function (grid, eOpts)
+    {
+        var editor = this.tree.plugins[0];
+        editor.un('edit', this.finishEdit, this);
 
-            if (this.isValidURL(newTag.value))
-            {
-                newTag.type = 'link';
-                me.record.data.type = 'link';
-            }
-                
-            if (this.autoSave)
-                this.saveTags(parent, true);
+        if (!newNode.data.name || (newNode.data.name && newNode.data.value && newNode.name=='' && newNode.value==''))
+            grid.record.parentNode.removeChild(grid.record);
+    },    
+    
+    finishEdit : function(me)
+    {
+        this.editing = true;
+        var newTag = new BQTag();
+        newTag = Ext.apply(newTag,
+        {
+            name : me.record.data.name,
+            value : me.record.data.value,
+        });
+        var parent = (me.record.parentNode.isRoot()) ? this.resource : me.record.parentNode.raw;
+        parent.addtag(newTag);
 
-            me.record.raw = newTag;
-            me.record.loaded=true;
-            me.record.commit();
-
-            me.record.parentNode.data.iconCls = 'icon-folder';
-            me.view.refresh();
-
-            BQ.ui.message('Resource tagger - Add', 'New record added!');
-            this.editing = false;
+        if (this.isValidURL(newTag.value))
+        {
+            newTag.type = 'link';
+            me.record.data.type = 'link';
         }
-        
-        editor.on('edit', finishEdit, this, {single : true});
             
-        editor.on('canceledit', function(grid, eOpts)
-        {
-            var editor = this.tree.plugins[0];
-            editor.un('edit', finishEdit, this);
+        if (this.autoSave)
+            this.saveTags(parent, true);
 
-            if (!newNode.data.name || (newNode.data.name && newNode.data.value && newNode.name=='' && newNode.value==''))
-                currentItem.removeChild(newNode);
-        }, this, {single : true});            
+        me.record.raw = newTag;
+        me.record.loaded = true;
+        me.record.data.qtip = this.getTooltip('', me.record);
+        me.record.commit();
+
+        me.record.parentNode.data.iconCls = 'icon-folder';
+        me.view.refresh();
+
+        this.editing = false;
     },
     
     deleteTags : function()
@@ -606,10 +622,10 @@ Ext.define('Bisque.ResourceTagger',
         if(this.store.applyModifications())
         {
             resource.save_();
-            if (!silent) BQ.ui.message('Resource tagger - Save', 'Changes were saved successfully!');
+            if (!silent) BQ.ui.message('', 'Changes were saved successfully!');
         }
         else
-            BQ.ui.message('Resource tagger - Save', 'No records modified!');
+            BQ.ui.message('', 'No records modified!');
     },
     
     importTags : function()
@@ -899,7 +915,6 @@ Ext.define('Bisque.GObjectTagger',
     exportToXml : function()
     {
         this.exportTo('xml');
-        
     },
     
     //exportToGDocs : Ext.emptyFn,

@@ -246,7 +246,7 @@ Ext.define('Bisque.ResourceBrowser.Browser',
                     tag_query : this.browserParams.tagQuery,
                     tag_order : this.browserParams.tagOrder
                 });
-
+                
                 var btnOrganize = this.commandBar.getComponent("btnGear").menu.getComponent("btnOrganize");
                 this.showOrganizer?btnOrganize.handler.call(this.commandBar):'';
             }
@@ -536,4 +536,9 @@ Ext.define('Bisque.ResourceBrowser.Browser',
 
         return uri;
     },
+    
+    findRecord : function(uri)
+    {
+        return this.resourceQueue.find(uri);
+    }
 });

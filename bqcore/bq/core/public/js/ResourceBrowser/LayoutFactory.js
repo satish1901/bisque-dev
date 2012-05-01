@@ -40,6 +40,7 @@ Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS = {
 	"List"       :   5,
 	"IconList"   :   6,
 	'Page'       :   7,
+	'Grid'       :   8,
 
     // for backwards compatibility
     "COMPACT"    :   1,
@@ -232,8 +233,11 @@ Ext.define('Bisque.ResourceBrowser.Layout.Base',
     {
         this.imgNoResults = Ext.create('Ext.Img', 
         {
-            src : bq.url('/js/ResourceBrowser/Images/no-results.png'),
-        })
+            width   :   300,
+            margin  :   0,
+            padding :   0,
+            src     :   bq.url('/js/ResourceBrowser/Images/no-results.png'),
+        });
         
         var ct = Ext.create('Ext.panel.Panel', 
         {
@@ -254,7 +258,7 @@ Ext.define('Bisque.ResourceBrowser.Layout.Base',
         }, this, {single:true});
 
         this.layout = 'fit';
-        this.add(ct);     // add calls doLayout internally so 'fit' will be applied
+        this.add(ct);     // "add" calls doLayout internally so 'fit' will be applied
     },
 	
 	getParentSize : function() 
@@ -563,4 +567,134 @@ Ext.define('Bisque.ResourceBrowser.Layout.Page',
     },
 });
 
+// Grid layout: Shows resources in a grid
+Ext.define('Bisque.ResourceBrowser.Layout.Grid', 
+{
+    extend : 'Bisque.ResourceBrowser.Layout.Base',
+    
+    inheritableStatics : {
+        layoutCSS : null
+    },
 
+    constructor : function() 
+    {
+        Ext.apply(this, {layout:'fit'});
+        this.callParent(arguments);
+    },
+
+    Init : function(resourceQueue) 
+    {
+        this.layoutConfig = this.browser.layoutConfig || {};
+        this.add(this.getResourceGrid());
+        
+        var resource, list=[];
+        for (var i=0;i<resourceQueue.length;i++)
+            list.push(resourceQueue[i].getFields());
+        
+        this.resourceStore.loadData(list);
+    },
+    
+    getVisibleElements : function(direction) 
+    {
+        var ctHeight = this.getParentSize().height-22; // height of grid header = 22px 
+        var noEl = Math.floor(ctHeight/21)+1; 
+        var tempQ = this.browser.resourceQueue.getTempQ(noEl, direction);
+        var elHeight, currentHeight = 0;
+
+        for (var i=0;i<tempQ.length;i++)
+        {
+            elHeight = tempQ[i].getFields()[6].height;
+            if (currentHeight + elHeight > ctHeight)
+                break;
+            else
+                currentHeight += elHeight;
+        }
+        
+        return i;
+    },
+    
+    getResourceGrid : function()
+    {
+        this.resourceGrid = Ext.create('Ext.grid.Panel', {
+            store : this.getResourceStore(),
+            border : 0,
+            listeners : 
+            {
+                scope: this,
+                'itemclick' : function(view, record, item, index)
+                {
+                    var resource = record.get('raw');
+                    this.browser.msgBus.fireEvent('ResourceSingleClick', resource.resource);
+                    resource.fireEvent('select', resource);
+                },
+                'itemdblclick' : function(view, record, item, index)
+                {
+                    var resource = record.get('raw');
+                    this.browser.msgBus.fireEvent('ResourceDblClick', resource.resource);
+                }
+            },
+            plugins : new Ext.ux.DataTip({tpl:'<div>{name}:{value}</div>'}),
+            
+            columns : 
+            {
+                items : [
+                {
+                    //maxWidth: 70,
+                    //hidden:true,
+                    dataIndex: 'icon',
+                    menuDisabled : true,
+                    sortable : false,
+                    align : 'center',
+                    maxWidth : this.layoutConfig.colIconWidth || 70,
+                    minWidth : 1,
+                },
+                {
+                    text: this.layoutConfig.colNameText || 'Name',
+                    dataIndex: 'name',
+                    align: 'left',
+                    flex : 0.4 
+                },
+                {
+                    text: this.layoutConfig.colValueText || 'Value',
+                    dataIndex: 'value',
+                    flex : 0.6
+                },
+                {
+                    text: 'Type',
+                    dataIndex: 'type',
+                    hidden : true,
+                },
+                {
+                    text : this.layoutConfig.colDateText || 'Date created',
+                    dataIndex: 'ts',
+                    flex : 0.4 
+                }],
+                defaults : 
+                {
+                    tdCls: 'align',
+                    align: 'center',
+                    sortable : true,
+                    flex : 0.4
+                }
+            }
+        });
+        
+        return this.resourceGrid;
+    },
+    
+    getResourceStore : function()
+    {
+        this.resourceStore = Ext.create('Ext.data.ArrayStore', {
+            fields:  ['icon', 'name', 'value', 'type', {name: 'ts', convert: 
+            function(value)
+            {
+                var created = new Date(value), today = new Date();
+                var days = Math.round((today-created)/(1000*60*60*24));
+                var pattern = (days) ? "n/j/Y" : "g:i A";   
+
+                return Ext.Date.format(created, pattern);
+            }}, 'raw']});
+        
+        return this.resourceStore;
+    }
+});

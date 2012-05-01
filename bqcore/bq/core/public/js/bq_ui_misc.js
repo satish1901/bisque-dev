@@ -51,7 +51,7 @@ BQ.ui = function(){
 
         popup: function(type, text, delay) {
             var t = BQ.ui.types[type] || BQ.ui.types['notification'];
-            BQ.ui.message( t.title, text, t.delay, t.cls );
+            BQ.ui.message( t.title, text, delay || t.delay, t.cls );
         },
 
         notification: function(text, delay) {

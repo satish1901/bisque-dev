@@ -848,6 +848,7 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
                     acl = TaggableAcl()
                     log.info('new acl for user %s' % user.name)
                     acl.user = user
+                    resource.acl.append(acl)
                     #DBSession.add(acl)
 
                 shares.append(acl)

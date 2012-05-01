@@ -252,3 +252,24 @@ Ext.define('Bisque.Resource.Mex.List',
         this.setLoading(false);
     },
 });
+
+Ext.define('Bisque.Resource.Mex.Grid',
+{
+    extend : 'Bisque.Resource.Mex',
+    
+    getFields : function()
+    {
+        var fields = this.callParent();
+        fields[1] = fields[1].toUpperCase();
+        var status = fields[2], color='#22F';
+        if (status=='FINISHED')
+            color = '#1C1'
+        else if (status=='FAILED')
+            color = '#E11'
+        
+        fields[2] = '<div style="color:'+color+'">'+fields[2]+'</div>';
+        return fields;
+    }
+})
+        
+

@@ -353,8 +353,9 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
                 delete uriObj[param];
             else
                 uri+='&'+param+'='+uriObj[param];
-		
-		return (baseURL+(uri==''?uri:'?'+uri.substring(1,uri.length)));
+                
+        uri = (uri==''?uri:uri.substring(1,uri.length));
+        return Ext.urlAppend(baseURL, uri);
 	},
 	
 	uriStateToString : function(uriObj)
@@ -389,5 +390,17 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
 			if (Ext.isDefined(this.dataHash[uri][tag]))
 				return this.dataHash[uri][tag];
 		return 0;
+	},
+	
+	find : function(uri)
+	{
+	    var currentResource = false;
+	    for (var i=0; i<this.length; i++)
+	    {
+	        currentResource = this[i].resource;
+	        if (currentResource.uri == uri)
+	           break;
+	    }
+	    return currentResource;
 	}
 });
