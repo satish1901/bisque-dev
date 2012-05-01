@@ -115,7 +115,7 @@ Ext.define('BQ.ShareDialog', {
             }
         }
 
-        if (modified)
+        if (modified || this.userAdded)
         {
             this.authRecord.save_();
             BQ.ui.notification('Sharing settings saved!', 2500);
@@ -140,6 +140,8 @@ Ext.define('BQ.ShareDialog', {
     
     addEmail : function()
     {
+        this.userAdded = true;
+        
         this.addUser({
             email   :   this.txtEmail.getValue(),
             action  :   'read'
@@ -188,7 +190,7 @@ Ext.define('BQ.ShareDialog', {
             else
                 record.push(['', authRecord[i].email, authRecord[i].action]);
         }
-            
+        
         this.store.loadData(record);
     },
     
@@ -205,7 +207,7 @@ Ext.define('BQ.ShareDialog', {
             frame           :   true,
             region          :   'east',
             viewMode        :   'ViewSearch',
-            wpublic         :   true, 
+            wpublic         :   'true',
             dataset         :   '/data_service/user?view=full',
 
             listeners       :   {

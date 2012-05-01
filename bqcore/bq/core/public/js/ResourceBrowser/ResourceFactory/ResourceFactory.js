@@ -442,12 +442,6 @@ Ext.define('Bisque.Resource.Page',
             handler     :   this.testAuth
         },
         {
-            text        :   'Rename',
-            iconCls     :   'icon-cog',
-            operation   :   this.promptName,
-            handler     :   this.testAuth
-        },
-        {
             text        :   'Delete',
             iconCls     :   'icon-delete',
             operation   :   this.deleteResource,
