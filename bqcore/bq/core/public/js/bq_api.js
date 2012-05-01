@@ -60,13 +60,13 @@ function BQObject (uri, doc){
     this.created = true;
     this.mex = null;
     this.xmltag = "resource";
-    this.xmlfields  = [ 'type', 'uri', 'src', 'perm', 'resource_uniq', 'resource_name'];
+    this.xmlfields  = [ 'type', 'uri', 'src', 'permission', 'resource_uniq', 'resource_name', 'name'];
 }
 BQObject.prototype = new BQXml();
 
 BQObject.prototype.initializeXml = function (resource) {
     this.uri = attribStr(resource,'uri');
-    this.perm = attribInt(resource,'perm');
+    this.perm = attribInt(resource,'permission');
     this.ts   = attribStr(resource,'ts');
     this.owner = attribStr(resource,'owner');
     this.type   = attribStr(resource,'type');
@@ -159,6 +159,12 @@ BQObject.prototype.delete_ = function (cb, errorcb) {
     }
 }
 
+BQObject.prototype.rename = function(newName, cb, errorcb)
+{
+    
+    
+}
+
 BQObject.prototype.deleteTag = function(childTag) {
     
 	if (childTag instanceof BQTag)
@@ -233,8 +239,48 @@ BQObject.prototype.findTags = function(query, params)
     return matchedTags;
 }
 
+BQObject.prototype.testAuth = function(user, cb, loaded, authRecord)
+{
+    if (!loaded)
+        if (user == this.owner)
+            cb('owner');
+        else
+            this.getAuth(Ext.bind(this.testAuth, this, [user, cb, true], 0));
+    else
+    {
+        authRecord = authRecord.children;
+        
+        for (var i=0;i<authRecord.length;i++)
+        {
+            if (authRecord[i].user == user)
+            {
+                if (permission=='edit' || permission=='owner')
+                    cb(true);
+                else
+                    cb(false);
+                return;
+            }
+        }
+        
+        // no user matching the uri was found
+        cb(false);
+    }
+}
 
-BQObject.attributes_skip = { 'uri':undefined, 'src':undefined, 'perm':undefined, 
+BQObject.prototype.getAuth = function(cb, loaded, authRecord)
+{
+    if (!loaded)
+    {
+        BQFactory.request({
+            uri :   this.uri + '/auth',
+            cb  :   Ext.bind(this.getAuth, this, [cb, true], 0)
+        });
+    }
+    else
+        cb(authRecord);
+}
+
+BQObject.attributes_skip = { 'uri':undefined, 'src':undefined, 'permission':undefined, 
                              'ts':undefined, 'owner':undefined, 'parent':undefined, 
                              'doc':undefined, 'mex':undefined,  };
 BQObject.types_skip = { 'template':undefined, };
@@ -370,13 +416,13 @@ BQObject.prototype.remove_resource  = function (uri) {
 
 BQObject.prototype.remove  = function (o) {
    var index = this.tags.indexOf (o);
-  if (index!=null) this.tags.splice(index,1);
+  if (index!=-1) this.tags.splice(index,1);
   else {
       index = this.gobjects.indexOf (o);
-      if (index!= null) this.gobjects.splice(index,1);
+      if (index!= -1) this.gobjects.splice(index,1);
       else {
           index = this.children.indexOf(o);
-          if (index != null) this.children.splice(index,1);
+          if (index != -1) this.children.splice(index,1);
       }
   }
 }
@@ -402,6 +448,16 @@ BQObject.prototype.save_ = function (parenturi, cb, errorcb) {
     } else {
         xmlrequest(parenturi, callback(docobj, 'response_', 'created', errorcb, cb),'post', req, errorcb);
     }
+}
+
+BQObject.prototype.append = function (cb, errorcb)
+{
+    this.testReadonly();
+        
+    var docobj = this.doc;
+    var req = docobj.toXML();
+    
+    xmlrequest(docobj.uri, callback(docobj, 'response_', 'update', errorcb, cb),'post', req, errorcb);
 }
 
 BQObject.prototype.response_ = function (code, errorcb, cb, xmldoc) {
@@ -605,7 +661,7 @@ BQObject.prototype.convert_tags=function (){
 function BQResource (uri, doc) {
     BQObject.call(this, uri, doc);
     this.xmltag = "resource";
-    this.xmlfields = [ 'uri',  'type', 'name', 'owner' ];
+    this.xmlfields = [ 'uri',  'type', 'name', 'owner', 'permission' ];
 }
 BQResource.prototype = new BQObject();
 //classExtend (BQObject, BQResource);
@@ -695,7 +751,7 @@ BQFactory.make = function(ty, uri, name, value) {
     if (ty in BQFactory.ctormap) 
         ctor = BQFactory.ctormap[ty];
     o =  new ctor(uri);
-    if (ctor == BQResource) o.xmltag = ty;
+    if (ctor == BQResource && ty) o.xmltag = ty;
     o.name = name;
     o.value = value;
     return o;
@@ -921,7 +977,7 @@ BQFactory.parseBQDocument = function (xmltxt) {
 function BQImage (uri){
     BQObject.call(this, uri);
     this.xmltag = "image";
-    this.xmlfields = [ "uri", "perm", "type", 'owner' ] ;
+    this.xmlfields = [ "uri", 'permission', "type", 'owner', 'name' ] ;
                         
 //                       "src", "x", "y","z", "t", "ch" ] ;
 
@@ -936,6 +992,7 @@ BQImage.prototype.initializeXml = function (image) {
     this.type   = attribStr(image,'type');
     this.owner   = attribStr(image,'owner');
     this.name  = attribStr(image,'name');
+    this.value = attribStr(image,'value');
     this.resource_type = this.xmltag;
 
     this.src  = '/image_service/images/' + attribStr(image,'resource_uniq');
@@ -996,7 +1053,7 @@ function BQTag (uri, name, value, type) {
     BQObject.call(this, uri);
     this.values = [];
     this.xmltag = "tag";
-    this.xmlfields = [ 'uri', 'name', 'type', 'value', 'index', 'perm', 'owner'];
+    this.xmlfields = [ 'uri', 'name', 'type', 'value', 'index', 'permission', 'owner'];
     this.name  = name;
     this.value = value;
     this.type  = type;
@@ -1006,7 +1063,7 @@ BQTag.prototype = new BQObject();
 
 BQTag.prototype.initializeXml = function (node) {
     this.uri = attribStr(node,'uri');
-    this.perm = attribInt(node,'perm');
+    this.perm = attribInt(node,'permission');
     this.ts   = attribStr(node,'ts');
     this.owner   = attribStr(node,'owner');
 
@@ -1030,7 +1087,7 @@ BQTag.prototype.setParent = function (p) {
 
 // BQTag.prototype.xmlNode = function (content) {
 //     var v = '<tag ';
-//     var fields = [ 'uri', 'name', 'type', 'value', 'index', 'perm'];
+//     var fields = [ 'uri', 'name', 'type', 'value', 'index', 'permission'];
 //     for (var f in fields ){
 //         if (this[fields[f]])
 //             v += (fields[f] + '="' + this[fields[f]] + '" ');
@@ -1047,6 +1104,8 @@ BQTag.prototype.toXML = function(){
          xmlrep += this.tags[i].toXML();
      for (var i=0; i < this.gobjects.length; i++ ) 
          xmlrep += this.gobjects[i].toXML();
+    for (var i=0; i < this.children.length; i++ ) 
+        xmlrep += this.children[i].toXML();
     return this.xmlNode(xmlrep);
 }
 
@@ -1584,6 +1643,7 @@ BQUser.prototype.initializeXml = function (user) {
     this.owner = attribStr(user,'owner');
     
     this.display_name = this.user_name;
+    this.ts = attribStr(user,'ts');
   
     this.email = attribStr(user, 'value');
     this.email_address = this.email;
@@ -1964,6 +2024,7 @@ BQSession.prototype.parseTags  = function (){
         this.expires = parseInt (expires.value) * 1000; 
         clog ("session " + this.timeout + ':' + this.expires);
     }
+
     var user = this.find_tags ('user');
     if (user) {
         this.user_uri = user.value;        
@@ -2037,22 +2098,6 @@ BQSession.prototype.session_timeout = function (baseurl) {
     //alert("Your session has  timed out");
 }
 
-
-Ext.define('BQTemplate',
-{
-    extend      :   'BQResource',
-    
-    constructor :   function(config)
-    {
-        Ext.apply(this, config);
-        this.callParent(arguments);
-    },
-    
-    addField    :   function(field)
-    {
-        // ADD FIELD CODE
-    }
-});
 
 //-------------------------------------------------------------------------
 // BQQuery - this is something old that probably should gof

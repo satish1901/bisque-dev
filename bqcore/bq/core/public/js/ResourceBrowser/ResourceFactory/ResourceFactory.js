@@ -18,7 +18,7 @@ Ext.define('Bisque.ResourceFactory', {
                     level   :   'warn',
                     stack   :   true
                 });
-                return Ext.create(Bisque.ResourceFactory.baseClass+'.'+layoutKey, config);
+                return Ext.create(Bisque.ResourceFactory.baseClass + '.' + layoutKey, config);
             }
         }
     }
@@ -131,9 +131,9 @@ Ext.define('Bisque.ResourceFactoryWrapper',
     		var layoutCls = Bisque.ResourceBrowser.LayoutFactory.getClass(config.layoutKey);
     		var css = Ext.ClassManager.get(layoutCls).readCSS();
     
-    		resource.prefetch(css);
-    		resource.setSize({width:css.layoutEl.width, height:css.layoutEl.height})
-    		resource.addCls(css.layoutCSS);
+    		//resource.prefetch(css);
+    		//resource.setSize({width:css.layoutEl.width, height:css.layoutEl.height})
+    		//resource.addCls(css.layoutCSS);
     		
     		return resource;
         }
@@ -252,6 +252,13 @@ Ext.define('Bisque.Resource',
         this.setLoading(false);
     },
     
+    // getFields : returns an array of data used in the grid view
+    getFields : function()
+    {
+        var resource = this.resource;
+        return ['', resource.name || '', resource.value || '', resource.resource_type, resource.ts, this, {height:21}]
+    },
+    
     afterRenderFn : function()
     {
         this.updateContainer();
@@ -368,25 +375,205 @@ Ext.define('Bisque.Resource.List', {
 // Default page view is a full page ResourceTagger
 Ext.define('Bisque.Resource.Page', 
 {
-    extend:'Bisque.Resource',
-
-    updateContainer : function() 
+    extend:'Ext.panel.Panel',
+    
+    constructor : function(config)
     {
-        var name = this.resource.name || this.resource.uri;
-        var type = this.resource.type || this.resource.resource_type;
-        var title = "Editing " + type + ' : ' + name;
+        var name = config.resource.name || config.resource.uri;
+        var type = config.resource.type || config.resource.resource_type;
+
+        Ext.apply(this,
+        {
+            layout  :   'fit',
+            border  :   false,
+            
+            tbar    :   new Ext.create('Ext.toolbar.Toolbar', 
+                        {
+                            defaults    :   {
+                                                scale   :   'medium',
+                                                scope   :   this
+                                            },
+                            items       :   [
+                                                this.getOperations(config.resource),
+                                                '-', '->',
+                                                {
+                                                    text    :   type + ': <b>' + name + '</b',
+                                                    handler :   this.promptName,
+                                                    scope   :   this
+                                                }
+                                             ]
+                        }),
+        }, config);
+        
+        this.callParent(arguments);
+        this.toolbar = this.getDockedComponent(0);
+        this.addListener('afterlayout', this.onResourceRender, this, {single:true});
+    },
+
+    onResourceRender : function() 
+    {
+        this.setLoading(true);
+
+        var name    =   this.resource.name || this.resource.uri;
+        var type    =   this.resource.type || this.resource.resource_type;
+        var title   =   "Editing " + type + ' : ' + name;
 
         var resourceTagger = new Bisque.ResourceTagger(
         {
-            itemId : 'resourceTagger',
-            title : title,
-            frame : true,
-            resource : this.resource,
-            split : true,
+            itemId      :   'resourceTagger',
+            title       :   title,
+            frame       :   true,
+            resource    :   this.resource,
+            split       :   true,
         });
 
-        this.layout = 'fit';        
         this.add(resourceTagger);
         this.setLoading(false);
-    }
+    },
+    
+    getOperations : function(resource)
+    {
+        var items=[];
+
+        items.push({
+            text        :   'Share',
+            iconCls     :   'icon-group',
+            operation   :   this.shareResource,
+            handler     :   this.testAuth
+        },
+        {
+            text        :   'Rename',
+            iconCls     :   'icon-cog',
+            operation   :   this.promptName,
+            handler     :   this.testAuth
+        },
+        {
+            text        :   'Delete',
+            iconCls     :   'icon-delete',
+            operation   :   this.deleteResource,
+            handler     :   this.testAuth
+        },
+        {
+            itemId      :   'btnPerm',
+            operation   :   this.changePrivacy,
+            handler     :   this.testAuth,
+            setBtnText  :   function(me)
+                            {
+                                var text = 'Visibility: ';
+                                
+                                if (this.resource.permission == 'published')
+                                {
+                                    text += '<span style="font-weight:bold;color: #079E0C">published</span>';
+                                    me.setIconCls('icon-eye');
+                                }
+                                else
+                                {
+                                    text += 'private';
+                                    me.setIconCls('icon-eye-close')
+                                }
+                                
+                                me.setText(text);
+                            },
+            listeners   :   {
+                                'afterrender'   :   function(me)
+                                                    {
+                                                        me.setBtnText.call(this, me);
+                                                    },
+                                scope           :   this
+                
+                            }
+        });
+        
+        return items;
+    },
+    
+    testAuth : function(btn, loaded, permission)
+    {
+        if (loaded!=true)
+        {
+            var user = BQSession.current_session.user_uri;
+            this.resource.testAuth(user, Ext.bind(this.testAuth, this, [btn, true], 0));            
+        }
+        else
+        {
+            if (permission)
+                btn.operation.call(this);
+            else
+                BQ.ui.attention('You do not have permission to perform this action!');
+        }
+    },
+    
+    /* Resource operations */
+
+    shareResource : function()
+    {
+        var shareDialog = Ext.create('BQ.ShareDialog', {
+            resource    :   this.resource
+        });
+    },
+
+    deleteResource : function()
+    {
+        function deleteRes(response)
+        {
+            if (response == 'yes')
+                this.resource.delete_(function(){window.location = bq.url('/');}, this.failure);
+        }
+        
+        Ext.MessageBox.confirm('Confirm operation', 'Are you sure you want to delete ' + this.resource.name + '?', Ext.bind(deleteRes, this));
+    },
+    
+    renameResource : function(btn, name, authRecord)
+    {
+        if (btn == 'ok')
+        {
+            var user = BQSession.current_session.user_uri;
+            var successMsg = 'Resource <b>' + this.resource.name + '</b> renamed to <b>' + name + '</b>.';
+            this.resource.name = name;
+            this.resource.save_(undefined, Ext.bind(this.success, this, [successMsg], true), Ext.bind(this.failure, this));
+        }
+    },
+    
+    changePrivacy : function(btn)
+    {
+        function loaded(resource)
+        {
+            resource.permission = (this.resource.permission=='private')?'published':'private';
+            resource.append(Ext.bind(success, this), Ext.bind(this.failure, this));
+        }
+        
+        function success(resource)
+        {
+            // can also broadcast 'reload' event on the resource, once apps start listening to it.
+            this.resource.permission = resource.permission;
+            var btnPerm = this.toolbar.getComponent('btnPerm');
+            btnPerm.setBtnText.call(this, btnPerm);
+        };
+        
+        BQFactory.request({
+            uri :   this.resource.uri + '?view=short',
+            cb  :   Ext.bind(loaded, this) 
+        });
+    },
+       
+    promptName : function(btn)
+    {
+        Ext.MessageBox.prompt('Rename ' + this.resource.name, 'Enter new name:', this.renameResource, this);
+    },
+
+    success : function(resource, msg)
+    {
+        BQ.ui.notification(msg || 'Operation successful.');
+    },
+    
+    failure : function()
+    {
+        BQ.ui.error('Operation failed!');
+    },
+    
+    prefetch : Ext.emptyFn
+});
+
+Ext.define('Bisque.Resource.Grid', {
+    extend:'Bisque.Resource',
 });

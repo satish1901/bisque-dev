@@ -7,3 +7,10 @@
 	background-image: url('../DatasetBrowser/Images/cancel.png') !important;
 }
 
+.icon-select24 {
+    background-image: url('../DatasetBrowser/Images/accept24.png') !important;
+}
+
+.icon-cancel24 {
+    background-image: url('../DatasetBrowser/Images/cancel24.png') !important;
+}

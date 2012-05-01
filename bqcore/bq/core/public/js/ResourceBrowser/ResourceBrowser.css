@@ -11,6 +11,10 @@
     box-shadow: 0px 0px 8px 3px hsl(210, 75%, 70%);
 }
 
+.background-transparent {
+    background: transparent;
+} 
+
 /* ResourceLayout settings: */
 .ImageCompact {
     margin: 15px;
@@ -304,6 +308,63 @@
 	z-index:1;
 }
 
+.labelOnImage {
+    color: #FFF;
+    position:absolute;
+    text-shadow: 1px 1px 3px rgba(0,0,0,1);
+    margin-top:15px;
+    padding: 2px 5px 5px 7px;
+    font-size: 13px;
+    background-color:rgba(10,10,10,.3);
+    font-weight:bold;
+    z-index:1;
+}
+
+.smallLabelOnImage {
+    font-size: 9px;
+}
+
 .white {
     background-color:#FFF;
 }
+
+.align {
+    vertical-align: middle;
+}
+
+.icon-lightning {
+    background-image: url('../ResourceBrowser/Images/lightning.png') !important;
+}
+
+.icon-cog {
+    background-image: url('../ResourceBrowser/Images/cog.png') !important;
+}
+
+.icon-eye {
+    background-image: url('../ResourceBrowser/Images/eye.png') !important;
+}
+
+.icon-eye-close {
+    background-image: url('../ResourceBrowser/Images/eye-close.png') !important;
+}
+
+.icon-group {
+    background-image: url('../ResourceBrowser/Images/group.png') !important;
+}
+
+.x-grid-checkheader {
+    height: 14px;
+    background-image: url('../ResourceBrowser/Images/unchecked.gif');
+    background-position: 50% -2px;
+    background-repeat: no-repeat;
+    background-color: transparent;
+}
+
+.x-grid-checkheader-checked {
+    background-image: url('../ResourceBrowser/Images/checked.gif');
+}
+
+.x-grid-checkheader-editor .x-form-cb-wrap {
+    text-align: center;
+}
+
