@@ -25,11 +25,29 @@
     <link rel="stylesheet" type="text/css" href="${tg.url('/client_service/public/css/welcome.css')}" />
 
 <style type="text/css" py:if="thumbnail">
+body { 
+    background-image: url('${thumbnail}=800,600');
+    background-size: cover !important;
+    background-origin: content-box;
+}    
+
+/* extjs 4.1 */
+#centerEl-body {
+    background-color: transparent;
+}
+
+/* extjs 4.0.2 */
+#centerEl .x-panel-body {
+    background-color: transparent;    
+}
+
+/*
 .welcome_front { 
     background-image: url('${thumbnail}=800,600');
     background-size: cover !important;
     background-origin: content-box;
 }
+*/
 </style>
 
 <style py:if="not tg.identity" type="text/css">

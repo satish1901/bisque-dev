@@ -314,12 +314,12 @@ class Taggable(object):
     uri = property(uri)
 
 
-    #@validates('owner')
-    #def validate_owner (self, key, owner):
-    #    if isinstance(owner, basestring) and owner.startswith ('http'):
-    #        log.warn ("validating owner  %s" % owner)
-    #        return map_url (owner)
-    #    return owner
+    @validates('owner')
+    def validate_owner (self, key, owner):
+        if isinstance(owner, basestring) and owner.startswith ('http'):
+            log.warn ("validating owner  %s" % owner)
+            return map_url (owner)
+        return owner
         
 
 #    def get_owner (self):
