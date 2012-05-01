@@ -140,8 +140,6 @@ Ext.define('BQ.ShareDialog', {
     
     addEmail : function()
     {
-        this.userAdded = true;
-        
         this.addUser({
             email   :   this.txtEmail.getValue(),
             action  :   'read'
@@ -158,6 +156,8 @@ Ext.define('BQ.ShareDialog', {
     
     addUser : function(record)
     {
+        this.userAdded = true;
+        
         var authRecord = new BQAuth();
         Ext.apply(authRecord, record);
         this.authRecord.addchild(authRecord);
