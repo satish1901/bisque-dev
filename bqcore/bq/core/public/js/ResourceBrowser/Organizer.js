@@ -428,6 +428,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
                     "value": 'gobject'
                 });
             }
+            }
             this.gobArr = gobArr;
             this.gobArrLoaded = true;
         }
