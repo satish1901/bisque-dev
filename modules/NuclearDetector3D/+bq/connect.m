@@ -42,15 +42,11 @@
 %
 
 function [output, info] = connect(method, url, location, input, user, password)
-
-    error(nargchk(2,6,nargin));
-    %if nargin<2 && isempty(strfind(url, '@')),
-    %    error('bq.urread:InvalidInput', 'You must provede user credentials if the URL does not contain them.');
-    %end
+    narginchk(2, 6);
 
     % This function requires Java
     if ~usejava('jvm')
-       error(message('MATLAB:urlwrite:NoJvm'));
+       error(message('BQ.connect:NoJvm'));
     end
     
     % Be sure the proxy settings are set.
@@ -60,18 +56,53 @@ function [output, info] = connect(method, url, location, input, user, password)
     % extract user name-password or Mex auth from the given in the URL
     % url = 'http://UUU:PPP@host.edu/images/1234';
     % url = 'https://Mex:IIII@host.edu/images/1234';
-    if strfind(url, '@'),
-        % parse the url
-        expression = '(?<scheme>\w+)://(?<user>\w+):(?<password>\w+)@(?<path>\S+)';
-        R = regexp(url, expression, 'names');
-        user = R.user;
-        password = R.password;        
-        url = [R.scheme '://' R.path];
+    url = bq.Url(url);
+    if url.hasCredentials(),
+        user = url.getUser();
+        password = url.getPassword();
+        url.setUser([]);
+        url.setPassword([]);        
     end    
     
     % Matlab's urlread() doesn't do HTTP Request params, so work directly with Java
-    server = java.net.URL(url);
-    connection = server.openConnection();
+    % old way
+    %server = java.net.URL(url);
+    %connection = server.openConnection();
+    
+    % new: begin
+    handler = [];
+    switch url.getScheme()
+        case 'https'
+            try
+                handler = sun.net.www.protocol.https.Handler;
+            catch exception %#ok
+                handler = [];
+            end
+    end
+
+    try
+        if isempty(handler)
+            server = java.net.URL(url.toString());
+        else
+            server = java.net.URL([], url.toString(), handler);
+        end
+    catch exception
+        error(message('BQ.connect:Server Cannot init'));
+    end
+
+    % Get the proxy information using MathWorks facilities for unified proxy
+    % prefence settings.
+    mwtcp = com.mathworks.net.transport.MWTransportClientPropertiesFactory.create();
+    proxy = mwtcp.getProxy(); 
+
+    % Open a connection to the URL.
+    if isempty(proxy)
+        connection = server.openConnection;
+    else
+        connection = server.openConnection(proxy);
+    end    
+    % new: end    
+    
     %connection.setReadTimeout(3000);
     connection.setRequestMethod(method);
     connection.setRequestProperty('Connection', 'Keep-Alive');

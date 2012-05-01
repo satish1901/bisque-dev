@@ -5,6 +5,6 @@ imurl = 'http://bisque.ece.ucsb.edu/data_service/image/161855';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % fetch image into a file using its original name
-image = bq.Factory.make(imurl);
+image = bq.Factory.fetch(imurl);
 filename = image.fetch([]);
 

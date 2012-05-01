@@ -121,6 +121,35 @@ classdef Image < bq.File
         
     end% methods
     
+    methods (Static)    
+        % image - image matrix or a filename
+        % args: struct describing the image
+        % args.filename
+        % args.dim - c z t (as bim.write_ome_tiff requires)
+        % args.res - x y z t (as bim.write_ome_tiff requires)
+        % node  - bq.Node object of the created resource
+        function node = store(image, args, root_url, user, password)
+            if ~exist('user', 'var') || isempty(user) || ~exist('password', 'var') || isempty(password),
+                error('bq.Image.store:UserCredentialsInvalid', 'Store requires user name and password');
+            end        
+            
+            % if an image was given, store it as OME-TIFF and then upload
+            if ~ischar(image),
+                if ~exist('args', 'var') || isempty(args),
+                    error('bq.Image.store:ImageArgsRequired', 'You must describe the image matrix');
+                end                  
+                
+                if ~isfield(args, 'dim'), args.dim = []; end
+                if ~isfield(args, 'res'), args.res = []; end                
+                filename = [tempdir args.filename];
+                bim.write_ome_tiff( image, filename, args.dim, args.res);
+            else
+                filename = image;                
+            end            
+            node = bq.File.store(filename, root_url, user, password); 
+        end % store          
+    end % static methods    
+    
     methods(Access = protected)
         % Override copyElement method:
         function cpObj = copyElement(obj)

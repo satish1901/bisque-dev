@@ -53,9 +53,13 @@ classdef Node < matlab.mixin.Copyable
         
         function save(self)
             url = self.getAttribute('uri');
-            bq.put(url, self.doc, self.user, self.password);
+            bq.post(url, self.doc, self.user, self.password);
         end % save          
         
+        function delete(self)
+            url = self.getAttribute('uri');
+            bq.delete(url, self.user, self.password);
+        end % delete              
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Access attributes
@@ -165,7 +169,7 @@ classdef Node < matlab.mixin.Copyable
             xn = xpath.evaluate(expression, self.element, XPathConstants.NODE);
             %node = bq.Node(self.doc, xn);
             if ~isempty(xn),
-                node = bq.Factory.make(self.doc, xn);
+                node = bq.Factory.fetch(self.doc, xn);
             else
                 node = [];
             end
@@ -203,7 +207,7 @@ classdef Node < matlab.mixin.Copyable
             nodes = cell(xnodes.getLength(),1);
             for i=1:xnodes.getLength(),
                 %nodes{i} = bq.Node(self.doc, xnodes.item(i-1));
-                nodes{i} = bq.Factory.make(self.doc, xnodes.item(i-1));
+                nodes{i} = bq.Factory.fetch(self.doc, xnodes.item(i-1));
             end
         end         
         
@@ -302,7 +306,7 @@ classdef Node < matlab.mixin.Copyable
 
             self.element.appendChild(r); 
             %resource = bq.Node(self.doc, r);
-            resource = bq.Factory.make(self.doc, r);
+            resource = bq.Factory.fetch(self.doc, r);
         end % add
         
         function tag = addTag(self, name, value, type)
@@ -352,7 +356,7 @@ classdef Node < matlab.mixin.Copyable
 
             self.element.appendChild(g); 
             %gob = bq.Node(self.doc, g);
-            gob = bq.Factory.make(self.doc, g);
+            gob = bq.Factory.fetch(self.doc, g);
         end % addGobject 
 
        
