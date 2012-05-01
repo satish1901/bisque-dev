@@ -13,7 +13,7 @@ function Botanicam(mex_url, access_token, image_url)
         
         % fetching image, require 3 channel RGB image with max size of 1024
         session.update('0% - fetching image');   
-        image = session.load(image_url); 
+        image = session.fetch(image_url); 
         if isempty(rect),
             im = image.slice(1,1).depth(8,'d').resize(2000, 2000, 'BC', 'MX').default().fetch();
         else

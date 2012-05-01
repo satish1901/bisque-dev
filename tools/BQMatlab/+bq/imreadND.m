@@ -69,8 +69,11 @@ function I = imreadND(url, user, password)
     else
         [I, res] = bq.get(purl.toString());
     end  
+    if res.status>=300 || isempty(I),
+        I = []; return;
+    end
     I = typecast(I, info.pixelFormat);
-    I = squeeze(reshape(I, info.height, info.width, info.channels, info.zsize, info.tsize)); 
+    I = squeeze(reshape(I, info.width, info.height, info.channels, info.zsize, info.tsize)); 
     
     % matlab uses row-major order, opposite to column-major in Bisque
     % we need to transpose all the image planes
