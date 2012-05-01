@@ -34,21 +34,50 @@ Ext.define('Bisque.Resource.Dataset.Compact',
     {
         if (!this.getData('fetched'))
         {
-            this.setData('fetched', -1);	// -1 = Loading
-
-	        BQFactory.request(
-	        {
-	        	uri:this.resource.owner,
-	        	cb:Ext.bind(this.loadResource, this),
-	        	errorcb:Ext.emptyFn
-	        });
+            this.setData('fetched', -1);    // -1 = Loading
+            this.resource.getMembers(Ext.bind(this.fetchMembers, this));
 		}
     },
     
-	loadResource : function(ownerInfo)
+    fetchMembers : function(memberTag)
     {
-		this.setData('owner', ownerInfo.display_name);
-		this.setData('fetched', 1);	// 1 = Loaded
+        BQFactory.request(
+        {
+            uri:memberTag.uri + '/value',
+            cb:Ext.bind(this.loadResource, this),
+            errorcb:Ext.emptyFn
+        });
+    },
+    
+	loadResource : function(resource)
+    {
+        var imgs = '<div style = "margin:3px;background:#F2F2F2;width:154px;height:154px">'
+        var thumbnail, margin;
+
+        for (var i=0;i<resource.children.length && i<4; i++)
+        {
+            if (resource.children[i].src)
+                thumbnail = resource.children[i].src+'?thumbnail=76,76&format=jpeg';
+            else
+                switch (resource.children[i].xmltag)
+                {
+                    case 'dataset':
+                    {
+                        thumbnail = bq.url('../export_service/public/images/folder-large.png');
+                        break; 
+                    }
+                    default :
+                        thumbnail = bq.url('../export_service/public/images/file-large.png') 
+                }
+
+            margin = (i==1?'margin:0px 0px 0px 2px;':(i==2?'margin:2px 2px 0px 0px;':'')); 
+            imgs += '<img style="display:inline-block;height:76px;width:76px;' + margin + '" src='+ thumbnail + ' />'
+        }
+        
+        imgs += '</div>';
+
+        this.setData('fetched', 1); // 1 = Loaded
+        this.setData('previewDiv', imgs);
 
         var renderedRef=this.getData('renderedRef')
         if (renderedRef)
@@ -57,22 +86,10 @@ Ext.define('Bisque.Resource.Dataset.Compact',
     
     updateContainer : function()
     {
-        var name = Ext.create('Ext.container.Container', {
-            cls : 'lblHeading1',
-            html : Ext.String.ellipsis(this.resource.name || 'undefined', 24),
-        })
-
-        var type = Ext.create('Ext.container.Container', {
-            cls : 'lblHeading2',
-            html : Ext.Date.format(new Date(this.resource.ts), "m-d-Y g:i:s a"),
-        })
-
-        var value = Ext.create('Ext.container.Container', {
-            cls : 'lblContent',
-            html : this.getData('owner'),
-        })
-
-        this.add([name, type, value]);
+        
+        this.update('<div class="labelOnImage" style="width:160px;">'+this.resource.name
+        +'<br><span class="smallLabelOnImage">'
+        + Ext.Date.format(new Date(this.resource.ts), "m/d/Y")+'</span></div>'+this.getData('previewDiv'));       
         this.setLoading(false);
     },
 });

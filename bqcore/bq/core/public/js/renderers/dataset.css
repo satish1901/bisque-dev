@@ -10,11 +10,11 @@
     2011-09-29 13:57:30 - first creation
     
 *******************************************************************************/
-
-.x-splitter {
+.bq-dataset .x-splitter {
     border-left: 1px solid #98C8FF;
     border-right: 1px solid #98C8FF;
 }
+
 
 .heading {
     font-size: 14px !important;
