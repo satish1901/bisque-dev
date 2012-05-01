@@ -1,7 +1,7 @@
 % bq.Factory
 % A factory class producing Nodes, Images etc...
 %   
-% i = bq.Factory.make('http://hjdfhjdhfjd');
+% i = bq.Factory.fetch('http://hjdfhjdhfjd');
 %
 %   AUTHOR:
 %       Dmitry Fedorov, www.dimin.net
@@ -29,7 +29,7 @@ classdef Factory
         % element  - optional: DOM element
         % user     - optional: string
         % password - optional: string
-        function [node] = make(doc, element, user, password)
+        function [node] = fetch(doc, element, user, password)
             %exist('b', 'var') && ~isempty(eval('b'))            
             creds = exist('user', 'var') && ~isempty(user) && ...
                     exist('password', 'var') && ~isempty(password);
@@ -65,7 +65,7 @@ classdef Factory
                 warning(error.identifier, error.message);
                 node = [];
             end            
-        end % make
+        end % fetch
 
         
 %         % type     - string of a Bisque object type

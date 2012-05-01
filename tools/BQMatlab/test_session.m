@@ -34,7 +34,10 @@ imageurl = tag.getAttribute('value');
 s.update('10%');
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % creating results
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 outputs = s.mex.addTag('outputs');
 outputs.addTag('my_number_objects', 123);
 outputs.addTag('some_float', 456.78);
@@ -52,6 +55,20 @@ g.addGobject('polyline', 'poly-in-z', p );
 p = [1,2,-1,3;4,5,-1,6;7,8,-1,9];
 g.addGobject('polyline', 'poly-in-t', p );
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% upload files and images
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+f = s.storeFile('my_file.bin');
+
+image = zeros(128, 128, 'double');
+args = struct('filename', 'my_2d_double_image.ome.tif');
+im = s.storeimage(image, args);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% finish
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 s.finish();
 

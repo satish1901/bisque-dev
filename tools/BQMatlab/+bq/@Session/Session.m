@@ -66,7 +66,7 @@ classdef Session < handle
             
             %self.mex = bq.get_xml( [self.mex_url '?view=deep'], self.user, self.password );
             %self.mex = bq.Node(self.mex);
-            self.mex = bq.Factory.make([self.mex_url '?view=deep'], [], self.user, self.password);
+            self.mex = bq.Factory.fetch([self.mex_url '?view=deep'], [], self.user, self.password);
         end % init
     
         function update(self, status)
@@ -126,14 +126,17 @@ classdef Session < handle
         % helper functions for reading objects from Bisque servers
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
        
-        function res = load(self, url)
-            %res = bq.Node(url, [], self.user, self.password ); 
-            res = bq.Factory.make(url, [], self.user, self.password);
+        function res = fetch(self, url)
+            res = bq.Factory.fetch(url, [], self.user, self.password);
         end
         
-        function res = save(self, m)
-            %res = bq.Factory.make(url, [], self.user, self.password);
+        function res = storeFile(self, filename)
+            res = bq.File.store(filename, self.bisque_root, self.user, self.password); 
         end        
+        
+        function res = storeImage(self, image, args)
+            res = bq.Image.store(image, args, self.bisque_root, self.user, self.password); 
+        end             
         
     end% methods
 end% classdef

@@ -1,7 +1,7 @@
 url = 'http://bisque.ece.ucsb.edu/data_service/image/765131?view=deep';
 
 % get gobject in the image
-image = bq.Factory.make(url);
+image = bq.Factory.fetch(url);
 
 poly = image.findNode('//polygon[@name="Hippocampus"]');
 vx1 = poly.getVertices();

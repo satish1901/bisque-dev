@@ -77,12 +77,13 @@ classdef File < bq.Node
             url = bq.Url(root_url); 
             url.setPath('import/transfer');
             [output, info] = bq.post_mpform(url.toString(), filename, user, password);
-            if ~isempty(output) && info.status<300,
+            output = char(output);
+            if ~isempty(output) && info.status<300 && isempty(regexpi(output, '(<html)', 'tokenExtents')),
                 output = char(output);
                 output = regexprep(output, '<resource type="uploaded">', '');
                 output = regexprep(output, '</resource>$', '');
                 doc = bq.str2xml(output);
-                node = bq.Factory.make(doc, [], user, password);
+                node = bq.Factory.fetch(doc, [], user, password);
             else
                 node = [];
             end

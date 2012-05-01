@@ -5,22 +5,24 @@ pass = '';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fetching a file from Bisque
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-file = bq.Factory.make(url, [], user, pass);
+file = bq.Factory.fetch(url, [], user, pass);
 % fetch a file with the original file name to the current location
 fn = file.fetch( [] );
 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% fetching a file from Bisque
+% storing a file into Bisque
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-url = 'http://vidi.ece.ucsb.edu:9090';
-user = 'XXX';
-pass = 'XXX';
+host = 'http://vidi.ece.ucsb.edu:9090';
+user = 'USER';
+pass = 'PASS';
+%filename = 'PATH\gtrain.model';
+%filename = 'PATH\pr-1z.tif';
 
-%filename = 'gtrain.model';
-filename = 'pr-1z.tif';
-file = bq.File.store(filename, url, user, pass); 
+file = bq.File.store(filename, host, user, pass); 
+if ~isempty(file),
+    file.addTag('about', 'this is a file upload from Matlab API');
+    file.save();
+end
 
-file.addTag('about', 'this is a file upload from Matlab API');
-file.save();
