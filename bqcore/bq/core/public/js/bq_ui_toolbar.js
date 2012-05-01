@@ -340,8 +340,8 @@ Ext.define('BQ.Application.Toolbar', {
     }, 
    
     createResource : function(resource) {
-        var ignore = { 'mex':null, 'user':null, 'image':null, 'module':null, 'service':null, 'system':null, };        
-        var mydata = [];
+        var ignore = { 'mex':null, 'user':null, 'image':null, 'module':null, 'service':null, 'system':null, 'file':null, 'dataset':null };        
+        var mydata = [['dataset']];
         var r=null;
         for (var i=0; (r=resource.children[i]); i++)
             if (!(r.name in ignore))

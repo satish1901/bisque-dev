@@ -1,7 +1,7 @@
 function NuclearDetector3D(mex_url, access_token, image_url, nuclear_channel, nuclear_diameter, ~)
     try
         session = bq.Session(mex_url, access_token);        
-        image = session.load(image_url);
+        image = session.fetch(image_url);
 
         nuclear_channel  = str2num(nuclear_channel);
         nuclear_diameter = str2num(nuclear_diameter);
