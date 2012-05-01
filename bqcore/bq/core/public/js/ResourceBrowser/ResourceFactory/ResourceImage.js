@@ -596,20 +596,7 @@ Ext.define('Bisque.Resource.Image.Full',
 // Page view for an image
 Ext.define('Bisque.Resource.Image.Page',
 {
-    extend : 'Bisque.Resource',
-    
-    mixins : {
-        'resourcePage' : 'Bisque.Resource.Page'
-    },
-    
-    constructor : function()
-    {
-        Ext.apply(this, {
-            layout:'fit',
-        });
-        
-        this.callParent(arguments);
-    },
+    extend : 'Bisque.Resource.Page',
     
     updateContainer : function()
     {
@@ -740,4 +727,3 @@ Ext.define('Bisque.Resource.Image.Page',
         resTab.add(map);
     }
 });
-

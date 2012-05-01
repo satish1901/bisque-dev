@@ -511,6 +511,9 @@ Ext.define('Bisque.ResourceBrowser.Browser',
 
         btnLeft.setDisabled(st.left || st.loading.left);
         btnRight.setDisabled(st.right || st.loading.right);
+        
+        if (btnLeft.disabled && btnRight.disabled)
+            this.commandBar.slider.slider.setDisabled(true);
 
         this.commandBar.btnTSSetState(this.browserState.tag_order.toLowerCase());
         this.commandBar.btnSearchSetState(this.browserState.tag_query);

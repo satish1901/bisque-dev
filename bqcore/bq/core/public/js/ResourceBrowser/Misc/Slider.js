@@ -41,7 +41,7 @@ Ext.define('Bisque.Misc.Slider',
 	
 	initComponent : function()
 	{
-		Bisque.Misc.Slider.superclass.initComponent.call(this, arguments);
+		this.callParent(arguments);
 
 		this.label=this.getLabel();
 		this.slider=this.getSlider();
@@ -67,20 +67,21 @@ Ext.define('Bisque.Misc.Slider',
 		return this.getComponent(1);
 	},
 
-	setStatus : function(st)
-	{
-		var mySt=st.sliderSt;
-		
-		this.label.setText(st.status);
-		
-		this.showLeftBtn(mySt.left);
-		this.showRightBtn(mySt.right);
-		
-		this.slider.setMinValue(mySt.min);
-		this.slider.setMaxValue(mySt.max);
-		
-		this.slider.setValue(mySt.value);
-	},
+
+    setStatus : function(st)
+    {
+        var mySt = st.sliderSt;
+
+        this.label.setText(st.status);
+
+        this.showLeftBtn(mySt.left);
+        this.showRightBtn(mySt.right);
+
+        this.slider.setMinValue(mySt.min);
+        this.slider.setMaxValue(mySt.max);
+
+        this.slider.setValue(mySt.value);
+    },
 
 	showLeftBtn : function(show)
 	{
