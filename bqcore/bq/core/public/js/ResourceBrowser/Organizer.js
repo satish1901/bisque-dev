@@ -15,7 +15,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
             tag_query   : arguments[0].browser.uri.tag_query || '',
 
             title       : 'Tag Filters',
-            width       : 300,
+            width       : 305,
             itemId      : 'organizerCt',
             layout      : 'accordion',
             border      : false,
@@ -316,7 +316,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
             titleCollapse : true,
             collapsible : true,
             hideCollapseTool : true,
-            border : false,
+            margin: '2 2 2 2',
             tools : [
             {
                 type : 'up',
@@ -465,11 +465,9 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
             }),
             emptyText : 'Select a tag...',
             queryMode : 'local',
-            //typeAhead: true
             listeners :
             {
                 'select' : this.OnCBSelect,
-                //'render' : function(cb){cb.setLoading(true)},
                 scope : this
             }
         });
@@ -480,11 +478,11 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
             {
                 model : 'Ext.grid.property.Property'
             }),
-            height : '100%',
             border : false,
             hideHeaders : true,
-            padding : 1,
             multiSelect : true,
+            //bodyStyle : 'background:#99e',
+            flex : 1,
 
             viewConfig :
             {
@@ -518,13 +516,8 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
         });
 
         this.grid.store.sortOnLoad = false;
-
-        this.add([this.tagCombo, new Ext.Container(
-        {
-            flex : 1,
-            autoScroll : true,
-            items : this.grid
-        })]);
+        this.add([this.tagCombo, this.grid]);
+        
     },
 
     GetSelection : function()

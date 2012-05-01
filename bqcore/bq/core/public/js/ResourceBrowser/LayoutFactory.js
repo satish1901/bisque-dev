@@ -237,22 +237,17 @@ Ext.define('Bisque.ResourceBrowser.Layout.Base',
         
         var ct = Ext.create('Ext.panel.Panel', 
         {
-            //bodyStyle:  'background:#eee',
             border      :   false,
             layout      :   {
                                 type : 'vbox',
                                 pack : 'center',
                                 align: 'center'
                             },
-            listeners   :   {
-                                'afterrender'   :   function(me)
-                                {
-                                    me.add(this.imgNoResults);
-                                    
-                                },
-                                scope           :   this
-                            }
         });
+        
+        ct.addListener('afterlayout', function(me) {
+            me.add(this.imgNoResults)
+        }, this, {single:true});
 
         this.layout = 'fit';
         this.add(ct);     // add calls doLayout internally so 'fit' will be applied

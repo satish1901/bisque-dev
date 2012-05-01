@@ -137,12 +137,13 @@ Ext.define('Bisque.ResourceBrowser.Browser',
         var imgSpinner = new Image();
         imgSpinner.src = bq.url('/js/ResourceBrowser/Images/loading.gif');
 
-        this.westPanel = new Ext.Panel(
+        this.westPanel = new Ext.panel.Panel(
         {
             region : 'west',
             split : true,
             layout : 'fit',
-            //border : false,
+            margin : '3 0 3 3',
+            frame : true,
             hidden : true,
             collapsible: true,
             hideCollapseTool : true,
@@ -180,7 +181,8 @@ Ext.define('Bisque.ResourceBrowser.Browser',
             gestureMgr : null,
             showGroups : false,
             preferenceKey : 'ResourceBrowser',
-
+            
+            bodyCls : 'background-transparent',
             // Panel related config
             border : false,
             title : config.title || '',
@@ -512,9 +514,7 @@ Ext.define('Bisque.ResourceBrowser.Browser',
         btnLeft.setDisabled(st.left || st.loading.left);
         btnRight.setDisabled(st.right || st.loading.right);
         
-        if (btnLeft.disabled && btnRight.disabled)
-            this.commandBar.slider.slider.setDisabled(true);
-
+        this.commandBar.slider.slider.setDisabled(btnLeft.disabled && btnRight.disabled);
         this.commandBar.btnTSSetState(this.browserState.tag_order.toLowerCase());
         this.commandBar.btnSearchSetState(this.browserState.tag_query);
     },
