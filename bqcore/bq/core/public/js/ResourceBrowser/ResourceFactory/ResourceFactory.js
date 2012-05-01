@@ -137,7 +137,57 @@ Ext.define('Bisque.ResourceFactoryWrapper',
     		
     		return resource;
         }
-    }
+    },
+    
+    getOperations : function()
+    {
+        this.operations = [{
+            name    :   'Delete',
+            iconCls :   'icon-delete'
+        },{
+            name    :   'Rename',
+        }];
+        
+        var operations=[];
+        
+        for (var i=0;i<this.operations.length;i++)
+        {
+            operations.push({
+                text    :   this.operations[i].name,
+                iconCls :   this.operations[i].iconCls  ||  'icon-cog'
+            });
+        }
+        
+        return operations;
+    },
+    
+    promptName : function(btn)
+    {
+        Ext.MessageBox.prompt('Rename ' + this.resource.name, 'Enter new name:', this.renameResource, this);
+    },
+
+    renameResource : function(btn, name, authRecord)
+    {
+        if (btn == 'ok')
+        {
+            var user = BQSession.current_session.user_uri;
+            var successMsg = 'Resource <b>' + this.resource.name + '</b> renamed to <b>' + name + '</b>.';
+            this.resource.name = name;
+            this.resource.save_(undefined, Ext.bind(this.success, this, [successMsg], true), Ext.bind(this.failure, this));
+        }
+    },
+    
+    success : function(resource, msg)
+    {
+        BQ.ui.notification(msg || 'Operation successful.');
+    },
+    
+    failure : function()
+    {
+        BQ.ui.error('Operation failed!');
+    },
+    
+    prefetch : Ext.emptyFn
 });
 
 /**
@@ -402,6 +452,8 @@ Ext.define('Bisque.Resource.Page',
 
     onResourceRender : function() 
     {
+        this.setLoading(true);
+
         this.setLoading(true);
 
         var name = this.resource.name || this.resource.uri;

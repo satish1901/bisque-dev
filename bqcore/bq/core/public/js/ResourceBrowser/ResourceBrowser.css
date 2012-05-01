@@ -15,6 +15,10 @@
     background: transparent;
 } 
 
+.background-transparent {
+    background: transparent;
+} 
+
 /* ResourceLayout settings: */
 .ImageCompact {
     margin: 15px;
@@ -311,6 +315,15 @@
 .white {
     background-color:#FFF;
 }
+
+.icon-lightning {
+    background-image: url('../ResourceBrowser/Images/lightning.png') !important;
+}
+
+.icon-cog {
+    background-image: url('../ResourceBrowser/Images/cog.png') !important;
+}
+
 
 .icon-lightning {
     background-image: url('../ResourceBrowser/Images/lightning.png') !important;

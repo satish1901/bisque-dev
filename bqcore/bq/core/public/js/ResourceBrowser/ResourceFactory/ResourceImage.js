@@ -594,9 +594,7 @@ Ext.define('Bisque.Resource.Image.Full',
     preMouseEnter : Ext.emptyFn,
     preMouseLeave : Ext.emptyFn,
     onMouseEnter : Ext.emptyFn
-});
-
-// Page view for an image
+});// Page view for an image
 Ext.define('Bisque.Resource.Image.Page',
 {
     extend : 'Bisque.Resource.Page',
@@ -728,6 +726,8 @@ Ext.define('Bisque.Resource.Image.Page',
             autoShow: true,
         });
         resTab.add(map);
+
+        this.setLoading(false);
 
         this.setLoading(false);
     }

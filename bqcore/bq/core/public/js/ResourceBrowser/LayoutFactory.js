@@ -248,6 +248,10 @@ Ext.define('Bisque.ResourceBrowser.Layout.Base',
         ct.addListener('afterlayout', function(me) {
             me.add(this.imgNoResults)
         }, this, {single:true});
+        
+        ct.addListener('afterlayout', function(me) {
+            me.add(this.imgNoResults)
+        }, this, {single:true});
 
         this.layout = 'fit';
         this.add(ct);     // add calls doLayout internally so 'fit' will be applied
