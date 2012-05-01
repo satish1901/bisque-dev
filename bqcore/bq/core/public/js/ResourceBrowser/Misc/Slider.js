@@ -70,17 +70,20 @@ Ext.define('Bisque.Misc.Slider',
 
     setStatus : function(st)
     {
-        var mySt = st.sliderSt;
-
-        this.label.setText(st.status);
-
-        this.showLeftBtn(mySt.left);
-        this.showRightBtn(mySt.right);
-
-        this.slider.setMinValue(mySt.min);
-        this.slider.setMaxValue(mySt.max);
-
-        this.slider.setValue(mySt.value);
+        if (!this.hidden)
+        {
+            var mySt = st.sliderSt;
+    
+            this.label.setText(st.status);
+    
+            this.showLeftBtn(mySt.left);
+            this.showRightBtn(mySt.right);
+    
+            this.slider.setMinValue(mySt.min);
+            this.slider.setMaxValue(mySt.max);
+    
+            this.slider.setValue(mySt.value);
+        }
     },
 
 	showLeftBtn : function(show)
@@ -129,7 +132,7 @@ Ext.define('Bisque.Misc.Slider',
 	
 	destroy : function()
 	{
-	    if (this.rendered)
+	    if (this.rendered && !this.hidden)
 	       this.callParent(arguments);
 	}
 });
