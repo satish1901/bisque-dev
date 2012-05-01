@@ -292,7 +292,7 @@ Ext.define('BQ.Export.Panel', {
                     align:'center',
                     renderer : function(value)
                     {
-                        return '<img src='+value+'?thumbnail=40,40&format=jpeg />'
+                        return '<div style="height:40px"><img src='+value+'?thumbnail=40,40&format=jpeg /></div>'
                     } 
                 },
                 {
@@ -363,7 +363,7 @@ Ext.define('BQ.Export.Panel', {
                 'icon',
                 'name',
                 {name: 'type', convert: function(value){return Ext.String.capitalize(value)}},  
-                {name: 'ts', convert: function(value){return Ext.Date.format(Ext.Date.parse(value, 'Y-m-d H:i:s.u'), "F j, Y g:i:s a")}},
+                {name: 'ts', convert: function(value){return Ext.Date.format(new Date(value), "F j, Y g:i:s a")}},
                 {name: 'public', convert: function(value){return (value=='published')?'Yes':'No'}},
                 'uri',
                 'viewPriority'

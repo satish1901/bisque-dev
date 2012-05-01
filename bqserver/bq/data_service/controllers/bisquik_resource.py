@@ -118,6 +118,7 @@ class ResourceAuth(Resource):
         resource = self.force_dbload(request.bisque.parent)
         log.debug ("AUTH %s with %s" % (resource, xml))
         resource = self.force_dbload(resource)
+        #DBSession.autoflush = False
         resource = resource_auth (resource, parent = None, action=RESOURCE_EDIT, newauth=etree.XML(xml))
         response = etree.Element('resource')
         tree = db2tree (resource,  parent = response, baseuri=self.baseuri)

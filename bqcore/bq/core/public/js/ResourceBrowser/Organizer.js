@@ -1,42 +1,45 @@
 // Needs to be rewritten for better generics as and when the specs become clear
 Ext.define('Bisque.ResourceBrowser.Organizer',
 {
-    extend : 'Ext.Panel',
+    extend : 'Ext.panel.Panel',
     constructor : function()
     {
         Ext.apply(this,
         {
-            parentCt : arguments[0].parentCt,
-            dataset : arguments[0].dataset,
-            wpublic : arguments[0].wpublic,
-            msgBus : arguments[0].msgBus,
-            uri : arguments[0].browser.uri,
-            tag_order : arguments[0].browser.uri.tag_order || '',
-            tag_query : arguments[0].browser.uri.tag_query || '',
+            parentCt    : arguments[0].parentCt,
+            dataset     : arguments[0].dataset,
+            wpublic     : arguments[0].wpublic,
+            msgBus      : arguments[0].msgBus,
+            uri         : arguments[0].browser.uri,
+            tag_order   : arguments[0].browser.uri.tag_order || '',
+            tag_query   : arguments[0].browser.uri.tag_query || '',
 
-            title : 'Organizer',
-            width : 300,
-            itemId : 'organizerCt',
-            layout : 'accordion',
-            border : false,
+            title       : 'Organizer',
+            width       : 305,
+            itemId      : 'organizerCt',
+            layout      : 'accordion',
+            border      : false,
+            tbar        :   {
+                                items : [
+                                {
+                                    iconCls : 'icon-add',
+                                    text : 'Add',
+                                    tooltip : 'Add new filter',
+                                    handler : this.AddFilter,
+                                    scope : this
+                                },
+                                {
+                                    iconCls : 'icon-refresh',
+                                    text : 'Reset',
+                                    tooltip : 'Reset all filters',
+                                    handler : this.resetFilters,
+                                    scope : this
+                                }]
+                            },
 
             existingTags : new Array(),
             items : [],
             tools : [
-            {
-                type : 'plus',
-                title : 'Add',
-                tooltip : 'Add new filter',
-                handler : this.AddFilter,
-                scope : this
-            },
-            {
-                type : 'refresh',
-                title : 'Reset',
-                tooltip : 'Reset all filters',
-                handler : this.Reset,
-                scope : this
-            },
             {
                 type : 'left',
                 title : 'Collapse organizer panel',
@@ -54,7 +57,6 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
         
         this.on('afterrender', function()
         {
-            //this.AddFilter();
             this.initFilters(this.uri);
             this.ManageEvents();
         }, this, {single : true});
@@ -192,7 +194,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
         {
             child.grid.setLoading({msg:''});
             var query = this.GetTagQuery();
-            var uri = this.dataset + '?{0}=' + child.tag + '&wpublic=' + this.browser.browserParams.wpublic + (query.length?'&tag_query='+query:'');
+            var uri = Ext.String.urlAppend(this.dataset, '{0}=' + child.tag + '&wpublic=' + this.browser.browserParams.wpublic + (query.length?'&tag_query='+query:''));
             var uri = Ext.String.format(uri, (child.tagType=='tag'?'tag_values':'gob_names'));
             
             BQFactory.load(uri, callback(this, 'PopulateGrid', true, child));
@@ -204,7 +206,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
             var tagArr = [];
             var data=(child.tagType=='tag'?resourceData.tags:resourceData.gobjects);
             
-            for( i = 0; i < data.length; i++)
+            for(var i = 0; i < data.length; i++)
                 tagArr.push(new Ext.grid.property.Property(
                 {
                     name : i + 1,
@@ -276,7 +278,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
         return tagQuery.substring(0, tagQuery.length - 5);
     },
 
-    Reset : function()
+    resetFilters : function()
     {
         while(this.items.length != 0)
             this.getComponent(0).destroy();
@@ -290,7 +292,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
  */
 Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
 {
-    extend : 'Ext.Panel',
+    extend : 'Ext.panel.Panel',
     constructor : function()
     {
         Ext.apply(this,
@@ -300,7 +302,6 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
                 type : 'vbox',
                 align : 'stretch'
             },
-            frame : true,
             parent : arguments[0].parent,
             tag_order : arguments[0].tag_order || '',
             tag_query : arguments[0].tag_query || '',
@@ -310,10 +311,12 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
             value : new Array(),
             tagCombo : [],
             grid : [],
-
+            
+            //bodyStyle : 'background : #D9E7F8',
             titleCollapse : true,
             collapsible : true,
             hideCollapseTool : true,
+            frame : true,
             border : false,
             tools : [
             {
@@ -395,10 +398,10 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
         {
             var query = this.parent.GetTagQuery();
             
-            var uri = this.parent.dataset 
-                      + '?{0}=1&wpublic=' 
+            var uri = Ext.String.urlAppend(this.parent.dataset,  
+                        '{0}=1&wpublic=' 
                       + this.parent.browser.browserParams.wpublic
-                      + (query.length?'&tag_query='+query:''); 
+                      + (query.length?'&tag_query='+query:'')); 
             
             BQFactory.load(Ext.String.format(uri, 'tag_names'), Ext.bind(this.GetTagList, this, [true, 'tag'], 0));
             BQFactory.load(Ext.String.format(uri, 'gob_types'), Ext.bind(this.GetTagList, this, [true, 'gobject'], 0));
@@ -463,11 +466,9 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
             }),
             emptyText : 'Select a tag...',
             queryMode : 'local',
-            //typeAhead: true
             listeners :
             {
                 'select' : this.OnCBSelect,
-                //'render' : function(cb){cb.setLoading(true)},
                 scope : this
             }
         });
@@ -478,11 +479,9 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
             {
                 model : 'Ext.grid.property.Property'
             }),
-            height : '100%',
-            border : false,
             hideHeaders : true,
-            padding : 1,
             multiSelect : true,
+            flex : 1,
 
             viewConfig :
             {
@@ -516,13 +515,8 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
         });
 
         this.grid.store.sortOnLoad = false;
-
-        this.add([this.tagCombo, new Ext.Container(
-        {
-            flex : 1,
-            autoScroll : true,
-            items : this.grid
-        })]);
+        this.add([this.tagCombo, this.grid]);
+        
     },
 
     GetSelection : function()
@@ -543,7 +537,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
             if (this.value.length>0)
             {
                 var str = "";
-                for( i = 0; i < this.value.length; i++)
+                for(var i = 0; i < this.value.length; i++)
                     str += '"' + encodeURIComponent(this.tag) + '"::"' + encodeURIComponent(this.value[i]) + '": OR ';
                 return str.substring(0, str.length - 4);
             }
@@ -557,7 +551,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
             if(this.value.length > 0)
             {
                 var str = "";
-                for( i = 0; i < this.value.length; i++)
+                for(var i = 0; i < this.value.length; i++)
                     str += '"' + encodeURIComponent(this.tag) + '":"' + encodeURIComponent(this.value[i]) + '" OR ';
                 return str.substring(0, str.length - 4);
             }

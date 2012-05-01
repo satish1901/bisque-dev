@@ -46,7 +46,7 @@ Ext.define('Bisque.Resource.Image',
             return this.browser.preferences.Images[key];
         return '';
     },
-
+    
     afterRenderFn : function()
     {
         this.setData('renderedRef', this);
@@ -419,6 +419,7 @@ Ext.define('Bisque.Resource.Image.PStripBig',
         });
 
 		this.setSize(config.bigPanel.getSize());
+		
         this.pnlSize=config.bigPanel.getSize();
         this.pnlSize.width=Math.floor(0.35*this.pnlSize.width);
 
@@ -567,8 +568,8 @@ Ext.define('Bisque.Resource.Image.Full',
 
         this.add(new Ext.Panel(
         {
-            layout:'border',
-            border:false,
+            layout: 'border',
+            border: false,
             items:[new Ext.Container(
             {
                 region:'west',
@@ -593,27 +594,31 @@ Ext.define('Bisque.Resource.Image.Full',
     onMouseEnter : Ext.emptyFn
 });
 
+
+Ext.define('Bisque.Resource.Image.Grid',
+{
+    extend : 'Bisque.Resource.Image',
+    
+    // convert ArrayStore to JsonStore?
+    getFields : function()
+    {
+        var fields = this.callParent();
+        fields[0] = '<div style="height:40px"><img src='+this.resource.src+'?thumbnail=40,40&format=jpeg /></div>';
+        fields[6].height = 48;
+        return fields;
+    },
+});
+
+
+
 // Page view for an image
 Ext.define('Bisque.Resource.Image.Page',
 {
-    extend : 'Bisque.Resource',
+    extend : 'Bisque.Resource.Page',
     
-    mixins : {
-        'resourcePage' : 'Bisque.Resource.Page'
-    },
-    
-    constructor : function()
+    onResourceRender : function()
     {
-        Ext.apply(this, {
-            layout:'fit',
-        });
-        
-        this.callParent(arguments);
-    },
-    
-    updateContainer : function()
-    {
-        this.setLoading(false);
+        this.setLoading(true);
         this.root = '';
         if (this.resource && this.resource.uri)
             this.root = this.resource.uri.replace(/\/data_service\/.*$/i, '');  
@@ -652,7 +657,7 @@ Ext.define('Bisque.Resource.Image.Page',
                 scope:this
             },
         });
-    
+        
         var resTab = Ext.create('Ext.tab.Panel',
         {
             title : 'Metadata',
@@ -729,7 +734,7 @@ Ext.define('Bisque.Resource.Image.Page',
             }
         });
         resTab.add(gobjectTagger);
-       
+
         var map = Ext.create('BQ.gmap.GMapPanel3',  {
             title: 'Map',
             url: this.resource.src+'?meta',
@@ -738,6 +743,7 @@ Ext.define('Bisque.Resource.Image.Page',
             autoShow: true,
         });
         resTab.add(map);
+
+        this.setLoading(false);
     }
 });
-

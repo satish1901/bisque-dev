@@ -10,6 +10,7 @@ Ext.define('Bisque.ResourceBrowser.viewStateManager',
             searchBar : false,
             
             btnTS : false,
+            btnRefresh : false,
             
             btnLayoutThumb : false,
             btnLayoutCard : false,
@@ -18,6 +19,8 @@ Ext.define('Bisque.ResourceBrowser.viewStateManager',
     
             btnLayoutLeft : false,
             btnLayoutRight : false,
+            
+            slider : false,
             
             btnGear : false,
             btnOrganizer : false,
@@ -42,6 +45,21 @@ Ext.define('Bisque.ResourceBrowser.viewStateManager',
 				this.cBar.btnGear=true;
 				break;
 			}
+            case 'ViewSearch':
+            {
+                this.cBar.btnTS = true;
+                this.cBar.btnRefresh = true;
+
+                this.cBar.btnLayoutThumb=true;
+                this.cBar.btnLayoutCard=true;
+                this.cBar.btnLayoutPStrip=true;
+                this.cBar.btnLayoutFull=true;
+                
+                this.cBar.slider = true;
+                this.cBar.btnGear = true;
+                
+                break;
+            }
 			case 'ViewerLayouts':
 			{
                 this.cBar.searchBar=true;
