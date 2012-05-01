@@ -483,6 +483,8 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
             multiSelect : true,
             //bodyStyle : 'background:#99e',
             flex : 1,
+            //bodyStyle : 'background:#99e',
+            flex : 1,
 
             viewConfig :
             {
