@@ -1,5 +1,5 @@
 // Page view for a template
-Ext.define('Bisque.Resource.Template1.Page',
+Ext.define('Bisque.Resource.Template.Page',
 {
     extend : 'Bisque.Resource.Page',
     

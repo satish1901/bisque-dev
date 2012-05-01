@@ -603,7 +603,7 @@ Ext.define('Bisque.Resource.Image.Grid',
     getFields : function()
     {
         var fields = this.callParent();
-        fields[0] = '<div style="height:40px"><img src='+this.resource.src+'?thumbnail=40,40&format=jpeg /></div>';
+        fields[0] = '<img style="height:40px;width:40px;" src='+this.resource.src+'?thumbnail=75,75&format=jpeg />';
         fields[6].height = 48;
         return fields;
     },
