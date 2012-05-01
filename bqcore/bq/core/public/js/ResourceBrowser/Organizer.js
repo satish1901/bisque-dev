@@ -1,42 +1,45 @@
 // Needs to be rewritten for better generics as and when the specs become clear
 Ext.define('Bisque.ResourceBrowser.Organizer',
 {
-    extend : 'Ext.Panel',
+    extend : 'Ext.panel.Panel',
     constructor : function()
     {
         Ext.apply(this,
         {
-            parentCt : arguments[0].parentCt,
-            dataset : arguments[0].dataset,
-            wpublic : arguments[0].wpublic,
-            msgBus : arguments[0].msgBus,
-            uri : arguments[0].browser.uri,
-            tag_order : arguments[0].browser.uri.tag_order || '',
-            tag_query : arguments[0].browser.uri.tag_query || '',
+            parentCt    : arguments[0].parentCt,
+            dataset     : arguments[0].dataset,
+            wpublic     : arguments[0].wpublic,
+            msgBus      : arguments[0].msgBus,
+            uri         : arguments[0].browser.uri,
+            tag_order   : arguments[0].browser.uri.tag_order || '',
+            tag_query   : arguments[0].browser.uri.tag_query || '',
 
-            title : 'Organizer',
-            width : 300,
-            itemId : 'organizerCt',
-            layout : 'accordion',
-            border : false,
+            title       : 'Tag Filters',
+            width       : 300,
+            itemId      : 'organizerCt',
+            layout      : 'accordion',
+            border      : false,
+            tbar        :   {
+                                items : [
+                                {
+                                    iconCls : 'icon-add',
+                                    text : 'Add',
+                                    tooltip : 'Add new filter',
+                                    handler : this.AddFilter,
+                                    scope : this
+                                },
+                                {
+                                    iconCls : 'icon-refresh',
+                                    text : 'Reset',
+                                    tooltip : 'Reset all filters',
+                                    handler : this.Reset,
+                                    scope : this
+                                }]
+                            },
 
             existingTags : new Array(),
             items : [],
             tools : [
-            {
-                type : 'plus',
-                title : 'Add',
-                tooltip : 'Add new filter',
-                handler : this.AddFilter,
-                scope : this
-            },
-            {
-                type : 'refresh',
-                title : 'Reset',
-                tooltip : 'Reset all filters',
-                handler : this.Reset,
-                scope : this
-            },
             {
                 type : 'left',
                 title : 'Collapse organizer panel',
@@ -54,7 +57,6 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
         
         this.on('afterrender', function()
         {
-            //this.AddFilter();
             this.initFilters(this.uri);
             this.ManageEvents();
         }, this, {single : true});
@@ -204,7 +206,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
             var tagArr = [];
             var data=(child.tagType=='tag'?resourceData.tags:resourceData.gobjects);
             
-            for( i = 0; i < data.length; i++)
+            for(var i = 0; i < data.length; i++)
                 tagArr.push(new Ext.grid.property.Property(
                 {
                     name : i + 1,
@@ -290,7 +292,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
  */
 Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
 {
-    extend : 'Ext.Panel',
+    extend : 'Ext.panel.Panel',
     constructor : function()
     {
         Ext.apply(this,
@@ -300,7 +302,6 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
                 type : 'vbox',
                 align : 'stretch'
             },
-            frame : true,
             parent : arguments[0].parent,
             tag_order : arguments[0].tag_order || '',
             tag_query : arguments[0].tag_query || '',
@@ -310,6 +311,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
             value : new Array(),
             tagCombo : [],
             grid : [],
+            frame : true,
 
             titleCollapse : true,
             collapsible : true,
@@ -543,7 +545,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
             if (this.value.length>0)
             {
                 var str = "";
-                for( i = 0; i < this.value.length; i++)
+                for(var i = 0; i < this.value.length; i++)
                     str += '"' + encodeURIComponent(this.tag) + '"::"' + encodeURIComponent(this.value[i]) + '": OR ';
                 return str.substring(0, str.length - 4);
             }
@@ -557,7 +559,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
             if(this.value.length > 0)
             {
                 var str = "";
-                for( i = 0; i < this.value.length; i++)
+                for(var i = 0; i < this.value.length; i++)
                     str += '"' + encodeURIComponent(this.tag) + '":"' + encodeURIComponent(this.value[i]) + '" OR ';
                 return str.substring(0, str.length - 4);
             }

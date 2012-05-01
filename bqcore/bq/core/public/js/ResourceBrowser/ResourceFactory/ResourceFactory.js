@@ -131,9 +131,9 @@ Ext.define('Bisque.ResourceFactoryWrapper',
     		var layoutCls = Bisque.ResourceBrowser.LayoutFactory.getClass(config.layoutKey);
     		var css = Ext.ClassManager.get(layoutCls).readCSS();
     
-    		resource.prefetch(css);
-    		resource.setSize({width:css.layoutEl.width, height:css.layoutEl.height})
-    		resource.addCls(css.layoutCSS);
+    		//resource.prefetch(css);
+    		//resource.setSize({width:css.layoutEl.width, height:css.layoutEl.height})
+    		//resource.addCls(css.layoutCSS);
     		
     		return resource;
         }
@@ -368,10 +368,29 @@ Ext.define('Bisque.Resource.List', {
 // Default page view is a full page ResourceTagger
 Ext.define('Bisque.Resource.Page', 
 {
-    extend:'Bisque.Resource',
-
-    updateContainer : function() 
+    extend:'Ext.panel.Panel',
+    
+    constructor : function(config)
     {
+        Ext.apply(this,
+        {
+            layout      :   'fit',
+            loadingMsg  :   'Loading...',
+            listeners   :   {
+                                'afterlayout'   :   function(me)
+                                {
+                                    me.setLoading(me.loadingMsg);
+                                }
+                            }
+        }, config);
+        
+        this.callParent(arguments);
+    },
+
+    initComponent : function() 
+    {
+        this.callParent(arguments);
+
         var name = this.resource.name || this.resource.uri;
         var type = this.resource.type || this.resource.resource_type;
         var title = "Editing " + type + ' : ' + name;
@@ -385,8 +404,11 @@ Ext.define('Bisque.Resource.Page',
             split : true,
         });
 
-        this.layout = 'fit';        
         this.add(resourceTagger);
-        this.setLoading(false);
-    }
+        
+        //this.loadingMsg = false;
+        //this.setLoading(this.loadingMsg);
+    },
+    
+    prefetch : Ext.emptyFn
 });

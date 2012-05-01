@@ -140,8 +140,8 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 					padding : '5 1 5 5',
 					handler : function(me)
 					{
-						me.stopAnimation();
-						me.el.frame("#B0CEF7");
+						//me.stopAnimation();
+						//me.el.frame("#B0CEF7");
 						this.browser.resourceQueue.loadPrev(this.browser.layoutMgr.getVisibleElements('left'/*direction:left*/));
 						this.browser.changeLayoutThrottled(this.browser.layoutKey, 'Left');
 					},
@@ -156,8 +156,8 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 					padding : '5 5 5 1',
 					handler : function(me)
 					{
-						me.stopAnimation();
-						me.el.frame("#B0CEF7");
+						//me.stopAnimation();
+						//me.el.frame("#B0CEF7");
 						this.browser.resourceQueue.loadNext();
 						this.browser.changeLayoutThrottled(this.browser.layoutKey, 'Right');
 					},
@@ -379,6 +379,8 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 				break;
 			case 'btnPStrip' :
 				this.browser.changeLayoutThrottled(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PStrip);
+            case 'btnPStrip' :
+                this.browser.changeLayoutThrottled(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PStrip);
 				break;
 			case 'btnFull' :
 				this.browser.changeLayoutThrottled(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Full);
