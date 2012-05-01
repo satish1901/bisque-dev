@@ -453,7 +453,7 @@ class ModuleServer(ServiceController):
     @expose(content_type='text/xml')
     def register_engine(self, **kw):
         'Helper method .. redirect post to engine resource'
-        xml =  self.engine.default (**kw)
+        xml =  self.engine._default (**kw)
         self.load_services()
         return xml
 

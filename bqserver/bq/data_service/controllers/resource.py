@@ -69,7 +69,8 @@ from pylons.controllers.util import abort
 
 import tg
 from tg import redirect, expose, request
-from tg.configuration import  Bunch, config
+from tg.util import Bunch
+from tg.configuration import  config
 #from tg.controllers import CUSTOM_CONTENT_TYPE
 
 from bq.core import identity
@@ -458,7 +459,7 @@ class Resource(ServiceController):
         self.server_cache.invalidate(url, user=self.user_id)
 
     @expose()
-    def default(self, *path, **kw):
+    def _default(self, *path, **kw):
         request = tg.request
         response = tg.response
         path = list(path)
@@ -544,7 +545,7 @@ class Resource(ServiceController):
                 bisque.parent = resource
                 #log.debug ("parent = %s" % resource)
                 #call down into the child resource.
-                return child.default(*path, **kw)
+                return child._default(*path, **kw)
 
 
 #        if http_method == 'get':

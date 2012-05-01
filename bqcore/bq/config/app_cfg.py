@@ -20,7 +20,8 @@ from paste.deploy.converters import asbool
 from pylons.middleware import StatusCodeRedirect
 from pylons.util import call_wsgi_application
 
-from tg.configuration import AppConfig, Bunch, config
+from tg.configuration import AppConfig, config
+from tg.util import  Bunch
 from tg.error import ErrorHandler
 #import tgscheduler
 

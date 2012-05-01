@@ -347,7 +347,7 @@ class EngineServer(ServiceController):
 
 
     @expose(content_type="text/xml")
-    def default(self, *path, **kw):
+    def _default(self, *path, **kw):
         log.debug ('in default %s' % str( path) )
         path = list(path)
         if len(path) > 0:
@@ -361,8 +361,8 @@ class EngineServer(ServiceController):
                 log.warn ("No module by name of %s" % module_name)
                 method_not_found()
 
-            return module_resource.default(*path, **kw)
-        return super(EngineServer, self).default(*path, **kw)
+            return module_resource._default(*path, **kw)
+        return super(EngineServer, self)._default(*path, **kw)
         
     def addmodules(self, response):
         if not isinstance(response, etree._Element):
