@@ -113,10 +113,20 @@ classdef Url < matlab.mixin.Copyable
         % Accessors
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%        
         
-        function root = getRoot(self)
-            root = [self.purl.scheme '://' self.purl.authority];
+        function r = getRoot(self)
+            r = [self.purl.scheme '://' self.purl.authority];
         end
+        
+        function r = getScheme(self)
+            r = self.purl.scheme;
+        end        
+        
+        % credentials
 
+        function r = hasCredentials(self)
+            r = self.hasUser() && self.hasPassword();
+        end            
+        
         function r = hasUser(self)
             r = isfield(self.purl, 'user') && ~isempty(self.purl.user);
         end          
@@ -139,7 +149,17 @@ classdef Url < matlab.mixin.Copyable
         
         function setPassword(self, pass)
             self.purl.password = pass;
-        end         
+        end  
+        
+        % path
+        
+        function path = getPath(self)
+            path = self.purl.path;
+        end        
+        
+        function setPath(self, path)
+            self.purl.path = path;
+        end          
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Query

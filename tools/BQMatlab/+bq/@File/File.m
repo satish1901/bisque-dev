@@ -67,10 +67,25 @@ classdef File < bq.Node
     end % methods
     
     methods (Static)    
-        % filename - given to save the stream into a file
-        % f        - bq.File object from create file
-        function f = store(self, filename)
-            f = [];
+        % filename - filename
+        % node     - bq.Node object of the created resource
+        function node = store(filename, root_url, user, password)
+            if ~exist('user', 'var') || isempty(user) || ~exist('password', 'var') || isempty(password),
+                error('bq.File.store:UserCredentialsInvalid', 'Store requires user name and password');
+            end        
+            
+            url = bq.Url(root_url); 
+            url.setPath('import/transfer');
+            [output, info] = bq.post_mpform(url.toString(), filename, user, password);
+            if ~isempty(output) && info.status<300,
+                output = char(output);
+                output = regexprep(output, '<resource type="uploaded">', '');
+                output = regexprep(output, '</resource>$', '');
+                doc = bq.str2xml(output);
+                node = bq.Factory.make(doc, [], user, password);
+            else
+                node = [];
+            end
         end % store          
     end % static methods
     

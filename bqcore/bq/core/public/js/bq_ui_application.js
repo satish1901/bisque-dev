@@ -7,12 +7,16 @@ Ext.require(['Ext.container.Viewport']);
 Ext.define('BQ', {
     extend: 'Ext.util.Observable',
 
+    root: '/',
+
     constructor: function(config) {
         if (typeof(bq) == "undefined")
             bq = {};
+        /*
         config = config || {};
         Ext.apply(config, {root: '/'}, bq);
         this.initConfig(config);
+        */
         return this.callParent(arguments);        
     },   
 
@@ -111,10 +115,12 @@ Ext.define('BQ.Application.Window', {
     layout : 'border',
     border : false,
     
+    /*
     constructor: function(config) {
         this.initConfig(config);
         return this.callParent(arguments);        
-    },    
+    },
+    */    
 
     initComponent : function() {
         Ext.tip.QuickTipManager.init();

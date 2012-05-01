@@ -41,14 +41,19 @@
 %   0.1 - 2011-06-27 First implementation
 %
 
-function [output, info] = connect(method, url, location, input, user, password)
+function [output, info] = post_mpform(url, input, user, password)
     narginchk(2, 6);
 
     % This function requires Java
     if ~usejava('jvm')
        error(message('BQ.connect:NoJvm'));
     end
-    
+
+    import java.io.IOException;
+    import java.io.FileInputStream;
+    import java.io.BufferedInputStream;
+    import java.io.BufferedOutputStream;    
+    import java.io.File;      
     % Be sure the proxy settings are set.
     %import com.mathworks.mlwidgets.io.InterruptibleStreamCopier;
     com.mathworks.mlwidgets.html.HTMLPrefs.setProxySettings;
@@ -104,23 +109,13 @@ function [output, info] = connect(method, url, location, input, user, password)
     % new: end    
     
     %connection.setReadTimeout(3000);
-    connection.setRequestMethod(method);
+    connection.setRequestMethod('POST');
     connection.setRequestProperty('Connection', 'Keep-Alive');
     connection.setRequestProperty('Content-Type', 'text/xml');    
-        
-    if strcmpi(method, 'GET'),
-        connection.setUseCaches(true);
-        connection.setDoInput(true);
-    elseif strcmpi(method, 'POST') || strcmpi(method, 'PUT'),
-        connection.setDoInput(true);
-        connection.setDoOutput(true);
-        connection.setUseCaches(false);        
-        if ~ischar(input),
-            input = bq.xml2str(input);
-        end        
-        connection.setRequestProperty('Content-Length', int2str(length(input)));        
-    end
-    
+    connection.setDoInput(true);
+    connection.setDoOutput(true);
+    connection.setUseCaches(false);        
+
     if exist('user', 'var') && exist('password', 'var') && ...
        ~isempty(user) && ~isempty(password),
         if ~strcmpi(user, 'Mex') ,
@@ -129,24 +124,47 @@ function [output, info] = connect(method, url, location, input, user, password)
           connection.setRequestProperty('Mex', password);
         end
     end
+
+    boundary = 'BisqueMatlabAPI***********************';
+    connection.setRequestProperty('Content-Type', ['multipart/form-data; boundary=',boundary]);    
+    %connection.setRequestProperty('Content-Length', int2str(length(input)));        
     
     connection.connect();
+
+    eol = [char(13),char(10)];    
+    [~, name, ext] = fileparts(input);
+    filename = [name ext];
     
-    if strcmpi(method, 'POST') || strcmpi(method, 'PUT'),
-        out = java.io.OutputStreamWriter(connection.getOutputStream(), 'UTF-8');
-        out.write(input);
-        out.flush();    
+    out = java.io.BufferedOutputStream(connection.getOutputStream());
+    outp = java.io.PrintStream(connection.getOutputStream); % stream for textual output
+    outp.print(['--', boundary, eol]);
+    outp.print(['Content-Disposition: form-data; name="file"']);
+    outp.print(['; filename="' filename '"', eol]);
+    outp.print(['Content-Type: application/octet-stream',eol]);
+    outp.print([eol]);
+
+    % write actual payload
+    if ischar(input),
+        file2stream(out, input);
+        out.flush();
+    else
+        %out.write(input); % if the input is a vector
     end    
+    
+    outp.print([eol]);
+    outp.print(['--',boundary,'--',eol]);
+    outp.close;    
+    out.close; 
     
     info.status  = connection.getResponseCode();
     info.error = char(readstream(connection.getErrorStream()));
 
     if info.status>=300,
         output = [];
-        error(['Bisque Connect error: ' info.error '\nMethod: ' method '\nURL: ' url]); % dima: not sure if this should be here
-    elseif exist('location', 'var') && ~isempty(location),    
-        output = stream2file(connection.getInputStream(), location);        
-        %output = stream2file( java.io.BufferedInputStream(connection.getInputStream(), 4*1024), location);
+        error(['Bisque MP POST error: ' info.error '\nURL: ' url.toString()]); % dima: not sure if this should be here
+    %elseif exist('location', 'var') && ~isempty(location),    
+    %    output = stream2file(connection.getInputStream(), location);        
+    %    %output = stream2file( java.io.BufferedInputStream(connection.getInputStream(), 4*1024), location);
     else
         output = readstream(connection.getInputStream());
         %output = readstream( java.io.BufferedInputStream(connection.getInputStream(), 4*1024) );
@@ -177,51 +195,17 @@ function output = readstream(inputStream)
     end
 end
 
-function output = stream2file(inputStream, location)
-    %READSTREAM Read all bytes to a file
-    output = [];
-    if isempty(inputStream), return; end    
-
-    % Specify the full path to the file so that getAbsolutePath will work when the
-    % current directory is not the startup directory and urlwrite is given a
-    % relative path.
-    file = java.io.File(location);
-    if ~file.isAbsolute
-       location = fullfile(pwd,location);
-       file = java.io.File(location);
-    end
-
-    % Make sure the path isn't nonsense.
-    try
-       file = file.getCanonicalFile;
-    catch
-       error('MATLAB:urlwrite:InvalidOutputLocation','Could not resolve file "%s".',char(file.getAbsolutePath));
-    end
-
-    % Open the output file.
-    try
-        fileOutputStream = java.io.FileOutputStream(file);
-    catch
-        error('MATLAB:urlwrite:InvalidOutputLocation','Could not open output file "%s".',char(file.getAbsolutePath));
-    end
-    
-    % do the actual fetch and store file    
+function file2stream(output, location)
+    input = java.io.BufferedInputStream(java.io.FileInputStream(location));
     try
         import com.mathworks.mlwidgets.io.InterruptibleStreamCopier;
         isc = InterruptibleStreamCopier.getInterruptibleStreamCopier();
-        isc.copyStream(inputStream, fileOutputStream);        
-        
-        % we can use apache too
-        %import org.apache.commons.io.CopyUtils;
-        %asc = org.apache.commons.io.CopyUtils();        
-        %asc.copy(inputStream, fileOutputStream);
-        
-        inputStream.close;
-        fileOutputStream.close;
-        output = char(file.getAbsolutePath);
+        isc.copyStream(input, output);        
+        %output.close; % dima: should not be closed yet, other multipart
+        %from data is written
+        input.close;
     catch err,
-        fileOutputStream.close;
-        delete(file);
-        error('bq.get:StreamCopyFailed', 'Error while downloading URL. Your JVM might not have enough heap memory...');
+        input.close;
+        error('bq.post_mpform.file2stream', ['Error while reading file stream: ' err.message]);
     end
 end
