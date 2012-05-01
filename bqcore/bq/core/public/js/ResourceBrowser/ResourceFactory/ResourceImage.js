@@ -263,10 +263,7 @@ Ext.define('Bisque.Resource.Image.Compact',
     {
         var text = Ext.String.ellipsis(this.resource.name, 25) || '';
         this.update('<div class="textOnImage" style="width:'+this.layoutMgr.layoutEl.width+'px;">'+text+'</div>'+this.getData('image'));
-        this.setLoading(true);
-        this.root = '';
-        if (this.resource && this.resource.uri)
-            this.root = this.resource.uri.replace(/\/data_service\/.*$/i, '');  
+        this.setLoading(false);
         
         /*this.resizer = Ext.create('Ext.resizer.Resizer', {
             target : this,
@@ -613,6 +610,7 @@ Ext.define('Bisque.Resource.Image.Grid',
 });
 
 
+
 // Page view for an image
 Ext.define('Bisque.Resource.Image.Page',
 {
@@ -620,7 +618,7 @@ Ext.define('Bisque.Resource.Image.Page',
     
     onResourceRender : function()
     {
-        this.setLoading(false);
+        this.setLoading(true);
         this.root = '';
         if (this.resource && this.resource.uri)
             this.root = this.resource.uri.replace(/\/data_service\/.*$/i, '');  
@@ -745,8 +743,6 @@ Ext.define('Bisque.Resource.Image.Page',
             autoShow: true,
         });
         resTab.add(map);
-
-        this.setLoading(false);
 
         this.setLoading(false);
     }

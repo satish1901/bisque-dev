@@ -223,6 +223,7 @@ Ext.define('BQ.ShareDialog', {
         this.form = Ext.create('Ext.form.Panel',
         {
             frame           :   true,
+            height          :   110,
             title           :   'Invite a guest',
     
             fieldDefaults   :   {

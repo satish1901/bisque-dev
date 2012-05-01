@@ -51,13 +51,13 @@ Ext.define('Bisque.Resource.Dataset.Compact',
     
 	loadResource : function(resource)
     {
-        var imgs = '<div style = "margin:3px;background:#F2F2F2;width:154px;height:154px">'
+        var imgs = '<div style = "margin:4px;background:#F2F2F2;width:152px;height:152px">'
         var thumbnail, margin;
 
         for (var i=0;i<resource.children.length && i<4; i++)
         {
             if (resource.children[i].src)
-                thumbnail = resource.children[i].src+'?thumbnail=76,76&format=jpeg';
+                thumbnail = resource.children[i].src+'?thumbnail=75,75&format=jpeg';
             else
                 switch (resource.children[i].xmltag)
                 {
@@ -71,7 +71,7 @@ Ext.define('Bisque.Resource.Dataset.Compact',
                 }
 
             margin = (i==1?'margin:0px 0px 0px 2px;':(i==2?'margin:2px 2px 0px 0px;':'')); 
-            imgs += '<img style="display:inline-block;height:76px;width:76px;' + margin + '" src='+ thumbnail + ' />'
+            imgs += '<img style="display:inline-block;height:75px;width:75px;' + margin + '" src='+ thumbnail + ' />'
         }
         
         imgs += '</div>';

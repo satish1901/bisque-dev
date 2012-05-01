@@ -15,10 +15,6 @@
     background: transparent;
 } 
 
-.background-transparent {
-    background: transparent;
-} 
-
 /* ResourceLayout settings: */
 .ImageCompact {
     margin: 15px;
@@ -370,14 +366,5 @@
 
 .x-grid-checkheader-editor .x-form-cb-wrap {
     text-align: center;
-}
-
-
-.icon-lightning {
-    background-image: url('../ResourceBrowser/Images/lightning.png') !important;
-}
-
-.icon-cog {
-    background-image: url('../ResourceBrowser/Images/cog.png') !important;
 }
 

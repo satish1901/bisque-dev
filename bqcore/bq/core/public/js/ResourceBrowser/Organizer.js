@@ -14,7 +14,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
             tag_order   : arguments[0].browser.uri.tag_order || '',
             tag_query   : arguments[0].browser.uri.tag_query || '',
 
-            title       : 'Tag Filters',
+            title       : 'Organizer',
             width       : 305,
             itemId      : 'organizerCt',
             layout      : 'accordion',
@@ -32,7 +32,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
                                     iconCls : 'icon-refresh',
                                     text : 'Reset',
                                     tooltip : 'Reset all filters',
-                                    handler : this.Reset,
+                                    handler : this.resetFilters,
                                     scope : this
                                 }]
                             },
@@ -278,7 +278,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
         return tagQuery.substring(0, tagQuery.length - 5);
     },
 
-    Reset : function()
+    resetFilters : function()
     {
         while(this.items.length != 0)
             this.getComponent(0).destroy();
@@ -429,7 +429,6 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
                     "value": 'gobject'
                 });
             }
-            }
             this.gobArr = gobArr;
             this.gobArrLoaded = true;
         }
@@ -482,8 +481,6 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
             }),
             hideHeaders : true,
             multiSelect : true,
-            //bodyStyle : 'background:#99e',
-            flex : 1,
             flex : 1,
 
             viewConfig :

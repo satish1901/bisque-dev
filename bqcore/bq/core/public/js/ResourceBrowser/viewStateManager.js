@@ -56,7 +56,7 @@ Ext.define('Bisque.ResourceBrowser.viewStateManager',
                 this.cBar.btnLayoutFull=true;
                 
                 this.cBar.slider = true;
-                this.cBar.btnGear=true;
+                this.cBar.btnGear = true;
                 
                 break;
             }
