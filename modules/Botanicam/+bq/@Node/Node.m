@@ -56,10 +56,10 @@ classdef Node < matlab.mixin.Copyable
             bq.post(url, self.doc, self.user, self.password);
         end % save          
         
-        function delete(self)
+        function remove(self)
             url = self.getAttribute('uri');
             bq.delete(url, self.user, self.password);
-        end % delete              
+        end % remove              
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Access attributes

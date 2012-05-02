@@ -1,7 +1,6 @@
 function Botanicam(mex_url, access_token, image_url)
+    session = bq.Session(mex_url, access_token); 
     try
-        session = bq.Session(mex_url, access_token);        
-
         % fetch provided ROI
         roi = session.mex.findNode('//tag[@name="inputs"]/tag[@name="image_url"]/gobject[@name="roi"]/rectangle');
         if ~isempty(roi),
@@ -26,7 +25,7 @@ function Botanicam(mex_url, access_token, image_url)
         %% RUN
         session.update('20% - recognizing');   
         [genus, specie, confidence, commonName, url] = run_gplant_recognizer(im);
-
+        %genus='mygenus'; specie='myspecies'; confidence='1.0'; commonName='myname'; url='myurl';
         
         %% SAVE RESULTS
         session.update('90% - storing results');  
