@@ -140,7 +140,7 @@ def safename(filename, user):
     #filemd5 = md5.new(filename).hexdigest()
     filename = re_url_scheme.sub("", filename)
     filename = re_slash.sub(",", filename)
-    filename = re_reserved.sub('', filename)
+    filename = re_reserved.sub('-', filename)
     # This one is special to create cachenames that args can be seperate from requested path
     filename = filename.replace('?', '#')
 
