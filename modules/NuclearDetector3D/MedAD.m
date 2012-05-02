@@ -1,5 +1,3 @@
-function [M, ind] = MedAD(x)
-
 % [M, ind] = MedAD(x)
 %
 % DESC:
@@ -19,13 +17,13 @@ function [M, ind] = MedAD(x)
 % M         = scale
 % ind       = indices of the inliers (optional)
 
-N = size(x, 2);
-med = median(x);
-temp = abs(x - med);
-M = 1.4826 * median(temp);
+function [M, ind] = MedAD(x)
+    x = double(x);
+    med = median(x);
+    temp = abs(x - med);
+    M = 1.4826 * median(temp);
 
-if nargout > 1
-    ind = find(x <= M);
-end;
-
-return
+    if nargout > 1
+        ind = find(x <= M);
+    end;
+end
