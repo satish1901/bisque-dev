@@ -891,6 +891,7 @@ def resource_delete(resource, user_id=None):
     # owner so first delete all referneces.
     # ACL, values etc.. 
     # 
+    session.autoflush = False
     value_count = session.query(Value).filter_by(valobj = resource.id).count()
     if value_count:
         resource.resource_hidden = True
