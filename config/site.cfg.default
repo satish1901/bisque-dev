@@ -21,6 +21,7 @@ servers = h1
 
 h1.url = http://localhost:8080
 # h1.server = :3031
+# h1.server = unix:///tmp/bisque.sock
 h1.services_disabled = engine_service
 #h2.url = http://localhost:9092
 #h2.services_disabled = engine_service
@@ -32,6 +33,7 @@ h1.services_disabled = engine_service
 # Engine on this host
 # Each engine must have the proxyroot parameter set
 # e1.url = http://biobisque.org:27000
+# e1.server = unix:///tmp/engine.sock
 # e1.server = :3091
 # e1.services_enabled = engine_service
 # e1.proxyroot = http://biobisque.org

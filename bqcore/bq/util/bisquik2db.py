@@ -427,8 +427,8 @@ def xmlelement(dbo, parent, baseuri, **kw):
 
 
 def xmlnode(dbo, parent, baseuri, view, **kw):
-    #rtype = getattr(dbo, 'resource_type', None)
-    rtype = dbo.xmltag
+    rtype = getattr(dbo, 'resource_type', dbo.xmltag)
+    #rtype = dbo.xmltag
     if rtype == 'tag':
         elem = xmlelement (dbo, parent, baseuri)
         if 'deep' not in view and dbo.resource_value == None:
@@ -591,8 +591,8 @@ def db2node(dbo, parent, view, baseuri, nodes, doc_id):
 
     node = xmlnode(dbo, parent, baseuri, view)
     if "full" in view :
-         v = filter (lambda x: x != 'full', view)
-         tl = [ db2tree_int(x, node, view=v, baseuri=baseuri) for x in dbo.children ] 
+         #v = filter (lambda x: x != 'full', view)
+         tl = [ xmlnode(x, node, view=view, baseuri=baseuri) for x in dbo.children ] 
          #gl = [ db2tree_int(x, node, view=v, baseuri=baseuri) for x in dbo.gobjects ]
 #    elif "deep" in view:
 #         tl = [ db2tree_int(x, node, view, baseuri) for x in dbo.children ] 
@@ -608,7 +608,7 @@ def db2node(dbo, parent, view, baseuri, nodes, doc_id):
          for tag_name in v:
              tag = dbo.tagq.filter_by(resource_name = tag_name).first()
              if tag:
-                 db2tree_int(tag, node, v, baseuri)
+                 xmlnode(tag, node, v, baseuri)
              
     return node, nodes, doc_id
 
