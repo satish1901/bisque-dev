@@ -16,11 +16,12 @@ $matlabroot/sys/java/jre/glnxa64/jre/lib/amd64:
 XAPPLRESDIR=$matlabroot/X11/app-defaults 
 
 PATH=.:$matlabroot/bin:$PATH
-HOME=.
+#HOME=.
 #DISPLAY=:0.0
 unset DISPLAY
+unset HOME
 
-export PATH LD_LIBRARY_PATH HOME #DISPLAY  XAPPLRESDIR
+export PATH LD_LIBRARY_PATH
 
 SCRIPT=$1; 
 

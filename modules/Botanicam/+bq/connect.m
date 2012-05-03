@@ -42,7 +42,8 @@
 %
 
 function [output, info] = connect(method, url, location, input, user, password)
-    narginchk(2, 6);
+    if ~exist('method', 'var') error(message('BQ.connect:RequiresMethod')); end
+    if ~exist('url', 'var') error(message('BQ.connect:RequiresUrl')); end
 
     % This function requires Java
     if ~usejava('jvm')
