@@ -113,7 +113,7 @@ taggable = Table('taggable', metadata,
                  Column('ts', DateTime(timezone=False)),
                  Column('perm', Integer), #ForeignKey('permission_sets.set_id')
                  Column('owner_id', Integer, ForeignKey('taggable.id')),
-                 Column('resource_uniq', String(40)),
+                 Column('resource_uniq', String(40), index=True),
                  Column('resource_index', Integer),
                  Column('resource_hidden', Boolean),
                  Column('resource_type', Unicode(255), index=True ),  # will be same as tb_id UniqueName
@@ -126,8 +126,8 @@ taggable = Table('taggable', metadata,
 
 values = Table ('values', metadata,
           Column('resource_parent_id',Integer, ForeignKey('taggable.id'),primary_key=True),
-          Column('document_id',Integer, ForeignKey('taggable.id')),
           Column('indx', Integer, primary_key = True, autoincrement=False),
+          Column('document_id',Integer, ForeignKey('taggable.id'), index=True),
           Column('valstr', UnicodeText),
           Column('valnum', Float),
           Column('valobj', Integer, ForeignKey('taggable.id'))
@@ -135,8 +135,8 @@ values = Table ('values', metadata,
 
 vertices = Table ('vertices', metadata,
                 Column('resource_parent_id',Integer, ForeignKey('taggable.id'), primary_key=True),
-                Column('document_id',Integer, ForeignKey('taggable.id')),
                 Column('indx', Integer, primary_key=True, autoincrement=False),
+                Column('document_id',Integer, ForeignKey('taggable.id'), index=True),
                 Column('x', Float),
                 Column('y', Float),
                 Column('z', Float),

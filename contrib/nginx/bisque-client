@@ -13,7 +13,9 @@ server {
     }
 
     location @bisque {
-        uwsgi_pass unix://<bisque_install_dir>/tmp/client.sock;
+        # Pick your socket
+        #uwsgi_pass 0.0.0.0:3031
+        #uwsgi_pass unix:///tmp/client.sock;
         include uwsgi_params;
         uwsgi_param SCRIPT_NAME "";
         uwsgi_read_timeout 600;
