@@ -26,7 +26,7 @@ Ext.define('BQ.ShareDialog', {
                                 type    :   'vbox',
                                 align   :   'stretch'
                             },
-            flex        :   0.4,
+            flex        :   4,
             title       :   'Add user',   
             region      :   'east',
             margin      :   '3 3 3 0',
@@ -38,7 +38,8 @@ Ext.define('BQ.ShareDialog', {
         this.centerPanel = Ext.create('Ext.panel.Panel', {
             region      :   'center',
             border      :   false,
-            flex        :   0.6,
+            flex        :   6,
+            margin      :   '3 1 3 3',
             layout      :   'fit',
         });
 
@@ -96,7 +97,6 @@ Ext.define('BQ.ShareDialog', {
         this.callParent(arguments);
         
         this.addComponents();
-        this.reloadPermissions();
         this.show();
     },
     
@@ -197,7 +197,8 @@ Ext.define('BQ.ShareDialog', {
     addComponents : function()
     {
         
-        this.browser    =   Ext.create('Bisque.ResourceBrowser.Browser', {
+        this.browser = Ext.create('Bisque.ResourceBrowser.Browser',
+        {
             layout          :   Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Grid,
             layoutConfig    :   {
                                     colIconWidth    :   8,
@@ -209,14 +210,15 @@ Ext.define('BQ.ShareDialog', {
             viewMode        :   'ViewSearch',
             wpublic         :   'true',
             dataset         :   '/data_service/user?view=full',
-
             listeners       :   {
-                                    scope       :   this,
-                                    'Select'    :   this.userSelected
+                                    scope           :   this,
+                                    'Select'        :   this.userSelected,
+                                    'browserLoad'   :   Ext.Function.pass(this.reloadPermissions, [undefined], this) 
                                 }
         });
         
-        var label      =   Ext.create('Ext.form.Label', {
+        var label = Ext.create('Ext.form.Label',
+        {
             html    :   '<b>- or -</b>',
             margin  :   3,
             style   :   'color:#04408C;text-align:center'
@@ -264,7 +266,6 @@ Ext.define('BQ.ShareDialog', {
         {
             store   :   this.getStore(),
             frame   :   true,
-            margin  :   '3 1 3 3',
             border  :   false,
             
             columns :   {

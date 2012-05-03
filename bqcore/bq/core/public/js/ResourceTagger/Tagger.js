@@ -380,7 +380,7 @@ Ext.define('Bisque.ResourceTagger',
             },
 
             /* Modified function so as to not delete the root nodes */
-            /*onNodeAdded : function(parent, node)
+            onNodeAdded : function(parent, node)
             {
                 var proxy = this.getProxy(), reader = proxy.getReader(), data = node.raw || node.data, dataRoot, children;
 
@@ -396,7 +396,7 @@ Ext.define('Bisque.ResourceTagger',
                         //delete data[reader.root];
                     }
                 }
-            }*/
+            }
 
         });
 
