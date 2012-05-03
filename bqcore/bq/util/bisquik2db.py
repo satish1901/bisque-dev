@@ -608,7 +608,7 @@ def db2node(dbo, parent, view, baseuri, nodes, doc_id):
          for tag_name in v:
              tag = dbo.tagq.filter_by(resource_name = tag_name).first()
              if tag:
-                 xmlnode(tag, node, v, baseuri)
+                 xmlnode(tag, node, view=v, baseuri=baseuri)
              
     return node, nodes, doc_id
 
