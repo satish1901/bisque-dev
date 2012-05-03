@@ -190,6 +190,7 @@ Ext.define('BQ.upload.ZipAnnotator', {
         var types = Ext.create('Ext.data.Store', {
             fields: ['type', 'description'],
             data : [
+                {"type":"zip",             "description":"upload as-is: compressed file"},
                 {"type":"zip-multi-file",  "description":"multiple unrelated images"},
                 {"type":"zip-time-series", "description":"multiple files composing one time-series image"},
                 {"type":"zip-z-stack",     "description":"multiple files composing one z-stack"},
@@ -829,7 +830,7 @@ Ext.define('BQ.upload.Panel', {
 
         this.helpPanel = Ext.create('Ext.panel.Panel', {
             border: 0, 
-            title: 'Help on compressed files', 
+            title: 'Help', 
             autoScroll: true,
             bodyStyle: 'padding: 10px',
             loader: { url: '/import_service/public/help.html', renderer: 'html', autoLoad: true },
@@ -1256,7 +1257,7 @@ Ext.define('BQ.upload.Dialog', {
         var uploader_config = { 
             border: 0, 
             flex:2, 
-            heading: config.title || 'Image upload',
+            heading: config.title || 'Upload',
             formconf: { form_action: '/import/transfer', form_file: 'file', form_tags: 'file_tags' },
             listeners: {
                     filesuploaded: this.onFilesUploaded,

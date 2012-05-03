@@ -1,10 +1,10 @@
-#appwindow-embedded-center {
+body {
     background: url('images/background_grass.jpg'), 
         url('images/background_cloud.png'), url('images/background_cloud.png'), url('images/background_cloud.png'),
         url('images/background_sun.png');
     
     background-position: bottom, 
-        70% 30px, 35% -70px, 110% -10px,
+        70% 50px, 35% -70px, 110% -10px,
         -60px -40px;
     
     background-repeat: repeat-x, 
@@ -21,23 +21,23 @@
 }
 
 @keyframes myanim {
-    0%   { background-position: bottom, -30% 30px, -150% -70px, 150% -10px, -60px -40px; 
+    0%   { background-position: bottom, -30% 50px, -150% -70px, 150% -10px, -60px -40px; 
            background-size: contain, 20%, 30%, 25%, 250px; }
-    100% { background-position: bottom, 130% 30px, 150% -70px, -50% -10px, -60px -40px; 
+    100% { background-position: bottom, 130% 50px, 150% -70px, -50% -10px, -60px -40px; 
            background-size: contain, 20%, 30%, 25%, 300px; }
 }
 
 @-webkit-keyframes myanim {
-    0%   { background-position: bottom, -30% 30px, -150% -70px, 150% -10px, -60px -40px; 
+    0%   { background-position: bottom, -30% 50px, -150% -70px, 150% -10px, -60px -40px; 
            background-size: contain, 20%, 30%, 25%, 250px; }
-    100% { background-position: bottom, 130% 30px, 150% -70px, -50% -10px, -60px -40px; 
+    100% { background-position: bottom, 130% 50px, 150% -70px, -50% -10px, -60px -40px; 
            background-size: contain, 20%, 30%, 25%, 300px; }
 }
 
 @-moz-keyframes myanim {
-    0%   { background-position: bottom, -30% 30px, -150% -70px, 150% -10px, -60px -40px; 
+    0%   { background-position: bottom, -30% 50px, -150% -70px, 150% -10px, -60px -40px; 
            background-size: contain, 20%, 30%, 25%, 250px; }
-    100% { background-position: bottom, 130% 30px, 150% -70px, -50% -10px, -60px -40px; 
+    100% { background-position: bottom, 130% 50px, 150% -70px, -50% -10px, -60px -40px; 
            background-size: contain, 20%, 30%, 25%, 300px; }
 }
 

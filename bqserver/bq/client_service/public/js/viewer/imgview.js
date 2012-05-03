@@ -326,7 +326,8 @@ function ImgViewer (parentid, image_or_uri, parameters) {
     this.target.appendChild (this.imagediv);
     
     //var plugin_list = "default,slicer,tiles,ops,download,movie,external,permissions,share,statistics,scalebar,progressbar,infobar,edit,renderer";
-    var plugin_list = "default,slicer,tiles,ops,download,movie,external,permissions,share,scalebar,progressbar,infobar,edit,renderer";
+    //var plugin_list = "default,slicer,tiles,ops,download,movie,external,permissions,share,scalebar,progressbar,infobar,edit,renderer";
+    var plugin_list = "default,slicer,tiles,ops,download,movie,external,scalebar,progressbar,infobar,edit,renderer";
     if ('onlyedit' in this.parameters)
         plugin_list = "default,slicer,tiles,ops,scalebar,progressbar,infobar,edit,renderer";
     if ('simpleview' in this.parameters) {
