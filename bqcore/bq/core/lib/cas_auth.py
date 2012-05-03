@@ -128,7 +128,7 @@ class CASPlugin(object):
                     res.headers.add(a,v)
                 res.status = 302
                 logout_url = 'http://%s%s' % (environ['HTTP_HOST'], self.post_logout)
-                res.location = "%s?url=%s" % (self.cas_logout_url, logout_url)
+                res.location = "%s?service=%s" % (self.cas_logout_url, logout_url)
                 environ['repoze.who.application'] = res
             return {}
 
