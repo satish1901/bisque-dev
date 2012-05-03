@@ -508,10 +508,26 @@ Ext.define('Bisque.Resource.Page',
 
     deleteResource : function()
     {
+        function success()
+        {
+            this.setLoading(false);
+            
+            Ext.MessageBox.show({
+                title   :   'Success',
+                msg     :   'Resource deleted successfully! You will be redirected to your BISQUE homepage.',
+                buttons :   Ext.MessageBox.OK,
+                icon    :   Ext.MessageBox.INFO,
+                fn      :   function(){window.location = bq.url('/')}
+            });
+        }
+        
         function deleteRes(response)
         {
             if (response == 'yes')
-                this.resource.delete_(function(){window.location = bq.url('/');}, this.failure);
+            {
+                this.setLoading({msg:'Deleting...'});
+                this.resource.delete_(Ext.bind(success, this), Ext.Function.pass(this.failure, ['Delete operation failed!']));
+            }
         }
         
         Ext.MessageBox.confirm('Confirm operation', 'Are you sure you want to delete ' + this.resource.name + '?', Ext.bind(deleteRes, this));
@@ -560,9 +576,9 @@ Ext.define('Bisque.Resource.Page',
         BQ.ui.notification(msg || 'Operation successful.');
     },
     
-    failure : function()
+    failure : function(msg)
     {
-        BQ.ui.error('Operation failed!');
+        BQ.ui.error(msg || 'Operation failed!');
     },
     
     prefetch : Ext.emptyFn
