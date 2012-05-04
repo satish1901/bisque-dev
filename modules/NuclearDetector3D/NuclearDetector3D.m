@@ -10,16 +10,16 @@ function NuclearDetector3D(mex_url, access_token, image_url, nuclear_channel, nu
         res =  cell2mat(t.getValues('number'));
         %res = [0.439453, 0.439453, 1.0, 1.0]; % image resolution in microns per pixel
 
-        if isfield(image.info, 'pixel_resolution_x'),
+        if isfield(image.info, 'pixel_resolution_x') && res(1)<=0,
             res(1) = getfield(image.info, 'pixel_resolution_x');
         end
-        if isfield(image.info, 'pixel_resolution_y'),
+        if isfield(image.info, 'pixel_resolution_y') && res(2)<=0,
             res(2) = getfield(image.info, 'pixel_resolution_y');
         end    
-        if isfield(image.info, 'pixel_resolution_z'),
+        if isfield(image.info, 'pixel_resolution_z') && res(3)<=0,
             res(3) = getfield(image.info, 'pixel_resolution_z');
         end    
-        if isfield(image.info, 'pixel_resolution_t'),
+        if isfield(image.info, 'pixel_resolution_t') && res(4)<=0,
             res(4) = getfield(image.info, 'pixel_resolution_t');
         end
 

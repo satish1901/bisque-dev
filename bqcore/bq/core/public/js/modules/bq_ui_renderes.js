@@ -758,7 +758,8 @@ Ext.define('BQ.selectors.PixelResolution', {
             //resource.values[i].value = 0.0;
             //p.setValue(0.0);            
         }
-        
+
+        this.reference = res;        
         if (res instanceof BQDataset) {
             var msg = 'You have selected a dataset, this module will only work correctly if all images have the same pixel resolution!';
             BQ.ui.tip(this.getId(), msg, {anchor:'left', timeout: 30000, });
@@ -795,6 +796,12 @@ Ext.define('BQ.selectors.PixelResolution', {
 
     isValid: function() {
         var resource = this.resource;
+        var reference = this.reference;
+        
+        if (reference instanceof BQDataset) {
+            return true;
+        }        
+        
         if (!resource.values || 
             resource.values[0].value<=0 || resource.values[1].value<=0 || resource.values[2].value<=0 || resource.values[3].value<=0) {
             var template = resource.template || {};
