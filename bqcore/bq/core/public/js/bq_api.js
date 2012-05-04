@@ -291,13 +291,24 @@ function clean_resources(resource, skiptemplate) {
         if (i in BQObject.attributes_skip || (skiptemplate && i=='template'))
             delete resource[i];
 
-    // remove template
+    // remove old style template - kept for compatibility, should disappear in the future
     if (skiptemplate && resource.tags) {
         var p=resource.tags.length-1;
         while (p>=0) {
             var t = resource.tags[p];
             if (t.type in BQObject.types_skip)
                 resource.tags.splice(p, 1);
+            p--;
+        }
+    }
+
+    // remove template objects
+    if (skiptemplate && resource.children) {
+        var p=resource.children.length-1;
+        while (p>=0) {
+            var t = resource.children[p];
+            if (t.resource_type in BQObject.types_skip)
+                resource.children.splice(p, 1);
             p--;
         }
     }
