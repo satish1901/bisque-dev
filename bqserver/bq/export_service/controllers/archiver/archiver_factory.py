@@ -8,10 +8,11 @@ class AbstractArchiver():
         return 'text/plain'
 
     def getFileExtension(self):
-        return '.log'
+        return '.xml'
     
     def beginFile(self, file):
-        if file.get('extension') == '.xml':
+        if file.get('extension') == '.xml' or file.get('path') is None:
+            file['extension'] = '.xml'  # ensure extension is None if we are only exporting XML
             self.reader = StringIO(etree.tostring(file.get('XML')))
         else:
             self.reader = open(file.get('path'), 'rb')
@@ -34,8 +35,10 @@ class AbstractArchiver():
         return
     
     def destinationPath(self, file):
+        uniq = '-' + file.get('uniq')[-4:] if file.get('uniq') is not None else '' 
         path = file.get('dataset') + os.sep if file.get('dataset') is not '' else ''
-        path += '(' + file.get('uniq')[-4:] + ') ' + file.get('name') + file.get('extension')
+        fileName, fileExt = os.path.splitext(file.get('name'))
+        path +=  fileName + uniq + (file.get('extension') or fileExt)
         return path
 
 

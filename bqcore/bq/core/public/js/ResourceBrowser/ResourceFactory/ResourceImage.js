@@ -743,6 +743,19 @@ Ext.define('Bisque.Resource.Image.Page',
             autoShow: true,
         });
         resTab.add(map);
+        
+        // add custom download option to the toolbar
+        var menu = this.toolbar.getComponent("btnDownload").menu;
+        menu.add([{
+            xtype   :   'menuseparator'
+        }, {
+            xtype   :   'menuitem',
+            text    :   'Original image',
+            handler :   function() 
+                        {
+                            window.open(this.resource.src);
+                        }
+        }]);
 
         this.setLoading(false);
     }
