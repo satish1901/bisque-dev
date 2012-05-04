@@ -379,7 +379,7 @@ Ext.define('Bisque.Resource.Page',
     
     constructor : function(config)
     {
-        var name = config.resource.name || config.resource.uri;
+        var name = config.resource.name || '';
         var type = config.resource.type || config.resource.resource_type;
 
         Ext.apply(this,
@@ -397,7 +397,8 @@ Ext.define('Bisque.Resource.Page',
                                                 this.getOperations(config.resource),
                                                 '-', '->',
                                                 {
-                                                    text    :   type + ': <b>' + name + '</b',
+                                                    itemId  :   'btnRename',
+                                                    text    :   type + ': <b>' + name + '</b>',
                                                     handler :   this.promptName,
                                                     scope   :   this
                                                 }
@@ -436,6 +437,41 @@ Ext.define('Bisque.Resource.Page',
         var items=[];
 
         items.push({
+            xtype       :   'splitbutton',
+            text        :   'Download',
+            itemId      :   'btnDownload',
+            iconCls     :   'icon-download-small',
+            operation   :   this.downloadResource,
+            handler     :   this.testAuth,
+            compression :   'tar',
+            menu        :   {
+                                defaults    :   {
+                                                    xtype       :   'menucheckitem',
+                                                    group       :   'downloadGroup',
+                                                    groupCls    :   Ext.baseCSSClass + 'menu-group-icon',
+                                                    checked     :   false,
+                                                    scope       :   this,
+                                                    handler     :   this.testAuth,
+                                                    operation   :   this.downloadResource
+                                                },
+                                items       :   [{
+                                                    compression :   'tar',
+                                                    text        :   'as TARball',
+                                                    checked     :   true,
+                                                },{
+                                                    compression :   'gzip',
+                                                    text        :   'as GZip archive',
+                                                },{
+                                                    compression :   'bz2',
+                                                    text        :   'as BZip2 archive',
+                                                },{
+                                                    compression :   'zip',
+                                                    text        :   'as (PK)Zip archive',
+                                                }]
+                            }
+            
+        },
+        {
             text        :   'Share',
             iconCls     :   'icon-group',
             operation   :   this.shareResource,
@@ -491,7 +527,7 @@ Ext.define('Bisque.Resource.Page',
         else
         {
             if (permission)
-                btn.operation.call(this);
+                btn.operation.call(this, btn);
             else
                 BQ.ui.attention('You do not have permission to perform this action!');
         }
@@ -535,13 +571,25 @@ Ext.define('Bisque.Resource.Page',
     
     renameResource : function(btn, name, authRecord)
     {
+        function success(msg)
+        {
+            BQ.ui.notification(msg);
+            var type = this.resource.type || this.resource.resource_type;
+            this.toolbar.getComponent('btnRename').setText(type + ': <b>' + (this.resource.name || '') + '</b>');
+        }
+        
         if (btn == 'ok')
         {
-            var user = BQSession.current_session.user_uri;
             var successMsg = 'Resource <b>' + this.resource.name + '</b> renamed to <b>' + name + '</b>.';
             this.resource.name = name;
-            this.resource.save_(undefined, Ext.bind(this.success, this, [successMsg], true), Ext.bind(this.failure, this));
+            this.resource.save_(undefined, success.call(this, successMsg), Ext.bind(this.failure, this));
         }
+    },
+    
+    downloadResource : function(btn)
+    {
+        var exporter = Ext.create('BQ.Export.Panel');
+        exporter.downloadResource(this.resource, btn.compression);
     },
     
     changePrivacy : function(btn)
@@ -568,7 +616,7 @@ Ext.define('Bisque.Resource.Page',
        
     promptName : function(btn)
     {
-        Ext.MessageBox.prompt('Rename ' + this.resource.name, 'Enter new name:', this.renameResource, this);
+        Ext.MessageBox.prompt('Rename ' + this.resource.name, 'Enter new name:', this.renameResource, this, false, this.resource.name);
     },
 
     success : function(resource, msg)
