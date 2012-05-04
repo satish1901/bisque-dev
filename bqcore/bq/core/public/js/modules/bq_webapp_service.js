@@ -128,6 +128,6 @@ ModuleService.prototype.emit_error = function(message) {
 }
 
 ModuleService.prototype.onerror = function(o) {
-    this.emit_error(o.message_short);
+    this.emit_error(o.message_short || o.message || o['http-error'] || o);
 }
 

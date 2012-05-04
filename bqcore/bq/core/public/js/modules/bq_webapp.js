@@ -436,6 +436,9 @@ BQWebApp.prototype.done = function (mex) {
         var message = "Module execution failure:<br>" + mex.toXML(); 
         if ('error_message' in mex.dict && mex.dict.error_message!='') 
             message = "The module reported an internal error:<br>" + mex.dict.error_message;
+        else
+        if ('http-error' in mex.dict) 
+            message = "The module reported an internal error:<br>" + mex.dict['http-error'];
         
         BQ.ui.error(message);
         var result_label = document.getElementById("webapp_results_summary");
