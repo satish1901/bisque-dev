@@ -352,6 +352,10 @@
     background-image: url('../ResourceBrowser/Images/group.png') !important;
 }
 
+.icon-download-small {
+    background-image: url('../ResourceBrowser/Images/download-small.png') !important;
+}
+
 .x-grid-checkheader {
     height: 14px;
     background-image: url('../ResourceBrowser/Images/unchecked.gif');
