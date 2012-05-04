@@ -1,4 +1,5 @@
-Ext.define('BQ.Export.Panel', {
+Ext.define('BQ.Export.Panel',
+{
     extend : 'Ext.panel.Panel',
     
     constructor : function()
@@ -97,42 +98,30 @@ Ext.define('BQ.Export.Panel', {
                     handler: this.download,
                     scope: this,
 
-                    menu:
-                    {
-                        items: [{
-                            compressionType: 'tar',
-                            text: 'as TARball',
-                            checked: true,
-                            group: 'compression_type',
-                            groupCls: Ext.baseCSSClass + 'menu-item-checked',
-                            handler: this.download,
-                            scope: this,
-                        },{
-                            compressionType: 'gzip',
-                            text: 'as GZip archive',
-                            checked: false,
-                            group: 'compression_type',
-                            groupCls: Ext.baseCSSClass + 'menu-item-checked',
-                            handler: this.download,
-                            scope: this,
-                        },{
-                            compressionType: 'bz2',
-                            text: 'as BZip2 archive',
-                            checked: false,
-                            group: 'compression_type',
-                            groupCls: Ext.baseCSSClass + 'menu-item-checked',
-                            handler: this.download,
-                            scope: this,
-                        },{
-                            compressionType: 'zip',
-                            text: 'as (PK)Zip archive',
-                            checked: false,
-                            group: 'compression_type',
-                            groupCls: Ext.baseCSSClass + 'menu-item-checked',
-                            handler: this.download,
-                            scope: this,
-                        }]
-                    }
+                    menu        :   {
+                                        defaults    :   {
+                                                            xtype       :   'menucheckitem',
+                                                            group       :   'downloadGroup',
+                                                            groupCls    :   Ext.baseCSSClass + 'menu-group-icon',
+                                                            checked     :   false,
+                                                            scope       :   this,
+                                                            handler     :   this.download,
+                                                        },
+                                        items       :   [{
+                                                            compressionType :   'tar',
+                                                            text            :   'as TARball',
+                                                            checked         :   true,
+                                                        },{
+                                                            compressionType :   'gzip',
+                                                            text            :   'as GZip archive',
+                                                        },{
+                                                            compressionType :   'bz2',
+                                                            text            :   'as BZip2 archive',
+                                                        },{
+                                                            compressionType :   'zip',
+                                                            text            :   'as (PK)Zip archive',
+                                                        }]
+                                    }
                 }
             },
             {
@@ -155,6 +144,13 @@ Ext.define('BQ.Export.Panel', {
         
         this.callParent(arguments);
         this.add(this.getResourceGrid())
+    },
+    
+    downloadResource : function(resource, compression)
+    {
+        var record = ['', '', resource.resource_type || 'resource', resource.ts, '', resource.uri, 0];
+        this.resourceStore.loadData([record]);
+        this.download({compressionType:compression});
     },
     
     download : function(btn)
