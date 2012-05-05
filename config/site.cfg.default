@@ -83,18 +83,22 @@ bisque.paths.root  =
 
 # Blobservice
 # Ordered list of stores .. path is created based on template
-bisque.blob_service.stores=file:$datadir/imagedir/$user/$dirhash/$filehash-$filename
-#bisque.blob_service.stores=
-# irods://winwood.iplantcollaborative.org/iplant/home/$user/bisque_data/uploads/$dirhash/$filehash-$filename, 
-# file:$datadir/imagedir/$user/$dirhash/$filehash-$filename,
-# s3://$user-$filehash-$filename
-#bisque.blob_service.file.dir = file:$datadir/imagedir
-#bisque.blob_service.irods.user = 
-#bisque.blob_service.irods.password = 
-#S3 Storage
-#bisque.blob_service.s3.access_key = 
-#bisque.blob_service.s3.secret_key =
-#bisque.blob_service.s3.bucket_id = 
+# bisque.blob_service.stores = irods1,s3,local
+bisque.blob_service.stores=local
+bisque.stores.local.path = file:$datadir/imagedir/$user/$dirhash/$filehash-$filename
+#bisque.stores.local.top= file:$datadir/imagedir
+# Example irods store
+#bisque.stores.irods1.path=irods://data.iplantcollaborative.org/iplant/home/$user/bisque_data/uploads/$dirhash/$filehash-$filename, 
+#bisque.stores.irods1.user=bisque
+#bisque.stores.irods1.password=<guess>
+#bisque.stores.irods1.readonly = true
+# example S3
+#bisque.stores.s3.path=s3://$user-$filehash-$filename
+#bisque.stores.s3.access_key = None
+#bisque.stores.s3.secret_key = None
+#bisque.stores.s3.bucket_id = None
+#bisque.stores.s3.location = us-west
+
 # Data service
 #bisque.data_service.caching=true
 #bisque.data_service.server_cache=.server_cache

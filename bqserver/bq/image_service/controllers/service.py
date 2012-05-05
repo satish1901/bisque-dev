@@ -38,10 +38,10 @@ def get_image_id(url):
     return id
 
 def get_format_map():
-    xmlout = '<response>' + imgcnv.installed_formats()
-    if bioformats.installed():
-        xmlout += bioformats.installed_formats()
-        xmlout += '</response>'
+    bformats = ""
+    if bioformats.installed() :
+        bformats = bioformats.installed_formats() 
+    xmlout='<response>%s%s</response>'  % (imgcnv.installed_formats(),bformats)
     format_tree = etree.XML(xmlout)
     formats = {}
     for ex in format_tree.xpath ('./format/codec/tag[@name="extensions"]'):

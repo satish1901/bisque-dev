@@ -1,8 +1,59 @@
+###############################################################################
+##  Bisque                                                                   ##
+##  Center for Bio-Image Informatics                                         ##
+##  University of California at Santa Barbara                                ##
+## ------------------------------------------------------------------------- ##
+##                                                                           ##
+##     Copyright (c) 2007,2008,2009,2010,2011,2012                           ##
+##     by the Regents of the University of California                        ##
+##                            All rights reserved                            ##
+##                                                                           ##
+## Redistribution and use in source and binary forms, with or without        ##
+## modification, are permitted provided that the following conditions are    ##
+## met:                                                                      ##
+##                                                                           ##
+##     1. Redistributions of source code must retain the above copyright     ##
+##        notice, this list of conditions, and the following disclaimer.     ##
+##                                                                           ##
+##     2. Redistributions in binary form must reproduce the above copyright  ##
+##        notice, this list of conditions, and the following disclaimer in   ##
+##        the documentation and/or other materials provided with the         ##
+##        distribution.                                                      ##
+##                                                                           ##
+##                                                                           ##
+## THIS SOFTWARE IS PROVIDED BY <COPYRIGHT HOLDER> ''AS IS'' AND ANY         ##
+## EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE         ##
+## IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR        ##
+## PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> OR           ##
+## CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,     ##
+## EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,       ##
+## PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR        ##
+## PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF    ##
+## LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING      ##
+## NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS        ##
+## SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.              ##
+##                                                                           ##
+## The views and conclusions contained in the software and documentation     ##
+## are those of the authors and should not be interpreted as representing    ##
+## official policies, either expressed or implied, of <copyright holder>.    ##
+###############################################################################
+"""
+SYNOPSIS
+========
+blob_service 
+  
+
+DESCRIPTION
+===========
+Micro webservice to store and retrieve blobs(untyped binary storage) on a variety 
+of storage platforms: local, irods, s3
+"""
 import os
 import logging
 import hashlib
 import urlparse
 import itertools
+
 
 from lxml import etree
 from datetime import datetime
@@ -31,6 +82,12 @@ from bq.data_service.model import Taggable, DBSession
 import blob_storage
 
 log = logging.getLogger('bq.blobs')
+
+try:
+    from ordereddict import OrderedDict
+except ImportError:
+    log.error("can't import OrderedDict")
+
 
 ###########################################################################
 # Hashing Utils
@@ -84,11 +141,24 @@ class BlobServer(RestController, ServiceMixin):
     
     def __init__(self, url ):
         ServiceMixin.__init__(self, url)
+        self.stores = OrderedDict()
         store_list = [ x.strip() for x in config.get('bisque.blob_service.stores','').split(',') ] 
         log.debug ('requested stores = %s' % store_list)
+        for store in store_list:
+            params = dict ( (x[0].replace('bisque.stores.%s.' % store, ''), x[1]) 
+                            for x in  config.items() if x[0].startswith('bisque.stores.%s' % store))
+            if 'path' not in params:
+                log.error ('cannot configure %s with out path parameter' % store)
+                continue
+            log.debug("params = %s" % params)
+            driver = blob_storage.make_storage_driver(params.pop('path'), **params)
+            if driver is None: 
+                log.error ("failed to configure %s.  Please check log for errors " % store)
+                continue
+            self.stores[store] = driver
         # Filter out None values for stores that can't be made
-        self.stores = list(itertools.ifilter(lambda x:x, (blob_storage.make_driver(st) for st in store_list )))
-        log.info ('configured stores %s' % ','.join( str(x) for x in self.stores))
+        #self.stores = list(itertools.ifilter(lambda x:x, (blob_storage.make_driver(st, **params) for st in store_list)))
+        log.info ('configured stores %s' % ','.join( str(x) for x in self.stores.keys()))
 
 
     def check_access(self, ident, action):
@@ -154,11 +224,7 @@ class BlobServer(RestController, ServiceMixin):
             resource.resource_value = dst
         return resource
 
-        
 
-    # available additional configs:
-    # perm
-    # tags
     def storeBlob(self, flosrc=None, filename=None, url=None,  permission="private", **kw):
         """Store the file object in the next blob and return the resource.
 
@@ -172,22 +238,26 @@ class BlobServer(RestController, ServiceMixin):
         blob_id = None
         flocal = None
         if flosrc is not None:
-            for store in self.stores:
+            for store_id, store in self.stores.items():
                 try:
                     # blob storage part
+                    if store.readonly:
+                        log.debug("skipping %s: is readonly" % store_id)
+                        continue
                     blob_id, flocal = store.write(flosrc, filename, user_name = user_name)
                     break
                 except Exception, e:
                     log.exception('storing blob failed')
-            if blob_id is None:
-                log.error('Could not store %s on any %s' %(filename, self.stores))
-                return None
         elif url is not None:
             if filename is None:
                 filename  = url.rsplit('/',1)[1]
             blob_id = url
         else:
             log.error("blobStore without URL or file: nothing to do")
+            return None
+
+        if blob_id is None:
+            log.error('Could not store %s on any store: %s' %(filename, self.stores.keys()))
             return None
 
         # hashed filename + stuff
@@ -227,7 +297,7 @@ class BlobServer(RestController, ServiceMixin):
         resource = DBSession.query(Taggable).filter_by (resource_uniq = ident).first()
         path = None
         if resource is not None and resource.resource_value:
-            for store in self.stores:
+            for store in self.stores.values():
                 if store.valid(resource.resource_value):
                     path =  store.localpath(resource.resource_value)
                     break
@@ -278,6 +348,37 @@ class BlobServer(RestController, ServiceMixin):
 
     def geturi(self, id):
         return self.url + '/' + str(id)
+
+
+
+    def move_resource_store(self, srcstore, dststore):
+        """Find all resource on srcstore and move to dststore
+
+        :param srcstore: Source store  ID
+        :param dststore: Destination store ID
+        """
+        src_store = self.stores.get(srcstore)
+        dst_store = self.stores.get(dststore)
+
+        if src_store is None or dst_store is None:
+            raise IllegalOperation("cannot access store %s, %s" % (srcstore, dststore))
+        if src_store == dst_store:
+            raise IllegalOperation("cannot move onto same store %s, %s" % (srcstore, dststore))
+
+        for resource in DBSession.query(Taggable).filter_by(Taggable.resource_value.like (src_store.top)):
+            localpath = self.localpath(resource.resource_uniq)
+
+            filename = resource.resource_name
+            user_name = resource.owner.resource_name
+            try:
+                blob_id, flocal = store.write(flosrc, filename, user_name = user_name)
+            except:
+                log.error("move failed for resource_uniq %s" % resource.resource_uniq)
+                continue
+
+            old_blob_id = resource.resource_value 
+            resource.resource_value = blob_id
+            
 
 
 
