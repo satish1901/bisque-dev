@@ -115,7 +115,7 @@ Ext.define('BQ.ShareDialog', {
             }
         }
 
-        if (modified || this.userAdded)
+        if (modified || this.userModified)
         {
             this.authRecord.save_();
             BQ.ui.notification('Sharing settings saved!', 2500);
@@ -156,7 +156,7 @@ Ext.define('BQ.ShareDialog', {
     
     addUser : function(record)
     {
-        this.userAdded = true;
+        this.userModified = true;
         
         var authRecord = new BQAuth();
         Ext.apply(authRecord, record);
@@ -329,6 +329,7 @@ Ext.define('BQ.ShareDialog', {
                                             return;
                                         }
                                         
+                                        this.userModified = true;
                                         this.authRecord.children.splice(rowIndex-1, 1);
                                         grid.store.removeAt(rowIndex);
                                     },
