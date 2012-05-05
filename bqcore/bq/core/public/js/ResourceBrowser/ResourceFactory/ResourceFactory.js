@@ -131,9 +131,9 @@ Ext.define('Bisque.ResourceFactoryWrapper',
     		var layoutCls = Bisque.ResourceBrowser.LayoutFactory.getClass(config.layoutKey);
     		var css = Ext.ClassManager.get(layoutCls).readCSS();
     
-    		//resource.prefetch(css);
-    		//resource.setSize({width:css.layoutEl.width, height:css.layoutEl.height})
-    		//resource.addCls(css.layoutCSS);
+    		resource.prefetch(css);
+    		resource.setSize({width:css.layoutEl.width, height:css.layoutEl.height})
+    		resource.addCls(css.layoutCSS);
     		
     		return resource;
         }
@@ -467,6 +467,12 @@ Ext.define('Bisque.Resource.Page',
                                                 },{
                                                     compression :   'zip',
                                                     text        :   'as (PK)Zip archive',
+                                                },{
+                                                    xtype       :   'menuseparator'
+                                                },{
+                                                    xtype       :   'menuitem',
+                                                    compression :   'none',
+                                                    text        :   'Original file'
                                                 }]
                             }
             
@@ -588,8 +594,19 @@ Ext.define('Bisque.Resource.Page',
     
     downloadResource : function(btn)
     {
+        if (btn.compression == 'none')
+            this.downloadOriginal();
+        else
+        {
+            var exporter = Ext.create('BQ.Export.Panel');
+            exporter.downloadResource(this.resource, btn.compression);
+        }
+    },
+    
+    downloadOriginal : function()
+    {
         var exporter = Ext.create('BQ.Export.Panel');
-        exporter.downloadResource(this.resource, btn.compression);
+        exporter.downloadResource(this.resource, 'none');
     },
     
     changePrivacy : function(btn)

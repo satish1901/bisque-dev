@@ -220,8 +220,26 @@ Ext.define('Bisque.Resource.Image.Compact',
                 width: this.layoutMgr.layoutEl.imageWidth,
                 height: this.layoutMgr.layoutEl.imageHeight,
             });
-            prefetchImg.onload=Ext.bind(this.loadResource, this, ['image'], true);
+            prefetchImg.onload  = Ext.bind(this.loadResource, this, ['image'], true);
+            prefetchImg.onerror = Ext.bind(this.resourceError, this);
+            prefetchImg.onabort = Ext.bind(this.resourceError, this);
         }
+    },
+    
+    resourceError : function()
+    {
+        var errorImg    =   '<img style="position:relative; top:50%; left:50%; margin-top: -15px;margin-left: -50px;"'
+                            + ' src="' + bq.url('/js/ResourceBrowser/Images/unavailable.png') + '"/>';
+        this.setData('image', errorImg);
+        this.setData('fetched', 1);
+        this.update(errorImg);
+        
+        if (!this.rendered)
+            this.on('afterrender', function(me){
+                me.setLoading(false);
+            }, this, {single:true});
+        else
+            this.setLoading(false);
     },
     
     loadResource : function(data, type)
@@ -744,19 +762,11 @@ Ext.define('Bisque.Resource.Image.Page',
         });
         resTab.add(map);
         
-        // add custom download option to the toolbar
-        var menu = this.toolbar.getComponent("btnDownload").menu;
-        menu.add([{
-            xtype   :   'menuseparator'
-        }, {
-            xtype   :   'menuitem',
-            text    :   'Original image',
-            handler :   function() 
-                        {
-                            window.open(this.resource.src);
-                        }
-        }]);
-
         this.setLoading(false);
+    },
+    
+    downloadOriginal : function()
+    {
+        window.open(this.resource.src);
     }
 });
