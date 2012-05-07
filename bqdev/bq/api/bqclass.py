@@ -289,13 +289,13 @@ class BQTag (BQResource):
     xmlkids = ['tags', 'gobjects',  ] # handle values  specially
 
     def __init__(self, name='', value=None, type=None):
+        super(BQTag, self).__init__()
+
         self.name = name
         self.values = (value and [BQValue(value)]) or []
-        self.tags =  []
-        self.gobjects = []
-        
         if type is not None:
             self.type=type
+
     def set_parent(self, parent):
         parent.tags.append(self)
 
@@ -368,9 +368,8 @@ class BQGObject(BQResource):
     xmlkids = ['tags', 'gobjects', 'vertices']
 
     def __init__(self, name=None, type=None):
+        super(BQGObject, self).__init__()
         self.vertices = []
-        self.tags     = []
-        self.gobjects = []
         self.name=name
         self.type= type or self.xmltag
 

@@ -274,7 +274,7 @@ class BaseRunner(object):
             # Submex's imply that we are iterated.
             # We can set up some options here and remove any execution 
             # for the top mex.
-            if len(self.mexes) > 1:
+            if len(self.mex_tree.xpath('//tag[@name="iterable"]')) or len(self.mexes) > 1:
                 topmex.executable = None
                 topmex.iterables = mexparser.process_iterables(self.module_tree, self.mex_tree)
 
