@@ -339,7 +339,7 @@ function ImgViewer (parentid, image_or_uri, parameters) {
         ImgViewer.pluginmap = {
             "default"     : DefaultImgPlugin,
             //"scale"       : ImgScale,
-            "download"    : ImgDownload,
+            //"download"    : ImgDownload,
             "movie"       : ImgMovie,
             "external"    : ImgExternal,                 
             "permissions" : ImgPermissions,
