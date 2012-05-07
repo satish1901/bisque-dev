@@ -222,6 +222,10 @@ Ext.define('Bisque.ResourceBrowser.Layout.Base',
 			{
 				this.resQ[i].setSize({width:this.layoutEl.width, height:this.layoutEl.height});
 				this.resQ[i].addCls(this.layoutCSS);
+				
+				if (this.browser.resourceQueue.selectedRes[this.resQ[i].resource.uri])
+				    this.resQ[i].cls = 'resource-view-selected';
+				
 				resCt.push(this.resQ[i]);
 				this.relayEvents(this.resQ[i], ['select', 'unselect']);
 			}

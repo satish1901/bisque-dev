@@ -60,7 +60,7 @@ function BQObject (uri, doc){
     this.created = true;
     this.mex = null;
     this.xmltag = "resource";
-    this.xmlfields  = [ 'type', 'uri', 'src', 'permission', 'resource_uniq', 'resource_name', 'name'];
+    this.xmlfields  = [ 'type', 'uri', 'owner', 'src', 'permission', 'resource_uniq', 'resource_name', 'name'];
 }
 BQObject.prototype = new BQXml();
 
@@ -698,7 +698,7 @@ BQResource.prototype = new BQObject();
 function BQTemplate (uri, doc) {
     BQObject.call(this, uri, doc);
     this.xmltag = 'template';
-    this.xmlfields = [ 'uri', 'type', 'name', 'owner' ];
+    this.xmlfields = [ 'uri', 'type', 'name', 'owner', 'permission' ];
 }
 BQTemplate.prototype = new BQObject();
 
@@ -1173,7 +1173,7 @@ function BQGObject(ty, uri){
     this.name = null;
     this.vertices = [];
     this.xmltag = "gobject";
-    this.xmlfields =  [ 'type', 'uri', 'name', 'owner' ] ;
+    this.xmlfields =  [ 'type', 'uri', 'name', 'owner', 'permission' ] ;
 }
 BQGObject.prototype = new BQObject();
 //extend(BQGObject,BQObject)
@@ -1185,6 +1185,8 @@ BQGObject.prototype.initializeXml = function (node) {
     this.name = attribStr(node, 'name');
     this.uri =  attribStr(node, 'uri');
     this.owner = attribStr(node, 'owner');
+    this.permission = attribStr(node, 'permission');
+    
     this.resource_type = this.xmltag;
 
     var x = node.ownerDocument.evaluate('./vertex', node, null, XPathResult.ANY_TYPE, null);
@@ -1635,6 +1637,7 @@ BQUrl.prototype.server = function () {
 function BQUser (){
     BQObject.call(this);
     this.xmltag = "user";
+    this.xmlfields = [ 'uri', 'type', 'name', 'owner', 'permission' ];
 }
 
 BQUser.prototype = new BQObject();
@@ -1652,6 +1655,7 @@ BQUser.prototype.initializeXml = function (user) {
     this.name = attribStr(user,'name');
     this.value = attribStr(user,'value');
     this.owner = attribStr(user,'owner');
+    this.permission = attribStr(user,'permission');
     
     this.display_name = this.user_name;
     this.ts = attribStr(user,'ts');
@@ -1731,6 +1735,7 @@ BQModule.prototype.initializeXml = function (node) {
     this.ts      = attribStr(node,'ts');
     this.owner   = attribStr(node, 'owner');
     this.value   = attribStr(node, 'value');
+    this.permission = attribStr(node, 'permission');
     this.resource_type = this.xmltag;
 }
 
@@ -1831,7 +1836,7 @@ BQModule.prototype.createMEX = function( ) {
 function BQMex (){
     BQObject.call(this);
     this.xmltag = "mex";
-    this.xmlfields = [ "uri", "name", "value", "type", 'owner' ] ;
+    this.xmlfields = [ "uri", "name", "value", "type", 'owner', 'permission'] ;
 }
 
 BQMex.prototype = new BQObject();
@@ -1841,6 +1846,7 @@ BQMex.prototype.initializeXml = function (mex) {
     this.value = attribStr(mex,'value');
     this.type  = attribStr(mex,'type');
     this.ts     = attribStr(mex,'ts');
+    this.permission = attribStr(mex, 'permission');
     this.owner  = attribStr(mex,'owner');
     this.resource_type = this.xmltag;
 
@@ -1922,7 +1928,7 @@ BQMex.prototype.afterInitialized = function () {
 function BQDataset (){
     BQObject.call(this);
     this.xmltag = "dataset";
-    this.xmlfields = [ "uri", "name", 'owner' ];
+    this.xmlfields = [ "uri", "name", 'owner', 'permission' ];
 }
 
 BQDataset.prototype = new BQObject();
@@ -1930,6 +1936,7 @@ BQDataset.prototype.initializeXml = function (mex) {
     this.uri   = attribStr(mex,'uri');
     this.name  = attribStr(mex,'name');
     this.ts    = attribStr(mex,'ts');
+    this.permission = attribStr(mex, 'permission');
     this.owner = attribStr(mex,'owner');
     this.resource_type = this.xmltag;    
 }

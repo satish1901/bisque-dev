@@ -301,7 +301,7 @@ Ext.define('Bisque.Resource',
     preClick : function()
     {
         this.msgBus.fireEvent('ResourceSingleClick', this.resource);
-    	
+
     	if (this.el.hasCls('resource-view-selected'))
     	{
     		this.toggleSelect(false);
@@ -317,7 +317,7 @@ Ext.define('Bisque.Resource',
     toggleSelect : function(state)
     {
     	if (state)
-    		this.addCls('resource-view-selected')
+            this.addCls('resource-view-selected')
     	else
     	{
     		this.removeCls('resource-view-selected');
@@ -442,7 +442,7 @@ Ext.define('Bisque.Resource.Page',
             itemId      :   'btnDownload',
             iconCls     :   'icon-download-small',
             operation   :   this.downloadResource,
-            handler     :   this.testAuth,
+            handler     :   this.downloadResource,
             compression :   'tar',
             menu        :   {
                                 defaults    :   {
@@ -451,7 +451,7 @@ Ext.define('Bisque.Resource.Page',
                                                     groupCls    :   Ext.baseCSSClass + 'menu-group-icon',
                                                     checked     :   false,
                                                     scope       :   this,
-                                                    handler     :   this.testAuth,
+                                                    handler     :   this.downloadResource,
                                                     operation   :   this.downloadResource
                                                 },
                                 items       :   [{

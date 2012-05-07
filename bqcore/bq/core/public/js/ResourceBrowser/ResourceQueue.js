@@ -245,10 +245,10 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
 		//console.time("prefetch");
 		
 		this.list=this.slice(this.rqOffset, this.rqOffset+this.visLimit);
-
+		
 		for(var i=0;i<this.list.length;i++)
 		{
-			this.splice(i+this.rqOffset, 1, Bisque.ResourceFactory.getResource({resource:this[i+this.rqOffset].resource, layoutKey:this.layoutKey, msgBus:this.msgBus, resQ:this, browser:this.browser}))
+			this.splice(i+this.rqOffset, 1, Bisque.ResourceFactory.getResource({resource:this[i+this.rqOffset].resource, layoutKey:this.layoutKey, msgBus:this.msgBus, resQ:this, browser:this.browser}));
 			this.list[i].prefetch(layoutMgr);
 		}
 
