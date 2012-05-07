@@ -28,6 +28,7 @@ The bisque server
         "TGScheduler",
         "boto",
         "numpy==1.6.0",
+        "ordereddict",
         # Installed from http://biodev.ece.ucsb.edu/binaries/depot
         "tw.recaptcha",
         "tgext.registration2",
