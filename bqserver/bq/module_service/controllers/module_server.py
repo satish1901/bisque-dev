@@ -212,9 +212,9 @@ class MexDelegate (Resource):
 
 
 def read_xml_body():
-    clen = int(tg.request.headers.get('Content-Length')) or 0
+    clen = int(tg.request.headers.get('Content-Length', 0)) 
     content = tg.request.headers.get('Content-Type')
-    if content.startswith('text/xml') or content.startswith('application/xml'):
+    if clen and content.startswith('text/xml') or content.startswith('application/xml'):
         return etree.XML(tg.request.body_file.read(clen))
     return None
 
@@ -330,7 +330,7 @@ class ServiceDelegate(controllers.WSGIAppController):
     @expose(content_type='text/xml')
     def execute(self, **kw):
         log.debug ('EXECUTE %s with %s' % (self.module, kw))
-        mex = read_xml_body()
+        mex = (tg.request.method.lower() in ('put', 'post') and read_xml_body()) or None
         mex = create_mex(self.module, self.name, mex=mex, **kw)
         etree.SubElement(mex, 'tag',
                          name="start-time",
