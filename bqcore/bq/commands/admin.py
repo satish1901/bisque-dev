@@ -100,7 +100,7 @@ class engine(server):
         import server_ops
         if self.command:
             server_ops.operation(self.command, self.options, 
-                                 mexrun=False,  cfg_file = 'engine.cfg',
+                                 mexrun=False,  cfg_file = 'site.cfg',
                                  *self.args)
             
 
