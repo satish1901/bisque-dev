@@ -88,6 +88,8 @@ def readhostconfig (site_cfg):
         bisque['pid_dir'] = config.get ('servers', 'pid_dir')
     if config.has_option('servers','backend'):
         bisque['backend'] = config.get ('servers', 'backend')
+    if config.has_option('servers','mex_dispatcher'):
+        bisque['mex_dispatcher'] = config.get ('servers', 'mex_dispatcher')
     return bisque
 
 
@@ -218,7 +220,7 @@ def uwsgi_command(command, cfgopt, processes, options, default_cfg_file = None):
     return processes
             
 
-def operation(command, options, mexrun=True, cfg_file=SITE_CFG, *args):
+def operation(command, options, mexrun = True, cfg_file=SITE_CFG, *args):
     """Run a multi-server command to start several bisque jobs
     """
     def verbose(msg):
@@ -240,9 +242,9 @@ def operation(command, options, mexrun=True, cfg_file=SITE_CFG, *args):
         cfgopt['site_dir'] = site_dir
         cfgopt['site_cfg'] = site_cfg
         cfgopt['virtualenv'] = os.getenv('VIRTUAL_ENV')          
+        mexrun = mexrun or config.get('mex_dispatcher', False)
 
         backend = config.get('backend', None)
-        
         verbose("using backend: " + str(backend))
         
         if backend == None:
