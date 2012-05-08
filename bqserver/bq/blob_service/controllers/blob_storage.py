@@ -140,6 +140,8 @@ class LocalStorage(BlobStorage):
             raise ConfigurationError('local storage %s does not begin with blob_service.local.dir %s' 
                                      % (self.format_path, self.top))
 
+        log.info("created localstore %s (%s)" % (self.format_path, self.top))
+
 
     def valid(self, ident):
         return os.path.exists(self.localpath(ident))
@@ -160,8 +162,8 @@ class LocalStorage(BlobStorage):
         ident = filepath[len(self.top) + 1:]
         return ident, localpath
 
-    def localpath(self, ident):
-        return  urlparse.urlparse(os.path.join(self.top, ident)).path
+    def localpath(self, path):
+        return  urlparse.urlparse(os.path.join(self.top, path)).path
 
     def nextEmptyBlob(self, user, filename):
         "Return a file object to the next empty blob"
@@ -199,6 +201,7 @@ class iRodsStorage(BlobStorage):
         log.debug('irods.user: %s irods.password: %s' % (self.user, self.password))
         # Get the constant portion of the path
         self.top = path.split('$')[0]
+        log.info("created irods store %s (%s)" % (self.format_path, self.top))
             
     def valid(self, irods_ident):
         return irods_ident and irods_ident.startswith(self.top)
@@ -256,7 +259,8 @@ class S3Storage(BlobStorage):
             except:
                 raise ServiceError('error while creating bucket in s3 blob storage')
         
-        log.info('s3 instantiated successfully')
+        log.info("created S3 store %s (%s)" % (self.format_path, self.top))
+
         
     def valid(self, s3_ident):
         return s3_ident and s3_ident.startswith(self.top)

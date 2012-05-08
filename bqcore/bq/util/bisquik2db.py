@@ -482,11 +482,13 @@ def resource2nodes(dbo, parent=None, view=[], baseuri=None,  **kw):
             elem = root = xmlnode(node, None, baseuri, view)
             nodes[node.id] = elem
 
-    vnodes = DBSession.query(Value).filter(Value.document_id == doc_id)
+    vnodes = DBSession.query(Value).filter(Value.document_id == doc_id).order_by(
+        Value.resource_parent_id, Value.indx)
     for v in vnodes:
         if v.resource_parent_id in nodes and nodes[v.resource_parent_id].get('value') is None:
             xmlnode (v, parent = nodes[v.resource_parent_id], baseuri=baseuri, view=view)
-    vnodes = DBSession.query(Vertex).filter(Vertex.document_id == doc_id)
+    vnodes = DBSession.query(Vertex).filter(Vertex.document_id == doc_id).order_by(
+        Vertex.resource_parent_id, Vertex.indx)
     for v in vnodes:
         if v.resource_parent_id in nodes:
             xmlnode (v, parent = nodes[v.resource_parent_id], baseuri=baseuri, view=view)
