@@ -84,9 +84,14 @@ import blob_storage
 log = logging.getLogger('bq.blobs')
 
 try:
+    # python 2.6 import
     from ordereddict import OrderedDict
 except ImportError:
-    log.error("can't import OrderedDict")
+    try:
+        # python 2.7 import
+        from collections import OrderedDict
+    except ImportError:
+        log.error("can't import OrderedDict")
 
 
 ###########################################################################
