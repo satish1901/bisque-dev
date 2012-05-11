@@ -235,12 +235,9 @@ class MexRunner(object):
             
         if response.status != 200:
             etree.SubElement (mextree, 'tag',
-                              name="http-status",
-                              value=str(response.status))
-            
-            etree.SubElement (mextree, 'tag',
-                              name="http-error",
-                              value=response.reason)
+                              name="error_message",
+                              value="Problem in dispatch:%s:%s" % (response.status, response.reason)
+                              )
 
         log.info ("MEX SAVE")
         bisquik2db(mextree)
@@ -273,14 +270,28 @@ class MexRunner(object):
         self.session = DBSession
         self.session.autoflush = False
         # Create service pairs 
-        pending = self.session.query(Mex).filter_by(resource_value='PENDING')
-        for mex in pending:
-            log.info('processing %s' % mex)
-            session['mex_id' ] = mex.id
-            for service in  self.find_active_service (mex):
-                request, response = self.process_one(mex, service)
-                if response.status == 200:
-                    break
+
+        with transaction.manager:
+            count = self.session.query(Mex).filter_by(resource_value='PENDING').update(
+                {Mex.resource_value: 'PENDING_'})
+        if count == 0: 
+            self.session.remove()
+            return 
+
+        try:
+            pending = self.session.query(Mex).filter_by(resource_value='PENDING_')
+            for mex in pending:
+                log.info('processing %s' % mex)
+                session['mex_id' ] = mex.id
+                for service in  self.find_active_service (mex):
+                    request, response = self.process_one(mex, service)
+                    if response.status == 200:
+                        break
+        finally:
+            with transaction.manager:
+                count = self.session.query(Mex).filter_by(resource_value='PENDING_').update(
+                    {Mex.resource_value: 'PENDING'})
+            
         self.session.remove()
         
 

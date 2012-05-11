@@ -280,7 +280,6 @@ def check_mex(mex):
                          name="end-time",
                          value=time.strftime("%Y-%m-%d %H:%M:%S",
                                              time.localtime()))
-        
     return mex
 
         
