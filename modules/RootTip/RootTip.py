@@ -100,31 +100,21 @@ class RootTip(object):
         if not args :
             args = ['setup', 'start', 'teardown']
 
-        if 'setup' in args:
-            self.setup()
-        if 'start' in args:
-            self.start()
-        if 'teardown' in args:
-            self.teardown()
-        #command = args.pop(0)
 
-        #if command not in ('setup','teardown', 'start'):
-        #    parser.error('Command must be start, setup or teardown')
+        try:
+            if 'setup' in args:
+                self.setup()
+            if 'start' in args:
+                self.start()
+            if 'teardown' in args:
+                self.teardown()
+        except Exception, e:
+            logging.exception ("problem during %s" % command)
+            self.bq.fail_mex(msg = "Exception during %s: %s" (command,  str(e)))
+            sys.exit(1)
 
-        # maltab code requires trailing slash..
-        #self.images = os.path.join(options.staging_path, 'images') + os.sep
-        #self.image_map_name = os.path.join(options.staging_path, IMAGE_MAP)
-        #self.resource_url = options.resource_url
-        #self.config = options
-        #self.is_dataset = 'dataset' in self.resource_url
-
+        sys.exit(0)
             
-        #command = getattr(self, command)
-        #command()
-
-        
-
-
 
 if __name__ == "__main__":
     RootTip().run()
