@@ -57,6 +57,41 @@ function BQWebApp (urlargs) {
       }, this, { delay: 100 } );
   }
 
+    // create grid for plotting status of parallel run
+    if (document.getElementById('run')) {
+        var myfields = [
+           {name: 'resource', title: 'Resource name'},
+           {name: 'status', title: 'Status'}, 
+        ];
+        
+        this.status_store = Ext.create('Ext.data.ArrayStore', {
+            data: [],
+            fields: myfields,              
+        });
+        
+        this.status_panel = this.create_renderer( 'run', 'Ext.grid.Panel', {
+            title: 'Parallel processing status',
+            renderTo: 'run',
+            cls: 'run-status',
+            border: 1,
+            height: 250,
+            
+            store: this.status_store,
+            columns: [
+                { text: myfields[0].title, sortable: true, dataIndex: myfields[0].name, flex: 3 },
+                { text: myfields[1].title, sortable: true, dataIndex: myfields[1].name, flex: 2 },              
+            ],            
+            
+            viewConfig: {
+                stripeRows: true,
+                enableTextSelection: true
+            },
+        });
+        this.status_panel.setVisible(false);
+    }
+
+
+
   if (this.module_url)  
   this.ms = new ModuleService(this.module_url, {
       ondone     : callback(this, 'done'), 
@@ -363,6 +398,7 @@ BQWebApp.prototype.clearUI_outputs_all = function () {
 }
 
 BQWebApp.prototype.updateResultsVisibility = function (vis) {
+    this.status_panel.setVisible(false);
     if (!vis) {
         if (this.holder_result) this.holder_result.hide();                    
         var result_label = document.getElementById("webapp_results_summary");
@@ -400,7 +436,7 @@ BQWebApp.prototype.run = function () {
     var button_run = document.getElementById("webapp_run_button");
     button_run.disabled=true;    
     button_run.childNodes[0].nodeValue = "Running ...";
-    
+        
     this.ms.run();
 }
 
@@ -414,10 +450,38 @@ BQWebApp.prototype.onstarted = function (mex) {
 BQWebApp.prototype.onprogress = function (mex) {
     if (!mex) return;
     var button_run = document.getElementById("webapp_run_button");    
-    if (mex.status != "FINISHED" && mex.status != "FAILED") {
+    if (mex.status == "FINISHED" || mex.status == "FAILED") return;
+    
+    if (!mex.hasIterables()) {
         button_run.childNodes[0].nodeValue = "Progress: " + mex.status;
         button_run.disabled = true;
+        return;
     }
+    
+    // ok, we're doing a parallel run, let's show status for all sub-mexes
+    this.status_panel.setVisible(true);
+    var index=0;
+    for (var iterable in mex.iterables) { 
+        for (var i=0; (o=mex.children[i]); i++) {
+            if (o instanceof BQMex) {
+                var name    = o.dict['inputs/'+iterable];
+                var status = o.value || o.status || 'initializing';
+                
+                var r = this.status_store.getAt(index);
+                if (r) {
+                    r.beginEdit();
+                    r.set( 'resource', name );
+                    r.set( 'status', status );
+                    r.endEdit(true);
+                    r.commit(); 
+                } else {
+                    r = this.status_store.add( {resource: name, status:status, } );
+                }                
+                index++;
+            }
+        }    
+    }
+  
 }
 
 //------------------------------------------------------------------------------
@@ -428,6 +492,7 @@ BQWebApp.prototype.done = function (mex) {
     var button_run = document.getElementById("webapp_run_button");
     button_run.childNodes[0].nodeValue = this.label_run;
     button_run.disabled = false;
+    this.status_panel.setVisible(false);
     this.mex = mex;
       
     if (mex.status == "FINISHED") {
