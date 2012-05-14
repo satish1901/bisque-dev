@@ -88,6 +88,8 @@ def readhostconfig (site_cfg):
         bisque['pid_dir'] = config.get ('servers', 'pid_dir')
     if config.has_option('servers','backend'):
         bisque['backend'] = config.get ('servers', 'backend')
+    if config.has_option('servers','mex_dispatcher'):
+        bisque['mex_dispatcher'] = config.get ('servers', 'mex_dispatcher')
     return bisque
 
 
@@ -162,29 +164,29 @@ def paster_command(command, options, cfgopt, processes, args):
         processes.append(Popen(server_cmd))
     return processes
 
-def mex_runner(command, options, processes):
+def mex_runner(command, options, processes, config):
     def verbose(msg):
         if options.verbose:
             print msg
         
     verbose('%s: %s' % (command , ' '.join(RUNNER_CMD)))
     if command is 'stop':
-        if os.path.exists('mexrunner.pid'):
+        if os.path.exists(os.path.join(config['pid_dir'], 'mexrunner.pid')):
             if not options.dryrun:
-                f = open('mexrunner.pid', 'rb')
+                f = open(os.path.join(config['pid_dir'], 'mexrunner.pid'), 'rb')
             mexrunner_pid = int(f.read())
             f.close()
             kill_process(mexrunner_pid)
-            os.remove ('mexrunner.pid')
+            os.remove (os.path.join(config['pid_dir'], 'mexrunner.pid'))
             verbose("Stopped Mexrunner: %s" % mexrunner_pid)
 
     if command is 'start':
         if not options.dryrun:
-            logfile = open('mexrunner.log', 'wb')
+            logfile = open(os.path.join(config['log_dir'], 'mexrunner.log'), 'wb')
             mexrunner = Popen(RUNNER_CMD, stdout=logfile, stderr=logfile)
 
             processes.append(mexrunner)
-            open('mexrunner.pid', 'wb').write(str(mexrunner.pid))
+            open(os.path.join(config['pid_dir'], 'mexrunner.pid'), 'wb').write(str(mexrunner.pid))
             verbose("Starting Mexrunner: %s" % mexrunner.pid)
     
     return processes
@@ -218,7 +220,7 @@ def uwsgi_command(command, cfgopt, processes, options, default_cfg_file = None):
     return processes
             
 
-def operation(command, options, mexrun=True, cfg_file=SITE_CFG, *args):
+def operation(command, options, mexrun = True, cfg_file=SITE_CFG, *args):
     """Run a multi-server command to start several bisque jobs
     """
     def verbose(msg):
@@ -240,9 +242,9 @@ def operation(command, options, mexrun=True, cfg_file=SITE_CFG, *args):
         cfgopt['site_dir'] = site_dir
         cfgopt['site_cfg'] = site_cfg
         cfgopt['virtualenv'] = os.getenv('VIRTUAL_ENV')          
+        mexrun = mexrun or config.get('mex_dispatcher', False)
 
         backend = config.get('backend', None)
-        
         verbose("using backend: " + str(backend))
         
         if backend == None:
@@ -289,7 +291,7 @@ def operation(command, options, mexrun=True, cfg_file=SITE_CFG, *args):
 
 
         if mexrun and command in ('stop', 'restart'):
-            mex_runner('stop', options, processes)
+            mex_runner('stop', options, processes, config)
             for proc in processes:
                 proc.wait()
             processes = []
@@ -303,7 +305,7 @@ def operation(command, options, mexrun=True, cfg_file=SITE_CFG, *args):
                     print "Warning: %s failed" % proc
                     startmex = False
             if startmex:
-                processes = mex_runner('start', options, processes)
+                processes = mex_runner('start', options, processes, config)
         if options.wait:
             for proc in processes:
                 proc.wait()

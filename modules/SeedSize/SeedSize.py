@@ -188,14 +188,12 @@ class SeedSize(object):
         self.config = options
         self.is_dataset = 'dataset' in self.resource_url
 
-
-
-            
-        command = getattr(self, command)
         try:
+            command = getattr(self, command)
             r = command()
-        except:
+        except Exception, e:
             logging.exception ("problem during %s" % command)
+            self.bq.fail_mex(msg = "Exception during %s: %s" (command,  str(e)))
             sys.exit(1)
         
         sys.exit(r)

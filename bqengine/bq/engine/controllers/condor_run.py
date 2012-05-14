@@ -5,7 +5,10 @@ import logging
 import string
 import subprocess
 import StringIO
+
 from bq.util.configfile import ConfigFile
+from bq.api import BQSession
+
 from command_run import CommandRunner, strtolist, AttrDict, check_exec
 from condor_templates import CondorTemplates
 
@@ -53,7 +56,7 @@ class CondorRunner (CommandRunner):
         # Condor requires a real Launcher (executable) in order
         # to post process. If it does not exist we create a small stub
         topmex = self.mexes[0]
-        executable = self.mexes[0].executable
+        executable = topmex.executable
         if len(self.mexes)>1:
             # multimex 
             executable = self.mexes[1].executable
@@ -69,6 +72,10 @@ class CondorRunner (CommandRunner):
         postargs.append ('staging_path=%s' % topmex.staging_path)
         postargs.extend ([ '%s=%s' % (k,v) for k,v in topmex.named_args.items()
                            if k!='staging_id' and k!='staging_path'])
+        postargs.append('mex_url=%s' % topmex.mex_url)
+        postargs.append('bisque_token=%s' % topmex.bisque_token)
+        #postargs.append('job_return= $RETURN')
+        postargs.append('$RETURN')
         postargs.append ('finish')
 
         for mex in self.mexes:
@@ -118,6 +125,21 @@ class CondorRunner (CommandRunner):
 
     def command_finish(self, **kw):
         # Cleanup condor stuff and look for error files.
+
+        topmex = self.mexes[0]
+        #job_return = int(self.mexes[0].named_args['job_return'])
+        job_return = int(topmex.arguments.pop())
+        if job_return != 0:
+            if self.session is None:
+                mex_url = topmex.named_args['mex_url']
+                token   = topmex.named_args['bisque_token']
+                self.session = BQSession().init_mex(mex_url, token)
+            # Possible look for log files and append to message here
+            #if os.path.exists(''):
+            #    pass
+            self.session.fail_mex(msg = 'job failed with return code %s' % job_return)
+            return None
+
         return super(CondorRunner, self).command_finish(**kw)
 
     def command_kill(self, **kw):

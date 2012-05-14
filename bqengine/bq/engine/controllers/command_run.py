@@ -236,11 +236,10 @@ class BaseRunner(object):
         self.options, topmex.arguments = self.parser.parse_args(args)
         self.command = topmex.arguments.pop()
         # Scan argument looking for named arguments
-        for arg in reversed(topmex.arguments):
+        for arg in topmex.arguments:
             tag, sep, val = arg.partition('=')
-            if sep != '=':
-                break
-            topmex.named_args[tag] = val
+            if sep == '=':
+                topmex.named_args[tag] = val
 
 
         # Pull out arguments from mex 
