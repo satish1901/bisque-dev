@@ -761,7 +761,7 @@ Ext.define('BQ.selectors.PixelResolution', {
 
         this.reference = res;        
         if (res instanceof BQDataset) {
-            var msg = 'You have selected a dataset, this module will only work correctly if all images have the same pixel resolution!';
+            var msg = 'In a dataset run, use 0 to pull embedded resolution or all images should have the same pixel resolution!';
             BQ.ui.tip(this.getId(), msg, {anchor:'left', timeout: 30000, });
         }
     },

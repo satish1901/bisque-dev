@@ -9,7 +9,8 @@
             <template>
                 <tag name="label" value="Select input resource" />
                 <tag name="accepted_type" value="image" />
-                <tag name="accepted_type" value="dataset" />     
+                <tag name="accepted_type" value="dataset" />    
+                <tag name="example_query" value="example:NuclearDetector3D" /> 
                 <tag name="require_geometry">
                     <tag name="z" value="stack" />
                     <tag name="fail_message" value="Requires a Z stack" />
@@ -179,6 +180,11 @@
     <tag name="display_options" >
         <tag name="group" value="Nuclear analysis" />
     </tag>
+
+    <tag name="interface">        
+        <tag name="javascript" type="file" value="webapp.js" />
+        <tag name="css" type="file" value="webapp.css" />
+    </tag>    
 
     <tag name="title" value="Detector of nuclei in 3D/4D" /> 
     <tag name="authors" value="Dmitry Fedorov and Boguslaw Obara" />    

@@ -310,6 +310,14 @@ the proxy address and see AdvancedInstalls"""),
              ]
 
 
+ENGINE_QUESTIONS=[
+    ('e1.url', "Enter the URL of this bisque module engine i.e. http://yourhostname:12000/",
+     "A module engine offers services over an open URL like a web-server. Please make sure any firewall software allows access to the selected port"),
+    ('e1.proxyroot', 'Enter the root URL of the Bisque Server ',
+     "A complete URL of the Bisque Server that will  access modules served by this engine .i.e. http://someserver:8080/"),
+    ]
+
+
 
 DB_QUESTIONS = [
                  ('sqlalchemy.url', 'A database URI', """
@@ -391,6 +399,18 @@ def install_site(params):
     params = modify_site_cfg(SITE_QUESTIONS, params)
     return params
 
+
+def install_engine(params):
+    print "Top level site variables are:"
+    for k in sorted(params.keys()):
+        if k in site:
+            print "  %s=%s" % (k,params[k])
+
+    if getanswer("Change a site variable", 'Y')!='Y':
+        return params
+        
+    params = modify_site_cfg(ENGINE_QUESTIONS, params, section = "servers", append=False)
+    return params
 
 
 
@@ -1295,7 +1315,7 @@ install_options= [
 
 
 engine_options= [
-           'binaries',
+#           'binaries',
            'matlab',
            'modules',
            'runtime',
@@ -1366,6 +1386,7 @@ def bisque_installer(options, args):
     if 'server'  in installer:
         install_server_defaults(params)
     if 'engine'  in installer:
+        params = install_engine(params)
         install_engine_defaults(params)
     if 'binaries'  in installer:
         fetch_external_binaries()
