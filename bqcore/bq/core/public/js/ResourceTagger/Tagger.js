@@ -1060,6 +1060,7 @@ Ext.define('Bisque.ResourceTagger.viewStateManager',
                 this.state.btnXML = false;
                 this.state.btnCSV = false;
                 this.state.btnGDocs = false;
+                this.state.editable = false;
                 break;
             }
             case 'Offline':
