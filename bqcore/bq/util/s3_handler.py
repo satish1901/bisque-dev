@@ -8,8 +8,8 @@ import boto
 from boto.s3.key import Key
 
 from bq.util.mkdir import _mkdir
-
-S3_CACHE = 'data/s3_cache/'
+from bq.util.paths import data_path
+S3_CACHE = data_path('s3_cache')
 
 class S3Error(Exception):
     pass
