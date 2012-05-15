@@ -380,8 +380,8 @@ Shape.prototype.init=function(svgNode){
     this.locked=false;
     this.visible=true;
     this.selected=false;
-  this.callback_data = null;
-   this.update_callback=null;
+    this.callback_data = null;
+    this.update_callback=null;
     this.select_callback=null;
     this.lastUpdate=null;
 }
@@ -389,7 +389,8 @@ Shape.prototype.init=function(svgNode){
 Shape.prototype.show=function(state){
   var display=(state)?"inline":"none";
   this.visible=state;
-  this.svgNode.setAttributeNS(null,"display",display);
+  if (this.svgNode)
+      this.svgNode.setAttributeNS(null,"display",display);
 };
 
 
@@ -513,7 +514,7 @@ Circle.prototype.init=function(svgNode){
 };
 
 Circle.prototype.realize=function(){
-    if(this.svgNode!=null){
+    if (this.svgNode) {
         this.center.realize();
         this.radius.realize();
         this.center.show(false);
@@ -522,7 +523,7 @@ Circle.prototype.realize=function(){
 };
 
 Circle.prototype.unrealize=function(){
-  if(this.svgNode!=null){
+  if (this.svgNode) {
         this.center.unrealize();
         this.radius.unrealize();
         this.svgNode.parentNode.removeChild(this.svgNode);
@@ -610,8 +611,11 @@ Handle.prototype.realize=function() {
             alert('Hanlde.realize svgelement');
       parent=_svgElement;
     }
-    handle.setAttributeNS(null,"x",this.point.x-Handle.SHAPE_SIZE_HALF);
-    handle.setAttributeNS(null,"y",this.point.y-Handle.SHAPE_SIZE_HALF);
+    if (!isNaN(this.point.x))
+        handle.setAttributeNS(null,"x",this.point.x-Handle.SHAPE_SIZE_HALF);
+    if (!isNaN(this.point.y))        
+        handle.setAttributeNS(null,"y",this.point.y-Handle.SHAPE_SIZE_HALF);
+    
     handle.setAttributeNS(null,"width",Handle.SHAPE_SIZE);
     handle.setAttributeNS(null,"height",Handle.SHAPE_SIZE);
     handle.setAttributeNS(null,"stroke","black");
@@ -1052,7 +1056,7 @@ Polygon.prototype.init=function(svgNode){
 };
 Polygon.prototype.realize=function(){
     if(this.svgNode!=null){
-        for(var i=0;i<this.handles.length;i++){
+        for(var i=0;i<this.handles.length;i++) {
             this.handles[i].realize();
             this.handles[i].show(false);
         }
