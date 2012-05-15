@@ -401,11 +401,8 @@ Ext.define('BQ.selectors.Resource', {
             return false;
         }
         
-        //if (this.selector_gobs) 
-        //    return this.selector_gobs.validate();
-
         if (this.resourcePreview && this.resourcePreview.validate) 
-            return this.resourcePreview.validate();
+            this.resourcePreview.validate();
         
         return true;
     },
@@ -479,17 +476,26 @@ Ext.define('BQ.selectors.Gobject', {
         // if requested, check if gobjects are present 
         if ('require_gobjects' in template) {
             var gobs = this.viewer ? this.viewer.getGobjects() : null;
-            if (!gobs || // gobs.length<=0 || 
-                ( 'require_gobjects/amount' in template && template['require_gobjects/amount']=='single'    && gobs.length!=1 ) ||
-                ( 'require_gobjects/amount' in template && template['require_gobjects/amount']=='many'      && gobs.length<1 ) ||
-                ( 'require_gobjects/amount' in template && template['require_gobjects/amount']=='oneornone' && gobs.length>1 ) ||
-                ( 'require_gobjects/amount' in template && template['require_gobjects/amount']>0 && gobs.length!=template['require_gobjects/amount'] )
-            ) {
-                var msg = template['require_gobjects/fail_message'] || 'Graphical annotations check failed!';
-                BQ.ui.attention(msg);
-                BQ.ui.tip(this.viewer.getId(), msg, {anchor:'left',});
-                return;
-            }  
+            var amount = null;
+            if ('require_gobjects/amount' in template) amount = template['require_gobjects/amount'];
+
+            if (gobs && amount && amount=='single'    && gobs.length==1) return true;
+            if (gobs && amount && amount=='many'      && gobs.length>=1) return true;
+            if (gobs && amount && amount=='oneornone' && gobs.length<=1) return true;
+            if (gobs && amount && typeof(amount)=='number' && amount>0 && gobs.length==amount) return true;
+            
+            if (gobs && amount) {
+                var ops = { '>':undefined, '<':undefined, '>=':undefined, '<=':undefined, '==':undefined, };
+                var m = amount.match(/([<>=]+)|(\d+)/g);
+                if (m.length==2 && m[0] in ops && !(isNaN(parseFloat(m[1]))))
+                    if (eval('gobs.length '+m[0]+m[1])) return true;
+            }
+            
+            // all tests have failed
+            var msg = template['require_gobjects/fail_message'] || 'Graphical annotations check failed!';
+            //BQ.ui.attention(msg);
+            BQ.ui.tip(this.viewer.getId(), msg, {anchor:'left',});
+            return false;
         }         
         
         return true;

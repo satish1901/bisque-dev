@@ -7,9 +7,10 @@ import logging
 import irods
 
 from bq.util.mkdir import _mkdir
+from bq.util.paths import data_path
+IRODS_CACHE = data_path('irods_cache')
 
 CONNECTION_POOL = {}
-IRODS_CACHE = 'data/irods_cache/'
 
 
 class IrodsError(Exception):
