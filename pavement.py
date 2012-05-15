@@ -76,6 +76,8 @@ def setup():
             os.chdir(app_dir)
             sh('python setup.py develop')
             os.chdir(top)
+    sh('easy_install http://biodev.ece.ucsb.edu/binaries/depot/Paste/Paste-1.7.5.1bisque2.tar.gz')
+
 
 @task
 @needs('generate_setup', 'minilib', 'setuptools.command.sdist')

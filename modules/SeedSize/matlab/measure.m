@@ -15,7 +15,7 @@ function [IMG] = measure(FileName,threshold)
     I = imread(FileName);    
     toc
     %if isrgb(I)
-    if size(x,3)==3,
+    if size(I,3)==3,
         I = rgb2gray(I);
     end
     % get the threshold
