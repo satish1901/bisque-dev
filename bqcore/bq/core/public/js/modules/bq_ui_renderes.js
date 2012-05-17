@@ -484,7 +484,7 @@ Ext.define('BQ.selectors.Gobject', {
             if (gobs && amount && amount=='oneornone' && gobs.length<=1) return true;
             if (gobs && amount && typeof(amount)=='number' && amount>0 && gobs.length==amount) return true;
             
-            if (gobs && amount) {
+            if (gobs && amount && typeof(amount)=='string') {
                 var ops = { '>':undefined, '<':undefined, '>=':undefined, '<=':undefined, '==':undefined, };
                 var m = amount.match(/([<>=]+)|(\d+)/g);
                 if (m.length==2 && m[0] in ops && !(isNaN(parseFloat(m[1]))))
@@ -862,7 +862,7 @@ Ext.define('BQ.selectors.Number', {
         if (!('minValue' in template) || !('maxValue' in template)) template.showSlider = false;
         // configure slider for floating point values
         var defaultDecimalPrecision = template.allowDecimals?2:0;
-        var sliderStep = (template.allowDecimals && (!('setep' in template) || template.step>=1))?0.01:1.0;
+        var sliderStep = template.stepSlider || ((template.allowDecimals && (!('setep' in template) || template.step>=1))?0.01:1.0);
         
         if (this.multivalue || template.showSlider != false)
         this.slider = Ext.create('Ext.slider.Multi', {        
@@ -1139,6 +1139,7 @@ Ext.define('BQ.selectors.Boolean', {
             
             fieldLabel: template.label?template.label:'',
             value: resource.value,
+            checked : resource.value,
 
             listeners: {
                 select: function(field, value) {
