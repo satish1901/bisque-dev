@@ -354,6 +354,7 @@ Ext.define('BQ.selectors.Resource', {
             this.resourcePreview = Ext.create('BQ.selectors.Gobject', {
                 resource: this.resource.gobjects[0],
                 selected_resource: this.selected_resource,
+                parent_renderer: this,
             });            
         } 
         
@@ -367,8 +368,8 @@ Ext.define('BQ.selectors.Resource', {
         this.add(this.resourcePreview);
         this.setHeight( this.getHeight() + this.resourcePreview.getHeight() + increment );
 
-        if (!this.validate()) return;
         this.fireEvent( 'changed', this, this.selected_resource );
+        if (!this.validate()) return;        
     },
 
     isValid: function() {
@@ -402,14 +403,13 @@ Ext.define('BQ.selectors.Resource', {
         }
         
         if (this.resourcePreview && this.resourcePreview.validate) 
-            this.resourcePreview.validate();
+            return this.resourcePreview.validate();
         
         return true;
     },
 
     onPhys: function() {
-        if (this.isValid())
-            this.fireEvent( 'gotPhys', this, this.phys );
+        this.fireEvent( 'gotPhys', this, this.phys );
     },
 
 });
@@ -461,7 +461,8 @@ Ext.define('BQ.selectors.Gobject', {
     
     onchanged: function() {    
         //BQ.ui.attention('objects changed');
-        if (!this.validate()) return;
+        var rend = this.parent_renderer || this;
+        if (!rend.validate()) return;
         this.resource.gobjects = Ext.clone( this.viewer.getGobjects() );              
     },
 
@@ -608,7 +609,7 @@ Ext.define('BQ.selectors.ImageChannel', {
         
         if (res instanceof BQDataset) {
             var msg = 'You have selected a dataset, this module will only work correctly if all images have the same channel structure!';
-            BQ.ui.tip(this.numfield.getId(), msg, {anchor:'left', timeout: 30000, });
+            BQ.ui.tip(this.numfield.getId(), msg, {anchor:'left', timeout: 30000, color: 'blue', });
         }
     },
 
@@ -768,7 +769,7 @@ Ext.define('BQ.selectors.PixelResolution', {
         this.reference = res;        
         if (res instanceof BQDataset) {
             var msg = 'In a dataset run, use 0 to pull embedded resolution or all images should have the same pixel resolution!';
-            BQ.ui.tip(this.getId(), msg, {anchor:'left', timeout: 30000, });
+            BQ.ui.tip(this.getId(), msg, { anchor:'left', timeout: 30000, color: 'blue', });
         }
     },
 
