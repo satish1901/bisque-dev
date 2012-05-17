@@ -30,6 +30,7 @@
                 <tag name="label" value="Nuclear channel" />
                 <tag name="reference" value="resource_url" />
                 <tag name="guess" value="nuc|Nuc|dapi|DAPI|405|dna|DNA|Cy3" />
+                <tag name="fail_message" value="You need to select image channel" />
             </template>
         </tag>
         
@@ -53,7 +54,8 @@
             <template>
                 <tag name="label" value="Voxel resolution" />
                 <tag name="reference" value="resource_url" />
-                <tag name="units" value="microns" />                
+                <tag name="units" value="microns" />  
+                <tag name="fail_message" value="You need to provide image resolution" />              
                 <tag name="description" value="This is a default voxel resolution and is only used during the dataste run if the image does not have one." />   
             </template>
         </tag>

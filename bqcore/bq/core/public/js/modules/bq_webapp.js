@@ -275,7 +275,7 @@ BQWebApp.prototype.inputs_from_mex = function (mex) {
         if (r && renderer && renderer.select)
             renderer.select(r);
     }
-  
+    this.inputsValid();
 }
 
 BQWebApp.prototype.load_from_mex = function (mex) {
@@ -425,6 +425,19 @@ BQWebApp.prototype.updateResultsVisibility = function (vis) {
     }  
 }
 
+BQWebApp.prototype.inputsValid = function () {
+    var valid=true;
+    var inputs = this.ms.module.inputs;
+    if (inputs && inputs.length>0)
+    for (var p=0; (i=inputs[p]); p++) {
+        var renderer = i.renderer;
+        if (renderer) 
+            //valid = valid && renderer.validate();
+            valid = renderer.validate() && valid; // make this run for all inputs and validate them all
+    }    
+    return valid;
+}
+
 //------------------------------------------------------------------------------
 // Run
 //------------------------------------------------------------------------------
@@ -435,18 +448,7 @@ BQWebApp.prototype.run = function () {
         BQ.ui.tip('webapp_run_button', 'You are not logged in! You need to log-in to run any analysis...'); 
         return;           
     }
-    
-    var valid=true;
-    var inputs = this.ms.module.inputs;
-    if (inputs && inputs.length>0)
-    for (var p=0; (i=inputs[p]); p++) {
-        var renderer = i.renderer;
-        if (renderer) 
-            //valid = valid && renderer.validate();
-            valid = renderer.validate() && valid; // make this run for all inputs and validate them all
-    }    
-    if (!valid) return;
-    
+    if (!this.inputsValid()) return;
   
     this.clearUI_outputs_all();    
     this.updateResultsVisibility(false);
