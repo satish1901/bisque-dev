@@ -161,7 +161,7 @@ function [output, info] = post_mpform(url, input, user, password)
 
     if info.status>=300,
         output = [];
-        error(['Bisque MP POST error: ' info.error '\nURL: ' url.toString()]); % dima: not sure if this should be here
+        error(['bq.post_mpform:error\nStatus: ' int2str(info.status) '\nMethod: ' method '\nURL: ' url.toString() '\nError:\n' info.error], '');
     %elseif exist('location', 'var') && ~isempty(location),    
     %    output = stream2file(connection.getInputStream(), location);        
     %    %output = stream2file( java.io.BufferedInputStream(connection.getInputStream(), 4*1024), location);
