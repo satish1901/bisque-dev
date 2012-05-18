@@ -144,7 +144,7 @@ function [output, info] = connect(method, url, location, input, user, password)
 
     if info.status>=300,
         output = [];
-        error(['Bisque Connect error: ' info.error '\nMethod: ' method '\nURL: ' url]); % dima: not sure if this should be here
+        error(['bq.connect:error\nStatus: ' int2str(info.status) '\nMethod: ' method '\nURL: ' url.toString() '\nError:\n' info.error], '');
     elseif exist('location', 'var') && ~isempty(location),    
         output = stream2file(connection.getInputStream(), location);        
         %output = stream2file( java.io.BufferedInputStream(connection.getInputStream(), 4*1024), location);

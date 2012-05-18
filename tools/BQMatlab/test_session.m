@@ -1,6 +1,6 @@
 
 % initing session
-s = bq.Session('http://vidi.ece.ucsb.edu:9090/data_service/mex/1155', '1155');
+s = bq.Session('http://vidi.ece.ucsb.edu:9090/data_service/mex/981', '981');
 
 % while running
 s.update('RUNNING');
