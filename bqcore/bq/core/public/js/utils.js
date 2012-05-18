@@ -297,74 +297,34 @@ function printXML( node ) {
   return xml;
 }
 
-
-function showerror (error_str) {
-    //clog(error_str);
-
-  var errordiv = document.createElementNS(xhtmlns, 'div');
-  document.body.appendChild(errordiv);  
-    errordiv.style.position = 'fixed';
-    errordiv.style.zIndex   = '14999';
-    errordiv.style.left     = '0px';
-    errordiv.style.top      = '0px';
-    errordiv.style.width    = '100%';
-    errordiv.style.height   = '100%'; 
-    errordiv.style.overflow = 'auto';
-    //document.body.style.padding = '0';
-    errordiv.innerHTML = error_str;
-
-}
-
 // threadsafe asynchronous XMLHTTPRequest code
-function makeRequest ( url, callback, callbackdata, method, postdata, errorcb ){
-    // we use a javascript feature here called "inner functions"
-    // using these means the local variables retain their values after the outer function
-    // has returned. this is useful for thread safety, so
-    // reassigning the onreadystatechange function doesn't stomp over earlier requests.
-
-    //  try {
-    //alert("getting perms");
-    //  netscape.security.PrivilegeManager.enablePrivilege("UniversalBrowserRead");
-    //      } catch (e) {
-    //      alert("Permission UniversalBrowserRead denied. " + e.toString());
-    //      }
-    //alert("makeRequest was called");
+function makeRequest ( url, callback, callbackdata, method, postdata, errorcb ) {
 
     function bindCallback(){
-        if (ajaxRequest.readyState == 0) {
-            // uninitialized
-        }
-        if (ajaxRequest.readyState == 1) {
-            // loading
-        }
-        if (ajaxRequest.readyState == 2) {
-            // loaded
-        }
-        if (ajaxRequest.readyState == 3) {
-            // interactive
-        }
-        if (ajaxRequest.readyState == 4) {
+        if (ajaxRequest.readyState == XMLHttpRequest.DONE) {
             //clog ("ajaxRequest.readyState == 4 and status: " + ajaxRequest.status);
             BQSession.reset_timeout();
             if (ajaxRequest.status == 200 || ajaxRequest.status == 0) {
-                if (ajaxCallback){
-                    if(ajaxRequest.responseXML != null) { // added to accomodate HTML requests as well as XML requests
+                if (ajaxCallback) {
+                    if (ajaxRequest.responseXML != null) { // added to accomodate HTML requests as well as XML requests
                         ajaxCallback( ajaxCallbackData, ajaxRequest.responseXML);
-                    }else{
+                    } else {
                         ajaxCallback( ajaxCallbackData, ajaxRequest.responseText);
                     }
                 } else {
-                    //alert('no callback defined');
-                    clog ("makeRequest: no callback defined");
+                    clog ("makeRequest - no callback defined: "+url);
                 }
             } else {
-
+                var consumed_status = { 401:undefined, 403:undefined, 404:undefined, };
                 var error_short = ("There was a problem with the request:\n" + 
                                    ajaxRequest.status + ":\t" + ajaxRequest.statusText + "\n");
                 var error_str = (error_short + ajaxRequest.responseText);
                 
-                if (ajaxRequest.status == 404 || ajaxRequest.status==401 )
-                    error_str = "You do not have permission for that operation\n(Are you logged in?)";
+                if (ajaxRequest.status == 401 || ajaxRequest.status==403 )
+                    error_str = "You do not have permission for this operation\nAre you logged in?\n\n"+url;
+                else
+                if (ajaxRequest.status == 404)
+                    error_str = "Requested resource does not exist:\n"+url;
                                  
                 if (ajaxCallbackError) {
                     ajaxCallbackError({ request: ajaxRequest, message: error_str, message_short: error_short});
@@ -372,12 +332,13 @@ function makeRequest ( url, callback, callbackdata, method, postdata, errorcb ){
                     return;
                 } 
                 
-                if (ajaxRequest.status == 404 || ajaxRequest.status==401) {
-                    alert(error_str);
+                if (ajaxRequest.status in consumed_status ) {
+                    //alert(error_str);
+                    BQ.ui.error(error_str); 
                     return;
                 }
                                    
-                showerror (error_str);
+                BQ.ui.error(error_str); 
                 //throw(error_str);
             }
         }
@@ -391,13 +352,10 @@ function makeRequest ( url, callback, callbackdata, method, postdata, errorcb ){
     var ajaxCallbackError = errorcb;
     
     try {
-        // bind our callback then hit the server...
         if (window.XMLHttpRequest) {
-            // moz et al
             ajaxRequest = new XMLHttpRequest();
             ajaxRequest.onreadystatechange = bindCallback;
             if ( method == "get" || method == "delete") {
-
                 ajaxRequest.open(method, url , true);
                 ajaxRequest.send(null);
             } else {
@@ -414,59 +372,54 @@ function makeRequest ( url, callback, callbackdata, method, postdata, errorcb ){
 }
 
 // Will call on response will call cb (xmldata)
-function xmlrequest ( url, cb,  method, postdata, errorcb ){
-    var ajaxRequest = null;
+function xmlrequest ( url, cb,  method, postdata, errorcb ) {
     function checkResponse() {
-        if (ajaxRequest.readyState == XMLHttpRequest.UNSENT) {// uninitialized
-        } else if (ajaxRequest.readyState == XMLHttpRequest.OPENED) {
-        } else if (ajaxRequest.readyState == XMLHttpRequest.HEADERS_RECEIVED) {
-        } else if (ajaxRequest.readyState == XMLHttpRequest.LOADING) {
-        } else if (ajaxRequest.readyState == XMLHttpRequest.DONE) {
+        if (ajaxRequest.readyState == XMLHttpRequest.DONE) {
             BQSession.reset_timeout();
             if (ajaxRequest.status == 200) {
-                if (ajaxRequest.callback){
-                    if(ajaxRequest.responseXML != null) { 
+                if (ajaxRequest.callback) {
+                    if (ajaxRequest.responseXML != null) { 
                         // added to accomodate HTML requests 
                         // as well as XML requests
                         ajaxRequest.callback(ajaxRequest.responseXML);
-                    }else{
+                    } else {
                         clog ('WARNING: xmlrequest return text/html');
                         ajaxRequest.callback(ajaxRequest.responseText);
                     }
                 } else {
-                    //alert('no callback defined');
+                    clog ("xmlrequest - no callback defined: "+url);
                 }
-            } else if (ajaxRequest.status==401 ) {
-            // Unathorized and unauthenticated (not logged in )
-                window.location ="/auth_service/login?came_from=" + window.location;
-            } else if (ajaxRequest.status==403 ) {
-                alert ("You do not have permission for that operation");
-            } else if (ajaxRequest.status == 404 ) {
-                alert ("You do not have permission for that operation\n(Are you logged in?)");
             } else {
-                var error_short = "There was a problem with the request:\n"; 
-                if (ajaxRequest.request_url) error_short += 'URL: ' + ajaxRequest.request_url+'\n';             
-                error_short += 'Status: ' + ajaxRequest.status+'\n';                                    
-                error_short += 'Message: ' + ajaxRequest.statusText+'\n';  
-                                   
-                var error_str = (error_short + ajaxRequest.responseText);
+                var error_short = "There was a problem with the request:\n";
+                if (ajaxRequest.request_url) 
+                    error_short += 'URL: ' + ajaxRequest.request_url+'\n';
+                error_short += 'Status: ' + ajaxRequest.status+'\n';
+                error_short += 'Message: ' + ajaxRequest.statusText+'\n';
+                var error_str = (error_short + ajaxRequest.responseText);                
+                
+                var consumed_status = { 401:undefined, 403:undefined, 404:undefined, };
+                if (ajaxRequest.status == 401 || ajaxRequest.status==403 ) {
+                    //error_str = "You do not have permission for this operation\nAre you logged in?\n\n"+url;
+                    window.location ="/auth_service/login?came_from=" + window.location;
+                } else
+                if (ajaxRequest.status == 404)
+                    error_str = "Requested resource does not exist:\n"+url;
+                                 
                 if (ajaxRequest.errorcallback) {
                     ajaxRequest.errorcallback({ request : ajaxRequest,
                                                 message : error_str, 
                                                 message_short: error_short});
                 } else {
-                    showerror (error_str);
+                    BQ.ui.error(error_str); 
                 }
-                throw(error_str);                
-            }
+                //throw(error_str);
+            }            
         }
     }
 
+    var ajaxRequest = null;
     try {
-  
-        // bind our callback then hit the server...
         if (window.XMLHttpRequest) {
-            // moz et al
             ajaxRequest = new XMLHttpRequest();
             ajaxRequest.onreadystatechange = checkResponse;
             ajaxRequest.callback = cb;
@@ -476,7 +429,7 @@ function xmlrequest ( url, cb,  method, postdata, errorcb ){
             ajaxRequest.open(method, url , true);
             ajaxRequest.setRequestHeader('Accept', 'text/xml');
 
-            if (  method == "get" || method == "delete") {
+            if (method == "get" || method == "delete") {
                 ajaxRequest.send(null);
             } else {
                 //ajaxRequest.setRequestHeader("Content-Type",
