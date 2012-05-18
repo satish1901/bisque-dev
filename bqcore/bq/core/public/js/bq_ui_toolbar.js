@@ -340,12 +340,13 @@ Ext.define('BQ.Application.Toolbar', {
     }, 
    
     createResource : function(resource) {
-        var ignore = { 'mex':null, 'user':null, 'image':null, 'module':null, 'service':null, 'system':null, 'file':null, 'dataset':null };        
+        var ignore = { 'mex':null, 'user':null, 'image':null, 'module':null, 'service':null, 'system':null, 'file':null, 'dataset':null, };        
         var mydata = [['dataset']];
         var r=null;
         for (var i=0; (r=resource.children[i]); i++)
             if (!(r.name in ignore))
-                mydata.push( [r.name] );       
+                mydata.push( [r.name] );   
+        delete ignore.dataset;
         
         store_types = Ext.create('Ext.data.ArrayStore', {
             fields: [ {name: 'name',}, ],        
