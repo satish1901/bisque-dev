@@ -830,6 +830,7 @@ BQFactory.load = function(uri, cb, progresscb, cache) {
 default_error_callback = function (o) {
   //alert(o.message);
   clog(o.message);
+  BQ.ui.error(o.message); 
 }
 
 BQFactory.request = function(params) {
