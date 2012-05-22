@@ -326,7 +326,8 @@ BQWebApp.prototype.setupUI_inputs = function (my_renderers) {
     for (var p=0; (i=inputs[p]); p++) {
         var t = i.type;
         if (t in BQ.selectors.resources)
-            i.renderer = this.create_renderer( 'inputs', BQ.selectors.resources[t], { resource: i, module: this.ms.module, } );
+            i.renderer = this.create_renderer( 'inputs', BQ.selectors.resources[t], 
+                                               { resource: i, module: this.ms.module, webapp: this, } );
             //if (my_renderers) my_renderers(i.name) = i.renderer;
     }
 
@@ -343,7 +344,8 @@ BQWebApp.prototype.setupUI_inputs = function (my_renderers) {
     for (var p=0; (i=inputs[p]); p++) {
         var t = (i.type || i.resource_type).toLowerCase();
         if (t in BQ.selectors.parameters)
-            i.renderer = this.create_renderer( 'parameters', BQ.selectors.parameters[t], { resource: i, module: this.ms.module, } );
+            i.renderer = this.create_renderer( 'parameters', BQ.selectors.parameters[t], 
+                                               { resource: i, module: this.ms.module, webapp: this, } );
             //if (my_renderers) my_renderers(i.name) = i.renderer;
     }
 }
