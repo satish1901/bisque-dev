@@ -23,7 +23,8 @@ Ext.namespace('BQ.renderers');
 BQ.selectors.resources  = { 'image'            : 'BQ.selectors.Resource', 
                             'dataset'          : 'BQ.selectors.Resource', 
                             'resource'         : 'BQ.selectors.Resource', 
-                            'gobject'          : 'BQ.selectors.Gobject', };
+                            'gobject'          : 'BQ.selectors.Gobject', 
+                            'mex'              : 'BQ.selectors.Mex', };
 
 BQ.selectors.parameters = { 'tag'              : 'BQ.selectors.String', 
                             'string'           : 'BQ.selectors.String', 
@@ -822,7 +823,206 @@ Ext.define('BQ.selectors.PixelResolution', {
 });
 
 
+/*******************************************************************************
+Resource templated configs:
+query
+*******************************************************************************/
 
+Ext.define('BQ.selectors.Mex', {
+    alias: 'widget.selectormex',    
+    extend: 'BQ.selectors.Selector',
+    requires: ['Ext.button.Button', 'Bisque.ResourceBrowser.Dialog', 'Bisque.DatasetBrowser.Dialog'],
+    
+    layout: 'auto',
+    cls: 'resourcerenderer',
+    height: 75,
+
+    initComponent : function() {
+        var resource = this.resource;
+        var template = resource.template || {};
+
+        this.items = [];
+        this.items.push( {xtype: 'label', text:template.label+':' } );
+        this.items.push( Ext.create('Ext.button.Button', {
+            text: 'Select a module execution (MEX)', 
+            //iconCls: 'upload', 
+            scale: 'large', 
+            //cls: 'x-btn-default-large',
+            //tooltip: 'Start the upload of all queued files',
+            handler: Ext.Function.bind( this.selectMex, this ),
+        }));
+   
+        this.callParent();
+    },
+    
+    selectMex: function() {
+        var resource = this.resource;
+        var template = resource.template || {};        
+        var browser  = Ext.create('Bisque.ResourceBrowser.Dialog', {
+            'height' : '85%',
+            'width' :  '85%',
+            dataset: '/data_service/mex',
+            tagQuery: template.query,
+            listeners: {  'Select': function(me, resource) { 
+                           this.onselected(resource);
+                    }, scope: this },
+            
+        });          
+    },
+   
+    onerror: function(message) {
+        BQ.ui.error('Error fethnig resource:<br>' + message); 
+    },    
+    
+    select: function(resource) {
+        // if the input resource is a reference to an image with wrapped gobjects
+        if (resource instanceof BQTag) {
+            BQFactory.request( { uri: resource.value, 
+                                 cb: callback(this, 'onselected'), 
+                                 errorcb: callback(this, 'onerror'), 
+                               });               
+        } else if (typeof resource != 'string')
+            this.onselected(resource);
+        else
+            BQFactory.request( { uri: resource, 
+                                 cb: callback(this, 'onselected'), 
+                                 errorcb: callback(this, 'onerror'), 
+                               });         
+    },    
+    
+    onselected: function(R) {
+        this.selected_resource = R;
+        this.resource.value = R.uri;
+        this.resource.type = R.resource_type;        
+        var increment = 20;
+        
+        if (this.resourcePreview) {
+            this.setHeight( this.getHeight() - this.resourcePreview.getHeight() - increment);    
+            this.resourcePreview.destroy();
+        }
+        this.resourcePreview = Bisque.ResourceFactoryWrapper.getResource( {resource:R} );
+        this.add(this.resourcePreview);
+        this.setHeight( this.getHeight() + this.resourcePreview.getHeight() + increment );
+
+        this.fireEvent( 'changed', this, this.selected_resource );
+        if (!this.validate()) return;        
+    },
+
+    isValid: function() {
+        var resource = this.resource;
+        var template = resource.template || {};        
+
+        if (!this.selected_resource || !this.selected_resource.uri) {
+            //BQ.ui.attention('You need to select an input resource!');
+            BQ.ui.tip(this.getId(), 'You need to select an input resource!', {anchor:'left',});
+            return false;
+        }
+        
+        return true;
+    },
+
+});
+
+/*******************************************************************************
+Resource templated configs:
+
+*******************************************************************************/
+/*
+Ext.define('BQ.selectors.SubTree', {
+    alias: 'widget.selectormex',    
+    extend: 'BQ.selectors.Selector',
+    requires: ['Ext.button.Button', 'Bisque.ResourceBrowser.Dialog', 'Bisque.DatasetBrowser.Dialog'],
+    
+    layout: 'auto',
+    cls: 'resourcerenderer',
+    height: 75,
+
+    initComponent : function() {
+        var resource = this.resource;
+        var template = resource.template || {};
+
+        this.items = [];
+        this.items.push( {xtype: 'label', text:template.label+':' } );
+        this.items.push( Ext.create('Ext.button.Button', {
+            text: 'Select a module execution (MEX)', 
+            //iconCls: 'upload', 
+            scale: 'large', 
+            //cls: 'x-btn-default-large',
+            //tooltip: 'Start the upload of all queued files',
+            handler: Ext.Function.bind( this.selectMex, this ),
+        }));
+   
+        this.callParent();
+    },
+    
+    selectMex: function() {
+        var resource = this.resource;
+        var template = resource.template || {};        
+        var browser  = Ext.create('Bisque.ResourceBrowser.Dialog', {
+            'height' : '85%',
+            'width' :  '85%',
+            dataset: '/data_service/mex',
+            tagQuery: template.query,
+            listeners: {  'Select': function(me, resource) { 
+                           this.onselected(resource);
+                    }, scope: this },
+            
+        });          
+    },
+   
+    onerror: function(message) {
+        BQ.ui.error('Error fethnig resource:<br>' + message); 
+    },    
+    
+    select: function(resource) {
+        // if the input resource is a reference to an image with wrapped gobjects
+        if (resource instanceof BQTag) {
+            BQFactory.request( { uri: resource.value, 
+                                 cb: callback(this, 'onselected'), 
+                                 errorcb: callback(this, 'onerror'), 
+                               });               
+        } else if (typeof resource != 'string')
+            this.onselected(resource);
+        else
+            BQFactory.request( { uri: resource, 
+                                 cb: callback(this, 'onselected'), 
+                                 errorcb: callback(this, 'onerror'), 
+                               });         
+    },    
+    
+    onselected: function(R) {
+        this.selected_resource = R;
+        this.resource.value = R.uri;
+        this.resource.type = R.resource_type;        
+        var increment = 20;
+        
+        if (this.resourcePreview) {
+            this.setHeight( this.getHeight() - this.resourcePreview.getHeight() - increment);    
+            this.resourcePreview.destroy();
+        }
+        this.resourcePreview = Bisque.ResourceFactoryWrapper.getResource( {resource:R} );
+        this.add(this.resourcePreview);
+        this.setHeight( this.getHeight() + this.resourcePreview.getHeight() + increment );
+
+        this.fireEvent( 'changed', this, this.selected_resource );
+        if (!this.validate()) return;        
+    },
+
+    isValid: function() {
+        var resource = this.resource;
+        var template = resource.template || {};        
+
+        if (!this.selected_resource || !this.selected_resource.uri) {
+            //BQ.ui.attention('You need to select an input resource!');
+            BQ.ui.tip(this.getId(), 'You need to select an input resource!', {anchor:'left',});
+            return false;
+        }
+        
+        return true;
+    },
+
+});
+*/
 
 /*******************************************************************************
 Number templated configs:
