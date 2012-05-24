@@ -969,7 +969,8 @@ def current_mex_id ():
                 if mex is None:
                     log.error("No initialization (system) mex found")
                 mex_id = mex and mex.id
-                request.initial_mex_id = mex_id
+                if mex_id:
+                    request.initial_mex_id = mex_id
 
     #else:
     #    mex = DBSession.merge (mex, load=False)
