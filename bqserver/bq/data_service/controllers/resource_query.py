@@ -72,7 +72,6 @@ from bq.data_service.model import Tag, GObject
 from bq.data_service.model import Value, values
 from bq.data_service.model import dbtype_from_tag
 
-from bq.core import identity
 from bq.core.identity import get_user_id, get_admin_id
 from bq.core.model import User
 from bq.util.mkdir import _mkdir
@@ -275,7 +274,7 @@ def prepare_permissions (query, user_id, with_public, action = RESOURCE_READ):
     with_public = public_vals.get(with_public, False)
 
     if not user_id:
-        user_id = identity.get_user_id()
+        user_id = get_user_id()
 
     if user_id == get_admin_id():
         log.debug('user (%s) =admin skipping protection filters' % (user_id))
@@ -704,8 +703,7 @@ def resource_query(resource_type,
     if kw.has_key('limit'):
         query = query.limit (int(kw.pop('limit')))
 
-    
-    log.debug ("query = %s" % query)
+    #log.debug ("query = %s" % query)
     #query =  query.distinct()
     
     return query
@@ -878,7 +876,7 @@ def resource_delete(resource, user_id=None):
        2. else remove ACL permissions 
        3. Ensure all references are deleted also.
        """
-    log.info('resource_delete %s' % resource)
+    log.info('resource_delete %s: start' % resource)
     if  user_id is None:
         user_id = get_user_id()
     if resource.owner_id != user_id and user_id != get_admin_id():
@@ -886,7 +884,7 @@ def resource_delete(resource, user_id=None):
         q = session.query (TaggableAcl).filter_by (taggable_id = resource.id)
         q = q.filter (TaggableAcl.user_id == user_id)
         q.delete()
-        log.debug('deleting acls %s' % q)
+        log.debug('deleting acls reource_owner(%s) delete(%s) %s' % (resource.owner_id, user_id, q))
         return
     # owner so first delete all referneces.
     # ACL, values etc.. 
@@ -901,7 +899,7 @@ def resource_delete(resource, user_id=None):
     q = session.query (TaggableAcl).filter_by (taggable_id = resource.id)
     q.delete()
     session.delete(resource)
-    log.debug('resource delete %s' % resource)
+    log.debug('resource_delete %s:end' % resource)
 
 
 def resource_types(user_id=None, wpublic=False):

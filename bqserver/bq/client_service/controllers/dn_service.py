@@ -68,7 +68,7 @@ from repoze.what.predicates import not_anonymous
 #from paste.debug.profile import profile_decorator
 
 
-from bq.core.identity import get_user_id, get_user_pass
+from bq.core.identity import get_username, anonymous
 from bq.core.service import ServiceController, service_registry
 from bq.util.bix2db import BIXImporter
 from bq.util.bisquik2db import bisquik2db
@@ -130,11 +130,9 @@ class DNServer(ServiceController):
     #@profile_decorator(logfile="/home/kage/dn_savefile.profile")
     def savefile (self, **kw):
         log.info ("savefile request " + str (tg.request))
-        #log.debug( 'savefile - username: ' + str(identity.current.user_name) )      
-
-        userpwd = get_user_pass()
+        username = get_username()
         # check the user identity here and return 401 if fails
-        if not not_anonymous():
+        if anonymous():
             response.status_int = 401
             log.debug( 'Access denied' )        
             return 'Access denied'
@@ -155,7 +153,7 @@ class DNServer(ServiceController):
             return "No file to be uploaded..."        
         upload = kw['upload']
         uploadroot = config.get('bisque.image_service.upload_dir', data_path('uploads'))
-        upload_dir = uploadroot+'/'+ str(userpwd[0])
+        upload_dir = uploadroot+'/'+ str(username)
         _mkdir (upload_dir)        
         if not upload.filename:
             return 'No file sent...'
@@ -175,15 +173,14 @@ class DNServer(ServiceController):
             for DN provide http uploads, where directory is not specified by DN 
             but is known by the server and thus should be ignored here
         '''
-        userpwd = get_user_pass()
+        username = get_username()
         #log.debug( 'notify - username: ' + str(userpwd) )
-        if userpwd is None or not not_anonymous():
+        if username is None:
             log.debug( 'notify needs credentialed user' )               
             abort(401)
 
         log.debug( 'notify - args: ' + str(kw) )
         
-        username   = str(userpwd[0])
         bixfiles   = kw.pop('bixfiles', [])
         imagefiles = kw.pop('imagefiles', [])
         upload_dir = kw.pop('uploaddir', None)

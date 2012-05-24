@@ -2,10 +2,12 @@
 """Setup the bqcore application"""
 
 import logging
-from tg import config, session
-from bq.core import model
+from tg import config, session, request
 from paste.registry import Registry
 from beaker.session import Session, SessionObject
+from pylons.controllers.util import Request
+from bq.release import __VERSION__
+from bq.core import model
 
 import transaction
 
@@ -20,6 +22,8 @@ def bootstrap(command, conf, vars):
     registry = Registry()
     registry.prepare()
     registry.register(session, SessionObject({}))
+    registry.register(request, Request.blank('/bootstrap'))
+    request.identity = {}
 
     try:
         initial_mex = ModuleExecution()
@@ -27,7 +31,7 @@ def bootstrap(command, conf, vars):
         initial_mex.name = "initialization"
         initial_mex.type = "initialization"
         model.DBSession.add(initial_mex)
-        session['mex'] = initial_mex
+        request.identity['bisque.mex'] = initial_mex
 
         admin = model.User(
             user_name = u"admin",
@@ -73,9 +77,9 @@ def bootstrap(command, conf, vars):
         system = model.DBSession.query(Taggable).filter_by (resource_type='system').first()
         if system is None:
             system = Taggable(resource_type = 'system')
-            version = Tag (parent = system)
+            version = Tag(parent = system)
             version.name ='version'
-            version.value  = '0.5'
+            version.value  = __VERSION__
             prefs = Tag(parent = system)
             prefs.name = 'Preferences'
             model.DBSession.add(system)

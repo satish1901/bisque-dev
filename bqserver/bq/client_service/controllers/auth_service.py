@@ -64,8 +64,6 @@ from tg import config, validate
 from pylons.i18n import _
 from repoze.what import predicates
 
-#from turbogears.visit import enable_visit_plugin
-
 from bq.core.service import ServiceController
 from bq.core import identity
 from bq.core.model import DBSession
@@ -162,13 +160,15 @@ class AuthenticationServer(ServiceController):
     @expose(content_type="text/xml")
     def credentials(self, **kw):
         response = etree.Element('resource', type='credentials')
-        cred = identity.get_user_pass()
-        if cred:
-            etree.SubElement(response,'tag', name='user', value=cred[0])
-            etree.SubElement(response,'tag', name='pass', value=cred[1])
-            etree.SubElement(response,'tag',
-                             name="basic-authorization",
-                             value=base64.encodestring("%s:%s" % cred))
+        username = identity.get_username()
+        if username:
+            etree.SubElement(response,'tag', name='user', value=username)
+            #OLD way of sending credential
+            #if cred[1]:
+            #    etree.SubElement(response,'tag', name='pass', value=cred[1])
+            #    etree.SubElement(response,'tag',
+            #                     name="basic-authorization",
+            #                     value=base64.encodestring("%s:%s" % cred))
         #tg.response.content_type = "text/xml"
         return etree.tostring(response)
 
