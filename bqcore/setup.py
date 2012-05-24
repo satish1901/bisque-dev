@@ -111,7 +111,6 @@ setup(
       create-module = bq.commands.create:createModule
       create-bootstrap = bq.commands.create_bootstrap:make_bootstrap
       server = bq.commands.admin:server
-      engine = bq.commands.admin:engine
       setup   = bq.commands.admin:setup
       deploy   = bq.commands.admin:deploy
       sql     = bq.commands.admin:sql
