@@ -23,12 +23,12 @@ log = logging.getLogger("bq.http_client")
 local_client = None
 
 try:
-    from bisquik.identity import get_user_pass
-    def get_default_userpass():
-        return get_user_pass()
+    from bisquik.identity import add_credentials 
+    def add_default_credentials(headers):
+        add_credentials(headers)
 except:
-    def get_default_userpass():
-        return None
+    def add_default_credentials(headers):
+        pass
 
 
 
@@ -61,13 +61,16 @@ def finish(cleanup_cache=False):
 
 
 def prepare_credentials (client, headers, userpass=None):
-    if userpass is None:
-        userpass =  get_default_userpass()
     if userpass is not None:
         client.add_credentials (userpass[0], userpass[1])
         headers['authorization'] =  'Basic ' + base64.encodestring("%s:%s" % userpass ).strip()
-    else:
-        client.clear_credentials()
+        return 
+    cred = {}
+    add_default_credentials (cred) 
+    if cred: 
+        headers.update (cred)
+        return 
+    client.clear_credentials()
 
 
 def request(url, method="GET", body=None, headers = {},
