@@ -675,7 +675,7 @@ class import_serviceController(ServiceController):
         log.info ('insert %s for %s' % (url, user))
         try:
             if user is not None and identity.current.user_name == 'admin':
-                identity.current.user_name = user
+                identity.current.set_current_user( user )
             resource =  blob_service.store_blob(filename=filename, url=url, permission=permission, **kw)
             return etree.tostring(resource)
         except Exception,e:

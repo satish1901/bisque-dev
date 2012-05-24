@@ -40,7 +40,24 @@ def strtolist(x, sep=','):
 def config_path(*names):
     return to_sys_path(os.path.join('.', 'config', *names))
 
+def which(program):
+    import os
+    def is_exe(fpath):
+        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
 
+    fpath, fname = os.path.split(program)
+    if fpath:
+        if is_exe(program):
+            return program
+    else:
+        for path in os.environ["PATH"].split(os.pathsep):
+            exe_file = os.path.join(path, program)
+            if is_exe(exe_file):
+                return exe_file
+
+    return None
+##########################################
+# Local exception
 class RunnerException(Exception):
     """Exception in the runners"""
     def __init__(self, msg =None, mex= {}):
@@ -53,8 +70,11 @@ class RunnerException(Exception):
 
 
 
-
+######################################
+# dict allowing field access to elements
 class AttrDict(dict):
+    "dictionary allowing access to elements as field"
+
     def __init__(self, *args, **kwargs):
         dict.__init__(self, *args, **kwargs)
     def __getattr__(self, name):
@@ -340,6 +360,20 @@ class BaseRunner(object):
     def command_status(self, **kw):
         return None
 
+    def check(self, module_tree=None, **kw):
+        "check whether the module seems to be runnable"
+        self.read_config(**kw)
+        # check for a disabled module
+        enabled = self.config.get('module_enabled', 'true').lower() == "true"
+        if not enabled :
+            log.info ('Module is disabled')
+            return False
+        # Add remaining arguments to the executable line
+        # Ensure the loaded executable is a list
+        if isinstance(self.config.executable, str):
+            executable = shlex.split(self.config.executable)
+        return executable and which(executable[0]) is not None
+
     def main(self, **kw):
         # Find and read a config file for the module
         try:
@@ -358,9 +392,8 @@ class BaseRunner(object):
         except Exception, e:
             log.exception ("Unknown exeception: %s" % e)
             raise RunnerException(str(e), self.mexes)
-
-
         return 1
+
 
 class CommandRunner(BaseRunner):
     """Small extension to BaseRunner to actually execute the script.
