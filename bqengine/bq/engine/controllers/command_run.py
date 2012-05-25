@@ -372,6 +372,8 @@ class BaseRunner(object):
         # Ensure the loaded executable is a list
         if isinstance(self.config.executable, str):
             executable = shlex.split(self.config.executable)
+        if os.name == 'nt':
+            return True
         return executable and which(executable[0]) is not None
 
     def main(self, **kw):

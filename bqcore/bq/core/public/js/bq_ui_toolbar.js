@@ -156,9 +156,49 @@ Ext.define('BQ.Application.Toolbar', {
         this.menu_user.add( {text: 'Sign out', itemId: 'menu_user_signout', hidden: true, 
                                 handler: Ext.Function.pass(pageAction, bq.url('/auth_service/logout_handler'))} );
                                  
-        this.menu_user.add( {text: 'Sign in', itemId: 'menu_user_signin', 
-                                handler: Ext.Function.pass(pageAction, bq.url('/auth_service/login?came_from='+encodeURIComponent(window.location)))} );
-                         
+        //this.menu_user.add( {text: 'Sign in', itemId: 'menu_user_signin', 
+        //                        handler: Ext.Function.pass(pageAction, bq.url('/auth_service/login?came_from='+encodeURIComponent(window.location)))} );
+        this.menu_user.add({text: 'Sign in', itemId: 'menu_user_signin', 
+                            menu: {
+                                xtype: 'menu',
+                                plain: true,
+                                items: {                                
+                                    xtype: 'form',
+                                    layout: 'form',
+                                    cls: 'loginform',
+                                    border: false,
+                                    bodyBorder: false,            
+                                    url: '/auth_service/login',
+                                    width: 350,
+                                    fieldDefaults: {
+                                        msgTarget: 'side',
+                                        border: 0,
+                                    },
+                                    items: [{
+                                            xtype: 'hiddenfield',
+                                            name: 'came_from',
+                                            value: document.location,
+                                        }, {
+                                            xtype: 'textfield',
+                                            fieldLabel: 'User name',
+                                            name: 'login',
+                                            allowBlank: false,                
+                                    },],
+                            
+                                    buttons: [{
+                                        xtype: 'button',
+                                        text: 'Sign in',
+                                        formBind: true, //only enabled once the form is valid
+                                        disabled: true,
+                                        handler: function() {
+                                            var form = this.up('form').getForm();
+                                            if (form.isValid())
+                                                form.submit();
+                                        }
+                                    }]
+                                }, // form
+                            }, // button menu 
+        }); // add login menu
     
         
         var menu_help = [];
