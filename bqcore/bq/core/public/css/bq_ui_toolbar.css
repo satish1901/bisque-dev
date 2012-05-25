@@ -35,3 +35,13 @@
     font-size: 12px;
 }
 
+/*******************************************************************/
+
+.loginform {
+    padding: 5px 10px 5px 10px;   
+}
+
+.loginform .x-panel-body-default {
+    background: transparent;
+}
+
