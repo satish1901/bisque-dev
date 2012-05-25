@@ -259,8 +259,7 @@ Ext.define('BQ.Application.Toolbar', {
         this.items.push({ menu: menu_help, icon: this.images_base_url+'help.png', tooltip: 'All information about Bisque'  }); 
         
         this.callParent();
-        
-        
+
         // update user menu based on application events
         Ext.util.Observable.observe(BQ.Application);        
         BQ.Application.on('gotuser', function(u) { 
@@ -298,6 +297,12 @@ Ext.define('BQ.Application.Toolbar', {
             for (var i=0; (p=this.tools_admin[i]); i++)
                 this.menu_user.child('#'+p).setVisible(false);              
         }, this);  
+
+        BQ.Preferences.get({
+            type : 'system',
+            key : 'Toolbar',
+            callback : Ext.bind(this.on_preferences, this)
+        });
         
         this.fetchResourceTypes();        
     },
@@ -313,6 +318,11 @@ Ext.define('BQ.Application.Toolbar', {
 
     systemPrefs : function() {
         var preferences = Ext.create('BQ.Preferences.Dialog', {prefType:'system'});
+    },
+    on_preferences : function (preferences) {
+        clog('boo');
+        this.menu_user.child('#menu_user_register').setVisible(false);            
+        //'
     },
 
     fetchResourceTypes : function() {

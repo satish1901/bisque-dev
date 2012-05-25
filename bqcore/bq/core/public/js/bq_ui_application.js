@@ -57,7 +57,7 @@ Ext.define('BQ.Application', {
             ongotuser: callback(this, this.onGotUser),
             onnouser: callback(this, this.onNoUser),            
         });        
-        
+
         return this;
     },
     
