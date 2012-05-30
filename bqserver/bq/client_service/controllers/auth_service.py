@@ -165,10 +165,11 @@ class AuthenticationServer(ServiceController):
         cred = identity.get_user_pass()
         if cred:
             etree.SubElement(response,'tag', name='user', value=cred[0])
-            etree.SubElement(response,'tag', name='pass', value=cred[1])
-            etree.SubElement(response,'tag',
-                             name="basic-authorization",
-                             value=base64.encodestring("%s:%s" % cred))
+            if cred[1] is not None:
+                etree.SubElement(response,'tag', name='pass', value=cred[1])
+                etree.SubElement(response,'tag',
+                                 name="basic-authorization",
+                                 value=base64.encodestring("%s:%s" % cred))
         #tg.response.content_type = "text/xml"
         return etree.tostring(response)
 

@@ -204,7 +204,7 @@ class RootController(BaseController):
     #    return dict (code=status, message = msg)
 
     @expose()
-    def index(self):
+    def index(self, **kw):
         redirect (config.get('bisque.root') + "/client_service/")
 
 
