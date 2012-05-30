@@ -38,14 +38,16 @@ function login_openid(provider) {
 
     <h2>Login</h2>
 
+  <!-- 
     <div class="alternativelogin">
         <input type="hidden" id="openid_provider" value="google" />        
         <input py:if="h.asbool(config.get('bisque.login.cas'))" type="button" id="submit_cas" value="Login with CAS" onclick="login_cas()" />
         <input py:if="h.asbool(config.get('bisque.login.google'))" type="button" id="submit_google" value="Login with Google" onclick="login_openid('google')" />
     </div>
+ -->
 
     <div class="mainlogin">
-        <label for="loginusername">Username:<input type="text" id="loginusername" name="login" class="text"></input></label>
+        <label for="loginusername">Username:<input type="text" id="loginusername" name="login" value="$username" class="text"></input></label>
         <label for="loginpassword">Password:<input type="password" id="loginpassword" name="password" class="text"></input></label>
         <input type="submit" id="submit" value="Login" />
     </div>    

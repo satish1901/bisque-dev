@@ -57,6 +57,8 @@ import base64
 
 from datetime import datetime, timedelta
 from lxml import etree
+from sqlalchemy import or_
+
 import tg
 from tg import request, response, session, flash, require
 from tg import controllers, expose, redirect, url
@@ -67,26 +69,71 @@ from repoze.what import predicates
 from bq.core.service import ServiceController
 from bq.core import identity
 from bq.core.model import DBSession
-from bq.data_service.model import ModuleExecution
+from bq.data_service.model import ModuleExecution, BQUser, User
 from bq import module_service
+from bq.util.urlutil import update_url
 
 from bq import data_service
 log = logging.getLogger("bq.auth")
 
 
+try:
+    # python 2.6 import
+    from ordereddict import OrderedDict
+except ImportError:
+    try:
+        # python 2.7 import
+        from collections import OrderedDict
+    except ImportError:
+        log.error("can't import OrderedDict")
+
+
+
+
+
 class AuthenticationServer(ServiceController):
     service_type = "auth_service"
-    
+    identifiers = {}
+
+    def login_map(self):
+        if self.identifiers:
+            return self.identifiers
+        identifiers = OrderedDict()
+        for key in [x.strip() for x in config.get('bisque.login.identifiers').split(',')]:
+            identifiers[key] =  config.get('bisque.login.%s' % key)
+        self.identifiers = identifiers
+        return identifiers
+
+    @expose()
+    def login_check(self, came_from='/', login='', **kw):
+        login_urls = self.login_map()
+        default_login = login_urls.values()[-1]
+        if login:
+            # Look up user
+            user = DBSession.query (User).filter_by(user_name=login).first()
+            # REDIRECT to registration page?
+            if user is None:
+                redirect(default_login)
+            # Find a matching identifier
+            login_identifiers = [ g.group_name for g in user.groups ] 
+            for identifier in login_urls.keys():
+                if  identifier in login_identifiers:
+                    login_url  = login_urls[identifier]
+                    log.debug ("redirecting to %s handler" % identifier)
+                    redirect(update_url(login_url, dict(username=login)))
+
+        log.debug ("using default login handler %s" % default_login)
+        redirect(update_url(default_login, dict(username=login)))
+
 
     @expose('bq.client_service.templates.login')
-    def login(self, came_from='/', **kw):
+    def login(self, came_from='/', username = '', **kw):
         """Start the user login."""
         login_counter = request.environ['repoze.who.logins']
         if login_counter > 0:
             flash(_('Wrong credentials'), 'warning')
-
-        return dict(page='login', login_counter=str(login_counter),
-                    came_from=came_from)
+            
+        return dict(page='login', login_counter=str(login_counter), came_from=came_from, username=username)
 
     #@expose ()
     #def login_handler(self, **kw):

@@ -158,17 +158,19 @@ Ext.define('BQ.Application.Toolbar', {
                                  
         //this.menu_user.add( {text: 'Sign in', itemId: 'menu_user_signin', 
         //                        handler: Ext.Function.pass(pageAction, bq.url('/auth_service/login?came_from='+encodeURIComponent(window.location)))} );
+
         this.menu_user.add({text: 'Sign in', itemId: 'menu_user_signin', 
                             menu: {
                                 xtype: 'menu',
                                 plain: true,
                                 items: {                                
                                     xtype: 'form',
-                                    layout: 'form',
+                                    //layout: 'form',
                                     cls: 'loginform',
+                                    standardSubmit: true,
                                     border: false,
                                     bodyBorder: false,            
-                                    url: '/auth_service/login',
+                                    url: '/auth_service/login_check',
                                     width: 350,
                                     fieldDefaults: {
                                         msgTarget: 'side',
@@ -189,7 +191,7 @@ Ext.define('BQ.Application.Toolbar', {
                                         xtype: 'button',
                                         text: 'Sign in',
                                         formBind: true, //only enabled once the form is valid
-                                        disabled: true,
+                                        //disabled: true,
                                         handler: function() {
                                             var form = this.up('form').getForm();
                                             if (form.isValid())
@@ -200,7 +202,6 @@ Ext.define('BQ.Application.Toolbar', {
                             }, // button menu 
         }); // add login menu
     
-        
         var menu_help = [];
         menu_help.push( { xtype:'tbtext', text: '<img src="'+this.images_base_url+'bisque_logo_white_170.png" style="width: 96px; height: 77px; margin: 10px; margin-left: 30px;" />', indent: true } );
         menu_help.push( {text: 'About Bisque', 
@@ -361,7 +362,7 @@ Ext.define('BQ.Application.Toolbar', {
     },
     on_preferences : function (preferences) {
         clog('boo');
-        this.menu_user.child('#menu_user_register').setVisible(false);            
+        //this.menu_user.child('#menu_user_register').setVisible(false);            
         //'
     },
 
