@@ -1,4 +1,5 @@
 import logging
+from paste.httpheaders import AUTHORIZATION
 from repoze.who.interfaces import IIdentifier
 from zope.interface import implements
 
@@ -13,10 +14,21 @@ class MexAuthenticatePlugin(object):
     
     def identify(self, environ):
         """Lookup the owner """
+        # OLD Way using custom header 
         mexid = environ.get('HTTP_MEX', None)
         #log.info ("MexAuthenticate %s" % mexid)
         if mexid :
             return { 'bisque.mex_id' : mexid }
+
+        # New way using standard Authencation header
+        authorization = AUTHORIZATION(environ)
+        try:
+            authmeth, auth = authorization.split(' ', 1)
+        except ValueError: # not enough values to unpack
+            return None
+        if authmeth.lower() == 'mex':
+            return { 'bisque.mex_id' : auth }
+
         return None
     def remember(self, environ, identity):
         pass

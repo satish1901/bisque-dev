@@ -18,8 +18,8 @@ _source_adapters = configure_sql_adapters(
     model.DBSession,
 )
 md_group_plugin = AuthorizationMetadata(
-#    {'sqlauth': _source_adapters['group']},
-#    {'sqlauth': _source_adapters['permission']},
+    {'sqlauth': _source_adapters['group']},
+    {'sqlauth': _source_adapters['permission']},
 )
 
 # THIS IS CRITICALLY IMPORTANT!  Without this your site will
