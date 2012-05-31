@@ -66,7 +66,6 @@ from tg import config
 from bq.core.model import DBSession
 from bq.data_service.model import *
 from bq.exceptions import BQException
-from urljoin import urljoin
 
 log = logging.getLogger('bq.db')
 

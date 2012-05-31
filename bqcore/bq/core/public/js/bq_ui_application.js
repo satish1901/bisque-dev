@@ -85,6 +85,10 @@ Ext.define('BQ.Application', {
         BQ.Preferences.loadUser(null, 'LOADED');
     }, 
 
+    hasUser: function() {
+        return (this.session && this.user);
+    },
+
     getCenterComponent: function() {
         if (this.main)
             return this.main.getCenterComponent();
