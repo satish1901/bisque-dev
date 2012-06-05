@@ -516,22 +516,7 @@ BQWebApp.prototype.done = function (mex) {
     button_run.disabled = false;
     this.status_panel.setVisible(false);
     this.mex = mex;
-      
-    if (mex.status == "FINISHED") {
-        this.parseResults(mex);
-    } else {
-        var message = "Module execution failure:<br>" + mex.toXML(); 
-        if ('error_message' in mex.dict && mex.dict.error_message!='') 
-            message = "The module reported an internal error:<br>" + mex.dict.error_message;
-        else
-        if ('http-error' in mex.dict) 
-            message = "The module reported an internal error:<br>" + mex.dict['http-error'];
-        
-        BQ.ui.error(message);
-        var result_label = document.getElementById("webapp_results_summary");
-        if (result_label)
-            result_label.innerHTML = '<h3 class="error">'+ message+'</h3>';
-    }      
+    this.parseResults(mex);
 }
 
 BQWebApp.prototype.getRunTimeString = function (tags) {
@@ -553,12 +538,13 @@ BQWebApp.prototype.getRunTimeString = function (tags) {
 
 BQWebApp.prototype.parseResults = function (mex) {
     // Update module run info
-    var result_label = document.getElementById("webapp_results_summary");
-    if (result_label) {
-        result_label.innerHTML = '<h3 class="good">The module ran in ' + this.getRunTimeString(mex.dict)+'</h3>';
+    if (mex.status == "FINISHED") {
+        var result_label = document.getElementById("webapp_results_summary");
+        if (result_label) {
+            result_label.innerHTML = '<h3 class="good">The module ran in ' + this.getRunTimeString(mex.dict)+'</h3>';
+        }
+        if (!this.mex_mode) BQ.ui.notification('Analysis done! Verify results...');
     }
-    if (!this.mex_mode) BQ.ui.notification('Analysis done! Verify results...');
-
     this.showOutputs(mex);
 }
 
@@ -567,14 +553,30 @@ BQWebApp.prototype.showOutputs = function (mex, key) {
         BQ.ui.warning('No outputs to show');
         return;
     }
-    var outputs = mex.find_tags('outputs');
-    if (outputs && outputs.tags) {
-        this.outputs = outputs.tags; // dima - this should be children in the future   
-        this.outputs_index  = outputs.create_flat_index();          
-    }   
-    
-    // setup output renderers
     this.clearUI_outputs(key);
-    this.setupUI_outputs(key);
+   
+    if (mex.status == "FINISHED") {
+        var outputs = mex.find_tags('outputs');
+        if (outputs && outputs.tags) {
+            this.outputs = outputs.tags; // dima - this should be children in the future   
+            this.outputs_index  = outputs.create_flat_index();          
+        }   
+        // setup output renderers
+        this.setupUI_outputs(key);
+    } if (mex.status == "FAILED") {        
+        var message = "Module execution failure:<br>" + mex.toXML(); 
+        if ('error_message' in mex.dict && mex.dict.error_message!='') 
+            message = "The module reported an internal error:<br>" + mex.dict.error_message;
+        else
+        if ('http-error' in mex.dict) 
+            message = "The module reported an internal error:<br>" + mex.dict['http-error'];
+        
+        BQ.ui.error(message);
+        var result_label = document.getElementById("webapp_results_summary");
+        if (result_label)
+            result_label.innerHTML = '<h3 class="error">'+ message+'</h3>';
+    } else {
+        BQ.ui.notification('Analysis in progress...');
+    }       
 }
 
