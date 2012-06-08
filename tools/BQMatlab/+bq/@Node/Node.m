@@ -97,9 +97,12 @@ classdef Node < matlab.mixin.Copyable
         % Access values
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%        
         
-        function value = getValue(self)
+        function value = getValue(self, default)
             type = '';
             value = [];
+            if exist('default', 'var'),
+                value = default;
+            end    
             if self.element.hasAttribute('type'),
                 type = char(self.element.getAttribute('type'));  
             end
@@ -191,11 +194,15 @@ classdef Node < matlab.mixin.Copyable
             end
         end             
         
-        function v = findValue(self, expression)
+        function v = findValue(self, expression, default)
             v = [];
             t = self.findNode(expression);
             if ~isempty(t),
-                v = t.getValue();            
+                if exist('default', 'var'),
+                    v = t.getValue(default);
+                else
+                    v = t.getValue();
+                end           
             end
         end           
  
