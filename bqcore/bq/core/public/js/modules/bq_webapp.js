@@ -177,8 +177,10 @@ function parseUrlArguments(urlargs) {
     return d;
 }
 
-BQWebApp.prototype.mexMode = function () {
+BQWebApp.prototype.mexMode = function (mex) {
     this.mex_mode = true;
+    if (mex.status != "FINISHED" && mex.status != "FAILED") return;            
+    
     BQ.ui.notification('This application is currently showing previously computed results.<br><br>'+
         '<i>Remove the "mex" url parameter in order to analyse new data.</i>', 20000); 
     //document.getElementById("webapp_input").style.display = 'none';
@@ -280,7 +282,7 @@ BQWebApp.prototype.inputs_from_mex = function (mex) {
 
 BQWebApp.prototype.load_from_mex = function (mex) {
     this.hideProgress();
-    this.mexMode();
+    this.mexMode(mex);
     this.inputs_from_mex(mex);
     this.done(mex);
 }
@@ -563,7 +565,7 @@ BQWebApp.prototype.showOutputs = function (mex, key) {
         }   
         // setup output renderers
         this.setupUI_outputs(key);
-    } if (mex.status == "FAILED") {        
+    } else if (mex.status == "FAILED") {        
         var message = "Module execution failure:<br>" + mex.toXML(); 
         if ('error_message' in mex.dict && mex.dict.error_message!='') 
             message = "The module reported an internal error:<br>" + mex.dict.error_message;
@@ -576,7 +578,10 @@ BQWebApp.prototype.showOutputs = function (mex, key) {
         if (result_label)
             result_label.innerHTML = '<h3 class="error">'+ message+'</h3>';
     } else {
-        BQ.ui.notification('Analysis in progress...');
+        BQ.ui.notification('You are visualizing analysis which is currently in progress...', 25000);
+        var result_label = document.getElementById("webapp_results_summary");
+        if (result_label)
+            result_label.innerHTML = '<h3>Selected analysis is still running, wait for it to complete...</h3>';
     }       
 }
 
