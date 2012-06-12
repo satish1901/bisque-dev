@@ -26,10 +26,12 @@ classdef Node < matlab.mixin.Copyable
     
     methods
         
-        % doc      - URL string or DOM document
-        % element  - optional: DOM element
-        % user     - optional: string
-        % password - optional: string
+        % creates a bq.Node from either an DOM element or by fetching from
+        % Bisque server
+        %   doc      - URL string or DOM document
+        %   element  - optional: DOM element
+        %   user     - optional: string
+        %   password - optional: string
         function [self] = Node(doc, element, user, password)
             if exist('doc', 'var'), self.doc = doc; end            
             if exist('user', 'var'), self.user = user; end
@@ -51,15 +53,29 @@ classdef Node < matlab.mixin.Copyable
             end            
         end % constructor
         
-        function save(self)
-            url = self.getAttribute('uri');
-            bq.post(url, self.doc, self.user, self.password);
+        function save(self, filename)
+        % stores the document, default: is if the filename is not given
+        % posts the document back to the Bisque server
+        % if the filename is given then stores the doc as an XML file            
+            if exist('filename', 'var') && ischar(filename),
+                xmlwrite(filename, self.doc);         
+            else
+                url = self.getAttribute('uri');
+                bq.post(url, self.doc, self.user, self.password);
+            end            
         end % save          
         
         function remove(self)
+        % removes the node from the document on the server by sending
+        % delete to its URL
             url = self.getAttribute('uri');
             bq.delete(url, self.user, self.password);
         end % remove              
+        
+        function str = toString(self)
+        % creates a string from the current document
+            str = bq.xml2str(self.doc);
+        end % toString          
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Access attributes
@@ -81,9 +97,12 @@ classdef Node < matlab.mixin.Copyable
         % Access values
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%        
         
-        function value = getValue(self)
+        function value = getValue(self, default)
             type = '';
             value = [];
+            if exist('default', 'var'),
+                value = default;
+            end    
             if self.element.hasAttribute('type'),
                 type = char(self.element.getAttribute('type'));  
             end
@@ -151,6 +170,7 @@ classdef Node < matlab.mixin.Copyable
             node = self.findNode(expression);
         end           
         
+        function node = findNode(self, expression)
         % Returns bq.Node found with xpath expression
         %
         % INPUT:
@@ -160,8 +180,7 @@ classdef Node < matlab.mixin.Copyable
         %    s - a struct containing tag values by their names
         %        for tags example above will produce:
         %            s.width, s.descr, s.pix_res
-        %        
-        function node = findNode(self, expression)
+        %                
             import javax.xml.xpath.*;
             factory = XPathFactory.newInstance;
             xpath = factory.newXPath;    
@@ -175,15 +194,19 @@ classdef Node < matlab.mixin.Copyable
             end
         end             
         
-        function v = findValue(self, expression)
+        function v = findValue(self, expression, default)
             v = [];
             t = self.findNode(expression);
             if ~isempty(t),
-                v = t.getValue();            
+                if exist('default', 'var'),
+                    v = t.getValue(default);
+                else
+                    v = t.getValue();
+                end           
             end
         end           
-        
-        
+ 
+        function nodes = findNodes(self, expression)
         % Returns a vector of bq.Node found with xpath expression
         %
         % INPUT:
@@ -193,8 +216,7 @@ classdef Node < matlab.mixin.Copyable
         %    s - a struct containing tag values by their names
         %        for tags example above will produce:
         %            s.width, s.descr, s.pix_res
-        %        
-        function nodes = findNodes(self, expression)
+        %                 
             import javax.xml.xpath.*;
             factory = XPathFactory.newInstance;
             xpath = factory.newXPath;    
@@ -211,6 +233,7 @@ classdef Node < matlab.mixin.Copyable
             end
         end         
         
+        function s = getNameValueMap(self, expression)
         % Returns tags found with xpath expression in proper formats
         %
         % INPUT:
@@ -220,8 +243,7 @@ classdef Node < matlab.mixin.Copyable
         %    s - a struct containing values by their names
         %        for tags example above will produce:
         %            s.width, s.descr, s.pix_res
-        %        
-        function s = getNameValueMap(self, expression)
+        %                
             import javax.xml.xpath.*;
             factory = XPathFactory.newInstance;
             xpath = factory.newXPath;    
@@ -243,6 +265,7 @@ classdef Node < matlab.mixin.Copyable
             end
         end           
         
+        function s = findNameValueMap(self, tags, template)
         % Finds tags of interest and returns their values in proper formats
         % the difference from the getTagValues is in providing default  
         % tag types and tag values
@@ -258,8 +281,7 @@ classdef Node < matlab.mixin.Copyable
         %    s   - a struct containing tag values by their names
         %          for tags example above will produce:
         %            s.width, s.descr, s.pix_res
-        %
-        function s = findNameValueMap(self, tags, template)
+        %            
             import javax.xml.xpath.*;
             factory = XPathFactory.newInstance;
             xpath = factory.newXPath;    
@@ -305,8 +327,7 @@ classdef Node < matlab.mixin.Copyable
             end
 
             self.element.appendChild(r); 
-            %resource = bq.Node(self.doc, r);
-            resource = bq.Factory.fetch(self.doc, r);
+            resource = bq.Factory.fetch(self.doc, r, self.user, self.password);
         end % add
         
         function tag = addTag(self, name, value, type)
@@ -327,36 +348,11 @@ classdef Node < matlab.mixin.Copyable
             g.setAttribute('type', type);
             g.setAttribute('name', name);
 
-            if nargin>3 && ~isempty(vertices),
-                for i=1:size(vertices, 1),
-                    v = self.doc.createElement('vertex');
-
-                    if ~isempty(vertices(i,:)) && vertices(i,1)>=0,
-                        v.setAttribute('x', num2str(vertices(i,1)));
-                    end
-                    if length(vertices(i,:))>1 && vertices(i,2)>=0,
-                        v.setAttribute('y', num2str(vertices(i,2)));
-                    end
-                    if length(vertices(i,:))>2 && vertices(i,3)>=0,
-                        v.setAttribute('z', num2str(vertices(i,3)));
-                    end
-                    if length(vertices(i,:))>3 && vertices(i,4)>=0,
-                        v.setAttribute('t', num2str(vertices(i,4)));
-                    end
-                    if length(vertices(i,:))>4 && vertices(i,5)>=0,
-                        v.setAttribute('c', num2str(vertices(i,5)));
-                    end            
-                    if size(vertices, 1)>1,
-                        v.setAttribute('index', num2str(i-1));
-                    end       
-
-                    g.appendChild(v); 
-                end
-            end
-
             self.element.appendChild(g); 
-            %gob = bq.Node(self.doc, g);
-            gob = bq.Factory.fetch(self.doc, g);
+            gob = bq.Factory.fetch(self.doc, g, self.user, self.password);
+            if nargin>3 && ~isempty(vertices),
+                gob.setVertices(vertices);
+            end
         end % addGobject 
 
        

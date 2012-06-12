@@ -23,7 +23,9 @@ Ext.namespace('BQ.renderers');
 BQ.selectors.resources  = { 'image'            : 'BQ.selectors.Resource', 
                             'dataset'          : 'BQ.selectors.Resource', 
                             'resource'         : 'BQ.selectors.Resource', 
-                            'gobject'          : 'BQ.selectors.Gobject', };
+                            'gobject'          : 'BQ.selectors.Gobject', 
+                            'mex'              : 'BQ.selectors.Mex', 
+                            'subtree'          : 'BQ.selectors.SubTree', };
 
 BQ.selectors.parameters = { 'tag'              : 'BQ.selectors.String', 
                             'string'           : 'BQ.selectors.String', 
@@ -354,6 +356,7 @@ Ext.define('BQ.selectors.Resource', {
             this.resourcePreview = Ext.create('BQ.selectors.Gobject', {
                 resource: this.resource.gobjects[0],
                 selected_resource: this.selected_resource,
+                parent_renderer: this,
             });            
         } 
         
@@ -367,8 +370,8 @@ Ext.define('BQ.selectors.Resource', {
         this.add(this.resourcePreview);
         this.setHeight( this.getHeight() + this.resourcePreview.getHeight() + increment );
 
-        if (!this.validate()) return;
         this.fireEvent( 'changed', this, this.selected_resource );
+        if (!this.validate()) return;        
     },
 
     isValid: function() {
@@ -401,9 +404,6 @@ Ext.define('BQ.selectors.Resource', {
             return false;
         }
         
-        //if (this.selector_gobs) 
-        //    return this.selector_gobs.validate();
-
         if (this.resourcePreview && this.resourcePreview.validate) 
             return this.resourcePreview.validate();
         
@@ -411,8 +411,7 @@ Ext.define('BQ.selectors.Resource', {
     },
 
     onPhys: function() {
-        if (this.isValid())
-            this.fireEvent( 'gotPhys', this, this.phys );
+        this.fireEvent( 'gotPhys', this, this.phys );
     },
 
 });
@@ -464,7 +463,8 @@ Ext.define('BQ.selectors.Gobject', {
     
     onchanged: function() {    
         //BQ.ui.attention('objects changed');
-        if (!this.validate()) return;
+        var rend = this.parent_renderer || this;
+        if (!rend.validate()) return;
         this.resource.gobjects = Ext.clone( this.viewer.getGobjects() );              
     },
 
@@ -479,17 +479,26 @@ Ext.define('BQ.selectors.Gobject', {
         // if requested, check if gobjects are present 
         if ('require_gobjects' in template) {
             var gobs = this.viewer ? this.viewer.getGobjects() : null;
-            if (!gobs || // gobs.length<=0 || 
-                ( 'require_gobjects/amount' in template && template['require_gobjects/amount']=='single'    && gobs.length!=1 ) ||
-                ( 'require_gobjects/amount' in template && template['require_gobjects/amount']=='many'      && gobs.length<1 ) ||
-                ( 'require_gobjects/amount' in template && template['require_gobjects/amount']=='oneornone' && gobs.length>1 ) ||
-                ( 'require_gobjects/amount' in template && template['require_gobjects/amount']>0 && gobs.length!=template['require_gobjects/amount'] )
-            ) {
-                var msg = template['require_gobjects/fail_message'] || 'Graphical annotations check failed!';
-                BQ.ui.attention(msg);
-                BQ.ui.tip(this.viewer.getId(), msg, {anchor:'left',});
-                return;
-            }  
+            var amount = null;
+            if ('require_gobjects/amount' in template) amount = template['require_gobjects/amount'];
+
+            if (gobs && amount && amount=='single'    && gobs.length==1) return true;
+            if (gobs && amount && amount=='many'      && gobs.length>=1) return true;
+            if (gobs && amount && amount=='oneornone' && gobs.length<=1) return true;
+            if (gobs && amount && typeof(amount)=='number' && amount>0 && gobs.length==amount) return true;
+            
+            if (gobs && amount && typeof(amount)=='string') {
+                var ops = { '>':undefined, '<':undefined, '>=':undefined, '<=':undefined, '==':undefined, };
+                var m = amount.match(/([<>=]+)|(\d+)/g);
+                if (m.length==2 && m[0] in ops && !(isNaN(parseFloat(m[1]))))
+                    if (eval('gobs.length '+m[0]+m[1])) return true;
+            }
+            
+            // all tests have failed
+            var msg = template['require_gobjects/fail_message'] || 'Graphical annotations check failed!';
+            //BQ.ui.attention(msg);
+            BQ.ui.tip(this.viewer.getId(), msg, {anchor:'left',});
+            return false;
         }         
         
         return true;
@@ -510,6 +519,7 @@ Image Channel templated configs:
         <tag name="label" value="Nuclear channel" />
         <tag name="reference" value="image_url" />
         <tag name="guess" value="nuc|Nuc|dapi|DAPI|405|dna|DNA|Cy3" />
+        <tag name="allowNone" value="false" type="boolean" />
     </tag>
 </tag>
 *******************************************************************************/
@@ -517,7 +527,7 @@ Image Channel templated configs:
 Ext.define('BQ.selectors.ImageChannel', {
     alias: 'widget.selectorchannel',    
     extend: 'BQ.selectors.Selector',
-    requires: ['Ext.form.field.Number', 'Ext.data.Store', 'Ext.form.field.ComboBox'],
+    requires: ['Ext.form.field.Number', 'Ext.data.Store', 'Ext.form.field.ComboBox', 'Ext.tip.*'],
 
     height: 30,
     layout: 'hbox',
@@ -544,15 +554,22 @@ Ext.define('BQ.selectors.ImageChannel', {
             labelAlign: 'right',
             fieldLabel: label,
             value: resource.value!=undefined?parseInt(resource.value):undefined,
-            minValue: 1,
-            maxValue: 100,
+            minValue: template.allowNone?0:1,
+            maxValue: 1000,
             allowDecimals: false,
             step: 1,
             
             listeners: {
+                scope: this,
                 change: function(field, value) {
                     this.resource.value = String(value);
-                }, scope: this,
+                },
+                afterrender : function(o) {
+                    o.tip = Ext.create('Ext.tip.ToolTip', {
+                        target : o.getEl().getAttribute("id"),
+                        html : template.description,
+                    });
+                },           
             },
             
         });
@@ -583,9 +600,16 @@ Ext.define('BQ.selectors.ImageChannel', {
             editable : false, 
 
             listeners: {
+                scope: this,
                 select: function(field, value) {
                     this.resource.value = field.getValue();
-                }, scope: this,
+                }, 
+                afterrender : function(o) {
+                    o.tip = Ext.create('Ext.tip.ToolTip', {
+                        target : o.getEl().getAttribute("id"),
+                        html : template.description,
+                    });
+                },                 
             },
             
         });       
@@ -602,23 +626,28 @@ Ext.define('BQ.selectors.ImageChannel', {
         
         if (res instanceof BQDataset) {
             var msg = 'You have selected a dataset, this module will only work correctly if all images have the same channel structure!';
-            BQ.ui.tip(this.numfield.getId(), msg, {anchor:'left', timeout: 30000, });
+            BQ.ui.tip(this.numfield.getId(), msg, {anchor:'left', timeout: 30000, color: 'blue', });
         }
     },
 
     onPhys : function(sel, phys) {
         var resource = this.resource;
         var template = resource.template || {};
-        var guess = template.guess || '';
-                
+        var guess = template.guess;
+               
         // create channel combo
         var selected = 1;
         var a = [];
+        if (template.allowNone) {
+            a.push({ 'name': 'None', 'channel': 0, }); 
+            selected = 0; 
+        }
+        
         var i=undefined;
         for (var p=0; (i=phys.channel_names[p]); p++) {
             i = String(i);
             a.push({ 'name': ''+(p+1)+': '+i, 'channel': p+1, });  
-            if (i.match(guess))
+            if (guess && i.match(guess))
                 selected = p+1; 
         }
         this.store.removeAll(true);                      
@@ -723,9 +752,16 @@ Ext.define('BQ.selectors.PixelResolution', {
                 step: 0.01,
                 
                 listeners: {
+                    scope: this,
                     change: function(field, value) {
                         resource.values[field.value_index].value = String(value);
-                    }, scope: this,
+                    }, 
+                    afterrender : function(o) {
+                        o.tip = Ext.create('Ext.tip.ToolTip', {
+                            target : o.getEl().getAttribute("id"),
+                            html : template.description,
+                        });
+                    },                       
                 },
             });
             
@@ -762,7 +798,7 @@ Ext.define('BQ.selectors.PixelResolution', {
         this.reference = res;        
         if (res instanceof BQDataset) {
             var msg = 'In a dataset run, use 0 to pull embedded resolution or all images should have the same pixel resolution!';
-            BQ.ui.tip(this.getId(), msg, {anchor:'left', timeout: 30000, });
+            BQ.ui.tip(this.getId(), msg, { anchor:'left', timeout: 30000, color: 'blue', });
         }
     },
 
@@ -815,6 +851,229 @@ Ext.define('BQ.selectors.PixelResolution', {
 });
 
 
+/*******************************************************************************
+Resource templated configs:
+query
+*******************************************************************************/
+
+Ext.define('BQ.selectors.Mex', {
+    alias: 'widget.selectormex',    
+    extend: 'BQ.selectors.Selector',
+    requires: ['Ext.button.Button', 'Bisque.ResourceBrowser.Dialog', 'Bisque.DatasetBrowser.Dialog'],
+    
+    layout: 'auto',
+    cls: 'resourcerenderer',
+    height: 75,
+
+    initComponent : function() {
+        var resource = this.resource;
+        var template = resource.template || {};
+
+        this.items = [];
+        this.items.push( {xtype: 'label', text:template.label+':' } );
+        this.items.push( Ext.create('Ext.button.Button', {
+            text: 'Select a module execution (MEX)', 
+            //iconCls: 'upload', 
+            scale: 'large', 
+            //cls: 'x-btn-default-large',
+            tooltip: template.description,
+            handler: Ext.Function.bind( this.selectMex, this ),
+        }));
+   
+        this.callParent();
+    },
+    
+    selectMex: function() {
+        var resource = this.resource;
+        var template = resource.template || {};        
+        var browser  = Ext.create('Bisque.ResourceBrowser.Dialog', {
+            'height' : '85%',
+            'width' :  '85%',
+            dataset: '/data_service/mex',
+            tagQuery: template.query,
+            listeners: {  'Select': function(me, resource) { 
+                           this.onselected(resource);
+                    }, scope: this },
+            
+        });          
+    },
+   
+    onerror: function(message) {
+        BQ.ui.error('Error fethnig resource:<br>' + message); 
+    },    
+    
+    select: function(resource) {
+        // if the input resource is a reference to an image with wrapped gobjects
+        if (resource instanceof BQTag) {
+            BQFactory.request( { uri: resource.value, 
+                                 cb: callback(this, 'onselected'), 
+                                 errorcb: callback(this, 'onerror'), 
+                               });               
+        } else if (typeof resource != 'string')
+            this.onselected(resource);
+        else
+            BQFactory.request( { uri: resource, 
+                                 cb: callback(this, 'onselected'), 
+                                 errorcb: callback(this, 'onerror'), 
+                               });         
+    },    
+    
+    onselected: function(R) {
+        this.selected_resource = R;
+        this.resource.value = R.uri;
+        this.resource.type = R.resource_type;        
+        var increment = 20;
+        
+        if (this.resourcePreview) {
+            this.setHeight( this.getHeight() - this.resourcePreview.getHeight() - increment);    
+            this.resourcePreview.destroy();
+        }
+        this.resourcePreview = Bisque.ResourceFactoryWrapper.getResource( {resource:R} );
+        this.add(this.resourcePreview);
+        this.setHeight( this.getHeight() + this.resourcePreview.getHeight() + increment );
+
+        this.fireEvent( 'changed', this, this.selected_resource );
+        if (!this.validate()) return;        
+    },
+
+    isValid: function() {
+        var resource = this.resource;
+        var template = resource.template || {};        
+
+        if (!this.selected_resource || !this.selected_resource.uri) {
+            //BQ.ui.attention('You need to select an input resource!');
+            BQ.ui.tip(this.getId(), 'You need to select an input resource!', {anchor:'left',});
+            return false;
+        }
+        
+        return true;
+    },
+
+});
+
+/*******************************************************************************
+Resource templated configs:
+
+*******************************************************************************/
+
+Ext.define('BQ.selectors.SubTree', {
+    alias: 'widget.selectorsubtree',    
+    extend: 'BQ.selectors.Selector',
+    requires: ['Ext.button.Button', 'Ext.tree.*', 'Ext.data.*'],
+    
+    layout: 'auto',
+    cls: 'resourcerenderer',
+    //height: 75,
+    height: 400,
+
+    initComponent : function() {
+        var resource = this.resource;
+        var template = resource.template || {};
+
+        this.items = [];
+        this.items.push( {xtype: 'label', text:template.label+':' } );
+        /*
+        this.items.push( Ext.create('Ext.button.Button', {
+            text: 'Select a module execution (MEX)', 
+            //iconCls: 'upload', 
+            scale: 'large', 
+            //cls: 'x-btn-default-large',
+            //tooltip: 'Start the upload of all queued files',
+            handler: Ext.Function.bind( this.selectSub, this ),
+        }));
+        */
+        
+        
+        var grid = Ext.create('BQ.grid.Panel', {
+            border: 1,
+            url: '/data_service/image',
+        });
+        this.items.push(grid);
+        
+   
+        this.callParent();
+    },
+    
+    selectSub: function() {
+        var resource = this.resource;
+        var template = resource.template || {};        
+        var browser  = Ext.create('Bisque.ResourceBrowser.Dialog', {
+            'height' : '85%',
+            'width'  : '85%',
+            dataset  : template.path,
+            tagQuery : template.query,
+            listeners: {  'Select': function(me, resource) { 
+                           this.onselected(resource);
+                    }, scope: this },
+            
+        });          
+    },
+   
+    onerror: function(message) {
+        BQ.ui.error('Error fethnig resource:<br>' + message); 
+    },    
+    
+    select: function(resource) {
+        // if the input resource is a reference to an image with wrapped gobjects
+        if (resource instanceof BQTag) {
+            BQFactory.request( { uri: resource.value, 
+                                 cb: callback(this, 'onselected'), 
+                                 errorcb: callback(this, 'onerror'), 
+                               });               
+        } else if (typeof resource != 'string')
+            this.onselected(resource);
+        else
+            BQFactory.request( { uri: resource, 
+                                 cb: callback(this, 'onselected'), 
+                                 errorcb: callback(this, 'onerror'), 
+                               });         
+    },    
+    
+    onselected: function(R) {
+        //this.selected_resource = R;
+        //this.resource.value = R.uri;
+        //this.resource.type = R.resource_type;        
+        var increment = 20;
+        
+        if (this.resourcePreview) {
+            this.setHeight( this.getHeight() - this.resourcePreview.getHeight() - increment);    
+            this.resourcePreview.destroy();
+        }
+
+
+
+        
+        this.resourcePreview = Bisque.ResourceFactoryWrapper.getResource( {resource:R} );
+
+
+
+
+
+
+
+
+
+
+        this.add(this.resourcePreview);
+        this.setHeight( this.getHeight() + this.resourcePreview.getHeight() + increment );
+        //this.fireEvent( 'changed', this, this.selected_resource );
+        if (!this.validate()) return;        
+    },
+
+    isValid: function() {
+        var resource = this.resource;
+        var template = resource.template || {};        
+
+        if (!this.selected_resource || !this.selected_resource.uri) {
+            //BQ.ui.attention('You need to select an input resource!');
+            BQ.ui.tip(this.getId(), 'You need to select an input resource!', {anchor:'left',});
+            return false;
+        }
+        
+        return true;
+    },
+
+});
 
 
 /*******************************************************************************
@@ -856,7 +1115,7 @@ Ext.define('BQ.selectors.Number', {
         if (!('minValue' in template) || !('maxValue' in template)) template.showSlider = false;
         // configure slider for floating point values
         var defaultDecimalPrecision = template.allowDecimals?2:0;
-        var sliderStep = (template.allowDecimals && (!('setep' in template) || template.step>=1))?0.01:1.0;
+        var sliderStep = template.stepSlider || ((template.allowDecimals && (!('setep' in template) || template.step>=1))?0.01:1.0);
         
         if (this.multivalue || template.showSlider != false)
         this.slider = Ext.create('Ext.slider.Multi', {        
@@ -874,16 +1133,24 @@ Ext.define('BQ.selectors.Number', {
             increment: sliderStep,
 
             listeners: {
+                scope: this,
                 change: function(field, value) {
                     if (!this.multivalue) {
                         this.resource.value = value;
-                        if (this.numfield && this.numfield.getValue()!=value) this.numfield.setValue(value);    
+                        if (this.numfield && this.numfield.getValue()!=value) this.numfield.setValue(value); 
+                        if (this.numlabel) this.numlabel.setText(value);
                     } else {
                         var vals = field.getValues(); 
                         for (var i=0; (v=this.resource.values[i]); i++)
                             v.value = vals[i];                                               
                     }
-                }, scope: this,
+                }, 
+                afterrender : function(o) {
+                    o.tip = Ext.create('Ext.tip.ToolTip', {
+                        target : o.getEl().getAttribute("id"),
+                        html : template.description,
+                    });
+                },                  
             },
             
         });          
@@ -906,18 +1173,29 @@ Ext.define('BQ.selectors.Number', {
             step: template.step!=undefined?template.step:1,
             
             listeners: {
+                scope: this,
                 change: function(field, value) {
                     this.resource.value = String(value);
                     if (this.slider && this.slider.getValue(0)!=value) this.slider.setValue(0, value);
-                }, scope: this,
+                }, 
+                afterrender : function(o) {
+                    o.tip = Ext.create('Ext.tip.ToolTip', {
+                        target : o.getEl().getAttribute("id"),
+                        html : template.description,
+                    });
+                },                  
             },
             
         });
+     
+        if (!this.multivalue && template.hideNumberPicker)
+            this.numlabel = Ext.create('Ext.form.Label', { cls: 'numberlabel', width: 32, });
 
         if (this.numfield) this.items.push(this.numfield);
         if (this.slider) this.items.push(this.slider);
+        if (this.numlabel) this.items.push(this.numlabel);        
         if (template.units)
-            this.items.push({ xtype: 'container', html:'<label>'+template.units+'</label>', cls: 'units', flex: 1, });        
+            this.items.push({ xtype: 'container', html:'<label>'+template.units+'</label>', cls: 'units', flex: 2, });
             
         this.callParent();
     },
@@ -992,12 +1270,19 @@ Ext.define('BQ.selectors.String', {
             regex: template.regex?template.regex:undefined,
 
             listeners: {
+                scope: this,
                 change: function(field, value) {
                     //value = parseInt(value, 10);
                     //field.setValue(value + value % 2);
                     this.resource.value = String(value);
                     this.value = String(value);
-                }, scope: this,
+                },
+                afterrender : function(o) {
+                    o.tip = Ext.create('Ext.tip.ToolTip', {
+                        target : o.getEl().getAttribute("id"),
+                        html : template.description,
+                    });
+                },                  
             },
             
         }];
@@ -1075,10 +1360,17 @@ Ext.define('BQ.selectors.Combo', {
             editable : (template.editable!=undefined)?template.editable:true, 
 
             listeners: {
+                scope: this,
                 select: function(field, value) {
                     this.resource.value = field.getValue();
                     this.value = this.resource.value;
-                }, scope: this,
+                },
+                afterrender : function(o) {
+                    o.tip = Ext.create('Ext.tip.ToolTip', {
+                        target : o.getEl().getAttribute("id"),
+                        html : template.description,
+                    });
+                },                  
             },
             
         });
@@ -1133,12 +1425,20 @@ Ext.define('BQ.selectors.Boolean', {
             
             fieldLabel: template.label?template.label:'',
             value: resource.value,
+            checked : resource.value,
 
             listeners: {
+                scope: this,
                 select: function(field, value) {
                     this.resource.value = field.getValue();
                     this.value = this.resource.value;
-                }, scope: this,
+                }, 
+                afterrender : function(o) {
+                    o.tip = Ext.create('Ext.tip.ToolTip', {
+                        target : o.getEl().getAttribute("id"),
+                        html : template.description,
+                    });
+                },                   
             },
             
         });
@@ -1195,7 +1495,16 @@ Ext.define('BQ.selectors.Date', {
                 
                 format: 'Y-m-d',
                 value: resource.value!=undefined?resource.value:new Date(),
-                listeners: { select: this.onselect, scope: this, },
+                listeners: { 
+                    scope: this, 
+                    select: this.onselect, 
+                    afterrender : function(o) {
+                        o.tip = Ext.create('Ext.tip.ToolTip', {
+                            target : o.getEl().getAttribute("id"),
+                            html : template.description,
+                        });
+                    },                      
+                },
                 
             });
             this.items.push(this.selector_date);
@@ -1213,7 +1522,16 @@ Ext.define('BQ.selectors.Date', {
                 
                 format: 'H:i:s',
                 value: resource.value!=undefined?resource.value:new Date(),
-                listeners: { select: this.onselect, scope: this, },
+                listeners: { 
+                    scope: this, 
+                    select: this.onselect, 
+                    afterrender : function(o) {
+                        o.tip = Ext.create('Ext.tip.ToolTip', {
+                            target : o.getEl().getAttribute("id"),
+                            html : template.description,
+                        });
+                    },                     
+                },
                 
             });  
             this.items.push(this.selector_time); 

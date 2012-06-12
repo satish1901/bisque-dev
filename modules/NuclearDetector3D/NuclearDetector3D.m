@@ -1,15 +1,16 @@
-function NuclearDetector3D(mex_url, access_token, image_url, nuclear_channel, nuclear_diameter, ~)
+%function NuclearDetector3D(mex_url, access_token, image_url, nuclear_channel, membrane_channel, nuclear_diameter, ~)
+function NuclearDetector3D(mex_url, access_token, image_url, ~, ~, ~, ~)
     session = bq.Session(mex_url, access_token);
     try
-        image = session.fetch(image_url);
-
-        nuclear_channel  = str2num(nuclear_channel);
-        nuclear_diameter = str2num(nuclear_diameter);
+        nuclear_channel  = str2num(session.mex.findValue('//tag[@name="inputs"]/tag[@name="nuclear_channel"]'));
+        membrane_channel = str2num(session.mex.findValue('//tag[@name="inputs"]/tag[@name="membrane_channel"]', '0'));
+        nuclear_diameter = session.mex.findValue('//tag[@name="inputs"]/tag[@name="nuclear_size"]');        
         
         t = session.mex.findNode('//tag[@name="inputs"]/tag[@name="pixel_resolution"]');
         res =  cell2mat(t.getValues('number'));
         %res = [0.439453, 0.439453, 1.0, 1.0]; % image resolution in microns per pixel
 
+        image = session.fetch(image_url);        
         if isfield(image.info, 'pixel_resolution_x') && res(1)<=0,
             res(1) = getfield(image.info, 'pixel_resolution_x');
         end
@@ -22,7 +23,6 @@ function NuclearDetector3D(mex_url, access_token, image_url, nuclear_channel, nu
         if isfield(image.info, 'pixel_resolution_t') && res(4)<=0,
             res(4) = getfield(image.info, 'pixel_resolution_t');
         end
-
         
         number_t = max(1, image.info.image_num_t);
         np = cell(number_t, 1);
@@ -31,6 +31,12 @@ function NuclearDetector3D(mex_url, access_token, image_url, nuclear_channel, nu
             session.update(sprintf('Time %d: 0% - fetching image', current_t));   
             imn = image.slice([],current_t).remap(nuclear_channel).fetch();
 
+            % filter using membraine channel
+            if membrane_channel>0,
+                imm = image.slice([],current_t).remap(membrane_channel).fetch();
+                imn = imdiff(imn, imm);
+            end
+            
             %% Run
             ns =  (nuclear_diameter/2.0) ./ res;
 
@@ -57,7 +63,7 @@ function NuclearDetector3D(mex_url, access_token, image_url, nuclear_channel, nu
         for j=1:length(np),        
             for i=1:length(np{j}),       
                 n = g.addGobject('nucleus', int2str(j*i));        
-                v = [np{j}(i,2)-1, np{j}(i,1)-1, np{j}(i,3)-1, j-1.0];
+                v = [np{j}(i,1:3), j];
                 p = n.addGobject('point', 'centroid', v );
                 p.addTag('confidence', np{j}(i,5)*100, 'number'); 
             end
