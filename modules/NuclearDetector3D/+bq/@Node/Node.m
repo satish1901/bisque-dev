@@ -58,10 +58,10 @@ classdef Node < matlab.mixin.Copyable
         % posts the document back to the Bisque server
         % if the filename is given then stores the doc as an XML file            
             if exist('filename', 'var') && ischar(filename),
-                xmlwrite(filename, self.doc);         
+                xmlwrite(filename, self.element);         
             else
                 url = self.getAttribute('uri');
-                bq.post(url, self.doc, self.user, self.password);
+                bq.post(url, self.element, self.user, self.password);
             end            
         end % save          
         
@@ -74,7 +74,7 @@ classdef Node < matlab.mixin.Copyable
         
         function str = toString(self)
         % creates a string from the current document
-            str = bq.xml2str(self.doc);
+            str = bq.xml2str(self.element);
         end % toString          
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
