@@ -115,8 +115,10 @@ function [output, info] = connect(method, url, location, input, user, password)
     elseif strcmpi(method, 'POST') || strcmpi(method, 'PUT'),
         connection.setDoInput(true);
         connection.setDoOutput(true);
-        connection.setUseCaches(false);        
-        if ~ischar(input),
+        connection.setUseCaches(false); 
+        if isa(input, 'bq.Node'),
+            input = input.toString();
+        elseif ~ischar(input),
             input = bq.xml2str(input);
         end        
         connection.setRequestProperty('Content-Length', int2str(length(input)));        
