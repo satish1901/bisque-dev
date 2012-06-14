@@ -110,7 +110,7 @@ function [output, info] = post_mpform(url, input, user, password)
     % new: end    
 
     boundary = '----BisqueMatlabAPI***********************';
-    %connection.setReadTimeout(3000);
+    connection.setReadTimeout(1200000);
     connection.setRequestMethod('POST');
     connection.setRequestProperty('Connection', 'Keep-Alive');
     connection.setRequestProperty('Content-Type', ['multipart/form-data; boundary=',boundary]);      
