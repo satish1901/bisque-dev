@@ -29,7 +29,7 @@ setup(
         "Genshi",
         "zope.sqlalchemy >= 0.4",
         "repoze.tm2 >= 1.0a5",
-        "SQLAlchemy==0.7.6",
+        "SQLAlchemy>=0.7.6, <0.8",
         "sqlalchemy-migrate",
         "repoze.what-quickstart",
         "repoze.what >= 1.0.8",
