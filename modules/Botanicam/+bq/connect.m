@@ -104,7 +104,7 @@ function [output, info] = connect(method, url, location, input, user, password)
     end    
     % new: end    
     
-    %connection.setReadTimeout(3000);
+    connection.setReadTimeout(1200000);
     connection.setRequestMethod(method);
     connection.setRequestProperty('Connection', 'Keep-Alive');
     connection.setRequestProperty('Content-Type', 'text/xml');    

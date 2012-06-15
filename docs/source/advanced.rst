@@ -8,3 +8,4 @@ Advanced Topics
 
    adminmode.rst
    develop.rst
+   cloud.rst
