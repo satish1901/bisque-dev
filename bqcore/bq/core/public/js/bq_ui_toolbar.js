@@ -345,7 +345,8 @@ Ext.define('BQ.Application.Toolbar', {
         var r=null;
         for (var i=0; (r=resource.children[i]); i++)
             if (!(r.name in ignore))
-                mydata.push( [r.name] );       
+                mydata.push( [r.name] );
+        delete ignore.dataset;
         
         store_types = Ext.create('Ext.data.ArrayStore', {
             fields: [ {name: 'name',}, ],        
