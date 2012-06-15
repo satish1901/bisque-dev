@@ -42,8 +42,9 @@
 %
 
 function [output, info] = post_mpform(url, input, user, password)
-    narginchk(2, 6);
-
+    if ~exist('url', 'var') error(message('BQ.post_mpform:RequiresUrl')); end
+    if ~exist('input', 'var') error(message('BQ.post_mpform:RequiresInput')); end
+    
     % This function requires Java
     if ~usejava('jvm')
        error(message('BQ.connect:NoJvm'));
@@ -107,11 +108,12 @@ function [output, info] = post_mpform(url, input, user, password)
         connection = server.openConnection(proxy);
     end    
     % new: end    
-    
-    %connection.setReadTimeout(3000);
+
+    boundary = '----BisqueMatlabAPI***********************';
+    connection.setReadTimeout(1200000);
     connection.setRequestMethod('POST');
     connection.setRequestProperty('Connection', 'Keep-Alive');
-    connection.setRequestProperty('Content-Type', 'text/xml');    
+    connection.setRequestProperty('Content-Type', ['multipart/form-data; boundary=',boundary]);      
     connection.setDoInput(true);
     connection.setDoOutput(true);
     connection.setUseCaches(false);        
@@ -125,8 +127,7 @@ function [output, info] = post_mpform(url, input, user, password)
         end
     end
 
-    boundary = 'BisqueMatlabAPI***********************';
-    connection.setRequestProperty('Content-Type', ['multipart/form-data; boundary=',boundary]);    
+ 
     %connection.setRequestProperty('Content-Length', int2str(length(input)));        
     
     connection.connect();
