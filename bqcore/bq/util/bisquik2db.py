@@ -318,6 +318,7 @@ def get_email (dbo, fn, baseuri):
 def make_user (dbo, fn, baseuri):
     return ('user', baseuri + str(dbo.user))
 
+clean_fields = [ 'name', 'value', 'type' ]
 mapping_fields = {
 #    'table_name':'type',
     'engine_id' : 'engine',
@@ -411,10 +412,13 @@ def model_fields(dbo, baseuri=None):
 
 
 
-def xmlelement(dbo, parent, baseuri, **kw):
+def xmlelement(dbo, parent, baseuri, view, **kw):
     xtag = kw.pop('xtag', dbo.xmltag)
     if not kw:
         kw = model_fields (dbo, baseuri)
+        if 'clean' in view:
+            kw = dict([ (k,v) for k,v in kw.items() if k in clean_fields])
+                    
     if xtag == 'resource':
         xtag = dbo.resource_type
     if parent is not None:
@@ -429,20 +433,20 @@ def xmlnode(dbo, parent, baseuri, view, **kw):
     rtype = getattr(dbo, 'resource_type', dbo.xmltag)
     #rtype = dbo.xmltag
     if rtype == 'tag':
-        elem = xmlelement (dbo, parent, baseuri)
+        elem = xmlelement (dbo, parent, baseuri, view=view)
         if 'deep' not in view and dbo.resource_value == None:
             junk = [ xmlnode(x, elem, baseuri, view) for x in dbo.values ]
         return elem
     if  rtype == 'gobject':
         if 'canonical' not in view and dbo.type in known_gobjects:
-            elem = xmlelement (dbo, parent, baseuri, xtag=dbo.type)
+            elem = xmlelement (dbo, parent, baseuri, xtag=dbo.type, view=view)
         else:
-            elem = xmlelement (dbo, parent, baseuri)
+            elem = xmlelement (dbo, parent, baseuri, view=view)
         if 'deep' not in view:
             junk = [ xmlnode(x, elem, baseuri, view) for x in dbo.vertices ]
         return elem
     if rtype=='value':
-        elem = xmlelement (dbo, parent, baseuri)
+        elem = xmlelement (dbo, parent, baseuri, view=view)
         elem.set('type', dbo.type)
         if dbo.type == 'object':
             elem.text = baseuri + unicode(dbo.value)
@@ -450,7 +454,7 @@ def xmlnode(dbo, parent, baseuri, view, **kw):
             elem.text = unicode(dbo.value)
         return elem
 
-    elem = xmlelement (dbo, parent, baseuri)
+    elem = xmlelement (dbo, parent, baseuri, view=view)
     return elem
 
 def valnode(val, parent, baseuri, view):

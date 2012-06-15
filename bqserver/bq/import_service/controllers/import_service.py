@@ -619,7 +619,8 @@ class import_serviceController(ServiceController):
         'x_tags' where x can be any string. 
         
         """
-        
+        #log.debug("TRANSFER %s"  % (kw))
+        #log.debug("BODY %s " % request.body[:100])
         params = dict (kw)
         files = []
         for pname, f in params.items():
