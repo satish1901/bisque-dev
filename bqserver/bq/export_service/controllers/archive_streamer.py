@@ -52,17 +52,16 @@ class ArchiveStreamer():
             
             file_info   =   {}
             xml         =   data_service.get_resource(uri, view='deep')
-            name        =   (xml.get('name') or xml.xpath('./tag[@name="filename"]') or xml.xpath('./tag[@name="name"]')) and name[0]
+            name        =   xml.get('name') or xml.xpath('./tag[@name="filename"]') or xml.xpath('./tag[@name="name"]') and name[0]
             file_info   =   dict(XML        =   xml, 
                                  type       =   xml.tag,
-                                 name       =   name or xml.get('uniq')[-4:] if xml.get('uniq') is not None else str(randint(1000,9999)),
-                                 uniq       =   xml.get('uniq'),
-                                 path       =   blob_service.localpath(file_info['uniq'])
+                                 name       =   name or xml.get('resource_uniq')[-4:] if xml.get('resource_uniq') is not None else str(randint(1000,9999)),
+                                 uniq       =   xml.get('resource_uniq'),
+                                 path       =   blob_service.localpath(xml.get('resource_uniq')),
                                  dataset    =   dataset,
                                  extension  =   '')
 
             return file_info
-
         
         def xmlInfo(finfo):
             file = finfo.copy()
