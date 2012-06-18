@@ -78,16 +78,24 @@ classdef Node < matlab.mixin.Copyable
             % string from the whole document
             %str = bq.xml2str(self.element);
             
-            % stupid and ugly way of doing this, until i figure out how
-            % to create docs from subtrees
-            newdoc = com.mathworks.xml.XMLUtils.createDocument('root');
-            newdoc.getDocumentElement().appendChild(newdoc.adoptNode(self.element.cloneNode(true)));
-            str = bq.xml2str(newdoc);      
-            str = regexprep(str, '\n', '');
-            str = regexprep(str, '>\s+<', '><');
-            str = regexprep(str, '^<\?xml version="1.0" encoding="utf-8"\?>', '');
-            str = regexprep(str, '^<root>', '');
-            str = regexprep(str, '</root>$', '');
+            %% create a new doc from subtree
+            import javax.xml.parsers.*;
+            factory = DocumentBuilderFactory.newInstance;
+            builder = factory.newDocumentBuilder;
+            newdoc = builder.newDocument;
+            newdoc.appendChild(newdoc.adoptNode(self.element.cloneNode(true)));
+            
+            %% create a string from DOM doc
+            import javax.xml.transform.*;
+            import javax.xml.transform.dom.*;
+            import javax.xml.transform.stream.*;  
+            tfactory = TransformerFactory.newInstance;
+            transformer = tfactory.newTransformer;
+            transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, 'yes');
+            transformer.setOutputProperty(OutputKeys.INDENT, 'no');            
+            stream = java.io.StringWriter;
+            transformer.transform(DOMSource(newdoc), StreamResult(stream));
+            str = char(stream.toString);
         end % toString          
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
