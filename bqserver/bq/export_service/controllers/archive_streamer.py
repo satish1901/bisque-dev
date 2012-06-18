@@ -47,7 +47,7 @@ class ArchiveStreamer():
     # Returns a list of fileInfo objects based on files' URIs
     def fileInfoList(self, fileList, datasetList):
         
-        def fileInfo(dataset, uri, index):
+        def fileInfo(dataset, uri, index=0):
             from random import randint
             
             xml =   data_service.get_resource(uri, view='deep')
@@ -62,7 +62,7 @@ class ArchiveStreamer():
                 name = str(index)
             return  dict(XML        =   xml, 
                          type       =   xml.tag,
-                         name       =   name 
+                         name       =   name ,
                          uniq       =   xml.get('resource_uniq'),
                          path       =   blob_service.localpath(xml.get('resource_uniq')),
                          dataset    =   dataset,
