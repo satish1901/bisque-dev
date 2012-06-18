@@ -72,7 +72,7 @@ from bq.data_service.model import Tag, GObject
 from bq.data_service.model import Value, values
 from bq.data_service.model import dbtype_from_tag
 
-from bq.core.identity import get_user_id, get_admin_id
+from bq.core.identity import get_user_id, get_admin_id, get_admin
 from bq.core.model import User
 from bq.util.mkdir import _mkdir
 from bq.util.paths import data_path
@@ -741,6 +741,8 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
         q = q.filter (TaggableAcl.user_id == user_id)
         
     if action==RESOURCE_READ:
+        q = list (q.all())
+        q.append(fobject('auth', user = get_admin(), action = "edit"))
         return q
                           
     # setup for an edit of auth records
@@ -783,6 +785,10 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
             email = auth.get ('email', None)
             action = auth.get ('action', RESOURCE_READ)
             log.debug ("AUTH : %s %s " % (email, action))
+            # Hack for admin (simply skip users with out an email i.e. admin)
+            if email is None: 
+                continue
+
             if email is not None and action is not None:
                 invite = None
                 user = session.query(BQUser).filter_by(resource_value=unicode(email)).first()

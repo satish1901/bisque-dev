@@ -215,7 +215,7 @@ class BisquikResource(Resource):
         """GET /ds/images : fetch group of object 
 
         Create a listing of the resource.  Several options are allowed
-        view={normal,full,deep},
+        view={short,full,deep},[clean],[canonical],
         tags=tag expression i.e. [TAG:]VAL [AND|OR [TAG:]VAL]+
         xxx=val match an attribute on the resorce
         """
