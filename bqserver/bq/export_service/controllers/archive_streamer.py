@@ -47,21 +47,26 @@ class ArchiveStreamer():
     # Returns a list of fileInfo objects based on files' URIs
     def fileInfoList(self, fileList, datasetList):
         
-        def fileInfo(dataset, uri):
+        def fileInfo(dataset, uri, index):
             from random import randint
             
-            file_info   =   {}
-            xml         =   data_service.get_resource(uri, view='deep')
-            name        =   xml.get('name') or xml.xpath('./tag[@name="filename"]') or xml.xpath('./tag[@name="name"]') and name[0]
-            file_info   =   dict(XML        =   xml, 
-                                 type       =   xml.tag,
-                                 name       =   name or xml.get('resource_uniq')[-4:] if xml.get('resource_uniq') is not None else str(randint(1000,9999)),
-                                 uniq       =   xml.get('resource_uniq'),
-                                 path       =   blob_service.localpath(xml.get('resource_uniq')),
-                                 dataset    =   dataset,
-                                 extension  =   '')
-
-            return file_info
+            xml =   data_service.get_resource(uri, view='deep')
+            # try to fingure out a name for the resource
+            name=   xml.get('name') 
+            if not name:
+                name = ((xml.xpath('./tag[@name="filename"]') or xml.xpath('./tag[@name="name"]')) 
+                        and name[0].get('value'))
+            if not name and xml.get('resource_uniq'):
+                name  = xml.get('resource_uniq')[-4] 
+            if not name: 
+                name = str(index)
+            return  dict(XML        =   xml, 
+                         type       =   xml.tag,
+                         name       =   name 
+                         uniq       =   xml.get('resource_uniq'),
+                         path       =   blob_service.localpath(xml.get('resource_uniq')),
+                         dataset    =   dataset,
+                         extension  =   '')
         
         def xmlInfo(finfo):
             file = finfo.copy()
@@ -83,8 +88,8 @@ class ArchiveStreamer():
                 name = dataset.xpath('/dataset/@name')[0]
                 members = dataset.xpath('/dataset/tag[@name="members"][1]/value')
                 
-                for member in members:
-                    finfo = fileInfo(name, member.text)
+                for index, member in enumerate(members):
+                    finfo = fileInfo(name, member.text, index)
                     flist.append(finfo)
                     if finfo.get('type') == 'image':
                         flist.append(xmlInfo(finfo))
