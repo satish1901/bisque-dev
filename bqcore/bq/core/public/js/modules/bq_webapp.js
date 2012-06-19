@@ -177,10 +177,8 @@ function parseUrlArguments(urlargs) {
     return d;
 }
 
-BQWebApp.prototype.mexMode = function (mex) {
+BQWebApp.prototype.mexMode = function () {
     this.mex_mode = true;
-    if (mex.status != "FINISHED" && mex.status != "FAILED") return;            
-    
     BQ.ui.notification('This application is currently showing previously computed results.<br><br>'+
         '<i>Remove the "mex" url parameter in order to analyse new data.</i>', 20000); 
     //document.getElementById("webapp_input").style.display = 'none';
@@ -282,7 +280,7 @@ BQWebApp.prototype.inputs_from_mex = function (mex) {
 
 BQWebApp.prototype.load_from_mex = function (mex) {
     this.hideProgress();
-    this.mexMode(mex);
+    this.mexMode();
     this.inputs_from_mex(mex);
     this.done(mex);
 }
@@ -516,9 +514,24 @@ BQWebApp.prototype.done = function (mex) {
     var button_run = document.getElementById("webapp_run_button");
     button_run.childNodes[0].nodeValue = this.label_run;
     button_run.disabled = false;
-    //this.status_panel.setVisible(false);
+    this.status_panel.setVisible(false);
     this.mex = mex;
-    this.parseResults(mex);
+      
+    if (mex.status == "FINISHED") {
+        this.parseResults(mex);
+    } else {
+        var message = "Module execution failure:<br>" + mex.toXML(); 
+        if ('error_message' in mex.dict && mex.dict.error_message!='') 
+            message = "The module reported an internal error:<br>" + mex.dict.error_message;
+        else
+        if ('http-error' in mex.dict) 
+            message = "The module reported an internal error:<br>" + mex.dict['http-error'];
+        
+        BQ.ui.error(message);
+        var result_label = document.getElementById("webapp_results_summary");
+        if (result_label)
+            result_label.innerHTML = '<h3 class="error">'+ message+'</h3>';
+    }      
 }
 
 BQWebApp.prototype.getRunTimeString = function (tags) {
@@ -540,13 +553,12 @@ BQWebApp.prototype.getRunTimeString = function (tags) {
 
 BQWebApp.prototype.parseResults = function (mex) {
     // Update module run info
-    if (mex.status == "FINISHED") {
-        var result_label = document.getElementById("webapp_results_summary");
-        if (result_label) {
-            result_label.innerHTML = '<h3 class="good">The module ran in ' + this.getRunTimeString(mex.dict)+'</h3>';
-        }
-        if (!this.mex_mode) BQ.ui.notification('Analysis done! Verify results...');
+    var result_label = document.getElementById("webapp_results_summary");
+    if (result_label) {
+        result_label.innerHTML = '<h3 class="good">The module ran in ' + this.getRunTimeString(mex.dict)+'</h3>';
     }
+    if (!this.mex_mode) BQ.ui.notification('Analysis done! Verify results...');
+
     this.showOutputs(mex);
 }
 
@@ -555,33 +567,14 @@ BQWebApp.prototype.showOutputs = function (mex, key) {
         BQ.ui.warning('No outputs to show');
         return;
     }
+    var outputs = mex.find_tags('outputs');
+    if (outputs && outputs.tags) {
+        this.outputs = outputs.tags; // dima - this should be children in the future   
+        this.outputs_index  = outputs.create_flat_index();          
+    }   
+    
+    // setup output renderers
     this.clearUI_outputs(key);
-   
-    if (mex.status == "FINISHED") {
-        var outputs = mex.find_tags('outputs');
-        if (outputs && outputs.tags) {
-            this.outputs = outputs.tags; // dima - this should be children in the future   
-            this.outputs_index  = outputs.create_flat_index();          
-        }   
-        // setup output renderers
-        this.setupUI_outputs(key);
-    } else if (mex.status == "FAILED") {        
-        var message = "Module execution failure:<br>" + mex.toXML(); 
-        if ('error_message' in mex.dict && mex.dict.error_message!='') 
-            message = "The module reported an internal error:<br>" + mex.dict.error_message;
-        else
-        if ('http-error' in mex.dict) 
-            message = "The module reported an internal error:<br>" + mex.dict['http-error'];
-        
-        BQ.ui.error(message);
-        var result_label = document.getElementById("webapp_results_summary");
-        if (result_label)
-            result_label.innerHTML = '<h3 class="error">'+ message+'</h3>';
-    } else {
-        BQ.ui.notification('You are visualizing analysis which is currently in progress...', 25000);
-        var result_label = document.getElementById("webapp_results_summary");
-        if (result_label)
-            result_label.innerHTML = '<h3>Selected analysis is still running, wait for it to complete...</h3>';
-    }       
+    this.setupUI_outputs(key);
 }
 
