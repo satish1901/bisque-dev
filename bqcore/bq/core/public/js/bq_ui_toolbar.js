@@ -468,8 +468,12 @@ Ext.define('BQ.Application.Toolbar', {
                 valueField: 'name',
                 queryMode : 'local',
                 
-                invalidText: 'This type is not allowed for creation!',
-                validator: function(value) { return !(value in ignore) },
+                //invalidText: 'This type is not allowed for creation!',
+                validator: function(value) { 
+                    if (value in ignore) return 'This type is not allowed for creation!';
+                    if (/[^\w-]/.test(value)) return 'Resource type may only contain word characters: letters, digits, dash and underscore';
+                    return true;
+                },
             },{
                 fieldLabel: 'Name',
                 name: 'name',
