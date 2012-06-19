@@ -35,6 +35,7 @@ Bisque.ResourceTagger.RenderersAvailable =
     'link' : Bisque.ResourceTagger.LinkRenderer,
     'statistics' : Bisque.ResourceTagger.LinkRenderer,
     'resource' : Bisque.ResourceTagger.ResourceRenderer,
+    'image' : Bisque.ResourceTagger.ResourceRenderer,
 
     // Gobject renderers
     'point' : Bisque.ResourceTagger.VertexRenderer,

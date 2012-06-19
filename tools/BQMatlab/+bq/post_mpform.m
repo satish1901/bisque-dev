@@ -42,8 +42,9 @@
 %
 
 function [output, info] = post_mpform(url, input, user, password)
-    narginchk(2, 6);
-
+    if ~exist('url', 'var') error(message('BQ.post_mpform:RequiresUrl')); end
+    if ~exist('input', 'var') error(message('BQ.post_mpform:RequiresInput')); end
+    
     % This function requires Java
     if ~usejava('jvm')
        error(message('BQ.connect:NoJvm'));
@@ -107,11 +108,12 @@ function [output, info] = post_mpform(url, input, user, password)
         connection = server.openConnection(proxy);
     end    
     % new: end    
-    
-    %connection.setReadTimeout(3000);
+
+    boundary = '----BisqueMatlabAPI***********************';
+    connection.setReadTimeout(1200000);
     connection.setRequestMethod('POST');
     connection.setRequestProperty('Connection', 'Keep-Alive');
-    connection.setRequestProperty('Content-Type', 'text/xml');    
+    connection.setRequestProperty('Content-Type', ['multipart/form-data; boundary=',boundary]);      
     connection.setDoInput(true);
     connection.setDoOutput(true);
     connection.setUseCaches(false);        
@@ -125,8 +127,7 @@ function [output, info] = post_mpform(url, input, user, password)
         end
     end
 
-    boundary = 'BisqueMatlabAPI***********************';
-    connection.setRequestProperty('Content-Type', ['multipart/form-data; boundary=',boundary]);    
+ 
     %connection.setRequestProperty('Content-Length', int2str(length(input)));        
     
     connection.connect();
@@ -161,7 +162,7 @@ function [output, info] = post_mpform(url, input, user, password)
 
     if info.status>=300,
         output = [];
-        error(['Bisque MP POST error: ' info.error '\nURL: ' url.toString()]); % dima: not sure if this should be here
+        error(['bq.post_mpform:error\nStatus: ' int2str(info.status) '\nMethod: ' method '\nURL: ' url.toString() '\nError:\n' info.error], '');
     %elseif exist('location', 'var') && ~isempty(location),    
     %    output = stream2file(connection.getInputStream(), location);        
     %    %output = stream2file( java.io.BufferedInputStream(connection.getInputStream(), 4*1024), location);

@@ -156,11 +156,81 @@ Ext.define('BQ.Application.Toolbar', {
         this.menu_user.add( {text: 'Sign out', itemId: 'menu_user_signout', hidden: true, 
                                 handler: Ext.Function.pass(pageAction, bq.url('/auth_service/logout_handler'))} );
                                  
-        this.menu_user.add( {text: 'Sign in', itemId: 'menu_user_signin', 
-                                handler: Ext.Function.pass(pageAction, bq.url('/auth_service/login?came_from='+encodeURIComponent(window.location)))} );
-                         
+        //this.menu_user.add( {text: 'Sign in', itemId: 'menu_user_signin', 
+        //                        handler: Ext.Function.pass(pageAction, bq.url('/auth_service/login?came_from='+encodeURIComponent(window.location)))} );
+
+        this.menu_user.add({text: 'Sign in', itemId: 'menu_user_signin', 
+                            menu: {
+                                xtype: 'menu',
+                                plain: true,
+                                items: {                                
+                                    xtype: 'form',
+                                    id: 'login_form',
+                                    //layout: 'form', // uncomment for extjs 4.1
+                                    cls: 'loginmenu',
+                                    standardSubmit: true,
+                                    border: false,
+                                    bodyBorder: false,            
+                                    url: '/auth_service/login_check',
+                                    width: 350,
+                                    fieldDefaults: {
+                                        msgTarget: 'side',
+                                        border: 0,
+                                    },
+                                    items: [{
+                                            xtype: 'hiddenfield',
+                                            name: 'came_from',
+                                            value: document.location,
+                                            allowBlank: true,
+                                        }, {
+                                            xtype: 'textfield',
+                                            fieldLabel: 'User name',
+                                            name: 'login',
+                                            //id: 'loginusername',
+                                            allowBlank: false,   
+                                            fieldSubTpl: ['<input id="loginusername" type="{type}" ', 
+                                                        '<tpl if="name">name="{name}" </tpl>', 
+                                                        '<tpl if="size">size="{size}" </tpl>', 
+                                                        '<tpl if="tabIdx">tabIndex="{tabIdx}" </tpl>', 
+                                                        'class="{fieldCls} {typeCls}" autocomplete="on" autofocus="true" />',
+                                                        {compiled: true, disableFormats: true}],
+                                            listeners: {
+                                                specialkey: function(field, e){
+                                                    if (e.getKey() == e.ENTER) {
+                                                        var form = field.up('form').getForm();
+                                                        form.submit();
+                                                    }
+                                                }
+                                            },                                                                                                               
+                                    },],
+                            
+                                    buttons: [{
+                                        xtype: 'button',
+                                        text: 'Sign in',
+                                        formBind: true, //only enabled once the form is valid
+                                        //disabled: true, // uncomment for extjs 4.1
+                                        handler: function() {
+                                            var form = this.up('form').getForm();
+                                            if (form.isValid())
+                                                form.submit();
+                                        }
+                                    }],
+                                    
+                                    autoEl: {
+                                        tag: 'form',
+                                    },
+                                    
+                                    listeners: {
+                                        render: function() {
+                                            this.el.set({ autocomplete: 'on' });
+                                        },
+                                    },                                    
+                                    
+                                }, // form
+                                
+                            }, // button menu 
+        }); // add login menu
     
-        
         var menu_help = [];
         menu_help.push( { xtype:'tbtext', text: '<img src="'+this.images_base_url+'bisque_logo_white_170.png" style="width: 96px; height: 77px; margin: 10px; margin-left: 30px;" />', indent: true } );
         menu_help.push( {text: 'About Bisque', 
@@ -259,8 +329,7 @@ Ext.define('BQ.Application.Toolbar', {
         this.items.push({ menu: menu_help, icon: this.images_base_url+'help.png', tooltip: 'All information about Bisque'  }); 
         
         this.callParent();
-        
-        
+
         // update user menu based on application events
         Ext.util.Observable.observe(BQ.Application);        
         BQ.Application.on('gotuser', function(u) { 
@@ -275,10 +344,14 @@ Ext.define('BQ.Application.Toolbar', {
             for (var i=0; (p=this.tools_user[i]); i++)
                 this.menu_user.child('#'+p).setVisible(true);            
 
-            // show user menus
+            // show admin menus
             if (u.user_name == 'admin')
             for (var i=0; (p=this.tools_admin[i]); i++)
                 this.menu_user.child('#'+p).setVisible(true);  
+        
+            // create resource element 
+            if (this.menu_resource_create) this.menu_resource_create.setVisible(true);   
+        
         }, this);
 
         BQ.Application.on('signedin', function() { 
@@ -296,8 +369,18 @@ Ext.define('BQ.Application.Toolbar', {
 
             // hide user menus
             for (var i=0; (p=this.tools_admin[i]); i++)
-                this.menu_user.child('#'+p).setVisible(false);              
+                this.menu_user.child('#'+p).setVisible(false);    
+                
+            // create resource element  
+            if (this.menu_resource_create) this.menu_resource_create.setVisible(false); 
+                         
         }, this);  
+
+        BQ.Preferences.get({
+            type : 'system',
+            key : 'Toolbar',
+            callback : Ext.bind(this.on_preferences, this)
+        });
         
         this.fetchResourceTypes();        
     },
@@ -314,6 +397,12 @@ Ext.define('BQ.Application.Toolbar', {
     systemPrefs : function() {
         var preferences = Ext.create('BQ.Preferences.Dialog', {prefType:'system'});
     },
+    
+    on_preferences : function (preferences) {
+        clog('boo');
+        //this.menu_user.child('#menu_user_register').setVisible(false);            
+        //'
+    },
 
     fetchResourceTypes : function() {
         BQFactory.request ({uri : '/data_service/', 
@@ -329,18 +418,19 @@ Ext.define('BQ.Application.Toolbar', {
             var uri = r.uri;            
             menu.add( {text: name, handler: Ext.Function.pass(pageAction, '/client_service/browser?resource='+uri)} );
         }
-        menu.add( '-' );
-        menu.add( {text: 'Create a new resource', 
-                   handler: function() {this.createResource(resource);},
-                   scope: this, });
         
+        menu.add( '-' );
+        this.menu_resource_create = menu.add( {text: 'Create a new resource', 
+                   handler: function() {this.createResource(resource);},
+                   scope: this, 
+                   hidden: !BQApp.hasUser() });
         
         this.child('#menu_images').menu = menu;
         this.child('#menu_resources').menu = menu;        
     }, 
    
     createResource : function(resource) {
-        var ignore = { 'mex':null, 'user':null, 'image':null, 'module':null, 'service':null, 'system':null, 'file':null, 'dataset':null };        
+        var ignore = { 'mex':null, 'user':null, 'image':null, 'module':null, 'service':null, 'system':null, 'file':null, 'dataset':null, };        
         var mydata = [['dataset']];
         var r=null;
         for (var i=0; (r=resource.children[i]); i++)

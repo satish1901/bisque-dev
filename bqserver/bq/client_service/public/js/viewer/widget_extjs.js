@@ -62,6 +62,12 @@ Ext.define('BQ.viewer.Image', {
         this.callParent();
     },
 
+    onDestroy : function(){
+        if (this.viewer) 
+            this.viewer.cleanup();
+        this.callParent();
+    },
+
     afterRender : function() {
         this.callParent();
         this.loadViewer(this.resource);

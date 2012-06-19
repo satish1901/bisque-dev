@@ -75,8 +75,6 @@ from repoze.what import predicates
 from bq import  module_service
 from bq.core.service import ServiceController, BaseController
 from bq.exceptions import EngineError, RequestError
-#from bq.core.identity  import get_user_pass
-#from bq.core.proxy import ProxyRewriteURL
 
 from bq.util.configfile import ConfigFile
 from bq.util.hostutils import same_host
@@ -85,7 +83,7 @@ from bq.util.http.thread_pool import ThreadPool, makeRequests
 from bq.util.paths import bisque_path, config_path
 from bq.util.copylink import copy_link
 
-from adapters import MatlabAdapter, PythonAdapter, ShellAdapter, RuntimeAdapter
+from adapters import RuntimeAdapter
 
 log = logging.getLogger('bq.engine_service')
 
@@ -94,7 +92,7 @@ HEARTBEAT   = config.get('bisque.engine_service.hb');
 engine_root = '/'.join ([config.get('bisque.server') , 'engine_service'])
 
 def method_unavailable (msg=None):
-    abort(403)
+    abort(503)
     
 def method_not_found():
     abort(404)
@@ -263,7 +261,8 @@ def initialize_available_modules(engines):
             continue
         log.debug ("found module at %s" % xmlfile)
         try:
-            module_root = etree.parse (open(xmlfile)).getroot()
+            with open(xmlfile) as xml:
+                module_root = etree.parse (xml).getroot()
         except etree.XMLSyntaxError:
             log.exception ('while parsing %s' % xmlfile)
             continue
@@ -292,6 +291,9 @@ def initialize_available_modules(engines):
                 module_root.set('engine_url', engine_root + '/'+module_name)
                 module_root.set('status', status)
                 #module_root.set('codeurl', engine_root + '/'+module_name)
+                for x in module_root.iter(tag=etree.Element):
+                    x.set('permission', 'published')
+                
                 available.append(module_root)
             else:
                 unavailable.append ( module_name)
@@ -318,9 +320,9 @@ class EngineServer(ServiceController):
         self.resource_by_name = {}
 
         #self.module_resource = EngineResource()
-        self.engines = { 'matlab': MatlabAdapter(),
-                         'python': PythonAdapter(),
-                         'shell' : ShellAdapter(),
+        self.engines = { #'matlab': MatlabAdapter(),
+                         #'python': PythonAdapter(),
+                         #'shell' : ShellAdapter(),
                          'runtime' : RuntimeAdapter(),
                          #'lam' : LamAdapter(),
                          }
@@ -443,24 +445,6 @@ class AsyncRequest:
 
 
 
-# class RemoteEngineServer(object):
-#     def __init__(self):
-#         #self.url = serverurl
-#         self.async = AsyncRequest(5)
-#     def execute(self, mextree, server_url, callback=None, calldata=None, up=None):
-#         if not up:
-#             up = get_user_pass ()
-#         log.debug ('user_pass' + str(up))
-#         body = ProxyRewriteURL.for_output(etree.tostring(mextree))
-#         log.debug ("POST " + body)
-#         self.async.request(server_url+'/mex_execute',
-#                            "POST", 
-#                            body,
-#                            {'content-type':'text/xml' },
-#                            callback,
-#                            calldata,
-#                            user_pass= up)
-
 
 reserved_io_types = ['system-input']
 
@@ -470,9 +454,9 @@ from bq.config.middleware import public_file_filter
 class EngineModuleResource(BaseController):
     """Convert the local module into one accessable as a web resource"""
 
-    adapters = { 'matlab': MatlabAdapter(),
-                 'python': PythonAdapter(),
-                 'shell' : ShellAdapter(),
+    adapters = { #'matlab': MatlabAdapter(),
+                 #'python': PythonAdapter(),
+                 #'shell' : ShellAdapter(),
                  'runtime' : RuntimeAdapter(),
                  }
 
@@ -766,67 +750,6 @@ class EngineModuleResource(BaseController):
             #    self.status = "free"
             #    self.jobs = self.jobs-1
             return mextree
-
-
-##########################################
-#  Module accesible 
-
-
-_preferred = None
-_servers = {} 
-def initialize(uri=None):
-    global _preferred, _servers
-    
-    server = None
-    server_url = config.get('bisque.engine_service.local_server', None)
-    if server_url:
-        server = EngineServer(server_url)
-        _preferred = _servers[server_url] = server
-    
-    #else:
-    #    server = RemoteEngineServer()
-    #    _preferred = server
-        
-    #server_url = config.get('bisquik.engine_service.remote', None)
-    #if server_url:
-    #    server = RemoteEngineServer(server_url)
-    #    _preferred = _servers[server_url] = server
-                
-    log.debug ("initialize servers: " + str(_servers))
-    return _preferred
-
-def preferred_server(): return _preferred
-
-def find_server(server_uri):
-    global _servers
-    global _preferred
-    server = _servers.get(server_uri, None)
-
-    if not server:
-        return _preferred
-    
-    return server
-
-    #if not server:
-        #net = urlparse.urlsplit(server_uri)[1]
-        #if same_host (net):
-            #log.debug('created local server' + server_uri)
-            #server = EngineServer(server_uri)
-        #else:
-            #log.debug('created remote server' + server_uri)
-            #server = RemoteEngineServer(server_uri)
-        #_servers[server_uri]  = server
-    #log.debug ("find_servers: " + str(_servers))
-    #return server
-
-def execute(mextree, server_uri, **kw):
-    log.debug ("ALL servers: " + str(_servers))
-    log.debug ("using server: " + str(server_uri))
-    server = find_server(server_uri)
-
-    log.debug ("args " + str(kw))
-    return server.execute(mextree, server_uri, **kw)
-
 
 
 

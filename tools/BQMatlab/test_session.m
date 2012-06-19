@@ -1,6 +1,6 @@
 
 % initing session
-s = bq.Session('http://vidi.ece.ucsb.edu:9090/data_service/mex/1155', '1155');
+s = bq.Session('http://vidi.ece.ucsb.edu:9090/data_service/mex/981', '981');
 
 % while running
 s.update('RUNNING');
@@ -15,9 +15,9 @@ mytags = s.mex.findNameValueMap(tags, '//tag[@name="inputs"]/tag[@name=''%s'']')
 mym = [mytags.keys; mytags.values]';
 
 % fetch some input tag as a bq.Node
-imageurl = s.mex.findValue('//tag[@name="inputs"]/tag[@name="image_url"]');
+imageurl = s.mex.findValue('//tag[@name="inputs"]/tag[@name="resource_url"]');
 % fetch first plane of the first channel
-image = s.load(imageurl);
+image = s.fetch(imageurl);
 im = image.slice(1,1).remap(1).fetch();
 imagesc(im);
 

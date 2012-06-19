@@ -1,7 +1,7 @@
 Ext.Loader.setConfig({
     enabled: true
 });
-Ext.Loader.setPath('Ext.ux', '../extjs/examples/ux');
+Ext.Loader.setPath('Ext.ux', bq.url('/extjs/examples/ux'));
 
 Ext.require([
     'Ext.ux.CheckColumn'

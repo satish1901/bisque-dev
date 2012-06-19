@@ -241,8 +241,8 @@ class BisquikResource(Resource):
                                    wpublic = wpublic,
                                    **kw)
             xtag = self.resource_type[1].xmltag
-            response = etree.Element ('resource')
-            etree.SubElement(response, xtag, count = str(count))
+            response = etree.Element ('resource', uri=str(request.url))
+            etree.SubElement(response, 'tag', name="count", value=str(count), type="number")
         else:
             #if limit is None: limit = 1000
             #if limit > 1000:

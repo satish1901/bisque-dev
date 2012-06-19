@@ -125,7 +125,7 @@ class DataServerController(ServiceController):
         args = [ "%s=%s" % (k, v) for k,v in kw.items()]
         full_url = "%s?%s" % (url, "&".join (args))
         if identity.not_anonymous():
-            user_id = identity.current.get_bq_user().id
+            user_id = identity.get_user_id()
         header, response = self.server_cache.fetch(full_url, user_id)
         return response
 
@@ -133,11 +133,11 @@ class DataServerController(ServiceController):
         args = [ "%s=%s" % (k, v) for k,v in kw.items()]
         full_url = "%s?%s" % (url, "&".join (args))
         if identity.not_anonymous():
-            user_id = identity.current.get_bq_user().id
+            user_id = identity.get_user_id()
         self.server_cache.save (full_url, {'Content-Type':'text/xml'}, response, user_id)
     def cache_invalidate(self, url, user_id=None):
         if user_id is None and identity.not_anonymous():
-            user_id = identity.current.get_bq_user().id
+            user_id = identity.get_user_id()
         self.server_cache.invalidate(url, user_id)
 
     def new_image(self, resource = None, **kw):
@@ -317,11 +317,11 @@ class DataServerController(ServiceController):
 
     def update(self, resource_tree, replace_all=False, **kw):
         view=kw.pop('view', None)
-        if replace_all:
-            uri = resource_tree.get ('uri') 
-            r = load_uri(resource_tree.get('uri'))
-            r.clear()
-        r = bisquik2db(doc=resource_tree)
+        #if replace_all:
+        #    uri = resource_tree.get ('uri') 
+        #    r = load_uri(resource_tree.get('uri'))
+        #    r.clear()
+        r = bisquik2db(doc=resource_tree, replace=replace_all)
         #response  = etree.Element ('response')
         r =  db2tree (r, parent=None, view=view, baseuri = self.url)
         self.cache_invalidate(r.get('uri'))

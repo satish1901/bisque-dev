@@ -66,7 +66,7 @@ BQObject.prototype = new BQXml();
 
 BQObject.prototype.initializeXml = function (resource) {
     this.uri = attribStr(resource,'uri');
-    this.perm = attribInt(resource,'permission');
+    this.permission = attribStr(resource,'permission');
     this.ts   = attribStr(resource,'ts');
     this.owner = attribStr(resource,'owner');
     this.type   = attribStr(resource,'type');
@@ -830,6 +830,7 @@ BQFactory.load = function(uri, cb, progresscb, cache) {
 default_error_callback = function (o) {
   //alert(o.message);
   clog(o.message);
+  BQ.ui.error(o.message); 
 }
 
 BQFactory.request = function(params) {
@@ -1074,7 +1075,7 @@ BQTag.prototype = new BQObject();
 
 BQTag.prototype.initializeXml = function (node) {
     this.uri = attribStr(node,'uri');
-    this.perm = attribInt(node,'permission');
+    this.permission = attribStr(node,'permission');
     this.ts   = attribStr(node,'ts');
     this.owner   = attribStr(node,'owner');
 

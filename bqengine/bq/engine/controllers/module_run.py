@@ -74,6 +74,13 @@ class ModuleRunner(object):
                 return RUNNER_MAP[run_platform]
         return None
 
+    def check(self, **kw):
+        runner_class = self.choose_runner()
+        if runner_class:
+            runner = runner_class(**kw)
+            return runner.check(**kw)
+        return False
+
     def main(self, **kw):
         """Called when module is launched.
         """
