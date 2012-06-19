@@ -54,8 +54,8 @@ class ArchiveStreamer():
             # try to fingure out a name for the resource
             name=   xml.get('name') 
             if not name:
-                name = ((xml.xpath('./tag[@name="filename"]') or xml.xpath('./tag[@name="name"]')) 
-                        and name[0].get('value'))
+                name = xml.xpath('./tag[@name="filename"]') or xml.xpath('./tag[@name="name"]')
+                name = name and name[0].get('value')
             if not name and xml.get('resource_uniq'):
                 name  = xml.get('resource_uniq')[-4] 
             if not name: 
