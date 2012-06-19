@@ -18,12 +18,11 @@ classdef File < bq.Node
     
     methods
 
-        function [self] = File(doc, element, user, password)
         % doc      - URL string or DOM document
         % element  - optional: DOM element
         % user     - optional: string
         % password - optional: string
-            
+        function [self] = File(doc, element, user, password)
             supargs = {};
             if exist('doc', 'var'), supargs{1} = doc; end
             if exist('element', 'var'), supargs{2} = element; end            
@@ -36,12 +35,12 @@ classdef File < bq.Node
         % Blob access
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        function blob = fetch(self, filename)
         % filename - optional: if given and not empty represents a filename to save the stream into
         %                      if given but is empty instructs to use resources name
         % blob - the actual blob data if no filename was provided or 
         %        the filename where the blob was stored
-        
+        function blob = fetch(self, filename)
+
             if isempty(self.doc) || ~self.hasAttribute('resource_uniq'),
                 error('bq.File.fetch:InvalidResource', 'This resource is invalid');
             end
@@ -68,10 +67,9 @@ classdef File < bq.Node
     end % methods
     
     methods (Static)    
-
-        function node = store(filename, root_url, user, password)
         % filename - filename
-        % node     - bq.Node object of the created resource            
+        % node     - bq.Node object of the created resource
+        function node = store(filename, root_url, user, password)
             if ~exist('user', 'var') || isempty(user) || ~exist('password', 'var') || isempty(password),
                 error('bq.File.store:UserCredentialsInvalid', 'Store requires user name and password');
             end        

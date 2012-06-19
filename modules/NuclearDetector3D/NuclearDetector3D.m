@@ -1,16 +1,15 @@
-%function NuclearDetector3D(mex_url, access_token, image_url, nuclear_channel, membrane_channel, nuclear_diameter, ~)
-function NuclearDetector3D(mex_url, access_token, image_url, ~, ~, ~, ~)
+function NuclearDetector3D(mex_url, access_token, image_url, nuclear_channel, nuclear_diameter, ~)
     session = bq.Session(mex_url, access_token);
     try
-        nuclear_channel  = str2num(session.mex.findValue('//tag[@name="inputs"]/tag[@name="nuclear_channel"]'));
-        membrane_channel = str2num(session.mex.findValue('//tag[@name="inputs"]/tag[@name="membrane_channel"]', '0'));
-        nuclear_diameter = session.mex.findValue('//tag[@name="inputs"]/tag[@name="nuclear_size"]');        
+        image = session.fetch(image_url);
+
+        nuclear_channel  = str2num(nuclear_channel);
+        nuclear_diameter = str2num(nuclear_diameter);
         
         t = session.mex.findNode('//tag[@name="inputs"]/tag[@name="pixel_resolution"]');
         res =  cell2mat(t.getValues('number'));
         %res = [0.439453, 0.439453, 1.0, 1.0]; % image resolution in microns per pixel
 
-        image = session.fetch(image_url);        
         if isfield(image.info, 'pixel_resolution_x') && res(1)<=0,
             res(1) = getfield(image.info, 'pixel_resolution_x');
         end
@@ -23,6 +22,7 @@ function NuclearDetector3D(mex_url, access_token, image_url, ~, ~, ~, ~)
         if isfield(image.info, 'pixel_resolution_t') && res(4)<=0,
             res(4) = getfield(image.info, 'pixel_resolution_t');
         end
+
         
         number_t = max(1, image.info.image_num_t);
         np = cell(number_t, 1);
@@ -31,12 +31,6 @@ function NuclearDetector3D(mex_url, access_token, image_url, ~, ~, ~, ~)
             session.update(sprintf('Time %d: 0% - fetching image', current_t));   
             imn = image.slice([],current_t).remap(nuclear_channel).fetch();
 
-            % filter using membraine channel
-            if membrane_channel>0,
-                imm = image.slice([],current_t).remap(membrane_channel).fetch();
-                imn = imdiff(imn, imm);
-            end
-            
             %% Run
             ns =  (nuclear_diameter/2.0) ./ res;
 
