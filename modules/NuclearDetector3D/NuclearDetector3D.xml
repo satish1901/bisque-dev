@@ -31,6 +31,18 @@
                 <tag name="reference" value="resource_url" />
                 <tag name="guess" value="nuc|Nuc|dapi|DAPI|405|dna|DNA|Cy3" />
                 <tag name="fail_message" value="You need to select image channel" />
+                <tag name="allowNone" value="false" type="boolean" />
+                <tag name="description" value="Select an image channel representing nulcei" />
+            </template>
+        </tag>
+
+        <tag name="membrane_channel" value="0" type="image_channel">
+            <template>
+                <tag name="label" value="Membrane channel" />
+                <tag name="reference" value="resource_url" />
+                <tag name="allowNone" value="true" type="boolean" />
+                <tag name="description" value="You can improve nuclear separation and filter out noise
+                    by membraine channel substraction. Set to 0 or 'None' for no filtering." />
             </template>
         </tag>
         
@@ -43,6 +55,7 @@
                 <tag name="decimalPrecision" value="4" type="number" />
                 <tag name="step" value="0.1" type="number" />
                 <tag name="units" value="microns" />
+                <tag name="description" value="Provide average nuclear diameter, favor smaller visible nuclei" />
             </template>             
         </tag>        
 
@@ -56,7 +69,8 @@
                 <tag name="reference" value="resource_url" />
                 <tag name="units" value="microns" />  
                 <tag name="fail_message" value="You need to provide image resolution" />              
-                <tag name="description" value="This is a default voxel resolution and is only used during the dataste run if the image does not have one." />   
+                <tag name="description" value="This is a default voxel resolution and is only used during the 
+                    dataste run if the image does not have one. Set to 0 to use image embedded values." />   
             </template>
         </tag>
         
