@@ -12,7 +12,11 @@ setup(name='bqdev',
       description="Bisque Module API",
       author='Center for Bioimage informatics',
       author_email='cbi@biodev.ece.ucsb.edu',
-      home_page = 'http://biodev.ece.ucsb.edu/projects/bisque',
+      #home_page = 'http://biodev.ece.ucsb.edu/projects/bisque',
       url='http://biodeve.ece.ucsb.edu/projects/bisquik',
-      packages= ['bq', 'bq.api' ]
+      packages= ['bq', 'bq.api' ],
+      install_requires=[
+        "httplib2",
+        "lxml",
+        ]
       )
