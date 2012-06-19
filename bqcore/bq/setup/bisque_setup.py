@@ -84,9 +84,6 @@ def config_path(*names):
 def bisque_path(*names):
     return to_sys_path(os.path.join(BQDIR, *names))
 
-def quoted(value):
-    'quote a value if has special chars'
-    return '\"%s\"' % value if any(c in value for c in "#=" ) else value
 
 def which(command):
     """Emulate the Shell command which returning the path of the command
@@ -500,8 +497,7 @@ def update_site_cfg (bisque_vars, section = BQ_SECTION, append=True, cfg=SITE_CF
         c.read(open(cfg))
 
     for k,v in bisque_vars.items():
-        c.edit_config (section, k, '%s = %s' % (k,quoted(v)), {}, append)
-        print "edit %s %s" % (k,v)
+        c.edit_config (section, k, '%s = %s' % (k,v), {}, append)
     c.write (open (cfg, 'w'))
 
 
@@ -518,8 +514,8 @@ def modify_site_cfg(qs, bisque_vars, section = BQ_SECTION, append=True, cfg=SITE
     c = ConfigFile()
     c.read(open(cfg))
     for k,v in bisque_vars.items():
-        c.edit_config (section, k, '%s = %s' % (k,quoted(v)), {}, append)
-        print "edit %s %s" % (k,v)
+        c.edit_config (section, k, '%s = %s' % (k,v), {}, append)
+        #print "edit %s %s" % (k,v)
     c.write (open (cfg, 'w'))
 
     return bisque_vars

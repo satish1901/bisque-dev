@@ -7,12 +7,10 @@ import re
 import StringIO
 import string
 
-# Bracketed name i.e. [section]
 section_re = re.compile (r'^\[(.*)\]')
-# Remove # comments exception those that are in "  chracters
-line_re = re.compile (r'#(?=(?:[^"]*"[^"]*")*[^"]*$).*', re.MULTILINE)
 
 GLOBAL_SECTION="__GLOBAL__"
+
 
 class peekable(object):
     def __init__(self, iter):
@@ -39,12 +37,11 @@ def filterfluff(lines):
         lines = lines.splitlines()
     lines = peekable (iter(lines))
     for  l in lines:
-        #line, sep, comment = l.partition ('#')
-        line = line_re.sub('', l)
+        line, sep, comment = l.partition ('#')
         while line.endswith("\\"):
-            line = line[:-1] + line_re.sub ('', lines.next())
+            line = line[:-1] + lines.next()
         while lines.peek(0, '').startswith( (' ', '\t') ):
-            line = line[:] + line_re.sub ('', lines.next())
+            line = line[:] + lines.next()
         line = line.strip()
         if line:
             yield line

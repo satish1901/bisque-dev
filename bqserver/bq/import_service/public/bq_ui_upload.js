@@ -1085,14 +1085,9 @@ Ext.define('BQ.upload.Panel', {
     upload : function() {
         this.all_done = false;        
         this.files_uploaded = 0;
-        
-        var total = 0;
-        this.uploadPanel.items.each( function() { if (this.getState && this.getState()<BQ.upload.Item.STATES.DONE) total++; } );
-        this.total = total;
-        
         this._time_started = new Date();  
         this.progress.setVisible(true);
-        this.progress.updateProgress(0, BQ.upload.UPLOAD_STRING);        
+        this.progress.updateProgress(0, BQ.upload.UPLOAD_STRING);
         this.uploadPanel.items.each( function() { if (this.upload) this.upload(); } );
     },     
 
@@ -1141,12 +1136,11 @@ Ext.define('BQ.upload.Panel', {
     },
 
     testDone : function(nomessage) {
-        //var total = this.uploadPanel.items.getCount();
-        var total = this.total;
+        var total = this.uploadPanel.items.getCount();
         this.progress.updateProgress( this.files_uploaded/total, 'Uploaded '+this.files_uploaded+'/'+total );
         
         var e = this.uploadPanel.items.findBy( function(){ return (this.getState && this.getState()<BQ.upload.Item.STATES.DONE); } );
-        if (!e && this.files_uploaded>=total && !this.all_done) {
+        if (!e && this.files_uploaded==total && !this.all_done) {
             this.all_done = true;
 
             // first find out if some files had upload error

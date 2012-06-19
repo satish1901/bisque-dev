@@ -68,10 +68,10 @@ function createXhr() {
 BQFileUpload.prototype.upload = function () {
     
     var fd = new FormData();
+    fd.append(this.form_file, this.file );
+    
     if (this.conf.tags)
         fd.append(this.form_tags, this.conf.tags );
-
-    fd.append(this.form_file, this.file );
     
     //this.xhr = new XMLHttpRequest();
     this.xhr = createXhr();

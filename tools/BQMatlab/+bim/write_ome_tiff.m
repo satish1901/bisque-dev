@@ -15,11 +15,6 @@
 %       res      - struct with image resolution, if known
 %                  res.x, res.y, res.z, res.t
 %
-%   EXAMPLE:
-%
-%       bim.write_ome_tiff( im, 'myimage.ome.tif', struct('z', 0), struct('x', 0.6215, 'y', 0.6215, 'z', 1.0));
-%
-%
 %   AUTHOR:
 %       Dmitry Fedorov, <www.dimin.net>
 %
