@@ -72,6 +72,7 @@ class image_serviceController(ServiceController):
 
         self.srv = ImageServer (image_dir=imgdir,
                                 work_dir = workdir,
+                                data_dir = data_path(),
                                 server_url = server_url)
 
 
