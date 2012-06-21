@@ -106,6 +106,7 @@ class AuthenticationServer(ServiceController):
 
     @expose()
     def login_check(self, came_from='/', login='', **kw):
+        log.debug ("login_check %s from=%s other=%s" % (login, came_from, kw))
         login_urls = self.login_map()
         default_login = login_urls.values()[-1]
         if login:
@@ -120,10 +121,10 @@ class AuthenticationServer(ServiceController):
                 if  identifier in login_identifiers:
                     login_url  = login_urls[identifier]
                     log.debug ("redirecting to %s handler" % identifier)
-                    redirect(update_url(login_url, dict(username=login)))
+                    redirect(update_url(login_url, dict(username=login, came_from=came_from)))
 
         log.debug ("using default login handler %s" % default_login)
-        redirect(update_url(default_login, dict(username=login)))
+        redirect(update_url(default_login, dict(username=login, came_from=came_from)))
 
 
     @expose('bq.client_service.templates.login')
