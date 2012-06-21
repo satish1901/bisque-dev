@@ -1718,12 +1718,13 @@ class CloseImageService(object):
 #
 
 class ImageServer(object):
-    def __init__(self, image_dir, work_dir, server_url):
+    def __init__(self, image_dir, work_dir, data_dir, server_url):
         '''Start an image server, using local dir imagedir,
         and loading extensions as methods'''
         #super(ImageServer, self).__init__(image_dir, server_url)
         self.imagedir = image_dir
         self.workdir = work_dir
+        self.datadir = data_dir
         self.cache = FileCache()
         self.url = server_url
 
@@ -1914,9 +1915,16 @@ class ImageServer(object):
 
     def ensureWorkPath(self, path):
         # change ./imagedir to ./workdir if needed
-        path = path.replace( self.imagedir, self.workdir, 1 )
+        drv, path = os.path.splitdrive(path)
         if path.find( self.workdir ) == -1:
-            path = self.workdir + '/' + path
+            if path.find (self.imagedir)>=0:
+                path = path.replace(self.imagedir, self.workdir, 1)
+            elif path.find(self.datadir)>=0:
+                path = path.replace(self.datadir, self.workdir, 1)
+            else:
+                if path[0]=='/' or path=='\\':
+                    path=path[1:]
+                path = os.path.join(self.workdir , path)
 
         #make sure that the path directory exists
         _mkdir( os.path.dirname(path) )
