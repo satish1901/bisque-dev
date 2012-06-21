@@ -260,7 +260,7 @@ Ext.define('BQ.Application.Toolbar', {
         menu_help.push( {text: 'Submit a bug or suggestion', 
                          handler: Ext.Function.pass(urlAction, 'http://biodev.ece.ucsb.edu/projects/bisquik/newticket')} );
         menu_help.push( {text: 'Send us e-mail', 
-                         handler: Ext.Function.pass(urlAction, 'mailto:bisque-dev@biodev.ece.ucsb.edu')} );                                        
+                         handler: Ext.Function.pass(urlAction, 'mailto:bisque-dev@biodev.ece.ucsb.edu,bisque-bioimage@googlegroups.com')} );                                        
         
         
         //--------------------------------------------------------------------------------------
