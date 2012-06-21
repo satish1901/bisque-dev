@@ -363,9 +363,9 @@ Ext.define('BQ.Export.Panel',
             [
                 'icon',
                 'name',
-                {name: 'type', convert: function(value){return Ext.String.capitalize(value)}},  
-                {name: 'ts', convert: function(value){return Ext.Date.format(new Date(value), "F j, Y g:i:s a")}},
-                {name: 'public', convert: function(value){return (value=='published')?'Yes':'No'}},
+                {name: 'type'/*, convert: function(value){return Ext.String.capitalize(value)}*/},  
+                {name: 'ts'/*, convert: function(value){return Ext.Date.format(new Date(value), "F j, Y g:i:s a")}*/},
+                {name: 'public'/*, convert: function(value){return (value=='published')?'Yes':'No'}*/},
                 'uri',
                 'viewPriority'
             ],
