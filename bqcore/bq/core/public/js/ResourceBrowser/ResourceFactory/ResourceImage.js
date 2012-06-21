@@ -6,8 +6,7 @@ Ext.define('Bisque.Resource.Image',
     // Two functions for speed
     GetImageThumbnailRel : function(params, size, full)
     {
-        //return '<img style="position:absolute;top:50%;left:50%" src="' + this.getThumbnailSrc(params) + '"/>';
-        return '<img style="position:relative; top:50%; left:50%; margin-top: -'+size.height/2+'px;margin-left: -'+size.width/2+'px;"'
+        return '<img style=" display: block; margin-left: auto; margin-right: auto; margin-top: ' + (params.height+10-size.height)/2 + 'px;"'
         +((full==undefined)?' id="'+this.resource.uri+'"':'')
         + ' src="' + this.getThumbnailSrc(params)
         + '"/>';
@@ -20,7 +19,6 @@ Ext.define('Bisque.Resource.Image',
     
     GetImageThumbnailAbs : function(params, size, full)
     {
-        //return '<img src="' + this.resource.src + '?thumbnail' + params + '"/>';
         return '<img style="position:absolute; top:50%; left:50%; margin-top: -'+size.height/2+'px;margin-left: -'+size.width/2+'px;"'
         +((full==undefined)?' id="'+this.resource.uri+'"':'')
         + ' src="' + this.getThumbnailSrc(params) 
@@ -228,7 +226,7 @@ Ext.define('Bisque.Resource.Image.Compact',
     
     resourceError : function()
     {
-        var errorImg    =   '<img style="position:relative; top:50%; left:50%; margin-top: -15px;margin-left: -50px;"'
+        var errorImg    =   '<img style="display: block; margin-left: auto; margin-right: auto; margin-top: 65px;"'
                             + ' src="' + bq.url('/js/ResourceBrowser/Images/unavailable.png') + '"/>';
         this.setData('image', errorImg);
         this.setData('fetched', 1);
@@ -439,7 +437,7 @@ Ext.define('Bisque.Resource.Image.PStripBig',
 		this.setSize(config.bigPanel.getSize());
 		
         this.pnlSize=config.bigPanel.getSize();
-        this.pnlSize.width=Math.floor(0.35*this.pnlSize.width);
+        this.pnlSize.width=Math.floor(0.50*this.pnlSize.width);
 
         var prefetchImg = new Image();
         prefetchImg.src = this.resource.src + '?thumbnail='+(this.pnlSize.width-10).toString()+','+(this.pnlSize.height-10).toString();
@@ -480,7 +478,7 @@ Ext.define('Bisque.Resource.Image.PStripBig',
 					type:'vbox',
 					align:'top'
 				},
-				width:'55%',
+				width:'50%',
 				cls : 'white',
 				contentEl:imgDiv
 			}), resourceTagger]
