@@ -60,7 +60,7 @@ class StagedEnvironment(BaseEnvironment):
                 mex.files =  strtolist(mex.files)
                 
 
-            staging_base = mex.get('staging_base', STAGING_BASE)
+            staging_base = mex.get('runtime.staging_base', STAGING_BASE)
             mex.staging_path=mex.named_args.get ('staging_path')
             mex.staging_id=mex.named_args.get ('staging_id') 
 

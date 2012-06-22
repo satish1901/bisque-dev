@@ -393,8 +393,7 @@ Ext.define('Bisque.Resource.Page',
                                                 scale   :   'medium',
                                                 scope   :   this
                                             },
-                            items       :   [
-                                                this.getOperations(config.resource),
+                            items       :   this.getOperations(config.resource).concat([
                                                 '-', '->',
                                                 {
                                                     itemId  :   'btnRename',
@@ -402,7 +401,7 @@ Ext.define('Bisque.Resource.Page',
                                                     handler :   this.promptName,
                                                     scope   :   this
                                                 }
-                                             ]
+                                             ])
                         }),
         }, config);
         

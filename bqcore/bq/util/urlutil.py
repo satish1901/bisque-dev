@@ -1,6 +1,7 @@
 import urlparse
 import posixpath
-from urllib import urlencode
+import urllib
+import urlparse
 
 def urljoin(base, partialpath, **kw):
     url = urlparse.urlparse(base)
@@ -10,7 +11,17 @@ def urljoin(base, partialpath, **kw):
         query = dict ([ q.split('=')  for q in url[4].split('&')])
     else:
         query = {}
-    query.update ( urlencode(kw) )
+    query.update ( urllib.urlencode(kw) )
     return urlparse.urlunparse(
         (url.scheme,url.netloc,path,url.params,query,url.fragment)
         )
+
+def update_url(url, params = {}):
+    'construct a url with new params'
+
+    url_parts = list(urlparse.urlparse(url))
+    query = dict(urlparse.parse_qsl(url_parts[4]))
+    query.update(params)
+    
+    url_parts[4] = urllib.urlencode(query)
+    return  urlparse.urlunparse(url_parts)

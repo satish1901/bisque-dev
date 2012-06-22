@@ -179,7 +179,8 @@ Ext.define('Bisque.ResourceTagger',
             rowLines : true,
             lines : true,
             iconCls : 'icon-grid',
-            animate: this.animate,
+            animate : this.animate,
+            header : false,
 
             store : this.getTagStore(data),
             multiSelect : true,
@@ -1060,6 +1061,7 @@ Ext.define('Bisque.ResourceTagger.viewStateManager',
                 this.state.btnXML = false;
                 this.state.btnCSV = false;
                 this.state.btnGDocs = false;
+                this.state.editable = false;
                 break;
             }
             case 'Offline':

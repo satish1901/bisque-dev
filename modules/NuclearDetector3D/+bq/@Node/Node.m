@@ -26,13 +26,13 @@ classdef Node < matlab.mixin.Copyable
     
     methods
         
+        function [self] = Node(doc, element, user, password)
         % creates a bq.Node from either an DOM element or by fetching from
         % Bisque server
         %   doc      - URL string or DOM document
         %   element  - optional: DOM element
         %   user     - optional: string
         %   password - optional: string
-        function [self] = Node(doc, element, user, password)
             if exist('doc', 'var'), self.doc = doc; end            
             if exist('user', 'var'), self.user = user; end
             if exist('password', 'var'), self.password = password; end
@@ -58,10 +58,10 @@ classdef Node < matlab.mixin.Copyable
         % posts the document back to the Bisque server
         % if the filename is given then stores the doc as an XML file            
             if exist('filename', 'var') && ischar(filename),
-                xmlwrite(filename, self.doc);         
+                xmlwrite(filename, self.element);         
             else
                 url = self.getAttribute('uri');
-                bq.post(url, self.doc, self.user, self.password);
+                bq.post(url, self.element, self.user, self.password);
             end            
         end % save          
         
@@ -74,7 +74,28 @@ classdef Node < matlab.mixin.Copyable
         
         function str = toString(self)
         % creates a string from the current document
-            str = bq.xml2str(self.doc);
+            
+            % string from the whole document
+            %str = bq.xml2str(self.element);
+            
+            %% create a new doc from subtree
+            import javax.xml.parsers.*;
+            factory = DocumentBuilderFactory.newInstance;
+            builder = factory.newDocumentBuilder;
+            newdoc = builder.newDocument;
+            newdoc.appendChild(newdoc.adoptNode(self.element.cloneNode(true)));
+            
+            %% create a string from DOM doc
+            import javax.xml.transform.*;
+            import javax.xml.transform.dom.*;
+            import javax.xml.transform.stream.*;  
+            tfactory = TransformerFactory.newInstance;
+            transformer = tfactory.newTransformer;
+            transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, 'yes');
+            transformer.setOutputProperty(OutputKeys.INDENT, 'no');            
+            stream = java.io.StringWriter;
+            transformer.transform(DOMSource(newdoc), StreamResult(stream));
+            str = char(stream.toString);
         end % toString          
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

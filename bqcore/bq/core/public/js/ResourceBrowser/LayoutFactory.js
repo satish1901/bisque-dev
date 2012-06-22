@@ -445,8 +445,8 @@ Ext.define('Bisque.ResourceBrowser.Layout.PStrip',
             return;
         }
 		
-		this.proxyPnl = new Ext.Panel({border:false, flex:1, autoScroll:true, layout:{type:'hbox', align:'middle',  pack:'center'}});
-		var psPnl = new Ext.Panel({border:false});
+		this.proxyPnl = Ext.create('Ext.panel.Panel', {border:false, flex:1, autoScroll:true, layout:{type:'hbox', align:'middle',  pack:'center'}});
+		var psPnl = Ext.create('Ext.panel.Panel', {border:false});
 		
 		// Code for laying out resource containers in this layout container
 		for (var i=0; i<this.resQ.length; i++)
@@ -460,7 +460,7 @@ Ext.define('Bisque.ResourceBrowser.Layout.PStrip',
 		this.add([this.proxyPnl, psPnl]);
 
 		if (this.resQ.length)	// Register eventHandler only if resourceQueue is not null
-			this.on('afterrender', function(){this.CreateBigResource(this.resQ[0].resource, this)}, this);
+			this.on('afterlayout', function(){this.CreateBigResource(this.resQ[0].resource, this)}, this);
 		this.msgBus.on('PStripResourceClick', this.CreateBigResource);
 	},
 	
