@@ -8,3 +8,6 @@ Advanced Topics
 
    adminmode.rst
    develop.rst
+   cloud.rst
+
+Advanced topics for the administrator

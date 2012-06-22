@@ -960,6 +960,11 @@ Ext.define('BQ.upload.Panel', {
             el.on( 'dragleave', this.onDragLeave, this );
             el.on( 'drop', this.onDrop, this );
         }
+
+        // this is used for capturing window closing and promting the user if upload is in progress        
+        //Ext.EventManager.on(window, 'beforeunload', this.onClose, this);
+        var me = this;
+        window.onbeforeunload = function(){ return me.onClose(); }
     },   
 
     onDestroy : function() {
@@ -1238,6 +1243,18 @@ Ext.define('BQ.upload.Panel', {
         this.btn_reupload.setVisible(false);        
         this.upload();
     }, 
+    
+    // this is used for capturing window closing and promting the user if upload is in progress        
+    onClose : function() {
+        var uploading=0;
+        this.uploadPanel.items.each( function() { 
+            if (this.state==BQ.upload.Item.STATES.UPLOADING || 
+                this.state==BQ.upload.Item.STATES.INGESTING) uploading++;
+        });            
+        if (uploading<=0) return;
+        return 'Upload in progress, by closing the page you will cancel all uploads!';
+    },  
+        
 });
 
 //--------------------------------------------------------------------------------------
@@ -1297,6 +1314,6 @@ Ext.define('BQ.upload.Dialog', {
         this.fireEvent( 'uploaded', [dataset]);
         this.destroy();
     },     
-    
+   
 });
 

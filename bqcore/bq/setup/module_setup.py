@@ -88,6 +88,14 @@ def matlab_setup(main_path, files = [], bisque_deps = False, dependency_dir = "m
     # -R Specify the run-time options for the MATLAB Common Runtime
     # (MCR) usage: mcc -m -R -nojvm,<args>,-nojit,<args> -v foo.m
 
+
+    rest = []
+    
+    if isinstance(main_path, list):
+        mpath = main_path.pop(0)
+        rest = main_path
+        main_path = mpath
+    
     ext_map = { 'nt' : '.exe' } 
     if main_path.endswith (".m"):
         main_path = main_path [0:-2]
@@ -97,7 +105,7 @@ def matlab_setup(main_path, files = [], bisque_deps = False, dependency_dir = "m
     if len(files):
         copy_files (files, '.')
     if not os.path.exists (dependency_dir): os.mkdir (dependency_dir)
-    if mcc(main_path + '.m', '-d', dependency_dir, '-m', '-C', '-R', '-nodisplay', '-R', '-nosplash'):
+    if mcc(main_path + '.m', '-d', dependency_dir, '-m', '-C', '-R', '-nodisplay', '-R', '-nosplash', *rest):
         main = main_name + ext_map.get(os.name, '')
         ctf  = main_name + '.ctf'
         shutil.copyfile(os.path.join(dependency_dir, main), main)

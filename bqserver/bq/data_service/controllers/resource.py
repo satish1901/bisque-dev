@@ -453,10 +453,7 @@ class Resource(ServiceController):
                 datetime.strftime(last_modified, "%a, %d %b %Y %H:%M:%S GMT"))
 
     def invalidate(self, url):
-        self.user_id = None
-        if identity.not_anonymous():
-            self.user_id = identity.current.get_bq_user().id
-        self.server_cache.invalidate(url, user=self.user_id)
+        self.server_cache.invalidate(url, user=identity.get_user_id())
 
     @expose()
     def _default(self, *path, **kw):
@@ -471,7 +468,7 @@ class Resource(ServiceController):
         bisque = request.bisque 
         if not hasattr(bisque, 'user_id'):
             if identity.not_anonymous():
-                user_id = identity.current.get_bq_user().id
+                user_id = identity.get_user_id()
             bisque.user_id = user_id
         user_id = bisque.user_id 
 
