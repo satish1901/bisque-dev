@@ -490,7 +490,7 @@ Ext.define('BQ.selectors.Gobject', {
             if (gobs && amount && typeof(amount)=='string') {
                 var ops = { '>':undefined, '<':undefined, '>=':undefined, '<=':undefined, '==':undefined, };
                 var m = amount.match(/([<>=]+)|(\d+)/g);
-                if (m.length==2 && m[0] in ops && !(isNaN(parseFloat(m[1]))))
+                if (m && m.length==2 && m[0] in ops && !(isNaN(parseFloat(m[1]))))
                     if (eval('gobs.length '+m[0]+m[1])) return true;
             }
             
