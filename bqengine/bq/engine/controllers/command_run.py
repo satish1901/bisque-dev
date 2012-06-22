@@ -50,7 +50,9 @@ def which(program):
         if is_exe(program):
             return program
     else:
-        for path in os.environ["PATH"].split(os.pathsep):
+        p = os.environ["PATH"].split(os.pathsep)
+        p.insert(0, '.')
+        for path in p:
             exe_file = os.path.join(path, program)
             if is_exe(exe_file):
                 return exe_file
@@ -391,6 +393,8 @@ class BaseRunner(object):
         except ModuleEnvironmentError, e:
             log.exception( "Problem occured in module")
             raise RunnerException(str(e), self.mexes)
+        except RunnerException, e:
+            raise
         except Exception, e:
             log.exception ("Unknown exeception: %s" % e)
             raise RunnerException(str(e), self.mexes)
@@ -417,6 +421,13 @@ class CommandRunner(BaseRunner):
 
 
     def execone(self, command_line, stdout = None, stderr=None, cwd = None):
+        if os.name=='nt':
+            exe = which(command_line[0])
+            exe = exe or which(command_line[0] + '.exe')
+            exe = exe or which(command_line[0] + '.bat')
+            if exe is None:
+                 raise RunnerException ("Executable was not found: %s" % command_line[0])                
+            command_line[0] = exe
         retcode = subprocess.call(command_line,
                                   stdout = stdout,
                                   stderr = stderr,

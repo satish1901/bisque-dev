@@ -151,12 +151,13 @@ class RuntimeAdapter(BaseAdapter):
             #                      stdout = stdout,
             #                      stderr = stderr)
             #return process.pid
+
         except Exception, e:
             os.chdir(current_dir)
             log.exception ("During exec of %s: %s" % (command_line, e))
             mex.set ('value', 'FAILED')
             etree.SubElement(mex, 'tag',
-                             name = "ERROR",
+                             name = "error_message",
                              value = "During exec of %s: %s" % (command_line, e))
             if isinstance(e, EngineError):
                 raise
