@@ -516,7 +516,7 @@ BQWebApp.prototype.done = function (mex) {
     var button_run = document.getElementById("webapp_run_button");
     button_run.childNodes[0].nodeValue = this.label_run;
     button_run.disabled = false;
-    this.status_panel.setVisible(false);
+    //this.status_panel.setVisible(false);
     this.mex = mex;
     this.parseResults(mex);
 }
