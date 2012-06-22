@@ -88,6 +88,20 @@ class StagedEnvironment(BaseEnvironment):
         if create and not os.path.exists (mex.staging_path) :
             os.makedirs (mex.staging_path)
 
+    def _filelist(self, files, **kw):
+        if os.name != 'nt':
+            return files
+        fs = []
+        for f in files:
+            if not os.path.exists(f) and os.path.exists(f + '.exe'):
+                fs.append(f+'.exe')
+                continue
+            if not os.path.exists(f) and os.path.exists(f + '.bat'):
+                fs.append(f+'.bat')
+                continue                
+            fs.append(f)
+        return fs
+
     def setup_environment(self, runner, **kw):
         """Create the staging area and place the executable there
         """
@@ -95,7 +109,7 @@ class StagedEnvironment(BaseEnvironment):
         for mex in runner.mexes:
             self._staging_setup(runner, mex)
             if mex.get('files'):
-                files = mex.files 
+                files = self._filelist(mex.files)
                 runner.log ("copying %s: %s to %s" % (mex.initial_dir, files, mex.staging_path))
                 copy_link(*(files + [ mex.staging_path ]))
 
