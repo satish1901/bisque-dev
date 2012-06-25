@@ -62,7 +62,7 @@ import bq
 from bq.core.service import ServiceController
 from bq.core import identity
 from bq.core.model import   User #, Visit
-from bq.core.model import DBSession as session
+from bq.core.model import DBSession 
 from bq.data_service.model import  BQUser, Image, TaggableAcl
 #from bq.image_service.model import  FileAcl
 from tg import redirect
@@ -99,10 +99,10 @@ class AdminController(ServiceController):
                      'images': BQUser.id
                      }
         order_with = ordering.get (order, BQUser.id)
-        users = session.query(BQUser).order_by(order_with).all()
+        users = DBSession.query(BQUser).order_by(order_with).all()
         results  = []
         for u in users:
-            count = session.query(Image).filter (Image.owner_id == u.id).count()
+            count = DBSession.query(Image).filter (Image.owner_id == u.id).count()
             results.append ( [u, count] )
 
         if order == "images":
@@ -133,7 +133,7 @@ class AdminController(ServiceController):
         #If we got a handle on the user
         if user:
             #Find all his images
-            results = session.query(Image).filter(Image.owner_id == user.id).all()
+            results = DBSession.query(Image).filter(Image.owner_id == user.id).all()
         else:
             flash('No user was found with name of ' + username + '. Perhaps something odd happened?')
             redirect(url('/admin/error'))
@@ -149,14 +149,14 @@ class AdminController(ServiceController):
         else:
             images = []
 
-        return dict(user=user, images=images, query=None, wpublic =kw.pop('wpublic', not bq.core.identity.not_anonymous()), search=None, analysis = None, options = options)
+        return dict(user=user, images=images,  options = options)
 
     @expose ()
     def deleteimage(self, imageid=None, **kw):
         log.debug("image: " + str(imageid) )
-        image = session.query(Image).filter(Image.id == imageid).first()
-        session.delete(image)
-        session.flush()
+        image = DBSession.query(Image).filter(Image.id == imageid).first()
+        DBSession.delete(image)
+        DBSession.flush()
         redirect(request.headers.get("Referer", "/"))
 
     @expose ('bq.client_service.templates.admin.confirmdeleteuser')
@@ -166,12 +166,12 @@ class AdminController(ServiceController):
     
     @expose ()
     def deleteuser(self, username=None,  **kw):
-        #session.autoflush = False
+        #DBSession.autoflush = False
 
 
         # Remove the user from the system for most purposes, but
         # leave the id for statistics purposes.
-        user = session.query(User).filter (User.display_name == username).first()
+        user = DBSession.query(User).filter (User.display_name == username).first()
         log.debug ("Renaming internal user %s" % user)
         if user:
             user.display_name = ("(R)" + user.display_name)[:255]
@@ -180,21 +180,21 @@ class AdminController(ServiceController):
         
 
 
-        user = session.query(BQUser).filter(BQUser.resource_name == username).first()
+        user = DBSession.query(BQUser).filter(BQUser.resource_name == username).first()
         log.debug("ADMIN: Deleting user: " + str(user) )
         # delete the access permission
-        #for p in session.query(FileAcl).filter_by(user = user.user_name):
+        #for p in DBSession.query(FileAcl).filter_by(user = user.user_name):
         #    log.debug ("KILL FILEACL %s" % p)
-        #    session.delete(p)
-        for p in session.query(TaggableAcl).filter_by(user_id=user.id):
+        #    DBSession.delete(p)
+        for p in DBSession.query(TaggableAcl).filter_by(user_id=user.id):
             log.debug ("KILL ACL %s" % p)
-            session.delete(p)
-        session.flush()
+            DBSession.delete(p)
+        DBSession.flush()
         
         self.deleteimages(username, will_redirect=False)
-        session.delete(user)
+        DBSession.delete(user)
 
-        session.flush()
+        DBSession.flush()
         redirect('/admin/users')
 
     @expose ('bq.client_service.templates.admin.confirmdeleteimages')
@@ -204,14 +204,14 @@ class AdminController(ServiceController):
 
     @expose ()
     def deleteimages(self, username=None,  will_redirect=True, **kw):
-        user = session.query(BQUser).filter(BQUser.resource_name == username).first()
+        user = DBSession.query(BQUser).filter(BQUser.resource_name == username).first()
         log.debug("ADMIN: Deleting all images of: " + str(user) )
-        images = session.query(Image).filter( Image.owner_id == user.id).all()
+        images = DBSession.query(Image).filter( Image.owner_id == user.id).all()
         for i in images:
             log.debug("ADMIN: Deleting image: " + str(i) )
-            session.delete(i)
+            DBSession.delete(i)
         if will_redirect:
-            session.flush()
+            DBSession.flush()
             redirect('/admin/users')
         return dict()
     
@@ -225,8 +225,8 @@ class AdminController(ServiceController):
         log.debug("ADMIN: Adding user: " + str(user_name) )
        
         user = User(user_name=user_name, password=password, email_address=email_address, display_name=display_name)
-        session.add(user)
-        session.flush()
+        DBSession.add(user)
+        DBSession.flush()
 
         redirect('/admin/users')    
     
@@ -253,19 +253,19 @@ class AdminController(ServiceController):
         #user.tag('display_name') = display_name
         #user.display_name = display_name
 
-        tg_user = User.query.filter (User.user_name == user_name).first()
+        tg_user = DBSession.query(User).filter (User.user_name == user_name).first()
         if not tg_user:
             log.debug('No user was found with name of ' + user_name + '. Please check core tables?')
             redirect(url('/admin/'))
 
         tg_user.email_address = email_address
         tg_user.password = password
-        tg_user.display_name = display_name
+        #tg_user.display_name = display_name
 
 
         log.debug("ADMIN: Updated user: " + str(user_name) )
         
-        session.flush()
+        DBSession.flush()
         #flash ('User Updated')
         #return ""
         redirect( '/admin/edituser?username='+ str(user_name) )

@@ -77,19 +77,32 @@ class RuntimeAdapter(BaseAdapter):
     def __init__(self):
         pass
     def check(self, module):
-        #module_name = module.get('name')
+        module_name = module.get('name')
         #module_path = module.get('path').split(' ')[-1]
         #command = os.path.join(MODULE_BASE, module_name, module_path)
         #if not os.path.exists (command):
         #    log.debug ("Failed to find module at %s" % command)
         #    return False
+
+        current_dir = os.getcwd()
+        try:
+            module_dir = os.path.join(MODULE_BASE, module_name)
+            log.info ("Currently in %s" % current_dir)
+            log.info ("Checking %s in %s" % (module_name,  module_dir))
+
+            os.chdir(module_dir)
+            m = ModuleRunner()
+            if not m.check (module_tree = module):
+                return False
         
-        async =  module.xpath('//tag[@name="asynchronous"]')
-        if len(async):
-            async[0].set('value', 'True')
-        else:
-            module.append(etree.Element('tag', name='asynchronous', value='True'))
-        return True
+            async =  module.xpath('//tag[@name="asynchronous"]')
+            if len(async):
+                async[0].set('value', 'True')
+            else:
+                module.append(etree.Element('tag', name='asynchronous', value='True'))
+            return True
+        finally:
+            os.chdir(current_dir)
 
     def execute(self, module, mex):
         log.debug ("module : " + etree.tostring(module))
@@ -138,12 +151,13 @@ class RuntimeAdapter(BaseAdapter):
             #                      stdout = stdout,
             #                      stderr = stderr)
             #return process.pid
+
         except Exception, e:
             os.chdir(current_dir)
             log.exception ("During exec of %s: %s" % (command_line, e))
             mex.set ('value', 'FAILED')
             etree.SubElement(mex, 'tag',
-                             name = "ERROR",
+                             name = "error_message",
                              value = "During exec of %s: %s" % (command_line, e))
             if isinstance(e, EngineError):
                 raise

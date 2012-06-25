@@ -111,6 +111,16 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 					scope : this
 				},'->',
                 {
+                    itemId : 'btnActivate',
+                    icon : bq.url('/js/ResourceBrowser/Images/activate.png'),
+                    tooltip : '(ACTIVATE) Press button to switch to selection mode',
+                    state : 'ACTIVATE',
+                    hidden : this.viewMgr.cBar.btnActivate,
+                    scale : 'large',
+                    handler : this.btnActivate,
+                    scope : this
+                },
+                {
                     itemId : 'btnRefresh',
                     icon : bq.url('/js/ResourceBrowser/Images/refresh.png'),
                     tooltip : 'Refresh browser',
@@ -284,6 +294,24 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
         this.browser.msgBus.fireEvent('Browser_ReloadData', {});
     },
     
+    btnActivate : function(btn)
+    {
+        if (btn.state == 'ACTIVATE')
+        {
+            btn.setIcon(bq.url('/js/ResourceBrowser/Images/select.png'));
+            btn.state='SELECT';
+            btn.setTooltip('(SELECT) Press button to switch to activation mode');
+        }
+        else
+        {
+            btn.setIcon(bq.url('/js/ResourceBrowser/Images/activate.png'));
+            btn.state='ACTIVATE';
+            btn.setTooltip('(ACTIVATE) Press button to switch to selection mode');
+        }
+        
+        this.browser.selectState = btn.state;
+    },
+    
 	btnTS : function(btn)
 	{
         var tagOrder = cleanTagOrder(this.browser.browserState.tag_order) || '';
@@ -409,6 +437,13 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 		}
 	},
 	
+    btnActivateSetState : function(state)
+    {
+        var btn=this.getComponent('btnActivate');
+        btn.state = (state=='ACTIVATE')?'SELECT':'ACTIVATE';
+        this.btnActivate(btn);
+    },
+
 	btnTSSetState : function(tagOrder)
 	{
         var sortState=(tagOrder.indexOf('"@ts":desc')!=-1)?'DESC':((tagOrder.indexOf('"@ts":asc')!=-1)?'ASC':'');
