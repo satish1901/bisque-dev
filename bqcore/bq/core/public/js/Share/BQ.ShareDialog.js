@@ -1,7 +1,7 @@
 Ext.Loader.setConfig({
     enabled: true
 });
-Ext.Loader.setPath('Ext.ux', bq.url('/extjs/examples/ux'));
+Ext.Loader.setPath('Ext.ux', bq.url('/js/Share'));
 
 Ext.require([
     'Ext.ux.CheckColumn'
@@ -328,7 +328,7 @@ Ext.define('BQ.ShareDialog', {
                                             BQ.ui.error('Cannot delete owner record!', 3000);
                                             return;
                                         }
-                                        
+
                                         this.userModified = true;
                                         this.authRecord.children.splice(rowIndex-1, 1);
                                         grid.store.removeAt(rowIndex);

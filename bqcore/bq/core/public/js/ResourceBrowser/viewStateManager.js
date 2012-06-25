@@ -9,6 +9,7 @@ Ext.define('Bisque.ResourceBrowser.viewStateManager',
             
             searchBar : false,
             
+            btnActivate : false,
             btnTS : false,
             btnRefresh : false,
             
@@ -47,6 +48,7 @@ Ext.define('Bisque.ResourceBrowser.viewStateManager',
 			}
             case 'ViewSearch':
             {
+                this.cBar.btnActivate = true;
                 this.cBar.btnTS = true;
                 this.cBar.btnRefresh = true;
 

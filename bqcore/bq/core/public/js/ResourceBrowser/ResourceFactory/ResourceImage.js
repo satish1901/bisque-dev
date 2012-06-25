@@ -657,7 +657,7 @@ Ext.define('Bisque.Resource.Image.Page',
             'title' : 'Analysis',
             'viewMode' : 'MexBrowser',
             'dataset' : this.root+'/data_service/mex',
-            'tagQuery' : '"'+this.resource.uri+'"&view=deep',
+            'tagQuery' : '"'+this.resource.uri+'"',
             'wpublic' : true,
     
             mexLoaded : false,
@@ -693,6 +693,13 @@ Ext.define('Bisque.Resource.Image.Page',
         var viewerContainer = Ext.create('BQ.viewer.Image', {
             region : 'center',
             resource: this.resource,
+            listeners : {
+                            'changed'   :   function(me, gobjects)
+                            {
+                                this.gobjectTagger.appendGObjects(gobjects);
+                            },
+                            scope       :   this
+                        }
         });
     
         this.add({
@@ -701,14 +708,28 @@ Ext.define('Bisque.Resource.Image.Page',
             items : [viewerContainer, resTab]
         });
     
-        var gobjectTagger = new Bisque.GObjectTagger(
+        this.gobjectTagger = new Bisque.GObjectTagger(
         {
-            resource : this.resource,
-            imgViewer : viewerContainer.viewer,
-            mexBrowser : mexBrowser,
-            title : 'Graphical',
-            viewMode : 'GObjectTagger',
-            listeners :
+            resource        :   this.resource,
+            imgViewer       :   viewerContainer.viewer,
+            mexBrowser      :   mexBrowser,
+            title           :   'Graphical',
+            viewMode        :   'GObjectTagger',
+            readFromMex     :   function(resQ)
+                                {
+                                    function changeFormat(mex)
+                                    {
+                                        this.appendFromMex([{resource:mex}]);
+                                    } 
+                                    
+                                    for (var i=0; i<resQ.length; i++)
+                                        BQFactory.request({
+                                            uri :   resQ[i].resource.uri+'?view=deep',
+                                            cb  :   Ext.bind(changeFormat, this)
+                                        });
+                                },
+            
+            listeners       :
             {
                 'beforeload' : function(me, resource)
                 {
@@ -723,11 +744,11 @@ Ext.define('Bisque.Resource.Image.Page',
                     me.imgViewer.loadGObjects(resource.gobjects, false);
     
                     if(me.mexBrowser.mexLoaded)
-                        me.appendFromMex(me.mexBrowser.resourceQueue);
+                        me.readFromMex(me.mexBrowser.resourceQueue);
                     else
                         me.mexBrowser.on('browserLoad', function(mb, resQ)
                         {
-                            me.appendFromMex(resQ);
+                            me.readFromMex(resQ);
                         }, me);
     
                 },
@@ -749,7 +770,7 @@ Ext.define('Bisque.Resource.Image.Page',
                 }
             }
         });
-        resTab.add(gobjectTagger);
+        resTab.add(this.gobjectTagger);
 
         var map = Ext.create('BQ.gmap.GMapPanel3',  {
             title: 'Map',

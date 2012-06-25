@@ -119,7 +119,7 @@ Ext.define('Bisque.ResourceTagger',
 
         this.resource = resource;
         this.editable = false;
-        this.testAuth(BQApp.user);
+        this.testAuth(BQApp.user, false);
         
         if(this.resource.tags.length > 0)
             this.loadResourceTags(this.resource.tags);
@@ -707,30 +707,38 @@ Ext.define('Bisque.ResourceTagger',
         }
     },
     
-    testAuth : function(user)
+    testAuth : function(user, loaded, permission)
     {
-        if (user && (user.uri==this.resource.owner))
+        if (user)
         {
-            // user is autorized to edit tags
-            this.tree.btnAdd = false;
-            this.tree.btnDelete = false;
-            this.tree.btnImport = false;
-
-            this.editable = true;
-            
-            if (this.tree.rendered)
+            if (!loaded)
+                this.resource.testAuth(user.uri, Ext.bind(this.testAuth, this, [user, true], 0));            
+            else
             {
-                var tbar = this.tree.getDockedItems('toolbar')[0];
-
-                tbar.getComponent('grpAddDelete').getComponent('btnAdd').setDisabled(false);
-                tbar.getComponent('grpAddDelete').getComponent('btnDelete').setDisabled(false);
-                tbar.getComponent('grpImportExport').getComponent('btnImport').setDisabled(false);
+                if (permission)
+                {
+                    // user is authorized to edit tags
+                    this.tree.btnAdd = false;
+                    this.tree.btnDelete = false;
+                    this.tree.btnImport = false;
+        
+                    this.editable = true;
+                    
+                    if (this.tree.rendered)
+                    {
+                        var tbar = this.tree.getDockedItems('toolbar')[0];
+        
+                        tbar.getComponent('grpAddDelete').getComponent('btnAdd').setDisabled(false);
+                        tbar.getComponent('grpAddDelete').getComponent('btnDelete').setDisabled(false);
+                        tbar.getComponent('grpImportExport').getComponent('btnImport').setDisabled(false);
+                    }
+                }
             }
         }
         else if (user===undefined)
         {
             // User autentication hasn't been done yet
-            BQApp.on('gotuser', Ext.bind(this.testAuth, this));
+            BQApp.on('gotuser', Ext.bind(this.testAuth, this, [false], 1));
         }
     },
     
@@ -907,8 +915,16 @@ Ext.define('Bisque.GObjectTagger',
     {
         if (data && data.length>0)
         {
-            this.addNode(this.tree.getRootNode(), {name:data[0].name, value:Ext.Date.format(Ext.Date.parse(mex.ts, 'Y-m-d H:i:s.u'), "F j, Y g:i:s a"), gobjects:data});
-            this.fireEvent('onappend', this, data);
+            if (mex)
+            {
+                this.addNode(this.tree.getRootNode(), {name:data[0].name, value:Ext.Date.format(Ext.Date.parse(mex.ts, 'Y-m-d H:i:s.u'), "F j, Y g:i:s a"), gobjects:data});
+                this.fireEvent('onappend', this, data);
+            }
+            else
+            {
+                this.addNode(this.tree.getRootNode(), data[data.length-1]);
+                this.fireEvent('onappend', this, data[data.length-1]);
+            }
         }
     },
 
