@@ -402,7 +402,8 @@ ImgViewer.prototype.init = function () {
 ImgViewer.prototype.cleanup = function() {
     this.target.removeChild (this.menudiv);
     //this.target.removeChild (this.optiondiv);
-    this.target.removeChild (this.imagediv);    
+    this.target.removeChild (this.imagediv); 
+    mouser=null;   
 };
 
 ImgViewer.prototype.addPlugin = function  (plugin) {

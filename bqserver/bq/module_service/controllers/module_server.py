@@ -88,10 +88,9 @@ from tg import controllers, expose, config, override_template
 from bq import data_service
 from bq.util import http
 from bq.util.xmldict import d2xml, xml2d
-from bq.core.identity import user_admin, not_anonymous, get_user_pass
+from bq.core.identity import  set_admin_mode
 from bq.core.permission import *
 from bq.exceptions import RequestError
-from bq.core.controllers.proxy import exposexml
 
 log = logging.getLogger('bq.module_server')
 
@@ -382,7 +381,7 @@ class ModuleServer(ServiceController):
         self.service_list = None
 
     def load_services(self):
-
+        "(re)Load all registered service points "
         
         services = data_service.query('service')
         service_list = {}
@@ -429,6 +428,9 @@ class ModuleServer(ServiceController):
         services = data_service.query('service')
         for service in services:
             module = data_service.get_resource(service.get ('type'))
+            if module is None:
+                log.error("missing module %s for service %s "  % (service.get('type'), service.get('name')))
+                continue
             resource.append(module)
         return etree.tostring(resource)
         
@@ -452,6 +454,7 @@ class ModuleServer(ServiceController):
     @expose(content_type='text/xml')
     def register_engine(self, **kw):
         'Helper method .. redirect post to engine resource'
+        set_admin_mode()
         xml =  self.engine._default (**kw)
         self.load_services()
         return xml
@@ -465,7 +468,7 @@ class ModuleServer(ServiceController):
         return self.mex.create_mex(mex)
 
     @expose('bq.module_service.templates.register')
-    def register_module(name, module):
+    def register_module(self, name=None, module=None):
         return dict ()
     @expose(content_type="text/xml")
     def services(self):
@@ -543,19 +546,30 @@ class EngineResource (Resource):
     def register_module (self, module_def):
         name = module_def.get ('name')
         ts   = module_def.get ('ts')
-        version = module_def.xpath('//tag[@name="version"]')
-        version = version and version[0].get('value')
+        version = module_def.xpath('./tag[@name="module_options"]/tag[@name="version"]')
+        version = len(version) and version[0].get('value')
         
         found = False
         modules = data_service.query ('module', name=name, view="deep")
+        
+        found_versions = []
         for m in modules:
-            log.info ('module %s : new=%s current=%s' % (name,ts, m.get('ts')))
-            m_version = module_def.xpath('//tag[@name="version"]')[0].get('value')
+            m_version = m.xpath('./tag[@name="module_options"]/tag[@name="version"]')
+            m_version = len(m_version) and m_version[0].get('value')
+            #m_version = m.xpath('//tag[@name="version"]')[0].get('value')
             
+            log.info('module %s ts(version) : new=%s(%s) current=%s(%s)' % (name, ts, version, m.get('ts'), m_version))
+            if m_version in found_versions:
+                log.error("module %s has multiple definitions with same version %s" % (name, m_version))
+                data_service.del_resource(m)
+                continue
+
+            found_versions.append(m_version)
             if m_version == version:
                 if  ts > m.get('ts'):
                     module_def.set('uri', m.get('uri'))
                     module_def.set('ts', str(datetime.now()))
+                    #module_def.set('permission', 'published')
                     m = data_service.update(module_def, replace_all=True)
                     log.debug("Updating new module definition with: " + etree.tostring(m))
                 found = True

@@ -56,10 +56,6 @@ Commands:""" % (__VERSION__, sys.argv[0])
     command = command(__VERSION__)
     command.run()
 
-    
-
-
-
 class server(object):
     desc = "Start or stop a bisque server"
     
@@ -91,18 +87,6 @@ class server(object):
         if self.command:
             server_ops.operation(self.command, self.options, *self.args)
 
-
-class engine(server):
-    desc = 'Start or stop a bisque engine'
-
-    def run(self):
-        #Check for self.command in init..
-        import server_ops
-        if self.command:
-            server_ops.operation(self.command, self.options, 
-                                 mexrun=False,  cfg_file = 'site.cfg',
-                                 *self.args)
-            
 
 class cache(object):
     desc = "delete the cache"

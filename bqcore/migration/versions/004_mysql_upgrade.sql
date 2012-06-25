@@ -6,8 +6,6 @@ BEGIN;
 ALTER TABLE taggable drop foreign key taggable_ibfk_1;
 ALTER TABLE taggable drop column tb_id;
 
-
-
 ALTER TABLE taggable drop foreign key taggable_ibfk_3;
 ALTER TABLE taggable change column mex mex_id int(11);
 ALTER TABLE taggable ADD CONSTRAINT  FOREIGN KEY (mex_id) REFERENCES taggable(id);

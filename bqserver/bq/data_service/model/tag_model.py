@@ -71,7 +71,7 @@ from sqlalchemy.sql import and_, case
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 
-from tg import config, session
+from tg import config, session, request
 
 from bq.core.model import mapper
 from bq.core.model import DBSession as current_session
@@ -93,7 +93,7 @@ from bq.util.memoize import memoized
 
 
 import logging
-log = logging.getLogger("bq.data_service")
+log = logging.getLogger("bq.data_service.tag_model")
 
 global admin_user, init_module, init_mex
 admin_user =  init_module = init_mex = None
@@ -286,9 +286,11 @@ class Taggable(object):
         self.perm = PUBLIC
         self.ts = datetime.now()
         #log.debug("new taggable user:" + str(session.dough_user.__dict__) )
-        owner  = identity.current.get_bq_user()
-        self.mex = current_mex()
-        log.debug ("owner = %s mex = %s" % (owner, self.mex))
+        owner  = identity.get_user()
+        mex_id = current_mex_id()
+        log.debug ("owner = %s mex = %s" % (owner, mex_id))
+        if mex_id is not None:
+            self.mex_id = mex_id
         if owner:
             self.owner_id = owner.id
             self.perm = PRIVATE
@@ -947,91 +949,34 @@ mapper( Service, inherits=Taggable,
 #    )
 #)
 
-        
-# def db_setup():
-#     global admin_user, init_module, init_mex
-#     admin_user = BQUser.query.filter(BQUser.user_name == u'admin').first()
-#     if not admin_user:
-#         admin_user = BQUser.new_user(password=u'admin', email = u'admin')
-#         init_module = Module ()
-#         init_mex = ModuleExecution ()
-#         DBSession.add (init_module)
-#         DBSession.add (init_mex)
-#         DBSession.flush()
-    
-#         DBSession.refresh (init_module)
-#         DBSession.refresh (init_mex)
-#         admin_user.mex_id = init_mex.id
-
-#         init_module.owner_id = admin_user.id
-#         init_module.mex_id = init_mex.id
-#         init_module.name  = "initialize"
-
-#         init_mex.mex_id = init_mex.id
-#         init_mex.owner_id = admin_user.id
-#         init_mex.module = "initialize"
-#         init_mex.status = "FINISH"
-#     identity.set_admin (admin_user)
-        
-
-# def db_load():
-#     global admin_user, init_module, init_mex
-#     admin_user = DBSession.query(BQUser).filter_by(user_name=u'admin').first()
-#     init_module= DBSession.query(Module).filter_by(name='initialize').first()
-#     init_mex   = DBSession.query(ModuleExecution).filter_by(module='initialize').first()
-#     log.info( "initalize mex = %s" % init_mex)
 
 
-def init_admin():
-#    admin_group = Group.query.filter(Group.group_name == u'admin').first()
-#    if not admin_group:
-#        admin_group = Group(group_name = u'admin', display_name = u'Administrators')
-#        session.add(admin_group)
-#        session.flush()
-        
-    log.debug ("admin user = %s" %  admin_user)
-    return admin_user
+def current_mex_id ():
+    mex_id = request.identity.get('bisque.mex_id', None)
+    log.debug ('IDENTITY mex %s' % mex_id)
+    if mex_id is None:
+        mex_id = session.get('mex_id', None)
+        #if mex_id:
+        #    mex =  DBSession.query(ModuleExecution).get(mex_id)
+        #log.debug ('session mex_id %s mex %s' % (mex_id, mex))
+        if mex_id is None:
+            log.info("using initialization mex")
+            if hasattr(request, 'initial_mex_id'):
+                mex_id = request.initial_mex_id
+            else:
+                mex = DBSession.query(ModuleExecution).filter_by(
+                    resource_user_type = "initialization").first()
+                if mex is None:
+                    log.error("No initialization (system) mex found")
+                mex_id = mex and mex.id
+                if mex_id:
+                    request.initial_mex_id = mex_id
 
+    #else:
+    #    mex = DBSession.merge (mex, load=False)
+    #request.identity['bisque.mex'] = mex
 
-
-def current_mex ():
-    mex = None
-    try:
-        mex = session.get('mex', None)
-        if mex is None:
-            mex_id = session.get('mex_id', None)
-            if mex_id:
-                mex = DBSession.query(ModuleExecution).get(mex_id)
-    except TypeError, e:
-        pass
-
-    if mex is None:
-        mex = DBSession.query(ModuleExecution).filter_by(
-            resource_user_type = "initialization").first()
-    return mex
-
-def set_current_mex(mex):
-    try:
-        session['mex'] = mex
-        return 
-    except TypeError,e:
-        pass
-            
-    from tg import session
-    from bq.core import model
-    from paste.registry import Registry
-    from beaker.session import Session, SessionObject
-
-    registry = Registry()
-    registry.prepare()
-    registry.register(session, SessionObject({}))
-
-    session['mex'] = mex
-
-
-
-
-
+    return mex_id
 
 
 @memoized
