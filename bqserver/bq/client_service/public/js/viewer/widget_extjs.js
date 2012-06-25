@@ -88,7 +88,7 @@ Ext.define('BQ.viewer.Image', {
     },
 
     onchanged : function(gobs) {
-        this.fireEvent( 'changed', this );
+        this.fireEvent( 'changed', this, gobs );
     },
 
     getGobjects : function() {
