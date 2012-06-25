@@ -328,7 +328,7 @@ function makeRequest ( url, callback, callbackdata, method, postdata, errorcb ) 
                                  
                 if (ajaxCallbackError) {
                     ajaxCallbackError({ request: ajaxRequest, message: error_str, message_short: error_short});
-                    throw(error_str);                    
+                    //throw(error_str);                    
                     return;
                 } 
                 
