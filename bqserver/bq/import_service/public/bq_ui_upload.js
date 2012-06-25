@@ -1206,6 +1206,7 @@ Ext.define('BQ.upload.Panel', {
                 members.push( new Value( "object", this.resource.uri ) );
             }
         });
+        if (members.length<1) return;
         
         var dataset = new BQDataset();
         dataset.name = this.dataset_name || ('Uploaded on '+(new Date()).toISOString());

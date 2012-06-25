@@ -453,7 +453,7 @@ BQObject.prototype.save_ = function (parenturi, cb, errorcb) {
     this.testReadonly();    
     var docobj = this.doc;
     var req = docobj.toXML();
-    //errorcb = errorcb || default_error_callback;
+    errorcb = errorcb || default_error_callback;
     if (docobj.uri  ) {
         xmlrequest(docobj.uri, callback(docobj, 'response_', 'update', errorcb, cb),'put', req, errorcb);
     } else {
@@ -828,9 +828,8 @@ BQFactory.load = function(uri, cb, progresscb, cache) {
 //request({uri_params : { meta: null, view:'deep' }
 
 default_error_callback = function (o) {
-  //alert(o.message);
-  clog(o.message);
-  BQ.ui.error(o.message); 
+    clog(o.message);
+    BQ.ui.error(o.message); 
 }
 
 BQFactory.request = function(params) {
