@@ -171,7 +171,7 @@ Viewstate.prototype.inverseTransformPoint = function  (ix, iy) {
     xp += this.original_width/2.0;
     yp += this.original_height/2.0;
              
-    return { x:xp, y:yp };
+    return { x: Ext.util.Format.round(xp, 2), y: Ext.util.Format.round(yp, 2) };
 }
 
 

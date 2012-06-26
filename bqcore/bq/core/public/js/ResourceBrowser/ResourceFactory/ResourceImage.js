@@ -691,15 +691,26 @@ Ext.define('Bisque.Resource.Image.Page',
         });
 
         var viewerContainer = Ext.create('BQ.viewer.Image', {
-            region : 'center',
-            resource: this.resource,
-            listeners : {
-                            'changed'   :   function(me, gobjects)
-                            {
-                                this.gobjectTagger.appendGObjects(gobjects);
+            region      :   'center',
+            resource    :   this.resource,
+            parameters  :   {
+                                gobjectCreated  :   Ext.bind(function(gob)
+                                                    {
+                                                        this.gobjectTagger.appendGObjects([gob])
+                                                    }, this),
+                                
+                                gobjectDeleted  :   Ext.bind(function(gi)
+                                                    {
+                                                        this.gobjectTagger.deleteGObject(gi)
+                                                    }, this),
                             },
-                            scope       :   this
-                        }
+            listeners   :   {
+                                'changed'   :   function(me, gobjects)
+                                {
+                                    this.gobjectTagger.tree.getView().refresh();
+                                },
+                                scope       :   this
+                            }
         });
     
         this.add({

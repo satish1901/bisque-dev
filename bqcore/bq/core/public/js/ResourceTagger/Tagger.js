@@ -911,6 +911,14 @@ Ext.define('Bisque.GObjectTagger',
         return gobjects;
     },
     
+    deleteGObject : function(index)
+    {
+        var root = this.tree.getRootNode();
+        var g = root.getChildAt(index);
+        root.removeChild(g, true);
+        this.tree.getView().refresh();
+    },
+    
     appendGObjects : function(data, mex)
     {
         if (data && data.length>0)
@@ -922,8 +930,8 @@ Ext.define('Bisque.GObjectTagger',
             }
             else
             {
-                this.addNode(this.tree.getRootNode(), data[data.length-1]);
-                this.fireEvent('onappend', this, data[data.length-1]);
+                this.addNode(this.tree.getRootNode(), data);
+                //this.fireEvent('onappend', this, data);
             }
         }
     },
