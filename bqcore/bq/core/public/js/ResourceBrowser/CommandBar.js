@@ -77,22 +77,22 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 					padding : '3 0 3 0',
 					scope : this
 				},
+                {
+                    itemId : 'btnGrid',
+                    icon : bq.url('/js/ResourceBrowser/Images/grid.png'),
+                    hidden : this.viewMgr.cBar.btnLayoutGrid,
+                    tooltip : 'Grid layout',
+                    scale : 'large',
+                    toggleGroup : 'btnLayout',
+                    handler : this.btnLayoutClick,
+                    padding : '3 0 3 0',
+                    scope : this
+                },
 				{
 					itemId : 'btnCard',
 					icon : bq.url('/js/ResourceBrowser/Images/card.png'),
 					hidden : this.viewMgr.cBar.btnLayoutCard,
 					tooltip : 'Card layout',
-					scale : 'large',
-					toggleGroup : 'btnLayout',
-					handler : this.btnLayoutClick,
-					padding : '3 0 3 0',
-					scope : this
-				},
-				{
-					itemId : 'btnPStrip',
-					icon : bq.url('/js/ResourceBrowser/Images/pstrip.png'),
-					hidden : this.viewMgr.cBar.btnLayoutPStrip,
-					tooltip : 'Photo strip layout',
 					scale : 'large',
 					toggleGroup : 'btnLayout',
 					handler : this.btnLayoutClick,
@@ -407,10 +407,8 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 			case 'btnCard' :
 				this.browser.changeLayoutThrottled(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Card);
 				break;
-			case 'btnPStrip' :
-				this.browser.changeLayoutThrottled(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PStrip);
-            case 'btnPStrip' :
-                this.browser.changeLayoutThrottled(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PStrip);
+            case 'btnGrid' :
+                this.browser.changeLayoutThrottled(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Grid);
 				break;
 			case 'btnFull' :
 				this.browser.changeLayoutThrottled(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Full);
@@ -428,8 +426,8 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Card :
 				this.getComponent('btnCard').toggle(true, false);
 				break;
-			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PStrip :
-				this.getComponent('btnPStrip').toggle(true, false);
+			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Grid :
+				this.getComponent('btnGrid').toggle(true, false);
 				break;
 			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Full :
 				this.getComponent('btnFull').toggle(true, false);

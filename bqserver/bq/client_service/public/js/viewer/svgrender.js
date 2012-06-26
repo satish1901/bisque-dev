@@ -67,7 +67,7 @@ SVGRenderer.prototype.setclick = function (cb, doadd ){
     this.addHandler ("click", cb);
 }
 SVGRenderer.prototype.setkeyhandler = function (cb, doadd ){
-   var ty = 'keypress';
+   var ty = 'keydown';
    if (cb) {
         document.documentElement.addEventListener(ty,cb,false);
         this.events[ty] = cb;
