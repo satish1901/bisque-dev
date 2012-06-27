@@ -110,9 +110,7 @@ Bisque.ResourceBrowser.DatasetManager = Ext.extend(Ext.Panel,
         {
             var dataset = new BQDataset();
             dataset.name = name;
-            dataset.setMembers([]);
-            
-            dataset.save_('/data_service/dataset/?view=deep', callback(this, 'addDataset'));
+            dataset.save_(undefined, callback(this, 'addDataset'));
         }
     },
 
@@ -248,16 +246,12 @@ Bisque.ResourceBrowser.DatasetManager.DatasetTbar = Ext.extend(Ext.Toolbar,
         if (this.ownerCt.selectedRes)
         {
             var members = [];
-            for (var i = 0; i < this.ownerCt.selectedRes.length; i++)
-            {
-                var v = new Value();
-                v.type = "object";
-                v.value = this.ownerCt.selectedRes[i];
-                members.push(v);
+            for (var i = 0; i < this.ownerCt.selectedRes.length; i++) {
+                members.push(new Value('object', this.ownerCt.selectedRes[i]));
             }
             this.dataset.appendMembers(members, callback(this, function()
             {
-                this.dataset.save_(callback(this, 'datasetLoad'))
+                this.dataset.save_(undefined, callback(this, 'datasetLoad'));
             }));
         }
     },
@@ -266,17 +260,13 @@ Bisque.ResourceBrowser.DatasetManager.DatasetTbar = Ext.extend(Ext.Toolbar,
     {
     	var resQ=this.ownerCt.browser.resourceQueue;
 		var members = [];
-        for (var i = 0; i < resQ.length; i++)
-        {
-			var v = new Value();
-			v.type = "object";
-			v.value = resQ[i].resource.uri;
-			members.push(v);
+        for (var i = 0; i < resQ.length; i++) {
+			members.push(new Value('object', resQ[i].resource.uri));
 		}
         
 		this.dataset.appendMembers(members, callback(this, function()
 		{
-			this.dataset.save_(callback(this, 'datasetLoad'))
+			this.dataset.save_(undefined, callback(this, 'datasetLoad'));
 		}));
     },
 

@@ -2,12 +2,10 @@
 // BQAPI - 
 //-----------------------------------------------------------------------------
 
-// BQObject interface library for Image, Tags and GObjects.
-// BQObject is base class for manipulation, and communication with
-// the bisque system from javascript.
 BQTypeError = new Error("Bisque type error");
 BQOperationError = new Error("Bisque operation error");
 
+/* //dima - not being used, hiding from the parser
 classExtend = function(subClass, baseClass) {
    function inheritance() {}
    inheritance.prototype = baseClass.prototype;
@@ -17,6 +15,7 @@ classExtend = function(subClass, baseClass) {
    subClass.baseConstructor = baseClass;
    subClass.superClass = baseClass.prototype;
 }
+*/
 
 //-----------------------------------------------------------------------------
 // BQFactory for creating Bisque Objects
@@ -48,6 +47,7 @@ BQFactory.ctormap =  {
 
 BQFactory.ignored = {
     vertex  : Vertex,
+    value   : Value,
 };
 
 BQFactory.escapeXML = function(xml) {
@@ -401,6 +401,9 @@ BQXml.prototype.xmlNode = function (content) {
 
 //-----------------------------------------------------------------------------
 // BQObject
+// BQObject interface library for Image, Tags and GObjects.
+// BQObject is base class for manipulation, and communication with
+// the bisque system from javascript.
 //-----------------------------------------------------------------------------
 
 function BQObject (uri, doc) {
@@ -814,9 +817,10 @@ BQObject.prototype.save_ = function (parenturi, cb, errorcb) {
     var docobj = this.doc;
     var req = docobj.toXML();
     errorcb = errorcb || default_error_callback;
-    if (docobj.uri  ) {
+    if (docobj.uri) {
         xmlrequest(docobj.uri, callback(docobj, 'response_', 'update', errorcb, cb),'put', req, errorcb);
     } else {
+        parenturi = parenturi || '/data_service/'+this.resource_type+'/';
         xmlrequest(parenturi, callback(docobj, 'response_', 'created', errorcb, cb),'post', req, errorcb);
     }
 }
@@ -1818,7 +1822,7 @@ function BQDataset (){
 }
 BQDataset.prototype = new BQObject();
 
-// dima: a method is required to figure out if an additional fetch is required
+// dima: some method is required to figure out if an additional fetch is required
 BQDataset.prototype.getMembers = function (cb) {
     // Call the callback cb with the members tag when loaded
     /*
@@ -1830,47 +1834,23 @@ BQDataset.prototype.getMembers = function (cb) {
         return members;
     }
     */
-    if (cb) cb(this.values);
-    return this.values;    
+    // we need to make sure we fetched values before we can do this properly
+    this.values = this.values || [];
+    
+    if (cb) cb(this);
+    return this;    
 }
 
-/*
-BQDataset.prototype.members_loaded = function (cb, dataset_tags) {
-    // Called by dataset.load_tags with user cb, and actual tags.
-    var members = this.find_tags ('members');
-    if (!members) {
-        function membersLoaded(dataset, cb) {
-            cb(dataset.find_tags('members'));
-        }
-        members = this.addtag ({ name: 'members' });
-        members.save_('', Ext.bind(membersLoaded, this, [cb], true));
-    }
-    cb(members);
-}
-*/
-
-// dima: why this save here??? I think this needs rewrite!
 BQDataset.prototype.setMembers = function (nvs) {
     this.values = nvs;
-    this.save_();
 }
-
-// dima: instead of setMembers, until i'll rewrite the thing
-BQDataset.prototype.newMembers = function (nvs) {
-    this.values = nvs;
-}
-
-//BQDataset.prototype.save_ = function (parenturi, cb, errorcb) {
-//    this.doc = this;
-//    BQObject.prototype.save_.call(this, parenturi, cb, errorcb);
-//}
 
 BQDataset.prototype.appendMembers = function (newmembers, cb) {
     this.getMembers (callback (this, this.appendMembersResp, newmembers, cb))
 }
 BQDataset.prototype.appendMembersResp = function (newmembers, cb, members_tag) {
-    var members = members_tag.values.concat(newmembers)
-    this.setMembers (members)
+    var members = members_tag.values.concat(newmembers);
+    this.setMembers (members);
     if (cb) cb();
 }
 
