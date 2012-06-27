@@ -24,7 +24,7 @@ Ext.define('Bisque.ResourceBrowser.Dialog',
         };
         config.height = config.height || '85%';
         config.width = config.width || '85%';
-        config.selType = 'MULTI';
+        config.selType = config.selType || 'MULTI';
 
         var bodySz = Ext.getBody().getViewSize();
         var height = parseInt((config.height.toString().indexOf("%") == -1) ? config.height : (bodySz.height * parseInt(config.height) / 100));

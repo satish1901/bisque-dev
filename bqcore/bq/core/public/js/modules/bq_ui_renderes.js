@@ -259,11 +259,12 @@ Ext.define('BQ.selectors.Resource', {
     
     selectImage: function() {
         var browser  = new Bisque.ResourceBrowser.Dialog({
-            'height' : '85%',
-            'width' :  '85%',
-            listeners: {  'Select': function(me, resource) { 
-                           this.onselected(resource);
-                    }, scope: this },
+            height      :   '85%',
+            width       :   '85%',
+            selType     :   'SINGLE',
+            listeners   :   {'Select': function(me, resource) { 
+                                   this.onselected(resource);
+                            }, scope: this },
             
         });        
     },
