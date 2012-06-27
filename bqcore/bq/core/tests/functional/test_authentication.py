@@ -45,7 +45,7 @@ class TestAuthentication(TestController):
         # Being redirected to the initially requested page:
         assert post_login.location.startswith('http://localhost/auth_service/post_login')
         initial_page = post_login.follow(status=302)
-        assert 'authtkt' in initial_page.request.cookies, \
+        assert 'auth_tkt' in initial_page.request.cookies, \
                "Session cookie wasn't defined: %s" % initial_page.request.cookies
         assert initial_page.location.startswith('http://localhost/client_service/upload'), \
                initial_page.location
@@ -62,7 +62,7 @@ class TestAuthentication(TestController):
         # Being redirected to the home page:
         assert post_login.location.startswith('http://localhost/auth_service/post_login')
         home_page = post_login.follow(status=302)
-        assert 'authtkt' in home_page.request.cookies, \
+        assert 'auth_tkt' in home_page.request.cookies, \
                'Session cookie was not defined: %s' % home_page.request.cookies
         assert home_page.location == 'http://localhost/'
 

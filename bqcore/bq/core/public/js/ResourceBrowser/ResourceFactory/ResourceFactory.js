@@ -387,14 +387,14 @@ Ext.define('Bisque.Resource.Page',
             layout  :   'fit',
             border  :   false,
             
-            tbar    :   new Ext.create('Ext.toolbar.Toolbar', 
+            tbar    :   Ext.create('Ext.toolbar.Toolbar', 
                         {
                             defaults    :   {
-                                                scale   :   'medium',
-                                                scope   :   this
+                                                scale       :   'medium',
+                                                scope       :   this,
+                                                needsAuth   :   true,
                                             },
-                            items       :   [
-                                                this.getOperations(config.resource),
+                            items       :   this.getOperations(config.resource).concat([
                                                 '-', '->',
                                                 {
                                                     itemId  :   'btnRename',
@@ -402,12 +402,13 @@ Ext.define('Bisque.Resource.Page',
                                                     handler :   this.promptName,
                                                     scope   :   this
                                                 }
-                                             ]
+                                             ])
                         }),
         }, config);
         
         this.callParent(arguments);
         this.toolbar = this.getDockedComponent(0);
+        this.testAuth(BQApp.user, false);
         this.addListener('afterlayout', this.onResourceRender, this, {single:true});
     },
 
@@ -432,6 +433,35 @@ Ext.define('Bisque.Resource.Page',
         this.setLoading(false);
     },
     
+    testAuth : function(user, loaded, permission)
+    {
+        function disableOperations()
+        {
+            // user is not authorized
+            var tbar = this.getDockedItems('toolbar')[0];
+            for (var i=0;i<tbar.items.getCount();i++)
+            {
+                var cmp = tbar.items.getAt(i);
+                if (cmp.needsAuth)
+                    cmp.setDisabled(true);
+            }
+        }
+
+        if (user)
+        {
+            if (!loaded)
+                this.resource.testAuth(user.uri, Ext.bind(this.testAuth, this, [user, true], 0));            
+            else
+                if (!permission)
+                    disableOperations.call(this);
+        }
+        else if (user===undefined)
+            // User autentication hasn't been done yet
+            BQApp.on('gotuser', Ext.bind(this.testAuth, this, [false], 1));
+        else if (user == null)
+            disableOperations.call(this)
+    },
+    
     getOperations : function(resource)
     {
         var items=[];
@@ -441,6 +471,7 @@ Ext.define('Bisque.Resource.Page',
             text        :   'Download',
             itemId      :   'btnDownload',
             iconCls     :   'icon-download-small',
+            needsAuth   :   false,
             operation   :   this.downloadResource,
             handler     :   this.downloadResource,
             compression :   'tar',
@@ -478,21 +509,23 @@ Ext.define('Bisque.Resource.Page',
             
         },
         {
+            itemId      :   'btnShare',
             text        :   'Share',
             iconCls     :   'icon-group',
             operation   :   this.shareResource,
-            handler     :   this.testAuth
+            handler     :   this.testAuth1
         },
         {
+            itemId      :   'btnDelete',
             text        :   'Delete',
             iconCls     :   'icon-delete',
             operation   :   this.deleteResource,
-            handler     :   this.testAuth
+            handler     :   this.testAuth1
         },
         {
             itemId      :   'btnPerm',
             operation   :   this.changePrivacy,
-            handler     :   this.testAuth,
+            handler     :   this.testAuth1,
             setBtnText  :   function(me)
                             {
                                 var text = 'Visibility: ';
@@ -523,12 +556,12 @@ Ext.define('Bisque.Resource.Page',
         return items;
     },
     
-    testAuth : function(btn, loaded, permission)
+    testAuth1 : function(btn, loaded, permission)
     {
         if (loaded!=true)
         {
             var user = BQSession.current_session.user_uri;
-            this.resource.testAuth(user, Ext.bind(this.testAuth, this, [btn, true], 0));            
+            this.resource.testAuth(user, Ext.bind(this.testAuth1, this, [btn, true], 0));            
         }
         else
         {

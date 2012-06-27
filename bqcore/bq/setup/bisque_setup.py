@@ -501,7 +501,7 @@ def update_site_cfg (bisque_vars, section = BQ_SECTION, append=True, cfg=SITE_CF
 
     for k,v in bisque_vars.items():
         c.edit_config (section, k, '%s = %s' % (k,quoted(v)), {}, append)
-        print "edit %s %s" % (k,v)
+        #print "edit %s %s" % (k,v)
     c.write (open (cfg, 'w'))
 
 
@@ -519,7 +519,7 @@ def modify_site_cfg(qs, bisque_vars, section = BQ_SECTION, append=True, cfg=SITE
     c.read(open(cfg))
     for k,v in bisque_vars.items():
         c.edit_config (section, k, '%s = %s' % (k,quoted(v)), {}, append)
-        print "edit %s %s" % (k,v)
+        #print "edit %s %s" % (k,v)
     c.write (open (cfg, 'w'))
 
     return bisque_vars

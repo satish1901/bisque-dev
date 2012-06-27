@@ -215,7 +215,7 @@ class BisquikResource(Resource):
         """GET /ds/images : fetch group of object 
 
         Create a listing of the resource.  Several options are allowed
-        view={normal,full,deep},
+        view={short,full,deep},[clean],[canonical],
         tags=tag expression i.e. [TAG:]VAL [AND|OR [TAG:]VAL]+
         xxx=val match an attribute on the resorce
         """
@@ -241,8 +241,8 @@ class BisquikResource(Resource):
                                    wpublic = wpublic,
                                    **kw)
             xtag = self.resource_type[1].xmltag
-            response = etree.Element ('resource')
-            etree.SubElement(response, xtag, count = str(count))
+            response = etree.Element ('resource', uri=str(request.url))
+            etree.SubElement(response, 'tag', name="count", value=str(count), type="number")
         else:
             #if limit is None: limit = 1000
             #if limit > 1000:

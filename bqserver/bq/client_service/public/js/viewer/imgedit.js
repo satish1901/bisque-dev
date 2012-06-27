@@ -10,6 +10,7 @@
 ImgViewer.BTN_TITLE_ANNOTATE = 'Annotate';
 ImgViewer.BTN_TITLE_CANCEL   = 'Cancel';
 ImgViewer.BTN_TITLE_SELECT   = 'Select';
+ImgViewer.BTN_TITLE_DELETE   = 'Delete';
 ImgViewer.BTN_TITLE_NAVIGATE = 'Navigate';
 ImgViewer.BTN_TITLE_SAVE     = 'Save';
 
@@ -137,6 +138,8 @@ ImgEdit.prototype.editImage = function () {
     //bt.push(v.addCommandGroup("edit", ImgViewer.BTN_TITLE_SELECT, callback(this, "setmode", callback(this, 'select'), "help me")));
     bt.push( v.addCommandGroup(ImgViewer.BTN_TITLE_GROUP, ImgViewer.BTN_TITLE_NAVIGATE, callback(this, 'navigate')) );
     bt.push( v.addCommandGroup(ImgViewer.BTN_TITLE_GROUP, ImgViewer.BTN_TITLE_SELECT, callback(this, 'select')) );
+    bt.push( v.addCommandGroup(ImgViewer.BTN_TITLE_GROUP, ImgViewer.BTN_TITLE_DELETE, callback(this, 'delete_item')) );
+    
     
     if ('point' in this.editprimitives)
       bt.push(v.addCommandGroup(ImgViewer.BTN_TITLE_GROUP, ImgViewer.BTN_TITLE_POINT, callback(this, "setmode", callback(this, 'newPoint'))));
@@ -236,9 +239,9 @@ ImgEdit.prototype.delete_item =  function (e){
             if (gob.uri != null 
                 && !confirm( "This graphical annotation is registered in the Database.\n  Really Delete?"))   return;
             r.hideShape (this.viewer.current_view, gob);
-            this.gobjects.splice(gi,1);
+            this.remove_gobject(gi);
             gob.delete_();
-            this.tageditor.destroy();
+            //this.tageditor.destroy();
             this.tageditor = null;
         }
     }
@@ -293,6 +296,18 @@ ImgEdit.prototype.mousemove = function (e) {
 
 ImgEdit.prototype.push_gobject = function (gob){
     this.gobjects.push(gob);
+    if (this.viewer.parameters.gobjectCreated) 
+        this.viewer.parameters.gobjectCreated(gob);
+    
+    //this.viewer.image.addgobjects(gob);
+}
+
+ImgEdit.prototype.remove_gobject = function (gi){
+    this.gobjects.splice(gi,1);
+    
+    if (this.viewer.parameters.gobjectDeleted) 
+        this.viewer.parameters.gobjectDeleted(gi);
+    
     //this.viewer.image.addgobjects(gob);
 }
 
