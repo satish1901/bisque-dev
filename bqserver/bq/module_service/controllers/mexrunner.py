@@ -8,8 +8,9 @@ import logging
 import transaction
 
 import tg
-from tg import config, url, session
+from tg import config, url, session, request
 from paste.registry import Registry
+from pylons.controllers.util import Request
 from beaker.session import Session, SessionObject
 
 from lxml import etree
@@ -105,9 +106,12 @@ class MexRunner(object):
         #Session.configure(bind=sqlengine)
         self.__class__.runner_count = self.__class__.runner_count +1
 
+        # The following lines fake an active request so identity can work
         registry = Registry()
         registry.prepare()
         registry.register(session, SessionObject({}))
+        registry.register(request, Request.blank('/mexrunner'))
+        request.identity = {}
         set_admin_mode(True)
 
 
