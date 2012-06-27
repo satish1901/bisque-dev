@@ -485,11 +485,20 @@ function checkResponseXML(data, xmlResponse) {
 
 
 function clog(str) {
-  if (typeof(window['console']) != "undefined")
-  {
-    var caller = arguments.callee.caller.name || arguments.callee.caller.$name;
-    console.log(caller + ' : ' + str);
-  }
+    if (typeof(window['console']) != "undefined") {
+        var name = arguments.callee.caller.$name || arguments.callee.caller.name;
+        var owner = null;
+        try {
+            name  = arguments.callee.caller.caller.$name || arguments.callee.caller.caller.name;
+            owner = arguments.callee.caller.caller.$owner.$className;
+        } catch(err) {
+            // do nothing really
+        }
+        var caller = '';
+        if (name) caller = name + ': ';
+        if (owner) caller = owner+'.'+caller;
+        console.log(caller + str);
+    }
 }
 
 function deleteNodes(t) {

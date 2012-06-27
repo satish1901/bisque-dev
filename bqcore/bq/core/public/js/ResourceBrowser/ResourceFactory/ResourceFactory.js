@@ -26,7 +26,7 @@ Ext.define('Bisque.ResourceFactory', {
 
 Bisque.ResourceFactoryDeprecated = function(config)
 {
-    var resType = (config.resource.xmltag=="resource")?config.resource.type:config.resource.xmltag; 
+    var resType = (config.resource.resource_type=="resource")?config.resource.type:config.resource.resource_type; 
     
     switch (resType)
     {
