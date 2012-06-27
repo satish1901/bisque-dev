@@ -413,7 +413,10 @@ Ext.define('BQ.Application.Toolbar', {
     onResourceTypes : function(resource) {
         var menu = Ext.create('Ext.menu.Menu');
         var r=null;
+        // always add dataset to the list of available resources!
+        menu.add( {text: 'dataset', handler: Ext.Function.pass(pageAction, '/client_service/browser?resource=/data_service/dataset')} );
         for (var i=0; (r=resource.children[i]); i++) {
+            if (r.name == 'dataset') continue;
             var name = r.name;
             var uri = r.uri;            
             menu.add( {text: name, handler: Ext.Function.pass(pageAction, '/client_service/browser?resource='+uri)} );

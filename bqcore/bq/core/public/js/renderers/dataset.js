@@ -250,10 +250,8 @@ Ext.define('BQ.renderers.dataset', {
         var m = this.resource.getMembers();
         var members = m.values; // has to be in two lines, otherwise some optimization happens...
         var r = null;
-        for (var i=0; (r=sel[i]); i++) {
-            var v = new Value('object', r.uri );
-            members.push(v);
-        }
+        for (var i=0; (r=sel[i]); i++)
+            members.push(new Value('object', r.uri ));
         // append elements to current values
         this.resource.setMembers(members);
         this.resource.save_(undefined, 
