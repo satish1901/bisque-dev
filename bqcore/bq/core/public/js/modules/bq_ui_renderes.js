@@ -38,6 +38,7 @@ BQ.selectors.parameters = { 'tag'              : 'BQ.selectors.String',
                           };
 
 BQ.renderers.resources  = { 'image'            : 'BQ.renderers.Image', 
+                            'file'             : 'BQ.renderers.File', 
                             'dataset'          : 'BQ.renderers.Dataset', 
                           //'gobject'          : 'BQ.renderers.Gobject', 
                             'tag'              : 'BQ.renderers.Tag', 
@@ -259,11 +260,12 @@ Ext.define('BQ.selectors.Resource', {
     
     selectImage: function() {
         var browser  = new Bisque.ResourceBrowser.Dialog({
-            'height' : '85%',
-            'width' :  '85%',
-            listeners: {  'Select': function(me, resource) { 
-                           this.onselected(resource);
-                    }, scope: this },
+            height      :   '85%',
+            width       :   '85%',
+            selType     :   'SINGLE',
+            listeners   :   {'Select': function(me, resource) { 
+                                   this.onselected(resource);
+                            }, scope: this },
             
         });        
     },
@@ -1875,6 +1877,59 @@ Ext.define('BQ.renderers.Image', {
 
 });
 
+
+/*******************************************************************************
+File templated configs:
+
+*******************************************************************************/
+   
+Ext.define('BQ.renderers.File', {
+    alias: 'widget.rendererfile',    
+    extend: 'BQ.renderers.Renderer',
+    //requires: ['Bisque.ResourceBrowser.Browser'],
+    
+    height: 80,
+    layout: {
+        type: 'vbox',
+        pack  : 'start',
+    },  
+    defaults: { border: null, },  
+
+    initComponent : function() {
+        var definition = this.definition;
+        var template = definition.template || {};
+        var resource = this.resource;
+        if (!definition || !resource) return;
+        template.label = template.label || 'Output file';
+
+        if (resource.resource_type == 'tag' && resource.type == 'file') {
+            BQFactory.request( { uri: resource.value, 
+                                 cb:  callback(this, 'onFile'), });
+        }
+
+        this.items = [];
+        this.items.push( {xtype: 'label', html: template.label, } );        
+        this.callParent();
+    },
+
+    onFile : function(r) {
+        this.file = r;
+        this.add({
+            xtype: 'button',
+            text: 'Download "<b>'+this.file.name+'</b>"', 
+            iconCls: 'download', 
+            scale: 'large', 
+            //cls: 'x-btn-default-large',
+            //tooltip: 'Download',
+            handler: Ext.Function.bind( this.download, this ),
+        });   
+    },
+
+    download : function() {
+        window.open(this.file.src);         
+    },
+
+});
 
 /*******************************************************************************
 Dataset templated configs:
