@@ -90,7 +90,7 @@ Ext.define('BQ.renderers.dataset', {
                 'Select': function(me, resource) { 
                     window.open(bq.url('/client_service/view?resource='+resource.uri)); 
                 }, 
-                'modechange': Ext.bind(this.onmodechange, this), 
+                'SelectMode_Change': Ext.bind(this.onmodechange, this), 
                 scope: this,
             },         
         }); 
@@ -105,6 +105,7 @@ Ext.define('BQ.renderers.dataset', {
                 text: 'Add images', 
                 iconCls: 'icon_plus',
                 scope: this, 
+                disabled: true,
                 tooltip: 'Add resources into the dataset', 
                 //cls: 'x-btn-default-medium', 
                 handler: function() { this.browseResources('image'); }, 
@@ -114,6 +115,7 @@ Ext.define('BQ.renderers.dataset', {
                 tooltip: 'Remove selected resource from the dataset, keeps the resource untouched',
                 scope: this, 
                 iconCls: 'icon_minus', 
+                disabled: true,
                 //cls: 'x-btn-default-medium',
                 handler: this.removeSelectedResources, 
             },                       
@@ -299,7 +301,7 @@ Ext.define('BQ.renderers.dataset', {
     }, 
 
     onmodechange: function(mode) { 
-        var ena = (mode != 'EDIT');
+        var ena = (mode != 'SELECT');
         this.toolbar.child('#menu_add_images').setDisabled(ena);    
         this.toolbar.child('#menu_delete_selected').setDisabled(ena);            
     },
