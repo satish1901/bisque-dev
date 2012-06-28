@@ -851,15 +851,14 @@ def install_matlabwrap(params):
 
 def install_modules(params):
     # Check each module for an install script and run it.
-    if getanswer( "Try to setup modules", 'Y',
-                  "Run the installation scripts on the modules. Some of these require local compilations and have outside dependencies. Please monitor carefullly") != 'Y':
+    ans =  getanswer( "Try to setup modules", 'Y',
+                  "Run the installation scripts on the modules. Some of these require local compilations and have outside dependencies. Please monitor carefullly")
+    if ans != 'Y':
         return
     if not os.path.exists(bisque_path('modules')):
         os.makedirs (bisque_path('modules'))
         print "No modules were found on the system. Please install sample modules from http://biodev.ece.ucsb.edu/binaries/depot/bisque-modules.tgz"
         return
-                   
-
     for bm in os.listdir (bisque_path('modules')):
         modpath = bisque_path('modules', bm)
         environ = dict(os.environ)
@@ -1046,6 +1045,12 @@ def install_runtime(params, cfg = RUNTIME_CFG):
     staging=params['runtime.staging_base'] = os.path.abspath(os.path.expanduser(params['runtime.staging_base']))
 
     update_site_cfg(params, section=None, cfg=cfg)
+
+    for bm in os.listdir (bisque_path('modules')):
+        modpath = bisque_path('modules', bm)
+        if os.path.isdir(modpath) and os.path.exists(os.path.join(modpath, "runtime-module.cfg")):
+            cfg_path = os.path.join(modpath, 'runtime-bisque.cfg')
+            copy_link(RUNTIME_CFG, cfg_path)
     try:
         if not os.path.exists(staging):
             os.makedirs(staging)

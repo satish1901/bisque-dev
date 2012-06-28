@@ -244,24 +244,37 @@ def create_mex(module_url, name, mex = None, **kw):
         mex.set('value', 'PENDING')
         mex.set('type', module_url)
 
-        # Check that we might have an iterable resource
+        # Check that we might have an iterable resource in mex/tag[name='inputs']
+        # <tag name="execute_options">
+        #   <tag name="iterable" value="resource_url" type="dataset">
+        #        <tag name="xpath" value="./value/@text'/>
+        # </tag></tag>
         iterable = mex.xpath('./tag[@name="execute_options"]/tag[@name="iterable"]')
         if len(iterable):
-            #mex.set('value', 'SUPER')
             mex_inputs = mex.xpath('./tag[@name="inputs"]')[0]
-            #mex.remove(mex_inputs)
-            iterable_tag_name = iterable[0].get('value')
-            dataset_tag = mex_inputs.xpath('./tag[@name="%s"]' % iterable_tag_name)[0]
+            # xpath returns a list
+            iterable = iterable[0]
+            resource_xpath = './value/text()'
+            if len(iterable):
+                # Children of iterable allow overide of extraction expression
+                if iterable[0].get('name') == 'xpath':
+                    resource_xpath = iterable[0].get('value')
+
+            iterable_tag_name = iterable.get('value')
+            resource_tag = mex_inputs.xpath('./tag[@name="%s"]' % iterable_tag_name)[0]
+            resource_type = resource_tag.get('type')
+            resource_value = resource_tag.get('value')
             #inputs.remove(dataset_tag)
-            dataset = data_service.get_resource(dataset_tag.get('value'), view='full')
-            members = dataset.xpath('/dataset/tag[@name="members"]')[0]
-            for resource in members:
-                # Create SubMex section with original parameters replaced with dataset members
+            log.debug ('iterable tag %s:%s:%s' % (resource_type, iterable_tag_name, resource_value))
+            resource = data_service.get_resource(resource_value, view='full')
+            members = resource.xpath(resource_xpath)
+            log.debug ('iterated xpath %s members %s' % (resource_xpath, members))
+            for value in members:
+                # Create SubMex section with original parameters replaced with iterated members
                 subinputs = copy.deepcopy(mex_inputs)
                 resource_tag = subinputs.xpath('./tag[@name="%s"]' % iterable_tag_name)[0]
-                #resource_tag.set('value', resource.text)
                 subinputs.remove (resource_tag)
-                etree.SubElement(subinputs, 'tag', name=iterable_tag_name, value=resource.text)
+                etree.SubElement(subinputs, 'tag', name=iterable_tag_name, value=value)
                 submex = etree.Element('mex', name=name, type=module_url)
                 submex.append(subinputs)
                 mex.append(submex)
@@ -611,6 +624,7 @@ class EngineResource (Resource):
             service = (len(service) and service[0]) 
             if  service == 0:
                 service_def = etree.Element('service', 
+                                            permission = 'published',
                                             name = module.get('name'),
                                             type = module.get('uri'),
                                             value = engine_url)
