@@ -308,8 +308,8 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
             btn.state='ACTIVATE';
             btn.setTooltip('(ACTIVATE) Press button to switch to selection mode');
         }
-        
         this.browser.selectState = btn.state;
+        this.browser.fireEvent('SelectMode_Change', btn.state);
     },
     
 	btnTS : function(btn)
