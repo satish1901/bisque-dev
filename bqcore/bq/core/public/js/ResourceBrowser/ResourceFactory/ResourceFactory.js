@@ -375,8 +375,9 @@ Ext.define('Bisque.Resource.List', {
 // Default page view is a full page ResourceTagger
 Ext.define('Bisque.Resource.Page', 
 {
-    extend:'Ext.panel.Panel',
-    defaults: { border: false, },
+    extend   :'Ext.panel.Panel',
+    defaults : { border: false, },
+    layout   : 'fit',
         
     constructor : function(config)
     {
@@ -385,7 +386,7 @@ Ext.define('Bisque.Resource.Page',
 
         Ext.apply(this,
         {
-            layout  :   'fit',
+            //layout  :   'fit',
             border  :   false,
             
             tbar    :   Ext.create('Ext.toolbar.Toolbar', 
@@ -401,7 +402,8 @@ Ext.define('Bisque.Resource.Page',
                                                     itemId  :   'btnRename',
                                                     text    :   type + ': <b>' + name + '</b>',
                                                     handler :   this.promptName,
-                                                    scope   :   this
+                                                    scope   :   this,
+                                                    cls     :   'heading',
                                                 }
                                              ])
                         }),
@@ -616,13 +618,13 @@ Ext.define('Bisque.Resource.Page',
         function success(msg)
         {
             BQ.ui.notification(msg);
-            var type = this.resource.type || this.resource.resource_type;
+            var type = this.resource.resource_type || this.resource.type;
             this.toolbar.getComponent('btnRename').setText(type + ': <b>' + (this.resource.name || '') + '</b>');
         }
         
-        if (btn == 'ok')
-        {
-            var successMsg = 'Resource <b>' + this.resource.name + '</b> renamed to <b>' + name + '</b>.';
+        if (btn == 'ok' && this.resource.name != name) {
+            var type = this.resource.resource_type || this.resource.type;
+            var successMsg = type + ' <b>' + this.resource.name + '</b> renamed to <b>' + name + '</b>.';
             this.resource.name = name;
             this.resource.save_(undefined, success.call(this, successMsg), Ext.bind(this.failure, this));
         }
@@ -669,7 +671,7 @@ Ext.define('Bisque.Resource.Page',
        
     promptName : function(btn)
     {
-        Ext.MessageBox.prompt('Rename ' + this.resource.name, 'Enter new name:', this.renameResource, this, false, this.resource.name);
+        Ext.MessageBox.prompt('Rename "' + this.resource.name+'"', 'Please, enter new name:', this.renameResource, this, false, this.resource.name);
     },
 
     success : function(resource, msg)
