@@ -330,7 +330,7 @@ ImgEdit.prototype.newPoint = function (e, x, y) {
     var v = this.viewer.current_view;
     var g = new BQGObject("point");
     var pt = v.inverseTransformPoint(x,y);
-    g.vertices.push (new Vertex (pt.x, pt.y, v.z, v.t, null, 0));
+    g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, 0));
     this.push_gobject (g);
 
     this.visit_render.visitall(g, [v]);
@@ -341,8 +341,8 @@ ImgEdit.prototype.newRect = function (e, x, y) {
     var v = this.viewer.current_view;
     var g = new BQGObject("rectangle");
     var pt = v.inverseTransformPoint(x,y);
-    g.vertices.push (new Vertex (pt.x, pt.y, v.z, v.t, null, 0));
-    g.vertices.push (new Vertex (pt.x+50/v.scale, pt.y+50/v.scale, v.z, v.t, null, 1));
+    g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, 0));
+    g.vertices.push (new BQVertex (pt.x+50/v.scale, pt.y+50/v.scale, v.z, v.t, null, 1));
     this.push_gobject (g);
     this.visit_render.visitall(g, [v]);
     this.dochange();
@@ -357,7 +357,7 @@ ImgEdit.prototype.newPolygon = function (e, x, y) {
     }
     var pt = v.inverseTransformPoint(x,y);
     var index = g.vertices.length;
-    g.vertices.push (new Vertex (pt.x, pt.y, v.z, v.t, null, index));
+    g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, index));
     // Double click ends the object otherwise add points 
     this.current_gob =  (e.detail > 1)?null:g;
     this.visit_render.visitall(g, [v]);
@@ -374,7 +374,7 @@ ImgEdit.prototype.newPolyline = function (e, x, y) {
     }
     var pt = v.inverseTransformPoint(x,y);
     var index = g.vertices.length;
-    g.vertices.push (new Vertex (pt.x, pt.y, v.z, v.t, null, index));
+    g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, index));
     // Double click ends the object otherwise add points 
     this.current_gob =  (e.detail > 1)?null:g;
     this.visit_render.visitall(g, [v]);
@@ -386,8 +386,8 @@ ImgEdit.prototype.newCircle = function (e, x, y) {
     var v = this.viewer.current_view;
     var g = new BQGObject("circle");
     var pt = v.inverseTransformPoint(x,y);
-    g.vertices.push (new Vertex (pt.x, pt.y, v.z, v.t, null, 0));
-    g.vertices.push (new Vertex (pt.x+50/v.scale, pt.y+50/v.scale, v.z, v.t, null, 1));
+    g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, 0));
+    g.vertices.push (new BQVertex (pt.x+50/v.scale, pt.y+50/v.scale, v.z, v.t, null, 1));
     this.push_gobject (g);
 
     this.visit_render.visitall(g, [v]);

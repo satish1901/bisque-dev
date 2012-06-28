@@ -1203,7 +1203,7 @@ Ext.define('BQ.upload.Panel', {
         var members = [];
         this.uploadPanel.items.each( function() { 
             if (this.resource && this.resource.uri) {
-                members.push( new Value( "object", this.resource.uri ) );
+                members.push( new BQValue( "object", this.resource.uri ) );
             }
         });
         if (members.length<1) return;

@@ -1,6 +1,11 @@
-//-----------------------------------------------------------------------------
-// BQAPI - 
-//-----------------------------------------------------------------------------
+/*-----------------------------------------------------------------------------
+ BQAPI - JavaScript Bisque API
+ 
+ dima: problems i see today
+   1) no way to tell if object is completely loaded or needs additional fetches
+   2) lot's of repeated functions: load_tags, loadTags, etc...
+   3) some objects have non-standard attributes: BQAuth
+-----------------------------------------------------------------------------*/
 
 BQTypeError = new Error("Bisque type error");
 BQOperationError = new Error("Bisque operation error");
@@ -17,14 +22,19 @@ classExtend = function(subClass, baseClass) {
 }
 */
 
+default_error_callback = function (o) {
+    clog(o.message);
+    BQ.ui.error(o.message); 
+}
+
 //-----------------------------------------------------------------------------
 // BQFactory for creating Bisque Objects
 //-----------------------------------------------------------------------------
 
 function BQFactory (){}
 BQFactory.ctormap =  { 
-                       //vertex  : Vertex, // dima: speed optimization, using xpath for sub vertices is much faster
-                       //value   : Value,  // dima: speed optimization, using xpath for sub values is much faster
+                       //vertex  : BQVertex, // dima: speed optimization, using xpath for sub vertices is much faster
+                       //value   : BQValue,  // dima: speed optimization, using xpath for sub values is much faster
                        tag      : BQTag,
                        image    : BQImage,
                        gobject  : BQGObject,
@@ -46,8 +56,8 @@ BQFactory.ctormap =  {
 };
 
 BQFactory.ignored = {
-    vertex  : Vertex,
-    value   : Value,
+    vertex  : BQVertex,
+    value   : BQValue,
 };
 
 BQFactory.escapeXML = function(xml) {
@@ -77,7 +87,6 @@ BQFactory.make = function(ty, uri, name, value) {
     o.value = value;
     return o;
 }
-
 
 BQFactory.createFromXml = function(xmlResource, resource, parent) {
     var stack = [];
@@ -135,13 +144,6 @@ BQFactory.load = function(uri, cb, progresscb, cache) {
                         cache : cache});
 };
 
-//request({uri_params : { meta: null, view:'deep' }
-
-default_error_callback = function (o) {
-    clog(o.message);
-    BQ.ui.error(o.message); 
-}
-
 BQFactory.request = function(params) {
     var uri =  params.uri;
     var url_params = params.uri_params;
@@ -195,9 +197,6 @@ BQFactory.request = function(params) {
     }
 };
 
-
-
-
 BQFactory.loaded_callback = function (uri, cb, xmldoc) {
     var o = BQFactory.session[uri];
     cb (o);
@@ -228,7 +227,6 @@ BQFactory.on_xmlresponse = function(params, xmldoc) {
     }
     return cb(bq);    
 }
-
 
 // <x:include xlink:href="http://ssks?offset=5&limit=5" />
 BQFactory.on_xmlresponse_progress = function (params, xmldoc) {
@@ -290,7 +288,7 @@ BQFactory.parseBQDocument = function (xmltxt) {
 }
 
 //-----------------------------------------------------------------------------
-// Value
+// BQValue
 //-----------------------------------------------------------------------------
 
 function parseValueType(v, t) {
@@ -305,7 +303,7 @@ function parseValueType(v, t) {
     return v;    
 }
 
-function Value (t, v) {
+function BQValue (t, v) {
     this.resource_type = "value";
     this.xmlfields = [ 'type', 'index' ];
     if (t instanceof Element && arguments.length==1) {
@@ -316,28 +314,28 @@ function Value (t, v) {
     if (t != undefined) this.type = t;
     if (v != undefined) this.value = parseValueType(v, this.type);    
 }
+BQValue.prototype = new BQXml();
 
-Value.prototype = new BQXml();
-Value.prototype.initializeXml = function (node) {
+BQValue.prototype.initializeXml = function (node) {
     this.type  = attribStr(node, 'type');
     this.value = parseValueType(node.textContent, this.type);
     this.index = attribInt(node, 'index');    
 }
 
-Value.prototype.setParent = function (p) {
+BQValue.prototype.setParent = function (p) {
     p.values = p.values || [];
     p.values.push(this);
 }
 
-Value.prototype.xmlNode = function (){
+BQValue.prototype.xmlNode = function () {
     return BQXml.prototype.xmlNode.call (this, this.value)
 }
 
 //-----------------------------------------------------------------------------
-// Vertex
+// BQVertex
 //-----------------------------------------------------------------------------
 
-function Vertex(x, y, z, t, ch, index) {
+function BQVertex(x, y, z, t, ch, index) {
     this.resource_type = "vertex";
     this.xmlfields = [ 'x', 'y', 'z', 't', 'ch', 'index' ];
     if (x instanceof Element && arguments.length==1) {
@@ -351,14 +349,14 @@ function Vertex(x, y, z, t, ch, index) {
     this.ch =ch;
     this.index = index;
 }
-Vertex.prototype = new BQXml();
+BQVertex.prototype = new BQXml();
 
-Vertex.prototype.setParent = function (p) {
+BQVertex.prototype.setParent = function (p) {
     p.vertices = p.vertices || [];
     p.vertices.push(this);
 }
 
-Vertex.prototype.initializeXml = function (node) {
+BQVertex.prototype.initializeXml = function (node) {
     this.x     = attribFloat(node, "x");
     this.y     = attribFloat(node, "y");
     this.z     = attribFloat(node, "z");
@@ -450,7 +448,7 @@ BQObject.prototype.initializeXml = function (node) {
     var y = x.iterateNext();
     if (y) this.values = [];
     while (y) {
-        this.values.push(new Value(y));
+        this.values.push(new BQValue(y));
         y = x.iterateNext();
     } 
 }
@@ -540,7 +538,6 @@ BQObject.prototype.rename = function(newName, cb, errorcb) {
 }
 
 BQObject.prototype.deleteTag = function(childTag) {
-    
     if (childTag instanceof BQTag)
         this.remove(childTag);
     else
@@ -577,40 +574,6 @@ BQObject.prototype.find_children  = function (type, name, deep, found) {
     if (found.length == 1) 
         return found[0];
     return found;
-}
-
-/* 
- * query    : object, can have (name, value, type)
- * params   : object, can have (deep[false], breakOnFirst[false]) 
- * 
- * e.g.
- * var allTags = resource.findTags({
- *                      value : 'Retina'
- *                  }, {
- *                      deep : true,
- *                      breakOnFirst:false
- *                  })
- * 
- */
-
-BQObject.prototype.findTags = function(query, params)
-{
-    function isMatch(tag, query)
-    {
-        return (tag.name == query.name)
-    }
-    
-    var matchedTags = [];
-    
-    for (var i=0;i<this.tags.length;i++)
-    {
-        if (isMatch(this.tags[i], query))
-            matchedTags.push(this.tags[i]);
-        if (params.deep)
-            matchedTags = matchedTags.concat(this.tags[i].findTags(query, params));
-    }
-    
-    return matchedTags;
 }
 
 BQObject.prototype.testAuth = function(user, cb, loaded, authRecord)
@@ -783,6 +746,7 @@ BQObject.prototype.create_flat_index = function ( index, prefix ) {
     return index;
 } 
 
+// dima: not being used
 BQObject.prototype.find_resource  = function (ty) {
     for (var i=0; i < this.children.length; i++) 
         if (this.children[i].type == ty) 
@@ -790,7 +754,8 @@ BQObject.prototype.find_resource  = function (ty) {
     return null;
 }
 
-BQObject.prototype.remove_resource  = function (uri) {
+// dima: used in template, needs different name, e.g. remove_resource_by_uri ?
+BQObject.prototype.remove_resource = function (uri) {
     for (var i=0; i < this.children.length; i++) 
         if (this.children[i].uri == uri) {
             delete this.children[i];
@@ -799,17 +764,17 @@ BQObject.prototype.remove_resource  = function (uri) {
     return null;
 }
 
-BQObject.prototype.remove  = function (o) {
-   var index = this.tags.indexOf (o);
-  if (index!=-1) this.tags.splice(index,1);
-  else {
+BQObject.prototype.remove = function (o) {
+    var index = this.tags.indexOf (o);
+    if (index!=-1) this.tags.splice(index,1);
+    else {
       index = this.gobjects.indexOf (o);
       if (index!= -1) this.gobjects.splice(index,1);
       else {
           index = this.children.indexOf(o);
           if (index != -1) this.children.splice(index,1);
       }
-  }
+    }
 }
 
 BQObject.prototype.save_ = function (parenturi, cb, errorcb) {
@@ -825,6 +790,7 @@ BQObject.prototype.save_ = function (parenturi, cb, errorcb) {
     }
 }
 
+// dima: used in browser factory, same thing as save but always does POST 
 BQObject.prototype.append = function (cb, errorcb)
 {
     this.testReadonly();
@@ -916,12 +882,15 @@ BQObject.prototype.load_children = function (config)
     });
 }
 
+// dima: repeated from load_tags
 BQObject.prototype.loadTags = function (config)
 {
     config.attrib='tag';
     config.vector='tags';
     BQObject.prototype.load_children.call(this, config);
 }
+
+// dima: repeated from load_gobjects
 BQObject.prototype.loadGObjects = function (config)
 {
     config.attrib='gobject';
@@ -1130,7 +1099,7 @@ BQGObject.prototype.initializeXml = function (node) {
     var y = x.iterateNext();
     if (y) this.vertices = [];
     while (y) {
-        this.vertices.push(new Vertex(y));
+        this.vertices.push(new BQVertex(y));
         y = x.iterateNext();
     }
 }
@@ -1141,22 +1110,11 @@ BQGObject.prototype.setParent = function (p) {
     this.parent = p;    
 }
 
-/*
-BQGObject.prototype.toXML =  function () {
-    var xmlrep = '';
-     for (var i=0; i < this.vertices.length; i++ ) 
-         xmlrep += this.vertices[i].xmlNode();
-     for (var i=0; i < this.tags.length; i++ ) 
-         xmlrep += this.tags[i].toXML();
-     for (var i=0; i < this.gobjects.length; i++ ) 
-         xmlrep += this.gobjects[i].toXML();
-     return this.xmlNode (xmlrep);
-}
-*/
-
-//////////////////////////////////////////////
+//-----------------------------------------------------------------------------
+// BQVisitor
 // Simple visitor (mainly for) GObjects
-// 
+//-----------------------------------------------------------------------------
+
 function BQVisitor () {
 }
 BQVisitor.prototype.visit_array = function (l, arglist){
@@ -1733,6 +1691,7 @@ BQModule.prototype.createMEX = function( ) {
 //-------------------------------------------------------------------------------
 // BQMex
 //-------------------------------------------------------------------------------
+
 function BQMex (){
     BQObject.call(this);
     this.resource_type = "mex";
