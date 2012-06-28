@@ -24,8 +24,8 @@ Ext.define('BQ.renderers.dataset', {
     cls : 'bq-dataset',
     defaults: { border: 0, },
  
-    onResourceRender : function() {
-    
+    constructor : function() {
+        this.callParent(arguments);
         this.tagger = Ext.create('Bisque.ResourceTagger', {
             resource : this.resource,
             title : 'Annotations',
@@ -147,7 +147,8 @@ Ext.define('BQ.renderers.dataset', {
         if (!BQSession.current_session)
             BQFactory.request( {uri: '/auth_service/session', cb: callback(this, 'onsession') }); 
         else
-            this.onsession(BQSession.current_session);            
+            this.onsession(BQSession.current_session);
+
     },
  
     onsession: function (session) {

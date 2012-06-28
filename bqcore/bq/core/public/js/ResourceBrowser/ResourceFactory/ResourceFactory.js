@@ -317,7 +317,10 @@ Ext.define('Bisque.Resource',
     toggleSelect : function(state)
     {
     	if (state)
+    	{
+            this.removeCls('LightShadow');
             this.addCls('resource-view-selected')
+        }
     	else
     	{
     		this.removeCls('resource-view-selected');
@@ -471,21 +474,16 @@ Ext.define('Bisque.Resource.Page',
         var items=[];
 
         items.push({
-            //xtype       :   'splitbutton',
-            xtype       :   'button', // dima: make the button menu to allow choosing every time
+            xtype       :   'button',
             text        :   'Download',
             itemId      :   'btnDownload',
             iconCls     :   'icon-download-small',
             needsAuth   :   false,
-            //operation   :   this.downloadResource, // dima: make the button menu to allow choosing every time
-            //handler     :   this.downloadResource, // dima: make the button menu to allow choosing every time
             compression :   'tar',
             menu        :   {
                                 defaults    :   {
-                                                    xtype       :   'menucheckitem',
                                                     group       :   'downloadGroup',
                                                     groupCls    :   Ext.baseCSSClass + 'menu-group-icon',
-                                                    checked     :   false,
                                                     scope       :   this,
                                                     handler     :   this.downloadResource,
                                                     operation   :   this.downloadResource,
@@ -499,7 +497,6 @@ Ext.define('Bisque.Resource.Page',
                                                 }, {
                                                     compression :   'tar',
                                                     text        :   'as TARball',
-                                                    checked     :   true,
                                                 },{
                                                     compression :   'gzip',
                                                     text        :   'as GZip archive',
@@ -511,7 +508,6 @@ Ext.define('Bisque.Resource.Page',
                                                     text        :   'as (PK)Zip archive',
                                                 },]
                             }
-            
         },
         {
             itemId      :   'btnShare',

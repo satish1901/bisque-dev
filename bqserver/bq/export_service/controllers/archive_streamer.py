@@ -48,16 +48,15 @@ class ArchiveStreamer():
     def fileInfoList(self, fileList, datasetList):
         
         def fileInfo(dataset, uri, index=0):
-            from random import randint
             
-            xml =   data_service.get_resource(uri, view='deep')
+            xml     =   data_service.get_resource(uri, view='deep')
             # try to fingure out a name for the resource
-            name=   xml.get('name') 
+            name    =   xml.get('name') 
             if not name:
                 name = xml.xpath('./tag[@name="filename"]') or xml.xpath('./tag[@name="name"]')
                 name = name and name[0].get('value')
             if not name and xml.get('resource_uniq'):
-                name  = xml.get('resource_uniq')[-4] 
+                name = xml.get('resource_uniq')[-4] 
             if not name: 
                 name = str(index)
             return  dict(XML        =   xml, 
