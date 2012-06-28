@@ -2,6 +2,7 @@
 Ext.define('Bisque.ResourceBrowser.Organizer',
 {
     extend : 'Ext.panel.Panel',
+    defaults: { border: 0, },
     constructor : function()
     {
         Ext.apply(this,
@@ -293,6 +294,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
 Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
 {
     extend : 'Ext.panel.Panel',
+    cls: 'organizer-filter',
     constructor : function()
     {
         Ext.apply(this,

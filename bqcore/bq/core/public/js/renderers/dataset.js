@@ -13,8 +13,8 @@
 
 Ext.define('BQ.renderers.dataset', {
     alias: 'widget.renderersdataset',    
-    extend: 'Ext.panel.Panel',
-    //extend: 'Bisque.Resource.Page',
+    //extend: 'Ext.panel.Panel',
+    extend: 'Bisque.Resource.Page',
     requires: ['Ext.toolbar.Toolbar', 'Ext.tip.QuickTipManager', 'Ext.tip.QuickTip', 'BQ.dataset.Panel'],
 
     border: 0,
@@ -23,8 +23,8 @@ Ext.define('BQ.renderers.dataset', {
     heading: 'Dataset',
     cls : 'bq-dataset',
     defaults: { border: 0, },
-
-    initComponent : function() {
+ 
+    onResourceRender : function() {
     
         this.tagger = Ext.create('Bisque.ResourceTagger', {
             resource : this.resource,
@@ -86,51 +86,60 @@ Ext.define('BQ.renderers.dataset', {
             //wpublic: false,
             showOrganizer : true,
             viewMode: 'ViewerLayouts',
-            listeners: { 'Select': function(me, resource) { 
-                          window.open(bq.url('/client_service/view?resource='+resource.uri)); 
-                       }, 
-                       scope: this },         
+            listeners: { 
+                'Select': function(me, resource) { 
+                    window.open(bq.url('/client_service/view?resource='+resource.uri)); 
+                }, 
+                'modechange': Ext.bind(this.onmodechange, this), 
+                scope: this,
+            },         
         }); 
 
         //--------------------------------------------------------------------------------------
         // toolbars
         //--------------------------------------------------------------------------------------
+        var n = this.toolbar.items.getCount()-2;
+        this.toolbar.insert( n, [{ 
+                itemId: 'menu_add_images', 
+                xtype:'splitbutton', 
+                text: 'Add images', 
+                iconCls: 'icon_plus',
+                scope: this, 
+                tooltip: 'Add resources into the dataset', 
+                //cls: 'x-btn-default-medium', 
+                handler: function() { this.browseResources('image'); }, 
+            }, { 
+                itemId: 'menu_delete_selected', 
+                text: 'Remove selected', 
+                tooltip: 'Remove selected resource from the dataset, keeps the resource untouched',
+                scope: this, 
+                iconCls: 'icon_minus', 
+                //cls: 'x-btn-default-medium',
+                handler: this.removeSelectedResources, 
+            },                       
+            /*{ itemId: 'menu_delete', 
+                text: 'Delete', 
+                //icon: this.images_base_url+'upload.png',
+                handler: this.remove, 
+                scope: this, 
+                iconCls: 'icon_x', 
+                tooltip: 'Delete current dataset, keeps all the elements untouched',
+            },*/
+            '-',
+            /*'->', 
+            { 
+                itemId: 'menu_rename', 
+                text: 'Dataset: <b>'+this.resource.name+'</b>', 
+                cls: 'heading',
+                scope: this, 
+                tooltip: 'Rename the dataset', 
+                //cls: 'x-btn-default-medium', 
+                handler: this.askRename, 
+            },*/
+        ]);
 
-        this.dockedItems = [{
-            xtype: 'toolbar',
-            itemId: 'toolbar',
-            dock: 'top',
-            defaults: { scale: 'medium',  },
-            allowBlank: false,
-            //cls: 'tools', 
-            layout: {
-                overflowHandler: 'Menu'
-            },            
-            items: [{ itemId: 'menu_images', xtype:'splitbutton', text: 'Add images', iconCls: 'icon_plus',
-                      scope: this, tooltip: 'Add resources into the dataset', //cls: 'x-btn-default-medium', 
-                      handler: function() { this.browseResources('image'); }, },
-                    //{ itemId: 'menu_query', xtype:'splitbutton', text: 'Add from query', iconCls: 'icon_plus',
-                    //  scope: this, tooltip: 'Add resources into the dataset from query', //cls: 'x-btn-default-medium', 
-                    //  handler: function() { this.browseQuery('image'); }, },                        
-                    { itemId: 'menu_delete_selected', text: 'Remove selected', tooltip: 'Remove selected resource from the dataset, keeps the resource untouched',
-                      scope: this, iconCls: 'icon_minus', //cls: 'x-btn-default-medium',
-                      handler: this.removeSelectedResources, },                        
-                    { itemId: 'menu_delete', text: 'Delete', //icon: this.images_base_url+'upload.png',
-                        handler: this.remove, scope: this, iconCls: 'icon_x', 
-                        tooltip: 'Delete current dataset, keeps all the elements untouched' },
-                    '->', 
-                    //{ xtype:'tbtext', html: 'Dataset: <b>'+this.resource.name+'</b>', cls: 'heading', }
-                    
-                    { itemId: 'menu_rename', 
-                      text: 'Dataset: <b>'+this.resource.name+'</b>', cls: 'heading',
-                      scope: this, tooltip: 'Rename the dataset', //cls: 'x-btn-default-medium', 
-                      handler: this.askRename, },
-                  ],
-        }];    
-        
-        
-        this.items = [this.preview, this.tabber];        
-        this.callParent();
+
+        this.add( [this.preview, this.tabber] );        
 
         this.fetchResourceTypes();
         if (!BQSession.current_session)
@@ -142,8 +151,8 @@ Ext.define('BQ.renderers.dataset', {
     onsession: function (session) {
         this.user_uri = session && session.user_uri?session.user_uri:null;
         if (this.user_uri) return;
-        var tb = this.child('#toolbar');
-        tb.child('#menu_images').setDisabled(true); 
+        var tb = this.toolbar;
+        tb.child('#menu_add_images').setDisabled(true); 
         //tb.child('#menu_query').setDisabled(true); 
         tb.child('#menu_delete_selected').setDisabled(true);
         tb.child('#menu_delete').setDisabled(true);
@@ -165,9 +174,9 @@ Ext.define('BQ.renderers.dataset', {
     }, 
 
     onResourceTypes : function(resource) {
-        //this.addResourceTypes(resource, '#menu_images', 'addResourceTypeMenu');
+        //this.addResourceTypes(resource, '#menu_add_images', 'addResourceTypeMenu');
         //this.addResourceTypes(resource, '#menu_query', 'addResourceQueryMenu');  
-        this.addResourceTypes(resource, '#menu_images');      
+        this.addResourceTypes(resource, '#menu_add_images');      
     },     
 
     addResourceTypes : function(resource, button_id, f) {
@@ -187,7 +196,7 @@ Ext.define('BQ.renderers.dataset', {
             this.addResourceQueryMenu(menu, r.name);
         }        
         
-        this.child('#toolbar').child(button_id).menu = menu;
+        this.toolbar.child(button_id).menu = menu;
     },  
 
     addResourceTypeMenu : function(menu, name) {
@@ -209,7 +218,7 @@ Ext.define('BQ.renderers.dataset', {
         // reload the browser
         var uri = { offset: 0, };
         this.preview.msgBus.fireEvent('Browser_ReloadData', uri);
-        this.child('#toolbar').child('#menu_rename').setText('Dataset: <b>'+this.resource.name+'</b>'); 
+        this.toolbar.child('#menu_rename').setText('Dataset: <b>'+this.resource.name+'</b>'); 
         this.preview.setTitle(this.resource.name?'Preview for "'+this.resource.name+'"':'Preview');    
     },     
 
@@ -289,6 +298,12 @@ Ext.define('BQ.renderers.dataset', {
                             errorcb: callback(this, 'changedError'), });               
     }, 
 
+    onmodechange: function(mode) { 
+        var ena = (mode != 'EDIT');
+        this.toolbar.child('#menu_add_images').setDisabled(ena);    
+        this.toolbar.child('#menu_delete_selected').setDisabled(ena);            
+    },
+
     removeSelectedResources : function() {
         if (!this.checkAllowWrites(true)) return;        
         var sel = this.preview.resourceQueue.selectedRes;
@@ -304,7 +319,6 @@ Ext.define('BQ.renderers.dataset', {
                 members.splice(j, 1);
         }
 
-        // dima: this does not work  backend error!!!!!!!!!!!!!
         this.resource.setMembers(members);
         this.resource.save_(undefined, 
                             callback(this, 'changedOk'),
@@ -318,7 +332,8 @@ Ext.define('BQ.renderers.dataset', {
         });
         myMask.show();        
     },
-    
+
+/*      
     remove: function() {   
         if (!this.checkAllowWrites(true)) return;
         
@@ -346,6 +361,7 @@ Ext.define('BQ.renderers.dataset', {
                             callback(this, 'changedOk'),
                             callback(this, 'changedError'));
     },
-   
+*/   
+
 });
 
