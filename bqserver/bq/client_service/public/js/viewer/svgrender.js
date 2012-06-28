@@ -258,7 +258,7 @@ SVGRenderer.prototype.move_poly = function ( state ) {
         if (i % 2 == 0) {
             var np = view.inverseTransformPoint (x, y);
             if (i/2 >= gob.vertices.length) 
-                gob.vertices[i/2] = new Vertex()
+                gob.vertices[i/2] = new BQVertex()
             gob.vertices[i/2].x = np.x;
             gob.vertices[i/2].y = np.y;
         }
@@ -342,7 +342,7 @@ SVGRenderer.prototype.select_poly = function ( state ) {
 //         if (i % 2 == 0) {
 //             var np = view.inverseTransformPoint (x, y);
 //             if (i/2 >= gob.vertices.length) 
-//                 gob.vertices[i/2] = new Vertex()
+//                 gob.vertices[i/2] = new BQVertex()
 //             gob.vertices[i/2].x = np.x;
 //             gob.vertices[i/2].y = np.y;
 //         }

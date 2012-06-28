@@ -247,7 +247,7 @@ Bisque.ResourceBrowser.DatasetManager.DatasetTbar = Ext.extend(Ext.Toolbar,
         {
             var members = [];
             for (var i = 0; i < this.ownerCt.selectedRes.length; i++) {
-                members.push(new Value('object', this.ownerCt.selectedRes[i]));
+                members.push(new BQValue('object', this.ownerCt.selectedRes[i]));
             }
             this.dataset.appendMembers(members, callback(this, function()
             {
@@ -261,7 +261,7 @@ Bisque.ResourceBrowser.DatasetManager.DatasetTbar = Ext.extend(Ext.Toolbar,
     	var resQ=this.ownerCt.browser.resourceQueue;
 		var members = [];
         for (var i = 0; i < resQ.length; i++) {
-			members.push(new Value('object', resQ[i].resource.uri));
+			members.push(new BQValue('object', resQ[i].resource.uri));
 		}
         
 		this.dataset.appendMembers(members, callback(this, function()
