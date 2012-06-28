@@ -37,6 +37,7 @@ BQFactory.ctormap =  {
                        //value   : BQValue,  // dima: speed optimization, using xpath for sub values is much faster
                        tag      : BQTag,
                        image    : BQImage,
+                       file     : BQFile,
                        gobject  : BQGObject,
                        point    : BQGObject,
                        rectangle: BQGObject,
@@ -1050,6 +1051,26 @@ BQImage.prototype.initializeXml = function (node) {
 }
 
 //-----------------------------------------------------------------------------
+// BQFile
+//-----------------------------------------------------------------------------
+
+function BQFile (uri){
+    BQObject.call(this, uri);
+    this.resource_type = 'file';
+}
+BQFile.prototype = new BQObject();
+//extend(BQFile, BQObject);
+
+BQFile.prototype.initializeXml = function (node) {
+    BQObject.prototype.initializeXml.call(this, node);
+    if (this.resource_uniq) {
+        this.src  = '/blob_service/' + this.resource_uniq;
+        // in the case the data is coming from another server, make sure to load proper URL
+        this.src = this.uri.replace(/\/data_service\/.*$/i, this.src);
+    }
+}
+
+//-----------------------------------------------------------------------------
 // BQTag
 //-----------------------------------------------------------------------------
 
@@ -1521,7 +1542,7 @@ function BQUser (){
 }
 
 BQUser.prototype = new BQObject();
-//extend(BQImage, BQObject);
+//extend(BQUser, BQObject);
 
 BQUser.prototype.initializeXml = function (node) {
     BQObject.prototype.initializeXml.call(this, node);    
@@ -1561,7 +1582,7 @@ function BQAuth (){
 }
 
 BQAuth.prototype = new BQObject();
-//extend(BQImage, BQObject);
+//extend(BQAuth, BQObject);
 
 BQAuth.prototype.initializeXml = function (node) {
     BQObject.prototype.initializeXml.call(this, node);    

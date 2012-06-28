@@ -376,7 +376,8 @@ Ext.define('Bisque.Resource.List', {
 Ext.define('Bisque.Resource.Page', 
 {
     extend:'Ext.panel.Panel',
-    
+    defaults: { border: false, },
+        
     constructor : function(config)
     {
         var name = config.resource.name || '';
@@ -418,13 +419,14 @@ Ext.define('Bisque.Resource.Page',
 
         var name    =   this.resource.name || this.resource.uri;
         var type    =   this.resource.type || this.resource.resource_type;
-        var title   =   "Editing " + type + ' : ' + name;
+        //var title   =   "Editing " + type + ' : ' + name;
+        var title   =   'Annotations'; // dima: keep same titles everywhere for simplisity
 
         var resourceTagger = new Bisque.ResourceTagger(
         {
             itemId      :   'resourceTagger',
             title       :   title,
-            frame       :   true,
+            //frame       :   true, // dima: small UI tweaks
             resource    :   this.resource,
             split       :   true,
         });
@@ -467,13 +469,14 @@ Ext.define('Bisque.Resource.Page',
         var items=[];
 
         items.push({
-            xtype       :   'splitbutton',
+            //xtype       :   'splitbutton',
+            xtype       :   'button', // dima: make the button menu to allow choosing every time
             text        :   'Download',
             itemId      :   'btnDownload',
             iconCls     :   'icon-download-small',
             needsAuth   :   false,
-            operation   :   this.downloadResource,
-            handler     :   this.downloadResource,
+            //operation   :   this.downloadResource, // dima: make the button menu to allow choosing every time
+            //handler     :   this.downloadResource, // dima: make the button menu to allow choosing every time
             compression :   'tar',
             menu        :   {
                                 defaults    :   {
@@ -483,9 +486,15 @@ Ext.define('Bisque.Resource.Page',
                                                     checked     :   false,
                                                     scope       :   this,
                                                     handler     :   this.downloadResource,
-                                                    operation   :   this.downloadResource
+                                                    operation   :   this.downloadResource,
                                                 },
                                 items       :   [{
+                                                    xtype       :   'menuitem',
+                                                    compression :   'none',
+                                                    text        :   'Original file'
+                                                }, {
+                                                    xtype       :   'menuseparator'
+                                                }, {
                                                     compression :   'tar',
                                                     text        :   'as TARball',
                                                     checked     :   true,
@@ -498,13 +507,7 @@ Ext.define('Bisque.Resource.Page',
                                                 },{
                                                     compression :   'zip',
                                                     text        :   'as (PK)Zip archive',
-                                                },{
-                                                    xtype       :   'menuseparator'
-                                                },{
-                                                    xtype       :   'menuitem',
-                                                    compression :   'none',
-                                                    text        :   'Original file'
-                                                }]
+                                                },]
                             }
             
         },

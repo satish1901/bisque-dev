@@ -85,3 +85,13 @@ renderer
     border: 1px solid #CCCCCC;
 }
 
+/*
+file renderer
+*/
+
+.download {
+    background-image: url('/images/toolbar/download.png');
+    background-position: center center;   
+    background-repeat: no-repeat; 
+    padding: 4px;
+}
