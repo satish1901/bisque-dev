@@ -53,6 +53,7 @@ DESCRIPTION
 import logging
 import sys, traceback
 import itertools
+import functools
 import urlparse
 import time
 import copy
@@ -98,6 +99,23 @@ known_gobjects = [
     'ellipse' ,
     'label',
     ]    
+
+
+
+system_types = [
+    'value',
+    'vertex',
+    'file',
+    'image',
+    'dataset',
+    'system',
+    'service',
+    'module',
+    'tag',
+    'user',
+    'template',
+    'mex',
+    ]
 
 class XMLNode(list):
     '''Surrogate XML node for non-database items'''
@@ -232,6 +250,7 @@ class ResourceFactory(object):
 #      callable : Replace the value of the
 #      (name, value) : A tuple for renaming and revalueing the 
 
+
 def make_owner (dbo, fn, baseuri):
     return ('owner', baseuri + str(dbo.owner))
 def make_uri(dbo, fn, baseuri):
@@ -240,8 +259,11 @@ def get_email (dbo, fn, baseuri):
     return ('email', dbo.user.resource_value)
 def make_user (dbo, fn, baseuri):
     return ('user', baseuri + str(dbo.user))
+def make_time(dbo, fn, baseuri):
+    ts = getattr(dbo, fn, None)
+    return (fn, ts and ts.isoformat())
 
-clean_fields = [ 'name', 'value', 'type' ]
+clean_fields = [ 'name', 'value', 'type', 'x', 'y', 'index', 'z', 't', 'ch', 'resource_uniq', 'resource_type' ]
 mapping_fields = {
 #    'table_name':'type',
     'engine_id' : 'engine',
@@ -263,12 +285,15 @@ mapping_fields = {
 #    'value': 'resoruce_value',
     'document_id': None,
     'document' : None,
+    'created' : make_time,
+    'ts'      : make_time,
     'resource_parent_id': None,
     'resource_name' : 'name',
     'resource_value': 'value',
     'resource_type' : None,
     'resource_user_type' : 'type',
     'resource_hidden' : 'hidden',
+    'resource_index' : 'index',
     'module_type_id':None,
     'mex' : None,
     'mex_id' : None,
@@ -318,12 +343,12 @@ def model_fields(dbo, baseuri=None):
         # The dictionary is sufficient 
         dbo_fields= dbo.__dict__
         log.debug ('dbo_fields %s' % dbo_fields)
-    for fn in dbo_fields:
-        fn = mapping_fields.get(fn, fn)
+    for fname in dbo_fields:
+        fn = mapping_fields.get(fname, fname)
         if fn is None:
             continue                    # Skip when map is None
         if callable(fn):
-            fn, attr_val = fn(dbo, fn, baseuri)
+            fn, attr_val = fn(dbo, fname, baseuri)
         else:
             attr_val = getattr(dbo, fn, None)
         if attr_val is not None and attr_val!='':
@@ -336,14 +361,21 @@ def model_fields(dbo, baseuri=None):
 
 
 def xmlelement(dbo, parent, baseuri, view, **kw):
-    xtag = kw.pop('xtag', dbo.xmltag)
+    'Produce a single XML element based on the DB object and the view'
+    xtag = kw.pop('xtag', getattr(dbo, 'resource_type', dbo.xmltag))
+                    
     if not kw:
         kw = model_fields (dbo, baseuri)
         if 'clean' in view:
             kw = dict([ (k,v) for k,v in kw.items() if k in clean_fields])
-                    
-    if xtag == 'resource':
-        xtag = dbo.resource_type
+
+    if xtag not in system_types and xtag not in  known_gobjects:
+        xtag = 'resource'
+        kw['resource_type'] = xtag
+
+    #if xtag == 'resource':
+    #    xtag = dbo.resource_type
+
     if parent is not None:
         #log.debug ("etree: " + str(xtag)+ str(kw))
         elem =  etree.SubElement (parent, xtag, **kw)
@@ -353,21 +385,33 @@ def xmlelement(dbo, parent, baseuri, view, **kw):
 
 
 def xmlnode(dbo, parent, baseuri, view, **kw):
+    'Produce a XML element and children '
     rtype = getattr(dbo, 'resource_type', dbo.xmltag)
     #rtype = dbo.xmltag
-    if rtype == 'tag':
-        elem = xmlelement (dbo, parent, baseuri, view=view)
-        if 'deep' not in view and dbo.resource_value == None:
-            junk = [ xmlnode(x, elem, baseuri, view) for x in dbo.values ]
-        return elem
-    if  rtype == 'gobject':
+    if rtype not in ('value', 'vertex'):
         if 'canonical' not in view and dbo.type in known_gobjects:
             elem = xmlelement (dbo, parent, baseuri, xtag=dbo.type, view=view)
         else:
             elem = xmlelement (dbo, parent, baseuri, view=view)
+        if 'deep' not in view and dbo.resource_value == None:
+            junk = [ xmlnode(x, elem, baseuri, view) for x in dbo.values ]
         if 'deep' not in view:
             junk = [ xmlnode(x, elem, baseuri, view) for x in dbo.vertices ]
         return elem
+
+    #if rtype == 'tag':
+    #    elem = xmlelement (dbo, parent, baseuri, view=view)
+    #    if 'deep' not in view and dbo.resource_value == None:
+    #        junk = [ xmlnode(x, elem, baseuri, view) for x in dbo.values ]
+    #    return elem
+    #if  rtype == 'gobject':
+    #    if 'canonical' not in view and dbo.type in known_gobjects:
+    #        elem = xmlelement (dbo, parent, baseuri, xtag=dbo.type, view=view)
+    #    else:
+    #        elem = xmlelement (dbo, parent, baseuri, view=view)
+    #    if 'deep' not in view:
+    #        junk = [ xmlnode(x, elem, baseuri, view) for x in dbo.vertices ]
+    #    return elem
     if rtype=='value':
         elem = xmlelement (dbo, parent, baseuri, view=view)
         elem.set('type', dbo.type)
@@ -435,10 +479,10 @@ def resource2tree(dbo, parent=None, view=[], baseuri=None, nodes= {}, doc_id = N
 def db2tree(dbo, parent=None, view=[], baseuri=None, progressive=False, **kw):
     log.debug ("dbo=%s, parent=%s, view=%s, baseuri=%s" %
                (dbo, parent, view, baseuri))
-    if view:
-        view = view.split(',')
-    else:
-        view = []
+    if isinstance(view, basestring):
+        view = [ x.strip() for x in view.split(',') ]
+    view = view or []
+
     endtime = 0
     if progressive and max_response_time>0:
         log.debug ("progressive response: max %f", max_response_time)

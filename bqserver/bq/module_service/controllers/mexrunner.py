@@ -254,17 +254,20 @@ class MexRunner(object):
 
 
     def process_one(self, mex, service):
-        with transaction.manager:
-            request = self.prepare_request(mex, service, self.baseuri)
-        #self.session.flush()
+        try:
+            with transaction.manager:
+                request = self.prepare_request(mex, service, self.baseuri)
 
-        response = self.dispatch_mex(request)
+            response = self.dispatch_mex(request)
 
-        with transaction.manager:
-            response.request.reload()
-            self.process_response(response)
-        #self.session.flush()
-        return request, response
+            with transaction.manager:
+                response.request.reload()
+                self.process_response(response)
+            return request, response
+        except:
+            log.exception ('Exception during processing of %s' % mex)
+            response = MexResponse(None,{'status':'500'}, None)
+            return request, response
 
 
     def process_pending(self, mex_id=None):
