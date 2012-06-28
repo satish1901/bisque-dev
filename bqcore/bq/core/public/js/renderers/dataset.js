@@ -14,6 +14,7 @@
 Ext.define('BQ.renderers.dataset', {
     alias: 'widget.renderersdataset',    
     extend: 'Ext.panel.Panel',
+    //extend: 'Bisque.Resource.Page',
     requires: ['Ext.toolbar.Toolbar', 'Ext.tip.QuickTipManager', 'Ext.tip.QuickTip', 'BQ.dataset.Panel'],
 
     border: 0,
