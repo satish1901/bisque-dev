@@ -82,6 +82,7 @@ import tg
 from lxml import etree
 from datetime import datetime, timedelta
 from paste.proxy import make_proxy
+from paste.util.multidict import MultiDict
 from pylons.controllers.util import abort
 from tg import controllers, expose, config, override_template
 
@@ -239,48 +240,68 @@ def create_mex(module_url, name, mex = None, **kw):
                                  name = param_name,
                                  value= param_val)
                 log.debug ('param found %s=%s' % (param_name, param_val))
-    else:
-        mex.set('name', name)
-        mex.set('value', 'PENDING')
-        mex.set('type', module_url)
+        return mex
+    # Process Mex
+    mex.set('name', name)
+    mex.set('value', 'PENDING')
+    mex.set('type', module_url)
 
-        # Check that we might have an iterable resource in mex/tag[name='inputs']
-        # <tag name="execute_options">
-        #   <tag name="iterable" value="resource_url" type="dataset">
-        #        <tag name="xpath" value="./value/@text'/>
-        # </tag></tag>
-        iterable = mex.xpath('./tag[@name="execute_options"]/tag[@name="iterable"]')
-        if len(iterable):
-            mex_inputs = mex.xpath('./tag[@name="inputs"]')[0]
-            # xpath returns a list
-            iterable = iterable[0]
-            resource_xpath = './value/text()'
-            if len(iterable):
-                # Children of iterable allow overide of extraction expression
-                if iterable[0].get('name') == 'xpath':
-                    resource_xpath = iterable[0].get('value')
+    # Check that we might have an iterable resource in mex/tag[name='inputs']
+    # 
+    # <moudule> <tag name="execute_options">
+    #   <tag name="iterable" value="resource_url" type="dataset">
+    #        <tag name="xpath" value="./value/@text'/>
+    # </tag></tag> </module>
+    iterables = module.xpath('./tag[@name="execute_options"]/tag[@name="iterable"]')
+    if len(iterables)==0:
+        return mex
+    # Build array of iterable types and expressions
+    iters = {}
+    for itr in iterables:
+        resource_tag = itr.get('value')
+        resource_type = itr.get('type')
+        resource_xpath = './value/text()'
+        if len(itr):
+            # Children of iterable allow overide of extraction expression
+            if itr[0].get('name') == 'xpath':
+                resource_xpath = itr[0].get('value')
+        iters.setdefault( resource_tag, []).append ( (resource_type, resource_xpath) )
+    log.debug ('iterables in module %s' % iters)
 
-            iterable_tag_name = iterable.get('value')
-            resource_tag = mex_inputs.xpath('./tag[@name="%s"]' % iterable_tag_name)[0]
-            resource_type = resource_tag.get('type')
-            resource_value = resource_tag.get('value')
-            #inputs.remove(dataset_tag)
-            log.debug ('iterable tag %s:%s:%s' % (resource_type, iterable_tag_name, resource_value))
+    # Find an iterable tags in the mex inputs, add them mex_tags
+    mex_inputs = mex.xpath('./tag[@name="inputs"]')[0]
+    mex_tags = {}   # iterable_input name :  [ mex_xml_node1, mex_xml2 ] 
+    for iter_tag, iter_list in iters.items():
+        for iter_type, iter_xpath in iter_list:
+            log.debug ("checking name=%s type=%s" % (iter_tag, iter_type))
+            resource_tag = mex_inputs.xpath('./tag[@name="%s" and @type="%s"]' % (iter_tag, iter_type))
+            if len(resource_tag):
+                # Hmm assert len(resource_tag) == 1
+                mex_tags[iter_tag] = resource_tag[0]
+    log.debug ('iterable tags found in mex %s' % mex_tags)
+
+    # for each iterable found in the mex inputs, check the resource type 
+    for iter_tag, iterable in mex_tags.items():
+        resource_value = iterable.get('value')
+        resource_type = iterable.get('type')
+
+        # Find the matching type in the original module iterable list 
+        for iter_type, iter_xpath in iters[iter_tag]:
+            if iter_type != resource_type:
+                continue
             resource = data_service.get_resource(resource_value, view='full')
-            members = resource.xpath(resource_xpath)
+            members = resource.xpath(iter_xpath)
             log.debug ('iterated xpath %s members %s' % (resource_xpath, members))
             for value in members:
                 # Create SubMex section with original parameters replaced with iterated members
                 subinputs = copy.deepcopy(mex_inputs)
-                resource_tag = subinputs.xpath('./tag[@name="%s"]' % iterable_tag_name)[0]
+                resource_tag = subinputs.xpath('./tag[@name="%s"]' % iter_tag)[0]
                 subinputs.remove (resource_tag)
-                etree.SubElement(subinputs, 'tag', name=iterable_tag_name, value=value)
+                etree.SubElement(subinputs, 'tag', name=iter_tag, value=value)
                 submex = etree.Element('mex', name=name, type=module_url)
                 submex.append(subinputs)
                 mex.append(submex)
-
-            log.info('mex rewritten-> %s' % etree.tostring(mex))
-            
+    log.info('mex rewritten-> %s' % etree.tostring(mex))
     return mex
         
 
