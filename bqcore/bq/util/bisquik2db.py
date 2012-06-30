@@ -105,17 +105,18 @@ known_gobjects = [
 system_types = [
     'value',
     'vertex',
+    'gobject', 
+    'tag',
     'file',
     'image',
     'dataset',
     'system',
     'service',
     'module',
-    'tag',
     'user',
     'template',
     'mex',
-    ]
+    ] 
 
 class XMLNode(list):
     '''Surrogate XML node for non-database items'''
@@ -369,9 +370,16 @@ def xmlelement(dbo, parent, baseuri, view, **kw):
         if 'clean' in view:
             kw = dict([ (k,v) for k,v in kw.items() if k in clean_fields])
 
-    if xtag not in system_types and xtag not in  known_gobjects:
+    if 'canonical' in view or xtag not in system_types:
         xtag = 'resource'
         kw['resource_type'] = xtag
+    elif xtag == 'gobject' and dbo.type in known_gobjects:
+        xtag  = dbo.type
+        kw.pop('type')
+        
+
+
+        
 
     #if xtag == 'resource':
     #    xtag = dbo.resource_type
@@ -389,10 +397,7 @@ def xmlnode(dbo, parent, baseuri, view, **kw):
     rtype = getattr(dbo, 'resource_type', dbo.xmltag)
     #rtype = dbo.xmltag
     if rtype not in ('value', 'vertex'):
-        if 'canonical' not in view and dbo.type in known_gobjects:
-            elem = xmlelement (dbo, parent, baseuri, xtag=dbo.type, view=view)
-        else:
-            elem = xmlelement (dbo, parent, baseuri, view=view)
+        elem = xmlelement (dbo, parent, baseuri, view=view)
         if 'deep' not in view and dbo.resource_value == None:
             junk = [ xmlnode(x, elem, baseuri, view) for x in dbo.values ]
         if 'deep' not in view:
