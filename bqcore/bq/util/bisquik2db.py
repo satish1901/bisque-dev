@@ -676,6 +676,7 @@ def updateDB(root=None, parent=None, resource = None, factory = ResourceFactory,
                 type_ = attrib.get ('type', None)
                 indx  = attrib.get ('index', None)
                 ts_   = attrib.pop ('ts', None)
+                created_ = attrib.pop ('created', None)
                 owner = attrib.pop ('owner', None)
                 #uniq  = attrib.pop ('resource_uniq', None)
 
