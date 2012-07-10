@@ -1693,14 +1693,16 @@ BQModule.prototype.createMEX = function( ) {
     // create OUTPUTS block
     //var tag_outputs = mex.addtag ({name:'outputs'}); // dima: the outputs tag will be created by the module?
     
-    // create execute_options block
+    // dima: the new iterable structure does not require module to post this anymore 
+    //       instead MS would look into module definition file for itarables
+    // create execute_options block    
     if (this.iterables && this.iterables.length>0) {
         var tag_execute = mex.addtag ({name:'execute_options'});
         var iterable_name = undefined;
         for (var p=0; (iterable_name=this.iterables[p]); p++) {
             var i = this.inputs_index[iterable_name];
             if (!i) continue;
-            if (i.type == 'dataset')
+            //if (i.type == 'dataset')
                 tag_execute.addtag({ name:'iterable', value:i.name, type: i.type, });
         }
     }

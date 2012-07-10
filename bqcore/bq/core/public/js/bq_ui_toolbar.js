@@ -19,8 +19,11 @@ var pageAction = function(url) {
 var htmlAction = function( url, title ) {
   var c = {
       modal: true,
-      width: '60%',
-      height: '60%',
+      //width: '60%',
+      //height: '60%',
+      width: BQApp?BQApp.getCenterComponent().getWidth()/1.6:document.width/1.6,
+      height: BQApp?BQApp.getCenterComponent().getHeight()/1.2:document.height/1.2,
+      
       buttonAlign: 'center',
       autoScroll: true,
       loader: { url: url, renderer: 'html', autoLoad: true },
@@ -28,10 +31,9 @@ var htmlAction = function( url, title ) {
    };
    if (title && typeof title == 'string') c.title = title;
    
-   var w = Ext.create('Ext.Window', c);
+   var w = Ext.create('Ext.window.Window', c);
    w.show();           
 }; 
-
 
 function analysisAction(o, e) {
     //if (typeof BQApp.resource == 'undefined') {
@@ -39,19 +41,15 @@ function analysisAction(o, e) {
     //    return;
     //}
 
-    var w = Math.min(500, BQApp.main.getComponent('centerEl').body.dom.offsetWidth * 0.8);    
-    var h = BQApp.main.getComponent('centerEl').body.dom.offsetHeight * 0.8;
+    var w = Math.round(Math.min(500, BQApp?BQApp.getCenterComponent().getWidth()*0.8:document.width*0.8));    
+    var h = Math.round(BQApp?BQApp.getCenterComponent().getHeight()*0.8:document.height*0.8);
     
     //var resourceBrowser  = new Bisque.ResourceBrowser.Dialog({    
-    var resourceBrowser  = new Bisque.ResourceBrowser.Browser({
+    var resourceBrowser  = Ext.create('Bisque.ResourceBrowser.Browser', {
         layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.IconList,
         wpublic: true,
         selType: 'SINGLE',        
         viewMode: 'ModuleBrowser',
-        //width :  w,
-        //height : '85%',
-        width : '100%',
-        height : '100%',
         dataset : '/module_service/',
         listeners : { 
             'Select' : function(rb, module) {
@@ -70,6 +68,7 @@ function analysisAction(o, e) {
         maxWidth: w,
         minWidth: w,
         height:  h,
+        layout: 'fit',
         autoHide: false,
         shadow: true,
         items: [resourceBrowser],
@@ -166,7 +165,7 @@ Ext.define('BQ.Application.Toolbar', {
                                 items: {                                
                                     xtype: 'form',
                                     id: 'login_form',
-                                    //layout: 'form', // uncomment for extjs 4.1
+                                    layout: 'form', // uncomment for extjs 4.1
                                     cls: 'loginmenu',
                                     standardSubmit: true,
                                     border: false,
@@ -187,13 +186,38 @@ Ext.define('BQ.Application.Toolbar', {
                                             fieldLabel: 'User name',
                                             name: 'login',
                                             //id: 'loginusername',
-                                            allowBlank: false,   
+                                            inputId: 'loginusername',
+                                            allowBlank: false,  
+                                            
+                                            /*
+                                            // extjs 4.0.X 
                                             fieldSubTpl: ['<input id="loginusername" type="{type}" ', 
                                                         '<tpl if="name">name="{name}" </tpl>', 
                                                         '<tpl if="size">size="{size}" </tpl>', 
                                                         '<tpl if="tabIdx">tabIndex="{tabIdx}" </tpl>', 
                                                         'class="{fieldCls} {typeCls}" autocomplete="on" autofocus="true" />',
                                                         {compiled: true, disableFormats: true}],
+                                            */                                                        
+                                            
+                                            // extjs 4.1          
+                                            fieldSubTpl: [ // note: {id} here is really {inputId}, but {cmpId} is available
+                                                '<input id="{id}" type="{type}" {inputAttrTpl}',
+                                                    ' size="1"', // allows inputs to fully respect CSS widths across all browsers
+                                                    '<tpl if="name"> name="{name}"</tpl>',
+                                                    '<tpl if="value"> value="{[Ext.util.Format.htmlEncode(values.value)]}"</tpl>',
+                                                    '<tpl if="placeholder"> placeholder="{placeholder}"</tpl>',
+                                                    '<tpl if="maxLength !== undefined"> maxlength="{maxLength}"</tpl>',
+                                                    '<tpl if="readOnly"> readonly="readonly"</tpl>',
+                                                    '<tpl if="disabled"> disabled="disabled"</tpl>',
+                                                    '<tpl if="tabIdx"> tabIndex="{tabIdx}"</tpl>',
+                                                    '<tpl if="fieldStyle"> style="{fieldStyle}"</tpl>',
+                                                ' class="{fieldCls} {typeCls} {editableCls}" autocomplete="on" autofocus="true" />',
+                                                {
+                                                    disableFormats: true,
+                                                }
+                                            ],                                                        
+
+                                                        
                                             listeners: {
                                                 specialkey: function(field, e){
                                                     if (e.getKey() == e.ENTER) {
@@ -438,7 +462,7 @@ Ext.define('BQ.Application.Toolbar', {
         var r=null;
         for (var i=0; (r=resource.children[i]); i++)
             if (!(r.name in ignore))
-                mydata.push( [r.name] );
+                mydata.push( [r.name] );   
         delete ignore.dataset;
         
         store_types = Ext.create('Ext.data.ArrayStore', {
