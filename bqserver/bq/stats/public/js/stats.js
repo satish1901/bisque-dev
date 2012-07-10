@@ -1159,7 +1159,7 @@ BQ.stats.grid.Factory.make = function(xreduce, results, opts) {
     var conf = { 
         xreduce: xreduce, 
         results: results, 
-        flex: 1,
+        //flex: 1,
     };
     if (opts) Ext.applyIf(conf, opts);
     
@@ -1172,7 +1172,8 @@ BQ.stats.grid.Factory.make = function(xreduce, results, opts) {
 
 Ext.define('BQ.stats.grid.Grid', {
     alias: 'widget.statsgrid',    
-    extend: 'Ext.panel.Panel', // extend: 'Ext.container.Container', // dima - apparently requires Panel
+    extend: 'Ext.panel.Panel', 
+    //extend: 'Ext.container.Container', // dima - apparently requires Panel
     requires: ['Ext.grid.Panel'],    
     
     // required inputs
@@ -1192,12 +1193,9 @@ Ext.define('BQ.stats.grid.Grid', {
     },       
     
     initComponent : function() {
-        this.callParent();
         this.createStore();
-    },    
-    
-    afterRender : function() {
         this.createGrid();
+        this.callParent();        
     },    
     
     createStore: function () {
@@ -1230,7 +1228,7 @@ Ext.define('BQ.stats.grid.Grid', {
         this.setTitle(mytitle);
         
         Ext.QuickTips.init();
-        Ext.state.Manager.setProvider(Ext.create('Ext.state.CookieProvider'));
+        //Ext.state.Manager.setProvider(Ext.create('Ext.state.CookieProvider'));
     
         var myfields = store.bqfields;
         this.grid = Ext.create('Ext.grid.Panel', {
@@ -1260,7 +1258,8 @@ Ext.define('BQ.stats.grid.Grid', {
                 scope: this 
             },
         });    
-        this.add(this.grid);
+        //this.add(this.grid);
+        this.items = [this.grid];
     },
 
 });
@@ -1353,21 +1352,6 @@ Ext.define('BQ.stats.Visualizer', {
     //cls: 'selector',
     border: 0,
     layout: 'border',
-    defaults: {
-        collapsible: true,
-        split: true,
-        //border: false,
-    },
-    
-    //defaults: { border: 0, xtype: 'container', },
-    /*
-    constructor: function(config) {
-        this.addEvents({
-            'changed'   : true,
-        });
-        this.callParent(arguments);
-        return this;
-    },*/
 
     initComponent : function() {
         this.opts = this.opts || {};      
@@ -1376,9 +1360,9 @@ Ext.define('BQ.stats.Visualizer', {
         
         this.items = [];
         if (this.opts.grid == true) {
-            this.gridPanel = Ext.create('Ext.panel.Panel', {
+            this.gridPanel = Ext.create('Ext.container.Container', { 
                 region: 'west',
-                collapsible: true,
+                //collapsible: true,
                 split: true,
                 flex: 1,      
                 layout: 'accordion',
@@ -1388,7 +1372,7 @@ Ext.define('BQ.stats.Visualizer', {
         }        
         
         // center plot panel has to exist for the layout to work correctly
-        this.plotPanel = Ext.create('Ext.panel.Panel', {
+        this.plotPanel = Ext.create('Ext.container.Container', { 
             collapsible: false,
             region: 'center',
             flex: 2,
@@ -1482,11 +1466,6 @@ Ext.define('BQ.stats.Dialog', {
     layout : 'fit',
     modal : true,
     border : false,
-    //width : '85%',
-    //height : '85%',
-
-    width : 800,
-    height : 600,
     
     constructor : function(config) {
 
@@ -1508,6 +1487,12 @@ Ext.define('BQ.stats.Dialog', {
         this.show();
         return this;
     },
+    
+    initComponent : function() {
+        this.width  = this.width || BQApp?BQApp.getCenterComponent().getWidth()/1.2:document.width/1.2; 
+        this.height = this.height || BQApp?BQApp.getCenterComponent().getHeight()/1.2:document.height/1.2; 
+        this.callParent();
+    },    
     
 });
 
