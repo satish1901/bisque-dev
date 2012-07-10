@@ -143,31 +143,23 @@ Ext.define('Bisque.ResourceTagger',
         this.relayEvents(this.tree, ['itemclick']);
     },
 
-    onEdit : function(me)
-    {
-        if (me.record.raw)
-            if (this.autoSave)
-            {
-                this.saveTags(me.record.raw, true);
-                me.record.commit();
-            }
-    },
-    
     getTagTree : function(data)
     {
         this.rowEditor = Ext.create('Bisque.ResourceTagger.Editor',
         {
-            clicksToMoveEditor : 1,
-            tagger : this,
-            errorSummary : false,
-            listeners : 
-            {
-                'edit' : this.onEdit,
-                scope : this
-            },
-            beforeEdit : function() {
-                return this.tagger.editable;
-            }
+            clicksToMoveEditor  :   1,
+            tagger              :   this,
+            errorSummary        :   false,
+            listeners           :   {
+                                        'edit'          :   this.finishEdit,
+                                        'cancelEdit'    :   this.cancelEdit,
+                                        scope           :   this
+                                    },
+            
+            beforeEdit          :   function()
+                                    {
+                                        return this.tagger.editable;
+                                    }
         });
         
         this.tree = Ext.create('Ext.tree.Panel',
@@ -382,22 +374,26 @@ Ext.define('Bisque.ResourceTagger',
             /* Modified function so as to not delete the root nodes */
             onNodeAdded : function(parent, node)
             {
-                var proxy = this.getProxy(), reader = proxy.getReader(), data = node.raw || node.data, dataRoot, children;
-
-                Ext.Array.remove(this.removed, node);
-
-                if(!node.isLeaf() && !node.isLoaded())
-                {
+                var me = this,
+                    proxy = me.getProxy(),
+                    reader = proxy.getReader(),
+                    data = node.raw || node[node.persistenceProperty],
+                    dataRoot;
+        
+                Ext.Array.remove(me.removed, node);
+        
+                if (!node.isLeaf()) {
                     dataRoot = reader.getRoot(data);
-                    if(dataRoot)
-                    {
-                        this.fillNode(node, reader.extractData(dataRoot));
-                        // Do not delete the root
+                    if (dataRoot) {
+                        me.fillNode(node, reader.extractData(dataRoot));
                         //delete data[reader.root];
                     }
                 }
+        
+                if (me.autoSync && !me.autoSyncSuspended && (node.phantom || node.dirty)) {
+                    me.sync();
+                }                
             }
-
         });
 
         return this.store;
@@ -418,7 +414,7 @@ Ext.define('Bisque.ResourceTagger',
 
     getStoreFields : function()
     {
-        return {};
+        return {name : 'dummy', type : 'string'};
     },
 
     getToolbar : function()
@@ -530,33 +526,29 @@ Ext.define('Bisque.ResourceTagger',
         this.newNode = newNode;
         currentItem.expand();
         editor.startEdit(newNode, 0);
-
-        editor.addListener(
-        {
-            'edit'          :   {
-                                    fn      :   this.finishEdit,
-                                    single  :   true
-                                },
-            'cancelEdit'    :   {
-                                    fn      :   this.cancelEdit,
-                                    valg    :   'abc',
-                                    single  :   true,
-                                },
-            scope           :   this,
-        });            
     },
     
     cancelEdit : function (grid, eOpts)
     {
-        var editor = this.tree.plugins[0];
-        editor.un('edit', this.finishEdit, this);
-
-        if (!newNode.data.name || (newNode.data.name && newNode.data.value && newNode.name=='' && newNode.value==''))
-            grid.record.parentNode.removeChild(grid.record);
+        if (eOpts.record && eOpts.record.dirty)
+        {
+            eOpts.record.parentNode.removeChild(eOpts.record);
+        }
     },    
     
-    finishEdit : function(me)
+    finishEdit : function(_editor, me)
     {
+        if (me.record.raw instanceof BQObject)
+        {
+            if (this.autoSave)
+            {
+                this.saveTags(me.record.raw, true);
+                me.record.commit();
+            }
+
+            return;
+        }
+        
         this.editing = true;
         var newTag = new BQTag();
         newTag = Ext.apply(newTag,
