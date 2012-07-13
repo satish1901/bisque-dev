@@ -144,6 +144,7 @@ Ext.define('Bisque.ResourceBrowser.Browser',
             layout : 'fit',
             cls: 'organizer',
             frame : true,
+            header : false,
             hidden : true,
             collapsible: true,
             hideCollapseTool : true,
@@ -152,10 +153,6 @@ Ext.define('Bisque.ResourceBrowser.Browser',
                 {
                     me.setTitle(me.getComponent(0).title);
                 },
-                'beforeexpand' : function(me)
-                {
-                    me.removeDocked(me.header, false);
-                }
             }
         });
 
