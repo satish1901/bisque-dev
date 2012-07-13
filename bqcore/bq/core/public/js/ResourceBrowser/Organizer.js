@@ -484,6 +484,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
             hideHeaders : true,
             multiSelect : true,
             flex : 1,
+            border : 0,
 
             viewConfig :
             {
