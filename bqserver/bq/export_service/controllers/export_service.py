@@ -193,28 +193,50 @@ class export_serviceController(ServiceController):
 
     @expose()
     def initStream(self, **kw):
-        """create and return a streaming archive
+        """Create and return a streaming archive
 
-        :param compressionTye: tar,zip,gzip, bz2
-        :param files: a list(comma seperated) of resource URIs to include in the archive
-        :param datasets: a list uris of dataset resource URI to include in the archive
+        :param compressionType: tar, zip, gzip, bz2
+        :param files: a comma separated list of resource URIs to include in the archive
+        :param datasets: a comma separated list of dataset resource URIs to include in the archive
+        :param urls: a comma separated list of any url accessible over HTTP to include in the archive
+
+        ------------------------------------
+        Sample XML when POSTing to this app
+        ------------------------------------
+        
+        <resource>
+            <value type="FILE">    ...    </value>
+            <value type="URL">     ...    </value>
+            <value type="DATASET"> ...    </value>
+        </resource>
+        
         """
+        
         from bq.export_service.controllers.archive_streamer import ArchiveStreamer
-        urlList = []
+        files = datasets = urls = []
 
         if (tg.request.method.upper()=='POST' and tg.request.body):
             data = etree.XML(tg.request.body)
             for resource in data:
-                urlList.append(resource.text)
+                type = resource.get('type').upper() 
+                if (type == 'FILE'):
+                    files.append(resource.text)
+                elif (type == 'DATASET'):
+                    datasets.append(resource.text)
+                elif (type == 'URL'):
+                    urls.append(resource.text)
+                else:
+                    urls.append(resource.text)
             
         import string
 
         compressionType = kw.pop('compressionType', '')
-        files = string.split(kw.pop('files', ''), ',')
-        datasets = string.split(kw.pop('datasets', ''), ',')
+        files = files + string.split(kw.pop('files', ''), ',')
+        datasets = datasets + string.split(kw.pop('datasets', ''), ',')
+        urls = urls + string.split(kw.pop('urls', ''), ',')
         
         archiveStreamer = ArchiveStreamer(compressionType)
-        archiveStreamer.init(archiveName='Bisque-archive '+time.strftime('%H.%M.%S'), fileList=files, datasetList=datasets, urlList=urlList)
+        archiveStreamer.init(archiveName='Bisque-archive '+time.strftime('%H.%M.%S'), fileList=files, datasetList=datasets, urlList=urls)
         
         return archiveStreamer.stream()
 
