@@ -70,10 +70,16 @@ class SeedSize(object):
                       }]
         else:
             submexes = self._get_submexes()
-            tags = [{ 'name': 'outputs',
-                      'tag' : [{'name': 'Summary',  'tag' : summary_tags },
-                               {'name': 'seed-resource', 'type':'dataset', 'value':self.resource_url,}]
-                      }]
+            tags = [
+                { 'name': 'execute_options',
+                  'tag' : [ {'name': 'iterable', 'value' : 'seed-resource' } ] 
+                  },
+                { 'name': 'outputs',
+                  'tag' : [{'name': 'Summary',  'tag' : summary_tags },
+                           {'name': 'mex_url', 'value': self.mex_url, 'type': 'mex'},
+                           {'name': 'seed-resource', 'type':'dataset', 'value':self.resource_url,}]
+                  },
+                    ]
             # for i, submex in enumerate(mexlist):
             #     tag, image_url = gettag(submex, 'image_url')
             #     gob, gob_url = gettag(submex, 'SeedSize')
@@ -186,6 +192,7 @@ class SeedSize(object):
         self.image_map_name = os.path.join(options.staging_path, IMAGE_MAP)
         self.resource_url = options.resource_url
         self.config = options
+        self.mex_url = self.bq.mex.uri
         self.is_dataset = 'dataset' in self.resource_url
 
         try:
