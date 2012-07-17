@@ -616,8 +616,9 @@ Ext.define('Bisque.ResourceBrowser.Layout.Grid',
     getResourceGrid : function()
     {
         this.resourceGrid = Ext.create('Ext.grid.Panel', {
-            store : this.getResourceStore(),
-            border : 0,
+            store       :   this.getResourceStore(),
+            border      :   0,
+            multiSelect :   true,
             listeners : 
             {
                 scope: this,

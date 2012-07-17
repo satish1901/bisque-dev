@@ -3,6 +3,7 @@ import tarfile
 import copy
 import string
 import logging
+import httplib2 
 
 from tg import request, response, expose
 from lxml import etree
@@ -20,16 +21,18 @@ class ArchiveStreamer():
         self.archiver = ArchiverFactory().getClass(compressionType)
     
     
-    def init(self, archiveName='Bisque archive', fileList=[''], datasetList=['']):
+    def init(self, archiveName='Bisque archive', fileList=[''], datasetList=[''], urlList=['']):
         self.fileList = fileList
         self.datasetList = datasetList
+        self.urlList = urlList
         
         response.headers['Content-Type'] = self.archiver.getContentType()
         response.headers['Content-Disposition'] = 'attachment;filename="' + archiveName + self.archiver.getFileExtension() + '"'
     
     def stream(self):
-        log.debug ("BEGIN STREAM %s" % request.url)
-        flist = self.fileInfoList(self.fileList, self.datasetList)
+        log.debug("ArchiveStreamer: Begin stream %s" % request.url)
+        
+        flist = self.fileInfoList(self.fileList, self.datasetList, self.urlList)
         for file in flist:
             self.archiver.beginFile(file)
             while not self.archiver.EOF():
@@ -38,20 +41,20 @@ class ArchiveStreamer():
 
         yield self.archiver.readEnding()
         self.archiver.close()
-        log.debug ("END STREAM %s" % request.url)
+        log.debug ("ArchiveStreamer: End stream %s" % request.url)
 
     # ------------------------------------------------------------------------------------------
     # Utility functions 
     # ------------------------------------------------------------------------------------------
     
     # Returns a list of fileInfo objects based on files' URIs
-    def fileInfoList(self, fileList, datasetList):
+    def fileInfoList(self, fileList, datasetList, urlList):
         
         def fileInfo(dataset, uri, index=0):
-            
             xml     =   data_service.get_resource(uri, view='deep')
-            # try to fingure out a name for the resource
             name    =   xml.get('name') 
+
+            # try to figure out a name for the resource
             if not name:
                 name = xml.xpath('./tag[@name="filename"]') or xml.xpath('./tag[@name="name"]')
                 name = name and name[0].get('value')
@@ -71,13 +74,30 @@ class ArchiveStreamer():
             file = finfo.copy()
             file['extension'] = '.xml'
             return file
+
+        def urlInfo(url, index=0):
+            httpReader = httplib2.Http()
+            header, content = httpReader.request(url)
             
+            items = (header.get('content-disposition') or header.get('Content-Disposition') or '').split(';')
+            fileName = str(index) + '.'
+            
+            for item in items:
+                pair = item.split('=')
+                if (pair[0].lower()=='filename'):
+                    fileName = pair[1]
+            
+            return  dict(name       =   fileName,
+                         content    =   content,
+                         dataset    =   '',
+                         extension  =   'URL')
+                    
         flist = []
 
         if fileList != ['']:       # empty fileList
             for uri in fileList:
                 finfo = fileInfo('', uri)
-                flist.append(finfo)      #blank dataset name for orphan files
+                flist.append(finfo)      # blank dataset name for orphan files
                 if finfo.get('type') == 'image':
                     flist.append(xmlInfo(finfo))
 
@@ -92,5 +112,10 @@ class ArchiveStreamer():
                     flist.append(finfo)
                     if finfo.get('type') == 'image':
                         flist.append(xmlInfo(finfo))
+
+        if urlList != ['']:       # empty urlList
+            for index, url in enumerate(urlList):
+                finfo = urlInfo(url, index)
+                flist.append(finfo)      # blank dataset name for orphan files
 
         return flist

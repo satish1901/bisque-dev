@@ -185,7 +185,6 @@ class export_serviceController(ServiceController):
         value = kw.pop('value', '')
         return value
     
-    
     #------------------------------------------------------------------
     # new ArchiveStreamer - Utkarsh
     #------------------------------------------------------------------
@@ -193,6 +192,13 @@ class export_serviceController(ServiceController):
     @expose()
     def initStream(self, **kw):
         from bq.export_service.controllers.archive_streamer import ArchiveStreamer
+        urlList = []
+
+        if (tg.request.method.upper()=='POST' and tg.request.body):
+            data = etree.XML(tg.request.body)
+            for resource in data:
+                urlList.append(resource.text)
+            
         import string
 
         compressionType = kw.pop('compressionType', '')
@@ -200,7 +206,7 @@ class export_serviceController(ServiceController):
         datasets = string.split(kw.pop('datasets', ''), ',')
         
         archiveStreamer = ArchiveStreamer(compressionType)
-        archiveStreamer.init(archiveName='Bisque archive '+time.strftime('%H.%M.%S'), fileList=files, datasetList=datasets)
+        archiveStreamer.init(archiveName='Bisque archive '+time.strftime('%H.%M.%S'), fileList=files, datasetList=datasets, urlList=urlList)
         
         return archiveStreamer.stream()
 
