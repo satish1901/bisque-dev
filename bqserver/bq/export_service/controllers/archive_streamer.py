@@ -77,7 +77,12 @@ class ArchiveStreamer():
 
         def urlInfo(url, index=0):
             httpReader = httplib2.Http()
-            header, content = httpReader.request(url)
+            # This hack get's around bisque internal authentication mechanisms 
+            # please refer to http://biodev.ece.ucsb.edu/projects/bisquik/ticket/597
+            headers  = dict ( (name, request.headers.get(name)) for name in ['Authorization', 'Mex' ]
+                              if name in request.headers)
+            log.debug ('sending %s with %s'  % (url, headers))
+            header, content = httpReader.request(url, headers= headers)
             
             items = (header.get('content-disposition') or header.get('Content-Disposition') or '').split(';')
             fileName = str(index) + '.'

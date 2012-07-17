@@ -72,6 +72,8 @@ import pkg_resources
 from pylons.i18n import ugettext as _, lazy_ugettext as l_
 from tg import expose, flash
 from repoze.what import predicates 
+
+
 from bq.core.service import ServiceController
 
 # additional includes
@@ -84,7 +86,7 @@ import threading
 import shutil
 import tarfile
 import zipfile
-
+import logging
 import gdata.docs
 import gdata.docs.service
 
@@ -102,7 +104,6 @@ from tg import request, response, session, flash, require
 from repoze.what import predicates
 
 from bq import data_service
-
 from create_archive import CreateArchive
 
 #---------------------------------------------------------------------------------------
@@ -112,6 +113,7 @@ from create_archive import CreateArchive
 NO_BYTES=16*1024
 max_size=1024*1024*1024*2
 CHARREGEX=re.compile("\W+")
+log  = logging.getLogger('bq.export_service')
 
 #---------------------------------------------------------------------------------------
 # controller 
@@ -191,6 +193,12 @@ class export_serviceController(ServiceController):
 
     @expose()
     def initStream(self, **kw):
+        """create and return a streaming archive
+
+        :param compressionTye: tar,zip,gzip, bz2
+        :param files: a list(comma seperated) of resource URIs to include in the archive
+        :param datasets: a list uris of dataset resource URI to include in the archive
+        """
         from bq.export_service.controllers.archive_streamer import ArchiveStreamer
         urlList = []
 
@@ -206,7 +214,7 @@ class export_serviceController(ServiceController):
         datasets = string.split(kw.pop('datasets', ''), ',')
         
         archiveStreamer = ArchiveStreamer(compressionType)
-        archiveStreamer.init(archiveName='Bisque archive '+time.strftime('%H.%M.%S'), fileList=files, datasetList=datasets, urlList=urlList)
+        archiveStreamer.init(archiveName='Bisque-archive '+time.strftime('%H.%M.%S'), fileList=files, datasetList=datasets, urlList=urlList)
         
         return archiveStreamer.stream()
 
