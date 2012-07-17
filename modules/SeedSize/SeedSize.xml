@@ -115,6 +115,11 @@
                             <value>//tag[@name='area']</value>
                             <value>//tag[@name='major']</value>
                             <value>//tag[@name='minor']</value>
+                        </tag>
+                        <tag name="title">
+                            <value>area</value>
+                            <value>major</value>
+                            <value>minor</value>
                         </tag>                        
                     </tag>                      
 
