@@ -371,8 +371,8 @@ def xmlelement(dbo, parent, baseuri, view, **kw):
             kw = dict([ (k,v) for k,v in kw.items() if k in clean_fields])
 
     if 'canonical' in view or xtag not in system_types:
-        xtag = 'resource'
         kw['resource_type'] = xtag
+        xtag = 'resource'
     elif xtag == 'gobject' and dbo.type in known_gobjects:
         xtag  = dbo.type
         kw.pop('type')
