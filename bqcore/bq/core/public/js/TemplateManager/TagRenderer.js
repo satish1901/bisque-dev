@@ -44,7 +44,7 @@ Ext.define('BQ.TagRenderer.Base',
                                 parseVariable : function(tag)
                                 {
                                     var value;
-                                    tag.value = tag.value || '';
+                                    tag.value = Ext.isEmpty(tag.value)?'':tag.value;
                                     
                                     switch (tag.type)
                                     {

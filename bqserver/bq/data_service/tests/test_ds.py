@@ -30,16 +30,16 @@ class TestDSController(TestController):
 
 
     def test_b_newimage_noauth (self):
-        req = etree.Element ('image', x='512', y='512' )
-        response = self.app.post ('/data_service/images',
+        req = etree.Element ('image', name='new', value = "image.jpg" )
+        response = self.app.post ('/data_service/image',
                                   params = etree.tostring(req),
                                   content_type='application/xml',
                                   status = 401,
                                   )
     def test_c_newimage_auth (self):
-        req = etree.Element ('image', x='512', y='512' )
+        req = etree.Element ('image', name='new', value="image.jpg" )
         environ = {'REMOTE_USER': 'admin'}
-        response = self.app.post ('/data_service/images',
+        response = self.app.post ('/data_service/image',
                                   extra_environ = environ,
                                   params = etree.tostring(req),
                                   headers=[('content-type', 'application/xml')],

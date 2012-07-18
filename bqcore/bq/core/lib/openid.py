@@ -32,6 +32,7 @@ class OpenIDAuth(object):
             return registration.register_user(user_name, values = {
                     'display_name' : name,
                     'email_address' : email,
+                    'identifier'    : 'openid',
                     #password =  illegal password so all authentication goes through openid
                     })
         else:

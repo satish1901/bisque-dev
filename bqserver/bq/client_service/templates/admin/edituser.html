@@ -10,8 +10,6 @@
 <head/>
 
 <body>
-<div py:match="datasets" />
-<div py:match="organizer" />
 <div class="maindiv" >
 
   <div style="clear:both; margin: 10px;">
@@ -31,20 +29,18 @@
   <form action="/admin/updateuser" method="post" enctype="application/x-www-form-urlencoded" class="admin_form" >
     <label> User name: ${user.resource_name}</label><br />
     <input type="hidden" name="user_name" id="user_name" value="${user.resource_name}" />
-<!--    <label> User password: </label><input type="password" name="user_password" id="user_password" value="${user.password}" /><br /> -->
+    <label> New password: </label><input type="password" name="user_password" id="user_password"  />  Note: update works only for local password <br /> 
 <!--    <label> Display name: </label><input type="text" name="display_name" id="display_name" value="${user.display_name}" /><br /> -->
     <label> E-mail: </label><input type="text" name="email" id="email" value="${user.resource_value}" /><br />
     <input type="submit" name="button" id="button" value="Submit" />
   </form> 
-
+  </div>
             
 
 
 
+<!--
 
-
-  </div>
-	
 	<div id="image_list">
 			<div py:for="i in images" style="padding:15px; width: 150px; height: 200px; float: left;">
 				<a href="/image_service/images/${i.resource_uniq}"><img src="/image_service/images/${i.resource_uniq}?thumbnail" /></a><br />
@@ -59,10 +55,10 @@
 			<a py:if="not options['page'] > (options['totalimages']/20 )" href="/admin/edituser/${user.resource_name}?page=${options['page']+1}"> -&lt;Next&gt;</a>
 	</div>
 
+-->
 
 
-
-	
 </div>
+	
 </body>
 </html>

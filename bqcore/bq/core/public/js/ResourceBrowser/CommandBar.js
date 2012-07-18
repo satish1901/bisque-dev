@@ -77,22 +77,22 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 					padding : '3 0 3 0',
 					scope : this
 				},
+                {
+                    itemId : 'btnGrid',
+                    icon : bq.url('/js/ResourceBrowser/Images/grid.png'),
+                    hidden : this.viewMgr.cBar.btnLayoutGrid,
+                    tooltip : 'Grid layout',
+                    scale : 'large',
+                    toggleGroup : 'btnLayout',
+                    handler : this.btnLayoutClick,
+                    padding : '3 0 3 0',
+                    scope : this
+                },
 				{
 					itemId : 'btnCard',
 					icon : bq.url('/js/ResourceBrowser/Images/card.png'),
 					hidden : this.viewMgr.cBar.btnLayoutCard,
 					tooltip : 'Card layout',
-					scale : 'large',
-					toggleGroup : 'btnLayout',
-					handler : this.btnLayoutClick,
-					padding : '3 0 3 0',
-					scope : this
-				},
-				{
-					itemId : 'btnPStrip',
-					icon : bq.url('/js/ResourceBrowser/Images/pstrip.png'),
-					hidden : this.viewMgr.cBar.btnLayoutPStrip,
-					tooltip : 'Photo strip layout',
 					scale : 'large',
 					toggleGroup : 'btnLayout',
 					handler : this.btnLayoutClick,
@@ -110,6 +110,16 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 					padding : '3 0 3 0',
 					scope : this
 				},'->',
+                {
+                    itemId : 'btnActivate',
+                    icon : bq.url('/js/ResourceBrowser/Images/activate.png'),
+                    tooltip : '(ACTIVATE) Press button to switch to selection mode',
+                    state : 'ACTIVATE',
+                    hidden : this.viewMgr.cBar.btnActivate,
+                    scale : 'large',
+                    handler : this.btnActivate,
+                    scope : this
+                },
                 {
                     itemId : 'btnRefresh',
                     icon : bq.url('/js/ResourceBrowser/Images/refresh.png'),
@@ -284,6 +294,24 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
         this.browser.msgBus.fireEvent('Browser_ReloadData', {});
     },
     
+    btnActivate : function(btn)
+    {
+        if (btn.state == 'ACTIVATE')
+        {
+            btn.setIcon(bq.url('/js/ResourceBrowser/Images/select.png'));
+            btn.state='SELECT';
+            btn.setTooltip('(SELECT) Press button to switch to activation mode');
+        }
+        else
+        {
+            btn.setIcon(bq.url('/js/ResourceBrowser/Images/activate.png'));
+            btn.state='ACTIVATE';
+            btn.setTooltip('(ACTIVATE) Press button to switch to selection mode');
+        }
+        this.browser.selectState = btn.state;
+        this.browser.fireEvent('SelectMode_Change', btn.state);
+    },
+    
 	btnTS : function(btn)
 	{
         var tagOrder = cleanTagOrder(this.browser.browserState.tag_order) || '';
@@ -379,10 +407,8 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 			case 'btnCard' :
 				this.browser.changeLayoutThrottled(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Card);
 				break;
-			case 'btnPStrip' :
-				this.browser.changeLayoutThrottled(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PStrip);
-            case 'btnPStrip' :
-                this.browser.changeLayoutThrottled(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PStrip);
+            case 'btnGrid' :
+                this.browser.changeLayoutThrottled(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Grid);
 				break;
 			case 'btnFull' :
 				this.browser.changeLayoutThrottled(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Full);
@@ -400,8 +426,8 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Card :
 				this.getComponent('btnCard').toggle(true, false);
 				break;
-			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PStrip :
-				this.getComponent('btnPStrip').toggle(true, false);
+			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Grid :
+				this.getComponent('btnGrid').toggle(true, false);
 				break;
 			case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Full :
 				this.getComponent('btnFull').toggle(true, false);
@@ -409,6 +435,13 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 		}
 	},
 	
+    btnActivateSetState : function(state)
+    {
+        var btn=this.getComponent('btnActivate');
+        btn.state = (state=='ACTIVATE')?'SELECT':'ACTIVATE';
+        this.btnActivate(btn);
+    },
+
 	btnTSSetState : function(tagOrder)
 	{
         var sortState=(tagOrder.indexOf('"@ts":desc')!=-1)?'DESC':((tagOrder.indexOf('"@ts":asc')!=-1)?'ASC':'');

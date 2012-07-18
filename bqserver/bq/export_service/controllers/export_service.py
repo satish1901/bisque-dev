@@ -72,6 +72,8 @@ import pkg_resources
 from pylons.i18n import ugettext as _, lazy_ugettext as l_
 from tg import expose, flash
 from repoze.what import predicates 
+
+
 from bq.core.service import ServiceController
 
 # additional includes
@@ -84,7 +86,7 @@ import threading
 import shutil
 import tarfile
 import zipfile
-
+import logging
 import gdata.docs
 import gdata.docs.service
 
@@ -102,7 +104,6 @@ from tg import request, response, session, flash, require
 from repoze.what import predicates
 
 from bq import data_service
-
 from create_archive import CreateArchive
 
 #---------------------------------------------------------------------------------------
@@ -112,6 +113,7 @@ from create_archive import CreateArchive
 NO_BYTES=16*1024
 max_size=1024*1024*1024*2
 CHARREGEX=re.compile("\W+")
+log  = logging.getLogger('bq.export_service')
 
 #---------------------------------------------------------------------------------------
 # controller 
@@ -185,22 +187,56 @@ class export_serviceController(ServiceController):
         value = kw.pop('value', '')
         return value
     
-    
     #------------------------------------------------------------------
     # new ArchiveStreamer - Utkarsh
     #------------------------------------------------------------------
 
     @expose()
     def initStream(self, **kw):
+        """Create and return a streaming archive
+
+        :param compressionType: tar, zip, gzip, bz2
+        :param files: a comma separated list of resource URIs to include in the archive
+        :param datasets: a comma separated list of dataset resource URIs to include in the archive
+        :param urls: a comma separated list of any url accessible over HTTP to include in the archive
+
+        ------------------------------------
+        Sample XML when POSTing to this app
+        ------------------------------------
+        
+        <resource>
+            <value type="FILE">    ...    </value>
+            <value type="URL">     ...    </value>
+            <value type="DATASET"> ...    </value>
+        </resource>
+        
+        """
+        
         from bq.export_service.controllers.archive_streamer import ArchiveStreamer
+        files = datasets = urls = []
+
+        if (tg.request.method.upper()=='POST' and tg.request.body):
+            data = etree.XML(tg.request.body)
+            for resource in data:
+                type = resource.get('type').upper() 
+                if (type == 'FILE'):
+                    files.append(resource.text)
+                elif (type == 'DATASET'):
+                    datasets.append(resource.text)
+                elif (type == 'URL'):
+                    urls.append(resource.text)
+                else:
+                    urls.append(resource.text)
+            
         import string
 
         compressionType = kw.pop('compressionType', '')
-        files = string.split(kw.pop('files', ''), ',')
-        datasets = string.split(kw.pop('datasets', ''), ',')
+        files = files + string.split(kw.pop('files', ''), ',')
+        datasets = datasets + string.split(kw.pop('datasets', ''), ',')
+        urls = urls + string.split(kw.pop('urls', ''), ',')
         
         archiveStreamer = ArchiveStreamer(compressionType)
-        archiveStreamer.init(archiveName='Bisque archive '+time.strftime('%H.%M.%S'), fileList=files, datasetList=datasets)
+        archiveStreamer.init(archiveName='Bisque-archive '+time.strftime('%H.%M.%S'), fileList=files, datasetList=datasets, urlList=urls)
         
         return archiveStreamer.stream()
 

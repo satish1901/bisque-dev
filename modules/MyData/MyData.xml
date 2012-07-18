@@ -212,7 +212,14 @@ For details on notation and configuration:
             <template>
                 <tag name="label" value="My time" />
             </template>             
-        </tag>                  
+        </tag>  
+        
+        <tag name="mex_url" type="mex">
+            <template>
+                <tag name="label" value="Select input MEX" />
+                <tag name="query" value="&amp;name=NuclearDetector3D" /> 
+            </template>
+        </tag>          
         
     </tag>
     

@@ -119,7 +119,7 @@ Ext.define('Bisque.ResourceTagger',
 
         this.resource = resource;
         this.editable = false;
-        this.testAuth(BQApp.user);
+        this.testAuth(BQApp.user, false);
         
         if(this.resource.tags.length > 0)
             this.loadResourceTags(this.resource.tags);
@@ -143,31 +143,23 @@ Ext.define('Bisque.ResourceTagger',
         this.relayEvents(this.tree, ['itemclick']);
     },
 
-    onEdit : function(me)
-    {
-        if (me.record.raw)
-            if (this.autoSave)
-            {
-                this.saveTags(me.record.raw, true);
-                me.record.commit();
-            }
-    },
-    
     getTagTree : function(data)
     {
         this.rowEditor = Ext.create('Bisque.ResourceTagger.Editor',
         {
-            clicksToMoveEditor : 1,
-            tagger : this,
-            errorSummary : false,
-            listeners : 
-            {
-                'edit' : this.onEdit,
-                scope : this
-            },
-            beforeEdit : function() {
-                return this.tagger.editable;
-            }
+            clicksToMoveEditor  :   1,
+            tagger              :   this,
+            errorSummary        :   false,
+            listeners           :   {
+                                        'edit'          :   this.finishEdit,
+                                        'cancelEdit'    :   this.cancelEdit,
+                                        scope           :   this
+                                    },
+            
+            beforeEdit          :   function()
+                                    {
+                                        return this.tagger.editable;
+                                    }
         });
         
         this.tree = Ext.create('Ext.tree.Panel',
@@ -179,7 +171,8 @@ Ext.define('Bisque.ResourceTagger',
             rowLines : true,
             lines : true,
             iconCls : 'icon-grid',
-            animate: this.animate,
+            animate : this.animate,
+            header : false,
 
             store : this.getTagStore(data),
             multiSelect : true,
@@ -381,22 +374,26 @@ Ext.define('Bisque.ResourceTagger',
             /* Modified function so as to not delete the root nodes */
             onNodeAdded : function(parent, node)
             {
-                var proxy = this.getProxy(), reader = proxy.getReader(), data = node.raw || node.data, dataRoot, children;
-
-                Ext.Array.remove(this.removed, node);
-
-                if(!node.isLeaf() && !node.isLoaded())
-                {
+                var me = this,
+                    proxy = me.getProxy(),
+                    reader = proxy.getReader(),
+                    data = node.raw || node[node.persistenceProperty],
+                    dataRoot;
+        
+                Ext.Array.remove(me.removed, node);
+        
+                if (!node.isLeaf()) {
                     dataRoot = reader.getRoot(data);
-                    if(dataRoot)
-                    {
-                        this.fillNode(node, reader.extractData(dataRoot));
-                        // Do not delete the root
+                    if (dataRoot) {
+                        me.fillNode(node, reader.extractData(dataRoot));
                         //delete data[reader.root];
                     }
                 }
+        
+                if (me.autoSync && !me.autoSyncSuspended && (node.phantom || node.dirty)) {
+                    me.sync();
+                }                
             }
-
         });
 
         return this.store;
@@ -417,7 +414,7 @@ Ext.define('Bisque.ResourceTagger',
 
     getStoreFields : function()
     {
-        return {};
+        return {name : 'dummy', type : 'string'};
     },
 
     getToolbar : function()
@@ -529,33 +526,29 @@ Ext.define('Bisque.ResourceTagger',
         this.newNode = newNode;
         currentItem.expand();
         editor.startEdit(newNode, 0);
-
-        editor.addListener(
-        {
-            'edit'          :   {
-                                    fn      :   this.finishEdit,
-                                    single  :   true
-                                },
-            'cancelEdit'    :   {
-                                    fn      :   this.cancelEdit,
-                                    valg    :   'abc',
-                                    single  :   true,
-                                },
-            scope           :   this,
-        });            
     },
     
     cancelEdit : function (grid, eOpts)
     {
-        var editor = this.tree.plugins[0];
-        editor.un('edit', this.finishEdit, this);
-
-        if (!newNode.data.name || (newNode.data.name && newNode.data.value && newNode.name=='' && newNode.value==''))
-            grid.record.parentNode.removeChild(grid.record);
+        if (eOpts.record && eOpts.record.dirty)
+        {
+            eOpts.record.parentNode.removeChild(eOpts.record);
+        }
     },    
     
-    finishEdit : function(me)
+    finishEdit : function(_editor, me)
     {
+        if (me.record.raw instanceof BQObject)
+        {
+            if (this.autoSave)
+            {
+                this.saveTags(me.record.raw, true);
+                me.record.commit();
+            }
+
+            return;
+        }
+        
         this.editing = true;
         var newTag = new BQTag();
         newTag = Ext.apply(newTag,
@@ -706,30 +699,38 @@ Ext.define('Bisque.ResourceTagger',
         }
     },
     
-    testAuth : function(user)
+    testAuth : function(user, loaded, permission)
     {
-        if (user && (user.uri==this.resource.owner))
+        if (user)
         {
-            // user is autorized to edit tags
-            this.tree.btnAdd = false;
-            this.tree.btnDelete = false;
-            this.tree.btnImport = false;
-
-            this.editable = true;
-            
-            if (this.tree.rendered)
+            if (!loaded)
+                this.resource.testAuth(user.uri, Ext.bind(this.testAuth, this, [user, true], 0));            
+            else
             {
-                var tbar = this.tree.getDockedItems('toolbar')[0];
-
-                tbar.getComponent('grpAddDelete').getComponent('btnAdd').setDisabled(false);
-                tbar.getComponent('grpAddDelete').getComponent('btnDelete').setDisabled(false);
-                tbar.getComponent('grpImportExport').getComponent('btnImport').setDisabled(false);
+                if (permission)
+                {
+                    // user is authorized to edit tags
+                    this.tree.btnAdd = false;
+                    this.tree.btnDelete = false;
+                    this.tree.btnImport = false;
+        
+                    this.editable = true;
+                    
+                    if (this.tree.rendered)
+                    {
+                        var tbar = this.tree.getDockedItems('toolbar')[0];
+        
+                        tbar.getComponent('grpAddDelete').getComponent('btnAdd').setDisabled(false);
+                        tbar.getComponent('grpAddDelete').getComponent('btnDelete').setDisabled(false);
+                        tbar.getComponent('grpImportExport').getComponent('btnImport').setDisabled(false);
+                    }
+                }
             }
         }
         else if (user===undefined)
         {
             // User autentication hasn't been done yet
-            BQApp.on('gotuser', Ext.bind(this.testAuth, this));
+            BQApp.on('gotuser', Ext.bind(this.testAuth, this, [false], 1));
         }
     },
     
@@ -902,12 +903,28 @@ Ext.define('Bisque.GObjectTagger',
         return gobjects;
     },
     
+    deleteGObject : function(index)
+    {
+        var root = this.tree.getRootNode();
+        var g = root.getChildAt(index);
+        root.removeChild(g, true);
+        this.tree.getView().refresh();
+    },
+    
     appendGObjects : function(data, mex)
     {
         if (data && data.length>0)
         {
-            this.addNode(this.tree.getRootNode(), {name:data[0].name, value:Ext.Date.format(Ext.Date.parse(mex.ts, 'Y-m-d H:i:s.u'), "F j, Y g:i:s a"), gobjects:data});
-            this.fireEvent('onappend', this, data);
+            if (mex)
+            {
+                this.addNode(this.tree.getRootNode(), {name:data[0].name, value:Ext.Date.format(Ext.Date.parse(mex.ts, 'Y-m-d H:i:s.u'), "F j, Y g:i:s a"), gobjects:data});
+                this.fireEvent('onappend', this, data);
+            }
+            else
+            {
+                this.addNode(this.tree.getRootNode(), data);
+                //this.fireEvent('onappend', this, data);
+            }
         }
     },
 
@@ -1060,6 +1077,7 @@ Ext.define('Bisque.ResourceTagger.viewStateManager',
                 this.state.btnXML = false;
                 this.state.btnCSV = false;
                 this.state.btnGDocs = false;
+                this.state.editable = false;
                 break;
             }
             case 'Offline':

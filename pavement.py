@@ -53,12 +53,13 @@ options(
     ),
 )
 
-subdirs=['bqdev', 'bqcore', 'bqserver', 'bqengine' ]
-
+server_subdirs=['bqdev', 'bqcore', 'bqserver', 'bqengine' ]
+engine_subdirs=['bqdev', 'bqcore', 'bqengine' ]
 
 
 @task
-def setup():
+@cmdopts('engine', 'e', 'install only the engine')
+def setup(options):
     'install local version and setup local packages'
     # Hack as numpy fails to install when in setup.py dependencies
     sh('easy_install numpy==1.6.0')
@@ -70,6 +71,10 @@ def setup():
     sh('easy_install http://biodev.ece.ucsb.edu/binaries/depot/Paste/Paste-1.7.5.1bisque2.tar.gz')
 
     top = os.getcwd()
+    subdirs = server_subdirs
+    if hasattr(options, 'engine'):
+        subdirs = engine_subdirs
+
     for d in subdirs:
         app_dir = path('.') / d
         if os.path.exists(app_dir):
