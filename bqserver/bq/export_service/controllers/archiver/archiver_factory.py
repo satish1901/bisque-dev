@@ -11,13 +11,19 @@ class AbstractArchiver():
         return '.xml'
     
     def beginFile(self, file):
-        if file.get('extension') == '.xml' or file.get('path') is None:
-            file['extension'] = '.xml'  # ensure extension is XML if we are only exporting XML
-            self.reader = StringIO(etree.tostring(file.get('XML')))
-            
+        if file.get('extension') == 'URL':
+            self.reader = StringIO(file.get('content'))
             self.reader.seek(0, 2)
             self.fileSize = self.reader.tell()
             self.reader.seek(0)
+        
+        elif file.get('extension') == '.xml' or file.get('path') is None:
+            file['extension'] = '.xml'  # ensure extension is XML if we are only exporting XML
+            self.reader = StringIO(etree.tostring(file.get('XML')))
+            self.reader.seek(0, 2)
+            self.fileSize = self.reader.tell()
+            self.reader.seek(0)
+
         else:
             self.reader = open(file.get('path'), 'rb')
 

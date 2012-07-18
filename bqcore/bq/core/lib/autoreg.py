@@ -32,16 +32,30 @@ class AutoRegister (object):
         self.mapping = {}
         self.key_map = key_map
 
+    def login_group (self, login_identifier):
+        g = model.DBSession.query(Group).filter_by(group_name = login_identifier).first()
+        if g is None:
+            g = Group()
+            g.group_name = login_identifier
+            g.display_name = u'%s Group' % login_identifier 
+            model.DBSession.add(g)
+        return g
+
+
     def register_user( self, user_name, values = {} ):
         """Attempt to register the user locally"""
         name_match = model.User.by_user_name( user_name )
         email_match= values.get('email_address') and model.User.by_email_address(values['email_address'])
+        identifier = values.get('identifier')
+
         if  name_match is None and email_match is None:
             try:
                 log.info("adding user %s" % user_name )
-                model.DBSession.add(
-                    model.User(user_name = user_name, **values)
-                    )
+                u = model.User(user_name = user_name, **values)
+                model.DBSession.add(u)
+                if identifier:
+                    g = self.login_group(identifier)
+                    g.users.append(u)
                 transaction.commit()
                 return user_name
             except (SQLAlchemyError, DatabaseError), e:

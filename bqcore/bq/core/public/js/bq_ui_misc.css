@@ -5,7 +5,7 @@
 #messagepopup {
     position:absolute;
     left:35%;
-    top:10px;
+    top:45px;
     width:300px;
     z-index:20000;
 }

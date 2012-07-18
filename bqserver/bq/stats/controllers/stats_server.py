@@ -90,7 +90,7 @@ import os
 import logging
 import pkg_resources
 from pylons.i18n import ugettext as _, lazy_ugettext as l_
-from tg import expose, flash
+from tg import expose, flash, response
 from repoze.what import predicates 
 from bq.core.service import ServiceController
 #from bq.stats import model
@@ -129,6 +129,8 @@ def dict2url(d, mykeys=None):
     return '%s'%'&'.join(l)
       
 def getNumberedArgs(d, basename):
+    if basename not in d:
+        return []
     l = [d[basename]]
     i = 1
     while '%s%s'%(basename, i) in d:
@@ -137,6 +139,7 @@ def getNumberedArgs(d, basename):
     return l
     
 def guaranteeSize(l, n):
+    if len(l)<=0: return l
     if len(l)>=n: return l
     for i in range(n-len(l)):
         l.append(l[len(l)-1])
@@ -179,24 +182,24 @@ class statsController(ServiceController):
 
     @expose(content_type='text/xml')
     def maps (self, **kw):
-        response = etree.Element ('resource')
-        response.attrib['uri'] = '%s/maps'%(self.baseuri)
+        stream = etree.Element ('resource')
+        stream.attrib['uri'] = '%s/maps'%(self.baseuri)
         for n in self.operators:
-            tag      = etree.SubElement (response, 'tag')
+            tag      = etree.SubElement (stream, 'tag')
             tag.attrib['name']  = n           
             tag.attrib['value'] = '%s [ver %s]'%(self.operators[n].__doc__, self.operators[n].version)
-        return etree.tostring(response)   
+        return etree.tostring(stream)   
 
 
     @expose(content_type='text/xml')
     def reduces (self, **kw):
-        response = etree.Element ('resource')
-        response.attrib['uri'] = '%s/reduces'%(self.baseuri)
+        stream = etree.Element ('resource')
+        stream.attrib['uri'] = '%s/reduces'%(self.baseuri)
         for n in self.summarizers:
-            tag      = etree.SubElement (response, 'tag')
+            tag      = etree.SubElement (stream, 'tag')
             tag.attrib['name']  = n            
             tag.attrib['value'] = '%s [ver %s]'%(self.summarizers[n].__doc__, self.summarizers[n].version)
-        return etree.tostring(response)           
+        return etree.tostring(stream)           
 
 
     @expose('bq.stats.templates.index')
@@ -237,14 +240,15 @@ class statsController(ServiceController):
         d = self.compute_stats(**kw)
         
         url = kw['url']
-        response = etree.Element ('resource', type='statistic')        
-        response.set('uri', '%s/compute?%s'%(self.baseuri, dict2url({'url':url})))
+        stream = etree.Element ('resource', type='statistic')        
+        stream.set('uri', '%s/compute?%s'%(self.baseuri, dict2url({'url':url})))
         
         for i in d:
             xpath   = i.pop('xpath')
             xmap    = i.pop('xmap')
             xreduce = i.pop('xreduce')
-            r = etree.SubElement (response, 'resource', name='%s of %s'%(xreduce, xmap), type=xreduce)            
+            title   = i.pop('title')
+            r = etree.SubElement (stream, 'resource', name=title, type=xreduce)            
             r.set('uri', '/stats/compute?%s'%(dict2url({ 'url':url, 'xpath':xpath, 'xmap':xmap, 'xreduce':xreduce })))
             for k in i:     
                 v = i[k]
@@ -252,7 +256,10 @@ class statsController(ServiceController):
                     v = ','.join( [quote(str(x)) for x in v] )
                 BQTag(name=k, value=str(v)).toEtree(r)
         
-        return etree.tostring(response)
+        filename = kw.get('filename', 'stats.xml')
+        response.headers['Content-Type'] = 'text/xml'
+        response.headers['Content-Disposition'] = 'filename="' + filename + '"'        
+        return etree.tostring(stream)
        
     #-------------------------------------------------------------
     # Formatters - CSV 
@@ -270,17 +277,25 @@ class statsController(ServiceController):
             xpath   = i.pop('xpath')
             xmap    = i.pop('xmap')
             xreduce = i.pop('xreduce')
+            title   = i.pop('title')            
             for k in i:     
                 if not hasattr(i[k], '__iter__'): 
                     myiters.append([i[k]])
                 else:
                     myiters.append(i[k])
-                mytitles.append( ('%s of %s of %s'%( xreduce, xmap, xpath )).replace(',', ';') )
-        
+                if k != xreduce:
+                    mytitles.append( ('%s (%s)'%( title, k )).replace(',', ';') )
+                else:
+                    mytitles.append( title.replace(',', ';') )
+                            
         it = izip_longest(fillvalue='', *myiters)
         ts = [t for t in it]
-        response = "\n".join([(', '.join([str(e) for e in t])) for t in ts])
-        return '%s\n%s'%( ', '.join(mytitles), response)
+        stream = "\n".join([(', '.join([str(e) for e in t])) for t in ts])
+        
+        filename = kw.get('filename', 'stats.csv')
+        response.headers['Content-Type'] = 'text/csv'
+        response.headers['Content-Disposition'] = 'attachment; filename="' + filename + '"'
+        return '%s\n%s'%( ', '.join(mytitles), stream)
 
     #-------------------------------------------------------------   
     # this function will raise exceptions of operators or summarizers cannot take requested inputs
@@ -305,10 +320,13 @@ class statsController(ServiceController):
         xpath   = getNumberedArgs(kw, 'xpath')
         xmap    = getNumberedArgs(kw, 'xmap')
         xreduce = getNumberedArgs(kw, 'xreduce')
+        titles  = getNumberedArgs(kw, 'title')
+        if len(titles)<=0: titles = [None]
         maxsize = max([ len(xpath), len(xmap), len(xreduce) ])
         xpath   = guaranteeSize(xpath, maxsize)        
         xmap    = guaranteeSize(xmap, maxsize)
-        xreduce = guaranteeSize(xreduce, maxsize)        
+        xreduce = guaranteeSize(xreduce, maxsize)
+        titles  = guaranteeSize(titles, maxsize)           
         setmode = 'setmode' in kw
 
 
@@ -329,7 +347,7 @@ class statsController(ServiceController):
                 if members_uri is not None:
                     request = data_service.get_resource('%s/value'%members_uri, view='deep')
         
-        response = []        
+        stream = []        
         for i in range(len(xpath)):
             
             # -----------------------------------------------------
@@ -358,9 +376,10 @@ class statsController(ServiceController):
             d['xpath']   = xpath[i]
             d['xmap']    = xmap[i]
             d['xreduce'] = xreduce[i]
-            response.append(d)                  
+            d['title']   = titles[i] or '%s of %s for %s'%( xreduce[i], xmap[i], xpath[i] )
+            stream.append(d)                  
         
-        return response        
+        return stream        
 
 
 def initialize(uri):

@@ -48,7 +48,7 @@ classdef Gobject < bq.Node
                 v = zeros(xnodes.getLength(), 6);
                 for i=1:xnodes.getLength(),
                     n = xnodes.item(i-1);
-                    v(i,1) = getVertexAttr(n, 'y');                    
+                    v(i,1) = getVertexAttr(n, 'y');
                     v(i,2) = getVertexAttr(n, 'x');
                     v(i,3) = getVertexAttr(n, 'z');
                     v(i,4) = getVertexAttr(n, 't');
@@ -58,7 +58,6 @@ classdef Gobject < bq.Node
             end            
         end % getVertices   
         
-        % dima: untested !!!!!!!!!!!!
         function v = setVertices(self, v)
             % find all <vertex> sub nodes            
             import javax.xml.xpath.*;
@@ -74,17 +73,17 @@ classdef Gobject < bq.Node
             end            
           
             % set the new vertex nodes
-            for i=1:length(v),
+            for i=1:size(v,1),
                 n = self.doc.createElement('vertex');                
-                setVertexAttr(n, 'y', v(i,1));                    
-                setVertexAttr(n, 'x', v(i,2));
-                setVertexAttr(n, 'z', v(i,3));
-                setVertexAttr(n, 't', v(i,4));
-                setVertexAttr(n, 'c', v(i,5));
-                setVertexAttr(n, 'index', v(i,6));
-                self.element.appendChild(n);                
+                if ~isempty(v(i,:)), setVertexAttr(n, 'y', v(i,1)); end                    
+                if length(v(i,:))>1, setVertexAttr(n, 'x', v(i,2)); end
+                if length(v(i,:))>2, setVertexAttr(n, 'z', v(i,3)); end
+                if length(v(i,:))>3, setVertexAttr(n, 't', v(i,4)); end
+                if length(v(i,:))>4, setVertexAttr(n, 'c', v(i,5)); end
+                if length(v(i,:))>5, setVertexAttr(n, 'index', v(i,6)); end
+                self.element.appendChild(n);
             end            
-        end % getVertices   
+        end % setVertices   
 
     end % methods
   

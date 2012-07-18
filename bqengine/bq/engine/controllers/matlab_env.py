@@ -89,6 +89,8 @@ class MatlabEnvironment(BaseEnvironment):
         #    self.matlab_home = runner.named_args['matlab_home']
 
     def setup_environment(self, runner):
+        if os.name == 'nt':
+            return
         # Construct a special environment script
         for mex in runner.mexes:
             #if mex.executable:

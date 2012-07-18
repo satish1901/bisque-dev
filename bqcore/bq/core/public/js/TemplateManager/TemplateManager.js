@@ -101,8 +101,9 @@ Ext.define('BQ.TemplateManager.Creator',
     
     saveTemplate : function()
     {
-        BQ.TemplateManager.initResource('', this.resource);
+        //BQ.TemplateManager.initResource('', this.resource);
         //this.tagger.resource.save_();
+        this.resource.save_();
         BQ.ui.message('', 'Changes saved!');
     },
     

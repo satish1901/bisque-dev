@@ -52,7 +52,4 @@ DESCRIPTION
 
 """
 
-from python_adapter import *
-from matlab_adapter import *
-from sh_adapter import *
 from runtime_adapter import *

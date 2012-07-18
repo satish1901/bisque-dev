@@ -171,7 +171,7 @@ Viewstate.prototype.inverseTransformPoint = function  (ix, iy) {
     xp += this.original_width/2.0;
     yp += this.original_height/2.0;
              
-    return { x:xp, y:yp };
+    return { x: Ext.util.Format.round(xp, 2), y: Ext.util.Format.round(yp, 2) };
 }
 
 
@@ -402,7 +402,8 @@ ImgViewer.prototype.init = function () {
 ImgViewer.prototype.cleanup = function() {
     this.target.removeChild (this.menudiv);
     //this.target.removeChild (this.optiondiv);
-    this.target.removeChild (this.imagediv);    
+    this.target.removeChild (this.imagediv); 
+    mouser=null;   
 };
 
 ImgViewer.prototype.addPlugin = function  (plugin) {

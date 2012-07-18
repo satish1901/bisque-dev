@@ -57,6 +57,7 @@ DESCRIPTION
 import logging
 import time
 from paste.util.multidict import MultiDict
+from paste.httpexceptions import HTTPNotFound
 
 #from turbogears import controllers, expose, config
 #from turbogears import  redirect
@@ -180,7 +181,7 @@ class RootController(BaseController):
         URL are formed with
         <service_type>/<path>?arguments
         """
-        log.info ('%s  %s' % (request.method, request.url))
+        log.info ('[%s] %s %s' % (request.identity.get('repoze.who.userid'), request.method, request.url))
         if service_type in oldnames:
             log.warn ('found oldname( %s ) in request' % (service_type))
             service_type = oldnames[service_type]
@@ -193,7 +194,7 @@ class RootController(BaseController):
         if service is not None:
           log.debug ('found %s ' % str(service))
           return service, rest
-        log.error ('no service found %s with %s', service_type, rest)
+        log.warn ('no service found %s with %s', service_type, rest)
         abort(404)
         #return super(RootController, self)._lookup(service_type, *rest)
 

@@ -15,6 +15,19 @@
     background: transparent;
 } 
 
+.browser-main {
+    background: white;
+} 
+
+.organizer {
+    margin: 4px 0px 4px 4px; 
+    padding: 0px;  
+}
+
+.organizer-filter {
+    margin: 4px; 
+}
+
 /* ResourceLayout settings: */
 .ImageCompact {
     margin: 15px;
@@ -372,3 +385,10 @@
     text-align: center;
 }
 
+.heading {
+    font-size: 14px !important;
+}
+
+.heading .x-btn-inner {
+    font-size: 14px !important;
+}

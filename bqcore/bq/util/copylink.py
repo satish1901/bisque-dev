@@ -10,7 +10,7 @@ def copy_link (*largs):
         
     for f in largs:
         if not os.path.exists(f):
-            log.warn("can't copy %s" %f)
+            log.error("can't copy %s to %s: missing file" % (f, d))
             continue
         try:
             dest = d

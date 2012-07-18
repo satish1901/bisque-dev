@@ -1697,18 +1697,17 @@ Ext.define('BQ.renderers.RendererWithTools', {
             text: template[name+'/label']?template[name+'/label']:'Plot',
             scope: this,
             handler: function() {
-                var title = template[name+'/title'];
+                var title = template[name+'/label']?template[name+'/label']:'Plot';
                 if (title instanceof Array) title = title.join(', ');
-                var titles = template[name+'/titles'];
+                var titles = template[name+'/title'];
                 if (!(titles instanceof Array)) titles = [titles];
-                var opts = { args: {numbins: template[name+'/args/numbins']}, titles: titles, };
                 this.plotter = Ext.create('BQ.stats.Dialog', {
                     url     : this.res_uri_for_tools,
                     xpath   : template[name+'/xpath'],
                     xmap    : template[name+'/xmap'],
                     xreduce : template[name+'/xreduce'],
                     title   : title,
-                    opts    : opts,
+                    opts    : { args: {numbins: template[name+'/args/numbins']}, titles: titles, },
                     root    : this.root,
                 });
             },
@@ -1740,7 +1739,12 @@ Ext.define('BQ.renderers.RendererWithTools', {
                 if (this.root) url = this.root + url;
                 url += createStatsArgs('xpath', template, name);
                 url += createStatsArgs('xmap', template, name);
-                url += createStatsArgs('xreduce', template, name);                                        
+                url += createStatsArgs('xreduce', template, name);
+                url += createStatsArgs('title', template, name);
+                if (template[name+'/filename'])
+                    url += '&filename='+template[name+'/filename'];
+                else if (this.res_for_tools) 
+                    url += '&filename='+this.res_for_tools.name+'.csv';
                 window.open(url);                
             },
         });         
@@ -1843,6 +1847,7 @@ Ext.define('BQ.renderers.Image', {
         // create tools menus
         var tool_items = [];
         if (this.gobjects.length>0) {
+            this.res_for_tools = this.resource;
             this.res_uri_for_tools = this.gobjects[0].uri;
             var gobs = this.definition.gobjects[0];
             this.template_for_tools = (gobs?gobs.template:{}) || {};
@@ -2025,7 +2030,8 @@ Ext.define('BQ.renderers.Mex', {
         
         // create tools menus
         var tool_items = [];
-        this.res_uri_for_tools = resource.value; // dima: resource.value ???
+        this.res_for_tools = {name: resource.resource_type+'.csv', };
+        this.res_uri_for_tools = resource.value;
         this.template_for_tools = template;
         tool_items = this.createTools();
 
