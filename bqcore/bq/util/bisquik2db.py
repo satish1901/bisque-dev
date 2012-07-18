@@ -116,6 +116,7 @@ system_types = [
     'user',
     'template',
     'mex',
+    'auth',
     ] 
 
 class XMLNode(list):
@@ -398,9 +399,9 @@ def xmlnode(dbo, parent, baseuri, view, **kw):
     #rtype = dbo.xmltag
     if rtype not in ('value', 'vertex'):
         elem = xmlelement (dbo, parent, baseuri, view=view)
-        if 'deep' not in view and dbo.resource_value == None:
+        if 'deep' not in view and hasattr(dbo,'resource_value') and dbo.resource_value == None:
             junk = [ xmlnode(x, elem, baseuri, view) for x in dbo.values ]
-        if 'deep' not in view:
+        if 'deep' not in view and hasattr(dbo, 'vertices'):
             junk = [ xmlnode(x, elem, baseuri, view) for x in dbo.vertices ]
         return elem
 
