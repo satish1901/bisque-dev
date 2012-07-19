@@ -4,8 +4,9 @@ import copy
 import string
 import logging
 import httplib2 
+import urlparse
 
-from tg import request, response, expose
+from tg import request, response, expose, config
 from lxml import etree
 from cStringIO import StringIO
 from bq import data_service, image_service, blob_service
@@ -21,7 +22,7 @@ class ArchiveStreamer():
         self.archiver = ArchiverFactory().getClass(compressionType)
     
     
-    def init(self, archiveName='Bisque archive', fileList=[''], datasetList=[''], urlList=['']):
+    def init(self, archiveName='Bisque archive', fileList=[], datasetList=[], urlList=[]):
         self.fileList = fileList
         self.datasetList = datasetList
         self.urlList = urlList
@@ -82,6 +83,10 @@ class ArchiveStreamer():
             headers  = dict ( (name, request.headers.get(name)) for name in ['Authorization', 'Mex' ]
                               if name in request.headers)
 
+            # test if URL is relative, httplib2 does not fetch relative
+            if urlparse.urlparse(url).scheme == '':
+                url = urlparse.urljoin(config.get('bisque.root'), url)
+            
             log.debug ('ArchiveStreamer: Sending %s with %s'  % (url, headers))
             header, content = httpReader.request(url, headers=headers)
             
@@ -100,14 +105,14 @@ class ArchiveStreamer():
                     
         flist = []
 
-        if fileList != ['']:       # empty fileList
+        if len(fileList)>0:       # empty fileList
             for uri in fileList:
                 finfo = fileInfo('', uri)
                 flist.append(finfo)      # blank dataset name for orphan files
                 if finfo.get('type') == 'image':
                     flist.append(xmlInfo(finfo))
 
-        if datasetList != ['']:     # empty datasetList
+        if len(datasetList)>0:     # empty datasetList
             for uri in datasetList:
                 dataset = data_service.get_resource(uri, view='full')
                 name = dataset.xpath('/dataset/@name')[0]
@@ -119,7 +124,7 @@ class ArchiveStreamer():
                     if finfo.get('type') == 'image':
                         flist.append(xmlInfo(finfo))
 
-        if urlList != ['']:       # empty urlList
+        if len(urlList)>0:       # empty urlList
             for index, url in enumerate(urlList):
                 finfo = urlInfo(url, index)
                 flist.append(finfo)      # blank dataset name for orphan files
