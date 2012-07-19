@@ -213,12 +213,14 @@ class export_serviceController(ServiceController):
         """
         
         from bq.export_service.controllers.archive_streamer import ArchiveStreamer
-        files = datasets = urls = []
+        files    = []
+        datasets = []
+        urls     = []
 
         if (tg.request.method.upper()=='POST' and tg.request.body):
             data = etree.XML(tg.request.body)
             for resource in data:
-                type = resource.get('type').upper() 
+                type = resource.get('type', 'URL').upper() 
                 if (type == 'FILE'):
                     files.append(resource.text)
                 elif (type == 'DATASET'):
@@ -231,9 +233,9 @@ class export_serviceController(ServiceController):
         import string
 
         compressionType = kw.pop('compressionType', '')
-        files = files + string.split(kw.pop('files', ''), ',')
-        datasets = datasets + string.split(kw.pop('datasets', ''), ',')
-        urls = urls + string.split(kw.pop('urls', ''), ',')
+        if 'files' in kw: files = files + kw.pop('files').split(',')
+        if 'datasets' in kw: datasets = datasets + kw.pop('datasets').split(',')
+        if 'urls' in kw: urls = urls + kw.pop('urls').split(',')                    
         
         archiveStreamer = ArchiveStreamer(compressionType)
         archiveStreamer.init(archiveName='Bisque-archive '+time.strftime('%H.%M.%S'), fileList=files, datasetList=datasets, urlList=urls)
@@ -241,366 +243,330 @@ class export_serviceController(ServiceController):
         return archiveStreamer.stream()
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#------------------------------------------------------------------------------
-# Tar file export, by Santosh
-#------------------------------------------------------------------------------
-    @expose(template='bq.export_service.templates.to_tar')
-    @require(predicates.not_anonymous())    
-    def to_tar (self, **kw):
-        return { 'opts': kw }
-
-    #to export tar file, called from export service page
-    @expose()
-    @require(predicates.not_anonymous())      
-    def exportTar(self,**kw):
-        resource_url=str(kw.pop('resource_url',''))
-        resource_url=self.refineUrl(resource_url)#refine the url
-        url_list=resource_url.split('/')
-        lenList=len(url_list)
-        tarName=url_list[lenList-2]+'_'+url_list[lenList-1]
-        tf=self.checkCache(tarName)#checking the cache for the .tar file
-        if tf is not None:
-            filePath=os.path.abspath(tf)
-            return serve_file(filePath, "application/x-tar", "attachment")
-        try:
-            check_index=url_list.index('datasets')
-            url=resource_url
-            if url is not '':
-                try:
-                    xmldata=data_service.load(url+'?view=full')
-                except:
-                    return dict(error= str(sys.exc_value))
-            response=etree.Element('response')
-            document=etree.ElementTree(response)
-            doc=etree.fromstring(xmldata)
-            for elt in doc.getiterator():
-                if elt.tag=='resource':
-                    if elt.attrib.has_key('type'):
-                        if elt.get('type') == 'image':
-                            uri=elt.get('uri')
-                            imgdata=data_service.load(uri+'?view=full')
-                            imdoc=etree.fromstring(imgdata)
-                            for imelt in imdoc.getiterator('image'):
-                                if imelt.tag=='image':
-                                    image=etree.SubElement(response,'image',src=imelt.get('src'),uri=uri)
-            cherrypy.response.headers["Content-Disposition"] = 'attachment; filename="%s"'%(tarName+'.tar')
-            cherrypy.response.headerMap['Content-Type'] = "application/x-tar"
-            zipDict=self.checkTarFileSize(document)
-            num_files=zipDict['num_files']
-            total_size=zipDict['total_size']
-            contLength=total_size+num_files*512+10*1024*1024 #10 additional MB of buffer size
-            log.debug("content length::::::::::::::::::::::::::::::::"+str(contLength))
-            cherrypy.response.headerMap['Content-Length'] = str(contLength)
-            archive=CreateArchive(tarName, self.userpass)
-            return archive.createTarFile(document)
-        except ValueError:
-            check_index=-1
-        if check_index==-1:
-            if resource_url is not '':
-                try:
-                    xmldata=data_service.load(resource_url+'?view=full')
-                except:
-                    return dict(error= str(sys.exc_value))
-                cherrypy.response.headers["Content-Disposition"] = 'attachment; filename="%s"'%(tarName+'.tar')
-                cherrypy.response.headerMap['Content-Type'] = "application/x-tar"
-                response=etree.Element('response')
-                document=etree.ElementTree(response)
-                doc=etree.fromstring(xmldata)
-                for elt in doc.getiterator('image'):
-                    if elt.tag=='image':
-                        image=etree.SubElement(response,'image',src=elt.get('src'),uri=elt.get('uri'))
-                zipDict=self.checkTarFileSize(document)
-                num_files=zipDict['num_files']
-                total_size=zipDict['total_size']
-                contLength=total_size+num_files*512+10*1024*1024 #10 additional MB of buffer size
-                log.debug("content length::::::::::::::::::::::::::::::::"+str(contLength))
-                cherrypy.response.headerMap['Content-Length'] = str(contLength)
-                archive=CreateArchive(tarName, self.userpass)
-                return archive.createTarFile(document)
-        return
-
-    @expose()
-    @require(predicates.not_anonymous())    
-    def segmentationDsTar(self,**kw):
-        dataset_label=kw['dataset_label']
-        tarName=re.sub(CHARREGEX,'_',dataset_label)
-        tf=self.checkCache(tarName)
-        if tf is not None:
-            filePath=os.path.abspath(tf)
-            return serve_file(filePath, "application/x-tar", "attachment")
-        cherrypy.response.headers["Content-Disposition"] = 'attachment; filename="%s"'%(tarName+'.tar')
-        cherrypy.response.headerMap['Content-Type'] = "application/x-tar"
-        server=data_service.uri()
-        datasetUrl=kw['dataset_uri']+'/tags'
-        headers,imagesXml=http_client.request(datasetUrl)
-        imagesXml=str(imagesXml)
-        response=etree.Element('response')
-        document=etree.ElementTree(response)
-        xpathExpression='//resource[@type="image"]'
-        xmlDoc=etree.fromstring(imagesXml)
-        eltList=xmlDoc.xpath(xpathExpression)
-        len_elements=len(eltList)
-        for x in range(len_elements):
-            log.debug("index"+str(x))
-            elt=eltList[x]
-            uri=elt.attrib['uri']
-            headers,srcrequest=http_client.request(uri)
-            srcrequest=str(srcrequest)
-            xpathExpression='//image'
-            xmlDoc=etree.fromstring(srcrequest)
-            elementList=xmlDoc.xpath(xpathExpression)
-            element=elementList[0]
-            src=element.attrib['src']
-            image=etree.SubElement(response,'image',src=src,uri=uri)
-        zipDict=self.checkTarFileSize(document)
-        num_files=zipDict['num_files']
-        total_size=zipDict['total_size']
-        contLength=total_size+num_files*512+10*1024*1024 #10 additional MB of buffer size
-        log.debug("content length::::::::::::::::::::::::::::::::"+str(contLength))
-        cherrypy.response.headerMap['Content-Length'] = str(contLength)
-        archive=CreateArchive(tarName, self.userpass)
-        return archive.createTarFile(document)
-
-    def findDataSetUrl(self,xmldata,dataset_label):
-        xmlDoc=etree.fromstring(xmldata)
-        xpathExpression='//dataset[@name="'+dataset_label+'"]'
-        eltList=xmlDoc.xpath(xpathExpression)
-        log.debug(eltList)
-        elt=eltList[0];
-        return elt.attrib['uri']
-
-    #check the size of the download files and make parts
-    @expose('bq.export_service.templates.downloadTarFiles')
-    @require(predicates.not_anonymous())    
-    def checkDownloadTar(self,**kw):
-        query = kw.pop('tag_query', None)
-        view=kw.pop('view', 'short')
-        wpublic = kw.pop('wpublic', not identity.not_anonymous())
-        offset = int(kw.pop('offset', 0))
-        response = etree.Element('response')
-        images = aggregate_service.query("image" ,
-                                         tag_query=query,
-                                         view=view,
-                                         wpublic=wpublic, **kw)
-        for i in images[offset:]:
-            response.append(i)
-        document=etree.ElementTree(response)
-        log.debug('Tag Query Response:'+etree.tostring(document))
-        zipDict=self.checkTarFileSize(document)
-        limits=zipDict['limits']
-        offsets=zipDict['offsets']
-        total_size=zipDict['total_size']
-        num_files=zipDict['num_files']
-        if total_size > max_size:
-            return dict(limits=limits,offsets=offsets,query=query,wpublic=wpublic,view="short")
-        else:
-            part=kw.pop('part',1)
-            tarName=re.sub(CHARREGEX,'_',query)+'_'+str(part)
-            cherrypy.response.headers["Content-Disposition"] = 'attachment; filename="%s"'%(tarName+'.tar')
-            cherrypy.response.headerMap['Content-Type'] = "application/x-tar"
-            contLength=512-total_size%512 +total_size+num_files*512+5*1024*1024
-            log.debug("content length::::::::::::::::::::::::::::::::"+str(contLength))
-            cherrypy.response.headerMap['Content-Length'] = str(contLength)
-            offset=0
-            limit=-1
-            tf=self.checkCache(tarName)
-            if tf is not None:
-                filePath=os.path.abspath(tf)
-                return serve_file(filePath, "application/x-tar", "attachment")
-            view=kw.pop('view', 'short')
-            wpublic = kw.pop('wpublic', not identity.not_anonymous())
-            response = etree.Element('response')
-            images = aggregate_service.query("image" ,
-                                         tag_query=query,
-                                         view=view,
-                                         wpublic=wpublic, **kw)
-            if limit != -1:
-                for i in images[offset:limit]:
-                    response.append(i)
-            else:
-                for i in images[offset:]:
-                    response.append(i)
-            document=etree.ElementTree(response)
-            archive=CreateArchive(tarName, self.userpass)
-            return archive.createTarFile(document)
-
-    #check the size of the tar file using image size info
-    def checkTarFileSize(self,document):
-        count=0
-        no_bytes=0
-        no_gb=max_size
-        offsets=[0]
-        limits=[]
-        end_ind=0
-        total_size=0
-        num_files=0
-        for elt in document.getiterator():
-            if elt.tag == 'image':
-                num_files=num_files+1
-                src=str(elt.get('src'))
-                imageSize=self.getImageSizeFromInfo(src)
-                if no_bytes < no_gb:
-                    no_bytes=no_bytes+int(imageSize)
-                    total_size=total_size+int(imageSize)
-                    log.debug('Info:Total Size so far'+str(no_bytes))
-                    count=count+1
-                    end_ind=0
-                else:
-                    offsets.append(count)
-                    no_bytes=int(imageSize)
-                    end_ind=1
-        if end_ind==1:
-            offsets.append(count)
-        for x in range(len(offsets)-1):
-            limits.append(offsets[x+1])
-        limits.append(-1)
-        return dict(limits=limits,offsets=offsets,no_bytes=no_bytes,total_size=total_size,num_files=num_files)
-
-    @expose()
-    @require(predicates.not_anonymous())    
-    def downloadTar(self,**kw):
-        query = kw.pop('tag_query', None)
-        part=kw.pop('part',1)
-        tarName=re.sub(CHARREGEX,'_',query)+'_'+str(part)
-        cherrypy.response.headers["Content-Disposition"] = 'attachment; filename="%s"'%(tarName+'.tar')
-        cherrypy.response.headerMap['Content-Type'] = "application/x-tar"
-        tf=self.checkCache(tarName)
-        if tf is not None:
-            filePath=os.path.abspath(tf)
-            return serve_file(filePath, "application/x-tar", "attachment")
-        view=kw.pop('view', 'short')
-        wpublic = kw.pop('wpublic', not identity.not_anonymous())
-        offset = int(kw.pop('offset', 0))
-        limit = int(kw.pop('limit', 0))
-        response = etree.Element('response')
-        images = aggregate_service.query("image" ,
-                                         tag_query=query,
-                                         view=view,
-                                         wpublic=wpublic, **kw)
-        if limit != -1:
-            for i in images[offset:limit]:
-                response.append(i)
-        else:
-            for i in images[offset:]:
-                response.append(i)
-        document=etree.ElementTree(response)
-        zipDict=self.checkTarFileSize(document)
-        num_files=zipDict['num_files']
-        total_size=zipDict['total_size']
-        contLength=total_size+num_files*512+10*1024*1024
-        log.debug("content length::::::::::::::::::::::::::::::::"+str(contLength))
-        cherrypy.response.headerMap['Content-Length'] = str(contLength)
-        archive=CreateArchive(tarName, self.userpass)
-        return archive.createTarFile(document)
-
-    #get the size of the image using image info-filesize
-    def getImageSizeFromInfo(self,src):
-        #header,responseXml = http_client.xmlrequest(url=src+'?info')
-        #xmlResp=str(responseXml)
-        #log.debug("Response XML:"+str(xmlResp))
-        #xmlDoc=etree.fromstring(str(xmlResp))
-        log.debug("URI::::::::::::::::::::::::::::::"+src)
-        try:
-            xmlStr=image_service.info (src)
-            xmlDoc=etree.fromstring(xmlStr)
-        except:
-             header,responseXml = http_client.xmlrequest(url=src+'?info',userpass=self.userpass)
-             xmlResp=str(responseXml)
-             log.debug("Response XML:"+str(xmlResp))
-             try:
-                 xmlDoc=etree.fromstring(str(xmlResp))
-             except etree.XMLSyntaxError:
-                 log.error("SizeFromInfo: BAD INFO from imageserver %s" % xmlResp)
-                 return 0
-             #xmlDoc=data_service.load(src+'?info')
-        eltList=xmlDoc.xpath('//tag[@name="filesize"]')
-        log.debug(etree.tostring(eltList[0]))
-        elt=eltList[0];
-        return elt.attrib['value']
-
-    #download the tar from the cache
-    def checkCache(self,tarName):
-        try:
-            curDir=os.curdir
-            downDir=curDir+'/downloads'
-            if os.path.exists(downDir):
-                tempf=open(downDir+'/'+tarName+'.tar','rb')
-                tempf.close()
-                log.debug("Returning cache file:::::::::::::::::")
-                filename='downloads/'+tarName+'.tar'
-                return filename
-            else:
-                os.mkdir("downloads")
-                return None
-        except IOError:
-            tempf=None
-            return tempf
-
-    def fileGenerator(self,fp):
-        no_bytes=8
-        while True:
-            bytes = fp.read(1024 * no_bytes) # Read blocks of 8KB at a time
-            if not bytes: break
-            yield bytes
-
-    def refineUrl(self,resource_url):
-        check_deep=resource_url.find('?view=deep')
-        if check_deep > 0:
-            resource_url=resource_url.replace('?view=deep','')
-        check_full=resource_url.find('?view=full')
-        if check_full > 0:
-            resource_url=resource_url.replace('?view=full','')
-        return resource_url
-
-    def readMetaData(self,extractDir):
-        try:
-           metaF=open(extractDir+'/metadata.xml')
-           metadata=metaF.read()
-           metaXml=etree.fromstring(metadata)
-        except IOError:
-           return None
-        return metaXml
-
-    def sanitize_filename(self, filename):
-        """ Removes any path info that might be inside filename, and returns results. """
-        import urllib
-        return urllib.unquote(filename).split("\\")[-1].split("/")[-1]
+##------------------------------------------------------------------------------
+## Tar file export, by Santosh
+##------------------------------------------------------------------------------
+#    @expose(template='bq.export_service.templates.to_tar')
+#    @require(predicates.not_anonymous())    
+#    def to_tar (self, **kw):
+#        return { 'opts': kw }
+#
+#    #to export tar file, called from export service page
+#    @expose()
+#    @require(predicates.not_anonymous())      
+#    def exportTar(self,**kw):
+#        resource_url=str(kw.pop('resource_url',''))
+#        resource_url=self.refineUrl(resource_url)#refine the url
+#        url_list=resource_url.split('/')
+#        lenList=len(url_list)
+#        tarName=url_list[lenList-2]+'_'+url_list[lenList-1]
+#        tf=self.checkCache(tarName)#checking the cache for the .tar file
+#        if tf is not None:
+#            filePath=os.path.abspath(tf)
+#            return serve_file(filePath, "application/x-tar", "attachment")
+#        try:
+#            check_index=url_list.index('datasets')
+#            url=resource_url
+#            if url is not '':
+#                try:
+#                    xmldata=data_service.load(url+'?view=full')
+#                except:
+#                    return dict(error= str(sys.exc_value))
+#            response=etree.Element('response')
+#            document=etree.ElementTree(response)
+#            doc=etree.fromstring(xmldata)
+#            for elt in doc.getiterator():
+#                if elt.tag=='resource':
+#                    if elt.attrib.has_key('type'):
+#                        if elt.get('type') == 'image':
+#                            uri=elt.get('uri')
+#                            imgdata=data_service.load(uri+'?view=full')
+#                            imdoc=etree.fromstring(imgdata)
+#                            for imelt in imdoc.getiterator('image'):
+#                                if imelt.tag=='image':
+#                                    image=etree.SubElement(response,'image',src=imelt.get('src'),uri=uri)
+#            cherrypy.response.headers["Content-Disposition"] = 'attachment; filename="%s"'%(tarName+'.tar')
+#            cherrypy.response.headerMap['Content-Type'] = "application/x-tar"
+#            zipDict=self.checkTarFileSize(document)
+#            num_files=zipDict['num_files']
+#            total_size=zipDict['total_size']
+#            contLength=total_size+num_files*512+10*1024*1024 #10 additional MB of buffer size
+#            log.debug("content length::::::::::::::::::::::::::::::::"+str(contLength))
+#            cherrypy.response.headerMap['Content-Length'] = str(contLength)
+#            archive=CreateArchive(tarName, self.userpass)
+#            return archive.createTarFile(document)
+#        except ValueError:
+#            check_index=-1
+#        if check_index==-1:
+#            if resource_url is not '':
+#                try:
+#                    xmldata=data_service.load(resource_url+'?view=full')
+#                except:
+#                    return dict(error= str(sys.exc_value))
+#                cherrypy.response.headers["Content-Disposition"] = 'attachment; filename="%s"'%(tarName+'.tar')
+#                cherrypy.response.headerMap['Content-Type'] = "application/x-tar"
+#                response=etree.Element('response')
+#                document=etree.ElementTree(response)
+#                doc=etree.fromstring(xmldata)
+#                for elt in doc.getiterator('image'):
+#                    if elt.tag=='image':
+#                        image=etree.SubElement(response,'image',src=elt.get('src'),uri=elt.get('uri'))
+#                zipDict=self.checkTarFileSize(document)
+#                num_files=zipDict['num_files']
+#                total_size=zipDict['total_size']
+#                contLength=total_size+num_files*512+10*1024*1024 #10 additional MB of buffer size
+#                log.debug("content length::::::::::::::::::::::::::::::::"+str(contLength))
+#                cherrypy.response.headerMap['Content-Length'] = str(contLength)
+#                archive=CreateArchive(tarName, self.userpass)
+#                return archive.createTarFile(document)
+#        return
+#
+#    @expose()
+#    @require(predicates.not_anonymous())    
+#    def segmentationDsTar(self,**kw):
+#        dataset_label=kw['dataset_label']
+#        tarName=re.sub(CHARREGEX,'_',dataset_label)
+#        tf=self.checkCache(tarName)
+#        if tf is not None:
+#            filePath=os.path.abspath(tf)
+#            return serve_file(filePath, "application/x-tar", "attachment")
+#        cherrypy.response.headers["Content-Disposition"] = 'attachment; filename="%s"'%(tarName+'.tar')
+#        cherrypy.response.headerMap['Content-Type'] = "application/x-tar"
+#        server=data_service.uri()
+#        datasetUrl=kw['dataset_uri']+'/tags'
+#        headers,imagesXml=http_client.request(datasetUrl)
+#        imagesXml=str(imagesXml)
+#        response=etree.Element('response')
+#        document=etree.ElementTree(response)
+#        xpathExpression='//resource[@type="image"]'
+#        xmlDoc=etree.fromstring(imagesXml)
+#        eltList=xmlDoc.xpath(xpathExpression)
+#        len_elements=len(eltList)
+#        for x in range(len_elements):
+#            log.debug("index"+str(x))
+#            elt=eltList[x]
+#            uri=elt.attrib['uri']
+#            headers,srcrequest=http_client.request(uri)
+#            srcrequest=str(srcrequest)
+#            xpathExpression='//image'
+#            xmlDoc=etree.fromstring(srcrequest)
+#            elementList=xmlDoc.xpath(xpathExpression)
+#            element=elementList[0]
+#            src=element.attrib['src']
+#            image=etree.SubElement(response,'image',src=src,uri=uri)
+#        zipDict=self.checkTarFileSize(document)
+#        num_files=zipDict['num_files']
+#        total_size=zipDict['total_size']
+#        contLength=total_size+num_files*512+10*1024*1024 #10 additional MB of buffer size
+#        log.debug("content length::::::::::::::::::::::::::::::::"+str(contLength))
+#        cherrypy.response.headerMap['Content-Length'] = str(contLength)
+#        archive=CreateArchive(tarName, self.userpass)
+#        return archive.createTarFile(document)
+#
+#    def findDataSetUrl(self,xmldata,dataset_label):
+#        xmlDoc=etree.fromstring(xmldata)
+#        xpathExpression='//dataset[@name="'+dataset_label+'"]'
+#        eltList=xmlDoc.xpath(xpathExpression)
+#        log.debug(eltList)
+#        elt=eltList[0];
+#        return elt.attrib['uri']
+#
+#    #check the size of the download files and make parts
+#    @expose('bq.export_service.templates.downloadTarFiles')
+#    @require(predicates.not_anonymous())    
+#    def checkDownloadTar(self,**kw):
+#        query = kw.pop('tag_query', None)
+#        view=kw.pop('view', 'short')
+#        wpublic = kw.pop('wpublic', not identity.not_anonymous())
+#        offset = int(kw.pop('offset', 0))
+#        response = etree.Element('response')
+#        images = aggregate_service.query("image" ,
+#                                         tag_query=query,
+#                                         view=view,
+#                                         wpublic=wpublic, **kw)
+#        for i in images[offset:]:
+#            response.append(i)
+#        document=etree.ElementTree(response)
+#        log.debug('Tag Query Response:'+etree.tostring(document))
+#        zipDict=self.checkTarFileSize(document)
+#        limits=zipDict['limits']
+#        offsets=zipDict['offsets']
+#        total_size=zipDict['total_size']
+#        num_files=zipDict['num_files']
+#        if total_size > max_size:
+#            return dict(limits=limits,offsets=offsets,query=query,wpublic=wpublic,view="short")
+#        else:
+#            part=kw.pop('part',1)
+#            tarName=re.sub(CHARREGEX,'_',query)+'_'+str(part)
+#            cherrypy.response.headers["Content-Disposition"] = 'attachment; filename="%s"'%(tarName+'.tar')
+#            cherrypy.response.headerMap['Content-Type'] = "application/x-tar"
+#            contLength=512-total_size%512 +total_size+num_files*512+5*1024*1024
+#            log.debug("content length::::::::::::::::::::::::::::::::"+str(contLength))
+#            cherrypy.response.headerMap['Content-Length'] = str(contLength)
+#            offset=0
+#            limit=-1
+#            tf=self.checkCache(tarName)
+#            if tf is not None:
+#                filePath=os.path.abspath(tf)
+#                return serve_file(filePath, "application/x-tar", "attachment")
+#            view=kw.pop('view', 'short')
+#            wpublic = kw.pop('wpublic', not identity.not_anonymous())
+#            response = etree.Element('response')
+#            images = aggregate_service.query("image" ,
+#                                         tag_query=query,
+#                                         view=view,
+#                                         wpublic=wpublic, **kw)
+#            if limit != -1:
+#                for i in images[offset:limit]:
+#                    response.append(i)
+#            else:
+#                for i in images[offset:]:
+#                    response.append(i)
+#            document=etree.ElementTree(response)
+#            archive=CreateArchive(tarName, self.userpass)
+#            return archive.createTarFile(document)
+#
+#    #check the size of the tar file using image size info
+#    def checkTarFileSize(self,document):
+#        count=0
+#        no_bytes=0
+#        no_gb=max_size
+#        offsets=[0]
+#        limits=[]
+#        end_ind=0
+#        total_size=0
+#        num_files=0
+#        for elt in document.getiterator():
+#            if elt.tag == 'image':
+#                num_files=num_files+1
+#                src=str(elt.get('src'))
+#                imageSize=self.getImageSizeFromInfo(src)
+#                if no_bytes < no_gb:
+#                    no_bytes=no_bytes+int(imageSize)
+#                    total_size=total_size+int(imageSize)
+#                    log.debug('Info:Total Size so far'+str(no_bytes))
+#                    count=count+1
+#                    end_ind=0
+#                else:
+#                    offsets.append(count)
+#                    no_bytes=int(imageSize)
+#                    end_ind=1
+#        if end_ind==1:
+#            offsets.append(count)
+#        for x in range(len(offsets)-1):
+#            limits.append(offsets[x+1])
+#        limits.append(-1)
+#        return dict(limits=limits,offsets=offsets,no_bytes=no_bytes,total_size=total_size,num_files=num_files)
+#
+#    @expose()
+#    @require(predicates.not_anonymous())    
+#    def downloadTar(self,**kw):
+#        query = kw.pop('tag_query', None)
+#        part=kw.pop('part',1)
+#        tarName=re.sub(CHARREGEX,'_',query)+'_'+str(part)
+#        cherrypy.response.headers["Content-Disposition"] = 'attachment; filename="%s"'%(tarName+'.tar')
+#        cherrypy.response.headerMap['Content-Type'] = "application/x-tar"
+#        tf=self.checkCache(tarName)
+#        if tf is not None:
+#            filePath=os.path.abspath(tf)
+#            return serve_file(filePath, "application/x-tar", "attachment")
+#        view=kw.pop('view', 'short')
+#        wpublic = kw.pop('wpublic', not identity.not_anonymous())
+#        offset = int(kw.pop('offset', 0))
+#        limit = int(kw.pop('limit', 0))
+#        response = etree.Element('response')
+#        images = aggregate_service.query("image" ,
+#                                         tag_query=query,
+#                                         view=view,
+#                                         wpublic=wpublic, **kw)
+#        if limit != -1:
+#            for i in images[offset:limit]:
+#                response.append(i)
+#        else:
+#            for i in images[offset:]:
+#                response.append(i)
+#        document=etree.ElementTree(response)
+#        zipDict=self.checkTarFileSize(document)
+#        num_files=zipDict['num_files']
+#        total_size=zipDict['total_size']
+#        contLength=total_size+num_files*512+10*1024*1024
+#        log.debug("content length::::::::::::::::::::::::::::::::"+str(contLength))
+#        cherrypy.response.headerMap['Content-Length'] = str(contLength)
+#        archive=CreateArchive(tarName, self.userpass)
+#        return archive.createTarFile(document)
+#
+#    #get the size of the image using image info-filesize
+#    def getImageSizeFromInfo(self,src):
+#        #header,responseXml = http_client.xmlrequest(url=src+'?info')
+#        #xmlResp=str(responseXml)
+#        #log.debug("Response XML:"+str(xmlResp))
+#        #xmlDoc=etree.fromstring(str(xmlResp))
+#        log.debug("URI::::::::::::::::::::::::::::::"+src)
+#        try:
+#            xmlStr=image_service.info (src)
+#            xmlDoc=etree.fromstring(xmlStr)
+#        except:
+#             header,responseXml = http_client.xmlrequest(url=src+'?info',userpass=self.userpass)
+#             xmlResp=str(responseXml)
+#             log.debug("Response XML:"+str(xmlResp))
+#             try:
+#                 xmlDoc=etree.fromstring(str(xmlResp))
+#             except etree.XMLSyntaxError:
+#                 log.error("SizeFromInfo: BAD INFO from imageserver %s" % xmlResp)
+#                 return 0
+#             #xmlDoc=data_service.load(src+'?info')
+#        eltList=xmlDoc.xpath('//tag[@name="filesize"]')
+#        log.debug(etree.tostring(eltList[0]))
+#        elt=eltList[0];
+#        return elt.attrib['value']
+#
+#    #download the tar from the cache
+#    def checkCache(self,tarName):
+#        try:
+#            curDir=os.curdir
+#            downDir=curDir+'/downloads'
+#            if os.path.exists(downDir):
+#                tempf=open(downDir+'/'+tarName+'.tar','rb')
+#                tempf.close()
+#                log.debug("Returning cache file:::::::::::::::::")
+#                filename='downloads/'+tarName+'.tar'
+#                return filename
+#            else:
+#                os.mkdir("downloads")
+#                return None
+#        except IOError:
+#            tempf=None
+#            return tempf
+#
+#    def fileGenerator(self,fp):
+#        no_bytes=8
+#        while True:
+#            bytes = fp.read(1024 * no_bytes) # Read blocks of 8KB at a time
+#            if not bytes: break
+#            yield bytes
+#
+#    def refineUrl(self,resource_url):
+#        check_deep=resource_url.find('?view=deep')
+#        if check_deep > 0:
+#            resource_url=resource_url.replace('?view=deep','')
+#        check_full=resource_url.find('?view=full')
+#        if check_full > 0:
+#            resource_url=resource_url.replace('?view=full','')
+#        return resource_url
+#
+#    def readMetaData(self,extractDir):
+#        try:
+#           metaF=open(extractDir+'/metadata.xml')
+#           metadata=metaF.read()
+#           metaXml=etree.fromstring(metadata)
+#        except IOError:
+#           return None
+#        return metaXml
+#
+#    def sanitize_filename(self, filename):
+#        """ Removes any path info that might be inside filename, and returns results. """
+#        import urllib
+#        return urllib.unquote(filename).split("\\")[-1].split("/")[-1]
 
 
 #---------------------------------------------------------------------------------------

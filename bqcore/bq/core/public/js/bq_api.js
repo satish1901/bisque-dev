@@ -329,7 +329,7 @@ BQValue.prototype.setParent = function (p) {
 }
 
 BQValue.prototype.xmlNode = function () {
-    return BQXml.prototype.xmlNode.call (this, this.value)
+    return BQXml.prototype.xmlNode.call (this, BQFactory.escapeXML(this.value));
 }
 
 //-----------------------------------------------------------------------------
@@ -389,7 +389,7 @@ BQXml.prototype.xmlNode = function (content) {
     }
     if (content && content != "") {
         v += ">";
-        v += content ;
+        v += content;
         v += "</" + this.resource_type +">"
     } else {
         v += "/>";
@@ -472,6 +472,23 @@ BQObject.prototype.afterInitialized = function () {
         this.template = ta[0].toDict(true);
     else if (ta)
         this.template = ta.toDict(true);
+}
+
+
+// dima: this function takes an array of strings or an object value_name - value_type and 
+//       sets as a new array of values in the resource
+BQObject.prototype.setValues = function (vals) {
+    if (this.readonly) 
+        throw "This object is read only!";
+    
+    this.values = [];
+    if (vals instanceof Array) {
+        for (var i=0; i<vals.length; i++)
+            this.values.push(new BQValue(undefined, vals[i]));
+    } else {
+        for (var i in vals)
+            this.values.push(new BQValue(vals[i], i));
+    }
 }
 
 BQObject.prototype.testReadonly = function () {

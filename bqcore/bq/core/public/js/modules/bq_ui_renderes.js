@@ -1644,16 +1644,6 @@ function createStatsArgs(command, template, name) {
 Ext.define('BQ.renderers.RendererWithTools', {
     extend: 'BQ.renderers.Renderer',
 
-/*
-    tools: {
-        'plot'          : 'createMenuPlot',
-        'export-csv'    : 'createMenuExportCsv',
-        'export-xml'    : 'createMenuExportXml',
-        'export-excel'  : 'createMenuExportExcel',
-        'export-gdocs'  : 'createMenuExportGdocs',
-        'preview-movie' : 'createMenuPreviewMovie',   
-    },
-*/
     toolsPlot: {
         'plot'          : 'createMenuPlot',
     },
@@ -1665,6 +1655,7 @@ Ext.define('BQ.renderers.RendererWithTools', {
         'export_xml'    : 'createMenuExportXml',
         'export_excel'  : 'createMenuExportExcel',
         'export_gdocs'  : 'createMenuExportGdocs',
+        'export_package': 'createMenuExportPackage',
     },
 
     createTools : function() {
@@ -1806,6 +1797,19 @@ Ext.define('BQ.renderers.RendererWithTools', {
         });        
     }, 
 
+    createMenuExportPackage : function(menu) {
+        if (!this.res_uri_for_tools) return;
+        if (!this.template_for_tools) return;
+        var template = this.template_for_tools || {};
+        if (!('export_package' in template) || template['export_package']==false) return; 
+        menu.add({
+            text: 'complete document as a GZip package',
+            scope: this,
+            handler: function() {
+                window.open('/export/initStream?compressionType=gzip&urls='+this.res_uri_for_tools + '?view=deep');
+            },
+        }); 
+    }, 
 
 });
 
@@ -1951,7 +1955,7 @@ Ext.define('BQ.renderers.Dataset', {
         type: 'vbox',
         align : 'stretch',
         pack  : 'start',
-    },    
+    },
 
     constructor: function(config) {
         this.addEvents({
@@ -1991,7 +1995,7 @@ Ext.define('BQ.renderers.Dataset', {
             //dataset: resource,
             dataset: resource.getMembers().uri+'/value',
             selType: 'SINGLE',
-            height: '100%',
+            flex: 1,
             cls: 'bordered',
             viewMode : 'ViewerOnly',
             listeners: { 'Select': function(me, resource) { 
@@ -2060,8 +2064,8 @@ Ext.define('BQ.renderers.Browser', {
         type: 'vbox',
         align : 'stretch',
         pack  : 'start',
-    },    
-
+    },
+    
     constructor: function(config) {
         this.addEvents({
             'selected' : true,
@@ -2086,7 +2090,7 @@ Ext.define('BQ.renderers.Browser', {
             viewMode : 'ViewerOnly',
             tagQuery : resource.value, 
             wpublic  : 'true',
-            height: '100%',
+            flex: 1,            
             cls: 'bordered',
             listeners: { 'Select': function(me, resource) { 
                            window.open(bq.url('/client_service/view?resource='+resource.uri)); 

@@ -353,7 +353,7 @@ BQWebApp.prototype.setupUI_inputs = function (my_renderers) {
 }
 
 // this function needed for proper closure creation
-BQWebApp.prototype.setupUI_output = function (i, outputs_index, my_renderers) {
+BQWebApp.prototype.setupUI_output = function (i, outputs_index, my_renderers, mex) {
     var n = i.name;
     var r = outputs_index[n]; 
     if (!r) return;
@@ -362,6 +362,7 @@ BQWebApp.prototype.setupUI_output = function (i, outputs_index, my_renderers) {
         var conf = { 
             definition: i, 
             resource: r, 
+            mex: mex,
         };
         
         // special case if the output is a dataset, we expect sub-Mexs
@@ -381,7 +382,7 @@ BQWebApp.prototype.setupUI_output = function (i, outputs_index, my_renderers) {
     }
 }
 
-BQWebApp.prototype.setupUI_outputs = function (key) {
+BQWebApp.prototype.setupUI_outputs = function (key, mex) {
     key = key || 'outputs';
     this.renderers[key] = this.renderers[key] || {};
     var my_renderers = this.renderers[key];
@@ -395,7 +396,7 @@ BQWebApp.prototype.setupUI_outputs = function (key) {
     // create renderers for each outputs element
     if (outputs_definitions && outputs_definitions.length>0)
     for (var p=0; (i=outputs_definitions[p]); p++) {
-        this.setupUI_output(i, outputs_index, my_renderers);
+        this.setupUI_output(i, outputs_index, my_renderers, mex);
     }
 }
 
@@ -564,7 +565,7 @@ BQWebApp.prototype.showOutputs = function (mex, key) {
             this.outputs_index  = outputs.create_flat_index();          
         }   
         // setup output renderers
-        this.setupUI_outputs(key);
+        this.setupUI_outputs(key, mex);
     } else if (mex.status == "FAILED") {        
         var message = "Module execution failure:<br>" + mex.toXML(); 
         if ('error_message' in mex.dict && mex.dict.error_message!='') 
