@@ -77,7 +77,7 @@ class SeedSize(object):
                 { 'name': 'outputs',
                   'tag' : [{'name': 'Summary',  'tag' : summary_tags },
                            {'name': 'mex_url', 'value': self.mex_url, 'type': 'mex'},
-                           {'name': 'seed-resource', 'type':'dataset', 'value':self.resource_url,}]
+                           {'name': 'image_url', 'type':'dataset', 'value':self.resource_url,}]
                   },
                     ]
             # for i, submex in enumerate(mexlist):
