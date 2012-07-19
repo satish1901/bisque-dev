@@ -39,9 +39,18 @@ Ext.define('BQ.renderers.seedsize.Mex', {
         this.image_names = {};
         var myiterable = mex.dict['execute_options/iterable'];
         this.images = Ext.clone(mex.iterables[myiterable]);
-        delete this.images['dataset'];
+        
+        // fetch dataset name
+        this.num_requests = 1;        
+        BQFactory.request({ uri: this.images['dataset'], 
+                            cb: callback(this, 'onResource'), 
+                            errorcb: callback(this, 'onerror'), 
+                            //uri_params: {view:'short'}, 
+                         });          
+        
+        if ('dataset' in this.images) delete this.images['dataset'];
+        if ('undefined' in this.images) delete this.images['undefined'];        
         // fetch image names 
-        this.num_requests = 0;
         for (var u in this.images) {
             var sub_mex = this.images[u];
             this.images[u] = { mex: sub_mex.uri, name: null, };
@@ -49,9 +58,9 @@ Ext.define('BQ.renderers.seedsize.Mex', {
         }        
         for (var u in this.images) {
             BQFactory.request({ uri: u, 
-                                 cb: callback(this, 'onImage'), 
+                                 cb: callback(this, 'onResource'), 
                                  errorcb: callback(this, 'onerror'), 
-                                 //uri_params: {view:'short'}, 
+                                 //uri_params: {view:'short'}, // dima: by default it's short, if error happens we try to mark that in the list by fetched url
                              });            
         }
     },
@@ -64,17 +73,19 @@ Ext.define('BQ.renderers.seedsize.Mex', {
         if (this.num_requests<=0) this.onAllImages();
     }, 
     
-    onImage: function(im) {
-        this.num_requests--;        
-        this.images[im.uri].name = im.name;
+    onResource: function(im) {
+        this.num_requests--;   
+        if (im instanceof BQImage)     
+            this.images[im.uri].name = im.name;
+        else if (im instanceof BQDataset)
+            this.dataset_name = im.name;                 
         if (this.num_requests<=0) this.onAllImages();
     },    
     
     onAllImages: function() {
         this.setLoading(false);
 
-        var r = new BQResource();
-        var vals = [];
+        var staturls = [];
         for (var i in this.images) {
             var u = '/stats/csv?url='+this.images[i].mex;
             u += '&xmap=tag-value-number';
@@ -86,44 +97,37 @@ Ext.define('BQ.renderers.seedsize.Mex', {
             u += "&title1=major";
             u += "&title2=minor";
             u += "&filename="+this.images[i].name+'.csv';            
-            vals.push(u);
+            staturls.push(u);
         }
-        r.setValues(vals);
-    
-        var payload = r.toXML();
-        var url = '/export/initStream?compressionType=gzip';
-    
-        // dima: this might not work due to AJAX request
-        /*
-        BQFactory.request({ uri: url, 
-                            method: 'post',
-                            xmldata: payload,
-                            //cb: callback(this, 'onImage'), 
-                            //errorcb: callback(this, 'onerror'), 
-                         });               
-        */
+        //var r = new BQResource();
+        //r.setValues(staturls);
+        //var payload = r.toXML();
         
-        Ext.Ajax.timeout = 1200000; 
-        Ext.Ajax.request({
-           url: url,
-           method: 'POST',
-           jsonData: payload,
-           scope: this,
-           success: function (result, request) {
-                Ext.DomHelper.append(document.body, {
-                    tag: 'iframe',
-                    frameBorder: 0,
-                    width: 0,
-                    height: 0,
-                    src:result,
-                    css: 'display:none;visibility:hidden;height:1px;'
-                });
-            }, //success
-            failure: function (response, opts) {
-                var msg = 'server-side failure with status code: ' + response.status + ' message: ' + response.statusText;
-                BQ.ui.error(msg);  
-            },
-        });        
+        //dima: ok, lot's of hackery here, what we'll do is create a hidden iframe with html form inside activated automatically
+        //      that will do a post to export service and later activate browser save as dialog
+        
+        //var url = '/export/initStream?compressionType=gzip';
+        var url = '/export/initStream';
+        var html = '<html><body>'+
+                   '<form id="csvpost" name="csvpost" action="'+url+'" method="post">'+
+                   '<input type="hidden" name="compressionType" value="gzip" />'+
+                   '<input type="hidden" name="filename" value="'+(this.dataset_name||'full_dataset')+'" />'+
+                   '<input type="hidden" name="urls" value="'+staturls.join(',')+'" />'+
+                   '<input type="submit" value="Submit" /></form>'+
+                   '<script type="text/javascript">document.getElementById("csvpost").submit();</script>'+
+                   '</body></html>';
+        //var w = window.open();
+        //w.document.writeln(html);
+
+        var ifr = Ext.DomHelper.append(document.body, {
+            tag: 'iframe',
+            frameBorder: 0,
+            width: 0,
+            height: 0,
+            css: 'display:none; visibility:hidden; height:1px;',
+        });
+        ifr.contentDocument.writeln(html);
+
     },
 
 });
