@@ -106,7 +106,13 @@
                         <value>//gobject[@type='seed']/tag[@name='area']</value>
                         <value>//gobject[@type='seed']/tag[@name='major']</value>
                         <value>//gobject[@type='seed']/tag[@name='minor']</value>
-                    </tag>                        
+                    </tag>     
+                    <tag name="title">
+                        <value>area</value>
+                        <value>major</value>
+                        <value>minor</value>
+                    </tag>
+                    <tag name="filename" value="full_dataset.csv" />
                 </tag>                      
                 
                 <tag name="export_package" value="true" type="boolean">
@@ -118,6 +124,12 @@
                 <tag name="export_gdocs"  value="true"  type="boolean" />
             </template> 
         </tag>
+        
+        <tag name="image_url" type="dataset">
+            <template>
+                <tag name="label" value="Pick an image to see individual results" />
+            </template> 
+        </tag>          
         
         <tag name="seed-resource" type="resource">
             <template>

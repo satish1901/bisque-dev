@@ -1883,7 +1883,27 @@ Ext.define('BQ.renderers.Image', {
         }); 
     }, 
 
-
+    createExportCsv : function(menu, name, template) {
+        if (!this.res_uri_for_tools) return; 
+        menu.add({
+            text: template[name+'/label']?template[name+'/label']:'as CSV',
+            scope: this,
+            handler: function() {
+                var url = '/stats/csv?url=' + this.res_uri_for_tools;
+                if (this.root) url = this.root + url;
+                url += createStatsArgs('xpath', template, name);
+                url += createStatsArgs('xmap', template, name);
+                url += createStatsArgs('xreduce', template, name);
+                url += createStatsArgs('title', template, name);
+                if (template[name+'/filename'])
+                    url += '&filename='+template[name+'/filename'];
+                else if (this.res_for_tools) 
+                    url += '&filename='+this.viewer.viewer.image.name+'.csv';
+                window.open(url);                
+            },
+        });         
+    },
+    
 });
 
 

@@ -1225,7 +1225,8 @@ Ext.define('BQ.stats.grid.Grid', {
         var store = this.store;
 
         var mytitle = this.title ? this.title : this.xreduce;
-        this.setTitle(mytitle);
+        this.title = mytitle;
+        
         
         Ext.QuickTips.init();
         //Ext.state.Manager.setProvider(Ext.create('Ext.state.CookieProvider'));
