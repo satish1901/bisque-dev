@@ -218,7 +218,10 @@ class export_serviceController(ServiceController):
         urls     = []
 
         if (tg.request.method.upper()=='POST' and tg.request.body):
-            data = etree.XML(tg.request.body)
+            try:
+                data = etree.XML(tg.request.body)
+            except etree.ParseError:
+                data = []
             for resource in data:
                 type = resource.get('type', 'URL').upper() 
                 if (type == 'FILE'):
@@ -229,17 +232,15 @@ class export_serviceController(ServiceController):
                     urls.append(resource.text)
                 else:
                     urls.append(resource.text)
-            
-        import string
 
         compressionType = kw.pop('compressionType', '')
         if 'files' in kw: files = files + kw.pop('files').split(',')
         if 'datasets' in kw: datasets = datasets + kw.pop('datasets').split(',')
-        if 'urls' in kw: urls = urls + kw.pop('urls').split(',')                    
+        if 'urls' in kw: urls = urls + kw.pop('urls').split(',')    
+        filename = kw.pop('filename', None) or 'Bisque-archive '+time.strftime('%H.%M.%S')
         
         archiveStreamer = ArchiveStreamer(compressionType)
-        archiveStreamer.init(archiveName='Bisque-archive '+time.strftime('%H.%M.%S'), fileList=files, datasetList=datasets, urlList=urls)
-        
+        archiveStreamer.init(archiveName=filename, fileList=files, datasetList=datasets, urlList=urls)
         return archiveStreamer.stream()
 
 

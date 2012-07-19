@@ -1763,7 +1763,7 @@ BQMex.prototype.findMexsForIterable = function (name, root) {
     for (var i=0; (o=this.children[i]); i++) {
         if (o instanceof BQMex) {
             var resource = o.dict[root+name];
-            this.iterables[name][resource] = o;
+            if (resource) this.iterables[name][resource] = o;
         }
     }
 }
