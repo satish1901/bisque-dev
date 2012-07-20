@@ -384,6 +384,12 @@ BQWebApp.prototype.setupUI_output = function (i, outputs_index, my_renderers, me
 
 BQWebApp.prototype.setupUI_outputs = function (key, mex) {
     key = key || 'outputs';
+    
+    //if (key != 'outputs') {
+    //    this.setupUI_outputs_sub(key, mex);
+    //    return;
+    //}
+    
     this.renderers[key] = this.renderers[key] || {};
     var my_renderers = this.renderers[key];
     
@@ -399,6 +405,67 @@ BQWebApp.prototype.setupUI_outputs = function (key, mex) {
         this.setupUI_output(i, outputs_index, my_renderers, mex);
     }
 }
+
+BQWebApp.prototype.setupUI_output_sub = function (w, i, outputs_index, my_renderers, mex) {
+    var n = i.name;
+    var r = outputs_index[n]; 
+    if (!r) return;
+    var t = (r.type || i.type || i.resource_type).toLowerCase();
+    if (t in BQ.renderers.resources) {
+        var conf = { 
+            definition: i, 
+            resource: r, 
+            mex: mex,
+        };
+        
+        // special case if the output is a dataset, we expect sub-Mexs
+        if (this.mex.iterables && n in this.mex.iterables && r.type=='dataset') {
+            this.mex.findMexsForIterable(n, 'outputs/');
+            if (Object.keys(this.mex.iterables[n]).length>1) {
+                conf.title = 'Select a thumbnail to see individual results:';                  
+                conf.listeners = { 'selected': function(resource) { 
+                             var suburl = resource.uri;
+                             var submex = this.mex.iterables[n][suburl];
+                             this.showOutputs(submex, 'outputs-sub');
+                        }, scope: this };
+            }
+        }
+        
+        my_renderers[n] = Ext.create(BQ.renderers.resources[t], conf);
+        w.add(my_renderers[n]);
+    }
+}
+
+BQWebApp.prototype.setupUI_outputs_sub = function (key, mex) {
+    this.renderers[key] = this.renderers[key] || {};
+    var my_renderers = this.renderers[key];
+    
+    var outputs_definitions = this.ms.module.outputs;
+    var outputs = this.outputs;
+    var outputs_index = this.outputs_index; 
+    if (!outputs || !outputs_index) return; 
+    if (!outputs_definitions || outputs_definitions.length<=0) return;    
+
+
+    var w = Ext.create('Ext.window.Window', {
+      modal: true,
+      width: BQApp?BQApp.getCenterComponent().getWidth()*0.95:document.width*0.95,
+      height: BQApp?BQApp.getCenterComponent().getHeight()*0.95:document.height*0.95,
+      buttonAlign: 'center',
+      autoScroll: true,
+      defaults: {border: 0, },
+      border: 0, 
+      //loader: { url: url, renderer: 'html', autoLoad: true },
+      //buttons: [ { text: 'Ok', handler: function () { .close(); } }]
+    });  
+    
+    // create renderers for each outputs element
+    if (outputs_definitions && outputs_definitions.length>0)
+    for (var p=0; (i=outputs_definitions[p]); p++)
+        this.setupUI_output_sub(w, i, outputs_index, my_renderers, mex);
+    w.show();
+}
+
 
 BQWebApp.prototype.clearUI_outputs = function (key) {
     key = key || 'outputs'; 
@@ -475,7 +542,7 @@ BQWebApp.prototype.onstarted = function (mex) {
 BQWebApp.prototype.onprogress = function (mex) {
     if (!mex) return;
     var button_run = document.getElementById("webapp_run_button");    
-    if (mex.status == "FINISHED" || mex.status == "FAILED") return;
+    //if (mex.status == "FINISHED" || mex.status == "FAILED") return;
     
     if (!mex.hasIterables()) {
         button_run.childNodes[0].nodeValue = "Progress: " + mex.status;
@@ -514,6 +581,7 @@ BQWebApp.prototype.onprogress = function (mex) {
 //------------------------------------------------------------------------------
 
 BQWebApp.prototype.done = function (mex) {
+    this.onprogress(mex);
     var button_run = document.getElementById("webapp_run_button");
     button_run.childNodes[0].nodeValue = this.label_run;
     button_run.disabled = false;

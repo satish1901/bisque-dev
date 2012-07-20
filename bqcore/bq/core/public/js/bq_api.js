@@ -1792,7 +1792,7 @@ BQMex.prototype.afterInitialized = function () {
         // if the main output does not have a dataset resource, create one
         this.outputs = this.outputs || [];
         this.outputs_index = this.outputs_index || {};        
-        if (!(name in this.outputs_index)) {
+        if (!(name in this.outputs_index) && this.iterables && name in this.iterables && 'dataset' in this.iterables[name]) {
             var r = new BQTag(undefined, name, this.iterables[name]['dataset'], 'dataset');
             this.outputs.push(r);
             this.outputs_index[name] = r;   

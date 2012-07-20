@@ -301,7 +301,7 @@ Ext.define('Bisque.Resource',
     preClick : function()
     {
         this.msgBus.fireEvent('ResourceSingleClick', this.resource);
-
+        if (!this.el) return; // dima: not sure what this is but it may not exist
     	if (this.el.hasCls('resource-view-selected'))
     	{
     		this.toggleSelect(false);
