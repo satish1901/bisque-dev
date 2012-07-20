@@ -264,7 +264,9 @@ Ext.define('BQ.selectors.Resource', {
             width       :   '85%',
             selType     :   'SINGLE',
             listeners   :   {'Select': function(me, resource) { 
-                                   this.onselected(resource);
+                                   //this.onselected(resource);
+                                   var i = this; var r = resource;
+                                   setTimeout(function() { i.onselected(r); }, 100);                                   
                             }, scope: this },
             
         });        
@@ -280,7 +282,9 @@ Ext.define('BQ.selectors.Resource', {
             tagQuery : template.example_query, 
             wpublic  : 'true',            
             listeners: {  'Select': function(me, resource) { 
-                           this.onselected(resource);
+                           //this.onselected(resource);
+                           var i = this; var r = resource;
+                           setTimeout(function() { i.onselected(r); }, 100);                               
                     }, scope: this },
         });                
     },
@@ -290,6 +294,7 @@ Ext.define('BQ.selectors.Resource', {
             'height' : '85%',
             'width' :  '85%',
             listeners: {  'DatasetSelect': function(me, resource) { 
+                           //this.onselected(resource);
                            var i = this; var r = resource;
                            setTimeout(function() { i.onselected(r); }, 100);
                     }, scope: this },
@@ -302,7 +307,9 @@ Ext.define('BQ.selectors.Resource', {
             //maxFiles: 1,
             //dataset_configs: BQ.upload.DATASET_CONFIGS.PROHIBIT, 
             listeners: {  'uploaded': function(reslist) { 
-                           this.onselected(reslist[0]);
+                           //this.onselected(reslist[0]);
+                           var i = this; var r = reslist[0];
+                           setTimeout(function() { i.onselected(r); }, 100);                           
                     }, scope: this },              
         });        
     },
