@@ -133,7 +133,7 @@
         
         <tag name="seed-resource" type="resource">
             <template>
-                <tag name="label" value="Analyzed resource" />
+                <tag name="label" value="Image with detected seeds" />
             </template>            
             <gobject name="seeds">
                 <template>

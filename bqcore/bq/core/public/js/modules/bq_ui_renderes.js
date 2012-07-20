@@ -891,7 +891,7 @@ Ext.define('BQ.selectors.Mex', {
         var browser  = Ext.create('Bisque.ResourceBrowser.Dialog', {
             'height' : '85%',
             'width' :  '85%',
-            dataset: '/data_service/mex',
+            dataset: bq.url('/data_service/mex'),
             tagQuery: template.query,
             listeners: {  'Select': function(me, resource) { 
                            this.onselected(resource);
@@ -988,7 +988,7 @@ Ext.define('BQ.selectors.SubTree', {
         
         var grid = Ext.create('BQ.grid.Panel', {
             border: 1,
-            url: '/data_service/image',
+            url: bq.url('/data_service/image'),
         });
         this.items.push(grid);
         
@@ -1726,7 +1726,7 @@ Ext.define('BQ.renderers.RendererWithTools', {
             text: template[name+'/label']?template[name+'/label']:'as CSV',
             scope: this,
             handler: function() {
-                var url = '/stats/csv?url=' + this.res_uri_for_tools;
+                var url = bq.url('/stats/csv?url=' + this.res_uri_for_tools);
                 if (this.root) url = this.root + url;
                 url += createStatsArgs('xpath', template, name);
                 url += createStatsArgs('xmap', template, name);
@@ -1792,7 +1792,7 @@ Ext.define('BQ.renderers.RendererWithTools', {
             text: 'complete document to Google Docs',
             scope: this,
             handler: function() {
-                window.open('/export/to_gdocs?url='+this.res_uri_for_tools);
+                window.open(bq.url('/export/to_gdocs?url='+this.res_uri_for_tools));
             },
         });        
     }, 
@@ -1806,7 +1806,7 @@ Ext.define('BQ.renderers.RendererWithTools', {
             text: 'complete document as a GZip package',
             scope: this,
             handler: function() {
-                window.open('/export/initStream?compressionType=gzip&urls='+this.res_uri_for_tools + '?view=deep');
+                window.open(bq.url('/export/initStream?compressionType=gzip&urls='+this.res_uri_for_tools + '?view=deep'));
             },
         }); 
     }, 
@@ -1878,7 +1878,7 @@ Ext.define('BQ.renderers.Image', {
             text: 'Overlay annotations on a movie',
             scope: this,
             handler: function() {
-                window.open('/client_service/movieplayer?resource='+resource_uri+'&gobjects='+this.gobjects[0].uri);
+                window.open(bq.url('/client_service/movieplayer?resource='+resource_uri+'&gobjects='+this.gobjects[0].uri));
             },
         }); 
     }, 
@@ -1889,7 +1889,7 @@ Ext.define('BQ.renderers.Image', {
             text: template[name+'/label']?template[name+'/label']:'as CSV',
             scope: this,
             handler: function() {
-                var url = '/stats/csv?url=' + this.res_uri_for_tools;
+                var url = bq.url('/stats/csv?url=' + this.res_uri_for_tools);
                 if (this.root) url = this.root + url;
                 url += createStatsArgs('xpath', template, name);
                 url += createStatsArgs('xmap', template, name);
