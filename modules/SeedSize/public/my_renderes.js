@@ -87,7 +87,7 @@ Ext.define('BQ.renderers.seedsize.Mex', {
 
         var staturls = [];
         for (var i in this.images) {
-            var u = '/stats/csv?url='+this.images[i].mex;
+            var u = bq.url('/stats/csv?url='+this.images[i].mex);
             u += '&xmap=tag-value-number';
             u += '&xreduce=vector';
             u += "&xpath=//gobject[@type='seed']/tag[@name='area']";
@@ -103,11 +103,11 @@ Ext.define('BQ.renderers.seedsize.Mex', {
         //r.setValues(staturls);
         //var payload = r.toXML();
         
-        //dima: ok, lot's of hackery here, what we'll do is create a hidden iframe with html form inside activated automatically
+        //dima: ok, lot's of hackery here, what we'll do is create a hidden iframe withs html form inside activated automatically
         //      that will do a post to export service and later activate browser save as dialog
         
         //var url = '/export/initStream?compressionType=gzip';
-        var url = '/export/initStream';
+        var url = bq.url('/export/initStream');
         var html = '<html><body>'+
                    '<form id="csvpost" name="csvpost" action="'+url+'" method="post">'+
                    '<input type="hidden" name="compressionType" value="gzip" />'+
