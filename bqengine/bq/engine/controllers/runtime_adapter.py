@@ -62,9 +62,10 @@ from bq.exceptions import EngineError
 from bq.util.paths import bisque_path
 
 from base_adapter import BaseAdapter
-from bq.engine.controllers.module_run import ModuleRunner
+
 from bq.core import identity
 
+from .module_run import ModuleRunner
 
 MODULE_BASE = config.get('bisque.engine_service.local_modules', bisque_path('modules'))
 log = logging.getLogger('bq.engine_service.adapters.runtime')
@@ -104,7 +105,7 @@ class RuntimeAdapter(BaseAdapter):
         finally:
             os.chdir(current_dir)
 
-    def execute(self, module, mex):
+    def execute(self, module, mex, pool):
         log.debug ("module : " + etree.tostring(module))
         log.debug ("mex : " + etree.tostring(mex))
         module_name = module.get('name')
@@ -141,7 +142,8 @@ class RuntimeAdapter(BaseAdapter):
             m.main(arguments=command_line, 
                    mex_tree=mex, 
                    module_tree=module, 
-                   bisque_token = identity.mex_authorization_token())
+                   bisque_token = identity.mex_authorization_token(),
+                   pool = pool)
             os.chdir(current_dir)
             #process = Popen(command_line, cwd=module_dir, stdout=PIPE, stderr=PIPE)
             #stdout,stderr = process.communicate()

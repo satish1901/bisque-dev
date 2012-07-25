@@ -257,7 +257,7 @@ def startup():
     root = config.get ('bisque.root')
     if not root:
         raise ConfigurationError ('bisque.root not set')
-    proxy = config.get('bisque.proxyroot', None)
+    proxy = config.get('bisque.site', None)
     enabled = config.get('bisque.services_enabled', None)
     disabled = config.get('bisque.services_disabled', None)
     enabled  = enabled and [ x.strip() for x in enabled.split(',') ] or []
@@ -267,40 +267,40 @@ def startup():
                % (root, proxy, enabled, disabled))
 
     RootController.mount_local_services(root, enabled, disabled)
-    if proxy:
-        log.info ("attempt to contact ROOT server %s" % proxy)
-        # Create service proxy from proxyroot:
-        root_services = service_proxy (ServiceRegistryController, "%s/services/"%proxy)
-        # Initialize stubs for remote services
-        content = None
-        while True:
-          try:
-            content = root_services.index ()
-            response = etree.XML (content)
-            if len(response):
-              break
-          except RequestError, e:
-            log.debug ("root_service request failed")
+    # if proxy:
+    #     log.info ("attempt to contact ROOT server %s" % proxy)
+    #     # Create service proxy from proxyroot:
+    #     root_services = service_proxy (ServiceRegistryController, "%s/services/"%proxy)
+    #     # Initialize stubs for remote services
+    #     content = None
+    #     while True:
+    #       try:
+    #         content = root_services.index ()
+    #         response = etree.XML (content)
+    #         if len(response):
+    #           break
+    #       except RequestError, e:
+    #         log.debug ("root_service request failed")
             
-          log.debug ("Waiting for Root server %s" % content )
-          time.sleep(5)
+    #       log.debug ("Waiting for Root server %s" % content )
+    #       time.sleep(5)
           
-        log.debug ("Root response %s " % content )
-        for service_tag in response:
-            service_type = service_tag.get('type')
-            service_url  = service_tag.get('value')
-            service_cls = service_registry.find_class(service_type)
-            if service_cls is None:
-              log.warn('Could not find service %s' % service_type)
-              continue
-            service_registry.register_instance(service_proxy(service_cls,
-                                                             service_url))
-        # Register this instance
-        for service_type, entry in service_registry.get_services().items():
-            for instance in entry.instances:
-                if hasattr(instance, 'proxy_url' ):
-                    continue
-                root_services.register (service_type, instance.uri)
+    #     log.debug ("Root response %s " % content )
+    #     for service_tag in response:
+    #         service_type = service_tag.get('type')
+    #         service_url  = service_tag.get('value')
+    #         service_cls = service_registry.find_class(service_type)
+    #         if service_cls is None:
+    #           log.warn('Could not find service %s' % service_type)
+    #           continue
+    #         service_registry.register_instance(service_proxy(service_cls,
+    #                                                          service_url))
+    #     # Register this instance
+    #     for service_type, entry in service_registry.get_services().items():
+    #         for instance in entry.instances:
+    #             if hasattr(instance, 'proxy_url' ):
+    #                 continue
+    #             root_services.register (service_type, instance.uri)
 
 
     #  Startup any local services that need it.
