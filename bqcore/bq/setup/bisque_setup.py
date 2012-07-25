@@ -4,6 +4,7 @@ import traceback
 import optparse
 #import package_resources
 import os,sys,stat,platform, datetime
+import socket
 import shutil
 import fnmatch
 import subprocess 
@@ -258,17 +259,25 @@ BQBIN = None
 SITE_CFG     = config_path('site.cfg')
 SITE_DEFAULT = config_path('site.cfg.default')
 RUNTIME_CFG  = config_path('runtime-bisque.cfg')
+HOSTNAME = socket.getfqdn()
 
 
 #################################################
 ## Initial values
-site = {
-    'bisque.root' : 'http://localhost:8080',
+SITE_VARS = {
+    'bisque.root' : 'http://%s:8080' % HOSTNAME,
     'bisque.organization': 'Your Organization',
     'bisque.title': 'Image Repository',
     'bisque.admin_email' : 'YourEmail@YourOrganization',
     'bisque.paths.root' : os.getcwd(),
     }
+
+ENGINE_VARS  ={
+    'engine.root': 'http://%s:27000'  % HOSTNAME,
+    'bisque.root' : 'http://%s:8080' % HOSTNAME,
+#    'bisque.admin_email' : 'YourEmail@YourOrganization',
+    }
+
 # Add any variables to read from the site.cfg each time
 # you run bisque-setup
 initial_vars = {
@@ -314,10 +323,10 @@ the proxy address and see AdvancedInstalls"""),
 
 
 ENGINE_QUESTIONS=[
-    ('e1.url', "Enter the URL of this bisque module engine i.e. http://yourhostname:12000/",
+    ('bisque.root' , 'Enter the root URL of the BISQUE server ',
+     "A URL of Bisque site where this engine will register modules"),
+    ('engine.root', "Enter the URL of this bisque module engine",
      "A module engine offers services over an open URL like a web-server. Please make sure any firewall software allows access to the selected port"),
-    ('e1.proxyroot', 'Enter the root URL of the Bisque Server ',
-     "A complete URL of the Bisque Server that will  access modules served by this engine .i.e. http://someserver:8080/"),
     ]
 
 
@@ -358,105 +367,8 @@ CONDOR_QUESTIONS =[
     ('condor.dag_config_template', "A DAGMan Config", None)
     ]
 
-
-
-###
-### Unfinished 
-# SERVER_QUESTIONS = [
-#     ('bisque.root.port_range',
-#      'Enter port range for root servers',
-#      """
-#      Multple bisque servers can help performance and machine
-#      utilization.  Each bisque server needs it's own TCP/IP port.
-#      Please enter a free range i.e. 5000,5004
-#      """),
-#     ('bisquik.engine_service.port_range',
-#      'Port range for engine servers'
-#      """
-#      Mutliple engine servers can be run on a single machine but each needs
-#      a single TCP port to operate on. Please give a suitable free range i.e.
-#      10000,10004
-#      """)
-#     ]
-
-
 #####################################################
 # Installer routines
-
-
-def install_cfg (site_cfg, section, default_cfg):
-    if not os.path.exists (site_cfg):
-        shutil.copyfile(default_cfg, site_cfg)
-    params = read_site_cfg(cfg=site_cfg, section=section)
-    return params
-
-def install_site(params):
-    print "Top level site variables are:"
-    for k in sorted(params.keys()):
-        if k in site:
-            print "  %s=%s" % (k,params[k])
-
-    if getanswer("Change a site variable", 'Y')!='Y':
-        return params
-        
-    params = modify_site_cfg(SITE_QUESTIONS, params)
-    return params
-
-
-def install_engine(params):
-    print "Top level site variables are:"
-    for k in sorted(params.keys()):
-        if k in site:
-            print "  %s=%s" % (k,params[k])
-
-    if getanswer("Change a site variable", 'Y')!='Y':
-        return params
-        
-    params = modify_site_cfg(ENGINE_QUESTIONS, params, section = "servers", append=False)
-    return params
-
-
-
-# install binary hooks into local .hgrc file
-def install_mercurial_hooks():
-  
-    if getanswer ("May I reconfigure your mercurial?", "Y",
-                  "This will change your mercurial setup adding hooks for binary file handling") != 'Y':
-        return  
-
-    external = to_sys_path('external/*')+'.{zip,jar,gz,bz2,gem,dll,a,egg}'
-    elements = { 'extensions' :  [ ('external', None)],
-      'hooks' :[ ('pretxncommit.crlf', 'pretxncommit.crlf = python:hgext.win32text.forbidcrlf')],
-      'encode':[ (external, None)],
-#      'decode':[external, '#' + external + '= download: http://biodev.ece.ucsb.edu/binaries/'],
-      'decode':[ (external, None)],
-    }
-    
-
-#    env = { 'path' : package_resources.resource_filename('Bisquik', 'tools') }
-    env = { 'path' : os.getcwd() }
-
-
-    log.info( "Adding mercurial hooks" )
-    c = ConfigFile ()
-    #hgrc = os.path.expanduser(to_sys_path("~/.hgrc"))
-    hgrc = bisque_path(".hg/hgrc")
-    c.read (open(hgrc))
-    for section, lines in elements.items():
-        for key,val in lines:
-            c.edit_config (section, key, val, env)
-    if getanswer ('May I reconfigure your ' + hgrc, 'Y',
-                  "This will change your mercurial setup adding hooks for binary file handling") == 'Y':
-        c.write (open(hgrc, 'w'))
-    
-    
-
-
-
-##################################################
-#
-
-
 def update_variables (qs, store):
     """Ask questions to update any global  variables"""
     values = {}
@@ -477,10 +389,16 @@ def update_variables (qs, store):
         
     return values
 
-
 #######################################################
-#
+# config editing
 BQ_SECTION="app:main"
+
+def install_cfg (site_cfg, section, default_cfg):
+    if not os.path.exists (site_cfg):
+        shutil.copyfile(default_cfg, site_cfg)
+    params = read_site_cfg(cfg=site_cfg, section=section)
+    return params
+
 def read_site_cfg(cfg , section):
     bisque_vars = {}
     
@@ -501,8 +419,9 @@ def update_site_cfg (bisque_vars, section = BQ_SECTION, append=True, cfg=SITE_CF
 
     for k,v in bisque_vars.items():
         c.edit_config (section, k, '%s = %s' % (k,quoted(v)), {}, append)
-        #print "edit %s %s" % (k,v)
+        print "edit %s %s" % (k,v)
     c.write (open (cfg, 'w'))
+    return bisque_vars
 
 
 def modify_site_cfg(qs, bisque_vars, section = BQ_SECTION, append=True, cfg=SITE_CFG):
@@ -519,15 +438,15 @@ def modify_site_cfg(qs, bisque_vars, section = BQ_SECTION, append=True, cfg=SITE
     c.read(open(cfg))
     for k,v in bisque_vars.items():
         c.edit_config (section, k, '%s = %s' % (k,quoted(v)), {}, append)
-        #print "edit %s %s" % (k,v)
+        print "edit %s %s" % (k,v)
     c.write (open (cfg, 'w'))
-
     return bisque_vars
 
 
 
 ############################################
-#
+# Database
+
 db_create_error = """
 *** Database creation failed ***
 Please check your db url to ensure that it is in the correct format.
@@ -784,7 +703,7 @@ Please resolve the problem(s) and re-run 'bisque-setup --database'.""")
 
 
 #######################################################
-#
+# Matlab
 def install_matlab(params, cfg = RUNTIME_CFG):
     #print params
     matlab_home = which('matlab') 
@@ -847,7 +766,7 @@ def install_matlabwrap(params):
 
 
 #######################################################
-#
+# Modules
 
 def install_modules(params):
     # Check each module for an install script and run it.
@@ -883,9 +802,6 @@ def install_modules(params):
 #######################################################
 #
 
-#######################################################
-#
-
 def install_scripts ():
     scripts = [ 'bq-start-servers', 'bq-kill-servers' ]
     mapping = { 'BQENV' : BQENV,
@@ -902,7 +818,6 @@ def install_scripts ():
 #######################################################
 #
 def install_bioformats(params):
-    
     if getanswer ("Install bioformats", "Y",
                   "Bioformats can be used as a backup to read many image file types") == "Y":
 
@@ -917,7 +832,6 @@ def install_bioformats(params):
         for fname in  biozip.namelist():
             if fname[-1] == '/':  # skip dirs
                 continue
-            
             dest = os.path.join(BQBIN, os.path.basename(fname))
             #destdir = os.path.dirname(dest)
             #if not os.path.isdir(destdir):
@@ -931,21 +845,21 @@ def install_bioformats(params):
                 
         # python >2.6
         #biozip.extractall(os.path.join(BQENV, "bin"))
-
         biozip.close()
                            
 
 
 
 #######################################################
-#
+# initial configuration files
 
 def install_server_defaults(params):
+    "Install initial configuration for a bisque server"
     print "Server config"
+    new_install = False
+
     if not os.path.exists(config_path('server.ini')):
         shutil.copyfile(config_path('server.ini.default'), config_path('server.ini'))
-        server_params = { 'bisque.root' : params['bisque.root'], 'h1.url' : params['bisque.root']}
-        params = modify_site_cfg([], server_params, 'servers', append=False)
 
     if not os.path.exists(config_path('shell.ini')):
         shutil.copyfile(config_path('shell.ini.default'), config_path('shell.ini'))
@@ -956,19 +870,68 @@ def install_server_defaults(params):
     if not os.path.exists(config_path('registration.cfg')):
         shutil.copyfile(config_path('registration.cfg.default'), config_path('registration.cfg'))
 
+    if not os.path.exists(SITE_CFG):
+        params = install_cfg(SITE_CFG, section=BQ_SECTION, default_cfg=config_path('site.cfg.default') )
+        params.update(SITE_VARS)
+        new_install = True
+
+    print "Top level site variables are:"
+    for k in sorted(params.keys()):
+        if k in SITE_VARS:
+            print "  %s=%s" % (k,params[k])
+
+    if getanswer("Change a site variable", 'Y')!='Y':
+        return params
+        
+    params = modify_site_cfg(SITE_QUESTIONS, params)
+    return params
+
+    if new_install:
+        server_params = { 'bisque.root' : params['bisque.root'], 'h1.url' : params['bisque.root']}
+        params = update_site_cfg(server_params, 'servers', append=False)
+    else:
+        print "Warning: Please review the [server] section of site.cfg after modifying site variables"
+    return params
+
 
 def install_engine_defaults(params):
+    "Install initial configuration for a bisque engine"
     print "Engine config"
+    new_install = False
+
     if not os.path.exists(config_path('server.ini')):
         shutil.copyfile(config_path('server.ini.default'), config_path('server.ini'))
-        server_params = { 'bisque.root' : params['bisque.root'], 'h1.url' : params['bisque.root']}
-        params = modify_site_cfg([], server_params, 'servers', append=False)
 
     if not os.path.exists(config_path('shell.ini')):
         shutil.copyfile(config_path('shell.ini.default'), config_path('shell.ini'))
 
     if not os.path.exists(config_path('who.ini')):
-        shutil.copy(config_path('who.ini.default'), config_path('who.ini'))
+        shutil.copy(config_path('who.engine.ini'), config_path('who.ini'))
+
+
+    if not os.path.exists(SITE_CFG):
+        params = install_cfg(SITE_CFG, section=BQ_SECTION, default_cfg=config_path('engine.cfg.default') )
+        params.update(ENGINE_VARS)
+        new_install = True
+
+    print "Top level site variables are:"
+    for k in sorted(params.keys()):
+        if k in ENGINE_VARS:
+            print "  %s=%s" % (k,params[k])
+
+    if getanswer("Change a site variable", 'Y')!='Y':
+        return params
+        
+    params = modify_site_cfg(ENGINE_QUESTIONS, params,  append=False)
+
+    if getanswer("Update servers", 'Y' if new_install else 'N', 'Modify [server] section of site.cfg') == 'Y':
+        server_params = { 'e1.proxyroot' : params['bisque.root'], 'e1.url' : params['engine.root'], }
+        server_params = update_site_cfg(server_params, 'servers', append=False )
+        params.update(server_params)
+    else:
+        print "Warning: Please review the [server] section of site.cfg after modifying site variables"
+    return params
+
 
 
 def install_proxy(params):
@@ -1306,7 +1269,7 @@ engine_msg="""
 You can start a bisque module engine with
    $$ bq-admin server start
 which will register any module with
-    ${bisque.root}
+    ${engine.root}
 """
 
 install_options= [
@@ -1328,7 +1291,7 @@ engine_options= [
            'matlab',
            'modules',
            'runtime',
-           'bioformats',
+#           'bioformats',
            'engine',
            ]
 
@@ -1373,16 +1336,10 @@ def bisque_installer(options, args):
 
     print "Beginning install of %s" % (system_type)
         
-    #call ([PYTHON, "setup.py", "develop"])
-    cfg_map = { 'bisque': config_path('site.cfg.default'), 
-                'engine' : config_path('engine.cfg.default') } 
-    
-    #install_scripts()
     params = {}
-    if not os.path.exists (SITE_CFG): 
-        params = install_cfg(SITE_CFG, section=BQ_SECTION, default_cfg=cfg_map[system_type] )
-    else:
+    if  os.path.exists (SITE_CFG): 
         params = read_site_cfg(cfg = SITE_CFG, section=BQ_SECTION)
+        print params
 
     if not os.path.exists(RUNTIME_CFG):
         runtime_params = install_cfg(RUNTIME_CFG, section=None, default_cfg=config_path('runtime-bisque.default'))
@@ -1390,13 +1347,10 @@ def bisque_installer(options, args):
         runtime_params = read_site_cfg(cfg=RUNTIME_CFG, section = None)
     
     params['bisque.installed'] = "inprogress"
-    if 'site' in installer:
-        params = install_site(params)
     if 'server'  in installer:
-        install_server_defaults(params)
+        params = install_server_defaults(params)
     if 'engine'  in installer:
-        params = install_engine(params)
-        install_engine_defaults(params)
+        params = install_engine_defaults(params)
     if 'binaries'  in installer:
         fetch_external_binaries()
         install_dependencies()

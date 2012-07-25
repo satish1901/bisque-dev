@@ -72,6 +72,11 @@ class BisqueAppConfig(AppConfig):
     def setup_sqlalchemy(self):
         from tg import config
         sqlalchemy_url = config.get ('sqlalchemy.url')
+        if not sqlalchemy_url:
+            config['use_transaction_manager'] = False
+            config['has_database'] = False
+            return
+        config['has_database'] = True
         if not sqlalchemy_url.startswith('sqlite://'):
             return super(BisqueAppConfig, self).setup_sqlalchemy()
         from sqlalchemy.pool import NullPool
@@ -130,6 +135,7 @@ base_config.variable_provider = helpers.add_global_tmpl_vars
 
 #Configure the base SQLALchemy Setup
 base_config.use_sqlalchemy = True
+
 base_config.model = bq.core.model
 base_config.DBSession = bq.core.model.DBSession
 

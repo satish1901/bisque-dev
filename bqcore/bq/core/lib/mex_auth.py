@@ -2,6 +2,7 @@ import logging
 from paste.httpheaders import AUTHORIZATION
 from repoze.who.interfaces import IIdentifier
 from zope.interface import implements
+from tg import config
 
 from bq.core.model import DBSession
 from bq.data_service.model import ModuleExecution
@@ -39,6 +40,10 @@ class MexAuthenticatePlugin(object):
             mexid = identity['bisque.mex_id']
         except KeyError:
             return None
+
+        if not config.get('has_database'):
+            environ['repoze.what.credentials'] = { 'repoze.who.userid': mexid }
+            return mexid
 
         log.debug("MexAuthenticate:auth %s" % (identity))
         mex = DBSession.query(ModuleExecution).get (mexid)

@@ -4,8 +4,10 @@ from subprocess import Popen, call
 import pkg_resources
 import getopt
 from urlparse import urlparse
-
 from ConfigParser import SafeConfigParser
+
+from bq.util.commands import asbool, find_site_cfg
+
 #from bq.commands.server_ops import root
 
 PID_TEMPL = "bisque_%s.pid" 
@@ -16,8 +18,6 @@ RUNNER_CMD = ['mexrunner']
 SITE_CFG = 'site.cfg'
 UWSGI_ENGINE_CFG = 'uwsgi_engine.cfg.default'
 UWSGI_CLIENT_CFG = 'uwsgi_client.cfg.default'
-
-config_dirs = ['.', './config', '/etc/bisque']
 
 if os.name == 'nt':
     import win32api, win32con
@@ -45,12 +45,6 @@ else:
 #####################################################################
 # utils
 
-def find_site_cfg(cfg_file):
-    for dp in config_dirs:
-        site_cfg = os.path.join(dp, cfg_file)
-        if os.path.exists(site_cfg):
-            return site_cfg
-    return None
 
 def readhostconfig (site_cfg):
     #vars = { 'here' : os.getcwd() }
@@ -220,7 +214,7 @@ def uwsgi_command(command, cfgopt, processes, options, default_cfg_file = None):
     return processes
             
 
-def operation(command, options, mexrun = True, cfg_file=SITE_CFG, *args):
+def operation(command, options, cfg_file=SITE_CFG, *args):
     """Run a multi-server command to start several bisque jobs
     """
     def verbose(msg):
@@ -242,7 +236,7 @@ def operation(command, options, mexrun = True, cfg_file=SITE_CFG, *args):
         cfgopt['site_dir'] = site_dir
         cfgopt['site_cfg'] = site_cfg
         cfgopt['virtualenv'] = os.getenv('VIRTUAL_ENV')          
-        mexrun = mexrun or config.get('mex_dispatcher', False)
+        mexrun = asbool(config.get('mex_dispatcher', True))
 
         backend = config.get('backend', None)
         verbose("using backend: " + str(backend))

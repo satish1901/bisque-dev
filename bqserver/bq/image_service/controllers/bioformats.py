@@ -56,7 +56,9 @@ def run_command(command):
        
         return o
     except OSError, e:
-        log.exception ('unknown exception')
+        log.warn ('%s command not found' % command[0])
+    except:
+        log.exception ("during execution %s" % command )
     return None
 
 ################################################################################

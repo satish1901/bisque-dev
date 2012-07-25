@@ -73,6 +73,7 @@ def setup(options):
     top = os.getcwd()
     subdirs = server_subdirs
     if hasattr(options, 'engine'):
+        print "INSTALLING ENGINE"
         subdirs = engine_subdirs
 
     for d in subdirs:
