@@ -273,7 +273,7 @@ SITE_VARS = {
     }
 
 ENGINE_VARS  ={
-    'engine.root': 'http://%s:27000'  % HOSTNAME,
+    'bisque.engine': 'http://%s:27000'  % HOSTNAME,
     'bisque.root' : 'http://%s:8080' % HOSTNAME,
 #    'bisque.admin_email' : 'YourEmail@YourOrganization',
     }
@@ -325,7 +325,7 @@ the proxy address and see AdvancedInstalls"""),
 ENGINE_QUESTIONS=[
     ('bisque.root' , 'Enter the root URL of the BISQUE server ',
      "A URL of Bisque site where this engine will register modules"),
-    ('engine.root', "Enter the URL of this bisque module engine",
+    ('bisque.engine', "Enter the URL of this bisque module engine",
      "A module engine offers services over an open URL like a web-server. Please make sure any firewall software allows access to the selected port"),
     ]
 
@@ -908,7 +908,6 @@ def install_engine_defaults(params):
     if not os.path.exists(config_path('who.ini')):
         shutil.copy(config_path('who.engine.ini'), config_path('who.ini'))
 
-
     if not os.path.exists(SITE_CFG):
         params = install_cfg(SITE_CFG, section=BQ_SECTION, default_cfg=config_path('engine.cfg.default') )
         params.update(ENGINE_VARS)
@@ -925,7 +924,7 @@ def install_engine_defaults(params):
     params = modify_site_cfg(ENGINE_QUESTIONS, params,  append=False)
 
     if getanswer("Update servers", 'Y' if new_install else 'N', 'Modify [server] section of site.cfg') == 'Y':
-        server_params = { 'e1.proxyroot' : params['bisque.root'], 'e1.url' : params['engine.root'], }
+        server_params = { 'e1.proxyroot' : params['bisque.root'], 'e1.url' : params['bisque.engine'], }
         server_params = update_site_cfg(server_params, 'servers', append=False )
         params.update(server_params)
     else:
@@ -1269,7 +1268,7 @@ engine_msg="""
 You can start a bisque module engine with
    $$ bq-admin server start
 which will register any module with
-    ${engine.root}
+    ${bisque.engine}
 """
 
 install_options= [

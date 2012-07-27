@@ -58,7 +58,7 @@ full_stack = true
 
 ##########################################################
 # Bisque Configuration 
-# 
+##########################################################
 # Visible titles
 bisque.organization = ORG
 bisque.title = BioImage Repository
@@ -74,7 +74,7 @@ bisque.root = http://localhost:8080
 bisque.server = http://localhost:8080
 bisque.services_disabled = engine_service
 #bisque.services_enabled = client_service
-bisque.proxy =
+bisque.site = http://localhost:8080
 bisque.installed = pending
 bisque.paths.root  = 
 #bisque.paths.data  = installationdir/data

@@ -183,8 +183,9 @@ class MexRunner(object):
             # Depending on return code, we will update the engine/service
             # availability i.e. after a bunch of tries disable the service
             # and notify the admin
-            log.info ("DISPATCH to %s FAILED" % response.request.service.resource_value)
-        if response.status == 200:
+            log.warn ("DISPATCH to %s FAILED" % response.request.service.resource_value)
+            mex = self.end_response(response)
+        else:  # response.status == 200:
             # We received a good status so we update the last-contact
             #contact = response.request.service.findtag('last-contact')
             #contact.value = str(datetime.now())
@@ -194,9 +195,6 @@ class MexRunner(object):
             else:
                 log.debug("ASYNCH: DISPATCH")
                 mex = response.request.mex
-
-        else: #  resp['status'] != "200":
-            mex = self.end_response(response)
         log.debug ("END DISPATCH")
         return mex
 
