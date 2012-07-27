@@ -263,9 +263,7 @@ def startup():
     disabled = config.get('bisque.services_disabled', None)
     enabled  = enabled and [ x.strip() for x in enabled.split(',') ] or []
     disabled = disabled and [ x.strip() for x in disabled.split(',') ] or []
-
-    log.info ('using root=%s proxy=%s with services=%s - %s'
-               % (root, proxy, enabled, disabled))
+    log.info ('using root=%s with services=%s - %s' % (root,  enabled, disabled))
 
     RootController.mount_local_services(root, enabled, disabled)
     # if proxy:
