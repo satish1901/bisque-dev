@@ -540,7 +540,7 @@ def db2node(dbo, parent, view, baseuri, nodes, doc_id):
 #    elif "deep" in view:
 #         tl = [ db2tree_int(x, node, view, baseuri) for x in dbo.children ] 
 #         #gl = [ db2tree_int(x, node, view, baseuri) for x in dbo.gobjects ]
-    elif view is None or len(view)==0 or 'short' in view:
+    elif not view or 'short' in view:
         pass
     else:
         # Allow a list of tags to be specified in the view parameter which 
