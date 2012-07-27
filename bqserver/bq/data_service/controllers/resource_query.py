@@ -79,6 +79,7 @@ from bq.util.paths import data_path
 
 from bq  import image_service
 from bq.client_service.controllers import notify_service
+from resource import Resource
 
 log = logging.getLogger('bq.data_service.query')
 
@@ -740,9 +741,10 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
     if resource.owner_id != user_id and user_id != get_admin_id():
         q = q.filter (TaggableAcl.user_id == user_id)
         
-    if action==RESOURCE_READ:
-        q = list (q.all())
-        q.append(fobject('auth', user = get_admin(), action = "edit"))
+    if action == RESOURCE_READ:
+        if user_id == get_admin_id():
+            q = list (q.all())
+            q.append(fobject('auth', user = get_admin(), action = "edit", resource_value=''))
         return q
                           
     # setup for an edit of auth records
@@ -754,7 +756,7 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
         # Remove the previous ACL elements and replace with the provided xml
 
         log.debug ("RESOURCE EDIT %d %s" % (resource.id, resource.acl))
-        new_shares = []
+        current_shares = []
         previous_shares = []
         shares = []
         for acl in resource.acl:
@@ -832,13 +834,14 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
                         email = email)
                     
                     log.debug("AUTH: new user %s" % user)
-                    new_shares.append (user)
                     
                 elif user not in previous_shares:
                     
                     invite = string.Template(textwrap.dedent(share_msg)).substitute(
                                         common_email,
                                         email = email)
+                else:
+                    previous_shares.remove(user)
 
 
                 ####################
@@ -855,8 +858,10 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
                     resource.acl.append(acl)
                     #DBSession.add(acl)
 
+                current_shares.append (user)
                 shares.append(acl)
                 acl.action = action
+                Resource.hier_cache.invalidate ('/', user = user.id)
                 #image_service.set_file_acl(resource.src,
                 #                           user.user_name,
                 #                           action)
@@ -872,6 +877,8 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
                     log.exception("Mail not sent")
 
         resource.acl = shares
+        for user in set(previous_shares) - set(current_shares):
+            Resource.hier_cache.invalidate ('/', user = user.id)
     
     return []
 
@@ -891,6 +898,7 @@ def resource_delete(resource, user_id=None):
         q = q.filter (TaggableAcl.user_id == user_id)
         q.delete()
         log.debug('deleting acls reource_owner(%s) delete(%s) %s' % (resource.owner_id, user_id, q))
+        Resource.hier_cache.invalidate ('/', user = user_id)
         return
     # owner so first delete all referneces.
     # ACL, values etc.. 
