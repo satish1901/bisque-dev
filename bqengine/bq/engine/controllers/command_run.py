@@ -235,7 +235,7 @@ class BaseRunner(object):
         self.mex_tree = kw.pop('mex_tree', None)
         self.module_tree = kw.pop('module_tree', None)
         self.bisque_token = kw.pop('bisque_token', None)
-        self.pool = kw.pop('pool')
+        self.pool = kw.pop('pool', None)
         # list of dict representing each mex : variables and arguments
         self.mexes = []
         self.rundir = os.getcwd()

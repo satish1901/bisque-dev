@@ -181,7 +181,8 @@ class RootController(BaseController):
         URL are formed with
         <service_type>/<path>?arguments
         """
-        log.info ('[%s] %s %s' % (request.identity.get('repoze.who.userid'), request.method, request.url))
+        #log.info ('[%s] %s %s %s' % (request.identity.get('repoze.who.userid'), request.method, request.url, request.headers))
+        log.info ('[%s] %s %s' % (request.identity.get('repoze.who.userid'), request.method, request.url ))
         if service_type in oldnames:
             log.warn ('found oldname( %s ) in request' % (service_type))
             service_type = oldnames[service_type]
@@ -257,7 +258,7 @@ def startup():
     root = config.get ('bisque.root')
     if not root:
         raise ConfigurationError ('bisque.root not set')
-    proxy = config.get('bisque.site', None)
+    #proxy = config.get('bisque.site', None)
     enabled = config.get('bisque.services_enabled', None)
     disabled = config.get('bisque.services_disabled', None)
     enabled  = enabled and [ x.strip() for x in enabled.split(',') ] or []

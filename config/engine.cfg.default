@@ -30,22 +30,23 @@ full_stack = true
 
 ##########################################################
 # Bisque Configuration
-#
-
-
+##########################################################
 # server defaults
 bisque.root = http://localhost:9090
 bisque.server = http://localhost:9090
 bisque.services_enabled = engine_service
-bisque.site =
 bisque.installed = finished
 bisque.paths.root = /home/kgk/work/bisquik/bq051
 #bisque.paths.data  = /home/kgk/bisquik/bisque05/data
 #bisque.paths.config  = /home/kgk/bisquik/bisque05/config
 
 # Engine Service
-engine.root = http://localhost:27000
+bisque.engine = http://localhost:27000
 #bisque.engine_service.local_modules = modules
+
+
+###############################################################
+# Package dependencies config
 
 # Beaker Sessions Config
 # If you'd like to fine-tune the individual locations of the cache data dirs
@@ -56,6 +57,7 @@ engine.root = http://localhost:27000
 cache_dir = %(here)s/../data/
 beaker.session.key = bq
 beaker.session.secret = somesecret
+
 
 # Paster  Config
 smtp_server = localhost
