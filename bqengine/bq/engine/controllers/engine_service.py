@@ -74,7 +74,6 @@ from tg import config, controllers, expose, redirect, override_template
 from pylons.i18n import ugettext as _, lazy_ugettext as l_
 from repoze.what import predicates 
 
-from bq import  module_service
 from bq.core.service import ServiceController, BaseController
 from bq.exceptions import EngineError, RequestError
 
@@ -243,14 +242,7 @@ class EngineServer(ServiceController):
                          }
         modules, unavailable = initialize_available_modules(self.engines)
         log.debug ('found modules= %s' % str(modules))
-        #self.engine = etree.Element ('engine', uri = engine_root,
-        #                             status = self.status, jobs = str(self.jobs))
-        #for m in modules:
-        #    self.engine.append (m)
-        #    self.module_by_name [m.get("name")] = m
         self.unavailable = unavailable
-        #self.hb.request(module_service.register_engine, body = etree.tostring(self.engine), respfunc = self.addmodules)
-
         for module in modules:
             setattr(EngineServer, module.get('name'), EngineModuleResource(module, self.mpool))
             self.module_by_name[module.get('name')]  = module

@@ -5,7 +5,6 @@ from zope.interface import implements
 from tg import config
 
 from bq.core.model import DBSession
-from bq.data_service.model import ModuleExecution
 
 log = logging.getLogger("bq.mex_auth")
 
@@ -45,6 +44,7 @@ class MexAuthenticatePlugin(object):
             environ['repoze.what.credentials'] = { 'repoze.who.userid': mexid }
             return mexid
 
+        from bq.data_service.model import ModuleExecution
         log.debug("MexAuthenticate:auth %s" % (identity))
         mex = DBSession.query(ModuleExecution).get (mexid)
 

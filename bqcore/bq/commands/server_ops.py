@@ -278,6 +278,9 @@ def operation(command, options, cfg_file=SITE_CFG, *args):
                         def_cfg = UWSGI_ENGINE_CFG
                     if cfgopt['services_disabled'] == 'engine_service':
                         def_cfg = UWSGI_CLIENT_CFG
+                    if not find_site_cfg(def_cfg):
+                        print ("Cannot find config file %s" % def_cfg)
+                        return 
                     processes = uwsgi_command('start', cfgopt, processes, options, def_cfg)
                 else:
                     prepare_log (cfgopt['logfile'])
