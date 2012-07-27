@@ -5,6 +5,7 @@ import shutil
 import atexit
 import logging
 import irods
+import subprocess
 
 from bq.util.mkdir import _mkdir
 from bq.util.paths import data_path
@@ -30,7 +31,7 @@ def irods_cleanup():
         print "disconnecting %s" % key
         conn.disconnect()
 
-atexit.register(irods_cleanup)
+#atexit.register(irods_cleanup)
 
 
 
@@ -167,7 +168,7 @@ def copyfile(f1, *dest):
             fw.write(buf)
         if len(buf) < BLOCK_SZ:
             break
-    
+
 def irods_cache_save(f, path, *dest):
     cache_filename = os.path.join(IRODS_CACHE, path[1:])
     _mkdir(os.path.dirname(cache_filename))
@@ -191,13 +192,30 @@ def irods_fetch_file(url, **kw):
             f.close()
     return localname
 
+def irods_fetch_file_IGET(url, **kw):
+    ic = IrodsConnection(url, **kw)
+    #conn, base_url, basedir, path = irods_conn(url, **kw)
+    log.debug( "irods-path %s" %  ic.path)
+    localname = irods_cache_fetch(ic.path)
+    if localname is None:
+        with ic:
+            log.debug( "irods_fetching %s -> %s" % (url, ic.path))
+            localname = irods_cache_name(ic.path)
+            _mkdir(os.path.dirname(localname))
+            log.info('irods %s' %  ['iget', ic.path, localname])
+            retcode = subprocess.call(['iget',ic.path, localname])
+            if retcode:
+                raise IrodsError("can't read from %s  %s %s error (%s)" % (url, ic.path, localname, retcode))
+    return localname
+
+
 def irods_push_file(fileobj, url, savelocal=True, **kw):
     #conn, base_url, basedir, path = irods_conn(url, **kw)
     with IrodsConnection(url, **kw) as ic:
         # Hmm .. if an irodsEnv exists then it is used over our login name provided above, 
         # meaning even though we have logged in as user X we may be the homedir of user Y (in .irodsEnv)
         # irods.mkCollR(conn, basedir, os.path.dirname(path))
-        irods.mkCollR(ic.conn, '/', os.path.dirname(ic.path))
+        retcode = irods.mkCollR(ic.conn, '/', os.path.dirname(ic.path))
         log.debug( "irods-path %s" %  ic.path)
         f = irods.iRodsOpen(ic.conn, ic.path, 'w')
         if f:
@@ -206,13 +224,31 @@ def irods_push_file(fileobj, url, savelocal=True, **kw):
             return localname
         raise IrodsError("can't write irods url %s" % url)
 
+def irods_push_file_IPUT(fileobj, url, savelocal=True, **kw):
+    #conn, base_url, basedir, path = irods_conn(url, **kw)
+    with IrodsConnection(url, **kw) as ic:
+        # Hmm .. if an irodsEnv exists then it is used over our login name provided above, 
+        # meaning even though we have logged in as user X we may be the homedir of user Y (in .irodsEnv)
+        # irods.mkCollR(conn, basedir, os.path.dirname(path))
+        retcode = irods.mkCollR(ic.conn, '/', os.path.dirname(ic.path))
+        if retcode:
+            raise IrodsError("can't write irods url %s" % url)
+        log.debug( "irods-path %s" %  ic.path)
+        localname = irods_cache_save(fileobj, ic.path)
+        log.info ('iput %s %s' % (localname, ic.path))
+        retcode = subprocess.call(['iput', localname, ic.path])
+        if retcode:
+            raise IrodsError("can't write irods url %s" % url)
+        return localname
+
+
 
 def irods_fetch_dir(url, **kw):
 
     #conn, base_url, basedir, path = irods_conn(url, **kw)
     with IrodsConnection(url, **kw) as ic:
         coll = irods.irodsCollection(ic.conn)
-        coll.openCollection(ic.path); 
+        path = coll.openCollection(ic.path); 
         # Bug in openCollection (appends \0)
         path = path.strip('\x00')
         #print 'path2 Null', '\x00' in path

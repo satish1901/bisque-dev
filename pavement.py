@@ -58,7 +58,7 @@ engine_subdirs=['bqdev', 'bqcore', 'bqengine' ]
 
 
 @task
-@cmdopts('engine', 'e', 'install only the engine')
+@cmdopts([('engine', 'e', 'install only the engine')])
 def setup(options):
     'install local version and setup local packages'
     # Hack as numpy fails to install when in setup.py dependencies
