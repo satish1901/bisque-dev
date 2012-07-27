@@ -61,12 +61,16 @@ engine_subdirs=['bqdev', 'bqcore', 'bqengine' ]
 @cmdopts([('engine', 'e', 'install only the engine')])
 def setup(options):
     'install local version and setup local packages'
-    # Hack as numpy fails to install when in setup.py dependencies
-    sh('easy_install numpy==1.6.0')
-    sh('easy_install numpy==1.6.0')
-    # End Hack
-    sh('easy_install http://biodev.ece.ucsb.edu/binaries/download/tw.output/tw.output-0.5.0dev-20110906.tar.gz') 
-    sh('easy_install http://biodev.ece.ucsb.edu/binaries/depot/tgext.registration2/tgext.registration2-0.5.2.tar.gz')
+
+    engine_install = getattr(options, 'engine', False)
+
+    if not engine_install:
+        # Hack as numpy fails to install when in setup.py dependencies
+        sh('easy_install numpy==1.6.0')
+        sh('easy_install numpy==1.6.0')
+        # End Hack
+        sh('easy_install http://biodev.ece.ucsb.edu/binaries/download/tw.output/tw.output-0.5.0dev-20110906.tar.gz') 
+        sh('easy_install http://biodev.ece.ucsb.edu/binaries/depot/tgext.registration2/tgext.registration2-0.5.2.tar.gz')
     sh('easy_install http://biodev.ece.ucsb.edu/binaries/depot/httplib2/httplib2-0.7.1.tar.gz')
     sh('easy_install http://biodev.ece.ucsb.edu/binaries/depot/Paste/Paste-1.7.5.1bisque2.tar.gz')
 
