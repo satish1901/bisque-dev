@@ -5,6 +5,7 @@ import string
 import logging
 import httplib2 
 import urlparse
+import os
 
 from tg import request, response, expose, config
 from lxml import etree
@@ -106,29 +107,50 @@ class ArchiveStreamer():
                          extension  =   'URL')
                     
         flist = []
+        fileHash = {}   # Use a URI hash to look out for file repetitions
 
         if len(fileList)>0:       # empty fileList
-            for uri in fileList:
+            for index, uri in enumerate(fileList):
                 finfo = fileInfo('', uri)
+                if fileHash.get(finfo.get('name'))!=None:
+                    fileHash[finfo.get('name')] = fileHash.get(finfo.get('name')) + 1
+                    name, ext = os.path.splitext(finfo.get('name'))
+                    finfo['name'] = name + '_' + str(fileHash.get(finfo.get('name'))-1) + ext
+                else:
+                    fileHash[finfo.get('name')] = 1
+                    
                 flist.append(finfo)      # blank dataset name for orphan files
                 if finfo.get('type') == 'image':
                     flist.append(xmlInfo(finfo))
 
         if len(datasetList)>0:     # empty datasetList
             for uri in datasetList:
+                fileHash = {}
                 dataset = data_service.get_resource(uri, view='full')
                 name = dataset.xpath('/dataset/@name')[0]
                 members = dataset.xpath('/dataset/tag[@name="members"][1]/value')
                 
                 for index, member in enumerate(members):
                     finfo = fileInfo(name, member.text, index)
+
+                    if fileHash.get(finfo.get('name'))!=None:
+                        fileHash[finfo.get('name')] = fileHash.get(finfo.get('name')) + 1
+                        name, ext = os.path.splitext(finfo.get('name'))
+                        finfo['name'] = name + '_' + str(fileHash.get(finfo.get('name'))-1) + ext
+                    else:
+                        fileHash[finfo.get('name')] = 1
+
                     flist.append(finfo)
                     if finfo.get('type') == 'image':
                         flist.append(xmlInfo(finfo))
 
         if len(urlList)>0:       # empty urlList
             for index, url in enumerate(urlList):
-                finfo = urlInfo(url, index)
-                flist.append(finfo)      # blank dataset name for orphan files
+                if fileHash.get(url)!=None:
+                    continue
+                else:
+                    fileHash[url] = 1
+                    finfo = urlInfo(url, index)
+                    flist.append(finfo)      # blank dataset name for orphan files
 
         return flist

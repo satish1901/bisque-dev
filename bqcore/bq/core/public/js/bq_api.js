@@ -428,7 +428,8 @@ function BQObject (uri, doc) {
 BQObject.prototype = new BQXml();
 
 BQObject.prototype.initializeXml = function (node) {
-    this.resource_type = node.nodeName;
+    
+    this.resource_type = attribStr(node, 'resource_type') || node.nodeName;
     this.type          = attribStr(node, 'type');
     this.name          = attribStr(node, 'name');
     this.value         = parseValueType(attribStr(node, 'value'), this.type);
@@ -1025,6 +1026,7 @@ function BQResource (uri, doc) {
     BQObject.call(this, uri, doc);
     this.resource_type = 'resource';
 }
+
 BQResource.prototype = new BQObject();
 
 
@@ -1750,10 +1752,10 @@ BQMex.prototype.hasIterables = function () {
 // creates mapping from iterable resources in sub MEXes to their MEXes
 BQMex.prototype.findMexsForIterable = function (name, root) {
     root = root || 'inputs/';
+    this.iterables = this.iterables || {};
     if (!name || this.children.length<1) return;
     this.dict = this.dict || this.toDict(true);
         
-    this.iterables = this.iterables || {};
     var dataset = this.dict[root+name];
     this.iterables[name] = this.iterables[name] || {};
     this.iterables[name]['dataset'] = dataset;

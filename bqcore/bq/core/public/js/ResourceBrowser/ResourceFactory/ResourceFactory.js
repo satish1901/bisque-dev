@@ -385,7 +385,7 @@ Ext.define('Bisque.Resource.Page',
     constructor : function(config)
     {
         var name = config.resource.name || '';
-        var type = config.resource.type || config.resource.resource_type;
+        var type = config.resource.resource_type || config.resource.type;
 
         Ext.apply(this,
         {
@@ -422,16 +422,10 @@ Ext.define('Bisque.Resource.Page',
     {
         this.setLoading(true);
 
-        var name    =   this.resource.name || this.resource.uri;
-        var type    =   this.resource.type || this.resource.resource_type;
-        //var title   =   "Editing " + type + ' : ' + name;
-        var title   =   'Annotations'; // dima: keep same titles everywhere for simplisity
-
         var resourceTagger = new Bisque.ResourceTagger(
         {
             itemId      :   'resourceTagger',
-            title       :   title,
-            //frame       :   true, // dima: small UI tweaks
+            title       :   'Annotations',
             resource    :   this.resource,
             split       :   true,
         });
