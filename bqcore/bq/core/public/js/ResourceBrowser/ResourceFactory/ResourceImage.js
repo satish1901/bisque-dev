@@ -615,6 +615,13 @@ Ext.define('Bisque.Resource.Image.Grid',
 {
     extend : 'Bisque.Resource.Image',
     
+    prefetch : function(layoutMgr)
+    {
+        this.callParent(arguments);
+        var prefetchImg = new Image();
+        prefetchImg.src = this.resource.src+'?thumbnail=75,75&format=jpeg';
+    },
+    
     // convert ArrayStore to JsonStore?
     getFields : function()
     {

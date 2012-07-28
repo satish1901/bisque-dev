@@ -234,9 +234,18 @@ class export_serviceController(ServiceController):
                     urls.append(resource.text)
 
         compressionType = kw.pop('compressionType', '')
-        if 'files' in kw: files = files + kw.pop('files').split(',')
-        if 'datasets' in kw: datasets = datasets + kw.pop('datasets').split(',')
-        if 'urls' in kw: urls = urls + kw.pop('urls').split(',')    
+        
+        def extractData(kw, field):
+            if field in kw:
+                str = kw.pop(field)
+                if (str):
+                    return str.split(',')
+            return []
+        
+        files       =   files + extractData(kw, 'files')
+        datasets    =   datasets + extractData(kw, 'datasets')
+        urls        =   urls + extractData(kw, 'urls')
+        
         filename = kw.pop('filename', None) or 'Bisque-archive '+time.strftime('%H.%M.%S')
         
         archiveStreamer = ArchiveStreamer(compressionType)
