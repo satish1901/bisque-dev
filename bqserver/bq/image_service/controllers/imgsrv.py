@@ -893,9 +893,15 @@ class ThumbnailService(object):
 
         if not os.path.exists(ofile):
             log.debug('Service - Thumbnail: ' + ofile)
+            conv_arg = imgsrv_thumbnail_cmd
+            try:
+                if int(data_token.dims['depth']) == 8:
+                    conv_arg = conv_arg.replace('-depth 8,d ', '')
+            except (KeyError, ValueError):
+                    pass
             size_arg = ' -resize '+str(size[0])+','+str(size[1])+','+method+',AR'
             opts_arg = ' -options "quality 95 progressive yes"'
-            imgcnv.convert( ifile, ofile, fmt='jpeg', extra=imgsrv_thumbnail_cmd+size_arg+opts_arg)
+            imgcnv.convert( ifile, ofile, fmt='jpeg', extra=conv_arg+size_arg+opts_arg)
 
         try:
             info = self.server.getImageInfo(filename=ofile)
@@ -1915,7 +1921,7 @@ class ImageServer(object):
 
     def ensureWorkPath(self, path):
         # change ./imagedir to ./workdir if needed
-        drv, path = os.path.splitdrive(path)
+        #drv, path = os.path.splitdrive(path) # dima: does not seem necessary?
         if path.find( self.workdir ) == -1:
             if path.find (self.imagedir)>=0:
                 path = path.replace(self.imagedir, self.workdir, 1)
@@ -1925,7 +1931,6 @@ class ImageServer(object):
                 if path[0]=='/' or path=='\\':
                     path=path[1:]
                 path = os.path.join(self.workdir , path)
-
         #make sure that the path directory exists
         _mkdir( os.path.dirname(path) )
         return path
