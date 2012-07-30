@@ -178,7 +178,9 @@ ImgOperations.prototype.createMenu = function () {
    
     var view_title = 'View';
     if (this.viewer.imagephys) {
-      view_title = 'View ['+this.viewer.imagephys.pixel_depth+'bit p/ channel]';        
+        view_title = 'View ['+this.viewer.imagephys.pixel_depth+'bit p/ channel]';        
+        if (this.viewer.imagephys.pixel_depth == 8)
+            this.default_enhancement = 'f';
     }
     var group_view = this.createGroup (view_title, this.menu);    
     
