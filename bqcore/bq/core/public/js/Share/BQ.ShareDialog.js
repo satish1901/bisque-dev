@@ -278,28 +278,29 @@ Ext.define('BQ.ShareDialog', {
             
             columns :   {
                             defaults : {
-                                minWidth : 1
+                                minWidth : 20
                             },
                             items : [
                             {
                                 text: 'Name',
-                                flex: 0.4,
+                                flex: 3,
                                 sortable: false,
                                 dataIndex: 'name',
                             },
                             {
                                 text: 'Email address',
-                                flex: 0.5,
+                                flex: 4,
                                 sortable: false,
                                 align: 'center',
                                 dataIndex: 'value'
                             },
                             {
-                                text    :   'Permissions',
+                                text    :   'Permission',
                                 defaults:   {
                                                 align       :   'center',
                                                 sortable    :   false,
-                                                minWidth    :   25
+                                                minWidth    :   25,
+                                                maxWidth    :   60,
                                             },
                                 columns :   [{
                                                 xtype       :   'checkcolumn',
@@ -311,14 +312,14 @@ Ext.define('BQ.ShareDialog', {
                                                 text        :   'Edit',
                                                 dataIndex   :   'edit',
                                             }],
-                                flex: 0.3,
+                                flex: 1,
                                 sortable: false,
                                 align: 'center',
                             }, 
                             {
                                 xtype: 'actioncolumn',
                                 itemId: 'colAction',
-                                maxWidth: 80,
+                                maxWidth: 60,
                                 menuDisabled : true,
                                 sortable : false,
                                 align: 'center',
