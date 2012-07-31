@@ -9,6 +9,11 @@ Bisque.ResourceTagger.ResourceRenderer = function(value, metaData, record)
     return Ext.String.format('<a href={0} target="_blank">{1}</a>', bq.url("/client_service/view?resource=" + value), value);
 };
 
+Bisque.ResourceTagger.EmailRenderer = function(value, metaData, record)
+{
+    return Ext.String.format('<a href={0} target="_blank">{1}</a>', 'mailto:'+value, value);
+};
+
 Bisque.ResourceTagger.VertexRenderer = function(value, metaData, record)
 {
     var comboHtml = '<select>';
@@ -31,25 +36,28 @@ Bisque.ResourceTagger.VertexRenderer = function(value, metaData, record)
 
 Bisque.ResourceTagger.RenderersAvailable =
 {
-    'file' : Bisque.ResourceTagger.LinkRenderer,
-    'link' : Bisque.ResourceTagger.LinkRenderer,
-    'statistics' : Bisque.ResourceTagger.LinkRenderer,
-    'resource' : Bisque.ResourceTagger.ResourceRenderer,
-    'image' : Bisque.ResourceTagger.ResourceRenderer,
+    'file'          :   Bisque.ResourceTagger.LinkRenderer,
+    'link'          :   Bisque.ResourceTagger.LinkRenderer,
+    'hyperlink'     :   Bisque.ResourceTagger.LinkRenderer,
+    'statistics'    :   Bisque.ResourceTagger.LinkRenderer,
+    'resource'      :   Bisque.ResourceTagger.ResourceRenderer,
+    'bisqueresource':   Bisque.ResourceTagger.ResourceRenderer,
+    'image'         :   Bisque.ResourceTagger.ResourceRenderer,
+    'email'         :   Bisque.ResourceTagger.EmailRenderer,
 
     // Gobject renderers
-    'point' : Bisque.ResourceTagger.VertexRenderer,
-    'polyline' : Bisque.ResourceTagger.VertexRenderer,
-    'polygon' : Bisque.ResourceTagger.VertexRenderer,
-    'rectangle' : Bisque.ResourceTagger.VertexRenderer,
-    'square' : Bisque.ResourceTagger.VertexRenderer,
-    'circle' : Bisque.ResourceTagger.VertexRenderer,
-    'ellipse' : Bisque.ResourceTagger.VertexRenderer
+    'point'         :   Bisque.ResourceTagger.VertexRenderer,
+    'polyline'      :   Bisque.ResourceTagger.VertexRenderer,
+    'polygon'       :   Bisque.ResourceTagger.VertexRenderer,
+    'rectangle'     :   Bisque.ResourceTagger.VertexRenderer,
+    'square'        :   Bisque.ResourceTagger.VertexRenderer,
+    'circle'        :   Bisque.ResourceTagger.VertexRenderer,
+    'ellipse'       :   Bisque.ResourceTagger.VertexRenderer
 };
 
 Bisque.ResourceTagger.BaseRenderer = function(value, metaData, record)
 {
-    var renderer = Bisque.ResourceTagger.RenderersAvailable[record.data.type];
+    var renderer = Bisque.ResourceTagger.RenderersAvailable[record.data.type.toLowerCase()];
 
     if(renderer)
         return renderer.apply(this, arguments);
