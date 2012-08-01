@@ -415,6 +415,7 @@ class import_serviceController(ServiceController):
         try:
             log.debug('Inserting blob: [%s] [%s] [%s] [%s]'%(src, filename, perm, tags))
             resource = blob_service.store_blob (filesrc=src, filename=filename, permission=perm, tags=tags)
+            src.close()
             # Add specific image tags here:
         except Exception, e:
             log.exception("Error during store")
@@ -485,6 +486,7 @@ class import_serviceController(ServiceController):
             parent_uri = None
             try:
                 resource_parent = blob_service.store_blob (filesrc=f.file, filename=os.path.split(f.filename)[-1], permission=f.permission)
+                f.file.close()
                 parent_uri = resource_parent.get('uri')
             except Exception, e:
                 log.exception("Error during store")  
