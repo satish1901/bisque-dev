@@ -162,7 +162,7 @@ function [output, info] = post_mpform(url, input, user, password)
 
     if info.status>=300,
         output = [];
-        error(['bq.post_mpform:error\nStatus: ' int2str(info.status) '\nMethod: ' method '\nURL: ' url.toString() '\nError:\n' info.error], '');
+        error(['bq.post_mpform:error\nStatus: ' int2str(info.status) '\nMethod: POST\nURL: ' url.toString() '\nError:\n' info.error], '');
     %elseif exist('location', 'var') && ~isempty(location),    
     %    output = stream2file(connection.getInputStream(), location);        
     %    %output = stream2file( java.io.BufferedInputStream(connection.getInputStream(), 4*1024), location);
