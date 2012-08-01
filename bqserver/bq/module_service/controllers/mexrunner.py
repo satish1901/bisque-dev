@@ -8,8 +8,9 @@ import logging
 import transaction
 
 import tg
-from tg import config, url, session
+from tg import config, url, session, request
 from paste.registry import Registry
+from pylons.controllers.util import Request
 from beaker.session import Session, SessionObject
 
 from lxml import etree
@@ -105,9 +106,12 @@ class MexRunner(object):
         #Session.configure(bind=sqlengine)
         self.__class__.runner_count = self.__class__.runner_count +1
 
+        # The following lines fake an active request so identity can work
         registry = Registry()
         registry.prepare()
         registry.register(session, SessionObject({}))
+        registry.register(request, Request.blank('/mexrunner'))
+        request.identity = {}
         set_admin_mode(True)
 
 
@@ -179,8 +183,9 @@ class MexRunner(object):
             # Depending on return code, we will update the engine/service
             # availability i.e. after a bunch of tries disable the service
             # and notify the admin
-            log.info ("DISPATCH to %s FAILED" % response.request.service.resource_value)
-        if response.status == 200:
+            log.warn ("DISPATCH to %s FAILED" % response.request.service.resource_value)
+            mex = self.end_response(response)
+        else:  # response.status == 200:
             # We received a good status so we update the last-contact
             #contact = response.request.service.findtag('last-contact')
             #contact.value = str(datetime.now())
@@ -190,9 +195,6 @@ class MexRunner(object):
             else:
                 log.debug("ASYNCH: DISPATCH")
                 mex = response.request.mex
-
-        else: #  resp['status'] != "200":
-            mex = self.end_response(response)
         log.debug ("END DISPATCH")
         return mex
 
@@ -250,17 +252,20 @@ class MexRunner(object):
 
 
     def process_one(self, mex, service):
-        with transaction.manager:
-            request = self.prepare_request(mex, service, self.baseuri)
-        #self.session.flush()
+        try:
+            with transaction.manager:
+                request = self.prepare_request(mex, service, self.baseuri)
 
-        response = self.dispatch_mex(request)
+            response = self.dispatch_mex(request)
 
-        with transaction.manager:
-            response.request.reload()
-            self.process_response(response)
-        #self.session.flush()
-        return request, response
+            with transaction.manager:
+                response.request.reload()
+                self.process_response(response)
+            return request, response
+        except:
+            log.exception ('Exception during processing of %s' % mex)
+            response = MexResponse(None,{'status':'500'}, None)
+            return request, response
 
 
     def process_pending(self, mex_id=None):

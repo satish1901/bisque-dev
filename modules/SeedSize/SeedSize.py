@@ -72,12 +72,12 @@ class SeedSize(object):
             submexes = self._get_submexes()
             tags = [
                 { 'name': 'execute_options',
-                  'tag' : [ {'name': 'iterable', 'value' : 'seed-resource' } ] 
+                  'tag' : [ {'name': 'iterable', 'value' : 'image_url' } ] 
                   },
                 { 'name': 'outputs',
                   'tag' : [{'name': 'Summary',  'tag' : summary_tags },
                            {'name': 'mex_url', 'value': self.mex_url, 'type': 'mex'},
-                           {'name': 'seed-resource', 'type':'dataset', 'value':self.resource_url,}]
+                           {'name': 'image_url', 'type':'dataset', 'value':self.resource_url,}]
                   },
                     ]
             # for i, submex in enumerate(mexlist):
@@ -105,7 +105,10 @@ class SeedSize(object):
             mex = { 'type' : self.bq.mex.type,
                     'name' : self.bq.mex.name,
                     'value': 'FINISHED', 
-                    'tag': [{ 'name': 'outputs',
+                    'tag': [ { 'name': 'inputs',
+                               'tag' : [ {'name': 'image_url', 'value' : result2url [result] } ] 
+                             },    
+                             { 'name': 'outputs',
                               'tag' : [{'name': 'seed-resource', 'type':'image', 'value':  result2url [result],
                                         'gobject':{ 'name': 'seeds', 'type': 'seedsize', 'gobject': gobs}, }] }]
                     }

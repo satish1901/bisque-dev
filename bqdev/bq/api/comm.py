@@ -235,8 +235,9 @@ class BQSession(object):
         :param gobjects: same as etree.Element|BQGobject|dict objects of form { 'name': 'x', 'value':'z' }
         :param children: list of tuple (type, obj array) i.e ('mex', dict.. )
         """
-        self.mex.value = status
-        mex = toXml(self.mex)
+        mex = etree.Element('mex', value = status, uri = self.mex.uri)
+        #self.mex.value = status
+        #mex = toXml(self.mex)
         def append_mex (mex, type_tup):
             type_, elems = type_tup
             for  tg in elems:
@@ -259,7 +260,7 @@ class BQSession(object):
         #                  'status' : status,
         #                  'tag' : tags, 
         #                  'gobject': gobjects }}
-        content = self.postxml(self.mex.uri, mex, view='deep')
+        content = self.postxml(self.mex.uri, mex, view='deep' if reload else 'short')
         if reload and content is not None:
             self.mex = fromXml(content, session = self)
             return self.mex

@@ -1,9 +1,16 @@
-// BQObject interface library for Image, Tags and GObjects.
-// BQObject is base class for manipulation, and communication with
-// the bisque system from javascript.
+/*-----------------------------------------------------------------------------
+ BQAPI - JavaScript Bisque API
+ 
+ dima: problems i see today
+   1) no way to tell if object is completely loaded or needs additional fetches
+   2) lot's of repeated functions: load_tags, loadTags, etc...
+   3) some objects have non-standard attributes: BQAuth
+-----------------------------------------------------------------------------*/
+
 BQTypeError = new Error("Bisque type error");
 BQOperationError = new Error("Bisque operation error");
 
+/* //dima - not being used, hiding from the parser
 classExtend = function(subClass, baseClass) {
    function inheritance() {}
    inheritance.prototype = baseClass.prototype;
@@ -13,16 +20,368 @@ classExtend = function(subClass, baseClass) {
    subClass.baseConstructor = baseClass;
    subClass.superClass = baseClass.prototype;
 }
+*/
+
+default_error_callback = function (o) {
+    clog(o.message);
+    BQ.ui.error(o.message); 
+}
+
+//-----------------------------------------------------------------------------
+// BQFactory for creating Bisque Objects
+//-----------------------------------------------------------------------------
+
+function BQFactory (){}
+BQFactory.ctormap =  { 
+                       //vertex  : BQVertex, // dima: speed optimization, using xpath for sub vertices is much faster
+                       //value   : BQValue,  // dima: speed optimization, using xpath for sub values is much faster
+                       tag      : BQTag,
+                       image    : BQImage,
+                       file     : BQFile,
+                       gobject  : BQGObject,
+                       point    : BQGObject,
+                       rectangle: BQGObject,
+                       ellipse  : BQGObject,
+                       polygon  : BQGObject,
+                       polyline : BQGObject,
+                       circle   : BQGObject,
+                       label    : BQGObject,
+                       module   : BQModule,
+                       mex      : BQMex,
+                       session  : BQSession,
+                       user     : BQUser,
+                       auth     : BQAuth,
+                       dataset  : BQDataset,
+                       resource : BQResource,
+                       template : BQTemplate,
+};
+
+BQFactory.ignored = {
+    vertex  : BQVertex,
+    value   : BQValue,
+};
+
+BQFactory.escapeXML = function(xml) {
+    var specials = [ [ /</g,  "&lt;"],
+                     [ />/g,  "&gt;"],
+                     [ RegExp("'", 'g') , '&#039;'],
+                     [ RegExp('"','g') ,  '&quot;']
+                   ] ;
+    // Replace Bare & (not followed 
+    xml = String(xml).replace (/&/g, '&amp;');
+    specials.every (function (pair) {
+        xml = xml.replace (pair[0], pair[1]);
+        return true;
+    });
+    return xml;
+}
+
+BQFactory.session = {};
+
+BQFactory.make = function(ty, uri, name, value) {
+    var ctor = BQResource;
+    if (ty in BQFactory.ctormap) 
+        ctor = BQFactory.ctormap[ty];
+    o =  new ctor(uri);
+    if (ctor == BQResource && ty) o.resource_type = ty;
+    o.name = name;
+    o.value = value;
+    return o;
+}
+
+BQFactory.createFromXml = function(xmlResource, resource, parent) {
+    var stack = [];
+    var resources = [];
+    //  Initialize stack with a tuple of 
+    //    1. The XML node being parsed
+    //    2. The current resource being filled out
+    //    3. The parent resource if any
+    stack.push ([xmlResource, resource, parent]);
+    while (stack.length != 0) {
+        var elem = stack.shift();
+        var node = elem[0];
+        var resource  = elem[1];
+        var parent = elem[2];
+        var type_ = node.nodeName;
+        if (resource == null){
+            if (type_ == 'resource') 
+               type_ = attribStr(node, 'type');
+            resource = BQFactory.make(type_);
+        }
+        resource.initializeXml(node);
+        resources.push (resource);
+        if (parent) {
+            resource.setParent(parent) ;
+            resource.doc = parent.doc;
+        }
+        for (var i=0; i < node.childNodes.length; i++ ) {
+            var k = node.childNodes[i];
+            if (k.nodeType == 1 &&  ! (k.nodeName in BQFactory.ignored)) // Element nodes ONLY
+                stack.push ( [ k, null, resource ]);
+            //else
+            //    clog ("Got Node type" + k.nodeType + " for " + k.text);
+        }
+    }
+
+    response = resources[0];
+
+    // dima: do some additional processing after you inited elements    
+    var rr = resources.reverse();       
+    for (var p=0; (r=rr[p]); p++)
+        if (r.afterInitialized) r.afterInitialized(); 
+    
+    return response;
+}
+
+
+/** 
+ * Load a Bisque URL as an object. Calls cb (loaded_object) when done.
+ * Checks for both outstanding ajax requests and previously loaded objects.
+ */
+BQFactory.load = function(uri, cb, progresscb, cache) {
+    BQFactory.request({ uri : uri, 
+                        cb  : cb,
+                        progresscb: progresscb,
+                        cache : cache});
+};
+
+BQFactory.request = function(params) {
+    var uri =  params.uri;
+    var url_params = params.uri_params;
+    var cb  =  params.cb;
+    var progresscb = params.progresscb;
+    var cache = (typeof params.cache=="undefined")?true:false;
+    var method = params.method || "get";
+    var xmldata = params.xmldata;
+    params.errorcb = params.errorcb || default_error_callback;    
+
+    if (url_params) {
+        var pl = [];
+        var v;
+        for (var x in url_params) {
+            if (url_params[x]) {
+                v = encodeURIComponent(url_params[x])
+                pl.push(x+'='+v);
+            } else {
+                pl.push(x);
+            }
+        }
+        if ( uri.indexOf('?')==-1 )
+            uri = uri + '?' + pl.join('&');
+        else
+            uri = uri + '&' + pl.join('&');            
+    }
+
+    clog ("Loading: " + uri);
+    if (! uri) {
+        clog("ERROR: trying to load null uri");
+    }
+    if (cache && uri in BQFactory.session) {
+        var o = BQFactory.session[uri];
+        if (o instanceof XMLHttpRequest) {
+            clog ("outstanding request");
+            if (cb) 
+                chainRequest(o, callback(BQFactory, 'loaded_callback', uri, cb));
+        } else {
+            //clog ("using cache result");
+            //if (cb) cb(o);
+            // Just redo the request
+            clog ('re-issuing cached result ' + uri);
+            BQFactory.session[uri] = xmlrequest(uri, callback(BQFactory, 'on_xmlresponse', params), method, xmldata, params.errorcb);
+        }
+    } else if (progresscb) {
+        BQFactory.session[uri] = 
+            xmlrequest(uri, callback(BQFactory, 'on_xmlresponse_progress', params), method, xmldata, params.errorcb);
+
+    } else {
+        BQFactory.session[uri] = xmlrequest(uri, callback(BQFactory, 'on_xmlresponse', params), method, xmldata, params.errorcb);
+    }
+};
+
+BQFactory.loaded_callback = function (uri, cb, xmldoc) {
+    var o = BQFactory.session[uri];
+    cb (o);
+};
+
+BQFactory.on_xmlresponse = function(params, xmldoc) {
+    var uri = params.uri;
+    var cb  = params.cb;
+    var errorcb = params.errorcb;
+    
+    clog('Response: ' + uri);
+    try { 
+        var n = xmldoc.firstChild;
+        if (!n) return null;
+        if (n.nodeName == 'response') 
+        n = n.firstChild;
+        if (!n) return null;        
+        var ty = n.nodeName;
+        if (ty=='resource') ty = attribStr(n, 'type');
+        var bq = BQFactory.make (ty, uri);
+        BQFactory.createFromXml(n, bq, null);
+        bq.doc = bq;
+        BQFactory.session[uri] = bq;
+    } catch  (err) {
+        clog ("on_xmlresponse error" + err);
+        if (errorcb) errorcb ({ xmldoc : xmldoc, message : 'parse error in BQFactory.on_xmlresponse' });
+        return;
+    }
+    return cb(bq);    
+}
+
+// <x:include xlink:href="http://ssks?offset=5&limit=5" />
+BQFactory.on_xmlresponse_progress = function (params, xmldoc) {
+    var uri = params.uri;
+    var cb  = params.cb;
+    var progresscb = params.progresscb;
+    var errorcb = params.errorcb;
+
+    clog('Response: ' + uri);
+    try {
+        var loaded = [];
+        var last = true;
+        var n = xmldoc.firstChild;
+        if (!n) return;
+        if (n.nodeName == "response") 
+        n = n.firstChild;
+        var bq = BQFactory.make (n.nodeName, uri);
+        bq.doc = bq;
+        BQFactory.session[uri] = bq;
+        if (n.nodeName == "resource") 
+        n  = n.firstChild;
+        while (n != null) {
+            var node = n;
+            n = node.nextSibling;
+            
+            if (node.name == 'include') {
+                xmlrequest (node.attributes['href'], 
+                            callback(BQFactory, 'on_xmlresponse_progress',
+                                     uri, cb, progresscb));
+                last = false;
+                continue;
+            }
+            // Must be node result
+            var o = BQFactory.createFromXml (node, null, bq);
+            loaded.push (o);
+            if (progresscb != null) 
+            progresscb(o);
+        }    
+        if (cb && last) cb(bq);
+    } catch (err) {
+        clog ("on_xmlresponse error" + err);
+        if (errorcb) errorcb ({ xmldoc : xmldoc, message : 'parse error in BQFactory.on_xmlresponse_progress' });
+    }
+}
+
+BQFactory.parseBQDocument = function (xmltxt) {
+    var parser  = new DOMParser ();
+    xmldoc = parser.parseFromString(xmltxt, "text/xml");
+    var n = xmldoc.firstChild;
+    if (!n) return null;
+    if (n.nodeName == 'response') 
+        n = n.firstChild;
+    if (!n) return null;        
+    var ty = n.nodeName;
+    var bq = BQFactory.make (ty);
+    BQFactory.createFromXml(n, bq, null);
+    bq.doc = bq;
+    return bq;
+}
+
+//-----------------------------------------------------------------------------
+// BQValue
+//-----------------------------------------------------------------------------
+
+function parseValueType(v, t) {
+    try {
+        if (t && t == 'number') 
+            return parseFloat(v);
+        else if (t && t == 'boolean') 
+            return (v=='true') ? true : false;
+    } catch(err) {
+        return v;          
+    }
+    return v;    
+}
+
+function BQValue (t, v) {
+    this.resource_type = "value";
+    this.xmlfields = [ 'type', 'index' ];
+    if (t instanceof Element && arguments.length==1) {
+        this.initializeXml(t);
+        return;       
+    }
+
+    if (t != undefined) this.type = t;
+    if (v != undefined) this.value = parseValueType(v, this.type);    
+}
+BQValue.prototype = new BQXml();
+
+BQValue.prototype.initializeXml = function (node) {
+    this.type  = attribStr(node, 'type');
+    this.value = parseValueType(node.textContent, this.type);
+    this.index = attribInt(node, 'index');    
+}
+
+BQValue.prototype.setParent = function (p) {
+    p.values = p.values || [];
+    p.values.push(this);
+}
+
+BQValue.prototype.xmlNode = function () {
+    return BQXml.prototype.xmlNode.call (this, BQFactory.escapeXML(this.value));
+}
+
+//-----------------------------------------------------------------------------
+// BQVertex
+//-----------------------------------------------------------------------------
+
+function BQVertex(x, y, z, t, ch, index) {
+    this.resource_type = "vertex";
+    this.xmlfields = [ 'x', 'y', 'z', 't', 'ch', 'index' ];
+    if (x instanceof Element && arguments.length==1) {
+        this.initializeXml(x);
+        return;       
+    }    
+    this.x =x;
+    this.y =y;
+    this.z =z;
+    this.t =t;
+    this.ch =ch;
+    this.index = index;
+}
+BQVertex.prototype = new BQXml();
+
+BQVertex.prototype.setParent = function (p) {
+    p.vertices = p.vertices || [];
+    p.vertices.push(this);
+}
+
+BQVertex.prototype.initializeXml = function (node) {
+    this.x     = attribFloat(node, "x");
+    this.y     = attribFloat(node, "y");
+    this.z     = attribFloat(node, "z");
+    this.t     = attribFloat(node, "t");
+    this.ch    = attribInt(node, "ch");
+    this.index = attribInt(node, "index");
+}
+
+
+//-----------------------------------------------------------------------------
+// BQXml
+//-----------------------------------------------------------------------------
 
 function BQXml() {
-    this.xmltag = '';
-    this.xmlfields = []
+    this.resource_type = '';
+    this.xmlfields = [];
 }
+
 BQXml.prototype.toXML = function (){ 
     return this.xmlNode ();
 }
+
 BQXml.prototype.xmlNode = function (content) {
-    var v = '<' + this.xmltag + ' ';
+    var v = '<' + this.resource_type + ' ';
     var fields = this.xmlfields;
     for (var f in fields ){
         if (this[fields[f]] != undefined  &&  this[fields[f]] != null )
@@ -30,56 +389,70 @@ BQXml.prototype.xmlNode = function (content) {
     }
     if (content && content != "") {
         v += ">";
-        v += content ;
-        v += "</" + this.xmltag +">"
+        v += content;
+        v += "</" + this.resource_type +">"
     } else {
         v += "/>";
     }
-            
-//     kids = this.tags.length + this.gobjects.length + this.children.length;
-//     if (kids == 0)
-//         v += ' />';
-//     else
-//         v += ' >';
 
     return v;
 }
 
+//-----------------------------------------------------------------------------
+// BQObject
+// BQObject interface library for Image, Tags and GObjects.
+// BQObject is base class for manipulation, and communication with
+// the bisque system from javascript.
+//-----------------------------------------------------------------------------
 
-function BQObject (uri, doc){
+function BQObject (uri, doc) {
     BQXml.call(this, uri, doc);
     this.readonly = false;
     this.uri = uri;
+    this.doc = doc || this;    
+    
     this.children = [];
-    this.tags = [];
+    this.tags     = [];
     this.gobjects = [];
-    this.doc = doc
-    if (doc==undefined || doc == null) // && uri != null) 
-        this.doc = this;
+    
+    // object rationalization, any taggable may have values and vertices, use undefined to mark unfetched lists
+    this.values   = undefined;
+    this.vertices = undefined;
+
     this.dirty = true;
     this.created = true;
     this.mex = null;
-    this.xmltag = "resource";
-    this.xmlfields  = [ 'type', 'uri', 'owner', 'src', 'permission', 'resource_uniq', 'resource_name', 'name'];
+    this.resource_type = 'resource';
+    this.xmlfields  = [ 'type', 'name', 'value', 'uri', 'owner', 'permission', 'ts', 'resource_uniq', 'index', 'hidden'];
 }
 BQObject.prototype = new BQXml();
 
-BQObject.prototype.initializeXml = function (resource) {
-    this.uri = attribStr(resource,'uri');
-    this.perm = attribInt(resource,'permission');
-    this.ts   = attribStr(resource,'ts');
-    this.owner = attribStr(resource,'owner');
-    this.type   = attribStr(resource,'type');
-    this.resource_uniq = attribStr(resource, 'resource_uniq');
-    this.name = attribStr(resource,'name');
-    this.value = attribStr(resource, 'value');
-    this.resource_uniq = attribStr(resource, 'resource_uniq');
+BQObject.prototype.initializeXml = function (node) {
     
-    this.attributes = attribDict (resource);
-    this.resource_type = resource.nodeName; //this.xmltag; Utkarsh : Use the unknown resource's xmltag rather than a generic 'resource'
-    this.dirty = false;
-    this.created = false;
-    this.template = {};
+    this.resource_type = attribStr(node, 'resource_type') || node.nodeName;
+    this.type          = attribStr(node, 'type');
+    this.name          = attribStr(node, 'name');
+    this.value         = parseValueType(attribStr(node, 'value'), this.type);
+    this.uri           = attribStr(node, 'uri');
+    this.owner         = attribStr(node, 'owner');
+    this.permission    = attribStr(node, 'permission');
+    this.ts            = attribStr(node, 'ts');
+    this.resource_uniq = attribStr(node, 'resource_uniq');
+    this.index         = attribStr(node, 'index');
+    this.hidden        = attribStr(node, 'hidden');
+    this.attributes    = attribDict (node);
+    this.dirty         = false;
+    this.created       = false;
+    this.template      = {};
+    
+    // dima: speed optimization, using xpath for resources with many values is much faster
+    var x = node.ownerDocument.evaluate('./value', node, null, XPathResult.ANY_TYPE, null);
+    var y = x.iterateNext();
+    if (y) this.values = [];
+    while (y) {
+        this.values.push(new BQValue(y));
+        y = x.iterateNext();
+    } 
 }
 
 BQObject.prototype.afterInitialized = function () {
@@ -102,18 +475,32 @@ BQObject.prototype.afterInitialized = function () {
         this.template = ta.toDict(true);
 }
 
+
+// dima: this function takes an array of strings or an object value_name - value_type and 
+//       sets as a new array of values in the resource
+BQObject.prototype.setValues = function (vals) {
+    if (this.readonly) 
+        throw "This object is read only!";
+    
+    this.values = [];
+    if (vals instanceof Array) {
+        for (var i=0; i<vals.length; i++)
+            this.values.push(new BQValue(undefined, vals[i]));
+    } else {
+        for (var i in vals)
+            this.values.push(new BQValue(vals[i], i));
+    }
+}
+
 BQObject.prototype.testReadonly = function () {
   if (this.readonly)
       throw "This object is read only!";
 }
 
 BQObject.prototype.setParent = function (p) {
-    if (p instanceof BQTag)
-        p.values.push (this);
-    else {
-        p.children.push (this);
-        this.parent = p;
-    }
+    p.children = p.children || [];
+    p.children.push (this);
+    this.parent = p;
 }
 
 BQObject.prototype.getkids = function (){
@@ -137,18 +524,24 @@ BQObject.prototype.load_response = function (cb, ign, xmldoc) {
         cb(this);
 }
 
-BQObject.prototype.toXML = function (){ 
-    var xmlrep = ""; //this.xmlNode();
-    // Insides
-    for (var i=0; i < this.tags.length; i++ ) 
-        xmlrep += this.tags[i].toXML();
-    for (var i=0; i < this.gobjects.length; i++ ) 
-        xmlrep += this.gobjects[i].toXML();
-    for (var i=0; i < this.children.length; i++ ) 
-        xmlrep += this.children[i].toXML();
-
-    //xmlrep += "</resource>";
-    return this.xmlNode (xmlrep);
+BQObject.prototype.toXML = function() {
+    var xmlrep = '';
+    if (this.values)
+        for (var i=0; i < this.values.length; i++ ) 
+            xmlrep += this.values[i].xmlNode();
+    if (this.vertices)
+        for (var i=0; i < this.vertices.length; i++ ) 
+            xmlrep += this.vertices[i].xmlNode();            
+    if (this.tags)
+        for (var i=0; i < this.tags.length; i++ ) 
+             xmlrep += this.tags[i].toXML();
+    if (this.gobjects)         
+        for (var i=0; i < this.gobjects.length; i++ ) 
+             xmlrep += this.gobjects[i].toXML();
+    if (this.children)
+        for (var i=0; i < this.children.length; i++ ) 
+            xmlrep += this.children[i].toXML();
+    return this.xmlNode(xmlrep);
 }
 
 BQObject.prototype.delete_ = function (cb, errorcb) {
@@ -159,18 +552,15 @@ BQObject.prototype.delete_ = function (cb, errorcb) {
     }
 }
 
-BQObject.prototype.rename = function(newName, cb, errorcb)
-{
-    
-    
+BQObject.prototype.rename = function(newName, cb, errorcb) {
+    clog ('BQAPI: BQObject.prototype.rename - Not implemented');
 }
 
 BQObject.prototype.deleteTag = function(childTag) {
-    
-	if (childTag instanceof BQTag)
-		this.remove(childTag);
-	else
-		clog ('BQAPI: deleteTag - Input is not a BQTag.');
+    if (childTag instanceof BQTag)
+        this.remove(childTag);
+    else
+        clog ('BQAPI: deleteTag - Input is not a BQTag.');
 }
 
 BQObject.prototype.find_tags  = function (name, deep, found) {
@@ -203,40 +593,6 @@ BQObject.prototype.find_children  = function (type, name, deep, found) {
     if (found.length == 1) 
         return found[0];
     return found;
-}
-
-/* 
- * query    : object, can have (name, value, type)
- * params   : object, can have (deep[false], breakOnFirst[false]) 
- * 
- * e.g.
- * var allTags = resource.findTags({
- *                      value : 'Retina'
- *                  }, {
- *                      deep : true,
- *                      breakOnFirst:false
- *                  })
- * 
- */
-
-BQObject.prototype.findTags = function(query, params)
-{
-    function isMatch(tag, query)
-    {
-        return (tag.name == query.name)
-    }
-    
-    var matchedTags = [];
-    
-    for (var i=0;i<this.tags.length;i++)
-    {
-        if (isMatch(this.tags[i], query))
-            matchedTags.push(this.tags[i]);
-        if (params.deep)
-            matchedTags = matchedTags.concat(this.tags[i].findTags(query, params));
-    }
-    
-    return matchedTags;
 }
 
 BQObject.prototype.testAuth = function(user, cb, loaded, authRecord)
@@ -409,6 +765,7 @@ BQObject.prototype.create_flat_index = function ( index, prefix ) {
     return index;
 } 
 
+// dima: not being used
 BQObject.prototype.find_resource  = function (ty) {
     for (var i=0; i < this.children.length; i++) 
         if (this.children[i].type == ty) 
@@ -416,7 +773,8 @@ BQObject.prototype.find_resource  = function (ty) {
     return null;
 }
 
-BQObject.prototype.remove_resource  = function (uri) {
+// dima: used in template, needs different name, e.g. remove_resource_by_uri ?
+BQObject.prototype.remove_resource = function (uri) {
     for (var i=0; i < this.children.length; i++) 
         if (this.children[i].uri == uri) {
             delete this.children[i];
@@ -425,42 +783,33 @@ BQObject.prototype.remove_resource  = function (uri) {
     return null;
 }
 
-BQObject.prototype.remove  = function (o) {
-   var index = this.tags.indexOf (o);
-  if (index!=-1) this.tags.splice(index,1);
-  else {
+BQObject.prototype.remove = function (o) {
+    var index = this.tags.indexOf (o);
+    if (index!=-1) this.tags.splice(index,1);
+    else {
       index = this.gobjects.indexOf (o);
       if (index!= -1) this.gobjects.splice(index,1);
       else {
           index = this.children.indexOf(o);
           if (index != -1) this.children.splice(index,1);
       }
-  }
+    }
 }
 
-
-// BQObject.prototype.save_ = function (parenturi, cb) {
-//     var req = '<request>';
-//     req += this.toXML();
-//     req += '</request>';
-//     if (this.uri != null) {
-//         makeRequest(this.uri, callback(this, 'response_', 'update'), cb, 'put', req);
-//     } else {
-//         makeRequest(parenturi, callback(this, 'response_', 'new'), cb, 'post', req);
-//     }
-// }
 BQObject.prototype.save_ = function (parenturi, cb, errorcb) {
     this.testReadonly();    
     var docobj = this.doc;
     var req = docobj.toXML();
-    //errorcb = errorcb || default_error_callback;
-    if (docobj.uri  ) {
+    errorcb = errorcb || default_error_callback;
+    if (docobj.uri) {
         xmlrequest(docobj.uri, callback(docobj, 'response_', 'update', errorcb, cb),'put', req, errorcb);
     } else {
+        parenturi = parenturi || '/data_service/'+this.resource_type+'/';
         xmlrequest(parenturi, callback(docobj, 'response_', 'created', errorcb, cb),'post', req, errorcb);
     }
 }
 
+// dima: used in browser factory, same thing as save but always does POST 
 BQObject.prototype.append = function (cb, errorcb)
 {
     this.testReadonly();
@@ -488,7 +837,7 @@ BQObject.prototype.response_ = function (code, errorcb, cb, xmldoc) {
             BQFactory.createFromXml(node, this, null)
         } catch  (err) {
             clog ("save_" + err);
-            if (errorcb) errorcb ({ xmldoc : xmldoc, message : 'parse error' });
+            if (errorcb) errorcb ({ xmldoc : xmldoc, message : 'parse error in BQObject.response_' });
             return;
         }
     }
@@ -552,12 +901,15 @@ BQObject.prototype.load_children = function (config)
     });
 }
 
+// dima: repeated from load_tags
 BQObject.prototype.loadTags = function (config)
 {
     config.attrib='tag';
     config.vector='tags';
     BQObject.prototype.load_children.call(this, config);
 }
+
+// dima: repeated from load_gobjects
 BQObject.prototype.loadGObjects = function (config)
 {
     config.attrib='gobject';
@@ -660,36 +1012,23 @@ BQObject.prototype.convert_tags=function (){
      }
 }
 
-
-/// BQResource represents an addressable resource.
+//-----------------------------------------------------------------------------
+// BQResource represents an addressable resource.
 // It is often used a the top level document of a tag document
 // I1  
 //  +- R1 == /image/1/tags
 //  +- R2 == /image/1/gobjects
 //      + G1
 //      + G2/R3 == /image/1/gobjects/2  a very large gobject
+//-----------------------------------------------------------------------------
 
 function BQResource (uri, doc) {
     BQObject.call(this, uri, doc);
-    this.xmltag = "resource";
-    this.xmlfields = [ 'uri',  'type', 'name', 'owner', 'permission' ];
+    this.resource_type = 'resource';
 }
+
 BQResource.prototype = new BQObject();
-//classExtend (BQObject, BQResource);
 
-
-// BQResource.prototype.toXML = function (){ 
-//     var xmlrep = "resource";
-//      // Insides
-//      for (var i=0; i < this.tags.length; i++ ) 
-//          xmlrep += this.tags[i].toXML();
-//      for (var i=0; i < this.gobjects.length; i++ ) 
-//          xmlrep += this.gobjects[i].toXML();
-//      for (var i=0; i < this.children.length; i++ ) 
-//          xmlrep += this.children[i].toXML();
-
-//      return xmlrep;
-//  }
 
 //-----------------------------------------------------------------------------
 // BQTemplate
@@ -697,374 +1036,67 @@ BQResource.prototype = new BQObject();
 
 function BQTemplate (uri, doc) {
     BQObject.call(this, uri, doc);
-    this.xmltag = 'template';
-    this.xmlfields = [ 'uri', 'type', 'name', 'owner', 'permission' ];
+    this.resource_type = 'template';
 }
 BQTemplate.prototype = new BQObject();
 
-BQTemplate.prototype.setParent = function (p) {
-    p.children.push (this);
-    this.parent = p;    
-}
 
 //-----------------------------------------------------------------------------
-// BQFactory for creating Bisque Objects
+// BQImage
 //-----------------------------------------------------------------------------
 
-function BQFactory (){}
-BQFactory.ctormap =  { 
-    //vertex  : Vertex,
-                       value   : Value,
-                       tag     : BQTag,
-                       image   : BQImage,
-                       //images  : BQImage,
-                       gobject : BQGObject,
-                       point   : BQGObject,
-                       rectangle:BQGObject,
-                       ellipse  :BQGObject,
-                       polygon  :BQGObject,
-                       polyline :BQGObject,
-                       circle   :BQGObject,
-                       label    :BQGObject,
-                       module   :BQModule,
-                       mex      :BQMex,
-                       session  :BQSession,
-                       user     :BQUser,
-                       auth     :BQAuth,
-                       dataset  :BQDataset,
-                       resource :BQResource,
-                       template :BQTemplate,
-};
-
-BQFactory.ignored = {
-    vertex  : Vertex,
-};
-
-BQFactory.escapeXML = function(xml) {
-    var specials = [ [ /</g,  "&lt;"],
-                     [ />/g,  "&gt;"],
-                     [ RegExp("'", 'g') , '&#039;'],
-                     [ RegExp('"','g') ,  '&quot;']
-                   ] ;
-    // Replace Bare & (not followed 
-    xml = String(xml).replace (/&/g, '&amp;');
-    specials.every (function (pair) {
-        xml = xml.replace (pair[0], pair[1]);
-        return true;
-    });
-    return xml;
-}
-
-BQFactory.session = {};
-
-BQFactory.make = function(ty, uri, name, value) {
-    var ctor = BQResource;
-    if (ty in BQFactory.ctormap) 
-        ctor = BQFactory.ctormap[ty];
-    o =  new ctor(uri);
-    if (ctor == BQResource && ty) o.xmltag = ty;
-    o.name = name;
-    o.value = value;
-    return o;
-}
-
-
-BQFactory.createFromXml = function(xmlResource, resource, parent) {
-    var stack = [];
-    var resources = [];
-    //  Initialize stack with a tuple of 
-    //    1. The XML node being parsed
-    //    2. The current resource being filled out
-    //    3. The parent resource if any
-    stack.push ([xmlResource, resource, parent]);
-    while (stack.length != 0) {
-        var elem = stack.shift();
-        var node = elem[0];
-        var resource  = elem[1];
-        var parent = elem[2];
-        var type_ = node.nodeName;
-        if (resource == null){
-            if (type_ == 'resource') 
-               type_ = attribStr(node, 'type');
-            resource = BQFactory.make(type_);
-        }
-        resource.initializeXml(node);
-        resources.push (resource);
-        if (parent) {
-            resource.setParent(parent) ;
-            resource.doc = parent.doc;
-        }
-        for (var i=0; i < node.childNodes.length; i++ ) {
-            var k = node.childNodes[i];
-            if (k.nodeType == 1 &&  ! (k.nodeName in BQFactory.ignored)) // Element nodes ONLY
-                stack.push ( [ k, null, resource ]);
-            //else
-            //    clog ("Got Node type" + k.nodeType + " for " + k.text);
-        }
-    }
-
-    response = resources[0];
-
-    // dima: do some additional processing after you inited elements    
-    var rr = resources.reverse();       
-    for (var p=0; (r=rr[p]); p++)
-        if (r.afterInitialized) r.afterInitialized(); 
-    
-    return response;
-}
-
-
-/** 
- * Load a Bisque URL as an object. Calls cb (loaded_object) when done.
- * Checks for both outstanding ajax requests and previously loaded objects.
- */
-BQFactory.load = function(uri, cb, progresscb, cache) {
-    BQFactory.request({ uri : uri, 
-                        cb  : cb,
-                        progresscb: progresscb,
-                        cache : cache});
-};
-
-//request({uri_params : { meta: null, view:'deep' }
-
-default_error_callback = function (o) {
-  //alert(o.message);
-  clog(o.message);
-}
-
-BQFactory.request = function(params) {
-    var uri =  params.uri;
-    var url_params = params.uri_params;
-    var cb  =  params.cb;
-    var progresscb = params.progresscb;
-    var cache = (typeof params.cache=="undefined")?true:false;
-    var method = params.method || "get";
-    var xmldata = params.xmldata;
-    params.errorcb = params.errorcb || default_error_callback;    
-
-    if (url_params) {
-        var pl = [];
-        var v;
-        for (var x in url_params) {
-            if (url_params[x]) {
-                v = encodeURIComponent(url_params[x])
-                pl.push(x+'='+v);
-            } else {
-                pl.push(x);
-            }
-        }
-        if ( uri.indexOf('?')==-1 )
-            uri = uri + '?' + pl.join('&');
-        else
-            uri = uri + '&' + pl.join('&');            
-    }
-
-    clog ("Loading: " + uri);
-    if (! uri) {
-        clog("ERROR: trying to load null uri");
-    }
-    if (cache && uri in BQFactory.session) {
-        var o = BQFactory.session[uri];
-        if (o instanceof XMLHttpRequest) {
-            clog ("outstanding request");
-            if (cb) 
-                chainRequest(o, callback(BQFactory, 'loaded_callback', uri, cb));
-        } else {
-            //clog ("using cache result");
-            //if (cb) cb(o);
-            // Just redo the request
-            clog ('re-issuing cached result ' + uri);
-            BQFactory.session[uri] = xmlrequest(uri, callback(BQFactory, 'on_xmlresponse', params), method, xmldata, params.errorcb);
-        }
-    } else if (progresscb) {
-        BQFactory.session[uri] = 
-            xmlrequest(uri, callback(BQFactory, 'on_xmlresponse_progress', params), method, xmldata, params.errorcb);
-
-    } else {
-        BQFactory.session[uri] = xmlrequest(uri, callback(BQFactory, 'on_xmlresponse', params), method, xmldata, params.errorcb);
-    }
-};
-
-
-
-
-BQFactory.loaded_callback = function (uri, cb, xmldoc) {
-    var o = BQFactory.session[uri];
-    cb (o);
-};
-
-BQFactory.on_xmlresponse = function(params, xmldoc) {
-    var uri = params.uri;
-    var cb  = params.cb;
-    var errorcb = params.errorcb;
-    
-
-    clog('Response: ' + uri);
-    //
-    //
-    try { 
-        var n = xmldoc.firstChild;
-        if (!n) return null;
-        if (n.nodeName == 'response') 
-        n = n.firstChild;
-        if (!n) return null;        
-        var ty = n.nodeName;
-        if (ty=='resource') ty = attribStr(n, 'type');
-        var bq = BQFactory.make (ty, uri);
-        BQFactory.createFromXml(n, bq, null);
-        bq.doc = bq;
-        BQFactory.session[uri] = bq;
-    } catch  (err) {
-        clog ("on_xmlresponse error" + err);
-        if (errorcb) errorcb ({ xmldoc : xmldoc, message : 'parse error' });
-        return;
-    }
-    return cb(bq);    
-}
-
-
-// <x:include xlink:href="http://ssks?offset=5&limit=5" />
-BQFactory.on_xmlresponse_progress = function (params, xmldoc) {
-    var uri = params.uri;
-    var cb  = params.cb;
-    var progresscb = params.progresscb;
-    var errorcb = params.errorcb;
-
-    clog('Response: ' + uri);
-    try {
-        var loaded = [];
-        var last = true;
-        var n = xmldoc.firstChild;
-        if (!n) return;
-        if (n.nodeName == "response") 
-        n = n.firstChild;
-        var bq = BQFactory.make (n.nodeName, uri);
-        bq.doc = bq;
-        BQFactory.session[uri] = bq;
-        if (n.nodeName == "resource") 
-        n  = n.firstChild;
-        while (n != null) {
-            var node = n;
-            n = node.nextSibling;
-            
-            if (node.name == 'include') {
-                xmlrequest (node.attributes['href'], 
-                            callback(BQFactory, 'on_xmlresponse_progress',
-                                     uri, cb, progresscb));
-                last = false;
-                continue;
-            }
-            // Must be node result
-            var o = BQFactory.createFromXml (node, null, bq);
-            loaded.push (o);
-            if (progresscb != null) 
-            progresscb(o);
-        }    
-        if (cb && last) cb(bq);
-    } catch (err) {
-        clog ("on_xmlresponse error" + err);
-        if (errorcb) errorcb ({ xmldoc : xmldoc, message : 'parse error' });
-    }
-}
-
-BQFactory.parseBQDocument = function (xmltxt) {
-    var parser  = new DOMParser ();
-    xmldoc = parser.parseFromString(xmltxt, "text/xml");
-    var n = xmldoc.firstChild;
-    if (!n) return null;
-    if (n.nodeName == 'response') 
-        n = n.firstChild;
-    if (!n) return null;        
-    var ty = n.nodeName;
-    var bq = BQFactory.make (ty);
-    BQFactory.createFromXml(n, bq, null);
-    bq.doc = bq;
-    return bq;
-}
-
-
-/////////////////////////////////////////////////
-//
 function BQImage (uri){
     BQObject.call(this, uri);
-    this.xmltag = "image";
-    this.xmlfields = [ "uri", 'permission', "type", 'owner', 'name' ] ;
-                        
-//                       "src", "x", "y","z", "t", "ch" ] ;
-
+    this.resource_type = "image";
 }
 BQImage.prototype = new BQObject();
 //extend(BQImage, BQObject);
 
-BQImage.prototype.initializeXml = function (image) {
-    this.uri = attribStr(image,'uri');
-    this.permission = attribStr(image,'permission');
-    this.ts   = attribStr(image,'ts');
-    this.type   = attribStr(image,'type');
-    this.owner   = attribStr(image,'owner');
-    this.name  = attribStr(image,'name');
-    this.value = attribStr(image,'value');
-    this.resource_type = this.xmltag;
-
-    this.src  = '/image_service/images/' + attribStr(image,'resource_uniq');
-    // in the case the the data is coming from another server, make sure to load proper URL
-    this.src = this.uri.replace(/\/data_service\/.*$/i, this.src);
-    
-//    this.x    = attribInt(image,'x');
-//    this.y    = attribInt(image,'y');
-//    this.z    = attribInt(image,'z');
-//    this.t    = attribInt(image,'t');
-//    this.ch   = attribInt(image,'ch');
-}
-
-////////////////////////////////////////////////
-
-function parseValueType(v, t) {
-    try {
-        if (t && t == 'number') 
-            return parseFloat(v);
-        else if (t && t == 'boolean') 
-            return (v=='true') ? true : false;
-    } catch(err) {
-        return v;          
+BQImage.prototype.initializeXml = function (node) {
+    BQObject.prototype.initializeXml.call(this, node);
+    if (this.resource_uniq) {
+        this.src  = '/image_service/images/' + this.resource_uniq;
+        // in the case the the data is coming from another server, make sure to load proper URL
+        this.src = this.uri.replace(/\/data_service\/.*$/i, this.src);
     }
-    return v;    
-}
-
-function Value (t, v) {
-    this.xmltag = "value";
-    this.xmlfields = [ 'type', 'index' ];
     
-    if (t != undefined) this.type = t;
-    //if (v != undefined) this.value = v; // dima  
-    if (v != undefined) this.value = parseValueType(v, this.type);    
+    /*
+    this.x    = attribInt(node,'x');
+    this.y    = attribInt(node,'y');
+    this.z    = attribInt(node,'z');
+    this.t    = attribInt(node,'t');
+    this.ch   = attribInt(node,'ch');
+    */
 }
 
-Value.prototype = new BQXml();
-Value.prototype.initializeXml = function (node){
-    //this.value = node.text;
-    this.type = attribStr(node, 'type');
-    //this.value = node.textContent; // dima
-    this.value = parseValueType(node.textContent, this.type);
-    this.index = attribInt(node, 'index');    
+//-----------------------------------------------------------------------------
+// BQFile
+//-----------------------------------------------------------------------------
+
+function BQFile (uri){
+    BQObject.call(this, uri);
+    this.resource_type = 'file';
+}
+BQFile.prototype = new BQObject();
+//extend(BQFile, BQObject);
+
+BQFile.prototype.initializeXml = function (node) {
+    BQObject.prototype.initializeXml.call(this, node);
+    if (this.resource_uniq) {
+        this.src  = '/blob_service/' + this.resource_uniq;
+        // in the case the data is coming from another server, make sure to load proper URL
+        this.src = this.uri.replace(/\/data_service\/.*$/i, this.src);
+    }
 }
 
-Value.prototype.setParent = function (p){
-    p.values.push (this);
-}
-
-Value.prototype.xmlNode = function (){
-    return BQXml.prototype.xmlNode.call (this, this.value)
-}
-
-
-////////////////////////////////////////////////
+//-----------------------------------------------------------------------------
+// BQTag
+//-----------------------------------------------------------------------------
 
 function BQTag (uri, name, value, type) {
     BQObject.call(this, uri);
-    this.values = [];
-    this.xmltag = "tag";
-    this.xmlfields = [ 'uri', 'name', 'type', 'value', 'index', 'permission', 'owner'];
+    //this.values = [];
+    this.resource_type = "tag";
     this.name  = name;
     this.value = value;
     this.type  = type;
@@ -1072,99 +1104,17 @@ function BQTag (uri, name, value, type) {
 BQTag.prototype = new BQObject();
 //extend(BQTag, BQObject);
 
-BQTag.prototype.initializeXml = function (node) {
-    this.uri = attribStr(node,'uri');
-    this.perm = attribInt(node,'permission');
-    this.ts   = attribStr(node,'ts');
-    this.owner   = attribStr(node,'owner');
-
-    this.index = attribInt(node, 'index');
-    this.name = attribStr(node, 'name');
-    this.type =  attribStr(node,'type');
-    //this.value = attribStr(node, 'value'); // dima
-    this.value = parseValueType(attribStr(node, 'value'), this.type);
-    this.resource_type = this.xmltag;
-}
 BQTag.prototype.setParent = function (p) {
-    if (p.tags == this.tags) alert ("parent and child are same");
-//    if (this.index && p.tags[this.index] == null) {
-//        p.tags[this.index] = this;
-//    }else{
-        p.tags.push (this);
-//        this.index = p.tags.length
-//    }
+    if (p.tags == this.tags) 
+        alert ('Warning - BQTag.prototype.setParent: parent and child are same');
+    p.tags = p.tags || [];
+    p.tags.push (this);
     this.parent = p;
 }
 
-// BQTag.prototype.xmlNode = function (content) {
-//     var v = '<tag ';
-//     var fields = [ 'uri', 'name', 'type', 'value', 'index', 'permission'];
-//     for (var f in fields ){
-//         if (this[fields[f]])
-//             v += (fields[f] + '="' + this[fields[f]] + '" ');
-//     }
-//     v += ' />';
-//     return v;
-// }
-
-BQTag.prototype.toXML = function(){
-    var xmlrep = ''
-     for (var i=0; i < this.values.length; i++ ) 
-         xmlrep += this.values[i].xmlNode();
-     for (var i=0; i < this.tags.length; i++ ) 
-         xmlrep += this.tags[i].toXML();
-     for (var i=0; i < this.gobjects.length; i++ ) 
-         xmlrep += this.gobjects[i].toXML();
-    for (var i=0; i < this.children.length; i++ ) 
-        xmlrep += this.children[i].toXML();
-    return this.xmlNode(xmlrep);
-}
-
-////////////////////////////////////////////////
-// 
-function Vertex(x, y, z, t, ch, index) {
-	this.x =x;
-	this.y =y;
-	this.z =z;
-	this.t =t;
-	this.ch =ch;
-	this.index = index;
-    this.xmltag = "vertex";
-    this.xmlfields = [ 'x', 'y', 'z', 't', 'ch', 'index' ];
-}
-Vertex.prototype = new BQXml();
-
-Vertex.prototype.setParent = function (p) {
-//    if (this.index) 
-//        p.vertices[this.index] = this;
-//    else
-        p.vertices.push(this);
-}
-Vertex.prototype.initializeXml = function (node) {
-    this.x = attribFloat(node, "x");
-    this.y = attribFloat(node, "y");
-    this.z = attribFloat(node, "z");
-    this.t = attribFloat(node, "t");
-    this.ch = attribInt(node, "ch");
-    this.index = attribInt(node, "index");
-}
-
-// Vertex.prototype.toXML = function (){
-//     return this.xmlNode();
-// }
-
-// Vertex.prototype.xmlNode = function (content) {
-//      var v = '<vertex ';
-//      var fields = [ 'x', 'y', 'z', 't', 'ch', 'index' ];
-//      for (var f in fields ){
-//          if (this[fields[f]]!= null)
-//              v += (fields[f] + '="' + this[fields[f]] + '" ');
-//      }
-//      v += ' />';
-//      return v;
-// }
-
-//////////////////////////////////////////////
+//-----------------------------------------------------------------------------
+// BQGObject
+//-----------------------------------------------------------------------------
 
 function BQGObject(ty, uri){
     BQObject.call(this, uri);
@@ -1172,67 +1122,39 @@ function BQGObject(ty, uri){
     this.uri=null;
     this.name = null;
     this.vertices = [];
-    this.xmltag = "gobject";
-    this.xmlfields =  [ 'type', 'uri', 'name', 'owner', 'permission' ] ;
+    this.resource_type = "gobject";
 }
 BQGObject.prototype = new BQObject();
 //extend(BQGObject,BQObject)
 
 BQGObject.prototype.initializeXml = function (node) {
+    BQObject.prototype.initializeXml.call(this, node);
+    
     this.type  = node.nodeName;
     if (this.type == 'gobject') 
         this.type = attribStr(node, 'type');
-    this.name = attribStr(node, 'name');
-    this.uri =  attribStr(node, 'uri');
-    this.owner = attribStr(node, 'owner');
-    this.permission = attribStr(node, 'permission');
     
-    this.resource_type = this.xmltag;
-
+    // dima: speed optimization, using xpath for resources with many vertices is much faster
     var x = node.ownerDocument.evaluate('./vertex', node, null, XPathResult.ANY_TYPE, null);
-    
-    this.vertices = [];
     var y = x.iterateNext();
+    if (y) this.vertices = [];
     while (y) {
-        //this.vertices.push([attribFloat(y, 'x'),  attribFloat(y, 'y'), attribFloat(y, 'z'), 
-        //attribFloat(y, 't'), attribFloat(y, 'ch') ]);
-        var v = new Vertex();
-        v.initializeXml(y);
-        this.vertices.push(v);
+        this.vertices.push(new BQVertex(y));
         y = x.iterateNext();
     }
-      
 }
 
 BQGObject.prototype.setParent = function (p) {
+    p.gobjects = p.gobjects || [];    
     p.gobjects.push (this);
     this.parent = p;    
 }
 
-// BQGObject.prototype.xmlNode =  function ( ) {
-//     var node ="<gobject ";
-//     if (this.type && this.type != "") 
-//         node += 'type="'+ this.type + '" ';
-//     if (this.uri && this.uri != "") 
-//         node += 'uri="'+ this.uri + '" ';
-//     if (this.name && this.name != "") 
-//         node += 'name="'+ this.name + '" ';
-//     node += ">";
-//     return node;
-// }
-BQGObject.prototype.toXML =  function () {
-    var xmlrep = '';
-     for (var i=0; i < this.vertices.length; i++ ) 
-         xmlrep += this.vertices[i].xmlNode();
-     for (var i=0; i < this.tags.length; i++ ) 
-         xmlrep += this.tags[i].toXML();
-     for (var i=0; i < this.gobjects.length; i++ ) 
-         xmlrep += this.gobjects[i].toXML();
-     return this.xmlNode (xmlrep);
-}
-//////////////////////////////////////////////
+//-----------------------------------------------------------------------------
+// BQVisitor
 // Simple visitor (mainly for) GObjects
-// 
+//-----------------------------------------------------------------------------
+
 function BQVisitor () {
 }
 BQVisitor.prototype.visit_array = function (l, arglist){
@@ -1352,10 +1274,9 @@ function visit_array (arr, cb) {
 }
 
 
-
-////////////////////////////////////////////////////////////
-// ImagePhys
-// Maintain a record of image physical parameters
+//-------------------------------------------------------------------------------
+// BQImagePhys - maintains a record of image physical parameters
+//-------------------------------------------------------------------------------
 
 function BQImagePhys(bqimage) {
     this.num_channels = 0;
@@ -1636,31 +1557,17 @@ BQUrl.prototype.server = function () {
 
 function BQUser (){
     BQObject.call(this);
-    this.xmltag = "user";
-    this.xmlfields = [ 'uri', 'type', 'name', 'owner', 'permission' ];
+    this.resource_type = "user";
 }
 
 BQUser.prototype = new BQObject();
-//extend(BQImage, BQObject);
+//extend(BQUser, BQObject);
 
-BQUser.prototype.initializeXml = function (user) {
-    this.resource_type = this.xmltag;
-    this.uri = attribStr(user,'uri');
-
-    //this.display_name = attribStr(user,'display_name');
-    //this.password  = attribStr(user,'password');  
-    //this.email_address = attribStr (user, 'email_address');
-
-    this.user_name = attribStr(user,'name');
-    this.name = attribStr(user,'name');
-    this.value = attribStr(user,'value');
-    this.owner = attribStr(user,'owner');
-    this.permission = attribStr(user,'permission');
-    
-    this.display_name = this.user_name;
-    this.ts = attribStr(user,'ts');
-  
-    this.email = attribStr(user, 'value');
+BQUser.prototype.initializeXml = function (node) {
+    BQObject.prototype.initializeXml.call(this, node);    
+    this.user_name     = this.name;
+    this.display_name  = this.user_name;
+    this.email         = this.value;
     this.email_address = this.email;
 }
 
@@ -1689,18 +1596,20 @@ BQUser.prototype.on_credentials = function(cb, cred) {
 
 function BQAuth (){
     BQObject.call(this);
-    this.xmltag = "auth";
+    this.resource_type = "auth";
     this.xmlfields = [ "action", "user", "email" ] ;
 }
 
 BQAuth.prototype = new BQObject();
-//extend(BQImage, BQObject);
+//extend(BQAuth, BQObject);
 
-BQAuth.prototype.initializeXml = function (auth) {
-    this.uri = attribStr(auth,'uri');
-    this.action = attribStr(auth,'action');
-    this.email = attribStr(auth,'email');
-    this.user = attribStr(auth,'user');
+BQAuth.prototype.initializeXml = function (node) {
+    BQObject.prototype.initializeXml.call(this, node);    
+
+    // dima: DIFFERENT ATTRIBUTES!!!
+    this.action = attribStr(node, 'action');
+    this.email  = attribStr(node, 'email');
+    this.user   = attribStr(node, 'user');
 }
 
 
@@ -1724,20 +1633,9 @@ function BQModule () {
                    };
 
     BQObject.call(this);
-    this.xmltag = "module";
+    this.resource_type = "module";
 }
 BQModule.prototype = new BQObject();
-
-BQModule.prototype.initializeXml = function (node) {
-    this.name    = attribStr(node,'name');
-    this.uri     = attribStr(node,'uri');
-    this.type    = attribStr(node,'type');
-    this.ts      = attribStr(node,'ts');
-    this.owner   = attribStr(node, 'owner');
-    this.value   = attribStr(node, 'value');
-    this.permission = attribStr(node, 'permission');
-    this.resource_type = this.xmltag;
-}
 
 BQModule.prototype.afterInitialized = function () {
     
@@ -1814,15 +1712,16 @@ BQModule.prototype.createMEX = function( ) {
     // create OUTPUTS block
     //var tag_outputs = mex.addtag ({name:'outputs'}); // dima: the outputs tag will be created by the module?
     
-    // create execute_options block
+    // dima: the new iterable structure does not require module to post this anymore 
+    //       instead MS would look into module definition file for itarables
+    // create execute_options block    
     if (this.iterables && this.iterables.length>0) {
         var tag_execute = mex.addtag ({name:'execute_options'});
         var iterable_name = undefined;
         for (var p=0; (iterable_name=this.iterables[p]); p++) {
             var i = this.inputs_index[iterable_name];
             if (!i) continue;
-            if (i.type == 'dataset')
-                tag_execute.addtag({ name:'iterable', value:i.name, type: i.type, });
+            tag_execute.addtag({ name:'iterable', value:i.name,  });
         }
     }
     
@@ -1833,24 +1732,16 @@ BQModule.prototype.createMEX = function( ) {
 //-------------------------------------------------------------------------------
 // BQMex
 //-------------------------------------------------------------------------------
+
 function BQMex (){
     BQObject.call(this);
-    this.xmltag = "mex";
-    this.xmlfields = [ "uri", "name", "value", "type", 'owner', 'permission'] ;
+    this.resource_type = "mex";
 }
 
 BQMex.prototype = new BQObject();
-BQMex.prototype.initializeXml = function (mex) {
-    this.uri = attribStr(mex,'uri');
-    this.name = attribStr(mex,'name');
-    this.value = attribStr(mex,'value');
-    this.type  = attribStr(mex,'type');
-    this.ts     = attribStr(mex,'ts');
-    this.permission = attribStr(mex, 'permission');
-    this.owner  = attribStr(mex,'owner');
-    this.resource_type = this.xmltag;
-
-    this.status =this.value;
+BQMex.prototype.initializeXml = function (node) {
+    BQObject.prototype.initializeXml.call(this, node);    
+    this.status = this.value;
 }
 
 BQMex.prototype.hasIterables = function () {
@@ -1861,10 +1752,10 @@ BQMex.prototype.hasIterables = function () {
 // creates mapping from iterable resources in sub MEXes to their MEXes
 BQMex.prototype.findMexsForIterable = function (name, root) {
     root = root || 'inputs/';
+    this.iterables = this.iterables || {};
     if (!name || this.children.length<1) return;
     this.dict = this.dict || this.toDict(true);
         
-    this.iterables = this.iterables || {};
     var dataset = this.dict[root+name];
     this.iterables[name] = this.iterables[name] || {};
     this.iterables[name]['dataset'] = dataset;
@@ -1873,7 +1764,7 @@ BQMex.prototype.findMexsForIterable = function (name, root) {
     for (var i=0; (o=this.children[i]); i++) {
         if (o instanceof BQMex) {
             var resource = o.dict[root+name];
-            this.iterables[name][resource] = o;
+            if (resource) this.iterables[name][resource] = o;
         }
     }
 }
@@ -1902,7 +1793,7 @@ BQMex.prototype.afterInitialized = function () {
         // if the main output does not have a dataset resource, create one
         this.outputs = this.outputs || [];
         this.outputs_index = this.outputs_index || {};        
-        if (!(name in this.outputs_index)) {
+        if (!(name in this.outputs_index) && this.iterables && name in this.iterables && 'dataset' in this.iterables[name]) {
             var r = new BQTag(undefined, name, this.iterables[name]['dataset'], 'dataset');
             this.outputs.push(r);
             this.outputs_index[name] = r;   
@@ -1927,22 +1818,14 @@ BQMex.prototype.afterInitialized = function () {
 //-------------------------------------------------------------------------------
 function BQDataset (){
     BQObject.call(this);
-    this.xmltag = "dataset";
-    this.xmlfields = [ "uri", "name", 'owner', 'permission' ];
+    this.resource_type = "dataset";
 }
-
 BQDataset.prototype = new BQObject();
-BQDataset.prototype.initializeXml = function (mex) {
-    this.uri   = attribStr(mex,'uri');
-    this.name  = attribStr(mex,'name');
-    this.ts    = attribStr(mex,'ts');
-    this.permission = attribStr(mex, 'permission');
-    this.owner = attribStr(mex,'owner');
-    this.resource_type = this.xmltag;    
-}
 
+// dima: some method is required to figure out if an additional fetch is required
 BQDataset.prototype.getMembers = function (cb) {
     // Call the callback cb with the members tag when loaded
+    /*
     var members = this.find_tags ('members');
     if (!members) {
         this.load_tags (callback(this, 'members_loaded', cb));
@@ -1950,59 +1833,32 @@ BQDataset.prototype.getMembers = function (cb) {
         if (cb) cb(members);
         return members;
     }
+    */
+    // we need to make sure we fetched values before we can do this properly
+    this.values = this.values || [];
+    
+    if (cb) cb(this);
+    return this;    
 }
 
-BQDataset.prototype.members_loaded = function (cb, dataset_tags) {
-    // Called by dataset.load_tags with user cb, and actual tags.
-    var members = this.find_tags ('members');
-    if (!members) {
-        function membersLoaded(dataset, cb) {
-            cb(dataset.find_tags('members'));
-        }
-        members = this.addtag ({ name: 'members' });
-        members.save_('', Ext.bind(membersLoaded, this, [cb], true));
-    }
-    cb(members);
-}
-
-// dima: why this save here??? I think this needs rewrite!
 BQDataset.prototype.setMembers = function (nvs) {
-    // Tag an array of Value s
-    var members = this.find_tags ('members');
-
-    if (!members) {
-        members = this.addtag ({ name: 'members' });
-        members.save_();
-        
-    }
-    members.values = nvs
-}
-
-// dima: instead of setMembers, until i'll rewrite the thing
-BQDataset.prototype.newMembers = function (nvs) {
-    var members = this.find_tags ('members');
-    if (!members)
-        members = this.addtag ({ name: 'members' });
-    members.values = nvs
-}
-
-BQDataset.prototype.save_ = function (parenturi, cb, errorcb) {
-    this.doc = this
-    BQObject.prototype.save_.call(this, parenturi, cb, errorcb);
+    this.values = nvs;
 }
 
 BQDataset.prototype.appendMembers = function (newmembers, cb) {
     this.getMembers (callback (this, this.appendMembersResp, newmembers, cb))
 }
 BQDataset.prototype.appendMembersResp = function (newmembers, cb, members_tag) {
-    var members = members_tag.values.concat(newmembers)
-    this.setMembers (members)
+    var members = members_tag.values.concat(newmembers);
+    this.setMembers (members);
     if (cb) cb();
 }
 
 
-////////////////////////////////////////////
-//
+//-------------------------------------------------------------------------------
+// BQSession
+//-------------------------------------------------------------------------------
+
 function BQSession () {
     BQObject.call(this);
     this.current_timer = null;

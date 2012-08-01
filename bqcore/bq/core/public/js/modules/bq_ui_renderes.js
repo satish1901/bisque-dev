@@ -264,7 +264,9 @@ Ext.define('BQ.selectors.Resource', {
             width       :   '85%',
             selType     :   'SINGLE',
             listeners   :   {'Select': function(me, resource) { 
-                                   this.onselected(resource);
+                                   //this.onselected(resource);
+                                   var i = this; var r = resource;
+                                   setTimeout(function() { i.onselected(r); }, 100);                                   
                             }, scope: this },
             
         });        
@@ -280,7 +282,9 @@ Ext.define('BQ.selectors.Resource', {
             tagQuery : template.example_query, 
             wpublic  : 'true',            
             listeners: {  'Select': function(me, resource) { 
-                           this.onselected(resource);
+                           //this.onselected(resource);
+                           var i = this; var r = resource;
+                           setTimeout(function() { i.onselected(r); }, 100);                               
                     }, scope: this },
         });                
     },
@@ -290,6 +294,7 @@ Ext.define('BQ.selectors.Resource', {
             'height' : '85%',
             'width' :  '85%',
             listeners: {  'DatasetSelect': function(me, resource) { 
+                           //this.onselected(resource);
                            var i = this; var r = resource;
                            setTimeout(function() { i.onselected(r); }, 100);
                     }, scope: this },
@@ -302,7 +307,9 @@ Ext.define('BQ.selectors.Resource', {
             //maxFiles: 1,
             //dataset_configs: BQ.upload.DATASET_CONFIGS.PROHIBIT, 
             listeners: {  'uploaded': function(reslist) { 
-                           this.onselected(reslist[0]);
+                           //this.onselected(reslist[0]);
+                           var i = this; var r = reslist[0];
+                           setTimeout(function() { i.onselected(r); }, 100);                           
                     }, scope: this },              
         });        
     },
@@ -891,7 +898,7 @@ Ext.define('BQ.selectors.Mex', {
         var browser  = Ext.create('Bisque.ResourceBrowser.Dialog', {
             'height' : '85%',
             'width' :  '85%',
-            dataset: '/data_service/mex',
+            dataset: bq.url('/data_service/mex'),
             tagQuery: template.query,
             listeners: {  'Select': function(me, resource) { 
                            this.onselected(resource);
@@ -988,7 +995,7 @@ Ext.define('BQ.selectors.SubTree', {
         
         var grid = Ext.create('BQ.grid.Panel', {
             border: 1,
-            url: '/data_service/image',
+            url: bq.url('/data_service/image'),
         });
         this.items.push(grid);
         
@@ -1644,16 +1651,6 @@ function createStatsArgs(command, template, name) {
 Ext.define('BQ.renderers.RendererWithTools', {
     extend: 'BQ.renderers.Renderer',
 
-/*
-    tools: {
-        'plot'          : 'createMenuPlot',
-        'export-csv'    : 'createMenuExportCsv',
-        'export-xml'    : 'createMenuExportXml',
-        'export-excel'  : 'createMenuExportExcel',
-        'export-gdocs'  : 'createMenuExportGdocs',
-        'preview-movie' : 'createMenuPreviewMovie',   
-    },
-*/
     toolsPlot: {
         'plot'          : 'createMenuPlot',
     },
@@ -1665,6 +1662,7 @@ Ext.define('BQ.renderers.RendererWithTools', {
         'export_xml'    : 'createMenuExportXml',
         'export_excel'  : 'createMenuExportExcel',
         'export_gdocs'  : 'createMenuExportGdocs',
+        'export_package': 'createMenuExportPackage',
     },
 
     createTools : function() {
@@ -1697,18 +1695,17 @@ Ext.define('BQ.renderers.RendererWithTools', {
             text: template[name+'/label']?template[name+'/label']:'Plot',
             scope: this,
             handler: function() {
-                var title = template[name+'/title'];
+                var title = template[name+'/label']?template[name+'/label']:'Plot';
                 if (title instanceof Array) title = title.join(', ');
-                var titles = template[name+'/titles'];
+                var titles = template[name+'/title'];
                 if (!(titles instanceof Array)) titles = [titles];
-                var opts = { args: {numbins: template[name+'/args/numbins']}, titles: titles, };
                 this.plotter = Ext.create('BQ.stats.Dialog', {
                     url     : this.res_uri_for_tools,
                     xpath   : template[name+'/xpath'],
                     xmap    : template[name+'/xmap'],
                     xreduce : template[name+'/xreduce'],
                     title   : title,
-                    opts    : opts,
+                    opts    : { args: {numbins: template[name+'/args/numbins']}, titles: titles, },
                     root    : this.root,
                 });
             },
@@ -1736,11 +1733,16 @@ Ext.define('BQ.renderers.RendererWithTools', {
             text: template[name+'/label']?template[name+'/label']:'as CSV',
             scope: this,
             handler: function() {
-                var url = '/stats/csv?url=' + this.res_uri_for_tools;
+                var url = bq.url('/stats/csv?url=' + this.res_uri_for_tools);
                 if (this.root) url = this.root + url;
                 url += createStatsArgs('xpath', template, name);
                 url += createStatsArgs('xmap', template, name);
-                url += createStatsArgs('xreduce', template, name);                                        
+                url += createStatsArgs('xreduce', template, name);
+                url += createStatsArgs('title', template, name);
+                if (template[name+'/filename'])
+                    url += '&filename='+template[name+'/filename'];
+                else if (this.res_for_tools) 
+                    url += '&filename='+this.res_for_tools.name+'.csv';
                 window.open(url);                
             },
         });         
@@ -1797,11 +1799,24 @@ Ext.define('BQ.renderers.RendererWithTools', {
             text: 'complete document to Google Docs',
             scope: this,
             handler: function() {
-                window.open('/export/to_gdocs?url='+this.res_uri_for_tools);
+                window.open(bq.url('/export/to_gdocs?url='+this.res_uri_for_tools));
             },
         });        
     }, 
 
+    createMenuExportPackage : function(menu) {
+        if (!this.res_uri_for_tools) return;
+        if (!this.template_for_tools) return;
+        var template = this.template_for_tools || {};
+        if (!('export_package' in template) || template['export_package']==false) return; 
+        menu.add({
+            text: 'complete document as a GZip package',
+            scope: this,
+            handler: function() {
+                window.open(bq.url('/export/initStream?compressionType=gzip&urls='+this.res_uri_for_tools + '?view=deep'));
+            },
+        }); 
+    }, 
 
 });
 
@@ -1843,6 +1858,7 @@ Ext.define('BQ.renderers.Image', {
         // create tools menus
         var tool_items = [];
         if (this.gobjects.length>0) {
+            this.res_for_tools = this.resource;
             this.res_uri_for_tools = this.gobjects[0].uri;
             var gobs = this.definition.gobjects[0];
             this.template_for_tools = (gobs?gobs.template:{}) || {};
@@ -1869,12 +1885,32 @@ Ext.define('BQ.renderers.Image', {
             text: 'Overlay annotations on a movie',
             scope: this,
             handler: function() {
-                window.open('/client_service/movieplayer?resource='+resource_uri+'&gobjects='+this.gobjects[0].uri);
+                window.open(bq.url('/client_service/movieplayer?resource='+resource_uri+'&gobjects='+this.gobjects[0].uri));
             },
         }); 
     }, 
 
-
+    createExportCsv : function(menu, name, template) {
+        if (!this.res_uri_for_tools) return; 
+        menu.add({
+            text: template[name+'/label']?template[name+'/label']:'as CSV',
+            scope: this,
+            handler: function() {
+                var url = bq.url('/stats/csv?url=' + this.res_uri_for_tools);
+                if (this.root) url = this.root + url;
+                url += createStatsArgs('xpath', template, name);
+                url += createStatsArgs('xmap', template, name);
+                url += createStatsArgs('xreduce', template, name);
+                url += createStatsArgs('title', template, name);
+                if (template[name+'/filename'])
+                    url += '&filename='+template[name+'/filename'];
+                else if (this.res_for_tools) 
+                    url += '&filename='+this.viewer.viewer.image.name+'.csv';
+                window.open(url);                
+            },
+        });         
+    },
+    
 });
 
 
@@ -1946,7 +1982,7 @@ Ext.define('BQ.renderers.Dataset', {
         type: 'vbox',
         align : 'stretch',
         pack  : 'start',
-    },    
+    },
 
     constructor: function(config) {
         this.addEvents({
@@ -1986,7 +2022,7 @@ Ext.define('BQ.renderers.Dataset', {
             //dataset: resource,
             dataset: resource.getMembers().uri+'/value',
             selType: 'SINGLE',
-            height: '100%',
+            flex: 1,
             cls: 'bordered',
             viewMode : 'ViewerOnly',
             listeners: { 'Select': function(me, resource) { 
@@ -2025,7 +2061,8 @@ Ext.define('BQ.renderers.Mex', {
         
         // create tools menus
         var tool_items = [];
-        this.res_uri_for_tools = resource.value; // dima: resource.value ???
+        this.res_for_tools = {name: resource.resource_type+'.csv', };
+        this.res_uri_for_tools = resource.value;
         this.template_for_tools = template;
         tool_items = this.createTools();
 
@@ -2054,8 +2091,8 @@ Ext.define('BQ.renderers.Browser', {
         type: 'vbox',
         align : 'stretch',
         pack  : 'start',
-    },    
-
+    },
+    
     constructor: function(config) {
         this.addEvents({
             'selected' : true,
@@ -2080,7 +2117,7 @@ Ext.define('BQ.renderers.Browser', {
             viewMode : 'ViewerOnly',
             tagQuery : resource.value, 
             wpublic  : 'true',
-            height: '100%',
+            flex: 1,            
             cls: 'bordered',
             listeners: { 'Select': function(me, resource) { 
                            window.open(bq.url('/client_service/view?resource='+resource.uri)); 

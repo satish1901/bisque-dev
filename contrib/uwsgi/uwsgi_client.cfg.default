@@ -46,6 +46,9 @@ master = true
 
 #limits
 
+#socket timeout
+socket-timeout = 600
+
 #brutally kill workers that will not terminate within 10 seconds during graceful reload
 reload-mercy = 10
 

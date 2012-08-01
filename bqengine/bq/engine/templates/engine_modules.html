@@ -9,9 +9,14 @@
 <body>
 
 <div >
-
+<h1>Modules on this engine</h1>
 <ul>
-<li py:for="murl,name in modules"><a href="${murl}">${name}</a></li>
+<li py:for="murl,name in modules">
+<img src="$murl/thumbnail" width="64" height="64"/>
+<a href="${murl}/index">${name}</a>
+<a href="${murl}/description">Description</a>
+<a href="${murl}/help">Help</a>
+</li>
 </ul>
 
 </div>

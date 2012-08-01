@@ -59,7 +59,7 @@ Ext.define('Bisque.Resource.Dataset.Compact',
             if (resource.children[i].src)
                 thumbnail = resource.children[i].src+'?thumbnail=75,75&format=jpeg';
             else
-                switch (resource.children[i].xmltag)
+                switch (resource.children[i].resource_type)
                 {
                     case 'dataset':
                     {

@@ -40,7 +40,26 @@ def strtolist(x, sep=','):
 def config_path(*names):
     return to_sys_path(os.path.join('.', 'config', *names))
 
+def which(program):
+    import os
+    def is_exe(fpath):
+        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
 
+    fpath, fname = os.path.split(program)
+    if fpath:
+        if is_exe(program):
+            return program
+    else:
+        p = os.environ["PATH"].split(os.pathsep)
+        p.insert(0, '.')
+        for path in p:
+            exe_file = os.path.join(path, program)
+            if is_exe(exe_file):
+                return exe_file
+
+    return None
+##########################################
+# Local exception
 class RunnerException(Exception):
     """Exception in the runners"""
     def __init__(self, msg =None, mex= {}):
@@ -53,8 +72,11 @@ class RunnerException(Exception):
 
 
 
-
+######################################
+# dict allowing field access to elements
 class AttrDict(dict):
+    "dictionary allowing access to elements as field"
+
     def __init__(self, *args, **kwargs):
         dict.__init__(self, *args, **kwargs)
     def __getattr__(self, name):
@@ -213,6 +235,7 @@ class BaseRunner(object):
         self.mex_tree = kw.pop('mex_tree', None)
         self.module_tree = kw.pop('module_tree', None)
         self.bisque_token = kw.pop('bisque_token', None)
+        self.pool = kw.pop('pool', None)
         # list of dict representing each mex : variables and arguments
         self.mexes = []
         self.rundir = os.getcwd()
@@ -253,7 +276,7 @@ class BaseRunner(object):
                 topmex.named_args.update ( [x.split('=') for x in mex_inputs] )
             topmex.executable.extend(mex_inputs)
             topmex.rundir = self.rundir
-            topmex.options = module_options
+            #topmex.options = module_options
             
             # Create a nested list of  arguments  (in case of submex)
             submexes = self.mex_tree.xpath('/mex/mex')
@@ -273,9 +296,9 @@ class BaseRunner(object):
             # Submex's imply that we are iterated.
             # We can set up some options here and remove any execution 
             # for the top mex.
-            if len(self.mex_tree.xpath('//tag[@name="iterable"]')) or len(self.mexes) > 1:
+            topmex.iterables = mexparser.process_iterables(self.module_tree, self.mex_tree)
+            if topmex.iterables:
                 topmex.executable = None
-                topmex.iterables = mexparser.process_iterables(self.module_tree, self.mex_tree)
 
         log.info("processing %d mexes -> %s" % (len(self.mexes), self.mexes))
 
@@ -296,7 +319,7 @@ class BaseRunner(object):
 
         log.info("starting %d mexes -> %s" % (len(self.mexes), self.mexes))
 
-        if len(self.mexes) > 1:
+        if self.mexes[0].iterables:
             if self.session is None:
                 self.session = BQSession().init_mex(self.mexes[0].mex_url, self.mexes[0].bisque_token)
             self.session.update_mex('running parallel')
@@ -317,18 +340,21 @@ class BaseRunner(object):
 
         self.teardown_environments()
 
-        if len(self.mexes) > 1:
+        if self.mexes[0].iterables:
             if self.session is None:
                 self.session = BQSession().init_mex(self.mexes[0].mex_url, self.mexes[0].bisque_token)
             # outputs 
             #   mex_rul
             #   dataset_url
             tags = None
-            if 'iterables' in self.mexes[0] and self.mexes[0].iterables is not None:
-                iter_name, iter_val, iter_type = self.mexes[0].iterables
-                tags = [ { 'name' : 'outputs',
-                           'tag' : [ { 'name': iter_name, 'value': iter_val, 'type': iter_type },
-                                     { 'name': 'mex_url', 'value': self.mexes[0].mex_url, 'type' : 'mex' },]}]
+            itrs = []
+            for iter_name, iter_val, iter_type in self.mexes[0].iterables:
+                itrs.append( { 'name': iter_name, 'value': iter_val, 'type': iter_type } )
+            itrs.append ( { 'name': 'mex_url', 'value': self.mexes[0].mex_url, 'type' : 'mex' })
+            tags = [ { 'name' : 'outputs',
+                       'tag' : itrs } ]
+
+
             self.session.finish_mex(tags = tags)
         return None
 
@@ -339,6 +365,22 @@ class BaseRunner(object):
 
     def command_status(self, **kw):
         return None
+
+    def check(self, module_tree=None, **kw):
+        "check whether the module seems to be runnable"
+        self.read_config(**kw)
+        # check for a disabled module
+        enabled = self.config.get('module_enabled', 'true').lower() == "true"
+        if not enabled :
+            log.info ('Module is disabled')
+            return False
+        # Add remaining arguments to the executable line
+        # Ensure the loaded executable is a list
+        if isinstance(self.config.executable, str):
+            executable = shlex.split(self.config.executable)
+        if os.name == 'nt':
+            return True
+        return executable and which(executable[0]) is not None
 
     def main(self, **kw):
         # Find and read a config file for the module
@@ -355,17 +397,25 @@ class BaseRunner(object):
         except ModuleEnvironmentError, e:
             log.exception( "Problem occured in module")
             raise RunnerException(str(e), self.mexes)
+        except RunnerException, e:
+            raise
         except Exception, e:
             log.exception ("Unknown exeception: %s" % e)
             raise RunnerException(str(e), self.mexes)
-
-
         return 1
+
+#import multiprocessing
+#log = multiprocessing.log_to_stderr()
+#log.setLevel(multiprocessing.SUBDEBUG)
+
 
 class CommandRunner(BaseRunner):
     """Small extension to BaseRunner to actually execute the script.
     """
     name = "command"
+
+    def __init__(self, **kw):
+        super(CommandRunner, self).__init__(**kw)
 
     def read_config (self, **kw):
         super(CommandRunner, self).read_config (**kw)
@@ -380,22 +430,10 @@ class CommandRunner(BaseRunner):
                 continue
             mex.log_name = os.path.join(mex.rundir, "%s.log" % mex.executable[0])
 
-
-    def execone(self, command_line, stdout = None, stderr=None, cwd = None):
-        retcode = subprocess.call(command_line,
-                                  stdout = stdout,
-                                  stderr = stderr,
-                                  #stdin  = open("/dev/null"),
-                                  shell  = (os.name == "nt"),
-                                  cwd    = cwd
-                                  )
-        if retcode:
-            raise RunnerException (
-                "Command %s gave non-zero return code %s" %
-                (" ".join(command_line), retcode))
-
     def command_execute(self, **kw):
-
+        "Execute the commands locally specified the mex list"
+        self.execute_kw = kw
+        self.processes = []
         for mex in self.mexes:
             if not mex.executable:
                 log.info ('skipping mex %s ' % mex)
@@ -410,17 +448,38 @@ class CommandRunner(BaseRunner):
             self.log( "running '%s' in %s" % (' '.join(command_line), rundir))
             log.info ('mex %s ' % mex)
 
-            self.execone(command_line, 
-                         stdout = open(mex.log_name,'a'),
-                         stderr = subprocess.STDOUT,
-                         cwd = rundir)
-        
-        return self.command_finish
+            self.processes.append(dict( command_line = command_line, logfile = mex.log_name, rundir = rundir, mex=mex))
+
+        # ****NOTE***  
+        # execone must be in engine_service as otherwise multiprocessing is unable to find it
+        # I have no idea why not.
+        from bq.engine.controllers.engine_service import execone, fun
+
+        if self.pool:
+            log.debug ('Using async ppool %s with %s ' % (self.pool, self.processes))
+            #self.pool.map_async(fun, [1,2], callback = self.command_return)
+            self.pool.map_async(execone, self.processes, callback = self.command_return)
+        else:
+            for p in self.processes:
+                retcode = execone (p)
+                if retcode:
+                    raise RunnerException (
+                        "Command %s gave non-zero return code %s" %
+                        (" ".join(p['command_line']), retcode))
+            return self.command_finish
+
+        return None
+    def command_return(self, returns):
+        "collect return values when mex was executed asynchronously "
+        log.info ("Command_return with %s" % returns)
+        for item, retcode in enumerate(returns):
+            command = self.processes[item]['command_line']
+            if retcode :
+                log.error("returned %s (non-zero) for %s " % (retcode, command))
+        self.command_finish(**self.execute_kw)
 
 
 
-
-
-if __name__ == "__main__":
-    CommandRunner().main()
-    sys.exit(0)
+#if __name__ == "__main__":
+#    CommandRunner().main()
+#    sys.exit(0)

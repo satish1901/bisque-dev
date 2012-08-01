@@ -24,7 +24,7 @@ Ext.define('Bisque.ResourceBrowser.Dialog',
         };
         config.height = config.height || '85%';
         config.width = config.width || '85%';
-        config.selType = 'MULTI';
+        config.selType = config.selType || 'MULTI';
 
         var bodySz = Ext.getBody().getViewSize();
         var height = parseInt((config.height.toString().indexOf("%") == -1) ? config.height : (bodySz.height * parseInt(config.height) / 100));
@@ -142,8 +142,9 @@ Ext.define('Bisque.ResourceBrowser.Browser',
             region : 'west',
             split : true,
             layout : 'fit',
-            margin : '3 0 3 3',
+            cls: 'organizer',
             frame : true,
+            header : false,
             hidden : true,
             collapsible: true,
             hideCollapseTool : true,
@@ -152,10 +153,6 @@ Ext.define('Bisque.ResourceBrowser.Browser',
                 {
                     me.setTitle(me.getComponent(0).title);
                 },
-                'beforeexpand' : function(me)
-                {
-                    me.removeDocked(me.header, false);
-                }
             }
         });
 
@@ -182,7 +179,8 @@ Ext.define('Bisque.ResourceBrowser.Browser',
             showGroups : false,
             preferenceKey : 'ResourceBrowser',
             
-            bodyCls : 'background-transparent',
+            //bodyCls : 'background-transparent',
+            bodyCls : 'browser-main',
             // Panel related config
             border : false,
             title : config.title || '',
@@ -234,7 +232,8 @@ Ext.define('Bisque.ResourceBrowser.Browser',
 
             this.browserState['offset'] = this.browserParams.offset;
             this.layoutKey = this.layoutKey || this.browserParams.layout;
-            this.showOrganizer = this.browserParams.showOrganizer || false,
+            this.showOrganizer = this.browserParams.showOrganizer || false;
+            this.selectState = this.browserParams.selectState || 'ACTIVATE';
             this.commandBar.applyPreferences();
 
             if (this.browserParams.dataset!="None")
@@ -422,13 +421,13 @@ Ext.define('Bisque.ResourceBrowser.Browser',
         {
             'ResourceDblClick' : function(resource)
             {
-                if(this.browserParams.selType == 'MULTI')
+                if(this.browserParams.selType == 'MULTI' && this.selectState == 'ACTIVATE')
                     this.fireEvent('Select', this, resource);
             },
 
             'ResourceSingleClick' : function(resource)
             {
-                if(this.browserParams.selType == 'SINGLE')
+                if(this.browserParams.selType == 'SINGLE' && this.selectState == 'ACTIVATE')
                     this.fireEvent('Select', this, resource);
             },
 
@@ -517,6 +516,7 @@ Ext.define('Bisque.ResourceBrowser.Browser',
         this.commandBar.slider.slider.setDisabled(btnLeft.disabled && btnRight.disabled);
         this.commandBar.btnTSSetState(this.browserState.tag_order.toLowerCase());
         this.commandBar.btnSearchSetState(this.browserState.tag_query);
+        this.commandBar.btnActivateSetState(this.selectState);
     },
 
     getURIFromState : function()

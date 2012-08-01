@@ -11,13 +11,19 @@ class AbstractArchiver():
         return '.xml'
     
     def beginFile(self, file):
-        if file.get('extension') == '.xml' or file.get('path') is None:
-            file['extension'] = '.xml'  # ensure extension is XML if we are only exporting XML
-            self.reader = StringIO(etree.tostring(file.get('XML')))
-            
+        if file.get('extension') == 'URL':
+            self.reader = StringIO(file.get('content'))
             self.reader.seek(0, 2)
             self.fileSize = self.reader.tell()
             self.reader.seek(0)
+        
+        elif file.get('extension') == '.xml' or file.get('path') is None:
+            file['extension'] = '.xml'  # ensure extension is XML if we are only exporting XML
+            self.reader = StringIO(etree.tostring(file.get('XML')))
+            self.reader.seek(0, 2)
+            self.fileSize = self.reader.tell()
+            self.reader.seek(0)
+
         else:
             self.reader = open(file.get('path'), 'rb')
 
@@ -40,9 +46,11 @@ class AbstractArchiver():
         return
     
     def destinationPath(self, file):
-        uniq = '-' + file.get('uniq')[-4:] if file.get('uniq') is not None else '' 
+        uniq = '' #-' + file.get('uniq')[-4:] if file.get('uniq') is not None else '' 
         path = file.get('dataset') + os.sep if file.get('dataset') is not '' else ''
         fileName, fileExt = os.path.splitext(file.get('name'))
+        if file.get('extension') == 'URL':
+            return file.get('name')
         path +=  fileName + uniq + (file.get('extension') or fileExt)
         return path
 

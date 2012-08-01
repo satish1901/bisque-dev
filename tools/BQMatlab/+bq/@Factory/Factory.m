@@ -25,22 +25,28 @@ classdef Factory
     
     methods (Static)
         
-        % doc      - URL string or DOM document
-        % element  - optional: DOM element
-        % user     - optional: string
-        % password - optional: string
         function [node] = fetch(doc, element, user, password)
-            %exist('b', 'var') && ~isempty(eval('b'))            
+        % parses the Bisque documentand returns a root bq.Node
+        % if doc is not a DOM document but a string, fetches that first
+        % from file or Bisque server
+        %   doc      - URL string, DOM document or a file name
+        %   element  - optional: DOM element
+        %   user     - optional: string
+        %   password - optional: string
+        
             creds = exist('user', 'var') && ~isempty(user) && ...
                     exist('password', 'var') && ~isempty(password);
             
-            % if doc is a URL then fetch it
-            if ischar(doc),
+            if ischar(doc) && strcmpi(doc(1:4), 'http'),
+                % if doc is a URL then fetch it first
                 if creds,
                     doc = bq.get_xml( doc, user, password );
                 else
                     doc = bq.get_xml( doc );    
                 end                    
+            elseif ischar(doc),
+                % if doc is a filename, load from a file
+                doc = xmlread(doc);
             end            
             
             if ~exist('element', 'var') || isempty(element),
@@ -66,28 +72,26 @@ classdef Factory
                 node = [];
             end            
         end % fetch
-
         
-%         % type     - string of a Bisque object type
-%         % user     - optional: string
-%         % password - optional: string
-%         function [node] = new(type, user, password)
-%             name = 'node';
-%             %bq.Factory.resources('node')
-%             
-%             try
-%                 node = feval(ctorMT.Name,args{:});
-%                 node = feval(bq.Factory.resources('node'), 'http://vidi.ece.ucsb.edu:9090/data_service/image/4932');
-%             catch ME
-%                 warning(ME.identifier, ME.message)
-%                 obj = [];
-%             end            
-%             
-%             
-%         end % new             
-%         
-        
-        
+        function [node] = new(type, name, value)
+        % creates a new DOM document and returns respective bq.Node
+        %   type  - string of a Bisque object type
+        %   name  - name string
+        %   value - value string            
+            if ~exist('type', 'var'),
+                error('bq.factory.new: type is required', '');
+            end
+            input = sprintf('<%s />', type);
+            doc = bq.str2xml(input);
+            node = bq.Factory.fetch(doc);
+            
+            if exist('name', 'var'),                
+                node.setAttribute('name', name);
+            end
+            if exist('value', 'var'),                
+                node.setAttribute('value', value);                
+            end
+        end % new     
         
     end% static methods
 end% classdef

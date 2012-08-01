@@ -35,3 +35,12 @@
     font-size: 12px;
 }
 
+/*******************************************************************/
+
+.loginmenu {
+    padding: 5px 10px 5px 10px;   
+}
+
+.loginmenu .x-panel-body-default {
+    background: transparent;
+}
