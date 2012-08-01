@@ -162,9 +162,8 @@ class DNServer(ServiceController):
         out = open (upload_dir+'/'+upload.filename,"wb")
         shutil.copyfileobj (upload.file, out)
         out.close()
+        upload.file.close()
 
-        #fhash, path = blob_service.store_blob (upload.file, upload.filename)
-        
         return 'Upload done for: ' + upload.filename
 
 
