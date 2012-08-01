@@ -626,7 +626,7 @@ Ext.define('Bisque.ResourceBrowser.Layout.Grid',
                 {
                     var resource = record.get('raw');
                     this.browser.msgBus.fireEvent('ResourceSingleClick', resource.resource);
-                    resource.fireEvent('select', resource);
+                    this.fireEvent('select', resource);
                 },
                 'itemdblclick' : function(view, record, item, index)
                 {
