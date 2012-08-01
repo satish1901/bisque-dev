@@ -183,11 +183,29 @@ class MexParser(object):
         return [ self.prepare_mex_params(module, mx) for mx in mexes ] 
 
     def process_iterables(self, module, mex):
-        'extract iterables from the mex as tuple i.e.  iterable_tag_name, dataset_url'
-        iterable = mex.xpath('./tag[@name="execute_options"]/tag[@name="iterable"]')
-        if len(iterable):
-            mex_inputs = mex.xpath('./tag[@name="inputs"]')[0]
-            iterable_tag_name = iterable[0].get('value')
-            dataset_tag = mex_inputs.xpath('./tag[@name="%s"]' % iterable_tag_name)[0]
-            return ( iterable_tag_name, dataset_tag.get('value'), dataset_tag.get('type'))
-        return None
+        """extract iterables from the mex as tuple i.e.  iterable_tag_name, dataset_url
+         (input tagname, value, type) 
+        ('resource_url', 'http://host/dataservice/image/121',  'image')
+        """
+
+        #log.debug ('iteraable module = %s' % etree.tostring(module)) 
+        iterables = []
+        mod_iterables = module.xpath('./tag[@name="execute_options"]/tag[@name="iterable"]')
+        mex_inputs    = mex.xpath('./tag[@name="inputs"]')[0]
+
+        iters = {}
+        for itr in mod_iterables:
+            resource_tag = itr.get('value')
+            resource_type = itr.get('type')
+            iters.setdefault(resource_tag, {})[resource_type] =  None
+        log.debug ('iterables in module %s' % iters)
+
+        for iter_tag, iter_d in iters.items():
+            for iter_type in iter_d.keys():
+                log.debug ("checking name=%s type=%s" % (iter_tag, iter_type))
+                resource_tag = mex_inputs.xpath('./tag[@name="%s" and @type="%s"]' % (iter_tag, iter_type))
+                if len(resource_tag):
+                    # Hmm assert len(resource_tag) == 1
+                    iterables.append( (iter_tag, resource_tag[0].get('value'), resource_tag[0].get('type') ))
+        log.debug('iterables  %s' % iterables)
+        return iterables

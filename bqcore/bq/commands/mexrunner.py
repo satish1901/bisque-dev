@@ -58,7 +58,12 @@ def main():
     
     time.sleep(10)
     while True:
-        mexrunner.process_pending()
+        try:
+            mexrunner.process_pending()
+        except  (KeyboardInterrupt, SystemExit):
+            raise
+        except:
+            log.exception("Continuing after exception:")
         time.sleep(qwait)
 
 if __name__ == '__main__':

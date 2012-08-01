@@ -56,9 +56,9 @@ Prepare a Python Virtual Environment
 
    **You must activate the environment** if you logout or create a new shell before using command line tools with bisque.
 
-#. Install imgcnv image manipulation (`imgcnv <http://biodev.ece.ucsb.edu/projects/bioimage/downloader/download/category/4>`_).  Look for  imgcnv_<​SYSTEM>_​1-​XX.​zip and click it. You will need to fill out a form to download. Note: the location of imgcnv should be added into the PATH environment variable. 
+#. Install imgcnv image manipulation (`imgcnv <http://biodev.ece.ucsb.edu/projects/bioimage/downloader/download/category/4>`_).  Look for  imgcnv_<SYSTEM>_1-XX.zip and click it. You will need to fill out a form to download. Note: the location of imgcnv should be added into the PATH environment variable. 
    ::
-         (bqenv)$ unzip imgcnv_​YYYYY-​XX.​zip
+         (bqenv)$ unzip imgcnv_YYYYY-XX.zip
          (bqenv)$ cp imgcnv/imgcnv bqenv/bin
          (bqenv)$ chmod +x bqenv/bin/imgcnv
 

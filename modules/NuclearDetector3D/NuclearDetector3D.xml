@@ -29,7 +29,7 @@
             <template>
                 <tag name="label" value="Nuclear channel" />
                 <tag name="reference" value="resource_url" />
-                <tag name="guess" value="nuc|Nuc|dapi|DAPI|405|dna|DNA|Cy3" />
+                <tag name="guess" value="nuc|Nuc|dapi|DAPI|405|dna|DNA" />
                 <tag name="fail_message" value="You need to select image channel" />
                 <tag name="allowNone" value="false" type="boolean" />
                 <tag name="description" value="Select an image channel representing nulcei" />

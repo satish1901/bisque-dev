@@ -82,16 +82,16 @@ import tg
 from lxml import etree
 from datetime import datetime, timedelta
 from paste.proxy import make_proxy
+from paste.util.multidict import MultiDict
 from pylons.controllers.util import abort
 from tg import controllers, expose, config, override_template
 
 from bq import data_service
 from bq.util import http
 from bq.util.xmldict import d2xml, xml2d
-from bq.core.identity import user_admin, not_anonymous, get_user_pass
+from bq.core.identity import  set_admin_mode
 from bq.core.permission import *
 from bq.exceptions import RequestError
-from bq.core.controllers.proxy import exposexml
 
 log = logging.getLogger('bq.module_server')
 
@@ -240,35 +240,69 @@ def create_mex(module_url, name, mex = None, **kw):
                                  name = param_name,
                                  value= param_val)
                 log.debug ('param found %s=%s' % (param_name, param_val))
-    else:
-        mex.set('name', name)
-        mex.set('value', 'PENDING')
-        mex.set('type', module_url)
+        return mex
+    # Process Mex
+    mex.set('name', name)
+    mex.set('value', 'PENDING')
+    mex.set('type', module_url)
 
-        # Check that we might have an iterable resource
-        iterable = mex.xpath('./tag[@name="execute_options"]/tag[@name="iterable"]')
-        if len(iterable):
-            #mex.set('value', 'SUPER')
-            mex_inputs = mex.xpath('./tag[@name="inputs"]')[0]
-            #mex.remove(mex_inputs)
-            iterable_tag_name = iterable[0].get('value')
-            dataset_tag = mex_inputs.xpath('./tag[@name="%s"]' % iterable_tag_name)[0]
-            #inputs.remove(dataset_tag)
-            dataset = data_service.get_resource(dataset_tag.get('value'), view='full')
-            members = dataset.xpath('/dataset/tag[@name="members"]')[0]
-            for resource in members:
-                # Create SubMex section with original parameters replaced with dataset members
-                subinputs = copy.deepcopy(mex_inputs)
-                resource_tag = subinputs.xpath('./tag[@name="%s"]' % iterable_tag_name)[0]
-                #resource_tag.set('value', resource.text)
-                subinputs.remove (resource_tag)
-                etree.SubElement(subinputs, 'tag', name=iterable_tag_name, value=resource.text)
-                submex = etree.Element('mex', name=name, type=module_url)
-                submex.append(subinputs)
-                mex.append(submex)
+    log.debug('mex original %s' % etree.tostring(mex))
+    # Check that we might have an iterable resource in mex/tag[name='inputs']
+    # 
+    # <moudule> <tag name="execute_options">
+    #   <tag name="iterable" value="resource_url" type="dataset">
+    #        <tag name="xpath" value="./value/@text'/>
+    # </tag></tag> </module>
+    iterables = module.xpath('./tag[@name="execute_options"]/tag[@name="iterable"]')
+    if len(iterables)==0:
+        return mex
+    # Build dict of iterable input names ->   dict of iterable types -> xpath expressions
+    iters = {}
+    for itr in iterables:
+        resource_tag = itr.get('value')
+        resource_type = itr.get('type')
+        resource_xpath = './value/text()'
+        if len(itr):
+            # Children of iterable allow overide of extraction expression
+            if itr[0].get('name') == 'xpath':
+                resource_xpath = itr[0].get('value')
+        iters.setdefault(resource_tag, {})[resource_type] =  resource_xpath
+    log.debug ('iterables in module %s' % iters)
 
-            log.info('mex rewritten-> %s' % etree.tostring(mex))
-            
+    # Find an iterable tags (that match name and type) in the mex inputs, add them mex_tags
+    mex_inputs = mex.xpath('./tag[@name="inputs"]')[0]
+    mex_tags = {}   # iterable_input name :  [ mex_xml_node1, mex_xml2 ] 
+    for iter_tag, iter_d in iters.items():
+        for iter_type in iter_d.keys():
+            log.debug ("checking name=%s type=%s" % (iter_tag, iter_type))
+            resource_tag = mex_inputs.xpath('./tag[@name="%s" and @type="%s"]' % (iter_tag, iter_type))
+            if len(resource_tag):
+                # Hmm assert len(resource_tag) == 1
+                mex_tags[iter_tag] = resource_tag[0]
+    log.debug ('iterable tags found in mex %s' % mex_tags)
+
+    # for each iterable found in the mex inputs, check the resource type 
+    for iter_tag, iterable in mex_tags.items():
+        resource_value = iterable.get('value')
+        resource_type = iterable.get('type')
+        resource_xpath  = iters[iter_tag][resource_type]
+
+        resource = data_service.get_resource(resource_value, view='full')
+        # if the fetched resource doesn't match the expected type, then skip to next iterable
+        if not (resource_type == resource.tag or resource_type == resource.get('type')):
+            continue
+        members = resource.xpath(resource_xpath)
+        log.debug ('iterated xpath %s members %s' % (resource_xpath, members))
+        for value in members:
+            # Create SubMex section with original parameters replaced with iterated members
+            subinputs = copy.deepcopy(mex_inputs)
+            resource_tag = subinputs.xpath('./tag[@name="%s"]' % iter_tag)[0]
+            subinputs.remove (resource_tag)
+            etree.SubElement(subinputs, 'tag', name=iter_tag, value=value)
+            submex = etree.Element('mex', name=name, type=module_url)
+            submex.append(subinputs)
+            mex.append(submex)
+    log.info('mex rewritten-> %s' % etree.tostring(mex))
     return mex
         
 
@@ -382,7 +416,7 @@ class ModuleServer(ServiceController):
         self.service_list = None
 
     def load_services(self):
-
+        "(re)Load all registered service points "
         
         services = data_service.query('service')
         service_list = {}
@@ -429,6 +463,9 @@ class ModuleServer(ServiceController):
         services = data_service.query('service')
         for service in services:
             module = data_service.get_resource(service.get ('type'))
+            if module is None:
+                log.error("missing module %s for service %s "  % (service.get('type'), service.get('name')))
+                continue
             resource.append(module)
         return etree.tostring(resource)
         
@@ -452,6 +489,7 @@ class ModuleServer(ServiceController):
     @expose(content_type='text/xml')
     def register_engine(self, **kw):
         'Helper method .. redirect post to engine resource'
+        set_admin_mode()
         xml =  self.engine._default (**kw)
         self.load_services()
         return xml
@@ -465,7 +503,7 @@ class ModuleServer(ServiceController):
         return self.mex.create_mex(mex)
 
     @expose('bq.module_service.templates.register')
-    def register_module(name, module):
+    def register_module(self, name=None, module=None):
         return dict ()
     @expose(content_type="text/xml")
     def services(self):
@@ -541,21 +579,33 @@ class EngineResource (Resource):
 
 
     def register_module (self, module_def):
+        log.debug('register_module : %s' % module_def.get('name'))
         name = module_def.get ('name')
         ts   = module_def.get ('ts')
-        version = module_def.xpath('//tag[@name="version"]')
-        version = version and version[0].get('value')
+        version = module_def.xpath('./tag[@name="module_options"]/tag[@name="version"]')
+        version = len(version) and version[0].get('value')
         
         found = False
         modules = data_service.query ('module', name=name, view="deep")
+        
+        found_versions = []
         for m in modules:
-            log.info ('module %s : new=%s current=%s' % (name,ts, m.get('ts')))
-            m_version = module_def.xpath('//tag[@name="version"]')[0].get('value')
+            m_version = m.xpath('./tag[@name="module_options"]/tag[@name="version"]')
+            m_version = len(m_version) and m_version[0].get('value')
+            #m_version = m.xpath('//tag[@name="version"]')[0].get('value')
             
+            log.info('module %s ts(version) : new=%s(%s) current=%s(%s)' % (name, ts, version, m.get('ts'), m_version))
+            if m_version in found_versions:
+                log.error("module %s has multiple definitions with same version %s" % (name, m_version))
+                data_service.del_resource(m)
+                continue
+
+            found_versions.append(m_version)
             if m_version == version:
                 if  ts > m.get('ts'):
                     module_def.set('uri', m.get('uri'))
                     module_def.set('ts', str(datetime.now()))
+                    #module_def.set('permission', 'published')
                     m = data_service.update(module_def, replace_all=True)
                     log.debug("Updating new module definition with: " + etree.tostring(m))
                 found = True
@@ -564,7 +614,7 @@ class EngineResource (Resource):
             log.debug ("CREATING NEW MODULE: %s " % name)
             m = data_service.new_resource(module_def)
 
-        log.debug("register_module using  module %s for %s version %s" % (m.get('uri'), name, version))
+        log.debug("END:register_module using  module %s for %s version %s" % (m.get('uri'), name, version))
         return m
 
     def new(self, resource, xml, **kw):
@@ -593,20 +643,23 @@ class EngineResource (Resource):
             module = self.register_module(module_def)
             module_def.set ('uri', module.get ('uri'))
 
+            log.debug ('loading services for %s ' % module.get('name'))
             service = data_service.query('service', name=module.get('name'), view="deep")
             service = (len(service) and service[0]) 
             if  service == 0:
                 service_def = etree.Element('service', 
+                                            permission = 'published',
                                             name = module.get('name'),
                                             type = module.get('uri'),
                                             value = engine_url)
                 service = data_service.new_resource(service_def)
+                log.info("service create %s" % etree.tostring(service))
             else: 
                 service.set('type', module.get('uri'))
                 service.set('value', engine_url)
                 service = data_service.update(service)
+                log.info("service update %s" % etree.tostring(service))
                 
-                log.info("service create %s" % etree.tostring(service))
         return etree.tostring (resource)
 
     def modify(self, resource, xml, **kw):

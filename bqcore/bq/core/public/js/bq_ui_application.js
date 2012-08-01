@@ -57,7 +57,7 @@ Ext.define('BQ.Application', {
             ongotuser: callback(this, this.onGotUser),
             onnouser: callback(this, this.onNoUser),            
         });        
-        
+
         return this;
     },
     
@@ -84,6 +84,10 @@ Ext.define('BQ.Application', {
         this.fireEvent( 'nouser');
         BQ.Preferences.loadUser(null, 'LOADED');
     }, 
+
+    hasUser: function() {
+        return (this.session && this.user);
+    },
 
     getCenterComponent: function() {
         if (this.main)

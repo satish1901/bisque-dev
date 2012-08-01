@@ -1,7 +1,7 @@
 Ext.Loader.setConfig({
     enabled: true
 });
-Ext.Loader.setPath('Ext.ux', '../extjs/examples/ux');
+Ext.Loader.setPath('Ext.ux', bq.url('/js/Share'));
 
 Ext.require([
     'Ext.ux.CheckColumn'
@@ -53,6 +53,7 @@ Ext.define('BQ.ShareDialog', {
             layout      :   'border',
             bodyCls     :   'white',
             items       :   [this.centerPanel, this.eastPanel],
+            owner       :   undefined,
             bbar :
             {
                 xtype   :   'toolbar',
@@ -173,25 +174,32 @@ Ext.define('BQ.ShareDialog', {
             return;
         }
         
+        this.store.removeAll(true);
         this.authRecord = authRecord;
         authRecord = this.authRecord.children;
                     
-        var record = [];
-        var owner = this.browser.findRecord(this.resource.owner), user;
-        record.push([owner.display_name, owner.email, 'owner']);
+        this.fetchUserInfo(this.resource.owner, 'owner', -1);
         
         for (var i=0; i<authRecord.length; i++)
         {
             if (authRecord[i].user)
-            {
-                user = this.browser.findRecord(authRecord[i].user);
-                record.push([user.display_name, user.email, authRecord[i].action]);
-            }
+                this.fetchUserInfo(authRecord[i].user, authRecord[i].action, i);
             else
-                record.push(['', authRecord[i].email, authRecord[i].action]);
+                this.store.loadData([['', authRecord[i].email, authRecord[i].action, i]], true);
         }
-        
-        this.store.loadData(record);
+    },
+    
+    fetchUserInfo : function(uri, permission, sortOrder, user)
+    {
+        if (!user)
+        {
+            BQFactory.request({
+                uri :   uri,
+                cb  :   Ext.bind(this.fetchUserInfo, this, [uri, permission, sortOrder], 0)
+            })
+        }
+        else
+            this.store.loadData([[user.display_name, user.email, permission, sortOrder]], true);
     },
     
     addComponents : function()
@@ -270,48 +278,48 @@ Ext.define('BQ.ShareDialog', {
             
             columns :   {
                             defaults : {
-                                minWidth : 1
+                                minWidth : 20
                             },
                             items : [
                             {
                                 text: 'Name',
-                                flex: 0.4,
+                                flex: 3,
                                 sortable: false,
                                 dataIndex: 'name',
                             },
                             {
                                 text: 'Email address',
-                                flex: 0.5,
+                                flex: 4,
                                 sortable: false,
                                 align: 'center',
                                 dataIndex: 'value'
-                            }, 
+                            },
                             {
-                                text    :   'Permissions',
+                                text    :   'Permission',
                                 defaults:   {
                                                 align       :   'center',
                                                 sortable    :   false,
-                                                minWidth    :   25
+                                                minWidth    :   25,
+                                                maxWidth    :   60,
                                             },
                                 columns :   [{
                                                 xtype       :   'checkcolumn',
                                                 text        :   'View',
                                                 dataIndex   :   'view',
-                                                allowBlank  :   false
                                             },
                                             {
                                                 xtype       :   'checkcolumn',
                                                 text        :   'Edit',
                                                 dataIndex   :   'edit',
                                             }],
-                                flex: 0.3,
+                                flex: 1,
                                 sortable: false,
                                 align: 'center',
                             }, 
                             {
                                 xtype: 'actioncolumn',
                                 itemId: 'colAction',
-                                maxWidth: 80,
+                                maxWidth: 60,
                                 menuDisabled : true,
                                 sortable : false,
                                 align: 'center',
@@ -328,7 +336,7 @@ Ext.define('BQ.ShareDialog', {
                                             BQ.ui.error('Cannot delete owner record!', 3000);
                                             return;
                                         }
-                                        
+
                                         this.userModified = true;
                                         this.authRecord.children.splice(rowIndex-1, 1);
                                         grid.store.removeAt(rowIndex);
@@ -351,6 +359,7 @@ Ext.define('BQ.ShareDialog', {
                 'name',
                 'value',
                 'permission',
+                'viewPriority',
                 {
                     name : 'view',
                     type : 'bool',
@@ -362,17 +371,21 @@ Ext.define('BQ.ShareDialog', {
                     name : 'edit',
                     type : 'bool',
                     convert : function(value, record){
-                        if (value == undefined)
+                        if (Ext.isEmpty(value))
                             value = (record.data.permission=='edit' || record.data.permission=='owner') ? true : false
-                        if (value == true)
-                            record.set('view', true);
                         if (record.data.permission=='owner')
                             value = true;
 
                         return value;
-                    }
+                    },
                 },
             ],
+            sorters: 
+            [{
+                property : 'viewPriority',
+                direction : 'ASC'
+                
+            }],
         });
         
         return this.store;

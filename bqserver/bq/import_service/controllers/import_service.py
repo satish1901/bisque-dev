@@ -621,7 +621,8 @@ class import_serviceController(ServiceController):
         'x_tags' where x can be any string. 
         
         """
-        
+        #log.debug("TRANSFER %s"  % (kw))
+        #log.debug("BODY %s " % request.body[:100])
         params = dict (kw)
         files = []
         for pname, f in params.items():
@@ -677,7 +678,7 @@ class import_serviceController(ServiceController):
         log.info ('insert %s for %s' % (url, user))
         try:
             if user is not None and identity.current.user_name == 'admin':
-                identity.current.user_name = user
+                identity.current.set_current_user( user )
             resource =  blob_service.store_blob(filename=filename, url=url, permission=permission, **kw)
             return etree.tostring(resource)
         except Exception,e:

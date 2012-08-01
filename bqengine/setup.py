@@ -30,5 +30,8 @@ setup(
     entry_points="""
     [bisque.services]
     engine_service = bq.engine.controllers.engine_service
+    [bq.commands]
+    module = bq.engine.commands.module_admin:module_admin
+
     """,
 )
