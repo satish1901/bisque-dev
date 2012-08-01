@@ -128,7 +128,7 @@ class ArchiveStreamer():
                 fileHash = {}
                 dataset = data_service.get_resource(uri, view='full')
                 name = dataset.xpath('/dataset/@name')[0]
-                members = dataset.xpath('/dataset/tag[@name="members"][1]/value')
+                members = dataset.xpath('/dataset/value')
                 
                 for index, member in enumerate(members):
                     finfo = fileInfo(name, member.text, index)
