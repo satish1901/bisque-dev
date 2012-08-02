@@ -11,10 +11,13 @@ import logging
 from optparse import OptionParser
 
 import tg
+from paste.script import command
 from paste.deploy import appconfig
 from bq.config.environment import load_environment
 from bq.core import model
 from bq.util.paths import config_path
+
+
 
 def load_config(filename):
     conf = appconfig('config:' + os.path.abspath(filename))
@@ -38,6 +41,30 @@ def main():
     print "DUMMY LOAD"
 
 
+class LoadEngine(command.Command):
+    """Load the engine without starting"""
+
+    usage = "load_engine config_file"
+    summary = "load the engine code without running engine"
+    group_name = "Bisque"
+    name = None
+    auth = None
+    geo = False
+    package = None
+    sqlalchemy = True
+
+    dry_run = False
+
+
+
+    parser = command.Command.standard_parser(verbose=True)
+    def command(self):
+        config = self.args[0]
+        print("using {0}".format(config))
+        load_config (config)
+        from bq.engine.controllers.engine_service import execone
+        print "DUMMY LOAD"
+        
         
 
 if __name__ == '__main__':

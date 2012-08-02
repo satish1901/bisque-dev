@@ -28,8 +28,10 @@ setup(
             ('public/**', 'ignore', None)]},
 
     entry_points="""
-   [console_scripts]
-    load_engine = bq.engine.commands.load_engine:main
+    [paste.paster_command]
+    load_engine = bq.engine.commands.load_engine:LoadEngine
+    [paste.paster_global_command]
+    load_glo_engine = bq.engine.commands.load_engine:LoadEngine
     [bisque.services]
     engine_service = bq.engine.controllers.engine_service
     [bq.commands]
