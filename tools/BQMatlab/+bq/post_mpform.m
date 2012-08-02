@@ -108,8 +108,8 @@ function [output, info] = post_mpform(url, input, user, password)
         connection = server.openConnection(proxy);
     end    
     % new: end    
-
-    boundary = '----BisqueMatlabAPI***********************';
+    
+    boundary = ['----BisqueMatlabAPIBoundary' randomstring(20)];
     connection.setReadTimeout(1200000);
     connection.setRequestMethod('POST');
     connection.setRequestProperty('Connection', 'Keep-Alive');
@@ -176,6 +176,12 @@ function out = base64encode(str)
     % Uses Sun-specific class, but we know that is the JVM Matlab ships with
     encoder = sun.misc.BASE64Encoder();
     out = char(encoder.encode(java.lang.String(str).getBytes()));
+end
+
+function str = randomstring(N)
+    myset = char(['A':'Z' 'a':'z' '0':'9']);
+    i = ceil(length(myset)*rand(1,N));
+    str = myset(i);
 end
 
 function output = readstream(inputStream)
