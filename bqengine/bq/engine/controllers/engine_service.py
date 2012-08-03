@@ -97,28 +97,28 @@ def fun(p):
     x = os.system ('/bin/ls')
     return x
 
-
-def execone(params):
-    """ Execute a single process locally """
-    #command_line, stdout = None, stderr=None, cwd = None):
-    #print "Exec", params
-    command_line = params['command_line']
-    rundir = params['rundir']
-    
-    if os.name=='nt':
-        exe = which(command_line[0])
-        exe = exe or which(command_line[0] + '.exe')
-        exe = exe or which(command_line[0] + '.bat')
-        if exe is None:
-            raise RunnerException ("Executable was not found: %s" % command_line[0])                
-        command_line[0] = exe
-    print 'CALLing %s in %s' % (command_line,  rundir)
-    return subprocess.call(params['command_line'],
-                           stdout = open(params['logfile'], 'a'),
-                           stderr = subprocess.STDOUT,
-                           shell  = (os.name == "nt"),
-                           cwd    = rundir,
-                           )
+#
+#def execone(params):
+#    """ Execute a single process locally """
+#    #command_line, stdout = None, stderr=None, cwd = None):
+#    #print "Exec", params
+#    command_line = params['command_line']
+#    rundir = params['rundir']
+#    
+#    if os.name=='nt':
+#        exe = which(command_line[0])
+#        exe = exe or which(command_line[0] + '.exe')
+#        exe = exe or which(command_line[0] + '.bat')
+#        if exe is None:
+#            raise RunnerException ("Executable was not found: %s" % command_line[0])                
+#        command_line[0] = exe
+#    print 'CALLing %s in %s' % (command_line,  rundir)
+#    return subprocess.call(params['command_line'],
+#                           stdout = open(params['logfile'], 'a'),
+#                           stderr = subprocess.STDOUT,
+#                           shell  = (os.name == "nt"),
+#                           cwd    = rundir,
+#                           )
 
 def method_unavailable (msg=None):
     abort(503)
@@ -231,6 +231,21 @@ class EngineServer(ServiceController):
         self.running = {}
         self.module_by_name = {}
         self.resource_by_name = {}
+
+#        import multiprocessing, logging
+#        logger = multiprocessing.log_to_stderr()
+#        logger.setLevel(multiprocessing.SUBDEBUG)
+#        log.debug('CWD: %s'%os.getcwd())
+
+        if os.name == 'nt':
+            sys.argv = [sys.argv[0].replace('paster-script.py', 'python.exe'), 'bqengine\\bq\\engine\\controllers\\execone.py']
+            import execone
+            sys.modules['__main__'] = execone
+            from multiprocessing.forking import set_executable 
+            set_executable( sys.argv[0].replace('paster-script.py', 'python.exe') )
+            sys.argv[1] = 'bqengine\\bq\\engine\\controllers\\execone.py'
+            del sys.argv[2:]
+
         self.mpool = multiprocessing.Pool(4)
 
         #self.module_resource = EngineResource()
