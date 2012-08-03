@@ -20,5 +20,10 @@ function doc = str2xml(str)
     import java.io.*;
     iS = InputSource();
     iS.setCharacterStream( StringReader(str) );
-    doc = xmlread(iS);
+    try
+        doc = xmlread(iS);
+    catch  error
+        warning(error.identifier, error.message);
+        doc = [];
+    end
 end 
