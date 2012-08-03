@@ -453,7 +453,7 @@ class CommandRunner(BaseRunner):
         # ****NOTE***  
         # execone must be in engine_service as otherwise multiprocessing is unable to find it
         # I have no idea why not.
-        from bq.engine.controllers.engine_service import execone, fun
+        from bq.engine.controllers.execone import execone
 
         if self.pool:
             log.debug ('Using async ppool %s with %s ' % (self.pool, self.processes))
