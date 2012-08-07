@@ -270,6 +270,18 @@ Ext.define('Bisque.Resource.Mex.Grid',
         fields[2] = '<div style="color:'+color+'">'+fields[2]+'</div>';
         return fields;
     }
-})
+});
+
+// Page view for a mex
+Ext.define('Bisque.Resource.Mex.Page',
+{
+    extend : 'Bisque.Resource.Page',
+    
+    constructor : function(config)
+    {
+        window.location = bq.url('/module_service/'+config.resource.name+'/?mex='+config.resource.uri);
+    }
+});
+
         
 
