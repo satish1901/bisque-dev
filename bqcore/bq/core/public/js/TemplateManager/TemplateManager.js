@@ -7,24 +7,45 @@ Ext.define('BQ.TemplateManager',
             return Ext.create('BQ.TemplateManager.Creator', config);
         },
         
-        initResource : function(resource, template)
+        // Create a blank resource from a template
+        createResource : function(config, cb, template)
         {
-            // Assume the resource and the template are fully loaded)
-            //template
-            
-            
-            
-        }
-    }
-});
+            if (!(template instanceof BQTemplate))
+            {
+                BQFactory.request({
+                    uri     :   template,
+                    cb      :   Ext.pass(BQ.TemplateManager.createResource, [config, cb]),
+                    cache   :   false,
+                });
+            }
+            else
+            {
+                // Parse template URL #http://www.joezimjs.com/javascript/the-lazy-mans-url-parsing/
+                var parser = document.createElement('a');
+                parser.href = template.uri;
+                
+                // Assume the template is fully loaded
+                var resource = new BQResource();
+                
+                Ext.apply(resource, {
+                    resource_type   :   template.name,
+                    type            :   parser.pathname,
+                }, config)
+                
+                resource = copyTags.call(this, template, resource);
+                resource.save_('/data_service/' + resource.resource_type + '?view=deep', cb, function(msg) {BQ.ui.error('An error occured while trying to create a resource from template: ' + msg)});
+            }
 
-Ext.define('BQ.TemplateManager.Visitor', 
-{
-    extend : BQVisitor,
-    
-    visit : function(node, args)
-    {
-        var a = 3;
+            function copyTags(template, resource)
+            {
+                for(var i = 0; i < template.tags.length; i++)
+                {
+                    var tag = template.tags[i]; 
+                    copyTags.call(this, tag, resource.addtag({name:tag.name, value:tag.template["Default value"] || '', type: tag.value}));
+                }
+                return resource;
+            }
+        },
     }
 });
 
@@ -73,11 +94,11 @@ Ext.define('BQ.TemplateManager.Creator',
 
         this.tagger = Ext.create('Bisque.TemplateTagger',
         {
-            resource    :   this.resource,
-            listeners   :   {
-                                'itemclick' :   this.onFieldSelect,
-                                scope       :   this
-                            },
+            resource        :   this.resource,
+            listeners       :   {
+                                    'itemclick' :   this.onFieldSelect,
+                                    scope       :   this
+                                },
         });
         
         this.grid = Ext.create('Ext.grid.property.Grid',
@@ -88,7 +109,7 @@ Ext.define('BQ.TemplateManager.Creator',
                                     scope       :   this
                                 },
             customEditors   :   {
-                                    'Select'    :   {
+                                    'Values'    :   {
                                                         xtype       :   'textareafield',
                                                         emptyText   :   'Enter comma separated values e.g. option1, option2'
                                                     }
@@ -101,10 +122,7 @@ Ext.define('BQ.TemplateManager.Creator',
     
     saveTemplate : function()
     {
-        //BQ.TemplateManager.initResource('', this.resource);
-        //this.tagger.resource.save_();
-        this.resource.save_();
-        BQ.ui.message('', 'Changes saved!');
+        this.resource.save_(undefined, Ext.pass(BQ.ui.notification, ['Changes saved!', 2000]), Ext.pass(BQ.ui.error, ['Save failed!']));
     },
     
     onFieldSelect : function(tree, record)
