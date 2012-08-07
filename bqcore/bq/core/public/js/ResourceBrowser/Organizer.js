@@ -286,6 +286,8 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
     }
 });
 
+
+
 /**
  * @class Bisque.ResourceBrowser.Organizer.TagFilterCt : Generates tag filters
  *        based on existing tag queries
@@ -464,8 +466,33 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
             displayField : 'name',
             store : Ext.create('Ext.data.Store',
             {
-                model : 'Ext.grid.property.Property'
+                model   : 'Ext.grid.property.Property',
+                sorters :   [{
+                                property: 'value',
+                                direction: 'DESC'
+                            }, {
+                                property: 'name',
+                                direction: 'ASC'
+                            }],           
             }),
+            listConfig  :   {
+                                getInnerTpl : function()
+                                {
+                                    return ['<tpl if="value==&quot;gobject&quot;">' +
+                                                '<div>' +
+                                                    '<p class="alignLeft">{name}</p>' + 
+                                                    '<p class="alignRightGobject">gobject</p>' +
+                                                    '<div style="clear: both;"></div>' +
+                                                '</div>' +
+                                            '<tpl else>' +
+                                                '<div>' +
+                                                    '<p class="alignLeft">{name}</p>' + 
+                                                    '<p class="alignRightTag">tag</p>' +
+                                                    '<div style="clear: both;"></div>' +
+                                                '</div>' +
+                                            '</tpl>'];
+                                }
+                            },
             emptyText : 'Select a tag...',
             queryMode : 'local',
             listeners :
@@ -517,7 +544,6 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
             }]
         });
 
-        this.grid.store.sortOnLoad = false;
         this.add([this.tagCombo, this.grid]);
         
     },
