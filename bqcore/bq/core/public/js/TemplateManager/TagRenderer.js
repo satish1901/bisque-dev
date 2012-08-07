@@ -3,14 +3,34 @@ Ext.define('BQ.TagRenderer.Base',
     
     alias               :   'BQ.TagRenderer.Base',
     inheritableStatics  :   {
+                                baseClass       :   'BQ.TagRenderer',
                                 template        :   {
                                                         'Default value' :   '',
-                                                        'Fail message'  :   '',
                                                         'Allow blank'   :   false,
                                                         'Editable'      :   true,
-                                                        'Help text'     :   '',
                                                     },
-                                                
+
+                                /// getRenderer     :   Returns a tag renderer for a given tag type and template information
+                                /// inputs -
+                                /// config.tplType  :   Type of template (String, Number etc.)
+                                /// config.tplInfo  :   Template information    (minValue, maxValue etc.)
+                                getRenderer     :   function(config)
+                                {
+                                    var className = BQ.TagRenderer.Base.baseClass + '.' + config.tplType;
+            
+                                    if (Ext.ClassManager.get(className))
+                                        return Ext.create(className).getRenderer(config);
+                                    else
+                                    {
+                                        Ext.log({
+                                            msg     :   Ext.String.format('TagRenderer: Unknown class: {0}, type: {1}. Initializing with default tag renderer.', className, config.tplType),
+                                            level   :   'warn',
+                                            stack   :   true
+                                        });
+                                        return Ext.create(BQ.TagRenderer.Base.baseClass + '.' +'String').getRenderer(config);
+                                    }
+                                },
+                                
                                 getTemplate     :   function()
                                 {
                                     var componentTemplate = Ext.clone(this.template || {});
@@ -70,12 +90,21 @@ Ext.define('BQ.TagRenderer.String',
     inheritableStatics  :   {
                                 componentName   :   'String',
                                 template        :   {
-                                                        'Help text'             :   'Use "String" type for fields which will contain alphabets and numerals.',
-                                                        'units'                 :   'microns',                   
-                                                        'minLength'             :   10,  
-                                                        'maxLength'             :   100,
+                                                        'minLength'             :   1,  
+                                                        'maxLength'             :   200,
                                                         'RegEx'                 :   ''
                                                     }                    
+                        },
+                        
+    getRenderer         :   function(config)
+                            {
+                                return  {
+                                            xtype       :   'textfield',
+
+                                            minLength   :   config.tplInfo.minLength || BQ.TagRenderer.String.template.minLength,
+                                            maxLength   :   config.tplInfo.maxLength || BQ.TagRenderer.String.template.maxLength,
+                                            regex       :   RegExp(config.tplInfo.RegEx || ''),
+                                        }
                             }
 });
 
@@ -86,11 +115,24 @@ Ext.define('BQ.TagRenderer.Number',
     inheritableStatics  :   {
                                 componentName   :   'Number',
                                 template        :   {
-                                                        'Help text'             :   'Use "Number" type for fields which will only contain numerals.',
                                                         'minValue'              :   0,  
                                                         'maxValue'              :   100,
+                                                        'allowDecimals'         :   true,
+                                                        'decimalPrecision'      :   2,
                                                     }                    
-                            }   
+                            },
+                               
+    getRenderer         :   function(config)
+                            {
+                                return  {
+                                            xtype               :   'numberfield',
+                                            
+                                            minValue            :   config.tplInfo.minValue || BQ.TagRenderer.Number.template.minValue,
+                                            maxValue            :   config.tplInfo.maxValue || BQ.TagRenderer.Number.template.maxValue,
+                                            allowDecimals       :   config.tplInfo.allowDecimals || BQ.TagRenderer.Number.template.allowDecimals,
+                                            decimalPrecision    :   config.tplInfo.decimalPrecision || BQ.TagRenderer.Number.template.decimalPrecision,
+                                        }
+                            }
 });
 
 Ext.define('BQ.TagRenderer.Boolean',
@@ -99,32 +141,140 @@ Ext.define('BQ.TagRenderer.Boolean',
     alias               :   'BQ.TagRenderer.Boolean',
     inheritableStatics  :   {
                                 componentName   :   'Boolean',
+                            },
+
+    getRenderer         :   function(config)
+                            {
+                                return  {
+                                            xtype           :   'checkbox',
+                                            boxLabel        :   ' (checked = true, unchecked = False)',
+                                        }
                             }
 });
 
+Ext.define('BQ.TagRenderer.Date',
+{
+    extend              :   'BQ.TagRenderer.Base',
+    alias               :   'BQ.TagRenderer.Date',
+    inheritableStatics  :   {
+                                componentName   :   'Date',
+                                template        :   {
+                                                        'format'    :   'm/d/Y',
+                                                    }                    
+                            },
 
-Ext.define('BQ.TagRenderer.ComboBox', 
+    getRenderer         :   function(config)
+                            {
+                                return  {
+                                            xtype       :   'datefield',
+                                            format      :   config.tplInfo.format || BQ.TagRenderer.Date.template.format,
+                                            getValue    :   function()
+                                            {
+                                                return this.getRawValue();
+                                            }
+                                        }
+                            }
+});
+
+Ext.define('BQ.TagRenderer.ComboBox',
 {
     extend  :   'BQ.TagRenderer.Base',
     alias   :   'BQ.TagRenderer.ComboBox',
     inheritableStatics  :   {
                                 componentName   :   'ComboBox',
                                 template        :   {
-                                                        'Help text'             :   'Use "ComboBox" type for fields which may contain multiple choices.',
-                                                        'units'                 :   'microns',
-                                                        'Select'                :   '',
+                                                        'Values'    :   '',
                                                     }                    
+                        },
+                        
+    getRenderer         :   function(config)
+                            {
+                                var values = config.tplInfo.Values || '';
+                                return  {
+                                            xtype       :   'combobox',
+                                            store       :   values.split(','),
+                                            editable    :   false
+                                        }
                             }
 });
 
-Ext.define('BQ.TagRenderer.CheckBoxGroup',
+Ext.define('BQ.TagRenderer.Hyperlink',
 {
-    extend  :   'BQ.TagRenderer.Base',
-    alias   :   'BQ.TagRenderer.CheckBoxGroup',
+    extend              :   'BQ.TagRenderer.Base',
+    alias               :   'BQ.TagRenderer.Hyperlink',
     inheritableStatics  :   {
-                                componentName   :   'CheckBoxGroup',
-                                template        :   {
-                                                        'Select'                :   '',
-                                                    }                    
+                                componentName   :   'Hyperlink',
+                            },
+
+    getRenderer         :   function(config)
+                            {
+                                return  {
+                                            xtype       :   'textfield',
+                                            vtype       :   'url'
+                                        }
                             }
 });
+
+Ext.define('BQ.TagRenderer.BisqueResource',
+{
+    extend              :   'BQ.TagRenderer.Base',
+    alias               :   'BQ.TagRenderer.BisqueResource',
+    inheritableStatics  :   {
+                                componentName   :   'BisqueResource',
+                            },
+
+    getRenderer         :   function(config)
+                            {
+                                return  {
+                                            xtype       :   'BisqueResourcePicker',
+                                            editable    :   false,
+                                        }
+                            }
+});
+
+Ext.define('Bisque.Resource.Picker',
+{
+    extend      :   'Ext.form.field.Picker',
+    xtype       :   'BisqueResourcePicker',
+    triggerCls  :   Ext.baseCSSPrefix + 'form-date-trigger',
+    
+    createPicker: function()
+    {
+        var rb = new Bisque.ResourceBrowser.Dialog(
+        {
+            height      :   '85%',
+            width       :   '85%',
+            viewMode    :   'ViewerLayouts',
+            selType     :   'SINGLE',
+            listeners   :
+            {
+                'Select' : function(me, resource)
+                {
+                    this.setValue(resource.uri);
+                },
+
+                scope : this
+            },
+        });
+    },
+});
+
+
+Ext.define('BQ.TagRenderer.Email',
+{
+    extend              :   'BQ.TagRenderer.Base',
+    alias               :   'BQ.TagRenderer.Email',
+    inheritableStatics  :   {
+                                componentName   :   'Email',
+                            },
+
+    getRenderer         :   function(config)
+                            {
+                                return  {
+                                            xtype       :   'textfield',
+                                            vtype       :   'email'
+                                        }
+                            }
+});
+
+
