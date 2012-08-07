@@ -27,6 +27,7 @@ ImgInfoBar.prototype = new ViewerPlugin();
 ImgInfoBar.prototype.create = function (parent) {
     this.parentdiv = parent;
     this.infobar = null;
+    this.namebar = null;    
     return parent;
 }
 
@@ -47,12 +48,24 @@ ImgInfoBar.prototype.updateImage = function () {
       this.infobar.style.cssText = ImgViewer.INFO_CONTROL_STYLE;
       surf.appendChild(this.infobar);
     }
+
+    // create name bar
+    if (!this.namebar) {
+      var surf = this.parentdiv;
+      if (this.viewer.viewer_controls_surface) surf = this.viewer.viewer_controls_surface;
+        
+      this.namebar = document.createElement('span');
+      this.namebar.className = 'name';
+      this.namebar.setAttribute("style", ImgViewer.INFO_CONTROL_STYLE );
+      this.namebar.style.cssText = ImgViewer.INFO_CONTROL_STYLE;
+      surf.appendChild(this.namebar);
+    }
+
     
     // update inforamtion string
     var view = this.viewer.current_view;  
     var dim = view.imagedim;
     var imgphys = this.viewer.imagephys;  
-
 
     if (this.infobar) {
       var s = 'Image: '+dim.x+'x'+dim.y;
@@ -63,11 +76,9 @@ ImgInfoBar.prototype.updateImage = function () {
       s += ' Scale: '+ view.scale*100 +'%';   
       this.infobar.innerHTML = s;
     }
+    
+    if (this.namebar) {
+      this.namebar.innerHTML = this.viewer.image.name;
+    }    
 }
 
-ImgInfoBar.prototype.updatePosition = function () {
-    //if (this.scalebar == null) return;
-    //var view = this.viewer.current_view;  
-    //var imgphys = this.viewer.imagephys;  
-    //this.scalebar.setValue( imgphys.pixel_size[0]/view.scale );   
-}

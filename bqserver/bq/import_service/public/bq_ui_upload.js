@@ -1097,19 +1097,25 @@ Ext.define('BQ.upload.Panel', {
     },     
 
     cancel : function(ondestroy) {
+        if (!ondestroy) this.uploadPanel.setLoading('Canceling uploads...');
         this.uploadPanel.items.each( function() { if (this.cancel) this.cancel(); } );
         if (!ondestroy) {
+            this.uploadPanel.setLoading(false);
             this.testDone(true);        
             this.fireEvent( 'filescanceled', this); 
         }
     },     
    
     setPermissionsToggle : function() {
+        this.uploadPanel.setLoading('Setting permissions...');
         this.uploadPanel.items.each( function() { if (this.togglePermission) this.togglePermission(); } );
+        this.uploadPanel.setLoading(false);
     },      
     
     setPermissions : function(new_perm) {
+        this.uploadPanel.setLoading('Setting permissions...');
         this.uploadPanel.items.each( function() { if (this.setPermission) this.setPermission(new_perm); } );
+        this.uploadPanel.setLoading(false);
     },  
 
     blockPropagation: function (e) {
@@ -1233,6 +1239,7 @@ Ext.define('BQ.upload.Panel', {
     }, 
        
     reupload : function () {
+        this.uploadPanel.setLoading('Removing succeeded uploads...');
         this.uploadPanel.items.each( function() { 
             if (this.state == BQ.upload.Item.STATES.DONE) {
                 this.destroy();
@@ -1241,7 +1248,8 @@ Ext.define('BQ.upload.Panel', {
                 this.setState( BQ.upload.Item.STATES.READY );
             }
         });         
-        this.btn_reupload.setVisible(false);        
+        this.btn_reupload.setVisible(false);  
+        this.uploadPanel.setLoading(false);      
         this.upload();
     }, 
     

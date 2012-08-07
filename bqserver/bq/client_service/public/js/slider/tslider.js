@@ -32,8 +32,8 @@ Ext.define('BQ.slider.TSlider', {
     alias: ['widget.timeslider'],
     alternateClassName: ['BQ.TSlider', 'BQ.ui.TSlider', 'BQ.slider.TSlider'],
 
-    id: 'tslider',
-    
+    cls: 'slider tslider',
+        
     config: {
       //resolution: 1.0,
       unit: 'ms', 

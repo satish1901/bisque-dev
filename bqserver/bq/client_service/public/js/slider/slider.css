@@ -16,12 +16,12 @@
   z-index: 30;   
 }
 
-.slider#tslider {
+.tslider {
   right: 150px;
-  bottom: 15px;  
+  bottom: 15px;
 }
 
-.slider#zslider {
+.zslider {
   right: 15px;
   bottom: 150px; 
 }
