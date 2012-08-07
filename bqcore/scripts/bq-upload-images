@@ -47,8 +47,8 @@ def main():
         parser.error ("Need at least one file or directory and destination")
     dest = args.pop()
 
-    if not dest.endswith('/client_service/upload_images'):
-        dest += '/client_service/upload_images'
+    if not dest.endswith('/import/transfer'):
+        dest += '/import/transfer'
 
     # Prepare username 
     if options.user is None:
