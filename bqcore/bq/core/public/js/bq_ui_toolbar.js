@@ -630,11 +630,6 @@ Ext.define('BQ.Application.Toolbar', {
                     if (form.isValid()) {
                         var v = form.getValues()
                         var resource = BQFactory.make(v.type, undefined, v.name);
-                        
-                        // dima: temporary hack to fix the dataset memebers tag problem
-                        if (v.type == 'dataset')
-                             resource.addtag ({name: 'members'});
-                        
                         resource.save_('/data_service/'+v.type, 
                                        callback(this, this.onResourceCreated), 
                                        callback(this, this.onResourceError));

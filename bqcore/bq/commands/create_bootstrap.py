@@ -11,6 +11,11 @@ def extend_parser(optparse_parser):
     optparse_parser.add_option('--tg', help='Specify turbogears repo to bootstrap', 
                                 default = 'http://www.turbogears.org/2.1/downloads/current/index',)
 
+def adjust_options(options, args):
+    if len(args) == 0:
+        print "installing in bqenv"
+        args.append( 'bqenv' )
+
 
 def after_install(options, home_dir):
     if sys.platform == 'win32':
@@ -44,7 +49,7 @@ def bisque_install(options, home_dir, bindir):
     print "*********************************"
     print "* Execute the following commands*"
     print "source bqenv/bin/activate"
-    print "paver setup"
+    print "paver setup    [ --engine]"
     print "bq-admin setup [engine]"
 
     print "Please visit http://biodev.ece.ucsb.edu/projects/bisquik/wiki/InstallationInstructions and follow instructions there"

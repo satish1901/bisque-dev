@@ -90,7 +90,10 @@ class ArchiveStreamer():
             
             log.debug ('ArchiveStreamer: Sending %s with %s'  % (url, headers))
             header, content = httpReader.request(url, headers=headers)
-            
+
+            if not header['status'].startswith('200'):
+                log.error("URL request returned %s" % header['status'])
+                return None
             items = (header.get('content-disposition') or header.get('Content-Disposition') or '').split(';')
             fileName = str(index) + '.'
             log.debug('Respose headers: %s'%header)
@@ -151,6 +154,7 @@ class ArchiveStreamer():
                 else:
                     fileHash[url] = 1
                     finfo = urlInfo(url, index)
+                if finfo:
                     flist.append(finfo)      # blank dataset name for orphan files
 
         return flist
