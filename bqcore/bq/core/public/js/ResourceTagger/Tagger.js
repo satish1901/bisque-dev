@@ -98,7 +98,7 @@ Ext.define('Bisque.ResourceTagger',
         });
     },
 
-    setResource : function(resource)
+    setResource : function(resource, template)
     {
         this.setLoading(true);
         
@@ -131,8 +131,21 @@ Ext.define('Bisque.ResourceTagger',
             });
     },
 
-    loadResourceTags : function(data)
+    loadResourceTags : function(data, template)
     {
+        var type = this.resource.type || this.resource.resource_type;
+
+        // Check to see if resource was derived from a template
+        if (type.indexOf('data_service/template')!=-1 && !template)
+        {
+            BQFactory.request({
+                uri :   this.resource.type+'?view=deep',
+                cb  :   Ext.bind(this.initCopy, this)
+            });
+            
+            return;
+        }
+
         this.setLoading(false);
 
         var root = {};
@@ -143,6 +156,26 @@ Ext.define('Bisque.ResourceTagger',
         this.relayEvents(this.tree, ['itemclick']);
     },
 
+    initCopy : function(template)
+    {
+        var resource = this.copyTemplate(template, this.resource);
+        this.resource = resource;
+        this.loadResourceTags(this.resource.tags, template);
+    },
+        
+    copyTemplate : function(template, resource)
+    {
+        for(var i = 0; i < resource.tags.length; i++)
+        {
+            var matchingTag = template.find_tags(resource.tags[i].name);
+            matchingTag = (matchingTag instanceof Array)?matchingTag[0]:matchingTag;
+            resource.tags[i].template = matchingTag.template;
+            this.copyTemplate(matchingTag, resource.tags[i]);
+        }
+        
+        return resource;
+    },
+
     getTagTree : function(data)
     {
         this.rowEditor = Ext.create('Bisque.ResourceTagger.Editor',
@@ -150,14 +183,32 @@ Ext.define('Bisque.ResourceTagger',
             clicksToMoveEditor  :   1,
             tagger              :   this,
             errorSummary        :   false,
+
             listeners           :   {
                                         'edit'          :   this.finishEdit,
                                         'cancelEdit'    :   this.cancelEdit,
                                         scope           :   this
                                     },
             
-            beforeEdit          :   function()
+            beforeEdit          :   function(editor)
                                     {
+                                        if (this.tagger.editable && editor.record.raw.template && this.tagger.resource.resource_type!='template')
+                                        {
+                                            if (editor.record.raw.template.Editable)
+                                            {
+                                                try {
+                                                    this.tagger.tree.columns[1].setEditor(BQ.TagRenderer.Base.getRenderer({tplType:editor.record.get('type'), tplInfo:editor.record.raw.template}));
+                                                }
+                                                catch(error)
+                                                {
+                                                    alert(error);
+                                                }
+                                                return true;
+                                            }
+                                            else
+                                                return false;
+                                        }
+
                                         return this.tagger.editable;
                                     }
         });
@@ -267,35 +318,14 @@ Ext.define('Bisque.ResourceTagger',
                 
             }
         }, {
-            text : this.colValueText || 'Value',
-            dataIndex : 'value',
-            flex : 1,
-            sortable : true,
-            field : {
-                // dima: combo box instead of the normal text edit that will be populated with existing tag values
-                xtype     : 'bqcombobox',
-                tabIndex: 1,                
-
-                store     : this.store_values,
-                displayField: 'value',
-                valueField: 'value',
-                queryMode : 'local',                
-                                
-                minChars: 1,
-                allowBlank : true,   
-                editable: true,  
-                forceSelection: false,           
-                autoScroll: true,
-                autoSelect: false,
-                typeAhead : true,
-                
-                //matchFieldWidth: false,
-                defaultListConfig : { emptyText: undefined, loadingText: "Loading...", maxHeight: 300, resizable: false, },
-                
-                //fieldLabel: this.colValueText || 'Value',
-                //labelAlign: 'top',
-            },
-            
+            text        :   this.colValueText || 'Value',
+            itemId      :   'colValue',
+            dataIndex   :   'value',
+            flex        :   1,
+            sortable    :   true,
+            editor      :   {
+                                allowBlank: false
+                            },
             renderer : Bisque.ResourceTagger.BaseRenderer
         }];
     },
@@ -457,7 +487,7 @@ Ext.define('Bisque.ResourceTagger',
                 hidden : this.viewMgr.state.btnImport,
                 scale : 'small',
                 iconCls : 'icon-import',
-                handler : this.importTags,
+                handler : this.importMenu,
                 disabled : this.tree.btnImport,
                 scope : this
             },
@@ -543,6 +573,7 @@ Ext.define('Bisque.ResourceTagger',
             if (this.autoSave)
             {
                 this.saveTags(me.record.raw, true);
+                me.record.data.qtip = this.getTooltip('', me.record);
                 me.record.commit();
             }
 
@@ -620,14 +651,40 @@ Ext.define('Bisque.ResourceTagger',
             BQ.ui.message('', 'No records modified!');
     },
     
-    importTags : function()
+    importMenu : function(btn, e)
+    {
+        if (!btn.menu)
+        {
+            var menuItems = [];
+            
+            for (var i=0; i<BQApp.resourceTypes.length; i++)
+            {
+                menuItems.push({
+                    text    :   'from <b>'+BQApp.resourceTypes[i].name+'</b>',
+                    name    :   '/data_service/'+BQApp.resourceTypes[i].name,
+                    handler :   this.importTags,
+                    scope   :   this
+                })
+            }
+            
+            btn.menu = Ext.create('Ext.menu.Menu', {
+                items   :   menuItems
+            });
+        }
+        
+        btn.showMenu();
+    },
+    
+    importTags : function(menuItem)
     {
         var rb = new Bisque.ResourceBrowser.Dialog(
         {
-            height : '85%',
-            width : '85%',
-            viewMode : 'ViewerLayouts',
-            listeners :
+            height      :   '85%',
+            width       :   '85%',
+            dataset     :   menuItem.name,
+            viewMode    :   'ViewerLayouts',
+            selType     :   'SINGLE',
+            listeners   :
             {
                 'Select' : function(me, resource)
                 {
@@ -647,12 +704,16 @@ Ext.define('Bisque.ResourceTagger',
     
     appendTags : function(data)
     {
+        this.tree.setLoading(true);
+        
         if (data.length>0)
         {
             data = this.stripURIs(data);
             this.resource.tags = this.resource.tags.concat(data);
             this.addNode(this.tree.getRootNode(), data);
         }
+
+        this.tree.setLoading(false);
     },
     
     stripURIs : function(tagDocument)
@@ -716,10 +777,10 @@ Ext.define('Bisque.ResourceTagger',
         
                     this.editable = true;
                     
-                    if (this.tree.rendered)
+                    if (this.tree instanceof Ext.Component)
                     {
                         var tbar = this.tree.getDockedItems('toolbar')[0];
-        
+                        
                         tbar.getComponent('grpAddDelete').getComponent('btnAdd').setDisabled(false);
                         tbar.getComponent('grpAddDelete').getComponent('btnDelete').setDisabled(false);
                         tbar.getComponent('grpImportExport').getComponent('btnImport').setDisabled(false);

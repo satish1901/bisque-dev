@@ -482,6 +482,9 @@ Ext.define('BQ.Application.Toolbar', {
             // create resource element 
             if (this.menu_resource_create) this.menu_resource_create.setVisible(true);   
         
+            // create resource from template element 
+            if (this.menu_createFromTemplate) this.menu_createFromTemplate.setVisible(true);   
+
         }, this);
 
         BQ.Application.on('signedin', function() { 
@@ -503,6 +506,9 @@ Ext.define('BQ.Application.Toolbar', {
                 
             // create resource element  
             if (this.menu_resource_create) this.menu_resource_create.setVisible(false); 
+
+            // create resource from template element 
+            if (this.menu_createFromTemplate) this.menu_createFromTemplate.setVisible(false);   
                          
         }, this);  
 
@@ -545,12 +551,17 @@ Ext.define('BQ.Application.Toolbar', {
         var r=null;
         // always add dataset to the list of available resources!
         menu.add( {text: 'dataset', handler: Ext.Function.pass(pageAction, '/client_service/browser?resource=/data_service/dataset')} );
+        var resourceTypes = [];
+        
         for (var i=0; (r=resource.children[i]); i++) {
+            resourceTypes.push({name:r.name, uri:r.uri});
             if (r.name == 'dataset') continue;
             var name = r.name;
             var uri = r.uri;            
             menu.add( {text: name, handler: Ext.Function.pass(pageAction, '/client_service/browser?resource='+uri)} );
         }
+        
+        BQApp.resourceTypes = resourceTypes;
         
         menu.add( '-' );
         this.menu_resource_create = menu.add( {text: 'Create a new resource', 
@@ -558,9 +569,103 @@ Ext.define('BQ.Application.Toolbar', {
                    scope: this, 
                    hidden: !BQApp.hasUser() });
         
+        this.menu_createFromTemplate = menu.add({
+            text    :   'Create resource from template', 
+            handler :   function() {this.createResourceFromTemplate()},
+            scope   :   this, 
+            hidden  :   !BQApp.hasUser()
+        });
+
         this.child('#menu_images').menu = menu;
         this.child('#menu_resources').menu = menu;        
-    }, 
+    },
+    
+    createResourceFromTemplate  :   function(template)
+    {
+        if (!template)
+        {
+            BQFactory.request({
+                uri     :   '/data_service/template/',
+                cb      :   Ext.bind(this.createResourceFromTemplate, this),
+                errorcb :   function(error){BQ.ui.error('createResourceFromTemplate: Error occured while fetching list of available templates.'+error.message, 4000)}
+                }
+            )
+            
+            return;
+        }
+        
+        var store = Ext.create('Ext.data.Store', {
+            fields  :   ['name', 'uri'],
+            data    :   template.children
+        });
+        
+        var formPanel = Ext.create('Ext.form.Panel',
+        {
+            frame           :   true,
+            width           :   350,
+            defaultType     :   'textfield',
+            bodyStyle       :   {
+                                    padding         :   '10px'
+                                },
+            fieldDefaults   :   {
+                                    msgTarget       :   'side',
+                                    labelWidth      :   100
+                                },
+            defaults        :   {
+                                    anchor          : '100%',
+                                    allowBlank      :   false,
+                                },
+            items           :   [{
+                                    xtype           :   'combobox',
+                                    name            :   'template',
+                                    fieldLabel      :   'Select template',
+                                    store           :   store,
+                                    displayField    :   'name',
+                                    valueField      :   'uri',
+                                    editable        :   false
+                                }, {
+                                    fieldLabel      :   'Name',
+                                    name            :   'name'
+                                }]
+        });
+        
+           
+        var display = Ext.create('Ext.window.Window',
+        {
+            items       :   formPanel,
+            modal       :   true,
+            border      :   false,
+            title       :   'Create resource from template',
+            buttonAlign :   'center',
+            buttons     :   [
+                                {
+                                    text    :   'Create',
+                                    scope   :   this,
+                                    margin  :   3,
+                                    handler :   function(btn)
+                                    {
+                                        var form = formPanel.getForm();
+                                        
+                                        if (form.isValid())
+                                        {
+                                            var input = form.getValues();
+                                            BQ.TemplateManager.createResource({name: input.name}, this.onResourceCreated, input.template+'?view=deep');
+                                        }
+                                    }
+                                },
+                                {
+                                    text    :   'Cancel',
+                                    scope   :   this,
+                                    margin  :   3,
+                                    handler :   function()
+                                    {
+                                        display.destroy();
+                                    }
+                                },
+                            ]
+        }).show();
+        
+    },
    
     createResource : function(resource) {
         var ignore = { 'mex':null, 'user':null, 'image':null, 'module':null, 'service':null, 'system':null, 'file':null, 'dataset':null, };        
