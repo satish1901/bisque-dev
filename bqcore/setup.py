@@ -31,6 +31,7 @@ setup(
         "repoze.tm2 >= 1.0a5",
         "SQLAlchemy>=0.7.6, <0.8",
         "sqlalchemy-migrate",
+        "Alembic",
         "repoze.what-quickstart",
         "repoze.what >= 1.0.8",
         "repoze.what-quickstart",
@@ -115,6 +116,7 @@ setup(
       deploy   = bq.commands.admin:deploy
       sql     = bq.commands.admin:sql
       preferences= bq.commands.admin:preferences
+      database  = bq.commands.admin:database
       
       [paste.paster_create_template]
       bisque_core = bq.bisque_template:CoreServiceTemplate

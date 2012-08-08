@@ -134,6 +134,23 @@ def guess_type(filename):
         return 'image'
     return 'file'
 
+def load_stores():
+    stores = OrderedDict()
+    store_list = [ x.strip() for x in config.get('bisque.blob_service.stores','').split(',') ] 
+    log.debug ('requested stores = %s' % store_list)
+    for store in store_list:
+        params = dict ( (x[0].replace('bisque.stores.%s.' % store, ''), x[1]) 
+                        for x in  config.items() if x[0].startswith('bisque.stores.%s' % store))
+        if 'path' not in params:
+            log.error ('cannot configure %s with out path parameter' % store)
+            continue
+        log.debug("params = %s" % params)
+        driver = blob_storage.make_storage_driver(params.pop('path'), **params)
+        if driver is None: 
+            log.error ("failed to configure %s.  Please check log for errors " % store)
+            continue
+        stores[store] = driver
+    return stores
 
 
 ###########################################################################
@@ -146,23 +163,7 @@ class BlobServer(RestController, ServiceMixin):
     
     def __init__(self, url ):
         ServiceMixin.__init__(self, url)
-        self.stores = OrderedDict()
-        store_list = [ x.strip() for x in config.get('bisque.blob_service.stores','').split(',') ] 
-        log.debug ('requested stores = %s' % store_list)
-        for store in store_list:
-            params = dict ( (x[0].replace('bisque.stores.%s.' % store, ''), x[1]) 
-                            for x in  config.items() if x[0].startswith('bisque.stores.%s' % store))
-            if 'path' not in params:
-                log.error ('cannot configure %s with out path parameter' % store)
-                continue
-            log.debug("params = %s" % params)
-            driver = blob_storage.make_storage_driver(params.pop('path'), **params)
-            if driver is None: 
-                log.error ("failed to configure %s.  Please check log for errors " % store)
-                continue
-            self.stores[store] = driver
-        # Filter out None values for stores that can't be made
-        #self.stores = list(itertools.ifilter(lambda x:x, (blob_storage.make_driver(st, **params) for st in store_list)))
+        self.stores = load_stores()
         log.info ('configured stores %s' % ','.join( str(x) for x in self.stores.keys()))
 
 
@@ -176,7 +177,6 @@ class BlobServer(RestController, ServiceMixin):
             else:
                 abort(401)
         return resource
-
 
     @expose()
     def get_one(self, *args):
@@ -203,7 +203,9 @@ class BlobServer(RestController, ServiceMixin):
         "Create a blob based on unique ID"
         log.info("post() called %s" % kwargs)
         #log.info("post() body %s" % tg.request.body_file.read())
-        return self.storeBlob(flosrc = tg.request.body_file)
+        resource =  self.storeBlob(flosrc = tg.request.body_file)
+        tg.request.body_file.close()
+        return resource
 
     
     @expose()
