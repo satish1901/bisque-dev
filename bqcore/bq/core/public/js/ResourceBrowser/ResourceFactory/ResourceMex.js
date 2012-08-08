@@ -44,9 +44,7 @@ Ext.define('Bisque.Resource.Mex.Compact',
 		this.tagsLoaded=true;
 		this.resource.tags=data.tags;
 		
-		var tagArr=[], tags =
-		{
-		}, found='';
+		var tagArr=[], tags = {}, found='';
 
 		for (var i = 0; i < this.resource.tags.length; i++)
 		{
@@ -129,21 +127,26 @@ Ext.define('Bisque.Resource.Mex.List',
     {
     	if (!this.ttip)
     	{
-	    	this.ttip=Ext.create('Ext.tip.ToolTip', 
-	    	{
-	    		target: me.id,
-	    		width:278,
-	    		cls:'LightShadow',
-	    		style:'background-color:#FAFAFA;border: solid 3px #E0E0E0;',
-	    		layout:'hbox',
-                //autoHide : false,
-	    		listeners : 
-	    		{
-	    			"afterrender" : function(me){if (!this.tagsLoaded) me.setLoading({msg:''})},
-	    			scope : this
-	    		}
-	    	});
-    	}
+            this.ttip = Ext.create('Ext.tip.ToolTip', {
+                target      :   me.id,
+                width       :   278,
+                cls         :   'LightShadow',
+                layout      :   'hbox',
+                style       :   {
+                                    'background-color'  :   '#FAFAFA',
+                                    'border'            :   'solid 3px #E0E0E0'
+                                },
+                listeners   :   {
+                                    'afterrender'   :   function(me)
+                                    {
+                                        if (!this.tagsLoaded)
+                                            me.setLoading({msg:''})
+                                    },
+                                    scope   :   this
+                                }            
+    	   }); 
+        }    	
+    	
         // HACK to hide session "mex". Come up with better strategy in future
         //if (this.resource.status=='SESSION')
         //    this.setVisible(false);
@@ -165,7 +168,6 @@ Ext.define('Bisque.Resource.Mex.List',
         this.mouseIn=false;
         this.callParent(arguments);
     },
-    
     
 	tagData : function(data)
 	{
