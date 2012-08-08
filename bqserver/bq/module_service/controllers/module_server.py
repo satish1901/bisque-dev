@@ -512,7 +512,7 @@ class ModuleServer(ServiceController):
         
 
     def begin_internal_mex(self, name='session', value='active', mex_type = "session"):
-        mex = etree.Element('mex', name=name, value=value, type=mex_type)
+        mex = etree.Element('mex', name=name, value=value, hidden='true', type=mex_type)
         if name:
             mex.set('name',name)
         #etree.SubElement(mex, 'tag',

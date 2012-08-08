@@ -149,7 +149,7 @@ class DatasetServer(ServiceController):
         if dataset is None:
             dataset = data_service.get_resource(duri, view='full')
         if members is None:
-            members = dataset.xpath('/dataset/tag[@name="members"]')[0]
+            members = dataset.xpath('/dataset/value')
 
         op_klass  = self.operations.get(operation, IdemOp)
         op = op_klass(duri, dataset=dataset, members = members)
@@ -187,7 +187,7 @@ class DatasetServer(ServiceController):
         """
 
         dataset = data_service.get_resource(duri, view='deep')
-        members = dataset.xpath('./tag[@name="members"]')[0]
+        members = dataset.xpath('./value')
         for n, val in enumerate(members):
             val.set('index', str(n))
 
@@ -195,15 +195,15 @@ class DatasetServer(ServiceController):
         count = len(members)
         for resource in items:
             # check  if already there:
-            found = members.xpath('./value[text()="%s"]' % resource.get('uri'))
+            found = dataset.xpath('./value[text()="%s"]' % resource.get('uri'))
             if len(found) == 0:
-                val = etree.SubElement(members, 'value', type='object', index = str(count))
+                val = etree.SubElement(dataset, 'value', type='object', index = str(count))
                 val.text =resource.get('uri')
                 count += 1
 
 
-        log.debug ("members = %s" % etree.tostring(members))
-        r = data_service.update(members)
+        log.debug ("members = %s" % etree.tostring (dataset))
+        r = data_service.update(dataset)
         return etree.tostring(r)
 
     @expose(content_type="text/xml")
@@ -211,7 +211,7 @@ class DatasetServer(ServiceController):
     def delete(self, duri, **kw):
         # remove all member 
         dataset = data_service.get_resource(duri, view='full')
-        members = dataset.xpath('./tag[@name="members"]')[0]
+        members = dataset.xpath('./value')
         data_service.del_resource(dataset)
         return self.iterate (operation='delete', dataset=dataset, members=members, **kw)
 

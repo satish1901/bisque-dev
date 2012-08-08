@@ -222,7 +222,29 @@ class BQSession(object):
             smap [ service.type ] = service.value
         self.service_map = smap
 
-    
+    #############################
+    # Classes and Type
+    #############################
+    def element(self, ty, **attrib):
+        elem = etree.Element(ty, **attrib)
+    def append(self, elem, tags=[], gobjects=[], children=[]):
+        def append_mex (mex, type_tup):
+            type_, elems = type_tup
+            for  tg in elems:
+                if isinstance(tg, dict):
+                    tg = d2xml({ type_ : tg})
+                elif isinstance(tg, BQNode):
+                    tg = toXml(tg)
+                elif isinstance(tg, etree._Element):
+                    pass
+                else:
+                    raise BQException('bad values in tag/gobject list %s' % tg)
+                mex.append(tg)
+
+        append_mex(mex, ('tag', tags))
+        append_mex(mex, ('gobject', gobjects))
+        for elem in children:
+            append_mex(mex, elem)
 
     ##############################
     # Mex

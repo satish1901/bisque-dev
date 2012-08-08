@@ -235,9 +235,7 @@ class ResourceFactory(object):
             if v is not None:
                 objarr[indx] = v
             objarr[indx].document = parent.document
-            log.debug('ARRAY = %s' % [ str(x) for x in objarr ])
-            #    v.indx = indx;
-            #log.debug ('fetching %s %s[%d]:%s' %(parent , array, indx, v)) 
+            #log.debug('ARRAY = %s' % [ str(x) for x in objarr ])
             return objarr[indx]
 
 
@@ -483,7 +481,7 @@ def resource2tree(dbo, parent=None, view=[], baseuri=None, nodes= {}, doc_id = N
 
 
 def db2tree(dbo, parent=None, view=[], baseuri=None, progressive=False, **kw):
-    log.debug ("dbo=%s, parent=%s, view=%s, baseuri=%s" %
+    log.debug ("db2tree dbo=%s, parent=%s, view=%s, baseuri=%s" %
                (dbo, parent, view, baseuri))
     if isinstance(view, basestring):
         view = [ x.strip() for x in view.split(',') ]
@@ -514,11 +512,13 @@ def db2tree_int(dbo, parent = None, view=None, baseuri=None, endtime=None):
     if hasattr(dbo, '__iter__'):
         r = []
         for x in dbo:
+            #log.debug ("proxing %s "% x)
             if endtime and  time.clock() >= endtime:
                 fetched = len (r)
                 return False, r
             n, nodes, doc_id = db2node(x, parent, view, baseuri, nodes, doc_id)
             r.append(n)
+        #log.debug ("returning array %s" % r)
         return True, r
         #return [ db2tree_int(x, parent, view, baseuri) for x in dbo ]
     n, nodes, doc_id = db2node(dbo, parent, view, baseuri, nodes, doc_id)
@@ -527,7 +527,7 @@ def db2tree_int(dbo, parent = None, view=None, baseuri=None, endtime=None):
 
 
 def db2node(dbo, parent, view, baseuri, nodes, doc_id):
-    log.debug ("dbo=%s view=%s" % ( dbo, view))
+    #log.debug ("dbo=%s view=%s" % ( dbo, view))
     if 'deep' in view:
         n, nodes, doc_id = resource2tree(dbo, parent, view, baseuri, nodes, doc_id)
         return n, nodes, doc_id
@@ -540,7 +540,8 @@ def db2node(dbo, parent, view, baseuri, nodes, doc_id):
 #    elif "deep" in view:
 #         tl = [ db2tree_int(x, node, view, baseuri) for x in dbo.children ] 
 #         #gl = [ db2tree_int(x, node, view, baseuri) for x in dbo.gobjects ]
-    elif not view or 'short' in view:
+    elif view is None or len(view)==0 or 'short' in view:
+    #elif not view or 'short' in view:
         pass
     else:
         # Allow a list of tags to be specified in the view parameter which 
@@ -648,7 +649,7 @@ def updateDB(root=None, parent=None, resource = None, factory = ResourceFactory,
         evnodes = etree.iterwalk(root, events=('start','end'))
         log.debug ("walking " + str(root))
     except TypeError:
-        log.debug ("blech:" + str( [ root, doc ] ))
+        log.exception ("blech:" + str( [ root, resource ] ))
         return parent
 
     last_resource = None
