@@ -32,90 +32,92 @@ r.ny = r.ny(I);
 my_path = my_path(I,:);
 B = B(:,I);
 
-depth = 3; bf = 3;
-thresh = my_thresh;
-[E,V] = create_funnel(depth,bf,S);
-end_control = [1,0];
-iterations=10;
-thresh=my_thresh;
-result_flag =1;
-for i=1:iterations
-    if ~ end_control(1)
-        Ix_end = my_path(1,2); Iy_end = my_path(1,1);
-        [vec_p_end,vec_n_end] = my_vec_p_n(my_path(1,:),my_path(2,:));
-        sp =  mt_funnel(zeros(Q,1),Ix_end,Iy_end,E,V,vec_p_end,d_p,...
-            vec_n_end,d_n,gradients,a,thresh,depth,S);
-        if isempty(sp)
-            B_end=[];
-            end_control(1)=1;
+if growthVar==1
+    depth = 3; bf = 3;
+    thresh = my_thresh;
+    [E,V] = create_funnel(depth,bf,S);
+    end_control = [1,0];
+    iterations=10;
+    thresh=my_thresh;
+    result_flag =1;
+    for i=1:iterations
+        if ~ end_control(1)
+            Ix_end = my_path(1,2); Iy_end = my_path(1,1);
+            [vec_p_end,vec_n_end] = my_vec_p_n(my_path(1,:),my_path(2,:));
+            sp =  mt_funnel(zeros(Q,1),Ix_end,Iy_end,E,V,vec_p_end,d_p,...
+                vec_n_end,d_n,gradients,a,thresh,depth,S);
+            if isempty(sp)
+                B_end=[];
+                end_control(1)=1;
+            else
+                [current_x,current_y] = get_pos_from_funnel(Ix_end,Iy_end,sp(2),V,vec_p_end,vec_n_end,d_p,d_n);
+                [my_vec_p,my_vec_n] = my_vec_p_n([current_y,current_x],[Iy_end,Ix_end]);
+                Ix_end_new = current_x;
+                Iy_end_new = current_y;
+                my_path = [Iy_end_new,Ix_end_new;my_path];
+                r.vx = [linspace(Ix_end_new-my_vec_n(2)*NL,Ix_end_new+my_vec_n(2)*NL,S)',r.vx];
+                r.vy = [linspace(Iy_end_new-my_vec_n(1)*NL,Iy_end_new+my_vec_n(1)*NL,S)',r.vy];
+                r.nx = [my_vec_n(2);r.nx];
+                r.ny = [my_vec_n(1);r.ny];
+                B_end = [calculate_obs_prob_ext(r,S,gradients,a,b,d_p,NL,'end2'),...
+                    calculate_obs_prob_ext(r,S,gradients,a,b,d_p,NL,'end')];
+            end
         else
-            [current_x,current_y] = get_pos_from_funnel(Ix_end,Iy_end,sp(2),V,vec_p_end,vec_n_end,d_p,d_n);
-            [my_vec_p,my_vec_n] = my_vec_p_n([current_y,current_x],[Iy_end,Ix_end]);
-            Ix_end_new = current_x;
-            Iy_end_new = current_y;
-            my_path = [Iy_end_new,Ix_end_new;my_path];
-            r.vx = [linspace(Ix_end_new-my_vec_n(2)*NL,Ix_end_new+my_vec_n(2)*NL,S)',r.vx];
-            r.vy = [linspace(Iy_end_new-my_vec_n(1)*NL,Iy_end_new+my_vec_n(1)*NL,S)',r.vy];
-            r.nx = [my_vec_n(2);r.nx];
-            r.ny = [my_vec_n(1);r.ny];
-            B_end = [calculate_obs_prob_ext(r,S,gradients,a,b,d_p,NL,'end2'),...
-                calculate_obs_prob_ext(r,S,gradients,a,b,d_p,NL,'end')];
+            B_end = [];
         end
-    else
-        B_end = [];
-    end
-    if ~ end_control(2)
-        Ix_tip = my_path(end,2); Iy_tip = my_path(end,1);
-        %
-        if size(my_path,1) <=1
-            result_flag = 0;
-            disp ('lost the contour: reinitialize.'); 
-            continue; 
-        end
-        %
-        [vec_p_tip,vec_n_tip] = my_vec_p_n(my_path(end,:),my_path(end-1,:));
-        sp =  mt_funnel(delta(:,end),Ix_tip,Iy_tip,E,V,vec_p_tip,d_p,...
-            vec_n_tip,d_n,gradients,a,thresh,depth,S);
-        if isempty(sp)
-            end_control(2) = 1;
+        if ~ end_control(2)
+            Ix_tip = my_path(end,2); Iy_tip = my_path(end,1);
+            %
+            if size(my_path,1) <=1
+                result_flag = 0;
+                disp ('lost the contour: reinitialize.'); 
+                continue; 
+            end
+            %
+            [vec_p_tip,vec_n_tip] = my_vec_p_n(my_path(end,:),my_path(end-1,:));
+            sp =  mt_funnel(delta(:,end),Ix_tip,Iy_tip,E,V,vec_p_tip,d_p,...
+                vec_n_tip,d_n,gradients,a,thresh,depth,S);
+            if isempty(sp)
+                end_control(2) = 1;
+                B_tip=[];
+            else
+                [current_x,current_y] = get_pos_from_funnel(Ix_tip,Iy_tip,sp(2),V,vec_p_tip,vec_n_tip,d_p,d_n);
+                [my_vec_p,my_vec_n] = my_vec_p_n([current_y,current_x],[Iy_tip,Ix_tip]);
+                Ix_tip_new = current_x;
+                Iy_tip_new = current_y;
+                my_path = [my_path;Iy_tip_new,Ix_tip_new];
+                r.vx = [r.vx,linspace(Ix_tip_new-my_vec_n(2)*NL,Ix_tip_new+my_vec_n(2)*NL,S)'];
+                r.vy = [r.vy,linspace(Iy_tip_new-my_vec_n(1)*NL,Iy_tip_new+my_vec_n(1)*NL,S)'];
+                r.nx = [r.nx;my_vec_n(2)];
+                r.ny = [r.ny;my_vec_n(1)];
+                B_tip = calculate_obs_prob_ext(r,S,gradients,a,b,d_p,NL,'tip');
+            end
+        else
             B_tip=[];
-        else
-            [current_x,current_y] = get_pos_from_funnel(Ix_tip,Iy_tip,sp(2),V,vec_p_tip,vec_n_tip,d_p,d_n);
-            [my_vec_p,my_vec_n] = my_vec_p_n([current_y,current_x],[Iy_tip,Ix_tip]);
-            Ix_tip_new = current_x;
-            Iy_tip_new = current_y;
-            my_path = [my_path;Iy_tip_new,Ix_tip_new];
-            r.vx = [r.vx,linspace(Ix_tip_new-my_vec_n(2)*NL,Ix_tip_new+my_vec_n(2)*NL,S)'];
-            r.vy = [r.vy,linspace(Iy_tip_new-my_vec_n(1)*NL,Iy_tip_new+my_vec_n(1)*NL,S)'];
-            r.nx = [r.nx;my_vec_n(2)];
-            r.ny = [r.ny;my_vec_n(1)];
-            B_tip = calculate_obs_prob_ext(r,S,gradients,a,b,d_p,NL,'tip');
         end
-    else
-        B_tip=[];
-    end
-    if ~isempty(B_end)
-        B = [B_end,B(:,2:end),B_tip];
-    else
-        B = [B,B_tip];
-    end
+        if ~isempty(B_end)
+            B = [B_end,B(:,2:end),B_tip];
+        else
+            B = [B,B_tip];
+        end
 
 
-    [state_path,delta,psi] = my_viterbi_path(p2,r,B,tr);
+        [state_path,delta,psi] = my_viterbi_path(p2,r,B,tr);
 
-    if state_path(end) == S+1
-        end_control(2) = 1;
-    end
+        if state_path(end) == S+1
+            end_control(2) = 1;
+        end
 
-    if state_path(1) == S+2
-        end_control(1) = 1;
-    end
+        if state_path(1) == S+2
+            end_control(1) = 1;
+        end
 
-    if end_control(1) && end_control(2)
-        break;
+        if end_control(1) && end_control(2)
+            break;
+        end
     end
-end
-%
+end    
+    %
 if result_flag ~= 0
     my_path = path_conv(state_path,r.vx,r.vy,Q);
     [r,pred_path] = trellis(my_path , d_p , S , NL );
@@ -126,6 +128,8 @@ else
     my_path=[];
     pred_path=[];
 end
+
+    
 %
 % [a,b,thresh] = get_fg_bg_model_train(r,S,gradients,thresh_s);
 
