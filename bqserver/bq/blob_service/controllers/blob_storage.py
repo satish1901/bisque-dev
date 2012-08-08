@@ -128,10 +128,12 @@ class BlobStorage(object):
         'determine whether this store can access the identified file'
     def localpath(self, ident):
         'return the local path of  the identified file'
-
     def write(self, fp, name, user_name=''):
         'write the file to a local blob returning a short ident and the localpath'
-
+    def walk(self):
+        'walk entries on this store .. see os.walk'
+    def delete(self, ident):
+        'delete an entry on the store'
 
 
 ###############################################
@@ -165,8 +167,10 @@ class LocalStorage(BlobStorage):
 
     def write(self, fp, name, user_name=''):
         'store blobs given local path'
+        opened = False
         if not fp and name:
             src = open(name, 'rb')
+            opened = True
         else:
             src = fp
             src.seek(0)
@@ -177,6 +181,8 @@ class LocalStorage(BlobStorage):
         with  open(localpath, 'wb') as trg:
             shutil.copyfileobj(src, trg)
         ident = filepath[len(self.top) + 1:]
+        if opened:
+            src.close()
         return ident, localpath
 
     def localpath(self, path):
@@ -193,6 +199,14 @@ class LocalStorage(BlobStorage):
             else:
                 break
         return fn
+
+    def walk(self):
+        'walk store returning all elements'
+        for tp in os.walk (self.top[5:]):   # remove file: 
+            yield tp
+    def delete(self, ident):
+        log.debug("deleting %s" %  os.path.join(self.top, ident))
+            
 
 ###############################################
 # Irods

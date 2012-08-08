@@ -93,18 +93,11 @@ class cache(object):
 
     def run(self):
         #Check for self.command in init..
-        import server_ops
-        if self.command:
-            server_ops.operation(self.command, self.options, *self.args)
-
-        if os.path.exists ('.cache'):
-            shutil.rmtree ('.cache')
-        os.mkdir ('.cache')
-        if os.path.exists('.server_cache'):
-            shutil.rmtree('.server_cache')
-        os.mkdir ('.server_cache')
-        
-
+        from bq.utils.paths import data_path
+        for p in (data_path('.server_cache'), data_path('.client_cache')):
+            if os.path.exists (p):
+                shutil.rmtree (p)
+                os.makedirs(p)
 
 class database(object):
     desc = 'Execute a database command'
@@ -113,13 +106,25 @@ class database(object):
                     usage="%prog database [admin]",
                     version="%prog " + version)
     
+
+        parser.add_option('-c','--config', default="config/site.cfg")
+        parser.add_option('-n','--dryrun', action="store_true", default=False)
+        options, args = parser.parse_args()
+
+        self.args = args
+        self.options = options
+        if len(args) == 0:
+            parser.error('argument must be clean')
+
         options, args = parser.parse_args()
         self.command = args[0]
         self.args = args[1:]
 
 
     def run(self):
-        ''
+        load_config(self.options.config)
+        import cleandb
+        cleandb.clean_images(self.options)
             
 
         
@@ -237,14 +242,6 @@ class preferences (object):
         transaction.commit()
         with open(prefs,'w') as f:
             f.write(etree.tostring(system, pretty_print=True))
-
-
-
-        
-
-            
-
-
 
 
 class sql(object):
