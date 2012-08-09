@@ -166,24 +166,6 @@
     border-right-width: 0px;     
 }
 
-.welcome_front .x-mask {
-    background-color: transparent; 
-}
-
-.welcome_front .x-mask-msg div {
-    background-image: url('../images/progress_circles.gif');
-    background-color: transparent;
-    background-repeat: no-repeat;
-    background-position: center center;
-    width: 60px;
-    height: 60px;    
-}
-
-.welcome_front .x-mask-msg {
-    background-color: transparent;
-}
-
-
 .welcome_front .ResourceIconList img { 
     /*opacity:0.4;
     filter:alpha(opacity=40); /* For IE8 and earlier */
@@ -246,7 +228,7 @@
 
 .welcome_front .ResourceList {
     background-color: transparent;
-    border: none 0px;
+    border: none 0px !important;
 }
 
 .welcome_front .resource-view-over {
