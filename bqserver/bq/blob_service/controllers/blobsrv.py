@@ -303,12 +303,14 @@ class BlobServer(RestController, ServiceMixin):
 
         resource = DBSession.query(Taggable).filter_by (resource_uniq = ident).first()
         path = None
+        fullpath = None
         if resource is not None and resource.resource_value:
             for store in self.stores.values():
                 if store.valid(resource.resource_value):
-                    path =  store.localpath(resource.resource_value)
+                    fullpath = resource.resource_value
+                    path =  store.localpath(fullpath)
                     break
-            log.debug('using localpath=%s' % path)
+            log.debug('using %s full=%s localpath=%s' % (ident, fullpath, path))
             return path
         raise IllegalOperation("bad resource value %s" % ident)
 
