@@ -42,7 +42,7 @@ function analysisAction(o, e) {
     //}
 
     var w = Math.round(Math.min(500, BQApp?BQApp.getCenterComponent().getWidth()*0.8:document.width*0.8));    
-    var h = Math.round(BQApp?BQApp.getCenterComponent().getHeight()*0.8:document.height*0.8);
+    var h = Math.round(BQApp?BQApp.getCenterComponent().getHeight()*0.99:document.height*0.99);
     
     //var resourceBrowser  = new Bisque.ResourceBrowser.Dialog({    
     var resourceBrowser  = Ext.create('Bisque.ResourceBrowser.Browser', {
@@ -50,6 +50,7 @@ function analysisAction(o, e) {
         wpublic: true,
         selType: 'SINGLE',        
         viewMode: 'ModuleBrowser',
+        showOrganizer: false,
         dataset : '/module_service/',
         listeners : { 
             'Select' : function(rb, module) {
