@@ -626,6 +626,7 @@ def resource_query(resource_type,
     # This converts an request for values to the actual
     # objects represented by those values;  :o
     if dbtype == Value:
+        log.debug ("VALUE QUERY %s" % query)
         sq1 = query.with_labels().subquery()
         query = session.query (Taggable).filter (Taggable.id == sq1.c.values_valobj)
         wpublic = 1
@@ -909,10 +910,11 @@ def resource_delete(resource, user_id=None):
         resource.resource_hidden = True
         log.debug('hiding resource due to references')
         return
-
     q = session.query (TaggableAcl).filter_by (taggable_id = resource.id)
     q.delete()
     session.delete(resource)
+    session.flush()
+
     log.debug('resource_delete %s:end' % resource)
 
 

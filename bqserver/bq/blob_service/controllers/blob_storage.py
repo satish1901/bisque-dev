@@ -205,7 +205,9 @@ class LocalStorage(BlobStorage):
         for tp in os.walk (self.top[5:]):   # remove file: 
             yield tp
     def delete(self, ident):
-        log.debug("deleting %s" %  os.path.join(self.top, ident))
+        fullpath = os.path.join(self.top[5:], ident) # remove file
+        log.debug("deleting %s" %  fullpath)
+        os.remove (fullpath) 
             
 
 ###############################################

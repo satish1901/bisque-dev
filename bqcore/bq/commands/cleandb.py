@@ -3,8 +3,12 @@ import os
 from tg import config
 from sqlalchemy.sql import and_, or_ 
 from bq.util.paths import data_path
+from bq.util.sizeoffmt import sizeof_fmt
+from bq.util.diskusage import disk_usage
 
 __all__  = [ "clean_images" ]
+    
+
 
 def clean_store(local, options):
     from bq.data_service.model import Taggable, Image, DBSession
@@ -31,15 +35,18 @@ def clean_store(local, options):
     print "DB count", len(dbfiles)
     missing = localfiles - dbfiles
     print "deleting %s files" % len(missing)
+    before = disk_usage(top)
     if not options.dryrun:
         for f in missing:
             local.delete(f)
     else:
         print "would delete %s" % missing
+    after = disk_usage(top)
+    print "Reclaimed %s space" % sizeof_fmt(before.used - after.used)
     
 
 def clean_images(options):
-    print "CLEAN"
+    "Clean unreferenced images/files from bisque storage"
 
     from bq.blob_service.controllers.blobsrv import load_stores
     stores = load_stores()
@@ -50,17 +57,3 @@ def clean_images(options):
             clean_store(store, options)
 
 
-def bozo():
-
-            image = DBSession.query(Taggable).filter(and_(Taggable.resource_value==filepath,
-                                                          or_(Taggable.resource_type=='image', 
-                                                              Taggable.resource_type=='file'))).first()
-
-            #print filepath, (image.resource_type, 'exists')  if image else 'missing'
-            if not image:
-                print filepath, " missing"
-            
-
-
-    
-        

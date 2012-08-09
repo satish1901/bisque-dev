@@ -419,7 +419,7 @@ def update_site_cfg (bisque_vars, section = BQ_SECTION, append=True, cfg=SITE_CF
 
     for k,v in bisque_vars.items():
         c.edit_config (section, k, '%s = %s' % (k,quoted(v)), {}, append)
-        print "edit %s %s" % (k,v)
+        #print "edit %s %s" % (k,v)
     c.write (open (cfg, 'w'))
     return bisque_vars
 
@@ -438,7 +438,7 @@ def modify_site_cfg(qs, bisque_vars, section = BQ_SECTION, append=True, cfg=SITE
     c.read(open(cfg))
     for k,v in bisque_vars.items():
         c.edit_config (section, k, '%s = %s' % (k,quoted(v)), {}, append)
-        print "edit %s %s" % (k,v)
+        #print "edit %s %s" % (k,v)
     c.write (open (cfg, 'w'))
     return bisque_vars
 
@@ -609,8 +609,16 @@ def get_dburi(params):
     return params, DBURL
 
 
-def test_db_initialized(DBURL):
+def test_db_alembic (DBURL):
+    r, out = sql(DBURL, 'select * from alembic_version')
+    return r == 0
+    
+def test_db_sqlmigrate(DBURL):
     r, out = sql(DBURL, 'select * from migrate_version')
+    return r == 0
+
+def test_db_initialized(DBURL):
+    r, out = sql(DBURL, 'select * from taggable limit 1')
     return r == 0
     
 
@@ -678,6 +686,7 @@ Please resolve the problem(s) and re-run 'bisque-setup --database'.""")
                
     # Step 3: find out whether the database needs initialization
     db_initialized = test_db_initialized(DBURL)
+    newdb = False
     if not db_initialized and getanswer(
         "Intialize the new database",  "Y",
         """
@@ -686,16 +695,17 @@ Please resolve the problem(s) and re-run 'bisque-setup --database'.""")
         """) == "Y":
         if call (['paster','setup-app', config_path('site.cfg')]) != 0:
             raise SetupError("There was a problem initializing the Database")
-        if call ([PYTHON, to_sys_path('bqcore/migration/manage.py'), 'version_control']) != 0:
-            raise SetupError("Could not setup version management in new database."
-                             "Please try to setup the database manually or contact the developers")
+        newdb = True
 
-        from bq.release import __DB_VERSION__
-        sql(DBURL, "update migrate_version set version=%s" % __DB_VERSION__)
-        
-    # Step 4: Always upgrade the database to newest version
-    print "Upgrading database version"
-    call ([PYTHON, to_sys_path ('bqcore/migration/manage.py'), 'upgrade'])
+    if test_db_sqlmigrate(DBURL):
+        print "Upgrading database version (sqlmigrate)"
+        call ([PYTHON, to_sys_path ('bqcore/migration/manage.py'), 'upgrade'])
+
+    if not newdb and test_db_alembic(DBURL):
+        print "Upgrading database version (alembic)"
+        if call (["alembic", '-c', config_path('alembic.ini'), 'upgrade', 'head']) != 0:
+            raise SetupError("There was a problem initializing the Database")
+
     print params
     return params
         
