@@ -666,6 +666,7 @@ Ext.define('Bisque.Resource.Image.Page',
             'dataset' : this.root+'/data_service/mex',
             'tagQuery' : '"'+this.resource.uri+'"',
             'wpublic' : true,
+            showOrganizer: false, 
     
             mexLoaded : false,
     

@@ -232,7 +232,9 @@ Ext.define('Bisque.ResourceBrowser.Browser',
 
             this.browserState['offset'] = this.browserParams.offset;
             this.layoutKey = this.layoutKey || this.browserParams.layout;
-            this.showOrganizer = this.browserParams.showOrganizer || false;
+            this.showOrganizer = true;
+            if ('showOrganizer' in this.browserParams) 
+                this.showOrganizer = this.browserParams.showOrganizer;
             this.selectState = this.browserParams.selectState || 'ACTIVATE';
             this.commandBar.applyPreferences();
 

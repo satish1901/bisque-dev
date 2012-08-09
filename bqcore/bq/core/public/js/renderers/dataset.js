@@ -25,7 +25,7 @@ Ext.define('BQ.renderers.dataset', {
     defaults: { border: 0, },
  
     onResourceRender : function() {
-        this.setLoading(true);
+        this.setLoading('Fetching memebrs...', true);
         this.tagger = Ext.create('Bisque.ResourceTagger', {
             resource : this.resource,
             title : 'Annotations',
@@ -105,7 +105,7 @@ Ext.define('BQ.renderers.dataset', {
                 text: 'Add images', 
                 iconCls: 'icon_plus',
                 scope: this, 
-                disabled: true,
+                //disabled: true,
                 tooltip: 'Add resources into the dataset', 
                 //cls: 'x-btn-default-medium', 
                 handler: function() { this.browseResources('image'); }, 
@@ -223,7 +223,7 @@ Ext.define('BQ.renderers.dataset', {
         // reload the browser
         var uri = { offset: 0, };
         this.preview.msgBus.fireEvent('Browser_ReloadData', uri);
-        this.toolbar.child('#menu_rename').setText('Dataset: <b>'+this.resource.name+'</b>'); 
+        //this.toolbar.child('#menu_rename').setText('Dataset: <b>'+this.resource.name+'</b>'); 
         this.preview.setTitle(this.resource.name?'Preview for "'+this.resource.name+'"':'Preview');    
     },     
 
@@ -305,7 +305,7 @@ Ext.define('BQ.renderers.dataset', {
 
     onmodechange: function(mode) { 
         var ena = (mode != 'SELECT');
-        this.toolbar.child('#menu_add_images').setDisabled(ena);    
+        //this.toolbar.child('#menu_add_images').setDisabled(ena);    
         this.toolbar.child('#menu_delete_selected').setDisabled(ena);            
     },
 
