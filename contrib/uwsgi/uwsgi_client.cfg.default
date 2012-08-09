@@ -78,3 +78,5 @@ no-orphans = true
 #automatically remove unix socket and pidfiles on server exit
 vacuum = true
 
+# post-buffering attempts
+post-buffering = 8192
