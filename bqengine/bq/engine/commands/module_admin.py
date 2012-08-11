@@ -100,7 +100,7 @@ class module_admin(object):
     def register (self):
         from bq.engine.controllers.engine_service import load_module
         bisque_root = norm(config.get('bisque.root') + '/')
-        engine_root = urlparse.urljoin(norm(config.get ('engine.root') + '/'), 'engine_service')+'/'
+        engine_root = urlparse.urljoin(norm(config.get ('bisque.engine') + '/'), 'engine_service')+'/'
         module_register = urlparse.urljoin(bisque_root, "module_service/register_engine")
 
         print "loading ", self.module_path

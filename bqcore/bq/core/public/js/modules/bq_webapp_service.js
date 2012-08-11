@@ -128,6 +128,9 @@ ModuleService.prototype.emit_error = function(message) {
 }
 
 ModuleService.prototype.onerror = function(o) {
-    this.emit_error(o.message_short || o.message || o['http-error'] || o);
+    if (typeof(o)=='string')
+        this.emit_error(o);
+    else
+        this.emit_error(o.message_short || o.message || o['http-error'] || 'communication error');
 }
 
