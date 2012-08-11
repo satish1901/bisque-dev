@@ -275,6 +275,7 @@ SITE_VARS = {
 ENGINE_VARS  ={
     'bisque.engine': 'http://%s:27000'  % HOSTNAME,
     'bisque.root' : 'http://%s:8080' % HOSTNAME,
+    'bisque.paths.root' : os.getcwd(),
 #    'bisque.admin_email' : 'YourEmail@YourOrganization',
     }
 
@@ -327,6 +328,8 @@ ENGINE_QUESTIONS=[
      "A URL of Bisque site where this engine will register modules"),
     ('bisque.engine', "Enter the URL of this bisque module engine",
      "A module engine offers services over an open URL like a web-server. Please make sure any firewall software allows access to the selected port"),
+    ('bisque.paths.root', 'Installation Directory', 
+     'Location of bisque installation.. used for find configuration and data'),
     ]
 
 
