@@ -317,6 +317,7 @@ initial_vars = {
 linked_vars = {
     'h1.url' : '${bisque.root}',
     'smtp_server' : '${mail.smtp.server}',        
+    'registration.site_name' : '${bisque.title} (${bisque.root})',
     'registration.host' : '${bisque.root}',
     'registration.mail.smtp_server' : '${mail.smtp.server}',
     'registration.mail.admin_email' : '${bisque.admin_email}',
