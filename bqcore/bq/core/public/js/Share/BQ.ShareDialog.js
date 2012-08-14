@@ -207,6 +207,7 @@ Ext.define('BQ.ShareDialog', {
         
         this.browser = Ext.create('Bisque.ResourceBrowser.Browser',
         {
+            showOrganizer   : false,
             layout          :   Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Grid,
             layoutConfig    :   {
                                     colIconWidth    :   8,

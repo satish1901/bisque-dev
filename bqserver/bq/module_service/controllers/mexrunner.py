@@ -70,7 +70,7 @@ class MexRequest(object):
         self.mex_id = mex.uri.rsplit('/', 1)[1]
         # End the transaction so the http request is
         # not part of it.
-        self.asynch = self.modtree.xpath('//tag[@name="asynchronous"]')
+        self.asynch = True #self.modtree.xpath('//tag[@name="asynchronous"]')
         self.service_uri = service.resource_value
 
     def reload(self):
