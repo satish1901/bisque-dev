@@ -34,6 +34,8 @@ log.addHandler(ch)
 ## ENSURE setup.py has been run before..
 
 capture = None
+answer_file = None
+save_answers = False
 
 try:
     import bq
@@ -128,7 +130,14 @@ def getanswer(question, default, help=None):
     if "\n" in question:
         question = textwrap.dedent (question)
     while 1:
-        if capture is not None:
+        if not save_answers and answer_file:
+            a = answer_file.readline().strip()
+            if question.strip() != a: 
+                raise SetupError( "Mismatch '%s' !=  '%s' " % (question, a) )
+            a = answer_file.readline().strip()
+            answer_file.readline()
+
+        elif capture is not None:
             a =  capture.logged_input ("%s [%s]? " % (question, default))
         else:
             a =  raw_input ("%s [%s]? " % (question, default))
@@ -144,6 +153,11 @@ def getanswer(question, default, help=None):
             a = a.upper()
             
         if a == '': a = default
+        if save_answers and answer_file:
+            answer_file.write(question)
+            answer_file.write ('\n')
+            answer_file.write (a)
+            answer_file.write ('\n\n')
         break
     return a
 
@@ -1447,15 +1461,23 @@ def setup(options, args):
             sys.exit(0)
 
     cancelled = False
+    global answer_file, save_answers
     global BQENV
     global BQBIN
     BQENV = virtenv
     BQBIN = os.path.join(BQENV, 'bin') # Our local bin
     if os.name == "nt":
         BQBIN = os.path.join(BQENV, 'Scripts') # windows local bin 
-        
+
     begin_install = datetime.datetime.now()
-    if has_script and not options.inscript:
+    if options.read:
+        print "Reading answers from %s" % options.read
+        answer_file = open (options.read)
+    elif options.write:
+        print "Saving answers to %s" % options.write
+        answer_file = open (options.write, "wb")
+        save_answers = True
+    elif has_script and not options.inscript:
         script = ['bq-admin', 'setup', '--inscript']
         script.extend (args)
         r = typescript(script, 'bisque-install.log')

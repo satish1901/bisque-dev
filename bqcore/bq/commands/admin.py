@@ -136,6 +136,8 @@ class setup(object):
                     usage=usage,
                     version="%prog " + version)
         parser.add_option("--inscript", action="store_true", help="we are running under typescript" )
+        parser.add_option("-r", "--read", action="store", help="Read answers from given file" )
+        parser.add_option("-w", "--write", action="store", help="Write answers from given file" )
         options, args = parser.parse_args()
         for arg in args:
             if arg not in install_options + ['bisque', 'engine']:
