@@ -579,6 +579,7 @@ class EngineResource (Resource):
 
 
     def register_module (self, module_def):
+        """register a remote module"""
         log.debug('register_module : %s' % module_def.get('name'))
         name = module_def.get ('name')
         ts   = module_def.get ('ts')
@@ -588,6 +589,8 @@ class EngineResource (Resource):
         found = False
         modules = data_service.query ('module', name=name, view="deep")
         
+        #  RULES for updating a module
+        #  
         found_versions = []
         for m in modules:
             m_version = m.xpath('./tag[@name="module_options"]/tag[@name="version"]')

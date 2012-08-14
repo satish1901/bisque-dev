@@ -28,6 +28,7 @@ Some key ingredients are:
    quickstart.rst
    installation.rst
    advanced
+   bisque-admin.rst
 
 
 
