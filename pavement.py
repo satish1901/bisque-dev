@@ -79,13 +79,13 @@ def getanswer(question, default, help=None):
     return a
 
 
+#@cmdopts([('engine', 'e', 'install only the engine')])
 @task
-@cmdopts([('engine', 'e', 'install only the engine')])
+@consume_args 
 def setup(options):
     'install local version and setup local packages'
 
-    engine_install = getattr(options, 'engine', None)
-
+    engine_install = (len(options.args) or None) and options.args[0] == 'engine'
     if engine_install is None:
         if getanswer("install server or engine", "engine", 
                   "answer 'server' or 'engine' depending what sort of bisque server you wish to install") == 'engine':
@@ -104,7 +104,7 @@ def setup(options):
 
     top = os.getcwd()
     subdirs = server_subdirs
-    if hasattr(options, 'engine'):
+    if engine_install:
         print "INSTALLING ENGINE"
         subdirs = engine_subdirs
 

@@ -55,7 +55,7 @@ def bisque_install(options, home_dir, bindir):
     print "* Execute the following commands*"
     print "Linux: source bqenv/bin/activate"
     print "Windows: bqenv\\Scripts\\activate.bat"
-    print "paver setup    [ --engine]"
+    print "paver setup    [engine]"
     print "bq-admin setup [engine]"
 
     print "Please visit http://biodev.ece.ucsb.edu/projects/bisquik/wiki/InstallationInstructions and follow instructions there"
