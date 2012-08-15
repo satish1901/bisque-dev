@@ -415,14 +415,14 @@ class import_serviceController(ServiceController):
         try:
             log.debug('Inserting blob: [%s] [%s] [%s] [%s]'%(src, filename, perm, tags))
             resource = blob_service.store_blob (filesrc=src, filename=filename, permission=perm, tags=tags)
-            # Add specific image tags here:
+            log.debug('Inserted resource :::::\n %s'% etree.tostring(resource) )
+            # dima: Add specific image tags here
         except Exception, e:
             log.exception("Error during store")
             return None
         finally:
             src.close()
         
-        log.debug('insert_image :::::\n %s'% etree.tostring(resource) )
         return resource
 
     def process(self, f):

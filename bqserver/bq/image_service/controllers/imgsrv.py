@@ -210,6 +210,12 @@ class ProcessToken(object):
         self.cacheInfo = 'no-cache'
         self.httpResponseCode = 404
 
+    def setHtmlErrorNotSupported (self):
+        self.data = 'File is not in supported image format...'
+        self.contentType = 'text/html'
+        self.cacheInfo = 'no-cache'
+        self.httpResponseCode = 415
+
     def isValid (self):
         if self.data:
             return True
@@ -624,7 +630,8 @@ class SliceService(object):
         # slice the image
         if not os.path.exists(ofname):
             if not imgcnv.supported(ifname):
-                data_token.setHtml('Slice service: input file is not in supported image format...')
+                #data_token.setHtml('Slice service: input file is not in supported image format...')
+                data_token.setHtmlErrorNotSupported()
                 return data_token
 
             info = self.server.getImageInfo(id=image_id)
@@ -1374,7 +1381,8 @@ class RotateService(object):
 
         if not os.path.exists(ofile):
             if not imgcnv.supported(ifile):
-                data_token.setHtml('Rotate service: input file is not in supported image format...')
+                #data_token.setHtml('Rotate service: input file is not in supported image format...')
+                data_token.setHtmlErrorNotSupported()
                 return data_token
 
             params = '-rotate %d' % (ang)
@@ -1476,7 +1484,8 @@ class UriService(object):
         #data_token.setImage(fname=ofile, format='tiff')
 
         if not imgcnv.supported(ofile):
-            data_token.setHtml('URI service: Downloaded file is not in supported image format...')
+            #data_token.setHtml('URI service: Downloaded file is not in supported image format...')
+            data_token.setHtmlErrorNotSupported()
         else:
             data_token.dims = self.server.getImageInfo(filename=ofile)
 
@@ -2061,7 +2070,8 @@ class ImageServer(object):
                 #        data_token = self.services['bioformats'].action (ident, data_token, '')
 
             if len(query)>0 and (not 'width' in data_token.dims):
-                data_token.setHtml('File is not in supported image format...')
+                #data_token.setHtml('File is not in supported image format...')
+                data_token.setHtmlErrorNotSupported()
                 return data_token
 
         try:

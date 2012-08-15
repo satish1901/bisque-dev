@@ -225,6 +225,11 @@ class image_serviceController(ServiceController):
       
         path   = request.path+'?'+request.query_string
         userId = identity.current.user_name
+        
+        # dima: patch for incorrect /auth requests for image service
+        if path.find('/auth')>=0:
+            tg.response.headers['Content-Type']  = 'text/xml'
+            return '<resource />'
                             
         data_token = self.srv.process(path, id, userId, **kw)
         tg.response.headers['Content-Type']  = data_token.contentType
@@ -253,11 +258,20 @@ class image_serviceController(ServiceController):
             if data_token.hasFileName():
                fname = data_token.outFileName
           
-            #Content-Disposition: attachment; filename=genome.jpeg;  
-            if data_token.isImage():                    
-                disposition = 'filename="%s"'%(fname)
-            else:
-                disposition = 'attachment; filename="%s"'%(fname)
+            #Content-Disposition: attachment; filename=genome.jpeg; 
+            disposition = ''
+            if data_token.isImage() is not True:
+                disposition = 'attachment; '
+
+            try:
+                fname.encode('ascii')
+                disposition = '%sfilename="%s"'%(disposition, fname)
+            except UnicodeEncodeError:
+                # dima: encode the filename in utf-8
+                disposition = '%sfilename="%s"; filename*="%s"'%(disposition, fname.encode('utf8'), fname.encode('utf8'))
+                #disposition = '%sfilename="%s"; filename*="%s"'%(disposition, fname.encode('ascii', errors='ignore'), fname.encode('utf8'))
+
+                
             #tg.response.headers["Content-Disposition"] = disposition
             # this header is cleared when the streaming is used
             #cherrypy.response.headers["Content-Length"] = 10*1024*1024            
@@ -270,10 +284,7 @@ class image_serviceController(ServiceController):
 
             # fix for the cherrypy error 10055 "No buffer space available" on windows
             # by streaming the contents of the files as opposite to sendall the whole thing
-            log.info ("returning %s type %s dispostion %s"%(data_token.data
-                                                            ,data_token.contentType,
-                                                            disposition))
-                                                            
+            log.info ("returning %s type %s"%(data_token.data, data_token.contentType ))
             return forward(FileApp(data_token.data,
                                    content_type=data_token.contentType,
                                    content_disposition=disposition,
