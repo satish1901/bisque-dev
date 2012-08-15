@@ -55,7 +55,7 @@ def installed_formats():
     return Popen ([IMGCNV,'-fmtxml'], stdout=PIPE).communicate()[0]
 
 def supported(ifnm):
-    log.debug('IMGCNV: supported for: '+str(ifnm) )
+    log.debug('IMGCNV: supported for: %s'%ifnm )
     with Locks (ifnm):
         supported = Popen ([IMGCNV, '-supported', '-i', ifnm],stdout=PIPE).communicate()[0]
 

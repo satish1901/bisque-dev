@@ -149,10 +149,7 @@
 
 .welcome_front .ResourceIconList {
     background-color: transparent; /*rgba(255,255,255,0.5);*/
-    border-bottom-width: 0px;
-    border-top-width: 0px;    
-    border-left-width: 0px;   
-    border-right-width: 0px; 
+    border: solid 0px transparent !important; 
     cursor: pointer;    
     
     /*color: white;*/

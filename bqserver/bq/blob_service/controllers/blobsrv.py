@@ -251,7 +251,12 @@ class BlobServer(RestController, ServiceMixin):
                     if store.readonly:
                         log.debug("skipping %s: is readonly" % store_id)
                         continue
-                    blob_id, flocal = store.write(flosrc, filename, user_name = user_name)
+                    # dima: make sure local file name will be ascii, should be fixed later
+                    # dima: unix without LANG or LC_CTYPE will through error due to ascii while using sys.getfilesystemencoding()
+                    #filename_safe = filename.encode(sys.getfilesystemencoding()) 
+                    #filename_safe = filename.encode('ascii', 'xmlcharrefreplace')
+                    filename_safe = filename.encode('idna')
+                    blob_id, flocal = store.write(flosrc, filename_safe, user_name = user_name)
                     break
                 except Exception, e:
                     log.exception('storing blob failed')
