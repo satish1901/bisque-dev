@@ -393,8 +393,7 @@ class Taggable(object):
     def set_type(self, v):
         self.resource_user_type = v
     type = property(get_type, set_type)
-
-
+    
     def get_permission(self):
         return perm2str.get(self.perm)
     def set_permission(self, v):
@@ -412,8 +411,8 @@ class Taggable(object):
     def get_hidden(self):
         return self.resource_hidden
     def set_hidden(self, v):
-        self.resource_hidden=v
-        return v
+        self.resource_hidden = v in ('True', 'true', True)
+        return self.resource_hidden
     hidden = property(get_hidden, set_hidden)
 
     # Tag.value helper functions
