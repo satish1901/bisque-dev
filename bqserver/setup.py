@@ -52,6 +52,7 @@ The bisque server
     ingest_service   = bq.ingest.controllers.ingest_server
     dataset_service  = bq.dataset_service.controllers.dataset_service
     usage            = bq.usage.controllers.usage
+
     [bq.commands]
     module = bq.module_service.commands.module_admin:module_admin
       """,
