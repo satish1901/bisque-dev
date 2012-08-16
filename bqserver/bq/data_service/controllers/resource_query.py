@@ -59,6 +59,7 @@ from tg import config, url
 from datetime import datetime
 from sqlalchemy.sql import select, func, exists, and_, or_, not_, asc, desc
 from sqlalchemy.orm import Query, aliased
+#from datetime import strptime 
 
 from bq.core.model import DBSession as session
 #from bq.image_service import image_service

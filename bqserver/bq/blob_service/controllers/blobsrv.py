@@ -187,7 +187,12 @@ class BlobServer(RestController, ServiceMixin):
         self.check_access(ident, RESOURCE_READ)
         try:
             localpath = os.path.normpath(self.localpath(ident))
-            disposition = 'filename="%s"'% self.getBlobFileName(ident)
+            filename = self.getBlobFileName(ident)
+            disposition = 'attachment; filename="%s"'%filename
+            try:
+                filename.encode('ascii')
+            except UnicodeEncodeError:
+                disposition = 'attachment; filename="%s"; filename*="%s"'%(filename.encode('utf8'), filename.encode('utf8'))
 
             return forward(FileApp(localpath,
                                    content_disposition=disposition,                                   

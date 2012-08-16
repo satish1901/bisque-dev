@@ -56,6 +56,11 @@ def installed_formats():
 
 def supported(ifnm):
     log.debug('IMGCNV: supported for: %s'%ifnm )
+    # dima: there will be an error here if the file name is in unicode, mitigate until teh real fix
+    try:
+        ifnm.encode('ascii')
+    except UnicodeEncodeError:
+        ifnm = ifnm.encode('utf8')
     with Locks (ifnm):
         supported = Popen ([IMGCNV, '-supported', '-i', ifnm],stdout=PIPE).communicate()[0]
 
