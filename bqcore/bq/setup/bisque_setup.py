@@ -288,7 +288,7 @@ SITE_VARS = {
 
 ENGINE_VARS  ={
     'bisque.engine': 'http://%s:27000'  % HOSTNAME,
-    'bisque.root' : 'http://%s:8080' % HOSTNAME,
+#    'bisque.root' : 'http://%s:8080' % HOSTNAME,
     'bisque.paths.root' : os.getcwd(),
 #    'bisque.admin_email' : 'YourEmail@YourOrganization',
     }
