@@ -149,7 +149,7 @@ def paster_command(command, options, cfgopt, processes, args):
             'http_port=%s' % cfgopt['port'],
             'http_host=%s' % cfgopt['host'],
             'rooturl=%s' % cfgopt['root'],
-            'proxyroot=%s' % cfgopt['proxyroot'],
+            #'proxyroot=%s' % cfgopt['proxyroot'],
             'sitecfg=%s' % cfgopt['site_cfg'],
             ])
     server_cmd.extend (args)
@@ -255,7 +255,7 @@ def operation(command, options, cfg_file=SITE_CFG, *args):
                 l.strip() for l in serverspec.pop('services_disabled', '').split(',')])
             cfgopt['host'] = fullurl[1].split(':')[0]
             cfgopt['port'] = str(fullurl.port)
-            cfgopt['proxyroot'] = serverspec.pop('proxyroot', '')
+            #cfgopt['proxyroot'] = serverspec.pop('proxyroot', '')
             cfgopt['logfile'] = os.path.join(config['log_dir'], LOG_TEMPL % cfgopt['port'])
             cfgopt['pidfile'] = os.path.join(config['pid_dir'], PID_TEMPL % cfgopt['port'])
 
