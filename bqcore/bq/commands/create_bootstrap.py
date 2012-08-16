@@ -53,8 +53,10 @@ def bisque_install(options, home_dir, bindir):
     print 
     print "*********************************"
     print "* Execute the following commands*"
-    print "Linux: source bqenv/bin/activate"
-    print "Windows: bqenv\\Scripts\\activate.bat"
+    if sys.platform == 'win32':
+        print "bqenv\\\\Scripts\\\\activate.bat"
+    else:
+        print "source bqenv/bin/activate"
     print "paver setup    [engine]"
     print "bq-admin setup [engine]"
 

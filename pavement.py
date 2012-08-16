@@ -100,7 +100,6 @@ def setup(options):
         sh('easy_install http://biodev.ece.ucsb.edu/binaries/depot/tgext.registration2/tgext.registration2-0.5.2.tar.gz')
     sh('easy_install http://biodev.ece.ucsb.edu/binaries/depot/httplib2/httplib2-0.7.1.tar.gz')
     sh('easy_install http://biodev.ece.ucsb.edu/binaries/depot/Paste/Paste-1.7.5.1bisque2.tar.gz')
-    sh('easy_install PasteScript==1.7.3')
 
     top = os.getcwd()
     subdirs = server_subdirs
@@ -115,7 +114,7 @@ def setup(options):
             sh('python setup.py develop')
             os.chdir(top)
     sh('easy_install http://biodev.ece.ucsb.edu/binaries/depot/Paste/Paste-1.7.5.1bisque2.tar.gz')
-
+    sh('easy_install pastescript==1.7.3')
 
 @task
 @needs('generate_setup', 'minilib', 'setuptools.command.sdist')
