@@ -62,14 +62,18 @@ class usageController(ServiceController):
             d2 = now - timedelta(days=i+1)
             ts = ['>%s'%d2.isoformat(), '<=%s'%d1.isoformat()]
             days.append(d2.isoformat(' '))
-            req = data_service.query(resource_type, view='count', ts=ts, welcome=True)
-            log.debug('=============================== %s'%etree.tostring(req))
-            c = req.xpath('//%s[@count]'%resource_type)
-            if len(c)>0:
-                counts.append( c[0].get('count') ) 
-            else:           
-                counts.append('0') 
-
+            # dima: some error happens in data_service and this throws
+            try:
+                req = data_service.query(resource_type, view='count', ts=ts, welcome=True)
+                log.debug('=============================== %s'%etree.tostring(req))
+                c = req.xpath('//%s[@count]'%resource_type)
+                if len(c)>0:
+                    counts.append( c[0].get('count') ) 
+                else:           
+                    counts.append('0')
+            except AttributeError:                    
+                    counts.append('0')
+           
         counts.reverse()
         days.reverse()
         return counts, days

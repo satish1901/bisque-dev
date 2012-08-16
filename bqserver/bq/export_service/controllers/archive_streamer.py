@@ -28,8 +28,14 @@ class ArchiveStreamer():
         self.datasetList = datasetList
         self.urlList = urlList
         
+        filename = archiveName + self.archiver.getFileExtension()
+        disposition = 'attachment; filename="%s"'%filename
+        try:
+            filename.encode('ascii')
+        except UnicodeEncodeError:
+            disposition = 'attachment; filename="%s"; filename*="%s"'%(filename.encode('utf8'), filename.encode('utf8'))        
         response.headers['Content-Type'] = self.archiver.getContentType()
-        response.headers['Content-Disposition'] = 'attachment;filename="' + archiveName + self.archiver.getFileExtension() + '"'
+        response.headers['Content-Disposition'] = disposition
     
     def stream(self):
         log.debug("ArchiveStreamer: Begin stream %s" % request.url)
@@ -103,6 +109,11 @@ class ArchiveStreamer():
                 pair = item.split('=')
                 if (pair[0].lower().strip()=='filename'):
                     fileName = pair[1].strip('"\'')
+                if (pair[0].lower().strip()=='filename*'):
+                    try:
+                        fileName = pair[1].strip('"\'').decode('utf8')
+                    except UnicodeDecodeError:                    
+                        pass
             
             return  dict(name       =   fileName,
                          content    =   content,
