@@ -339,8 +339,8 @@ the proxy address and see AdvancedInstalls"""),
 
 
 ENGINE_QUESTIONS=[
-    ('bisque.root' , 'Enter the root URL of the BISQUE server ',
-     "A URL of Bisque site where this engine will register modules"),
+#    ('bisque.root' , 'Enter the root URL of the BISQUE server ',
+#     "A URL of Bisque site where this engine will register modules"),
     ('bisque.engine', "Enter the URL of this bisque module engine",
      "A module engine offers services over an open URL like a web-server. Please make sure any firewall software allows access to the selected port"),
     ('bisque.paths.root', 'Installation Directory', 
