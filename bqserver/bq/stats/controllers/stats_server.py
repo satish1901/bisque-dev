@@ -257,9 +257,8 @@ class statsController(ServiceController):
                 BQTag(name=k, value=str(v)).toEtree(r)
         
         filename = kw.get('filename', 'stats.xml')
-        disposition = 'filename="%s"'%filename
         try:
-            filename.encode('ascii')
+            disposition = 'filename="%s"'% filename.encode('ascii')
         except UnicodeEncodeError:
             disposition = 'filename="%s"; filename*="%s"'%(filename.encode('utf8'), filename.encode('utf8'))        
         response.headers['Content-Type'] = 'text/xml'
@@ -298,9 +297,8 @@ class statsController(ServiceController):
         stream = "\n".join([(', '.join([str(e) for e in t])) for t in ts])
         
         filename = kw.get('filename', 'stats.csv')
-        disposition = 'attachment; filename="%s"'%filename
         try:
-            filename.encode('ascii')
+            disposition = 'filename="%s"'% filename.encode('ascii')
         except UnicodeEncodeError:
             disposition = 'attachment; filename="%s"; filename*="%s"'%(filename.encode('utf8'), filename.encode('utf8'))             
         response.headers['Content-Type'] = 'text/csv'
