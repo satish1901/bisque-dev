@@ -29,9 +29,8 @@ class ArchiveStreamer():
         self.urlList = urlList
         
         filename = archiveName + self.archiver.getFileExtension()
-        disposition = 'attachment; filename="%s"'%filename
         try:
-            filename.encode('ascii')
+            disposition = 'attachment; filename="%s"'%filename.encode('ascii')
         except UnicodeEncodeError:
             disposition = 'attachment; filename="%s"; filename*="%s"'%(filename.encode('utf8'), filename.encode('utf8'))        
         response.headers['Content-Type'] = self.archiver.getContentType()

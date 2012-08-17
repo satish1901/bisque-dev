@@ -188,9 +188,8 @@ class BlobServer(RestController, ServiceMixin):
         try:
             localpath = os.path.normpath(self.localpath(ident))
             filename = self.getBlobFileName(ident)
-            disposition = 'attachment; filename="%s"'%filename
             try:
-                filename.encode('ascii')
+                disposition = 'attachment; filename="%s"'%filename.encode('ascii')
             except UnicodeEncodeError:
                 disposition = 'attachment; filename="%s"; filename*="%s"'%(filename.encode('utf8'), filename.encode('utf8'))
 
