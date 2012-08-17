@@ -263,7 +263,7 @@ def p_error(p):
 #  move to some system directory like "/var/run/bisque" 
 # http://www.dabeaz.com/ply/ply.html#ply_nn18
 #_mkdir("generated")
-yacc.yacc(outputdir=data_path(), debug= 1)
+yacc.yacc(outputdir=data_path(), debug= 0)
 
 # End Parser 
 #############################################################
