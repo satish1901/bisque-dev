@@ -113,6 +113,7 @@ def setup(options):
             os.chdir(app_dir)
             sh('python setup.py develop')
             os.chdir(top)
+    sh('easy_install http://biodev.ece.ucsb.edu/binaries/depot/TurboGears2/TurboGears2-2.1.5bisque.tar.gz')
     sh('easy_install http://biodev.ece.ucsb.edu/binaries/depot/Paste/Paste-1.7.5.1bisque2.tar.gz')
     sh('easy_install pastescript==1.7.3')
 

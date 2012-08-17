@@ -82,10 +82,6 @@ setup(
                                  'core/templates/*/*',
                                  'core/public/*/*']},
 
-    scripts = ["scripts/bq-upload-images",
-               "scripts/bqdev-upload-binary",
-               ],
-    
     message_extractors={'bq': [
             ('**.py', 'python', None),
             ('core/templates/**.mako', 'mako', None),
@@ -105,6 +101,8 @@ setup(
       [console_scripts]
       bq-admin = bq.commands.admin:main
       mexrunner = bq.commands.mexrunner:main
+      bqdev-upload-binary = bq.commands.uploadbinary:main
+      bq-upload-images = bq.commands.uploadimages:main
 
       [bq.commands]
       create-core    = bq.commands.create:createCoreService
