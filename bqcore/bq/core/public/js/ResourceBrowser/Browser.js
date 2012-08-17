@@ -39,6 +39,7 @@ Ext.define('Bisque.ResourceBrowser.Dialog',
             height : height,
             width : width,
             items : new Bisque.ResourceBrowser.Browser(config),
+            showOrganizer : true,
         }, config);
 
         this.dockedItems = [
@@ -232,9 +233,9 @@ Ext.define('Bisque.ResourceBrowser.Browser',
 
             this.browserState['offset'] = this.browserParams.offset;
             this.layoutKey = this.layoutKey || this.browserParams.layout;
-            this.showOrganizer = true;
-            if ('showOrganizer' in this.browserParams) 
-                this.showOrganizer = this.browserParams.showOrganizer;
+            //this.showOrganizer = true;
+            //if ('showOrganizer' in this.browserParams) 
+            this.showOrganizer = this.browserParams.showOrganizer || false;
             this.selectState = this.browserParams.selectState || 'ACTIVATE';
             this.commandBar.applyPreferences();
 
