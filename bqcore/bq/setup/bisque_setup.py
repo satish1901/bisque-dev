@@ -705,14 +705,14 @@ Please resolve the problem(s) and re-run 'bisque-setup --database'.""")
     # Step 3: find out whether the database needs initialization
     db_initialized = test_db_initialized(DBURL)
     newdb = False
+    install_cfg(ALEMBIC_CFG, section="alembic", default_cfg=config_path('alembic.ini.default'))
+    update_site_cfg(params, section='alembic', cfg = ALEMBIC_CFG, append=False)
     if not db_initialized and getanswer(
         "Intialize the new database",  "Y",
         """
         The database is freshly created and doesn't seem to have
         any tables yet.  Allow the system to create them..
         """) == "Y":
-        install_cfg(ALEMBIC_CFG, section="alembic", default_cfg=config_path('alembic.ini.default'))
-        update_site_cfg(params, section='alembic', cfg = ALEMBIC_CFG, append=False)
         if call (['paster','setup-app', config_path('site.cfg')]) != 0:
             raise SetupError("There was a problem initializing the Database")
         newdb = True
@@ -722,7 +722,8 @@ Please resolve the problem(s) and re-run 'bisque-setup --database'.""")
         print "Upgrading database version (sqlmigrate)"
         call ([PYTHON, to_sys_path ('bqcore/migration/manage.py'), 'upgrade'])
 
-    if not newdb and test_db_alembic(DBURL):
+
+    if not newdb : #and test_db_alembic(DBURL):
         print "Upgrading database version (alembic)"
         if call (["alembic", '-c', config_path('alembic.ini'), 'upgrade', 'head']) != 0:
             raise SetupError("There was a problem initializing the Database")
