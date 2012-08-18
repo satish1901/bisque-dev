@@ -440,7 +440,11 @@ def resource2nodes(dbo, parent=None, view=[], baseuri=None,  **kw):
     nodes = {}
     for node in docnodes:
         if node.resource_parent_id is not None:
-            node_parent = nodes[node.resource_parent_id]
+            try:
+                node_parent = nodes[node.resource_parent_id]
+            except KeyError:
+                log.error("Missing parent node %s (permission error)  in document %s" % (node_resource_parent_id, doc_id))
+                continue
             #elem = etree.SubElement(parent, node.resource_type)
             elem = xmlnode (node, node_parent, baseuri, view)
             nodes[node.id] = elem
