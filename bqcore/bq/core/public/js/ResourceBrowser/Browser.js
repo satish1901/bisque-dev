@@ -25,6 +25,7 @@ Ext.define('Bisque.ResourceBrowser.Dialog',
         config.height = config.height || '85%';
         config.width = config.width || '85%';
         config.selType = config.selType || 'MULTI';
+        config.showOrganizer = ('showOrganizer' in config)? config.showOrganizer: true;
 
         var bodySz = Ext.getBody().getViewSize();
         var height = parseInt((config.height.toString().indexOf("%") == -1) ? config.height : (bodySz.height * parseInt(config.height) / 100));
@@ -39,7 +40,6 @@ Ext.define('Bisque.ResourceBrowser.Dialog',
             height : height,
             width : width,
             items : new Bisque.ResourceBrowser.Browser(config),
-            showOrganizer : true,
         }, config);
 
         this.dockedItems = [
