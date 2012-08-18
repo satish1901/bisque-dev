@@ -6,20 +6,20 @@
         <tag name="input-system" value="mex_url" />
         -->
         <tag name="image_url" type="image">
-          <tag name="template" type="template">
+          <template>
             <tag name="require_geometry">
               <tag name="t" value="stack" />
               <tag name="fail_message" value="Need a time-series" />
             </tag>
-          </tag>
+          </template>
           <gobject name="tips">
-            <tag name="template" type="template">
+            <template>
               <tag name="gobject" value="point" />
               <tag name="require_gobjects">              
                   <tag name="amount" value="many" />
                   <tag name="fail_message" value="Requires select of root tips" />
               </tag>              
-            </tag>
+            </template>
           </gobject>
         </tag>
         <tag name="mex_url"      type="system-input" />
@@ -28,18 +28,18 @@
     
     <tag name="outputs">
       <tag name="rootimage" type="image">
-        <tag name="template" type="template">
+        <template>
           <tag name="label" value="Tracked root tips" />
-        </tag>            
+        </template>
         <gobject name="root_tips">
-            <tag name="template" type="template">
+            <template>
                 <tag name="plot"          value="true"  type="boolean" />
                 <tag name="export_csv"    value="true"  type="boolean" />
                 <tag name="export_xml"    value="true"  type="boolean" />
                 <tag name="export_excel"  value="false" type="boolean" />
                 <tag name="export_gdocs"  value="false" type="boolean" />
                 <tag name="preview_movie" value="false" type="boolean" />
-            </tag>                  
+            </template>
         </gobject>        
         
       </tag>
