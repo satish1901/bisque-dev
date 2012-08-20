@@ -29,13 +29,22 @@ Ext.define('BQ.usage.Stats', {
     tag_titles: {'number_images': 'All Images', 'number_images_user': 'My images', 'number_images_planes': '2D Planes', 'number_tags': 'Tags', },
 
     initComponent : function() {
-        BQFactory.request( {uri: this.resource, cb: callback(this, 'onStats') });
+        this.setLoading('Fetching usage...'); 
+        BQFactory.request({
+            uri: this.resource, 
+            cb: callback(this, 'onStats'), 
+            errorcb: callback(this, 'onError'),
+        });
         this.callParent();
     },
+
+    onError: function() {
+        this.setLoading(false);
+    },    
    
     onStats: function(stats) {
+        this.setLoading(false);
         var dict = stats.toDict(true);   
-        
         var s = '<h2><a href="/usage/">Usage statistics</a></h2>';
         for (var i in this.tag_titles) {
             if (i in dict)
@@ -69,12 +78,21 @@ Ext.define('BQ.usage.Uploads', {
             extend: 'Ext.data.Model',
             fields: ['count', 'date'],
         });
-           
-        BQFactory.request( {uri: this.resource, cb: callback(this, 'onStats') });        
+        this.setLoading('Fetching usage...');    
+        BQFactory.request({
+            uri: this.resource, 
+            cb: callback(this, 'onStats'), 
+            errorcb: callback(this, 'onError'),
+        });        
         this.callParent();
     },
+
+    onError: function() {
+        this.setLoading(false);
+    },   
    
     onStats: function(stats) {
+        this.setLoading(false);
         var dict = stats.toDict(true);   
         var counts = dict.counts.split(',');
         var dates  = dict.days.split(',');

@@ -331,11 +331,21 @@ Ext.define('BQ.renderers.dataset', {
     },  
     
     onremoved: function() {   
+        /*
         var myMask = new Ext.LoadMask(BQApp.getCenterComponent(), {
             msg: 'Dataset removed, this URL is no longer valid...',
             msgCls: 'final', 
         });
-        myMask.show();        
+        myMask.show();       
+        */
+            
+        Ext.MessageBox.show({
+            title   :   'Success',
+            msg     :   'Dataset deleted successfully! You will be redirected to the Bisque homepage.',
+            buttons :   Ext.MessageBox.OK,
+            icon    :   Ext.MessageBox.INFO,
+            fn      :   function(){ window.location = bq.url('/'); },
+        });        
     },
 
 /*      
