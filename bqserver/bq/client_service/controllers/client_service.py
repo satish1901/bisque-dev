@@ -174,7 +174,11 @@ class ClientServer(ServiceController):
                     wpublic = kw.pop('wpublic', wpublicVal),                    
                     analysis = None)
 
-    
+    @expose(template='bq.client_service.templates.about')
+    def about(self, **kw):
+        from bq.release import __VERSION__
+        version = '%s'%__VERSION__
+        return dict(version=version)    
     
     
     # Test

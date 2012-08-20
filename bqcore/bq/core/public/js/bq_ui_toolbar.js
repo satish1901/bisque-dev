@@ -304,7 +304,8 @@ Ext.define('BQ.Application.Toolbar', {
         });
         menu_help.push({
             text: 'About Bisque', 
-            handler: Ext.Function.pass(htmlAction, [bq.url('/client_service/public/about/about.html'), 'About Bisque'] ), 
+            //handler: Ext.Function.pass(htmlAction, [bq.url('/client_service/public/about/about.html'), 'About Bisque'] ), 
+            handler: Ext.Function.pass(htmlAction, [bq.url('/client_service/about'), 'About Bisque'] ), 
         });    
         menu_help.push({
             text: 'Privacy policy', 
