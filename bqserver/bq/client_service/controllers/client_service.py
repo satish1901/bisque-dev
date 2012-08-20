@@ -101,7 +101,7 @@ class ClientServer(ServiceController):
     service_type = "client_service"
     
     def viewlink(self, resource):
-        return self.baseuri + "/view?" + urlencode ({'resource': resource})
+        return self.baseuri + "view?" + urlencode ({'resource': resource})
 
 
     @expose(content_type="text/xml")
