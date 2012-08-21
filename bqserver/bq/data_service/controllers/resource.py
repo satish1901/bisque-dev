@@ -276,7 +276,7 @@ class HierarchicalCache(ResponseCache):
         for special in ('tag_names', 'tag_values'):
             super(HierarchicalCache, self).invalidate(''.join([scheme, "://",
                                                                authority,
-                                                               '/data_service/images/',
+                                                               '/data_service/image/',
                                                                special]),
                                          '*',files)
         object_found = False
