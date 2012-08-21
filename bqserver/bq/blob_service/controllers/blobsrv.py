@@ -134,6 +134,23 @@ def guess_type(filename):
         return 'image'
     return 'file'
 
+def load_stores():
+    stores = OrderedDict()
+    store_list = [ x.strip() for x in config.get('bisque.blob_service.stores','').split(',') ] 
+    log.debug ('requested stores = %s' % store_list)
+    for store in store_list:
+        params = dict ( (x[0].replace('bisque.stores.%s.' % store, ''), x[1]) 
+                        for x in  config.items() if x[0].startswith('bisque.stores.%s' % store))
+        if 'path' not in params:
+            log.error ('cannot configure %s with out path parameter' % store)
+            continue
+        log.debug("params = %s" % params)
+        driver = blob_storage.make_storage_driver(params.pop('path'), **params)
+        if driver is None: 
+            log.error ("failed to configure %s.  Please check log for errors " % store)
+            continue
+        stores[store] = driver
+    return stores
 
 
 ###########################################################################
@@ -146,23 +163,7 @@ class BlobServer(RestController, ServiceMixin):
     
     def __init__(self, url ):
         ServiceMixin.__init__(self, url)
-        self.stores = OrderedDict()
-        store_list = [ x.strip() for x in config.get('bisque.blob_service.stores','').split(',') ] 
-        log.debug ('requested stores = %s' % store_list)
-        for store in store_list:
-            params = dict ( (x[0].replace('bisque.stores.%s.' % store, ''), x[1]) 
-                            for x in  config.items() if x[0].startswith('bisque.stores.%s' % store))
-            if 'path' not in params:
-                log.error ('cannot configure %s with out path parameter' % store)
-                continue
-            log.debug("params = %s" % params)
-            driver = blob_storage.make_storage_driver(params.pop('path'), **params)
-            if driver is None: 
-                log.error ("failed to configure %s.  Please check log for errors " % store)
-                continue
-            self.stores[store] = driver
-        # Filter out None values for stores that can't be made
-        #self.stores = list(itertools.ifilter(lambda x:x, (blob_storage.make_driver(st, **params) for st in store_list)))
+        self.stores = load_stores()
         log.info ('configured stores %s' % ','.join( str(x) for x in self.stores.keys()))
 
 
@@ -177,7 +178,6 @@ class BlobServer(RestController, ServiceMixin):
                 abort(401)
         return resource
 
-
     @expose()
     def get_one(self, *args):
         "Fetch a blob based on uniq ID"
@@ -187,7 +187,11 @@ class BlobServer(RestController, ServiceMixin):
         self.check_access(ident, RESOURCE_READ)
         try:
             localpath = os.path.normpath(self.localpath(ident))
-            disposition = 'filename="%s"'% self.getBlobFileName(ident)
+            filename = self.getBlobFileName(ident)
+            try:
+                disposition = 'attachment; filename="%s"'%filename.encode('ascii')
+            except UnicodeEncodeError:
+                disposition = 'attachment; filename="%s"; filename*="%s"'%(filename.encode('utf8'), filename.encode('utf8'))
 
             return forward(FileApp(localpath,
                                    content_disposition=disposition,                                   
@@ -203,7 +207,9 @@ class BlobServer(RestController, ServiceMixin):
         "Create a blob based on unique ID"
         log.info("post() called %s" % kwargs)
         #log.info("post() body %s" % tg.request.body_file.read())
-        return self.storeBlob(flosrc = tg.request.body_file)
+        resource =  self.storeBlob(flosrc = tg.request.body_file)
+        tg.request.body_file.close()
+        return resource
 
     
     @expose()
@@ -249,7 +255,12 @@ class BlobServer(RestController, ServiceMixin):
                     if store.readonly:
                         log.debug("skipping %s: is readonly" % store_id)
                         continue
-                    blob_id, flocal = store.write(flosrc, filename, user_name = user_name)
+                    # dima: make sure local file name will be ascii, should be fixed later
+                    # dima: unix without LANG or LC_CTYPE will through error due to ascii while using sys.getfilesystemencoding()
+                    #filename_safe = filename.encode(sys.getfilesystemencoding()) 
+                    #filename_safe = filename.encode('ascii', 'xmlcharrefreplace')
+                    filename_safe = filename.encode('idna')
+                    blob_id, flocal = store.write(flosrc, filename_safe, user_name = user_name)
                     break
                 except Exception, e:
                     log.exception('storing blob failed')
@@ -301,12 +312,14 @@ class BlobServer(RestController, ServiceMixin):
 
         resource = DBSession.query(Taggable).filter_by (resource_uniq = ident).first()
         path = None
+        fullpath = None
         if resource is not None and resource.resource_value:
             for store in self.stores.values():
                 if store.valid(resource.resource_value):
-                    path =  store.localpath(resource.resource_value)
+                    fullpath = resource.resource_value
+                    path =  store.localpath(fullpath)
                     break
-            log.debug('using localpath=%s' % path)
+            log.debug('using %s full=%s localpath=%s' % (ident, fullpath, path))
             return path
         raise IllegalOperation("bad resource value %s" % ident)
 

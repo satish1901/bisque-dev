@@ -101,7 +101,7 @@ class ClientServer(ServiceController):
     service_type = "client_service"
     
     def viewlink(self, resource):
-        return self.baseuri + "/view?" + urlencode ({'resource': resource})
+        return self.baseuri + "view?" + urlencode ({'resource': resource})
 
 
     @expose(content_type="text/xml")
@@ -174,7 +174,11 @@ class ClientServer(ServiceController):
                     wpublic = kw.pop('wpublic', wpublicVal),                    
                     analysis = None)
 
-    
+    @expose(template='bq.client_service.templates.about')
+    def about(self, **kw):
+        from bq.release import __VERSION__
+        version = '%s'%__VERSION__
+        return dict(version=version)    
     
     
     # Test

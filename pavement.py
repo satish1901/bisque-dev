@@ -32,7 +32,7 @@ options(
     #packages=["bqcore/bq"],
     
     setup_requires=["PasteScript >= 1.7"],
-    paster_plugins=['PasteScript', 'Pylons', 'TurboGears2'],
+    paster_plugins=['PasteScript', 'Pylons', 'TurboGears2', 'bqengine'],
     build_top=path("build"),
     build_dir=lambda: options.build_top / "bisque05",
     license=Bunch(
@@ -57,12 +57,39 @@ server_subdirs=['bqdev', 'bqcore', 'bqserver', 'bqengine' ]
 engine_subdirs=['bqdev', 'bqcore', 'bqengine' ]
 
 
+def getanswer(question, default, help=None):
+    import textwrap
+    if "\n" in question:
+        question = textwrap.dedent (question)
+    while 1:
+        a =  raw_input ("%s [%s]? " % (question, default))
+        
+        if a=='?':
+            if help is not None:
+                print textwrap.dedent(help)
+            else:
+                print "Sorry no help available currently."
+            continue
+        y_n = ['Y', 'y', 'N', 'n']
+        if default in y_n and a in y_n:
+            a = a.upper()
+            
+        if a == '': a = default
+        break
+    return a
+
+
+#@cmdopts([('engine', 'e', 'install only the engine')])
 @task
-@cmdopts([('engine', 'e', 'install only the engine')])
+@consume_args 
 def setup(options):
     'install local version and setup local packages'
 
-    engine_install = getattr(options, 'engine', False)
+    engine_install = (len(options.args) or None) and options.args[0] == 'engine'
+    if engine_install is None:
+        if getanswer("install server or engine", "engine", 
+                  "answer 'server' or 'engine' depending what sort of bisque server you wish to install") == 'engine':
+            engine_install = True
 
     if not engine_install:
         # Hack as numpy fails to install when in setup.py dependencies
@@ -76,7 +103,7 @@ def setup(options):
 
     top = os.getcwd()
     subdirs = server_subdirs
-    if hasattr(options, 'engine'):
+    if engine_install:
         print "INSTALLING ENGINE"
         subdirs = engine_subdirs
 
@@ -86,8 +113,9 @@ def setup(options):
             os.chdir(app_dir)
             sh('python setup.py develop')
             os.chdir(top)
+    sh('easy_install http://biodev.ece.ucsb.edu/binaries/depot/TurboGears2/TurboGears2-2.1.5.tar.gz')
     sh('easy_install http://biodev.ece.ucsb.edu/binaries/depot/Paste/Paste-1.7.5.1bisque2.tar.gz')
-
+    sh('easy_install pastescript==1.7.3')
 
 @task
 @needs('generate_setup', 'minilib', 'setuptools.command.sdist')

@@ -24,6 +24,6 @@ bisque.server=http://%(http_host)s:%(http_port)s
 bisque.root=%(rooturl)s
 bisque.services_enabled=%(services_enabled)s
 bisque.services_disabled=%(services_disabled)s
-bisque.proxyroot= %(proxyroot)s
+#bisque.proxyroot= %(proxyroot)s
 
 

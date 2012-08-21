@@ -132,11 +132,16 @@ Ext.define('BQ.ShareDialog', {
      
     userSelected : function(resourceBrowser, user)
     {
-        this.addUser({
-            user    :   user.uri,
-            email   :   user.email,
-            action  :   'read'
-        });
+        var recordID = this.store.find('user_name', user.user_name);
+        
+        if (recordID==-1)
+            this.addUser({
+                user    :   user.uri,
+                email   :   user.email,
+                action  :   'read'
+            });
+        else
+            BQ.ui.notification('Selected user already exists in the share list!');
     },
     
     addEmail : function()
@@ -185,7 +190,7 @@ Ext.define('BQ.ShareDialog', {
             if (authRecord[i].user)
                 this.fetchUserInfo(authRecord[i].user, authRecord[i].action, i);
             else
-                this.store.loadData([['', authRecord[i].email, authRecord[i].action, i]], true);
+                this.store.loadData([['', authRecord[i].email, authRecord[i].action, i, authRecord[i].user_name]], true);
         }
     },
     
@@ -199,7 +204,7 @@ Ext.define('BQ.ShareDialog', {
             })
         }
         else
-            this.store.loadData([[user.display_name, user.email, permission, sortOrder]], true);
+            this.store.loadData([[user.display_name, user.email, permission, sortOrder, user.user_name]], true);
     },
     
     addComponents : function()
@@ -207,6 +212,7 @@ Ext.define('BQ.ShareDialog', {
         
         this.browser = Ext.create('Bisque.ResourceBrowser.Browser',
         {
+            showOrganizer   :   false,
             layout          :   Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Grid,
             layoutConfig    :   {
                                     colIconWidth    :   8,
@@ -360,6 +366,7 @@ Ext.define('BQ.ShareDialog', {
                 'value',
                 'permission',
                 'viewPriority',
+                'user_name',
                 {
                     name : 'view',
                     type : 'bool',

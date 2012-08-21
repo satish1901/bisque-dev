@@ -31,6 +31,7 @@ setup(
         "repoze.tm2 >= 1.0a5",
         "SQLAlchemy>=0.7.6, <0.8",
         "sqlalchemy-migrate",
+        "Alembic",
         "repoze.what-quickstart",
         "repoze.what >= 1.0.8",
         "repoze.what-quickstart",
@@ -81,10 +82,6 @@ setup(
                                  'core/templates/*/*',
                                  'core/public/*/*']},
 
-    scripts = ["scripts/bq-upload-images",
-               "scripts/bqdev-upload-binary",
-               ],
-    
     message_extractors={'bq': [
             ('**.py', 'python', None),
             ('core/templates/**.mako', 'mako', None),
@@ -104,6 +101,8 @@ setup(
       [console_scripts]
       bq-admin = bq.commands.admin:main
       mexrunner = bq.commands.mexrunner:main
+      bqdev-upload-binary = bq.commands.uploadbinary:main
+      bq-upload-images = bq.commands.uploadimages:main
 
       [bq.commands]
       create-core    = bq.commands.create:createCoreService
@@ -115,6 +114,7 @@ setup(
       deploy   = bq.commands.admin:deploy
       sql     = bq.commands.admin:sql
       preferences= bq.commands.admin:preferences
+      database  = bq.commands.admin:database
       
       [paste.paster_create_template]
       bisque_core = bq.bisque_template:CoreServiceTemplate

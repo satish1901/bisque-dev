@@ -162,6 +162,7 @@ smtp_server=localhost
 
 # TGExt.Registration2 Config
 registration_config = %(here)s/registration.cfg
+registration.site_name = Bisque
 registration.mail.admin_email = admin@nowhere.com
 registration.host = http://localhost:8080
 registration.mail.smtp_server = localhost

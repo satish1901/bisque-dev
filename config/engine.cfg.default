@@ -17,7 +17,7 @@ servers = e1
 e1.url = http://yourhist:27000
 #e1.server = :3052
 e1.services_enabled = engine_service
-e1.proxyroot = http://bisque.ece.ucsb.edu
+#e1.proxyroot = http://bisque.ece.ucsb.edu
 
 # Place log file and pid files elsewhere
 #log_dir = /var/log/bisque

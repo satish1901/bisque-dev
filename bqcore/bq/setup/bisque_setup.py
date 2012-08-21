@@ -34,6 +34,8 @@ log.addHandler(ch)
 ## ENSURE setup.py has been run before..
 
 capture = None
+answer_file = None
+save_answers = False
 
 try:
     import bq
@@ -128,7 +130,14 @@ def getanswer(question, default, help=None):
     if "\n" in question:
         question = textwrap.dedent (question)
     while 1:
-        if capture is not None:
+        if not save_answers and answer_file:
+            a = answer_file.readline().strip()
+            if question.strip() != a: 
+                raise SetupError( "Mismatch '%s' !=  '%s' " % (question, a) )
+            a = answer_file.readline().strip()
+            answer_file.readline()
+
+        elif capture is not None:
             a =  capture.logged_input ("%s [%s]? " % (question, default))
         else:
             a =  raw_input ("%s [%s]? " % (question, default))
@@ -144,6 +153,11 @@ def getanswer(question, default, help=None):
             a = a.upper()
             
         if a == '': a = default
+        if save_answers and answer_file:
+            answer_file.write(question)
+            answer_file.write ('\n')
+            answer_file.write (a)
+            answer_file.write ('\n\n')
         break
     return a
 
@@ -255,7 +269,7 @@ BQDEPOT  = os.path.join(BQDIR, "external") # Local directory for externals
 BQENV = None
 BQBIN = None
 
-
+ALEMBIC_CFG  = config_path('alembic.ini')
 SITE_CFG     = config_path('site.cfg')
 SITE_DEFAULT = config_path('site.cfg.default')
 RUNTIME_CFG  = config_path('runtime-bisque.cfg')
@@ -274,7 +288,8 @@ SITE_VARS = {
 
 ENGINE_VARS  ={
     'bisque.engine': 'http://%s:27000'  % HOSTNAME,
-    'bisque.root' : 'http://%s:8080' % HOSTNAME,
+#    'bisque.root' : 'http://%s:8080' % HOSTNAME,
+    'bisque.paths.root' : os.getcwd(),
 #    'bisque.admin_email' : 'YourEmail@YourOrganization',
     }
 
@@ -302,6 +317,7 @@ initial_vars = {
 linked_vars = {
     'h1.url' : '${bisque.root}',
     'smtp_server' : '${mail.smtp.server}',        
+    'registration.site_name' : '${bisque.title} (${bisque.root})',
     'registration.host' : '${bisque.root}',
     'registration.mail.smtp_server' : '${mail.smtp.server}',
     'registration.mail.admin_email' : '${bisque.admin_email}',
@@ -323,10 +339,12 @@ the proxy address and see AdvancedInstalls"""),
 
 
 ENGINE_QUESTIONS=[
-    ('bisque.root' , 'Enter the root URL of the BISQUE server ',
-     "A URL of Bisque site where this engine will register modules"),
+#    ('bisque.root' , 'Enter the root URL of the BISQUE server ',
+#     "A URL of Bisque site where this engine will register modules"),
     ('bisque.engine', "Enter the URL of this bisque module engine",
      "A module engine offers services over an open URL like a web-server. Please make sure any firewall software allows access to the selected port"),
+    ('bisque.paths.root', 'Installation Directory', 
+     'Location of bisque installation.. used for find configuration and data'),
     ]
 
 
@@ -419,7 +437,7 @@ def update_site_cfg (bisque_vars, section = BQ_SECTION, append=True, cfg=SITE_CF
 
     for k,v in bisque_vars.items():
         c.edit_config (section, k, '%s = %s' % (k,quoted(v)), {}, append)
-        print "edit %s %s" % (k,v)
+        #print "edit %s %s" % (k,v)
     c.write (open (cfg, 'w'))
     return bisque_vars
 
@@ -438,7 +456,7 @@ def modify_site_cfg(qs, bisque_vars, section = BQ_SECTION, append=True, cfg=SITE
     c.read(open(cfg))
     for k,v in bisque_vars.items():
         c.edit_config (section, k, '%s = %s' % (k,quoted(v)), {}, append)
-        print "edit %s %s" % (k,v)
+        #print "edit %s %s" % (k,v)
     c.write (open (cfg, 'w'))
     return bisque_vars
 
@@ -609,8 +627,16 @@ def get_dburi(params):
     return params, DBURL
 
 
-def test_db_initialized(DBURL):
+def test_db_alembic (DBURL):
+    r, out = sql(DBURL, 'select * from alembic_version')
+    return r == 0
+    
+def test_db_sqlmigrate(DBURL):
     r, out = sql(DBURL, 'select * from migrate_version')
+    return r == 0
+
+def test_db_initialized(DBURL):
+    r, out = sql(DBURL, 'select * from taggable limit 1')
     return r == 0
     
 
@@ -678,6 +704,9 @@ Please resolve the problem(s) and re-run 'bisque-setup --database'.""")
                
     # Step 3: find out whether the database needs initialization
     db_initialized = test_db_initialized(DBURL)
+    newdb = False
+    install_cfg(ALEMBIC_CFG, section="alembic", default_cfg=config_path('alembic.ini.default'))
+    update_site_cfg(params, section='alembic', cfg = ALEMBIC_CFG, append=False)
     if not db_initialized and getanswer(
         "Intialize the new database",  "Y",
         """
@@ -686,16 +715,19 @@ Please resolve the problem(s) and re-run 'bisque-setup --database'.""")
         """) == "Y":
         if call (['paster','setup-app', config_path('site.cfg')]) != 0:
             raise SetupError("There was a problem initializing the Database")
-        if call ([PYTHON, to_sys_path('bqcore/migration/manage.py'), 'version_control']) != 0:
-            raise SetupError("Could not setup version management in new database."
-                             "Please try to setup the database manually or contact the developers")
-
-        from bq.release import __DB_VERSION__
-        sql(DBURL, "update migrate_version set version=%s" % __DB_VERSION__)
+        newdb = True
         
-    # Step 4: Always upgrade the database to newest version
-    print "Upgrading database version"
-    call ([PYTHON, to_sys_path ('bqcore/migration/manage.py'), 'upgrade'])
+
+    if test_db_sqlmigrate(DBURL):
+        print "Upgrading database version (sqlmigrate)"
+        call ([PYTHON, to_sys_path ('bqcore/migration/manage.py'), 'upgrade'])
+
+
+    if not newdb : #and test_db_alembic(DBURL):
+        print "Upgrading database version (alembic)"
+        if call (["alembic", '-c', config_path('alembic.ini'), 'upgrade', 'head']) != 0:
+            raise SetupError("There was a problem initializing the Database")
+
     print params
     return params
         
@@ -1434,15 +1466,23 @@ def setup(options, args):
             sys.exit(0)
 
     cancelled = False
+    global answer_file, save_answers
     global BQENV
     global BQBIN
     BQENV = virtenv
     BQBIN = os.path.join(BQENV, 'bin') # Our local bin
     if os.name == "nt":
         BQBIN = os.path.join(BQENV, 'Scripts') # windows local bin 
-        
+
     begin_install = datetime.datetime.now()
-    if has_script and not options.inscript:
+    if options.read:
+        print "Reading answers from %s" % options.read
+        answer_file = open (options.read)
+    elif options.write:
+        print "Saving answers to %s" % options.write
+        answer_file = open (options.write, "wb")
+        save_answers = True
+    elif has_script and not options.inscript:
         script = ['bq-admin', 'setup', '--inscript']
         script.extend (args)
         r = typescript(script, 'bisque-install.log')

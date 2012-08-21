@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # Script to upload external files to the binary server
 #
-import os, re, urllib2, sha, inspect, sys
+import os, re, urllib2, hashlib, inspect, sys
 
 BASE= "http://biodev.ece.ucsb.edu/binaries/upload/"
 
@@ -9,7 +9,7 @@ class Abort(Exception):
     pass
 
 def _sha1hash(data):
-    return sha.new(data).hexdigest().upper()
+    return hashlib.sha1(data).hexdigest().upper()
 
 
 
@@ -124,7 +124,7 @@ Use --help for more info.
 """ % BASE
 
 
-if __name__ == "__main__":
+def main():
     from optparse import OptionParser 
     parser = OptionParser (usage=help)
     parser.add_option ('-u', '--user', action="store", default='')
@@ -155,3 +155,5 @@ if __name__ == "__main__":
     print "\n".join (uploaded)
             
 
+if __name__ == "__main__":
+    main()

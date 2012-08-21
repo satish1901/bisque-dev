@@ -42,7 +42,7 @@ function analysisAction(o, e) {
     //}
 
     var w = Math.round(Math.min(500, BQApp?BQApp.getCenterComponent().getWidth()*0.8:document.width*0.8));    
-    var h = Math.round(BQApp?BQApp.getCenterComponent().getHeight()*0.8:document.height*0.8);
+    var h = Math.round(BQApp?BQApp.getCenterComponent().getHeight()*0.99:document.height*0.99);
     
     //var resourceBrowser  = new Bisque.ResourceBrowser.Dialog({    
     var resourceBrowser  = Ext.create('Bisque.ResourceBrowser.Browser', {
@@ -50,6 +50,7 @@ function analysisAction(o, e) {
         wpublic: true,
         selType: 'SINGLE',        
         viewMode: 'ModuleBrowser',
+        showOrganizer: false,
         dataset : '/module_service/',
         listeners : { 
             'Select' : function(rb, module) {
@@ -303,7 +304,8 @@ Ext.define('BQ.Application.Toolbar', {
         });
         menu_help.push({
             text: 'About Bisque', 
-            handler: Ext.Function.pass(htmlAction, [bq.url('/client_service/public/about/about.html'), 'About Bisque'] ), 
+            //handler: Ext.Function.pass(htmlAction, [bq.url('/client_service/public/about/about.html'), 'About Bisque'] ), 
+            handler: Ext.Function.pass(htmlAction, [bq.url('/client_service/about'), 'About Bisque'] ), 
         });    
         menu_help.push({
             text: 'Privacy policy', 
@@ -735,11 +737,6 @@ Ext.define('BQ.Application.Toolbar', {
                     if (form.isValid()) {
                         var v = form.getValues()
                         var resource = BQFactory.make(v.type, undefined, v.name);
-                        
-                        // dima: temporary hack to fix the dataset memebers tag problem
-                        if (v.type == 'dataset')
-                             resource.addtag ({name: 'members'});
-                        
                         resource.save_('/data_service/'+v.type, 
                                        callback(this, this.onResourceCreated), 
                                        callback(this, this.onResourceError));

@@ -20,11 +20,11 @@
  
 <div class="navigationcontorls" >
   <p>Download this video as: 
-  [<a onclick="_mp.downloadAs('quicktime');">Apple QuickTime</a>] 
-  [<a onclick="_mp.downloadAs('avi');">Microsoft AVI (MPEG4)</a>] 
-  [<a onclick="_mp.downloadAs('wmv');">Windows Media Video</a>]   
-  [<a onclick="_mp.downloadAs('flv');">Adobe Flash Video</a>] 
-  [<a onclick="_mp.downloadAs('mpeg4');">MPEG4</a>]   
+  [<a onclick="BQApp._mp.downloadAs('quicktime');">Apple QuickTime</a>] 
+  [<a onclick="BQApp._mp.downloadAs('avi');">Microsoft AVI (MPEG4)</a>] 
+  [<a onclick="BQApp._mp.downloadAs('wmv');">Windows Media Video</a>]   
+  [<a onclick="BQApp._mp.downloadAs('flv');">Adobe Flash Video</a>] 
+  [<a onclick="BQApp._mp.downloadAs('mpeg4');">MPEG4</a>]   
   </p>
 </div>
 
@@ -57,7 +57,7 @@
 
 <script type="text/javascript">
  Ext.onReady ( function () {
-    var _mp = new moviePlayer( 'videoplayer', '${resource}', "${tg.url('/client_service/public/movieplayer/flash')}" );
+    BQApp._mp = new moviePlayer( 'videoplayer', '${resource}', "${tg.url('/client_service/public/movieplayer/flash')}" );
   });
   // html 5 video tag
   //var _mp = new moviePlayer( 'html5video', '${resource}' );  

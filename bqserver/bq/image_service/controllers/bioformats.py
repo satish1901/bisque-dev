@@ -231,7 +231,7 @@ def info(ifnm, original=None):
     else:
         command = [BFINFO, '-nopix', '-nometa', '-map', ifnm, original ]
         
-    log.debug('BioFormats info for: '+str(ifnm) )
+    log.debug('BioFormats info for: %s'%(ifnm) )
     with Locks(ifnm):
         o = run_command( command )
     if o is None: return {}

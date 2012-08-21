@@ -59,6 +59,7 @@ from tg import config, url
 from datetime import datetime
 from sqlalchemy.sql import select, func, exists, and_, or_, not_, asc, desc
 from sqlalchemy.orm import Query, aliased
+#from datetime import strptime 
 
 from bq.core.model import DBSession as session
 #from bq.image_service import image_service
@@ -262,7 +263,7 @@ def p_error(p):
 #  move to some system directory like "/var/run/bisque" 
 # http://www.dabeaz.com/ply/ply.html#ply_nn18
 #_mkdir("generated")
-yacc.yacc(outputdir=data_path(), debug= 1)
+yacc.yacc(outputdir=data_path(), debug= 0)
 
 # End Parser 
 #############################################################
@@ -626,6 +627,7 @@ def resource_query(resource_type,
     # This converts an request for values to the actual
     # objects represented by those values;  :o
     if dbtype == Value:
+        log.debug ("VALUE QUERY %s" % query)
         sq1 = query.with_labels().subquery()
         query = session.query (Taggable).filter (Taggable.id == sq1.c.values_valobj)
         wpublic = 1
@@ -909,10 +911,11 @@ def resource_delete(resource, user_id=None):
         resource.resource_hidden = True
         log.debug('hiding resource due to references')
         return
-
     q = session.query (TaggableAcl).filter_by (taggable_id = resource.id)
     q.delete()
     session.delete(resource)
+    session.flush()
+
     log.debug('resource_delete %s:end' % resource)
 
 

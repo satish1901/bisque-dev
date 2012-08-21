@@ -157,17 +157,23 @@
     background-color: #E8F1FA;
 }
 
+/*
+dima: Global mask style is defined and overriden in bisquik_extjs_fixes in js and css, no specific changes are needed
+*/
+
+/* fix for overwritten x-mask style */
+/*
+.x-masked>.x-mask {
+    opacity: 0.6;
+    background-color: #F0F0F0;
+}
+*/
+/*
 .x-mask {
     z-index: 100;
     position: absolute;
     top: 0;
     left: 0;
-}
-
-/* fix for overwritten x-mask style */
-.x-masked>.x-mask {
-    opacity: 0.6;
-    background-color: #F0F0F0;
 }
 
 .x-mask-msg {
@@ -193,6 +199,7 @@
     border: 0px;
     background-color: #f0f0f0;
 }
+*/
 
 /* Align certain buttons left */
 .button-alignleft .x-btn-text {
