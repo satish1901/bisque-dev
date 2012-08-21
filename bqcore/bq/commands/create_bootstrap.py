@@ -30,9 +30,13 @@ def after_install(options, home_dir):
     bisque_install(options, home_dir, bindir)
 
 def bisque_install(options, home_dir, bindir):
-    if subprocess.call(['hg', '--version']) != 0:
-         subprocess.call([os.path.join(home_dir, bindir, 'easy_install'),
-                         'mercurial'])
+    try:
+       r = subprocess.call(['hg', '--version'])
+    except OSError:
+       r = 1
+
+    if r !=  0:
+         subprocess.call([os.path.join(home_dir, bindir, 'easy_install'), 'mercurial'])
          mercurial = os.path.join(home_dir, bindir, 'hg')
     else:
          mercurial = 'hg'
