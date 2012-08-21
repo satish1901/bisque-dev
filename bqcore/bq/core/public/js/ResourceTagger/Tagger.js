@@ -21,7 +21,7 @@ Ext.define('Bisque.ResourceTagger',
                 btnAdd : true,
                 btnDelete : true,
                 btnImport : true,
-                btnExport : true,
+                //btnExport : true,
             },
             store : {},
             dirtyRecords : []
@@ -326,7 +326,7 @@ Ext.define('Bisque.ResourceTagger',
             editor      :   {
                                 allowBlank: false
                             },
-            renderer : Bisque.ResourceTagger.BaseRenderer
+            renderer    :   Bisque.ResourceTagger.BaseRenderer
         }];
     },
 
@@ -515,7 +515,7 @@ Ext.define('Bisque.ResourceTagger',
                     {
                         text : 'to Google Docs',
                         handler : this.exportToGDocs,
-                        hidden : this.viewMgr.state.btnGDocs,
+                        hidden : true,//this.viewMgr.state.btnGDocs,
                         scope : this
                     }]
                 }
@@ -803,8 +803,11 @@ Ext.define('Bisque.ResourceTagger',
 
     exportToXml : function()
     {
-        // append view=full ?
-        window.open(this.resource.uri);
+        var url = '/export/initStream?urls='
+        url += encodeURIComponent(this.resource.uri+'?view=deep');
+        url += '&filename='+(this.resource.name || 'document');
+        
+        window.open(url);
     },
 
     exportToCsv : function()
@@ -812,6 +815,8 @@ Ext.define('Bisque.ResourceTagger',
         var url = '/stats/csv?url=';
         url += encodeURIComponent(this.resource.uri);
         url += '&xpath=%2F%2Ftag&xmap=tag-name-string&xmap1=tag-value-string&xreduce=vector';
+        url += '&title=Name&title1=Value';
+        url += '&filename='+(this.resource.name || 'document') + '.csv';
         window.open(url);
     },
 
@@ -824,14 +829,15 @@ Ext.define('Bisque.ResourceTagger',
 
 Ext.define('Bisque.GObjectTagger',
 {
-    extend : 'Bisque.ResourceTagger',
-    animate: false,
+    extend  :   'Bisque.ResourceTagger',
+    animate :   false,
 
     constructor : function(config)
     {
         config.rootProperty = 'gobjects';
         config.colNameText = 'GObject';
         config.colValueText = 'Vertices';
+        config.tree = {btnExport : true};
 
         this.callParent(arguments);
     },
@@ -991,14 +997,16 @@ Ext.define('Bisque.GObjectTagger',
 
     exportToXml : function()
     {
-        this.exportTo('xml');
+        //var gobject=this.tree.getRootNode(), selection = this.tree.getChecked();
+        //debugger
+        //this.exportTo('xml');
     },
     
     //exportToGDocs : Ext.emptyFn,
 
     exportToCsv : function()
     {
-        this.exportTo('csv');
+        //this.exportTo('csv');
     },
     
     exportTo : function(format)

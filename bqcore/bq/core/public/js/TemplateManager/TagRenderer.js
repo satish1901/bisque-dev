@@ -147,7 +147,7 @@ Ext.define('BQ.TagRenderer.Boolean',
                             {
                                 return  {
                                             xtype           :   'checkbox',
-                                            boxLabel        :   ' (checked = true, unchecked = False)',
+                                            boxLabel        :   ' (checked = True, unchecked = False)',
                                         }
                             }
 });

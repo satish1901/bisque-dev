@@ -584,6 +584,13 @@ Ext.define('Bisque.ResourceBrowser.Layout.Grid',
 
     Init : function(resourceQueue) 
     {
+        // if no results were obtained for a given query, show a default no-results message
+        if (resourceQueue.length==0)
+        {
+            this.noResults();
+            return;
+        }
+
         this.layoutConfig = this.browser.layoutConfig || {};
         this.add(this.getResourceGrid());
         
@@ -592,6 +599,17 @@ Ext.define('Bisque.ResourceBrowser.Layout.Grid',
             list.push(resourceQueue[i].getFields());
         
         this.resourceStore.loadData(list);
+
+        var selModel = this.resourceGrid.getSelectionModel();
+        this.resQ = resourceQueue;
+        
+        this.resourceGrid.on('afterrender', function(me)
+        {
+            var resourceQueue = this.resQ, selModel = this.resourceGrid.getSelectionModel();
+            for (var i=0;i<resourceQueue.length;i++)
+                if (this.browser.resourceQueue.selectedRes[resourceQueue[i].resource.uri])
+                    selModel.select(i, true);
+        }, this, {single:true});
     },
     
     getVisibleElements : function(direction) 
@@ -619,6 +637,7 @@ Ext.define('Bisque.ResourceBrowser.Layout.Grid',
             store       :   this.getResourceStore(),
             border      :   0,
             multiSelect :   true,
+            simpleSelect:   true,
             listeners : 
             {
                 scope: this,
