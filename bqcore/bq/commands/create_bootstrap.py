@@ -11,6 +11,11 @@ def extend_parser(optparse_parser):
     optparse_parser.add_option('--tg', help='Specify turbogears repo to bootstrap', 
                                 default = 'http://www.turbogears.org/2.1/downloads/current/index',)
 
+def adjust_options(options, args):
+    if len(args) == 0:
+        print "installing in bqenv"
+        args.append( 'bqenv' )
+
 
 def after_install(options, home_dir):
     if sys.platform == 'win32':
@@ -25,15 +30,24 @@ def after_install(options, home_dir):
     bisque_install(options, home_dir, bindir)
 
 def bisque_install(options, home_dir, bindir):
-    subprocess.call([os.path.join(home_dir, bindir, 'easy_install'),
-                     'mercurial'])
+    try:
+       r = subprocess.call(['hg', '--version'])
+    except OSError:
+       r = 1
+
+    if r !=  0:
+         subprocess.call([os.path.join(home_dir, bindir, 'easy_install'), 'mercurial'])
+         mercurial = os.path.join(home_dir, bindir, 'hg')
+    else:
+         mercurial = 'hg'
+
 
     print "********************************"
     print "**     Fetching bisque        **"
     print "********************************"
+    print "Cloning: ", options.repo
     print 
-    subprocess.call([os.path.join(home_dir, bindir, 'hg'),
-                     'clone', options.repo, 'tmp'])
+    subprocess.call([mercurial, 'clone', options.repo, 'tmp'])
     for df in glob.glob('tmp/*') + glob.glob('tmp/.hg*'):
         if not os.path.exists(os.path.basename(df)):
             shutil.move (df, os.path.basename(df))
@@ -43,8 +57,11 @@ def bisque_install(options, home_dir, bindir):
     print 
     print "*********************************"
     print "* Execute the following commands*"
-    print "source bqenv/bin/activate"
-    print "paver setup"
+    if sys.platform == 'win32':
+        print "bqenv\\\\Scripts\\\\activate.bat"
+    else:
+        print "source bqenv/bin/activate"
+    print "paver setup    [engine]"
     print "bq-admin setup [engine]"
 
     print "Please visit http://biodev.ece.ucsb.edu/projects/bisquik/wiki/InstallationInstructions and follow instructions there"

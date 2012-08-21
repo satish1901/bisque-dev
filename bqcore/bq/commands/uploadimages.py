@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import os, sys
 
+import urlparse
 from optparse import OptionParser
 from bq.util import http 
 
@@ -21,6 +22,7 @@ except:
     def isimagefile(fname):
         return True
 
+DESTINATION = "/import/transfer"
 
 def upload(dest, filename, userpass, tags=None):
     files = {  "file" : open(filename, "rb") }
@@ -47,8 +49,14 @@ def main():
         parser.error ("Need at least one file or directory and destination")
     dest = args.pop()
 
-    if not dest.endswith('/import/transfer'):
-        dest += '/import/transfer'
+    if not dest.endswith(DESTINATION):
+        dest += DESTINATION
+
+    if not dest.startswith('http'):
+        dest = "http://%s" % dest
+
+    dest_tuple = list(urlparse.urlsplit(dest))
+    dest =  urlparse.urlunsplit(dest_tuple)
 
     # Prepare username 
     if options.user is None:

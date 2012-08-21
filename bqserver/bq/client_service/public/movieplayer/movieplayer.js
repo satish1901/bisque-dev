@@ -69,6 +69,26 @@ moviePlayer.prototype.generateVideoUrl = function ( fmt ) {
   return fu;
 }
 
+moviePlayer.prototype.generateUrl = function ( fmt ) {
+  var pages = '';
+  if (this.t1>0 && this.t2>0 && this.z1>0 && this.z2>0) {
+      if (this.t2>this.t1)
+        pages = '&slice=,,'+String(this.z1)+','+String(this.t1)+'-'+String(this.t2);
+      if (this.z2>this.z1)
+        pages = '&slice=,,'+String(this.z1)+'-'+String(this.z2)+','+String(this.t1);
+  }
+
+  var size = '';
+  if (this._size_x>this._flash_width || this._size_y>this._flash_height) {
+    size = '&resize='+String(this._flash_width)+','+String(this._flash_height)+',BC,MX';
+  }
+  
+  var fu = this._image_url + '?remap=display'+size+pages+'&format='+fmt;   
+  if (this._fps > 0)
+    fu += ',fps,'+String(this._fps);  
+  return fu;
+}
+
 moviePlayer.prototype.generateIconUrl = function () {
   var size = '';
   if (this._size_x>this._flash_width || this._size_y>this._flash_height) {
@@ -319,7 +339,7 @@ moviePlayer.prototype.reloadVideo = function () {
 }
 
 moviePlayer.prototype.downloadAs = function ( fmt ) {  
-  var u = this.generateVideoUrl(fmt)+',stream';
-  //window.location = u;
-  window.open(u);    
+  var u = this.generateUrl(fmt)+',stream';
+  window.location = u;
+  //window.open(u);    
 }

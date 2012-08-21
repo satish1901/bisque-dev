@@ -61,7 +61,7 @@ from bq.util.paths import config_path
 from bq.util.commands import find_site_cfg
 from bq.util.urlnorm import norm
 
-logging.basicConfig(level = logging.DEBUG)
+logging.basicConfig(level = logging.WARN)
 
 def load_config(filename):
     conf = appconfig('config:' + os.path.abspath(filename))
@@ -75,6 +75,8 @@ class module_admin(object):
         parser = optparse.OptionParser(
                     usage="%prog module [register|unregister] path/to/Module.xml",
                     version="%prog " + version)
+
+        parser.add_option('-u', '--user', action='store', help='Login as user (usually admin)')
         options, args = parser.parse_args()
         self.args = args
         self.options = options
@@ -85,11 +87,11 @@ class module_admin(object):
             parser.error("no command given")
 
         if len(self.args):
-            self.module_path = self.args.pop(0)
-            if not os.path.exists(self.module_path):
-                parse.error("can't find module at %s" % self.module_path)
+            self.engine_path = self.args.pop(0)
+            if not self.engine_path.endswith('/'):
+                self.engine_path += '/'
         else:
-            parser.error('must provide path to module.xml')
+            parser.error('must provide URL to the service ')
 
 
     def run(self):
@@ -97,18 +99,33 @@ class module_admin(object):
         load_config(site_cfg)
         self.command()
 
+    def get_definition(self):
+        url = urlparse.urljoin(self.engine_path, 'definition')
+        print "loading ", url
+        resp, module_xml = http.xmlrequest(url)
+        if resp['status'] != '200':
+            print "Can't access %s" %url 
+            print resp
+            return None
+        try:
+            module_xml =   etree.XML(module_xml)
+            print "Fetched definition file for %s " % module_xml.get('name')
+            return module_xml
+        except Exception:
+            log.exception("During parsing of %s " % module_xml)
+                
+        
+
     def register (self):
-        from bq.engine.controllers.engine_service import load_module
         bisque_root = norm(config.get('bisque.root') + '/')
-        engine_root = urlparse.urljoin(norm(config.get ('engine.root') + '/'), 'engine_service')+'/'
         module_register = urlparse.urljoin(bisque_root, "module_service/register_engine")
 
-        print "loading ", self.module_path
-        module_xml = load_module(self.module_path)
+
+        module_xml = self.get_definition()
         name = module_xml.get('name')
         if module_xml is not None:
-            engine = etree.Element ('engine', uri = engine_root)
-            module_xml.set('engine_url', urlparse.urljoin(engine_root, name))
+            engine = etree.Element ('engine', uri = self.engine_path)
+            module_xml.set('engine_url', self.engine_path)
             engine.append(module_xml)
             #####
             log.info ("POSTING %s to %s" % (name, module_register))
@@ -116,9 +133,10 @@ class module_admin(object):
             #print xml
             resp, content = http.xmlrequest (norm(module_register+'/'), method='POST', body=xml)
             if resp['status'] != '200':
-                print resp
+                print "An error occurred:"
+                print content
                 return
-            print content
+            print "Registered"
 
             
             

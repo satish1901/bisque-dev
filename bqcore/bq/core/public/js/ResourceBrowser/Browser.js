@@ -25,6 +25,7 @@ Ext.define('Bisque.ResourceBrowser.Dialog',
         config.height = config.height || '85%';
         config.width = config.width || '85%';
         config.selType = config.selType || 'MULTI';
+        config.showOrganizer = ('showOrganizer' in config)? config.showOrganizer: true;
 
         var bodySz = Ext.getBody().getViewSize();
         var height = parseInt((config.height.toString().indexOf("%") == -1) ? config.height : (bodySz.height * parseInt(config.height) / 100));
@@ -232,6 +233,8 @@ Ext.define('Bisque.ResourceBrowser.Browser',
 
             this.browserState['offset'] = this.browserParams.offset;
             this.layoutKey = this.layoutKey || this.browserParams.layout;
+            //this.showOrganizer = true;
+            //if ('showOrganizer' in this.browserParams) 
             this.showOrganizer = this.browserParams.showOrganizer || false;
             this.selectState = this.browserParams.selectState || 'ACTIVATE';
             this.commandBar.applyPreferences();

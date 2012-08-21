@@ -363,9 +363,9 @@ Ext.define('Bisque.Resource.Page',
         this.setLoading(false);
     },
     
-    testAuth : function(user, loaded, permission)
+    testAuth : function(user, loaded, permission, action)
     {
-        function disableOperations()
+        function disableOperations(action)
         {
             // user is not authorized
             var tbar = this.getDockedItems('toolbar')[0];
@@ -374,6 +374,8 @@ Ext.define('Bisque.Resource.Page',
                 var cmp = tbar.items.getAt(i);
                 if (cmp.needsAuth)
                     cmp.setDisabled(true);
+                if (cmp.itemId=='btnDelete' && action=='read')
+                    cmp.setDisabled(false);
             }
         }
 
@@ -383,7 +385,7 @@ Ext.define('Bisque.Resource.Page',
                 this.resource.testAuth(user.uri, Ext.bind(this.testAuth, this, [user, true], 0));            
             else
                 if (!permission)
-                    disableOperations.call(this);
+                    disableOperations.call(this, action);
         }
         else if (user===undefined)
             // User autentication hasn't been done yet
@@ -414,7 +416,7 @@ Ext.define('Bisque.Resource.Page',
                                 items       :   [{
                                                     xtype       :   'menuitem',
                                                     compression :   'none',
-                                                    text        :   'Original file'
+                                                    text        :   'Original'
                                                 }, {
                                                     xtype       :   'menuseparator'
                                                 }, {
@@ -443,8 +445,8 @@ Ext.define('Bisque.Resource.Page',
             itemId      :   'btnDelete',
             text        :   'Delete',
             iconCls     :   'icon-delete',
-            operation   :   this.deleteResource,
-            handler     :   this.testAuth1
+            handler     :   this.deleteResource,
+            //handler     :   this.testAuth1
         },
         {
             itemId      :   'btnPerm',

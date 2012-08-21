@@ -114,8 +114,8 @@ class ArchiveStreamer():
                 finfo = fileInfo('', uri)
                 if fileHash.get(finfo.get('name'))!=None:
                     fileHash[finfo.get('name')] = fileHash.get(finfo.get('name')) + 1
-                    name, ext = os.path.splitext(finfo.get('name'))
-                    finfo['name'] = name + '_' + str(fileHash.get(finfo.get('name'))-1) + ext
+                    namef, ext = os.path.splitext(finfo.get('name'))
+                    finfo['name'] = namef + '_' + str(fileHash.get(finfo.get('name'))-1) + ext
                 else:
                     fileHash[finfo.get('name')] = 1
                     
@@ -129,14 +129,13 @@ class ArchiveStreamer():
                 dataset = data_service.get_resource(uri, view='full')
                 name = dataset.xpath('/dataset/@name')[0]
                 members = dataset.xpath('/dataset/value')
-                
                 for index, member in enumerate(members):
                     finfo = fileInfo(name, member.text, index)
 
                     if fileHash.get(finfo.get('name'))!=None:
                         fileHash[finfo.get('name')] = fileHash.get(finfo.get('name')) + 1
-                        name, ext = os.path.splitext(finfo.get('name'))
-                        finfo['name'] = name + '_' + str(fileHash.get(finfo.get('name'))-1) + ext
+                        namef, ext = os.path.splitext(finfo.get('name'))
+                        finfo['name'] = namef + '_' + str(fileHash.get(finfo.get('name'))-1) + ext
                     else:
                         fileHash[finfo.get('name')] = 1
 

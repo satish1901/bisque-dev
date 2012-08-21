@@ -34,8 +34,5 @@ setup(
     load_glo_engine = bq.engine.commands.load_engine:LoadEngine
     [bisque.services]
     engine_service = bq.engine.controllers.engine_service
-    [bq.commands]
-    module = bq.engine.commands.module_admin:module_admin
-
     """,
 )
