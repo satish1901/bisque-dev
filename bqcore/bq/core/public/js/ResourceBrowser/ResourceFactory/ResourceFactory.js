@@ -416,7 +416,7 @@ Ext.define('Bisque.Resource.Page',
                                 items       :   [{
                                                     xtype       :   'menuitem',
                                                     compression :   'none',
-                                                    text        :   'Original file'
+                                                    text        :   'Original'
                                                 }, {
                                                     xtype       :   'menuseparator'
                                                 }, {

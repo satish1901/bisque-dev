@@ -150,7 +150,7 @@ Ext.define('BQ.Export.Panel',
     {
         var type = resource.resource_type;
         
-        if (type!='dataset')
+        if (type!='dataset' || compression=='none') 
             type = 'file';
         
         var record = ['', '',  type, resource.ts, '', resource.uri, 0];
