@@ -613,7 +613,7 @@ BQObject.prototype.testAuth = function(user, cb, loaded, authRecord)
                 if (authRecord[i].action=='edit' || authRecord[i].action=='owner')
                     cb(true);
                 else
-                    cb(false);
+                    cb(false, authRecord[i].action);
                 return;
             }
         }

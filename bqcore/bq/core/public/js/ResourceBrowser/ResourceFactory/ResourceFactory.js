@@ -24,77 +24,6 @@ Ext.define('Bisque.ResourceFactory', {
     }
 })
 
-Bisque.ResourceFactoryDeprecated = function(config)
-{
-    var resType = (config.resource.resource_type=="resource")?config.resource.type:config.resource.resource_type; 
-    
-    switch (resType)
-    {
-        case 'mex':
-            switch (config.layoutKey)
-            {
-                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.COMPACT :
-                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.CARD :
-                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PSTRIP :
-                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PSTRIP_BIG :
-                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.FULL :
-                    return new Bisque.ResourceBrowser.ResourceFactory.MexResourceCompact(config);
-                    break;
-                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.LIST :
-                    return new Bisque.ResourceBrowser.ResourceFactory.MexResourceList(config);
-                    break;
-                default :
-                    throw new Error('ResourceFactory: Unrecognized resource layout key - '
-                    + config.layoutKey);
-            }
-            break;
-        case 'module':
-            switch (config.layoutKey)
-            {
-                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.COMPACT :
-                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.CARD :
-                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PSTRIP :
-                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PSTRIP_BIG :
-                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.FULL :
-                    return new Bisque.ResourceBrowser.ResourceFactory.ModuleResourceCompact(config);
-                    break;
-                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.LIST :
-                    return new Bisque.ResourceBrowser.ResourceFactory.ModuleResourceList(config);
-                    break;
-                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.ICON_LIST :
-                    return new Bisque.ResourceBrowser.ResourceFactory.ModuleResourceIconList(config);
-                    break;
-                default :
-                    throw new Error('ResourceFactory: Unrecognized resource layout key - '
-                    + config.layoutKey);
-            }
-            break;
-        case 'dataset':
-            switch (config.layoutKey)
-            {
-                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.COMPACT :
-                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.CARD :
-                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PSTRIP :
-                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PSTRIP_BIG :
-                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.FULL :
-                    return new Bisque.ResourceBrowser.ResourceFactory.DatasetResourceCompact(config);
-                    break;
-                case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.LIST :
-                    return new Bisque.ResourceBrowser.ResourceFactory.DatasetResourceList(config);
-                    break;
-                default :
-                    throw new Error('ResourceFactory: Unrecognized resource layout key - '
-                    + config.layoutKey);
-            }
-            break;
-        default :
-            return new Bisque.ResourceBrowser.ResourceFactory.Resource(config);
-            
-            //throw new Error('ResourceFactory: Unknown resource type: ' + config.resource.type);
-    }
-};
-
-
 // Returns standalone resources 
 Ext.define('Bisque.ResourceFactoryWrapper',
 {
@@ -434,9 +363,9 @@ Ext.define('Bisque.Resource.Page',
         this.setLoading(false);
     },
     
-    testAuth : function(user, loaded, permission)
+    testAuth : function(user, loaded, permission, action)
     {
-        function disableOperations()
+        function disableOperations(action)
         {
             // user is not authorized
             var tbar = this.getDockedItems('toolbar')[0];
@@ -445,6 +374,8 @@ Ext.define('Bisque.Resource.Page',
                 var cmp = tbar.items.getAt(i);
                 if (cmp.needsAuth)
                     cmp.setDisabled(true);
+                if (cmp.itemId=='btnDelete' && action=='read')
+                    cmp.setDisabled(false);
             }
         }
 
@@ -454,7 +385,7 @@ Ext.define('Bisque.Resource.Page',
                 this.resource.testAuth(user.uri, Ext.bind(this.testAuth, this, [user, true], 0));            
             else
                 if (!permission)
-                    disableOperations.call(this);
+                    disableOperations.call(this, action);
         }
         else if (user===undefined)
             // User autentication hasn't been done yet
@@ -514,8 +445,8 @@ Ext.define('Bisque.Resource.Page',
             itemId      :   'btnDelete',
             text        :   'Delete',
             iconCls     :   'icon-delete',
-            operation   :   this.deleteResource,
-            handler     :   this.testAuth1
+            handler     :   this.deleteResource,
+            //handler     :   this.testAuth1
         },
         {
             itemId      :   'btnPerm',
