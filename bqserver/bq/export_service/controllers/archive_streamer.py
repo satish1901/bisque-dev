@@ -28,13 +28,8 @@ class ArchiveStreamer():
         self.datasetList = datasetList
         self.urlList = urlList
         
-        filename = archiveName + self.archiver.getFileExtension()
-        try:
-            disposition = 'attachment; filename="%s"'%filename.encode('ascii')
-        except UnicodeEncodeError:
-            disposition = 'attachment; filename="%s"; filename*="%s"'%(filename.encode('utf8'), filename.encode('utf8'))        
         response.headers['Content-Type'] = self.archiver.getContentType()
-        response.headers['Content-Disposition'] = disposition
+        response.headers['Content-Disposition'] = 'attachment;filename="' + archiveName + self.archiver.getFileExtension() + '"'
     
     def stream(self):
         log.debug("ArchiveStreamer: Begin stream %s" % request.url)
@@ -95,10 +90,7 @@ class ArchiveStreamer():
             
             log.debug ('ArchiveStreamer: Sending %s with %s'  % (url, headers))
             header, content = httpReader.request(url, headers=headers)
-
-            if not header['status'].startswith('200'):
-                log.error("URL request returned %s" % header['status'])
-                return None
+            
             items = (header.get('content-disposition') or header.get('Content-Disposition') or '').split(';')
             fileName = str(index) + '.'
             log.debug('Respose headers: %s'%header)
@@ -108,11 +100,6 @@ class ArchiveStreamer():
                 pair = item.split('=')
                 if (pair[0].lower().strip()=='filename'):
                     fileName = pair[1].strip('"\'')
-                if (pair[0].lower().strip()=='filename*'):
-                    try:
-                        fileName = pair[1].strip('"\'').decode('utf8')
-                    except UnicodeDecodeError:                    
-                        pass
             
             return  dict(name       =   fileName,
                          content    =   content,
@@ -127,8 +114,8 @@ class ArchiveStreamer():
                 finfo = fileInfo('', uri)
                 if fileHash.get(finfo.get('name'))!=None:
                     fileHash[finfo.get('name')] = fileHash.get(finfo.get('name')) + 1
-                    name, ext = os.path.splitext(finfo.get('name'))
-                    finfo['name'] = name + '_' + str(fileHash.get(finfo.get('name'))-1) + ext
+                    namef, ext = os.path.splitext(finfo.get('name'))
+                    finfo['name'] = namef + '_' + str(fileHash.get(finfo.get('name'))-1) + ext
                 else:
                     fileHash[finfo.get('name')] = 1
                     
@@ -142,14 +129,13 @@ class ArchiveStreamer():
                 dataset = data_service.get_resource(uri, view='full')
                 name = dataset.xpath('/dataset/@name')[0]
                 members = dataset.xpath('/dataset/value')
-                
                 for index, member in enumerate(members):
                     finfo = fileInfo(name, member.text, index)
 
                     if fileHash.get(finfo.get('name'))!=None:
                         fileHash[finfo.get('name')] = fileHash.get(finfo.get('name')) + 1
-                        name, ext = os.path.splitext(finfo.get('name'))
-                        finfo['name'] = name + '_' + str(fileHash.get(finfo.get('name'))-1) + ext
+                        namef, ext = os.path.splitext(finfo.get('name'))
+                        finfo['name'] = namef + '_' + str(fileHash.get(finfo.get('name'))-1) + ext
                     else:
                         fileHash[finfo.get('name')] = 1
 
@@ -164,7 +150,6 @@ class ArchiveStreamer():
                 else:
                     fileHash[url] = 1
                     finfo = urlInfo(url, index)
-                if finfo:
                     flist.append(finfo)      # blank dataset name for orphan files
 
         return flist
