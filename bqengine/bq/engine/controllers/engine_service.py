@@ -259,6 +259,7 @@ class EngineServer(ServiceController):
         modules, unavailable = initialize_available_modules(self.engines)
         log.debug ('found modules= %s' % str(modules))
         self.unavailable = unavailable
+        self.modules = modules
         for module in modules:
             setattr(EngineServer, module.get('name'), EngineModuleResource(module, self.mpool))
             self.module_by_name[module.get('name')]  = module
@@ -269,6 +270,14 @@ class EngineServer(ServiceController):
         server = urlparse.urljoin(config.get('bisque.server'), self.service_type)
         modules = [ ("%s/%s" % (server, k), k) for k in sorted(self.module_by_name.keys())]
         return dict(modules=modules)
+
+    @expose(content_type="text/xml")
+    def _services(self, *path, **kw):
+        resource = etree.Element('resource')
+        for m in self.modules:
+            etree.SubElement(resource, 'service', name=m.get('name'), value=m.get('value'))
+        return etree.tostring(resource)
+
     @expose(content_type="text/xml")
     def _default(self, *path, **kw):
         log.debug ('in default %s' % str( path) )

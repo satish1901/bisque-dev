@@ -1,10 +1,11 @@
 from setuptools import setup, find_packages
 import sys, os
 
-version = '0.5.2'
+from bq.release import __VERSION__
+#version = '0.5.2'
 
 setup(name='bqserver',
-      version=version,
+      version=__VERSION__,
       description="Main Bisque server",
       long_description="""\
 The bisque server

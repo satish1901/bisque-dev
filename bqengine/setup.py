@@ -1,9 +1,11 @@
 
 from setuptools import setup, find_packages
 
+from bq.release import __VERSION__
+
 setup(
     name='bqengine',
-    version='0.5.1',
+    version=__VERSION__,
     description='',
     author='',
     author_email='',

@@ -14,9 +14,11 @@ except ImportError:
     use_setuptools()
     from setuptools import setup, find_packages
 
+from bq.release import __VERSION__
+
 setup(
     name='bqcore',
-    version='0.5.0',
+    version=__VERSION__, 
     description='',
     author='',
     author_email='',
