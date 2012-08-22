@@ -5,10 +5,10 @@ except ImportError:
     use_setuptools()
     from setuptools import setup, find_packages
 
-version = '0.5.1'
+from bq.release import __VERSION__
 
 setup(name='bqdev',
-      version=version,
+      version=__VERSION__,
       description="Bisque Module API",
       author='Center for Bioimage informatics',
       author_email='cbi@biodev.ece.ucsb.edu',
