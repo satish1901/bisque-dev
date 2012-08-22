@@ -633,7 +633,7 @@ class EngineResource (Resource):
             resource = etree.XML (xml)
         for module_def in resource.getiterator('module'):
             #codeurl = module_def.get ('codeurl')
-            engine_url = module_def.get ('engine_url', None)
+            #engine_url = module_def.get ('engine_url', None)
             #if codeurl is None or not codeurl.startswith('http://'):
             #    if engine_url is not None:
             #        log.debug ("Engine_url is deprecated. please use codeurl ")
@@ -644,7 +644,7 @@ class EngineResource (Resource):
             #    raise abort(400)
 
             module = self.register_module(module_def)
-            module_def.set ('uri', module.get ('uri'))
+            engine_url = module.get ('value')
 
             log.debug ('loading services for %s ' % module.get('name'))
             service = data_service.query('service', name=module.get('name'), view="deep")
