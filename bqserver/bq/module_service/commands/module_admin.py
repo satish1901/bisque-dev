@@ -77,6 +77,8 @@ class module_admin(object):
                     version="%prog " + version)
 
         parser.add_option('-u', '--user', action='store', help='Login as user (usually admin)')
+        parser.add_option('-a', '--all', action='store_true', help='Register/Unregister all module at engine', default=False)
+
         options, args = parser.parse_args()
         self.args = args
         self.options = options
@@ -99,33 +101,36 @@ class module_admin(object):
         load_config(site_cfg)
         self.command()
 
-    def get_definition(self):
-        url = urlparse.urljoin(self.engine_path, 'definition')
+    
+    def get_xml(self, url):
         print "loading ", url
-        resp, module_xml = http.xmlrequest(url)
+        resp, xml = http.xmlrequest(url)
         if resp['status'] != '200':
             print "Can't access %s" %url 
             print resp
             return None
         try:
-            module_xml =   etree.XML(module_xml)
-            print "Fetched definition file for %s " % module_xml.get('name')
-            return module_xml
+            xml =   etree.XML(xml)
+            return xml
         except Exception:
-            log.exception("During parsing of %s " % module_xml)
-                
+            print "Problem parsing"
+            log.exception("During parsing of %s " % xml)
+        return None
         
+    def get_modules(self, engine_path):
+        'list module urls  at engine given path path'
+        engine_path = norm(engine_path + '/') 
+        modules = self.get_xml( url = urlparse.urljoin(engine_path, '_services'))
+        return  [ m.get('value') for m in modules ] 
 
-    def register (self):
+    def register_one(self, module_path):
         bisque_root = norm(config.get('bisque.root') + '/')
+        module_path = norm(module_path + '/')
         module_register = urlparse.urljoin(bisque_root, "module_service/register_engine")
-
-
-        module_xml = self.get_definition()
+        module_xml = self.get_xml( url = urlparse.urljoin(module_path, 'definition'))
         name = module_xml.get('name')
         if module_xml is not None:
-            engine = etree.Element ('engine', uri = self.engine_path)
-            module_xml.set('engine_url', self.engine_path)
+            engine = etree.Element ('engine', uri = module_path)
             engine.append(module_xml)
             #####
             log.info ("POSTING %s to %s" % (name, module_register))
@@ -138,7 +143,18 @@ class module_admin(object):
                 return
             print "Registered"
 
-            
+    def register (self):
+        if self.options.all:
+            module_paths = self.get_modules(self.engine_path)
+        else:
+            module_paths = [ self.engine_path ] 
+        for m in module_paths:
+            print "registering %s" % m
+            self.register_one(m)
+
+
+    def unregister(self):
+        print "NOT IMPLEMENTED"
             
             
 
