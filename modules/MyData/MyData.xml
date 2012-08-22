@@ -5,7 +5,7 @@ Module definition for an example module MyData
 For details on notation and configuration:
     http://biodev.ece.ucsb.edu/projects/bisquik/wiki/BisqueModuleSpecification
 -->
-<module name="MyData" path="./MyData" type="runtime">
+<module name="MyData" type="runtime">
 
     <!-- INPUTS
     Inputs section formally defines all inputs the module 

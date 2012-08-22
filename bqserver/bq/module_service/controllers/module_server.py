@@ -610,11 +610,11 @@ class EngineResource (Resource):
                     module_def.set('ts', str(datetime.now()))
                     #module_def.set('permission', 'published')
                     m = data_service.update(module_def, replace_all=True)
-                    log.debug("Updating new module definition with: " + etree.tostring(m))
+                    log.info("Updating new module definition with: " + etree.tostring(m))
                 found = True
 
         if not found:
-            log.debug ("CREATING NEW MODULE: %s " % name)
+            log.info ("CREATING NEW MODULE: %s " % name)
             m = data_service.new_resource(module_def)
 
         log.debug("END:register_module using  module %s for %s version %s" % (m.get('uri'), name, version))
@@ -625,7 +625,7 @@ class EngineResource (Resource):
         Allows an engine to register a set of modules in a single
         request
         """
-        self.invalidate ("/ms/")
+        self.invalidate ("/module_service/")
         log.debug ("engine_register:new %s" % xml)
         if isinstance (xml, etree._Element):
             resource = xml

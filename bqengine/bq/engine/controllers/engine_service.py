@@ -186,8 +186,9 @@ def load_module(module_path, engines = None):
         engine = engines and engines.get(module_type, None)
         if engine and not engine.check (module_root): 
             return None
-        module_root.set('engine_url', engine_root + '/'+module_name)
-        module_root.set('status', status)
+        #module_root.set('engine_url', engine_root + '/'+module_name)
+        module_root.set('value', engine_root + '/'+module_name)
+        #module_root.set('status', status)
         for x in module_root.iter(tag=etree.Element):
             x.set('permission', 'published')
         return module_root
