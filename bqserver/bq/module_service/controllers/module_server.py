@@ -583,6 +583,7 @@ class EngineResource (Resource):
         log.debug('register_module : %s' % module_def.get('name'))
         name = module_def.get ('name')
         ts   = module_def.get ('ts')
+        value= module_def.get ('value')
         version = module_def.xpath('./tag[@name="module_options"]/tag[@name="version"]')
         version = len(version) and version[0].get('value')
         
@@ -611,13 +612,15 @@ class EngineResource (Resource):
                     #module_def.set('permission', 'published')
                     m = data_service.update(module_def, replace_all=True)
                     log.info("Updating new module definition with: " + etree.tostring(m))
+                else:
+                    log.debug ("Module on system is newer: remote %s < system %s " % (ts, m.get('ts')))
                 found = True
 
         if not found:
             log.info ("CREATING NEW MODULE: %s " % name)
             m = data_service.new_resource(module_def)
 
-        log.debug("END:register_module using  module %s for %s version %s" % (m.get('uri'), name, version))
+        log.info("END:register_module using  module %s for %s version %s" % (m.get('uri'), name, version))
         return m
 
     def new(self, resource, xml, **kw):
