@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<module name="MetaData" path="./MetaData" type="runtime">
+<module name="MetaData" type="runtime">
 
     <!-- Comments are OK -->  
     <tag name="inputs">

@@ -1,4 +1,4 @@
-<module type="runtime" name="ShExample" path="./list_arguments" >
+<module type="runtime" name="ShExample"  >
    <tag name="inputs" >
     <tag name="input-formal" value="image_url" type="image" />
     <tag name="input-system" value="mex_url" />

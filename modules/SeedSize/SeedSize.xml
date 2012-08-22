@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<module name="SeedSize" path="./launch.py" type="runtime" >
+<module name="SeedSize" type="runtime" >
 
     <!-- INPUTS
     Inputs define exactly what the module takes, UI options can be provided in the interface section
