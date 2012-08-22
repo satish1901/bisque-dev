@@ -614,6 +614,7 @@ class EngineResource (Resource):
                     log.info("Updating new module definition with: " + etree.tostring(m))
                 else:
                     log.debug ("Module on system is newer: remote %s < system %s " % (ts, m.get('ts')))
+                    
                 found = True
 
         if not found:
@@ -634,6 +635,11 @@ class EngineResource (Resource):
             resource = xml
         else:
             resource = etree.XML (xml)
+
+        if resource.tag != 'engine':
+            log.error('non-engine communication %s'  % xml)
+            abort(502)
+        engine_url = resource.get('uri')
         for module_def in resource.getiterator('module'):
             #codeurl = module_def.get ('codeurl')
             #engine_url = module_def.get ('engine_url', None)
@@ -647,7 +653,7 @@ class EngineResource (Resource):
             #    raise abort(400)
 
             module = self.register_module(module_def)
-            engine_url = module.get ('value')
+            engine_url = module.get('value') or engine_url
 
             log.debug ('loading services for %s ' % module.get('name'))
             service = data_service.query('service', name=module.get('name'), view="deep")
