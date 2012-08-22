@@ -583,6 +583,7 @@ class EngineResource (Resource):
         log.debug('register_module : %s' % module_def.get('name'))
         name = module_def.get ('name')
         ts   = module_def.get ('ts')
+        value= module_def.get ('value')
         version = module_def.xpath('./tag[@name="module_options"]/tag[@name="version"]')
         version = len(version) and version[0].get('value')
         
@@ -610,14 +611,16 @@ class EngineResource (Resource):
                     module_def.set('ts', str(datetime.now()))
                     #module_def.set('permission', 'published')
                     m = data_service.update(module_def, replace_all=True)
-                    log.debug("Updating new module definition with: " + etree.tostring(m))
+                    log.info("Updating new module definition with: " + etree.tostring(m))
+                else:
+                    log.debug ("Module on system is newer: remote %s < system %s " % (ts, m.get('ts')))
                 found = True
 
         if not found:
-            log.debug ("CREATING NEW MODULE: %s " % name)
+            log.info ("CREATING NEW MODULE: %s " % name)
             m = data_service.new_resource(module_def)
 
-        log.debug("END:register_module using  module %s for %s version %s" % (m.get('uri'), name, version))
+        log.info("END:register_module using  module %s for %s version %s" % (m.get('uri'), name, version))
         return m
 
     def new(self, resource, xml, **kw):
@@ -625,7 +628,7 @@ class EngineResource (Resource):
         Allows an engine to register a set of modules in a single
         request
         """
-        self.invalidate ("/ms/")
+        self.invalidate ("/module_service/")
         log.debug ("engine_register:new %s" % xml)
         if isinstance (xml, etree._Element):
             resource = xml
@@ -633,7 +636,7 @@ class EngineResource (Resource):
             resource = etree.XML (xml)
         for module_def in resource.getiterator('module'):
             #codeurl = module_def.get ('codeurl')
-            engine_url = module_def.get ('engine_url', None)
+            #engine_url = module_def.get ('engine_url', None)
             #if codeurl is None or not codeurl.startswith('http://'):
             #    if engine_url is not None:
             #        log.debug ("Engine_url is deprecated. please use codeurl ")
@@ -644,7 +647,7 @@ class EngineResource (Resource):
             #    raise abort(400)
 
             module = self.register_module(module_def)
-            module_def.set ('uri', module.get ('uri'))
+            engine_url = module.get ('value')
 
             log.debug ('loading services for %s ' % module.get('name'))
             service = data_service.query('service', name=module.get('name'), view="deep")

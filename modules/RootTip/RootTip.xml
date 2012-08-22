@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<module name="RootTip" path="./launch.py" type="runtime" >
+<module name="RootTip" type="runtime" >
     
     <tag name="inputs">
         <tag name="image_url" type="image" > 
