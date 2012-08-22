@@ -1,4 +1,4 @@
-<module name="CellProfiler" path="python launch.py" type="runtime">
+<module name="CellProfiler" type="runtime">
 
     <tag name="inputs">
         <tag type="image" name="image_url"  />

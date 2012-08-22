@@ -182,12 +182,13 @@ def load_module(module_path, engines = None):
         module_name = module_root.get('name')
         module_path = module_root.get('path')
         module_type = module_root.get('type')
-        module_root.set('ts', str(datetime.fromtimestamp(ts.st_mtime)))
+        module_root.set('ts', datetime.fromtimestamp(ts.st_mtime).isoformat())
         engine = engines and engines.get(module_type, None)
         if engine and not engine.check (module_root): 
             return None
-        module_root.set('engine_url', engine_root + '/'+module_name)
-        module_root.set('status', status)
+        #module_root.set('engine_url', engine_root + '/'+module_name)
+        module_root.set('value', engine_root + '/'+module_name)
+        #module_root.set('status', status)
         for x in module_root.iter(tag=etree.Element):
             x.set('permission', 'published')
         return module_root
