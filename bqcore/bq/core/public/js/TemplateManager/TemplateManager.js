@@ -105,14 +105,24 @@ Ext.define('BQ.TemplateManager.Creator',
         {
             source          :   {},
             listeners       :   {
-                                    'edit'      :   this.onPropertyEdit,
-                                    scope       :   this
+                                    'edit'          :   this.onPropertyEdit,
+                                    scope           :   this
                                 },
             customEditors   :   {
-                                    'Values'    :   {
-                                                        xtype       :   'textareafield',
-                                                        emptyText   :   'Enter comma separated values e.g. option1, option2'
-                                                    }
+                                    'Values'        :   {
+                                                            xtype       :   'textareafield',
+                                                            emptyText   :   'Enter comma separated values e.g. option1, option2'
+                                                        },
+                                    'Resource type' :   {
+                                                            xtype       :   'combo',
+                                                            store       :   Ext.create('Ext.data.Store', {
+                                                                                fields  :   ['name', 'uri'],
+                                                                                data    :   BQApp.resourceTypes,   
+                                                                            }),
+                                                            queryMode   :   'local',       
+                                                            displayField:   'name',
+                                                            editable    :   false
+                                                        }
                                 }
         });
         

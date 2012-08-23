@@ -168,9 +168,12 @@ Ext.define('Bisque.ResourceTagger',
         for(var i = 0; i < resource.tags.length; i++)
         {
             var matchingTag = template.find_tags(resource.tags[i].name);
-            matchingTag = (matchingTag instanceof Array)?matchingTag[0]:matchingTag;
-            resource.tags[i].template = matchingTag.template;
-            this.copyTemplate(matchingTag, resource.tags[i]);
+            if (matchingTag)
+            {
+                matchingTag = (matchingTag instanceof Array)?matchingTag[0]:matchingTag;
+                resource.tags[i].template = matchingTag.template;
+                this.copyTemplate(matchingTag, resource.tags[i]);
+            }
         }
         
         return resource;
