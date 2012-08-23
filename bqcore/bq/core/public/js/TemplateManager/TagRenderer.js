@@ -221,12 +221,16 @@ Ext.define('BQ.TagRenderer.BisqueResource',
     alias               :   'BQ.TagRenderer.BisqueResource',
     inheritableStatics  :   {
                                 componentName   :   'BisqueResource',
+                                template        :   {
+                                                        'Resource type' :   'image',
+                                                    }                    
                             },
 
     getRenderer         :   function(config)
                             {
                                 return  {
                                             xtype       :   'BisqueResourcePicker',
+                                            dataset     :   config.tplInfo['Resource type'] || BQ.TagRenderer.BisqueResource.template['Resource type'],
                                             editable    :   false,
                                         }
                             }
@@ -246,6 +250,7 @@ Ext.define('Bisque.Resource.Picker',
             width       :   '85%',
             viewMode    :   'ViewerLayouts',
             selType     :   'SINGLE',
+            dataset     :   '/data_service/' + this.dataset,
             listeners   :
             {
                 'Select' : function(me, resource)
