@@ -37,7 +37,7 @@ function segmentedImage = ImageMatting(mex_url, access_token, image_url, varargi
 
     for regionIter = 1 : size(polylines, 1)
         polyline = bqBresenham(polylines{regionIter}.getVertices());
-        I_d{regionIter} = sub2ind([noRows noCols], polyline(:,1), polyline(:,2));
+        I_d{regionIter} = uint64(sub2ind([noRows noCols], polyline(:,1), polyline(:,2)));
     end
     
     session.update('Working...');
@@ -53,7 +53,7 @@ function segmentedImage = ImageMatting(mex_url, access_token, image_url, varargi
     sObject = imref.addGobject('Object', 'Segmented object');
     
     for i = 1 : size(contours, 1)
-        sObject.addGobject('polygon', sprintf('Boundary %d', i), fliplr(contours{i}) - 1); % REMOVE -1 WHEN API STARTS DOING IT!
+        sObject.addGobject('polygon', sprintf('Boundary %d', i), contours{i}); % REMOVE -1 WHEN API STARTS DOING IT!
     end
 
     session.update('Saving results.');
