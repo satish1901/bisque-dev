@@ -397,9 +397,11 @@ Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
 	    var currentResource = false;
 	    for (var i=0; i<this.length; i++)
 	    {
-	        currentResource = this[i].resource;
-	        if (currentResource.uri == uri)
-	           break;
+	        if (this[i].resource.uri == uri)
+	        {
+	            currentResource = this[i].resource;
+	            break;
+	        }
 	    }
 	    return currentResource;
 	}

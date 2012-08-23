@@ -28,6 +28,26 @@
     margin: 4px; 
 }
 
+.alignLeft {
+    float   :   left;
+    margin  :   0;
+    padding :   0;
+}
+
+.alignRightTag {
+    float   :   right;
+    margin  :   0;
+    padding :   0px 5px 0px 0px;
+    color   :   #99E;
+}
+
+.alignRightGobject {
+    float   :   right;
+    margin  :   0;
+    padding :   0px 5px 0px 0px;
+    color   :   #9C9;
+}
+
 /* ResourceLayout settings: */
 .ImageCompact {
     margin: 15px;
