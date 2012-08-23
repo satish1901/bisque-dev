@@ -8,12 +8,13 @@ Ext.define('Bisque.TemplateTagger',
         
         Ext.apply(config, 
         {
-            tree        :   {
-                                btnAdd      :   false,
-                                btnDelete   :   false,
-                                btnImport   :   true,
-                                btnExport   :   true,
-                            },
+            tree            :   {
+                                    btnAdd      :   false,
+                                    btnDelete   :   false,
+                                    btnImport   :   true,
+                                    btnExport   :   true,
+                                },
+            importDataset   :   '/data_service/template',
         });
 
         this.tagRenderers = Ext.ClassManager.getNamesByExpression('BQ.TagRenderer.*'), this.tagTypes={};
@@ -28,6 +29,7 @@ Ext.define('Bisque.TemplateTagger',
     {
         this.resource = resource || new BQTemplate();
         this.loadResourceTags(this.resource.tags);
+        this.testAuth(BQApp.user, false);
     },
     
     onEdit : function(me)
@@ -55,13 +57,8 @@ Ext.define('Bisque.TemplateTagger',
 
     updateQueryTagValues : Ext.emptyFn,
     
-    cancelEdit : function(grid, eOpts)
-    {
-        grid.record.parentNode.removeChild(grid.record);
-    },
-    
     // finish editing on a new record
-    finishEdit : function(me)
+    finishEdit : function(_editor, me)
     {
         this.callParent(arguments);
         
@@ -71,7 +68,7 @@ Ext.define('Bisque.TemplateTagger',
 
     populateComboStore : function()
     {
-       this.store_names = [];
+        this.store_names = [];
 
         this.store_values = Ext.create('Ext.data.ArrayStore', {
             fields  :   [
