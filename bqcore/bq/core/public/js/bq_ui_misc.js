@@ -89,9 +89,9 @@ BQ.ui = function(){
 }();
 
 BQ.ui.types = {
-    'notification': { delay: 5000, title: '',        cls: 'notification' },
-    'attention':    { delay: 5000, title: '',        cls: 'warning' },
-    'warning':      { delay: 5000, title: 'Warning', cls: 'warning' },
-    'error':        { delay: 5000, title: 'Error',   cls: 'error' },            
+    'notification': { delay: 5000,  title: '',        cls: 'notification' },
+    'attention':    { delay: 10000, title: '',        cls: 'warning' },
+    'warning':      { delay: 10000, title: 'Warning', cls: 'warning' },
+    'error':        { delay: 50000, title: 'Error',   cls: 'error' },            
 };
 
