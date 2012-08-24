@@ -57,6 +57,7 @@ import itertools
 
 from lxml import etree
 from datetime import datetime
+from datetime import timedelta
 
 
 import tg
@@ -74,6 +75,9 @@ from bq.exceptions import IllegalOperation
 from bq.util.paths import data_path
 from bq.util.mkdir import _mkdir
 from bq.util.hash import make_uniq_hash
+from bq.util.timer import Timer
+from bq.util.sizeoffmt import sizeof_fmt
+
 from bq import data_service
 from bq.data_service.model import Taggable, DBSession
 
@@ -125,7 +129,9 @@ def file_hash_MD5( filename ):
     f.close()
     return m.hexdigest()	  
    
-
+#########################################################
+# Utility functions
+########################################################
 
 def guess_type(filename):
     from bq import image_service 
@@ -151,6 +157,17 @@ def load_stores():
             continue
         stores[store] = driver
     return stores
+
+def transfer_msg(flocal, transfer_t):
+    'return a human string for transfer time and size'
+    fsize = os.path.getsize (flocal)
+    name  = os.path.basename(flocal)
+    if transfer_t == 0:
+        return "transferred %s in 0 sec!" % fsize
+    return "{name} transferred {size} in {time} ({speed}/sec)".format(name=name, size=sizeof_fmt(fsize),
+                                                                      time=timedelta(seconds=transfer_t), 
+                                                                      speed = sizeof_fmt(fsize/transfer_t))
+
 
 
 ###########################################################################
@@ -236,6 +253,72 @@ class BlobServer(RestController, ServiceMixin):
         return resource
 
 
+
+    def create_resource(self, blob_id, filename, resource = None):
+        'create a resource from a blob and return new resource'
+        # hashed filename + stuff
+        fhash = make_uniq_hash (filename)
+        # resource creation
+        resource_type = guess_type(filename)                  
+        if resource is None:
+            resource = etree.Element(resource_type)
+        else:
+            resource.tag = resource_type 
+        resource.set('name', filename)
+        resource.set('value', blob_id)
+        resource.set('resource_uniq', fhash)
+
+        # KGK  
+        # These are redundant (filename is the attribute name name upload is the ts
+        resource.insert(0, etree.Element('tag', name="filename", value=filename))
+        resource.insert(1, etree.Element('tag', name="upload_datetime", value=datetime.now().isoformat(' '), type='datetime' ))
+
+        log.info ("NEW RESOURCE <= %s" % (etree.tostring(resource)))
+        return data_service.new_resource(resource = resource)
+
+    def store_fileobj(self, fileobj, filename=None, resource=None):
+        'Create a blob from a file'
+        user_name = identity.current.user_name
+        # dima: make sure local file name will be ascii, should be fixed later
+        # dima: unix without LANG or LC_CTYPE will through error due to ascii while using sys.getfilesystemencoding()
+        #filename_safe = filename.encode(sys.getfilesystemencoding()) 
+        #filename_safe = filename.encode('ascii', 'xmlcharrefreplace')
+        if not filename:
+            filename = getattr(fileobj, 'name', '')
+
+        filename_safe = filename.encode('idna')
+
+        def store_blob(fileobj, filename_safe, user_name):
+            for store_id, store in self.stores.items():
+                try:
+                    # blob storage part
+                    if store.readonly:
+                        log.debug("skipping %s: is readonly" % store_id)
+                        continue
+                    return  store.write(fileobj, filename_safe, user_name = user_name)
+                except Exception, e:
+                    log.exception('storing blob failed')
+            return (None,None)
+
+        with Timer() as t:
+            blob_id, flocal = store_blob(fileobj, filename_safe, user_name = user_name)
+
+        if blob_id is None:
+            log.error('Could not store %s on any store: %s' %(filename, self.stores.keys()))
+            return None
+
+        if log.isEnabledFor(logging.INFO):
+            log.info (transfer_msg (flocal, t.interval))
+
+        return self.create_resource(blob_id, filename=filename, resource=resource)
+
+    def store_reference(self, urlref, filename=None, resource=None):
+        'create a blob from a blob_id'
+        blob_id = urlref
+        if filename is None:
+            filename  = urlref.rsplit('/',1)[1]
+        return self.create_resource(blob_id, filename=filename, resource=resource)
+
     def storeBlob(self, flosrc=None, filename=None, url=None,  permission="private", **kw):
         """Store the file object in the next blob and return the resource.
 
@@ -245,57 +328,8 @@ class BlobServer(RestController, ServiceMixin):
         @param perrmision: the permission for the resource
         @return: a resource or None on failure
         """
-        user_name = identity.current.user_name
-        blob_id = None
-        flocal = None
-        if flosrc is not None:
-            for store_id, store in self.stores.items():
-                try:
-                    # blob storage part
-                    if store.readonly:
-                        log.debug("skipping %s: is readonly" % store_id)
-                        continue
-                    # dima: make sure local file name will be ascii, should be fixed later
-                    # dima: unix without LANG or LC_CTYPE will through error due to ascii while using sys.getfilesystemencoding()
-                    #filename_safe = filename.encode(sys.getfilesystemencoding()) 
-                    #filename_safe = filename.encode('ascii', 'xmlcharrefreplace')
-                    filename_safe = filename.encode('idna')
-                    blob_id, flocal = store.write(flosrc, filename_safe, user_name = user_name)
-                    break
-                except Exception, e:
-                    log.exception('storing blob failed')
-        elif url is not None:
-            if filename is None:
-                filename  = url.rsplit('/',1)[1]
-            blob_id = url
-        else:
-            log.error("blobStore without URL or file: nothing to do")
-            return None
-
-        if blob_id is None:
-            log.error('Could not store %s on any store: %s' %(filename, self.stores.keys()))
-            return None
-
-        # hashed filename + stuff
-        fhash = make_uniq_hash (filename)
-        # resource creation
-        resource_type = guess_type(filename)                  
-
-        resource = etree.Element( resource_type, permission = permission,
-                                  resource_uniq = fhash,
-                                  resource_name = filename,
-                                  resource_value = blob_id )
-
-        etree.SubElement(resource, 'tag', name="filename", value=filename)
-        etree.SubElement(resource, 'tag', name="upload_datetime", value=datetime.now().isoformat(' '), type='datetime' ) 
-
-        if resource_type == 'image':
-            #resource.set('src', "/image_service/images/%s" % fhash) # dima: this here is a hack!!!!
-            pass
-        #if flocal is not None:
-        #    etree.SubElement(resource, 'tag', name='sha1', value=file_hash_SHA1(flocal))
-
-
+        resource = etree.Element('resource', permission = permission)
+        
         # ingest extra tags
         if 'tags' in kw and kw['tags'] is not None:
             tags = kw['tags']
@@ -303,24 +337,36 @@ class BlobServer(RestController, ServiceMixin):
                 #resource.extend(copy.deepcopy(list(tags)))
                 resource.extend(list(tags))
 
-        log.info ("NEW RESOURCE <= %s" % (etree.tostring(resource)))
-        return data_service.new_resource(resource = resource)
+        if flosrc is not None:
+            resource = self.store_fileobj(flosrc, filename, resource=resource)
+        elif url is not None:
+            resource = self.store_reference(url, filename, resource=resource)
+        else:
+            log.error("blobStore without URL or file: nothing to do")
+            return None
 
+        return resource
 
     def localpath (self, ident):
         "Find  local path for the identified blob, using workdir for local copy if needed"
 
+        def fetch_blob(blob_id):
+            for store in self.stores.values():
+                if store.valid(blob_id):
+                    return  store.localpath(blob_id)
+            return None
+
         resource = DBSession.query(Taggable).filter_by (resource_uniq = ident).first()
         path = None
-        fullpath = None
         if resource is not None and resource.resource_value:
-            for store in self.stores.values():
-                if store.valid(resource.resource_value):
-                    fullpath = resource.resource_value
-                    path =  store.localpath(fullpath)
-                    break
-            log.debug('using %s full=%s localpath=%s' % (ident, fullpath, path))
+            blob_id  = resource.resource_value
+            with Timer() as t:
+                path = fetch_blob(blob_id)
+            if log.isEnabledFor(logging.INFO):
+                log.info (transfer_msg (path, t.interval))
+            log.debug('using %s full=%s localpath=%s' % (ident, blob_id, path))
             return path
+
         raise IllegalOperation("bad resource value %s" % ident)
 
 

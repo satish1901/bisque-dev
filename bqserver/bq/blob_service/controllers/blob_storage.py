@@ -54,14 +54,11 @@ import shutil
 
 from tg import config
 from paste.deploy.converters import asbool
-from datetime import timedelta
 
 from bq.exceptions import ConfigurationError, ServiceError
 from bq.util.paths import data_path
 from bq.util.mkdir import _mkdir
 from bq.util.hash import make_uniq_hash
-from bq.util.timer import Timer
-from bq.util.sizeoffmt import sizeof_fmt
 
 
 log = logging.getLogger('bq.blobs.storage')
@@ -97,19 +94,6 @@ def randomPath (format_path, user, filename, **params):
         dirhash=rand_hash[0],
         filehash=rand_hash,
         filename=os.path.basename(filename), **params)
-
-
-def transfer_msg(flocal, transfer_t):
-    'return a human string for transfer time and size'
-    fsize = os.path.getsize (flocal)
-    name  = os.path.basename(flocal)
-    if transfer_t == 0:
-        return "transferred %s in 0 sec!" % fsize
-    return "{name} transferred {size} in {time} ({speed}/sec)".format(name=name, size=sizeof_fmt(fsize),
-                                                                      time=timedelta(seconds=transfer_t), 
-                                                                      speed = sizeof_fmt(fsize/transfer_t))
-    
-
 
 
 ###############################################
@@ -242,10 +226,7 @@ class iRodsStorage(BlobStorage):
     def write(self, fp, filename, user_name=None):
         blob_ident = randomPath(self.format_path, user_name, filename)
         log.debug('irods.write: %s -> %s' % (filename, blob_ident))
-        with Timer() as t:
-            flocal = irods_handler.irods_push_file(fp, blob_ident, user=self.user, password=self.password)
-        if log.isEnabledFor(logging.INFO):
-            log.info (transfer_msg (flocal, t.interval))
+        flocal = irods_handler.irods_push_file(fp, blob_ident, user=self.user, password=self.password)
         return blob_ident, flocal
 
     def localpath(self, irods_ident):
@@ -306,12 +287,7 @@ class S3Storage(BlobStorage):
         blob_ident = randomPath(self.format_path, user_name, filename)
         log.debug('s3.write: %s -> %s' % (filename, blob_ident))
         s3_key = blob_ident.replace("s3://","")
-        with Timer() as t:
-            flocal = s3_handler.s3_push_file(fp, self.bucket , s3_key)
-
-        if log.isEnabledFor(logging.INFO):
-            log.info (transfer_msg (flocal, t.interval))
-
+        flocal = s3_handler.s3_push_file(fp, self.bucket , s3_key)
         return blob_ident, flocal
 
     def localpath(self, s3_ident):
