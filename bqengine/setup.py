@@ -1,7 +1,8 @@
 
 from setuptools import setup, find_packages
 
-from bq.release import __VERSION__
+#from bq.release import __VERSION__
+__VERSION__="0.5.2"
 
 setup(
     name='bqengine',

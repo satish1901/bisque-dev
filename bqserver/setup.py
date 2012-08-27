@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages
 import sys, os
 
-from bq.release import __VERSION__
-#version = '0.5.2'
+#from bq.release import __VERSION__
+__VERSION__ = '0.5.2'
 
 setup(name='bqserver',
       version=__VERSION__,
