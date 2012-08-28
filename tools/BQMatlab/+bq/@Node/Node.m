@@ -205,9 +205,7 @@ classdef Node < matlab.mixin.Copyable
             import javax.xml.xpath.*;
             factory = XPathFactory.newInstance;
             xpath = factory.newXPath;    
-            %xn = xpath.evaluate(expression, self.doc, XPathConstants.NODE);
             xn = xpath.evaluate(expression, self.element, XPathConstants.NODE);
-            %node = bq.Node(self.doc, xn);
             if ~isempty(xn),
                 node = bq.Factory.fetch(self.doc, xn, self.user, self.password);
             else
@@ -251,7 +249,6 @@ classdef Node < matlab.mixin.Copyable
             import javax.xml.xpath.*;
             factory = XPathFactory.newInstance;
             xpath = factory.newXPath;    
-            %xnodes = xpath.evaluate(expression, self.doc, XPathConstants.NODESET);
             xnodes = xpath.evaluate(expression, self.element, XPathConstants.NODESET);
             if isempty(xnodes) || xnodes.getLength()<1,
                 nodes = cell(0,1);
@@ -259,7 +256,6 @@ classdef Node < matlab.mixin.Copyable
             end            
             nodes = cell(xnodes.getLength(),1);
             for i=1:xnodes.getLength(),
-                %nodes{i} = bq.Node(self.doc, xnodes.item(i-1));
                 nodes{i} = bq.Factory.fetch(self.doc, xnodes.item(i-1), self.user, self.password);
             end
         end         
