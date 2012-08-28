@@ -172,7 +172,7 @@ classdef Node < matlab.mixin.Copyable
             end
         end % getValues            
         
-        function value = setValues(self)
+        function value = setValues(self, values)
             % not yet implemented
             %value = char(self.element.getAttribute(name));
         end % setValues                  
@@ -209,13 +209,23 @@ classdef Node < matlab.mixin.Copyable
             xn = xpath.evaluate(expression, self.element, XPathConstants.NODE);
             %node = bq.Node(self.doc, xn);
             if ~isempty(xn),
-                node = bq.Factory.fetch(self.doc, xn);
+                node = bq.Factory.fetch(self.doc, xn, self.user, self.password);
             else
                 node = [];
             end
         end             
         
         function v = findValue(self, expression, default)
+        % Returns a value of bq.Node found with xpath expression
+        %
+        % INPUT:
+        %    expression - an xpath expression 
+        %    default    - default value if needed, otherwise []
+        %
+        % OUTPUT:
+        %    v - value as either a string or a number based on type
+        %        attribute
+        %                             
             v = [];
             t = self.findNode(expression);
             if ~isempty(t),
@@ -250,7 +260,7 @@ classdef Node < matlab.mixin.Copyable
             nodes = cell(xnodes.getLength(),1);
             for i=1:xnodes.getLength(),
                 %nodes{i} = bq.Node(self.doc, xnodes.item(i-1));
-                nodes{i} = bq.Factory.fetch(self.doc, xnodes.item(i-1));
+                nodes{i} = bq.Factory.fetch(self.doc, xnodes.item(i-1), self.user, self.password);
             end
         end         
         
