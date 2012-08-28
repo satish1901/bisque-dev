@@ -5,6 +5,7 @@ Ext.define('BQ.TagRenderer.Base',
     inheritableStatics  :   {
                                 baseClass       :   'BQ.TagRenderer',
                                 template        :   {
+                                                        'Type'          :   'Base',
                                                         'Default value' :   '',
                                                         'Allow blank'   :   false,
                                                         'Editable'      :   true,
@@ -16,18 +17,19 @@ Ext.define('BQ.TagRenderer.Base',
                                 /// config.tplInfo  :   Template information    (minValue, maxValue etc.)
                                 getRenderer     :   function(config)
                                 {
-                                    var className = BQ.TagRenderer.Base.baseClass + '.' + config.tplType;
+                                    var tplType = config.tplType || config.tplInfo.Type;
+                                    var className = BQ.TagRenderer.Base.baseClass + '.' + tplType;
             
                                     if (Ext.ClassManager.get(className))
                                         return Ext.create(className).getRenderer(config);
                                     else
                                     {
                                         Ext.log({
-                                            msg     :   Ext.String.format('TagRenderer: Unknown class: {0}, type: {1}. Initializing with default tag renderer.', className, config.tplType),
+                                            msg     :   Ext.String.format('TagRenderer: Unknown class: {0}, type: {1}. Initializing with default tag renderer.', className, tplType),
                                             level   :   'warn',
                                             stack   :   true
                                         });
-                                        return Ext.create(BQ.TagRenderer.Base.baseClass + '.' +'String').getRenderer(config);
+                                        return Ext.create(BQ.TagRenderer.Base.baseClass + '.' + 'String').getRenderer(config);
                                     }
                                 },
                                 
@@ -90,6 +92,7 @@ Ext.define('BQ.TagRenderer.String',
     inheritableStatics  :   {
                                 componentName   :   'String',
                                 template        :   {
+                                                        'Type'                  :   'String',
                                                         'minLength'             :   1,  
                                                         'maxLength'             :   200,
                                                         'RegEx'                 :   ''
@@ -115,6 +118,7 @@ Ext.define('BQ.TagRenderer.Number',
     inheritableStatics  :   {
                                 componentName   :   'Number',
                                 template        :   {
+                                                        'Type'                  :   'Number',
                                                         'minValue'              :   0,  
                                                         'maxValue'              :   100,
                                                         'allowDecimals'         :   true,
@@ -141,6 +145,9 @@ Ext.define('BQ.TagRenderer.Boolean',
     alias               :   'BQ.TagRenderer.Boolean',
     inheritableStatics  :   {
                                 componentName   :   'Boolean',
+                                template        :   {
+                                                        'Type'  :   'Boolean'
+                                                    }
                             },
 
     getRenderer         :   function(config)
@@ -159,6 +166,7 @@ Ext.define('BQ.TagRenderer.Date',
     inheritableStatics  :   {
                                 componentName   :   'Date',
                                 template        :   {
+                                                        'Type'      :   'Date',
                                                         'format'    :   'm/d/Y',
                                                     }                    
                             },
@@ -178,11 +186,12 @@ Ext.define('BQ.TagRenderer.Date',
 
 Ext.define('BQ.TagRenderer.ComboBox',
 {
-    extend  :   'BQ.TagRenderer.Base',
-    alias   :   'BQ.TagRenderer.ComboBox',
+    extend              :   'BQ.TagRenderer.Base',
+    alias               :   'BQ.TagRenderer.ComboBox',
     inheritableStatics  :   {
                                 componentName   :   'ComboBox',
                                 template        :   {
+                                                        'Type'      :   'ComboBox',
                                                         'Values'    :   '',
                                                     }                    
                         },
@@ -204,6 +213,9 @@ Ext.define('BQ.TagRenderer.Hyperlink',
     alias               :   'BQ.TagRenderer.Hyperlink',
     inheritableStatics  :   {
                                 componentName   :   'Hyperlink',
+                                template        :   {
+                                                        'Type'  :   'Hyperlink'
+                                                    }
                             },
 
     getRenderer         :   function(config)
@@ -222,6 +234,7 @@ Ext.define('BQ.TagRenderer.BisqueResource',
     inheritableStatics  :   {
                                 componentName   :   'BisqueResource',
                                 template        :   {
+                                                        'Type'          :   'BisqueResource',
                                                         'Resource type' :   'image',
                                                     }                    
                             },
@@ -271,6 +284,9 @@ Ext.define('BQ.TagRenderer.Email',
     alias               :   'BQ.TagRenderer.Email',
     inheritableStatics  :   {
                                 componentName   :   'Email',
+                                template        :   {
+                                                        'Type'  :   'Email'
+                                                    }
                             },
 
     getRenderer         :   function(config)

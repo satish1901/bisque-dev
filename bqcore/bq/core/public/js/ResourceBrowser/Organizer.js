@@ -71,8 +71,15 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
         this.tag_order = this.tag_order.replace(/"/g,'').split(',');
         this.tag_query = this.parseTagQuery(this.tag_query.replace(/"/g,''));
 
+        var filterCount=0;
+        
         for(var i=0;i<this.tag_order.length;i++)
         {
+            if (this.tag_order[i].indexOf('@ts')!=-1)   // Ignore time-stamp from tag_order
+                continue;
+                
+            filterCount++;
+            
             var pair = this.tag_order[i].split(':');
             var filterCt = new Bisque.ResourceBrowser.Organizer.TagFilterCt({parent: this, tag_order: pair, tag_query: this.tag_query[pair[0]] || ''});
             this.add(filterCt);
@@ -81,6 +88,9 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
             this.relayEvents(filterCt, ['onFilterDragDrop']);
             //filterCt.expand(true);
         }
+        
+        if (filterCount==0) // Add a blank filter if no tag_query was used to initialize the Organizer
+            this.AddFilter();
     },
     
     parseTagQuery : function(tag_query)
