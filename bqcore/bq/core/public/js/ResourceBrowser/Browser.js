@@ -295,6 +295,20 @@ Ext.define('Bisque.ResourceBrowser.Browser',
 
             uri.wpublic = this.browserParams.wpublic
 
+            function checkTS(tagOrder)
+            {
+                if (tagOrder.indexOf('@ts')==-1)
+                {
+                    var ts = this.commandBar.getComponent("btnTS").sortState;
+                    tagOrder += (tagOrder) ? ',' : '';
+                    tagOrder += (ts=='ASC') ? '"@ts":asc' : '"@ts":desc';
+                }
+                
+                return tagOrder;
+            }
+            
+            uri.tag_order = checkTS.call(this, uri.tag_order);
+
             this.setBrowserState(uri);
         }
         else
@@ -419,6 +433,21 @@ Ext.define('Bisque.ResourceBrowser.Browser',
         this.addEvents('Select');
         this.changeLayoutThrottled = Ext.Function.createThrottled(this.ChangeLayout, 400, this);
         this.centerPanel.on('resize', Ext.bind(this.ChangeLayout, this, [-1]));
+
+        Ext.create('Ext.util.KeyMap',
+        {
+            target  :   Ext.getDoc(),
+            binding :   [{
+                            key                 :   "aA",
+                            ctrl                :   true,
+                            handler             :   function(key, e)
+                                                    {
+                                                        this.layoutMgr.toggleSelectAll();
+                                                    },
+                            defaultEventAction  :   'stopEvent',
+                            scope               :   this
+                        }]
+        });
 
         this.msgBus.mon(this.msgBus,
         {

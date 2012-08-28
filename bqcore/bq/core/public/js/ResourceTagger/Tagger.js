@@ -691,18 +691,32 @@ Ext.define('Bisque.ResourceTagger',
             {
                 'Select' : function(me, resource)
                 {
-                    if(resource.tags.length > 0)
-                        this.appendTags(resource.tags);
+                    if (resource instanceof BQTemplate)
+                        BQ.TemplateManager.createResource({name: '', noSave:true}, Ext.bind(this.onResourceCreated, this), resource.uri+'?view=deep');
                     else
-                        resource.loadTags(
-                        {
-                            cb : callback(this, "appendTags"),
-                        });
+                    {
+                        if(resource.tags.length > 0)
+                            this.appendTags(resource.tags);
+                        else
+                            resource.loadTags(
+                            {
+                                cb : callback(this, "appendTags"),
+                            });
+                    }
                 },
 
                 scope : this
             },
         });
+    },
+    
+    onResourceCreated : function(resource, template)
+    {
+        this.resource.type = resource.type;
+        this.appendTags(resource.tags);
+        
+        var resource = this.copyTemplate(template, this.resource);
+        this.resource = resource;
     },
     
     appendTags : function(data)

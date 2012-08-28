@@ -107,7 +107,8 @@ Ext.define('Bisque.ResourceBrowser.Layout.Base',
 			resQ : [],
 			layoutEl :{},
 			border : false,
-			autoScroll : true
+			autoScroll : true,
+			toggleAll : false,
 		});
 		
 		this.callParent(arguments);
@@ -167,6 +168,20 @@ Ext.define('Bisque.ResourceBrowser.Layout.Base',
 				
 				scope : this
 			});
+	},
+	
+	toggleSelectAll : function()
+	{
+	    this.toggleAll = !this.toggleAll;
+	    
+	    if (this.browser.selType!='SINGLE')
+	    {
+	        for (var i=0; i<this.resQ.length; i++)
+	        {
+                this.resQ[i].toggleSelect(this.toggleAll);
+                this.resQ[i].fireEvent('select', this.resQ[i]);
+            }
+	    }
 	},
 	
 	Init : function(resourceQueue, thisCt) 
