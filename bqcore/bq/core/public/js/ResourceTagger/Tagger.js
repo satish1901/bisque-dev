@@ -631,13 +631,10 @@ Ext.define('Bisque.ResourceTagger',
             {
                 'Select' : function(me, resource)
                 {
-                    if(resource.tags.length > 0)
-                        this.appendTags(resource.tags);
-                    else
-                        resource.loadTags(
-                        {
-                            cb : callback(this, "appendTags"),
-                        });
+                    resource.loadTags(
+                    {
+                        cb : callback(this, "appendTags"),
+                    });
                 },
 
                 scope : this
@@ -647,12 +644,19 @@ Ext.define('Bisque.ResourceTagger',
     
     appendTags : function(data)
     {
+        this.tree.setLoading(true);
+        
         if (data.length>0)
         {
             data = this.stripURIs(data);
             this.resource.tags = this.resource.tags.concat(data);
             this.addNode(this.tree.getRootNode(), data);
+            
+            if (this.autoSave)
+                this.saveTags(null, true);
         }
+
+        this.tree.setLoading(false);
     },
     
     stripURIs : function(tagDocument)
