@@ -191,10 +191,16 @@ def uwsgi_command(command, cfgopt, processes, options, default_cfg_file = None):
             print msg
             
     if command is 'stop':
-        uwsgi_cmd = ['uwsgi', '--stop', cfgopt['pidfile']]
+        pidfile = cfgopt['pidfile']
+        uwsgi_cmd = ['uwsgi', '--stop', pidfile]
         #processes.append(Popen(uwsgi_cmd,shell=True,stdout=sys.stdout))
-    
-    if command is 'start':
+        
+        verbose('Executing: ' + ' '.join(uwsgi_cmd))
+        if  call(uwsgi_cmd) != 0:
+            print "Stop failed .. process already dead?"
+        if os.path.exists (pidfile):
+            os.remove (pidfile)
+    elif command is 'start':
         cfg_file = find_site_cfg(default_cfg_file)
         final_cfg = os.path.join(os.path.dirname(cfg_file), default_cfg_file.replace('.default', ''))
         from string import Template
@@ -204,13 +210,13 @@ def uwsgi_command(command, cfgopt, processes, options, default_cfg_file = None):
         f.close()
         
         uwsgi_cmd = ['uwsgi', '--ini-paste', final_cfg]
+
         #if cfgopt['http_serv'] == 'true':
         #    uwsgi_cmd.extend(['--http', cfgopt['url']])
         #processes.append(Popen(uwsgi_cmd,shell=True,stdout=sys.stdout))
-    
-    os.system(' '.join(uwsgi_cmd))
-    verbose('Executing: ' + ' '.join(uwsgi_cmd))
-    
+        verbose('Executing: ' + ' '.join(uwsgi_cmd))
+        if  call(uwsgi_cmd) != 0:
+            print "Start failed"
     return processes
             
 
