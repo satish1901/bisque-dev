@@ -221,8 +221,10 @@ Ext.define('BQ.renderers.dataset', {
     changedOk : function() {
         this.setLoading(false);
         // reload the browser
-        var uri = { offset: 0, };
-        this.preview.msgBus.fireEvent('Browser_ReloadData', uri);
+        this.preview.msgBus.fireEvent('Browser_ReloadData', { offset: 0, });
+        // reload resource for tagger
+        this.tagger.reload();
+        
         //this.toolbar.child('#menu_rename').setText('Dataset: <b>'+this.resource.name+'</b>'); 
         this.preview.setTitle(this.resource.name?'Preview for "'+this.resource.name+'"':'Preview');    
     },     

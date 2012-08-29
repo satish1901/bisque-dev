@@ -131,6 +131,10 @@ Ext.define('Bisque.ResourceTagger',
             });
     },
 
+    reload : function() {
+         this.setResource( this.resource.uri );
+    },
+
     loadResourceTags : function(data, template)
     {
         var type = this.resource.type || this.resource.resource_type;
@@ -151,6 +155,7 @@ Ext.define('Bisque.ResourceTagger',
         var root = {};
         root[this.rootProperty] = data;
         
+        this.removeAll(true);
         this.add(this.getTagTree(root));
         this.fireEvent('onload', this, this.resource);
         this.relayEvents(this.tree, ['itemclick']);
