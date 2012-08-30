@@ -448,26 +448,26 @@ class MetaService(object):
                 info['image_num_p'] = str( int(info2['tsize']) * int(info2['zsize']) )
 
             response = etree.Element ('response')
-            response.attrib['uri'] = '%s/%s?meta'%(self.server.url, image_id)
-            response.attrib['src'] = '%s/%s'%(self.server.url, image_id)
+            response.set('uri', '%s/%s?meta'%(self.server.url, image_id))
+            response.set('src', '%s/%s'%(self.server.url, image_id))
             image    = etree.SubElement (response, 'image')
-            image.attrib['src'] = '%s/%s'%(self.server.url, image_id)
-            image.attrib['uri'] = '%s/%s?meta'%(self.server.url, image_id)
+            image.set('src', '%s/%s'%(self.server.url, image_id))
+            image.set('uri', '%s/%s?meta'%(self.server.url, image_id))
             planes = None
 
             # append original file name
             fileName = self.server.originalFileName(image_id)
             if len(fileName)>0:
                 tag = etree.SubElement(image, 'tag')
-                tag.attrib['name'] = 'filename'
-                tag.attrib['type'] = 'string'
-                tag.attrib['value'] = fileName
+                tag.set('name', 'filename')
+                tag.set('value', fileName)
 
             tags_map = {}
             for k, v in info.items():
                 k = unicode(str(k), 'latin1')
                 v = unicode(str(v), 'latin1')
-
+                #log.debug('meta %s: %s'%(k, v))
+                
                 tl = k.split('/')
                 parent = image
                 for i in range(0,len(tl)):
@@ -479,9 +479,10 @@ class MetaService(object):
                         parent = tp
                     else:
                         parent = tags_map[tn]
-                parent.attrib['type'] = 'string'
-                parent.attrib['value'] = v
-
+                try:
+                    parent.set('value', v)
+                except ValueError:
+                    pass
 
             log.debug("MetaService: storing metadata into " + str(metacache))
             xmlstr = etree.tostring(response)

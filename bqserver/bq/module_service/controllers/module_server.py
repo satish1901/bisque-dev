@@ -413,7 +413,7 @@ class ModuleServer(ServiceController):
         self.__class__.engine = self.engine = EngineResource (server_url,
                                                               self.modules)
         #self.load_services()
-        self.service_list = None
+        self.service_list = {}
 
     def load_services(self):
         "(re)Load all registered service points "
@@ -436,10 +436,11 @@ class ModuleServer(ServiceController):
     @expose()
     def _lookup(self, service, *rest):
         log.info('service lookup for %s' % service)
-        if self.service_list is None:
+        proxy = self.service_list.get(service)
+        if proxy is None: 
             self.service_list = self.load_services()
-
-        return self.service_list.get(service), rest
+            proxy = self.service_list.get(service)
+        return proxy, rest
 
 
     #@expose(content_type='text/xml')
