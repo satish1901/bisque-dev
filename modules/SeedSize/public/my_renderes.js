@@ -33,7 +33,6 @@ Ext.define('BQ.renderers.seedsize.Mex', {
 
     fetchImageFileNames : function() {
         this.setLoading('Fetching image file names');
-        if (!this.mex || !(this.res_uri_for_tools==this.mex.uri)) return;
         var mex = this.mex;
         
         this.image_names = {};
