@@ -73,7 +73,7 @@ class module_admin(object):
     desc = 'module options'
     def __init__(self, version):
         parser = optparse.OptionParser(
-                    usage="%prog module [register|unregister] path/to/Module.xml",
+                    usage="%prog module [register|unregister] [-u user:pass] [-a] http://myengnine.org/engine_service/[MyModule]",
                     version="%prog " + version)
 
         parser.add_option('-u', '--user', action='store', help='Login as user (usually admin)')
