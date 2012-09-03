@@ -58,7 +58,10 @@ classdef Node < matlab.mixin.Copyable
         % posts the document back to the Bisque server
         % if the filename is given then stores the doc as an XML file            
             if exist('filename', 'var') && ischar(filename),
-                xmlwrite(filename, self.element);         
+                %xmlwrite(filename, self.element);         
+                fileID = fopen(filename, 'w');
+                fwrite(fileID, self.toString());
+                fclose(fileID);
             else
                 url = self.getAttribute('uri');
                 bq.post(url, self.element, self.user, self.password);
