@@ -220,6 +220,15 @@ For details on notation and configuration:
                 <tag name="query" value="&amp;name=NuclearDetector3D" /> 
             </template>
         </tag>          
+
+        <tag name="sub_element" type="subtree">
+            <template>
+                <tag name="label" value="Select a sub resource" />
+                <tag name="path" value="/data_service/mex" />
+                <tag name="query" value="&amp;name=NuclearDetector3D" /> 
+                <tag name="filter" value="tag" /> 
+            </template>
+        </tag>  
         
     </tag>
     
