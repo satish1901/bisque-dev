@@ -372,8 +372,13 @@ Ext.define('BQ.selectors.Resource', {
         // fetch image physics 
         this.phys = undefined;
         if (this.selected_resource instanceof BQImage) {
-            this.phys = new BQImagePhys(this.selected_resource);
-            this.phys.load(callback(this, this.onPhys));
+            this.onImage(this.selected_resource);
+        } else if (this.selected_resource instanceof BQDataset) {
+            BQFactory.request({ 
+                uri: this.selected_resource.getMembers().values[0].value, 
+                cb: callback(this, 'onImage'), 
+                errorcb: callback(this, 'onerror'), 
+            });  
         }
         
         this.add(this.resourcePreview);
@@ -381,6 +386,15 @@ Ext.define('BQ.selectors.Resource', {
 
         this.fireEvent( 'changed', this, this.selected_resource );
         if (!this.validate()) return;        
+    },
+
+    onImage: function(image) {
+        this.phys = new BQImagePhys(image);
+        this.phys.load(callback(this, this.onPhys));        
+    },
+
+    onPhys: function() {
+        this.fireEvent( 'gotPhys', this, this.phys );
     },
 
     isValid: function() {
@@ -417,10 +431,6 @@ Ext.define('BQ.selectors.Resource', {
             return this.resourcePreview.validate();
         
         return true;
-    },
-
-    onPhys: function() {
-        this.fireEvent( 'gotPhys', this, this.phys );
     },
 
 });
@@ -633,8 +643,8 @@ Ext.define('BQ.selectors.ImageChannel', {
         this.numfield.setVisible(true);
         this.combo.setVisible(false);
         
-        if (res instanceof BQDataset) {
-            var msg = 'You have selected a dataset, this module will only work correctly if all images have the same channel structure!';
+        if (!(res instanceof BQImage)) {
+            var msg = 'You have selected a group resource, this module will only work correctly if all images have the same channel structure!';
             BQ.ui.tip(this.numfield.getId(), msg, {anchor:'left', timeout: 30000, color: 'blue', });
         }
     },
@@ -900,31 +910,38 @@ Ext.define('BQ.selectors.Mex', {
             'width' :  '85%',
             dataset: bq.url('/data_service/mex'),
             tagQuery: template.query,
-            listeners: {  'Select': function(me, resource) { 
-                           this.onselected(resource);
-                    }, scope: this },
+            listeners: {  
+                'Select': function(me, resource) { this.onselected(resource); }, 
+                scope: this 
+            },
             
         });          
     },
    
     onerror: function(message) {
+        this.setLoading(false);
         BQ.ui.error('Error fethnig resource:<br>' + message); 
     },    
     
     select: function(resource) {
         // if the input resource is a reference to an image with wrapped gobjects
         if (resource instanceof BQTag) {
-            BQFactory.request( { uri: resource.value, 
-                                 cb: callback(this, 'onselected'), 
-                                 errorcb: callback(this, 'onerror'), 
-                               });               
-        } else if (typeof resource != 'string')
+            BQFactory.request({ 
+                uri: resource.value, 
+                cb: callback(this, 'onselected'), 
+                errorcb: callback(this, 'onerror'),
+                uri_params: { view:'deep' },  
+            });               
+        } else if (typeof resource != 'string') {
             this.onselected(resource);
-        else
-            BQFactory.request( { uri: resource, 
-                                 cb: callback(this, 'onselected'), 
-                                 errorcb: callback(this, 'onerror'), 
-                               });         
+        } else {
+            BQFactory.request({ 
+                uri: resource, 
+                cb: callback(this, 'onselected'), 
+                errorcb: callback(this, 'onerror'),
+                uri_params: { view:'deep' },  
+            }); 
+        }        
     },    
     
     onselected: function(R) {
@@ -942,7 +959,52 @@ Ext.define('BQ.selectors.Mex', {
         this.setHeight( this.getHeight() + this.resourcePreview.getHeight() + increment );
 
         this.fireEvent( 'changed', this, this.selected_resource );
-        if (!this.validate()) return;        
+        if (!this.validate()) return;   
+        
+        var template = this.resource.template || {};    
+        var mymex = this.selected_resource;
+        if (template.query_selected_resource && mymex.inputs_index) {
+            this.onFullMex(mymex);
+        } else if (template.query_selected_resource && !mymex.inputs_index) {
+            this.setLoading('Fetching full Module Execution document');
+            BQFactory.request({ 
+                uri: mymex.uri, 
+                cb: callback(this, 'onFullMex'), 
+                errorcb: callback(this, 'onerror'), 
+                uri_params: { view:'deep' }, 
+            });            
+        }
+    },
+
+    onFullMex: function(mex) {
+        var template = this.resource.template || {}; 
+
+        //dima: if iterated mex, find first submex, we need  xpath here !!!!!!!!!!!!
+        if (mex.iterables && mex.iterables[template.query_selected_resource]) {
+            var o=null;
+            for (var i=0; (o=mex.children[i]); i++)
+                if (o instanceof BQMex) {
+                    mex = o;
+                    break;
+                }
+        }
+                   
+        var uri = mex.dict['inputs/'+template.query_selected_resource];
+        BQFactory.request({ 
+            uri: uri, 
+            cb: callback(this, 'onImage'), 
+            errorcb: callback(this, 'onerror'), 
+        });            
+    },
+
+    onImage: function(image) {
+        this.setLoading(false);
+        this.phys = new BQImagePhys(image);
+        this.phys.load(callback(this, this.onPhys));        
+    },
+
+    onPhys: function() {
+        this.fireEvent( 'gotPhys', this, this.phys );
     },
 
     isValid: function() {
@@ -2004,13 +2066,17 @@ Ext.define('BQ.renderers.Dataset', {
         //this.items.push(this.browser);        
         this.callParent();
         if (typeof resource == 'string') {
-            BQFactory.request( { uri: resource, 
-                                 cb:  callback(this, 'initBrowser'), 
-                                 uri_params: {view:'deep'}, });
+            BQFactory.request({ 
+                uri: resource, 
+                cb:  callback(this, 'initBrowser'), 
+                uri_params: {view:'deep'}, 
+            });
         } else if (resource.resource_type == 'tag' && resource.type == 'dataset') {
-            BQFactory.request( { uri: resource.value, 
-                                 cb:  callback(this, 'initBrowser'), 
-                                 uri_params: {view:'deep'}, });
+            BQFactory.request({ 
+                uri: resource.value, 
+                cb:  callback(this, 'initBrowser'), 
+                uri_params: {view:'deep'}, 
+            });
         } else {
             this.initBrowser(resource);
         }        

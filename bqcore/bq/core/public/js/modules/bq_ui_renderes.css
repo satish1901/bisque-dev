@@ -48,9 +48,8 @@ resourcerenderer
 }
 
 .resourcerenderer .ImageCompact {
-    margin: 0px;
-    margin-top: 10px;    
-    margin-bottom: 10px;      
+    margin: 5px 5px 0px 1px !important;
+    float: none !important;
 }
 
 /*

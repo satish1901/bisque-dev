@@ -22,6 +22,7 @@ pass = 'PASS';
 
 file = bq.File.store(filename, host, user, pass); 
 if ~isempty(file),
+    file.setAttribute('permission', 'published');
     file.addTag('about', 'this is a file upload from Matlab API');
     file.save();
 end
