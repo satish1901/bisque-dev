@@ -146,7 +146,11 @@ function [output, info] = connect(method, url, location, input, user, password)
 
     if info.status>=300,
         output = [];
-        error(['bq.connect:error\nStatus: ' int2str(info.status) '\nMethod: ' method '\nURL: ' url.toString() '\nError:\n' info.error], '');
+        try
+            error(['bq.connect:error\nStatus: ' int2str(info.status) '\nMethod: ' method '\nURL: ' url.toString() '\nError:\n' info.error], '');
+        catch err,
+            error(['bq.connect:error\nStatus: ' int2str(info.status)], ''); 
+        end            
     elseif exist('location', 'var') && ~isempty(location),    
         output = stream2file(connection.getInputStream(), location);        
         %output = stream2file( java.io.BufferedInputStream(connection.getInputStream(), 4*1024), location);
