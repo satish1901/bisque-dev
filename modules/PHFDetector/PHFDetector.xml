@@ -171,7 +171,7 @@
     <tag name="execute_options">
         <tag name="argument_style" value="position" />
         <tag name="iterable" value="input_mex" type="mex" >
-            <tag name="xpath" value="./mex/@uri" />
+            <tag name="xpath" value="/mex/mex/@uri" />
         </tag>
     </tag>
 

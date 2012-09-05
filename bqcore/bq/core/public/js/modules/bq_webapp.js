@@ -210,6 +210,15 @@ BQWebApp.prototype.onnouser = function () {
 }
 
 BQWebApp.prototype.onerror = function (error) {
+    // if the error happened we need to refetch the MEX to see the sum element's status
+    if (this.status_panel.isVisible() && this.current_mex_uri)
+        BQFactory.request({ 
+            uri:     this.current_mex_uri, 
+            cb:      callback(this, 'onprogress'),
+            errorcb: function(){}, 
+            uri_params: { view:'deep' },  
+        });     
+    
     var str = error;
     if (typeof(error)=="object") str = error.message;  
     
@@ -534,6 +543,7 @@ BQWebApp.prototype.run = function () {
 
 BQWebApp.prototype.onstarted = function (mex) {
     if (!mex) return;
+    this.current_mex_uri = mex.uri;
     window.location.hash = 'mex=' + mex.uri;
     //window.location.hash
     //history.pushState({mystate: djksjdskjd, }, "page 2", "bar.html");
@@ -541,6 +551,7 @@ BQWebApp.prototype.onstarted = function (mex) {
 
 BQWebApp.prototype.onprogress = function (mex) {
     if (!mex) return;
+    if (!(mex instanceof BQMex)) return;
     var button_run = document.getElementById("webapp_run_button");    
     //if (mex.status == "FINISHED" || mex.status == "FAILED") return;
     
