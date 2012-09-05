@@ -927,7 +927,10 @@ Ext.define('Bisque.GObjectTagger',
         {
             if (mex)
             {
-                this.addNode(this.tree.getRootNode(), {name:data[0].name, value:Ext.Date.format(Ext.Date.parse(mex.ts, 'Y-m-d H:i:s.u'), "F j, Y g:i:s a"), gobjects:data});
+                var date = new Date();
+                date.setISO(mex.ts);
+                
+                this.addNode(this.tree.getRootNode(), {name:data[0].name, value:Ext.Date.format(date, "F j, Y g:i:s a"), gobjects:data});
                 this.fireEvent('onappend', this, data);
             }
             else

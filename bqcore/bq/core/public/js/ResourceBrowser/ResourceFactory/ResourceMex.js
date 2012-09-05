@@ -44,9 +44,7 @@ Ext.define('Bisque.Resource.Mex.Compact',
 		this.tagsLoaded=true;
 		this.resource.tags=data.tags;
 		
-		var tagArr=[], tags =
-		{
-		}, found='';
+		var tagArr=[], tags = {}, found='';
 
 		for (var i = 0; i < this.resource.tags.length; i++)
 		{
@@ -92,9 +90,12 @@ Ext.define('Bisque.Resource.Mex.Compact',
             html : Ext.String.ellipsis(this.resource.name || 'undefined', 24),
         })
 
+        var date = new Date();
+        date.setISO(this.resource.ts);
+        
         var type = Ext.create('Ext.container.Container', {
             cls : 'lblHeading2',
-            html : Ext.Date.format(new Date(this.resource.ts), "m-d-Y g:i:s a"),
+            html : Ext.Date.format(date, "m-d-Y g:i:s a"),
         })
 
         var value = Ext.create('Ext.container.Container', {
@@ -129,21 +130,26 @@ Ext.define('Bisque.Resource.Mex.List',
     {
     	if (!this.ttip)
     	{
-	    	this.ttip=Ext.create('Ext.tip.ToolTip', 
-	    	{
-	    		target: me.id,
-	    		width:278,
-	    		cls:'LightShadow',
-	    		style:'background-color:#FAFAFA;border: solid 3px #E0E0E0;',
-	    		layout:'hbox',
-                //autoHide : false,
-	    		listeners : 
-	    		{
-	    			"afterrender" : function(me){if (!this.tagsLoaded) me.setLoading({msg:''})},
-	    			scope : this
-	    		}
-	    	});
-    	}
+            this.ttip = Ext.create('Ext.tip.ToolTip', {
+                target      :   me.id,
+                width       :   278,
+                cls         :   'LightShadow',
+                layout      :   'hbox',
+                style       :   {
+                                    'background-color'  :   '#FAFAFA',
+                                    'border'            :   'solid 3px #E0E0E0'
+                                },
+                listeners   :   {
+                                    'afterrender'   :   function(me)
+                                    {
+                                        if (!this.tagsLoaded)
+                                            me.setLoading({msg:''})
+                                    },
+                                    scope   :   this
+                                }            
+    	   }); 
+        }    	
+    	
         // HACK to hide session "mex". Come up with better strategy in future
         //if (this.resource.status=='SESSION')
         //    this.setVisible(false);
@@ -165,7 +171,6 @@ Ext.define('Bisque.Resource.Mex.List',
         this.mouseIn=false;
         this.callParent(arguments);
     },
-    
     
 	tagData : function(data)
 	{
@@ -238,7 +243,8 @@ Ext.define('Bisque.Resource.Mex.List',
 			cls: this.resource.status=='FINISHED'?'lblModuleOwnerFin':(this.resource.status=='FAILED'?'lblModuleOwnerFail':'lblModuleOwner')
 		})
 
-		var date=new Date(this.resource.ts);
+		var date=new Date();
+		date.setISO(this.resource.ts);
 		
 		var mexDate=new Ext.form.Label({
 			text:Ext.Date.format(date, "F j, Y g:i:s a"),
@@ -270,6 +276,18 @@ Ext.define('Bisque.Resource.Mex.Grid',
         fields[2] = '<div style="color:'+color+'">'+fields[2]+'</div>';
         return fields;
     }
-})
+});
+
+// Page view for a mex
+Ext.define('Bisque.Resource.Mex.Page',
+{
+    extend : 'Bisque.Resource.Page',
+    
+    constructor : function(config)
+    {
+        window.location = bq.url('/module_service/'+config.resource.name+'/?mex='+config.resource.uri);
+    }
+});
+
         
 
