@@ -37,7 +37,8 @@ function PHFDetector(mex_url, access_token, input_mex_uri, ~, ~)
             confi = points{n}.findValue('tag[@name="confidence"]');
             nuclei{n} = struct( 'coord', coord(1:3), 'confidence', confi );
         end
-
+        sprintf('Number inputs:\n'); length(nuclei)
+        
         %% fetch input images
         session.update('5% - fetching input image'); 
         Idapi = image.slice([],1).remap(nuclear_channel).fetch();        
@@ -47,12 +48,14 @@ function PHFDetector(mex_url, access_token, input_mex_uri, ~, ~)
         session.update('10% - classifying'); 
         cell_size = nuclear_diameter * soma_nucleus_ratio;
         nuclei = analyse( Idapi, Iphf, res(1:3), nuclei, cell_size );
-       
+        sprintf('Number classified:\n'); length(nuclei)
+        
         % getting summary
         classes = [0, 0];
         for n=1:length(nuclei),
             classes(nuclei{n}.class) = classes(nuclei{n}.class) + 1;
         end        
+        sprintf('Classes:\n'); classes
         
         %% Store results
         session.update('90% - storing results');    
@@ -83,7 +86,7 @@ function PHFDetector(mex_url, access_token, input_mex_uri, ~, ~)
             p.addTag('color', mycolor);
             p.addTag('class', myclass);            
         end
-        
+        sprintf('Results XML:\n'); outputs.toString()
         session.finish();
     catch err
         ErrorMsg = [err.message, 10, 'Stack:', 10];

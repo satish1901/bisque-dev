@@ -287,7 +287,7 @@ def create_mex(module_url, name, mex = None, **kw):
         resource_type = iterable.get('type')
         resource_xpath  = iters[iter_tag][resource_type]
 
-        resource = data_service.get_resource(resource_value, view='full')
+        resource = data_service.get_resource(resource_value, view='deep')
         # if the fetched resource doesn't match the expected type, then skip to next iterable
         if not (resource_type == resource.tag or resource_type == resource.get('type')):
             continue

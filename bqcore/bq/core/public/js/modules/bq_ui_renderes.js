@@ -649,6 +649,11 @@ Ext.define('BQ.selectors.ImageChannel', {
         }
     },
 
+    setValue : function(v) {
+        this.numfield.setValue(v);
+        this.combo.setValue(v);
+    },
+
     onPhys : function(sel, phys) {
         var resource = this.resource;
         var template = resource.template || {};
@@ -671,19 +676,17 @@ Ext.define('BQ.selectors.ImageChannel', {
         }
         this.store.removeAll(true);                      
         this.store.add(a);
-        this.combo.setValue(this.selected_value || selected);
+        this.setValue(this.selected_value || selected);
         this.selected_value = undefined;
 
         this.numfield.setVisible(false);
         this.combo.setVisible(true);
-      
     },
 
     select: function(resource) {
         var value = parseInt(resource.value);
         this.selected_value = value;
-        this.numfield.setValue( value );
-        this.combo.setValue( value );        
+        this.setValue( value );
     }, 
 
     isValid: function() {
