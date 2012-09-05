@@ -14,7 +14,7 @@ function PHFDetector(mex_url, access_token, input_mex_uri, ~, ~)
         t = input_mex.findNode('//tag[@name="inputs"]/tag[@name="pixel_resolution"]');
         res =  cell2mat(t.getValues('number'));
 
-        image = session.fetch(image_url);        
+        image = session.fetch([image_url '?view=deep']);        
         if isfield(image.info, 'pixel_resolution_x') && res(1)<=0,
             res(1) = getfield(image.info, 'pixel_resolution_x');
         end
@@ -28,16 +28,32 @@ function PHFDetector(mex_url, access_token, input_mex_uri, ~, ~)
             res(4) = getfield(image.info, 'pixel_resolution_t');
         end
         
+        %% fetch ROI polygon, currently we simply look for any polygon on the image, 
+        %  this is a temp measure till we have a better gobjects creater in the web
+        polygon = [];
+        roi = image.findNode('//polygon');
+        if ~isempty(roi),
+            polygon = roi.getVertices();
+            %inpolygon(x,y,xv,yv);
+        end;        
+        
         %% fetch centoid locations
-        %'//tag[@name="outputs"]/tag[@name="MyImage"]/gobject[@name="nuclear_centroids"]/gobject/point'
         points = input_mex.findNodes('//gobject[@type="nucleus"]/point[@name="centroid"]');
         nuclei = cell(length(points), 1);
         for n=1:length(points),
             coord = points{n}.getVertices();
+            if ~isempty(polygon) && inpolygon(coord(1),coord(2),polygon(:,1),polygon(:,2))==0,
+                continue;
+            end
             confi = points{n}.findValue('tag[@name="confidence"]');
             nuclei{n} = struct( 'coord', coord(1:3), 'confidence', confi );
         end
+        nuclei = nuclei(~cellfun(@isempty, nuclei));
         sprintf('Number inputs:\n'); length(nuclei)
+        
+        if isempty(nuclei),
+            throw(MException('VerifyInput:NotEnoughElements', 'No input nuclei centorids were found...'));
+        end
         
         %% fetch input images
         session.update('5% - fetching input image'); 
