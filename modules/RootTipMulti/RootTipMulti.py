@@ -130,10 +130,13 @@ class RootTip(object):
 
         try:
             if 'setup' in args:
+                command = 'setup'
                 self.setup()
             if 'start' in args:
+                command = 'start'
                 self.start()
             if 'teardown' in args:
+                command = 'teardown'
                 self.teardown()
         except Exception, e:
             logging.exception ("problem during %s" % command)

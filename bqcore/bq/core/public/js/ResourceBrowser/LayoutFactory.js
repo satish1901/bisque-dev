@@ -723,7 +723,8 @@ Ext.define('Bisque.ResourceBrowser.Layout.Grid',
             fields:  ['icon', 'name', 'value', 'type', {name: 'ts', convert: 
             function(value)
             {
-                var created = new Date(value), today = new Date();
+                var created = new Date(), today = new Date();
+                created.setISO(value);
                 var days = Math.round((today-created)/(1000*60*60*24));
                 var pattern = (days) ? "n/j/Y" : "g:i A";   
 

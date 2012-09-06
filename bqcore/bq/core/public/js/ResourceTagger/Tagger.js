@@ -733,6 +733,9 @@ Ext.define('Bisque.ResourceTagger',
             data = this.stripURIs(data);
             this.resource.tags = this.resource.tags.concat(data);
             this.addNode(this.tree.getRootNode(), data);
+            
+            if (this.autoSave)
+                this.saveTags(null, true);
         }
 
         this.tree.setLoading(false);
