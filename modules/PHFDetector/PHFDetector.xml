@@ -7,7 +7,7 @@
 
         <tag name="input_mex" type="mex">
             <template>
-                <tag name="label" value="Select an existing execution of Nucler Detector" />
+                <tag name="label" value="Select an existing execution of Nuclear Detector" />
                 <tag name="query" value="&amp;name=NuclearDetector3D" /> 
                 <tag name="query_selected_resource" value="resource_url" /> 
                 <tag name="description" value="You need to run Nuclear Detector before classifying nuclei based on PHF channel" />
@@ -34,7 +34,7 @@
                 <tag name="allowDecimals" value="true" type="boolean" />
                 <tag name="decimalPrecision" value="4" type="number" />
                 <tag name="step" value="0.1" type="number" />
-                <tag name="description" value="Multiplier indicating how much larger area should be observed around the nucleus" />
+                <tag name="description" value="Multiplier indicating how much larger area should be observed around the nucleus for PHF response classification" />
             </template>             
         </tag>        
         
@@ -176,7 +176,7 @@
     </tag>
 
     <tag name="module_options" >
-        <tag name="version" value="3" />
+        <tag name="version" value="1" />
     </tag>   
        
     <tag name="display_options" >
@@ -192,6 +192,6 @@
     <tag name="authors" value="Dmitry Fedorov" />    
     <tag name="help"      type="file" value="public/help.html" />
     <tag name="thumbnail" type="file" value="public/thumbnail.png" />   
-    <tag name="description" type="string" value="This application detects PHF positive cell centroids in fluorescence images." />
+    <tag name="description" type="string" value="This application classifies cells based on the expression of Paired Helical Filaments (PHF) in fluorescence images." />
     
 </module>
