@@ -476,7 +476,7 @@ class CommandRunner(BaseRunner):
                 self.command_failed(self.processes[item])
         self.command_finish(**self.execute_kw)
 
-    def command_failed(self, process, msg):
+    def command_failed(self, process):
         """Update the bisque server  with a failed command for a mex"""
         mex = process['mex']
         command = " ".join(process['command_line'])
