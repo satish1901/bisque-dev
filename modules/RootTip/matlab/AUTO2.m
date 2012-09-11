@@ -5,7 +5,8 @@ matlabpool 4
 
 parfor i = 1:size(FileList,1)
     fprintf(['Make Dir \n']);
-    [pathstr, name, ext, versn] = fileparts(FileList{i});
+%    [pathstr, name, ext, versn] = fileparts(FileList{i});
+    [pathstr, name, ext] = fileparts(FileList{i});
     mkdir(['C:\FTP server\won\workingDIR_' name '\']);
     fprintf(['Unzip \n']);
     unzip(FileList{i},['C:\FTP server\won\workingDIR_' name '\']);    

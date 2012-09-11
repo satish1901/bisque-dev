@@ -140,7 +140,7 @@ class RootTip(object):
                 self.teardown()
         except Exception, e:
             logging.exception ("problem during %s" % command)
-            self.bq.fail_mex(msg = "Exception during %s: %s" (command,  str(e)))
+            self.bq.fail_mex(msg = "Exception during %s: %s" % (command,  e))
             sys.exit(1)
 
         sys.exit(0)

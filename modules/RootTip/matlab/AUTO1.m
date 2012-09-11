@@ -5,7 +5,8 @@ for i = 1:size(FileList,1)
     fprintf(['Unzip \n']);
     unzip(FileList{i},'C:\FTP server\won\workingDIR\');    
     fprintf(['Get file name \n']);
-    [pathstr, name, ext, versn] = fileparts(FileList{i});
+%    [pathstr, name, ext, versn] = fileparts(FileList{i});
+    [pathstr, name, ext] = fileparts(FileList{i});
     fprintf(['Get files \n']);
     [FileSequences] = findFileSequences('C:\FTP server\won\workingDIR\');
     fprintf(['Extract Data \n']);
