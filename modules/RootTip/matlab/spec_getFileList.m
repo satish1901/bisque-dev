@@ -4,7 +4,8 @@ cdir = dir(FilePath);   % get directory
 % get files and sort 
 cdir(1:2) = [];
 for i = 1:size(cdir,1)
-    [pathstr, name, ext, versn] = fileparts(cdir(i).name);
+%    [pathstr, name, ext, versn] = fileparts(cdir(i).name);
+    [pathstr, name, ext] = fileparts(cdir(i).name);
     if strcmp(ext,str)
         del(i) = 0;
         %numname(i) = str2num(name);

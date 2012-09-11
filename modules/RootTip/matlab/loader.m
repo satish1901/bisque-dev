@@ -2,7 +2,8 @@
 for i = 1:size(FileList,1)
     load(FileList{i})
     mid = [];
-    [pathstr, name, ext, versn] = fileparts(FileList{i});
+%    [pathstr, name, ext, versn] = fileparts(FileList{i});
+    [pathstr, name, ext] = fileparts(FileList{i});
     for j = 1:size(MID{1},2)
         %
         LOS = MID{1}{1}';

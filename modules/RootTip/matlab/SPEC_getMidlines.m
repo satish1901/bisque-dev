@@ -130,7 +130,8 @@ FileList = Wdig(FilePath,FileList,FileExt,1);
 clear name pathstr NUMname
     
 for i = 1:size(FileList,1)
-    [pathstr{i}, name{i}, ext{i}, versn] = fileparts(FileList{i});
+%    [pathstr{i}, name{i}, ext{i}, versn] = fileparts(FileList{i});
+    [pathstr{i}, name{i}, ext{i}] = fileparts(FileList{i});
     pathstr{i} = [pathstr{i} '\'];
     NUMname(i) = str2num(name{i});
 end
