@@ -99,63 +99,6 @@ class IrodsConnection(object):
 
         
 
-def irods_conn(url, user=None, host=None, port=None, password = None):
-    global CONNECTION_POOL
-
-    irods_url = urlparse.urlparse(url)
-    assert irods_url.scheme == 'irods'
-    env = parse_net.match(irods_url.netloc).groupdict()
-    log.debug ("irods_handler url %s -> env %s" % (url, env))
-
-    user  = user or env['user'] or irods_env.getRodsUserName()
-    host  = host or env['host'] or irods_env.getRodsHost()
-    port  = port or env['port'] or irods_env.getRodsPort() or 1247
-    password = password or env['password'] 
-
-    path = ''
-    zone = ''
-    if irods_url.path:
-        path = irods_url.path.split('/')
-        if len(path):
-            zone = path[1]
-        path = '/'.join(path)
-    if not zone:
-        zone = irods_env.getRodsZone()
-        
-
-    log.debug("irods_connect with %s" % ( [user, password, host, port] ))
-    key = ','.join([user, host, str(port)])
-    conn = CONNECTION_POOL.get(key)
-    if conn is None:
-        log.debug ( "Connecting" )
-        conn, err = irods.rcConnect(host, port, user, zone)
-        if conn is None:
-            raise IrodsError("Can't create connection to %s " % host)
-        if password:
-            irods.clientLoginWithPassword(conn, password)
-        else:
-            irods.clientLogin(conn)
-        CONNECTION_POOL[key] = conn
-
-    coll = irods.irodsCollection(conn)
-    nm = coll.getCollName()
-        
-    irods_url = urlparse.urlunparse(list(irods_url)[:2] + ['']*4)
-    if path in ['', '/']:
-        path = nm
-    #assert path.startswith(nm)
-
-    return conn, irods_url, nm, path
-    
-
-def irods_cache_name(path):
-    cache_filename = os.path.join(IRODS_CACHE, path[1:])
-    return cache_filename
-def irods_cache_fetch(path):
-    cache_filename = os.path.join(IRODS_CACHE, path[1:])
-    if os.path.exists(cache_filename):
-        return cache_filename
-    return None
 
 BLOCK_SZ=512*1024
 def copyfile(f1, *dest):
@@ -168,6 +111,16 @@ def copyfile(f1, *dest):
             fw.write(buf)
         if len(buf) < BLOCK_SZ:
             break
+#####################
+# iRods CACHE
+def irods_cache_name(path):
+    cache_filename = os.path.join(IRODS_CACHE, path[1:])
+    return cache_filename
+def irods_cache_fetch(path):
+    cache_filename = os.path.join(IRODS_CACHE, path[1:])
+    if os.path.exists(cache_filename):
+        return cache_filename
+    return None
 
 def irods_cache_save(f, path, *dest):
     cache_filename = os.path.join(IRODS_CACHE, path[1:])
@@ -179,7 +132,6 @@ def irods_cache_save(f, path, *dest):
     
 def irods_fetch_file(url, **kw):
     ic = IrodsConnection(url, **kw)
-    #conn, base_url, basedir, path = irods_conn(url, **kw)
     log.debug( "irods-path %s" %  ic.path)
     localname = irods_cache_fetch(ic.path)
     if localname is None:
@@ -194,7 +146,6 @@ def irods_fetch_file(url, **kw):
 
 def irods_fetch_file_IGET(url, **kw):
     ic = IrodsConnection(url, **kw)
-    #conn, base_url, basedir, path = irods_conn(url, **kw)
     log.debug( "irods-path %s" %  ic.path)
     localname = irods_cache_fetch(ic.path)
     if localname is None:
@@ -210,7 +161,6 @@ def irods_fetch_file_IGET(url, **kw):
 
 
 def irods_push_file(fileobj, url, savelocal=True, **kw):
-    #conn, base_url, basedir, path = irods_conn(url, **kw)
     with IrodsConnection(url, **kw) as ic:
         # Hmm .. if an irodsEnv exists then it is used over our login name provided above, 
         # meaning even though we have logged in as user X we may be the homedir of user Y (in .irodsEnv)
@@ -225,7 +175,6 @@ def irods_push_file(fileobj, url, savelocal=True, **kw):
         raise IrodsError("can't write irods url %s" % url)
 
 def irods_push_file_IPUT(fileobj, url, savelocal=True, **kw):
-    #conn, base_url, basedir, path = irods_conn(url, **kw)
     with IrodsConnection(url, **kw) as ic:
         # Hmm .. if an irodsEnv exists then it is used over our login name provided above, 
         # meaning even though we have logged in as user X we may be the homedir of user Y (in .irodsEnv)
@@ -245,7 +194,6 @@ def irods_push_file_IPUT(fileobj, url, savelocal=True, **kw):
 
 def irods_fetch_dir(url, **kw):
 
-    #conn, base_url, basedir, path = irods_conn(url, **kw)
     with IrodsConnection(url, **kw) as ic:
         coll = irods.irodsCollection(ic.conn)
         path = coll.openCollection(ic.path); 
