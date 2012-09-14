@@ -123,6 +123,13 @@
                             <value>tag-value-number</value>
                         </tag>                           
                         <tag name="xreduce" value="vector" />
+                        <tag name="title">
+                            <value>x</value>
+                            <value>y</value>
+                            <value>z</value>
+                            <value>t</value>
+                            <value>confidence</value>
+                        </tag>                                 
                     </tag>                      
 
                     <tag name="export_xml"    value="true"  type="boolean" />
@@ -167,6 +174,13 @@
                         <value>tag-value-number</value>
                     </tag>                           
                     <tag name="xreduce" value="vector" />
+                    <tag name="title">
+                        <value>x</value>
+                        <value>y</value>
+                        <value>z</value>
+                        <value>t</value>
+                        <value>confidence</value>
+                    </tag>
                 </tag>                      
         
                 <tag name="export_xml"    value="true"  type="boolean" />
