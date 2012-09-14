@@ -212,10 +212,21 @@ class preferences (object):
 
     def run(self):
         load_config(self.options.config)
-        from tg import config
         from lxml import etree
+        from tg import config, session, request
         from bq import data_service
+        from bq.core.identity import set_admin_mode
         import transaction
+        from paste.registry import Registry
+        from beaker.session import Session, SessionObject
+        from pylons.controllers.util import Request
+
+        registry = Registry()
+        registry.prepare()
+        registry.register(session, SessionObject({}))
+        registry.register(request, Request.blank('/bootstrap'))
+        request.identity = {}
+
 
         root = config.get ('bisque.root')
         enabled = config.get('bisque.services_enabled', None)
@@ -227,6 +238,7 @@ class preferences (object):
         RootController.mount_local_services(root, enabled, disabled)
         prefs = 'config/preferences.xml'
 
+        set_admin_mode(True)
         if self.args[0].startswith('init'):
             if os.path.exists(prefs):
                 print ('%s exists.. cannot init' % prefs)
