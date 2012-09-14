@@ -17,8 +17,7 @@ import transaction
 
 from bq.config.environment import load_environment
 from bq.core.model import DBSession as session
-from bq.data_service.model import Image, Tag, Value
-from bq.image_service.model import FileEntry, files
+from bq.data_service.model import Taggable, Image, Tag, Value
 
 
 
@@ -121,10 +120,10 @@ def flush():
         msg.log ("Flush");
         session.flush()
 
-def visit_all_blobs (callbacks, *l, **kw):
+def visit_all_files (callbacks, *l, **kw):
     print "VISIT BLOBS"
     count = 0
-    for blob in session.query(FileEntry):
+    for blob in session.query(Taggable).filter_by(resource_type = 'file'):
         msg.clear()
         for cb in callbacks:
             cb (blob, *l, **kw)
@@ -137,37 +136,28 @@ def visit_all_blobs (callbacks, *l, **kw):
     flush()
     return True
 
-def find_unreferenced_blobs (blob, host, fix):
-    """ Look for a blob in the database, directly or inderectly"""
-    I = session.query(Image).filter(Image.src == blob.uri).first()
-    if I: return
-    V = session.query(Value).filter(Value.valstr.like('%' + blob.uri +'%')).first()
-    if V: return
-    msg.log ("Blob with no reference %d=%s" % (blob.id, blob.uri))
-    if fix and ask("Delete blob without references"):
-        session.delete (blob)
                                     
 def find_misreferenced_blob(blob, host, fix):
     host_tuple = urlparse.urlparse (host)
-    blob_tuple = urlparse.urlparse (blob.uri)
+    blob_tuple = urlparse.urlparse (blob.value)
     if host_tuple[1] != blob_tuple[1]:
         msg.log ("blob %d has incorrect host '%s' != '%s'" % (blob.id , blob_tuple[1],host_tuple[1]))
         if fix and ask ("replace host"):
             b = list(blob_tuple)
             b[1] = host_tuple[1]
-            blob.uri = urlparse.urlunparse (b)
+            blob.value = urlparse.urlunparse (b)
 
 
 def move_blob_image_service(blob, host, **kw):
     "Change the old imgsrv address to image_service"
     #host_tuple = urlparse.urlparse (host)
-    b_tuple = urlparse.urlparse (blob.uri)
+    b_tuple = urlparse.urlparse (blob.value)
     if b_tuple[2].startswith("/imgsrv"):
         msg.log("blob %d has old image_service" % blob.id)
         if  ask("imgsrv->image_service"):
             b = list(b_tuple)
             b[2] = b_tuple[2].replace("/imgsrv", "/image_service")
-            blob.uri = urlparse.urlunparse (b)
+            blob.value = urlparse.urlunparse (b)
 
 
 
@@ -186,36 +176,36 @@ def visit_all_images (callbacks, start=0, **kw):
     count = 0
     for image in session.query(Image).order_by(Image.id)[start:]:
         msg.clear()
-        blob = session.query(FileEntry).filter_by(uri=image.src).first()
-        if  blob is None:
-            msg.log ("Database has image while with no blob ID %s %s"%(image.id , image.src))
-            if image.src is None:
-               msg.count("Image with no src:handfix", image.id )
-               print ("image with no src")
-               continue
-            imagesrc = urlparse.urlparse(image.src)[2] # PATH
-            blob = session.query(FileEntry).filter(FileEntry.uri.like("%%"+imagesrc)).first()
-            if blob is not None:
-                msg.log("Found blob w/ID but wrong host%s" % blob.uri)
-            else:
-                print ("No blob for %s" %image.src)
-                continue
-        
+        #blob = session.query(FileEntry).filter_by(uri=image.src).first()
+        #if  blob is None:
+        #    msg.log ("Database has image while with no blob ID %s %s"%(image.id , image.src))
+        #    if image.src is None:
+        #       msg.count("Image with no src:handfix", image.id )
+        #       print ("image with no src")
+        #       continue
+        #    imagesrc = urlparse.urlparse(image.src)[2] # PATH
+        #    blob = session.query(FileEntry).filter(FileEntry.uri.like("%%"+imagesrc)).first()
+        #    if blob is not None:
+        #        msg.log("Found blob w/ID but wrong host%s" % blob.uri)
+        #    else:
+        #        print ("No blob for %s" %image.src)
+        #        continue
+        # 
         msg.count('images')
         for cb in callbacks:
-            cb (image=image, blob=blob, **kw)
+            cb (image=image, **kw)
             count = count + 1
         count = count + 1
         if count % 2048 == 0:
             flush()
-        msg.dump ("in image %d (%s), blob %d " % (image.id, count, blob.id))
+        msg.dump ("in image %d (%s),  " % (image.id, count))
     flush()
     msg.dump_counts()
     return True
 
-def fix_image_blob_src(image, blob, host, old_host=None, **kw):
+def fix_image_value(image,  host, old_host=None, **kw):
     host_t = urlparse.urlparse(host)
-    image_t = list (urlparse.urlparse (image.src))
+    image_t = list (urlparse.urlparse (image.value))
     if old_host:
         oldhost_t = urlparse.urlparse(old_host)
 
@@ -224,33 +214,30 @@ def fix_image_blob_src(image, blob, host, old_host=None, **kw):
     if (old_host and  image_t[1] == oldhost_t[1]) and  ask("image %d host %s -> %s" % (image.id, image_t[1], host_t[1]) ):
     #if or image_t[1] != host_t[1]:
         image_t [1] = host_t[1]
-        image.src = urlparse.urlunparse (image_t)
+        image.value = urlparse.urlunparse (image_t)
         msg.count ('image.src modified', image.id)
-        blob.uri = urlparse.urlunparse (image_t)
+        #blob.uri = urlparse.urlunparse (image_t)
         
 
-def move_image_service(image, blob, host, old_host=None, **kw):
+def move_image_service(image,  host, old_host=None, **kw):
     "Change the old imgsrv address to image_service"
     #host_tuple = urlparse.urlparse (host)
-    image_tuple = urlparse.urlparse (image.src)
+    image_tuple = urlparse.urlparse (image.resource_value)
     if image_tuple[2].startswith("/imgsrv"):
         msg.log("image %d has old image_service" % image.id)
         if  ask("imgsrv->image_service"):
             b = list(image_tuple)
             b[2] = image_tuple[2].replace("/imgsrv", "/image_service")
-            image.src = urlparse.urlunparse (b)
-            blob.uri= image.src
-        
+            image.resource_value = urlparse.urlunparse (b)
 
 
-
-def fix_tag_value(image, blob, host, old_host=None, **kw):
+def fix_tag_value(image, host, old_host=None, **kw):
     if old_host is None:
         return
-    for tg in image.tags:
-        if tg.value !=  []:
+    for tg in image.docnodes:
+        if tg.resource_type == 'tag' and tg.value:
             S=tg.value
-            if S.startswith(old_host) and ask ('Tag value %s -> %s' %(S, host)):
+            if S and S.startswith(old_host) and ask ('Tag value %s -> %s' %(S, host)):
                 #newhost = re.sub(r'http://[^/]*', host, S)
                 newhost = host + S[len(old_host):]
                 print "%s becomes  %s " %(S, newhost)
@@ -259,51 +246,6 @@ def fix_tag_value(image, blob, host, old_host=None, **kw):
 
 
 
-def fix_blob_permission (image, blob, **kw):
-    permission = None
-    owner_name = None
-    if image.owner_id:
-        owner_name = image.owner.user_name
-        permission = image.perm
-    else:
-        msg.log( "Warning: Image %d has no owner" % (image.id))
-
-    # try to add a filename in either direction
-#    if blob.owner != owner_name:
-#        blob.owner = owner_name
-#        msg.count ("Bad blob owner")
-    if blob.perm != int (image.perm):
-        blob.perm  = int(image.perm)
-        msg.count ("Bad blob permission")
-        
-
-def fix_filename_tag(image, blob, host, **kw):
-    # Add or fix a filename tag to the image
-    image_filename = None
-    if  not blob:
-        return
-    for t in image.tags:
-        if t.name == "filename":
-            image_filename = t.value
-            break
-        
-    if image_filename is not None:
-        if not blob.original:
-            msg.count( "missing blobdb for image with filename tag" )
-            blob.original = image_filename
-    else:
-        if blob.original:
-            msg.count( "added filename tag" )
-            if not dryrun:
-                t = Tag()
-                t.name ="filename"
-                t.perm = image.perm
-                t.owner_id = image.owner_id
-                t.value = blob.original
-                image.tags.append (t)
-        else:
-            msg.count( "Missing filename:skipping", image.id )
-        
 
 def fix_tag_permission(image, blob, **kw):
     if image.perm != 0: return
@@ -393,17 +335,17 @@ if __name__ == "__main__":
 
     ### CALLBACK for taggable objects in database 
     callbacks = [
-        fix_image_blob_src,
+        fix_image_value,
         move_image_service,
         fix_tag_value,
 #        fix_blob_permission,
-        fix_filename_tag,
-        fix_tag_permission,
+        #fix_filename_tag,
+        #fix_tag_permission,
         ]
     ### BLOBCALSS for all blobs
     blobcalls = [
-        find_misreferenced_blob,
-        move_blob_image_service,
+#        find_misreferenced_blob,
+#        move_blob_image_service,
         # find_unreferenced_blobs 
         ] 
     try:
@@ -412,7 +354,7 @@ if __name__ == "__main__":
             ok = visit_all_images(callbacks, host=host, start=start, old_host=old_host)
         # Most BLOBS are fixed during visiting images..
         #  Look for stragglers
-        ok = ok and visit_all_blobs(blobcalls, host, fix=True)
+        ok = ok and visit_all_files(blobcalls, host, fix=True)
 
         close_sessions()
 
