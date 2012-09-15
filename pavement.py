@@ -117,10 +117,9 @@ def setup(options):
     sh('easy_install http://biodev.ece.ucsb.edu/binaries/depot/Paste/Paste-1.7.5.1bisque2.tar.gz')
     sh('easy_install pastescript==1.7.3')
 
-    print "Now run bq-admin setup %s " % ( 'engine' if engine_install else '' )
-    #if getanswer('Run bq-admin setup' , 'Y', 
-    #             "Run the setup (appropiate for this install") == 'Y':
-    #    sh ('bq-admin setup %s' % 
+    if getanswer('Run bq-admin setup' , 'Y', 
+                 "Run the setup (appropiate for this install") == 'Y':
+        sh ('bq-admin setup %s' % ( 'engine' if engine_install else '' ))
 
 @task
 @needs('generate_setup', 'minilib', 'setuptools.command.sdist')

@@ -5,11 +5,10 @@
         <tag name="mex_url"      type="system-input" />
         <tag name="bisque_token" type="system-input" />
         
-        <tag name="resource_url" type="resource">
+        <tag name="resource_url" type="image">
             <template>
-                <tag name="label" value="Select input image:" />
+                <tag name="label" value="Select input image" />
                 <tag name="accepted_type" value="image" />
-                <tag name="accepted_type" value="dataset" />     
             </template>
             
             <gobject name="stroke">
