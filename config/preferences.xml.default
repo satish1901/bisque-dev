@@ -10,6 +10,9 @@
       <tag name="Experimenters" value="experimenter" />
       <tag name="Species" value="species" />
   </tag>
+    <tag name="Toolbar">
+        <tag name="registration" value="/registration" />
+    </tag>  
   <tag name="ResourceBrowser">
     <tag name="Browser">
       <tag name="Tag Query"/>
