@@ -1,9 +1,10 @@
-function PHFDetector(mex_url, access_token, input_mex_uri, ~, ~)
+function PHFDetector(mex_url, access_token, input_mex_uri, ~, ~, ~)
     session = bq.Session(mex_url, access_token);
     try
         session.update('0% - fetching inputs'); 
         phf_channel        = str2num(session.mex.findValue('//tag[@name="inputs"]/tag[@name="phf_channel"]'));
         soma_nucleus_ratio = session.mex.findValue('//tag[@name="inputs"]/tag[@name="soma_nucleus_ratio"]');        
+        nuclear_filter     = session.mex.findValue('//tag[@name="inputs"]/tag[@name="nuclear_filter_confidence"]', 0); 
 
         %% most inputs are in the ND3D MEX
         input_mex = session.fetch([input_mex_uri '?view=deep']);
@@ -46,6 +47,9 @@ function PHFDetector(mex_url, access_token, input_mex_uri, ~, ~)
                 continue;
             end
             confi = points{n}.findValue('tag[@name="confidence"]');
+            if nuclear_filter>0 && confi<nuclear_filter,
+                continue;
+            end
             nuclei{n} = struct( 'coord', coord(1:3), 'confidence', confi );
         end
         nuclei = nuclei(~cellfun(@isempty, nuclei));
