@@ -92,6 +92,7 @@ Ext.define('BQ.Application.Toolbar', {
     layout: { overflowHandler: 'Menu',  },
     defaults: { scale: 'large', },
     cls: 'toolbar_main',
+    preferences : {},
     
     tools_none: [ 'menu_user_signin', 'menu_user_register', 'menu_user_register_sep'],    
     tools_user: ['menu_user_name', 'menu_user_profile', 'menu_user_signout', 'menu_user_prefs', 'menu_user_signout_sep'],
@@ -115,6 +116,11 @@ Ext.define('BQ.Application.Toolbar', {
         Ext.QuickTips.init();
         Ext.tip.QuickTipManager.init();
         var toolbar = this;        
+       
+        BQ.Preferences.get({
+            key : 'Toolbar',
+            callback : Ext.bind(this.onPreferences, this),
+        });
        
         //--------------------------------------------------------------------------------------
         // Toolbar menus
@@ -289,13 +295,13 @@ Ext.define('BQ.Application.Toolbar', {
             xtype: 'menuseparator', 
             itemId: 'menu_user_register_sep', 
         });    
+        
         this.menu_user.add({
             text: 'Register new user', 
             itemId: 'menu_user_register', 
-            handler: Ext.Function.pass(pageAction, bq.url('/registration')), 
+            handler: Ext.Function.pass(pageAction, bq.url(this.preferences.registration || '/registration')), 
         });
-    
-    
+
         var menu_help = [];
         menu_help.push({ 
             xtype:'tbtext', 
@@ -368,6 +374,7 @@ Ext.define('BQ.Application.Toolbar', {
         });
         this.items.push({ 
             xtype:'tbtext', 
+            itemId: 'menu_title', 
             text: '<h3><a href="/">'+this.title+'</a></h3>', 
         });        
         this.items.push({ 
@@ -760,6 +767,19 @@ Ext.define('BQ.Application.Toolbar', {
 
     onResourceError: function(message) {
         BQ.ui.error('Error creating resource: <br>'+message);
+    },
+   
+    onPreferences: function(pref) {
+        this.preferences = pref;  
+        
+        this.menu_user.child('#menu_user_register').setHandler( 
+            Ext.Function.pass(pageAction, bq.url(this.preferences.registration || '/registration')), 
+            this 
+        );
+
+        if (this.preferences.title)
+            this.child('#menu_title').setText( '<h3><a href="/">'+this.preferences.title+'</a></h3>' );
+        
     },
    
 });

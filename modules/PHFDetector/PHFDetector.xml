@@ -36,6 +36,19 @@
                 <tag name="step" value="0.1" type="number" />
                 <tag name="description" value="Multiplier indicating how much larger area should be observed around the nucleus for PHF response classification" />
             </template>             
+        </tag>  
+
+        <tag name="nuclear_filter_confidence" value="20" type="number" >
+            <template>
+                <tag name="label" value="Filter nuclei by confidence" />
+                <tag name="minValue" value="0" type="number" />
+                <tag name="maxValue" value="100" type="number" />
+                <tag name="allowDecimals" value="true" type="boolean" />
+                <tag name="decimalPrecision" value="4" type="number" />
+                <tag name="step" value="1" type="number" />
+                <tag name="units" value="%" />
+                <tag name="description" value="Only use nuclei with confidence above desired percentage" />
+            </template>             
         </tag>        
         
     </tag>
@@ -56,8 +69,21 @@
             </template>            
             <gobject name="phf_classified_centroids">
                 <template>
-                    
+
                     <tag name="plot" value="true"  type="boolean">
+                        <tag name="label" value="Distribution of cell classes" />
+                        <tag name="title" value="Distribution of cell classes" />
+                        <tag name="xmap" value="tag-value-string" />
+                        <tag name="xreduce" value="histogram" />
+                        <tag name="xpath">
+                            <value>//gobject[@type="nucleus"]/point[@name="centroid"]/tag[@name="class"]</value>
+                        </tag>                        
+                        <tag name="args">
+                            <tag name="numbins" value="10" type="number" />
+                        </tag>                        
+                    </tag>
+                    
+                    <tag name="plot1" value="true"  type="boolean">
                         <tag name="label" value="Distribution of PHF confidence for PHF+ cells" />
                         <tag name="title" value="Distribution of PHF confidence for PHF+ cells" />
                         <tag name="xmap" value="tag-value-number" />
@@ -70,7 +96,7 @@
                         </tag>                        
                     </tag>
 
-                    <tag name="plot1" value="true"  type="boolean">
+                    <tag name="plot2" value="true"  type="boolean">
                         <tag name="label" value="Distribution of PHF confidence for PHF- cells" />
                         <tag name="title" value="Distribution of PHF confidence for PHF- cells" />
                         <tag name="xmap" value="tag-value-number" />
@@ -90,13 +116,15 @@
                             <value>//point|//gobject[@type='point']</value>
                             <value>//point|//gobject[@type='point']</value>
                             <value>//tag[@name='class']</value>
-                            <value>//tag[@name='confidence_phf']</value>                            
+                            <value>//tag[@name='confidence_phf']</value>  
+                            <value>//tag[@name='confidence_nuclear']</value>                                         
                         </tag> 
                         <tag name="xmap">
                             <value>gobject-vertex-x</value>
                             <value>gobject-vertex-y</value>
                             <value>gobject-vertex-z</value>
                             <value>tag-value-string</value>
+                            <value>tag-value-number</value>
                             <value>tag-value-number</value>
                         </tag>                           
                         <tag name="xreduce" value="vector" />
@@ -106,6 +134,7 @@
                             <value>z</value>
                             <value>class</value>
                             <value>confidence_phf</value>
+                            <value>confidence_nucleus</value>
                         </tag>                         
                     </tag>                      
 
@@ -118,40 +147,77 @@
         </tag>
         
         <!-- Iterated outputs -->     
-        <tag name="input_mex" type="mex">
+        <tag name="mex_url" type="mex">
             <template>
                 <tag name="label" value="Results for all images in the dataset" />
-                <tag name="plot" value="true"  type="boolean">
-                    <tag name="label" value="Distribution of detection confidence" />
-                    <tag name="title" value="Distribution of detection confidence" />
-                    <tag name="xmap" value="tag-value-number" />
-                    <tag name="xreduce" value="histogram" />
-                    <tag name="xpath">
-                        <value>//tag[@name="confidence"]</value>
-                    </tag>                        
-                    <tag name="args">
-                        <tag name="numbins" value="20" type="number" />
-                    </tag>                        
-                </tag>
-        
-                <tag name="export_csv" value="true" type="boolean">
-                    <tag name="label" value="Nuclear centroid coordinates and confidence as CSV" />
-                    <tag name="xpath">
-                        <value>//point|//gobject[@type='point']</value>
-                        <value>//point|//gobject[@type='point']</value>
-                        <value>//point|//gobject[@type='point']</value>
-                        <value>//point|//gobject[@type='point']</value>
-                        <value>//tag[@name='confidence']</value>
-                    </tag> 
-                    <tag name="xmap">
-                        <value>gobject-vertex-x</value>
-                        <value>gobject-vertex-y</value>
-                        <value>gobject-vertex-z</value>
-                        <value>gobject-vertex-t</value>
-                        <value>tag-value-number</value>
-                    </tag>                           
-                    <tag name="xreduce" value="vector" />
-                </tag>                      
+
+                    <tag name="plot" value="true"  type="boolean">
+                        <tag name="label" value="Distribution of cell classes" />
+                        <tag name="title" value="Distribution of cell classes" />
+                        <tag name="xmap" value="tag-value-string" />
+                        <tag name="xreduce" value="histogram" />
+                        <tag name="xpath">
+                            <value>//gobject[@type="nucleus"]/point[@name="centroid"]/tag[@name="class"]</value>
+                        </tag>                        
+                        <tag name="args">
+                            <tag name="numbins" value="10" type="number" />
+                        </tag>                        
+                    </tag>
+                    
+                    <tag name="plot1" value="true"  type="boolean">
+                        <tag name="label" value="Distribution of PHF confidence for PHF+ cells" />
+                        <tag name="title" value="Distribution of PHF confidence for PHF+ cells" />
+                        <tag name="xmap" value="tag-value-number" />
+                        <tag name="xreduce" value="histogram" />
+                        <tag name="xpath">
+                            <value>//gobject[@name="phf_positive"]/gobject/point/tag[@name="confidence_phf"]</value>
+                        </tag>                        
+                        <tag name="args">
+                            <tag name="numbins" value="50" type="number" />
+                        </tag>                        
+                    </tag>
+
+                    <tag name="plot2" value="true"  type="boolean">
+                        <tag name="label" value="Distribution of PHF confidence for PHF- cells" />
+                        <tag name="title" value="Distribution of PHF confidence for PHF- cells" />
+                        <tag name="xmap" value="tag-value-number" />
+                        <tag name="xreduce" value="histogram" />
+                        <tag name="xpath">
+                            <value>//gobject[@name="phf_negative"]/gobject/point/tag[@name="confidence_phf"]</value>
+                        </tag>                        
+                        <tag name="args">
+                            <tag name="numbins" value="50" type="number" />
+                        </tag>                        
+                    </tag>
+
+                    <tag name="export_csv" value="true" type="boolean">
+                        <tag name="label" value="Nuclear centroid coordinates and class as CSV" />
+                        <tag name="xpath">
+                            <value>//point|//gobject[@type='point']</value>
+                            <value>//point|//gobject[@type='point']</value>
+                            <value>//point|//gobject[@type='point']</value>
+                            <value>//tag[@name='class']</value>
+                            <value>//tag[@name='confidence_phf']</value>  
+                            <value>//tag[@name='confidence_nuclear']</value>                                         
+                        </tag> 
+                        <tag name="xmap">
+                            <value>gobject-vertex-x</value>
+                            <value>gobject-vertex-y</value>
+                            <value>gobject-vertex-z</value>
+                            <value>tag-value-string</value>
+                            <value>tag-value-number</value>
+                            <value>tag-value-number</value>
+                        </tag>                           
+                        <tag name="xreduce" value="vector" />
+                        <tag name="title">
+                            <value>x</value>
+                            <value>y</value>
+                            <value>z</value>
+                            <value>class</value>
+                            <value>confidence_phf</value>
+                            <value>confidence_nucleus</value>
+                        </tag>                         
+                    </tag>
         
                 <tag name="export_xml"    value="true"  type="boolean" />
                 <tag name="export_excel"  value="false" type="boolean" />
@@ -159,9 +225,10 @@
             </template> 
         </tag>
               
-        <tag name="resource_url" type="dataset">
+        <tag name="input_mex" type="mex">
             <template>
-                <tag name="label" value="Pick an image to see individual results" />
+                <tag name="mode" value="browser" />
+                <tag name="label" value="Pick an input to see individual results" />
             </template> 
         </tag>                            
         
