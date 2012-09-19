@@ -380,7 +380,10 @@ class BaseRunner(object):
             executable = shlex.split(self.config.executable)
         if os.name == 'nt':
             return True
-        return executable and which(executable[0]) is not None
+        canrun = executable and which(executable[0]) is not None
+        if not canrun:
+           log.error ("Executable cannot be run %s" % executable)
+        return canrun
 
     def main(self, **kw):
         # Find and read a config file for the module
