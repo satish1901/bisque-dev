@@ -3,7 +3,7 @@ import sys
 from bq.setup.module_setup import matlab_setup, python_setup, read_config
 
 def setup(params, *args, **kw):
-    #python_setup('SeedSize.py', params=params) # dima: commented out fto disable bbfreeze
+    python_setup('SeedSize.py', params=params)
     return matlab_setup('matlab/seedSize', bisque_deps=False, params=params)
     
 if __name__ =="__main__":
