@@ -58,7 +58,10 @@ classdef Node < matlab.mixin.Copyable
         % posts the document back to the Bisque server
         % if the filename is given then stores the doc as an XML file            
             if exist('filename', 'var') && ischar(filename),
-                xmlwrite(filename, self.element);         
+                %xmlwrite(filename, self.element);         
+                fileID = fopen(filename, 'w');
+                fwrite(fileID, self.toString());
+                fclose(fileID);
             else
                 url = self.getAttribute('uri');
                 bq.post(url, self.element, self.user, self.password);
@@ -172,7 +175,7 @@ classdef Node < matlab.mixin.Copyable
             end
         end % getValues            
         
-        function value = setValues(self)
+        function value = setValues(self, values)
             % not yet implemented
             %value = char(self.element.getAttribute(name));
         end % setValues                  
@@ -205,17 +208,25 @@ classdef Node < matlab.mixin.Copyable
             import javax.xml.xpath.*;
             factory = XPathFactory.newInstance;
             xpath = factory.newXPath;    
-            %xn = xpath.evaluate(expression, self.doc, XPathConstants.NODE);
             xn = xpath.evaluate(expression, self.element, XPathConstants.NODE);
-            %node = bq.Node(self.doc, xn);
             if ~isempty(xn),
-                node = bq.Factory.fetch(self.doc, xn);
+                node = bq.Factory.fetch(self.doc, xn, self.user, self.password);
             else
                 node = [];
             end
         end             
         
         function v = findValue(self, expression, default)
+        % Returns a value of bq.Node found with xpath expression
+        %
+        % INPUT:
+        %    expression - an xpath expression 
+        %    default    - default value if needed, otherwise []
+        %
+        % OUTPUT:
+        %    v - value as either a string or a number based on type
+        %        attribute
+        %                             
             v = [];
             t = self.findNode(expression);
             if ~isempty(t),
@@ -241,7 +252,6 @@ classdef Node < matlab.mixin.Copyable
             import javax.xml.xpath.*;
             factory = XPathFactory.newInstance;
             xpath = factory.newXPath;    
-            %xnodes = xpath.evaluate(expression, self.doc, XPathConstants.NODESET);
             xnodes = xpath.evaluate(expression, self.element, XPathConstants.NODESET);
             if isempty(xnodes) || xnodes.getLength()<1,
                 nodes = cell(0,1);
@@ -249,8 +259,7 @@ classdef Node < matlab.mixin.Copyable
             end            
             nodes = cell(xnodes.getLength(),1);
             for i=1:xnodes.getLength(),
-                %nodes{i} = bq.Node(self.doc, xnodes.item(i-1));
-                nodes{i} = bq.Factory.fetch(self.doc, xnodes.item(i-1));
+                nodes{i} = bq.Factory.fetch(self.doc, xnodes.item(i-1), self.user, self.password);
             end
         end         
         

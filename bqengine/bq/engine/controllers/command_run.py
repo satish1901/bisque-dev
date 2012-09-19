@@ -463,7 +463,7 @@ class CommandRunner(BaseRunner):
             for p in self.processes:
                 retcode = execone (p)
                 if retcode:
-                    self.command_failed(p)
+                    self.command_failed(p, retcode)
             return self.command_finish
 
         return None
@@ -473,10 +473,10 @@ class CommandRunner(BaseRunner):
         for item, retcode in enumerate(returns):
             command = self.processes[item]['command_line']
             if retcode:
-                self.command_failed(self.processes[item])
+                self.command_failed(self.processes[item], retcode)
         self.command_finish(**self.execute_kw)
 
-    def command_failed(self, process):
+    def command_failed(self, process, retcode):
         """Update the bisque server  with a failed command for a mex"""
         mex = process['mex']
         command = " ".join(process['command_line'])

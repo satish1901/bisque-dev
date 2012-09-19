@@ -25,7 +25,8 @@ BQ.selectors.resources  = { 'image'            : 'BQ.selectors.Resource',
                             'resource'         : 'BQ.selectors.Resource', 
                             'gobject'          : 'BQ.selectors.Gobject', 
                             'mex'              : 'BQ.selectors.Mex', 
-                            'subtree'          : 'BQ.selectors.SubTree', };
+                            'subtree'          : 'BQ.selectors.SubTree'
+                          };
 
 BQ.selectors.parameters = { 'tag'              : 'BQ.selectors.String', 
                             'string'           : 'BQ.selectors.String', 
@@ -34,7 +35,7 @@ BQ.selectors.parameters = { 'tag'              : 'BQ.selectors.String',
                             'boolean'          : 'BQ.selectors.Boolean',
                             'date'             : 'BQ.selectors.Date', 
                             'image_channel'    : 'BQ.selectors.ImageChannel', 
-                            'pixel_resolution' : 'BQ.selectors.PixelResolution', 
+                            'pixel_resolution' : 'BQ.selectors.PixelResolution'
                           };
 
 BQ.renderers.resources  = { 'image'            : 'BQ.renderers.Image', 
@@ -43,7 +44,8 @@ BQ.renderers.resources  = { 'image'            : 'BQ.renderers.Image',
                           //'gobject'          : 'BQ.renderers.Gobject', 
                             'tag'              : 'BQ.renderers.Tag', 
                             'mex'              : 'BQ.renderers.Mex', 
-                            'browser'          : 'BQ.renderers.Browser', };
+                            'browser'          : 'BQ.renderers.Browser'
+                          };
 
 
 /*******************************************************************************
@@ -74,7 +76,7 @@ Ext.define('BQ.renderers.Renderer', {
     height: 10,
     border: 0,
     layout: 'auto',
-    defaults: { border: 0, xtype: 'container', },
+    defaults: { border: 0, xtype: 'container' },
 
     initComponent : function() {
         var resource = this.resource;
@@ -1836,7 +1838,7 @@ Ext.define('BQ.renderers.RendererWithTools', {
             text: 'complete document as XML',
             scope: this,
             handler: function() {
-                window.open(this.res_uri_for_tools + '?view=deep');
+                window.open(this.res_uri_for_tools + '?view=deep,clean');
             },
         }); 
     }, 
@@ -2089,7 +2091,7 @@ Ext.define('BQ.renderers.Dataset', {
         //resource: resource.resource_type=='image'?resource:resource.value, // reference or resource
         this.browser = Ext.create('Bisque.ResourceBrowser.Browser', {
             //dataset: resource,
-            dataset: resource.getMembers().uri+'/value',
+            dataset: resource.uri+'/value',
             selType: 'SINGLE',
             flex: 1,
             cls: 'bordered',
@@ -2128,18 +2130,40 @@ Ext.define('BQ.renderers.Mex', {
         if (!definition || !resource) return;
         template.label = template.label || 'Summary of this analysis';
         
-        // create tools menus
-        var tool_items = [];
-        this.res_for_tools = {name: resource.resource_type+'.csv', };
-        this.res_uri_for_tools = resource.value;
-        this.template_for_tools = template;
-        tool_items = this.createTools();
-
         this.items = [];
-        this.items.push( {xtype: 'label', html: template.label, } );        
-        if (tool_items.length>0) 
-            this.items.push( {xtype: 'toolbar', items: tool_items, defaults: { scale: 'medium' }, } );               
-               
+        this.items.push( {xtype: 'label', html: template.label, } );          
+        
+        if (template.mode == 'browser') {
+            // in this mode we browse a MEX and show its sub-MEXs
+            this.browser = Ext.create('Bisque.ResourceBrowser.Browser', {
+                dataset: resource.value + '?view=full',
+                selType: 'SINGLE',
+                flex: 1,
+                cls: 'bordered',
+                //viewMode : 'ViewerOnly',
+                viewMode : 'ViewerLayouts',
+                //layout: 
+                listeners: { 
+                    'Select': function(me, resource) { 
+                        this.fireEvent( 'selected', resource); 
+                    }, 
+                    scope: this 
+                },
+            }); 
+            this.setHeight(450);
+            this.items.push(this.browser);               
+        } else {
+            // this is a default mode where we show export menus
+            // create tools menus
+            var tool_items = [];
+            this.res_for_tools = {name: resource.resource_type+'.csv', };
+            this.res_uri_for_tools = resource.value;
+            this.template_for_tools = template;
+            tool_items = this.createTools();
+     
+            if (tool_items.length>0) 
+                this.items.push( {xtype: 'toolbar', items: tool_items, defaults: { scale: 'medium' }, } );               
+        }
         this.callParent();
     },
 
