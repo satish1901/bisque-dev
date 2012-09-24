@@ -611,10 +611,9 @@ Ext.define('Bisque.ResourceBrowser.Layout.Grid',
         
         var resource, list=[];
         for (var i=0;i<resourceQueue.length;i++)
-            list.push(resourceQueue[i].getFields());
-        
+            list.push(resourceQueue[i].getFields())
         this.resourceStore.loadData(list);
-
+        
         var selModel = this.resourceGrid.getSelectionModel();
         this.resQ = resourceQueue;
         
@@ -690,7 +689,7 @@ Ext.define('Bisque.ResourceBrowser.Layout.Grid',
                     flex : 0.4 
                 },
                 {
-                    text: this.layoutConfig.colValueText || 'Value',
+                    text: this.layoutConfig.colValueText || 'Owner',
                     dataIndex: 'value',
                     flex : 0.6
                 },
@@ -725,6 +724,7 @@ Ext.define('Bisque.ResourceBrowser.Layout.Grid',
             {
                 var created = new Date(), today = new Date();
                 created.setISO(value);
+                
                 var days = Math.round((today-created)/(1000*60*60*24));
                 var pattern = (days) ? "n/j/Y" : "g:i A";   
 

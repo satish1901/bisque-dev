@@ -49,6 +49,7 @@ Ext.define('BQ.Application', {
         this.callParent();
 
         config.config = config.config || {};                
+        this.onReady();        
         this.main = Ext.create('BQ.Application.Window', config.config);
         
         BQSession.initialize_timeout('', { 
@@ -56,9 +57,26 @@ Ext.define('BQ.Application', {
             onsignedout: callback(this, this.onSignedOut),
             ongotuser: callback(this, this.onGotUser),
             onnouser: callback(this, this.onNoUser),            
-        });        
-
+        });
+        
         return this;
+    },
+    
+    onReady : function()
+    {
+        // Load user information for all users.
+        BQFactory.request({
+            uri :   bq.url('/data_service/user?view=deep&wpublic=true'),
+            cb  :   Ext.bind(userInfoLoaded, this)
+        });
+        
+        function userInfoLoaded(data)
+        {
+            this.userList = {};
+            
+            for (var i=0; i<data.children.length;i++)
+                this.userList[data.children[i].uri] = data.children[i];
+        }
     },
     
     onSignedIn: function() {

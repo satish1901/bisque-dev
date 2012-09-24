@@ -119,7 +119,8 @@ Ext.define('Bisque.ResourceTagger',
 
         this.resource = resource;
         this.editable = false;
-        this.testAuth(BQApp.user, false);
+        if (!this.disableAuthTest)
+            this.testAuth(BQApp.user, false);
         
         if(this.resource.tags.length > 0)
             this.loadResourceTags(this.resource.tags);
@@ -131,8 +132,9 @@ Ext.define('Bisque.ResourceTagger',
             });
     },
 
-    reload : function() {
-         this.setResource( this.resource.uri );
+    reload : function()
+    {
+        this.setResource(this.resource.uri);
     },
 
     loadResourceTags : function(data, template)
@@ -157,6 +159,7 @@ Ext.define('Bisque.ResourceTagger',
         
         this.removeAll(true);
         this.add(this.getTagTree(root));
+        
         this.fireEvent('onload', this, this.resource);
         this.relayEvents(this.tree, ['itemclick']);
     },
@@ -708,13 +711,10 @@ Ext.define('Bisque.ResourceTagger',
                         BQ.TemplateManager.createResource({name: '', noSave:true}, Ext.bind(this.onResourceCreated, this), resource.uri+'?view=deep');
                     else
                     {
-                        if(resource.tags.length > 0)
-                            this.appendTags(resource.tags);
-                        else
-                            resource.loadTags(
-                            {
-                                cb : callback(this, "appendTags"),
-                            });
+                        resource.loadTags(
+                        {
+                            cb : callback(this, "appendTags"),
+                        });
                     }
                 },
 
