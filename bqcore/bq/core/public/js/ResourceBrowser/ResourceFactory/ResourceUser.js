@@ -4,11 +4,13 @@ Ext.define('Bisque.Resource.User.Grid',
     
     getFields : function(displayName)
     {
-        var tag = this.resource.find_tags('display_name', false);
-        this.displayName = (tag) ? tag.value : ''; 
+        var record = BQApp.userList[this.resource.owner];
+        this.displayName = record ? record.find_tags('display_name').value : ''; 
+
         this.resource.display_name = this.displayName;
         var fields = this.callParent();
         fields[1] = this.displayName;
+        fields[2] = record['email'] || '';
             
         return fields;
     }

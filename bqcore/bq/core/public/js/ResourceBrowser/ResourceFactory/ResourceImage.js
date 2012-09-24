@@ -622,12 +622,12 @@ Ext.define('Bisque.Resource.Image.Grid',
         prefetchImg.src = this.resource.src+'?thumbnail=75,75&format=jpeg';
     },
     
-    // convert ArrayStore to JsonStore?
-    getFields : function()
+    getFields : function(cb)
     {
         var fields = this.callParent();
         fields[0] = '<img style="height:40px;width:40px;" src='+this.resource.src+'?thumbnail=75,75&format=jpeg />';
         fields[6].height = 48;
+
         return fields;
     },
 });
