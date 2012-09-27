@@ -12,12 +12,12 @@ from datetime import datetime
 from lxml import etree
 from pylons.controllers.util import etag_cache
 from pylons.i18n import ugettext as _, lazy_ugettext as l_
-from tg import expose, flash, config
+from tg import expose, flash, config, abort
 from repoze.what import predicates 
 from bq.core.service import ServiceController
 from paste.fileapp import FileApp
 from pylons.controllers.util import forward
-
+from bq.data_service.model import Taggable, DBSession
 
 from bq.core import permission, identity
 from bq.util.paths import data_path
@@ -216,6 +216,22 @@ class image_serviceController(ServiceController):
     def blobs(self):
         pass
 
+    def check_access(self, ident, action):
+        from bq.data_service.controllers.resource_query import resource_permission
+        query = DBSession.query(Taggable).filter_by (resource_uniq = ident)
+        resource = resource_permission (query, action=action).first()
+        if resource is None:
+            if identity.not_anonymous():
+                abort(403)
+            else:
+                abort(401)
+        return resource
+
+    @expose()
+    def image(self, *path, **kw):
+        id = path[0]
+        return self.images(id, **kw)
+
     @expose()
     #@identity.require(identity.not_anonymous())
     def images(self, id, **kw):
@@ -225,6 +241,11 @@ class image_serviceController(ServiceController):
       
         path   = request.path+'?'+request.query_string
         userId = identity.current.user_name
+
+        # check for access permission
+        from bq.data_service.controllers.resource_query import RESOURCE_READ, RESOURCE_EDIT
+        self.check_access(id, RESOURCE_READ)
+        
         
         # dima: patch for incorrect /auth requests for image service
         if path.find('/auth')>=0:
