@@ -234,7 +234,7 @@ class BlobServer(RestController, ServiceMixin):
     def delete(self, *args, **kwargs):
         ' Delete the resource  '
         ident = args[0]
-        log.info("get_one() called %s" % args)
+        log.info("delete() called %s" % args)
         from bq.data_service.controllers.resource_query import resource_delete
         resource = self.getBlobInfo(ident)
         resource_delete(resource)
@@ -243,7 +243,7 @@ class BlobServer(RestController, ServiceMixin):
     @require(predicates.not_anonymous())
     def move(self, src, dst, *args,  **kwargs):
         ' Move a resource identified by path  '
-        log.info("get_one() called %s" % args)
+        log.info("move() called %s" % args)
         from bq.data_service.controllers.resource_query import resource_permission
         from bq.data_service.controllers.resource_query import RESOURCE_READ, RESOURCE_EDIT
         query = DBSession.query(Taggable).filter_by (resource_value=src,resource_parent=None)
