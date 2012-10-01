@@ -22,91 +22,103 @@ You need to Sign-up for `Amazon Web Services <http://aws.amazon.com>`_ and `Righ
 Creating a Bisque Instance
 --------------------------
 
-- Logon to Rightscale and import the `Bisque Server Template <https://my.rightscale.com/library/server_templates/Bisque-Server-Template/lineage/15175>`_. This template will serve as the basis for launching and configuring a new bisque installation.
+- Logon to Rightscale and import the `Bisque Server Template <https://my.rightscale.com/library/server_templates/Bisque-Server-Template/lineage/15175>`_. The :ref:`fig_template` will serve as the basis for launching and configuring a new bisque installation.
+
+.. _fig_template:
 
 .. figure:: images/template.png
   :align: center
-  :figwidth: 80 %
-  :height: 570 pt
   :alt: Bisque Server Template
 
-  Bisque Server Template
+  bisque server template
 
-- Once imported, the template will be available in your server templates library. Select it and choose "Add Server". Also select the cloud region where you would like to host the new bisque installation. Typically a geographic region closest to where the installation would generally be accessed from would be best.
+- Once imported, the template will be available in your :ref:`fig_server_templates` . Select it and choose ":ref:`fig_add_server`". Also :ref:`fig_select_region` where you would like to host the new bisque installation. Typically a geographic region closest to where the installation would generally be accessed from would be best.
+
+.. _fig_server_templates:
 
 .. figure:: images/server_templates.png
   :align: center
-  :height: 680 pt
   :alt: Server templates library
 
-  Server templates library
+  server templates library
+
+.. _fig_select_region:
 
 .. figure:: images/select_region.png
   :align: center
-  :height: 150 pt
   :alt: Select cloud region
 
-  Select cloud region
+  select the cloud region
+
+.. _fig_add_server:
 
 .. figure:: images/add_server.png
   :align: center
-  :figwidth: 80 %
-  :height: 300 pt
   :alt: Add a new server
 
-  Add a new server
+  Add Server
 
-- Next, you will be presented with various options to customize the hardware and network details of your bisque installation. You may leave most options to default as shown with the exception of the security groups (1). It is very important to configure this option correctly otherwise, you may not be able to run any modules on the bisque instance.
+- Next, you will be presented with various options to customize the :ref:`fig_server_details` of your bisque installation. You may leave most options to default as shown with the exception of the security groups (1). It is very important to configure this option correctly otherwise, you may not be able to run any modules on the bisque instance.
+
+.. _fig_server_details:
 
 .. figure:: images/server_details.png
   :align: center
-  :figwidth: 80 %
-  :height: 430
   :alt: Server details
 
-  Server details
+  hardware and network details
 
-- In security groups, click on "new". You need to create a security group that allows all TCP traffic from any IP on port '27000'.
+- In security groups, click on "new". You need to :ref:`fig_new_secgrp` that allows all TCP traffic from any IP on port '27000'.
+
+.. _fig_new_secgrp:
 
 .. figure:: images/new_secgrp.png
   :align: center
-  :figwidth: 80 %
-  :height: 680 pt
   :alt: Create a new security group
 
-  Create a new security group
+  create a new security group
 
-- Once created, select the cloud region of the bisque installation and click on EC2 security groups. Select the group you created and add a new permission allowing TCP traffic on port 27000.
+- Once created, select the cloud region of the bisque installation and click on EC2 security groups to :ref:`fig_edit_secgrp`. Select the group you created and :ref:`fig_add_permission` allowing TCP traffic on port 27000.
+
+.. _fig_edit_secgrp:
 
 .. figure:: images/edit_secgrp.png
   :align: center
-  :figwidth: 80 %
-  height: 280 pt
   :alt: Edit a security group
 
-  Edit a new security group
+  edit the security group
+
+.. _fig_add_permission:
 
 .. figure:: images/add_permission.png
   :align: center
-  :figwidth: 80 %
-  height: 100 pt
   :alt: Add permissions to a security group
 
-  Add permissions to a security group
+  add a permission
 
 - For additional information regarding security groups - `How to create a security group using Rightscale <http://support.rightscale.com/12-Guides/Dashboard_Users_Guide/Clouds/AWS_Region/EC2_Security_Groups/Actions/Create_a_New_Security_Group>`_
 - You may optionally edit the name of the server, the instance type (2) for a better machine (for a higher price) and also associate an elastic IP (3) i.e a static IP that can be used in case you wish to host your bisque instance with a more meaningful DNS name.
 - Once configured, click launch. User inputs and Configuration options specific to the bisque system will be displayed next.
 
-.. |server_templates| image:: images/server_templates.png
-.. |add_server| image:: images/add_server.png
-.. |select_region| image:: images/select_region.png
-.. |server_details| image:: images/server_details.png
-.. |new_secgrp| image:: images/new_secgrp.png
-.. |edit_secgrp| image:: images/edit_secgrp.png
-.. |add_permission| image:: images/add_permission.png
-
 Configuring the Bisque Instance
 -------------------------------
 
+In order to configure the bisque instance, two S3 buckets need to be created for storing the image data and the database respectively.
+To create an S3 bucket, select new in the :ref:`fig_new_s3`. Then, give a name for the S3 bucket, select the same cloud region as during the server configuration and :ref:`fig_create_bucket`.
+
+.. _fig_new_s3:
+
+.. figure:: images/new_s3.png
+  :align: center
+  :alt: Create new S3 bucket
+
+  S3 browser
+
+.. _fig_create_bucket:
+
+.. figure:: images/create_bucket.png
+  :align: center
+  :alt: Create new S3 bucket
+
+  create a new bucket
 
