@@ -105,11 +105,14 @@ def set_admin (admin):
     user_admin = admin
 
 def get_admin():
-    user_admin = request.identity.get ('bisque.admin_user', None)
+    user_admin = None
+    if hasattr(request, 'identity'):
+        user_admin = request.identity.get ('bisque.admin_user', None)
     if user_admin is None:
         from bq.data_service.model.tag_model import BQUser
         user_admin = DBSession.query(BQUser).filter_by(resource_name=u'admin').first()
-        request.identity['bisque.admin_user'] = user_admin
+        if hasattr(request, 'identity'):
+            request.identity['bisque.admin_user'] = user_admin
     return user_admin
 
 def get_admin_id():
