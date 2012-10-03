@@ -46,12 +46,16 @@ class AutoRegister (object):
         """Attempt to register the user locally"""
         name_match = model.User.by_user_name( user_name )
         email_match= values.get('email_address') and model.User.by_email_address(values['email_address'])
-        identifier = values.get('identifier')
+        identifier = values.pop('identifier', None)
 
         if  name_match is None and email_match is None:
             try:
                 log.info("adding user %s" % user_name )
-                u = model.User(user_name = user_name, **values)
+                
+                u = model.User(user_name = user_name, 
+                               display_name = values.get('display_name'),
+                               email_address = values.get('email_address'))
+                
                 model.DBSession.add(u)
                 if identifier:
                     g = self.login_group(identifier)
