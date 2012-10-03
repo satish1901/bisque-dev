@@ -958,10 +958,11 @@ def current_mex_id ():
     if hasattr(request,'identity'):
         mex_id = request.identity.get('bisque.mex_id', None)
     if mex_id is None:
-        mex_id = session.get('mex_id', None)
-        #if mex_id:
-        #    mex =  DBSession.query(ModuleExecution).get(mex_id)
-        #log.debug ('session mex_id %s mex %s' % (mex_id, mex))
+        try:
+            mex_id = session.get('mex_id', None)
+        except TypeError:
+            # ignore bad session object
+            pass
     if mex_id is None:
         log.info("using initialization mex")
         if hasattr(request, 'initial_mex_id'):
