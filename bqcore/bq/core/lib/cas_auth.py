@@ -143,6 +143,7 @@ class CASPlugin(object):
             log.debug ("login_path ticket=%s" % ticket)
             environ['repoze.who.plugins.cas'] = True
             if ticket is not None:
+                ticket = ticket.encode('utf-8')
                 identity['tokens'] =  "cas:%s" % ticket
                 identity['repoze.who.plugins.cas.ticket' ] = ticket
                 del environ['repoze.who.plugins.cas']
