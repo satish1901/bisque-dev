@@ -33,9 +33,9 @@ class AutoRegister (object):
         self.key_map = key_map
 
     def login_group (self, login_identifier):
-        g = model.DBSession.query(Group).filter_by(group_name = login_identifier).first()
+        g = model.DBSession.query(model.Group).filter_by(group_name = login_identifier).first()
         if g is None:
-            g = Group()
+            g = model.Group()
             g.group_name = login_identifier
             g.display_name = u'%s Group' % login_identifier 
             model.DBSession.add(g)
