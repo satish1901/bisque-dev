@@ -972,14 +972,14 @@ def current_mex_id ():
                 resource_user_type = "initialization").first()
             if mex is None:
                 log.error("No initialization (system) mex found: creating")
-                initial_mex = ModuleExecution()
-                initial_mex.mex = initial_mex
-                initial_mex.name = "initialization"
-                initial_mex.type = "initialization"
-                DBSession.add(initial_mex)
-                DBSession.flush()
-                DBSession.refresh(initial_mex)
-                mex = initial_mex
+                #initial_mex = ModuleExecution()
+                #initial_mex.mex = initial_mex
+                #initial_mex.name = "initialization"
+                #initial_mex.type = "initialization"
+                #DBSession.add(initial_mex)
+                #DBSession.flush()
+                #DBSession.refresh(initial_mex)
+                #mex = initial_mex
 
             mex_id = mex and mex.id
             if mex_id:
