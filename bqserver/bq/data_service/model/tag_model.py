@@ -954,29 +954,37 @@ mapper( Service, inherits=Taggable,
 
 
 def current_mex_id ():
-    mex_id = request.identity.get('bisque.mex_id', None)
-    log.debug ('IDENTITY mex %s' % mex_id)
+    mex_id = None
+    if hasattr(request,'identity'):
+        mex_id = request.identity.get('bisque.mex_id', None)
     if mex_id is None:
         mex_id = session.get('mex_id', None)
         #if mex_id:
         #    mex =  DBSession.query(ModuleExecution).get(mex_id)
         #log.debug ('session mex_id %s mex %s' % (mex_id, mex))
-        if mex_id is None:
-            log.info("using initialization mex")
-            if hasattr(request, 'initial_mex_id'):
-                mex_id = request.initial_mex_id
-            else:
-                mex = DBSession.query(ModuleExecution).filter_by(
-                    resource_user_type = "initialization").first()
-                if mex is None:
-                    log.error("No initialization (system) mex found")
-                mex_id = mex and mex.id
-                if mex_id:
-                    request.initial_mex_id = mex_id
+    if mex_id is None:
+        log.info("using initialization mex")
+        if hasattr(request, 'initial_mex_id'):
+            mex_id = request.initial_mex_id
+        else:
+            mex = DBSession.query(ModuleExecution).filter_by(
+                resource_user_type = "initialization").first()
+            if mex is None:
+                log.error("No initialization (system) mex found: creating")
+                initial_mex = ModuleExecution()
+                initial_mex.mex = initial_mex
+                initial_mex.name = "initialization"
+                initial_mex.type = "initialization"
+                DBSession.add(initial_mex)
+                DBSession.flush()
+                DBSession.refresh(initial_mex)
+                mex = initial_mex
 
-    #else:
-    #    mex = DBSession.merge (mex, load=False)
-    #request.identity['bisque.mex'] = mex
+            mex_id = mex and mex.id
+            if mex_id:
+                request.initial_mex_id = mex_id
+
+    log.debug ('IDENTITY mex %s' % mex_id)
 
     return mex_id
 
