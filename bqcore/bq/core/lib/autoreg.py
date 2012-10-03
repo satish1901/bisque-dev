@@ -58,9 +58,9 @@ class AutoRegister (object):
         try:
             log.info("adding user %s" % user_name )
                 
-                u = model.User(user_name = user_name, 
-                               display_name = values.get('display_name'),
-                               email_address = values.get('email_address'))
+            u = model.User(user_name = user_name, 
+                           display_name = values.get('display_name'),
+                           email_address = values.get('email_address'))
                 
             model.DBSession.add(u)
             if identifier:
