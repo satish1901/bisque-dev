@@ -678,10 +678,17 @@ class import_serviceController(ServiceController):
         # Note: This entrypoint should allow permission and tags to be inserted
         # in a similar way to tranfers.. maybe combining the two would be needed.
         log.info ('insert %s for %s' % (url, user))
+        
+        if 'tags' in kw:
+            try:
+                kw['tags'] = etree.fromstring(kw['tags'])
+            except Exception,e: # dima: possible exceptions here, ValueError, XMLSyntaxError
+                del kw['tags']
+        
         try:
             if user is not None and identity.current.user_name == 'admin':
                 identity.current.set_current_user( user )
-            resource =  blob_service.store_blob(filename=filename, url=url, permission=permission, **kw)
+            resource = blob_service.store_blob(filename=filename, url=url, permission=permission, **kw)
             return etree.tostring(resource)
         except Exception,e:
             log.exception("insert: %s %s" % (url, filename))

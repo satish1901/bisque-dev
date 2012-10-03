@@ -59,11 +59,9 @@ Ext.define('Bisque.Resource.Mex.Compact',
         
         var propsGrid=this.GetPropertyGrid({width:270}, tagArr);
         
-        if (this.ttip) {
-            if (tagArr.length>0)
-                this.ttip.add(propsGrid);
-    		this.ttip.setLoading(false);
-	    }
+        if (tagArr.length>0)
+            this.ttip.add(propsGrid);
+		this.ttip.setLoading(false);
 	},
 
     prefetch : function()
@@ -265,18 +263,12 @@ Ext.define('Bisque.Resource.Mex.Grid',
 {
     extend : 'Bisque.Resource.Mex',
     
-    getFields : function()
+    getFields : function(cb)
     {
-        var fields = this.callParent();
-        fields[1] = fields[1].toUpperCase();
-        var status = fields[2], color='#22F';
-        if (status=='FINISHED')
-            color = '#1C1'
-        else if (status=='FAILED')
-            color = '#E11'
-        
-        fields[2] = '<div style="color:'+color+'">'+fields[2]+'</div>';
-        return fields;
+        var status = this.resource.status, resource = this.resource;
+        var color = (status=='FINISHED') ? '#1C1' : (status=='FAILED') ? '#E11' : '#22F';
+       
+        return ['', resource.name || '', '<div style="color:'+color+'">'+Ext.String.capitalize(status)+'</div>' || '', resource.resource_type, resource.ts, this, {height:21}];
     }
 });
 
