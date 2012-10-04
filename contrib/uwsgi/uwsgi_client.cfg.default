@@ -83,3 +83,7 @@ post-buffering = 8192
 
 # headers and URL
 buffer-size = 8192
+
+#buffer size
+buffer-size = 8192
+
