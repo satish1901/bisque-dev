@@ -32,7 +32,7 @@ socket = $server
 processes = 1
 
 #number of threads per worker process
-threads = 1
+threads = 8
 
 #path to the uwsgi log file
 daemonize = $logfile
@@ -82,3 +82,7 @@ vacuum = true
 
 # post-buffering attempts
 post-buffering = 8192
+
+#buffer-size
+buffer-size = 8192
+

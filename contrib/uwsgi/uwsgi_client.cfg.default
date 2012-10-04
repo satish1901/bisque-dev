@@ -80,3 +80,7 @@ vacuum = true
 
 # post-buffering attempts
 post-buffering = 8192
+
+#buffer-size
+buffer-size = 8192
+
