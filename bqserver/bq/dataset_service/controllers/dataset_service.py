@@ -12,7 +12,7 @@ from bq.dataset_service import model
 from bq import data_service
 from bq import module_service
 
-
+from bq.data_service import RESOURCE_READ, RESOURCE_EDIT
 log = logging.getLogger('bq.dataset')
 
 
@@ -117,7 +117,7 @@ class TagEditOp (DatasetOp):
 
 class ShareOp (DatasetOp):
     'Apply sharing options to  each member'
-    def action(self, member, action, auth, **kw):
+    def action(self, member, auth, **kw):
         data_service.auth_resource(member, data_service.RESOURCE_EDIT, newauth=auth, notify=False)
         return None
 
