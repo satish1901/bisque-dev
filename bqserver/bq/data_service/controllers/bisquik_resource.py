@@ -57,15 +57,15 @@ import sqlalchemy
 
 import  pylons 
 from pylons.controllers.util import abort
+from paste.deploy.converters import asbool
 from sqlalchemy import desc
 from sqlalchemy.orm import Query
+
 import tg
 from tg import controllers, redirect, expose, response, request
 from tg import require
 from tg.controllers import CUSTOM_CONTENT_TYPE
-
 from lxml import etree
-
 from repoze.what.predicates import not_anonymous
 
 
@@ -74,15 +74,15 @@ from bq.core.model import metadata, DBSession
 from bq.data_service.model  import Taggable, Image, dbtype_from_tag, dbtype_from_name, all_resources
 from bq.util.bisquik2db import bisquik2db, db2tree
 
-from resource import Resource
-from resource_query import resource_query, resource_load, resource_count, resource_auth, resource_permission, resource_delete
-from resource_query import RESOURCE_READ, RESOURCE_EDIT
+from .resource import Resource
+from .resource_query import resource_query, resource_load, resource_count, resource_auth, resource_permission, resource_delete
+from .resource_query import RESOURCE_READ, RESOURCE_EDIT
+from .formats import find_formatter 
 
 log = logging.getLogger("bq.data_service.bisquik_resource")
 
-from formats import find_formatter 
-
 class ResourceAuth(Resource):
+    'Handle resource authorization records'
 
     def __init__(self, baseuri):
         self.baseuri = baseuri
@@ -95,6 +95,7 @@ class ResourceAuth(Resource):
         return int
     
     def dir(self, **kw):
+        'Read the list of authorization records associated with the parent resource'
         format = kw.pop('format', None)
         view = kw.pop('view', None)
         resource = self.force_dbload(request.bisque.parent)
@@ -113,13 +114,15 @@ class ResourceAuth(Resource):
     def modify(self, factory, xml, **kw):
         return self.new (factory, xml, **kw)
     
-    def new(self, factory,  xml, **kw):
+    def new(self, factory,  xml, notify=True, **kw):
+        'Create/Modify resource auth records'
         format = None
         resource = self.force_dbload(request.bisque.parent)
         log.debug ("AUTH %s with %s" % (resource, xml))
         resource = self.force_dbload(resource)
         #DBSession.autoflush = False
-        resource = resource_auth (resource, parent = None, action=RESOURCE_EDIT, newauth=etree.XML(xml))
+        resource = resource_auth (resource, parent = None, action=RESOURCE_EDIT, newauth=etree.XML(xml), 
+                                  notify=asbool(notify))
         response = etree.Element('resource')
         tree = db2tree (resource,  parent = response, baseuri=self.baseuri)
         formatter, content_type  = find_formatter (format)
