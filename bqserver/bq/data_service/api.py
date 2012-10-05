@@ -59,6 +59,8 @@ import logging
 from bq.util import http 
 from bq.core.service import service_registry
 
+RESOURCE_READ=0
+RESOURCE_EDIT=1
 
 log = logging.getLogger('bq.data_service')
 

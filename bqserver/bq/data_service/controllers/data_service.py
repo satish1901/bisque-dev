@@ -71,7 +71,7 @@ from bq.core import identity
 from bq.util.paths import data_path
 
 from .bisquik_resource import BisquikResource
-from .resource_query import resource_query, resource_count, resource_load, resource_delete, resource_types 
+from .resource_query import resource_query, resource_count, resource_load, resource_delete, resource_types, resource_auth
 from .resource_query import RESOURCE_READ, RESOURCE_EDIT
 from .resource import HierarchicalCache
 from .formats import find_formatter
@@ -227,7 +227,7 @@ class DataServerController(ServiceController):
         elif isinstance (resource, etree._Element):
             uri = resource.get ('uri')
         resource = load_uri (uri)
-        resource_auth(resource, action=action, newauth=auth, notify=notify)
+        resource_auth(resource, parent=None, action=action, newauth=auth, notify=notify)
         
 
 
