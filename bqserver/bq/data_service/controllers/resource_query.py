@@ -80,7 +80,7 @@ from bq.util.paths import data_path
 
 from bq  import image_service
 from bq.client_service.controllers import notify_service
-from resource import Resource
+from .resource import Resource
 
 log = logging.getLogger('bq.data_service.query')
 
@@ -732,7 +732,7 @@ def resource_permission(resource, action = RESOURCE_READ, user_id=None, with_pub
 
 
 
-def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth=None):
+def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth=None,notify=True):
     """View or edit authoization records associated the resource"""
 
     q = session.query (TaggableAcl).filter_by (taggable_id = resource.id)
@@ -830,14 +830,15 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
 
                     user = session.query(BQUser).filter_by(resource_name = name).first()
 
-                    invite = string.Template(textwrap.dedent(invite_msg)).substitute(
-                        common_email,
-                        name = name,
-                        email = email)
+                    if notify:
+                        invite = string.Template(textwrap.dedent(invite_msg)).substitute(
+                            common_email,
+                            name = name,
+                            email = email)
                     
                     log.debug("AUTH: new user %s" % user)
                     
-                elif user not in previous_shares:
+                elif user not in previous_shares and notify:
                     
                     invite = string.Template(textwrap.dedent(share_msg)).substitute(
                                         common_email,
