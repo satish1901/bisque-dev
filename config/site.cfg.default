@@ -122,12 +122,12 @@ bisque.engine =  http://localhost:8080
 #bisque.google_analytics="UA-3923721-1"
 #
 # Login identification  systems
-# note: you must also edit who.ini to enable these 
+# NOTE: you must also edit config/who.ini to enable these 
 #bisque.login.identifiers = cas,google,local
 bisque.login.identifiers = local
 bisque.login.local = /auth_service/login
 #bisque.login.cas = /auth_service/login_handler?login_type=cas
-#bisque.login.google = /auth_service/openid_login_handler
+#bisque.login.google = /auth_service/openid_login_handler?openid_provider=https://www.google.com/accounts/o8/id
 #bisque.password = hashed
 
 # Bisque Cluster Runtime  

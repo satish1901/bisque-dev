@@ -87,9 +87,10 @@ def config_path(*names):
 def bisque_path(*names):
     return to_sys_path(os.path.join(BQDIR, *names))
 
+QUOTED_CHARS="#"
 def quoted(value):
     'quote a value if has special chars'
-    return '\"%s\"' % value if any(c in value for c in "#=" ) else value
+    return '\"%s\"' % value if any(c in value for c in QUOTED_CHARS ) else value
 
 def which(command):
     """Emulate the Shell command which returning the path of the command

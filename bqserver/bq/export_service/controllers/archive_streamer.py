@@ -40,6 +40,8 @@ class ArchiveStreamer():
         log.debug("ArchiveStreamer: Begin stream %s" % request.url)
         
         flist = self.fileInfoList(self.fileList, self.datasetList, self.urlList)
+        flist = self.writeSummary(flist, self.archiver)
+        
         for file in flist:
             self.archiver.beginFile(file)
             while not self.archiver.EOF():
@@ -54,11 +56,37 @@ class ArchiveStreamer():
     # Utility functions 
     # ------------------------------------------------------------------------------------------
     
+    # Creates an export summary file
+    def writeSummary(self, flist, archiver):
+        summary = StringIO()
+        
+        bisqueText  =   ("- Exported by ---------------------\n"
+                         "   ___  ____________  __  ______   \n"
+                         "  / _ )/  _/ __/ __ \/ / / / __/   \n"
+                         " / _  |/ /_\ \/ /_/ / /_/ / _/     \n"  
+                         "/____/___/___/\___\_\____/___/     \n"
+                         "                                   \n"  
+                         "-----------------------------------\n")
+
+        summary.write(bisqueText + '\n');
+        
+        for file in flist:
+            summary.write(archiver.destinationPath(file) + '\n')
+        
+        summary.flush();
+        flist.append(dict(  name        =   'Summary.txt',
+                            content     =   summary.getvalue(),
+                            dataset     =   '',
+                            extension   =   'URL'))
+        
+        return flist
+
+    
     # Returns a list of fileInfo objects based on files' URIs
     def fileInfoList(self, fileList, datasetList, urlList):
         
         def fileInfo(dataset, uri, index=0):
-            xml     =   data_service.get_resource(uri, view='deep')
+            xml     =   data_service.get_resource(uri, view='deep,clean')
             name    =   xml.get('name') 
 
             # try to figure out a name for the resource
@@ -101,6 +129,7 @@ class ArchiveStreamer():
                 return None
             items = (header.get('content-disposition') or header.get('Content-Disposition') or '').split(';')
             fileName = str(index) + '.'
+            
             log.debug('Respose headers: %s'%header)
             log.debug('items: %s'%items)
             

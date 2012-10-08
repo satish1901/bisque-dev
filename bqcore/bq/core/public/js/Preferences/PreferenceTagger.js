@@ -2,10 +2,13 @@ Ext.define('Bisque.PreferenceTagger',
 {
     extend : 'Bisque.ResourceTagger',
     
+    autoSave : false,
+    
     constructor : function(config)
     {
         config = config || {};
         config.viewMode = 'PreferenceTagger';
+        config.autoSave = false;
         
         this.callParent([config]);
     },

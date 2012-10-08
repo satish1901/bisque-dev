@@ -45,33 +45,31 @@ class AutoRegister (object):
     def register_user( self, user_name, values = {} ):
         """Attempt to register the user locally"""
         name_match = model.User.by_user_name( user_name )
+        if name_match is not None:
+            log.info("found existing user: name %s by user %s " % (user_name, name_match))
+            return user_name
+
         email_match= values.get('email_address') and model.User.by_email_address(values['email_address'])
-        identifier = values.pop('identifier', None)
-
-        if  name_match is None and email_match is None:
-            try:
-                log.info("adding user %s" % user_name )
-                
-                u = model.User(user_name = user_name, 
-                               display_name = values.get('display_name'),
-                               email_address = values.get('email_address'))
-                
-                model.DBSession.add(u)
-                if identifier:
-                    g = self.login_group(identifier)
-                    g.users.append(u)
-                transaction.commit()
-                return user_name
-            except (SQLAlchemyError, DatabaseError), e:
-                log.exception('problem with autoreg')
-                return None
-        else:
+        if email_match is not None:
             log.info("found existing user: name %s by email %s " % (user_name, email_match))
+            return user_name
 
-        if email_match:
-            return email_match.user_name
-        if name_match:
-            return name_match.user_name
+        identifier = values.pop('identifier', None)
+        try:
+            log.info("adding user %s" % user_name )
+                
+            u = model.User(user_name = user_name, 
+                           display_name = values.get('display_name'),
+                           email_address = values.get('email_address'))
+                
+            model.DBSession.add(u)
+            if identifier:
+                g = self.login_group(identifier)
+                g.users.append(u)
+            transaction.commit()
+            return user_name
+        except (SQLAlchemyError, DatabaseError), e:
+            log.exception('problem with autoreg')
         return None
 
     def add_metadata( self, environ, identity ):

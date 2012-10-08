@@ -59,6 +59,8 @@ import logging
 from bq.util import http 
 from bq.core.service import service_registry
 
+RESOURCE_READ=0
+RESOURCE_EDIT=1
 
 log = logging.getLogger('bq.data_service')
 
@@ -108,6 +110,13 @@ def del_resource(resource, server=None, **kw):
     '''
     if server is None: server = service_registry.find_service ('data_service')
     return server.del_resource(resource, **kw)
+
+def auth_resource(resource, server=None, **kw):
+    ''' Create a new resource
+    '''
+    if server is None: server = service_registry.find_service ('data_service')
+    return server.auth_resource(resource, **kw)
+
 
 def load(resource_url, **kw):
     '''Return XML resource document

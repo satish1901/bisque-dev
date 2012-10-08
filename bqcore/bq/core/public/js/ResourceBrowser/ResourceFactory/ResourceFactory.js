@@ -184,8 +184,10 @@ Ext.define('Bisque.Resource',
     // getFields : returns an array of data used in the grid view
     getFields : function()
     {
-        var resource = this.resource;
-        return ['', resource.name || '', resource.value || '', resource.resource_type, resource.ts, this, {height:21}]
+        var resource = this.resource, record = BQApp.userList[this.resource.owner];
+        var name = record ? record.find_tags('display_name').value : ''
+       
+        return ['', resource.name || '', name || '', resource.resource_type, resource.ts, this, {height:21}];
     },
     
     afterRenderFn : function()
@@ -285,8 +287,78 @@ Ext.define('Bisque.Resource.Compact', {
 });
 
 Ext.define('Bisque.Resource.Card', {
-    extend:'Bisque.Resource'
+    extend:'Bisque.Resource',
+    
+    constructor : function()
+    {
+        Ext.apply(this,
+        {
+            layout : 'fit'
+        });
+        
+        this.callParent(arguments);
+    },
+    
+    prefetch : function(layoutMgr)
+    {
+        this.callParent(arguments);
+
+        if (!this.getData('fetched'))
+        {
+            this.setData('fetched', -1);    //Loading
+            BQFactory.load(this.resource.uri + '/tag', Ext.bind(this.loadResource, this));
+        }
+    },
+
+    loadResource : function(data)
+    {
+        this.resource.tags = data.tags;
+        var tag, tagProp, tagArr=[], tags = this.getSummaryTags();
+        
+        // Show preferred tags first
+        for (var i=0;i<this.resource.tags.length;i++)
+        {
+            tag = this.resource.tags[i];
+            tagProp = new Ext.grid.property.Property({
+                                                        name: tag.name,
+                                                        value: tag.value
+                                                    });
+            (tags[tag.name])?tagArr.unshift(tagProp):tagArr.push(tagProp);
+        }
+        
+        this.setData('tags', tagArr.slice(0, 7));
+        this.setData('fetched', 1); //Loaded
+
+        var renderedRef=this.getData('renderedRef')
+        if (renderedRef && !renderedRef.isDestroyed)
+            renderedRef.updateContainer();
+    },
+    
+    afterRenderFn : function()
+    {
+        this.setData('renderedRef', this);
+
+        if (this.getData('fetched')==1 && !this.isDestroyed)
+            this.updateContainer();
+    },
+    
+    getSummaryTags : function()
+    {
+        return {};
+    },
+
+    updateContainer : function()
+    {
+        var propsGrid=this.GetPropertyGrid({/*autoHeight:true}*/}, this.getData('tags'));
+        propsGrid.determineScrollbars=Ext.emptyFn;
+        
+        this.add([propsGrid]);
+        this.setLoading(false);
+    },
+    
+    onMouseMove : Ext.emptyFn,
 });
+
 
 Ext.define('Bisque.Resource.PStrip', {
     extend:'Bisque.Resource'
@@ -297,7 +369,58 @@ Ext.define('Bisque.Resource.PStripBig', {
 });
 
 Ext.define('Bisque.Resource.Full', {
-    extend:'Bisque.Resource'
+    extend:'Bisque.Resource',
+
+    constructor : function()
+    {
+        Ext.apply(this,
+        {
+            layout : 'fit'
+        });
+        
+        this.callParent(arguments);
+    },
+    
+    afterRenderFn : function()
+    {
+        this.setData('renderedRef', this);
+
+        if (this.getData('fetched')==1 && !this.isDestroyed)
+            this.updateContainer();
+    },
+    
+    prefetch : function(layoutMgr)
+    {
+        this.callParent(arguments);
+
+        if (!this.getData('fetched'))
+        {
+            this.setData('fetched', -1);    //Loading
+            BQFactory.load(this.resource.uri + '/tag?view=deep', Ext.bind(this.loadResource, this));
+        }
+    },
+
+    loadResource : function(data)
+    {
+        this.setData('tags', data.tags);
+        this.setData('fetched', 1); //Loaded
+
+        var renderedRef=this.getData('renderedRef')
+        if (renderedRef && !renderedRef.isDestroyed)
+            renderedRef.updateContainer();
+    },
+    
+    updateContainer : function()
+    {
+        var propsGrid=this.GetPropertyGrid({/*autoHeight:true}*/}, this.getData('tags'));
+        propsGrid.determineScrollbars=Ext.emptyFn;
+        
+        this.add([propsGrid]);
+        this.setLoading(false);
+    },
+
+    onMouseMove : Ext.emptyFn,
+
 });
 
 Ext.define('Bisque.Resource.List', {
