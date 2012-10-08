@@ -433,6 +433,25 @@ Ext.define('Bisque.ResourceBrowser.Browser',
         this.addEvents('Select');
         this.changeLayoutThrottled = Ext.Function.createThrottled(this.ChangeLayout, 400, this);
         this.centerPanel.on('resize', Ext.bind(this.ChangeLayout, this, [-1]));
+        
+        this.centerPanel.getEl().on('mousewheel', function(e)
+        {
+            if (this.layoutMgr.key!=Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Full)
+            {
+                if(e.getWheelDelta()>0)
+                {
+                    var btnRight = this.commandBar.getComponent("btnRight");
+                    if(!btnRight.disabled)
+                        btnRight.handler.call(btnRight.scope, btnRight);
+                }
+                else
+                {
+                    var btnLeft = this.commandBar.getComponent("btnLeft");
+                    if(!btnLeft.disabled)
+                        btnLeft.handler.call(btnLeft.scope, btnLeft);
+                }
+            }
+        }, this);
 
         Ext.create('Ext.util.KeyMap',
         {
