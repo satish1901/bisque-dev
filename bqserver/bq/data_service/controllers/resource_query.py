@@ -829,20 +829,15 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
                     #              display_name=name)
 
                     user = session.query(BQUser).filter_by(resource_name = name).first()
-
-                    if notify:
-                        invite = string.Template(textwrap.dedent(invite_msg)).substitute(
-                            common_email,
-                            name = name,
-                            email = email)
-                    
+                    invite = string.Template(textwrap.dedent(invite_msg)).substitute(
+                        common_email,
+                        name = name,
+                        email = email)
                     log.debug("AUTH: new user %s" % user)
-                    
-                elif user not in previous_shares and notify:
-                    
+                elif user not in previous_shares:
                     invite = string.Template(textwrap.dedent(share_msg)).substitute(
-                                        common_email,
-                                        email = email)
+                        common_email,
+                        email = email)
                 else:
                     previous_shares.remove(user)
 
@@ -870,7 +865,7 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
                 #                           action)
 
                 try:
-                    if invite is not None:
+                    if notify and invite is not None:
                         notify_service.send_mail (owner_email,
                                                   email,
                                                   "Invitation to view",

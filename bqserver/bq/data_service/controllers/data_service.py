@@ -227,7 +227,10 @@ class DataServerController(ServiceController):
         elif isinstance (resource, etree._Element):
             uri = resource.get ('uri')
         resource = load_uri (uri)
-        resource_auth(resource, parent=None, action=action, newauth=auth, notify=notify)
+        auth = resource_auth(resource, parent=None, action=action, newauth=auth, notify=notify)
+        response = etree.Element ('resource')
+        db2tree(auth, parent=response, view=None, baseuri=self.url)
+        return response
         
 
 
