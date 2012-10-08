@@ -606,6 +606,7 @@ class BQUser(Taggable):
         dn.value = tg_user.display_name or tg_user.user_name
         dn.owner = self
         self.owner = self
+        self.permission = 'published'
         
     @classmethod
     def new_user (cls, email, password, create_tg = False):
@@ -886,6 +887,7 @@ def bquser_callback (tg_user, operation, **kw):
             u.value = tg_user.email_address
             dn = u.findtag('display_name', create=True)
             dn.value = tg_user.display_name
+            dn.permission = 'published'
             log.info ('updated BQUSER %s' % u.name)
         return
 
