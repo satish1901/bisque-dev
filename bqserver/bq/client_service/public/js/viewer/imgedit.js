@@ -212,9 +212,20 @@ ImgEdit.prototype.dochange = function () {
 ImgEdit.prototype.save_edit = function (mode) {
 
     this.endEdit();
-    //alert('saving ' + this.gobjects.length + ' gobjects');	
+    //alert('saving ' + this.gobjects.length + ' gobjects');
+    
+    function findDirty(gobjects)
+    {
+        var dirty = [];
+        
+        for (var i=0; i<gobjects.length; i++)
+            if (gobjects[i].dirty)
+                dirty.push(gobjects[i]);
+        
+        return dirty;
+    }
 
-    this.viewer.image.gobjects = this.gobjects;
+    this.viewer.image.gobjects = this.viewer.image.gobjects.concat(findDirty(this.gobjects));
     this.viewer.image.save_gobjects();
 }
 
