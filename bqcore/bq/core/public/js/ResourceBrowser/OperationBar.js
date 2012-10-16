@@ -143,8 +143,10 @@ Ext.define('Bisque.ResourceBrowser.OperationBar',
                 (list>1) ? tempDS.tmp_shareMembers() : this.resourceCt.shareResource();
                 break;
             case 'Private':
+                this.resourceCt.changePrivacy('published', Ext.bind(this.success, this));
+                break;
             case 'Published':
-                this.resourceCt.changePrivacy(btn.text.toLowerCase(), Ext.bind(this.success, this));
+                this.resourceCt.changePrivacy('private', Ext.bind(this.success, this));
                 break;
             case 'Set all published':
                 tempDS.tmp_changePermission('published', Ext.bind(this.success, this));
