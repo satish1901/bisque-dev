@@ -14,6 +14,16 @@
     Bisque<py:if test="title">: ${title}</py:if>
     </title>  
     
+    <!-- Bisque styles -->
+    <link rel="stylesheet" type="text/css" href="${tg.url('/css/bisquik_extjs_fix.css')}" />
+    <link rel="stylesheet" type="text/css" href="${tg.url('/css/bq.css')}" />
+    <link rel="stylesheet" type="text/css" href="${tg.url('/css/bq_ui_toolbar.css')}" /> 
+    <link rel="stylesheet" type="text/css" href="${tg.url('/js/bq_ui_misc.css')}" />
+    <link rel="stylesheet" type="text/css" href="${tg.url('/js/ResourceBrowser/ResourceBrowser.css')}" />
+    <link rel="stylesheet" type="text/css" href="${tg.url('/js/ResourceTagger/Tagger.css')}" />
+    <link rel="stylesheet" type="text/css" href="${tg.url('/js/DatasetBrowser/DatasetBrowser.css')}" />
+    <link rel="stylesheet" type="text/css" href="${tg.url('/export_service/public/css/BQ.Export.css')}" />
+
     <!-- ExtJS -->
     <link rel="stylesheet" type="text/css" href="${tg.url('/extjs/resources/css/ext-all.css')}" />
     <!--
@@ -22,83 +32,69 @@
     
     <!--<script type="text/javascript" src="${tg.url('/extjs/bootstrap.js')}"></script>-->
     <script type="text/javascript" src="${tg.url('/extjs/ext-all.js')}"></script>
+    <py:choose>
+    <py:when test="tg.config.get('bisque.js_environment', None) == 'production'">
+    <script type="text/javascript" src="${tg.url('/js/bisque.min.js')}"></script>
+    </py:when>
     
-    <!-- Bisque styles -->
-    <link rel="stylesheet" type="text/css" href="${tg.url('/css/bisquik_extjs_fix.css')}" />
-    <link rel="stylesheet" type="text/css" href="${tg.url('/css/bq.css')}" />
-    <link rel="stylesheet" type="text/css" href="${tg.url('/css/bq_ui_toolbar.css')}" />  
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'production'" src="${tg.url('/js/bisque.min.js')}"></script>
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/bq_ui_extjs_fix.js')}"></script>  
+    <py:otherwise>
+    <script type="text/javascript" src="${tg.url('/js/bq_ui_extjs_fix.js')}"></script>  
     
     <!-- Bisque JsApi - this needs cleaning and updating -->  
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/utils.js')}" ></script>  
-    
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/bq_api.js')}" ></script>  
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/bq_ui_application.js')}" ></script>  
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/bq_ui_toolbar.js')}" ></script>  
-    
-    <link rel="stylesheet" type="text/css" href="${tg.url('/js/bq_ui_misc.css')}" />
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/bq_ui_misc.js')}"></script>  
-    
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/date.js')}"></script> 
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/encoder.js')}"></script> 
- 
+    <script type="text/javascript" src="${tg.url('/js/utils.js')}" ></script>  
+    <script type="text/javascript" src="${tg.url('/js/bq_api.js')}" ></script>  
+    <script type="text/javascript" src="${tg.url('/js/bq_ui_application.js')}" ></script>  
+    <script type="text/javascript" src="${tg.url('/js/bq_ui_toolbar.js')}" ></script>  
+    <script type="text/javascript" src="${tg.url('/js/bq_ui_misc.js')}"></script>  
+    <script type="text/javascript" src="${tg.url('/js/date.js')}"></script> 
+    <script type="text/javascript" src="${tg.url('/js/encoder.js')}"></script> 
  
     <!-- ResourceBrowser code -->
-    <link rel="stylesheet" href="${tg.url('/js/ResourceBrowser/ResourceBrowser.css')}" type="text/css"/>
-
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/ResourceBrowser/Browser.js')}"></script>
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/ResourceBrowser/LayoutFactory.js')}"></script>
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/ResourceBrowser/Organizer.js')}"></script>
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/ResourceBrowser/ResourceQueue.js')}"></script>
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/ResourceBrowser/DatasetManager.js')}"></script>
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/ResourceBrowser/CommandBar.js')}"></script>
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/ResourceBrowser/viewStateManager.js')}"></script>
-    
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/ResourceBrowser/ResourceFactory/ResourceFactory.js')}"></script>
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/ResourceBrowser/ResourceFactory/ResourceImage.js')}"></script>
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/ResourceBrowser/ResourceFactory/ResourceMex.js')}"></script>
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/ResourceBrowser/ResourceFactory/ResourceModule.js')}"></script>
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/ResourceBrowser/ResourceFactory/ResourceDataset.js')}"></script>
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/ResourceBrowser/ResourceFactory/ResourceFile.js')}"></script>
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/ResourceBrowser/ResourceFactory/ResourceUser.js')}"></script>
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/ResourceBrowser/ResourceFactory/ResourceTemplate.js')}"></script>
-    
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/ResourceBrowser/Misc/MessageBus.js')}"></script>
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/ResourceBrowser/Misc/GestureManager.js')}"></script>
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/ResourceBrowser/Misc/Slider.js')}"></script>
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/ResourceBrowser/Misc/DataTip.js')}"></script>
-    
-    <!-- ResourceTagger files -->
-    <link rel="stylesheet" href="${tg.url('/js/ResourceTagger/Tagger.css')}" type="text/css"/>
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/Browser.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/LayoutFactory.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/Organizer.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/ResourceQueue.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/DatasetManager.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/CommandBar.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/viewStateManager.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/ResourceFactory/ResourceFactory.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/ResourceFactory/ResourceImage.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/ResourceFactory/ResourceMex.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/ResourceFactory/ResourceModule.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/ResourceFactory/ResourceDataset.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/ResourceFactory/ResourceFile.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/ResourceFactory/ResourceUser.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/ResourceFactory/ResourceTemplate.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/Misc/MessageBus.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/Misc/GestureManager.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/Misc/Slider.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/Misc/DataTip.js')}"></script>
 
     <!-- Share dialog files -->
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/Share/BQ.ShareDialog.js')}"></script>
-    
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/ResourceTagger/ComboBox.js')}"></script>  
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/ResourceTagger/RowEditing.js')}"></script>    
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/ResourceTagger/Tagger.js')}"></script>
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/ResourceTagger/TaggerOffline.js')}"></script> 
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/ResourceTagger/ResourceRenderers/BaseRenderer.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/Share/BQ.ShareDialog.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/ResourceTagger/ComboBox.js')}"></script>  
+    <script type="text/javascript" src="${tg.url('/js/ResourceTagger/RowEditing.js')}"></script>    
+    <script type="text/javascript" src="${tg.url('/js/ResourceTagger/Tagger.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/ResourceTagger/TaggerOffline.js')}"></script> 
+    <script type="text/javascript" src="${tg.url('/js/ResourceTagger/ResourceRenderers/BaseRenderer.js')}"></script>
 
     <!-- Preferences -->
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/Preferences/BQ.Preferences.js')}" ></script>
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/Preferences/PreferenceViewer.js')}" ></script>
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/Preferences/PreferenceTagger.js')}" ></script>
+    <script type="text/javascript" src="${tg.url('/js/Preferences/BQ.Preferences.js')}" ></script>
+    <script type="text/javascript" src="${tg.url('/js/Preferences/PreferenceViewer.js')}" ></script>
+    <script type="text/javascript" src="${tg.url('/js/Preferences/PreferenceTagger.js')}" ></script>
  
     <!-- DatasetBrowser -->
-    <link rel="stylesheet" href="${tg.url('/js/DatasetBrowser/DatasetBrowser.css')}" type="text/css"/>
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/DatasetBrowser/DatasetBrowser.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/DatasetBrowser/DatasetBrowser.js')}"></script>
 
     <!-- TemplateManager -->
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/TemplateManager/TemplateTagger.js')}"></script>
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/TemplateManager/TemplateManager.js')}"></script>
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/js/TemplateManager/TagRenderer.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/TemplateManager/TemplateTagger.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/TemplateManager/TemplateManager.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/TemplateManager/TagRenderer.js')}"></script>
 
     <!-- Exporter -->
-    <link rel="stylesheet" type="text/css" href="${tg.url('/export_service/public/css/BQ.Export.css')}" />
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" src="${tg.url('/export_service/public/js/BQ.Export.js')}"></script>
-
+    <script type="text/javascript" src="${tg.url('/export_service/public/js/BQ.Export.js')}"></script>
+    </py:otherwise>
+    </py:choose>
     <!-- Configuration variables   -->  
     <script type="text/javascript" > 
         // update the configuration in your template

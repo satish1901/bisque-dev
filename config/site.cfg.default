@@ -64,8 +64,7 @@ bisque.organization = ORG
 bisque.title = BioImage Repository
 bisque.admin_email = admin@nowhere.com
 bisque.welcome_message = Welcome to the Bisque database
-#set environment to development for test/debug
-bisque.environment = production
+#bisque.js_environment = production
 #bisque.background_query = welcome_background:
 
 # tags used by the front page for site contents overview
