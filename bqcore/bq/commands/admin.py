@@ -5,6 +5,8 @@ import re
 import pkg_resources
 import bq
 import optparse
+import shutil
+import errno
 from bq.release import __VERSION__
 
 def load_config(filename):
@@ -165,14 +167,14 @@ class deploy(object):
         self.options = options
 
     def run(self):
-        if 'public' in self.args:
-            self.deploy_public()
+        self.deploy_public()
 
     def deploy_public(self):
         ''
         import pkg_resources
-        if not os.path.exists('public'):
-            os.makedirs ('public')
+        if os.path.exists('public'):
+            shutil.rmtree('public')
+        os.makedirs('public')
         for x in pkg_resources.iter_entry_points ("bisque.services"):
             try:
                 #print ('found static service: ' + str(x))
@@ -199,8 +201,8 @@ class deploy(object):
         try:
             subprocess.call(["grunt"])
         except OSError as e:
-            if e.rrrno == os.errno.ENONENT:
-                print "grunt not found.\n install it by typing 'npm install -g grunt'"
+            if e.rrrno == errno.ENOENT:
+                print "Javascript not packaged and minified.\ngrunt not found.\n install it by typing 'npm install -g grunt'"
             else:
                 print "Unknown error while trying to run grunt. Is it installed correctly?\n install it by typing 'npm install -g grunt'"
 
