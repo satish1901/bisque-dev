@@ -95,13 +95,17 @@ Ext.define('BQ.dataset.Panel', {
         if (this.selected_operation && this.dataset) {
             this.btn_modify.setDisabled(true);
             this.setLoading('Running...');
+
+            //this.selected_operation.execute(this.dataset.uri, callback(this, 'onDone'), callback(this, 'onError'));            
+
             var d = this.selected_operation.getArguments();
             var operation = this.selected_operation.getName();
             d.duri = this.dataset.uri;
             var l = [];
             for (var i in d)
                 l.push( i+'='+d[i] );
-            var uri = this.service_url + operation + '?' + l.join('&');            
+            var uri = this.service_url + operation + '?' + l.join('&');
+            
             BQFactory.request ({uri : uri, 
                                 cb : callback(this, 'onDone'),
                                 errorcb: callback(this, 'onError'),

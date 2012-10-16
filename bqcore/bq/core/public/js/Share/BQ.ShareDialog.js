@@ -45,7 +45,7 @@ Ext.define('BQ.ShareDialog', {
 
         Ext.apply(this,
         {
-            title       :   'Sharing settings - ' + config.resource.name,
+            title       :   'Sharing settings - ' + (config.resource ? config.resource.name : ''),
             modal       :   true,
             height      :   height,
             bodyStyle   :   'border:0px',
@@ -118,6 +118,11 @@ Ext.define('BQ.ShareDialog', {
 
         if (modified || this.userModified)
         {
+            var notify = this.grid.getDockedItems('toolbar[dock="bottom"]')[0].getComponent('cbNotify').getValue();
+            
+            if (!notify)
+                this.authRecord.uri = Ext.urlAppend(this.authRecord.uri, 'notify=false'); 
+            
             this.authRecord.save_();
             BQ.ui.notification('Sharing settings saved!', 2500);
         }
@@ -227,7 +232,7 @@ Ext.define('BQ.ShareDialog', {
             listeners       :   {
                                     scope           :   this,
                                     'Select'        :   this.userSelected,
-                                    'browserLoad'   :   Ext.Function.pass(this.reloadPermissions, [undefined], this) 
+                                    'browserLoad'   :   Ext.Function.pass(this.reloadPermissions, [undefined], this)
                                 }
         });
         
@@ -270,7 +275,7 @@ Ext.define('BQ.ShareDialog', {
                                                     {
                                                         text    :   'Clear',
                                                         handler :   this.clearForm
-                                                    }                                                    ]
+                                                    }]
                                 }
         });
         
@@ -278,79 +283,95 @@ Ext.define('BQ.ShareDialog', {
         
         this.grid = Ext.create('Ext.grid.Panel',
         {
-            store   :   this.getStore(),
-            frame   :   true,
-            border  :   false,
-            
-            columns :   {
-                            defaults : {
-                                minWidth : 20
-                            },
-                            items : [
-                            {
-                                text: 'Name',
-                                flex: 3,
-                                sortable: false,
-                                dataIndex: 'name',
-                            },
-                            {
-                                text: 'Email address',
-                                flex: 4,
-                                sortable: false,
-                                align: 'center',
-                                dataIndex: 'value'
-                            },
-                            {
-                                text    :   'Permission',
-                                defaults:   {
-                                                align       :   'center',
-                                                sortable    :   false,
-                                                minWidth    :   25,
-                                                maxWidth    :   60,
-                                            },
-                                columns :   [{
-                                                xtype       :   'checkcolumn',
-                                                text        :   'View',
-                                                dataIndex   :   'view',
-                                            },
-                                            {
-                                                xtype       :   'checkcolumn',
-                                                text        :   'Edit',
-                                                dataIndex   :   'edit',
-                                            }],
-                                flex: 1,
-                                sortable: false,
-                                align: 'center',
-                            }, 
-                            {
-                                xtype: 'actioncolumn',
-                                itemId: 'colAction',
-                                maxWidth: 60,
-                                menuDisabled : true,
-                                sortable : false,
-                                align: 'center',
-                                items: [
+            store       :   this.getStore(),
+            frame       :   true,
+            border      :   false,
+            dockedItems :   [
                                 {
-                                    icon : bq.url('../export_service/public/images/delete.png'),
-                                    align : 'center',
-                                    tooltip: 'Remove',
-                                    handler: function(grid, rowIndex, colIndex)
+                                    xtype   :   'toolbar',
+                                    dock    :   'bottom',
+                                    layout  :   {
+                                                    type    :   'hbox',
+                                                    pack    :   'center'
+                                                },
+                                    items   :   [{
+                                                    xtype           :   'checkbox',
+                                                    itemId          :   'cbNotify',
+                                                    boxLabel        :   'Notify users.',
+                                                    checked         :   true,
+                                                    handler         :   Ext.emptyFn,   
+                                                }]
+                                }
+                            ],
+            columns     :   {
+                                defaults : {
+                                    minWidth : 20
+                                },
+                                items : [
+                                {
+                                    text: 'Name',
+                                    flex: 3,
+                                    sortable: false,
+                                    dataIndex: 'name',
+                                },
+                                {
+                                    text: 'Email address',
+                                    flex: 4,
+                                    sortable: false,
+                                    align: 'center',
+                                    dataIndex: 'value'
+                                },
+                                {
+                                    text    :   'Permission',
+                                    defaults:   {
+                                                    align       :   'center',
+                                                    sortable    :   false,
+                                                    minWidth    :   25,
+                                                    maxWidth    :   60,
+                                                },
+                                    columns :   [{
+                                                    xtype       :   'checkcolumn',
+                                                    text        :   'View',
+                                                    dataIndex   :   'view',
+                                                },
+                                                {
+                                                    xtype       :   'checkcolumn',
+                                                    text        :   'Edit',
+                                                    dataIndex   :   'edit',
+                                                }],
+                                    flex: 1,
+                                    sortable: false,
+                                    align: 'center',
+                                }, 
+                                {
+                                    xtype: 'actioncolumn',
+                                    itemId: 'colAction',
+                                    maxWidth: 60,
+                                    menuDisabled : true,
+                                    sortable : false,
+                                    align: 'center',
+                                    items: [
                                     {
-                                        // Cannot remove owner record
-                                        if (rowIndex == 0)
+                                        icon : bq.url('../export_service/public/images/delete.png'),
+                                        align : 'center',
+                                        tooltip: 'Remove',
+                                        handler: function(grid, rowIndex, colIndex)
                                         {
-                                            BQ.ui.error('Cannot delete owner record!', 3000);
-                                            return;
-                                        }
-
-                                        this.userModified = true;
-                                        this.authRecord.children.splice(rowIndex-1, 1);
-                                        grid.store.removeAt(rowIndex);
-                                    },
-                                    scope : this
-                                }]
-                            }],
-                        }
+                                            // Cannot remove owner record
+                                            if (rowIndex == 0)
+                                            {
+                                                BQ.ui.error('Cannot delete owner record!', 3000);
+                                                return;
+                                            }
+    
+                                            this.userModified = true;
+                                            this.authRecord.children.splice(rowIndex-1, 1);
+                                            grid.store.removeAt(rowIndex);
+                                        },
+                                        scope : this
+                                    }]
+                                }],
+                            }
         });
         
         this.centerPanel.add(this.grid);

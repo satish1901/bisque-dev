@@ -108,6 +108,76 @@ Ext.define('Bisque.Resource.Mex.Compact',
     },
 });
 
+
+Ext.define('Bisque.Resource.Mex.Card',
+{
+    extend : 'Bisque.Resource.Card',
+    
+    prefetch : function(layoutMgr)
+    {
+        this.superclass.superclass.prefetch.apply(this, arguments);
+
+        if (!this.getData('fetched'))
+        {
+            this.setData('fetched', -1);    //Loading
+            BQFactory.load(this.resource.uri + '/tag?view=deep', Ext.bind(this.loadResource, this));
+        }
+    },
+
+    loadResource : function(data)
+    {
+        this.resource.tags = data.tags;
+        var tagProp, tagArr=[], tagsFlat = this.resource.toDict(true);
+
+        // Show preferred tags first
+        for (var tag in tagsFlat)
+        {
+            tagProp = new Ext.grid.property.Property({
+                                                        name: tag,
+                                                        value: tagsFlat[tag]
+                                                    });
+            (tag.indexOf('inputs')!=-1 || tag.indexOf('outputs')!=-1)?tagArr.unshift(tagProp):tagArr.push(tagProp);
+        }
+        
+        this.setData('tags', tagArr.slice(0, 12));
+        this.setData('fetched', 1); //Loaded
+
+        var renderedRef=this.getData('renderedRef')
+        if (renderedRef && !renderedRef.isDestroyed)
+            renderedRef.updateContainer();
+    },
+    
+});
+
+
+Ext.define('Bisque.Resource.Mex.Full',
+{
+    extend : 'Bisque.Resource.Full',
+    
+    loadResource : function(data)
+    {
+        this.resource.tags = data.tags;
+        var tagProp, tagArr=[], tagsFlat = this.resource.toDict(true);
+
+        // Show preferred tags first
+        for (var tag in tagsFlat)
+        {
+            tagProp = new Ext.grid.property.Property({
+                                                        name: tag,
+                                                        value: tagsFlat[tag]
+                                                    });
+            tagArr.push(tagProp);
+        }
+        
+        this.setData('tags', tagArr);
+        this.setData('fetched', 1); //Loaded
+
+        var renderedRef=this.getData('renderedRef')
+        if (renderedRef && !renderedRef.isDestroyed)
+            renderedRef.updateContainer();
+    },
+})
+
 Ext.define('Bisque.Resource.Mex.List',
 {
     extend : 'Bisque.Resource.Mex',
@@ -265,15 +335,15 @@ Ext.define('Bisque.Resource.Mex.Grid',
     
     getFields : function(cb)
     {
-        var status = this.resource.status, resource = this.resource;
+        var status = this.resource.status || 'unknown', resource = this.resource;
         var color = (status=='FINISHED') ? '#1C1' : (status=='FAILED') ? '#E11' : '#22F';
        
-        return ['', resource.name || '', '<div style="color:'+color+'">'+Ext.String.capitalize(status)+'</div>' || '', resource.resource_type, resource.ts, this, {height:21}];
+        return ['', resource.name || '', '<div style="color:'+color+'">'+Ext.String.capitalize(status.toLowerCase())+'</div>' || '', resource.resource_type, resource.ts, this, {height:21}];
     }
 });
 
 // Page view for a mex
-Ext.define('Bisque.Resource.Mex.Page',
+/*Ext.define('Bisque.Resource.Mex.Page',
 {
     extend : 'Bisque.Resource.Page',
     
@@ -281,7 +351,7 @@ Ext.define('Bisque.Resource.Mex.Page',
     {
         window.location = bq.url('/module_service/'+config.resource.name+'/?mex='+config.resource.uri);
     }
-});
+});*/
 
         
 

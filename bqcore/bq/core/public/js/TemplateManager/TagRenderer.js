@@ -101,8 +101,49 @@ Ext.define('BQ.TagRenderer.String',
                         
     getRenderer         :   function(config)
                             {
+                                var valueStore = config.valueStore;
+                                
+                                if (!valueStore)
+                                {
+                                    if (!Ext.ModelManager.getModel('TagValues'))
+                                    {
+                                        Ext.define('TagValues',
+                                        {
+                                            extend  :   'Ext.data.Model',
+                                            fields  :   [ {name: 'value', mapping: '@value' } ],
+                                        });
+                                    }
+            
+                                    var valueStore = Ext.create('Ext.data.Store',
+                                    {
+                                        model       :   'TagValues', 
+                                        autoLoad    :   true,
+                                        autoSync    :   false,
+
+                                        proxy       :   {
+                                                            noCache     :   false,
+                                                            type        :   'ajax',
+                                                            limitParam  :   undefined,
+                                                            pageParam   :   undefined,
+                                                            startParam  :   undefined,
+                                                            url         :   '/xml/dummy_tag_values.xml',
+                                                            reader      :   {
+                                                                                type    :   'xml',
+                                                                                root    :   'resource',
+                                                                                record  :   'tag', 
+                                                                            },
+                                                        },
+                                    });
+                                }
+                                    
                                 return  {
-                                            xtype       :   'textfield',
+                                            xtype       :   'combobox',
+                                            store       :   valueStore,
+                                            
+                                            displayField:   'value',
+                                            valueField  :   'value',
+                                            queryMode   :   'local',
+                                            typeAhead   :   true,
 
                                             minLength   :   config.tplInfo.minLength || BQ.TagRenderer.String.template.minLength,
                                             maxLength   :   config.tplInfo.maxLength || BQ.TagRenderer.String.template.maxLength,

@@ -6,9 +6,14 @@ Ext.define('Bisque.PreferenceTagger',
     
     constructor : function(config)
     {
-        config = config || {};
-        config.viewMode = 'PreferenceTagger';
-        config.autoSave = false;
+        config      =   config || {};
+        
+        config.viewMode =   'PreferenceTagger';
+        config.autoSave =   false,
+        config.tree     =   config.tree || {
+                                btnAdd : false,
+                                btnDelete : false,
+                            },
         
         this.callParent([config]);
     },

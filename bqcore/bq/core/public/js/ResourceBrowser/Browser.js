@@ -106,9 +106,13 @@ Ext.define('Bisque.ResourceBrowser.Dialog',
 
         if (selection.length)
             if (selection.length==1)
-                this.browser.fireEvent('Select', this, selection[0]);
+                this.browser.fireEvent('Select', this, selection[0].resource);
             else
-                this.browser.fireEvent('Select', this, selection);
+            {
+                for (var i=0, selectRes=[]; i<selection.length; i++)
+                    selectRes.push(selection[i].resource);
+                this.browser.fireEvent('Select', this, selectRes);
+            }
         else
             BQ.ui.message('Selection empty!', 'Please select an image or press cancel to abort.');
     },
@@ -440,15 +444,15 @@ Ext.define('Bisque.ResourceBrowser.Browser',
             {
                 if(e.getWheelDelta()>0)
                 {
-                    var btnRight = this.commandBar.getComponent("btnRight");
-                    if(!btnRight.disabled)
-                        btnRight.handler.call(btnRight.scope, btnRight);
-                }
-                else
-                {
                     var btnLeft = this.commandBar.getComponent("btnLeft");
                     if(!btnLeft.disabled)
                         btnLeft.handler.call(btnLeft.scope, btnLeft);
+                }
+                else
+                {
+                    var btnRight = this.commandBar.getComponent("btnRight");
+                    if(!btnRight.disabled)
+                        btnRight.handler.call(btnRight.scope, btnRight);
                 }
             }
         }, this);

@@ -144,7 +144,7 @@ Ext.define('Bisque.ResourceBrowser.Layout.Base',
 			{
 				'select' : function(resCt)
 				{
-					this.browser.resourceQueue.selectedRes[resCt.resource.uri]=resCt.resource;
+					this.browser.resourceQueue.selectedRes[resCt.resource.uri]=resCt;
 					var selRes=this.browser.resourceQueue.selectedRes;
 					var keys=Ext.Object.getKeys(selRes); var selection = [];
 		
