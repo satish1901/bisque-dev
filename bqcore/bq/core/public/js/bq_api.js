@@ -189,10 +189,6 @@ BQFactory.request = function(params) {
             clog ('re-issuing cached result ' + uri);
             BQFactory.session[uri] = xmlrequest(uri, callback(BQFactory, 'on_xmlresponse', params), method, xmldata, params.errorcb);
         }
-    } else if (progresscb) {
-        BQFactory.session[uri] = 
-            xmlrequest(uri, callback(BQFactory, 'on_xmlresponse_progress', params), method, xmldata, params.errorcb);
-
     } else {
         BQFactory.session[uri] = xmlrequest(uri, callback(BQFactory, 'on_xmlresponse', params), method, xmldata, params.errorcb);
     }
@@ -227,50 +223,6 @@ BQFactory.on_xmlresponse = function(params, xmldoc) {
         return;
     }
     return cb(bq);    
-}
-
-// <x:include xlink:href="http://ssks?offset=5&limit=5" />
-BQFactory.on_xmlresponse_progress = function (params, xmldoc) {
-    var uri = params.uri;
-    var cb  = params.cb;
-    var progresscb = params.progresscb;
-    var errorcb = params.errorcb;
-
-    clog('Response: ' + uri);
-    try {
-        var loaded = [];
-        var last = true;
-        var n = xmldoc.firstChild;
-        if (!n) return;
-        if (n.nodeName == "response") 
-        n = n.firstChild;
-        var bq = BQFactory.make (n.nodeName, uri);
-        bq.doc = bq;
-        BQFactory.session[uri] = bq;
-        if (n.nodeName == "resource") 
-        n  = n.firstChild;
-        while (n != null) {
-            var node = n;
-            n = node.nextSibling;
-            
-            if (node.name == 'include') {
-                xmlrequest (node.attributes['href'], 
-                            callback(BQFactory, 'on_xmlresponse_progress',
-                                     uri, cb, progresscb));
-                last = false;
-                continue;
-            }
-            // Must be node result
-            var o = BQFactory.createFromXml (node, null, bq);
-            loaded.push (o);
-            if (progresscb != null) 
-            progresscb(o);
-        }    
-        if (cb && last) cb(bq);
-    } catch (err) {
-        clog ("on_xmlresponse error" + err);
-        if (errorcb) errorcb ({ xmldoc : xmldoc, message : 'parse error in BQFactory.on_xmlresponse_progress' });
-    }
 }
 
 BQFactory.parseBQDocument = function (xmltxt) {
@@ -447,7 +399,7 @@ BQObject.prototype.initializeXml = function (node) {
     
     // dima: speed optimization, using xpath for resources with many values is much faster
     var x = node.ownerDocument.evaluate('./value', node, null, XPathResult.ANY_TYPE, null);
-    var y = x.iterateNext();
+    var y = x.iterateNext(); 
     if (y) this.values = [];
     while (y) {
         this.values.push(new BQValue(y));

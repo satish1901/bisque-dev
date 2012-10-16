@@ -1,5 +1,6 @@
 import sys
 import os
+import subprocess
 import re
 import pkg_resources
 import bq
@@ -194,7 +195,14 @@ class deploy(object):
         import glob
         for l in glob.glob('bqcore/bq/core/public/*'):
             os.symlink (os.path.join('..', l), os.path.join('public', os.path.basename(l)))
-
+        #check if grunt exists, if so, run it to pack and minify javascript
+        try:
+            subprocess.call(["grunt"])
+        except OSError as e:
+            if e.rrrno == os.errno.ENONENT:
+                print "grunt not found.\n install it by typing 'npm install -g grunt'"
+            else:
+                print "Unknown error while trying to run grunt. Is it installed correctly?\n install it by typing 'npm install -g grunt'"
 
 class preferences (object):
     desc = "read and/or update preferences"
