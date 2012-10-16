@@ -171,10 +171,12 @@ Ext.define('Bisque.Resource',
             cls : 'lblHeading2',
             html : this.resource.resource_type,
         })
+        
+        var owner = BQApp.userList[this.resource.owner] || {};
 
         var value = Ext.create('Ext.container.Container', {
             cls : 'lblContent',
-            html : this.resource.value,
+            html : owner.display_name,
         })
 
         this.add([name, type, value]);
@@ -188,6 +190,22 @@ Ext.define('Bisque.Resource',
         var name = record ? record.find_tags('display_name').value : ''
        
         return ['', resource.name || '', name || '', resource.resource_type, resource.ts, this, {height:21}];
+    },
+
+    testAuth1 : function(btn, loaded, permission)
+    {
+        if (loaded!=true)
+        {
+            var user = BQSession.current_session.user_uri;
+            this.resource.testAuth(user, Ext.bind(this.testAuth1, this, [btn, true], 0));            
+        }
+        else
+        {
+            if (permission)
+                btn.operation.call(this, btn);
+            else
+                BQ.ui.attention('You do not have permission to perform this action!');
+        }
     },
     
     afterRenderFn : function()
@@ -267,19 +285,73 @@ Ext.define('Bisque.Resource',
     preMouseEnter : function()
     {
     	this.removeCls('LightShadow');
+    	
+    	if (this.browser.selectState == 'SELECT')
+    	{
+            if (!this.operationBar)
+            {
+                this.operationBar = Ext.create('Bisque.ResourceBrowser.OperationBar', {
+                    renderTo    :   this.getEl(),
+                    resourceCt  :   this,
+                    browser     :   this.browser
+                });
+    
+                this.operationBar.alignTo(this, "tr-tr");
+            }
+
+            this.operationBar.setVisible(true);
+        }
     },
+    
     preMouseLeave : function()
     {
+        if (this.browser.selectState == 'SELECT')
+            this.operationBar.setVisible(false);
+
 		if (!this.el.hasCls('resource-view-selected'))
 			this.addCls('LightShadow');
     },
 
-    onMouseEnter : Ext.emptyFn,
     onMouseMove : Ext.emptyFn,
+
+    onMouseEnter : Ext.emptyFn,
     onMouseLeave : Ext.emptyFn,
     onDblClick : Ext.emptyFn,
     onClick : Ext.emptyFn,
-    onRightClick : Ext.emptyFn
+    onRightClick : Ext.emptyFn,
+    
+
+    /* Resource operations */
+    shareResource : function()
+    {
+        var shareDialog = Ext.create('BQ.ShareDialog', {
+            resource    :   this.resource
+        });
+    },
+
+    downloadOriginal : function()
+    {
+        var exporter = Ext.create('BQ.Export.Panel');
+        exporter.downloadResource(this.resource, 'none');
+    },
+    
+    changePrivacy : function(permission, success, failure)
+    {
+        function loaded(resource, permission, success, failure)
+        {
+            if  (permission)
+                resource.permission = permission;
+            else
+                resource.permission = (this.resource.permission=='private')?'published':'private';
+            
+            resource.append(Ext.bind(success, this), Ext.bind(failure, this));
+        }
+        
+        BQFactory.request({
+            uri :   this.resource.uri + '?view=short',
+            cb  :   Ext.bind(loaded, this, [permission, success, failure], 1) 
+        });
+    }
 });
 
 Ext.define('Bisque.Resource.Compact', {

@@ -17,13 +17,14 @@
 
 Ext.namespace('BQ.dataset');
 
-BQ.dataset.operations = { 'permission' : 'BQ.dataset.Permissions', 
-                          'delete'     : 'BQ.dataset.Delete', 
+BQ.dataset.operations = { 'permission'  :   'BQ.dataset.Permissions', 
+                          'delete'      :   'BQ.dataset.Delete',
+                          'share'       :   'BQ.dataset.Share'   
                           //'tagedit'    : 'BQ.dataset.Edittags',
                         };
 
 /*******************************************************************************
-  Baseclass for dataset oiperations
+  Baseclass for dataset operations
   
 *******************************************************************************/
 
@@ -42,6 +43,8 @@ Ext.define('BQ.dataset.Operation', {
     layout: 'auto',
     
     defaults: { border: 0, xtype: 'container', },
+    
+    statics : { service_url : '/dataset_service/' },
 
     constructor: function(config) {
         this.addEvents({
@@ -76,7 +79,19 @@ Ext.define('BQ.dataset.Operation', {
     validate: function() {
         return true;
     },
+    
+    execute : function(datasetURI, onDone, onError)
+    {
+        var args = this.getArguments();
+        args.duri = datasetURI;
 
+        var uri = Ext.urlAppend(BQ.dataset.Operation.service_url + this.getName(), Ext.Object.toQueryString(args, true));
+                    
+        BQFactory.request ({uri     :   uri, 
+                            cb      :   onDone,
+                            errorcb :   onError,
+                            cache   :   false});
+    }
 });
 
 
@@ -187,6 +202,56 @@ Ext.define('BQ.dataset.Delete', {
     },
 
 });
+
+
+
+/*******************************************************************************
+  BQ.dataset.Share
+*******************************************************************************/
+
+Ext.define('BQ.dataset.Share',
+{
+    alias       :   'widget.dataset-share',    
+    extend      :   'BQ.dataset.Operation',
+    requires    :   ['Ext.form.Panel'],
+    
+    title           :   'Share all elements',
+    name            :   'share',  
+
+    initComponent   :   function()
+    {
+        this.form = Ext.create('Ext.form.Panel',
+        {
+            cls         :   'datasets-form',
+            border      :   false,
+            defaultType :   'radiofield',
+            items       :   [{
+                                name        :   'share',
+                                value       :   true,
+                                checked     :   true,
+                                boxLabel    :   'Apply dataset\'s <b>share</b> authorization to all elements.',
+                                listeners   :   {
+                                                    'change'    :   function(f)
+                                                    {
+                                                        this.fireEvent('changed', this);
+                                                    },
+                                                    scope       :   this
+                                                },                
+                            }],
+            
+        });
+      
+        this.items = [this.form];
+        this.callParent();
+    },
+
+    getStatus: function()
+    {
+        return 'Applied dataset\'s <b>share</b> authorization to all elements.';
+    },
+});
+
+
 
 /*******************************************************************************
   BQ.dataset.Edittags

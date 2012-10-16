@@ -117,6 +117,11 @@ Ext.define('Bisque.Resource.Image',
         }
     },
     
+    /* Resource operations */
+    downloadOriginal : function()
+    {
+        window.open(this.resource.src);
+    },
 });
 
 Ext.define('Bisque.Resource.Image.Compact',
@@ -605,8 +610,8 @@ Ext.define('Bisque.Resource.Image.Full',
     },
 
     onMouseMove : Ext.emptyFn,
-    preMouseEnter : Ext.emptyFn,
-    preMouseLeave : Ext.emptyFn,
+    //preMouseEnter : Ext.emptyFn,
+    //preMouseLeave : Ext.emptyFn,
     onMouseEnter : Ext.emptyFn
 });
 

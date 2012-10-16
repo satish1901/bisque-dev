@@ -1,4 +1,4 @@
-// Page view for an image
+// Page view for a File
 Ext.define('Bisque.Resource.File.Page',
 {
     extend : 'Bisque.Resource.Page',

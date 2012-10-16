@@ -508,9 +508,12 @@ BQObject.prototype.rename = function(newName, cb, errorcb) {
     clog ('BQAPI: BQObject.prototype.rename - Not implemented');
 }
 
-BQObject.prototype.deleteTag = function(childTag) {
+BQObject.prototype.deleteTag = function(childTag, cb, errorcb) {
     if (childTag instanceof BQTag)
+    {
         this.remove(childTag);
+        childTag.delete_(cb, errorcb);
+    }
     else
         clog ('BQAPI: deleteTag - Input is not a BQTag.');
 }
@@ -1564,6 +1567,10 @@ BQAuth.prototype.initializeXml = function (node) {
     this.user   = attribStr(node, 'user');
 }
 
+BQAuth.prototype.save_ = function (node)
+{
+    debugger;
+}
 
 //-------------------------------------------------------------------------------
 // BQModule
@@ -1805,6 +1812,76 @@ BQDataset.prototype.appendMembersResp = function (newmembers, cb, members_tag) {
     this.setMembers (members);
     if (cb) cb();
 }
+
+// deleteMembers    : Deletes members of a temporary dataset (which hasn't been saved, hence no URI)
+//                  : Calls individual deletes on the resources and collects results
+// output           : callback is called with an object summary which has two members, success and failure e.g.
+//                  : summary : {success:7, failure:3} 
+// temporary until we come up with a permanent (backend?) solution
+
+BQDataset.prototype.tmp_deleteMembers = function(cb)
+{
+    Ext.apply(this,
+    {
+        tmp_cb      :   cb,
+        tmp_success :   0,
+        tmp_failure :   0,
+        tmp_final   :   this.tmp_members.length
+    })
+    
+    function result(success)
+    {
+        success?this.tmp_success++:this.tmp_failure++;
+        
+        if ((this.tmp_success+this.tmp_failure)==this.tmp_final)
+            cb({success:this.tmp_success, failure:this.tmp_failure});
+    }
+    
+    for (var i=0; i<this.tmp_members.length; i++)
+        this.tmp_members[i].resource.delete_(Ext.pass(result, [true], this), Ext.pass(result, [false], this));
+}
+
+// method for a temporary dataset to set new members
+// assumes members are BQResources for now
+BQDataset.prototype.tmp_setMembers = function(members)
+{
+    if (!(members instanceof Array))
+        members = [members];
+    
+    this.tmp_members = members;
+}
+
+// method for a temporary dataset to download all member resources into one TARball
+BQDataset.prototype.tmp_downloadMembers = function()
+{
+    var exporter = Ext.create('BQ.Export.Panel'), members=[];
+    
+    for (var i=0; i<this.tmp_members.length; i++)
+        members.push(this.tmp_members[i].resource);
+        
+    exporter.downloadResource(members, 'tar');
+}
+
+// method for a temporary dataset to change permission on all member resources
+BQDataset.prototype.tmp_changePermission = function(permission, success, failure)
+{
+    var no = {count:this.tmp_members.length};
+    
+    function result(no, success)
+    {
+        if (--no.count==0) success(); 
+    }
+    
+    for (var i=0; i<this.tmp_members.length; i++)
+        this.tmp_members[i].changePrivacy(permission, Ext.pass(result, [no, success]));
+}
+
+// method for a temporary dataset to share all member resources
+BQDataset.prototype.tmp_shareMembers = function()
+{
+    var exporter = Ext.create('BQ.ShareDialog.Offline', {resources : this.tmp_members});
+}
+
 
 
 //-------------------------------------------------------------------------------

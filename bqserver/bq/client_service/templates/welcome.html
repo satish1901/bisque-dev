@@ -204,7 +204,7 @@ body {
         });  
         
         var setBrowser = new Bisque.ResourceBrowser.Browser({
-          layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.List,
+          layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Grid,
           title: 'Datasets',
           viewMode: 'ViewerOnly',
           tagOrder: '"@ts":desc',          
@@ -230,7 +230,7 @@ body {
         this.recentsExplorer.setTitle('My recent stuff');
         
         var mexBrowser = new Bisque.ResourceBrowser.Browser({
-          layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.List,
+          layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Grid,
           title : 'Analysis',
           viewMode : 'MexBrowser',
           dataset : '/data_service/mex',

@@ -15,7 +15,7 @@
     </title>  
     
     <!-- Bisque styles -->
-    <link rel="stylesheet" type="text/css" href="${tg.url('/css/bisquik_extjs_fix.css')}" />
+    <link rel="stylesheet" type="text/css" href="${tg.url('/extjs/resources/css/ext-all.css')}" />
     <link rel="stylesheet" type="text/css" href="${tg.url('/css/bq.css')}" />
     <link rel="stylesheet" type="text/css" href="${tg.url('/css/bq_ui_toolbar.css')}" /> 
     <link rel="stylesheet" type="text/css" href="${tg.url('/js/bq_ui_misc.css')}" />
@@ -23,21 +23,23 @@
     <link rel="stylesheet" type="text/css" href="${tg.url('/js/ResourceTagger/Tagger.css')}" />
     <link rel="stylesheet" type="text/css" href="${tg.url('/js/DatasetBrowser/DatasetBrowser.css')}" />
     <link rel="stylesheet" type="text/css" href="${tg.url('/export_service/public/css/BQ.Export.css')}" />
+    <link rel="stylesheet" type="text/css" href="${tg.url('/css/bisquik_extjs_fix.css')}" />
 
     <!-- ExtJS -->
-    <link rel="stylesheet" type="text/css" href="${tg.url('/extjs/resources/css/ext-all.css')}" />
     <!--
     <link rel="stylesheet" type="text/css" href="${tg.url('/extjs/resources/css/ext-all-gray.css')}"/>
     -->
     
     <!--<script type="text/javascript" src="${tg.url('/extjs/bootstrap.js')}"></script>-->
-    <script type="text/javascript" src="${tg.url('/extjs/ext-all.js')}"></script>
+    
     <py:choose>
     <py:when test="tg.config.get('bisque.js_environment', None) == 'production'">
+    <script type="text/javascript" src="${tg.url('/extjs/ext-all.js')}"></script>
     <script type="text/javascript" src="${tg.url('/js/bisque.min.js')}"></script>
     </py:when>
     
     <py:otherwise>
+    <script type="text/javascript" src="${tg.url('/extjs/ext-all-debug.js')}"></script>
     <script type="text/javascript" src="${tg.url('/js/bq_ui_extjs_fix.js')}"></script>  
     
     <!-- Bisque JsApi - this needs cleaning and updating -->  
@@ -57,6 +59,7 @@
     <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/DatasetManager.js')}"></script>
     <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/CommandBar.js')}"></script>
     <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/viewStateManager.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/OperationBar.js')}"></script>
     <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/ResourceFactory/ResourceFactory.js')}"></script>
     <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/ResourceFactory/ResourceImage.js')}"></script>
     <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/ResourceFactory/ResourceMex.js')}"></script>
@@ -72,6 +75,7 @@
 
     <!-- Share dialog files -->
     <script type="text/javascript" src="${tg.url('/js/Share/BQ.ShareDialog.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/Share/BQ.ShareDialog.Offline.js')}"></script>
     <script type="text/javascript" src="${tg.url('/js/ResourceTagger/ComboBox.js')}"></script>  
     <script type="text/javascript" src="${tg.url('/js/ResourceTagger/RowEditing.js')}"></script>    
     <script type="text/javascript" src="${tg.url('/js/ResourceTagger/Tagger.js')}"></script>

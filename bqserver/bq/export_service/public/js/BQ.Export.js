@@ -148,13 +148,20 @@ Ext.define('BQ.Export.Panel',
     
     downloadResource : function(resource, compression)
     {
-        var type = resource.resource_type;
+        if (!(resource instanceof Array))
+            resource = [resource]
+
+        for (var i=0, type, record=[]; i<resource.length; i++)
+        {
+            type = resource[i].resource_type;
+
+            if (type!='dataset' || compression=='none') 
+                type = 'file';
+
+            record.push(['', '',  type, resource[i].ts, '', resource[i].uri, 0]);
+        }
         
-        if (type!='dataset' || compression=='none') 
-            type = 'file';
-        
-        var record = ['', '',  type, resource.ts, '', resource.uri, 0];
-        this.resourceStore.loadData([record]);
+        this.resourceStore.loadData(record);
         this.download({compressionType:compression});
     },
     
