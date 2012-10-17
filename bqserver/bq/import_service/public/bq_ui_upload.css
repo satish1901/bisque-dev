@@ -214,6 +214,10 @@
     display: block;
 }
 
+.annotator {
+    margin: 4px;
+}
+
 /*
 .tabs .x-panel-header-text {
     font-size: 16px;

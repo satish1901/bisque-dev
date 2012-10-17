@@ -144,6 +144,7 @@ Ext.define('BQ.upload.Annotator', {
     frame: true,
     bodyPadding: 5,    
     border: 0,
+    cls: 'annotator',
         
     fieldDefaults: {
         labelAlign: 'right',
@@ -195,6 +196,7 @@ Ext.define('BQ.upload.ZipAnnotator', {
                 {"type":"zip-time-series", "description":"multiple files composing one time-series image"},
                 {"type":"zip-z-stack",     "description":"multiple files composing one z-stack"},
                 {"type":"zip-5d-image",    "description":"multiple files composing one 5-D image"},                
+                {"type":"zip-volocity",    "description":"Volocity (*.mvd2) images"},                  
             ]
         });
  
@@ -296,7 +298,8 @@ Ext.define('BQ.upload.ZipAnnotator', {
             'zip-time-series': {'resolution_title':null, 'resolution_x':null, 'resolution_y':null, 'resolution_t':null},
             'zip-z-stack'    : {'resolution_title':null, 'resolution_x':null, 'resolution_y':null, 'resolution_z':null},
             'zip-5d-image'   : {'number_z':null, 'number_t':null, 'resolution_title':null, 
-                                'resolution_x':null, 'resolution_y':null, 'resolution_z':null, 'resolution_t':null},                        
+                                'resolution_x':null, 'resolution_y':null, 'resolution_z':null, 'resolution_t':null},  
+            'zip-volocity'   : {},                                                      
         };
         
         // the default state is false
@@ -492,9 +495,13 @@ Ext.define('BQ.upload.Item', {
             this.permissionButton.removeCls('published');                       
         this.permissionButton.setText(BQ.upload.Item.PERMISSIONS_STRINGS[this.permission]);  
     },      
-   
+    
+    isReadyToUpload : function() {
+        return (this.getState && this.getState()===BQ.upload.Item.STATES.READY);
+    },
+       
     upload : function() {
-        if (this.state >= BQ.upload.Item.STATES.UPLOADING) return;          
+        if (!this.isReadyToUpload()) return;          
         //this.time_started = new Date();
         this.state = BQ.upload.Item.STATES.UPLOADING;
         this.constructAnnotation();
@@ -1087,8 +1094,11 @@ Ext.define('BQ.upload.Panel', {
         this.files_uploaded = 0;
         
         var total = 0;
-        this.uploadPanel.items.each( function() { if (this.getState && this.getState()<BQ.upload.Item.STATES.DONE) total++; } );
+        this.uploadPanel.items.each( function(){ 
+            if (this.isReadyToUpload && this.isReadyToUpload()) total++; 
+        });
         this.total = total;
+        if (total===0) return;
         
         this._time_started = new Date();  
         this.progress.setVisible(true);
