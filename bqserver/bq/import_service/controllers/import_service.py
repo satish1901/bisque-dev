@@ -59,7 +59,7 @@ TODO
 
 __module__    = "import_service"
 __author__    = "Dmitry Fedorov, Kris Kvilekval"
-__version__   = "2.2"
+__version__   = "2.3"
 __revision__  = "$Rev$"
 __date__      = "$Date$"
 __copyright__ = "Center for BioImage Informatics, University California, Santa Barbara"
@@ -122,6 +122,7 @@ from bq.util.mkdir import _mkdir
 #---------------------------------------------------------------------------------------
 
 imgcnv_needed_version = '1.43'
+bioformats_needed_version = '4.3.0'
 
 #---------------------------------------------------------------------------------------
 # File object 
@@ -165,6 +166,7 @@ class import_serviceController(ServiceController):
         self.filters['zip-time-series'] = self.filter_zip_tstack   
         self.filters['zip-z-stack']     = self.filter_zip_zstack   
         self.filters['zip-5d-image']    = self.filter_5d_image   
+        self.filters['zip-volocity']    = self.filter_zip_volocity
         self.filters['image/slidebook'] = self.filter_series_bioformats
         self.filters['image/volocity']  = self.filter_series_bioformats
         
@@ -188,40 +190,94 @@ class import_serviceController(ServiceController):
             raise Exception('imgcnv not installed')
         imgcnv.check_version( imgcnv_needed_version )
 
+    def check_bioformats (self):
+        if not bioformats.installed():
+            raise Exception('bioformats not installed')
+        if not bioformats.ensure_version( bioformats_needed_version ):
+            raise Exception('Bioformats needs update! Has: '+bioformats.version()['full']+' Needs: '+ bioformats_needed_version)        
+
 #------------------------------------------------------------------------------
 # zip/tar.gz support functions
 #------------------------------------------------------------------------------
 
-    # dima - allow files inside directories
+#with ZipFile('spam.zip', 'w') as myzip:
+#    myzip.write('eggs.txt')
 
-    def unTarFiles(self, filename, folderName):
-        tar = tarfile.open(filename)
-        members = tar.getmembers()
-        tar.extractall('%s/'%(folderName))
-        tar.close()
-        return [ str(m.name) for m in members ]
+    # unpacking that preserves structure
+    def unZip(self, filename, foldername):
+        z = zipfile.ZipFile(filename, 'r')
 
-    def unZipFiles(self, filename, folderName):
-        zipF = zipfile.ZipFile(filename,'r')
-        members = zipF.infolist()
-        namelist = []
-        for znames in zipF.namelist():
-            lName = os.path.basename(znames)
-            if lName:
-                fName = '%s/%s'%(folderName, lName)
-                file(fName,'wb').write(zipF.read(znames))
-                namelist.append(lName)
-        zipF.close()
-        return namelist
+        # first test if archive is valid
+        names = z.namelist()        
+        for name in names:
+            if name.startswith('/') or name.startswith('\\') or name.startswith('..'):
+                z.close()
+                return []
+                 
+        # extract members if all is fine
+        z.extractall(foldername)
+        z.close()
+        return names
 
-    def unPackFiles(self, filename, folderName):
-        if filename.lower().endswith('zip'):
-            members=self.unZipFiles(filename, folderName)
-        else:
-            members=self.unTarFiles(filename, folderName)
-        return members
+    # unpacking that preserves structure
+    def unTar(self, filename, foldername):
+        z = tarfile.open(filename, 'r')
 
-    def unpackPackagedFile(self, upload_file):
+        # first test if archive is valid
+        names = z.getnames()
+        for name in names:
+            if name.startswith('/') or name.startswith('\\') or name.startswith('..'):
+                z.close()
+                return []
+                 
+        # extract members if all is fine
+        z.extractall(foldername)
+        z.close()
+        return names
+
+    # unpacking that flattens file structure
+    def unTarFlat(self, filename, folderName):
+        z = tarfile.open(filename, 'r')
+        names = []
+        for n in z.getnames():
+            basename = os.path.basename(n)
+            i = z.getmember(n)
+            if basename and i.isfile() is True:
+                filename = os.path.join(folderName, basename)
+                with file(filename, 'wb') as f:
+                    f.write(z.extractfile(i).read())
+                names.append(basename)
+        z.close()
+        return names
+
+    # unpacking that flattens file structure
+    def unZipFlat(self, filename, folderName):
+        z = zipfile.ZipFile(filename, 'r')
+        names = []
+        for n in z.namelist():
+            basename = os.path.basename(n)
+            i = z.getinfo(n)
+            if basename and i.compress_type is not zipfile.ZIP_STORED and i.file_size > 0:
+                filename = os.path.join(folderName, basename)
+                with file(filename, 'wb') as f:
+                    f.write(z.read(n))
+                names.append(basename)
+        z.close()
+        return names
+
+    def unPack(self, filename, folderName, peserve_structure=False):
+        if peserve_structure is False:
+            if filename.lower().endswith('zip'):
+                return self.unZipFlat(filename, folderName)
+            else:
+                return self.unTarFlat(filename, folderName)
+        else:            
+            if filename.lower().endswith('zip'):
+                return self.unZip(filename, folderName)
+            else:
+                return self.unTar(filename, folderName)
+
+    def unpackPackagedFile(self, upload_file, peserve_structure=False):
         ''' This method unpacked uploaded file into a proper location '''
         
         uploadroot = config.get('bisque.image_service.upload_dir', data_path('uploads'))
@@ -242,7 +298,7 @@ class import_serviceController(ServiceController):
         out.close()
 
         # unpack the contents of the packaged file
-        members = self.unPackFiles(filepath, unpack_dir)
+        members = self.unPack(filepath, unpack_dir, peserve_structure)
  
         return unpack_dir, members
 
@@ -308,6 +364,7 @@ class import_serviceController(ServiceController):
 
     def extractSeriesBioformats(self, upload_file):
         ''' This method unpacked uploaded file into a proper location '''
+        self.check_bioformats()
         
         uploadroot = config.get('bisque.image_service.upload_dir', data_path('uploads'))
         upload_dir = '%s/%s'%(uploadroot, str(bq.core.identity.get_user().name)) # .user_name       
@@ -336,6 +393,34 @@ class import_serviceController(ServiceController):
 
         return unpack_dir, members
 
+#------------------------------------------------------------------------------
+# volocity files supported by bioformats
+#------------------------------------------------------------------------------
+
+    def extractSeriesVolocity(self, upload_file):
+        ''' This method unpacks uploaded file and converts from Volocity to ome-tiff '''
+        self.check_bioformats()
+        unpack_dir, members = self.unpackPackagedFile(upload_file, peserve_structure=True)      
+        
+        log.debug('unpack_dir:\n %s'% unpack_dir ) 
+        log.debug('members:\n %s'% members )         
+        
+        # find all *.mvd2 files in the package
+        mvd2 = []
+        for m in members:
+            if m.endswith('.mvd2'):
+                log.debug('Found volocity: %s'% m )
+                fn = '%s.ome.tif'%m 
+                fn_in  = os.path.join(unpack_dir, m)
+                fn_out = os.path.join(unpack_dir, fn)
+                if bioformats.supported(fn_in):
+                    bioformats.convert(ifnm=fn_in, ofnm=fn_out)
+                    if os.path.exists(fn_out) and imgcnv.supported(fn_out):
+                        mvd2.append(fn)
+                             
+        log.debug('Converted: \n%s'% mvd2 )    
+        return unpack_dir, mvd2
+
 
 #---------------------------------------------------------------------------------------
 # filters, take f and return a list of file names
@@ -358,6 +443,9 @@ class import_serviceController(ServiceController):
         unpack_dir, members = self.extractSeriesBioformats(f)
         return [ '%s/%s'%(unpack_dir, m) for m in members ]
 
+    def filter_zip_volocity(self, f, intags):
+        unpack_dir, members = self.extractSeriesVolocity(f)
+        return [ '%s/%s'%(unpack_dir, m) for m in members ]
 
 
 #    def insert_resource_url(self, url):
@@ -409,7 +497,7 @@ class import_serviceController(ServiceController):
         if hasattr(f, 'original') and f.original:
             if tags is None:
                 tags = etree.Element('resource')
-            etree.SubElement(tags, 'tag', name="original_upload", value=f.original, type='link' )      
+            etree.SubElement(tags, 'tag', name="original_upload", value=f.original, type='resource' )      
 
         # try inserting the file in the blob service            
         try:
@@ -522,16 +610,15 @@ class import_serviceController(ServiceController):
             resource = etree.Element('dataset', name='%s'%(f.filename))
             etree.SubElement(resource, 'tag', name="upload_datetime", value=ts, type='datetime' )             
             if parent_uri:
-                etree.SubElement(resource, 'tag', name="original_upload", value=parent_uri, type='link' )   
+                etree.SubElement(resource, 'tag', name="original_upload", value=parent_uri, type='resource' )   
                         
-            members = etree.SubElement(resource, 'tag', name='members')
             index=0
             for r in resources:
                 # check for ingest errors here as well
                 if r.get('uri') is not None:
                     # index is giving trouble
-                    #v = etree.SubElement(members, 'value', index='%s'%index, type='object')
-                    v = etree.SubElement(members, 'value', type='object')
+                    #v = etree.SubElement(resource, 'value', index='%s'%index, type='object')
+                    v = etree.SubElement(resource, 'value', type='object')
                     v.text = r.get('uri')
                 else:
                     s = 'Error ingesting element %s with the name "%s"'%(index, r.get('name'))
