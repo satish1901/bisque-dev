@@ -1,5 +1,5 @@
 .msg .x-box-mc {
-    font-size:14px;
+    font-size: 12px;
 }
 
 #messagepopup {
@@ -28,6 +28,14 @@
 
 #messagepopup .msg p {
     margin: 0;
+    overflow: auto; 
+    font-size: 12px;       
+}
+
+#messagepopup .msg img {
+    float: right;
+    width: 20px;
+    opacity: 0.7;
 }
 
 #messagepopup .warning {
