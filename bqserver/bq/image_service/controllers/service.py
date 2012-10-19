@@ -143,7 +143,7 @@ class image_serviceController(ServiceController):
         """
         if self.format_map is None:
             self.format_map = get_format_map()
-
+        filename = filename.strip()
         ext = os.path.splitext(filename)[1][1:].lower()
         return self.format_map.get(ext)
 

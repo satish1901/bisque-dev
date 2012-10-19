@@ -135,6 +135,7 @@ def file_hash_MD5( filename ):
 
 def guess_type(filename):
     from bq import image_service 
+    filename = filename.strip()
     filetype = image_service.guess_image_type (filename)
     if filetype:
         return 'image'
