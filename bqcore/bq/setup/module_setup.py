@@ -145,7 +145,14 @@ def python_setup(scripts,  package_scripts =True, dependency_dir = 'pydist', par
                 return 0
         except Exception,e:
             print ("Could not create python launcher script %s" % e)
-        
+
+    
+def ensure_binary(exe):
+    'make sure executable is available to the module'
+    import distutils.spawn
+    p = distutils.spawn.find_executable(exe)
+    if p is None:
+        raise SetupError("Executable required but not found: %s" % exe)    
 
 def require(expression, params, throws = True):
     """Require everying in expression
