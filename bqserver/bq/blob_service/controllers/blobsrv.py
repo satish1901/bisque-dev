@@ -260,11 +260,11 @@ class BlobServer(RestController, ServiceMixin):
         # hashed filename + stuff
         fhash = make_uniq_hash (filename)
         # resource creation
-        resource_type = guess_type(filename)                  
+        resource_type = guess_type(filename)
         if resource is None:
             resource = etree.Element(resource_type)
         else:
-            resource.tag = resource_type 
+            resource.tag = resource_type
         resource.set('name', filename)
         resource.set('value', blob_id)
         resource.set('resource_uniq', fhash)
