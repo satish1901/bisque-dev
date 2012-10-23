@@ -51,6 +51,7 @@ import logging
 import urlparse
 import string
 import shutil
+import cgi
 
 from tg import config
 from paste.deploy.converters import asbool
@@ -95,6 +96,15 @@ def randomPath (format_path, user, filename, **params):
         filehash=rand_hash,
         filename=os.path.basename(filename), **params)
 
+#patch to allow no copy file uploads (direct to destination directory)
+import tempfile
+tmp_upload_dir = config.get('bisque.blob_service.tmp_upload_dir', string.Template("$datadir/tmp_upload_dir").safe_substitute(datadir=data_path()))
+_mkdir(tmp_upload_dir)
+def import_transfer_handler(filename):
+    return tempfile.NamedTemporaryFile('w+b', suffix = filename, dir=tmp_upload_dir, delete = False)
+
+#register callables here
+#cgi.file_upload_handler['/import/transfer'] = import_transfer_handler
 
 ###############################################
 #  BlobStorage
@@ -162,8 +172,14 @@ class LocalStorage(BlobStorage):
         filepath = self.nextEmptyBlob(user_name, name)
         localpath = urlparse.urlparse(filepath).path 
         log.debug('local.write: %s -> %s' % (name, localpath))
-        with  open(localpath, 'wb') as trg:
-            shutil.copyfileobj(src, trg)
+        
+        #patch for no copy file uploads - check for regular file or file like object
+        abs_path_src = os.path.abspath(src.name)
+        if os.path.isfile(abs_path_src):
+            shutil.move(abs_path_src,localpath)
+        else:
+            with open(localpath, 'wb') as trg:
+                shutil.copyfileobj(src, trg)
         ident = filepath[len(self.top) + 1:]
         if opened:
             src.close()

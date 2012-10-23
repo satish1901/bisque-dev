@@ -125,9 +125,16 @@ def irods_cache_fetch(path):
 def irods_cache_save(f, path, *dest):
     cache_filename = os.path.join(IRODS_CACHE, path[1:])
     _mkdir(os.path.dirname(cache_filename))
-    with open(cache_filename, 'wb') as fw:
-        #shutil.copyfileobj(f, fw)
-        copyfile(f, fw, *dest)
+    
+    #patch for no copy file uploads - check for regular file or file like object
+    abs_path_src = os.path.abspath(f.name)
+    if os.path.isfile(abs_path_src):
+        shutil.move(abs_path_src, cache_filename)
+        copyfile(f, *dest)
+    else:
+        with open(cache_filename, 'wb') as fw:
+            copyfile(f, fw, *dest)
+    
     return cache_filename
     
 def irods_fetch_file(url, **kw):

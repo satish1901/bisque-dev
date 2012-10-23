@@ -145,6 +145,12 @@ class UploadedFile:
         if not self.file is None:
             self.file.close()
 
+
+def loglog(s):
+    f = open('/home/kage/bq051/log.log','a')
+    f.write(s+'\n')
+    f.close()
+
 #---------------------------------------------------------------------------------------
 # controller 
 #---------------------------------------------------------------------------------------
@@ -293,9 +299,13 @@ class import_serviceController(ServiceController):
 #        log.debug('unpackPackagedFile ::::: unpack_dir\n %s'% unpack_dir )
         
         # we'll store the original uploaded file
-        out = open (filepath,'wb')
-        shutil.copyfileobj (upload_file.file, out)
-        out.close()
+        #patch for no copy file uploads - check for regular file or file like object
+        abs_path_src = os.path.abspath(upload_file.file.name)
+        if os.path.isfile(abs_path_src):
+            filepath = abs_path_src
+        else:
+            with open(filepath, 'wb') as trg:
+                shutil.copyfileobj(upload_file.file, trg)
 
         # unpack the contents of the packaged file
         members = self.unPack(filepath, unpack_dir, peserve_structure)
@@ -374,9 +384,13 @@ class import_serviceController(ServiceController):
         _mkdir (unpack_dir)
         
         # we'll store the original uploaded file
-        out = open (filepath,'wb')
-        shutil.copyfileobj (upload_file.file, out)
-        out.close()
+        #patch for no copy file uploads - check for regular file or file like object
+        abs_path_src = os.path.abspath(upload_file.file.name)
+        if os.path.isfile(abs_path_src):
+            filepath = abs_path_src
+        else:
+            with open(filepath, 'wb') as trg:
+                shutil.copyfileobj(upload_file.file, trg)
         members = []
         
         # extract all the series from the file
@@ -582,7 +596,7 @@ class import_serviceController(ServiceController):
                 f.file.close()
 
             # pre-process succeeded          
-            log.debug('filters nf: %s'% nf )            
+            log.debug('filters nf: %s'% nf )
             resources = []
             for n in nf:
                 name = os.path.split(n)[-1]
