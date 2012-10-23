@@ -104,7 +104,7 @@ def import_transfer_handler(filename):
     return tempfile.NamedTemporaryFile('w+b', suffix = filename, dir=tmp_upload_dir, delete = False)
 
 #register callables here
-#cgi.file_upload_handler['/import/transfer'] = import_transfer_handler
+cgi.file_upload_handler['/import/transfer'] = import_transfer_handler
 
 ###############################################
 #  BlobStorage
