@@ -157,10 +157,15 @@ class DNServer(ServiceController):
         _mkdir (upload_dir)        
         if not upload.filename:
             return 'No file sent...'
-        out = open (upload_dir+'/'+upload.filename,"wb")
-        shutil.copyfileobj (upload.file, out)
-        out.close()
-        upload.file.close()
+        
+        #patch for no copy file uploads - check for regular file or file like object
+        uploadpath = upload_dir+'/'+upload.filename,"wb"
+        abs_path_src = os.path.abspath(upload.file.name)
+        if os.path.isfile(abs_path_src):
+            shutil.move(abs_path_src, uploadpath)
+        else:
+            with open(uploadpath, 'wb') as trg:
+                shutil.copyfileobj(upload.file, trg)
 
         return 'Upload done for: ' + upload.filename
 

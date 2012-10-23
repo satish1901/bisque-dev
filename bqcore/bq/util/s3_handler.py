@@ -30,8 +30,14 @@ def s3_cache_fetch(bucket, key):
 def s3_cache_save(f, bucket, key):
     cache_filename = os.path.join(S3_CACHE, key)
     _mkdir(os.path.dirname(cache_filename))
-    with open(cache_filename, 'wb') as fw:
-        shutil.copyfileobj(f, fw)
+    
+    #patch for no copy file uploads - check for regular file or file like object
+    abs_path_src = os.path.abspath(f.name)
+    if os.path.isfile(abs_path_src):
+        shutil.move(abs_path_src, cache_filename)
+    else:
+        with open(cache_filename, 'wb') as fw:
+            shutil.copyfileobj(f, fw)
         
     k = Key(bucket)
     k.key = key
