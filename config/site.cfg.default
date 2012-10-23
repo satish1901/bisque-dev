@@ -86,6 +86,7 @@ bisque.paths.root  =
 # Ordered list of stores .. path is created based on template
 # bisque.blob_service.stores = irods1,s3,local
 bisque.blob_service.stores=local
+#bisque.blob_service.tmp_upload_dir = installationdir/data/tmp_upload_dir
 bisque.stores.local.path = file:$datadir/imagedir/$user/$dirhash/$filehash-$filename
 #bisque.stores.local.top= file:$datadir/imagedir
 # Example irods store
