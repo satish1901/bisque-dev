@@ -135,6 +135,7 @@ def file_hash_MD5( filename ):
 
 def guess_type(filename):
     from bq import image_service 
+    filename = filename.strip()
     filetype = image_service.guess_image_type (filename)
     if filetype:
         return 'image'
@@ -234,7 +235,7 @@ class BlobServer(RestController, ServiceMixin):
     def delete(self, *args, **kwargs):
         ' Delete the resource  '
         ident = args[0]
-        log.info("get_one() called %s" % args)
+        log.info("delete() called %s" % args)
         from bq.data_service.controllers.resource_query import resource_delete
         resource = self.getBlobInfo(ident)
         resource_delete(resource)
@@ -243,7 +244,7 @@ class BlobServer(RestController, ServiceMixin):
     @require(predicates.not_anonymous())
     def move(self, src, dst, *args,  **kwargs):
         ' Move a resource identified by path  '
-        log.info("get_one() called %s" % args)
+        log.info("move() called %s" % args)
         from bq.data_service.controllers.resource_query import resource_permission
         from bq.data_service.controllers.resource_query import RESOURCE_READ, RESOURCE_EDIT
         query = DBSession.query(Taggable).filter_by (resource_value=src,resource_parent=None)
@@ -283,10 +284,11 @@ class BlobServer(RestController, ServiceMixin):
         # dima: unix without LANG or LC_CTYPE will through error due to ascii while using sys.getfilesystemencoding()
         #filename_safe = filename.encode(sys.getfilesystemencoding()) 
         #filename_safe = filename.encode('ascii', 'xmlcharrefreplace')
+        #filename_safe = filename.encode('ascii', 'replace')        
         if not filename:
             filename = getattr(fileobj, 'name', '')
 
-        filename_safe = filename.encode('idna')
+        filename_safe = filename.encode('ascii', 'xmlcharrefreplace')
 
         def store_blob(fileobj, filename_safe, user_name):
             for store_id, store in self.stores.items():
