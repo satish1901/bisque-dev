@@ -1,5 +1,4 @@
 body {
-    background-color: white !important;
     background: url('images/background_grass.jpg'), 
         url('images/background_cloud.png'), url('images/background_cloud.png'), url('images/background_cloud.png'),
         url('images/background_sun.png');
@@ -42,7 +41,7 @@ body {
            background-size: contain, 20%, 30%, 25%, 300px; }
 }
 
-.x-splitter {
+#appwindow-embedded-center .x-splitter {
     background-color: transparent;
 }
 
