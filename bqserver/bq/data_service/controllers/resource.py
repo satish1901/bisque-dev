@@ -130,9 +130,9 @@ def safename(filename, user):
         if re_url_scheme.match(filename):
             if isinstance(filename,str):
                 filename = filename.decode('utf-8')
-                filename = filename.encode('idna')
+                filename = filename.encode('ascii', 'xmlcharrefreplace')
             else:
-                filename = filename.encode('idna')
+                filename = filename.encode('ascii', 'xmlcharrefreplace')
     except UnicodeError:
         pass
     if isinstance(filename,unicode):
