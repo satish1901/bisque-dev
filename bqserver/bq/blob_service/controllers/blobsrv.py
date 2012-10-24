@@ -284,10 +284,11 @@ class BlobServer(RestController, ServiceMixin):
         # dima: unix without LANG or LC_CTYPE will through error due to ascii while using sys.getfilesystemencoding()
         #filename_safe = filename.encode(sys.getfilesystemencoding()) 
         #filename_safe = filename.encode('ascii', 'xmlcharrefreplace')
+        #filename_safe = filename.encode('ascii', 'replace')        
         if not filename:
             filename = getattr(fileobj, 'name', '')
 
-        filename_safe = filename.encode('idna')
+        filename_safe = filename.encode('ascii', 'xmlcharrefreplace')
 
         def store_blob(fileobj, filename_safe, user_name):
             for store_id, store in self.stores.items():
