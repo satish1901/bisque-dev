@@ -96,16 +96,6 @@ def randomPath (format_path, user, filename, **params):
         filehash=rand_hash,
         filename=os.path.basename(filename), **params)
 
-#patch to allow no copy file uploads (direct to destination directory)
-import tempfile
-tmp_upload_dir = config.get('bisque.blob_service.tmp_upload_dir', string.Template("$datadir/tmp_upload_dir").safe_substitute(datadir=data_path()))
-_mkdir(tmp_upload_dir)
-def import_transfer_handler(filename):
-    return tempfile.NamedTemporaryFile('w+b', suffix = filename, dir=tmp_upload_dir, delete = False)
-
-#register callables here
-cgi.file_upload_handler['/import/transfer'] = import_transfer_handler
-
 ###############################################
 #  BlobStorage
 class BlobStorage(object):

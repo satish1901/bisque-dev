@@ -145,11 +145,24 @@ class UploadedFile:
         if not self.file is None:
             self.file.close()
 
+#patch to allow no copy file uploads (direct to destination directory)
+#---------------------------------------------------------------------------------------------#
+import cgi
 
-def loglog(s):
-    f = open('/home/kage/bq051/log.log','a')
-    f.write(s+'\n')
-    f.close()
+#if upload handler has been inited in webob
+if hasattr(cgi, 'file_upload_handler'):
+    tmp_upload_dir = config.get('bisque.blob_service.tmp_upload_dir', os.path.join(data_path(),'tmp_upload_dir'))
+    _mkdir(tmp_upload_dir)
+    
+    #register callables here
+    def import_transfer_handler(filename):
+        import tempfile
+        return tempfile.NamedTemporaryFile('w+b', suffix = filename, dir=tmp_upload_dir, delete = False)
+    
+    #map callables to paths here
+    cgi.file_upload_handler['/import/transfer'] = import_transfer_handler
+
+#---------------------------------------------------------------------------------------------#
 
 #---------------------------------------------------------------------------------------
 # controller 
