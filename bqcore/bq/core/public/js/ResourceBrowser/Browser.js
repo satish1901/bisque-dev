@@ -245,6 +245,8 @@ Ext.define('Bisque.ResourceBrowser.Browser',
 
             if (this.browserParams.dataset!="None")
             {
+                var baseURL = (this.browserParams.dataset instanceof BQDataset)?this.browserParams.dataset.uri+'/value':this.browserParams.dataset;
+                
                 this.loadData(
                 {
                     baseURL : this.browserParams.dataset,
