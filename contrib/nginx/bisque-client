@@ -20,6 +20,7 @@ server {
         uwsgi_param SCRIPT_NAME "";
         uwsgi_read_timeout 600;
         uwsgi_send_timeout 600;
+        uwsgi_buffering off;
     }
 
     error_page   500 502 503 504  /50x.html;
