@@ -166,6 +166,7 @@ class LocalStorage(BlobStorage):
         #patch for no copy file uploads - check for regular file or file like object
         abs_path_src = os.path.abspath(src.name)
         if os.path.isfile(abs_path_src):
+            src.close() #patch to make file move possible on windows
             shutil.move(abs_path_src,localpath)
         else:
             with open(localpath, 'wb') as trg:
