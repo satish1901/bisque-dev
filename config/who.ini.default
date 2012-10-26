@@ -47,13 +47,8 @@ use = bq.core.lib.autoreg:AutoRegister
 # # This is the base of the 'distinguished names' (DNs) of persons in your
 # # particular LDAP instance.  It will vary from server to server.
 # base_dn = o=ucsb
-
-# [plugin:ldap_attributes]
-# # I also do some overriding for more security in how I get attributes for
-# # users.
-# use = bq.core.lib.ldap_auth:LDAPAttributesPluginExt
-# ldap_connection = ldap://directory.ucsb.edu
 # attributes = uid,cn,sn,mail
+# auto_register=autoregister
 
 # OpenID
 # dependency:  repoze.who.plugins.openid
@@ -127,6 +122,7 @@ plugins =
 
 [authenticators]
 plugins =
+    auth_tkt
     sqlauth       
 #    ldap_auth
     mexauth
@@ -138,6 +134,6 @@ plugins =
 plugins =
     bq.core.lib.sqlauth:md_plugin
     bq.core.lib.sqlauth:md_group_plugin
-    autoregister
+#    autoregister
 
        

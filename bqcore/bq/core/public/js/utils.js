@@ -74,12 +74,12 @@ function attribDict(node) {
 
 function attribInt(node, a) {
     var v = node.getAttribute(a);
-    return isNaN(v) ? null : parseInt(v, 10);
+    return v ?  parseInt(v, 10): null;
 }
 
 function attribFloat(node, a) {
     var v = node.getAttribute(a);
-    return isNaN(v) ? null : parseFloat(v);
+    return v ? parseFloat(v) : null;
 }
 
 function attribStr(node, a) {
