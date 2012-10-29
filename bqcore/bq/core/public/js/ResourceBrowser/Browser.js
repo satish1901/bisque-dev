@@ -249,7 +249,7 @@ Ext.define('Bisque.ResourceBrowser.Browser',
                 
                 this.loadData(
                 {
-                    baseURL : this.browserParams.dataset,
+                    baseURL : baseURL,
                     offset : this.browserParams.offset,
                     tag_query : this.browserParams.tagQuery,
                     tag_order : this.browserParams.tagOrder

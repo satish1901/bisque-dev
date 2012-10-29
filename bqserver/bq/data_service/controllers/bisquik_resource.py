@@ -222,7 +222,7 @@ class BisquikResource(Resource):
         tags=tag expression i.e. [TAG:]VAL [AND|OR [TAG:]VAL]+
         xxx=val match an attribute on the resorce
         """
-        view  = kw.pop('view', None)
+        view  = kw.pop('view', 'short')
         tag_query = kw.pop('tag_query', '')
         tag_order = kw.pop('tag_order', '')
         wpublic = kw.pop('wpublic', None)
@@ -236,6 +236,7 @@ class BisquikResource(Resource):
         user_id = request.bisque.user_id
 
         if view=='count':
+            limit=None
             count = resource_count(self.resource_type,
                                    parent = parent,
                                    user_id = user_id,
@@ -341,7 +342,7 @@ class BisquikResource(Resource):
         """GET /ds/images/1 : fetch the resource
         """
         log.info ('GET  %s' % (request.url))
-        view=kw.pop('view', None)
+        view=kw.pop('view', 'short')
         format = kw.pop('format', None)
         resource = self.check_access(resource)
         log.info ("GET ==>%s" % str(resource))

@@ -106,7 +106,7 @@ class BQNode (object):
 class BQResource (BQNode):
     '''Base class for Bisque resources'''
     xmltag = 'resource'
-    xmlfields = ['name', 'value', 'type', 'uri', 'ts']
+    xmlfields = ['name', 'value', 'type', 'uri', 'ts', 'resource_uniq']
     xmlkids = ['kids', 'tags', 'gobjects']
 
     def __repr__(self):

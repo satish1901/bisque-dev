@@ -25,3 +25,11 @@ def update_url(url, params = {}):
     
     url_parts[4] = urllib.urlencode(query)
     return  urlparse.urlunparse(url_parts)
+
+def strip_url_params(url):
+    'strip url params returning clean url and param multidict '
+
+    url_parts = list(urlparse.urlparse(url))
+    query = dict(urlparse.parse_qsl(url_parts[4]))
+    url_parts[4] = None
+    return  urlparse.urlunparse(url_parts), query

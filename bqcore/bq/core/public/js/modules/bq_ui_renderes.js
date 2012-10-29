@@ -376,11 +376,20 @@ Ext.define('BQ.selectors.Resource', {
         if (this.selected_resource instanceof BQImage) {
             this.onImage(this.selected_resource);
         } else if (this.selected_resource instanceof BQDataset) {
-            BQFactory.request({ 
-                uri: this.selected_resource.getMembers().values[0].value, 
-                cb: callback(this, 'onImage'), 
-                errorcb: callback(this, 'onerror'), 
-            });  
+            var me = this;
+            this.selected_resource.getMembers(function (dataset) {
+                // Sometime values are loaded instances (image) and sometimes not!
+                var uri = dataset.values[0].uri || dataset.values[0].value;
+                BQFactory.request ({ uri : uri,
+                                     cb: callback(me, 'onImage'), 
+                                     errorcb: callback(me, 'onerror'), 
+                                   }); });
+
+            // BQFactory.request({ 
+            //     uri: this.selected_resource.getMembers().values[0].value, 
+            //     cb: callback(this, 'onImage'), 
+            //     errorcb: callback(this, 'onerror'), 
+            // });  
         }
         
         this.add(this.resourcePreview);

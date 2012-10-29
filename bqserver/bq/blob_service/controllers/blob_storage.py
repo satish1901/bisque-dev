@@ -51,7 +51,6 @@ import logging
 import urlparse
 import string
 import shutil
-import cgi
 
 from tg import config
 from paste.deploy.converters import asbool

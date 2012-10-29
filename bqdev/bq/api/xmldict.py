@@ -13,6 +13,10 @@ def xml2d(e):
     """
     def _xml2d(e):
         kids = dict(e.attrib)
+        #if e.text:
+        #    kids['__text__'] = e.text
+        #if e.tail:
+        #    kids['__tail__'] = e.tail
         for k, g in groupby(e, lambda x: x.tag):
             g = [ _xml2d(x) for x in g ] 
             kids[k]=  g
@@ -58,6 +62,10 @@ def d2xml(d):
                     if item is None: continue
                     node = etree.SubElement(p, k)
                     _d2xml(item, node)
+            #elif k == "__text__":
+            #        p.text = v
+            #elif k == "__tail__":
+            #        p.tail = v
             else:
                 p.set(k, unicode(v))
 

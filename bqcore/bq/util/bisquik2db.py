@@ -61,8 +61,11 @@ import copy
 from lxml import etree
 from datetime import datetime
 from sqlalchemy.orm import object_mapper
+from sqlalchemy.exc import OperationalError, ConcurrentModificationError
+
 from StringIO import StringIO
 from tg import config
+import transaction
 
 from bq.core.model import DBSession
 from bq.data_service.model import *
@@ -398,9 +401,11 @@ def xmlnode(dbo, parent, baseuri, view, **kw):
     if rtype not in ('value', 'vertex'):
         elem = xmlelement (dbo, parent, baseuri, view=view)
         if 'deep' not in view and hasattr(dbo,'resource_value') and dbo.resource_value == None:
-            junk = [ xmlnode(x, elem, baseuri, view) for x in dbo.values ]
+            if 'short' not in view:
+                junk = [ xmlnode(x, elem, baseuri, view) for x in dbo.values ]
         if 'deep' not in view and hasattr(dbo, 'vertices'):
-            junk = [ xmlnode(x, elem, baseuri, view) for x in dbo.vertices ]
+            if 'short' not in view:
+                junk = [ xmlnode(x, elem, baseuri, view) for x in dbo.vertices ]
         return elem
 
     #if rtype == 'tag':
@@ -734,9 +739,51 @@ def updateDB(root=None, parent=None, resource = None, factory = ResourceFactory,
     except Exception, e:
         log.exception("during parse of %s " % (etree.tostring(root, pretty_print=True)))
         raise e
-            
     return  last_resource
     
+def bisquik2db_internal(inputs, parent, resource,  replace):
+    '''Parse a document (either as a doc, or an etree.
+    Verify against xmlschema if present
+    '''
+    results=[]
+    if parent is not None:
+        parent = DBSession.merge(parent)
+    if resource is not None:
+        resource = DBSession.merge(resource)
+    for el in inputs:
+        node = updateDB(root=el, parent = parent, resource=resource, replace=replace)
+        log.debug ("returned %s " % str(node))
+        log.debug ('modifyed : new (%d), dirty (%d), deleted(%d)' %
+                   (len(DBSession.new), len(DBSession.dirty), len(DBSession.deleted)))
+        if not node in DBSession:
+            DBSession.add(node)
+        results.append(node)
+
+    DBSession.flush()
+    for node in results:
+        DBSession.refresh(node)
+    log.debug ('modifyed : new (%d), dirty (%d), deleted(%d)' %
+               (len(DBSession.new), len(DBSession.dirty), len(DBSession.deleted)))
+    log.debug("Bisquik2db last_node %s of document %s " % ( node, node.document ))
+    if len(results) == 1:
+        return node
+    return results
+
+
+class Attempt(object):
+    def __init__(self, manager, n):
+        self.manager = manager
+        self.count = n
+    def __enter__(self):
+        pass
+
+    def __exit__(self, t, v, tb):
+        if v is not None:
+            if isinstance (v, (OperationalError, ConcurrentModificationError)):
+                log.debug ("DB transient EXCEPTION %s" %v)
+                return True
+        return False
+                
 
 
 def bisquik2db(doc= None, parent=None, resource = None, xmlschema=None, replace=False):
@@ -755,31 +802,17 @@ def bisquik2db(doc= None, parent=None, resource = None, xmlschema=None, replace=
         inputs = [ doc ] 
 
     DBSession.autoflush = False
-    results = []
-    for el in inputs:
-        node = updateDB(root=el, parent = parent, resource=resource, replace=replace)
-        log.debug ("returned %s " % str(node))
-        log.debug ('modifyed : new (%d), dirty (%d), deleted(%d)' %
-                   (len(DBSession.new), len(DBSession.dirty), len(DBSession.deleted)))
-        if not node in DBSession:
-            DBSession.add(node)
-        results.append(node)
-
-    try:
-        DBSession.flush()
-        for node in results:
-            DBSession.refresh(node)
-            log.debug ('modifyed : new (%d), dirty (%d), deleted(%d)' %
-                       (len(DBSession.new), len(DBSession.dirty), len(DBSession.deleted)))
-            log.debug("Bisquik2db last_node %s of document %s " % ( node, node.document ))
-        if len(results) == 1:
-            return node
-        return results
-    except Exception, e:
-        log.exception (u'Exception in save resource-%s pareent-%s' % (resource, parent))
-        raise
-
-
+    def attempts(num=3):
+        for attempt in range(num):
+            yield Attempt(transaction.manager, attempt)
+        
+    # Try to overcome transient database errors 3 times with some magic:
+    for attempt in attempts(3):
+        with attempt:
+            # 'attempt' will disregard SA transient exceptions
+            # if no exception then the return just happens
+            return bisquik2db_internal(inputs, parent, resource, replace)
+        
             
 
 

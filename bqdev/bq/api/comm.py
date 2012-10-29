@@ -116,18 +116,18 @@ class BQServer(object):
         log.debug("FETCH %s req  header=%s" %  (url, headers))
         header, content = self.http.request(url, headers = headers)
         if 'xml' in header.get('content-type', ''):
-            log.debug("FETCH resp %s, content=%s" % (header, content))
+            log.debug("FETCH resp %s, content=%s..." % (header, content[:60]))
         return content
 
     def post(self, url, content=None, files=None, headers=None, method="POST"):
         headers = self.prepare_headers(headers)
-        log.debug("POST %s req %s, content=%s" % (url, headers, content))
+        log.debug("POST %s req %s, content=%s..." % (url, headers, content[:60]))
         header, content = self.http.request(url,
                                             headers = headers,
                                             body=content,
                                             method=method)
 
-        log.debug("POST resp %s, content=%s" % (header, content))
+        log.debug("POST resp %s, content=%s.." % (header, content[:60]))
         return content
 
 
@@ -200,13 +200,14 @@ class BQSession(object):
         log.debug('postxml %s  content %s ' % (url, xml))
         content = etree.tostring(xml, pretty_print=True)
         url = self.c.prepare_url(url, **params)
+        response = None
         try:
-            content =  self.c.post(url, content=content, method=method,
+            response =  self.c.post(url, content=content, method=method,
                                    headers = {'Content-Type':'text/xml', 'Accept': 'text/xml' })
-            return etree.XML(content)
+            return etree.XML(response)
         except:
-            log.exception('during post %s of %s ' % (url, xml))
-            return None
+            log.exception('during post %s of %s -> %s ' % (url, content, response))
+        return response
 
 
     def service_url(self, service_type, path = "" , query = None):
@@ -249,7 +250,7 @@ class BQSession(object):
     ##############################
     # Mex
     ##############################
-    def update_mex(self, status, tags = [], gobjects = [], children=[], reload=True):
+    def update_mex(self, status, tags = [], gobjects = [], children=[], reload=False):
         """save an updated mex with the addition
         
         :param status:  The current status of the mex

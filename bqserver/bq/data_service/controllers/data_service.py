@@ -69,6 +69,8 @@ from bq.util.bisquik2db import bisquik2db, load_uri, db2tree, updateDB, parse_ur
 from bq.exceptions import BadValue
 from bq.core import identity
 from bq.util.paths import data_path
+from bq.util.urlutil import strip_url_params
+
 
 from .bisquik_resource import BisquikResource
 from .resource_query import resource_query, resource_count, resource_load, resource_delete, resource_types, resource_auth
@@ -185,14 +187,16 @@ class DataServerController(ServiceController):
         self.cache_invalidate(r.get('uri').rsplit('/', 1)[0])
         return r
 
-    def get_resource(self, resource, view=None, **kw):
+    def get_resource(self, resource, **kw):
         uri = None
         if isinstance (resource, etree._Element):
             uri = resource.get ('uri')
         elif isinstance(resource, basestring):
-            uri = resource
+            uri,params = strip_url_params(resource)
+            params.update(kw)
+            kw = params
         if uri is not None:
-            response =  self.cache_check(uri, view=view, **kw)
+            response =  self.cache_check(uri, **kw)
             if response:
                 log.debug ("get_resource:CACHE response")
                 xml =  etree.XML (response)
@@ -201,12 +205,12 @@ class DataServerController(ServiceController):
                 net, name, ida, rest = parse_uri(uri)
                 resource = load_uri (uri)
                 if rest:
-                    resource = self.query(rest[-1], view=view, parent=resource)
-                    self.cache_save (uri, response=etree.tostring(resource), view=view, **kw)
+                    resource = self.query(rest[-1], parent=resource)
+                    self.cache_save (uri, response=etree.tostring(resource), **kw)
                     return resource
-        xtree = db2tree(resource, baseuri = self.url, view=view, **kw)
+        xtree = db2tree(resource, baseuri = self.url, **kw)
         uri = uri or xtree.get('uri')
-        self.cache_save (uri, response=etree.tostring(xtree), view=view, **kw)
+        self.cache_save (uri, response=etree.tostring(xtree), **kw)
         return xtree
 
 
