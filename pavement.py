@@ -114,8 +114,8 @@ def setup(options):
             sh('python setup.py develop')
             os.chdir(top)
     #sh('easy_install http://biodev.ece.ucsb.edu/binaries/depot/TurboGears2/TurboGears2-2.1.5.tar.gz')
-    sh('easy_install https://bitbucket.org/bisque/webob/downloads/WebOb-1.0.8bisque1.tar.gz')
-    sh('easy_install https://bitbucket.org/bisque/tg2/downloads/TurboGears2-2.1.5bisque.tar.gz')
+    sh('easy_install https://bitbucket.org/bisque/webob/downloads/WebOb-1.0.8.tar.gz')
+    sh('easy_install https://bitbucket.org/bisque/tg2/downloads/TurboGears2-2.1.5.tar.gz')
     sh('easy_install http://biodev.ece.ucsb.edu/binaries/depot/Paste/Paste-1.7.5.1bisque2.tar.gz')
     sh('easy_install pastescript==1.7.3')
 
