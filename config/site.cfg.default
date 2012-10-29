@@ -64,7 +64,9 @@ bisque.organization = ORG
 bisque.title = BioImage Repository
 bisque.admin_email = admin@nowhere.com
 bisque.welcome_message = Welcome to the Bisque database
-#bisque.js_environment = production
+#set environment to development for test/debug
+bisque.environment = development
+#bisque.environment = production
 #bisque.background_query = welcome_background:
 
 # tags used by the front page for site contents overview
@@ -188,6 +190,7 @@ sqlalchemy.pool_recycle = 3600
 who.config_file = %(here)s/who.ini
 who.log_level = error
 who.log_stream = stdout
+
 
 # WARNING: *THE LINE BELOW MUST BE UNCOMMENTED ON A PRODUCTION ENVIRONMENT*
 # Debug mode will enable the interactive debugging tool, allowing ANYONE to

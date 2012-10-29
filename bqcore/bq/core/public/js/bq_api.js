@@ -176,25 +176,26 @@ BQFactory.request = function(params) {
     if (! uri) {
         clog("ERROR: trying to load null uri");
     }
-    if (cache && uri in BQFactory.session) {
-        var o = BQFactory.session[uri];
-        if (o instanceof XMLHttpRequest) {
-            clog ("outstanding request");
-            if (cb) 
-                chainRequest(o, callback(BQFactory, 'loaded_callback', uri, cb));
-        } else {
-            //clog ("using cache result");
-            //if (cb) cb(o);
-            // Just redo the request
-            clog ('re-issuing cached result ' + uri);
-            BQFactory.session[uri] = xmlrequest(uri, callback(BQFactory, 'on_xmlresponse', params), method, xmldata, params.errorcb);
-        }
-    } else {
+    // if (cache && uri in BQFactory.session) {
+    //     var o = BQFactory.session[uri];
+    //     if (o instanceof XMLHttpRequest) {
+    //         clog ("outstanding request");
+    //         if (cb) 
+    //             chainRequest(o, callback(BQFactory, 'loaded_callback', uri, cb));
+    //     } else {
+    //         //clog ("using cache result");
+    //         //if (cb) cb(o);
+    //         // Just redo the request
+    //         clog ('re-issuing cached result ' + uri);
+    //         BQFactory.session[uri] = xmlrequest(uri, callback(BQFactory, 'on_xmlresponse', params), method, xmldata, params.errorcb);
+    //     }
+    // } else {
         BQFactory.session[uri] = xmlrequest(uri, callback(BQFactory, 'on_xmlresponse', params), method, xmldata, params.errorcb);
-    }
+//}
 };
 
 BQFactory.loaded_callback = function (uri, cb, xmldoc) {
+    clog ("Loaded callback for " + uri);
     var o = BQFactory.session[uri];
     cb (o);
 };
@@ -1794,10 +1795,18 @@ BQDataset.prototype.getMembers = function (cb) {
     }
     */
     // we need to make sure we fetched values before we can do this properly
-    this.values = this.values || [];
-    
-    if (cb) cb(this);
+    //this.values = this.values || [];
+
+    if (!this.values) {
+        BQFactory.request ({ uri : this.uri + '/value' ,  cb: callback(this, '_loaded', cb)});
+    } else {
+        if (cb) cb(this);
+    }
     return this;    
+}
+BQDataset.prototype._loaded = function (cb, resource) {
+    this.values = resource.children;
+    if (cb) cb(this);
 }
 
 BQDataset.prototype.setMembers = function (nvs) {

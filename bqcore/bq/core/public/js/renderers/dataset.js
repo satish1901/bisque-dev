@@ -25,7 +25,7 @@ Ext.define('BQ.renderers.dataset', {
     defaults: { border: 0, },
  
     onResourceRender : function() {
-        this.setLoading('Fetching memebrs...', true);
+        this.setLoading('Fetching members...', true);
         this.tagger = Ext.create('Bisque.ResourceTagger', {
             resource : this.resource,
             title : 'Annotations',
@@ -265,7 +265,7 @@ Ext.define('BQ.renderers.dataset', {
         }
 
         var m = this.resource.getMembers();
-        var members = m.values; // has to be in two lines, otherwise some optimization happens...
+        var members = m.values || []; // has to be in two lines, otherwise some optimization happens...
         var r = null;
         for (var i=0; (r=sel[i]); i++)
             members.push(new BQValue('object', r.uri ));

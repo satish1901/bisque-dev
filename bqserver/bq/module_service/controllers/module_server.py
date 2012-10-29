@@ -89,7 +89,7 @@ from tg import controllers, expose, config, override_template
 from bq import data_service
 from bq.util import http
 from bq.util.xmldict import d2xml, xml2d
-from bq.core.identity import  set_admin_mode
+from bq.core.identity import  set_admin_mode, not_anonymous
 from bq.core.permission import *
 from bq.exceptions import RequestError
 
@@ -113,9 +113,11 @@ class MexDelegate (Resource):
         self.runner = runner
 
     def remap_uri (self, mex):
-        mexid = mex.get('uri').rsplit('/',1)[1]
-        log.debug ('remap -> %s' % self.url)
-        mex.set ('uri', "%s%s" % (self.url, mexid))
+        uri = mex.get('uri')
+        if uri:
+            mexid = uri.rsplit('/',1)[1]
+            log.debug ('remap -> %s' % self.url)
+            mex.set ('uri', "%s%s" % (self.url, mexid))
 
     def load(self, token):
         log.debug ("load of %s " % tg.request.url)
@@ -163,7 +165,7 @@ class MexDelegate (Resource):
         return mex
 
     @expose()
-    def modify(self, resource, xml, **kw):
+    def modify(self, resource, xml, view=None, **kw):
         """
         Modify the mex in place.  Use to update status
         """
@@ -171,32 +173,32 @@ class MexDelegate (Resource):
         log.debug('MEX MODIFY')
         mex = etree.XML (xml)
         mex = check_mex(mex)
-        mex = data_service.update(mex, view='deep')
+        mex = data_service.update(mex, view=view)
         self.remap_uri (mex)
         tg.response.headers['Content-Type'] = 'text/xml'
         return etree.tostring (mex)
 
     @expose()
-    def get(self, resource, **kw):
+    def get(self, resource, view=None, **kw):
         """
         fetches the resource, and returns a representation of the resource.
         """
-        mex = data_service.get_resource(resource, view='deep')
-        log.debug ("dataservice fetch -> %s" % etree.tostring(mex))
+        mex = data_service.get_resource(resource, view=view)
+        #log.debug ("dataservice fetch -> %s" % etree.tostring(mex))
         self.remap_uri (mex)
 
         tg.response.headers['Content-Type'] = 'text/xml'
         return etree.tostring (mex)
         
     @expose()
-    def append(self, resource, xml, **kw):
+    def append(self, resource, xml, view=None, **kw):
         """
         Append a value to the mex
         """
         log.debug('MEX APPEND')
         mex = etree.XML(xml)
         mex = check_mex(mex)
-        mex = data_service.update(mex, view='deep')
+        mex = data_service.update(mex, view=view)
         #mex =  data_service.append_resource (resource, xml, **kw)
         self.remap_uri (mex)
         tg.response.headers['Content-Type'] = 'text/xml'
@@ -490,7 +492,7 @@ class ModuleServer(ServiceController):
     @expose(content_type='text/xml')
     def register_engine(self, **kw):
         'Helper method .. redirect post to engine resource'
-        set_admin_mode()
+        #set_admin_mode()
         xml =  self.engine._default (**kw)
         self.load_services()
         return xml

@@ -8,7 +8,7 @@ bqlog = logging.getLogger('bq.ldap')
 
 
 def retry(fn, args = (), kw = {}, count=2, exc=Exception, recover = int):
-    for trys in range(count):
+    for tries in range(count):
         try:
             return fn (*args, **kw)
         except exc, e:

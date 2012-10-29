@@ -115,6 +115,7 @@ ModuleService.prototype.checkMexStatus = function (mex) {
 
 ModuleService.prototype.requestMexStatus = function(mex_uri) {
     BQFactory.request ({uri : mex_uri, 
+                        uri_params : { view: 'deep'},
                         cb : callback(this, 'checkMexStatus'),
                         errorcb: callback(this, 'onerror'),
                         cache : false});
