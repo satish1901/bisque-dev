@@ -1,9 +1,10 @@
-Bisque.ResourceBrowser.ResourceQueue = Ext.extend(Array,
-{
-	constructor : function(config)
-	{
-		Bisque.ResourceBrowser.ResourceQueue.superclass.constructor.call(this, arguments);
+Bisque.ResourceBrowser.ResourceQueue = function() {};
+Bisque.ResourceBrowser.ResourceQueue.prototype = new Array;
 
+Ext.apply(Bisque.ResourceBrowser.ResourceQueue.prototype, 
+{
+	init : function(config)
+	{
 		Ext.apply(this,
 		{
 			browser          :   config.browser,
