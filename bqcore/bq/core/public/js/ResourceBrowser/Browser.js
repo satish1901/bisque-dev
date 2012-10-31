@@ -362,8 +362,8 @@ Ext.define('Bisque.ResourceBrowser.Browser',
                 if(this.uri[param].length == 0)
                     delete this.uri[param];
     
-            this.resourceQueue = new Bisque.ResourceBrowser.ResourceQueue(
-            {
+            this.resourceQueue = new Bisque.ResourceBrowser.ResourceQueue();
+            this.resourceQueue.init({
                 callBack : callback(this, 'dataLoaded'),
                 browser : this,
                 uri : this.uri
