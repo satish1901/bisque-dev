@@ -66,7 +66,7 @@ from sqlalchemy import Table, Column, ForeignKey
 from sqlalchemy import Integer, String, DateTime, Unicode, Float, Boolean
 from sqlalchemy import Text, UnicodeText
 from sqlalchemy.orm import relation, class_mapper, object_mapper, validates, backref, synonym
-from sqlalchemy import exceptions
+from sqlalchemy import exc
 from sqlalchemy.sql import and_, case
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
