@@ -122,7 +122,7 @@ class LDAPAuthenticatorPluginExt(LDAPSearchAuthenticatorPlugin):
 
     def reconnect(self,environ, identity):
         log  = environ.get('repoze.who.logger', bqlog)
-        log.warn( "FAILED TO CONNECT TO LDAP 1 : " + str(e))
+        log.warn( "FAILED TO CONNECT TO LDAP 1 : " )
         log.warn( "Retrying...")
         self.ldap_connection = ldap.initialize(self.uri)
 

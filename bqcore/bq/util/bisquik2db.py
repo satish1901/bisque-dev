@@ -61,7 +61,8 @@ import copy
 from lxml import etree
 from datetime import datetime
 from sqlalchemy.orm import object_mapper
-from sqlalchemy.exc import OperationalError, ConcurrentModificationError
+from sqlalchemy.exc import OperationalError
+from sqlalchemy.orm.exc import ConcurrentModificationError
 
 from StringIO import StringIO
 from tg import config
