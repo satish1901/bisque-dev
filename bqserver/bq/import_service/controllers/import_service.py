@@ -112,6 +112,7 @@ from bq.util.paths import data_path
 from bq import image_service
 from bq import data_service
 from bq import blob_service
+
 import bq.image_service.controllers.imgcnv as imgcnv
 import bq.image_service.controllers.bioformats as bioformats
 from bq.util.mkdir import _mkdir
@@ -130,11 +131,12 @@ bioformats_needed_version = '4.3.0'
 
 class UploadedFile:
     """ Object encapsulating upload file """
-    filename   = None
-    file       = None
-    tags       = None
-    original   = None
-    permission = 'private'
+    filename        =   None
+    file            =   None
+    tags            =   None
+    original        =   None
+    resource_type   =   None
+    permission      =   'private'
     
     def __init__(self, path, name, tags=None):
         self.filename = name
@@ -181,6 +183,7 @@ class import_serviceController(ServiceController):
         mimetypes.add_type('image/volocity', '.mvd2')
         
         self.filters = {}
+        self.filters['zip-bisque']      = self.filter_zip_bisque
         self.filters['zip-multi-file']  = self.filter_zip_multifile   
         self.filters['zip-time-series'] = self.filter_zip_tstack   
         self.filters['zip-z-stack']     = self.filter_zip_zstack   
@@ -284,8 +287,8 @@ class import_serviceController(ServiceController):
         z.close()
         return names
 
-    def unPack(self, filename, folderName, peserve_structure=False):
-        if peserve_structure is False:
+    def unPack(self, filename, folderName, preserve_structure=False):
+        if preserve_structure is False:
             if filename.lower().endswith('zip'):
                 return self.unZipFlat(filename, folderName)
             else:
@@ -296,7 +299,7 @@ class import_serviceController(ServiceController):
             else:
                 return self.unTar(filename, folderName)
 
-    def unpackPackagedFile(self, upload_file, peserve_structure=False):
+    def unpackPackagedFile(self, upload_file, preserve_structure=False):
         ''' This method unpacked uploaded file into a proper location '''
         
         uploadroot = config.get('bisque.image_service.upload_dir', data_path('uploads'))
@@ -321,7 +324,7 @@ class import_serviceController(ServiceController):
                 shutil.copyfileobj(upload_file.file, trg)
 
         # unpack the contents of the packaged file
-        members = self.unPack(filepath, unpack_dir, peserve_structure)
+        members = self.unPack(filepath, unpack_dir, preserve_structure)
  
         return unpack_dir, members
 
@@ -427,7 +430,7 @@ class import_serviceController(ServiceController):
     def extractSeriesVolocity(self, upload_file):
         ''' This method unpacks uploaded file and converts from Volocity to ome-tiff '''
         self.check_bioformats()
-        unpack_dir, members = self.unpackPackagedFile(upload_file, peserve_structure=True)      
+        unpack_dir, members = self.unpackPackagedFile(upload_file, preserve_structure=True)      
         
         log.debug('unpack_dir:\n %s'% unpack_dir ) 
         log.debug('members:\n %s'% members )         
@@ -449,30 +452,133 @@ class import_serviceController(ServiceController):
         return unpack_dir, mvd2
 
 
+
+
+
+
+
+
+
+#------------------------------------------------------------------------------
+# Import archives exported by a BISQUE system
+#------------------------------------------------------------------------------
+    def importBisqueArchive(self, file, tags):
+        
+        #-------------------------------------------------------------------
+        # parsePath : parses a path into hash of directories and a filename
+        #-------------------------------------------------------------------
+        def parsePath(filename):
+            (root, name) = os.path.split(filename)
+            dir = []
+            
+            while root!='':
+                root, nextDir = os.path.split(root)
+                dir = dir + [nextDir]
+            
+            dir.reverse()
+            return (dir, name)
+        
+        #-----------------------------------------------------------------------------------------
+        # ingestResource : recursively ingests a file hierarchy and returns top most parent's XML
+        #-----------------------------------------------------------------------------------------
+        def ingestResource(fileObj):
+            xml = parseXML(fileObj.get('XML'))
+
+            if fileObj.get('isDataset') is None:
+                if fileObj.get('FILE') is not None:
+                    fileObjUp = UploadedFile(fileObj.get('FILE'), None, None)
+                    return blob_service.store_fileobj(fileObjUp.file, self.sanitize_filename(os.path.basename(fileObj.get('FILE'))), xml)
+                else:
+                    return data_service.new_resource(resource = xml)
+            else:
+                del fileObj['isDataset']
+                del fileObj['XML'] 
+                
+                # delete value fields from the dataset XML
+                for value in xml.iter('value'):
+                    xml.remove(value)
+                
+                # iterate through children of the dataset
+                for member in fileObj:
+                    memberXML = ingestResource(fileObj.get(member))
+                    value = etree.SubElement(xml, 'value', type='object')
+                    value.text = memberXML.get('uri')
+                
+                return data_service.new_resource(resource = xml)
+            return None
+
+        #--------------------------------------------------------------
+        # parseXML : read and return a resource's XML from a .xml file 
+        #--------------------------------------------------------------
+        def parseXML(filePath):
+            file = open(filePath)
+            xml = file.read()
+            file.close()
+            return etree.fromstring(xml)
+
+        #---------------------------------------------------------------
+        #---------------------------------------------------------------
+        
+        unpack_dir, members = self.unpackPackagedFile(file, preserve_structure=True)
+        self.parent_uri = None
+        
+        memberHash = {}
+
+        # create a hash that maps flat file structure into a hierarchy
+        for member in members:
+            
+            if member == '_bisque.xml':
+                continue
+            
+            (dirs, name) = parsePath(member)
+            parent = memberHash
+            for dir in dirs:
+                parent[dir] = parent.get(dir) or {}
+                parent[dir]['isDataset'] = True
+                parent = parent[dir]
+            
+            (fname, ext) = os.path.splitext(name)
+            value = 'XML' if ext.lower() == '.xml' else 'FILE' 
+            entry = parent.get(fname) or {}
+            entry[value] = os.path.normpath(os.path.join(unpack_dir, member))
+            parent[fname] = entry
+
+        resources = []
+
+        # store resources and blobs with proper XML attached
+        for file in memberHash:
+            resources.append(ingestResource(memberHash.get(file)))
+        
+        return resources
+
+
 #---------------------------------------------------------------------------------------
 # filters, take f and return a list of file names
 #---------------------------------------------------------------------------------------
 
     def filter_zip_multifile(self, f, intags):
         unpack_dir, members = self.unpackPackagedFile(f)
-        return [ '%s/%s'%(unpack_dir, m) for m in members ]
+        return self.insertResources([ '%s/%s'%(unpack_dir, m) for m in members ], f)
     
+    def filter_zip_bisque(self, f, intags):
+        return self.importBisqueArchive(f, intags)
+
     def filter_zip_tstack(self, f, intags):
-        return [self.process5Dimage(f, number_t=0, **intags)]
+        return self.insertResources([self.process5Dimage(f, number_t=0, **intags)], f)
     
     def filter_zip_zstack(self, f, intags):
-        return [self.process5Dimage(f, number_z=0, **intags)]
+        return self.insertResources([self.process5Dimage(f, number_z=0, **intags)], f)
     
     def filter_5d_image(self, f, intags):
-        return [self.process5Dimage(f, **intags)]
+        return self.insertResources([self.process5Dimage(f, **intags)], f)
 
     def filter_series_bioformats(self, f, intags):
         unpack_dir, members = self.extractSeriesBioformats(f)
-        return [ '%s/%s'%(unpack_dir, m) for m in members ]
+        return self.insertResources([ '%s/%s'%(unpack_dir, m) for m in members ], f)
 
     def filter_zip_volocity(self, f, intags):
         unpack_dir, members = self.extractSeriesVolocity(f)
-        return [ '%s/%s'%(unpack_dir, m) for m in members ]
+        return self.insertResources([ '%s/%s'%(unpack_dir, m) for m in members ], f)
 
 
 #    def insert_resource_url(self, url):
@@ -540,6 +646,38 @@ class import_serviceController(ServiceController):
         
         return resource
 
+    def insertResources(self, nf, f):
+        parent_uri = self.storeOriginal(f)
+        self.parent_uri = parent_uri
+        
+        # pre-process succeeded          
+        log.debug('filters nf: %s'% nf )
+        resources = []
+        
+        for n in nf:
+            name = os.path.split(n)[-1]
+            if f.filename not in name:
+                name = '%s.%s'%(f.filename, name )
+            myf = UploadedFile(n, name, f.tags)
+            if parent_uri: myf.original = parent_uri
+            myf.permission = f.permission
+            resources.append( self.insert_image(myf) )
+        
+        return resources
+        
+    def storeOriginal(self, f):
+        # include the parent file into the database            
+        parent_uri = None
+        try:
+            resource_parent = blob_service.store_blob (filesrc=f.file, filename=os.path.split(f.filename)[-1], permission=f.permission)
+            parent_uri = resource_parent.get('uri')
+        except Exception, e:
+            log.exception("Error during store")  
+        finally:
+            f.file.close()
+        
+        return parent_uri
+    
     def process(self, f):
         """ processes the file and either ingests it inplace or first applies 
         some special pre-processing, the function returns a document 
@@ -586,7 +724,7 @@ class import_serviceController(ServiceController):
             log.debug('process -------------------\n %s'% intags )
             error = None
             try:
-                nf = self.filters[ intags['type'] ](f, intags)
+                resources = self.filters[ intags['type'] ](f, intags)
             except Exception, e:
                 log.exception('Problem in processing file: %s'  % intags['type'])
                 error = 'Problem processing the file: %s'%e
@@ -597,28 +735,6 @@ class import_serviceController(ServiceController):
                 resource = etree.Element('file', name=f.filename)
                 etree.SubElement(resource, 'tag', name='error', value=error)
                 return resource
-
-            # include the parent file into the database            
-            parent_uri = None
-            try:
-                resource_parent = blob_service.store_blob (filesrc=f.file, filename=os.path.split(f.filename)[-1], permission=f.permission)
-                parent_uri = resource_parent.get('uri')
-            except Exception, e:
-                log.exception("Error during store")  
-            finally:
-                f.file.close()
-
-            # pre-process succeeded          
-            log.debug('filters nf: %s'% nf )
-            resources = []
-            for n in nf:
-                name = os.path.split(n)[-1]
-                if f.filename not in name:
-                    name = '%s.%s'%(f.filename, name )
-                myf = UploadedFile(n, name, f.tags)
-                if parent_uri: myf.original = parent_uri
-                myf.permission = f.permission
-                resources.append( self.insert_image(myf) )
 
             # some error during pre-processing
             if len(resources)<1:
@@ -636,8 +752,9 @@ class import_serviceController(ServiceController):
             ts = datetime.now().isoformat(' ')
             resource = etree.Element('dataset', name='%s'%(f.filename))
             etree.SubElement(resource, 'tag', name="upload_datetime", value=ts, type='datetime' )             
-            if parent_uri:
-                etree.SubElement(resource, 'tag', name="original_upload", value=parent_uri, type='resource' )   
+            
+            if self.parent_uri is not None:
+                etree.SubElement(resource, 'tag', name="original_upload", value=self.parent_uri, type='resource' )   
                         
             index=0
             for r in resources:
