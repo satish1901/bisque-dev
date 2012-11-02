@@ -12,6 +12,18 @@ def store_blob(filesrc=None, filename=None, url=None, permission='private', **kw
     server = find_server()
     return server.storeBlob(flosrc=filesrc, filename=filename,url=url, permission=permission, **kw)
 
+def store_fileobj(fileobj, filename=None, resource=None):
+    "create and store a resource blob"
+
+    server = find_server()
+    return server.store_fileobj(fileobj=fileobj, filename=filename, resource=resource)
+
+def store_reference(urlref, filename=None, resource=None):
+    "create and store a resource blob"
+
+    server = find_server()
+    return server.store_reference(urlref=urlref, filename=filename, resource=resource)
+
 def fetch_blob(ident):
     "return resource identified by ident (uniq)"
     server = find_server()

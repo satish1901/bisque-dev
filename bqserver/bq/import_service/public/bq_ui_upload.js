@@ -191,6 +191,7 @@ Ext.define('BQ.upload.ZipAnnotator', {
         var types = Ext.create('Ext.data.Store', {
             fields: ['type', 'description'],
             data : [
+                {"type":"zip-bisque",      "description":"BISQUE archive"},
                 {"type":"zip",             "description":"upload as-is: compressed file"},
                 {"type":"zip-multi-file",  "description":"multiple unrelated images"},
                 {"type":"zip-time-series", "description":"multiple files composing one time-series image"},
@@ -201,7 +202,7 @@ Ext.define('BQ.upload.ZipAnnotator', {
         });
  
         var description = 'The import of compressed file "<b>'+this.file.name+'</b>" is ambiguous, we need some additional information. '+
-                          'See "help" for information about pcompressed file structure...';
+                          'See "help" for information about compressed file structure...';
         
         var resolution_question = 'It would also be very nice if you could provide pixel resolution, '+
             'although it\'s optional:';
@@ -299,7 +300,8 @@ Ext.define('BQ.upload.ZipAnnotator', {
             'zip-z-stack'    : {'resolution_title':null, 'resolution_x':null, 'resolution_y':null, 'resolution_z':null},
             'zip-5d-image'   : {'number_z':null, 'number_t':null, 'resolution_title':null, 
                                 'resolution_x':null, 'resolution_y':null, 'resolution_z':null, 'resolution_t':null},  
-            'zip-volocity'   : {},                                                      
+            'zip-volocity'   : {},
+            'zip-bisque'     : {},
         };
         
         // the default state is false

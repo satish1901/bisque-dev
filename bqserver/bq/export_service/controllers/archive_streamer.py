@@ -6,6 +6,8 @@ import logging
 import httplib2 
 import urlparse
 import os
+import datetime
+from bq.release import __VERSION__
 
 from tg import request, response, expose, config
 from lxml import etree
@@ -58,24 +60,13 @@ class ArchiveStreamer():
     
     # Creates an export summary file
     def writeSummary(self, flist, archiver):
-        summary = StringIO()
+        summary = etree.Element('resource', type='BISQUE Export Log')
+        etree.SubElement(summary, 'tag', name='Server', value=config.get('bisque.root'))
+        etree.SubElement(summary, 'tag', name='Version', value=__VERSION__)
+        etree.SubElement(summary, 'tag', name='Export_DateTime', value=str(datetime.datetime.now()))
         
-        bisqueText  =   ("- Exported by ---------------------\n"
-                         "   ___  ____________  __  ______   \n"
-                         "  / _ )/  _/ __/ __ \/ / / / __/   \n"
-                         " / _  |/ /_\ \/ /_/ / /_/ / _/     \n"  
-                         "/____/___/___/\___\_\____/___/     \n"
-                         "                                   \n"  
-                         "-----------------------------------\n")
-
-        summary.write(bisqueText + '\n');
-        
-        for file in flist:
-            summary.write(archiver.destinationPath(file) + '\n')
-        
-        summary.flush();
-        flist.append(dict(  name        =   'Summary.txt',
-                            content     =   summary.getvalue(),
+        flist.append(dict(  name        =   '_bisque.xml',
+                            content     =   etree.tostring(summary),
                             dataset     =   '',
                             extension   =   'URL'))
         
@@ -168,9 +159,18 @@ class ArchiveStreamer():
         if len(datasetList)>0:     # empty datasetList
             for uri in datasetList:
                 fileHash = {}
-                dataset = data_service.get_resource(uri, view='full')
+
+                dataset = data_service.get_resource(uri, view='full,clean')
                 name = dataset.xpath('/dataset/@name')[0]
                 members = dataset.xpath('/dataset/value')
+
+                # Insert dataset XML into file list
+                flist.append(dict(  name        =   name+'.xml',
+                                    content     =   etree.tostring(dataset),
+                                    dataset     =   '',
+                                    extension   =   'URL'))
+
+                
                 for index, member in enumerate(members):
                     finfo = fileInfo(name, member.text, index)
 
