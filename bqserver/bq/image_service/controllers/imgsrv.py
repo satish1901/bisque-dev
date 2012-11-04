@@ -50,8 +50,8 @@ log = logging.getLogger('bq.image_service.server')
 imgsrv_thumbnail_cmd = config.get('bisque.image_service.thumbnail_command', '-depth 8,d -page 1 -display')
 imgsrv_default_cmd = config.get('bisque.image_service.default_command', '-depth 8,d')
 
-imgcnv_needed_version = '1.51'
-bioformats_needed_version = '4.3.0'
+imgcnv_needed_version = '1.51' # dima: upcoming 1.54
+bioformats_needed_version = '4.3.0' # dima: upcoming 4.4.4
 
 # ImageServer
 #
@@ -85,7 +85,8 @@ G = M *1000
 def getQuery4Url(url):
     scheme, netloc, url, params, querystring, fragment = urlparse(url)
 
-    pairs = [s2 for s1 in querystring.split('&') for s2 in s1.split(';')]
+    #pairs = [s2 for s1 in querystring.split('&') for s2 in s1.split(';')]
+    pairs = [s1 for s1 in querystring.split('&')]
     query = []
     for name_value in pairs:
         if not name_value:
@@ -1071,6 +1072,44 @@ class RemapService(object):
 
         data_token.setImage(fname=ofile, format='tiff')
         return data_token
+        
+class FuseService(object):
+    """Provide an RGB image with the requested channel fusion
+       arg = W1R,W1G,W1B;W2R,W2G,W2B;W3R,W3G,W3B;W4R,W4G,W4B
+       output image will be constructed from channels 1 to n from input image mapped to RGB components with desired weights
+       fuse=display will use preferred mapping found in file's metadata
+       ex: fuse=255,0,0;0,255,0;0,0,255;255,255,255"""
+    def __init__(self, server):
+        self.server = server
+    def __repr__(self):
+        return 'FuseService: Returns an RGB image with the requested channel fusion, arg = W1R,W1G,W1B;W2R,W2G,W2B;...'
+
+    def hookInsert(self, data_token, image_id, hookpoint='post'):
+        pass
+    def action(self, image_id, data_token, arg):
+
+        arg = arg.lower()
+        ifile = self.server.getInFileName( data_token, image_id )
+        ofile = self.server.getOutFileName( ifile, '.fuse_' + arg )
+        log.debug('Fuse service: ' + ifile + ' to '+ ofile +' with [' + arg + ']')
+
+        if arg == 'display':
+            arg = '-multi -fusemeta'
+        else:
+            arg = '-multi -fusergb '+arg
+
+        if not os.path.exists(ofile):
+            imgcnv.convert(ifile, ofile, fmt='tiff', extra=arg)
+
+        try:
+            info = self.server.getImageInfo(filename=ofile)
+            if 'channels' in info: data_token.dims['channels'] = str(info['channels'])
+            data_token.dims['format'] = 'TIFF'
+        finally:
+            pass
+
+        data_token.setImage(fname=ofile, format='tiff')
+        return data_token        
 
 class DepthService(object):
     '''Provide an image with converted depth per pixel:
@@ -1759,6 +1798,7 @@ class ImageServer(object):
                           'default'      : DefaultService(self),
                           'roi'          : RoiService(self),
                           'remap'        : RemapService(self),
+                          'fuse'         : FuseService(self),
                           'depth'        : DepthService(self),
                           'rotate'       : RotateService(self),
                           'tile'         : TileService(self),
