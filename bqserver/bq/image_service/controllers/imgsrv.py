@@ -1232,11 +1232,13 @@ class TileService(object):
                 data_token.dims['pages'] = '1'
                 data_token.dims['zsize'] = '1'
                 data_token.dims['tsize'] = '1'
+                data_token.setImage(ofname, format='tiff')
+                data_token.histogram = hist_name                
             finally:
                 pass
+        else:
+            data_token.setHtmlErrorNotFound()
 
-        data_token.setImage(ofname, format='tiff')
-        data_token.histogram = hist_name
         return data_token
 
 
