@@ -276,8 +276,12 @@ def operation(command, options, cfg_file=SITE_CFG, *args):
 
             if command in ('start', 'restart'):
                 if os.path.exists(cfgopt['pidfile']):
-                    print 'old pid file: %s exists! exiting...' % cfgopt['pidfile']
-                    exit(0)
+                    if options.force:
+                        print 'old pid file: %s exists! restarting...' % cfgopt['pidfile']
+                        operation("stop", options, cfg_file, *args)
+                        time.sleep(5)
+                    else:
+                        sys.exit(2)
                 if backend == 'uwsgi':
                     cfgopt["server"] = cfgopt['server'].replace('unix://','').strip()
                     if cfgopt['services_enabled'] == 'engine_service':
