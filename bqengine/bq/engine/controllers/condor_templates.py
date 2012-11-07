@@ -45,7 +45,7 @@ ${condor_submit}
         continue
 %>
 initialdir = ${mex.staging_path}
-transfer_input_files  = ${' '.join(mex.transfers)}
+transfer_input_files  = ${','.join(mex.transfers)}
 arguments  = ${' '.join(mex.executable[1:])}
 queue
 %endfor
@@ -160,6 +160,7 @@ class CondorTemplates(object):
             if path and os.path.exists(path):
                 self.template[x] = open (path).read()
             else:
+                log.warn('template %s: %s not found: defaulting to internal version' % (x,path))
                 self.template[x] = CONDOR_TEMPLATES[x]
             
 
