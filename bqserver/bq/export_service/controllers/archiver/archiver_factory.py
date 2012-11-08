@@ -47,7 +47,7 @@ class AbstractArchiver():
     
     def destinationPath(self, file):
         uniq = '' #-' + file.get('uniq')[-4:] if file.get('uniq') is not None else '' 
-        path = file.get('dataset') + os.sep if file.get('dataset') is not '' else ''
+        path = file.get('dataset') +  '/' if file.get('dataset') is not '' else ''
         fileName, fileExt = os.path.splitext(file.get('name'))
         if file.get('extension') == 'URL':
             return file.get('name')

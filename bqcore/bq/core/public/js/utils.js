@@ -264,6 +264,9 @@ function xmlrequest(url, cb, method, postdata, errorcb)
                 }
                 else
                 {
+                    if (ajaxRequest.status === 401 || ajaxRequest.status === 403)
+                        window.location = "/auth_service/login?came_from=" + window.location;
+
                     BQ.ui.error(error_str);
                 }
                 //throw(error_str);

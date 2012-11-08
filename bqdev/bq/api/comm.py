@@ -121,13 +121,13 @@ class BQServer(object):
 
     def post(self, url, content=None, files=None, headers=None, method="POST"):
         headers = self.prepare_headers(headers)
-        log.debug("POST %s req %s, content=%s..." % (url, headers, content[:60]))
+        log.debug("POST %s req %s" % (url, headers))
         header, content = self.http.request(url,
                                             headers = headers,
                                             body=content,
                                             method=method)
 
-        log.debug("POST resp %s, content=%s.." % (header, content[:60]))
+        log.debug("POST resp %s" % header)
         return content
 
 

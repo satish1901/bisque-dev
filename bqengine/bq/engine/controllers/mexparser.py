@@ -112,8 +112,8 @@ class MexParser(object):
                 input_nodes.append (found)
             else:
                 found = actual_inputs.xpath ('./tag[@name="%s"]'%param_name)
-                log.debug ("PARAM %s=%s" % (param_name, found))
-                input_nodes +=  copy.deepcopy(found)
+                log.debug ("PARAM %s=%s" % (param_name, found[0]))
+                input_nodes.append (  copy.deepcopy(found[0]) )
             if found is None:
                 log.warn ('missing input for parameter %s' % mi.get('value'))
 
@@ -175,6 +175,7 @@ class MexParser(object):
             params = ['%s=%s'%(i.get('name'), i.get('value')) for i in input_nodes]
         else:
             params = [ i.get('value', '') for i in input_nodes ]
+        log.debug('\n\nPARAMS : %s'%params)
         return params
 
     def prepare_submexes(self, module, mex):
