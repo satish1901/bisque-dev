@@ -8,6 +8,7 @@ import os,sys
 import shlex
 import string
 import subprocess
+import re
 from module_env import BaseEnvironment, ModuleEnvironmentError
 
 class ScriptEnvironment(BaseEnvironment):
@@ -15,7 +16,7 @@ class ScriptEnvironment(BaseEnvironment):
     """
     name       = "Script"
     config    = {'script':""}
-
+    
     def __init__(self, runner, **kw):
         super(ScriptEnvironment, self).__init__(runner, **kw)
 
@@ -27,10 +28,23 @@ class ScriptEnvironment(BaseEnvironment):
         
     def create_script(self, mex):
         """Runs before the normal command but after read the config"""
-        script = string.Template(mex.script).safe_substitute(mex.named_args)
-        script = string.Template(script).safe_substitute(mex)
-        script = shlex.split(script, posix=(os.name != "nt"))
+        
+        _find_unsafe = re.compile(r'[^\w@%+=:,./-]').search
+        
+        def quote(s):
+            if not s:
+                return "''"
+            if _find_unsafe(s) is None:
+                return s
+            return "'" + s.replace("'", "'\"'\"'") + "'"                
+
+        quoted = dict ([(k, quote(v)) for (k, v) in mex.named_args.items()])
+        quoted.update (dict ((k, quote(v)) for (k, v) in mex.items() if isinstance(v, basestring)))
+        script = string.Template(mex.script).safe_substitute(quoted)
+        
+        script = shlex.split(script)
         mex.executable=list(script) + ['start']
+
         return script
         
     def setup_environment(self, runner):

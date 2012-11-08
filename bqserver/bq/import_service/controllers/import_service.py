@@ -159,7 +159,7 @@ if hasattr(cgi, 'file_upload_handler'):
     #register callables here
     def import_transfer_handler(filename):
         import tempfile
-        return tempfile.NamedTemporaryFile('w+b', suffix = filename, dir=tmp_upload_dir, delete = False)
+        return tempfile.NamedTemporaryFile('w+b', suffix = os.path.basename(filename), dir=tmp_upload_dir, delete = False)
     
     #map callables to paths here
     cgi.file_upload_handler['/import/transfer'] = import_transfer_handler

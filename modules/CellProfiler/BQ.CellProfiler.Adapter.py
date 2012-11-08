@@ -90,7 +90,6 @@ class CellProfiler():
         self.bqSession.update_mex('Initializing...')
         
         pipelinePath = os.path.join(self.options.modulePath, os.path.join("pipelines", self.pipeline))
-        commandPath = os.path.join(self.options.modulePath, os.path.join("commands", self.pipelineCmd))
 
         # copy the requested pipeline file into the staging directory
         copy2(pipelinePath, self.pipeline)
@@ -129,7 +128,9 @@ class CellProfiler():
         print 'Collecting Results'
         
         # create a new parent tag 'CellProfiler' to be placed on the mex
-        parentTag = BQTag(name='Summary: '+self.pipeline)
+        outputsTag = BQTag(name='outputs')
+        parentTag = BQTag(name='Summary')
+        outputsTag.addTag(tag=parentTag)
 
         # Read summary from csv and write to tags
         (header, records) = self.readCSV(os.path.join(self.outputDir, 'DefaultOUT_Summary.csv'))
@@ -139,6 +140,11 @@ class CellProfiler():
                 for j in range(len(header)):
                     parentTag.addTag(name=header[j], value=records[i][j])
         
+        
+        # Add parent image tag
+        imageTag = BQTag(name='Output image', value=self.options.resourceURL, type='image')
+        outputsTag.addTag(tag=imageTag)
+        
         print 'Reading GObjects'
 
         # Read object measurements from csv and write to gobjects
@@ -146,7 +152,7 @@ class CellProfiler():
 
         if header is not None:
             # create a new parent tag 'CellProfiler' to be placed on the mex
-            parentGObject = BQGObject(name='CellProfiler: '+self.pipeline)
+            parentGObject = BQGObject(name='CellProfiler Annotations')
             
             for i in range(len(records)):
                 shape = CPShape()
@@ -155,10 +161,9 @@ class CellProfiler():
 
                 parentGObject.addGObject(gob=shape)
 
+        imageTag.addGObject(gob=parentGObject)
+
         # Read any image files that the pipeline generated and post them to mex
-        imageTag = BQTag(name='Images')
-        parentTag.addTag(tag=imageTag)
-        
         imgFormats  = ['*.tif*', '*.jpg']
         fileList=[]
         for fmt in imgFormats:
@@ -170,10 +175,10 @@ class CellProfiler():
                 print 'BQ.CellProfiler.Adapter: Upload Error!'
                 uri = etree.XML(content).xpath('//image[@uri]/@uri')[0] or "BQ.CellProfiler.Adapter: Upload Error!"
                 fileName = os.path.split(file)[1]
-                tempTag = BQTag(name=fileName, value=uri, type='resource')
-                imageTag.addTag(tag=tempTag)
+                tempTag = BQTag(name=fileName, value=uri, type='image')
+                outputsTag.addTag(tag=tempTag)
 
-        self.bqSession.finish_mex(tags = [parentTag], gobjects = [parentGObject])
+        self.bqSession.finish_mex(tags = [outputsTag])
         self.bqSession.close()
 
 
@@ -198,6 +203,7 @@ class CellProfiler():
 
     def run(self):
         
+        logger.debug('sysargv : %s' % sys.argv )
         parser = OptionParser()
         
         parser.add_option('--resource_url', dest="resourceURL")
@@ -208,13 +214,14 @@ class CellProfiler():
         parser.add_option('--pipeline', dest="pipeline")
         
         (options, args) = parser.parse_args()
+
+        logger.debug('\n\nPARAMS : %s \n\n Options: %s' % (args, options))
         self.options = options
         
         self.options.isDataset = 'dataset' in self.options.resourceURL
         self.inputDir = os.path.join(self.options.stagingPath, 'input') + os.sep
         self.outputDir = os.path.join(self.options.stagingPath, 'output') + os.sep
-        self.pipeline = self.options.pipeline + ".cp"
-        self.pipelineCmd = self.options.pipeline + ".py"
+        self.pipeline = self.options.pipeline.lower() + ".cp"
 
         command = self.validateInput(parser, args)
         
