@@ -94,7 +94,7 @@ Ext.define('BQ.Application.Toolbar', {
     cls: 'toolbar_main',
     preferences : {},
     
-    tools_none: [ 'menu_user_signin', 'menu_user_register', 'menu_user_register_sep'],    
+    tools_none: [ 'menu_user_signin', 'menu_user_register', 'menu_user_register_sep','menu_user_recover' ],    
     tools_user: ['menu_user_name', 'menu_user_profile', 'menu_user_signout', 'menu_user_prefs', 'menu_user_signout_sep'],
     tools_admin: ['menu_user_admin_separator', 'menu_user_admin', 'menu_user_admin_prefs', ],    
     
@@ -300,6 +300,11 @@ Ext.define('BQ.Application.Toolbar', {
             text: 'Register new user', 
             itemId: 'menu_user_register', 
             handler: Ext.Function.pass(pageAction, bq.url(this.preferences.registration || '/registration')), 
+        });
+        this.menu_user.add({
+            text: 'Recover Password', 
+            itemId: 'menu_user_recover', 
+            handler: Ext.Function.pass(pageAction, bq.url(this.preferences.registration || '/registration/lost_password')), 
         });
 
         var menu_help = [];

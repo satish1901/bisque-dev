@@ -1533,9 +1533,10 @@ BQUser.prototype.afterInitialized = function () {
 }
 
 BQUser.prototype.get_credentials = function( cb) {
-    var u = new BQUrl(this.uri);
-    this.server_uri = u.server();
-    BQFactory.load (this.server_uri+bq.url("/auth_service/credentials/"), 
+    //var u = new BQUrl(this.uri);
+    //this.server_uri = u.server();
+    //BQFactory.load (this.server_uri+bq.url("/auth_service/credentials/"), 
+    BQFactory.load (bq.url("/auth_service/credentials/"), 
                     callback (this, 'on_credentials', cb))
 }
 

@@ -771,22 +771,6 @@ def bisquik2db_internal(inputs, parent, resource,  replace):
     return results
 
 
-class Attempt(object):
-    def __init__(self, manager, n):
-        self.manager = manager
-        self.count = n
-    def __enter__(self):
-        pass
-
-    def __exit__(self, t, v, tb):
-        if v is not None:
-            if isinstance (v, (OperationalError, ConcurrentModificationError)):
-                log.debug ("DB transient EXCEPTION %s" %v)
-                return True
-        return False
-                
-
-
 def bisquik2db(doc= None, parent=None, resource = None, xmlschema=None, replace=False):
     '''Parse a document (either as a doc, or an etree.
     Verify against xmlschema if present
@@ -803,16 +787,7 @@ def bisquik2db(doc= None, parent=None, resource = None, xmlschema=None, replace=
         inputs = [ doc ] 
 
     DBSession.autoflush = False
-    def attempts(num=3):
-        for attempt in range(num):
-            yield Attempt(transaction.manager, attempt)
-        
-    # Try to overcome transient database errors 3 times with some magic:
-    for attempt in attempts(3):
-        with attempt:
-            # 'attempt' will disregard SA transient exceptions
-            # if no exception then the return just happens
-            return bisquik2db_internal(inputs, parent, resource, replace)
+    return bisquik2db_internal(inputs, parent, resource, replace)
         
             
 

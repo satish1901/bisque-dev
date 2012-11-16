@@ -34,6 +34,15 @@ from paste.urlparser import StaticURLParser
 
 log = logging.getLogger("bq.config")
 
+
+def transaction_retry_wrapper(app_config, controller):
+    def wrapped_controller(*args, **kw):
+        for attempt in transaction.attempts(3):
+            with attempt:
+                return controller(*args, **kw)
+    return wrapped_controller
+
+
 class BisqueErrorFilter(object):
 
     def __init__(self, app, codes = []):
@@ -48,7 +57,7 @@ class BisqueErrorFilter(object):
             self.app, environ, catch_exc_info=True)
         #log.debug ("ENV=%s" % environ)
         if status[:3] in self.codes and environ.has_key('HTTP_USER_AGENT') and \
-           environ['HTTP_USER_AGENT'].startswith('Python'):
+                environ['HTTP_USER_AGENT'].startswith('Python'):
             environ['pylons.status_code_redirect'] = True
             log.info ('ERROR: disabled status_code_redirect')
         start_response(status, headers, exc_info)
@@ -62,11 +71,11 @@ class BisqueAppConfig(AppConfig):
         # Display error documents for self.handle_status_codes status codes (and
         # 500 when debug is disabled)
 
-        if asbool(config['debug']):
-            app = StatusCodeRedirect(app, self.handle_status_codes)
-        else:
-            app = StatusCodeRedirect(app, self.handle_status_codes + [500])
-        app = BisqueErrorFilter (app, [401, 500])
+        #if asbool(config['debug']):
+        #    app = StatusCodeRedirect(app, self.handle_status_codes)
+        #else:
+        #    app = StatusCodeRedirect(app, self.handle_status_codes + [500])
+        #app = BisqueErrorFilter (app, [401, 403,500])
         return app
 
     def setup_sqlalchemy(self):
@@ -85,6 +94,8 @@ class BisqueAppConfig(AppConfig):
         config['pylons.app_globals'].sa_engine = engine
         # Pass the engine to initmodel, to be able to introspect tables
         self.package.model.init_model(engine)
+        self.register_hook('controller_wrapper', transaction_retry_wrapper)
+        
 
     def after_init_config(self):
         "after config"
@@ -172,7 +183,7 @@ base_config.DBSession = bq.core.model.DBSession
 
 # YOU MUST CHANGE THIS VALUE IN PRODUCTION TO SECURE YOUR APP 
 base_config.sa_auth.cookie_secret = "images" 
-#base_config.auth_backend = 'sqlalchemy'
+base_config.auth_backend = 'bisque' # dummy name we setup in who.ini
 base_config.sa_auth.dbsession = model.DBSession
 # what is the class you want to use to search for users in the database
 base_config.sa_auth.user_class = model.User

@@ -134,6 +134,14 @@ bisque.login.local = /auth_service/login
 #bisque.login.google = /auth_service/openid_login_handler?openid_provider=https://www.google.com/accounts/o8/id
 #bisque.password = hashed
 
+# User traffic tracking 
+# You can use google (http://www.google.com/analytics/)  or piwik (http://piwik.org/), etc.  
+bisque.tracking = false
+#piwik
+#piwik.http = http://yourpiwikhost.org
+#piwik.https = https://yourpiwikhost.org
+
+
 # Bisque Cluster Runtime  
 condor.enabled = False
 condor.dag_template =
@@ -190,6 +198,8 @@ sqlalchemy.pool_recycle = 3600
 who.config_file = %(here)s/who.ini
 who.log_level = error
 who.log_stream = stdout
+
+
 
 
 # WARNING: *THE LINE BELOW MUST BE UNCOMMENTED ON A PRODUCTION ENVIRONMENT*

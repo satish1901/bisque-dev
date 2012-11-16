@@ -364,9 +364,9 @@ class InfoService(object):
 
         info = self.server.getImageInfo(id=image_id)
 
-        response = etree.Element ('response')
-        image    = etree.SubElement (response, 'image')
-        image.attrib['src'] = '/imgsrv/' + str(image_id)
+        #response = etree.Element ('response')
+        image    = etree.Element ('resource')
+        image.attrib['uri'] = '%s/%s' % (self.server.url,  image_id)
         for k, v in info.iteritems():
             tag = etree.SubElement(image, 'tag')
             tag.attrib['name'] = str(k)
@@ -381,7 +381,7 @@ class InfoService(object):
             tag.attrib['type'] = 'string'
             tag.attrib['value'] = fileName
 
-        data_token.setXml(etree.tostring(response))
+        data_token.setXml(etree.tostring(image))
         return data_token
 
 class DimService(object):
@@ -448,11 +448,11 @@ class MetaService(object):
                 if 'depth'    in info2: info['image_pixel_depth'] = str( info2['depth'] )
                 info['image_num_p'] = str( int(info2['tsize']) * int(info2['zsize']) )
 
-            response = etree.Element ('response')
-            response.set('uri', '%s/%s?meta'%(self.server.url, image_id))
-            response.set('src', '%s/%s'%(self.server.url, image_id))
-            image    = etree.SubElement (response, 'image')
-            image.set('src', '%s/%s'%(self.server.url, image_id))
+            #response = etree.Element ('response')
+            #response.set('uri', '%s/%s?meta'%(self.server.url, image_id))
+            #response.set('src', '%s/%s'%(self.server.url, image_id))
+            image    = etree.Element ('resource')
+            #image.set('src', '%s/%s'%(self.server.url, image_id))
             image.set('uri', '%s/%s?meta'%(self.server.url, image_id))
             planes = None
 
@@ -486,7 +486,7 @@ class MetaService(object):
                     pass
 
             log.debug("MetaService: storing metadata into " + str(metacache))
-            xmlstr = etree.tostring(response)
+            xmlstr = etree.tostring(image)
             f = open(metacache, "w")
             try:
                 f.write(xmlstr)
