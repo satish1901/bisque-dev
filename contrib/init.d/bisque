@@ -1,10 +1,10 @@
 #! /bin/sh
 ### BEGIN INIT INFO
 # Provides:          bisque
-# Required-Start:    $remote_fs $syslog postgresql mysql
+# Required-Start:    $remote_fs $syslog #postgresql  mysql
 # Required-Stop:     $remote_fs $syslog
-# Default-Start:     2 3 
-# Default-Stop:      0 1 
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
 # Short-Description: Bisque process script
 # Description:       Start and stop a bisque server
 ### END INIT INFO
@@ -16,11 +16,12 @@
 # PATH should only include /usr/* if it runs after the mountnfs.sh script
 #######################################
 # local paramaters 
-BISQUE_ROOT=/path/to/bisque/root
+#BISQUE_ROOT=/path/to/bisque
+#BISQUE_ROOT=/home/bisque/bisque
 BISQUE_USER=bisque
 BISQUE_CTL=bisquectl
 ################################################
-PATH=/sbin:/usr/sbin:/bin:/usr/bin
+PATH=/sbin:/usr/sbin:/bin:/usr/bin:/usr/local/bin
 DESC="Bisque Image Analysis"
 NAME=bisque
 PIDFILE=/var/run/$NAME.pid
@@ -28,7 +29,7 @@ SCRIPTNAME=/etc/init.d/$NAME
 ##################################
 
 # Exit if the package is not installed
-[ -x "$BISQUE_CTL" ] || exit 0
+#[ -x "$BISQUE_CTL" ] || exit 0
 
 # Read configuration variable file if it is present
 [ -r /etc/default/$NAME ] && . /etc/default/$NAME

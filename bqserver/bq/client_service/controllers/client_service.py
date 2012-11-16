@@ -261,35 +261,19 @@ class ClientServer(ServiceController):
                  link = self.viewlink (image.get('uri')))
 
     @expose("bq.client_service.templates.view")
-    def view(self, **kw):
+    def view(self, resource, **kw):
         query = ''
-        resource=kw.pop('resource', None)
-        user = bq.core.identity.get_user()
-        if user:
-            user = data_service.uri() + str(user)
-        else:
-            user =''
+        log.debug ("VIEW")
+        #resource=kw.pop('resource', '')
+        #if resource is None:
+        #    abort(404)
 
-        # Dispatch to controller or Choose template/widgets to
-        # instantiate on the viewer by the type of the resource.  ,
-        # tag_views=None, wpublic = None, search = None) Have a table
-        # of template_name or dispatchable methods (i.e. other classes
-        # or controllers) that can be used to generate the proper page
-        # for this resource.  Defaults to simple resource display such
-        # that the client decides the layout (ResourceDispatch in javascript)
-
-        return dict(resource=resource, user=user) 
+        return dict(resource=resource) 
 
     @expose("bq.client_service.templates.view")
     def create(self, **kw):
         query = ''
         type_=kw.pop('type', None)
-
-        user = bq.core.identity.get_user()
-        if user:
-            user = data_service.uri() + str(user)
-        else:
-            user =''
 
         if type_:
             resource = data_service.new_resource (type_, **kw)
@@ -297,7 +281,7 @@ class ClientServer(ServiceController):
             # Choose widgets to instantiate on the viewer by the type
             # of the resource.
             log.debug ('created %s  -> %s' % (type_, uri))
-            return dict(resource=resource, user=user) #, tag_views=None, wpublic = None, search = None)
+            return dict(resource=resource) #, tag_views=None, wpublic = None, search = None)
         raise IllegalOperation("create operation requires type")
 
     

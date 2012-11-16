@@ -143,6 +143,9 @@
 	<div id="content" class="content" >
     ${select('*|text()')} 
   </div> 
+
+
+ <xi:include href="tracking.html" py:if="asbool(tg.config.get('bisque.tracking'))" />
 </body>
 </py:match>
 

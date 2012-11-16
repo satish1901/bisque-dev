@@ -37,9 +37,9 @@ if __name__== "__main__":
     os.putenv ('PATH', path)
     os.environ['PATH'] = path
     
-    command = ['bq-admin', 'server', ]
+    command = ['.', 'bqenv/bin/activate;', 'bq-admin', 'server', ]
     command.extend (args)
-    proc = subprocess.call (command, cwd = BISQUE_ROOT)
+    proc = subprocess.call (' '.join(command), cwd = BISQUE_ROOT, shell=True)
 
     sys.exit(proc)
         
