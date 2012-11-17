@@ -15,6 +15,7 @@ convert them into boolean, for example, you should use the
 import os
 import tg
 import logging
+import transaction
 
 from paste.deploy.converters import asbool
 from pylons.middleware import StatusCodeRedirect
