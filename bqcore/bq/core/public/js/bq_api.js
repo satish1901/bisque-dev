@@ -1306,7 +1306,7 @@ BQImagePhys.prototype.init = function () {
   //-------------------------------------------------------
   // channel names
   for (var i=0; i<this.num_channels; i++)
-    this.channel_names[i] = i+1; 
+    this.channel_names[i] = 'Ch'+(i+1); 
   if (this.num_channels == 3) {
     this.channel_names[0] = 'Red';
     this.channel_names[1] = 'Green';
