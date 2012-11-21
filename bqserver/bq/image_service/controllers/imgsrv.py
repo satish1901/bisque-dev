@@ -50,7 +50,7 @@ log = logging.getLogger('bq.image_service.server')
 imgsrv_thumbnail_cmd = config.get('bisque.image_service.thumbnail_command', '-depth 8,d -page 1 -display')
 imgsrv_default_cmd = config.get('bisque.image_service.default_command', '-depth 8,d')
 
-imgcnv_needed_version = '1.51' # dima: upcoming 1.54
+imgcnv_needed_version = '1.54.1' # dima: upcoming 1.54
 bioformats_needed_version = '4.3.0' # dima: upcoming 4.4.4
 
 # ImageServer
@@ -1089,14 +1089,19 @@ class FuseService(object):
     def action(self, image_id, data_token, arg):
 
         arg = arg.lower()
+        argenc = ''.join([hex(int(i)).replace('0x', '') for i in arg.replace(';', ',').split(',') if i is not ''])
+        
         ifile = self.server.getInFileName( data_token, image_id )
-        ofile = self.server.getOutFileName( ifile, '.fuse_' + arg )
+        ofile = self.server.getOutFileName( ifile, '.fuse_' + argenc )
         log.debug('Fuse service: ' + ifile + ' to '+ ofile +' with [' + arg + ']')
 
         if arg == 'display':
             arg = '-multi -fusemeta'
         else:
             arg = '-multi -fusergb '+arg
+            
+        if data_token.histogram is not None:
+            arg += ' -ihst %s'%(data_token.histogram)            
 
         if not os.path.exists(ofile):
             imgcnv.convert(ifile, ofile, fmt='tiff', extra=arg)
@@ -1109,43 +1114,60 @@ class FuseService(object):
             pass
 
         data_token.setImage(fname=ofile, format='tiff')
+        #data_token.histogram = None # fusion ideally should not be changing image histogram
         return data_token        
 
 class DepthService(object):
     '''Provide an image with converted depth per pixel:
-       arg = depth,method
+       arg = depth,method[,format]
        depth is in bits per pixel
        method is: f or d or t or e
          f - full range
          d - data range
          t - data range with tolerance
          e - equalized
+       format is: u, s or f, if unset keeps image original
+         u - unsigned integer
+         s - signed integer
+         f - floating point
        ex: depth=8,d'''
     def __init__(self, server):
         self.server = server
     def __repr__(self):
-        return 'DepthService: Returns an Image with converted depth per pixel, arg = depth,method'
+        return 'DepthService: Returns an Image with converted depth per pixel, arg = depth,method[,format]'
     def hookInsert(self, data_token, image_id, hookpoint='post'):
         pass
     def action(self, image_id, data_token, arg):
         ms = 'f|F|d|D|t|T|e|E'.split('|')
         ds = '8|16|32|64'.split('|')
-        d,m = arg.split(',', 1)
+        fs = ['u', 's', 'f']
+        f=None
+        try: 
+            d,m,f = arg.lower().split(',', 2)
+        except ValueError:
+            d,m = arg.lower().split(',', 1)
 
         if not d in ds:
-            raise IllegalOperation('Depth service: depth is unsupported' )
+            raise IllegalOperation('Depth service: depth is unsupported: %s'%d )
 
         if not m in ms:
-            raise IllegalOperation('Depth service: method is unsupported' )
+            raise IllegalOperation('Depth service: method is unsupported: %s'%m )
+
+        if f is not None and f not in fs:
+            raise IllegalOperation('Depth service: format is unsupported: %s'%f )
+
 
         ifile = self.server.getInFileName(data_token, image_id)
         ofile = self.server.getOutFileName(ifile, '.depth_' + arg)
         log.debug('Depth service: ' + ifile + ' to '+ ofile +' with [' + arg + ']')
+        
+        if data_token.histogram is not None:
+            ohist = self.server.getOutFileName(ifile, '.histogram_depth_' + arg)
 
         if not os.path.exists(ofile):
             extra='-multi -depth '+arg
-            if not data_token.histogram is None:
-                extra += ' -ihst %s'%(data_token.histogram)
+            if data_token.histogram is not None:
+                extra += ' -ihst %s -ohst %s'%(data_token.histogram, ohist)
             imgcnv.convert(ifile, ofile, fmt='tiff', extra=extra)
 
         try:
@@ -1157,7 +1179,10 @@ class DepthService(object):
             pass
 
         data_token.setImage(fname=ofile, format='tiff')
-        data_token.histogram = None
+        if data_token.histogram is not None:
+            data_token.histogram = ohist                    
+        #else:
+        #    data_token.histogram = None
         return data_token
 
 
@@ -1995,6 +2020,8 @@ class ImageServer(object):
 
     def getOutFileName(self, infilename, appendix):
         ofile = self.ensureWorkPath(infilename)
+        ofile = os.path.relpath(ofile, self.workdir)
+        log.debug('Output filename: %s'%ofile)
         return ofile + appendix
 
     # def addImage(self, src, name, ownerId = None, permission = None, **kw):
@@ -2080,6 +2107,9 @@ class ImageServer(object):
         log.debug (">>>> Request url: %s" % url)
         query = getQuery4Url(url)
         log.debug (">>>> Query: %s by %s" % (query, userId)  )
+        
+        os.chdir(self.workdir)
+        log.debug('Current path: %s'%(self.workdir))
 
         # init the output to a simple file
         data_token = ProcessToken()

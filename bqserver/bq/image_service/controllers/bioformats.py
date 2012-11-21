@@ -37,7 +37,7 @@ if os.name == 'nt':
     BFCONVERT = 'bfconvert.bat'
     BFORMATS  = 'formatlist.bat'
 
-        
+ 
 ################################################################################
 # bioformats interface
 ################################################################################
@@ -158,6 +158,8 @@ def supported(ifnm, original=None):
 
 # '.ome.tiff' or '.ome.tif'.
 # 
+#sh bfconvert -bigtiff -compression LZW  ../53676.svs ../output.ome.tiff
+
 def convert(ifnm, ofnm, original=None, series=-1):
     '''returns output filename'''
     if not is_installed: return None
