@@ -1,7 +1,22 @@
 function ImgMovie (viewer,name){
     this.base = ViewerPlugin;
     this.base (viewer, name);
-    this.bt = this.viewer.addCommand ('View as movie', callback (this, 'showMovie'));
+    
+    if (this.viewer.toolbar) {
+        var toolbar = this.viewer.toolbar;
+        var n = toolbar.items.getCount()-2;
+        toolbar.insert( n, { 
+                itemId: 'menu_viewer_movie', 
+                xtype:'button', 
+                text: 'View as movie', 
+                iconCls: 'movie',
+                tooltip: 'View and export current image as a movie',                 
+                scope: this, 
+                handler: this.showMovie,
+            }
+        );
+        toolbar.doLayout();           
+    } // if toolbar    
 }
 ImgMovie.prototype = new ViewerPlugin();
 
@@ -11,12 +26,11 @@ ImgMovie.prototype.create = function (parent) {
 }
 
 ImgMovie.prototype.newImage = function () {
-    if (this.viewer.imagedim.z * this.viewer.imagedim.t <= 1) {
-        this.bt.style.display="none";
-    } else {
-        this.bt.style.display="";
-    }
+    if (!this.viewer.toolbar) return;
+    var m = this.viewer.toolbar.queryById('menu_viewer_movie');
+    if (m) m.setDisabled(this.viewer.imagedim.z * this.viewer.imagedim.t < 2);
 }
+
 ImgMovie.prototype.updateImage = function () {
 }
 

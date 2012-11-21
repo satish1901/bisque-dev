@@ -384,18 +384,36 @@
 
 .viewer .name {
   position: absolute; 
-  z-index: 15; 
+  z-index: 30; 
   width: 100%;
   height: 20px;
-  text-align: center; 
+  text-align: center;
   left: 0px; 
-  bottom: 5px; 
+  bottom: 10px; 
   padding: 5px; 
   top: none;
   color: #FFFFFF; 
   text-shadow: 1px 1px 1px #000000; 
   font-size: 11px;
   text-overflow: ellipsis;  
+  text-decoration: underline;
+}
+
+.viewer .viewoptions {
+    position: absolute; 
+    z-index: 30; 
+    width: 20px;
+    height: 20px;
+    left: 80px; 
+    top: 10px;
+    bottom: none;   
+    right: none;
+    /*padding: 5px; 
+    border-radius: 5px;*/
+  
+    background-image: url('/images/viewer/64px_view.png');
+    background-size: 20px;
+    background-color: transparent;  
 }
 
 /*******************************************************************************
@@ -409,4 +427,93 @@
   height: 120px;
   right: 60px; 
   top: 10px; 
+}
+
+/*******************************************************************************
+ channels
+*******************************************************************************/
+
+table.x-form-color {
+    min-width: 340px;
+    margin: 5px 10px 5px 10px;
+}
+
+.bq-viewer-tip {
+    background-color: rgba(0, 0, 0, 0.5); 
+    opacity: 0.8;  
+    border-color: rgba(255,255,255,0.3);
+}
+
+.bq-viewer-tip .x-tip-anchor {
+    border-right-color: rgba(255,255,255,0.3);
+}
+
+
+/*******************************************************************************
+ menu
+*******************************************************************************/
+
+.bq-viewer-menu {
+    background-color: rgba(0, 0, 0, 0.7); 
+    opacity: 0.8;  
+    border-color: rgba(255,255,255,0.2);
+    border-radius: 5px;   
+    padding: 0px 0px 5px 10px; 
+}
+
+.bq-viewer-menu .x-tip-anchor {
+    border-bottom-color: rgba(255,255,255,0.2);
+}
+
+.bq-viewer-menu .x-field {
+    margin-left: 15px;
+}
+
+.bq-viewer-menu label {
+    color: #ffffff;
+}
+
+.bq-viewer-menu .heading {
+    /*width: 100%;*/
+    margin: 5px 0px 10px 0px;    
+}
+
+.bq-viewer-menu .heading td {
+    width: 100% !important;
+}
+
+.bq-viewer-menu .heading label {
+    width: 100% !important;
+    font-size: 16px !important;
+}
+
+.bq-viewer-menu .x-tool img {
+    background-image: url('/images/viewer/16px_close.png');
+    background-size: 10px;
+    margin: 4px 4px 0px 0px;
+}
+
+/*******************************************************************************
+ toolbar
+*******************************************************************************/
+
+.movie {
+    background-image: url('/images/viewer/movie.png');
+    background-size: 16px;
+    background-color: transparent;
+    background-repeat: no-repeat;
+}
+
+.external {
+    background-image: url('/images/viewer/external.png');
+    background-size: 16px;
+    background-color: transparent;
+    background-repeat: no-repeat;
+}
+
+.converter {
+    background-image: url('/images/viewer/converter.png');
+    background-size: 16px;
+    background-color: transparent;
+    background-repeat: no-repeat;
 }

@@ -39,8 +39,7 @@ ImgInfoBar.prototype.updateImage = function () {
 
     // create info bar
     if (!this.infobar) {
-      var surf = this.parentdiv;
-      if (this.viewer.viewer_controls_surface) surf = this.viewer.viewer_controls_surface;
+      var surf = this.viewer.viewer_controls_surface ? this.viewer.viewer_controls_surface : this.parentdiv;      
         
       this.infobar = document.createElement('span');
       this.infobar.className = 'info';
@@ -54,7 +53,7 @@ ImgInfoBar.prototype.updateImage = function () {
       var surf = this.parentdiv;
       if (this.viewer.viewer_controls_surface) surf = this.viewer.viewer_controls_surface;
         
-      this.namebar = document.createElement('span');
+      this.namebar = document.createElement('a');
       this.namebar.className = 'name';
       this.namebar.setAttribute("style", ImgViewer.INFO_CONTROL_STYLE );
       this.namebar.style.cssText = ImgViewer.INFO_CONTROL_STYLE;
@@ -79,6 +78,7 @@ ImgInfoBar.prototype.updateImage = function () {
     
     if (this.namebar) {
       this.namebar.innerHTML = this.viewer.image.name;
+      this.namebar.href = '/client_service/view?resource='+this.viewer.image.uri;
     }    
 }
 

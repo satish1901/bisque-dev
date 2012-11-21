@@ -14,11 +14,6 @@ function ImgSlicer (viewer, name){
   
     this.base = ViewerPlugin;
     this.base (viewer, name);
-    
-    this.menu = null;
-    this.menu_elements = {};
-    
-    this.viewer.addCommand ('Planes', callback (this, 'toggleMenu'));        
 }
 
 ImgSlicer.prototype = new ViewerPlugin();
@@ -85,8 +80,7 @@ ImgSlicer.prototype.updateView = function (view) {
     var projection = this.default_projection;
     if (!this.menu) this.createMenu();     
     if (this.menu) {
-        cb = this.menu_elements['Intensity projection'];
-        if (cb) projection = cb.value;
+        projection = this.projection_combo.getValue();
     }
 
     // '', 'projectmax', 'projectmin', 'projectmaxt', 'projectmint', 'projectmaxz', 'projectminz'
@@ -176,8 +170,7 @@ ImgSlicer.prototype.updateImage = function () {
 ImgSlicer.prototype.updatePosition = function () {
     var view = this.viewer.current_view;
     var dim = view.imagedim.clone();    
-    var surf = this.div;
-    if (this.viewer.viewer_controls_surface) surf = this.viewer.viewer_controls_surface;
+    var surf = this.viewer.viewer_controls_surface ? this.viewer.viewer_controls_surface : this.div;
     
     if (!this.tslider && dim.t>1) {
         this.tslider = Ext.create('BQ.slider.TSlider', {
@@ -186,9 +179,12 @@ ImgSlicer.prototype.updatePosition = function () {
             hysteresis: this.update_delay_ms,
             minValue: 0,
             maxValue: dim.t-1,
-            listeners: { scope: this, change: function(newValue) { 
-              this.sliceT(newValue); 
-            } },
+            listeners: { 
+                scope: this, 
+                change: function(newValue) { 
+                    this.sliceT(newValue); 
+                },
+            },
             resolution: this.pixel_info_t[0],
             unit: this.pixel_info_t[1],                 
         });            
@@ -201,9 +197,12 @@ ImgSlicer.prototype.updatePosition = function () {
             hysteresis: this.update_delay_ms,
             minValue: 0,
             maxValue: dim.z-1,
-            listeners: { scope: this, change: function(newValue) { 
-              this.sliceZ(newValue); 
-            } },
+            listeners: { 
+                scope: this, 
+                change: function(newValue) { 
+                    this.sliceZ(newValue); 
+                },
+            },
             resolution: this.pixel_info_z[0],
             unit: this.pixel_info_z[1],                 
         });                
@@ -252,100 +251,54 @@ ImgSlicer.prototype.changed = function () {
     this.viewer.need_update();
 }
 
-ImgSlicer.prototype.createCombo = function (name, items, defval, parentdiv){
-    var combo= document.createElementNS(xhtmlns, 'select');
-
-    for (var i=0; i< items.length; i++) {
-        var option = document.createElementNS(xhtmlns, 'option');
-        option.text =  items[i][0];
-        option.value = items[i][1];
-        option.selected = (option.value == defval);
-        combo.appendChild (option);
-    }
-    
-    var div = document.createElementNS(xhtmlns, 'div');
-    
-    var label = document.createElementNS(xhtmlns, 'label');
-    label.textContent = name;
-   
-    div.appendChild (label);
-    div.appendChild (combo);    
-    parentdiv.appendChild (div);
-   
-    this.menu_elements[name] = combo;
-  	combo.onchange = callback(this, "changed", name);
-    return combo;
-}
-
-ImgSlicer.prototype.createGroup = function (name, parentdiv){
-    var group = document.createElementNS(xhtmlns, 'div');
-    group.setAttribute('id', 'group');
-
-    var label = document.createElementNS(xhtmlns, 'h3');
-    label.textContent = name;
-    group.appendChild (label);   
-
-    parentdiv.appendChild (group);
-    return group;
-}
-
 //-------------------------------------------------------------------------
 // Menu for projections
 //-------------------------------------------------------------------------
 
 ImgSlicer.prototype.createMenu = function () {
-    if (this.menu != null) return;
+    if (this.menu) return;    
+    //var surf = this.viewer.viewer_controls_surface ? this.viewer.viewer_controls_surface : this.parent;   
+    this.menu = this.viewer.createViewMenu();    
     
-    this.menu = document.createElementNS(xhtmlns, "div");
-    this.menu.className = "imgview_opdiv";
-    //this.menu.style.left = this.parent.offsetLeft +10+ "px";
-    //this.menu.style.top = this.parent.offsetTop +10+ "px";       
+    this.loadPreferences(this.viewer.preferences);    
     
     var dim = this.viewer.imagedim;
-    var planes_title = 'Image planes [W:'+dim.x+', H:'+dim.y+', Z:'+dim.z+', T:'+dim.t+']';
-    var group_planes = this.createGroup (planes_title, this.menu);                            
-
-    var combo_options = [ ["None", ""] ];
+    //var planes_title = 'Image planes [W:'+dim.x+', H:'+dim.y+', Z:'+dim.z+', T:'+dim.t+']';
+    var planes_title = 'Image planes [Z:'+dim.z+', T:'+dim.t+']';
+ 
+    
+    var combo_options = [ {'value':'', 'text':'None'} ];
     
     // only add projection options for 3D images                        
     if (dim.z>1 || dim.t>1) { 
-        combo_options.push(["Max", "projectmax"]);    
-        combo_options.push(["Min", "projectmin"]);  
+        combo_options.push({'value':'projectmax', 'text':'Max'});    
+        combo_options.push({'value':'projectmin', 'text':'Min'});  
     }                        
                         
     // only add these additional options for 4D/5D images
     if (dim.z>1 && dim.t>1) { 
-        combo_options.push(["Max for current Z", "projectmaxt"]);    
-        combo_options.push(["Min for current Z", "projectmint"]);  
-        combo_options.push(["Max for current T", "projectmaxz"]);
-        combo_options.push(["Min for current T", "projectminz"]);
-    }
-    this.createCombo ('Intensity projection', combo_options, this.default_projection, group_planes);
-                        
-    this.menu.style.display = "none";
-    this.viewer.imagediv.appendChild(this.menu);    
-}
-
-ImgSlicer.prototype.toggleMenu = function () {
-    var need_update = false;
-    if (this.menu == null) {
-        this.createMenu();
-        need_update =true;
-    } 
+        combo_options.push({'value':'projectmaxt', 'text':'Max for current Z'});    
+        combo_options.push({'value':'projectmint', 'text':'Min for current Z'});  
+        combo_options.push({'value':'projectmaxz', 'text':'Max for current T'});
+        combo_options.push({'value':'projectminz', 'text':'Min for current T'});
+    }    
     
-    this.viewer.active_submenu(this.menu);
-    if (this.menu.style.display  == "none" ) { 
-        this.menu.style.display = "";
-        //var view_top = this.parent.offsetTop;
-        //var view_left = this.parent.offsetLeft; 
-        //this.menu.style.left = view_left+10 + "px";
-        //this.menu.style.top = view_top+10 + "px";             
-
-    } else
-        this.menu.style.display = "none";
-
-    //if (need_update) 
-    //    this.viewer.need_update();        
-
+    this.projection_heading = this.menu.add({
+        xtype: 'displayfield',
+        fieldLabel: planes_title,
+        cls: 'heading',
+    });        
+    
+    this.projection_combo = this.viewer.createCombo( 'Intensity projection', combo_options, this.default_projection, this, this.changed);        
+    
+    if (dim.z*dim.t===1) { 
+        this.projection_heading.setVisible(false);
+        this.projection_combo.setVisible(false);
+    }
 }
+
+ImgSlicer.prototype.loadPreferences = function (p) {
+    this.default_projection  = 'projection'  in p ? p.projection  : this.default_projection;
+}
+
 

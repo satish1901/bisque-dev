@@ -1,9 +1,52 @@
 function ImgExternal (viewer,name){
     this.base = ViewerPlugin;
     this.base (viewer, name);
-    this.menu = null;
-    //this.menu_elements = {};
-    this.viewer.addCommand ('External', callback (this, 'toggleMenu'));    
+    
+    if (this.viewer.toolbar) {
+        var toolbar = this.viewer.toolbar;
+        var n = toolbar.items.getCount()-2;
+        toolbar.insert( n, [{ 
+                itemId: 'menu_viewer_external', 
+                xtype:'button', 
+                text: 'Export', 
+                iconCls: 'external',
+                scope: this, 
+                tooltip: 'Export current image to external applications', 
+                menu: {
+                    defaults: {
+                        scope: this,
+                    },
+                    items: [{
+                        xtype  : 'menuitem',
+                        itemId : 'menu_viewer_export_view', 
+                        text   : 'Export current view',
+                        handler: this.exportCurrentView,
+                    },{
+                        xtype  : 'menuitem',
+                        itemId : 'menu_viewer_external_bioView', 
+                        text   : 'View in bioView',
+                        handler: this.launchBioView,
+                    }, {
+                        xtype  : 'menuitem',
+                        itemId : 'menu_viewer_external_bioView3D', 
+                        text   : 'View in bioView3D',
+                        handler: this.launchBioView3D,
+                    }, {
+                        xtype  : 'menuitem',
+                        itemId : 'menu_viewer_export_gobs_gdocs', 
+                        text   : 'Export GObjects to Google Docs',
+                        handler: this.exportGObjectsToGoogle,
+                    },{
+                        xtype  : 'menuitem',
+                        itemId : 'menu_viewer_export_tags_gdocs', 
+                        text   : 'Export Tags to Google Docs',
+                        handler: this.exportTagsToGoogle,
+                    }]
+                },
+            }, //'-',
+        ]);    
+        toolbar.doLayout();    
+    } // if toolbar
 }
 ImgExternal.prototype = new ViewerPlugin();
 
@@ -13,53 +56,15 @@ ImgExternal.prototype.create = function (parent) {
 }
 
 ImgExternal.prototype.newImage = function () {
-
+    if (this.viewer.toolbar) {
+        //var num_pages = this.viewer.imagedim.z * this.viewer.imagedim.t;
+        var m = this.viewer.toolbar.queryById('menu_viewer_external_bioView3D');
+        if (m) m.setDisabled(this.viewer.imagedim.z<2);
+    }
 }
 
 ImgExternal.prototype.updateImage = function () {
 }
-
-ImgExternal.prototype.createButton = function (name, cb){
-    var bt= document.createElementNS(xhtmlns, 'button');
-    bt.innerHTML = name;
-    bt.setAttribute('id', name);
-    bt.onclick = cb;
-    this.menu.appendChild (bt);
-    return bt;
-}
-
-ImgExternal.prototype.toggleMenu = function () {
-    if (this.menu == null) {
-        this.menu = document.createElementNS(xhtmlns, "div");
-        this.menu.className = "imgview_opdiv";
-
-        this.bt_bv   = this.createButton('bioView', callback (this, 'launchBioView'));
-        this.bt_bv3d = this.createButton('bioView3D', callback (this, 'launchBioView3D'));
-
-        this.bt_expGobs = this.createButton('Export GObjects to Google Docs', callback (this, 'exportGObjectsToGoogle'));
-        this.bt_expTags = this.createButton('Export Tags to Google Docs', callback (this, 'exportTagsToGoogle'));
-
-        this.menu.style.display = "none";
-        this.viewer.imagediv.appendChild(this.menu);
-    } 
-
-    this.viewer.active_submenu(this.menu);
-    if (this.menu.style.display  == "none" ) {
-        this.menu.style.display = "";
-        
-        //var view_top = this.parent.offsetTop;
-        //var view_left = this.parent.offsetLeft; 
-	      //this.menu.style.left = view_left+10 + "px";
-	      //this.menu.style.top = view_top+10 + "px";
-	      
-        var num_pages = this.viewer.imagedim.z * this.viewer.imagedim.t;
-        if (this.bt_bv3d)
-          this.bt_bv3d.style.display = (num_pages <= 1)?"none":"";    	      
-	               
-    } else
-        this.menu.style.display = "none";
-}
-
 
 ImgExternal.prototype.launchBioView = function () {
     var user = this.viewer.user.credentials.user;
@@ -90,3 +95,13 @@ ImgExternal.prototype.exportTagsToGoogle = function () {
     //window.location = '/export/to_gdocs?url=' + this.viewer.imageuri + "/tag";  
     window.open( '/export/to_gdocs?url=' + this.viewer.imageuri + "/tag" );        
 }
+
+ImgExternal.prototype.exportCurrentView = function () {
+    var args = this.viewer.updateView().src_args;
+    args.push('format=jpeg,stream');
+    args = args.join('&').replace('&tile=0,0,0,256', '');
+    var url = '/image_service/images/'+this.viewer.image.resource_uniq+'?'+args;    
+    window.location = url;  
+}
+
+
