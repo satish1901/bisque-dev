@@ -10,7 +10,11 @@
 
 <xi:include href="master.html" />
 <head>
-    <title>Resource viewer</title>   
+    <title>Resource viewer</title>  
+    
+    <!-- Image Service -->
+    <link rel="stylesheet" type="text/css" href="${tg.url('/image_service/public/converter.css')}" />
+    <script type="text/javascript" src="${tg.url('/image_service/public/converter.js')}"></script>
     
     <!-- PanoJS3 -->
     <meta http-equiv="imagetoolbar" content="no" />
@@ -30,14 +34,17 @@
     <script type="text/javascript" src="/client_service/public/js/slider/slider.js"></script>
     <script type="text/javascript" src="/client_service/public/js/slider/tslider.js"></script>
     <script type="text/javascript" src="/client_service/public/js/slider/zslider.js"></script>
-    
+
+    <link rel="stylesheet" type="text/css" href="/client_service/public/js/picker/Color.css" /> 
+    <script type="text/javascript" src="/client_service/public/js/picker/Color.js"></script>   
+    <link rel="stylesheet" type="text/css" href="/client_service/public/js/form/field/Color.css" /> 
+    <script type="text/javascript" src="/client_service/public/js/form/field/Color.js"></script>   
     
     <link rel="stylesheet" type="text/css" href="/client_service/public/css/imgview.css" />
     
     <script type="text/javascript" src="/client_service/public/js/viewer/scalebar.js"></script>
     <script type="text/javascript" src="/client_service/public/js/viewer/2D.js"></script> 
     
-    <script type="text/javascript" src="/client_service/public/js/viewer/imageconverter.js"></script> 
     <script type="text/javascript" src="/client_service/public/js/viewer/imgview.js"></script>
     <script type="text/javascript" src="/client_service/public/js/viewer/imgops.js"></script> 
     <script type="text/javascript" src="/client_service/public/js/viewer/imgslicer.js"></script>
@@ -47,10 +54,9 @@
     <script type="text/javascript" src="/client_service/public/js/viewer/tilerender.js"></script>
     <script type="text/javascript" src="/client_service/public/js/viewer/svgrender.js"></script>
     <script type="text/javascript" src="/client_service/public/js/viewer/imgedit.js"></script>
-    <script type="text/javascript" src="/client_service/public/js/viewer/imgdownload.js"></script>
     <script type="text/javascript" src="/client_service/public/js/viewer/imgmovie.js"></script>
+    <script type="text/javascript" src="/client_service/public/js/viewer/imageconverter.js"></script>    
     <script type="text/javascript" src="/client_service/public/js/viewer/imgexternal.js"></script>
-    <script type="text/javascript" src="/client_service/public/js/viewer/imgshare.js"></script>
     <script type="text/javascript" src="/client_service/public/js/viewer/imgscalebar.js"></script>
     <script type="text/javascript" src="/client_service/public/js/viewer/imginfobar.js"></script>
     <script type="text/javascript" src="/client_service/public/js/viewer/progressbar.js"></script>

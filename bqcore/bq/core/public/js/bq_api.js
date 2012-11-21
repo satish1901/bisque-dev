@@ -1241,6 +1241,7 @@ function BQImagePhys(bqimage) {
     this.pixel_units = [];    
     this.channel_names = [];
     this.display_channels = [];
+    this.channel_colors = [];
 
     this.pixel_size_ds = [];
     this.channel_names_ds = [];
@@ -1250,6 +1251,23 @@ function BQImagePhys(bqimage) {
     this.channel_names_is = [];
     this.display_channels_is = [];
      
+    // default mapping
+    this.channel_colors_default = [
+        new Ext.draw.Color( 255,   0,   0 ), // red
+        new Ext.draw.Color(   0, 255,   0 ), // green
+        new Ext.draw.Color(   0,   0, 255 ), // blue
+        new Ext.draw.Color( 255, 255, 255 ), // gray
+        new Ext.draw.Color(   0, 255, 255 ), // cyan
+        new Ext.draw.Color( 255,   0, 255 ), // magenta
+        new Ext.draw.Color( 255, 255,   0 ), // yellow
+    ];   
+    
+    this.pixel_formats = {
+        'unsigned integer': 'u',
+        'signed integer'  : 's',
+        'floating point'  : 'f',
+    };
+    
     this.is_done = false;
     this.ds_done = false; 
     this.loadcallback = null;
@@ -1278,8 +1296,15 @@ BQImagePhys.prototype.init = function () {
   if (this.num_channels == 2)
     this.display_channels[2] = -1;
 
+
+    this.channel_colors = this.channel_colors_default.slice(0, Math.min(this.num_channels, this.channel_colors_default.length));
+    var diff = this.num_channels-this.channel_colors.length;
+    for (var i=0; i<diff; i++)
+        this.channel_colors.push(new Ext.draw.Color(0,0,0));
+
+
   //-------------------------------------------------------
-  // image channels to display RGB mapping  
+  // channel names
   for (var i=0; i<this.num_channels; i++)
     this.channel_names[i] = i+1; 
   if (this.num_channels == 3) {
@@ -1313,6 +1338,10 @@ BQImagePhys.prototype.normalizeMeta = function() {
     this.display_channels[i] = combineValue( this.display_channels_ds[i], this.display_channels_is[i], this.display_channels[i] );      
     this.display_channels[i] = parseInt( this.display_channels[i] );      
   }
+  
+  if (this.channel_colors_ds && this.channel_colors_ds.length===this.num_channels)
+      this.channel_colors = this.channel_colors_ds;
+  
   this.initialized = true;  
 }
 
@@ -1370,7 +1399,11 @@ BQImagePhys.prototype.onloadIS = function (image) {
   this.display_channels_is[0] = hash['display_channel_red'];      
   this.display_channels_is[1] = hash['display_channel_green'];      
   this.display_channels_is[2] = hash['display_channel_blue'];  
-  
+
+  for (var i=0; i<this.num_channels; i++)
+     if (hash['channel_color_'+i])
+         this.channel_colors[i] = Ext.draw.Color.fromString('rgb('+hash['channel_color_'+i]+')');
+    
   //-------------------------------------------------------
   // image channels to display RGB mapping  
   for (var i=0; i<this.num_channels; i++) {
@@ -1381,10 +1414,11 @@ BQImagePhys.prototype.onloadIS = function (image) {
   //-------------------------------------------------------
   // additional info
   this.pixel_depth = hash['image_pixel_depth'];     
-  
+  this.pixel_format = hash['image_pixel_format']; 
+    
   //-------------------------------------------------------
   // additional info
-  this.pixel_depth = hash['image_pixel_depth'];     
+  //this.pixel_depth = hash['image_pixel_depth'];     
   
   this.is_done = true; 
   this.onload();
@@ -1430,6 +1464,11 @@ BQImagePhys.prototype.onloadDS = function ( ) {
     this.display_channels_ds[0] = ht['display_channel_red'];
     this.display_channels_ds[1] = ht['display_channel_green'];     
     this.display_channels_ds[2] = ht['display_channel_blue'];
+    
+    this.channel_colors_ds = [];
+    for (var i=0; i<this.num_channels; i++)
+        if (ht['channel_color_'+i])
+            this.channel_colors_ds[i] = Ext.draw.Color.fromString('rgb('+ht['channel_color_'+i]+')');    
     
     //-------------------------------------------------------
     // image channels to display RGB mapping  
@@ -1533,10 +1572,9 @@ BQUser.prototype.afterInitialized = function () {
 }
 
 BQUser.prototype.get_credentials = function( cb) {
-    //var u = new BQUrl(this.uri);
-    //this.server_uri = u.server();
-    //BQFactory.load (this.server_uri+bq.url("/auth_service/credentials/"), 
-    BQFactory.load (bq.url("/auth_service/credentials/"), 
+    var u = new BQUrl(this.uri);
+    this.server_uri = u.server();
+    BQFactory.load (this.server_uri+bq.url("/auth_service/credentials/"), 
                     callback (this, 'on_credentials', cb))
 }
 

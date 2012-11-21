@@ -8,6 +8,7 @@ Ext.define('BQ', {
     extend: 'Ext.util.Observable',
 
     root: '/',
+    baseCSSPrefix: 'bq-',
 
     constructor: function(config) {
         if (typeof(bq) == "undefined")

@@ -314,20 +314,19 @@ function ImgViewer (parentid, image_or_uri, parameters) {
     this.imagediv = document.createElementNS (xhtmlns, "div");
     this.imagediv.id="imgviewer_image";
     this.imagediv.className = "image_viewer_display";
-
-/*
-    this.optiondiv = document.createElementNS (xhtmlns, "div");
-    this.optiondiv.id="imgviewer_option";
-    this.optiondiv.className = "image_viewer_option";
-*/
+    
+    this.preferences = undefined;
+    BQ.Preferences.get({
+        key : 'Viewer',
+        callback : Ext.bind(this.onPreferences, this),
+    });    
 
     this.target.appendChild (this.menudiv);
-    //this.target.appendChild (this.optiondiv);
     this.target.appendChild (this.imagediv);
     
-    //var plugin_list = "default,slicer,tiles,ops,download,movie,external,permissions,share,statistics,scalebar,progressbar,infobar,edit,renderer";
-    //var plugin_list = "default,slicer,tiles,ops,download,movie,external,permissions,share,scalebar,progressbar,infobar,edit,renderer";
-    var plugin_list = "default,slicer,tiles,ops,download,movie,external,scalebar,progressbar,infobar,edit,renderer";
+    this.toolbar = this.parameters.toolbar;  
+    
+    var plugin_list = "default,slicer,tiles,ops,download,movie,external,converter,scalebar,progressbar,infobar,edit,renderer";
     if ('onlyedit' in this.parameters)
         plugin_list = "default,slicer,tiles,ops,scalebar,progressbar,infobar,edit,renderer";
     if ('simpleview' in this.parameters) {
@@ -338,22 +337,18 @@ function ImgViewer (parentid, image_or_uri, parameters) {
     if (ImgViewer.pluginmap == null) 
         ImgViewer.pluginmap = {
             "default"     : DefaultImgPlugin,
-            //"scale"       : ImgScale,
-            //"download"    : ImgDownload,
             "movie"       : ImgMovie,
             "external"    : ImgExternal,                 
+            "converter"   : ImageConverter,                 
             "permissions" : ImgPermissions,
             "statistics"  : ImgStatistics,
             "scalebar"    : ImgScaleBar,
             "progressbar" : ProgressBar,            
             "infobar"     : ImgInfoBar,
             "slicer"      : ImgSlicer,
-            "share"       : ImgShare,
             "edit"        : ImgEdit,
-            //"scroller"    : ImgScroller,
             "tiles"       : TilesRenderer, // TILES RENDERER MUST BE BEFORE SVGRenderer  
-            "ops"         : ImgOperations, // Ops should be after slicer            
-            //"image"       : ImageRenderer, // IMAGE RENDERER MUST BE BEFORE SVGRenderer           
+            "ops"         : ImgOperations, // Ops should be after tiler            
             "renderer"    : SVGRenderer,   // RENDERER MUST BE LAST
         };
 
@@ -442,6 +437,8 @@ XButtonGroup.prototype.selected = function (text, cb){
     this.buttons[text].setAttribute('id','selected');
     if (cb) cb();
 }
+
+// DIMA: deprecated addCommand etc...
 
 ImgViewer.prototype.addCommandGroup = function (group, text, cb) {
     var bg = this.groups[group]; 
@@ -593,6 +590,7 @@ ImgViewer.prototype.doUpdateImage = function () {
 }
 
 ImgViewer.prototype.updateImage = function () {
+    this.requires_update = undefined;
     if (this.update_needed) clearTimeout(this.update_needed);
     this.update_needed = setTimeout(callback(this, 'doUpdateImage'), this.update_delay_ms);
 }
@@ -720,8 +718,11 @@ ImgViewer.prototype.newPhys = function (bqimagephys) {
         plugin.newImage ();
     }   
 
-
-    this.updateImage ();
+    //this.updateImage();
+    if (this.preferences)
+        this.updateImage();
+    else
+        this.requires_update = true;
 
     // Load gobjects from string and return
     if ('gobjects_xml' in this.parameters) {
@@ -733,6 +734,87 @@ ImgViewer.prototype.newPhys = function (bqimagephys) {
         this.loadGObjects(gobjects_url);
     }    
 
+}
+
+//----------------------------------------------------------------------
+// viewer preferences
+//----------------------------------------------------------------------
+
+ImgViewer.prototype.onPreferences = function(pref) {
+    this.preferences = pref;  
+    if (this.requires_update)
+        this.updateImage();   
+};
+
+//----------------------------------------------------------------------
+// view menu
+//----------------------------------------------------------------------
+
+ImgViewer.prototype.createCombo = function (label, items, def, scope, cb) {
+    var options = Ext.create('Ext.data.Store', {
+        fields: ['value', 'text'],
+        data : items
+    });
+    var combo = this.menu_view.add({
+        xtype: 'combobox',
+        fieldLabel: label,
+        store: options,
+        queryMode: 'local',
+        displayField: 'text',
+        valueField: 'value',
+        forceSelection: true,
+        editable: false,
+        value: def,
+        listeners:{
+            scope: scope,
+            'select': cb,
+        },
+    });    
+    return combo;
+}
+
+ImgViewer.prototype.createViewMenu = function() {
+    if (!this.menubutton) {
+        //var surf = this.viewer_controls_surface ? this.viewer_controls_surface : this.imagediv;      
+        
+        this.menubutton = document.createElement('span');
+        this.menubutton.className = 'viewoptions';
+        //this.infobar.setAttribute("style", ImgViewer.INFO_CONTROL_STYLE );
+        //this.infobar.style.cssText = ImgViewer.INFO_CONTROL_STYLE;
+        //surf.appendChild(this.menubutton);
+    }
+    
+    if (!this.menu_view) {
+        this.menu_view = Ext.create('Ext.tip.ToolTip', {
+            target: this.menubutton,
+            anchor: 'top',
+            anchorToTarget: true,
+            cls: 'bq-viewer-menu',
+            maxWidth: 470,
+            anchorOffset: -10,
+            autoHide: false,
+            shadow: false,
+            closable: true,
+            layout: {
+                type: 'vbox',
+                align: 'stretch',
+            },  
+            defaults: {
+                labelSeparator: '',
+                labelWidth: 200,
+            },    
+        }); 
+        var el = Ext.get(this.menubutton);
+        el.on('click', this.onMenuClick, this);        
+    }
+    return this.menu_view;  
+};
+
+ImgViewer.prototype.onMenuClick = function () {
+    if (this.menu_view.isVisible())
+        this.menu_view.hide();    
+    else
+        this.menu_view.show();
 }
 
 ////////////////////////////////////////////////
