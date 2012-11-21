@@ -116,18 +116,17 @@ ImgOperations.prototype.createMenu = function () {
     if (this.menu) return;    
 
     this.menu = this.viewer.createViewMenu();
-    
     var surf = this.viewer.viewer_controls_surface ? this.viewer.viewer_controls_surface : this.parent;       
     surf.appendChild(this.viewer.menubutton);
-    //if (!this.menu) return;       
-
+   
     this.loadPreferences(this.viewer.preferences);
     
-          
+       
 
     var dim = this.viewer.imagedim;
     
     this.createChannelMap( );
+
    
     var enhancement = this.default_enhancement;
     var view_title = 'View';
@@ -168,7 +167,7 @@ ImgOperations.prototype.createMenu = function () {
     */                 
                  
     //create update button and checkbox
-    this.createUpdateButton (this.menu);                  
+    //this.createUpdateButton (this.menu);                  
                         
 }
 
@@ -183,11 +182,10 @@ ImgOperations.prototype.createChannelMap = function ( ) {
     });
     
     this.channel_colors = imgphys.channel_colors;
-    this.channel_color_pickers = [];
     for (var ch=0; ch<channel_count; ch++) {
-        this.channel_color_pickers[ch] = {
+        cc = {
             xtype: 'colorfield',
-            fieldLabel: imgphys.channel_names[ch],
+            fieldLabel: ''+imgphys.channel_names[ch],
             name: 'channel_color_'+ch,
             channel: ch,
             value: this.channel_colors[ch].toString().replace('#', ''),
@@ -199,7 +197,7 @@ ImgOperations.prototype.createChannelMap = function ( ) {
                 },
             },            
         };
-        this.menu.add(this.channel_color_pickers[ch]);
+        this.menu.add(cc);
     }    
 }
 
