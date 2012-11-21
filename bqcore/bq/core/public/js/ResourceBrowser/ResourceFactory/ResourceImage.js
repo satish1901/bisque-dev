@@ -687,10 +687,8 @@ Ext.define('Bisque.Resource.Image.Page',
             },
         });
         
-        var resTab = Ext.create('Ext.tab.Panel',
-        {
+        var resTab = Ext.create('Ext.tab.Panel', {
             title : 'Metadata',
-    
             region : 'east',
             activeTab : 0,
             border : false,
@@ -716,6 +714,7 @@ Ext.define('Bisque.Resource.Image.Page',
                                                     {
                                                         this.gobjectTagger.deleteGObject(gi)
                                                     }, this),
+                                toolbar: this.toolbar,
                             },
             listeners   :   {
                                 'changed'   :   function(me, gobjects)
@@ -796,15 +795,15 @@ Ext.define('Bisque.Resource.Image.Page',
         });
         resTab.add(this.gobjectTagger);
 
-        var map = Ext.create('BQ.gmap.GMapPanel3',  {
+        resTab.add({        
+            xtype: 'bqgmap',
             title: 'Map',
             url: this.resource.src+'?meta',
             zoomLevel: 16,
             gmapType: 'map',
             autoShow: true,
         });
-        resTab.add(map);
-        
+                
         this.setLoading(false);
     },
     

@@ -17,15 +17,12 @@ GPS data (about a photo) which is passed to the map. The map sets a marker and c
  * @revised Alex Tovar
  */
 
-Ext.define('BQ.gmap.GMapPanel3', {
+Ext.define('BQ.gmap.Panel', {
     extend: 'Ext.panel.Panel',
-    
-    alias: 'gmappanel3',
-    
+    alias: 'widget.bqgmap',
     requires: ['Ext.window.MessageBox'],
     
-    initComponent : function(){
-        
+    initComponent : function() {
         var defConfig = {
             plain: true,
             zoomLevel: 3,
@@ -34,7 +31,6 @@ Ext.define('BQ.gmap.GMapPanel3', {
             zoom: 0,
             border: false
         };
-        
         Ext.applyIf(this,defConfig);
         this.callParent();        
     },
@@ -106,7 +102,7 @@ Ext.define('BQ.gmap.GMapPanel3', {
 
         var marker = new google.maps.Marker({position:point, map: this.gmap});
         google.maps.event.addListener(this.gmap, 'click', function() {
-        infoWindow.close();
+            infoWindow.close();
         });
     
         google.maps.event.addListener(marker, 'click', this.onMarkerClick);
@@ -138,7 +134,6 @@ Ext.define('BQ.gmap.GMapPanel3', {
     },
     
     findGPS : function(xmlDoc){
-
         if(xmlDoc!=null){
         var latituderef = this.evaluateXPath(xmlDoc, "//tag[@name='GPSLatitudeRef']/@value");
         var longituderef = this.evaluateXPath(xmlDoc, "//tag[@name='GPSLongitudeRef']/@value");
@@ -153,32 +148,16 @@ Ext.define('BQ.gmap.GMapPanel3', {
         return point;}
     },
     
-     evaluateXPath: function(aNode, aExpr) {
+    evaluateXPath: function(aNode, aExpr) {
         var xpe = new XPathEvaluator();
         var nsResolver = xpe.createNSResolver(aNode.ownerDocument == null ?
-          aNode.documentElement : aNode.ownerDocument.documentElement);
+            aNode.documentElement : aNode.ownerDocument.documentElement);
         var result = xpe.evaluate(aExpr, aNode, nsResolver, 0, null);
         var found = [];
         var res;
         while (res = result.iterateNext())
-          found.push(res);
+            found.push(res);
         return found;
-        },
-    
-    loadXML: function (url, context, callback)  {
-        var xhttp=null;
-        if (window.XMLHttpRequest)
-            xhttp=new XMLHttpRequest();
-        else
-           xhttp=new ActiveXObject("Microsoft.XMLHTTP");
-        xhttp.open("GET", url, true);
-        
-        xhttp.onreadystatechange = function (aEvt) {
-          if (xhttp.readyState == 4) {
-              if (xhttp.status==200 || xhttp.status==0)
-                  context[callback](xhttp.responseXML);
-          }
-        };    
-        xhttp.send();
-    }
+    },
+
 });
