@@ -151,9 +151,9 @@ def isTiff(ifnm):
         finally:
             pass
     
-    fmt = rd['format']
-    if not fmt: return False
-    return fmt.startswith('TIFF')
+    if 'format' not in rd:
+        return False
+    return 'tiff' in rd['format'].lower()
 
 def formats():
     return formatList()
