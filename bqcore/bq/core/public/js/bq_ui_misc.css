@@ -73,3 +73,22 @@
 #messagepopup .notification h3 {
     font-size: 20px;
 }
+
+
+
+.highlight {
+    background-color: rgba(33,33,33,0.7);
+    border-width: 0px;
+    padding: 10px;
+    text-align:center;
+}
+
+.highlight .x-tip-anchor-top {
+    border-bottom-color: rgba(33,33,33,0.7);
+}
+
+.highlight h3 {
+    color: #99CCFF;
+    font-size: 2em;
+}
+

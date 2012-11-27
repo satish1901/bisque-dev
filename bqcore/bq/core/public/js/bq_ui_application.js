@@ -118,6 +118,11 @@ Ext.define('BQ.Application', {
         this.main.setCenterComponent(c);  
     },
 
+    getToolbar: function() {
+        if (this.main)
+            return this.main.getToolbar();
+    },
+
     setLoading: function(load, targetEl) {
         if (!this.main) return;
         var w = this.getCenterComponent() || this.main;
@@ -204,6 +209,10 @@ Ext.define('BQ.Application.Window', {
     getHelpComponent: function() {
         return this.getComponent('help');  
     },       
+
+    getToolbar: function() {
+        return this.toolbar;  
+    },  
     
 });
 

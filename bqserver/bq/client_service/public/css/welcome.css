@@ -106,7 +106,13 @@
     position: absolute;
     bottom: 0px;
     right: 20px;
-    top: 150px;    
+    top: 150px; 
+    left: 460px;   
+}
+
+.intro {
+    width: 490px;
+    left: auto; 
 }
 
 .apps .x-panel-body-default {
@@ -236,4 +242,71 @@
 }
 
 /* mex list  */
+
+.welcome_front .x-grid-row {
+    /*height: 32px;*/
+    color: rgb(99, 99, 99);
+}
+
+.welcome_front .x-grid-row .x-grid-cell {
+    background-color: rgba(255,255,255,0.6);
+    font-size: 18px;
+}
+
+.welcome_front .x-grid-row-alt .x-grid-cell {
+    background-color: rgba(220,220,220,0.6);    
+}
+
+
+/* Size relative stuff  */
+
+@media screen and (max-width:900px) {
+    #stats.stats {
+        visibility: hidden;
+    }
+    
+    .intro {
+        width: 100%;
+        left: 20%;        
+    }       
+    
+    .activity {
+        left: 20%;       
+    }    
+}
+
+@media screen and (max-height:400px) {
+    #stats.stats {
+        visibility: hidden;
+    }
+}
+
+@media screen and (max-width:600px) {
+    #randomimage.randomimage {
+        visibility: hidden;
+    }
+    
+    .activity {
+        bottom: 0px;
+        right: 0px;
+        left: 0px;
+        top: 150px; 
+    }
+        
+    .intro {
+        width: 100%;
+    }    
+}
+
+@media screen and (max-height:500px) {
+    #heading.heading {
+        visibility: hidden;
+    }
+    
+    .activity {
+        bottom: 0px;
+        top: 0px; 
+    }   
+    
+}
 
