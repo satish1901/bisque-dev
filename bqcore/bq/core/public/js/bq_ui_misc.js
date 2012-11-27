@@ -93,6 +93,23 @@ BQ.ui = function(){
             setTimeout( function () { tip.destroy(); }, opts.timeout );
         },
 
+        highlight: function( element, text, opts ) {
+            opts = opts || {};
+            opts.timeout = opts.timeout || 5000;  
+            opts.anchor = opts.anchor || 'top';    
+            
+            var w = Ext.create('Ext.ToolTip', Ext.apply({
+              target: element,
+              anchor: opts.anchor,
+              cls: 'highlight',
+              html: text,
+              autoHide: false,
+              shadow: false,
+            }, opts));
+            w.show();
+            w.getEl().fadeOut({ delay: opts.timeout, remove: true});
+        },
+
     };
 }();
 
