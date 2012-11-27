@@ -2,21 +2,15 @@ function ImgMovie (viewer,name){
     this.base = ViewerPlugin;
     this.base (viewer, name);
     
-    if (this.viewer.toolbar) {
-        var toolbar = this.viewer.toolbar;
-        var n = toolbar.items.getCount()-2;
-        toolbar.insert( n, { 
-                itemId: 'menu_viewer_movie', 
-                xtype:'button', 
-                text: 'View as movie', 
-                iconCls: 'movie',
-                tooltip: 'View and export current image as a movie',                 
-                scope: this, 
-                handler: this.showMovie,
-            }
-        );
-        toolbar.doLayout();           
-    } // if toolbar    
+    this.viewer.addMenu({ 
+        itemId: 'menu_viewer_movie', 
+        xtype:'button', 
+        text: 'View as movie', 
+        iconCls: 'movie',
+        tooltip: 'View and export current image as a movie',                 
+        scope: this, 
+        handler: this.showMovie,
+    });
 }
 ImgMovie.prototype = new ViewerPlugin();
 

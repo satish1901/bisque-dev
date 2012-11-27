@@ -704,6 +704,7 @@ Ext.define('Bisque.Resource.Image.Page',
         var viewerContainer = Ext.create('BQ.viewer.Image', {
             region      :   'center',
             resource    :   this.resource,
+            toolbar     :   this.toolbar,
             parameters  :   {
                                 gobjectCreated  :   Ext.bind(function(gob)
                                                     {
@@ -714,7 +715,6 @@ Ext.define('Bisque.Resource.Image.Page',
                                                     {
                                                         this.gobjectTagger.deleteGObject(gi)
                                                     }, this),
-                                toolbar: this.toolbar,
                             },
             listeners   :   {
                                 'changed'   :   function(me, gobjects)

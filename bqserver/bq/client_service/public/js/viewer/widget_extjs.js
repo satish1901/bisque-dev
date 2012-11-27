@@ -81,10 +81,18 @@ Ext.define('BQ.viewer.Image', {
         this.resource = resource; 
 
         this.parameters = this.parameters || {};
+        if (this.toolbar) 
+            this.parameters.toolbar = this.toolbar;
         this.parameters.gobjectschanged = callback(this, 'onchanged');
         this.viewer = new ImgViewer(this.getId(), this.resource, this.parameters);   
         this.fireEvent( 'loaded', this ); 
         this.viewer.resize();  
+        
+        // dima: ultra ugly fix laying out toolbar on delay - NEEDS PROPER FIX!!!! 
+        if (this.toolbar) {
+            var element = this.toolbar;
+            setTimeout(function(){ element.updateLayout(); }, 1000);
+        }
     },
 
     onchanged : function(gobs) {
