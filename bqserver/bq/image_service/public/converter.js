@@ -15,10 +15,16 @@ Ext.define('BQ.panel.ToolCheck', {
     alias: 'widget.toolcheck',    
 
     cls: 'checkbox',
-    checked: false,
+    //checked: false,
+    //type: 'unpin',
     tooltip : 'Enable/disable service',
     stopEvent: true,
-    type: 'unpin',
+
+    initComponent : function() { 
+        this.checked = this.checked || false; 
+        this.type = this.checked ? 'pin' : 'unpin';
+        this.callParent();
+    },
 
     onClick: function(e, target) {
         this.checked = !this.checked;
@@ -53,18 +59,20 @@ Ext.define('BQ.is.Service', {
         return this;
     },   
 
-    initComponent : function() {  
+    initComponent : function() { 
+        this.enabled = this.enabled || false;
         this.tools = [{
-            xtype : 'toolcheck',
-            itemId: 'enabeled-checkbox',
-            scope : this,
+            xtype   : 'toolcheck',
+            itemId  : 'enabeled-checkbox',
+            checked : this.enabled,
+            scope   : this,
             handler : this.onCheckbox,
         }];       
         this.items = [Ext.apply({
             xtype : 'container',
             itemId: 'surface',
             cls: 'surface',
-            disabled: true,
+            disabled: !this.enabled,
             defaults: { labelWidth: 120, },
         }, this.surface_config || {})];
         this.callParent();
@@ -84,6 +92,10 @@ Ext.define('BQ.is.Service', {
             forceSelection: true,
             editable: false,
             flex: 1,
+            listeners: {
+                scope: this,
+                'select': this.emitChange,
+            },               
         }; 
         return Ext.apply(combo, config);   
     },
@@ -136,7 +148,7 @@ Ext.define('BQ.is.Service.Slice', {
                     xtype: 'numberfield',
                     itemId: 'sel_z1',
                     fieldLabel: 'Initial Z',
-                    value: 1,
+                    value: this.slice.z1 || 1,
                     minValue: 1,
                     maxValue: this.phys.z,
                     allowDecimals: false,
@@ -149,7 +161,7 @@ Ext.define('BQ.is.Service.Slice', {
                     xtype: 'numberfield',
                     itemId: 'sel_z2',
                     fieldLabel: 'Final Z',
-                    value: 0,
+                    value: this.slice.z2 || 0,
                     minValue: 0,
                     maxValue: this.phys.z,
                     allowDecimals: false,
@@ -162,7 +174,7 @@ Ext.define('BQ.is.Service.Slice', {
                     xtype: 'numberfield',
                     itemId: 'sel_t1',
                     fieldLabel: 'Initial T',
-                    value: 1,
+                    value: this.slice.t1 || 1,
                     minValue: 1,
                     maxValue: this.phys.t,
                     allowDecimals: false,
@@ -175,7 +187,7 @@ Ext.define('BQ.is.Service.Slice', {
                     xtype: 'numberfield',
                     itemId: 'sel_t2',
                     fieldLabel: 'Final T',
-                    value: 0,
+                    value: this.slice.t2 || 0,
                     minValue: 0,
                     maxValue: this.phys.t,
                     allowDecimals: false,
@@ -195,7 +207,7 @@ Ext.define('BQ.is.Service.Slice', {
                         colspan: 2,
                         //minWidth: 350,
                         //width: '100%',
-                        value: '',
+                        value: this.slice.projection || '',
                         listeners: {
                             scope: this,
                             'select': this.validate,
@@ -250,7 +262,12 @@ Ext.define('BQ.is.Service.Slice', {
         var t2 = this.queryById('sel_t2').getValue();
         var prj = this.queryById('combo-projection').getValue();
         
-        return 'slice=,,'+z1+'-'+z2+','+t1+'-'+t2+ (prj ? '&'+prj:'');
+        var command = 'slice=,,'+z1;
+        if (z2>0) command += '-'+z2;
+        command += ','+t1;        
+        if (t2>0) command += '-'+t2;        
+        command += prj ? '&'+prj:'';
+        return command;
     },
 });
 
@@ -414,6 +431,7 @@ Ext.define('BQ.is.Service.Negative', {
     alias: 'widget.bqis-service-negative',
     
     initComponent : function() {  
+        this.enabled = this.view.negative==='negative' ? true : false;
         this.surface_config = {           
             items: [{
                 xtype:'tbtext', 
@@ -674,8 +692,10 @@ Ext.define('BQ.is.Converter', {
         var s = undefined;
         for (var i=0; s=BQ.is.services[i]; ++i) {
             this.services.push(Ext.create(s, {
-                image: this.image,
-                phys: this.phys,
+                image : this.image,
+                phys  : this.phys,
+                slice : this.slice,
+                view  : this.view,                
                 listeners: {
                     scope: this,
                     changed: this.onchange,

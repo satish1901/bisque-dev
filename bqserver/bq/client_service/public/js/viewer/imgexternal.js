@@ -2,51 +2,45 @@ function ImgExternal (viewer,name){
     this.base = ViewerPlugin;
     this.base (viewer, name);
     
-    if (this.viewer.toolbar) {
-        var toolbar = this.viewer.toolbar;
-        var n = toolbar.items.getCount()-2;
-        toolbar.insert( n, [{ 
-                itemId: 'menu_viewer_external', 
-                xtype:'button', 
-                text: 'Export', 
-                iconCls: 'external',
-                scope: this, 
-                tooltip: 'Export current image to external applications', 
-                menu: {
-                    defaults: {
-                        scope: this,
-                    },
-                    items: [{
-                        xtype  : 'menuitem',
-                        itemId : 'menu_viewer_export_view', 
-                        text   : 'Export current view',
-                        handler: this.exportCurrentView,
-                    },{
-                        xtype  : 'menuitem',
-                        itemId : 'menu_viewer_external_bioView', 
-                        text   : 'View in bioView',
-                        handler: this.launchBioView,
-                    }, {
-                        xtype  : 'menuitem',
-                        itemId : 'menu_viewer_external_bioView3D', 
-                        text   : 'View in bioView3D',
-                        handler: this.launchBioView3D,
-                    }, {
-                        xtype  : 'menuitem',
-                        itemId : 'menu_viewer_export_gobs_gdocs', 
-                        text   : 'Export GObjects to Google Docs',
-                        handler: this.exportGObjectsToGoogle,
-                    },{
-                        xtype  : 'menuitem',
-                        itemId : 'menu_viewer_export_tags_gdocs', 
-                        text   : 'Export Tags to Google Docs',
-                        handler: this.exportTagsToGoogle,
-                    }]
-                },
-            }, //'-',
-        ]);    
-        toolbar.doLayout();    
-    } // if toolbar
+    this.viewer.addMenu([{ 
+        itemId: 'menu_viewer_external', 
+        xtype:'button', 
+        text: 'Export', 
+        iconCls: 'external',
+        scope: this, 
+        tooltip: 'Export current image to external applications', 
+        menu: {
+            defaults: {
+                scope: this,
+            },
+            items: [{
+                xtype  : 'menuitem',
+                itemId : 'menu_viewer_export_view', 
+                text   : 'Export current view',
+                handler: this.exportCurrentView,
+            },{
+                xtype  : 'menuitem',
+                itemId : 'menu_viewer_external_bioView', 
+                text   : 'View in bioView',
+                handler: this.launchBioView,
+            }, {
+                xtype  : 'menuitem',
+                itemId : 'menu_viewer_external_bioView3D', 
+                text   : 'View in bioView3D',
+                handler: this.launchBioView3D,
+            }, {
+                xtype  : 'menuitem',
+                itemId : 'menu_viewer_export_gobs_gdocs', 
+                text   : 'Export GObjects to Google Docs',
+                handler: this.exportGObjectsToGoogle,
+            },{
+                xtype  : 'menuitem',
+                itemId : 'menu_viewer_export_tags_gdocs', 
+                text   : 'Export Tags to Google Docs',
+                handler: this.exportTagsToGoogle,
+            }]
+        },
+    }]);    
 }
 ImgExternal.prototype = new ViewerPlugin();
 

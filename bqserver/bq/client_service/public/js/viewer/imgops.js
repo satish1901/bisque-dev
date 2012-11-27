@@ -24,10 +24,15 @@ ImgOperations.prototype.updateImage = function () {
 
 }
 
+ImgOperations.prototype.getParams = function () {
+    return this.params || {};
+},
+
 ImgOperations.prototype.updateView = function (view) {
     if (!this.menu) this.createMenu(); 
     if (this.menu) {
-
+        this.params = {};
+        this.params.enhancement = this.combo_enhancement.getValue();
         view.addParams  ('depth=8,' + this.combo_enhancement.getValue());
 
         /*
@@ -53,8 +58,10 @@ ImgOperations.prototype.updateView = function (view) {
         view.rotateTo( parseInt(cb.value) );        
 */
 
-        if (this.combo_negative.getValue())
+        if (this.combo_negative.getValue()) {
+            this.params.negative = this.combo_negative.getValue();
             view.addParams(this.combo_negative.getValue());    
+        }
     }       
 }
 

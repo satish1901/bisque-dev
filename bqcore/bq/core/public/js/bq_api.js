@@ -223,7 +223,8 @@ BQFactory.on_xmlresponse = function(params, xmldoc) {
         if (errorcb) errorcb ({ xmldoc : xmldoc, message : 'parse error in BQFactory.on_xmlresponse' });
         return;
     }
-    return cb(bq);    
+    if (cb)
+        return cb(bq);    
 }
 
 BQFactory.parseBQDocument = function (xmltxt) {
@@ -1572,10 +1573,11 @@ BQUser.prototype.afterInitialized = function () {
 }
 
 BQUser.prototype.get_credentials = function( cb) {
-    var u = new BQUrl(this.uri);
-    this.server_uri = u.server();
-    BQFactory.load (this.server_uri+bq.url("/auth_service/credentials/"), 
-                    callback (this, 'on_credentials', cb))
+//    var u = new BQUrl(this.uri);
+//    this.server_uri = u.server();
+//    BQFactory.load (this.server_uri+bq.url("/auth_service/credentials/"), 
+//                    callback (this, 'on_credentials', cb));
+    BQFactory.load (bq.url('/auth_service/credentials/'));
 }
 
 BQUser.prototype.on_credentials = function(cb, cred) {

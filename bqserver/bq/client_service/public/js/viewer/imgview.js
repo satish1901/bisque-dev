@@ -184,7 +184,6 @@ Viewstate.prototype.addParams = function (params) {
     }
     this.src_args.push (params);
 }
-
  
 Viewstate.prototype.image_url = function (auxparams) {
     var url = this.imagesrc;
@@ -463,6 +462,15 @@ ImgViewer.prototype.remCommandGroup = function (group) {
     }
 }
 
+ImgViewer.prototype.addMenu = function (m) {
+    if (!this.toolbar) return;
+    var toolbar = this.toolbar;
+    var n = toolbar.items.getCount()-2;
+    toolbar.insert(n, m);  
+    toolbar.doLayout();
+}
+
+
 ImgViewer.prototype.addCommand =function (text, callback, helptext){
     var menu = this.menudiv;
     var button = document.createElementNS (xhtmlns, "button");
@@ -596,15 +604,7 @@ ImgViewer.prototype.updateImage = function () {
 }
 
 ImgViewer.prototype.findPlugin = function(name) {
-    p = null;
-    for (var i = 0; i < this.plugins.length; i++) {
-        plugin = this.plugins[i];
-        if (plugin.name == name) {
-          p = plugin;
-          break;
-        }        
-    }    
-    return p;
+    return this.plugins_by_name[name];
 }
 
 ImgViewer.prototype.gobjects = function() {

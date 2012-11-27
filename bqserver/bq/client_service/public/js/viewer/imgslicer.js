@@ -73,6 +73,10 @@ ImgSlicer.prototype.createUrls  =function (view){
 //    if (item) item.show(visible);
 //}
 
+ImgSlicer.prototype.getParams = function () {
+    return this.params || {};
+},
+
 ImgSlicer.prototype.updateView = function (view) {
     view.z = this.z;
     view.t = this.t;
@@ -82,9 +86,13 @@ ImgSlicer.prototype.updateView = function (view) {
     if (this.menu) {
         projection = this.projection_combo.getValue();
     }
+    
+    this.params = {};
 
     // '', 'projectmax', 'projectmin', 'projectmaxt', 'projectmint', 'projectmaxz', 'projectminz'
     if (projection == '') {
+        this.params.z1 = view.z+1;
+        this.params.t1 = view.t+1;
         view.addParams ( 'slice=,,'+(view.z+1)+','+(view.t+1) );
         if (this.zslider) this.zslider.show();
         if (this.tslider) this.tslider.show();    
@@ -100,15 +108,22 @@ ImgSlicer.prototype.updateView = function (view) {
         // now take care of required pre-slicing for 4D/5D cases
         var dim = view.imagedim;
         if (prjtype=='projectmaxz' || prjtype=='projectminz') {
+            this.params.z1 = 1;
+            this.params.z2 = dim.z;
+            this.params.t1 = view.t+1;
             view.addParams ( 'slice=,,1-'+(dim.z)+','+(view.t+1) );
             showtslider = true;
             newdimt = dim.t;    
         } else 
         if (prjtype=='projectmaxt' || prjtype=='projectmint') {                 
+            this.params.z1 = dim.z+1;
+            this.params.t1 = 1;
+            this.params.t2 = view.t;
             view.addParams ( 'slice=,,'+(view.z+1)+',1-'+(dim.t) );
             showzslider = true;              
             newdimz = dim.z;    
         }
+        this.params.projection = projection;
         
         view.addParams (projection);
         view.imagedim.t = newdimt;
