@@ -11,43 +11,18 @@
     
     <title py:if="not welcome_message">Welcome</title>
     <title py:if="welcome_message">${welcome_message}</title>
-      
-    <script type="text/javascript" src="${tg.url('/client_service/public/js/DataExplore.js')}" ></script>
 
     <link rel="stylesheet" type="text/css" href="${tg.url('/js/carousel/carousel.css')}" />
     <script type="text/javascript" src="${tg.url('/js/carousel/Panel.js')}" ></script>    
 
     <script type="text/javascript" src="${tg.url('/usage/public/bq_usage_stats.js')}" ></script>
     
-    
-    <!--<link rel="stylesheet" type="text/css" href="${tg.url('/extjs/resources/css/ext-all-gray.css')}"/>
-    <link rel="stylesheet" type="text/css" href="${tg.url('/css/bisquik_extjs_fix.css')}" />-->
     <link rel="stylesheet" type="text/css" href="${tg.url('/client_service/public/css/welcome.css')}" />
 
 <style type="text/css" py:if="thumbnail">
-body { 
-    background-image: url('${thumbnail}=800,600');
-    background-size: cover !important;
-    background-origin: content-box;
-}    
-
-/* extjs 4.1 */
-#centerEl-body {
-    background-color: transparent;
-}
-
-/* extjs 4.0.2 */
-#centerEl .x-panel-body {
-    background-color: transparent;    
-}
-
-/*
-.welcome_front { 
-    background-image: url('${thumbnail}=800,600');
-    background-size: cover !important;
-    background-origin: content-box;
-}
-*/
+    body { 
+        background-image: url('${thumbnail}=800,600');
+    }    
 </style>
 
 <script type="text/javascript">
@@ -112,11 +87,6 @@ body {
 
 </script>
 
-<script type="text/javascript" py:if="tg.config.get('server.environment', None) == 'development'" > 
-    BQ.ui.warning( 'This a test environment, all your data may be lost!' );
-</script>
-
-
 <script type="text/javascript" >
     var my_items = [];
 </script>
@@ -157,45 +127,19 @@ body {
             width: 150,
             height: 140,
         });
-        
-        /*
-        this.imageExplorer = Ext.create('Ext.panel.Panel', {
-            renderTo: 'explore', 
-            title: 'Explore images',
-            width: 400,       
-            height: 255,
-            cls: 'box',
-            collapsible: true,
-            collapseDirection: 'left',
-            layout: 'hbox',
-            border: 0, 
-            defaults: { border: 0, }, 
-            items: [{ html: s, width: 140, height: 230, cls: 'explore' },],
-        });
-        */      
+  
     });
 </script>
 
 <script py:if="not tg.identity" type="text/javascript" >
     var tag_query = 'welcome_page:true';
+    var title = 'Featured datasets';
 </script>
 <script py:if="tg.identity" type="text/javascript" >
     var tag_query = undefined;
+    var title = 'Datasets';    
 </script>
 
-<script py:if="not tg.identity and welcome_tags" type="text/javascript" >
-    /*
-    Ext.onReady( function() { 
-        var tagsExplorer = Ext.create('Ext.carousel.Panel', {
-            width: 260,
-            height: 200,  
-        }); 
-        this.imageExplorer.add(tagsExplorer);     
-      
-       DataExplore("${welcome_tags}", tagsExplorer);
-    });
-    */
-</script>
 
 <script type="text/javascript" >
     Ext.onReady( function() { 
@@ -216,7 +160,7 @@ body {
         
         var setBrowser = new Bisque.ResourceBrowser.Browser({
               layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Compact,
-              title: 'Featured datasets',
+              title: title,
               viewMode: 'ViewerOnly',
               tagOrder: '"@ts":desc',          
               dataset: '/data_service/dataset',
@@ -277,6 +221,7 @@ body {
         }); 
         this.recentsExplorer.add(tabs);     
     });
+    
 </script>
 
 
@@ -291,10 +236,6 @@ body {
     <div class="box randomimage" id="randomimage" py:if="not tg.identity and imageurl">
         <a href="${imageurl}">Current random image</a>
     </div>
-    
-    <!--
-    <div class="exploreimages" py:if="not tg.identity" id="explore" ></div>
-    -->
     
     <div class="stats" id="stats"></div>
     

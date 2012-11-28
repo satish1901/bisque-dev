@@ -8,7 +8,7 @@
 <head py:attrs="select('@*')">
 
     <meta content="text/html; charset=UTF-8" http-equiv="content-type" py:replace="''"/>
-    <meta name="viewport" content="width=device-width" />
+    <meta name = "viewport" content="width=900, maximum-scale=1" />
     
     <title py:with="title = list(select('title/text()'))">
     Bisque<py:if test="title">: ${title}</py:if>
@@ -69,9 +69,12 @@
     <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/ResourceFactory/ResourceUser.js')}"></script>
     <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/ResourceFactory/ResourceTemplate.js')}"></script>
     <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/Misc/MessageBus.js')}"></script>
-    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/Misc/GestureManager.js')}"></script>
     <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/Misc/Slider.js')}"></script>
     <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/Misc/DataTip.js')}"></script>
+
+    <!-- Gesture manager -->
+    <script type="text/javascript" src="${tg.url('/js/senchatouch/sencha-touch-gestures.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/Misc/GestureManager.js')}"></script>
 
     <!-- Share dialog files -->
     <script type="text/javascript" src="${tg.url('/js/Share/BQ.ShareDialog.js')}"></script>
@@ -86,7 +89,7 @@
     <script type="text/javascript" src="${tg.url('/js/Preferences/BQ.Preferences.js')}" ></script>
     <script type="text/javascript" src="${tg.url('/js/Preferences/PreferenceViewer.js')}" ></script>
     <script type="text/javascript" src="${tg.url('/js/Preferences/PreferenceTagger.js')}" ></script>
- 
+
     <!-- DatasetBrowser -->
     <script type="text/javascript" src="${tg.url('/js/DatasetBrowser/DatasetBrowser.js')}"></script>
 
@@ -97,8 +100,10 @@
 
     <!-- Exporter -->
     <script type="text/javascript" src="${tg.url('/export_service/public/js/BQ.Export.js')}"></script>
+
     </py:otherwise>
     </py:choose>
+    
     <!-- Configuration variables   -->  
     <script type="text/javascript" > 
         // update the configuration in your template
@@ -127,10 +132,10 @@
         });
     </script>
   
-    <script type="text/javascript" py:if="tg.config.get('server.environment', None) == 'development'" > 
-        Ext.onReady( function(){     
-            BQ.ui.warning( 'This a test environment, all your data may be lost!' );
-        });
+    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" > 
+        Ext.onReady( function() {     
+            //BQ.ui.warning( 'This a test environment, all your data may be lost!' );
+        });     
     </script>
   
 </head>

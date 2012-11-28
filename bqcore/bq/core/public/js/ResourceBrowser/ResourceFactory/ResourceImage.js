@@ -263,10 +263,11 @@ Ext.define('Bisque.Resource.Image.Compact',
         {
             this.resource.tags = data.tags;
             var geometry = this.resource.find_tags('geometry') || {value:'1,1,1,1,1'};
-            this.resource.geometry = geometry.value.split(',');
-            
-            this.resource.z = parseInt(this.resource.geometry[2]);
-            this.resource.t = parseInt(this.resource.geometry[3]);
+            if (geometry && geometry.value) {
+                this.resource.geometry = geometry.value.split(',');
+                this.resource.z = parseInt(this.resource.geometry[2]);
+                this.resource.t = parseInt(this.resource.geometry[3]);
+            }
             this.setData('tags', 'true');
         }
 
