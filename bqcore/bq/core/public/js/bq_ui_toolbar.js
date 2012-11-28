@@ -90,29 +90,24 @@ Ext.define('BQ.Application.Toolbar', {
     region: 'north', 
     border: false,             
     layout: { overflowHandler: 'Menu',  },
-    defaults: { scale: 'large', },
+    defaults: { scale: 'large',  },
     cls: 'toolbar_main',
     preferences : {},
+    
+    title: 'Bisque demo', 
+    toolbar_opts: { 'browse':true, 'upload':true, 'download':true, 'services':true, 'query':true },   
+    image_query_text: 'Find images using tags',
+
+    tools_big_screen: [ 'button_upload', 'button_download' ],  
     
     tools_none: [ 'menu_user_signin', 'menu_user_register', 'menu_user_register_sep','menu_user_recover' ],    
     tools_user: ['menu_user_name', 'menu_user_profile', 'menu_user_signout', 'menu_user_prefs', 'menu_user_signout_sep'],
     tools_admin: ['menu_user_admin_separator', 'menu_user_admin', 'menu_user_admin_prefs', ],    
     
-    config: {
-        title: 'Bisque demo',    
-        toolbar_opts: { 'browse':true, 'upload':true, 'download':true, 'services':true, 'query':true },
-        image_query_text: 'Find images using tags',
-    },
-
-    constructor: function(config) {
-        config = config || {};
-        Ext.apply(config, {}, {images_base_url: bq.url('/images/toolbar/') });
-        if (bq.title) config.title = bq.title;
-        this.initConfig(config);
-        return this.callParent(arguments);        
-    },    
-   
     initComponent : function() {
+        this.images_base_url = this.images_base_url || bq.url('/images/toolbar/');
+        this.title = bq.title || this.title;        
+        
         Ext.QuickTips.init();
         Ext.tip.QuickTipManager.init();
         var toolbar = this;        
@@ -386,27 +381,27 @@ Ext.define('BQ.Application.Toolbar', {
             xtype: 'tbspacer', 
             width: 40, 
         });        
-        this.items.push({ 
-            menu: this.menu_services, 
-            icon: this.images_base_url+'services.png', 
-            text: 'Services', 
-            tooltip: '', 
+        this.items.push({
+            xtype : 'button',
+            itemId: 'button_services', 
+            menu  : this.menu_services,
+            icon  : this.images_base_url+'services.png', 
+            text  : 'Services', 
         });
-        this.items.push('-');        
         this.items.push({ 
             text: 'Upload', 
+            itemId: 'button_upload', 
             icon: this.images_base_url+'upload.png',
             handler: Ext.Function.pass(pageAction, bq.url('/import/upload')),
             tooltip: '', 
         });            
-        this.items.push('-');
         this.items.push({ 
             text: 'Download', 
+            itemId: 'button_download', 
             icon: this.images_base_url+'download.png', 
             handler: Ext.Function.pass(pageAction, '/export/'),
             tooltip: '', 
         });
-        this.items.push('-');            
 
 
         var browse_vis = (this.toolbar_opts && this.toolbar_opts.browse===false) ? false : true;
@@ -465,12 +460,13 @@ Ext.define('BQ.Application.Toolbar', {
             tooltip: 'Edit your user account', 
             plain: true,
         });
-        this.items.push('-');            
         this.items.push({ 
             menu: menu_help, 
             icon: this.images_base_url+'help.png', 
             tooltip: 'All information about Bisque',
         }); 
+        
+        this.addListener( 'resize', this.onResized, this);        
         
         this.callParent();
 
@@ -535,9 +531,17 @@ Ext.define('BQ.Application.Toolbar', {
         this.fetchResourceTypes();        
     },
 
-    // private
-    onDestroy : function() {
-        this.callParent();
+    onResized: function() {
+        //tools_big_screen: [ 'button_upload', 'button_download' ], 
+        var w = this.getWidth();
+        //var w = document.width;
+        if (w<1024) {
+            for (var i=0; id=this.tools_big_screen[i]; ++i)
+               this.queryById(id).setVisible(false);
+        } else {
+            for (var i=0; id=this.tools_big_screen[i]; ++i)
+               this.queryById(id).setVisible(true);          
+        }
     },
 
     userPrefs : function() {

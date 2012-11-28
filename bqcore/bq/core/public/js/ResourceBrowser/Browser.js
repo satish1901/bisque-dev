@@ -204,7 +204,7 @@ Ext.define('Bisque.ResourceBrowser.Browser',
 
         this.loadPreferences();
 
-        if(Ext.supports.Touch)
+        if (Ext.supports.Touch)
             this.gestureMgr = new Bisque.Misc.GestureManager();
     },
 

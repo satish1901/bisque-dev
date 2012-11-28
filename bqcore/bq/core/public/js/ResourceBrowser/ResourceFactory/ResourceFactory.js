@@ -233,12 +233,12 @@ Ext.define('Bisque.Resource',
 		if (this.browser.gestureMgr)
 			this.browser.gestureMgr.addListener(
 			[
-				{
+				/*{ // dima: double tap should not be needed anymore with edit mode on the browser
 					dom: el.dom,
 					eventName: 'doubletap',
 					listener: Ext.bind(Ext.Function.createSequence(this.preDblClick, this.onDblClick, this), this), 
 					//options: {holdThreshold:500}
-				},
+				},*/
 				{
 					dom: el.dom,
 					eventName: 'singletap',

@@ -107,7 +107,7 @@ BQ.ui = function(){
               shadow: false,
             }, opts));
             w.show();
-            w.getEl().fadeOut({ delay: opts.timeout, remove: true});
+            w.getEl().fadeOut({ delay: opts.timeout});//.fadeOut({ delay: opts.timeout, remove: true});
         },
 
     };
