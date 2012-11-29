@@ -2,6 +2,11 @@
 Ext.define('Bisque.Resource.Dataset',
 {
     extend:'Bisque.Resource',
+    
+    initComponent : function() {
+        this.addCls('dataset');	
+        this.callParent();			
+	},    
 
     afterRenderFn : function()
     {
@@ -51,7 +56,7 @@ Ext.define('Bisque.Resource.Dataset.Compact',
     
 	loadResource : function(resource)
     {
-        var imgs = '<div style = "margin:4px;background:#F2F2F2;width:152px;height:152px">'
+        var imgs = '<div style = "margin:4px;width:152px;height:152px">'
         var thumbnail, margin;
 
         for (var i=0;i<resource.children.length && i<4; i++)
