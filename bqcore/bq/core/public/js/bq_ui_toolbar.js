@@ -473,12 +473,6 @@ Ext.define('BQ.Application.Toolbar', {
                 this.queryById(p).setVisible(false);    
                          
         }, this);  
-
-        BQ.Preferences.get({
-            type : 'system',
-            key : 'Toolbar',
-            callback : Ext.bind(this.on_preferences, this)
-        });
         
         this.fetchResourceTypes();        
     },
@@ -502,10 +496,6 @@ Ext.define('BQ.Application.Toolbar', {
 
     systemPrefs : function() {
         var preferences = Ext.create('BQ.Preferences.Dialog', {prefType:'system'});
-    },
-    
-    on_preferences : function (preferences) {
-        //this.queryById('menu_user_register').setVisible(false);            
     },
 
     fetchResourceTypes : function() {
@@ -741,6 +731,9 @@ Ext.define('BQ.Application.Toolbar', {
    
     onPreferences: function(pref) {
         this.preferences = pref;  
+        
+        if (this.preferences.registration === 'disabled')
+            this.queryById('menu_user_register').setVisible(false);        
         
         this.queryById('menu_user_register').setHandler( 
             Ext.Function.pass(pageAction, bq.url(this.preferences.registration || '/registration')), 
