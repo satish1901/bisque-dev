@@ -408,13 +408,28 @@
     top: 10px;
     bottom: none;   
     right: none;
-    /*padding: 5px; 
-    border-radius: 5px;*/
   
     background-image: url('/images/viewer/64px_view.png');
     background-size: 20px;
     background-color: transparent;  
 }
+
+.viewer .viewoptions-phone {
+    width: 96px;
+    height: 96px;
+    left: 100px; 
+    top: 30px;
+    background-size: 96px;
+}
+
+.viewer .viewoptions-touch {
+    width: 36px;
+    height: 36px;
+    left: 85px; 
+    top: 15px;
+    background-size: 36px;
+}
+
 
 /*******************************************************************************
  progress

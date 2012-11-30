@@ -2,7 +2,7 @@
 /*  */
 /**************************************************************************/
 
-.toolbar_main {
+.toolbar-main {
     background-color: transparent;
     border: 0px;
     background: -moz-linear-gradient(top,  rgba(233,243,255,1) 0%, rgba(136,185,234,0.92) 50%, rgba(119,168,226,0) 100%);
@@ -14,30 +14,30 @@
     filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#e9f3ff', endColorstr='#0077a8e2',GradientType=0 );
 }
 
-.toolbar_main h3 {
+.toolbar-main h3 {
   font-size: 190%;
   font-weight: normal;
   font-family: "Times New Roman", Times, serif;
 }
 
-.toolbar_main a {
+.toolbar-main a {
   color: #000000;
 }
 
-.toolbar_main a:hover {
+.toolbar-main a:hover {
 	color: #C60;
 }
 
 .x-menu-body .menu-heading {
-    padding: 5px 0px 5px 0px;
+    padding: 5px 5px 3px 5px;
     font-family: Georgia, serif;
 }
 
-.toolbar_main .x-box-menu-right {
+.toolbar-main .x-box-menu-right {
     /*height: 32px;  */
 }
 
-.toolbar_main .x-btn-default-toolbar-large .x-btn-inner {
+.toolbar-main .x-btn-default-toolbar-large .x-btn-inner {
     font-size: 12px;
 }
 
@@ -50,3 +50,44 @@
 .loginmenu .x-panel-body-default {
     background: transparent;
 }
+
+/******************************************************************
+ Icons
+******************************************************************/
+
+.toolbar-main .icon-help {
+    background-image: url('/images/toolbar/help.png');
+}
+
+.toolbar-main .icon-user {
+    background-image: url('/images/toolbar/user.png');
+}
+
+.toolbar-main .icon-browse {
+    background-image: url('/images/toolbar/browse.png');
+}
+
+.toolbar-main .icon-export {
+    background-image: url('/images/toolbar/download.png') !important;
+}
+
+.toolbar-main .icon-import {
+    background-image: url('/images/toolbar/upload.png') !important;
+}
+
+.toolbar-main .icon-services {
+    background-image: url('/images/toolbar/services.png');
+}
+
+.toolbar-menu img {
+    background-size: 16px;
+}
+
+.toolbar-menu .icon-import {
+    background-image: url('/images/toolbar/upload.png') !important;
+}
+
+.toolbar-menu .icon-export {
+    background-image: url('/images/toolbar/download.png') !important;
+}
+
