@@ -300,6 +300,7 @@ Ext.define('Bisque.Resource.Dataset.Page',
     
         var renderer = Ext.create('BQ.renderers.dataset', {
             resource: this.resource,
+            loadmap: true,
         });
         
         this.add(renderer);

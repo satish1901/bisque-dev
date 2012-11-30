@@ -177,7 +177,6 @@ Ext.define('BQ.Application.Toolbar', {
                 inputId: 'loginusername',
                 allowBlank: false,  
                 
-                // extjs 4.1          
                 fieldSubTpl: [ // note: {id} here is really {inputId}, but {cmpId} is available
                     '<input id="{id}" type="{type}" {inputAttrTpl}',
                         ' size="1"', // allows inputs to fully respect CSS widths across all browsers
@@ -193,7 +192,7 @@ Ext.define('BQ.Application.Toolbar', {
                     {
                         disableFormats: true,
                     }
-                ],                                                        
+                ],                                                       
                             
                 listeners: {
                     specialkey: function(field, e){

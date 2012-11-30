@@ -58,7 +58,17 @@ Ext.define('BQ.renderers.dataset', {
                 },
                 scope:this
             },
-        });         
+        });  
+        
+        var map = undefined;
+        if (this.loadmap) map = {        
+            xtype: 'bqmap',
+            title: 'Map',
+            zoomLevel: 16,
+            gmapType: 'map',
+            autoShow: true,
+            resource: this.resource,
+        };               
     
         this.tabber = Ext.create('Ext.tab.Panel', {
             region : 'east',
@@ -72,7 +82,7 @@ Ext.define('BQ.renderers.dataset', {
             title : 'Annotate and modify',
             //collapsed: true,
 
-            items : [this.tagger, this.mexs, this.operations]
+            items : [this.tagger, this.mexs, this.operations, map]
         });
 
         this.preview = Ext.create('Bisque.ResourceBrowser.Browser', {
@@ -160,7 +170,7 @@ Ext.define('BQ.renderers.dataset', {
         tb.child('#menu_add_images').setDisabled(true); 
         //tb.child('#menu_query').setDisabled(true); 
         tb.child('#menu_delete_selected').setDisabled(true);
-        tb.child('#menu_delete').setDisabled(true);
+        //tb.child('#menu_delete').setDisabled(true);
         this.operations.setDisabled(true);               
     },
  
