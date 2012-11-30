@@ -91,7 +91,7 @@ Ext.define('BQ.Application.Toolbar', {
     border: false,             
     layout: { overflowHandler: 'Menu',  },
     defaults: { scale: 'large',  },
-    cls: 'toolbar_main',
+    cls: 'toolbar-main',
     preferences : {},
     
     title: 'Bisque demo', 
@@ -101,7 +101,8 @@ Ext.define('BQ.Application.Toolbar', {
     tools_big_screen: [ 'button_upload', 'button_download' ],  
     
     tools_none: [ 'menu_user_signin', 'menu_user_register', 'menu_user_register_sep','menu_user_recover' ],    
-    tools_user: ['menu_user_name', 'menu_user_profile', 'menu_user_signout', 'menu_user_prefs', 'menu_user_signout_sep'],
+    tools_user: ['menu_user_name', 'menu_user_profile', 'menu_user_signout', 'menu_user_prefs', 
+                 'menu_user_signout_sep', 'menu_resource_template', 'menu_resource_create', ],
     tools_admin: ['menu_user_admin_separator', 'menu_user_admin', 'menu_user_admin_prefs', ],    
     
     initComponent : function() {
@@ -118,95 +119,36 @@ Ext.define('BQ.Application.Toolbar', {
         });
        
         //--------------------------------------------------------------------------------------
-        // Toolbar menus
+        // Services menu
         //--------------------------------------------------------------------------------------   
 
-        //this.menu_services = Ext.create('Ext.menu.Menu');
-        this.menu_services = [];
-        this.menu_services.push({
-            text: 'Analysis', 
-            handler: analysisAction, 
-        });
-//        this.menu_services.push({
-//            text: 'Dataset operations', 
-//            handler: Ext.Function.pass(pageAction, '/dataset_service/'), 
-//        });        
-        this.menu_services.push('-');
-        this.menu_services.push({
-            text: 'Import', 
-            handler: Ext.Function.pass(pageAction, '/import/'),
-        });
-        this.menu_services.push({
-            text: 'Export', 
-            handler: Ext.Function.pass(pageAction, '/export/'),
-        });
-        this.menu_services.push('-');
-        this.menu_services.push({
-            text: 'Statistics', 
-            handler: Ext.Function.pass(pageAction, '/stats/'),
-        });        
-                       
-        
-        // Sign in | Register
-        this.menu_user = Ext.create('Ext.menu.Menu', {
+        this.menu_services = {
+            xtype: 'menu',
+            cls: 'toolbar-menu',
             plain: true,
-            //defaults: { plain: true, }, 
-        });
-        this.menu_user.add({
-            xtype:'tbtext', 
-            itemId: 'menu_user_name', 
-            text: 'Sign in', 
-            indent: true, 
-            hidden: true, 
-            cls: 'menu-heading', 
-        });
-        this.menu_user.add({
-            text: 'Profile', 
-            itemId: 'menu_user_profile', 
-            hidden: true, 
-            handler: Ext.Function.pass(pageAction, bq.url('/registration/edit_user')),
-        });
-        this.menu_user.add({ 
-            xtype:'menuseparator', 
-            itemId: 'menu_user_admin_separator', 
-            hidden: true, 
-        });
-        this.menu_user.add({
-            text: 'Website admin', 
-            itemId: 'menu_user_admin', 
-            hidden: true, 
-            handler: Ext.Function.pass(pageAction, bq.url('/admin')), 
-        });        
-        this.menu_user.add({ 
-            text: 'User preferences', 
-            itemId: 'menu_user_prefs', 
-            handler: this.userPrefs, 
-            scope: this, 
-            hidden: true, 
-        });    
-        this.menu_user.add({ 
-            text: 'System preferences', 
-            itemId: 'menu_user_admin_prefs', 
-            hidden:true, 
-            handler: this.systemPrefs, 
-            scope: this, 
-        });    
-        this.menu_user.add({
-            xtype: 'menuseparator', 
-            itemId: 'menu_user_signout_sep', 
-            hidden: true, 
-        });                 
-        this.menu_user.add({
-            text: 'Sign out', 
-            itemId: 'menu_user_signout', 
-            hidden: true, 
-            handler: Ext.Function.pass(pageAction, bq.url('/auth_service/logout_handler')), 
-        });
-                                 
-        //this.menu_user.add( {text: 'Sign in', itemId: 'menu_user_signin', 
-        //                        handler: Ext.Function.pass(pageAction, bq.url('/auth_service/login?came_from='+encodeURIComponent(window.location)))} );
+            items: [{
+                text: 'Analysis', 
+                handler: analysisAction, 
+            }, '-', {
+                text: 'Import', 
+                iconCls: 'icon-import',
+                handler: Ext.Function.pass(pageAction, '/import/'),
+            }, {
+                text: 'Export', 
+                iconCls: 'icon-export',            
+                handler: Ext.Function.pass(pageAction, '/export/'),
+            }, '-', {
+                text: 'Statistics', 
+                handler: Ext.Function.pass(pageAction, '/stats/'),
+            }],       
+        };                       
 
-        this.menu_user.add({ 
+        //--------------------------------------------------------------------------------------
+        // User menu
+        //--------------------------------------------------------------------------------------   
+        
+        // Sign in menu item
+        var signin = { 
             itemId: 'menu_user_signin', 
             plain: true,
             xtype: 'form',
@@ -267,7 +209,7 @@ Ext.define('BQ.Application.Toolbar', {
                 xtype: 'button',
                 text: 'Sign in',
                 formBind: true, //only enabled once the form is valid
-                //disabled: true, // uncomment for extjs 4.1
+                disabled: true, // uncomment for extjs 4.1
                 handler: function() {
                     var form = this.up('form').getForm();
                     if (form.isValid())
@@ -284,216 +226,233 @@ Ext.define('BQ.Application.Toolbar', {
                     this.el.set({ autocomplete: 'on' });
                 },
             },                                    
-        }); // add login menu
-
-        this.menu_user.add({
-            xtype: 'menuseparator', 
-            itemId: 'menu_user_register_sep', 
-        });    
+        };      
         
-        this.menu_user.add({
-            text: 'Register new user', 
-            itemId: 'menu_user_register', 
-            handler: Ext.Function.pass(pageAction, bq.url(this.preferences.registration || '/registration')), 
-        });
-        this.menu_user.add({
-            text: 'Recover Password', 
-            itemId: 'menu_user_recover', 
-            handler: Ext.Function.pass(pageAction, bq.url(this.preferences.registration || '/registration/lost_password')), 
-        });
+        this.menu_user = {
+            xtype: 'menu',
+            cls: 'toolbar-menu',
+            plain: true,
+            items: [{
+                plain: true,
+                cls: 'toolbar-menu',
+            }, {
+                xtype:'tbtext', 
+                itemId: 'menu_user_name', 
+                text: 'Sign in', 
+                indent: true, 
+                hidden: true, 
+                cls: 'menu-heading', 
+            }, {
+                text: 'Profile', 
+                itemId: 'menu_user_profile', 
+                hidden: true, 
+                handler: Ext.Function.pass(pageAction, bq.url('/registration/edit_user')),
+            }, { 
+                xtype:'menuseparator', 
+                itemId: 'menu_user_admin_separator', 
+                hidden: true, 
+            }, {
+                text: 'Website admin', 
+                itemId: 'menu_user_admin', 
+                hidden: true, 
+                handler: Ext.Function.pass(pageAction, bq.url('/admin')), 
+            }, { 
+                text: 'User preferences', 
+                itemId: 'menu_user_prefs', 
+                handler: this.userPrefs, 
+                scope: this, 
+                hidden: true, 
+            }, { 
+                text: 'System preferences', 
+                itemId: 'menu_user_admin_prefs', 
+                hidden:true, 
+                handler: this.systemPrefs, 
+                scope: this, 
+            }, {
+                xtype: 'menuseparator', 
+                itemId: 'menu_user_signout_sep', 
+                hidden: true, 
+            }, {
+                text: 'Sign out', 
+                itemId: 'menu_user_signout', 
+                hidden: true, 
+                handler: Ext.Function.pass(pageAction, bq.url('/auth_service/logout_handler')), 
+            }, signin, {
+                xtype: 'menuseparator', 
+                itemId: 'menu_user_register_sep', 
+            }, {
+                text: 'Register new user', 
+                itemId: 'menu_user_register', 
+                handler: Ext.Function.pass(pageAction, bq.url(this.preferences.registration || '/registration')), 
+            }, {
+                text: 'Recover Password', 
+                itemId: 'menu_user_recover', 
+                handler: Ext.Function.pass(pageAction, bq.url(this.preferences.registration || '/registration/lost_password')), 
+            }],
+        };
 
-        var menu_help = [];
-        menu_help.push({ 
-            xtype:'tbtext', 
-            text: '<img src="'+this.images_base_url+'bisque_logo_white_170.png" style="width: 96px; height: 77px; margin: 10px; margin-left: 30px;" />', 
-            indent: true, 
-        });
-        menu_help.push({
-            text: 'About Bisque', 
-            //handler: Ext.Function.pass(htmlAction, [bq.url('/client_service/public/about/about.html'), 'About Bisque'] ), 
-            handler: Ext.Function.pass(htmlAction, [bq.url('/client_service/about'), 'About Bisque'] ), 
-        });    
-        menu_help.push({
-            text: 'Privacy policy', 
-            handler: Ext.Function.pass(htmlAction, bq.url('/client_service/public/about/privacypolicy.html')), 
-        });
-        menu_help.push({
-            text: 'Terms of use', 
-            handler: Ext.Function.pass(htmlAction, bq.url('/client_service/public/about/termsofuse.html') ),
-        });    
-        menu_help.push({
-            text: 'License', 
-            handler: Ext.Function.pass(htmlAction, bq.url('/client_service/public/about/license.html') ),
-        });  
-
-        menu_help.push('-');  
-        menu_help.push({
-            text: 'Usage statistics', 
-            handler: Ext.Function.pass(pageAction, bq.url('/usage/') ),
-        });  
-        
-        menu_help.push('-');                
-        menu_help.push({
-            text: 'Online Help', 
-            handler: Ext.Function.pass(urlAction, bq.url('/client_service/help')),
-        });
-      
-        menu_help.push({
-            text: 'Bisque project website', 
-            handler: Ext.Function.pass(urlAction, 'http://www.bioimage.ucsb.edu/downloads/Bisque%20Database'), 
-        });   
-                             
-        menu_help.push('-'); 
-        menu_help.push({
-            xtype:'tbtext', text: 'Problems with Bisque?', 
-            indent: true, 
-            cls: 'menu-heading', 
-        });
-        menu_help.push({
-            text: 'Developers website', 
-            handler: Ext.Function.pass(urlAction, 'http://biodev.ece.ucsb.edu/projects/bisquik'),
-        });
-        menu_help.push({
-            text: 'Submit a bug or suggestion', 
-            handler: Ext.Function.pass(urlAction, 'http://biodev.ece.ucsb.edu/projects/bisquik/newticket'),
-        });
-        menu_help.push({
-            text: 'Send us e-mail', 
-            handler: Ext.Function.pass(urlAction, 'mailto:bisque-dev@biodev.ece.ucsb.edu,bisque-bioimage@googlegroups.com'),
-        });                                        
+        //--------------------------------------------------------------------------------------
+        // Help menu
+        //--------------------------------------------------------------------------------------
+        var menu_help = {
+            xtype: 'menu',
+            cls: 'toolbar-menu',
+            plain: true,
+            items: [{ 
+                xtype:'tbtext', 
+                text: '<img src="'+this.images_base_url+'bisque_logo_white_170.png" style="width: 96px; height: 77px; margin: 10px; margin-left: 30px;" />', 
+                indent: true, 
+            }, {
+                text: 'About Bisque', 
+                //handler: Ext.Function.pass(htmlAction, [bq.url('/client_service/public/about/about.html'), 'About Bisque'] ), 
+                handler: Ext.Function.pass(htmlAction, [bq.url('/client_service/about'), 'About Bisque'] ), 
+            }, {
+                text: 'Privacy policy', 
+                handler: Ext.Function.pass(htmlAction, bq.url('/client_service/public/about/privacypolicy.html')), 
+            }, {
+                text: 'Terms of use', 
+                handler: Ext.Function.pass(htmlAction, bq.url('/client_service/public/about/termsofuse.html') ),
+            }, {
+                text: 'License', 
+                handler: Ext.Function.pass(htmlAction, bq.url('/client_service/public/about/license.html') ),
+            }, '-', {
+                text: 'Usage statistics', 
+                handler: Ext.Function.pass(pageAction, bq.url('/usage/') ),
+            }, '-', {
+                text: 'Online Help', 
+                handler: Ext.Function.pass(urlAction, bq.url('/client_service/help')),
+            }, {
+                text: 'Bisque project website', 
+                handler: Ext.Function.pass(urlAction, 'http://www.bioimage.ucsb.edu/downloads/Bisque%20Database'), 
+            }, '-', {
+                xtype:'tbtext', text: 'Problems with Bisque?', 
+                indent: true, 
+                cls: 'menu-heading', 
+            }, {
+                text: 'Developers website', 
+                handler: Ext.Function.pass(urlAction, 'http://biodev.ece.ucsb.edu/projects/bisquik'),
+            }, {
+                text: 'Submit a bug or suggestion', 
+                handler: Ext.Function.pass(urlAction, 'http://biodev.ece.ucsb.edu/projects/bisquik/newticket'),
+            }, {
+                text: 'Send us e-mail', 
+                handler: Ext.Function.pass(urlAction, 'mailto:bisque-dev@biodev.ece.ucsb.edu,bisque-bioimage@googlegroups.com'),
+            }],
+        };                                        
         
         
         //--------------------------------------------------------------------------------------
         // Toolbar items
         //-------------------------------------------------------------------------------------- 
-        if (!this.items) this.items = [];
-
-        this.items.push({ 
-            xtype:'tbtext', 
-            text: '<img src="'+this.images_base_url+'bisque_logo_100px.png" style="width: 58px; height: 38px; margin-right: 5px; margin-left: 5px;" />',
-        });
-        this.items.push({ 
-            xtype:'tbtext', 
-            itemId: 'menu_title', 
-            text: '<h3><a href="/">'+this.title+'</a></h3>', 
-        });        
-        this.items.push({ 
-            xtype: 'tbspacer', 
-            width: 40, 
-        });        
-        this.items.push({
-            xtype : 'button',
-            itemId: 'button_services', 
-            menu  : this.menu_services,
-            icon  : this.images_base_url+'services.png', 
-            text  : 'Services', 
-        });
-        this.items.push({ 
-            text: 'Upload', 
-            itemId: 'button_upload', 
-            icon: this.images_base_url+'upload.png',
-            handler: Ext.Function.pass(pageAction, bq.url('/import/upload')),
-            tooltip: '', 
-        });            
-        this.items.push({ 
-            text: 'Download', 
-            itemId: 'button_download', 
-            icon: this.images_base_url+'download.png', 
-            handler: Ext.Function.pass(pageAction, '/export/'),
-            tooltip: '', 
-        });
-
-
-        var browse_vis = (this.toolbar_opts && this.toolbar_opts.browse===false) ? false : true;
-        this.items.push({
-            itemId: 'menu_images', 
-            xtype:'splitbutton', 
-            text: 'Images', 
-            icon: this.images_base_url+'browse.png', 
-            hidden: !browse_vis, 
-            tooltip: 'Browse images',
-            //menu: [{text: 'Menu Button 1'}], 
-            handler: function(c) { 
-                var q = '';
-                var m = toolbar.child('#menu_query');
-                if (m && m.value != toolbar.image_query_text) { q = '?tag_query='+escape(m.value); }
-                document.location = bq.url('/client_service/browser'+q); 
-            },
-        });
-        this.items.push({
-            itemId: 'menu_resources', 
-            text: 'Resources', 
-            icon: this.images_base_url+'browse.png', 
-            hidden: browse_vis, 
-            tooltip: 'Browse resources',
-        });
-        this.items.push({ 
-            xtype: 'tbspacer', 
-            width: 10, 
-            hidden: !browse_vis,
-        });    
-        this.items.push({
-            itemId: 'menu_query', 
-            xtype:'textfield', 
-            flex: 2, 
-            name: 'search', 
-            value: this.image_query_text, 
-            hidden: !browse_vis,
-            minWidth: 60,
-            tooltip: 'Query for images used Bisque expression',  
-            enableKeyEvents: true,
-            listeners: {
-                focus: function(c){ if (c.value == toolbar.image_query_text) c.setValue(''); },
-                specialkey: function(f, e) { 
-                    if (e.getKey()==e.ENTER && f.value!='' && f.value != toolbar.image_query_text) {
-                        document.location = bq.url('/client_service/browser?tag_query='+escape(f.value)); 
-                    }                         
+        var browse_vis = (this.toolbar_opts && this.toolbar_opts.browse===false) ? false : true;        
+        this.items = [{ 
+                xtype:'tbtext', 
+                text: '<img src="'+this.images_base_url+'bisque_logo_100px.png" style="width: 58px; height: 38px; margin-right: 5px; margin-left: 5px;" />',
+            }, { 
+                xtype:'tbtext', 
+                itemId: 'menu_title', 
+                text: '<h3><a href="/">'+this.title+'</a></h3>', 
+            }, { 
+                xtype: 'tbspacer', 
+                width: 40, 
+            }, {
+                xtype : 'button',
+                itemId: 'button_services', 
+                menu  : this.menu_services,
+                iconCls : 'icon-services', 
+                text  : 'Services', 
+            }, { 
+                text: 'Upload', 
+                itemId: 'button_upload', 
+                iconCls : 'icon-import',
+                handler: Ext.Function.pass(pageAction, bq.url('/import/upload')),
+                tooltip: '', 
+            }, { 
+                text: 'Download', 
+                itemId: 'button_download', 
+                iconCls : 'icon-export', 
+                handler: Ext.Function.pass(pageAction, '/export/'),
+                tooltip: '', 
+            }, {
+                itemId: 'menu_images', 
+                xtype:'splitbutton', 
+                text: 'Images', 
+                iconCls : 'icon-browse', 
+                hidden: !browse_vis, 
+                tooltip: 'Browse images',
+                //menu: [{text: 'Menu Button 1'}], 
+                handler: function(c) { 
+                    var q = '';
+                    var m = toolbar.queryById('menu_query');
+                    if (m && m.value != toolbar.image_query_text) { q = '?tag_query='+escape(m.value); }
+                    document.location = bq.url('/client_service/browser'+q); 
                 },
-            }
-        });
-        this.items.push('->');
-        this.items.push({ 
-            itemId: 'menu_user', 
-            menu: this.menu_user, 
-            icon: this.images_base_url+'user.png', 
-            text: 'Sign in', 
-            tooltip: 'Edit your user account', 
-            plain: true,
-        });
-        this.items.push({ 
-            menu: menu_help, 
-            icon: this.images_base_url+'help.png', 
-            tooltip: 'All information about Bisque',
-        }); 
-        
+            }, {
+                itemId: 'menu_resources', 
+                text: 'Resources', 
+                iconCls : 'icon-browse', 
+                hidden: browse_vis, 
+                tooltip: 'Browse resources',
+            }, { 
+                xtype: 'tbspacer', 
+                width: 10, 
+                hidden: !browse_vis,
+            }, {
+                itemId: 'menu_query', 
+                xtype:'textfield', 
+                flex: 2, 
+                name: 'search', 
+                value: this.image_query_text, 
+                hidden: !browse_vis,
+                minWidth: 60,
+                tooltip: 'Query for images used Bisque expression',  
+                enableKeyEvents: true,
+                listeners: {
+                    focus: function(c){ if (c.value == toolbar.image_query_text) c.setValue(''); },
+                    specialkey: function(f, e) { 
+                        if (e.getKey()==e.ENTER && f.value!='' && f.value != toolbar.image_query_text) {
+                            document.location = bq.url('/client_service/browser?tag_query='+escape(f.value)); 
+                        }                         
+                    },
+                }
+            }, '->', { 
+                itemId: 'menu_user', 
+                menu: this.menu_user, 
+                iconCls: 'icon-user', 
+                text: 'Sign in', 
+                tooltip: 'Edit your user account', 
+                plain: true,
+            }, { 
+                menu: menu_help, 
+                iconCls: 'icon-help', 
+                tooltip: 'All information about Bisque',
+            }, 
+        ];
+
+        //--------------------------------------------------------------------------------------
+        // final touches
+        //--------------------------------------------------------------------------------------         
         this.addListener( 'resize', this.onResized, this);        
-        
         this.callParent();
 
         // update user menu based on application events
         Ext.util.Observable.observe(BQ.Application);        
         BQ.Application.on('gotuser', function(u) { 
-            this.child('#menu_user').setText( u.display_name );
-            this.menu_user.child('#menu_user_name').setText( u.display_name+' - '+u.email_address );
+            this.queryById('menu_user').setText( u.display_name );
+            this.queryById('menu_user_name').setText( u.display_name+' - '+u.email_address );
             
             // hide no user menus
             for (var i=0; (p=this.tools_none[i]); i++)
-                this.menu_user.child('#'+p).setVisible(false);
+                this.queryById(p).setVisible(false);
 
             // show user menus
             for (var i=0; (p=this.tools_user[i]); i++)
-                this.menu_user.child('#'+p).setVisible(true);            
+                this.queryById(p).setVisible(true);            
 
             // show admin menus
             if (u.user_name == 'admin')
             for (var i=0; (p=this.tools_admin[i]); i++)
-                this.menu_user.child('#'+p).setVisible(true);  
-        
-            // create resource element 
-            if (this.menu_resource_create) this.menu_resource_create.setVisible(true);   
-        
-            // create resource from template element 
-            if (this.menu_createFromTemplate) this.menu_createFromTemplate.setVisible(true);   
+                this.queryById(p).setVisible(true);  
 
         }, this);
 
@@ -504,21 +463,15 @@ Ext.define('BQ.Application.Toolbar', {
         BQ.Application.on('signedout', function() { 
             // show no user menus
             for (var i=0; (p=this.tools_none[i]); i++)
-                this.menu_user.child('#'+p).setVisible(true);
+                this.queryById(p).setVisible(true);
 
             // hide user menus
             for (var i=0; (p=this.tools_user[i]); i++)
-                this.menu_user.child('#'+p).setVisible(false);            
+                this.queryById(p).setVisible(false);            
 
             // hide user menus
             for (var i=0; (p=this.tools_admin[i]); i++)
-                this.menu_user.child('#'+p).setVisible(false);    
-                
-            // create resource element  
-            if (this.menu_resource_create) this.menu_resource_create.setVisible(false); 
-
-            // create resource from template element 
-            if (this.menu_createFromTemplate) this.menu_createFromTemplate.setVisible(false);   
+                this.queryById(p).setVisible(false);    
                          
         }, this);  
 
@@ -553,9 +506,7 @@ Ext.define('BQ.Application.Toolbar', {
     },
     
     on_preferences : function (preferences) {
-        clog('boo');
-        //this.menu_user.child('#menu_user_register').setVisible(false);            
-        //'
+        //this.queryById('menu_user_register').setVisible(false);            
     },
 
     fetchResourceTypes : function() {
@@ -565,37 +516,48 @@ Ext.define('BQ.Application.Toolbar', {
     }, 
 
     onResourceTypes : function(resource) {
-        var menu = Ext.create('Ext.menu.Menu');
+        var menu = {
+            xtype: 'menu',
+            cls: 'toolbar-menu',
+            plain: true,
+            items: [{
+                text: 'dataset', 
+                handler: Ext.Function.pass(pageAction, '/client_service/browser?resource=/data_service/dataset'),
+            }],
+        };
+
+        BQApp.resourceTypes = [];
         var r=null;
-        // always add dataset to the list of available resources!
-        menu.add( {text: 'dataset', handler: Ext.Function.pass(pageAction, '/client_service/browser?resource=/data_service/dataset')} );
-        var resourceTypes = [];
-        
         for (var i=0; (r=resource.children[i]); i++) {
-            resourceTypes.push({name:r.name, uri:r.uri});
+            BQApp.resourceTypes.push({name:r.name, uri:r.uri});
             if (r.name == 'dataset') continue;
             var name = r.name;
             var uri = r.uri;            
-            menu.add( {text: name, handler: Ext.Function.pass(pageAction, '/client_service/browser?resource='+uri)} );
+            menu.items.push({
+                text: name, 
+                handler: Ext.Function.pass(pageAction, '/client_service/browser?resource='+uri),
+            });
         }
         
-        BQApp.resourceTypes = resourceTypes;
-        
-        menu.add( '-' );
-        this.menu_resource_create = menu.add( {text: 'Create a new resource', 
-                   handler: function() {this.createResource(resource);},
-                   scope: this, 
-                   hidden: !BQApp.hasUser() });
-        
-        this.menu_createFromTemplate = menu.add({
-            text    :   'Create resource from template', 
-            handler :   function() {this.createResourceFromTemplate()},
-            scope   :   this, 
-            hidden  :   !BQApp.hasUser()
+        menu.items.push('-');
+        menu.items.push({
+            text    : 'Create a new resource', 
+            itemId  : 'menu_resource_create', 
+            handler : function() {this.createResource(resource);},
+            scope   : this, 
+            hidden  : !BQApp.hasUser(),
+        });
+        menu.items.push({
+            itemId  : 'menu_resource_template', 
+            text    : 'Create resource from template', 
+            handler : function() {this.createResourceFromTemplate()},
+            scope   : this, 
+            hidden  : !BQApp.hasUser()
         });
 
-        this.child('#menu_images').menu = menu;
-        this.child('#menu_resources').menu = menu;        
+        menu = Ext.create('Ext.menu.Menu', menu);
+        this.queryById('menu_images').menu = menu;
+        this.queryById('menu_resources').menu = menu;        
     },
     
     createResourceFromTemplate  :   function(template)
@@ -781,13 +743,13 @@ Ext.define('BQ.Application.Toolbar', {
     onPreferences: function(pref) {
         this.preferences = pref;  
         
-        this.menu_user.child('#menu_user_register').setHandler( 
+        this.queryById('menu_user_register').setHandler( 
             Ext.Function.pass(pageAction, bq.url(this.preferences.registration || '/registration')), 
             this 
         );
 
         if (this.preferences.title)
-            this.child('#menu_title').setText( '<h3><a href="/">'+this.preferences.title+'</a></h3>' );
+            this.queryById('menu_title').setText( '<h3><a href="/">'+this.preferences.title+'</a></h3>' );
         
     },
    

@@ -775,13 +775,15 @@ ImgViewer.prototype.createCombo = function (label, items, def, scope, cb) {
 
 ImgViewer.prototype.createViewMenu = function() {
     if (!this.menubutton) {
-        //var surf = this.viewer_controls_surface ? this.viewer_controls_surface : this.imagediv;      
-        
         this.menubutton = document.createElement('span');
-        this.menubutton.className = 'viewoptions';
-        //this.infobar.setAttribute("style", ImgViewer.INFO_CONTROL_STYLE );
-        //this.infobar.style.cssText = ImgViewer.INFO_CONTROL_STYLE;
-        //surf.appendChild(this.menubutton);
+        
+        // temp fix to work similar to panojs3, will be updated to media queries
+        if (isClientTouch())
+            this.menubutton.className = 'viewoptions viewoptions-touch';
+        else if (isClientPhone())
+            this.menubutton.className = 'viewoptions viewoptions-phone';
+        else                 
+            this.menubutton.className = 'viewoptions';            
     }
     
     if (!this.menu_view) {

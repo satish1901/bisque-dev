@@ -53,8 +53,8 @@ body {
 }
 
 .widget .widget-header {
-    border-top-left-radius: 10px;
-    border-top-right-radius: 10px;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
     border-color: rgba(203, 221, 243, 0.0);
     border-width: 0px;
     border-style: solid;
