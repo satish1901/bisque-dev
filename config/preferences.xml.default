@@ -1,35 +1,42 @@
 <system name="system" >
-<tag name="version" value="0.5.1" />
-<tag name="Preferences">
-  <tag name="titles">
-    <tag name="organization" value="" />
-    <tag name="title" value="" />
-  </tag>
-  <tag name="Welcome"  >
-      <tag name="Types of images" value="image_type" />
-      <tag name="Experimenters" value="experimenter" />
-      <tag name="Species" value="species" />
-  </tag>
-    <tag name="Toolbar">
-        <tag name="registration" value="/registration" />
-    </tag>  
-  <tag name="ResourceBrowser">
-    <tag name="Browser">
-      <tag name="Tag Query"/>
-      <tag name="Layout" value="COMPACT"/>
-      <tag name="Include Public Resources" value="true"/>
+    <tag name="version" value="0.5.3" />
+    <tag name="Preferences">
+        <tag name="titles">
+            <tag name="organization" value="" />
+            <tag name="title" value="" />
+        </tag>
+        <tag name="Welcome">
+            <tag name="Types of images" value="image_type" />
+            <tag name="Experimenters" value="experimenter" />
+            <tag name="Species" value="species" />
+        </tag>
+        <tag name="Toolbar">
+            <tag name="registration" value="/registration" />
+        </tag>  
+        <tag name="ResourceBrowser">
+            <tag name="Browser">
+                <tag name="Tag Query"/>
+                <tag name="Layout" value="COMPACT"/>
+                <tag name="Include Public Resources" value="true"/>
+            </tag>
+            <tag name="Images">
+                <tag name="ImageParameters"/>
+            </tag>
+            <tag name="Summary Tags">
+                <tag name="filename"/>
+                <tag name="attached-file"/>
+                <tag name="image_type"/>
+                <tag name="imagedate"/>
+                <tag name="dataset_label"/>
+                <tag name="species"/>
+            </tag>
+        </tag>
+        <tag name="Viewer">
+            <tag type="boolean" name="autoUpdate" value="true"/>
+            <tag type="boolean" name="negative" value="false"/>
+            <tag name="enhancement" value="d"/>
+            <tag name="projection"/>
+            <tag name="enhancement-8bit" value="f"/>
+        </tag>  
     </tag>
-    <tag name="Images">
-      <tag name="ImageParameters"/>
-    </tag>
-    <tag name="Summary Tags">
-      <tag name="filename"/>
-      <tag name="attached-file"/>
-      <tag name="image_type"/>
-      <tag name="imagedate"/>
-      <tag name="dataset_label"/>
-      <tag name="species"/>
-    </tag>
-  </tag>
-</tag>
 </system>
