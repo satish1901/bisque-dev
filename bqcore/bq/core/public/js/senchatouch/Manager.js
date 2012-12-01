@@ -211,7 +211,7 @@ ExtTouch.gesture.Manager = new ExtTouch.AbstractManager({
 
         if (ExtTouch.supports.Touch && this.isClick) {
             this.isClick = false;
-            this.getEventSimulator().fire('click', this.startEvent.target, touch);
+            //this.getEventSimulator().fire('click', this.startEvent.target, touch);
         }
 
         this.lastMovePoint = null;
