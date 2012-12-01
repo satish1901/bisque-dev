@@ -1,13 +1,13 @@
 Ext.define('Bisque.Misc.GestureManager', {
     
-	constructor : function() {
-	    if (!ExtTouch) return;
+	constructor : function() { 
+	    if (typeof ExtTouch === 'undefined') return;
 		ExtTouch.supports.init();
         ExtTouch.gesture.Manager.init();
 	},
 	
 	addListener : function(listenerObj)	{
-	    if (!ExtTouch) return;	    
+	    if (typeof ExtTouch === 'undefined') return;	    
 		if (Ext.isArray(listenerObj)) {
 			Ext.Array.forEach(listenerObj, this.addListener, this);
 			return;
