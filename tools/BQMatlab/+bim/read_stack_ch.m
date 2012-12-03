@@ -15,15 +15,15 @@
 %   If the input is 1 or 4 bit, that will be converted to 8bits
 %
 
-function img = read_stack(filename)
+function img = read_stack_ch(filename, channel)
 
   [im, format, pages, xyzr, metatxt] = bim.bimread( filename, 1 );
   sz = size(im);
-  img = zeros(sz(1), sz(2), sz(3), pages, class(im));
+  img = zeros(sz(1), sz(2), pages, class(im));
   if length(sz)==2,
      img(:,:,1) = im;
   else
-     img(:,:,:,1) = im;
+     img(:,:,1) = im(:,:,channel);
   end
   
   for i=2:pages,
@@ -32,7 +32,7 @@ function img = read_stack(filename)
     if length(sz)==2,
        img(:,:,i) = im;
     else
-       img(:,:,:,i) = im;
+       img(:,:,i) = im(:,:,channel);
     end    
     
   end
