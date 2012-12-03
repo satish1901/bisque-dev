@@ -442,16 +442,16 @@ Ext.define('BQ.Application.Toolbar', {
             
             // hide no user menus
             for (var i=0; (p=this.tools_none[i]); i++)
-                this.queryById(p).setVisible(false);
+                this.setSubMenuVisibility(p, false);
 
             // show user menus
             for (var i=0; (p=this.tools_user[i]); i++)
-                this.queryById(p).setVisible(true);            
+                this.setSubMenuVisibility(p, true);
 
             // show admin menus
             if (u.user_name == 'admin')
             for (var i=0; (p=this.tools_admin[i]); i++)
-                this.queryById(p).setVisible(true);  
+                this.setSubMenuVisibility(p, true);
 
         }, this);
 
@@ -462,19 +462,24 @@ Ext.define('BQ.Application.Toolbar', {
         BQ.Application.on('signedout', function() { 
             // show no user menus
             for (var i=0; (p=this.tools_none[i]); i++)
-                this.queryById(p).setVisible(true);
+                this.setSubMenuVisibility(p, true);
 
             // hide user menus
             for (var i=0; (p=this.tools_user[i]); i++)
-                this.queryById(p).setVisible(false);            
+                this.setSubMenuVisibility(p, false);
 
             // hide user menus
             for (var i=0; (p=this.tools_admin[i]); i++)
-                this.queryById(p).setVisible(false);    
+                this.setSubMenuVisibility(p, false);    
                          
         }, this);  
         
         this.fetchResourceTypes();        
+    },
+
+    setSubMenuVisibility: function(id, v) {
+        var m = this.queryById(id);
+        if (m) m.setVisible(v);
     },
 
     onResized: function() {
