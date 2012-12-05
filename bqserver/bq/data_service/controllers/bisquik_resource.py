@@ -81,6 +81,10 @@ from .formats import find_formatter
 
 log = logging.getLogger("bq.data_service.bisquik_resource")
 
+
+#PROTECTED = [ 'module', 'mex', 'system' ]
+PROTECTED = [  ]
+
 class ResourceAuth(Resource):
     'Handle resource authorization records'
 
@@ -176,7 +180,11 @@ class BisquikResource(Resource):
         return self.force_dbload(parent)
 
     def check_access(self, query, action=RESOURCE_READ):
-        if  action == RESOURCE_EDIT and not identity.not_anonymous():
+        if action == RESOURCE_EDIT and self.resource_name in PROTECTED:
+            log.debug ("PROTECTED RESOURCE")
+            abort(403)
+        if action == RESOURCE_EDIT and not identity.not_anonymous():
+            log.debug ("EDIT denied because annonymous")
             abort(401)
         
         if query and isinstance(query, Query):
@@ -282,21 +290,20 @@ class BisquikResource(Resource):
     @expose(content_type='text/xml') # accept_format="text/xml")
     #@require(not_anonymous())
     def new(self, factory,  xml, **kw):
-        """POST /ds/images : Create a reference to the image in the local database
-        POST /ds/images/12/tags
+        """POST /ds/image : Create a reference to the image in the local database
         """
         view=kw.pop('view', None)
         format = kw.pop('format', None)
         log.info ("NEW: %s %s " %(request.url, xml) )
         
         # Create a DB object from the document.
-        if  not identity.not_anonymous():
-            pylons.response.status_int = 401    
-            return '<response status="FAIL">Permission denied</response>'
+        #if  not identity.not_anonymous():
+        #    pylons.response.status_int = 401    
+        #    return '<response status="FAIL">Permission denied</response>'
 
         parent = self.load_parent()
-        if parent:
-            parent = self.check_access(parent, RESOURCE_EDIT)
+        #if parent:
+        parent = self.check_access(parent, RESOURCE_EDIT)
         resource = bisquik2db(doc=xml, parent = parent)
         log.info ("NEW: => %s " %(str(resource)) )
         if resource is not None:

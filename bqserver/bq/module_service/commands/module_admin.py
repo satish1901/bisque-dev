@@ -76,8 +76,10 @@ class module_admin(object):
                     usage="%prog module [register|unregister] [-u user:pass] [-a] http://myengnine.org/engine_service/[MyModule]",
                     version="%prog " + version)
 
-        parser.add_option('-u', '--user', action='store', help='Login as user (usually admin)')
-        parser.add_option('-a', '--all', action='store_true', help='Register/Unregister all module at engine', default=False)
+        parser.add_option('-u', '--user', default=None, help='Login as user <user>:<pass>')
+        parser.add_option('-a', '--all', action='store_true', help='Register/Unregister all modules at engine', 
+                          default=False)
+        parser.add_option('-r', '--root', help='Bisque server root url')
 
         options, args = parser.parse_args()
         self.args = args
@@ -88,6 +90,11 @@ class module_admin(object):
         if not self.command:
             parser.error("no command given")
 
+        self.credentials = None
+        if self.options.user:
+            self.credentials = tuple(self.options.user.split(':'))
+
+
         if len(self.args):
             self.engine_path = self.args.pop(0)
             if not self.engine_path.endswith('/'):
@@ -97,8 +104,12 @@ class module_admin(object):
 
 
     def run(self):
-        site_cfg = find_site_cfg('site.cfg')
-        load_config(site_cfg)
+        if self.options.root:
+            self.root = options.root
+        else:
+            site_cfg = find_site_cfg('site.cfg')
+            load_config(site_cfg)
+            self.root = norm(config.get('bisque.root') + '/')
         self.command()
 
     
@@ -124,20 +135,23 @@ class module_admin(object):
         return  [ m.get('value') for m in modules ] 
 
     def register_one(self, module_path):
-        bisque_root = norm(config.get('bisque.root') + '/')
+        bisque_root = self.root
         module_path = norm(module_path + '/')
         module_register = urlparse.urljoin(bisque_root, "module_service/register_engine")
         module_xml = self.get_xml( url = urlparse.urljoin(module_path, 'definition'))
         name = module_xml.get('name')
         if module_xml is not None:
-            engine = etree.Element ('engine', uri = module_path)
-            engine.append(module_xml)
-            #####
             log.info ("POSTING %s to %s" % (name, module_register))
-            xml =  etree.tostring (engine)
+            #engine = etree.Element ('engine', uri = module_path)
+            #engine.append(module_xml)
+            #xml =  etree.tostring (engine)
             #print xml
-            resp, content = http.xmlrequest (norm(module_register+'/'), method='POST', body=xml)
-            if resp['status'] != '200':
+            xml = etree.tostring(module_xml)
+            resp, content = http.xmlrequest (norm(module_register+'/'), method='POST', body=xml, 
+                                             userpass = self.credentials)
+            if resp.status == '401':
+                print "You do not have permission to register (provide credentials)"
+            elif resp['status'] != '200':
                 print "An error occurred:"
                 print content
                 return
@@ -154,8 +168,32 @@ class module_admin(object):
 
 
     def unregister(self):
-        print "NOT IMPLEMENTED"
-            
+        if self.options.all:
+            module_paths = self.get_modules(self.engine_path)
+        else:
+            module_paths = [ self.engine_path ] 
+        for m in module_paths:
+            print "unregistering %s" % m
+            self.unregister_one(m)
+
+
+    def unregister_one(self, module_path):
+        bisque_root = self.root
+        module_path = norm(module_path + '/')
+        module_unregister = norm (urlparse.urljoin(bisque_root, "module_service/unregister_engine") + '/')
+
+        module_name = module_path.split('/')[-2]
+        url = "%s?name=%s" % (module_unregister, module_name)
+        
+        resp, content = http.xmlrequest (url, method='GET', userpass=self.credentials)
+        if resp.status == '401':
+            print "You do not have permission to register (provide credentials)"
+        elif resp['status'] != '200':
+            print "An error occurred:"
+            print content
+            return
+        print "UnRegistered"
+        
             
 
 

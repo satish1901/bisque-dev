@@ -75,7 +75,7 @@ class BQServer(object):
     """
 
     def __init__(self):
-        self.http = httplib2.Http()
+        self.http = httplib2.Http( disable_ssl_certificate_validation=True)
         self.auth = {}
         self.root = None
 

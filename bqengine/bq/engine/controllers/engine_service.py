@@ -186,11 +186,11 @@ def load_module(module_path, engines = None):
         engine = engines and engines.get(module_type, None)
         if engine and not engine.check (module_root): 
             return None
-        #module_root.set('engine_url', engine_root + '/'+module_name)
+        #module_root.set('value', engine_root + '/'+module_name)
         module_root.set('value', engine_root + '/'+module_name)
         #module_root.set('status', status)
-        for x in module_root.iter(tag=etree.Element):
-            x.set('permission', 'published')
+        #for x in module_root.iter(tag=etree.Element):
+        #    x.set('permission', 'published')
         return module_root
     return None
 
@@ -286,7 +286,7 @@ class EngineServer(ServiceController):
             module_name = path.pop(0)
             if module_name in self.unavailable:
                 method_unavailable("Module is disabled")
-        return super(EngineServer, self)._default(*path, **kw)
+        method_not_found()
 
 
 ##################################################################################
@@ -537,7 +537,8 @@ class EngineModuleResource(BaseController):
 
     
     @expose(content_type='text/xml')
-    @require(not_anonymous(msg='You need to log-in to run a module'))    
+    #You cannot require a valid login on the engine .. there are no users here!
+    #@require(not_anonymous(msg='You need to log-in to run a module'))    
     def execute(self, entrypoint = 'main'):
         log.debug("execute %s" % self.name)
         mex = read_xml_body()
@@ -583,7 +584,7 @@ class EngineModuleResource(BaseController):
                 mextree.set('value', 'FAILED')
                 excType, excVal, excTrace  = sys.exc_info()
                 trace =  " ".join(traceback.format_exception(excType,excVal, excTrace))
-                mextree.append (etree.Element ('tag',name='execption_trace', value=str(trace)))
+                mextree.append (etree.Element ('tag',name='error_message', value=str(trace)))
                 tg.response.status_int = 500
 
         finally:
