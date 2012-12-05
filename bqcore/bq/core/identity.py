@@ -135,9 +135,13 @@ def get_user():
     """Get the current user object"""
     return current._get_bquser()
 
+def set_current_user(username):
+    "set the current user by name"
+    return current.set_current_user(username)
+
 
 def add_credentials(headers):
-    """"add the current user credentials for outgoing http requests
+    """add the current user credentials for outgoing http requests
 
     This is a place holder for outgoing request made by the server
     on behalf of the logged in user.  Will depend on login methods

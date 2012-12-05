@@ -488,11 +488,8 @@ class CommandRunner(BaseRunner):
         # update process mex
         if self.session is None:
             self.session = BQSession().init_mex(self.mexes[0].mex_url, self.mexes[0].bisque_token)
-        failed_mex = self.session.load(mex.mex_url, view='short')
-        if failed_mex.value not in ('FAILED', 'FINISHED'):
-            newmex = self.session.element('mex', uri = mex.mex_url, value = "FAILED")
-            self.session.append(newmex, tags = [  { 'name':'error_message', 'value': msg } ] )
-            self.session.postxml(mex.mex_url, newmex)
+        if self.session.mex.value not in ('FAILED', 'FINISHED'):
+            self.session.fail_mex (msg)
         
 
 

@@ -39,7 +39,7 @@ def start(need_async=False):
     log.debug ("starting http")
     if not os.path.exists(cachedir):
         os.makedirs(cachedir)
-    local_client = Http(cachedir)
+    local_client = Http(cachedir, disable_ssl_certificate_validation=True)
     if need_async:
         async_request_pool.start_pool_handler()
 
