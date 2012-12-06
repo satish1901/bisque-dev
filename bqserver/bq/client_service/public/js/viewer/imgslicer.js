@@ -4,10 +4,10 @@
 
 
 function ImgSlicer (viewer, name){
-  
+    var p = viewer.parameters || {};  
     // default values for projection are: '', 'projectmax', 'projectmin' 
     // only in the case of 5D image: 'projectmaxt', 'projectmint', 'projectmaxz', 'projectminz'
-    this.default_projection  = '';  
+    this.default_projection  = p.projection || '';  
     this.plane_buffer_sz = 7;
     this.update_delay_ms = 250;  // Delay before requesting new frames
     this.cache_delay_ms = 1000;  // Delay before pre-caching new frames
@@ -313,6 +313,7 @@ ImgSlicer.prototype.createMenu = function () {
 }
 
 ImgSlicer.prototype.loadPreferences = function (p) {
+    p = Ext.apply(p, this.viewer.parameters || {}); // local defines overwrite preferences
     this.default_projection  = 'projection'  in p ? p.projection  : this.default_projection;
 }
 

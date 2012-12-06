@@ -52,7 +52,7 @@ default_format = 'bigtiff'
 imgsrv_thumbnail_cmd = config.get('bisque.image_service.thumbnail_command', '-depth 8,d -page 1 -display')
 imgsrv_default_cmd = config.get('bisque.image_service.default_command', '-depth 8,d')
 
-imgcnv_needed_version = '1.54.1' # dima: upcoming 1.54
+imgcnv_needed_version = '1.54.2' # dima: upcoming 1.54
 bioformats_needed_version = '4.3.0' # dima: upcoming 4.4.4
 
 # ImageServer
@@ -1080,27 +1080,33 @@ class FuseService(object):
        arg = W1R,W1G,W1B;W2R,W2G,W2B;W3R,W3G,W3B;W4R,W4G,W4B
        output image will be constructed from channels 1 to n from input image mapped to RGB components with desired weights
        fuse=display will use preferred mapping found in file's metadata
-       ex: fuse=255,0,0;0,255,0;0,0,255;255,255,255"""
+       ex: fuse=255,0,0;0,255,0;0,0,255;255,255,255:A"""
     def __init__(self, server):
         self.server = server
     def __repr__(self):
-        return 'FuseService: Returns an RGB image with the requested channel fusion, arg = W1R,W1G,W1B;W2R,W2G,W2B;...'
+        return 'FuseService: Returns an RGB image with the requested channel fusion, arg = W1R,W1G,W1B;W2R,W2G,W2B;...[:METHOD]'
 
     def hookInsert(self, data_token, image_id, hookpoint='post'):
         pass
     def action(self, image_id, data_token, arg):
-
+        method = 'a'
         arg = arg.lower()
+        if ':' in arg:
+            (arg, method) = arg.split(':', 1)
         argenc = ''.join([hex(int(i)).replace('0x', '') for i in arg.replace(';', ',').split(',') if i is not ''])
         
         ifile = self.server.getInFileName( data_token, image_id )
-        ofile = self.server.getOutFileName( ifile, '.fuse_' + argenc )
-        log.debug('Fuse service: ' + ifile + ' to '+ ofile +' with [' + arg + ']')
+        ofile = self.server.getOutFileName( ifile, '.fuse_%s'%(argenc) )
+        log.debug('Fuse service: %s to %s with [%s:%s]'%(ifile, ofile, arg, method))
 
         if arg == 'display':
             arg = '-multi -fusemeta'
         else:
-            arg = '-multi -fusergb '+arg
+            arg = '-multi -fusergb %s'%(arg)
+            
+        if method != 'a':
+            arg += ' -fusemethod %s'%(method)
+            ofile += '_%s'%(method)
             
         if data_token.histogram is not None:
             arg += ' -ihst %s'%(data_token.histogram)            
