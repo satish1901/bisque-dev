@@ -313,7 +313,6 @@ ImgSlicer.prototype.createMenu = function () {
 }
 
 ImgSlicer.prototype.loadPreferences = function (p) {
-    p = Ext.apply(p, this.viewer.parameters || {}); // local defines overwrite preferences
     this.default_projection  = 'projection'  in p ? p.projection  : this.default_projection;
 }
 

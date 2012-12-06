@@ -216,7 +216,6 @@ ImgOperations.prototype.createChannelMap = function ( ) {
 }
 
 ImgOperations.prototype.loadPreferences = function (p) {
-    p = Ext.apply(p, this.viewer.parameters || {}); // local defines overwrite preferences
     this.default_autoupdate  = 'autoUpdate'  in p ? p.autoUpdate  : this.default_autoupdate;
     this.default_negative    = 'negative'    in p ? p.negative    : this.default_negative;    
     this.default_enhancement = 'enhancement' in p ? p.enhancement : this.default_enhancement;      
