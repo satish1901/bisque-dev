@@ -1,10 +1,11 @@
-function ImgOperations (viewer,name) {
-       
-    this.default_enhancement = 'd';  // values: 'd', 'f', 't', 'e'      
-    this.default_enhancement_8bit = 'f';                
-    this.default_negative    = '';   // values: '', 'negative'
-    this.default_rotate      = 0;    // values: 0, 270, 90, 180
-    this.default_autoupdate  = false;
+function ImgOperations (viewer, name) {
+    var p = viewer.parameters || {};
+    this.default_enhancement      = p.enhancement     || 'd'; // values: 'd', 'f', 't', 'e'      
+    this.default_enhancement_8bit = p.enhancement8bit || 'f';                
+    this.default_negative         = p.negative        || '';  // values: '', 'negative'
+    this.default_fusion           = p.fusion          || 'a'; // values: 'a', 'm'    
+    this.default_rotate           = p.rotate          || 0;   // values: 0, 270, 90, 180
+    this.default_autoupdate       = false;
 
     this.base = ViewerPlugin;
     this.base (viewer, name);
@@ -48,6 +49,7 @@ ImgOperations.prototype.updateView = function (view) {
             fusion += this.channel_colors[i].getGreen() + ',';
             fusion += this.channel_colors[i].getBlue() + ';';            
         }
+        fusion += ':'+this.combo_fusion.getValue();
         view.addParams  ('fuse='+fusion);
         
 /*
@@ -149,6 +151,11 @@ ImgOperations.prototype.createMenu = function () {
         fieldLabel: view_title,
         cls: 'heading',
     });    
+    this.combo_fusion = this.viewer.createCombo( 'Fusion', [
+        {"value":"a", "text":"Average"},
+        {"value":"m", "text":"Maximum"},        
+    ], this.default_fusion, this, this.changed);
+    
     this.combo_enhancement = this.viewer.createCombo( 'Enhancement', [
         {"value":"d", "text":"Data range"},
         {"value":"f", "text":"Full range"},
@@ -209,10 +216,12 @@ ImgOperations.prototype.createChannelMap = function ( ) {
 }
 
 ImgOperations.prototype.loadPreferences = function (p) {
+    p = Ext.apply(p, this.viewer.parameters || {}); // local defines overwrite preferences
     this.default_autoupdate  = 'autoUpdate'  in p ? p.autoUpdate  : this.default_autoupdate;
     this.default_negative    = 'negative'    in p ? p.negative    : this.default_negative;    
     this.default_enhancement = 'enhancement' in p ? p.enhancement : this.default_enhancement;      
     this.default_rotate      = 'rotate'      in p ? p.rotate      : this.default_rotate;    
+    this.default_fusion      = 'fusion'      in p ? p.fusion      : this.default_fusion;        
     this.default_enhancement_8bit = 'enhancement-8bit' in p ? p['enhancement-8bit'] : this.default_enhancement_8bit;    
 }
 

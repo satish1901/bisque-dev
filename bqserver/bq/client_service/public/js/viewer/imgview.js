@@ -304,7 +304,7 @@ function ImgViewer (parentid, image_or_uri, parameters) {
     this.submenu = null;
     this.image_or_uri = image_or_uri;
 
-    this.parameters = parameters || {};      
+    this.parameters = Ext.apply(parameters || {}, this.getAttributes());
 
     this.menudiv = document.createElementNS (xhtmlns, "div");
     this.menudiv.id =  "imgmenu";
@@ -368,6 +368,18 @@ function ImgViewer (parentid, image_or_uri, parameters) {
 ImgViewer.prototype = new ViewerPlugin();
 ImgViewer.prototype.close = function (){
     history.back();
+}
+
+ImgViewer.prototype.getAttributes = function () {
+    var s = window.location.hash.replace(/^#/, '') || window.location.search.replace(/^\?/, '');
+    var attributes = {};    
+    var aa = s.split('&');
+    var a = undefined;
+    for (var i=0; a=aa[i]; ++i) {
+        var b = a.split('=', 2);
+        attributes[b[0]] =  decodeURIComponent(b[1]);
+    }
+    return attributes;
 }
 
 ImgViewer.prototype.onsession = function (session) {

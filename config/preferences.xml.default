@@ -37,6 +37,7 @@
             <tag name="enhancement" value="d"/>
             <tag name="projection"/>
             <tag name="enhancement-8bit" value="f"/>
+            <tag name="fusion" value="a"/>            
         </tag>  
     </tag>
 </system>

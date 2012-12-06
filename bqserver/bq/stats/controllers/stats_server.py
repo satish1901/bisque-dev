@@ -349,11 +349,9 @@ class statsController(ServiceController):
 
         # if the resource is a dataset, fetch contents of documents linked in it
         if request.tag == 'dataset' and not setmode: 
-            members = request.xpath("tag[@name='members']")
-            if len(members)>0:
-                members_uri = members[0].get('uri', None)
-                if members_uri is not None:
-                    request = data_service.get_resource('%s/value'%members_uri, view='deep')
+            members_uri = request.get('uri')
+            if members_uri is not None:
+                request = data_service.get_resource('%s/value'%members_uri, view='deep')
         
         stream = []        
         for i in range(len(xpath)):
