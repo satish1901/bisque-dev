@@ -753,7 +753,7 @@ ImgViewer.prototype.newPhys = function (bqimagephys) {
 //----------------------------------------------------------------------
 
 ImgViewer.prototype.onPreferences = function(pref) {
-    this.preferences = pref;  
+    this.preferences = Ext.apply(pref, this.parameters || {}); // local defines overwrite preferences
     if (this.requires_update)
         this.updateImage();   
 };
