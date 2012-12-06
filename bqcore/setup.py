@@ -103,7 +103,6 @@ setup(
 
       [console_scripts]
       bq-admin = bq.commands.admin:main
-      mexrunner = bq.commands.mexrunner:main
       bqdev-upload-binary = bq.commands.uploadbinary:main
       bq-upload-images = bq.commands.uploadimages:main
 

@@ -389,11 +389,10 @@ def count_special(**kw):
             return count
     return None
 
-def resource_count (resource_type, tag_query, **kw):
+def resource_count (resource_type,  **kw):
     count =   count_special(**kw)
     if count is None:
         query  =  resource_query(resource_type=resource_type,
-                                 tag_query = tag_query,
                                  **kw)
         #count = query.distinct().count()
         count = query.count()

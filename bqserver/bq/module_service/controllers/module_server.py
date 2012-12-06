@@ -96,7 +96,7 @@ from repoze.what.predicates import not_anonymous
 from bq import data_service
 from bq.util import http
 from bq.util.xmldict import d2xml, xml2d
-from bq.util.thread_pool import WorkRequest
+from bq.util.thread_pool import WorkRequest, NoResultsPending
 from bq.core.identity import  set_admin_mode, set_current_user, get_username
 from bq.core.permission import *
 from bq.exceptions import RequestError
@@ -362,9 +362,8 @@ def wait_for_query (query, retries = 10, interval = 1):
         found = query.first()
     return query
 
-def POST_mex (module, mex, username):
+def POST_mex (service_uri, mex, username):
     "POST A MEX in a subthread"
-    service_uri = module.get ('value')
     mex_url = mex.get ('uri')
     mex_id = mex_url.split('/')[-1]
     
@@ -475,7 +474,7 @@ class ServiceDelegate(controllers.WSGIAppController):
         mex = data_service.new_resource (mex, view='deep')
         self.remap_uri(mex)
         log.debug ("SCHEDULING_MEX %s %s" % (self.module.get ('uri'), mex.get ('uri')))
-        req = WorkRequest (async_dbaction, [ POST_mex, [ self.module, mex, get_username() ]], 
+        req = WorkRequest (async_dbaction, [ POST_mex, [ self.service_url, mex, get_username() ]], 
                            callback = POST_over, exc_callback = POST_over)
         req = tg.app_globals.pool.putRequest(req)
         #req = tg.app_globals.pool.putRequest(WorkRequest (POST_mex, [self.module, mex, get_username() ]))
@@ -548,7 +547,7 @@ class ModuleServer(ServiceController):
     def load_services(self):
         "(re)Load all registered service points "
         
-        modules = data_service.query('module', view='deep')
+        modules = data_service.query('module' , view='deep')
         service_list = {}
         for module in modules:
             log.debug ("FOUND module: %s" % (module.get('uri')))
@@ -589,7 +588,11 @@ class ModuleServer(ServiceController):
         #xml= self.modules.default(**kw)
         #modules = etree.XML(xml)
         #log.debug ("all modules = %s " % xml)
-        tg.app_globals.pool.poll()
+
+        try:
+            tg.app_globals.pool.poll(block=False)
+        except NoResultsPending:
+            pass
 
         resource = etree.Element('resource', uri = self.uri)
         services =  self.load_services()
