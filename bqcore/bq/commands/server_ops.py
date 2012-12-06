@@ -158,33 +158,6 @@ def paster_command(command, options, cfgopt, processes, args):
         processes.append(Popen(server_cmd))
     return processes
 
-def mex_runner(command, options, processes, config):
-    def verbose(msg):
-        if options.verbose:
-            print msg
-        
-    verbose('%s: %s' % (command , ' '.join(RUNNER_CMD)))
-    if command is 'stop':
-        if os.path.exists(os.path.join(config['pid_dir'], 'mexrunner.pid')):
-            if not options.dryrun:
-                f = open(os.path.join(config['pid_dir'], 'mexrunner.pid'), 'rb')
-            mexrunner_pid = int(f.read())
-            f.close()
-            kill_process(mexrunner_pid)
-            os.remove (os.path.join(config['pid_dir'], 'mexrunner.pid'))
-            verbose("Stopped Mexrunner: %s" % mexrunner_pid)
-
-    if command is 'start':
-        if not options.dryrun:
-            logfile = open(os.path.join(config['log_dir'], 'mexrunner.log'), 'wb')
-            mexrunner = Popen(RUNNER_CMD, stdout=logfile, stderr=logfile)
-
-            processes.append(mexrunner)
-            open(os.path.join(config['pid_dir'], 'mexrunner.pid'), 'wb').write(str(mexrunner.pid))
-            verbose("Starting Mexrunner: %s" % mexrunner.pid)
-    
-    return processes
-
 def uwsgi_command(command, cfgopt, processes, options, default_cfg_file = None): 
     def verbose(msg):
         if options.verbose:
@@ -297,34 +270,10 @@ def operation(command, options, cfg_file=SITE_CFG, *args):
                     processes = paster_command('start', options, cfgopt, processes, args)
 
 
-        if mexrun and command in ('stop', 'restart'):
-            mex_runner('stop', options, processes, config)
-            for proc in processes:
-                proc.wait()
-            processes = []
-        if mexrun and command in ('start', 'restart'):
-            startmex = True
-            # Should work, paster server returns 0 even when it fails
-            for proc in processes:
-                #print "checking %s" % proc
-                proc.poll()
-                if proc.returncode is not None and proc.returncode != 0:
-                    print "Warning: %s failed" % proc
-                    startmex = False
-            if startmex:
-                processes = mex_runner('start', options, processes, config)
         if options.wait:
             for proc in processes:
                 proc.wait()
 
-        #check for failed start
-
-
-            #if command in ('start', 'restart'):
-            #    time.sleep(5)
-            #if command in ('start', 'restart'):
-            #    LOG = open (logfile, 'rU')
-            #    tail (LOG)
     except KeyboardInterrupt:
         pass
     except:
