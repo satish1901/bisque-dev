@@ -6,33 +6,35 @@ from controllers.blob_storage import make_uniq_hash
 def find_server():
     return service_registry.find_service ('blob_service')
 
-def store_blob(filesrc=None, filename=None, url=None, permission='private', **kw):
+def store_blobOLD(filesrc=None, filename=None, url=None, permission='private', **kw):
     "create and store a resource blob"
-
     server = find_server()
     return server.storeBlob(flosrc=filesrc, filename=filename,url=url, permission=permission, **kw)
 
-def store_fileobj(fileobj, filename=None, resource=None):
+def store_blob(resource, fileobj=None):
     "create and store a resource blob"
-
     server = find_server()
-    return server.store_fileobj(fileobj=fileobj, filename=filename, resource=resource)
+    return server.store_blob(resource=resource, fileobj=fileobj)
 
-def store_reference(urlref, filename=None, resource=None):
+def store_fileobj(resource, fileobj  ):
     "create and store a resource blob"
-
     server = find_server()
-    return server.store_reference(urlref=urlref, filename=filename, resource=resource)
+    return server.store_fileobj(resource=resource, fileobj=fileobj )
 
-def fetch_blob(ident):
-    "return resource identified by ident (uniq)"
+def store_reference(resource, urlref ):
+    "create and store a resource blob"
     server = find_server()
-    return server.getBlobInfo(ident)
+    return server.store_reference( resource=resource, urlref=urlref)
+
+def fetch_blob(blob_id):
+    "return localpath of blobid "
+    server = find_server()
+    return server.fetch_blob(blob_id)
     
-def localpath(ident):
+def localpath(uniq_ident):
     "return localpath of resource by ident (uniq)"
     server = find_server()
-    return server.localpath(ident)
+    return server.localpath(uniq_ident)
 
 def original_name(ident):
     "create  localpath if possible of resource by ident (uniq)"

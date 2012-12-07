@@ -26,11 +26,11 @@
 function BQFileUpload(f, conf) {
     this.file = f;
     this.conf = conf || {};
-    
+    // Permit formconf has field name of form 
     if (this.conf.formconf) {
         this.form_action = this.conf.formconf.form_action || 'upload_handler';
         this.form_file   = this.conf.formconf.form_file || 'uploaded';
-        this.form_tags   = this.conf.formconf.form_tags || 'tags';
+        this.form_resource   = this.conf.formconf.form_resource || 'uploaded_resource';
     }
 }
 
@@ -68,8 +68,8 @@ function createXhr() {
 BQFileUpload.prototype.upload = function () {
     
     var fd = new FormData();
-    if (this.conf.tags)
-        fd.append(this.form_tags, this.conf.tags );
+    if (this.conf.resource)
+        fd.append(this.form_resource, this.conf.resource );
 
     fd.append(this.form_file, this.file );
     
