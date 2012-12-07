@@ -186,8 +186,10 @@ class BisquikResource(Resource):
         if action == RESOURCE_EDIT and not identity.not_anonymous():
             log.debug ("EDIT denied because annonymous")
             abort(401)
-        
-        if query and isinstance(query, Query):
+
+        if query is None:
+            return None
+        if  isinstance(query, Query):
             query = resource_permission(query, action=action)
         else:
             #   Previously loaded resource .. recreate query but with

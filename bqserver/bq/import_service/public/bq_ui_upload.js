@@ -20,7 +20,7 @@
 
 
     The document can also contain special tag for prosessing and additional info:
-    <resource>
+    <resource name="XXX" permission="private|published" >
         <tag name='any tag' value='any value' />
         <tag name='ingest'>
             
@@ -515,7 +515,7 @@ Ext.define('BQ.upload.Item', {
             uploadTransferStart:    Ext.Function.bind( this.onTransferStart, this ),
             uploadTransferEnd:      Ext.Function.bind( this.onTransferEnd, this ),                                    
             formconf: this.formconf,
-            tags: this.annotations ? this.annotations.toXML(): undefined,
+            resource: this.annotations ? this.annotations.toXML(): undefined,
         });
         this.fup.upload(); 
         this.updateUi();        
@@ -614,15 +614,16 @@ Ext.define('BQ.upload.Item', {
 
     constructAnnotation: function() {
         var resource = new BQResource();
-        resource.type = 'file';
-        resource.uri  = this.file.name;
+        //resource.type = 'file';
+        //resource.uri  = this.file.name;
         resource.name = this.file.name; 
         
         // add access permission annotation
         if (this.permission) {
-            if (!this.annotation_dict) 
-                this.annotation_dict = {};
-            this.annotation_dict['permission'] = BQ.upload.Item.PERMISSIONS_STRINGS[this.permission];
+            resource.permission =  BQ.upload.Item.PERMISSIONS_STRINGS[this.permission];
+            //if (!this.annotation_dict) 
+            //    this.annotation_dict = {};
+            //this.annotation_dict['permission'] = BQ.upload.Item.PERMISSIONS_STRINGS[this.permission];
         }
 
         // add tagger annotations
@@ -1302,7 +1303,7 @@ Ext.define('BQ.upload.Dialog', {
             border: 0, 
             flex:2, 
             heading: config.title || 'Upload',
-            formconf: { form_action: '/import/transfer', form_file: 'file', form_tags: 'file_tags' },
+            formconf: { form_action: '/import/transfer', form_file: 'file', form_resource: 'file_resource' },
             listeners: {
                     filesuploaded: this.onFilesUploaded,
                     datasetcreated: this.onDatasetCreated,

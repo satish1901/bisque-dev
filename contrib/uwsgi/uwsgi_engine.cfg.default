@@ -24,6 +24,7 @@ bisque.proxyroot=$proxyroot
 
 [uwsgi]
 #main options
+lazy = true
 
 #socket on which uwsgi listens
 socket = $server
@@ -79,9 +80,6 @@ no-orphans = true
 
 #automatically remove unix socket and pidfiles on server exit
 vacuum = true
-
-# post-buffering attempts
-post-buffering = 8192
 
 #buffer-size
 buffer-size = 8192

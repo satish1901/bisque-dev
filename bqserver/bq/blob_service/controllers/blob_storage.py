@@ -55,7 +55,8 @@ import shutil
 from tg import config
 from paste.deploy.converters import asbool
 
-from bq.exceptions import ConfigurationError, ServiceError
+from bq.exceptions import ConfigurationError, ServiceError, IllegalOperation
+
 from bq.util.paths import data_path
 from bq.util.mkdir import _mkdir
 from bq.util.hash import make_uniq_hash
@@ -119,6 +120,19 @@ class BlobStorage(object):
         'delete an entry on the store'
 
 
+def move_file (fp, newpath):
+    if hasattr(fp, 'name') and os.path.isfile(fp.name):
+        oldpath = os.path.abspath(fp.name)
+        fp.close()# Windows requires this.
+        shutil.move (oldpath, newpath)
+    else:
+        with open(newpath, 'wb') as trg:
+            shutil.copyfileobj(fp, trg)
+        
+        
+        
+
+
 ###############################################
 # Local
 class LocalStorage(BlobStorage):
@@ -146,37 +160,24 @@ class LocalStorage(BlobStorage):
 
 
     def valid(self, ident):
-        return os.path.exists(self.localpath(ident))
+        return ((ident.startswith(self.top)  or not ident.startswith('file://')) 
+                and os.path.exists(self.localpath(ident)))
 
-    def write(self, fp, name, user_name=''):
+    def write(self, fp, filename, user_name=''):
         'store blobs given local path'
-        opened = False
-        if not fp and name:
-            src = open(name, 'rb')
-            opened = True
-        else:
-            src = fp
-            src.seek(0)
-
-        filepath = self.nextEmptyBlob(user_name, name)
+        filepath = self.nextEmptyBlob(user_name, filename)
         localpath = urlparse.urlparse(filepath).path 
-        log.debug('local.write: %s -> %s' % (name, localpath))
+        log.debug('local.write: %s -> %s' % (filename, localpath))
         
         #patch for no copy file uploads - check for regular file or file like object
-        abs_path_src = os.path.abspath(src.name)
-        if os.path.isfile(abs_path_src):
-            src.close() #patch to make file move possible on windows
-            shutil.move(abs_path_src,localpath)
-        else:
-            with open(localpath, 'wb') as trg:
-                shutil.copyfileobj(src, trg)
+        move_file (fp, localpath)
         ident = filepath[len(self.top) + 1:]
-        if opened:
-            src.close()
         return ident, localpath
 
     def localpath(self, path):
-        return  urlparse.urlparse(os.path.join(self.top, path)).path
+        if not path.startswith('file://'):
+            path = os.path.join(self.top, path)
+        return urlparse.urlparse(path).path
 
     def nextEmptyBlob(self, user, filename):
         "Return a file object to the next empty blob"
@@ -301,6 +302,48 @@ class S3Storage(BlobStorage):
         s3_key = s3_ident.replace("s3://","")
         path = s3_handler.s3_fetch_file(self.bucket, s3_key)
         return  path
+
+
+
+###############################################
+# HTTP(S)
+class HttpStorage(BlobStorage):
+    """HTTP storage driver  """
+    scheme = 'http'
+
+    def __init__(self, path, user=None, password=None, readonly=True):
+        """Create a HTTP storage driver:
+
+        :param path: http:// url format_path for where to read/store files
+        :param  user: the irods users 
+        :param  password: the irods password 
+        :param readonly: set repo readonly
+        """
+        self.format_path = path
+        self.user = user # config.get('bisque.blob_service.irods.user')
+        self.password = password # config.get('bisque.blob_service.irods.password')
+        self.readonly = asbool(readonly)
+
+        if self.password:
+            self.password = self.password.strip('"\'')
+        log.debug('http.user: %s http.password: %s' % (self.user, self.password))
+        # Get the constant portion of the path
+        self.top = path.split('$')[0]
+        log.info("created irods store %s (%s)" % (self.format_path, self.top))
+            
+    def valid(self, http_ident):
+        return http_ident and http_ident.startswith(self.top)
+
+    def write(self, fp, filename, user_name=None):
+        raise IllegalOperation('HTTP(S) write is not implemented') 
+
+    def localpath(self, irods_ident):
+        raise IllegalOperation('HTTP(S) localpath is not implemented') 
+
+class HttpsStorage (HttpStorage):
+    "HTTPS storage"
+    scheme = 'https'
+
         
 
 ###############################################
@@ -318,6 +361,8 @@ def make_storage_driver(path, **kw):
         ''     : LocalStorage,
         'irods' : iRodsStorage,
         's3'    : S3Storage,
+        'http'  : HttpStorage,
+        'https' : HttpsStorage,
         }
 
     scheme = urlparse.urlparse(path).scheme.lower()

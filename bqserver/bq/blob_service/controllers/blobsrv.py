@@ -171,6 +171,49 @@ def transfer_msg(flocal, transfer_t):
 
 
 
+class StorageManager(object):
+    'Manage multiple stores'
+
+    def __init__(self):
+        self.stores = load_stores()
+        log.info ('configured stores %s' % ','.join( str(x) for x in self.stores.keys()))
+
+    def valid_blob(self, blob_id):
+        "Determin if uripath is supported by configured blob_storage (without fetching)"
+        for store in self.stores.values():
+            if store.valid(blob_id):
+                return True
+        return False
+
+    def fetch_blob(self, blob_id):
+        path = None
+        with Timer() as t:
+            for store in self.stores.values():
+                if store.valid(blob_id):
+                    path =  store.localpath(blob_id)
+                    break
+        if log.isEnabledFor(logging.INFO):
+            log.info (transfer_msg (path, t.interval))
+        return path
+
+    def save_blob(self, fileobj, filename, user_name):
+        filename_safe = filename.encode('ascii', 'xmlcharrefreplace')
+        for store_id, store in self.stores.items():
+            try:
+                # blob storage part
+                if store.readonly:
+                    log.debug("skipping %s: is readonly" % store_id)
+                    continue
+                return  store.write(fileobj, filename_safe, user_name = user_name)
+            except Exception, e:
+                log.exception('storing blob failed')
+        return (None,None)
+
+    def __str__(self):
+        return "stores%s" % self.stores.keys()
+
+
+
 ###########################################################################
 # BlobServer
 ###########################################################################
@@ -181,10 +224,11 @@ class BlobServer(RestController, ServiceMixin):
     
     def __init__(self, url ):
         ServiceMixin.__init__(self, url)
-        self.stores = load_stores()
-        log.info ('configured stores %s' % ','.join( str(x) for x in self.stores.keys()))
+        self.stores = StorageManager()
 
-
+#################################
+# service  functions 
+################################
     def check_access(self, ident, action):
         from bq.data_service.controllers.resource_query import resource_permission
         query = DBSession.query(Taggable).filter_by (resource_uniq = ident)
@@ -254,20 +298,17 @@ class BlobServer(RestController, ServiceMixin):
         return resource
 
 
-
-    def create_resource(self, blob_id, filename, resource = None):
+########################################
+# API functions
+#######################################
+    def create_resource(self, resource ):
         'create a resource from a blob and return new resource'
         # hashed filename + stuff
+
+        filename = resource.get ('name')
         fhash = make_uniq_hash (filename)
-
-        if resource is None:
-            resource = etree.Element('resource')
-
         resource.set('resource_type', resource.get('resource_type') or guess_type(filename))
-        resource.set('name', filename)
-        resource.set('value', blob_id)
         resource.set('resource_uniq', fhash)
-
         # KGK  
         # These are redundant (filename is the attribute name name upload is the ts
         resource.insert(0, etree.Element('tag', name="filename", value=filename))
@@ -276,7 +317,15 @@ class BlobServer(RestController, ServiceMixin):
         log.info ("NEW RESOURCE <= %s" % (etree.tostring(resource)))
         return data_service.new_resource(resource = resource)
 
-    def store_fileobj(self, fileobj, filename=None, resource=None):
+
+    def store_blob(self, resource, fileobj = None):
+        'Store a resource in the DB must be a valid resource'
+        if fileobj is not None:
+            return self.store_fileobj(resource, fileobj)
+        return self.store_reference( resource, resource.get('value') )
+        
+
+    def store_fileobj(self, resource, fileobj ):
         'Create a blob from a file'
         user_name = identity.current.user_name
         # dima: make sure local file name will be ascii, should be fixed later
@@ -284,91 +333,58 @@ class BlobServer(RestController, ServiceMixin):
         #filename_safe = filename.encode(sys.getfilesystemencoding()) 
         #filename_safe = filename.encode('ascii', 'xmlcharrefreplace')
         #filename_safe = filename.encode('ascii', 'replace')        
-        if not filename:
-            filename = getattr(fileobj, 'name', '')
-
-        filename_safe = filename.encode('ascii', 'xmlcharrefreplace')
-
-        def store_blob(fileobj, filename_safe, user_name):
-            for store_id, store in self.stores.items():
-                try:
-                    # blob storage part
-                    if store.readonly:
-                        log.debug("skipping %s: is readonly" % store_id)
-                        continue
-                    return  store.write(fileobj, filename_safe, user_name = user_name)
-                except Exception, e:
-                    log.exception('storing blob failed')
-            return (None,None)
+        filename = resource.get('name') or  getattr(fileobj, 'name') or ''
 
         with Timer() as t:
-            blob_id, flocal = store_blob(fileobj, filename_safe, user_name = user_name)
+            blob_id, flocal = self.stores.save_blob(fileobj, filename, user_name = user_name)
 
-        if blob_id is None:
-            log.error('Could not store %s on any store: %s' %(filename, self.stores.keys()))
-            return None
 
         if log.isEnabledFor(logging.INFO):
             log.info (transfer_msg (flocal, t.interval))
 
-        return self.create_resource(blob_id, filename=filename, resource=resource)
+        resource.set('name', filename)
+        resource.set('value', blob_id)
+        return self.create_resource(resource)
 
-    def store_reference(self, urlref, filename=None, resource=None):
+    def _make_url_local(self, urlref):
+        'return a local file to the specified urlref'
+        if urlref.startswith ('file:'):
+            return urlref [5:]
+        return None
+
+    def store_reference(self, resource, urlref = None ):
         'create a blob from a blob_id'
-        blob_id = urlref
-        if filename is None:
-            filename  = urlref.rsplit('/',1)[1]
-        return self.create_resource(blob_id, filename=filename, resource=resource)
+        filename  = resource.get ('name') or urlref.rsplit('/',1)[1]
+        if not self.stores.valid_blob(urlref):
+            # We have a URLref that is not part of the sanctioned stores:
+            # We will move it 
+            localpath = self._make_url_local(urlref)
+            if localpath:
+                user_name = identity.current.user_name
+                log.info("moving resource onto valid store %s "% resource.get('value'))
+                with Timer() as t:
+                    with open(localpath) as f:
+                        urlref, flocal = self.stores.save_blob(f, resource.get('name'), user_name = user_name)
+                        if urlref is None:
+                            raise IllegalOperation('Could not store %s on any store: %s' %(filename, self.stores))
+                if log.isEnabledFor(logging.INFO):
+                    log.info (transfer_msg (flocal, t.interval))
+            else:
+                raise IllegalOperation("%s could not be moved to a valid store" % urlref)
+        resource.set ('name' ,filename)
+        resource.set ('value', urlref)
+        return self.create_resource(resource)
 
-    def storeBlob(self, flosrc=None, filename=None, url=None,  permission="private", **kw):
-        """Store the file object in the next blob and return the resource.
-
-        @param flosrc: a local file object
-        @param filename: the original filename
-        @param url: a url if a remote object
-        @param perrmision: the permission for the resource
-        @return: a resource or None on failure
-        """
-        resource = etree.Element('resource', permission = permission)
-        
-        # ingest extra tags
-        if 'tags' in kw and kw['tags'] is not None:
-            tags = kw['tags']
-            if hasattr(tags, 'tag') and tags.tag == 'resource':
-                #resource.extend(copy.deepcopy(list(tags)))
-                resource.extend(list(tags))
-
-        if flosrc is not None:
-            resource = self.store_fileobj(flosrc, filename, resource=resource)
-        elif url is not None:
-            resource = self.store_reference(url, filename, resource=resource)
-        else:
-            log.error("blobStore without URL or file: nothing to do")
-            return None
-
-        return resource
-
-    def localpath (self, ident):
+    def localpath (self, uniq_ident):
         "Find  local path for the identified blob, using workdir for local copy if needed"
-
-        def fetch_blob(blob_id):
-            for store in self.stores.values():
-                if store.valid(blob_id):
-                    return  store.localpath(blob_id)
-            return None
-
-        resource = DBSession.query(Taggable).filter_by (resource_uniq = ident).first()
+        resource = DBSession.query(Taggable).filter_by (resource_uniq = uniq_ident).first()
         path = None
         if resource is not None and resource.resource_value:
             blob_id  = resource.resource_value
-            with Timer() as t:
-                path = fetch_blob(blob_id)
-            if log.isEnabledFor(logging.INFO):
-                log.info (transfer_msg (path, t.interval))
-            log.debug('using %s full=%s localpath=%s' % (ident, blob_id, path))
+            path = self.stores.fetch_blob(blob_id)
+            log.debug('using %s full=%s localpath=%s' % (uniq_ident, blob_id, path))
             return path
-
-        raise IllegalOperation("bad resource value %s" % ident)
+        raise IllegalOperation("bad resource value %s" % uniq_ident)
 
 
     def getBlobInfo(self, ident): 
@@ -411,10 +427,6 @@ class BlobServer(RestController, ServiceMixin):
             log.exception('cannot load resource_uniq %s' % id)
             return False
 
-    def geturi(self, id):
-        return self.url + '/' + str(id)
-
-
 
     def move_resource_store(self, srcstore, dststore):
         """Find all resource on srcstore and move to dststore
@@ -424,7 +436,6 @@ class BlobServer(RestController, ServiceMixin):
         """
         src_store = self.stores.get(srcstore)
         dst_store = self.stores.get(dststore)
-
         if src_store is None or dst_store is None:
             raise IllegalOperation("cannot access store %s, %s" % (srcstore, dststore))
         if src_store == dst_store:
@@ -436,13 +447,16 @@ class BlobServer(RestController, ServiceMixin):
             filename = resource.resource_name
             user_name = resource.owner.resource_name
             try:
-                blob_id, flocal = store.write(flosrc, filename, user_name = user_name)
+                with open(localpath) as f:
+                    blob_id, flocal = dst_store.write(f, filename, user_name = user_name)
             except:
                 log.error("move failed for resource_uniq %s" % resource.resource_uniq)
                 continue
-
             old_blob_id = resource.resource_value 
             resource.resource_value = blob_id
+
+    def geturi(self, id):
+        return self.url + '/' + str(id)
             
 
 
