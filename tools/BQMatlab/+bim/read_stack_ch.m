@@ -15,10 +15,22 @@
 %   If the input is 1 or 4 bit, that will be converted to 8bits
 %
 
-function img = read_stack_ch(filename, channel)
+function [img, dim, res] = read_stack_ch(filename, channel)
 
   [im, format, pages, xyzr, metatxt] = bim.bimread( filename, 1 );
   sz = size(im);
+  
+  dim = struct();
+  dim.c = 1;
+  dim.z = pages;
+  dim.t = 1;
+  
+  res = struct(); 
+  res.x = xyzr(1);
+  res.y = xyzr(2);
+  res.z = xyzr(3);
+  res.t = 0;  
+  
   img = zeros(sz(1), sz(2), pages, class(im));
   if length(sz)==2,
      img(:,:,1) = im;
