@@ -1839,14 +1839,18 @@ BQDataset.prototype.getMembers = function (cb) {
     //this.values = this.values || [];
 
     if (!this.values) {
-        BQFactory.request ({ uri : this.uri + '/value' ,  cb: callback(this, '_loaded', cb)});
+        BQFactory.request({ 
+            uri: this.uri + '/value',  
+            cb: callback(this, '_loaded', cb),
+            uri_params: {view:'deep'}
+        });
     } else {
         if (cb) cb(this);
     }
     return this;    
 }
 BQDataset.prototype._loaded = function (cb, resource) {
-    this.values = resource.children;
+    this.values = resource.children || [];
     if (cb) cb(this);
 }
 

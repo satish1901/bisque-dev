@@ -135,6 +135,7 @@ Ext.define('Bisque.QueryBrowser.Dialog', {
 Ext.define('Bisque.ResourceBrowser.Browser',
 {
     extend : 'Ext.panel.Panel',
+    alias: 'widget.bq-resource-browser',
 
     constructor : function(config)
     {
