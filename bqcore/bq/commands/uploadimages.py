@@ -27,7 +27,7 @@ DESTINATION = "/import/transfer"
 def upload(dest, filename, userpass, tags=None):
     files = {  "file" : open(filename, "rb") }
     if tags:
-        files['file_tags'] = tags
+        files['file_resource'] = tags
         
     headers, content = http.post_files (dest, files, userpass = userpass)
     if headers['status'] != '200':
@@ -37,12 +37,12 @@ def upload(dest, filename, userpass, tags=None):
 
 def main():
     usage="usage %prog [options] f1 [f2 f2 d1 ] bisque-url"
-    parser = OptionParser(usage=usage)
-    parser.add_option('-u','--user', dest="user",)
+    parser = OptionParser(usage)
+    parser.add_option('-u','--user', dest="user", help="Credentials in  user:pass form" )
     parser.add_option('-r','--recursive', action="store_true", default=False)
     parser.add_option('-v','--verbose',  action="store_true", default=False)
     parser.add_option('-t','--tag', action="append", dest="tags", help="-t name:value")
-    parser.add_option('--tagfile', action="store", default=None)
+    parser.add_option('--resource', action="store", default=None, help="XML resource record for the file")
 
     (options, args) = parser.parse_args()
     if len(args) < 2:
@@ -65,19 +65,24 @@ def main():
 
     # Prepare tags
     tags = None
-    if options.tagfile or options.tags:
+    if options.resource or options.tags:
         from StringIO import StringIO
         resource = None
-        if options.tagfile:
-            resource = et.parse (open(options.tagfile,'r'))
+        if options.resource:
+            if options.resource == '-':
+                fresource = sys.stdin
+            else:
+                fresource = open(options.resource, 'r')
+            resource = et.parse (fresource).getroot()
         if options.tags:
             if resource is None:
                 resource = et.Element('resource', uri = "/tags")
             for t,v in [ x.split(':') for x in options.tags]:
                 et.SubElement (resource, 'tag', name=t, value=v)
         if resource is not None:
-            tags = StringIO (et.tostring(resource))
-            tags.name = "stringio"
+            #tags = StringIO(et.tostring(resource))
+            #tags.name = "stringio"
+            tags = et.tostring(resource)
         
 
     #Upload copied files
