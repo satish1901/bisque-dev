@@ -93,8 +93,8 @@ def setup(options):
 
     if not engine_install:
         # Hack as numpy fails to install when in setup.py dependencies
-        sh('easy_install numpy==1.6.0')
-        sh('easy_install numpy==1.6.0')
+        sh('easy_install numpy')
+        sh('easy_install numpy')
         # End Hack
         sh('easy_install http://biodev.ece.ucsb.edu/binaries/download/tw.output/tw.output-0.5.0dev-20110906.tar.gz') 
         sh('easy_install http://biodev.ece.ucsb.edu/binaries/depot/tgext.registration2/tgext.registration2-0.5.2.tar.gz')

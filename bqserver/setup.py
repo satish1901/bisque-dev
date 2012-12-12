@@ -28,7 +28,7 @@ The bisque server
         "genshi",
         "TGScheduler",
         "boto",
-        "numpy==1.6.0",
+        "numpy",
         "ordereddict",
         # Installed from http://biodev.ece.ucsb.edu/binaries/depot
         "tw.recaptcha",

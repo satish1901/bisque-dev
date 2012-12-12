@@ -51,6 +51,7 @@ import optparse
 import os
 import logging
 import urlparse
+import datetime
 from lxml import etree
 from paste.deploy import appconfig
 from tg import config
@@ -73,13 +74,14 @@ class module_admin(object):
     desc = 'module options'
     def __init__(self, version):
         parser = optparse.OptionParser(
-                    usage="%prog module [register|unregister] [-u user:pass] [-a] http://myengnine.org/engine_service/[MyModule]",
+                    usage="%prog module [register|unregister] [-u user:pass] [-p] [-a] http://myengnine.org/engine_service/[MyModule]",
                     version="%prog " + version)
 
         parser.add_option('-u', '--user', default=None, help='Login as user <user>:<pass>')
         parser.add_option('-a', '--all', action='store_true', help='Register/Unregister all modules at engine', 
                           default=False)
         parser.add_option('-r', '--root', help='Bisque server root url')
+        parser.add_option('-p', '--published', help='Make published module', default=False, action='store_true')
 
         options, args = parser.parse_args()
         self.args = args
@@ -146,6 +148,11 @@ class module_admin(object):
             #engine.append(module_xml)
             #xml =  etree.tostring (engine)
             #print xml
+            module_xml.set('ts', datetime.datetime.now().isoformat())
+            if self.options.published:
+                for el in module_xml.getiterator():
+                    el.set ('permission', 'published')
+                    log.warn ('TAG %s' % el.tag)
             xml = etree.tostring(module_xml)
             resp, content = http.xmlrequest (norm(module_register+'/'), method='POST', body=xml, 
                                              userpass = self.credentials)
