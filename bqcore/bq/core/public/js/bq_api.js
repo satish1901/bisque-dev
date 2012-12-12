@@ -407,6 +407,11 @@ BQObject.prototype.initializeXml = function (node) {
         this.values.push(new BQValue(y));
         y = x.iterateNext();
     } 
+    if (this.resource_uniq) {
+        this.src  = '/blob_service/' + this.resource_uniq;
+        // in the case the data is coming from another server, make sure to load proper URL
+        this.src = this.uri.replace(/\/data_service\/.*$/i, this.src);
+    }
 }
 
 BQObject.prototype.afterInitialized = function () {
@@ -1039,11 +1044,6 @@ BQFile.prototype = new BQObject();
 
 BQFile.prototype.initializeXml = function (node) {
     BQObject.prototype.initializeXml.call(this, node);
-    if (this.resource_uniq) {
-        this.src  = '/blob_service/' + this.resource_uniq;
-        // in the case the data is coming from another server, make sure to load proper URL
-        this.src = this.uri.replace(/\/data_service\/.*$/i, this.src);
-    }
 }
 
 //-----------------------------------------------------------------------------
