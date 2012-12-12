@@ -180,7 +180,7 @@ class ResponseCache(object):
         cachename = os.path.join(self.cachepath, self._cache_name(url, user))
         headers = dict ([ (k,v) for k,v in headers.items() if k in self.known_headers])
         log.debug ('cache write %s to %s' % (url, cachename) )
-        with  open (cachename, 'w') as f:
+        with  open (cachename, 'wb') as f:
             f.write (str (headers))
             f.write ('\n\n')
             f.write (value)

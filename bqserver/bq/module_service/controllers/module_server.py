@@ -781,25 +781,27 @@ class EngineResource (Resource):
 
             module = self.register_module(module_def)
             engine_url = module.get('value') 
+            log.info ('Registered %s at %s' % (module.get('name') , engine_url))
+            log.debug ('Registered %s' % etree.tostring (module))
 
-            log.debug ('loading services for %s ' % module.get('name'))
-            service = data_service.query('service', name=module.get('name'), view="deep")
-            service = (len(service) and service[0]) 
-            if  service == 0:
-                service_def = etree.Element('service', 
-                                            permission = 'published',
-                                            name = module.get('name'),
-                                            type = module.get('uri'),
-                                            value = engine_url)
-                service = data_service.new_resource(service_def)
-                log.info("service create %s" % etree.tostring(service))
-            else: 
-                service.set('type', module.get('uri'))
-                service.set('value', engine_url)
-                service = data_service.update(service)
-                log.info("service update %s" % etree.tostring(service))
+            # log.debug ('loading services for %s ' % module.get('name'))
+            # service = data_service.query('service', name=module.get('name'), view="deep")
+            # service = (len(service) and service[0]) 
+            # if  service == 0:
+            #     service_def = etree.Element('service', 
+            #                                 permission = 'published',
+            #                                 name = module.get('name'),
+            #                                 type = module.get('uri'),
+            #                                 value = engine_url)
+            #     service = data_service.new_resource(service_def)
+            #     log.info("service create %s" % etree.tostring(service))
+            # else: 
+            #     service.set('type', module.get('uri'))
+            #     service.set('value', engine_url)
+            #     service = data_service.update(service)
+            #     log.info("service update %s" % etree.tostring(service))
                 
-        return etree.tostring (resource)
+        return etree.tostring (module)
 
     def modify(self, resource, xml, **kw):
         """
