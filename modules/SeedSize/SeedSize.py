@@ -162,6 +162,8 @@ class SeedSize(object):
 
 
     def run(self):
+        logging.basicConfig(level=logging.DEBUG)
+
         parser  = optparse.OptionParser()
         parser.add_option('-d','--debug', action="store_true")
         parser.add_option('-n','--dryrun', action="store_true")
@@ -188,7 +190,6 @@ class SeedSize(object):
         if command not in ('setup','teardown', 'start'):
             parser.error('Command must be start, setup or teardown')
 
-        logging.basicConfig(level=logging.DEBUG)
 
         # maltab code requires trailing slash..
         self.images = os.path.join(options.staging_path, 'images') + os.sep

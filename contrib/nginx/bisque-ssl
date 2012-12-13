@@ -38,7 +38,7 @@ server {
       upload_store_access user:rw group:rw all:rw;
       # Set specified fields in request body
       # this puts the original filename, new path+filename and content type in the requests params
-      upload_set_form_field $upload_field_name.path "<resource name='$upload_file_name' value='file://$upload_tmp_path'/>";
+      upload_set_form_field $upload_field_name.uploaded "<resource name='$upload_file_name' value='file://$upload_tmp_path'/>";
  
       upload_pass_form_field "^.*_resource$";
       upload_cleanup 400 404 499 500-505;

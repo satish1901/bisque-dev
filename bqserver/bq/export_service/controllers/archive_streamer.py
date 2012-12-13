@@ -12,6 +12,7 @@ from bq.release import __VERSION__
 from tg import request, response, expose, config
 from lxml import etree
 from cStringIO import StringIO
+from bq.exceptions import IllegalOperation
 from bq import data_service, image_service, blob_service
 from bq.export_service.controllers.archiver.archiver_factory import ArchiverFactory
 
@@ -44,8 +45,9 @@ class ArchiveStreamer():
         flist = self.fileInfoList(self.fileList, self.datasetList, self.urlList)
         flist = self.writeSummary(flist, self.archiver)
         
-        for file in flist:
-            self.archiver.beginFile(file)
+        for finfo in flist:
+            log.debug ('archiving %s' % finfo)
+            self.archiver.beginFile(finfo)
             while not self.archiver.EOF():
                 yield self.archiver.readBlock(self.block_size)
             self.archiver.endFile()
@@ -60,11 +62,16 @@ class ArchiveStreamer():
     
     # Creates an export summary file
     def writeSummary(self, flist, archiver):
+        if len(flist) == 1:
+            return flist
+
         summary = etree.Element('resource', type='BISQUE Export Log')
         etree.SubElement(summary, 'tag', name='Server', value=config.get('bisque.root'))
         etree.SubElement(summary, 'tag', name='Version', value=__VERSION__)
         etree.SubElement(summary, 'tag', name='Export_DateTime', value=str(datetime.datetime.now()))
-        
+
+
+
         flist.append(dict(  name        =   '_bisque.xml',
                             content     =   etree.tostring(summary),
                             dataset     =   '',
@@ -88,11 +95,16 @@ class ArchiveStreamer():
                 name = xml.get('resource_uniq')[-4] 
             if not name: 
                 name = str(index)
+            try:
+                path       =   blob_service.localpath(xml.get('resource_uniq')),
+            except IllegalOperation: 
+                path = None
+                
             return  dict(XML        =   xml, 
                          type       =   xml.tag,
                          name       =   name ,
                          uniq       =   xml.get('resource_uniq'),
-                         path       =   blob_service.localpath(xml.get('resource_uniq')),
+                         path       =   path,
                          dataset    =   dataset,
                          extension  =   '')
         
@@ -153,7 +165,7 @@ class ArchiveStreamer():
                     fileHash[finfo.get('name')] = 1
                     
                 flist.append(finfo)      # blank dataset name for orphan files
-                if finfo.get('type') == 'image':
+                if finfo.get('uniq') is not None:
                     flist.append(xmlInfo(finfo))
 
         if len(datasetList)>0:     # empty datasetList
