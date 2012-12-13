@@ -122,3 +122,15 @@ To create an S3 bucket, select new in the :ref:`fig_new_s3`. Then, give a name f
 
   create a new bucket
 
+Remote access to your Bisque Instance
+-------------------------------------
+
+To :ref:`fig_ssh` , you may do so through the Rightscale interface easily. Just click "SSH Console" in the Server details.
+
+.. _fig_ssh:
+
+.. figure:: images/ssh.png
+  :align: center
+  :alt: SSH to Bisque Instance
+
+  ssh to your bisque instance
