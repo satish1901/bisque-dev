@@ -166,9 +166,11 @@ def merge_resources (*resources):
     later resource overwrite earlier ones
     """
     final = copy.deepcopy (resources[0])
+    log.debug ('initially : %s' % etree.tostring(final))
     for rsc in resources[1:]:
         final.attrib.update(rsc.attrib)
         final.extend (copy.deepcopy (list (rsc)))
+        log.debug ('updated : %s -> %s' % (etree.tostring(rsc), etree.tostring(final)))
     return final
 
 #---------------------------------------------------------------------------------------
@@ -190,10 +192,10 @@ class UploadedResource(object):
             self.path = path.replace('file://', '')
         if resource.get ('name'):
             self.filename = sanitize_filename(resource.get('name'))
-        elif fileobj:
+        elif fileobj :
             # POSTed fileobject will have a filename (which may be path)
             # http://docs.pylonsproject.org/projects/pyramid_cookbook/en/latest/forms/file_uploads.html
-            self.path = getattr(fileobj, 'name', '')
+            self.path = getattr(fileobj, 'filename', '')
             self.filename = sanitize_filename (self.path)
             resource.set('name', self.filename)
 
@@ -847,39 +849,42 @@ class import_serviceController(ServiceController):
             '''
 
         def find_upload_resource(transfers, pname):
-            resource = transfers.pop(pname+'_resource', None) or transfers.pop(pname+'_tags', None)
-            if resource:
+            log.debug ("transfers %s " % (transfers))
+            
+            resource = transfers.pop(pname+'_resource', None) #or transfers.pop(pname+'_tags', None)
+            log.debug ("found %s _resource/_tags %s " % (pname, resource))
+            if resource is not None:
                 try:
                     if hasattr(resource, 'file'):
                         log.warn("XML Resource has file tag")
-                        resource = etree.parse (f.file).getroot()
-                    elif isinstance(resource, basestring):
+                        resource = f.file.read()
+                    if isinstance(resource, basestring):
+                        log.debug ("reading XML %s" % resource)
                         resource = etree.fromstring(resource)
-                        if not resource.get('name'):
-                            resource.set('name', getattr(f, 'filename', ''))
                 except:
                     log.exception("Couldn't read resource parameter %s" % resource)
                     resource = None
             return resource
 
-        log.debug("TRANSFER %s"  % kw)
-        for pname, f in transfers.items():
+        log.debug("INITIAL TRANSFER %s"  % transfers)
+        for pname, f in dict(transfers).items():
             if pname.endswith ('_resource') or pname.endswith('_tags'): continue
             if hasattr(f, 'file'):
                 # Uploaded File from multipart-form 
                 transfers.pop(pname)
-                resource = find_upload_resource(transfers, pname) 
+                resource = find_upload_resource(transfers, pname) or etree.Element('resource', name=sanitize_filename (getattr(f, 'filename', '')))
                 files.append(UploadedResource(fileobj=f.file, resource=resource))
+                log.debug ("TRASNFERED %s %s" % (f.filename, etree.tostring(resource)))
             if pname.endswith('.uploaded'):
                 # Entry point for NGINX upload and insert
                 transfers.pop(pname)
                 resource = etree.fromstring (f)
-                payload_resource = find_upload_resource(transfers, pname.replace ('.uploaded', ''))
+                payload_resource = find_upload_resource(transfers, pname.replace ('.uploaded', '')) or etree.Element('resource')
                 if payload_resource:
                     resource = merge_resources (resource, payload_resource)
                 upload_resource  = UploadedResource(resource=resource)
                 files.append(upload_resource)
-                log.debug ("UPLOADED %s" % upload_resource)
+                log.debug ("UPLOADED %s %s" % (upload_resource, etree.tostring(resource)))
         log.debug("TRANSFER after files %s"  % transfers)
 
         for pname, f in transfers.items():
