@@ -48,7 +48,7 @@ Ext.define('Bisque.Resource.Dataset.Compact',
     {
         BQFactory.request(
         {
-            uri:memberTag.uri + '/value',
+            uri:memberTag.uri + '/value?limit=4',
             cb:Ext.bind(this.loadResource, this),
             errorcb:Ext.emptyFn
         });
