@@ -57,7 +57,7 @@ function info = iminfo(url, user, password)
         doc_meta = bq.get_xml( [info.pixles_url '?meta'] );    
     end  
     if ~isempty(doc_meta),
-        template = '//image/tag[@name=''%s'']';
+        template = '//tag[@name=''%s'']';
         tags = { 'filename',    'str'; 
                  'image_num_x', 'int'; 
                  'image_num_y', 'int';              
@@ -75,7 +75,7 @@ function info = iminfo(url, user, password)
     end
     
     %% parse image resource tags overwriting some tag values
-    template = '//image/tag[@name=''%s'']';
+    template = '//tag[@name=''%s'']';
     tags = { 'filename',             'str';
              'pixel_resolution_x_y', 'double';             
              'pixel_resolution_x',   'double';
