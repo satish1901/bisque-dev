@@ -96,7 +96,7 @@ class ArchiveStreamer():
             if not name: 
                 name = str(index)
             try:
-                path       =   blob_service.localpath(xml.get('resource_uniq')),
+                path       =   blob_service.localpath(xml.get('resource_uniq'))
             except IllegalOperation: 
                 path = None
                 

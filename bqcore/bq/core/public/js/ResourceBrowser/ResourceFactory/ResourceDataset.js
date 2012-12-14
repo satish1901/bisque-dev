@@ -40,7 +40,8 @@ Ext.define('Bisque.Resource.Dataset.Compact',
         if (!this.getData('fetched'))
         {
             this.setData('fetched', -1);    // -1 = Loading
-            this.resource.getMembers(Ext.bind(this.fetchMembers, this));
+            //this.resource.getMembers(Ext.bind(this.fetchMembers, this));
+            this.fetchMembers(this.resource);
 		}
     },
     
@@ -48,7 +49,7 @@ Ext.define('Bisque.Resource.Dataset.Compact',
     {
         BQFactory.request(
         {
-            uri:memberTag.uri + '/value',
+            uri:memberTag.uri + '/value?limit=4',
             cb:Ext.bind(this.loadResource, this),
             errorcb:Ext.emptyFn
         });
