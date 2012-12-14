@@ -42,13 +42,8 @@ function [output] = run_gplant_recognizer(I,foldername,file)
     %given to it
     svmOutput='SVMoutput';
 
-    if ~ispc,
-        system(sprintf('./svm-scale -r %s/bushscaledata %s > %sS',foldername,svmFeatFile,svmFeatFile));
-        system(sprintf('./svm-predict -b 1 %sS  %s/bushmodel %s', svmFeatFile,foldername, svmOutput));
-    else
-        system(sprintf('svm-scale -r %s/bushscaledata %s > %sS',foldername,svmFeatFile,svmFeatFile));
-        system(sprintf('svm-predict -b 1 %sS  %s/bushmodel %s', svmFeatFile,foldername, svmOutput));
-    end
+    system(sprintf('svm-scale -r %s/bushscaledata %s > %sS',foldername,svmFeatFile,svmFeatFile));
+    system(sprintf('svm-predict -b 1 %sS  %s/bushmodel %s', svmFeatFile,foldername, svmOutput));
 
     %%
     %get the final tag prediction and the confidence from the SVM results

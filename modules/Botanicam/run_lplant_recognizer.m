@@ -34,13 +34,8 @@ function [ output ] = run_lplant_recognizer(I,foldername,file)
     %call the SVM classifier and the trained model
     %runs svm-scale and svm-predict to find the bush that matches the image
     %given to it
-    if ~ispc,
-        system(sprintf('./svm-scale -r %s/leafscaledata %s > %sS',foldername,svmFeatFile,svmFeatFile));
-        system(sprintf('./svm-predict -b 1 %sS  %s/leafmodel %s',svmFeatFile,foldername, svmOutput));
-    else
-        system(sprintf('svm-scale -r %s/leafscaledata %s > %sS',foldername,svmFeatFile,svmFeatFile));
-        system(sprintf('svm-predict -b 1 %sS  %s/leafmodel %s', svmFeatFile,foldername, svmOutput));
-    end 
+    system(sprintf('svm-scale -r %s/leafscaledata %s > %sS',foldername,svmFeatFile,svmFeatFile));
+    system(sprintf('svm-predict -b 1 %sS  %s/leafmodel %s', svmFeatFile,foldername, svmOutput));
 
     %%
     %get the final tag prediction and the confidence from the SVM results
