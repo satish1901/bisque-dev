@@ -53,11 +53,22 @@ classdef Node < matlab.mixin.Copyable
             end            
         end % constructor
         
-        function save(self, filename)
+        function save(self, filename, user, password)
         % stores the document, default: is if the filename is not given
         % posts the document back to the Bisque server
-        % if the filename is given then stores the doc as an XML file            
-            if exist('filename', 'var') && ischar(filename),
+        % if the filename is given then stores the doc as an XML file  
+        % if filename is a URL, stores document to that URL
+            if exist('user', 'var'), self.user = user; end
+            if exist('password', 'var'), self.password = password; end        
+        
+            if exist('filename', 'var') && ischar(filename) && ...
+               (strncmpi(filename, 'http://', 7)==1 || strncmpi(filename, 'https://', 8)==1),
+                if ~isempty(self.user) && ~isempty(self.password),
+                    bq.post(filename, self.element, self.user, self.password);
+                else
+                    bq.post(filename, self.element);                    
+                end
+            elseif exist('filename', 'var') && ischar(filename),
                 %xmlwrite(filename, self.element);         
                 fileID = fopen(filename, 'w');
                 fwrite(fileID, self.toString());
@@ -68,11 +79,16 @@ classdef Node < matlab.mixin.Copyable
             end            
         end % save          
         
-        function remove(self)
+        function remove(self, localonly)
         % removes the node from the document on the server by sending
         % delete to its URL
             url = self.getAttribute('uri');
-            bq.delete(url, self.user, self.password);
+            parent = self.element.getParentNode();
+            parent.removeChild(self.element);
+            if ~isempty(url) && ~(exist('localonly', 'var')) 
+                bq.delete(url, self.user, self.password);
+            end
+            self.element = [];
         end % remove              
         
         function str = toString(self)
