@@ -150,7 +150,7 @@ class module_admin(object):
             #print xml
             module_xml.set('ts', datetime.datetime.now().isoformat())
             if self.options.published:
-                for el in module_xml.getiterator():
+                for el in module_xml.getiterator(tag=etree.Element):
                     el.set ('permission', 'published')
                     log.warn ('TAG %s' % el.tag)
             xml = etree.tostring(module_xml)
