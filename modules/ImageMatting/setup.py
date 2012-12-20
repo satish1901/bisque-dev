@@ -1,8 +1,10 @@
 # Install script for ImageMatting
 import sys
-from bq.setup.module_setup import matlab_setup, read_config
+from bq.setup.module_setup import matlab_setup, read_config, ensure_matlab, mex_compile
 
 def setup(params, *args, **kw):
+    ensure_matlab(params)
+    mex_compile(command_line)
     return matlab_setup(['ImageMatting', '-a', 'vrl_tools'], params=params)
     
 if __name__ =="__main__":
