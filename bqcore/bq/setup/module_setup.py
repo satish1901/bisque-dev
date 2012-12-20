@@ -49,6 +49,27 @@ def mcc (command,  *largs, **kw):
         os.chdir (cwd)
     return ret == 0
 
+def mex_compile (command_list, where = None, **kw):
+    'mex compile a command_list a list of arguments to the matlab mex_compiler
+
+    :param: command_list a list of command 
+    :param: where '
+    if where:
+        cwd = os.getcwd()
+        os.chdir(where)
+    mex = ['mex']
+    mex.extend (command_list)
+    print " ".join (mex)
+    try:
+        ret = call (mex, shell = (os.name == "nt"))
+    except OSError:
+        print "Couldn't execute command %s" % (" ".join(mex))
+        print "Please check your matlab enviroment. In particular check if mcc is available and callable from the shell"
+        return False
+    if where:
+        os.chdir (cwd)
+    return ret == 0
+
 def matlab (command, where = None, params={ }):
     'run matlab with a command'
     if not require('runtime.matlab_home', params):
@@ -71,7 +92,7 @@ def copy_files (files, dest):
         copy_link (f, dest)
     
 
-def matlab_setup(main_path, files = [], bisque_deps = False, dependency_dir = "mbuild", params = {}, **kw):
+def matlab_setup(main_path, files = [], bisque_deps = False, dependency_dir = "mbuild",  params = {}, **kw):
     'prepare a matlab script for execution  by compiling with mcc'
 
     ensure_matlab(params)
@@ -105,6 +126,7 @@ def matlab_setup(main_path, files = [], bisque_deps = False, dependency_dir = "m
     if len(files):
         copy_files (files, '.')
     if not os.path.exists (dependency_dir): os.mkdir (dependency_dir)
+
     if mcc(main_path + '.m', '-d', dependency_dir, '-m', '-C', '-R', '-nodisplay', '-R', '-nosplash', *rest):
         main = main_name + ext_map.get(os.name, '')
         ctf  = main_name + '.ctf'
