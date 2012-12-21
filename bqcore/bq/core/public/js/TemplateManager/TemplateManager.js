@@ -42,10 +42,13 @@ Ext.define('BQ.TemplateManager',
 
             function copyTags(template, resource)
             {
+                var parser = document.createElement('a');
+                
                 for(var i = 0; i < template.tags.length; i++)
                 {
-                    var tag = template.tags[i]; 
-                    copyTags.call(this, tag, resource.addtag({name:tag.name, value:tag.template["Default value"] || '', type: tag.value}));
+                    var tag = template.tags[i];
+                    parser.href = tag.uri;
+                    copyTags.call(this, tag, resource.addtag({name:tag.name, value:tag.template["Default value"] || '', type: parser.pathname}));
                 }
                 return resource;
             }
@@ -136,7 +139,14 @@ Ext.define('BQ.TemplateManager.Creator',
     
     saveTemplate : function()
     {
-        this.resource.save_(undefined, Ext.pass(BQ.ui.notification, ['Changes saved!', 2000]), Ext.pass(BQ.ui.error, ['Save failed!']));
+        function success(resource)
+        {
+            BQ.ui.notification('Changes saved!', 2000);
+            this.tagger.setResource(resource);
+        }
+        
+        this.resource.uri = this.resource.uri + '?view=deep';
+        this.resource.save_(undefined, Ext.bind(success, this), Ext.pass(BQ.ui.error, ['Save failed!']));
     },
     
     onFieldSelect : function(tree, record)

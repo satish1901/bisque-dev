@@ -17,7 +17,7 @@ Ext.define('BQ.TagRenderer.Base',
                                 /// config.tplInfo  :   Template information    (minValue, maxValue etc.)
                                 getRenderer     :   function(config)
                                 {
-                                    var tplType = config.tplType || config.tplInfo.Type;
+                                    var tplType = config.tplInfo.Type;
                                     var className = BQ.TagRenderer.Base.baseClass + '.' + tplType;
             
                                     if (Ext.ClassManager.get(className))

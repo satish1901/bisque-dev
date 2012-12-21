@@ -557,6 +557,34 @@ BQObject.prototype.find_children  = function (type, name, deep, found) {
     return found;
 }
 
+// findTags         :   finds tags whose (input) attribute matches an input value
+// config params    : 
+// attr         =   (required) which attribute to match e.g. name, type, resource_type etc.
+// value        =   (required) matched value
+// deep         =   (default false) if the search should be deep or not
+// returnFirst  =   (default true) True to return first found instance otherwise returns all instances
+
+BQObject.prototype.findTags = function(config)
+{
+    var found = [], currentObj;
+    config.returnFirst = Ext.isDefined(config.returnFirst)?config.returnFirst:true;
+    
+    for (var i=0; i<this.tags.length; i++)
+    {
+        currentObj = this.tags[i];
+        if (currentObj[config.attr] == config.value)
+        {
+            found.push(currentObj)
+            if (config.returnFirst)
+                break;
+        }
+        else if (config.deep)
+            found = found.concat(currentObj.findTags(config))
+    }
+    
+    return found;
+}
+
 BQObject.prototype.testAuth = function(user, cb, loaded, authRecord)
 {
     if (!loaded)
@@ -758,7 +786,7 @@ BQObject.prototype.remove = function (o) {
     }
 }
 
-BQObject.prototype.save_ = function (parenturi, cb, errorcb) {
+BQObject.prototype.save_OLD = function (parenturi, cb, errorcb) {
     this.testReadonly();    
     var docobj = this.doc;
     var req = docobj.toXML();
@@ -770,6 +798,20 @@ BQObject.prototype.save_ = function (parenturi, cb, errorcb) {
         xmlrequest(parenturi, callback(docobj, 'response_', 'created', errorcb, cb),'post', req, errorcb);
     }
 }
+
+BQObject.prototype.save_ = function (parenturi, cb, errorcb) {
+    this.testReadonly();    
+    var obj = this;
+    var req = obj.toXML();
+    errorcb = errorcb || default_error_callback;
+    if (obj.uri) {
+        xmlrequest(obj.uri, callback(obj, 'response_', 'update', errorcb, cb),'put', req, errorcb);
+    } else {
+        parenturi = parenturi || '/data_service/'+this.resource_type+'/';
+        xmlrequest(parenturi, callback(obj, 'response_', 'created', errorcb, cb),'post', req, errorcb);
+    }
+}
+
 
 // dima: used in browser factory, same thing as save but always does POST 
 BQObject.prototype.append = function (cb, errorcb)
@@ -789,7 +831,7 @@ BQObject.prototype.response_ = function (code, errorcb, cb, xmldoc) {
     var node = xmldoc;
     if (node.nodeName == "#document" || node.nodeName == "response") 
         node = node.firstChild;
-    if (code == "created") {
+    //if (code == "created") {
         //alert (printXML(respobj));
         //this.uri = attribStr (node, 'uri');
         this.children = [];
@@ -802,7 +844,7 @@ BQObject.prototype.response_ = function (code, errorcb, cb, xmldoc) {
             if (errorcb) errorcb ({ xmldoc : xmldoc, message : 'parse error in BQObject.response_' });
             return;
         }
-    }
+    //+}
     if (cb != null) {
         cb (this);
     }

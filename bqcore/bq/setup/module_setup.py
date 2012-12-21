@@ -50,10 +50,11 @@ def mcc (command,  *largs, **kw):
     return ret == 0
 
 def mex_compile (command_list, where = None, **kw):
-    'mex compile a command_list a list of arguments to the matlab mex_compiler
+    """mex compile a command_list a list of arguments to the matlab mex_compiler
 
-    :param: command_list a list of command 
-    :param: where '
+    :param: command_list - a list of command 
+    :param: where - directory in which mex will be compiled"""
+    
     if where:
         cwd = os.getcwd()
         os.chdir(where)
