@@ -146,7 +146,8 @@ Ext.define('Bisque.ResourceTagger',
         {
             BQFactory.request({
                 uri :   this.resource.type+'?view=deep',
-                cb  :   Ext.bind(this.initCopy, this)
+                cb  :   Ext.bind(this.initCopy, this),
+                errorcb : Ext.bind(this.loadResourceTags, this, [this.resource.tags, true])
             });
             
             return;
@@ -175,8 +176,9 @@ Ext.define('Bisque.ResourceTagger',
     {
         for(var i = 0; i < resource.tags.length; i++)
         {
-            var matchingTag = template.find_tags(resource.tags[i].name);
-            if (matchingTag)
+            var matchingTag = template.findTags({attr:'uri', value: window.location.origin + resource.tags[i].type});
+            
+            if (!Ext.isEmpty(matchingTag))
             {
                 matchingTag = (matchingTag instanceof Array)?matchingTag[0]:matchingTag;
                 resource.tags[i].template = matchingTag.template;
@@ -240,20 +242,20 @@ Ext.define('Bisque.ResourceTagger',
         
         this.tree = Ext.create('Ext.tree.Panel',
         {
-            useArrows : true,
-            rootVisible : false,
-            border : false,
-            columnLines : true,
-            rowLines : true,
-            lines : true,
-            iconCls : 'icon-grid',
-            animate : this.animate,
-            header : false,
+            useArrows   :   true,
+            rootVisible :   false,
+            border      :   false,
+            columnLines :   true,
+            rowLines    :   true,
+            lines       :   true,
+            iconCls     :   'icon-grid',
+            animate     :   this.animate,
+            header      :   false,
 
-            store : this.getTagStore(data),
-            multiSelect : true,
-            tbar : this.getToolbar(),
-            columns : this.getTreeColumns(),
+            store       :   this.getTagStore(data),
+            multiSelect :   true,
+            tbar        :   this.getToolbar(),
+            columns     :   this.getTreeColumns(),
 
             selModel    :   this.getSelModel(),
             plugins     :   (this.viewMgr.state.editable) ? [this.rowEditor] : null,
@@ -267,9 +269,9 @@ Ext.define('Bisque.ResourceTagger',
             {
                 'checkchange' : function(node, checked)
                 {
+                    //Recursively check/uncheck all children of a parent node
                     (checked) ? this.fireEvent('select', this, node) : this.fireEvent('deselect', this, node);
                     this.checkTree(node, checked);
-                    //Recursively check/uncheck all children of a parent node
                 },
                 scope :this
             }
@@ -665,26 +667,9 @@ Ext.define('Bisque.ResourceTagger',
                 selectedItems[i].parentNode.removeChild(selectedItems[i], true);
             }
 
-            //if (this.autoSave)
-            //    this.saveTags(null, true);
-
             BQ.ui.message('Resource tagger - Delete', selectedItems.length + ' record(s) deleted!');
-
-/*            this.tree.getSelectionModel().deselectAll();
-            
-            for (var i=0;i<this.children.length; i++)
-            {
-                selectedItems[i].parentNode.removeChild(this.children[i], true);
-                
-                
-            }*/
-            
-            
-            
             this.tree.getSelectionModel().deselectAll();
         }
-        else
-            BQ.ui.message('Resource tagger - Delete', 'No records selected!');
     },
 
     saveTags : function(parent, silent)
@@ -738,14 +723,23 @@ Ext.define('Bisque.ResourceTagger',
                 'Select' : function(me, resource)
                 {
                     if (resource instanceof BQTemplate)
-                        BQ.TemplateManager.createResource({name: '', noSave:true}, Ext.bind(this.onResourceCreated, this), resource.uri+'?view=deep');
-                    else
                     {
+                        function applyTemplate(response)
+                        {
+                            if (response == 'yes')
+                                BQ.TemplateManager.createResource({name: '', noSave:true}, Ext.bind(this.onResourceCreated, this), resource.uri+'?view=deep');
+                        } 
+                        
+                        if (this.resource.type)
+                            Ext.MessageBox.confirm('Reapply template', 'This resource is already templated. Do you wish to reapply selected template?', Ext.bind(applyTemplate, this));
+                        else
+                            applyTemplate.apply(this, ['yes']);
+                    }
+                    else
                         resource.loadTags(
                         {
                             cb : callback(this, "appendTags"),
                         });
-                    }
                 },
 
                 scope : this
@@ -755,11 +749,42 @@ Ext.define('Bisque.ResourceTagger',
     
     onResourceCreated : function(resource, template)
     {
-        this.resource.type = resource.type;
-        this.appendTags(resource.tags);
+        if (resource.type == this.resource.type)
+            this.mergeTags(resource.tags);
+        else
+        {
+            this.resource.type = resource.type;
+            this.appendTags(resource.tags);
+        }
         
         var resource = this.copyTemplate(template, this.resource);
         this.resource = resource;
+    },
+    
+    mergeTags : function(data)
+    {
+        this.tree.setLoading(true);
+        
+        if (data.length>0)
+        {
+            var cleanData = this.stripURIs(data);
+
+            for (var i=0;i<data.length; i++)
+            {
+                var matchingTag = this.resource.findTags({attr: 'type', value: data[i].type});
+                
+                if (Ext.isEmpty(matchingTag))
+                {
+                    this.resource.tags.push(cleanData[i]);
+                    this.addNode(this.tree.getRootNode(), cleanData[i]);
+                }
+            }
+
+            if (this.autoSave)
+                this.saveTags(null, true);
+        }
+        
+        this.tree.setLoading(false);
     },
     
     appendTags : function(data)
@@ -769,9 +794,22 @@ Ext.define('Bisque.ResourceTagger',
         if (data.length>0)
         {
             data = this.stripURIs(data);
-            this.resource.tags = this.resource.tags.concat(data);
-            this.addNode(this.tree.getRootNode(), data);
-            
+            var currentItem = this.tree.getSelectionModel().getSelection();
+
+            if (currentItem.length)
+            {
+                currentItem = currentItem[0];
+                currentItem.raw.tags = currentItem.raw.tags.concat(data)
+            }
+            else
+            {
+                currentItem = this.tree.getRootNode();
+                this.resource.tags = this.resource.tags.concat(data);
+            }
+
+            this.addNode(currentItem, data);
+            currentItem.expand();
+
             if (this.autoSave)
                 this.saveTags(null, true);
         }

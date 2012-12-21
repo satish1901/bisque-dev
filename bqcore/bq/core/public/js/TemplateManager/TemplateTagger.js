@@ -53,6 +53,31 @@ Ext.define('Bisque.TemplateTagger',
             }
     },
     
+    importMenu : function()
+    {
+        var rb = new Bisque.ResourceBrowser.Dialog(
+        {
+            height      :   '85%',
+            width       :   '85%',
+            dataset     :   this.importDataset,
+            viewMode    :   'ViewerLayouts',
+            selType     :   'SINGLE',
+            listeners   :
+            {
+                'Select' : function(me, resource)
+                {
+                    resource.loadTags(
+                    {
+                        depth   :   'deep',   
+                        cb      :   Ext.bind(this.appendTags, this),
+                    });
+                },
+
+                scope : this
+            },
+        });
+    },
+    
     saveTags : Ext.emptyFn,
 
     updateQueryTagValues : Ext.emptyFn,
