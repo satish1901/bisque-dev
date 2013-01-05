@@ -786,7 +786,7 @@ BQObject.prototype.remove = function (o) {
     }
 }
 
-BQObject.prototype.save_OLD = function (parenturi, cb, errorcb) {
+BQObject.prototype.save_ = function (parenturi, cb, errorcb) {
     this.testReadonly();    
     var docobj = this.doc;
     var req = docobj.toXML();
@@ -799,7 +799,7 @@ BQObject.prototype.save_OLD = function (parenturi, cb, errorcb) {
     }
 }
 
-BQObject.prototype.save_ = function (parenturi, cb, errorcb) {
+BQObject.prototype.save_ww = function (parenturi, cb, errorcb) {
     this.testReadonly();    
     var obj = this;
     var req = obj.toXML();
@@ -831,7 +831,7 @@ BQObject.prototype.response_ = function (code, errorcb, cb, xmldoc) {
     var node = xmldoc;
     if (node.nodeName == "#document" || node.nodeName == "response") 
         node = node.firstChild;
-    //if (code == "created") {
+    if (code == "created") {
         //alert (printXML(respobj));
         //this.uri = attribStr (node, 'uri');
         this.children = [];
@@ -844,7 +844,7 @@ BQObject.prototype.response_ = function (code, errorcb, cb, xmldoc) {
             if (errorcb) errorcb ({ xmldoc : xmldoc, message : 'parse error in BQObject.response_' });
             return;
         }
-    //+}
+    }
     if (cb != null) {
         cb (this);
     }

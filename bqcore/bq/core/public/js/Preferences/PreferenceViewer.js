@@ -32,7 +32,9 @@ Ext.define('BQ.Preferences.Dialog',
             }
                 
         this.callParent(arguments);
-        this.addTagger(this.prefType);
+        BQ.Preferences.reloadUser(BQSession.current_session.user);
+        BQ.Preferences.get({key:'', type:'system', callback:Ext.bind(this.addTagger, this, [this.prefType])});
+
         this.show();
     },
     
