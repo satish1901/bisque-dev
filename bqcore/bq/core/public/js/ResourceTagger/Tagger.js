@@ -27,7 +27,7 @@ Ext.define('Bisque.ResourceTagger',
             dirtyRecords : []
         });
 
-        this.viewMgr = new Bisque.ResourceTagger.viewStateManager(config.viewMode);;
+        this.viewMgr = Ext.create('Bisque.ResourceTagger.viewStateManager', config.viewMode);
         this.populateComboStore();
         this.callParent([config]);
         
@@ -631,7 +631,7 @@ Ext.define('Bisque.ResourceTagger',
         }
             
         if (this.autoSave)
-            this.saveTags(parent, true);
+            this.saveTags(parent, true, newTag);
 
         me.record.raw = newTag;
         me.record.loaded = true;
@@ -678,7 +678,11 @@ Ext.define('Bisque.ResourceTagger',
         
         if(this.store.applyModifications())
         {
-            resource.save_();
+            function ruff(a,b,c,d)
+            {
+                //debugger;
+            }
+            resource.save_(undefined, ruff);
             if (!silent) BQ.ui.message('', 'Changes were saved successfully!');
         }
         else
@@ -1201,26 +1205,26 @@ Ext.define('Bisque.ResourceTagger.OwnershipStripper',
 
 Ext.define('Bisque.ResourceTagger.viewStateManager',
 {
-    //	ResourceTagger view-state
-    state : 
-    {
-        btnAdd : true,
-        btnDelete : true,
-        
-        btnToggleCheck : true,
-        
-        btnImport : true,
-        btnExport : true,
-        btnXML : true,
-        btnCSV : true,
-        btnGDocs : true,
-    
-        btnSave : true,
-        editable : true,
-    },
-
     constructor : function(mode)
     {
+        //  ResourceTagger view-state
+        this.state = 
+        {
+            btnAdd : true,
+            btnDelete : true,
+            
+            btnToggleCheck : true,
+            
+            btnImport : true,
+            btnExport : true,
+            btnXML : true,
+            btnCSV : true,
+            btnGDocs : true,
+        
+            btnSave : true,
+            editable : true,
+        };
+        
         function setHidden(obj, bool)
         {
             var result={};
