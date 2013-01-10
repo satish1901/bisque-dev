@@ -497,6 +497,11 @@ def db2tree(dbo, parent=None, view=[], baseuri=None, progressive=False, **kw):
         view = [ x.strip() for x in view.split(',') ]
     view = view or []
 
+    #if 'fulluri' in view:
+    #    view = [ x for x in view if x != 'fulluri' ] 
+    #else:
+    #    baseuri = urlparse.urlparse(baseuri).path
+
     endtime = 0
     if progressive and max_response_time>0:
         log.debug ("progressive response: max %f", max_response_time)
@@ -787,6 +792,8 @@ def bisquik2db(doc= None, parent=None, resource = None, xmlschema=None, replace=
         inputs = [ doc ] 
 
     DBSession.autoflush = False
+    if replace:
+        resource.clear()
     return bisquik2db_internal(inputs, parent, resource, replace)
         
             

@@ -117,6 +117,12 @@ def auth_resource(resource, server=None, **kw):
     if server is None: server = service_registry.find_service ('data_service')
     return server.auth_resource(resource, **kw)
 
+def update_resource(resource, server=None, replace=True,  **kw):
+    ''' Create a new resource
+    '''
+    if server is None: server = service_registry.find_service ('data_service')
+    return server.update_resource(resource=resource, replace=replace, **kw)
+
 
 def load(resource_url, **kw):
     '''Return XML resource document

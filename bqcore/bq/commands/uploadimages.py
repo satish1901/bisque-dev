@@ -4,6 +4,10 @@ import os, sys
 import urlparse
 from optparse import OptionParser
 from bq.util import http 
+import logging
+
+logging.basicConfig(level = logging.WARN)
+
 
 
 try:
@@ -25,9 +29,10 @@ except:
 DESTINATION = "/import/transfer"
 
 def upload(dest, filename, userpass, tags=None):
-    files = {  "file" : open(filename, "rb") }
+    files = [] 
     if tags:
-        files['file_resource'] = tags
+        files.append( ('file_resource', tags ) )
+    files.append( ("file",  open(filename, "rb")) )
         
     headers, content = http.post_files (dest, files, userpass = userpass)
     if headers['status'] != '200':
@@ -39,8 +44,9 @@ def main():
     usage="usage %prog [options] f1 [f2 f2 d1 ] bisque-url"
     parser = OptionParser(usage)
     parser.add_option('-u','--user', dest="user", help="Credentials in  user:pass form" )
-    parser.add_option('-r','--recursive', action="store_true", default=False)
-    parser.add_option('-v','--verbose',  action="store_true", default=False)
+    parser.add_option('-r','--recursive', action="store_true", default=False, help='recurse into dirs')
+    parser.add_option('-v','--verbose',  action="store_true", default=False, help="print actions")
+    parser.add_option('-d','--debug',  action="store_true", default=False, help='print debug log')
     parser.add_option('-t','--tag', action="append", dest="tags", help="-t name:value")
     parser.add_option('--resource', action="store", default=None, help="XML resource record for the file")
 
@@ -57,6 +63,9 @@ def main():
 
     dest_tuple = list(urlparse.urlsplit(dest))
     dest =  urlparse.urlunsplit(dest_tuple)
+    if options.debug:
+        logging.getLogger().setLevel(logging.DEBUG)
+        
 
     # Prepare username 
     if options.user is None:
