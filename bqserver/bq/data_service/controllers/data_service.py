@@ -227,6 +227,44 @@ class DataServerController(ServiceController):
         resource_delete(resource)
         self.cache_invalidate(uri)
 
+    def update_resource(self, resource, new_resource=None, replace=True, **kw):
+        """update a resource with a new values
+        @param resource: an etree element or uri 
+        @param new_resource:  an etree element if resource is a uri
+        @param replace: replace all members (if false then appends only)
+        @param kw: view parameters for return 
+        """
+        
+        uri = None
+        log.debug ('resource  = %s' % ( resource))
+        if isinstance (resource, etree._Element):
+            uri = resource.get ('uri')
+        elif isinstance(resource, basestring):
+            uri = resource
+            if new_resource is None:
+                raise BadValue('update_resource uri %s needs new_value to update  ' % uri )
+        if uri is not None:
+            resource = load_uri (uri)
+        log.debug ('resource %s = %s' % (uri, resource))
+        r = bisquik2db(doc=new_resource, resource=resource, replace=replace)
+        #response  = etree.Element ('response')
+        r =  db2tree (r, baseuri = self.url, **kw)
+        self.cache_invalidate(r.get('uri'))
+        return r
+
+    def update(self, resource_tree, replace_all=False, **kw):
+        view=kw.pop('view', None)
+        #if replace_all:
+        #    uri = resource_tree.get ('uri') 
+        #    r = load_uri(resource_tree.get('uri'))
+        #    r.clear()
+        r = bisquik2db(doc=resource_tree, replace=replace_all)
+        #response  = etree.Element ('response')
+        r =  db2tree (r, parent=None, view=view, baseuri = self.url)
+        self.cache_invalidate(r.get('uri'))
+        return r
+
+
     def auth_resource(self, resource, action=RESOURCE_READ, auth=None, notify=False, **kw):
         if isinstance(resource, basestring):
             uri = resource
@@ -342,17 +380,6 @@ class DataServerController(ServiceController):
 
         return response
 
-    def update(self, resource_tree, replace_all=False, **kw):
-        view=kw.pop('view', None)
-        #if replace_all:
-        #    uri = resource_tree.get ('uri') 
-        #    r = load_uri(resource_tree.get('uri'))
-        #    r.clear()
-        r = bisquik2db(doc=resource_tree, replace=replace_all)
-        #response  = etree.Element ('response')
-        r =  db2tree (r, parent=None, view=view, baseuri = self.url)
-        self.cache_invalidate(r.get('uri'))
-        return r
         
 def initialize(uri):
     """ Initialize the top level server for this microapp"""

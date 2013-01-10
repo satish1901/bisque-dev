@@ -6,7 +6,12 @@ import pkg_resources
 import bq
 import optparse
 import errno
+import logging
+
 from bq.release import __VERSION__
+
+
+logging.basicConfig(level=logging.WARN)
 
 def load_config(filename):
     from paste.deploy import appconfig
@@ -29,6 +34,8 @@ Bisque %s command line interface
 
 Usage: %s [options] <command>
 
+options: -d, --debug : print debug
+
 Commands:""" % (__VERSION__, sys.argv[0])
 
         longest = max([len(key) for key in commands.keys()])
@@ -43,11 +50,15 @@ Commands:""" % (__VERSION__, sys.argv[0])
     parser.allow_interspersed_args = False
     #parser.add_option("-c", "--config", dest="config")
     #parser.add_option("-e", "--egg", dest="egg")
+    parser.add_option("-d", "--debug", action="store_true", default=False)
     parser.print_help = _help
     (options, args) = parser.parse_args(sys.argv[1:])
     if not args or not commands.has_key(args[0]):
         _help()
         sys.exit()
+
+    if options.debug:
+        logging.getLogger().setLevel(logging.DEBUG)
 
     commandname = args[0]
         
@@ -71,6 +82,7 @@ class server(object):
         parser.add_option("-w", "--wait", action="store_true", help="wait for children" )
         parser.add_option("-s", "--site", help="specify location of site.cfg" )
         parser.add_option("-f", "--force", action="store_true", default=False, help="try force start or stop: ignore old pid files etc." )
+
         options, args = parser.parse_args()
         self.command = self.options = None
         if len(args) < 1 or args[0] not in ['start', 'stop', 'restart', 'echo', ]:
@@ -216,7 +228,7 @@ class preferences (object):
     desc = "read and/or update preferences"
     def __init__(self, version):
         parser = optparse.OptionParser(
-                    usage="%prog preferences [init|read|save]",
+                    usage="%prog preferences [init (db)|read (from db)|save (to db)]",
                     version="%prog " + version)
         parser.add_option('-c','--config', default="config/site.cfg")
         options, args = parser.parse_args()
@@ -268,14 +280,19 @@ class preferences (object):
                 return
             
             system = etree.parse('config/preferences.xml.default').getroot()
+            for el in system.getiterator(tag=etree.Element):
+                el.set ('permission', 'published')
             system = data_service.new_resource(system, view='deep')
         else:
-            system = etree.parse(prefs)
-            uri = system.getroot().get('uri')
+            system = etree.parse(prefs).getroot()
+            for el in system.getiterator(tag=etree.Element):
+                el.set ('permission', 'published')
+            uri = system.get('uri')
             if self.args[0].startswith('read'):
                 system = data_service.get_resource(uri, view='deep')
             elif self.args[0] == 'save':
-                system = data_service.update(system, view='deep')
+                logging.debug ('system = %s' % etree.tostring(system))
+                system = data_service.update_resource(system, view='deep')
         transaction.commit()
         with open(prefs,'w') as f:
             f.write(etree.tostring(system, pretty_print=True))
