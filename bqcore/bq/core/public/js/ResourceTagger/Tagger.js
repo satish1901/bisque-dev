@@ -205,15 +205,7 @@ Ext.define('Bisque.ResourceTagger',
             
             beforeEdit          :   function(editor)
                                     {
-                                        var isEmpty = function(obj)
-                                        {
-                                            if (!Ext.isDefined(obj))
-                                                return true;
-                                            else
-                                                return Object.keys(obj).length === 0;
-                                        }
-                                        
-                                        if (this.tagger.editable && !isEmpty(editor.record.raw.template) && this.tagger.resource.resource_type!='template')
+                                        if (this.tagger.editable && !isEmptyObject(editor.record.raw.template) && this.tagger.resource.resource_type!='template')
                                         {
                                             if (editor.record.raw.template.Editable)
                                             {

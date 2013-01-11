@@ -715,24 +715,67 @@ BQObject.prototype.toDict  = function (deep, found, prefix) {
     return found;
 }
 
-BQObject.prototype.toNestedDict = function(deep)
+BQObject.prototype.toNestedDict1 = function(deep)
 {
     var dict = {}, tag;
+    
+    if (!isEmptyObject(this.template))
+        dict['_template'] = this.template;
+    
+    if (this.tags.length==0)
+        return this.value || ''; 
+        
     for(var i = 0; i < this.tags.length; i++)
     {
         tag = this.tags[i];
         dict[tag.name] = (deep && tag.tags.length > 0) ? tag.toNestedDict(deep) : (tag.value || '');
     }
+    
     return dict;
+}
+
+BQObject.prototype.toNestedDict = function(deep)
+{
+    var data = {}, tags = {};
+
+    Ext.apply(data,
+    {
+        name        :   this.name,
+        value       :   this.value || '',
+    });
+
+    if (!isEmptyObject(this.template))
+        data['template'] = this.template;   
+    
+    if (deep)
+        for(var i = 0; i < this.tags.length; i++)
+            tags[this.tags[i].name] = this.tags[i].toNestedDict(deep);
+
+    return {data:data, tags:tags};
 }
 
 BQObject.prototype.fromNestedDict = function(dict)
 {
+    Ext.apply(this, dict.data);
+    
+    for (var tag in dict.tags)
+        this.addtag().fromNestedDict(dict.tags[tag])
+} 
+
+BQObject.prototype.fromNestedDict1 = function(dict)
+{
     var value;
+
+    if (dict['_template'])  // check for template entry
+    {
+        this._template = dict['_template'];
+        delete dict['_template'];
+    }    
     
     for (var tag in dict)
     {
         value = dict[tag];
+        
         if (value instanceof Object)
             this.addtag({name:tag}).fromNestedDict(value);
         else

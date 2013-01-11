@@ -39,6 +39,13 @@ function removeAllChildren(element) {
     }
 }
 
+// Test if the input object is empty
+function isEmptyObject(obj)
+{
+    return (!Ext.isDefined(obj)) ? true : Object.keys(obj).length === 0;
+}
+
+
 function getX(obj) {
     var curleft = 0;
     while (obj.offsetParent) {

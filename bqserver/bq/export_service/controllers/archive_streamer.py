@@ -66,11 +66,10 @@ class ArchiveStreamer():
             return flist
 
         summary = etree.Element('resource', type='BISQUE Export Log')
+
         etree.SubElement(summary, 'tag', name='Server', value=config.get('bisque.root'))
         etree.SubElement(summary, 'tag', name='Version', value=__VERSION__)
         etree.SubElement(summary, 'tag', name='Export_DateTime', value=str(datetime.datetime.now()))
-
-
 
         flist.append(dict(  name        =   '_bisque.xml',
                             content     =   etree.tostring(summary),
@@ -95,9 +94,10 @@ class ArchiveStreamer():
                 name = xml.get('resource_uniq')[-4] 
             if not name: 
                 name = str(index)
-            try:
-                path       =   blob_service.localpath(xml.get('resource_uniq'))
-            except IllegalOperation: 
+            
+            if xml.get('resource_uniq') is not None:
+                path = blob_service.localpath(xml.get('resource_uniq'))
+            else:
                 path = None
                 
             return  dict(XML        =   xml, 
@@ -106,7 +106,7 @@ class ArchiveStreamer():
                          uniq       =   xml.get('resource_uniq'),
                          path       =   path,
                          dataset    =   dataset,
-                         extension  =   '')
+                         extension  =   '' if xml.get('resource_uniq') is not None else '.xml')
         
         def xmlInfo(finfo):
             file = finfo.copy()
