@@ -114,11 +114,19 @@ Ext.define('BQ.Preferences',
      */
     get : function(caller)
     {
+        function fromDictionary(dict)
+        {
+            var obj = {};
+            for (var tag in dict.tags)
+                obj[dict.tags[tag].data.name] = fromDictionary(dict.tags[tag]) 
+            return isEmptyObject(obj) ? dict.data.value.trim() : obj;                
+        }
+        
         if (this.system.status=='LOADED' && this.user.status=='LOADED')
             if (caller.type=='user')
-                caller.callback(Ext.Object.merge(this.system.dictionary[caller.key] || {}, this.user.dictionary[caller.key] || {}));
+                caller.callback(fromDictionary(Ext.Object.merge(this.system.dictionary.tags[caller.key] || {}, this.user.dictionary.tags[caller.key] || {})));
             else    // return 'system' preferences by default 
-                caller.callback(this.system.dictionary[caller.key] || {});
+                caller.callback(fromDictionary(this.system.dictionary.tags[caller.key] || {data:{value:''}}));
         else
             this.queue.push(caller);
     },

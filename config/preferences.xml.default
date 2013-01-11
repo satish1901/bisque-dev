@@ -16,8 +16,23 @@
         <tag name="ResourceBrowser">
             <tag name="Browser">
                 <tag name="Tag Query"/>
-                <tag name="Layout" value="COMPACT"/>
-                <tag name="Include Public Resources" value="true"/>
+                <tag name="Layout" value="Compact">
+                    <template>
+                        <tag type="string" name="Type" value="ComboBox"/>
+                        <tag type="string" name="Default value" value="Compact"/>
+                        <tag type="boolean" name="Allow blank" value="false"/>
+                        <tag type="boolean" name="Editable" value="true"/>
+                        <tag type="string" name="Display values" value="Compact,Grid,Card,Full"/>
+                    </template>
+                </tag>                
+                <tag name="Include Public Resources" value="true">
+                    <template>
+                        <tag type="string" name="Type" value="Boolean"/>
+                        <tag type="string" name="Default value" value="true"/>
+                        <tag type="boolean" name="Allow blank" value="false"/>
+                        <tag type="boolean" name="Editable" value="true"/>
+                    </template>
+                </tag>                
             </tag>
             <tag name="Images">
                 <tag name="ImageParameters"/>
@@ -32,12 +47,68 @@
             </tag>
         </tag>
         <tag name="Viewer">
-            <tag type="boolean" name="autoUpdate" value="true"/>
-            <tag type="boolean" name="negative" value="false"/>
-            <tag name="enhancement" value="d"/>
-            <tag name="projection"/>
-            <tag name="enhancement-8bit" value="f"/>
-            <tag name="fusion" value="a"/>            
+            <tag type="boolean" name="autoUpdate" value="true">
+                <template>
+                    <tag type="string" name="Type" value="Boolean"/>
+                    <tag type="string" name="Default value" value="true"/>
+                    <tag type="boolean" name="Allow blank" value="false"/>
+                    <tag type="boolean" name="Editable" value="true"/>
+                </template>
+            </tag>
+            
+            <tag type="boolean" name="negative" value="false">
+                <template>
+                    <tag type="string" name="Type" value="Boolean"/>
+                    <tag type="string" name="Default value" value="false"/>
+                    <tag type="boolean" name="Allow blank" value="false"/>
+                    <tag type="boolean" name="Editable" value="true"/>
+                </template>
+            </tag>
+            
+            <tag name="enhancement" value="Data range">
+                <template>
+                    <tag type="string" name="Type" value="ComboBox"/>
+                    <tag type="string" name="Default value" value="Data range"/>
+                    <tag type="boolean" name="Allow blank" value="false"/>
+                    <tag type="boolean" name="Editable" value="true"/>
+                    <tag type="string" name="Display values" value="Data range,Full range,Data range + tolerance,Equalized"/>
+                    <tag type="string" name="Passed values" value="d,f,t,e"/>
+                </template>
+            </tag>
+            
+            <tag name="projection" value="None">
+                <template>
+                    <tag type="string" name="Type" value="ComboBox"/>
+                    <tag type="string" name="Default value" value="None"/>
+                    <tag type="boolean" name="Allow blank" value="false"/>
+                    <tag type="boolean" name="Editable" value="true"/>
+                    <tag type="string" name="Display values" value="None,projectmax,projectmin,projectmaxt,projectmint,projectmaxz,projectminz"/>
+                    <tag type="string" name="Passed values" value=" ,projectmax,projectmin,projectmaxt,projectmint,projectmaxz,projectminz"/>
+                </template>
+            </tag>
+
+            <tag name="enhancement-8bit" value="Full range">
+                <template>
+                    <tag type="string" name="Type" value="ComboBox"/>
+                    <tag type="string" name="Default value" value="Full range"/>
+                    <tag type="boolean" name="Allow blank" value="false"/>
+                    <tag type="boolean" name="Editable" value="true"/>
+                    <tag type="string" name="Display values" value="Full range,None"/>
+                    <tag type="string" name="Passed values" value="f, "/>
+                </template>
+            </tag>
+            
+            <tag name="fusion" value="Average">
+                <template>
+                    <tag type="string" name="Type" value="ComboBox"/>
+                    <tag type="string" name="Default value" value="Average"/>
+                    <tag type="boolean" name="Allow blank" value="false"/>
+                    <tag type="boolean" name="Editable" value="true"/>
+                    <tag type="string" name="Display values" value="Average,Maximum"/>
+                    <tag type="string" name="Passed values" value="a,m"/>
+                </template>
+            </tag>
+
         </tag>  
     </tag>
 </system>

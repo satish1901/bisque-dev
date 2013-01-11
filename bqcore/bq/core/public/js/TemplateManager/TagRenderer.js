@@ -232,18 +232,38 @@ Ext.define('BQ.TagRenderer.ComboBox',
     inheritableStatics  :   {
                                 componentName   :   'ComboBox',
                                 template        :   {
-                                                        'Type'      :   'ComboBox',
-                                                        'Values'    :   '',
+                                                        'Type'              :   'ComboBox',
+                                                        'Display values'    :   '',
+                                                        'Passed values'     :   ''
                                                     }                    
                         },
                         
     getRenderer         :   function(config)
                             {
-                                var values = config.tplInfo.Values || '';
+                                var values = config.tplInfo['Display values'] || '', passedValues = '';
+                                values = values.split(',');
+                                
+                                if (config.tplInfo['Passed values'])
+                                    passedValues = config.tplInfo['Passed values'].split(',');
+                                else
+                                    passedValues = values;
+
+                                // prepare data to be compatible with store
+                                for (var i=0, data=[]; i<values.length; i++)
+                                    data.push({'name':values[i], 'value':passedValues[i]});  
+                                
+                                var store = Ext.create('Ext.data.Store',
+                                {
+                                    fields  :   ['name', 'value'],
+                                    data    :   data
+                                });
+                                
                                 return  {
-                                            xtype       :   'combobox',
-                                            store       :   values.split(','),
-                                            editable    :   false
+                                            xtype           :   'combobox',
+                                            store           :   store,
+                                            displayField    :   'name',
+                                            valueField      :   'value',
+                                            editable        :   false,
                                         }
                             }
 });
