@@ -122,29 +122,38 @@ class ClientServer(ServiceController):
         welcome_message = config.get ('bisque.welcome_message', "Welcome to the Bisque image database")
         #image_count = aggregate_service.count("image", wpublic=wpublic)
         #image_count = data_service.count("image", wpublic=wpublic)
-        tag_query = config.get('bisque.background_query', "welcome_background:")
-        image_count  = data_service.count("image", tag_query=tag_query, wpublic=wpublic)
-        if image_count == 0:
-            image_count = data_service.count("image", wpublic=wpublic)
-            tag_query  = None
-
 
         thumbnail = None
         imageurl = None
-        if image_count:
-            im = random.randint(0, image_count-1)
-            #image = aggregate_service.retrieve("image", view=None, wpublic=wpublic)[im]
-            image  = data_service.query('image', tag_query=tag_query, wpublic=wpublic, 
-                                        offset = im, limit = 1)[0]
-            imageurl = self.viewlink(image.attrib['uri'])
-            #thumbnail = image.attrib['src'] +'?thumbnail'
+        welcome_resource = config.get ('bisque.background_resource', None)
+        if welcome_resource:
+            imageurl = welcome_resource
+            image  = data_service.get_resource(imageurl)
             thumbnail = "/image_service/images/%s?thumbnail" % image.get('resource_uniq')
+        else:
+            tag_query = config.get('bisque.background_query', "welcome_background:")
+            image_count  = data_service.count("image", tag_query=tag_query, wpublic=wpublic)
+            wpublic_query = wpublic
+            if image_count == 0 and wpublic == False:
+                wpublic_query  = True
+                image_count  = data_service.count("image", tag_query=tag_query, wpublic=wpublic_query)
+            # None found .. pick a random
+            if image_count == 0:
+                image_count = data_service.count("image", wpublic=wpublic)
+                tag_query  = None
+                wpublic_query = wpublic
+            if image_count:
+                im = random.randint(0, image_count-1)
+                #image = aggregate_service.retrieve("image", view=None, wpublic=wpublic)[im]
+                image  = data_service.query('image', tag_query=tag_query, wpublic=wpublic_query, 
+                                            offset = im, limit = 1)[0]
+                imageurl = self.viewlink(image.attrib['uri'])
+                #thumbnail = image.attrib['src'] +'?thumbnail'
+                thumbnail = "/image_service/images/%s?thumbnail" % image.get('resource_uniq')
        
         return dict(imageurl=imageurl,
                     thumbnail=thumbnail,
-                    wpublic = wpublic,
                     wpublicjs = pybool[str(wpublic)],
-                    welcome_tags = welcome_tags,
                     welcome_message = welcome_message
                     )
 
