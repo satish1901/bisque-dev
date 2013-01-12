@@ -211,7 +211,7 @@ class UploadedResource(object):
         self.close()
 
     def __repr__(self):
-        return 'UploadFile([%s] [%s] [%s] [%s]'%(self.path, self.filename, self.resource, self.fileobj)
+        return 'UploadFile([%s] [%s] [%s] [%s])'%(self.path, self.filename, self.resource, self.fileobj)
 
 
 
@@ -766,10 +766,13 @@ class import_serviceController(ServiceController):
         """
         response = etree.Element ('resource', type='uploaded')
         for f in files:
+            log.info ("processing %s " % f)
             x = self.process(f)
+            log.info ("processed %s -> %s " % (f, x))
             if x is not None:
                 response.append(x)
             else:
+                log.error ("while ingesting %s " % f)
                 etree.SubElement(response, 'tag', name="error", value='Error ingesting file' )  
         return response
 
@@ -899,6 +902,7 @@ class import_serviceController(ServiceController):
         # process the file list see if some files need special processing
         # e.g. ZIP needs to be unpacked
         # then ingest all
+        log.debug ("ingesting files %s " % files)
         response = self.ingest(files)
         # respopnd with an XML containing links to created resources
         return etree.tostring(response)
@@ -930,7 +934,7 @@ class import_serviceController(ServiceController):
 
     @expose(content_type="text/xml")
     @require(predicates.not_anonymous())
-    def insert(self, url = None, filename=None, permission='private',  user=None, **kw):
+    def insert(self, url, filename=None, permission='private',  user=None, **kw):
         """insert a URL to a fixed resource. This allows  insertion 
         of  resources  when they are already present on safe media
         i.e on the local server drives or remote irods, hdfs etc.
@@ -940,6 +944,8 @@ class import_serviceController(ServiceController):
 
         if user is not None and identity.current.user_name == 'admin':
             identity.current.set_current_user( user )
+        if filename is None:
+            filename = os.path.basename (url)
         resource = etree.Element('resource', name=filename, permission=permission, value=url)
         if 'tags' in kw:
             try:
@@ -947,39 +953,36 @@ class import_serviceController(ServiceController):
                 resource.extend(list(tags))
             except Exception,e: # dima: possible exceptions here, ValueError, XMLSyntaxError
                 del kw['tags']
-        kw['insert.resource'] = etree.tostring(resource)
+        kw['insert_resource'] = etree.tostring(resource)
         return self.transfer (** kw)
 
     @expose(content_type="text/xml")
     @require(predicates.not_anonymous())
-    def insert_XXresource(self, resource,  user=None, **kw):
+    def insert_inplace(self,  user=None, **kw):
         """insert a  fixed resource. This allows  insertion 
         of  resources  when they are already present on safe media
         i.e on the local server drives or remote irods, hdfs etc.
 
         Supported URL schemes must be enabled in blob_storage.
         This routine will report an error for illegal schemes
+
+        When admin credentials are presented with request, this routine
+        can create resources for any user specified by the user parameter.
+
+        Other arguments should be valid bisque resource documents
+        and follow the naming scheme of <param>_resource
+        
+        @param user: a user name that is valid on bisque 
+        @param kw : any number <param>_resource containing <resource ..> XML
         """
         # Note: This entrypoint should allow permission and tags to be inserted
         # in a similar way to tranfers.. maybe combining the two would be needed.
-        log.info ('insert %s for %s' % (url, user))
+        log.info ('insert_inplace %s %s ' % (user, kw))
 
-        if hasattr(resource, 'file'):
-            resource = etree.parse(resource.file)
-        else:
-            resource = etree.fromstring(resource)
-        
-        try:
-            if user is not None and identity.current.user_name == 'admin':
-                identity.current.set_current_user( user )
+        if user is not None and identity.current.user_name == 'admin':
+            identity.current.set_current_user( user )
 
-            rlist  = [ UploadedResource ( resource = resource) ]
-            response = self.ingest (rlist)
-            return etree.tostring(response)
-        except Exception,e:
-            log.exception("insert: %s %s" % (url, filename))
-            abort(500, "exception during url insert")
-
+        return self.transfer (**kw)
 
 
         

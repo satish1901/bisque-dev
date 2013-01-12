@@ -2,6 +2,7 @@
 ## insert2bisque.py
 ## This file lives in IRODSHOME/server/bin/cmd/insert2bisque.py
 ##       
+import os
 import sys
 import shlex
 import urllib
@@ -9,6 +10,7 @@ import urllib2
 import urlparse
 import base64
 import logging
+from optparse import OptionParser
 
 ############################
 # Config for local installation
@@ -19,24 +21,47 @@ IRODS_HOST='irods://irods.ece.ucsb.edu'
 # End Config 
 
 logging.basicConfig(filename=LOGFILE, level=logging.INFO)
+
 log = logging.getLogger('i2b')
 
-def main():
-    log.debug( "insert2bisque recevied %s" % (sys.argv) )
+def insert_bisque(path, user, host, credentials):
     try:
-        obj = sys.argv[1]
-        user = sys.argv[2]
-        url = "%s/import/insert?%s" % (BISQUE_HOST, urllib.urlencode( { 'url': IRODS_HOST+obj, 'user': user}))
-        request = urllib2.Request(url)
-        request.add_header('authorization',  'Basic ' + base64.encodestring("admin:%s" % BISQUE_ADMIN_PASS ).strip())
-        r = urllib2.urlopen(request)
+        request = urllib2.Request(host)
+        request.add_header('authorization',  'Basic ' + base64.encodestring(credentials).strip())
+        resource = "<resource name='%s' value='%s' />" % (os.path.basename(path), path )
+        resource = urllib.urlencode({ "user" : user, "irods_resource" : resource })
+        request.add_data (resource)
+        opener = urllib2.build_opener(
+            urllib2.HTTPRedirectHandler(),
+            urllib2.HTTPHandler(debuglevel=0),
+            urllib2.HTTPSHandler(debuglevel=0))
+        r = opener.open(request)
         response = r.read()
-        log.info( 'insert %s -> %s' % (url, response))
+        log.info( 'insert %s -> %s' % (host, response))
     except Exception,e:
         log.exception( "exception occurred %s" % e )
         raise e
 
 
 if __name__ == "__main__":
-    main()
+    parser = OptionParser (usage="usage: %prog [options] path user")
+    parser.add_option('-d', '--debug', action="store_true", default=False, help="log debugging")
+    parser.add_option('-t', '--target', default="%s/import/insert" % (BISQUE_HOST), help="bisque host entry url")
+    parser.add_option('-c', '--credential', default="admin:%s" % BISQUE_ADMIN_PASS, help="user credentials")
+    
+
+    (options, args) = parser.parse_args ()
+    if options.debug:
+        logging.getLogger().setLevel(logging.DEBUG)
+
+    log.debug( "insert2bisque recevied %s" % (sys.argv) )
+    if len(args) != 2:
+        parser.error("need path and user")
+
+    path, user = args 
+    if not urlparse.urlparse (path).scheme:
+        path = IRODS_HOST + path
+
+
+    insert_bisque(path, user, options.target, options.credential)
     sys.exit(0)
