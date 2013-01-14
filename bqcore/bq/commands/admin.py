@@ -231,6 +231,7 @@ class preferences (object):
                     usage="%prog preferences [init (db)|read (from db)|save (to db)]",
                     version="%prog " + version)
         parser.add_option('-c','--config', default="config/site.cfg")
+        parser.add_option('-f','--force', action="store_true", help="Force action if able")
         options, args = parser.parse_args()
 
         self.args = args
@@ -272,12 +273,20 @@ class preferences (object):
         if self.args[0].startswith('init'):
             x = data_service.query('system')
             if len(x):
-                print ("System object initialized at %s " % etree.tostring(x[0]))
-                return 
+                if self.options.force:
+                    print ("deleting current system object")
+                    data_service.del_resource(x[0])
+                else:
+                    print ("NO ACTION: System object initialized at %s " % etree.tostring(x[0]))
+                    return 
 
             if os.path.exists(prefs):
-                print ('%s exists.. cannot init' % prefs)
-                return
+                if self.options.force:
+                    print ("deleting %s" % prefs)
+                    os.remove (prefs)
+                else:
+                    print ('NO ACTION: %s exists.. cannot init' % prefs)
+                    return
             
             system = etree.parse('config/preferences.xml.default').getroot()
             for el in system.getiterator(tag=etree.Element):
