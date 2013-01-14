@@ -56,7 +56,7 @@ class AutoRegister (object):
 
         identifier = values.pop('identifier', None)
         try:
-            log.info("adding user %s" % user_name )
+            log.info("adding user %s with %s" % user_name, values )
                 
             u = model.User(user_name = user_name, 
                            display_name = values.get('display_name'),
