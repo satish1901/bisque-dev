@@ -114,7 +114,7 @@ class AuthenticationServer(ServiceController):
             user = DBSession.query (User).filter_by(user_name=login).first()
             # REDIRECT to registration page?
             if user is None:
-                redirect(default_login)
+                redirect(update_url(default_login, dict(username=login, came_from=came_from)))
             # Find a matching identifier
             login_identifiers = [ g.group_name for g in user.groups ] 
             for identifier in login_urls.keys():
