@@ -90,7 +90,7 @@ ImgSlicer.prototype.updateView = function (view) {
     this.params = {};
 
     // '', 'projectmax', 'projectmin', 'projectmaxt', 'projectmint', 'projectmaxz', 'projectminz'
-    if (projection == '') {
+    if (!projection || projection=='') {
         this.params.z1 = view.z+1;
         this.params.t1 = view.t+1;
         view.addParams ( 'slice=,,'+(view.z+1)+','+(view.t+1) );

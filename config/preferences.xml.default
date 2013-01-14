@@ -65,10 +65,10 @@
                 </template>
             </tag>
             
-            <tag name="enhancement" value="Data range">
+            <tag name="enhancement" value="d">
                 <template>
                     <tag type="string" name="Type" value="ComboBox"/>
-                    <tag type="string" name="Default value" value="Data range"/>
+                    <tag type="string" name="Default value" value="d"/>
                     <tag type="boolean" name="Allow blank" value="false"/>
                     <tag type="boolean" name="Editable" value="true"/>
                     <tag type="string" name="Display values" value="Data range,Full range,Data range + tolerance,Equalized"/>
@@ -76,10 +76,10 @@
                 </template>
             </tag>
             
-            <tag name="projection" value="None">
+            <tag name="projection" value="">
                 <template>
                     <tag type="string" name="Type" value="ComboBox"/>
-                    <tag type="string" name="Default value" value="None"/>
+                    <tag type="string" name="Default value" value=""/>
                     <tag type="boolean" name="Allow blank" value="false"/>
                     <tag type="boolean" name="Editable" value="true"/>
                     <tag type="string" name="Display values" value="None,projectmax,projectmin,projectmaxt,projectmint,projectmaxz,projectminz"/>
@@ -87,21 +87,21 @@
                 </template>
             </tag>
 
-            <tag name="enhancement-8bit" value="Full range">
+            <tag name="enhancement-8bit" value="f">
                 <template>
                     <tag type="string" name="Type" value="ComboBox"/>
-                    <tag type="string" name="Default value" value="Full range"/>
+                    <tag type="string" name="Default value" value="f"/>
                     <tag type="boolean" name="Allow blank" value="false"/>
                     <tag type="boolean" name="Editable" value="true"/>
-                    <tag type="string" name="Display values" value="Full range,None"/>
-                    <tag type="string" name="Passed values" value="f, "/>
+                    <tag type="string" name="Display values" value="Data range,Full range,Data range + tolerance,Equalized"/>
+                    <tag type="string" name="Passed values" value="d,f,t,e"/>
                 </template>
             </tag>
             
-            <tag name="fusion" value="Average">
+            <tag name="fusion" value="a">
                 <template>
                     <tag type="string" name="Type" value="ComboBox"/>
-                    <tag type="string" name="Default value" value="Average"/>
+                    <tag type="string" name="Default value" value="a"/>
                     <tag type="boolean" name="Allow blank" value="false"/>
                     <tag type="boolean" name="Editable" value="true"/>
                     <tag type="string" name="Display values" value="Average,Maximum"/>
