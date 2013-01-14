@@ -1,6 +1,6 @@
 Ext.define('BQ.Preferences.Object', {
     tag : {},
-    dictionary : {},
+    dictionary : {tags:{}},
     status : undefined,
     exists : undefined,
     object : undefined
