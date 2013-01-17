@@ -792,7 +792,7 @@ def bisquik2db(doc= None, parent=None, resource = None, xmlschema=None, replace=
         inputs = [ doc ] 
 
     DBSession.autoflush = False
-    if replace:
+    if replace and resource:
         resource.clear()
     return bisquik2db_internal(inputs, parent, resource, replace)
         
