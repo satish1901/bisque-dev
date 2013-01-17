@@ -611,14 +611,25 @@ class ModuleServer(ServiceController):
 
     @expose(content_type='text/xml')
     @require(not_anonymous())
-    def unregister_engine(self, name, **kw):
+    def unregister_engine(self, engine_uri, module_uri=None, **kw):
         'Remove a service record'
         #set_admin_mode()
-        service = data_service.query('service', name=name)
-        if len(service):
-            log.info ('DELETEing service %s' % etree.tostring(service[0]))
-            data_service.del_resource(service[0])
-            self.load_services()
+        log.debug ("unregister_engine %s %s %s " % (engine_uri, module_uri, kw))
+        engine_uri = engine_uri.rstrip ('/')
+        if module_uri is None:
+            modules = data_service.query('module', value=engine_uri)
+            if len(modules) == 0:
+                abort(403, 'No module found with engine %s' % (engine_uri))
+            elif len(modules)==1:
+                module_uri = modules[0].get ('uri')
+                name = modules[0].get('name')
+            else:
+                abort(403, "multiple modules with uri %s, please specify module_uri" % engine_uri)
+        log.debug ('unregister %s at %s' % (module_uri, engine_uri))
+        module = etree.Element ('module', uri=module_uri, value = '')
+        data_service.update (module)
+        log.info ('UNREGISTERed  %s (%s)' % (name, module_uri))
+        self.load_services()
         return "<resource/>"
 
     def execute(self, module_uri, **kw):
@@ -733,6 +744,7 @@ class EngineResource (Resource):
 
             found_versions.append(m_version)
             if m_version == version:
+                found = True
                 if  ts > m.get('ts'):
                     module_def.set('uri', m.get('uri'))
                     module_def.set('ts', str(datetime.now()))
@@ -741,8 +753,11 @@ class EngineResource (Resource):
                     log.info("Updating new module definition with: " + etree.tostring(m))
                 else:
                     log.debug ("Module on system is newer: remote %s < system %s " % (ts, m.get('ts')))
+            else:
+                # We are examining a different version of the module. 
+                # Should it be disabled?
+                pass 
                     
-                found = True
 
         if not found:
             log.info ("CREATING NEW MODULE: %s " % name)
@@ -779,8 +794,9 @@ class EngineResource (Resource):
             #    log.error ("Could not determine module codeurl during registration")
             #    raise abort(400)
 
+            engine_url = module_def.get('value').rstrip('/')
+            module_def.set ('value', engine_url)
             module = self.register_module(module_def)
-            engine_url = module.get('value') 
             log.info ('Registered %s at %s' % (module.get('name') , engine_url))
             log.debug ('Registered %s' % etree.tostring (module))
 

@@ -909,9 +909,10 @@ def install_server_defaults(params):
         new_install = True
 
     print "Top level site variables are:"
-    for k in sorted(params.keys()):
-        if k in SITE_VARS:
-            print "  %s=%s" % (k,params[k])
+    for k in sorted(SITE_VARS.keys()):
+        if k not in params:
+            params[k] = SITE_VARS[k]
+        print "  %s=%s" % (k,params[k])
 
     if getanswer("Change a site variable", 'Y')!='Y':
         return params
@@ -942,14 +943,15 @@ def install_engine_defaults(params):
         shutil.copy(config_path('who.engine.ini'), config_path('who.ini'))
 
     if not os.path.exists(SITE_CFG):
-        params = install_cfg(SITE_CFG, section=BQ_SECTION, default_cfg=config_path('engine.cfg.default') )
+        params = install_cfg(SITE_CFG, section=BQ_SECTION, default_cfg=config_path('engine.cfg.default'))
         params.update(ENGINE_VARS)
         new_install = True
 
     print "Top level site variables are:"
-    for k in sorted(params.keys()):
-        if k in ENGINE_VARS:
-            print "  %s=%s" % (k,params[k])
+    for k in sorted(ENGINE_VARS.keys()):
+        if k not in params:
+            params[k] = ENGINE_VARS[k]
+        print "  %s=%s" % (k,params[k])
 
     if getanswer("Change a site variable", 'Y')!='Y':
         return params
