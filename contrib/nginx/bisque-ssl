@@ -5,6 +5,13 @@
 # Don't forget to use bq-admin deploy public to 
 # You must EDIT and remove #EDIT before starting Nginx 
 
+####################################
+# Redirect HTTP reques to HTTPS
+server {
+ listen         [::]:80;
+ return 301 https://$host$request_uri;
+}
+
 #####################################
 # Bisque MAIN server 
 server {

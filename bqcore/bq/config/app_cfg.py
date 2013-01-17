@@ -102,7 +102,7 @@ class BisqueAppConfig(AppConfig):
         "after config"
         config['pylons.response_options']['headers'].pop('Cache-Control', None)
         config['pylons.response_options']['headers'].pop('Pragma', None)
-        print "DATA", config.get('use_sqlalchemy'), config.get('bisque.use_database')
+        ##print "DATA", config.get('use_sqlalchemy'), config.get('bisque.use_database')
     
     #kage - patch to use direct cascade
     def add_static_file_middleware(self, app):

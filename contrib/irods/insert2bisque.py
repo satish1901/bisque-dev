@@ -26,15 +26,16 @@ log = logging.getLogger('i2b')
 
 def insert_bisque(path, user, host, credentials):
     try:
+        opener = urllib2.build_opener(
+            urllib2.HTTPRedirectHandler(),
+            urllib2.HTTPHandler(debuglevel=0),
+            urllib2.HTTPSHandler(debuglevel=0))
+
         request = urllib2.Request(host)
         request.add_header('authorization',  'Basic ' + base64.encodestring(credentials).strip())
         resource = "<resource name='%s' value='%s' />" % (os.path.basename(path), path )
         resource = urllib.urlencode({ "user" : user, "irods_resource" : resource })
         request.add_data (resource)
-        opener = urllib2.build_opener(
-            urllib2.HTTPRedirectHandler(),
-            urllib2.HTTPHandler(debuglevel=0),
-            urllib2.HTTPSHandler(debuglevel=0))
         r = opener.open(request)
         response = r.read()
         log.info( 'insert %s -> %s' % (host, response))
@@ -46,7 +47,7 @@ def insert_bisque(path, user, host, credentials):
 if __name__ == "__main__":
     parser = OptionParser (usage="usage: %prog [options] path user")
     parser.add_option('-d', '--debug', action="store_true", default=False, help="log debugging")
-    parser.add_option('-t', '--target', default="%s/import/insert" % (BISQUE_HOST), help="bisque host entry url")
+    parser.add_option('-t', '--target', default="%s/import/insert_inplace" % (BISQUE_HOST), help="bisque host entry url")
     parser.add_option('-c', '--credential', default="admin:%s" % BISQUE_ADMIN_PASS, help="user credentials")
     
 
