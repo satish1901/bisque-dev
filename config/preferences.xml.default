@@ -25,10 +25,10 @@
                         <tag type="string" name="Display values" value="Compact,Grid,Card,Full"/>
                     </template>
                 </tag>                
-                <tag name="Include Public Resources" value="true">
+                <tag name="Include Public Resources" value="false">
                     <template>
                         <tag type="string" name="Type" value="Boolean"/>
-                        <tag type="string" name="Default value" value="true"/>
+                        <tag type="string" name="Default value" value="false"/>
                         <tag type="boolean" name="Allow blank" value="false"/>
                         <tag type="boolean" name="Editable" value="true"/>
                     </template>

@@ -32,27 +32,6 @@ Ext.define('Bisque.TemplateTagger',
         this.testAuth(BQApp.user, false);
     },
     
-    onEdit : function(me)
-    {
-        if (me.field == 'value' && (me.value!=me.record.get('value')))
-        {
-                var tag = me.record.raw;
-                var template = tag.find_children('template');
-                tag.remove_resource(template.uri);
-                
-                //me.record.commit();
-                var newTemplate = Ext.ClassManager.get(this.tagTypes[me.record.get('value')]).getTemplate();
-                tag.addchild(newTemplate);
-        }
-            
-        if (me.record.raw)
-            if (this.autoSave)
-            {
-                this.saveTags(me.record.raw, true);
-                me.record.commit();
-            }
-    },
-    
     importMenu : function()
     {
         var rb = new Bisque.ResourceBrowser.Dialog(
@@ -78,7 +57,10 @@ Ext.define('Bisque.TemplateTagger',
         });
     },
     
-    saveTags : Ext.emptyFn,
+    saveTags : function()
+    {
+        this.store.applyModifications();
+    },
 
     updateQueryTagValues : Ext.emptyFn,
     
@@ -87,8 +69,17 @@ Ext.define('Bisque.TemplateTagger',
     {
         this.callParent(arguments);
         
-        var template = Ext.ClassManager.get(this.tagTypes[me.record.data.value]).getTemplate();
-        me.record.raw.addchild(template);
+        var tag = me.record.raw;
+        var template = tag.find_children('template');
+
+        if ((me.newValues.value != me.originalValues.value) ||  Ext.isEmpty(template))
+        {
+                if (!Ext.isEmpty(template))
+                    tag.remove_resource(template.uri);
+                
+                var newTemplate = Ext.ClassManager.get(this.tagTypes[me.record.get('value')]).getTemplate();
+                tag.addchild(newTemplate);
+        }
     },
 
     populateComboStore : function()
