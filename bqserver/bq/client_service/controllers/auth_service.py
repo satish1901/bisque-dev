@@ -202,8 +202,9 @@ class AuthenticationServer(ServiceController):
             session.delete()
         except:
             log.exception("post_logout")
-
-        redirect(came_from)
+        #redirect(came_from)
+        log.debug ("POST_LOGOUT")
+        redirect(tg.url ('/'))
     
     @expose(content_type="text/xml")
     def credentials(self, **kw):
