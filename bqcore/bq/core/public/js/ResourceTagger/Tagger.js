@@ -670,11 +670,7 @@ Ext.define('Bisque.ResourceTagger',
         
         if(this.store.applyModifications())
         {
-            function ruff(a,b,c,d)
-            {
-                //debugger;
-            }
-            resource.save_(undefined, ruff);
+            resource.save_(undefined);
             if (!silent) BQ.ui.message('', 'Changes were saved successfully!');
         }
         else

@@ -60,20 +60,39 @@ Ext.define('Bisque.Resource.Image',
 
     onMouseEnter : function(e, me)
     {
-		// only 1 frame available
-		if (this.resource.t==1 && this.resource.z==1)
-			this.mmData={isLoadingImage:true};
-		else
-		{			
-			var el = this.getEl();
-			if (this.getData('fetched')==1)
-    			this.mmData =
-    			{
-    				x : el.getX() + el.getOffsetsTo(this.resource.uri)[0],
-    				y : el.getY() + el.getOffsetsTo(this.resource.uri)[1],
-    				isLoadingImage : false
-    			};
-		}
+        Ext.Ajax.request({
+            url         :   this.resource.src + '?meta',
+            callback    :   function(opts, success, response) {
+                                if (response.status>=400)
+                                    BQ.ui.error(response.responseText);
+                                else
+                                    this.onMetaLoaded(response.responseXML);
+                            },
+            scope       :   this,
+        });
+    },
+    
+    onMetaLoaded : function(xmlDoc)
+    {
+        if(!xmlDoc) return;
+        
+        this.resource.t = evaluateXPath(xmlDoc, "//tag[@name='image_num_t']/@value")[0].value;
+        this.resource.z = evaluateXPath(xmlDoc, "//tag[@name='image_num_z']/@value")[0].value;
+
+        // only 1 frame available
+        if (this.resource.t==1 && this.resource.z==1)
+            this.mmData={isLoadingImage:true};
+        else
+        {           
+            var el = this.getEl();
+            if (this.getData('fetched')==1)
+                this.mmData =
+                {
+                    x : el.getX() + el.getOffsetsTo(this.resource.uri)[0],
+                    y : el.getY() + el.getOffsetsTo(this.resource.uri)[1],
+                    isLoadingImage : false
+                };
+        }
     },
 
     onMouseLeave : function()
@@ -660,8 +679,9 @@ Ext.define('Bisque.Resource.Image.Page',
     
         var embeddedTagger = Ext.create('Bisque.ResourceTagger', {
             resource : this.resource.src + '?meta',
-            title : 'Embedded',
-            viewMode : 'ReadOnly',
+            title           :   'Embedded',
+            viewMode        :   'ReadOnly',
+            disableAuthTest :   true
         });
     
         var mexBrowser = new Bisque.ResourceBrowser.Browser(

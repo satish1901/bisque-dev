@@ -62,5 +62,5 @@ Bisque.ResourceTagger.BaseRenderer = function(value, metaData, record)
     if(renderer)
         return renderer.apply(this, arguments);
     else
-        return value;
+        return Ext.String.htmlEncode(value);
 };

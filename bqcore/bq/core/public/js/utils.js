@@ -32,6 +32,19 @@ function callback(obj, method) {
     };
 }
 
+function evaluateXPath(aNode, aExpr)
+{
+    var xpe = new XPathEvaluator();
+    var nsResolver = xpe.createNSResolver(aNode.ownerDocument == null ?
+      aNode.documentElement : aNode.ownerDocument.documentElement);
+    var result = xpe.evaluate(aExpr, aNode, nsResolver, 0, null);
+    var found = [];
+    var res;
+    while (res = result.iterateNext())
+      found.push(res);
+    return found;
+}
+
 // clean up an XML/HTML node by removing all its children nodes
 function removeAllChildren(element) {
     while (element.hasChildNodes()) {
@@ -234,11 +247,14 @@ function xmlrequest(url, cb, method, postdata, errorcb) {
                 var error_str = (error_short + ajaxRequest.responseText);
 
                 var consumed_status = {401 : undefined, 403 : undefined, 404 : undefined,};
-                if (ajaxRequest.status === 401 || ajaxRequest.status === 403) {
-                    error_str = "You do not have permission for this operation\nAre you logged in?\n\n"+url;
-                    //window.location = "/auth_service/login?came_from=" + window.location;
-                } else if (ajaxRequest.status === 404)
+                if (ajaxRequest.status === 401) {
+                    //error_str = "You do not have permission for this operation\nAre you logged in?\n\n"+url;
+                    window.location = "/auth_service/login?came_from=" + window.location;
+                }  else if (ajaxRequest.status === 403) {
+                    error_str = "You do not have permission for this operation:\n" + url;                    
+                } else if (ajaxRequest.status === 404) {
                     error_str = "Requested resource does not exist:\n" + url;
+                }
 
                 if (ajaxRequest.errorcallback) {
                     ajaxRequest.errorcallback({
@@ -246,12 +262,10 @@ function xmlrequest(url, cb, method, postdata, errorcb) {
                         message : error_str,
                         message_short : error_short
                     });
-                } else {
-                    if (ajaxRequest.status === 401) //  || ajaxRequest.status === 403)
-                        window.location = "/auth_service/login?came_from=" + window.location;
-
-                    BQ.ui.error(error_str);
                 }
+                    
+                BQ.ui.error(error_str);
+                
                 //throw(error_str);
             }
         }

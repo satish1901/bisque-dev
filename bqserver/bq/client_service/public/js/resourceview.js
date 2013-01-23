@@ -13,14 +13,8 @@ Ext.define('BQ.ResourceViewer', {
                 uri         :   resourceURL,
                 uri_params  :   {view : 'deep'},
                 cb          :   this.initViewer,
-                errorcb     :   this.onerror
+                errorcb     :   this.onError
             });
-        },
-        
-        onerror: function(message) {
-            BQApp.setLoading(false);
-            BQ.ui.error('Error fetching resource: <br>'+message);
-            this.initViewer();         
         },
         
         initViewer : function(resource) {
@@ -31,6 +25,12 @@ Ext.define('BQ.ResourceViewer', {
                 layoutKey   :   Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Page 
             });
             BQApp.setCenterComponent(resourceCt);
-        }
+        },
+
+        onError: function(error) {
+            BQApp.setLoading(false);
+            BQ.ui.error('Error fetching resource: <br>' + error.message);
+            this.initViewer();         
+        },
     }
 });
