@@ -69,6 +69,7 @@ Ext.define('Bisque.Resource.Image',
                                     this.onMetaLoaded(response.responseXML);
                             },
             scope       :   this,
+            disableCaching  :   false,
         });
     },
     
