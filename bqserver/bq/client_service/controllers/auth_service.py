@@ -160,10 +160,13 @@ class AuthenticationServer(ServiceController):
             redirect(url('/auth_service/login',params=dict(came_from=came_from, __logins=login_counter)))
         userid = request.identity['repoze.who.userid']
         flash(_('Welcome back, %s!') % userid)
+        session['bq_user_id'] = identity.get_user_id()
+        session['bq_admin_id'] = identity.get_admin_id()
         self._begin_mex_session()
         timeout = int (config.get ('bisque.visit.timeout', 0))
         if timeout:
             session['expires']  = datetime.now() + timedelta(minutes=timeout)
+
         session.save()
         redirect(came_from)
 

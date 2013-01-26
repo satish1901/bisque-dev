@@ -379,7 +379,7 @@ Ext.define('BQ.selectors.Resource', {
             var me = this;
             this.selected_resource.getMembers(function (dataset) {
                 // Sometime values are loaded instances (image) and sometimes not!
-                var uri = dataset.values[0].uri || dataset.values[0].value;
+                var uri = dataset.members[0].uri || dataset.values[0].value;
                 BQFactory.request ({ uri : uri,
                                      cb: callback(me, 'onImage'), 
                                      errorcb: callback(me, 'onerror'), 

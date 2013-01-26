@@ -112,10 +112,11 @@ class MexParser(object):
                 input_nodes.append (found)
             else:
                 found = actual_inputs.xpath ('./tag[@name="%s"]'%param_name)
-                log.debug ("PARAM %s=%s" % (param_name, found[0]))
-                input_nodes.append (  copy.deepcopy(found[0]) )
-            if found is None:
-                log.warn ('missing input for parameter %s' % mi.get('value'))
+                if len(found ):
+                    log.debug ("PARAM %s=%s" % (param_name, found[0]))
+                    input_nodes.append (  copy.deepcopy(found[0]) )
+                else:
+                    log.warn ('missing input for parameter %s' % mi.get('value'))
 
         # Add the index 
         for i, node in enumerate(input_nodes):
