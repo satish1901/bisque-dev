@@ -242,7 +242,7 @@ ImgEdit.prototype.keyhandler = function (e) {
     if (unicode in this.keymap) 
         this.keymap[unicode] (e);
 }
-ImgEdit.prototype.delete_item =  function (e){
+ImgEdit.prototype.delete_item1 =  function (e){
     var r = this.viewer.renderer;
     var found = false;
     for (var gi = 0; gi < this.gobjects.length; gi++) {
@@ -261,6 +261,30 @@ ImgEdit.prototype.delete_item =  function (e){
     if (!found) confirm("You must select an object to delete");
     this.dochange();
 }
+
+ImgEdit.prototype.delete_item = function(e) {
+
+    var gobjVisitor = Ext.create('BQGObjectVisitor');
+    gobjVisitor.visit_array(this.gobjects, this);
+
+}
+
+Ext.define('BQGObjectVisitor', {
+    extend  :   BQVisitor,
+    visit   :   function(node, me)
+    {
+        if (node instanceof BQGObject)
+            if (me.viewer.renderer.is_selected(node))
+            {
+                if (node.uri != null && !confirm( "This graphical annotation is registered in the database. \nReally delete?")) return;
+                
+                me.viewer.renderer.hideShape(me.viewer.current_view, node);
+                me.remove_gobject(node);
+                node.delete_();
+            }
+    }
+});
+
 
 ImgEdit.prototype.mousedown = function (e) {
   if (!e) e = window.event;  // IE event model  
