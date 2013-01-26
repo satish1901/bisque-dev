@@ -37,7 +37,10 @@ def upload(dest, filename, userpass, tags=None):
     headers, content = http.post_files (dest, files, userpass = userpass)
     if headers['status'] != '200':
         print "error while copying %s: Server response %s" % (filename, headers['status'])
+        print "saving error information to ", filename , "-transfer.err"
         open(filename + "-transfer.err",'wb').write(content)
+        return
+    return content
     
 
 def main():
@@ -107,7 +110,9 @@ def main():
                         upload(dest, filename, userpass, tags)
         elif os.path.isfile(path):
             if isimagefile (path):
-                upload(dest, path, userpass, tags)
+                response = upload(dest, path, userpass, tags)
+                if options.verbose:
+                    print response
             
             
 

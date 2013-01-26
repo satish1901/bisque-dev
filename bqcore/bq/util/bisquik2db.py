@@ -130,6 +130,7 @@ class XMLNode(list):
         self.tags = []
         self.gobjects = []
         self.children = []
+        self.document = None
     def __iter__(self):
         return itertools.chain(self.tags, self.gobjects, self.children)
     def __len__(self):
@@ -192,7 +193,7 @@ class ResourceFactory(object):
             if tag == 'user':
                 node.user = node
 
-        log.debug  ('factory.new %s -> %s ' % (xmlname, node))
+        log.debug  ('factory.new %s -> %s (%s)' % (xmlname, node, node.document))
         return node
 
     @classmethod
@@ -346,7 +347,7 @@ def model_fields(dbo, baseuri=None):
         # This occurs when the object is a fake DB objects
         # The dictionary is sufficient 
         dbo_fields= dbo.__dict__
-        log.debug ('dbo_fields %s' % dbo_fields)
+    #log.debug ('dbo_fields %s' % dbo_fields)
     for fname in dbo_fields:
         fn = mapping_fields.get(fname, fname)
         if fn is None:
@@ -367,7 +368,6 @@ def model_fields(dbo, baseuri=None):
 def xmlelement(dbo, parent, baseuri, view, **kw):
     'Produce a single XML element based on the DB object and the view'
     xtag = kw.pop('xtag', getattr(dbo, 'resource_type', dbo.xmltag))
-                    
     if not kw:
         kw = model_fields (dbo, baseuri)
         if 'clean' in view:
@@ -379,14 +379,6 @@ def xmlelement(dbo, parent, baseuri, view, **kw):
     elif xtag == 'gobject' and dbo.type in known_gobjects:
         xtag  = dbo.type
         kw.pop('type')
-        
-
-
-        
-
-    #if xtag == 'resource':
-    #    xtag = dbo.resource_type
-
     if parent is not None:
         #log.debug ("etree: " + str(xtag)+ str(kw))
         elem =  etree.SubElement (parent, xtag, **kw)
@@ -398,15 +390,15 @@ def xmlelement(dbo, parent, baseuri, view, **kw):
 def xmlnode(dbo, parent, baseuri, view, **kw):
     'Produce a XML element and children '
     rtype = getattr(dbo, 'resource_type', dbo.xmltag)
+    #log.debug ('xmlnode %s %s ' % (rtype, view))
     #rtype = dbo.xmltag
     if rtype not in ('value', 'vertex'):
         elem = xmlelement (dbo, parent, baseuri, view=view)
         if 'deep' not in view and hasattr(dbo,'resource_value') and dbo.resource_value == None:
             if 'short' not in view:
                 junk = [ xmlnode(x, elem, baseuri, view) for x in dbo.values ]
-        if 'deep' not in view and hasattr(dbo, 'vertices'):
-            if 'short' not in view:
-                junk = [ xmlnode(x, elem, baseuri, view) for x in dbo.vertices ]
+        if 'deep' not in view and 'short' not in view and hasattr(dbo, 'vertices'):
+            junk = [ xmlnode(x, elem, baseuri, view) for x in dbo.vertices ]
         return elem
 
     #if rtype == 'tag':

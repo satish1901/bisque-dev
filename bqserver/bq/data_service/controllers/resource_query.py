@@ -55,13 +55,13 @@ import logging
 import string
 import textwrap
 
-from tg import config, url
+from tg import config, url, session
 from datetime import datetime
 from sqlalchemy.sql import select, func, exists, and_, or_, not_, asc, desc
 from sqlalchemy.orm import Query, aliased
 #from datetime import strptime 
 
-from bq.core.model import DBSession as session
+from bq.core.model import DBSession 
 #from bq.image_service import image_service
 #from bq.notify_service import notify_service
 
@@ -77,6 +77,7 @@ from bq.core.identity import get_user_id, get_admin_id, get_admin
 from bq.core.model import User
 from bq.util.mkdir import _mkdir
 from bq.util.paths import data_path
+from bq.util.converters import asbool
 
 from bq  import image_service
 from bq.client_service.controllers import notify_service
@@ -276,9 +277,10 @@ def prepare_permissions (query, user_id, with_public, action = RESOURCE_READ):
     with_public = public_vals.get(with_public, False)
 
     if not user_id:
-        user_id = get_user_id()
+        user_id = session.get('bq_user_id', None) #get_user_id()
 
-    if user_id == get_admin_id():
+    # don't use None for next test .. if not logged in, the user will be None 
+    if user_id == session.get('bq_admin_id', -1): #get_admin_id()
         log.debug('user (%s) =admin skipping protection filters' % (user_id))
         return query
 
@@ -317,18 +319,19 @@ def prepare_type (resource_type, query = None):
     ## Setup universal query type
     query_expr = None
     if not query:
-        log.debug ("query ype %s" % dbtype)
-        query = session.query(dbtype)
+        log.debug ("query type %s %s" % (name, dbtype))
+        query = DBSession.query(dbtype)
 
     if dbtype == Taggable:
         log.debug ("query resource_type %s" % name)
         #query_expr = (Taggable.tb_id == UniqueName(name).id)
         query_expr = (Taggable.resource_type == name)
-    else:
-        if hasattr(dbtype, 'id'):
-            query_expr = (dbtype.id == Taggable.id)
+    elif not issubclass(dbtype, Taggable) and hasattr(dbtype, 'id'):
+        query_expr = (dbtype.id == Taggable.id)
 
-    return query.filter (query_expr)
+    if query_expr is not None:
+        query = query.filter(query_expr)
+    return query
 
 
 def prepare_parent(resource_type, query, parent_query=None):
@@ -338,7 +341,7 @@ def prepare_parent(resource_type, query, parent_query=None):
         #parent = parent_query.first()
         #log.debug ("subquery " + str(subquery))
         log.debug ( "adding parent of %s %s " % ( name , dbtype))
-        #query = session.query(dbtype).filter (dbtype.resource_parent_id == subquery.c.taggable_id)
+        #query = DBSession.query(dbtype).filter (dbtype.resource_parent_id == subquery.c.taggable_id)
         query  = query.filter(dbtype.resource_parent_id == subquery.c.taggable_id)
         #query  = query.filter(dbtype.resource_parent_id == parent.id)
     elif isinstance(parent_query, Taggable):
@@ -382,9 +385,9 @@ def prepare_order_expr (query, tag_order, **kw):
 
 def count_special(**kw):
     if kw.pop('images2d', None):
-        #vs = session.execute(select ([func.sum (Image.z * Image.t)])).fetchall()
+        #vs = DBSession.execute(select ([func.sum (Image.z * Image.t)])).fetchall()
         #count = vs[0][0]
-        count = session.query(Image).count()
+        count = DBSession.query(Image).count()
         if count:
             return count
     return None
@@ -455,7 +458,7 @@ def tags_special(dbtype, query, params):
         ### Return all tha available tag names for the given superquery
         sq1 = query.with_labels().subquery()
         # Fetch all name on all 'top' level tags from the query
-        sq2 = session.query(GObject).filter(GObject.document_id == sq1.c.taggable_document_id)
+        sq2 = DBSession.query(GObject).filter(GObject.document_id == sq1.c.taggable_document_id)
         sq3 = sq2.distinct(GObject.resource_user_type).order_by(Tag.resource_user_type)
         vsall = sq3.all()
         # for sqlite (no distinct on)
@@ -474,12 +477,12 @@ def tags_special(dbtype, query, params):
         #valtags = tags.alias()
         #tv = UniqueName(tv)
         sq1 = query.with_labels().subquery()
-        #sq2 = session.query(Tag).filter(and_(Tag.parent_id == sq1.c.taggable_id,
+        #sq2 = DBSession.query(Tag).filter(and_(Tag.parent_id == sq1.c.taggable_id,
         #                                     Tag.name_id == tv.id)).with_labels().subquery()
-        #sq2 = session.query(GObject).filter(
+        #sq2 = DBSession.query(GObject).filter(
         #    and_(GObject.resource_user_type == tv,
         #         GObject.document_id == sq1.c.taggable_document_id)).with_labels().subquery()
-        sq2 = session.query(GObject).filter(
+        sq2 = DBSession.query(GObject).filter(
             and_(GObject.resource_user_type == tv,
                  GObject.document_id == sq1.c.taggable_document_id)).distinct(GObject.resource_name).order_by(GObject.resource_name)
         # for sqllite (no distinct on)
@@ -499,7 +502,7 @@ def tags_special(dbtype, query, params):
         ### Return all tha available tag names for the given superquery
         sq1 = query.with_labels().subquery()
         # Fetch all name on all 'top' level tags from the query
-        sq2 = session.query(Tag).filter(Tag.document_id == sq1.c.taggable_document_id)
+        sq2 = DBSession.query(Tag).filter(Tag.document_id == sq1.c.taggable_document_id)
         sq3 = sq2.distinct(Tag.resource_name).order_by(Tag.resource_name)
         vsall = sq3.all()
         # for sqlite (no distinct on)
@@ -517,12 +520,12 @@ def tags_special(dbtype, query, params):
         #valtags = tags.alias()
         #tv = UniqueName(tv)
         sq1 = query.with_labels().subquery()
-        #sq2 = session.query(Tag).filter(and_(Tag.parent_id == sq1.c.taggable_id,
+        #sq2 = DBSession.query(Tag).filter(and_(Tag.parent_id == sq1.c.taggable_id,
         #                                     Tag.name_id == tv.id)).with_labels().subquery()
-        sq2 = session.query(Tag).filter(
+        sq2 = DBSession.query(Tag).filter(
             and_(Tag.resource_name == tv,
                  Tag.document_id == sq1.c.taggable_document_id)).with_labels().subquery()
-        sq2 = session.query(Tag).filter(
+        sq2 = DBSession.query(Tag).filter(
             and_(Tag.resource_name == tv,
                  Tag.document_id == sq1.c.taggable_document_id)).distinct(Tag.resource_value).order_by(Tag.resource_value)
         # for sqllite (no distinct on)
@@ -533,7 +536,7 @@ def tags_special(dbtype, query, params):
         except (IndexError, StopIteration):
             return []
         
-        #vs=session.query(Value.valstr).filter(Value.resource_parent_id == sq2.c.taggable_id).distinct()
+        #vs=DBSession.query(Value.valstr).filter(Value.resource_parent_id == sq2.c.taggable_id).distinct()
         #vsall = vs.all()
         #log.debug ('tag_values = %s' % vsall)
         #q = [ fobject (resource_type='tag', name = tv, value = v[0], resource_value = v[0])
@@ -547,7 +550,7 @@ def tags_special(dbtype, query, params):
         ### Return all tha available tag names for the given superquery
         sq1 = query.with_labels().subquery()
         # Fetch all name on all 'top' level tags from the query
-        sq2 = session.query(dbtype1).filter(dbtype1.document_id == sq1.c.taggable_document_id)
+        sq2 = DBSession.query(dbtype1).filter(dbtype1.document_id == sq1.c.taggable_document_id)
         sq3 = sq2.distinct(dbtype1.resource_name).order_by(dbtype1.resource_name)
         #log.debug ("tag_names query = %s" % sq1)
         q = [ fobject (resource_type=dbtype1.xmltag , name=tg.resource_name, type=tg.resource_user_type ) for tg in sq3]
@@ -559,13 +562,13 @@ def tags_special(dbtype, query, params):
         ### Find tags with name
         ## Equiv .../tag[@name=param]
         sq1 = query.with_labels().subquery()
-        return session.query(Tag).filter(
+        return DBSession.query(Tag).filter(
             and_(Tag.document_id == sq1.c.taggable_document_id,
                  Tag.resource_name == params.pop('name')))
     if params.has_key('value') and dbtype == Tag:
         ### Find tags with name
         ## Equiv .../tag[@value=param]
-        return session.query(Tag).filter(
+        return DBSession.query(Tag).filter(
             and_(Tag.id == Value.resource_parent_id, 
                  Value.valstr == params.pop('value')))
                  
@@ -577,7 +580,7 @@ def tags_special(dbtype, query, params):
         #q  =  and_(Tag.name_id == names.c.id,
         #           names.c.name == params.pop('name'),
         #           Taggable.id == Tag.id)
-        #return session.query(Tag).filter(q)
+        #return DBSession.query(Tag).filter(q)
         
 
 
@@ -588,7 +591,7 @@ def tags_special(dbtype, query, params):
     #              Value.valstr == params.pop('value'),
     #              Taggable.id == Tag.id)
     #    
-    #    return session.query(Tag).filter(q)
+    #    return DBSession.query(Tag).filter(q)
     
     return None
 
@@ -619,7 +622,7 @@ def resource_query(resource_type,
     log.debug ("query %s: %s order %s parent %s attributes %s" % (name, tag_query, tag_order, parent, str(kw)))
 
     query = prepare_type(resource_type)
-    #query = session.query(Taggable)
+    #query = DBSession.query(Taggable)
 
     query = prepare_parent(resource_type, query, parent)
 
@@ -628,7 +631,7 @@ def resource_query(resource_type,
     if dbtype == Value:
         log.debug ("VALUE QUERY %s" % query)
         sq1 = query.with_labels().subquery()
-        query = session.query (Taggable).filter (Taggable.id == sq1.c.values_valobj)
+        query = DBSession.query (Taggable).filter (Taggable.id == sq1.c.values_valobj)
         wpublic = 1
 
     if not kw.pop('welcome', None):
@@ -661,7 +664,7 @@ def resource_query(resource_type,
 
     ## Extra attributes
     if kw.has_key('hidden'):
-        query = query.filter(Taggable.resource_hidden == kw.pop('hidden'))
+        query = query.filter(Taggable.resource_hidden == asbool(kw.pop('hidden')))
     else:
         query = query.filter(Taggable.resource_hidden == None)
 
@@ -734,7 +737,7 @@ def resource_permission(resource, action = RESOURCE_READ, user_id=None, with_pub
 def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth=None,notify=True):
     """View or edit authoization records associated the resource"""
 
-    q = session.query (TaggableAcl).filter_by (taggable_id = resource.id)
+    q = DBSession.query (TaggableAcl).filter_by (taggable_id = resource.id)
     if not user_id:
         user_id = get_user_id()
     # If you are amin or have edit permission then you can see other
@@ -751,7 +754,7 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
     # setup for an edit of auth records
     # 
     if action==RESOURCE_EDIT:
-        owner  = session.query(BQUser).get(user_id)
+        owner  = DBSession.query(BQUser).get(user_id)
         owner_name = owner.name
         owner_email = owner.value
         # Remove the previous ACL elements and replace with the provided xml
@@ -794,7 +797,7 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
 
             if email is not None and action is not None:
                 invite = None
-                user = session.query(BQUser).filter_by(resource_value=unicode(email)).first()
+                user = DBSession.query(BQUser).filter_by(resource_value=unicode(email)).first()
 
                 if  user is None:
                     log.debug ('AUTH: no user %s sending invite' % email)
@@ -805,7 +808,7 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
                     count = 1
                     check_name = name
                     while True:
-                        user = session.query(BQUser).filter_by(
+                        user = DBSession.query(BQUser).filter_by(
                             resource_name=check_name).first()
                         if user is None:
                             name = check_name
@@ -817,8 +820,8 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
                               ( name, email, email))
 
                     tg_user = User(user_name=name, password='bisque', email_address=email, display_name=email)
-                    session.add(tg_user)
-                    session.flush()
+                    DBSession.add(tg_user)
+                    DBSession.flush()
                     log.debug ("AUTH: tg_user = %s" % tg_user)
                     
                     #user = BQUser(create_tg=True,
@@ -827,7 +830,7 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
                     #              email_address = email,
                     #              display_name=name)
 
-                    user = session.query(BQUser).filter_by(resource_name = name).first()
+                    user = DBSession.query(BQUser).filter_by(resource_name = name).first()
                     invite = string.Template(textwrap.dedent(invite_msg)).substitute(
                         common_email,
                         name = name,
@@ -853,7 +856,7 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
                     log.info('new acl for user %s' % user.name)
                     acl.user = user
                     resource.acl.append(acl)
-                    #DBSession.add(acl)
+                    #DBDBSession.add(acl)
 
                 current_shares.append (user)
                 shares.append(acl)
@@ -891,7 +894,7 @@ def resource_delete(resource, user_id=None):
         user_id = get_user_id()
     if resource.owner_id != user_id and user_id != get_admin_id():
         # Remove the ACL only
-        q = session.query (TaggableAcl).filter_by (taggable_id = resource.id)
+        q = DBSession.query (TaggableAcl).filter_by (taggable_id = resource.id)
         q = q.filter (TaggableAcl.user_id == user_id)
         q.delete()
         log.debug('deleting acls reource_owner(%s) delete(%s) %s' % (resource.owner_id, user_id, q))
@@ -900,24 +903,24 @@ def resource_delete(resource, user_id=None):
     # owner so first delete all referneces.
     # ACL, values etc.. 
     # 
-    session.autoflush = False
-    value_count = session.query(Value).filter_by(valobj = resource.id).count()
+    DBSession.autoflush = False
+    value_count = DBSession.query(Value).filter_by(valobj = resource.id).count()
     if value_count:
         resource.resource_hidden = True
         log.debug('hiding resource due to references')
         return
-    q = session.query (TaggableAcl).filter_by (taggable_id = resource.id)
+    q = DBSession.query (TaggableAcl).filter_by (taggable_id = resource.id)
     q.delete()
-    session.delete(resource)
-    session.flush()
+    DBSession.delete(resource)
+    DBSession.flush()
 
     log.debug('resource_delete %s:end' % resource)
 
 
 def resource_types(user_id=None, wpublic=False):
     'return all toplevel resource types available to user'
-    #names = [ x[0] for x in DBSession.query(Taggable.resource_type).distinct().all() ]
-    query = session.query(Taggable).filter_by(parent=None)
+    #names = [ x[0] for x in DBDBSession.query(Taggable.resource_type).distinct().all() ]
+    query = DBSession.query(Taggable).filter_by(parent=None)
     query = prepare_permissions(query, user_id=user_id, with_public=wpublic)
     vsall = query.distinct(Taggable.resource_type).order_by(Taggable.resource_type).all()
     # for sqlite (no distinct on)

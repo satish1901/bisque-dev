@@ -1923,11 +1923,11 @@ BQDataset.prototype.getMembers = function (cb) {
     // we need to make sure we fetched values before we can do this properly
     //this.values = this.values || [];
 
-    if (!this.values) {
+    if (!this.members) {
         BQFactory.request({ 
             uri: this.uri + '/value',  
             cb: callback(this, '_loaded', cb),
-            uri_params: {view:'deep'}
+            //uri_params: {view:'deep'}
         });
     } else {
         if (cb) cb(this);
@@ -1935,7 +1935,7 @@ BQDataset.prototype.getMembers = function (cb) {
     return this;    
 }
 BQDataset.prototype._loaded = function (cb, resource) {
-    this.values = resource.children || [];
+    this.members = resource.children || [];
     if (cb) cb(this);
 }
 
