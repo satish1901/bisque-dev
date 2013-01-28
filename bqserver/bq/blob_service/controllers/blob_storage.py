@@ -72,7 +72,8 @@ try:
     from bq.util import irods_handler
     supported_storage_schemes.append('irods')
 except ImportError:
-    log.warn ("Can't import irods: irods storage not supported")
+    #log.debug ("Can't import irods: irods storage not supported")
+    pass
 
 try:
     import boto
@@ -80,7 +81,8 @@ try:
     from boto.s3.connection import S3Connection, Location
     supported_storage_schemes.append('s3')
 except ImportError:
-    log.warn ("Can't import boto:  S3  Storage not supported")
+    #log.debug ("Can't import boto:  S3  Storage not supported")
+    pass
 
 
 

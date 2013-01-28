@@ -193,7 +193,7 @@ class ResourceFactory(object):
             if tag == 'user':
                 node.user = node
 
-        log.debug  ('factory.new %s -> %s (%s)' % (xmlname, node, node.document))
+        log.debug  ('factory.new %s -> %s document(%s)' % (xmlname, node, node.document))
         return node
 
     @classmethod
