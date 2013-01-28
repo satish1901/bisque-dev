@@ -142,7 +142,7 @@ Ext.define('Bisque.ResourceTagger',
         var type = this.resource.type || this.resource.resource_type;
 
         // Check to see if resource was derived from a template
-        if (type.indexOf('data_service/template')!=-1 && !template)
+        if (type.indexOf('data_service/template')!=-1 && !template && this.rootProperty != 'gobjects')
         {
             BQFactory.request({
                 uri :   this.resource.type+'?view=deep',

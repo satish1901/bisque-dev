@@ -753,21 +753,19 @@ mapper( Value, values,
                             primaryjoin=(values.c.valobj==taggable.c.id),
                             enable_typechecks=False
                             ),
-        'document' : relation(Taggable, uselist=False,lazy=True,
-                              primaryjoin=(values.c.document_id==taggable.c.id),
-                              enable_typechecks=False,
-                              #post_update=True
-                              )
+        #'document' : relation(Taggable, uselist=False,lazy=True,
+        #                      primaryjoin=(values.c.document_id==taggable.c.id),
+        #                      enable_typechecks=False,
+        #                      )
         }
         )
 
 mapper( Vertex, vertices, 
         properties = {
-        'document' : relation(Taggable, uselist=False, lazy=True,
-                              primaryjoin=(vertices.c.document_id==taggable.c.id),
-                              enable_typechecks=False,
-#                              post_update=True
-                              )
+        #'document' : relation(Taggable, uselist=False, lazy=True,
+        #                      primaryjoin=(vertices.c.document_id==taggable.c.id),
+        #                      enable_typechecks=False,
+        #                      )
         }
         )
 mapper(TaggableAcl, taggable_acl,)
@@ -822,38 +820,38 @@ mapper( Taggable, taggable,
                                         taggable.c.resource_type == 'tag')),
 
 
-    'document' : relation(Taggable, uselist=False,
-                          primaryjoin=(taggable.c.document_id==taggable.c.id),
-                          enable_typechecks=False,
-                          post_update=True
-                          )
-
-
-     #'docnodes': relation(Taggable, lazy=True, 
-     #                     cascade = "all, delete-orphan", passive_deletes=True,
-     #                     enable_typechecks = False, 
-     #                     post_update=True,
-     #                     primaryjoin = (taggable.c.id == taggable.c.document_id),
-     #                     backref = backref('document', post_update=True, 
-     #                                       enable_typechecks=False, remote_side=[taggable.c.id]),
-     #                     ),
-
-    # 'docvalues' : relation (Value, lazy=True, 
-    #                      cascade = "delete-orphan", passive_deletes=True,
-    #                      enable_typechecks = False, 
-    #                      post_update=True,
-    #                      primaryjoin = (taggable.c.id == values.c.document_id),
-    #                      backref = backref('document', post_update=True, 
-    #                                        enable_typechecks=False, remote_side=[taggable.c.id]),
+    #'document' : relation(Taggable, uselist=False,
+    #                      primaryjoin=(taggable.c.document_id==taggable.c.id),
+    #                      enable_typechecks=False,
+    #                      post_update=True
     #                      ),
-    # 'docvertices' : relation (Vertex, lazy=True, 
-    #                      cascade = "delete-orphan", passive_deletes=True,
-    #                      enable_typechecks = False, 
+
+
+     'docnodes': relation(Taggable, lazy=True, 
+                          cascade = "all, delete-orphan", passive_deletes=True,
+                          enable_typechecks = False, 
+                          post_update=True,
+                          primaryjoin = (taggable.c.id == taggable.c.document_id),
+                          backref = backref('document', post_update=True, 
+                                            enable_typechecks=False, remote_side=[taggable.c.id]),
+                          ),
+
+     'docvalues' : relation (Value, lazy=True, 
+                          cascade = "all, delete-orphan", passive_deletes=True,
+                          enable_typechecks = False, 
+                          primaryjoin = (taggable.c.id == values.c.document_id),
     #                      post_update=True,
-    #                      primaryjoin = (taggable.c.id == vertices.c.document_id),
-    #                      backref = backref('document', post_update=True, 
-    #                                        enable_typechecks=False, remote_side=[taggable.c.id]),
-    #                       ),
+                          backref = backref('document', #post_update=True, 
+                                            enable_typechecks=False, remote_side=[taggable.c.id]),
+                          ),
+     'docvertices' : relation (Vertex, lazy=True, 
+                          cascade = "all, delete-orphan", passive_deletes=True,
+                          enable_typechecks = False, 
+                          primaryjoin = (taggable.c.id == vertices.c.document_id),
+    #                      post_update=True,
+                          backref = backref('document', #post_update=True, 
+                                            enable_typechecks=False, remote_side=[taggable.c.id]),
+                           ),
     }
         )
 

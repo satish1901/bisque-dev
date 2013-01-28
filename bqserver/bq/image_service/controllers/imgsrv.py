@@ -364,7 +364,7 @@ class InfoService(object):
         pass
     def action(self, image_id, data_token, arg):
 
-        info = self.server.getImageInfo(id=image_id)
+        info = self.server.getImageInfo(ident=image_id)
 
         #response = etree.Element ('response')
         image    = etree.Element ('resource')
@@ -638,7 +638,7 @@ class SliceService(object):
                 data_token.setHtmlErrorNotSupported()
                 return data_token
 
-            info = self.server.getImageInfo(id=image_id)
+            info = self.server.getImageInfo(ident=image_id)
 
             # extract pages from 5D image
             if z1==z2==0: z1=1; z2=int(info['zsize'])
@@ -1516,7 +1516,7 @@ class BioFormatsService(object):
         if not os.path.exists(ofile) or not imgcnv.supported(ofile):
             return data_token
 
-        if bfinfo is None: bfinfo = self.server.getImageInfo(id=image_id)
+        if bfinfo is None: bfinfo = self.server.getImageInfo(ident=image_id)
         data_token.dims = bfinfo
         data_token.setImage(ofile, format=default_format)
         return data_token
@@ -1914,16 +1914,16 @@ class ImageServer(object):
         xmlstr = self.setFileInfo(id=id, filename=filename, **dict(pars))
         return xmlstr
 
-    def getImageInfo(self, id=None, data_token=None, filename=None):
-        if id==None and filename==None: return {}
-        if filename==None: filename = self.imagepath(id)
+    def getImageInfo(self, ident=None, data_token=None, filename=None):
+        if ident==None and filename==None: return {}
+        if filename==None: filename = self.imagepath(ident)
 
         return_token = data_token is not None
         infofile = self.getOutFileName( filename, '.info' )
 
         info = {}
         if os.path.exists(infofile):
-            info = self.getFileInfo(id=id, filename=filename)
+            info = self.getFileInfo(id=ident, filename=filename)
         else:
             # If file info is not cached, get it and cache!
 
@@ -1932,20 +1932,21 @@ class ImageServer(object):
                 info = imgcnv.info(filename)
 
             # if not decoded try bioformats
-            original = self.originalFileName(id)
-            if (not 'width' in info) and (bioformats.supported(filename, original)):
-                if data_token is None: data_token = ProcessToken()
-                data_token.setImage(filename, format=default_format)
-                data_token = self.services['bioformats'].action (id, data_token, '')
-                if not data_token.dims is None:
-                    info = data_token.dims
+            if ident is not None:
+                original = self.originalFileName(ident)
+                if (not 'width' in info) and (bioformats.supported(filename, original)):
+                    if data_token is None: data_token = ProcessToken()
+                    data_token.setImage(filename, format=default_format)
+                    data_token = self.services['bioformats'].action (ident, data_token, '')
+                    if not data_token.dims is None:
+                        info = data_token.dims
 
             if not 'filesize' in info:
                 fsb = os.path.getsize(filename)
                 info['filesize'] = str(fsb)
 
             if 'width' in info:
-                self.setImageInfo( id=id, filename=filename, info=info )
+                self.setImageInfo( id=ident, filename=filename, info=info )
 
         if not 'filesize' in info:
             fsb = os.path.getsize(filename)
@@ -2143,7 +2144,7 @@ class ImageServer(object):
             if len(query)>0:
                 # this will pre-convert the image if it's not supported by the imgcnv
                 # and also set the proper dimensions info
-                data_token = self.getImageInfo(id=ident, data_token=data_token)
+                data_token = self.getImageInfo(ident=ident, data_token=data_token)
 
                 # dima: this call seems ambiguous now, but some bugs appeared, call it anyways with a small test
                 #if 'width' not in data_token.dims:

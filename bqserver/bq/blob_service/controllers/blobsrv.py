@@ -413,8 +413,9 @@ class BlobServer(RestController, ServiceMixin):
         log.warn("blobsExist not implemented")
         return blobsfound
 
-    def originalFileName(self, id): 
-        return self.getBlobFileName(id) 
+    def originalFileName(self, ident): 
+        log.debug ('originalFileName: deprecated %s', ident)
+        return self.getBlobFileName(ident) 
         
     def fileExists(self, id):
         if id==None: return False      
