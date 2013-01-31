@@ -21,7 +21,8 @@ function [img, dim, res] = read_stack(filename)
   sz = size(im);
   
   dim = struct();
-  dim.c = sz(3);
+  dim.c = 1;
+  if size(sz)>2, dim.c = sz(3); end
   dim.z = pages;
   dim.t = 1;
   
@@ -31,7 +32,7 @@ function [img, dim, res] = read_stack(filename)
   res.z = xyzr(3);
   res.t = 0;
 
-  img = zeros(sz(1), sz(2), sz(3), pages, class(im));
+  img = zeros(sz(1), sz(2), dim.c, pages, class(im));
   if length(sz)==2,
      img(:,:,1) = im;
   else

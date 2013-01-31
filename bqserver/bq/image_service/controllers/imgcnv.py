@@ -67,17 +67,16 @@ def supported(ifnm):
     return supported.startswith('yes')
 
 
-def convert(ifnm, ofnm, fmt, extra=''):
+def convert(ifnm, ofnm, fmt, extra=[]):
     '''return list of output filenames'''
     with Locks(ifnm, ofnm) as l:
         if not l.locked:
             return 
 
         command = [IMGCNV, '-i', ifnm, '-o', ofnm, '-t', fmt]
-        command.extend (extra.split())
+        command.extend (extra)
 
-        command_line = " ".join(command) 
-        log.debug('IMGCNV: %s ' % command_line)
+        log.debug('IMGCNV: %s'%(" ".join(command)))
         retcode = call (command)
         if retcode != 0:
             log.debug ("IMGCNV:  returned %s" % retcode)
