@@ -170,8 +170,7 @@ def convert(ifnm, ofnm, original=None, series=-1):
             command = [BFCONVERT, ifnm, ofnm]
         else:
             command = [BFCONVERT, '-map', ifnm, original, ofnm]
-        command.append('-bigtiff')
-        command.append('-compression LZW')            
+        command.extend(['-bigtiff', '-compression', 'LZW'])            
         if series>=0:
             command.append('-series')
             command.append('%s'%series)
