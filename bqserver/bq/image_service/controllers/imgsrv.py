@@ -660,7 +660,7 @@ class SliceService(object):
             pages_str = ",".join([str(p) for p in pages])
 
             # init parameters
-            params = '-multi -page '+str(pages_str)
+            params = ['-multi', '-page', str(pages_str)]
 
             if not (x1==x2) or not (y1==y2):
                 x1s = ''; y1s = ''; x2s = ''; y2s = ''
@@ -670,9 +670,8 @@ class SliceService(object):
                 if not (y1==y2):
                     if y1 > 0: y1s = str(y1-1)
                     if y2 > 0: y2s = str(y2-1)
-                params = params + ' -roi %s,%s,%s,%s' % (x1s,y1s,x2s,y2s)
-
-            log.debug( 'Slice service params: '+params )
+                params.extend(['-roi', '%s,%s,%s,%s' % (x1s,y1s,x2s,y2s)])
+            log.debug( 'Slice service params: %s'%params )
             imgcnv.convert(ifname, ofname, fmt=default_format, extra=params )
 
         try:
@@ -747,15 +746,15 @@ class FormatService(object):
 
             if not os.path.exists(ofile):
                 # allow multiple pages to be saved in MP format
-                extra_opt = '-page 1'
+                extra_opt = ['-page', '1']
                 if imgcnv.canWriteMultipage( fmt ):
-                    extra_opt = '-multi'
+                    extra_opt = ['-multi']
 
                 if len(args) > 0:
-                    extra_opt += ' -options "' + (" ").join(args) + '"'
+                    extra_opt.extend( ['-options', (" ").join(args)])
                 else:
                     if fmt == 'jpg' or fmt == 'jpeg':
-                      extra_opt += ' -options "quality 95 progressive yes"'
+                      extra_opt.extend(['-options', 'quality 95 progressive yes'])
 
                 imgcnv.convert(ifile, ofile, fmt, extra=extra_opt)
 
@@ -845,7 +844,7 @@ class ResizeService(object):
 
         if not os.path.exists(ofile):
             size_arg = '-resize '+str(size[0])+','+str(size[1])+','+method+aspectRatio
-            imgcnv.convert( ifile, ofile, fmt=default_format, extra='-multi '+size_arg)
+            imgcnv.convert( ifile, ofile, fmt=default_format, extra=['-multi',size_arg])
 
         try:
             info = self.server.getImageInfo(filename=ofile)
@@ -904,15 +903,15 @@ class ThumbnailService(object):
 
         if not os.path.exists(ofile):
             log.debug('Service - Thumbnail: ' + ofile)
-            conv_arg = imgsrv_thumbnail_cmd
-            try:
-                if int(data_token.dims['depth']) == 8:
-                    conv_arg = conv_arg.replace('-depth 8,d ', '')
-            except (KeyError, ValueError):
-                    pass
-            size_arg = ' -resize '+str(size[0])+','+str(size[1])+','+method+',AR'
-            opts_arg = ' -options "quality 95 progressive yes"'
-            imgcnv.convert( ifile, ofile, fmt='jpeg', extra=conv_arg+size_arg+opts_arg)
+            conv_arg = imgsrv_thumbnail_cmd.split(' ')
+#            try:
+#                if int(data_token.dims['depth']) == 8:
+#                    conv_arg = conv_arg.replace('-depth 8,d ', '')
+#            except (KeyError, ValueError):
+#                    pass
+            conv_arg.extend([ '-resize', '%s,%s,%s,AR'%(size[0],size[1],method)])
+            conv_arg.extend([ '-options', 'quality 95 progressive yes'])
+            imgcnv.convert( ifile, ofile, fmt='jpeg', extra=conv_arg)
 
         try:
             info = self.server.getImageInfo(filename=ofile)
@@ -960,6 +959,7 @@ class DefaultService(object):
         log.debug('Default Preview service: ' + ifile + ' to '+ ofile )
 
         if not os.path.exists(ofile):
+            extra = imgsrv_default_cmd.split(' ')
             try:
                 # define channels in C form and then add 1 to start at 1
                 chan_r = 0; chan_g = 1; chan_b = 2
@@ -977,10 +977,11 @@ class DefaultService(object):
                     chan_r = self.getTagValueInt( image, 'display_channel_red', -1)
                     chan_g = self.getTagValueInt( image, 'display_channel_green', -1)
                     chan_b = self.getTagValueInt( image, 'display_channel_blue', -1)
-
-                imgcnv.convert( ifile, ofile, fmt=default_format, extra=imgsrv_default_cmd+' -remap %d,%d,%d'%(chan_r+1, chan_g+1, chan_b+1) )
+                extra.extend(['-remap', '%d,%d,%d'%(chan_r+1, chan_g+1, chan_b+1)])
+                imgcnv.convert( ifile, ofile, fmt=default_format, extra=extra )
             except:
-                imgcnv.convert( ifile, ofile, fmt=default_format, extra=imgsrv_default_cmd+' -display ')
+                extra.extend(['-display'])
+                imgcnv.convert( ifile, ofile, fmt=default_format, extra=extra)
 
         data_token.dims['format'] = default_format
         data_token.setImage(fname=ofile, format=default_format)
@@ -1021,8 +1022,8 @@ class RoiService(object):
         log.debug('ROI service: ' + ifile + ' to ' + ofile)
 
         if not os.path.exists(ofile):
-            params = ' -roi %d,%d,%d,%d' % (x1-1,y1-1,x2-1,y2-1)
-            imgcnv.convert( ifile, ofile, fmt=default_format, extra='-multi '+params)
+            params = ['-multi', '-roi', '%d,%d,%d,%d' % (x1-1,y1-1,x2-1,y2-1)]
+            imgcnv.convert( ifile, ofile, fmt=default_format, extra=params)
 
         try:
             info = self.server.getImageInfo(filename=ofile)
@@ -1056,11 +1057,11 @@ class RemapService(object):
         log.debug('Remap service: ' + ifile + ' to '+ ofile +' with [' + arg + ']')
 
         if arg == 'display':
-            arg = '-multi -display'
+            arg = ['-multi' '-display']
         elif arg=='gray' or arg=='grey':
-            arg = '-multi -fusegrey'
+            arg = ['-multi', '-fusegrey']
         else:
-            arg = '-multi -remap '+arg
+            arg = ['-multi', '-remap', arg]
 
         if not os.path.exists(ofile):
             imgcnv.convert(ifile, ofile, fmt=default_format, extra=arg)
@@ -1100,16 +1101,16 @@ class FuseService(object):
         log.debug('Fuse service: %s to %s with [%s:%s]'%(ifile, ofile, arg, method))
 
         if arg == 'display':
-            arg = '-multi -fusemeta'
+            arg = ['-multi', '-fusemeta']
         else:
-            arg = '-multi -fusergb %s'%(arg)
+            arg = ['-multi', '-fusergb', arg]
             
         if method != 'a':
-            arg += ' -fusemethod %s'%(method)
+            arg.extend(['-fusemethod', method])
             ofile += '_%s'%(method)
             
         if data_token.histogram is not None:
-            arg += ' -ihst %s'%(data_token.histogram)            
+            arg.extend(['-ihst', data_token.histogram])            
 
         if not os.path.exists(ofile):
             imgcnv.convert(ifile, ofile, fmt=default_format, extra=arg)
@@ -1122,7 +1123,7 @@ class FuseService(object):
             pass
 
         data_token.setImage(fname=ofile, format=default_format)
-        #data_token.histogram = None # fusion ideally should not be changing image histogram
+        data_token.histogram = None # fusion ideally should not be changing image histogram
         return data_token        
 
 class DepthService(object):
@@ -1173,9 +1174,9 @@ class DepthService(object):
             ohist = self.server.getOutFileName(ifile, '.histogram_depth_' + arg)
 
         if not os.path.exists(ofile):
-            extra='-multi -depth '+arg
+            extra=['-multi', '-depth', arg]
             if data_token.histogram is not None:
-                extra += ' -ihst %s -ohst %s'%(data_token.histogram, ohist)
+                extra.extend([ '-ihst', data_token.histogram, '-ohst', ohist])
             imgcnv.convert(ifile, ofile, fmt=default_format, extra=extra)
 
         try:
@@ -1242,19 +1243,21 @@ class TileService(object):
         ofname    = '%s_%.3d_%.3d_%.3d.tif' % (base_name, l, tnx, tny)
         test_tile = '%s_%.3d_%.3d_%.3d.tif' % (base_name, 0, 0, 0)
         hist_name = self.server.getOutFileName( '%s.tiles/%s_histogram'%(ifname, tsz), '' )
+        #hstl_name = '%s_lock'%(hist_name)
+        hstl_name = hist_name
 
         # tile the image
         tiles_name = '%s.tif' % (base_name)
         if not os.path.exists(hist_name):
-            with imgcnv.Locks(ifname, hist_name) as l:
+            with imgcnv.Locks(ifname, hstl_name) as l:
                 if l.locked:
-                    params = '-tile %d -ohst %s' % (tsz, hist_name)
+                    params = ['-tile', str(tsz), '-ohst', hist_name]
                     log.debug('Generate tiles: from %s to %s with %s' % (ifname, tiles_name, params) )
                     imgcnv.convert(ifname, tiles_name, fmt=default_format, extra=params )
                 else:
                     log.debug('IS locking failed for %s'%(hist_name) )
 
-        with imgcnv.Locks(hist_name) as l:
+        with imgcnv.Locks(hstl_name) as l:
             log.debug("IS Tile RL %s"%(hist_name))
             pass
         if os.path.exists(ofname):
@@ -1296,7 +1299,7 @@ class ProjectMaxService(object):
         log.debug('ProjectMax service: ' + ifile + ' to '+ ofile )
 
         if not os.path.exists(ofile):
-            imgcnv.convert(ifile, ofile, fmt=default_format, extra=' -projectmax')
+            imgcnv.convert(ifile, ofile, fmt=default_format, extra=['-projectmax'])
 
         data_token.dims['pages']  = '1'
         data_token.dims['zsize']  = '1'
@@ -1322,7 +1325,7 @@ class ProjectMinService(object):
         log.debug('ProjectMin service: ' + ifile + ' to '+ ofile )
 
         if not os.path.exists(ofile):
-            imgcnv.convert(ifile, ofile, fmt=default_format, extra=' -projectmin')
+            imgcnv.convert(ifile, ofile, fmt=default_format, extra=['-projectmin'])
 
         data_token.dims['pages']  = '1'
         data_token.dims['zsize']  = '1'
@@ -1348,7 +1351,7 @@ class NegativeService(object):
         log.debug('NegativeService service: ' + ifile + ' to '+ ofile )
 
         if not os.path.exists(ofile):
-            imgcnv.convert(ifile, ofile, fmt=default_format, extra=' -negative -multi')
+            imgcnv.convert(ifile, ofile, fmt=default_format, extra=['-negative', '-multi'])
 
         data_token.dims['format'] = default_format
         data_token.setImage(fname=ofile, format=default_format)
@@ -1374,7 +1377,7 @@ class SampleFramesService(object):
         log.debug('SampleFramesService: ' + ifile + ' to '+ ofile +' with [' + arg + ']')
 
         if not os.path.exists(ofile):
-            imgcnv.convert(ifile, ofile, fmt=default_format, extra='-multi -sampleframes '+arg)
+            imgcnv.convert(ifile, ofile, fmt=default_format, extra=['-multi', '-sampleframes', arg])
 
         try:
             info = self.server.getImageInfo(filename=ofile)
@@ -1408,7 +1411,7 @@ class FramesService(object):
         log.debug('FramesService: ' + ifile + ' to '+ ofile +' with [' + arg + ']')
 
         if not os.path.exists(ofile):
-            imgcnv.convert(ifile, ofile, fmt=default_format, extra='-multi -page '+arg)
+            imgcnv.convert(ifile, ofile, fmt=default_format, extra=['-multi', '-page', arg])
 
         try:
             info = self.server.getImageInfo(filename=ofile)
@@ -1461,7 +1464,7 @@ class RotateService(object):
                 return data_token
 
             params = '-rotate %d' % (ang)
-            imgcnv.convert( ifile, ofile, fmt=default_format, extra='-multi '+params)
+            imgcnv.convert( ifile, ofile, fmt=default_format, extra=['-multi', params])
 
         try:
             info = self.server.getImageInfo(filename=ofile)
@@ -1685,7 +1688,7 @@ class CreateImageService(object):
 
         for zi in range(z):
             for ti in range(t):
-                imgcnv.convert(ifname, ofname+'0-0,0-0,%d-%d,%d-%d'%(zi,zi,ti,ti), fmt=default_format, extra='-create '+creastr )
+                imgcnv.convert(ifname, ofname+'0-0,0-0,%d-%d,%d-%d'%(zi,zi,ti,ti), fmt=default_format, extra=['-create', creastr] )
 
         return data_token
 
@@ -1754,7 +1757,7 @@ class SetSliceService(object):
         ofname = self.server.getOutFileName( gfname, '.%d-%d,%d-%d,%d-%d,%d-%d' % (x1+1,x2+1,y1+1,y2+1,z1+1,z2+1,t1+1,t2+1) )
 
         log.debug('Slice service: to ' +  ofname )
-        imgcnv.convert(ifname, ofname, fmt=default_format, extra='-page 1' )
+        imgcnv.convert(ifname, ofname, fmt=default_format, extra=['-page', '1'] )
 
         data_token.setImage(ofname, format=default_format)
         return data_token
@@ -1791,7 +1794,7 @@ class CloseImageService(object):
                 ifname = self.server.getOutFileName( self.server.imagepath(image_id), '.0-0,0-0,%d-%d,%d-%d'%(zi,zi,ti,ti) )
                 log.debug('Close service: ' +  ifname )
                 ifiles.append(ifname)
-        imgcnv.convert_list(ifiles, ofname, fmt=default_format, extra='-multi' )
+        imgcnv.convert_list(ifiles, ofname, fmt=default_format, extra=['-multi'] )
 
         data_token.setImage(ofname, format=default_format)
         return data_token
