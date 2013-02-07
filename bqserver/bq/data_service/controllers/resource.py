@@ -331,11 +331,11 @@ def parse_http_date(timestamp_string):
     if timestamp_string is None: return None
     test = timestamp_string[3]
     if test == ',':
-        format = "%a, %d %b %Y %H:%M:%S GMT"
+        format = "%a, %d %b %Y %H:%M:%S %Z"
     elif test == ' ':
         format = "%a %d %b %H:%M:%S %Y"
     else:
-        format = "%A, %d-%b-%y %H:%M:%S GMT"
+        format = "%A, %d-%b-%y %H:%M:%S %Z"
     return datetime(*strptime(timestamp_string, format)[:6])
 
 
