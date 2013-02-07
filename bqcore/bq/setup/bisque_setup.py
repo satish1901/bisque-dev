@@ -854,14 +854,13 @@ def install_bioformats(params):
     if getanswer ("Install bioformats", "Y",
                   "Bioformats can be used as a backup to read many image file types") == "Y":
 
+        #bio_files = [ 'bio-formats.jar', 'loci-common.jar', 'mdbtools-java.jar', 'ome-io.jar',
+        #              'poi-loci.jar', 'jai_imageio.jar', 'loci_tools.jar', 'metakit.jar', 'ome-xml.jar' ]
 
-        bio_files = [ 'bio-formats.jar', 'loci-common.jar', 'mdbtools-java.jar', 'ome-io.jar',
-                      'poi-loci.jar', 'jai_imageio.jar', 'loci_tools.jar', 'metakit.jar', 'ome-xml.jar' ]
-
-        for bf in bio_files:
-            copy_link (os.path.join(BQDEPOT, bf), BQBIN)
+        #for bf in bio_files:
+        #    copy_link (os.path.join(BQDEPOT, bf), BQBIN)
              
-        biozip = zipfile.ZipFile (os.path.join(BQDEPOT, 'bftools.zip'))
+        biozip = zipfile.ZipFile (os.path.join(BQDEPOT, 'bioformats-pack.zip'))
         for fname in  biozip.namelist():
             if fname[-1] == '/':  # skip dirs
                 continue
@@ -873,7 +872,8 @@ def install_bioformats(params):
             f = open(dest, 'w')
             f.write(data)
             #os.fchmod (f, os.fstat(f) | stat.S_IXUSR)  # User exec
-            os.chmod (dest, os.fstat(f.fileno()).st_mode | stat.S_IXUSR)  # User exec
+            if not fname.endswith ('jar'):
+                os.chmod (dest, os.fstat(f.fileno()).st_mode | stat.S_IXUSR)  # User exec
             f.close()
                 
         # python >2.6
