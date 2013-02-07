@@ -68,6 +68,10 @@ log = logging.getLogger('bq.api.comm')
 class BQException(Exception):
     "BQException"
 
+class BQCommError(BQException):
+    def __init__(self, status, headers):
+        self.status = status
+        self.headers = headers
 
 class BQServer(object):
     """ A reference to Bisque server
@@ -117,6 +121,9 @@ class BQServer(object):
         header, content = self.http.request(url, headers = headers)
         if 'xml' in header.get('content-type', ''):
             log.debug("FETCH resp %s, content=%s..." % (header, content[:60]))
+        if header.status != 200:
+            raise BQCommError(header.status, header)
+
         return content
 
     def post(self, url, content=None, files=None, headers=None, method="POST"):
@@ -126,7 +133,8 @@ class BQServer(object):
                                             headers = headers,
                                             body=content,
                                             method=method)
-
+        if header.status != 200:
+            raise BQCommError(header.status, header)
         log.debug("POST resp %s" % header)
         return content
 
@@ -189,25 +197,16 @@ class BQSession(object):
         url = self.c.prepare_url (url, **params)
 
         log.debug('fetchxml %s ' % url)
-        try:
-            content =  self.c.fetch (url, headers = {'Content-Type':'text/xml', 'Accept':'text/xml'})
-            return etree.XML(content)
-        except:
-            log.exception('during fetch of %s %s' % (url, params))
-            return None
+        content =  self.c.fetch (url, headers = {'Content-Type':'text/xml', 'Accept':'text/xml'})
+        return etree.XML(content)
     
     def postxml(self, url, xml, method="POST", **params):
         log.debug('postxml %s  content %s ' % (url, xml))
         content = etree.tostring(xml, pretty_print=True)
         url = self.c.prepare_url(url, **params)
-        response = None
-        try:
-            response =  self.c.post(url, content=content, method=method,
-                                   headers = {'Content-Type':'text/xml', 'Accept': 'text/xml' })
-            return etree.XML(response)
-        except:
-            log.exception('during post %s of %s -> %s ' % (url, content, response))
-        return response
+        response =  self.c.post(url, content=content, method=method,
+                                headers = {'Content-Type':'text/xml', 'Accept': 'text/xml' })
+        return etree.XML(response)
 
 
     def service_url(self, service_type, path = "" , query = None):
@@ -292,8 +291,15 @@ class BQSession(object):
     def finish_mex(self, status = "FINISHED", tags=[], gobjects=[], children=[], msg=None ):
         if msg is not None:
             tags.append( { 'name':'message', 'value': msg })
-        return self.update_mex(status, tags=tags, gobjects=gobjects, children=children, reload=False)
-                          
+        try:
+            return self.update_mex(status, tags=tags, gobjects=gobjects, children=children, reload=False)
+        except BQCommError, ce:
+            log.error ("Problem during finish mex %s" % ce.headers)
+            try:
+                return self.update_mex (status='FAILED',tags= [  { 'name':'error_message', 'value':  "Error during saving (status %s)" % ce.status } ] )
+            except:
+                log.exception ("Cannot finish/fail Mex ")
+                    
     def fail_mex (self, msg):
         if msg is not None:
             tags = [  { 'name':'error_message', 'value': msg } ] 
@@ -312,20 +318,24 @@ class BQSession(object):
         """
         #if view not in url:
         #    url = url + "?view=%s" % view
-        xml = self.fetchxml(url, **params)
-        if xml.tag == "response":
-            xml = xml[0]
-        bqo  = fromXml(xml, session=self)
-        return bqo
+        try:
+            xml = self.fetchxml(url, **params)
+            if xml.tag == "response":
+                xml = xml[0]
+            bqo  = fromXml(xml, session=self)
+            return bqo
+        except BQCommError, ce:
+            return None
 
     def save(self, bqo, url=None, **kw):
-        if url is None and bqo.uri:
-            url = bqo.uri
-        xml =  toXml(bqo)
-        content = self.postxml(url, xml, **kw)
-        if content is not None:
+        try:
+            if url is None and bqo.uri:
+                url = bqo.uri
+            xml =  toXml(bqo)
+            content = self.postxml(url, xml, **kw)
             return fromXml(content, session=self)
-        return None
+        except BQCommError, ce:
+            return None
 
 
 

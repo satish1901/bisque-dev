@@ -72,7 +72,7 @@ try:
     from bq.util import irods_handler
     supported_storage_schemes.append('irods')
 except ImportError:
-    #log.debug ("Can't import irods: irods storage not supported")
+    #log.warn ("Can't import irods: irods storage not supported")
     pass
 
 try:
@@ -81,7 +81,7 @@ try:
     from boto.s3.connection import S3Connection, Location
     supported_storage_schemes.append('s3')
 except ImportError:
-    #log.debug ("Can't import boto:  S3  Storage not supported")
+    #log.warn ("Can't import boto:  S3  Storage not supported")
     pass
 
 
@@ -123,7 +123,7 @@ class BlobStorage(object):
 
 
 def move_file (fp, newpath):
-    if hasattr(fp, 'name') and os.path.isfile(fp.name):
+    if os.name != 'nt' and hasattr(fp, 'name') and os.path.isfile(fp.name):
         oldpath = os.path.abspath(fp.name)
         fp.close()# Windows requires this.
         shutil.move (oldpath, newpath)

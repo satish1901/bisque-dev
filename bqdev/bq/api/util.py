@@ -65,6 +65,63 @@ def make_qs(pd):
     return "&".join(query)
 
 
+def save_blob(session,  localfile, resource=None):
+    """put a local image on the server and return the URL
+    to the METADATA XML record
+
+    @param session: the local session
+    @param image: an BQImage object
+    @param localfile:  a file-like object or name of a localfile
+    @return XML content  when upload ok
+    """
+    url = session.service_url('import', 'transfer')
+    if isinstance(localfile, basestring):
+        localfile = open(localfile,'rb')
+
+    with localfile:
+        fields = { 'file' : localfile}
+        if resource is not None:
+            fields['file_resource'] = ET.tostring (resource)
+        body, headers = poster.encode.multipart_encode(fields)
+        content = session.c.post(url, headers=headers, content=body)
+        try:
+            rl = ET.XML (content)
+            return rl[0]
+        except ET.ParseError,e :
+            pass
+
+        return None
+
+
+def fetch_blob(session, uri, dest=None, uselocalpath=False):
+    """fetch original image locally as tif
+    @param session: the bqsession
+    @param uri: resource image uri 
+    @param dest: a destination directory
+    @param uselocalpath: true when routine is run on same host as server
+    """
+    image = session.load (uri)
+    name = image.name or next_name ("blob")
+    
+    query = None
+    if uselocalpath:
+        # Skip 'file:'
+        path = image.value
+        if path.startswith('file:') :
+            path =  path[5:]
+        return { uri: path }
+
+    uniq = image.get ('resource_uniq')
+    url = session.service_url('blob_service', path = uniq,  )
+    blobdata = session.c.fetch (url)
+    if os.path.isdir(dest):
+        outdest = os.path.join (dest, os.path.basename(name))
+    else:
+        outdest = os.path.join ('.', os.path.basename(name))
+    f = open(outdest, 'wb')
+    f.write(blobdata)
+    f.close()
+    return { uri : outdest }
 
 
 def fetch_image_planes(session, uri, dest, uselocalpath=False):

@@ -48,7 +48,7 @@ def get_format_map():
         codec = ex.getparent().get('name')
         for ext in ex.get('value').split('|'):
             formats.setdefault(ext, []).append(codec)
-    for format in ('zip', 'xml', 'csv'):
+    for format in ('amiramesh', 'cfg', 'csv', 'dat', 'grey', 'htm', 'html', 'hx', 'inf', 'labels', 'log', 'lut', 'mdb', 'pst', 'pty', 'rec', 'tim', 'txt', 'xlog', 'xml', 'zip', 'zpo' ) :
         if format in formats:
             del formats[format] # some formats should not be accepted as an image format
     return formats
