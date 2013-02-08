@@ -17,7 +17,12 @@ class ZipArchiver(zipfile.ZipFile, AbstractArchiver):
     def beginFile(self, file):
         AbstractArchiver.beginFile(self, file)
 
-        self.zipInfo = zipfile.ZipInfo(self.destinationPath(file), time.localtime(os.path.getctime(file.get('path')))[:6]);
+        if file.get('path') is None:
+            ftime = time.localtime();
+        else:
+            ftime = time.localtime(os.path.getctime(file.get('path')))
+            
+        self.zipInfo = zipfile.ZipInfo(self.destinationPath(file), ftime[:6]);
         self.reader.seek(0, 2)
         self.zipInfo.file_size = self.zipInfo.compress_size = self.reader.tell()
         
