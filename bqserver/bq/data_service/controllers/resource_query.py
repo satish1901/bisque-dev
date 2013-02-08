@@ -277,10 +277,12 @@ def prepare_permissions (query, user_id, with_public, action = RESOURCE_READ):
     with_public = public_vals.get(with_public, False)
 
     if not user_id:
-        user_id = session.get('bq_user_id', None) #get_user_id()
+        #user_id = session.get('bq_user_id', None) #get_user_id()
+        user_id = get_user_id()
 
     # don't use None for next test .. if not logged in, the user will be None 
-    if user_id == session.get('bq_admin_id', -1): #get_admin_id()
+    #if user_id == session.get('bq_admin_id', -1): #get_admin_id()
+    if user_id == get_admin_id():
         log.debug('user (%s) =admin skipping protection filters' % (user_id))
         return query
 
