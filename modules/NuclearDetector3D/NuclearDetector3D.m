@@ -39,14 +39,14 @@ function NuclearDetector3D(mex_url, access_token, image_url, ~, ~, ~, ~)
             
             %% Run
             ns =  (nuclear_diameter/2.0) ./ res;
-
+            
             t = 0.025:0.025:0.5;
             if isinteger(imn),
                t = t * double(intmax(class(imn)));
             end
 
             session.update(sprintf('Time %d: 10% - detecting', current_t));
-            np{current_t} = BONuclearDetector3D(imn, [], ns, t, session);   
+            np{current_t} = BONuclearDetector3D(imn, [], ns(1:3), t, session);   
             count = count + length(np{current_t});
         end
         
@@ -61,7 +61,7 @@ function NuclearDetector3D(mex_url, access_token, image_url, ~, ~, ~, ~)
         g = imref.addGobject('nuclear_centroids', 'nuclear_centroids');
 
         for j=1:length(np),        
-            for i=1:length(np{j}),       
+            for i=1:size(np{j},1),       
                 n = g.addGobject('nucleus', int2str(j*i));        
                 v = [np{j}(i,1:3), j];
                 p = n.addGobject('point', 'centroid', v );
