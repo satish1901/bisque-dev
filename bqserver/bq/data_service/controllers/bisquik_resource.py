@@ -173,7 +173,13 @@ class BisquikResource(Resource):
         
     def load(self, token, **kw):
         log.debug ("Load %s" % token)
-        return resource_load(self.resource_type, id=int(token), action=RESOURCE_READ)
+        try:
+            return resource_load(self.resource_type, id=int(token), action=RESOURCE_READ)
+        except ValueError, e:
+            abort (404)
+        except:
+            log.exception ('While loading:')
+            abort(404)
 
     def load_parent(self, parent = None, action=RESOURCE_READ):
         parent = getattr(request.bisque, 'parent', parent)
