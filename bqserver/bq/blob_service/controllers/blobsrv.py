@@ -241,15 +241,19 @@ class BlobServer(RestController, ServiceMixin):
         return resource
 
     @expose()
-    def get_one(self, *args):
+    def get_one(self, ident,  **kw):
         "Fetch a blob based on uniq ID"
-        log.info("get_one() called %s" % args)
+        log.info("get_one() called %s" % kw)
         from bq.data_service.controllers.resource_query import RESOURCE_READ, RESOURCE_EDIT
-        ident = args[0]
+        #ident = args[0]
         self.check_access(ident, RESOURCE_READ)
         try:
             localpath = os.path.normpath(self.localpath(ident))
             filename = self.getBlobFileName(ident)
+            if 'localpath' in kw:
+                tg.response.headers['Content-Type']  = 'text/xml'
+                resource = etree.Element ('resource', name=filename, value = localpath)
+                return etree.tostring (resource)
             try:
                 disposition = 'attachment; filename="%s"'%filename.encode('ascii')
             except UnicodeEncodeError:
