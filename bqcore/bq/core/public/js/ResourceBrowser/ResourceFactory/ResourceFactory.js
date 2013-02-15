@@ -781,15 +781,19 @@ Ext.define('Bisque.Resource.Page',
         
         function success(resource)
         {
+            this.setLoading(false);
+
             // can also broadcast 'reload' event on the resource, once apps start listening to it.
             this.resource.permission = resource.permission;
             var btnPerm = this.toolbar.getComponent('btnPerm');
             btnPerm.setBtnText.call(this, btnPerm);
         };
         
+        this.setLoading({msg:''});
+        
         BQFactory.request({
             uri :   this.resource.uri + '?view=short',
-            cb  :   Ext.bind(loaded, this) 
+            cb  :   Ext.bind(loaded, this)
         });
     },
        

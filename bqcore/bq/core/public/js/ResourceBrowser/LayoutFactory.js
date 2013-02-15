@@ -68,8 +68,10 @@ Ext.define('Bisque.ResourceBrowser.Layout.Base',
             
             me.layoutCSS = this.layoutCSS;
             me.layoutEl = {
-                width   :   null,
-                height  :   null
+                width           :   null,
+                height          :   null,
+                stdImageHeight  :   280,
+                stdImageWidth   :   280,
             };
             
             if (me.layoutCSS)
@@ -102,7 +104,6 @@ Ext.define('Bisque.ResourceBrowser.Layout.Base',
 			parentCt : configOpts.browser.centerPanel,
 			msgBus : configOpts.browser.msgBus,
 			showGroups : configOpts.browser.showGroups,
-			//bodyStyle : 'background: #AFA',
 			
 			resQ : [],
 			layoutEl :{},
@@ -356,42 +357,6 @@ Ext.define('Bisque.ResourceBrowser.Layout.Base',
 
 		return (grpRow>nRow);
 	},
-	
-	/*
-	animateIn : function(direction)
-	{
-    	var left=(direction=='Left'?-1:1)*this.ownerCt.getWidth();
-    	var from=(direction=='none'?{left:0}:{left:left});
-
-		this.animate(
-		{
-			from: from,
-			to: {left:0},
-			easing:'ease',
-			duration: this.animInDuration || 0,
-		});
-	},
-	
-	Destroy : function(direction) 
-	{
-		if (this.rendered)
-		{
-	    	var left=(direction=='Left'?1:-1)*this.getWidth();
-	    	
-			this.animate(
-			{
-				to: {opacity:0, left:left},
-				easing: 'easeOut',
-				duration: this.animDestroyDuration || 0,
-				listeners:
-				{
-					'afteranimate':function(){this.removeAll(true);this.destroy();},
-					scope:this
-				},
-			});
-		}
-	},
-	*/
 });
 
 // Compact Layout: Shows resources as thumbnails
@@ -423,93 +388,9 @@ Ext.define('Bisque.ResourceBrowser.Layout.Card',
 	constructor : function()
 	{
 		this.callParent(arguments);
-		this.layoutEl.imageWidth=140;
-		this.layoutEl.imageHeight=115;
+		this.layoutEl.imageWidth=120;
+		this.layoutEl.imageHeight=120;
 	}
-});
-
-
-// PhotoStrip Layout: Shows resources in a photostrip
-Ext.define('Bisque.ResourceBrowser.Layout.PStrip', 
-{
-	extend : 'Bisque.ResourceBrowser.Layout.Base',
-	
-    inheritableStatics : {
-        layoutCSS : 'ImagePStripSmall'
-    },
-
-	constructor : function() 
-	{
-		Ext.apply(this, {layout:{type:'vbox', align:'stretch'}});
-		this.callParent(arguments);
-
-		this.layoutEl.imageWidth=150;
-		this.layoutEl.imageHeight=150;
-		
-		this.setSize(this.getParentSize());
-	},
-
-	Init : function(resourceQueue) 
-	{
-		this.resQ = resourceQueue;
-
-        // if no results were obtained for a given query, show a default no-results message
-        if (this.resQ.length==0)
-        {
-            this.noResults();
-            return;
-        }
-		
-		this.proxyPnl = Ext.create('Ext.panel.Panel', {border:false, flex:1, autoScroll:true, layout:{type:'hbox', align:'middle',  pack:'center'}});
-		var psPnl = Ext.create('Ext.panel.Panel', {border:false});
-		
-		// Code for laying out resource containers in this layout container
-		for (var i=0; i<this.resQ.length; i++)
-		{
-			this.resQ[i].setSize({width:this.layoutEl.width, height:this.layoutEl.height});
-			this.resQ[i].addCls(this.layoutCSS);
-			psPnl.add(this.resQ[i]);
-			this.relayEvents(this.resQ[i], ['select', 'unselect']);
-		}
-		
-		this.add([this.proxyPnl, psPnl]);
-
-		if (this.resQ.length)	// Register eventHandler only if resourceQueue is not null
-			this.on('afterlayout', function(){this.CreateBigResource(this.resQ[0].resource, this)}, this);
-		this.msgBus.on('PStripResourceClick', this.CreateBigResource);
-	},
-	
-	getVisibleElements : function() 
-	{
-		var ctSize = this.getParentSize();
-		var nCol = Math.floor(ctSize.width / this.layoutEl.outerWidth);
-		return nCol;
-	},
-	
-	// Private member
-	CreateBigResource : function(resource, layoutMgr) 
-	{
-		var res = Bisque.ResourceFactory.getResource(
-		    {
-    			resource  :  resource,
-    			browser   :  layoutMgr.browser,
-    			layoutKey :  Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.PStripBig,
-    			msgBus    :  layoutMgr.msgBus,
-    			bigPanel  :  layoutMgr.proxyPnl 
-    		});
-		
-		layoutMgr.proxyPnl.add(0, res);
-		layoutMgr.proxyPnl.animate(
-		{
-			from: {opacity:0},
-			to: {opacity:1},
-			easing:'easeIn',
-			duration: 180,
-		});
-		
-		if (layoutMgr.proxyPnl.items.length>1)
-			layoutMgr.proxyPnl.getComponent(layoutMgr.proxyPnl.items.length-1).destroy();
-	},
 });
 
 // Full Layout: Shows all the tags assosiated with a resource
@@ -525,8 +406,8 @@ Ext.define('Bisque.ResourceBrowser.Layout.Full',
 	{
 		this.callParent(arguments);
 
-		this.layoutEl.imageHeight=275;
-		this.layoutEl.imageWidth=280;
+		this.layoutEl.imageHeight=270;
+		this.layoutEl.imageWidth=270;
 	},
 	
 	getVisibleElements : function() 
