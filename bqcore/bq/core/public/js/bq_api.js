@@ -400,13 +400,15 @@ BQObject.prototype.initializeXml = function (node) {
     this.template      = {};
     
     // dima: speed optimization, using xpath for resources with many values is much faster
-    var x = node.ownerDocument.evaluate('./value', node, null, XPathResult.ANY_TYPE, null);
-    var y = x.iterateNext(); 
-    if (y) this.values = [];
-    while (y) {
-        this.values.push(new BQValue(y));
-        y = x.iterateNext();
-    } 
+    // Utkarsh : now uses evaulateXPath from utils.js, which is browser independent
+    var values = evaluateXPath(node.ownerDocument, './value');
+
+    if (!Ext.isEmpty(values))
+        this.values = [];
+    
+    // values should be an array
+    this.values = values;
+        
     if (this.resource_uniq) {
         this.src  = '/blob_service/' + this.resource_uniq;
         // in the case the data is coming from another server, make sure to load proper URL
@@ -1177,13 +1179,15 @@ BQGObject.prototype.initializeXml = function (node) {
         this.type = attribStr(node, 'type');
     
     // dima: speed optimization, using xpath for resources with many vertices is much faster
-    var x = node.ownerDocument.evaluate('./vertex', node, null, XPathResult.ANY_TYPE, null);
-    var y = x.iterateNext();
-    if (y) this.vertices = [];
-    while (y) {
-        this.vertices.push(new BQVertex(y));
-        y = x.iterateNext();
-    }
+    // Utkarsh : now uses evaulateXPath from utils.js, which is browser independent
+    var vertices = evaluateXPath(node.ownerDocument, './vertex');
+
+    if (!Ext.isEmpty(vertices))
+        this.vertices = [];
+    
+    // values should be an array
+    this.vertices = vertices;
+
 }
 
 BQGObject.prototype.setParent = function (p) {

@@ -35,9 +35,13 @@ Ext.define('Bisque.ResourceBrowser.OperationBar',
             var tempDS = new BQDataset(), members = [];
             
             for (var res in this.browser.resourceQueue.selectedRes)
+            {
+                this.browser.resourceQueue.selectedRes[res].setLoading({msg:'Deleting...'});
                 members.push(this.browser.resourceQueue.selectedRes[res]);
+            }
             
             tempDS.tmp_setMembers(members);
+            
             tempDS.tmp_deleteMembers(Ext.bind(result, this));
 
             function result(summary)
@@ -49,6 +53,7 @@ Ext.define('Bisque.ResourceBrowser.OperationBar',
         else
         {
             me.operation = Ext.pass(this.resourceCt.resource.delete_, [Ext.bind(this.success, this), Ext.Function.pass(this.failure, ['Delete operation failed!'])], this.resourceCt.resource);
+            this.resourceCt.setLoading({msg:'Deleting...'});
             this.resourceCt.testAuth1(me);
         }
     },

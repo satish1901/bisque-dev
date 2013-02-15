@@ -11,6 +11,10 @@
     box-shadow: 0px 0px 8px 3px hsl(210, 75%, 70%) !important;
 }
 
+.imageCenterHoz {
+    display: block; margin-left: auto; margin-right: auto;
+}
+
 .background-transparent {
     background: transparent;
 } 
@@ -73,21 +77,6 @@
     width : 99%;
     background-color: #F9F9F9;
     border: solid 1px #EEE !important;
-}
-
-.ImagePStripSmall {
-    margin: 15px;
-    padding: 0px;
-    width: 160px;
-    height: 160px;
-    border: solid 1px #EEE !important;
-}
-
-.ImagePStripBig {
-    margin: 10px;
-    padding: 5px;
-    border: solid 1px #EEE;
-    background-color: #FAFAFA !important;
 }
 
 .ResourceList {

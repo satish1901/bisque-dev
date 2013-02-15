@@ -328,7 +328,9 @@ class HierarchicalCache(ResponseCache):
 
 
 def parse_http_date(timestamp_string):
+    
     if timestamp_string is None: return None
+    timestamp_string = timestamp_string.split(';')[0]    # http://stackoverflow.com/questions/12626699/if-modified-since-http-header-passed-by-ie9-includes-length
     test = timestamp_string[3]
     if test == ',':
         format = "%a, %d %b %Y %H:%M:%S %Z"

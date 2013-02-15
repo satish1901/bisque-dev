@@ -73,8 +73,8 @@ Ext.define('BQ.map.Map', {
     },      
     
     onImagesLoaded : function(xml) {
-        var unqs = this.evaluateXPath(xml, "//image/@resource_uniq"); 
-        var uris = this.evaluateXPath(xml, "//image/@uri"); 
+        var unqs = evaluateXPath(xml, "//image/@resource_uniq"); 
+        var uris = evaluateXPath(xml, "//image/@uri"); 
         for (var i=0; i<unqs.length; ++i) {
             var id  = unqs[i].value;
             var uri = uris[i].value;
@@ -146,28 +146,16 @@ Ext.define('BQ.map.Map', {
     
     findGPS : function(xmlDoc){
         if(!xmlDoc) return;
-        var latituderef = this.evaluateXPath(xmlDoc, "//tag[@name='GPSLatitudeRef']/@value");
-        var longituderef = this.evaluateXPath(xmlDoc, "//tag[@name='GPSLongitudeRef']/@value");
-        var latitude = this.evaluateXPath(xmlDoc, "//tag[@name='GPSLatitude']/@value");
-        var longitude = this.evaluateXPath(xmlDoc, "//tag[@name='GPSLongitude']/@value");
+        var latituderef = evaluateXPath(xmlDoc, "//tag[@name='GPSLatitudeRef']/@value");
+        var longituderef = evaluateXPath(xmlDoc, "//tag[@name='GPSLongitudeRef']/@value");
+        var latitude = evaluateXPath(xmlDoc, "//tag[@name='GPSLatitude']/@value");
+        var longitude = evaluateXPath(xmlDoc, "//tag[@name='GPSLongitude']/@value");
         
         var thelat = this.gpsParser(latitude, latituderef);
         var thelon = this.gpsParser(longitude, longituderef);
         if (!thelat || !thelon) return;
         
         return new google.maps.LatLng(thelat,thelon);
-    },
-    
-    evaluateXPath: function(aNode, aExpr) {
-        var xpe = new XPathEvaluator();
-        var nsResolver = xpe.createNSResolver(aNode.ownerDocument == null ?
-          aNode.documentElement : aNode.ownerDocument.documentElement);
-        var result = xpe.evaluate(aExpr, aNode, nsResolver, 0, null);
-        var found = [];
-        var res;
-        while (res = result.iterateNext())
-          found.push(res);
-        return found;
     },
     
 });

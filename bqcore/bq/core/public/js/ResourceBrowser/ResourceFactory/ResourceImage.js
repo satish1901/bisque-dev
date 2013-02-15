@@ -3,15 +3,22 @@ Ext.define('Bisque.Resource.Image',
 {
     extend:'Bisque.Resource',
 
-    // Two functions for speed
-    GetImageThumbnailRel : function(params, size, full)
+    GetImageThumbnailRel : function(params, actualSize, displaySize)
     {
-        return '<img style=" display: block; margin-left: auto; margin-right: auto; margin-top: ' + (params.height+10-size.height)/2 + 'px;"'
-        +((full==undefined)?' id="'+this.resource.uri+'"':'')
-        + ' src="' + this.getThumbnailSrc(params)
-        + '"/>';
+        var a = Ext.String.format('<img class="imageCenterHoz" style="\
+                    max-width   :   {0}px;  \
+                    max-height  :   {1}px;  \
+                    margin-top  :   {2}px;" \
+                    src         =   "{3}"   \
+                    id          =   "{4}"   />', 
+                    displaySize.width,
+                    displaySize.height,
+                    (0.5*displaySize.height/params.height) * (params.height-actualSize.height),
+                    this.getThumbnailSrc(params),
+                    this.resource.uri);
+        return a;
     },
-    
+
     getThumbnailSrc : function(params)
     {
         return this.resource.src + this.getImageParams(params);
@@ -28,10 +35,9 @@ Ext.define('Bisque.Resource.Image',
     getImageParams : function(config)
     {
         var prefs = this.getImagePrefs('ImageParameters') || '?slice=,,{sliceZ},{sliceT}&thumbnail={width},{height}&format=jpeg';
-        //var prefs = this.getImagePrefs('ImageParameters') || '?slice=,,{sliceZ},{sliceT}&depth=8,d&resize={width},{height},bc,ar&projectmax&format=jpeg';
 
-        prefs = prefs.replace('{sliceZ}', config.sliceZ || 1);
-        prefs = prefs.replace('{sliceT}', config.sliceT || 1);
+        prefs = prefs.replace('{sliceZ}', config.sliceZ || 0);
+        prefs = prefs.replace('{sliceT}', config.sliceT || 0);
         prefs = prefs.replace('{width}', config.width || 150);
         prefs = prefs.replace('{height}', config.height || 150);
         
@@ -117,11 +123,14 @@ Ext.define('Bisque.Resource.Image',
                 sliceY = this.resource.z
 
             var imgLoader = new Image();
+            imgLoader.style.height = this.layoutMgr.layoutEl.imageHeight;
+            imgLoader.style.width = this.layoutMgr.layoutEl.imageWidth;
+             
             imgLoader.src = this.resource.src + this.getImageParams({
                 sliceZ : sliceY,
                 sliceT : sliceX,
-                width : this.layoutMgr.layoutEl.imageWidth,
-                height : this.layoutMgr.layoutEl.imageHeight
+                width : this.layoutMgr.layoutEl.stdImageWidth,
+                height : this.layoutMgr.layoutEl.stdImageHeight
             });
             
             function ImgOnLoad()
@@ -134,6 +143,7 @@ Ext.define('Bisque.Resource.Image',
             }
 
             imgLoader.onload = Ext.bind(ImgOnLoad, this);
+            imgLoader.onerror = Ext.emtpyFn;
         }
     },
     
@@ -235,13 +245,11 @@ Ext.define('Bisque.Resource.Image.Compact',
         {
             this.setData('fetched', -1);	//Loading
 
-            BQFactory.load(this.resource.uri + '/tag', Ext.bind(this.loadResource, this, ['tags'], true));
-
             var prefetchImg = new Image();
             prefetchImg.src = this.getThumbnailSrc(
             {
-                width: this.layoutMgr.layoutEl.imageWidth,
-                height: this.layoutMgr.layoutEl.imageHeight,
+                width: this.layoutMgr.layoutEl.stdImageWidth,
+                height: this.layoutMgr.layoutEl.stdImageHeight,
             });
             prefetchImg.onload  = Ext.bind(this.loadResource, this, ['image'], true);
             prefetchImg.onerror = Ext.bind(this.resourceError, this);
@@ -251,7 +259,7 @@ Ext.define('Bisque.Resource.Image.Compact',
     
     resourceError : function()
     {
-        var errorImg    =   '<img style="display: block; margin-left: auto; margin-right: auto; margin-top: 65px;"'
+        var errorImg = '<img style="display: block; margin-left: auto; margin-right: auto; margin-top: 65px;"'
                             + ' src="' + bq.url('/js/ResourceBrowser/Images/unavailable.png') + '"/>';
         this.setData('image', errorImg);
         this.setData('fetched', 1);
@@ -271,27 +279,20 @@ Ext.define('Bisque.Resource.Image.Compact',
         {
             this.setData('image', this.GetImageThumbnailRel( 
             {
-                width: this.layoutMgr.layoutEl.imageWidth,
-                height: this.layoutMgr.layoutEl.imageHeight,
+                width: this.layoutMgr.layoutEl.stdImageWidth,
+                height: this.layoutMgr.layoutEl.stdImageHeight,
             },
             {
                 width:data.currentTarget.width,
                 height:data.currentTarget.height
+            },
+            {
+                width: this.layoutMgr.layoutEl.imageWidth,
+                height: this.layoutMgr.layoutEl.imageHeight,
             }));
         }
-        else
-        {
-            this.resource.tags = data.tags;
-            var geometry = this.resource.find_tags('geometry') || {value:'1,1,1,1,1'};
-            if (geometry && geometry.value) {
-                this.resource.geometry = geometry.value.split(',');
-                this.resource.z = parseInt(this.resource.geometry[2]);
-                this.resource.t = parseInt(this.resource.geometry[3]);
-            }
-            this.setData('tags', 'true');
-        }
 
-        if (this.getData('tags') && this.getData('image'))
+        if (this.getData('image'))
         {
             this.setData('fetched', 1); //Loaded
     
@@ -306,13 +307,6 @@ Ext.define('Bisque.Resource.Image.Compact',
         var text = Ext.String.ellipsis(this.resource.name, 25) || '';
         this.update('<div class="textOnImage" style="width:'+this.layoutMgr.layoutEl.width+'px;">'+text+'</div>'+this.getData('image'));
         this.setLoading(false);
-        
-        /*this.resizer = Ext.create('Ext.resizer.Resizer', {
-            target : this,
-            handles : 'all',
-            transparent : true
-            //pinned  : true
-        });*/
     },
 });
 
@@ -347,8 +341,8 @@ Ext.define('Bisque.Resource.Image.Card',
             var prefetchImg = new Image();
             prefetchImg.src = this.getThumbnailSrc(
             {
-                width: this.layoutMgr.layoutEl.imageWidth,
-                height: this.layoutMgr.layoutEl.imageHeight,
+                width: this.layoutMgr.layoutEl.stdImageWidth,
+                height: this.layoutMgr.layoutEl.stdImageHeight,
             });
             prefetchImg.onload=Ext.bind(this.loadResource, this, ['image'], true);
         }
@@ -359,12 +353,16 @@ Ext.define('Bisque.Resource.Image.Card',
         if (type=='image')
             this.setData('image', this.GetImageThumbnailRel( 
             {
-                width: this.layoutMgr.layoutEl.imageWidth,
-                height: this.layoutMgr.layoutEl.imageHeight
+                width: this.layoutMgr.layoutEl.stdImageWidth,
+                height: this.layoutMgr.layoutEl.stdImageHeight
             },
             {
-                width:data.currentTarget.width,
-                height:data.currentTarget.height
+                width: data.currentTarget.width,
+                height: data.currentTarget.height
+            },
+            {
+                width: this.layoutMgr.layoutEl.imageWidth,
+                height: this.layoutMgr.layoutEl.imageHeight,
             }));
         else
         {
@@ -425,98 +423,6 @@ Ext.define('Bisque.Resource.Image.Card',
 	onMouseMove : Ext.emptyFn,
 });
 
-Ext.define('Bisque.Resource.Image.PStrip',
-{
-    extend:'Bisque.Resource.Image.Compact',
-
-    onClick : function()
-    {
-        this.msgBus.fireEvent('PStripResourceClick', this.resource, this.layoutMgr);
-    },
-    
-    afterRenderFn : function()
-    {
-    	this.ttip=1;
-    	this.callParent(arguments);
-    },
-    
-    requestTags : Ext.emptyFn,
-});
-
-Ext.define('Bisque.Resource.Image.PStripBig',
-{
-    extend:'Bisque.Resource.Image',
-
-    constructor : function(config)
-    {
-        this.callParent(arguments);
-        Ext.apply(this,
-        {
-            layout:
-            {
-                type:'fit'
-            },
-            overCls:'',
-            data: {},
-        });
-
-		this.setSize(config.bigPanel.getSize());
-		
-        this.pnlSize=config.bigPanel.getSize();
-        this.pnlSize.width=Math.floor(0.50*this.pnlSize.width);
-
-        var prefetchImg = new Image();
-        prefetchImg.src = this.resource.src + '?thumbnail='+(this.pnlSize.width-10).toString()+','+(this.pnlSize.height-10).toString();
-        prefetchImg.onload=Ext.bind(this.loadResource, this);
-    },
-
-    loadResource : function(data, type)
-    {
-		var resourceTagger = new Bisque.ResourceTagger(
-		{
-			region : 'center',
-			resource : this.resource.uri,
-			//style : 'background-color:#FFF',
-		});
-
-		this.data.image=this.GetImageThumbnailAbs(
-		{
-            width: this.pnlSize.width-10,
-            height: this.pnlSize.width-10,
-		},
-		{
-			width: data.currentTarget.width,
-			height: data.currentTarget.height
-		}, true);
-            
-		var imgDiv = new Ext.get(document.createElement('div'));
-		imgDiv.update(this.data.image);
-
-		this.add(new Ext.Panel(
-		{
-			layout:'border',
-			border:false,
-			items:[new Ext.Container(
-			{
-				region:'west',
-				layout:
-				{
-					type:'vbox',
-					align:'top'
-				},
-				width:'50%',
-				cls : 'white',
-				contentEl:imgDiv
-			}), resourceTagger]
-		}));
-            
-		this.setLoading(false);
-	},
-    
-    preAfterRender : Ext.emptyFn,
-    afterRenderFn : Ext.emptyFn
-});
-
 Ext.define('Bisque.Resource.Image.Full',
 {
     extend : 'Bisque.Resource.Image',
@@ -544,8 +450,8 @@ Ext.define('Bisque.Resource.Image.Full',
             var prefetchImg = new Image();
             prefetchImg.src = this.getThumbnailSrc(
             {
-                width: this.layoutMgr.layoutEl.imageWidth,
-                height: this.layoutMgr.layoutEl.imageHeight,
+                width: this.layoutMgr.layoutEl.stdImageWidth,
+                height: this.layoutMgr.layoutEl.stdImageHeight,
             });
             prefetchImg.onload=Ext.bind(this.loadResource, this, ['image'], true);
         }
@@ -554,15 +460,20 @@ Ext.define('Bisque.Resource.Image.Full',
     loadResource : function(data, type)
     {
         if (type=='image')
-            this.setData('image', this.GetImageThumbnailAbs(
+            this.setData('image', this.GetImageThumbnailRel(
             {
-                width: this.layoutMgr.layoutEl.imageWidth,
-                height: this.layoutMgr.layoutEl.imageHeight
+                width: this.layoutMgr.layoutEl.stdImageWidth,
+                height: this.layoutMgr.layoutEl.stdImageHeight
             },
             {
                 width: data.currentTarget.width,
                 height: data.currentTarget.height
-            }, true));
+            },
+            {
+                width: this.layoutMgr.layoutEl.imageWidth,
+                height: this.layoutMgr.layoutEl.imageHeight,
+                
+            }));
         else
         {
             this.resource.tags = data.tags;
@@ -595,14 +506,20 @@ Ext.define('Bisque.Resource.Image.Full',
     updateContainer : function()
     {
         this.setLoading(false);
+
         var propsGrid=this.GetPropertyGrid(
         {
             autoHeight:false
         }, this.getData('tags'));
+
         propsGrid.setAutoScroll(true);
-        propsGrid.region='center';
-        propsGrid.padding=5;
-        propsGrid.style='background-color:#FAFAFA';
+
+        Ext.apply(propsGrid, {
+            region  :   'center',
+            padding :   5,
+            style   :   'background-color:#FAFAFA'
+            
+        });
 
         var imgDiv = new Ext.get(document.createElement('div'));
         imgDiv.dom.align = "center";
@@ -610,29 +527,26 @@ Ext.define('Bisque.Resource.Image.Full',
 
         this.add(new Ext.Panel(
         {
-            layout: 'border',
-            border: false,
-            items:[new Ext.Container(
+            layout  :   'border',
+            border  :   false,
+            items   :   [new Ext.Container(
             {
-                region:'west',
-                layout:
+                region  :   'west',
+                layout  :
                 {
-                    type:'hbox',
-                    pack:'center',
-                    align:'center'
+                    type    :   'hbox',
+                    pack    :   'center',
+                    align   :   'center'
                 },
-                region : 'west',
-                padding:5,
-                width:this.layoutMgr.layoutEl.imageHeight+10,
-                style:'background-color:#FAFAFA',
-                contentEl:imgDiv
+                region  :   'west',
+                width   :   this.layoutMgr.layoutEl.imageHeight,
+                style   :   'background-color:#FAFAFA',
+                contentEl   :   imgDiv
             }), propsGrid]
         }));
     },
 
     onMouseMove : Ext.emptyFn,
-    //preMouseEnter : Ext.emptyFn,
-    //preMouseLeave : Ext.emptyFn,
     onMouseEnter : Ext.emptyFn
 });
 
@@ -645,13 +559,13 @@ Ext.define('Bisque.Resource.Image.Grid',
     {
         this.callParent(arguments);
         var prefetchImg = new Image();
-        prefetchImg.src = this.resource.src+'?thumbnail=75,75&format=jpeg';
+        prefetchImg.src = this.resource.src+'?slice=,,0,0&thumbnail=280,280&format=jpeg';
     },
     
     getFields : function(cb)
     {
         var fields = this.callParent();
-        fields[0] = '<img style="height:40px;width:40px;" src='+this.resource.src+'?thumbnail=75,75&format=jpeg />';
+        fields[0] = '<img style="height:40px;width:40px;" src='+this.resource.src+'?slice=,,0,0&thumbnail=280,280&format=jpeg />';
         fields[6].height = 48;
 
         return fields;

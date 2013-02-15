@@ -123,7 +123,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer',
 
         filterCt.addEvents('onFilterDragDrop');
         this.relayEvents(filterCt, ['onFilterDragDrop']);
-        filterCt.expand(true);
+        filterCt.expand();
     },
 
     ManageEvents : function()

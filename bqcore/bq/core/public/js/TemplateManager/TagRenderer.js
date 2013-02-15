@@ -73,8 +73,8 @@ Ext.define('BQ.TagRenderer.Base',
                                         case 'number':
                                             value = parseFloat(tag.value);
                                             break;
-                                        case 'boolean': 
-                                            value = Boolean(tag.value);
+                                        case 'boolean':
+                                            value = Ext.isBoolean(tag.value) ? tag.value : (tag.value.toLowerCase() === "true");   
                                             break;
                                         default:
                                             value = tag.value;
