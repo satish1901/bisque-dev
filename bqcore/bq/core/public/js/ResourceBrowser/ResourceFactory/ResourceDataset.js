@@ -66,7 +66,7 @@ Ext.define('Bisque.Resource.Dataset.Compact',
                 {
                     case 'image':
                     {
-                        thumbnail = resource.children[i].src+'?thumbnail=75,75&format=jpeg';
+                        thumbnail = resource.children[i].src+'?slice=,,0,0&thumbnail=280,280&format=jpeg';
                         break;
                     }
                     case 'dataset':
@@ -119,7 +119,7 @@ Ext.define('Bisque.Resource.Dataset.Card',
                 {
                     case 'image':
                     {
-                        thumbnail = resource.children[i].src+'?thumbnail=75,75&format=jpeg';
+                        thumbnail = resource.children[i].src+'?slice=,,0,0&thumbnail=280,280&format=jpeg';
                         break;
                     }
                     case 'dataset':
@@ -183,7 +183,7 @@ Ext.define('Bisque.Resource.Dataset.Full',
                 {
                     case 'image':
                     {
-                        thumbnail = resource.children[i].src+'?thumbnail=75,75&format=jpeg';
+                        thumbnail = resource.children[i].src+'?slice=,,0,0&thumbnail=280,280&format=jpeg';
                         break;
                     }
                     case 'dataset':

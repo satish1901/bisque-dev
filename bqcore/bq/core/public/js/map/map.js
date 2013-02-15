@@ -82,7 +82,7 @@ Ext.define('BQ.map.Map', {
             var image = {
                 id: id,
                 uri: uri,
-                thumbnail : '/image_service/images/' + id + '?thumbnail',
+                thumbnail : '/image_service/images/' + id + '?slice=,,0,0&thumbnail=280,280&format=jpeg',
             };
             this.requestMeta(uri_meta, image);
         }
@@ -124,7 +124,7 @@ Ext.define('BQ.map.Map', {
     
     onMarkerClick : function(marker) {
         var map = this.gmap;
-        var s = '<img src= "' + marker.image.thumbnail + '" />';
+        var s = '<img style="height:40px;width:40px;" src= "' + marker.image.thumbnail + '" />';
         this.infoWindow.setContent(s);  
         this.infoWindow.open(map, marker);
         map.panTo(marker.position);
