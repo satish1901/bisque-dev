@@ -180,6 +180,7 @@ class deploy(object):
 
     def run(self):
         #if 'public' in self.args:
+        self.dir = self.args.pop(0) if len(self.args)>0 else 'public'
         self.deploy_public()
         
         
@@ -187,12 +188,10 @@ class deploy(object):
     def deploy_public(self):
         ''
         import pkg_resources
-        if  os.path.exists('public'):
-            print "Warning public exists"
-            print "Please remove public before continuing"
-            return
-        else:
-            os.makedirs ('public')
+        try:
+            os.makedirs (self.dir)
+        except OSError, e:
+            pass
         for x in pkg_resources.iter_entry_points ("bisque.services"):
             try:
                 #print ('found static service: ' + str(x))
@@ -204,9 +203,15 @@ class deploy(object):
                     #print ( "adding static: %s %s" % ( d,r ))
                     static_path =  r[len(d)+1:]
                     #print "path =", os.path.dirname(static_path)
-                    os.makedirs (os.path.join('public', os.path.dirname(static_path)))
+                    try:
+                        os.makedirs (os.path.join(self.dir, os.path.dirname(static_path)))
+                    except OSError,e:
+                        pass
                     #print "link ", (r, os.path.join('public', static_path))
-                    os.symlink (r, os.path.join('public', static_path))
+                    path = os.path.join(self.dir, static_path)
+                    if os.path.exists (path):
+                        os.unlink (path)
+                    os.symlink (r, path)
                     print "Deployed ", r
             except Exception, e:
                 #print "Exception: ", e
@@ -214,15 +219,24 @@ class deploy(object):
         # Link all core dirs
         import glob
         for l in glob.glob('bqcore/bq/core/public/*'):
-            os.symlink (os.path.join('..', l), os.path.join('public', os.path.basename(l)))
+            path = os.path.join(self.dir, os.path.basename(l))
+            if os.path.exists (path):
+                os.unlink (path)
+            os.symlink (os.path.join('..', l), path)
         #check if grunt exists, if so, run it to pack and minify javascript
+        msg = """Unknown error while trying to run grunt. Are NodeJS and Grunt installed?
+ install it by typing 'npm install -g grunt'"""
         try:
-            subprocess.call(["grunt"])
+            r = subprocess.call(["grunt"])
+            if r != 0:
+                print msg
+                return
+            print "To use minified Javascript, edit site.cfg and configure bisque.js_environment = production"
+
         except OSError as e:
             if e.errno == errno.ENOENT:
-                print "grunt not found.\n install it by typing 'npm install -g grunt'"
-            else:
-                print "Unknown error while trying to run grunt. Is it installed correctly?\n install it by typing 'npm install -g grunt'"
+                msg =  "grunt not found.\n install it by typing 'npm install -g grunt'"
+            print msg
 
 class preferences (object):
     desc = "read and/or update preferences"
