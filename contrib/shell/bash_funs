@@ -9,7 +9,6 @@ bq-activate() {
   local bq=${1:-$BISQUE}
   cd $bq
   source bqenv/bin/activate
-  cd TG
 }
 
 
