@@ -36,6 +36,9 @@
     
     Ext.onReady( function() { 
         
+        if (!(Ext.isChrome || Ext.firefoxVersion || Ext.isSafari))
+            BQ.ui.warning('<b>BISQUE</b> runs best on Chrome, Firefox and Safari.', 15000);
+            
         var main = BQApp.getCenterComponent();
         main.body.addCls('welcome_front');
         main.setAutoScroll( false );        

@@ -90,6 +90,8 @@ log = logging.getLogger('bq.engine_service')
 
 MODULE_PATH = config.get('bisque.engine_service.local_modules', bisque_path('modules'))
 HEARTBEAT   = config.get('bisque.engine_service.hb');
+POOL_SIZE   = config.get('bisque.engine_service.poolsize', 4)
+
 engine_root = '/'.join ([config.get('bisque.server') , 'engine_service'])
 
 
@@ -247,7 +249,7 @@ class EngineServer(ServiceController):
             sys.argv[1] = 'bqengine\\bq\\engine\\controllers\\execone.py'
             del sys.argv[2:]
 
-        self.mpool = multiprocessing.Pool(4)
+        self.mpool = multiprocessing.Pool(POOL_SIZE)
 
         #self.module_resource = EngineResource()
         self.engines = { #'matlab': MatlabAdapter(),

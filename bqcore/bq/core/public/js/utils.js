@@ -45,6 +45,21 @@ function evaluateXPath(aNode, aExpr)
     return found;
 }
 
+function evaluateXPathIE(aNode, aExpr)
+{
+    var nodes = aNode.selectNodes(aExpr);
+    var found = [];
+
+    for (var i=0; i<nodes.length; i++)
+        found.push(nodes[i]);
+
+    return found;
+}
+
+// Use IE specific code for XPath evaluation
+if (Ext.isIE)
+    evaluateXPath = evaluateXPathIE; 
+
 // clean up an XML/HTML node by removing all its children nodes
 function removeAllChildren(element) {
     while (element.hasChildNodes()) {
