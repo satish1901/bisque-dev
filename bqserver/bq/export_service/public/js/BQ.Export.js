@@ -300,7 +300,7 @@ Ext.define('BQ.Export.Panel',
                     align:'center',
                     renderer : function(value)
                     {
-                        return '<div style="height:40px"><img src='+value+'?thumbnail=40,40&format=jpeg /></div>'
+                        return '<div style="height:40px"><img style="height:40px;width:40px;" src='+value+'?slice=,,0,0&thumbnail=280,280&format=jpeg /></div>'
                     } 
                 },
                 {

@@ -43,6 +43,14 @@ function np = BONuclearDetector3D(imn, imm, ns, t, session)
     if exist('session', 'var'), session.update('40% - Seed search'); end
     t = sort(t);
     np = BOSeedSearch3D(imlog, ns, t);
+    
+    %% removing unchanging point sets towards low thresholds
+    dnp = zeros(size(np,1),1);
+    for i=1:size(np,1)-1,
+        dnp(i) = size(np{i},1) / size(np{i+1},1);
+    end
+    [~,idx] = max(dnp);
+    np = np(idx:end);
 
     %% Filtering
     if exist('session', 'var'), session.update('70% - Filtering'); end

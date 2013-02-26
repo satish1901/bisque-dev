@@ -348,6 +348,8 @@ Ext.define('Bisque.ResourceBrowser.Browser',
                     tags : tags,
                     order : values
                 };
+            else
+                this.showGroups = false;
         }
         else
             //this.showGroups is used in LayoutFactory to group resources based on tag order

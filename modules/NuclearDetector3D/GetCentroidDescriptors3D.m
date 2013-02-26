@@ -42,7 +42,7 @@ function dt = GetCentroidDescriptors3D(im, imlog, np, ns, all)
     
     %% transpose ellipsoid and get a descriptor
     for i=1:size(np,1)
-        idx = TransposeEllipsoid( ellipsoid, np(i,:), size(im) );
+        idx = round(TransposeEllipsoid( ellipsoid, np(i,:), size(im) ));
 
         s = struct();        
         v = im(idx); 

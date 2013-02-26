@@ -110,9 +110,12 @@ bisque.stores.local.path = file:$datadir/imagedir/$user/$dirhash/$filehash-$file
 #bisque.data_service.max_response_time = 0
 # Module Service
 #bisque.module_service.queue_wait =  5
+
 # Engine Service
 bisque.engine =  http://localhost:8080
 #bisque.engine_service.local_modules = modules
+#bisque.engine_service.poolsize = 4
+
 # Image Service
 #bisque.image_service.work_dir  = ./data//workdir
 #bisque.image_service.upload_dir  = ./data/uploads

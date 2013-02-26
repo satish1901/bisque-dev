@@ -43,7 +43,7 @@ Ext.define('Bisque.ResourceBrowser.DatasetManager',
     loadDatasets : function(loaded, datasetList)
     {
         if (!loaded)
-            BQFactory.load('/data_service/dataset/?view=short', callback(this, 'loadDatasets', true));
+            BQFactory.load('/data_service/dataset?view=short&tag_order=@ts:desc', callback(this, 'loadDatasets', true));
         else
         {
             var list = [], date = new Date(), i;
