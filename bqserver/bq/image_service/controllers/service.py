@@ -21,6 +21,7 @@ from bq.data_service.model import Taggable, DBSession
 
 from bq.core import permission, identity
 from bq.util.paths import data_path
+from bq.util.mkdir import _mkdir
 from imgsrv import ImageServer
 from imgsrv import ProcessToken
 import imgcnv
@@ -68,6 +69,7 @@ class image_serviceController(ServiceController):
         imgdir = config.get('bisque.image_service.local_dir', data_path('imagedir'))
         workdir= config.get('bisque.image_service.work_dir', data_path('workdir'))
 
+        _mkdir (workdir)
         log.info('ROOT=%s images=%s work=%s' % (config.get('bisque.root'), imgdir, workdir))
         self.format_map = None
 
