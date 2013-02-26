@@ -50,10 +50,10 @@ Ext.define('Bisque.ResourceFactoryWrapper',
     		
     		Ext.apply(config,
     		{
-    			layoutKey : config.layoutKey || Bisque.ResourceBrowser.LayoutFactory.DEFAULT_LAYOUT,
-    			msgBus : config.msgBus || config.resourceManager,
-    			resQ : config.resQ || config.resourceManager,
-    			browser : config.browser || {},
+    			layoutKey    :   config.layoutKey || Bisque.ResourceBrowser.LayoutFactory.DEFAULT_LAYOUT,
+    			msgBus       :   config.msgBus || config.resourceManager,
+    			resQ         :   config.resQ || config.resourceManager,
+    			browser      :   config.browser || {},
     		});
     		
             function preferencesLoaded(preferences, resource, layoutCls)
@@ -72,7 +72,7 @@ Ext.define('Bisque.ResourceFactoryWrapper',
             }
 
             var resource = Bisque.ResourceFactory.getResource(config);
-            var layoutCls = Bisque.ResourceBrowser.LayoutFactory.getLayout({browser:{layoutKey:Bisque.ResourceBrowser.LayoutFactory.DEFAULT_LAYOUT}});
+            var layoutCls = Bisque.ResourceBrowser.LayoutFactory.getLayout({browser:{layoutKey: config.layoutKey}});
             resource.setSize({width: layoutCls.layoutEl.width, height: layoutCls.layoutEl.height})
             resource.addCls(layoutCls.layoutCSS);
 
