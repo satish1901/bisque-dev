@@ -1081,6 +1081,20 @@ def install_mail(params):
     print "Please review/edit the mail.* settings in site.cfg for you site"""
     return params
 
+#######################################################
+
+def install_preferences(params):
+    if getanswer ("Initialize Preferences ","N",
+                  """Initialize system preferences.. new systems will 
+requires this while, upgraded system may depending on chnages""")!="Y":
+        return params
+    cmd = ['bq-admin', 'preferences', 'init', ]
+    if getanswer("Force initialization ", "Y", "Replace any existing preferences with new ones") == "Y":
+        cmd.append ('-f')
+    r  = subprocess.call (cmd, stderr = None)
+    if r!=0:
+        print "Problem initializing preferences.. please use bq-admin preferences"
+    return params
 
 #######################################################
 #
@@ -1317,6 +1331,7 @@ install_options= [
            'bioformats',
            'server',
            'mail',
+           'preferences',
            'admin']
 
 
@@ -1373,7 +1388,7 @@ def bisque_installer(options, args):
     params = {}
     if  os.path.exists (SITE_CFG): 
         params = read_site_cfg(cfg = SITE_CFG, section=BQ_SECTION)
-        print params
+        #print params
 
     if not os.path.exists(RUNTIME_CFG):
         runtime_params = install_cfg(RUNTIME_CFG, section=None, default_cfg=config_path('runtime-bisque.default'))
@@ -1400,6 +1415,9 @@ def bisque_installer(options, args):
         runtime_params = install_modules(runtime_params)
     if 'mail'  in installer:
         params = install_mail(params)
+    if 'preferences' in installer:
+        params = install_preferences(params)
+
     #if options.admin:
     #    setup_admin(params)
 
