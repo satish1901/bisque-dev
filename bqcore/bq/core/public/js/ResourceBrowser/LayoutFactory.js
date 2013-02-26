@@ -554,8 +554,6 @@ Ext.define('Bisque.ResourceBrowser.Layout.Grid',
             {
                 items : [
                 {
-                    //maxWidth: 70,
-                    //hidden:true,
                     dataIndex: 'icon',
                     menuDisabled : true,
                     sortable : false,

@@ -40,7 +40,6 @@ Ext.define('Bisque.Resource.Dataset.Compact',
         if (!this.getData('fetched'))
         {
             this.setData('fetched', -1);    // -1 = Loading
-            //this.resource.getMembers(Ext.bind(this.fetchMembers, this));
             this.fetchMembers(this.resource);
 		}
     },
@@ -57,7 +56,7 @@ Ext.define('Bisque.Resource.Dataset.Compact',
     
 	loadResource : function(resource)
     {
-        var imgs = '<div style = "margin:4px;width:152px;height:152px">'
+        var imgs = '<div style = "margin-left:4px; margin-top:-1px; width:152px;height:152px">'
         var thumbnail, margin;
 
         for (var i=0;i<resource.children.length && i<4; i++)
@@ -108,6 +107,16 @@ Ext.define('Bisque.Resource.Dataset.Card',
 {
     extend : 'Bisque.Resource.Dataset.Compact',
     
+    fetchMembers : function(memberTag)
+    {
+        BQFactory.request(
+        {
+            uri:memberTag.uri + '/value?limit=12',
+            cb:Ext.bind(this.loadResource, this),
+            errorcb:Ext.emptyFn
+        });
+    },
+
     loadResource : function(resource)
     {
         var imgs = '<div style = "margin:0px 0px 0px 12px;width:258px;height:310px">'
@@ -119,7 +128,7 @@ Ext.define('Bisque.Resource.Dataset.Card',
                 {
                     case 'image':
                     {
-                        thumbnail = resource.children[i].src+'?slice=,,0,0&thumbnail=280,280&format=jpeg';
+                        thumbnail = resource.children[i].src + this.getImageParams({width:280, height:280}); 
                         break;
                     }
                     case 'dataset':
@@ -172,6 +181,16 @@ Ext.define('Bisque.Resource.Dataset.Full',
         });
     },
     
+    fetchMembers : function(memberTag)
+    {
+        BQFactory.request(
+        {
+            uri:memberTag.uri + '/value?limit=12',
+            cb:Ext.bind(this.loadResource, this),
+            errorcb:Ext.emptyFn
+        });
+    },
+    
     loadResource : function(resource)
     {
         var imgs = '<div style = "margin:0px 0px 0px 12px;width:99%;">'
@@ -183,7 +202,7 @@ Ext.define('Bisque.Resource.Dataset.Full',
                 {
                     case 'image':
                     {
-                        thumbnail = resource.children[i].src+'?slice=,,0,0&thumbnail=280,280&format=jpeg';
+                        thumbnail = resource.children[i].src + this.getImageParams({width:280, height:280}); 
                         break;
                     }
                     case 'dataset':
