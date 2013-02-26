@@ -402,12 +402,11 @@ BQObject.prototype.initializeXml = function (node) {
     // dima: speed optimization, using xpath for resources with many values is much faster
     // Utkarsh : now uses evaulateXPath from utils.js, which is browser independent
     var values = evaluateXPath(node.ownerDocument, './value');
-
-    if (!Ext.isEmpty(values))
-        this.values = [];
+    this.values = [];
     
     // values should be an array
-    this.values = values;
+    for (var i=0; i<values.length; i++)
+        this.values.push(new BQValue(values[i]));
         
     if (this.resource_uniq) {
         this.src  = '/blob_service/' + this.resource_uniq;
@@ -1181,12 +1180,11 @@ BQGObject.prototype.initializeXml = function (node) {
     // dima: speed optimization, using xpath for resources with many vertices is much faster
     // Utkarsh : now uses evaulateXPath from utils.js, which is browser independent
     var vertices = evaluateXPath(node.ownerDocument, './vertex');
-
-    if (!Ext.isEmpty(vertices))
-        this.vertices = [];
+    this.vertices = [];
     
-    // values should be an array
-    this.vertices = vertices;
+    // vertices should be an array
+    for (var i=0; i<vertices.length; i++)
+        this.vertices.push(new BQVertex(vertices[i]));
 
 }
 
