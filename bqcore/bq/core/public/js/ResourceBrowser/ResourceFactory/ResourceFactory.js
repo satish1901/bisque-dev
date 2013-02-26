@@ -55,15 +55,34 @@ Ext.define('Bisque.ResourceFactoryWrapper',
     			resQ : config.resQ || config.resourceManager,
     			browser : config.browser || {},
     		});
-    			
-    		var resource = Bisque.ResourceFactory.getResource(config);
-    		var layoutCls = Bisque.ResourceBrowser.LayoutFactory.getClass(config.layoutKey);
-    		var css = Ext.ClassManager.get(layoutCls).readCSS();
-    
-    		resource.prefetch(css);
-    		resource.setSize({width:css.layoutEl.width, height:css.layoutEl.height})
-    		resource.addCls(css.layoutCSS);
     		
+            function preferencesLoaded(preferences, resource, layoutCls)
+            {
+                Ext.apply(resource, {
+                    preferences     :   preferences,
+                    getImagePrefs   :   function(key)
+                    {
+                        if (this.preferences && this.preferences.Images && this.preferences.Images[key])
+                            return this.preferences.Images[key];
+                        return '';
+                    },
+                })
+                
+                resource.prefetch(layoutCls);
+            }
+
+            var resource = Bisque.ResourceFactory.getResource(config);
+            var layoutCls = Bisque.ResourceBrowser.LayoutFactory.getLayout({browser:{layoutKey:Bisque.ResourceBrowser.LayoutFactory.DEFAULT_LAYOUT}});
+            resource.setSize({width: layoutCls.layoutEl.width, height: layoutCls.layoutEl.height})
+            resource.addCls(layoutCls.layoutCSS);
+
+            BQ.Preferences.get(
+            {
+                type        :   'user',
+                key         :   'ResourceBrowser',
+                callback    :   Ext.bind(preferencesLoaded, this, [resource, layoutCls], true)
+            });
+    			
     		return resource;
         }
     }
@@ -106,6 +125,45 @@ Ext.define('Bisque.Resource',
     {
         if (this.getData('fetched')!=1)
             this.setLoading({msg:''});
+    },
+    
+    GetImageThumbnailRel : function(params, actualSize, displaySize)
+    {
+        return  Ext.String.format('<img class="imageCenterHoz" style="\
+                    max-width   :   {0}px;  \
+                    max-height  :   {1}px;  \
+                    margin-top  :   {2}px;" \
+                    src         =   "{3}"   \
+                    id          =   "{4}"   />', 
+                    displaySize.width,
+                    displaySize.height,
+                    (0.5*displaySize.height/params.height) * (params.height-actualSize.height),
+                    this.getThumbnailSrc(params),
+                    this.resource.uri);
+    },
+
+    getThumbnailSrc : function(params)
+    {
+        return this.resource.src + this.getImageParams(params);
+    },
+    
+    getImageParams : function(config)
+    {
+        var prefs = this.getImagePrefs('ImageParameters') || '?slice=,,{sliceZ},{sliceT}&thumbnail={width},{height}&format=jpeg';
+
+        prefs = prefs.replace('{sliceZ}', config.sliceZ || 1);
+        prefs = prefs.replace('{sliceT}', config.sliceT || 1);
+        prefs = prefs.replace('{width}', config.width || 150);
+        prefs = prefs.replace('{height}', config.height || 150);
+        
+        return prefs;
+    },
+    
+    getImagePrefs : function(key)
+    {
+        if (this.browser.preferences && this.browser.preferences.Images && this.browser.preferences.Images[key])
+            return this.browser.preferences.Images[key];
+        return '';
     },
 
     GetPropertyGrid : function(configOpts, source)
@@ -223,7 +281,7 @@ Ext.define('Bisque.Resource',
 		this.setLoadingMask();	// Put a mask on the resource container while loading
 		var el=this.getEl();
 
-		el.on('mouseenter', Ext.Function.createSequence(this.preMouseEnter, this.onMouseEnter, this), this);
+        el.on('mouseenter', Ext.Function.createSequence(this.preMouseEnter, this.onMouseEnter, this), this);
 		el.on('mousemove', this.onMouseMove, this);
 		el.on('mouseleave', Ext.Function.createSequence(this.preMouseLeave, this.onMouseLeave, this), this);
 		el.on('click', Ext.Function.createSequence(this.preClick, this.onClick, this), this);
@@ -517,7 +575,6 @@ Ext.define('Bisque.Resource.Page',
 
         Ext.apply(this,
         {
-            //layout  :   'fit',
             border  :   false,
             
             tbar    :   Ext.create('Ext.toolbar.Toolbar', 
@@ -529,19 +586,28 @@ Ext.define('Bisque.Resource.Page',
                                             },
                             items       :   this.getOperations(config.resource).concat([
                                                 '-', '->',
+                                                /*{
+                                                    itemId      :   'btnOwner',
+                                                    iconCls     :   'icon-owner',
+                                                    href        :   '/',
+                                                    tooltip     :   'Contact the owner of this resource.',
+                                                    hidden      :   true,
+                                                    needsAuth   :   false,
+                                                }, '-',*/
                                                 {
                                                     itemId  :   'btnRename',
                                                     text    :   type + ': <b>' + name + '</b>',
                                                     handler :   this.promptName,
                                                     scope   :   this,
                                                     cls     :   'heading',
-                                                }
+                                                },
                                              ])
                         }),
         }, config);
         
         this.callParent(arguments);
         this.toolbar = this.getDockedComponent(0);
+
         this.testAuth(BQApp.user, false);
         this.addListener('afterlayout', this.onResourceRender, this, {single:true});
     },
@@ -557,7 +623,7 @@ Ext.define('Bisque.Resource.Page',
             resource    :   this.resource,
             split       :   true,
         });
-
+        
         this.add(resourceTagger);
         this.setLoading(false);
     },
@@ -580,6 +646,14 @@ Ext.define('Bisque.Resource.Page',
 
         if (user)
         {
+            /*if (user.uri!=this.resource.owner)
+            {
+                var btn = this.toolbar.getComponent('btnOwner'); 
+                btn.setText(user.display_name || '');
+                btn.getEl().down('a', true).setAttribute('href', 'mailto:' + user.email_address);
+                btn.setVisible(true);
+            }*/
+            
             if (!loaded)
                 this.resource.testAuth(user.uri, Ext.bind(this.testAuth, this, [user, true], 0));            
             else
@@ -645,7 +719,6 @@ Ext.define('Bisque.Resource.Page',
             text        :   'Delete',
             iconCls     :   'icon-delete',
             handler     :   this.deleteResource,
-            //handler     :   this.testAuth1
         },
         {
             itemId      :   'btnPerm',
@@ -677,6 +750,7 @@ Ext.define('Bisque.Resource.Page',
                 
                             }
         });
+        
         
         return items;
     },

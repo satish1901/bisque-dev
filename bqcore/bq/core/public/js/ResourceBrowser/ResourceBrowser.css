@@ -12,7 +12,15 @@
 }
 
 .imageCenterHoz {
-    display: block; margin-left: auto; margin-right: auto;
+    display         :   block;
+    margin-left     :   auto;
+    margin-right    :   auto;
+}
+
+.gridCellIcon { 
+    display         :   table-cell;
+    vertical-align  :   middle;
+    height          :   40px    
 }
 
 .background-transparent {
@@ -55,7 +63,8 @@
 /* ResourceLayout settings: */
 .ImageCompact {
     margin: 15px;
-    padding: 0px;
+    padding:0px;
+    padding-top:5px;
     width: 160px;
     height: 160px;
     border: solid 0px #F00 !important;	/* FBFBFB */
@@ -329,7 +338,7 @@ dima: Global mask style is defined and overriden in bisquik_extjs_fixes in js an
 	color: #FFF;
 	position:absolute;
 	text-shadow: 1px 1px 3px rgba(0,0,0,1);
-	margin-top:142px;
+	margin-top:137px;
 	font-size: 10px;
 	background-color:rgba(10,10,10,.05);
 	font-weight:bold;
@@ -379,6 +388,10 @@ dima: Global mask style is defined and overriden in bisquik_extjs_fixes in js an
 
 .icon-group {
     background-image: url('../ResourceBrowser/Images/group.png') !important;
+}
+
+.icon-owner {
+    background-image: url('../ResourceBrowser/Images/owner.png') !important;
 }
 
 .icon-download-small {

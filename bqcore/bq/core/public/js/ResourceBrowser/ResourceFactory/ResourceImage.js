@@ -2,54 +2,6 @@
 Ext.define('Bisque.Resource.Image',
 {
     extend:'Bisque.Resource',
-
-    GetImageThumbnailRel : function(params, actualSize, displaySize)
-    {
-        var a = Ext.String.format('<img class="imageCenterHoz" style="\
-                    max-width   :   {0}px;  \
-                    max-height  :   {1}px;  \
-                    margin-top  :   {2}px;" \
-                    src         =   "{3}"   \
-                    id          =   "{4}"   />', 
-                    displaySize.width,
-                    displaySize.height,
-                    (0.5*displaySize.height/params.height) * (params.height-actualSize.height),
-                    this.getThumbnailSrc(params),
-                    this.resource.uri);
-        return a;
-    },
-
-    getThumbnailSrc : function(params)
-    {
-        return this.resource.src + this.getImageParams(params);
-    },
-    
-    GetImageThumbnailAbs : function(params, size, full)
-    {
-        return '<img style="position:absolute; top:50%; left:50%; margin-top: -'+size.height/2+'px;margin-left: -'+size.width/2+'px;"'
-        +((full==undefined)?' id="'+this.resource.uri+'"':'')
-        + ' src="' + this.getThumbnailSrc(params) 
-        + '"/>';
-    },
-    
-    getImageParams : function(config)
-    {
-        var prefs = this.getImagePrefs('ImageParameters') || '?slice=,,{sliceZ},{sliceT}&thumbnail={width},{height}&format=jpeg';
-
-        prefs = prefs.replace('{sliceZ}', config.sliceZ || 0);
-        prefs = prefs.replace('{sliceT}', config.sliceT || 0);
-        prefs = prefs.replace('{width}', config.width || 150);
-        prefs = prefs.replace('{height}', config.height || 150);
-        
-        return prefs;
-    },
-    
-    getImagePrefs : function(key)
-    {
-        if (this.browser.preferences && this.browser.preferences.Images && this.browser.preferences.Images[key])
-            return this.browser.preferences.Images[key];
-        return '';
-    },
     
     afterRenderFn : function()
     {
@@ -259,7 +211,7 @@ Ext.define('Bisque.Resource.Image.Compact',
     
     resourceError : function()
     {
-        var errorImg = '<img style="display: block; margin-left: auto; margin-right: auto; margin-top: 65px;"'
+        var errorImg = '<img style="display: block; margin-left: auto; margin-right: auto; margin-top: 60px;"'
                             + ' src="' + bq.url('/js/ResourceBrowser/Images/unavailable.png') + '"/>';
         this.setData('image', errorImg);
         this.setData('fetched', 1);
@@ -559,13 +511,32 @@ Ext.define('Bisque.Resource.Image.Grid',
     {
         this.callParent(arguments);
         var prefetchImg = new Image();
-        prefetchImg.src = this.resource.src+'?slice=,,0,0&thumbnail=280,280&format=jpeg';
+        
+        prefetchImg.src = this.getThumbnailSrc(
+        {
+            width   :   this.layoutMgr.layoutEl.stdImageWidth,
+            height  :   this.layoutMgr.layoutEl.stdImageHeight,
+        });
     },
     
     getFields : function(cb)
     {
         var fields = this.callParent();
-        fields[0] = '<img style="height:40px;width:40px;" src='+this.resource.src+'?slice=,,0,0&thumbnail=280,280&format=jpeg />';
+        
+        fields[0] = '<div class="gridCellIcon" >' + this.GetImageThumbnailRel( 
+        {
+            width   :   280,
+            height  :   280
+        },
+        {
+            width   :   280,
+            height  :   280
+        },
+        {
+            width   :   40,
+            height  :   40,
+        }) + '</div>';
+        
         fields[6].height = 48;
 
         return fields;
