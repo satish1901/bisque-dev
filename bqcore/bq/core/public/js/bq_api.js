@@ -261,7 +261,7 @@ function parseValueType(v, t) {
 function BQValue (t, v, i) {
     this.resource_type = "value";
     this.xmlfields = [ 'type', 'index' ];
-    if (t instanceof Element && arguments.length==1) {
+    if (Ext.isElement(t) && arguments.length==1) {
         this.initializeXml(t);
         return;       
     }
@@ -274,7 +274,7 @@ BQValue.prototype = new BQXml();
 
 BQValue.prototype.initializeXml = function (node) {
     this.type  = attribStr(node, 'type');
-    this.value = parseValueType(node.textContent, this.type);
+    this.value = parseValueType(node.textContent || node.text, this.type);
     this.index = attribInt(node, 'index');    
 }
 
@@ -294,7 +294,7 @@ BQValue.prototype.xmlNode = function () {
 function BQVertex(x, y, z, t, ch, index) {
     this.resource_type = "vertex";
     this.xmlfields = [ 'x', 'y', 'z', 't', 'ch', 'index' ];
-    if (x instanceof Element && arguments.length==1) {
+    if (Ext.isElement(x) && arguments.length==1) {
         this.initializeXml(x);
         return;       
     }    
@@ -402,13 +402,13 @@ BQObject.prototype.initializeXml = function (node) {
     
     // dima: speed optimization, using xpath for resources with many values is much faster
     // Utkarsh : now uses evaulateXPath from utils.js, which is browser independent
-    var values = evaluateXPath(node.ownerDocument, './value');
+    var values = evaluateXPath(node, 'value');
     this.values = [];
     
     // values should be an array
     for (var i=0; i<values.length; i++)
         this.values.push(new BQValue(values[i]));
-        
+    
     if (this.resource_uniq) {
         this.src  = '/blob_service/' + this.resource_uniq;
         // in the case the data is coming from another server, make sure to load proper URL
@@ -1180,7 +1180,7 @@ BQGObject.prototype.initializeXml = function (node) {
     
     // dima: speed optimization, using xpath for resources with many vertices is much faster
     // Utkarsh : now uses evaulateXPath from utils.js, which is browser independent
-    var vertices = evaluateXPath(node.ownerDocument, './vertex');
+    var vertices = evaluateXPath(node, 'vertex');
     this.vertices = [];
     
     // vertices should be an array
