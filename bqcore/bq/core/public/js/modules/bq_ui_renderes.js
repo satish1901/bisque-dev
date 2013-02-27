@@ -777,7 +777,7 @@ Ext.define('BQ.selectors.PixelResolution', {
                 labelWidth: i==0?200:10,
                 fieldLabel: labels[i],
                 
-                value: parseFloat(resource.values[i].value),
+                value: resource.values[i] ? parseFloat(resource.values[i].value) : 0.0,
                 minValue: 0,
                 maxValue: 33,
                 allowDecimals: true,
@@ -787,7 +787,7 @@ Ext.define('BQ.selectors.PixelResolution', {
                 listeners: {
                     scope: this,
                     change: function(field, value) {
-                        resource.values[field.value_index].value = String(value);
+                        resource.values[field.value_index] = new BQValue ('number', value, field.value_index);
                     }, 
                     afterrender : function(o) {
                         o.tip = Ext.create('Ext.tip.ToolTip', {
@@ -849,7 +849,7 @@ Ext.define('BQ.selectors.PixelResolution', {
             this.field_res[3].setVisible(true);
         else {
             this.field_res[3].setVisible(false);            
-            resource.values[3].value = 1.0;
+            resource.values[3] = new BQValue ('number', 1.0, 3);
         }
     },
 

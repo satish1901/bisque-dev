@@ -248,7 +248,7 @@ BQFactory.parseBQDocument = function (xmltxt) {
 
 function parseValueType(v, t) {
     try {
-        if (t && t == 'number') 
+        if (t && typeof v === 'string' && t == 'number') 
             return parseFloat(v);
         else if (t && t == 'boolean') 
             return (v=='true') ? true : false;
@@ -258,7 +258,7 @@ function parseValueType(v, t) {
     return v;    
 }
 
-function BQValue (t, v) {
+function BQValue (t, v, i) {
     this.resource_type = "value";
     this.xmlfields = [ 'type', 'index' ];
     if (t instanceof Element && arguments.length==1) {
@@ -268,6 +268,7 @@ function BQValue (t, v) {
 
     if (t != undefined) this.type = t;
     if (v != undefined) this.value = parseValueType(v, this.type);    
+    if (i != undefined) this.index = i;       
 }
 BQValue.prototype = new BQXml();
 
