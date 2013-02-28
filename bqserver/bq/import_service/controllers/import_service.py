@@ -128,9 +128,7 @@ import cgi
 #if upload handler has been inited in webob
 if hasattr(cgi, 'file_upload_handler'):
     tmp_upload_dir = UPLOAD_DIR 
-    #config.get('bisque.blob_service.tmp_upload_dir', os.path.join(data_path(),'tmp_upload_dir'))
     _mkdir(tmp_upload_dir)
-    log.warn ('Configure special upload handler in %s' % tmp_upload_dir)
     
     #register callables here
     def import_transfer_handler(filename):
@@ -536,7 +534,7 @@ class import_serviceController(ServiceController):
             if fileObj.get('isDataset') is None:
                 if fileObj.get('FILE') is not None:
                     #fileObjUp = UploadedFile(fileObj.get('FILE'), None, None)
-                    with open(fileObj.get('FILE')) as f:
+                    with open(fileObj.get('FILE'), 'rb') as f:
                         #sanitize_filename(os.path.basename(fileObj.get('FILE'))), 
                         resource =  blob_service.store_blob(resource=xml, fileobj=f)
                     return resource
@@ -681,7 +679,7 @@ class import_serviceController(ServiceController):
             resource = etree.Element ('resource', name=name)
             resource.extend (copy.deepcopy (list (uf.resource)))
             etree.SubElement(resource, 'tag', name="original_upload", value=parent_uri, type='resource' )      
-            myf = UploadedResource(fileobj=open(fn), resource=resource)
+            myf = UploadedResource(fileobj=open(fn, 'rb'), resource=resource)
             ### NOTE ### 
             # could easily use self.process (myf)
             resources.append(self.insert_resource(myf))
