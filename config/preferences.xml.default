@@ -98,10 +98,10 @@
                 </template>
             </tag>
             
-            <tag name="fusion" value="a">
+            <tag name="fusion" value="m">
                 <template>
                     <tag type="string" name="Type" value="ComboBox"/>
-                    <tag type="string" name="Default value" value="a"/>
+                    <tag type="string" name="Default value" value="m"/>
                     <tag type="boolean" name="Allow blank" value="false"/>
                     <tag type="boolean" name="Editable" value="true"/>
                     <tag type="string" name="Display values" value="Average,Maximum"/>
