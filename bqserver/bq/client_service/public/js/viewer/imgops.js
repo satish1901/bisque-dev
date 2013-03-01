@@ -3,7 +3,7 @@ function ImgOperations (viewer, name) {
     this.default_enhancement      = p.enhancement     || 'd'; // values: 'd', 'f', 't', 'e'      
     this.default_enhancement_8bit = p.enhancement8bit || 'f';                
     this.default_negative         = p.negative        || '';  // values: '', 'negative'
-    this.default_fusion           = p.fusion          || 'a'; // values: 'a', 'm'    
+    this.default_fusion           = p.fusion          || 'm'; // values: 'a', 'm'    
     this.default_rotate           = p.rotate          || 0;   // values: 0, 270, 90, 180
     this.default_autoupdate       = false;
 
