@@ -55,23 +55,30 @@ from datetime import datetime
 from lxml import etree
 from tg import expose, controllers, flash, url, response
 import logging
-from repoze.what.predicates import is_user
+from repoze.what.predicates import is_user, in_group
 from repoze.what.predicates import not_anonymous
+from sqlalchemy import func
 
 import bq
 from bq.core.service import ServiceController
 from bq.core import identity
-from bq.core.model import   User #, Visit
+from bq.core.model import   User,Group #, Visit
 from bq.core.model import DBSession 
 from bq.data_service.model import  BQUser, Image, TaggableAcl
+
 #from bq.image_service.model import  FileAcl
 from tg import redirect
 from tg import request
 
 log = logging.getLogger('bq.admin')
 
+from bq.core import model
+from bq.core.model import DBSession
 
-    
+#from tgext.admin import AdminController
+
+#class BisqueAdminController(AdminController):
+#    allow_only = is_user('admin')
 
 class AdminController(ServiceController):
     """The admin controller is a central point for
@@ -82,6 +89,8 @@ class AdminController(ServiceController):
 
     #require = identity.in_group("admin")
     allow_only = is_user('admin')
+
+    #admin = BisqueAdminController([User, Group], DBSession)
 
     @expose('bq.client_service.templates.admin.index')
     def index(self, **kw):
@@ -99,11 +108,12 @@ class AdminController(ServiceController):
                      'images': BQUser.id
                      }
         order_with = ordering.get (order, BQUser.id)
-        users = DBSession.query(BQUser).order_by(order_with).all()
+        counter = DBSession.query (Image.owner_id, func.count('*').label('image_count')).group_by(Image.owner_id).subquery()
+
+        user_images = DBSession.query(BQUser, counter.c.image_count).outerjoin(counter, BQUser.id == counter.c.owner_id).order_by(order_with)
         results  = []
-        for u in users:
-            count = DBSession.query(Image).filter (Image.owner_id == u.id).count()
-            results.append ( [u, count] )
+        for u,c in user_images:
+            results.append ( [u, c] )
 
         if order == "images":
             results.sort (key = operator.itemgetter (1) )
