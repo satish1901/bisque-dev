@@ -264,7 +264,9 @@ class image_serviceController(ServiceController):
         if data_token.isHttpError():
             log.error('Responce Code: ' +str(data_token.httpResponseCode) )
             tg.response.status_int = data_token.httpResponseCode             
-            return data_token.data       
+            tg.response.content_type = data_token.contentType
+            tg.response.charset = 'utf8'
+            return data_token.data
 
         #second check if the output is TEXT/HTML/XML                  
         if data_token.isText():

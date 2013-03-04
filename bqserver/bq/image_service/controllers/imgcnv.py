@@ -72,17 +72,13 @@ def convert(ifnm, ofnm, fmt, extra=[]):
     with Locks(ifnm, ofnm) as l:
         if not l.locked:
             return 
-
         command = [IMGCNV, '-i', ifnm, '-o', ofnm, '-t', fmt]
         command.extend (extra)
-
-        log.debug('IMGCNV: %s'%(" ".join(command)))
+        cmds = " ".join(command)
+        log.debug('IMGCNV: execute %s'% cmds) 
         retcode = call (command)
         if retcode != 0:
-            log.debug ("IMGCNV:  returned %s" % retcode)
-        #raise RuntimeError ("IMGCNV failed: %s" % command_line)
-
-    return
+            log.error (" '%s' returned %s" % (cmds,retcode))
 
 def convert_list(ifnl, ofnm, fmt, extra=''):
     '''return list of output filenames'''
@@ -98,9 +94,11 @@ def convert_list(ifnl, ofnm, fmt, extra=''):
             return
         command.extend ( [ '-o', ofnm, '-t', fmt] )
         command.extend (extra.split())
-        log.debug('IMGCNV: %s ' % " ".join(command) )
+        cmds = " ".join(command)
+        log.debug('IMGCNV: %s ' % cmds )
         retcode = call (command)
-    return
+        if retcode != 0:
+            log.error (" '%s'   returned %s" % (cmds, retcode))
 
 def info(ifnm):
     log.debug('IMGCNV: info for: '+str(ifnm) )

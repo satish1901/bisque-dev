@@ -1,6 +1,6 @@
 
 
-class DataSrvException(object):
+class DataSrvException(BaseException):
     pass
 
 class UnsupportedFormat(DataSrvException):
