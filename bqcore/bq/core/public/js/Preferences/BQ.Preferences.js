@@ -119,7 +119,7 @@ Ext.define('BQ.Preferences',
             var obj = {};
             for (var tag in dict.tags)
                 obj[dict.tags[tag].data.name] = fromDictionary(dict.tags[tag])
-            return isEmptyObject(obj) ? (Ext.isString(dict.data.value)?dict.data.value.trim():dict.data.value) : obj;                
+            return isEmptyObject(obj) ? ( isEmptyObject(dict) ? {} : ( Ext.isString(dict.data.value) ? dict.data.value.trim() : dict.data.value ) ) : obj;                
         }
         caller.type = caller.type || 'user';
         

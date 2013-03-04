@@ -278,8 +278,10 @@ function xmlrequest(url, cb, method, postdata, errorcb) {
                         message_short : error_short
                     });
                 }
-                    
-                BQ.ui.error(error_str);
+
+                // Utkarsh : This shouldn't be called again if a default_error_callback is configured for all requests
+                //           Leads to two error message popups                     
+                //BQ.ui.error(error_str);
                 
                 //throw(error_str);
             }
