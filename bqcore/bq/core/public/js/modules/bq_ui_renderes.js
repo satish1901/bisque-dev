@@ -362,7 +362,16 @@ Ext.define('BQ.selectors.Resource', {
         // show the preview thumbnail of the selected resource, 
         // if gobjects are required the image viewer will be shown, so no need for the preview
         if (!(this.selected_resource instanceof BQImage) || this.resource.gobjects.length<1) {    
-            this.resourcePreview = Bisque.ResourceFactoryWrapper.getResource( {resource:R} );
+            this.resourcePreview = Bisque.ResourceFactoryWrapper.getResource({
+                resource: R,
+                listeners: { 
+                    'select': function(T) {
+                        window.open('/client_service/view?resource='+T.resource.uri);  
+                    }, 
+                    scope: this, 
+                },
+            });
+            
         } else {
             this.resourcePreview = Ext.create('BQ.selectors.Gobject', {
                 resource: this.resource.gobjects[0],
