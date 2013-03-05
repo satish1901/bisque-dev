@@ -64,7 +64,7 @@ moviePlayer.prototype.generateVideoUrl = function ( fmt ) {
   }
   
   var fu = this._image_url + '%3Fremap%3Ddisplay'+size+pages+'%26format%3D'+fmt;   
-  if (this._fps > 0)
+  if (this._fps > 5)
     fu += ',fps,'+String(this._fps);  
   return fu;
 }
@@ -84,7 +84,7 @@ moviePlayer.prototype.generateUrl = function ( fmt ) {
   }
   
   var fu = this._image_url + '?remap=display'+size+pages+'&format='+fmt;   
-  if (this._fps > 0)
+  if (this._fps > 5)
     fu += ',fps,'+String(this._fps);  
   return fu;
 }
@@ -149,8 +149,8 @@ moviePlayer.prototype.initPlayer = function () {
   //if (_num_pages < 900) this._fps = 15;   
   if (_num_pages < 450) this._fps = 12;   
   if (_num_pages < 225) this._fps = 6;   
-  if (_num_pages < 100) this._fps = 3;   
-  if (_num_pages < 50) this._fps = 1;     
+  //if (_num_pages < 100) this._fps = 3;   
+  //if (_num_pages < 50) this._fps = 1;     
   
   //-----------------------------------------------------------------------
   // Update play parameters

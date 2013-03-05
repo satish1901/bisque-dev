@@ -412,7 +412,8 @@ Ext.define('BQ.Application.Toolbar', {
                         var tip = Ext.create('Ext.tip.ToolTip', {
                             target: c.el,
                             anchor: 'top',
-                            minWidth: 600,                           
+                            minWidth: 500, 
+                            width: 500,                          
                             autoHide: true,
                             dismissDelay: 20000,
                             shadow: true,
