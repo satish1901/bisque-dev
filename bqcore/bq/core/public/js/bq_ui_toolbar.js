@@ -404,10 +404,23 @@ Ext.define('BQ.Application.Toolbar', {
                 value: this.image_query_text, 
                 hidden: !browse_vis,
                 minWidth: 60,
-                tooltip: 'Query for images used Bisque expression',  
+                tooltip: 'Query for images using Bisque expressions',  
                 enableKeyEvents: true,
                 listeners: {
-                    focus: function(c){ if (c.value == toolbar.image_query_text) c.setValue(''); },
+                    focus: function(c) { 
+                        if (c.value == toolbar.image_query_text) c.setValue(''); 
+                        var tip = Ext.create('Ext.tip.ToolTip', {
+                            target: c.el,
+                            anchor: 'top',
+                            minWidth: 600,                           
+                            autoHide: true,
+                            dismissDelay: 20000,
+                            shadow: true,
+                            autoScroll: true,
+                            loader: { url: '/html/querying.html', renderer: 'html', autoLoad: true },
+                        }); 
+                        tip.show();                           
+                    },
                     specialkey: function(f, e) { 
                         if (e.getKey()==e.ENTER && f.value!='' && f.value != toolbar.image_query_text) {
                             document.location = bq.url('/client_service/browser?tag_query='+escape(f.value)); 

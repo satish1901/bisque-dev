@@ -51,7 +51,21 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
 							},
 	
 							scope : this
-						}
+						},
+				        scope : this,
+                        focus: function(c) { 
+                            var tip = Ext.create('Ext.tip.ToolTip', {
+                                target: c.el,
+                                anchor: 'top',
+                                minWidth: 600,                           
+                                autoHide: true,
+                                dismissDelay: 20000,
+                                shadow: true,
+                                autoScroll: true,
+                                loader: { url: '/html/querying.html', renderer: 'html', autoLoad: true },
+                            }); 
+                            tip.show();                           
+                        },
 					}
 				},
 				{
