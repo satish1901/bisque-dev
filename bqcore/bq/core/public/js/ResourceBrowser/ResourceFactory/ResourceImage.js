@@ -22,7 +22,7 @@ Ext.define('Bisque.Resource.Image',
             url         :   this.resource.src + '?meta',
             callback    :   function(opts, success, response) {
                                 if (response.status>=400)
-                                    BQ.ui.error(response.responseText);
+                                    clog(response.responseText);
                                 else
                                     this.onMetaLoaded(response.responseXML);
                             },
@@ -78,6 +78,9 @@ Ext.define('Bisque.Resource.Image',
             imgLoader.style.height = this.layoutMgr.layoutEl.imageHeight;
             imgLoader.style.width = this.layoutMgr.layoutEl.imageWidth;
              
+            imgLoader.onload = Ext.bind(ImgOnLoad, this);
+            imgLoader.onerror = Ext.emtpyFn;
+
             imgLoader.src = this.resource.src + this.getImageParams({
                 sliceZ : sliceY,
                 sliceT : sliceX,
@@ -93,9 +96,6 @@ Ext.define('Bisque.Resource.Image',
                     this.mmData.isLoadingImage = false;
                 }
             }
-
-            imgLoader.onload = Ext.bind(ImgOnLoad, this);
-            imgLoader.onerror = Ext.emtpyFn;
         }
     },
     
@@ -224,7 +224,7 @@ Ext.define('Bisque.Resource.Image.Compact',
         else
             this.setLoading(false);
     },
-    
+
     loadResource : function(data, type)
     {
         if (type=='image')
