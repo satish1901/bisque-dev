@@ -160,14 +160,14 @@ class AuthenticationServer(ServiceController):
             redirect(url('/auth_service/login',params=dict(came_from=came_from, __logins=login_counter)))
         userid = request.identity['repoze.who.userid']
         flash(_('Welcome back, %s!') % userid)
-        session['bq_user_id'] = identity.get_user_id()
-        session['bq_admin_id'] = identity.get_admin_id()
         self._begin_mex_session()
-        timeout = int (config.get ('bisque.visit.timeout', 0))
+        timeout = int (config.get ('bisque.login.timeout', 10))
         if timeout:
-            session['expires']  = datetime.now() + timedelta(minutes=timeout)
+            session['expires']  = (datetime.now() + timedelta(minutes=timeout))
+            session['timeout']  = timeout*60
 
         session.save()
+        log.debug ("Current session %s" % session)
         redirect(came_from)
 
 
@@ -234,23 +234,15 @@ class AuthenticationServer(ServiceController):
             #log.debug ("session_timout for visit %s" % str(vk))
             #visit = Visit.lookup_visit (vk)
             #expire =  (visit.expiry - datetime.now()).seconds
-            timeout = int(session.get ('timeout', 20 )) *60
+            timeout = int(session.get ('timeout', 600 )) 
             expires = session.get ('expires', datetime(2100, 1,1))
             
             current_user = identity.get_user()
             if current_user:
                 etree.SubElement(sess,'tag',
                                  name='user', value=data_service.uri() + current_user.uri)
-
-            etree.SubElement (sess, 'tag',
-                              name='expires',
-                              value= str((expires - datetime.now()).seconds))
-            etree.SubElement (sess, 'tag',
-                              name='timeout',
-                              value= str(timeout) )
-                             
-
-
+            etree.SubElement (sess, 'tag', name='expires', value= expires.isoformat() )
+            etree.SubElement (sess, 'tag', name='timeout', value= str(timeout) )
         return etree.tostring(sess)
             
 

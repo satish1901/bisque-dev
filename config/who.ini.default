@@ -18,6 +18,8 @@ secret = images
 #cookie_name=bisque
 #secure=False
 #include_ip=False
+#timeout = 60
+#reissue_time = 5
 
 [plugin:basicauth]
 use = repoze.who.plugins.basicauth:make_plugin

@@ -44,8 +44,6 @@ setup(
         "repoze.who <= 1.99",
 #        "tgext.admin >= 0.3.9",
         "tw.forms",
-
-
         #"repoze.who.plugins.ldap",  #Optional for LDAP login
         #"repoze.who.plugins.openid",  #Optional for OpenID login
         
@@ -68,7 +66,8 @@ setup(
         # Bisque dependencies
         "lxml",
         "virtualenv",
-        "poster"
+        "poster",
+        "shortuuid",
         ],
     setup_requires=["PasteScript >= 1.7"],
     paster_plugins=['PasteScript', 'Pylons', 'TurboGears2'],

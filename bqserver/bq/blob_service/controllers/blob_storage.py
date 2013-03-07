@@ -59,7 +59,8 @@ from bq.exceptions import ConfigurationError, ServiceError, IllegalOperation
 
 from bq.util.paths import data_path
 from bq.util.mkdir import _mkdir
-from bq.util.hash import make_uniq_hash
+from bq.util.hash import make_short_uuid
+from bq.util.http import get_file
 
 
 log = logging.getLogger('bq.blobs.storage')
@@ -86,16 +87,16 @@ except ImportError:
 
 
 
-def randomPath (format_path, user, filename, **params):
+def randomPath (format_path, user, filename, uniq, **params):
     """Create a unique path using a format and hash of filename
     i.e. {user}/{dirhash}/{filehash}-{filename}
     """
-    rand_hash = make_uniq_hash(filename)
-    #return "%s/%s/%s/%s-%s" % (top, user, rand_hash[0], rand_hash, os.path.basename(filename))
+    if uniq is None:
+        uniq = make_short_uuid(filename)
     return string.Template(format_path).substitute(
         user=user,
-        dirhash=rand_hash[0],
-        filehash=rand_hash,
+        dirhash=uniq[0],
+        filehash=uniq,
         filename=os.path.basename(filename), **params)
 
 ###############################################
@@ -114,7 +115,7 @@ class BlobStorage(object):
         'determine whether this store can access the identified file'
     def localpath(self, ident):
         'return the local path of  the identified file'
-    def write(self, fp, name, user_name=''):
+    def write(self, fp, name, user_name='', uniq=None):
         'write the file to a local blob returning a short ident and the localpath'
     def walk(self):
         'walk entries on this store .. see os.walk'
@@ -165,9 +166,9 @@ class LocalStorage(BlobStorage):
         return ((ident.startswith(self.top)  or not ident.startswith('file://')) 
                 and os.path.exists(self.localpath(ident)))
 
-    def write(self, fp, filename, user_name=''):
+    def write(self, fp, filename, user_name='', uniq=None):
         'store blobs given local path'
-        filepath = self.nextEmptyBlob(user_name, filename)
+        filepath = self.nextEmptyBlob(user_name, filename, uniq)
         localpath = urlparse.urlparse(filepath).path 
         log.debug('local.write: %s -> %s' % (filename, localpath))
         
@@ -181,10 +182,10 @@ class LocalStorage(BlobStorage):
             path = os.path.join(self.top, path)
         return urlparse.urlparse(path).path
 
-    def nextEmptyBlob(self, user, filename):
+    def nextEmptyBlob(self, user, filename, uniq):
         "Return a file object to the next empty blob"
         while 1:
-            fn = randomPath(self.format_path, user, filename)
+            fn = randomPath(self.format_path, user, filename, uniq)
             fp = urlparse.urlparse(fn).path
             _mkdir (os.path.dirname(fp))
             if os.path.exists (fp):
@@ -232,8 +233,8 @@ class iRodsStorage(BlobStorage):
     def valid(self, irods_ident):
         return irods_ident and irods_ident.startswith(self.top)
 
-    def write(self, fp, filename, user_name=None):
-        blob_ident = randomPath(self.format_path, user_name, filename)
+    def write(self, fp, filename, user_name=None, uniq=None):
+        blob_ident = randomPath(self.format_path, user_name, filename, uniq)
         log.debug('irods.write: %s -> %s' % (filename, blob_ident))
         flocal = irods_handler.irods_push_file(fp, blob_ident, user=self.user, password=self.password)
         return blob_ident, flocal
@@ -291,9 +292,9 @@ class S3Storage(BlobStorage):
     def valid(self, s3_ident):
         return s3_ident and s3_ident.startswith(self.top)
 
-    def write(self, fp, filename, user_name=None):
+    def write(self, fp, filename, user_name=None, uniq=None):
         'write a file to s3'
-        blob_ident = randomPath(self.format_path, user_name, filename)
+        blob_ident = randomPath(self.format_path, user_name, filename, uniq)
         log.debug('s3.write: %s -> %s' % (filename, blob_ident))
         s3_key = blob_ident.replace("s3://","")
         flocal = s3_handler.s3_push_file(fp, self.bucket , s3_key)
