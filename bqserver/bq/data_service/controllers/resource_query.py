@@ -57,7 +57,8 @@ import textwrap
 
 from tg import config, url, session
 from datetime import datetime
-from sqlalchemy.sql import select, func, exists, and_, or_, not_, asc, desc
+from sqlalchemy import Integer, String, DateTime, Unicode, Float, Boolean
+from sqlalchemy.sql import select, func, exists, and_, or_, not_, asc, desc, operators, cast
 from sqlalchemy.orm import Query, aliased
 #from datetime import strptime 
 
@@ -73,13 +74,13 @@ from bq.data_service.model import Tag, GObject
 from bq.data_service.model import Value, values
 from bq.data_service.model import dbtype_from_tag
 
-from bq.core.identity import get_user_id, get_admin_id, get_admin
+from bq.core.identity import get_user_id, get_admin_id, get_admin, is_admin
 from bq.core.model import User
 from bq.util.mkdir import _mkdir
 from bq.util.paths import data_path
 from bq.util.converters import asbool
 
-from bq  import image_service
+from bq import image_service
 from bq.client_service.controllers import notify_service
 from .resource import Resource
 
@@ -114,8 +115,27 @@ except:
     import lex as lex
 
 
+
+_OPERATIONS = {
+        '==': operators.eq,
+        '!=': operators.ne,
+        '<': operators.lt,
+        '<=': operators.le,
+        '>': operators.gt,
+        '>=': operators.ge,
+#        'IN': operators.contains,
+#        'NOT IN': lambda a, b: not operators.contains(b, a)
+        }
+
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
 # Lexer 
-tokens = ('TAGVAL',  'SEP', 'TYSEP', 'AND', 'OR', 'LP', 'RP', 'QUOTED')
+tokens = ('TAGVAL',  'SEP', 'TYSEP', 'AND', 'OR', 'LP', 'RP', 'QUOTED', 'REL')
 reserved = { 'and':'AND', 'AND':'AND', 'or':'OR', 'OR':'OR', }
 
 #t_TAGVAL   = r'\w+\*?'
@@ -125,7 +145,7 @@ t_AND   = r'\&'
 t_OR    = r'\|'
 t_LP    = r'\('
 t_RP    = r'\)'
-#t_REL   = r'<|>|<=|>='
+t_REL   = r'<|>|<=|>=|==|!='
 #t_VALEXP= r'\w+\*'
 
 t_ignore = r' '
@@ -136,7 +156,7 @@ def t_QUOTED(t):
     t.value = t.value[1:-1]
     return t
 def t_TAGVAL(t):
-    r'[^:\t\n\r\f\v()" ]+'
+    r'[^:=<>\t\n\r\f\v()" ]+'
     t.type = reserved.get(t.value, 'TAGVAL')
     if t.type != 'TAGVAL':
         t.value = t.value.upper()
@@ -194,12 +214,22 @@ def p_term_tagvaltype(p):
     '''term : sexpr '''
 
     log.debug ('tagval %s' % list(p[1]))
-    name, val, type_ = p[1]
+    name, val, type_, rel = p[1]
     #vals= values.alias()
     tag = taggable.alias ()
 
+
     tagfilter =None
     if name:
+        # attributes
+        if name[0] == '@' and val:
+            name = name[1:]
+            if name in LEGAL_ATTRIBUTES:
+                op = _OPERATIONS[rel]
+                p[0] = op(getattr(Taggable, LEGAL_ATTRIBUTES[name]), val)
+            return
+
+        # standard subtag
         if name.count('*'):
             namexpr = tag.c.resource_name.ilike (name.replace('*', '%'))
         else:
@@ -213,7 +243,16 @@ def p_term_tagvaltype(p):
             v = v.replace('*', '%')
             valexpr = tag.c.resource_value.ilike(v)
         else:
-            valexpr = (func.lower(tag.c.resource_value) == v)
+            op = _OPERATIONS[rel]
+            if is_number(val):
+                # Cast does not work as column may contain non-float values
+                #valexpr = cast (tag.c.resource_value, Float)
+                #valexpr = op(valexpr ,  float(v))
+                valexpr = op(tag.c.resource_value ,  v)
+            else:
+                valexpr = func.lower(tag.c.resource_value) 
+                valexpr = op(valexpr ,  v)
+
         tagfilter = and_(tagfilter, valexpr)
 
     if type_:
@@ -231,18 +270,25 @@ def p_term_tagvaltype(p):
 ### Parsing
 #   [[TYPE ::]NAME:]VALUE
 def p_sexpr_val(p):
-    '''sexpr : tagval'''
+    '''sexpr : reltagval'''
     # return (name,value,type)
-    p[0] = (None, p[1], None)
+    p[0] = (None, p[1][0], None, p[1][1])
 def p_sexpr_nameval (p):
-    '''sexpr : tagval SEP tagval'''
+    '''sexpr : tagval SEP reltagval'''
     # return (name,value,type)
-    p[0] = (p[1], p[3], None)
+    p[0] = (p[1], p[3][0], None, p[3][1])
 def p_sexpr_namevaltype (p):
     '''sexpr :  tagval TYSEP sexpr '''
     # return (name,value,type)
-    p[0] = (p[3][0], p[3][1], p[1])
+    p[0] = (p[3][0], p[3][1], p[1], p[3][2])
 
+def p_reltagval (p):
+    ''' reltagval : tagval 
+                  | REL tagval'''
+    if len(p) == 3:
+        p[0] = (p[2], p[1])
+    else:
+        p[0] = (p[1], '==')
 
 def p_tagval(p):
     '''tagval : TAGVAL
@@ -282,7 +328,8 @@ def prepare_permissions (query, user_id, with_public, action = RESOURCE_READ):
 
     # don't use None for next test .. if not logged in, the user will be None 
     #if user_id == session.get('bq_admin_id', -1): #get_admin_id()
-    if user_id == get_admin_id():
+    #if user_id == get_admin_id():
+    if is_admin():
         log.debug('user (%s) =admin skipping protection filters' % (user_id))
         return query
 
@@ -717,15 +764,20 @@ def resource_query(resource_type,
 
 
 
-def resource_load(resource_type, id,
+def resource_load(resource_type, 
+                  id=None,
+                  uniq = None,
                   user_id=None,
                   with_public=True,
                   action=RESOURCE_READ,
                   **kw):
     name, dbtype = resource_type
-    resource = prepare_type (resource_type)
 #    resource = prepare_permissions (resource, user_id, with_public = with_public, action=action)
-    resource = resource.filter_by (id = int(id))
+    if uniq is not None:
+        resource = DBSession.query(Taggable).filter_by (resource_uniq = uniq)
+    else:
+        resource = prepare_type (resource_type)
+        resource = resource.filter_by (id = id)
 
     return resource
 
@@ -744,11 +796,12 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
         user_id = get_user_id()
     # If you are amin or have edit permission then you can see other
     # user that have permission over this resource
-    if resource.owner_id != user_id and user_id != get_admin_id():
+    if resource.owner_id != user_id and not is_admin(): #user_id != get_admin_id():
         q = q.filter (TaggableAcl.user_id == user_id)
         
     if action == RESOURCE_READ:
-        if user_id == get_admin_id():
+        #if user_id == get_admin_id():
+        if is_admin():
             q = list (q.all())
             q.append(fobject('auth', user = get_admin(), action = "edit", resource_value=''))
         return q
@@ -894,7 +947,7 @@ def resource_delete(resource, user_id=None):
     log.info('resource_delete %s: start' % resource)
     if  user_id is None:
         user_id = get_user_id()
-    if resource.owner_id != user_id and user_id != get_admin_id():
+    if resource.owner_id != user_id and not is_admin(): # user_id != get_admin_id():
         # Remove the ACL only
         q = DBSession.query (TaggableAcl).filter_by (taggable_id = resource.id)
         q = q.filter (TaggableAcl.user_id == user_id)

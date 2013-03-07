@@ -292,7 +292,7 @@ class preferences (object):
                     data_service.del_resource(x[0])
                 else:
                     print ("NO ACTION: System object initialized at %s " % etree.tostring(x[0]))
-                    return 
+                    sys.exit (1)
 
             if os.path.exists(prefs):
                 if self.options.force:
@@ -300,7 +300,7 @@ class preferences (object):
                     os.remove (prefs)
                 else:
                     print ('NO ACTION: %s exists.. cannot init' % prefs)
-                    return
+                    sys.exit(1)
             
             system = etree.parse('config/preferences.xml.default').getroot()
             for el in system.getiterator(tag=etree.Element):
