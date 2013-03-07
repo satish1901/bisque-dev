@@ -1,7 +1,7 @@
 from bq.core.service import service_registry
 
 from controllers.blobsrv import  guess_type
-from controllers.blob_storage import make_uniq_hash
+from controllers.blob_storage import make_short_uuid
 
 def find_server():
     return service_registry.find_service ('blob_service')

@@ -54,7 +54,6 @@ import hashlib
 import urlparse
 import itertools
 
-
 from lxml import etree
 from datetime import datetime
 from datetime import timedelta
@@ -63,7 +62,8 @@ from datetime import timedelta
 import tg
 from tg import expose, flash, config, require, abort
 from tg.controllers import RestController
-from paste.fileapp import FileApp
+#from paste.fileapp import FileApp
+from bq.util.fileapp import BQFileApp
 from pylons.controllers.util import forward
 from repoze.what import predicates 
 
@@ -74,7 +74,7 @@ from bq.core.permission import perm2str
 from bq.exceptions import IllegalOperation
 from bq.util.paths import data_path
 from bq.util.mkdir import _mkdir
-from bq.util.hash import make_uniq_hash
+from bq.util.hash import make_uniq_hash, make_short_uuid
 from bq.util.timer import Timer
 from bq.util.sizeoffmt import sizeof_fmt
 
@@ -196,7 +196,7 @@ class StorageManager(object):
             log.info (transfer_msg (path, t.interval))
         return path
 
-    def save_blob(self, fileobj, filename, user_name):
+    def save_blob(self, fileobj, filename, user_name, uniq):
         filename_safe = filename.encode('ascii', 'xmlcharrefreplace')
         for store_id, store in self.stores.items():
             try:
@@ -204,7 +204,7 @@ class StorageManager(object):
                 if store.readonly:
                     log.debug("skipping %s: is readonly" % store_id)
                     continue
-                return  store.write(fileobj, filename_safe, user_name = user_name)
+                return  store.write(fileobj, filename_safe, user_name = user_name, uniq=uniq)
             except Exception, e:
                 log.exception('storing blob failed')
         return (None,None)
@@ -259,22 +259,43 @@ class BlobServer(RestController, ServiceMixin):
             except UnicodeEncodeError:
                 disposition = 'attachment; filename="%s"; filename*="%s"'%(filename.encode('utf8'), filename.encode('utf8'))
 
-            return forward(FileApp(localpath,
-                                   content_disposition=disposition,                                   
+            return forward(BQFileApp(localpath,
+                                   content_disposition=disposition,        
                                    ).cache_control (max_age=60*60*24*7*6)) # 6 weeks
         except IllegalOperation:
             abort(404)
 
-
-
     @expose(content_type='text/xml')
     @require(predicates.not_anonymous())
-    def post(self, **kwargs):
+    def post(self, **transfers):
         "Create a blob based on unique ID"
         log.info("post() called %s" % kwargs)
         #log.info("post() body %s" % tg.request.body_file.read())
-        resource =  self.storeBlob(flosrc = tg.request.body_file)
-        tg.request.body_file.close()
+
+        def find_upload_resource(transfers, pname):
+            log.debug ("transfers %s " % (transfers))
+            
+            resource = transfers.pop(pname+'_resource', None) #or transfers.pop(pname+'_tags', None)
+            log.debug ("found %s _resource/_tags %s " % (pname, resource))
+            if resource is not None:
+                try:
+                    if hasattr(resource, 'file'):
+                        log.warn("XML Resource has file tag")
+                        resource = f.file.read()
+                    if isinstance(resource, basestring):
+                        log.debug ("reading XML %s" % resource)
+                        resource = etree.fromstring(resource)
+                except:
+                    log.exception("Couldn't read resource parameter %s" % resource)
+                    resource = None
+            return resource
+
+        for k,f in dict(transfers).items():
+            if k.endswith ('_resource') or k.endswith('_tags'): continue
+            if hasattr(f, 'file'):
+                resource = find_uploaded_resource(transfers, k)
+                resource = self.store_blob(resource = resource, file_obj = f.file)
+
         return resource
 
     
@@ -310,9 +331,7 @@ class BlobServer(RestController, ServiceMixin):
         # hashed filename + stuff
 
         filename = resource.get ('name')
-        fhash = make_uniq_hash (filename)
         resource.set('resource_type', resource.get('resource_type') or guess_type(filename))
-        resource.set('resource_uniq', fhash)
         # KGK  
         # These are redundant (filename is the attribute name name upload is the ts
         resource.insert(0, etree.Element('tag', name="filename", value=filename))
@@ -324,9 +343,13 @@ class BlobServer(RestController, ServiceMixin):
 
     def store_blob(self, resource, fileobj = None):
         'Store a resource in the DB must be a valid resource'
+        fhash = resource.get ('resource_uniq')
+        if fhash is None:
+            fhash = make_short_uuid()
+            resource.set('resource_uniq', fhash)
         if fileobj is not None:
             return self.store_fileobj(resource, fileobj)
-        return self.store_reference( resource, resource.get('value') )
+        return self.store_reference(resource, resource.get('value') )
         
 
     def store_fileobj(self, resource, fileobj ):
@@ -338,16 +361,17 @@ class BlobServer(RestController, ServiceMixin):
         #filename_safe = filename.encode('ascii', 'xmlcharrefreplace')
         #filename_safe = filename.encode('ascii', 'replace')        
         filename = resource.get('name') or  getattr(fileobj, 'name') or ''
-
+        uniq     = resource.get('resource_uniq')
+        
         with Timer() as t:
-            blob_id, flocal = self.stores.save_blob(fileobj, filename, user_name = user_name)
-
+            blob_id, flocal = self.stores.save_blob(fileobj, filename, user_name = user_name, uniq=uniq)
 
         if log.isEnabledFor(logging.INFO):
             log.info (transfer_msg (flocal, t.interval))
 
         resource.set('name', filename)
         resource.set('value', blob_id)
+        resource.set('resouce_uniq', uniq)
         return self.create_resource(resource)
 
     def _make_url_local(self, urlref):
@@ -364,19 +388,13 @@ class BlobServer(RestController, ServiceMixin):
             # We will move it 
             localpath = self._make_url_local(urlref)
             if localpath:
-                user_name = identity.current.user_name
-                log.info("moving resource onto valid store %s "% resource.get('value'))
-                with Timer() as t:
-                    with open(localpath) as f:
-                        urlref, flocal = self.stores.save_blob(f, resource.get('name'), user_name = user_name)
-                        if urlref is None:
-                            raise IllegalOperation('Could not store %s on any store: %s' %(filename, self.stores))
-                if log.isEnabledFor(logging.INFO):
-                    log.info (transfer_msg (flocal, t.interval))
+                with open(localpath) as f:
+                    return self.store_fileobj(resource, f)
             else:
                 raise IllegalOperation("%s could not be moved to a valid store" % urlref)
         resource.set ('name' ,filename)
         resource.set ('value', urlref)
+
         return self.create_resource(resource)
 
     def localpath (self, uniq_ident):

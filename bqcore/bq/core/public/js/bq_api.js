@@ -2065,9 +2065,9 @@ BQSession.prototype.parseTags  = function (){
     var timeout = this.find_tags ('timeout');
     var expires = this.find_tags ('expires');
     if (expires && timeout) {
+        clog ("session (timeout, expires) " + timeout.value + ':' + expires.value);
         this.timeout = parseInt (timeout.value) * 1000;
         this.expires = parseInt (expires.value) * 1000; 
-        clog ("session " + this.timeout + ':' + this.expires);
     }
 
     var user = this.find_tags ('user');
@@ -2104,7 +2104,7 @@ BQSession.prototype.set_timeout  = function (baseurl, opts) {
     if (this.timeout) {
         this.callback = callback (this, 'check_timeout', baseurl);
         // tag value  is in seconds while timeout is in milliseconds
-        clog ("timeout in " + this.timeout );
+        clog ("timeout in " + this.timeout/1000 + " s" );
         this.reset_timeout();
     } else {
         clog ('no expire');

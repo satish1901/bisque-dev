@@ -68,7 +68,7 @@ import pylons
 from pylons.controllers.util import abort
 
 import tg
-from tg import redirect, expose, request
+from tg import redirect, expose, request, session
 from tg.util import Bunch
 from tg.configuration import  config
 #from tg.controllers import CUSTOM_CONTENT_TYPE
@@ -463,18 +463,11 @@ class Resource(ServiceController):
         response = tg.response
         path = list(path)
         resource = None
-        user_id = None
         if not hasattr(request, 'bisque'):
             bisque = Bunch()
             request.bisque = bisque
         bisque = request.bisque 
-        if not hasattr(bisque, 'user_id'):
-            if identity.not_anonymous():
-                user_id = identity.get_user_id()
-            bisque.user_id = user_id
-        user_id = bisque.user_id 
-
-
+        user_id  = identity.get_user_id()
         http_method = request.method.lower()
         log.info ('Request "%s" with %s?%s'%(http_method,str(request.path),str(kw)))
         log.debug ('Request "%s" '%(path))
@@ -603,8 +596,7 @@ class Resource(ServiceController):
         """
         log.debug ("ETAG: %s " %tg.request.url)
         if self.cache:
-            return self.server_cache.etag (tg.request.url,
-                                           tg.request.bisque.user_id)
+            return self.server_cache.etag (tg.request.url, identity.get_user_id())
         return None
     def get_last_modified_date(self, resource):
         """
@@ -613,8 +605,7 @@ class Resource(ServiceController):
         log.debug ("CHECK MODFIED: %s " %tg.request.url)
 
         if self.cache:
-            return self.server_cache.modified (tg.request.url,
-                                               tg.request.bisque.user_id)
+            return self.server_cache.modified (tg.request.url, identity.get_user_id())
         return None
 
     def dir(self, **kw):

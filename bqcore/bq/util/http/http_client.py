@@ -139,10 +139,14 @@ def post_files (url,  fields = None, **kw):
     body, headers = encode.multipart_encode(fields)
     return request(url, 'POST', headers=headers, body=body, **kw)
 
-def get_file (url):
-    from tempfile import NamedTemporaryFile
+def get_file (url, path = None):
+    if path == None:
+        from tempfile import NamedTemporaryFile
+        f = NamedTemporaryFile(delete=False)
+    else:
+        f = open(path, 'wb')
+        
     header, content = request(url)
-    f = NamedTemporaryFile(delete=False)
     f.write (content)
     f.close()
     return f.name

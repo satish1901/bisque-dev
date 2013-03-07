@@ -30,6 +30,7 @@ def bootstrap(command, conf, vars):
         initial_mex.mex = initial_mex
         initial_mex.name = "initialization"
         initial_mex.type = "initialization"
+        initial_mex.hidden = True
         model.DBSession.add(initial_mex)
         model.DBSession.flush()
 

@@ -61,8 +61,6 @@ import copy
 from lxml import etree
 from datetime import datetime
 from sqlalchemy.orm import object_mapper
-from sqlalchemy.exc import OperationalError
-from sqlalchemy.orm.exc import ConcurrentModificationError
 
 from StringIO import StringIO
 from tg import config
@@ -470,7 +468,7 @@ def resource2tree(dbo, parent=None, view=[], baseuri=None, nodes= {}, doc_id = N
     'load an entire document tree for a particular node'
 
     if doc_id != dbo.document_id:
-        nodes, doc_id = resource2nodes(dbo, parent, view, baseuri)
+        nodes, doc_id = resource2nodes(dbo, parent, view, baseuri, **kw)
     if parent is not None:
         log.debug ("parent %s + %s" % (parent, nodes[dbo.id]))
         parent.append ( nodes[dbo.id])
@@ -557,9 +555,14 @@ def db2node(dbo, parent, view, baseuri, nodes, doc_id):
          #log.debug ("TAG VIEW=%s", v)
          #tl = [ db2tree_int(x, node, v, baseuri) for x in dbo.tags if x.resource_name in v ] 
          for tag_name in v:
-             tag = dbo.tagq.filter_by(resource_name = tag_name).first()
-             if tag:
+             tags = DBSession.query(Taggable).filter(Taggable.document_id == dbo.document_id, 
+                                                     Taggable.resource_type == 'tag', 
+                                                     Taggable.resource_name == tag_name)
+             for tag in tags:
                  xmlnode(tag, node, view=v, baseuri=baseuri)
+             #tag = dbo.tagq.filter_by(resource_name = tag_name).first()
+             #if tag:
+             #    xmlnode(tag, node, view=v, baseuri=baseuri)
              
     return node, nodes, doc_id
 
