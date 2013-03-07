@@ -8,6 +8,7 @@ syntax: glob
 *.mexw64
 *.mexw32
 *.project
+*.ctf
 runtime-bisque.cfg
 build/*
 data/*

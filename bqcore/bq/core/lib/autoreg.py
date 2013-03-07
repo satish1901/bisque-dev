@@ -28,11 +28,12 @@ class AutoRegister (object):
         structures.
 
         """
-        log.info("autoreg")
+        log.debug("autoreg created")
         self.mapping = {}
         self.key_map = key_map
 
     def login_group (self, login_identifier):
+        log.debug ('login_group')
         g = model.DBSession.query(model.Group).filter_by(group_name = login_identifier).first()
         if g is None:
             g = model.Group()
@@ -76,7 +77,12 @@ class AutoRegister (object):
         """Add our stored metadata to given identity if available"""
         user = identity.get('repoze.who.userid', None)
         log.debug ("metadata with user: %s" % user) 
-        if user:
-            log.debug ('identity  = %s' % identity)
-
+        try:
+            from bq.data_service.model import BQUser
+            if user:
+                bquser =  model.DBSession.query (BQUser).filter_by(resource_name = user).first()
+                identity['bisque.bquser'] = bquser
+                log.debug ("adding %s to identity %s" % (bquser, identity))
+        except ImportError:
+            pass
         return identity

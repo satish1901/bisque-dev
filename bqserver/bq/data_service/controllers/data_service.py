@@ -115,7 +115,11 @@ class DataServerController(ServiceController):
         path = list(path)
         log.info ("path = %s %s " % (path, kw))
         token = path.pop(0)
-        resource_controller = self.get_child_resource (token)
+        if token.startswith ('00-'):
+            resource_controller = self.get_child_resource('taggable')
+            path.append(token)
+        else:
+            resource_controller = self.get_child_resource (token)
         return resource_controller._default (*path, **kw)
             
 
@@ -342,7 +346,7 @@ class DataServerController(ServiceController):
             
             if path:
                 token = path.pop(0)
-                resource = resource_load (resource_type, id=int(token))
+                resource = resource_load (resource_type, ident=int(token))
             if path:
                 parent = resource
 

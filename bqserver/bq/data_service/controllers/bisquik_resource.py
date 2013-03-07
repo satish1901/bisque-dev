@@ -174,6 +174,8 @@ class BisquikResource(Resource):
     def load(self, token, **kw):
         log.debug ("Load %s" % token)
         try:
+            if token.startswith('00-'):
+                return resource_load (self.resource_type, uniq = token[3:], action=RESOURCE_READ)
             return resource_load(self.resource_type, id=int(token), action=RESOURCE_READ)
         except ValueError, e:
             abort (404)
@@ -249,7 +251,7 @@ class BisquikResource(Resource):
         log.info ('DIR  %s' % (request.url))
         #  Do not use loading 
         parent = getattr(request.bisque,'parent', None)
-        user_id = request.bisque.user_id
+        user_id = identity.get_user_id()
 
         if view=='count':
             limit=None
@@ -400,7 +402,7 @@ class BisquikResource(Resource):
         """
         log.info ('DELETE %s' % (request.url))
         resource = self.check_access(resource)
-        response = resource_delete(resource, user_id = request.bisque.user_id)
+        response = resource_delete(resource, user_id = identity.get_user_id())
         return "<resource/>"
 
 

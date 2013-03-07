@@ -1,7 +1,7 @@
 #from turbogears import identity
 #from turbogears.util import request_available
 
-
+from repoze.what.predicates import in_group
 from tg import request
 import logging
 from bq.exceptions import BQException
@@ -98,8 +98,6 @@ class BisqueIdentity(object):
 ##  Current user object
 current  = BisqueIdentity()
 
-
-    
 def set_admin (admin):
     global user_admin
     user_admin = admin
@@ -118,6 +116,10 @@ def get_admin():
 def get_admin_id():
     user_admin = get_admin()
     return user_admin and user_admin.id
+
+def is_admin ():
+    'return whether current user has admin priveledges'
+    return in_group('admin').is_met(request.environ)
     
 
 #     if request_available():
