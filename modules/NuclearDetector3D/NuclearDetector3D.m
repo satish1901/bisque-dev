@@ -1,5 +1,5 @@
 %function NuclearDetector3D(mex_url, access_token, image_url, nuclear_channel, membrane_channel, nuclear_diameter, ~)
-function NuclearDetector3D(mex_url, access_token, image_url, ~, ~, ~, ~)
+function NuclearDetector3D(mex_url, access_token, image_url, varargin)
     session = bq.Session(mex_url, access_token);
     try
         nuclear_channel  = str2num(session.mex.findValue('//tag[@name="inputs"]/tag[@name="nuclear_channel"]'));
@@ -46,7 +46,7 @@ function NuclearDetector3D(mex_url, access_token, image_url, ~, ~, ~, ~)
             end
 
             session.update(sprintf('Time %d: 10% - detecting', current_t));
-            np{current_t} = BONuclearDetector3D(imn, [], ns(1:3), t, session);   
+            np{current_t} = BONuclearDetector3D(imn, ns(1:3), t, session);   
             count = count + length(np{current_t});
         end
         
