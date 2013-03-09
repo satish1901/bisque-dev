@@ -34,8 +34,22 @@
 %                                   double
 %%
 
-function np = BONuclearDetector3D(imn, imm, ns, t, session)
+function np = BONuclearDetector3D(imn, ns, t, session)
 
+    %% imdilate gets impossibly slow for large structuring elements
+    % we'll aproximate large kernels by using smaller interpolated data
+    max_ns = [25, 25, 11];
+    scale = ns ./ max_ns;
+    scale(scale<1) = 1;
+    if max(scale)>1,
+        newsz = round(size(imn) ./ scale);
+        imn = imresize3d(imn, newsz, 'cubic');
+        ns = ns ./ scale;
+    else
+        scale = [1,1,1];
+    end    
+
+    %% Convolve with LoG
     if exist('session', 'var'), session.update('10% - Blob detection'); end
     imlog = BOBlobDetector3D(imn, ns);
 
@@ -51,16 +65,12 @@ function np = BONuclearDetector3D(imn, imm, ns, t, session)
     end
     [~,idx] = max(dnp);
     np = np(idx:end);
-
+    
     %% Filtering
     if exist('session', 'var'), session.update('70% - Filtering'); end
     for i=1:length(np),
         dt = GetCentroidDescriptors3D(imn,imlog,np{i},ns);
-        if ~isempty(imm)
-            np{i} = BOProfileDescriptor3D(imm,np{i},dt,ns*1.1);
-        else
-            np{i} = Filter3DPointsByDescriptor(np{i},dt,ns*1.1);
-        end
+        np{i} = Filter3DPointsByDescriptor(np{i},dt,ns*1.1);
     end
 
     %% Merging    
@@ -68,6 +78,11 @@ function np = BONuclearDetector3D(imn, imm, ns, t, session)
     np = MergeThresholds(np);
     dt = GetCentroidDescriptors3D(imn, imlog, np, ns, 1);
 
+    %% scaling points to original size, for large kernel case  
+    np(:,1) = np(:,1) .* scale(1);
+    np(:,2) = np(:,2) .* scale(2);
+    np(:,3) = np(:,3) .* scale(3);
+    
     %% Producing resuls     
     sz = size(np,1);
     counts = np(:,4);

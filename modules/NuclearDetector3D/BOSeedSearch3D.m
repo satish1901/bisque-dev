@@ -27,19 +27,6 @@
 %%
 
 function npo = BOSeedSearch3D(im, ns, t)
-    % imdilate gets impossibly slow for large structuring elemnts
-    % we'll aproximate using smaller interpolated version
-    max_ns = [25, 25, 13];
-    scale = ns ./ max_ns;
-    scale(scale<1) = 1;
-    if max(scale)>1,
-        newsz = round(size(im) ./ scale);
-        im = imresize3d(im, newsz, 'cubic');
-        ns = ns ./ scale;
-    else
-        scale = [1,1,1];
-    end
-    
     %% cube is 10 times faster - Matlab converts it into 1D line elements
     %se = ones(round(2.0*ns+1.0));
    
@@ -68,9 +55,6 @@ function npo = BOSeedSearch3D(im, ns, t)
         [~,idxs] = sort(im(idx),'descend');
         np = np(idxs,:);    
         np(:,4) = (1:size(np,1))';
-        np(:,1) = np(:,1) .* scale(1);
-        np(:,2) = np(:,2) .* scale(2);
-        np(:,3) = np(:,3) .* scale(3);
         npo{i} = np;
     end
 end
