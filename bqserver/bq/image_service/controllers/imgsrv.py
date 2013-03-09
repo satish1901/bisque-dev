@@ -1357,6 +1357,28 @@ class NegativeService(object):
         data_token.setImage(fname=ofile, format=default_format)
         return data_token
 
+class DeinterlaceService(object):
+    '''Provides a deinterlaced image
+       ex: deinterlace'''
+    def __init__(self, server):
+        self.server = server
+    def __repr__(self):
+        return 'DeinterlaceService: Returns a deinterlaced image'
+    def hookInsert(self, data_token, image_id, hookpoint='post'):
+        pass
+    def action(self, image_id, data_token, arg):
+
+        ifile = self.server.getInFileName(data_token, image_id)
+        ofile = self.server.getOutFileName(ifile, '.deinterlace')
+        log.debug('DeinterlaceService service: ' + ifile + ' to '+ ofile )
+
+        if not os.path.exists(ofile):
+            imgcnv.convert(ifile, ofile, fmt=default_format, extra=['-deinterlace', 'avg', '-multi'])
+
+        data_token.dims['format'] = default_format
+        data_token.setImage(fname=ofile, format=default_format)
+        return data_token
+
 class SampleFramesService(object):
     '''Returns an Image composed of Nth frames form input
        arg = frames_to_skip
@@ -1844,6 +1866,7 @@ class ImageServer(object):
                           'projectmax'   : ProjectMaxService(self),
                           'projectmin'   : ProjectMinService(self),
                           'negative'     : NegativeService(self),
+                          'deinterlace'  : DeinterlaceService(self),
                           'sampleframes' : SampleFramesService(self),
                           'frames'       : FramesService(self),
                           'mask'         : MaskService(self),
