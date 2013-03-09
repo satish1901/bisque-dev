@@ -15,7 +15,8 @@ fileConfig(config.config_file_name)
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-from bq.core.model import metadata
+#from bq.core.model import metadata
+from bq.data_service.model import metadata 
 target_metadata = metadata
 extend_existing=True
 
@@ -49,19 +50,25 @@ def run_migrations_online():
     and associate a connection with the context.
     
     """
+    #from bq.core.model import DBSession, init_model
+
+
     engine = engine_from_config(
                 config.get_section(config.config_ini_section), 
                 prefix='sqlalchemy.', 
                 poolclass=pool.NullPool)
-
     connection = engine.connect()
+    #DBSession.configure(bind=engine)
+    #connection = DBSession.connection()
+
     context.configure(
                 connection=connection, 
                 target_metadata=target_metadata
                 )
 
+    import transaction
     try:
-        with context.begin_transaction():
+       with context.begin_transaction():
             context.run_migrations()
     finally:
         connection.close()
