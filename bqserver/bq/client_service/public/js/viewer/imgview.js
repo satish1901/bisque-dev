@@ -477,7 +477,7 @@ ImgViewer.prototype.remCommandGroup = function (group) {
 ImgViewer.prototype.addMenu = function (m) {
     if (!this.toolbar) return;
     var toolbar = this.toolbar;
-    var n = toolbar.items.getCount()-2;
+    var n = toolbar.items.getCount()-4;
     toolbar.insert(n, m);  
     toolbar.doLayout();
 }

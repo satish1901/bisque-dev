@@ -224,7 +224,7 @@ Ext.define('Bisque.ResourceBrowser.Layout.Base',
 	            	width: (this.getParentSize().width-30),
 	            	//autoScroll:true,
         	    	padding:0,
-            		title: '<b>Group </b><i>'+Ext.String.ellipsis(currentGrp, 80)+'</i>',
+            		title: '<b>Group </b><i>'+Ext.String.ellipsis(decodeURIComponent(currentGrp), 80)+'</i>',
             		collapsible: true,
             		collapsed: false
 				}));
@@ -334,7 +334,7 @@ Ext.define('Bisque.ResourceBrowser.Layout.Base',
 			
 		for (var k=0;k<this.showGroups.tags.length;k++)
 		{
-		    value = tagHash[this.showGroups.tags[k]];
+		    value = tagHash[decodeURIComponent(this.showGroups.tags[k])];
             grp+=this.showGroups.tags[k]+(value?':'+value:'')+', ';
 		}
 		
