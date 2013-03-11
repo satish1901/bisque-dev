@@ -648,9 +648,10 @@ Ext.define('Bisque.Resource.Page',
         {
             if (user.uri!=this.resource.owner)
             {
+                var owner = BQApp.userList[this.resource.owner] || {};
                 var btn = this.toolbar.getComponent('btnOwner'); 
-                btn.setText(user.display_name || '');
-                btn.getEl().down('a', true).setAttribute('href', 'mailto:' + user.email_address);
+                btn.setText(owner.display_name || '');
+                btn.getEl().down('a', true).setAttribute('href', 'mailto:' + owner.email_address);
                 btn.setVisible(true);
             }
             
