@@ -586,14 +586,14 @@ Ext.define('Bisque.Resource.Page',
                                             },
                             items       :   this.getOperations(config.resource).concat([
                                                 '-', '->',
-                                                /*{
+                                                {
                                                     itemId      :   'btnOwner',
                                                     iconCls     :   'icon-owner',
                                                     href        :   '/',
                                                     tooltip     :   'Contact the owner of this resource.',
                                                     hidden      :   true,
                                                     needsAuth   :   false,
-                                                }, '-',*/
+                                                }, '-',
                                                 {
                                                     itemId  :   'btnRename',
                                                     text    :   type + ': <b>' + name + '</b>',
@@ -646,13 +646,13 @@ Ext.define('Bisque.Resource.Page',
 
         if (user)
         {
-            /*if (user.uri!=this.resource.owner)
+            if (user.uri!=this.resource.owner)
             {
                 var btn = this.toolbar.getComponent('btnOwner'); 
                 btn.setText(user.display_name || '');
                 btn.getEl().down('a', true).setAttribute('href', 'mailto:' + user.email_address);
                 btn.setVisible(true);
-            }*/
+            }
             
             if (!loaded)
                 this.resource.testAuth(user.uri, Ext.bind(this.testAuth, this, [user, true], 0));            
