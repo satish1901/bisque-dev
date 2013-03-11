@@ -109,11 +109,11 @@ def create_tables1(bind):
 
 taggable = Table('taggable', metadata,
                  Column('id', Integer, primary_key=True),
-                 Column('mex_id', Integer, ForeignKey('taggable.id', name="mex_fk", ondelete="CASCADE")),
+                 Column('mex_id', Integer, ForeignKey('taggable.id', name="mex_fk", ondelete="CASCADE"),index=True),
                  Column('created', DateTime(timezone=False)),
                  Column('ts', DateTime(timezone=False)),
                  Column('perm', Integer), #ForeignKey('permission_sets.set_id')
-                 Column('owner_id', Integer, ForeignKey('taggable.id', name="owner_fk", ondelete="CASCADE")),
+                 Column('owner_id', Integer, ForeignKey('taggable.id', name="owner_fk", ondelete="CASCADE"), index=True),
                  Column('resource_uniq', String(40), index=True),
                  Column('resource_index', Integer),
                  Column('resource_hidden', Boolean),
