@@ -66,6 +66,6 @@ function im = convsB(im,H)
         orient = ones(1,ndims(im));   
         orient(k) = numel(H{k});
         kernel = reshape(H{k}, orient);
-        im = imfilter(im,kernel,'same');  
+        im = imfilter(im,kernel,'symmetric','same');  
     end
 end

@@ -204,7 +204,7 @@
     </tag>
 
     <tag name="module_options" >
-        <tag name="version" value="4" />
+        <tag name="version" value="5" />
     </tag>   
        
     <tag name="display_options" >
