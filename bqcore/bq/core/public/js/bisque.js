@@ -4963,7 +4963,7 @@ Ext.define('Bisque.ResourceBrowser.Layout.Base',
 	            	width: (this.getParentSize().width-30),
 	            	//autoScroll:true,
         	    	padding:0,
-            		title: '<b>Group </b><i>'+Ext.String.ellipsis(currentGrp, 80)+'</i>',
+            		title: '<b>Group </b><i>'+Ext.String.ellipsis(decodeURIComponent(currentGrp), 80)+'</i>',
             		collapsible: true,
             		collapsed: false
 				}));
@@ -5073,7 +5073,7 @@ Ext.define('Bisque.ResourceBrowser.Layout.Base',
 			
 		for (var k=0;k<this.showGroups.tags.length;k++)
 		{
-		    value = tagHash[this.showGroups.tags[k]];
+		    value = tagHash[decodeURIComponent(this.showGroups.tags[k])];
             grp+=this.showGroups.tags[k]+(value?':'+value:'')+', ';
 		}
 		
@@ -6894,6 +6894,31 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
         this.westPanel.doComponentLayout(null, null, true);
 	},
 
+    btnOrganizerClick1 : function(reload)
+    {
+        this.westPanel.removeAll(false);
+        
+        this.organizerCt = (reload?undefined:this.organizerCt) || Ext.create('BQ.TagBrowser', 
+        {
+            width       :   500,
+            listeners   :   {
+                                scope           :   this,
+                                'QUERY_CHANGED' :   function(uri) { this.msgBus.fireEvent('Browser_ReloadData', uri) }   
+                            },
+                        
+            // state variables
+            config      :   {
+                                tagList         :   ['habitat', 'Plant Structure', 'Genus', 'species'],
+                                resourceType    :   'image',
+                                resourceServer  :   'data_service',
+                                includePublic   :   this.browser.browserParams.wpublic,
+                            }
+        });
+        
+        this.westPanel.setWidth(this.organizerCt.width).show().expand();
+        this.westPanel.add(this.organizerCt);
+    },
+    
 	btnLayoutClick : function(item)
 	{
 		switch (item.itemId)
@@ -7847,14 +7872,14 @@ Ext.define('Bisque.Resource.Page',
                                             },
                             items       :   this.getOperations(config.resource).concat([
                                                 '-', '->',
-                                                /*{
+                                                {
                                                     itemId      :   'btnOwner',
                                                     iconCls     :   'icon-owner',
                                                     href        :   '/',
                                                     tooltip     :   'Contact the owner of this resource.',
                                                     hidden      :   true,
                                                     needsAuth   :   false,
-                                                }, '-',*/
+                                                }, '-',
                                                 {
                                                     itemId  :   'btnRename',
                                                     text    :   type + ': <b>' + name + '</b>',
@@ -7907,13 +7932,26 @@ Ext.define('Bisque.Resource.Page',
 
         if (user)
         {
-            /*if (user.uri!=this.resource.owner)
+            if (user.uri!=this.resource.owner)
             {
-                var btn = this.toolbar.getComponent('btnOwner'); 
-                btn.setText(user.display_name || '');
-                btn.getEl().down('a', true).setAttribute('href', 'mailto:' + user.email_address);
-                btn.setVisible(true);
-            }*/
+                var owner = BQApp.userList[this.resource.owner] || {};
+                var btn = this.toolbar.getComponent('btnOwner');
+                var mailto = Ext.String.format('mailto:{0}?subject={1}&body=Bisque resource -  {2} + ({3}) %0A%0A', owner.email_address,
+                    '[Bisque] Regarding ' + this.resource.name, this.resource.name, document.URL);
+                
+                btn.setText(owner.display_name || '');
+                
+                function setMailTo(btn, mailto)
+                {
+                    btn.getEl().down('a', true).setAttribute('href', mailto);
+                    btn.setVisible(true);
+                }
+                
+                if (btn.getEl())
+                    setMailTo(btn, mailto);
+                else
+                    btn.mon('afterrender', Ext.bind(setMailTo, this, [mailto], 1), this, { single:true });
+            }
             
             if (!loaded)
                 this.resource.testAuth(user.uri, Ext.bind(this.testAuth, this, [user, true], 0));            
