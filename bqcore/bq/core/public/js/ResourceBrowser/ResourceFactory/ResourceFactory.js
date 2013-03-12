@@ -649,10 +649,22 @@ Ext.define('Bisque.Resource.Page',
             if (user.uri!=this.resource.owner)
             {
                 var owner = BQApp.userList[this.resource.owner] || {};
-                var btn = this.toolbar.getComponent('btnOwner'); 
+                var btn = this.toolbar.getComponent('btnOwner');
+                var mailto = Ext.String.format('mailto:{0}?subject={1}&body=Bisque resource -  {2} + ({3}) %0A%0A', owner.email_address,
+                    '[Bisque] Regarding ' + this.resource.name, this.resource.name, document.URL);
+                
                 btn.setText(owner.display_name || '');
-                btn.getEl().down('a', true).setAttribute('href', 'mailto:' + owner.email_address);
-                btn.setVisible(true);
+                
+                function setMailTo(btn, mailto)
+                {
+                    btn.getEl().down('a', true).setAttribute('href', mailto);
+                    btn.setVisible(true);
+                }
+                
+                if (btn.getEl())
+                    setMailTo(btn, mailto);
+                else
+                    btn.mon('afterrender', Ext.bind(setMailTo, this, [mailto], 1), this, { single:true });
             }
             
             if (!loaded)
