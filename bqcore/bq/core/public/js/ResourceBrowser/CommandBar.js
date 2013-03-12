@@ -394,7 +394,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
         this.westPanel.doComponentLayout(null, null, true);
 	},
 
-	btnOrganizerClick : function(reload)
+	btnOrganizerClick1 : function(reload)
 	{
         this.westPanel.removeAll(false);
         
@@ -412,6 +412,31 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
         this.westPanel.doComponentLayout(null, null, true);
 	},
 
+    btnOrganizerClick : function(reload)
+    {
+        this.westPanel.removeAll(false);
+        
+        this.organizerCt = (reload?undefined:this.organizerCt) || Ext.create('BQ.TagBrowser', 
+        {
+            width       :   500,
+            listeners   :   {
+                                scope           :   this,
+                                'QUERY_CHANGED' :   function(uri) { this.msgBus.fireEvent('Browser_ReloadData', uri) }   
+                            },
+                        
+            // state variables
+            config      :   {
+                                tagList         :   ['habitat', 'Plant Structure', 'Genus', 'species'],
+                                resourceType    :   'image',
+                                resourceServer  :   'data_service',
+                                includePublic   :   this.browser.browserParams.wpublic,
+                            }
+        });
+        
+        this.westPanel.setWidth(this.organizerCt.width).show().expand();
+        this.westPanel.add(this.organizerCt);
+    },
+    
 	btnLayoutClick : function(item)
 	{
 		switch (item.itemId)
