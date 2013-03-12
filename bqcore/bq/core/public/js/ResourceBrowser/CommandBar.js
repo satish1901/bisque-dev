@@ -394,7 +394,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
         this.westPanel.doComponentLayout(null, null, true);
 	},
 
-	btnOrganizerClick1 : function(reload)
+	btnOrganizerClick : function(reload)
 	{
         this.westPanel.removeAll(false);
         
@@ -412,7 +412,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
         this.westPanel.doComponentLayout(null, null, true);
 	},
 
-    btnOrganizerClick : function(reload)
+    btnOrganizerClick1 : function(reload)
     {
         this.westPanel.removeAll(false);
         
