@@ -34,11 +34,14 @@
 %                                   double
 %%
 
-function np = BONuclearDetector3D(imn, ns, t, session)
+function np = BONuclearDetector3D(imn, ns, t, session, timetext)
+    if ~exist('timetext', 'var'), 
+        timetext=''; 
+    end
 
     %% imdilate gets impossibly slow for large structuring elements
     % we'll aproximate large kernels by using smaller interpolated data
-    max_ns = [25, 25, 11];
+    max_ns = [21, 21, 9]; % [25, 25, 13];
     scale = ns ./ max_ns;
     scale(scale<1) = 1;
     if max(scale)>1,
@@ -50,31 +53,40 @@ function np = BONuclearDetector3D(imn, ns, t, session)
     end    
 
     %% Convolve with LoG
-    if exist('session', 'var'), session.update('10% - Blob detection'); end
+    if exist('session', 'var'), session.update([timetext '10% - Blob detection']); end
     imlog = BOBlobDetector3D(imn, ns);
 
     %% Finding seeds
-    if exist('session', 'var'), session.update('40% - Seed search'); end
+    if exist('session', 'var'), session.update([timetext '40% - Seed search']); end
     t = sort(t);
     np = BOSeedSearch3D(imlog, ns, t);
     
     %% removing unchanging point sets towards low thresholds
     dnp = zeros(size(np,1),1);
     for i=1:size(np,1)-1,
-        dnp(i) = size(np{i},1) / size(np{i+1},1);
+        dnp(i) = size(np{i},1) - size(np{i+1},1);
+        if max(size(np{i},1), size(np{i+1},1)) < 5000,
+            dnp(i) = 0;
+        end
     end
-    [~,idx] = max(dnp);
-    np = np(idx:end);
     
+    % detecting the spike in the number of detections and removing
+    % everything towards lower thresholds
+    [~,idx] = max(dnp);
+    if idx>1,
+        idx = min(idx+1, size(np,1));
+    end
+    np = np(idx:end);
+        
     %% Filtering
-    if exist('session', 'var'), session.update('70% - Filtering'); end
+    if exist('session', 'var'), session.update([timetext '70% - Filtering']); end
     for i=1:length(np),
         dt = GetCentroidDescriptors3D(imn,imlog,np{i},ns);
         np{i} = Filter3DPointsByDescriptor(np{i},dt,ns*1.1);
     end
 
     %% Merging    
-    if exist('session', 'var'), session.update('90% - Merging'); end
+    if exist('session', 'var'), session.update([timetext '90% - Merging']); end
     np = MergeThresholds(np);
     dt = GetCentroidDescriptors3D(imn, imlog, np, ns, 1);
 
@@ -86,45 +98,41 @@ function np = BONuclearDetector3D(imn, ns, t, session)
     %% Producing resuls     
     sz = size(np,1);
     counts = np(:,4);
-    sums = zeros(sz,1);
+    %sums = zeros(sz,1);
     img_mean = zeros(sz,1);
-    img_mad = zeros(sz,1);
-    log_mean = zeros(sz,1);
+    %img_mad = zeros(sz,1);
+    %log_mean = zeros(sz,1);
     for i=1:sz,   
-        sums(i) = dt{i}.sum;
+        %sums(i) = dt{i}.sum;
         img_mean(i) = dt{i}.mean;
-        img_mad(i) = dt{i}.mad;    
-        log_mean(i) = dt{i}.log_mean;    
+        %img_mad(i) = dt{i}.mad;    
+        %log_mean(i) = dt{i}.log_mean;    
     end  
 
-    sums_orig = sums;
-    sums = ( sums - min(sums) ) / ( max(sums) - min(sums) );
-    img_mean = ( img_mean - min(img_mean) ) / ( max(img_mean) - min(img_mean) );
-    img_mad = ( img_mad - min(img_mad) ) / ( max(img_mad) - min(img_mad) );
-    log_mean = ( log_mean - min(log_mean) ) / ( max(log_mean) - min(log_mean) );
-    counts = ( counts - min(counts) ) / ( max(counts) - min(counts) );
+    %sums_orig = sums;
+    %sums = scalev(sums);
+    img_mean = scalev(img_mean);
+    %img_mad = scalev(img_mad);
+    %log_mean = scalev(log_mean);
+    counts = scalev(counts);
 
     feature = (6*counts + 4*img_mean)/ 10;
-    %feature = (6*counts + 4*img_mad)/ 10;
-    feature = ( feature - min(feature) ) / ( max(feature) - min(feature) );
-
+    feature = scalev(feature);
 
     np(:,5) = feature;
-    np(:,6) = counts;
-    np(:,7) = sums;
-    np(:,8) = img_mean;
-    np(:,9) = log_mean;
-    np(:,10) = sums_orig;
+    %np(:,6) = counts;
+    %np(:,7) = sums;
+    %np(:,8) = img_mean;
+    %np(:,9) = log_mean;
+    %np(:,10) = sums_orig;
 
     np = sortrows(np, 5);
+end
 
-    % figure;
-    % hold on
-    % plot(np(:,6), 'Color', 'red', 'LineWidth', 2, 'DisplayName', 'counts' );
-    % plot(np(:,7), 'Color', 'green', 'LineWidth', 2, 'DisplayName', 'sums');
-    % plot(np(:,8), 'Color', 'cyan', 'LineWidth', 2, 'DisplayName', 'img_mean');
-    % plot(np(:,9), 'Color', 'yellow', 'LineWidth', 2, 'DisplayName', 'log_mean');
-    % plot(np(:,5), 'Color', 'blue', 'LineWidth', 2, 'DisplayName', 'feature');
-    % hold off
-
+function v = scalev(v)
+    if max(v)<=min(v),
+        v = ones(length(v),1);
+    else
+        v = ( v - min(v) ) / ( max(v) - min(v) );
+    end
 end

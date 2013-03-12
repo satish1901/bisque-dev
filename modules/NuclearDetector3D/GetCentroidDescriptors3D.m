@@ -41,19 +41,19 @@ function dt = GetCentroidDescriptors3D(im, imlog, np, ns, all)
     ellipsoid = Ellipsoid3D(ns);
     
     %% transpose ellipsoid and get a descriptor
-    for i=1:size(np,1)
+    parfor i=1:size(np,1)
         idx = round(TransposeEllipsoid( ellipsoid, np(i,:), size(im) ));
 
         s = struct();        
         v = im(idx); 
-        s.sum = sum(v(:));       
+        s.sum = sum(v(:));   
+        s.mean = mean(v(:));        
         
-        if all==1,
-            vlog = imlog(idx);  
-            s.mean = mean(v(:));
-            s.log_mean = mean(vlog(:));
-            s.mad = MedAD(v(:));
-        end
+%         if all==1,
+%             vlog = imlog(idx);              
+%             s.log_mean = mean(vlog(:));
+%             s.mad = MedAD(v(:));
+%         end
         
         dt{i} = s;
     end

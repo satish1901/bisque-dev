@@ -1,15 +1,14 @@
-%function NuclearDetector3D(mex_url, access_token, image_url, nuclear_channel, membrane_channel, nuclear_diameter, ~)
 function NuclearDetector3D(mex_url, access_token, image_url, varargin)
     session = bq.Session(mex_url, access_token);
     try
         nuclear_channel  = str2num(session.mex.findValue('//tag[@name="inputs"]/tag[@name="nuclear_channel"]'));
         membrane_channel = str2num(session.mex.findValue('//tag[@name="inputs"]/tag[@name="membrane_channel"]', '0'));
-        nuclear_diameter = session.mex.findValue('//tag[@name="inputs"]/tag[@name="nuclear_size"]');        
-        
+        nuclear_diameter = session.mex.findValue('//tag[@name="inputs"]/tag[@name="nuclear_size"]');     
+       
         t = session.mex.findNode('//tag[@name="inputs"]/tag[@name="pixel_resolution"]');
         res =  cell2mat(t.getValues('number'));
         %res = [0.439453, 0.439453, 1.0, 1.0]; % image resolution in microns per pixel
-
+       
         image = session.fetch(image_url);        
         if isfield(image.info, 'pixel_resolution_x') && res(1)<=0,
             res(1) = getfield(image.info, 'pixel_resolution_x');
@@ -28,7 +27,8 @@ function NuclearDetector3D(mex_url, access_token, image_url, varargin)
         np = cell(number_t, 1);
         count = 0;
         for current_t=1:number_t,
-            session.update(sprintf('Time %d: 0% - fetching image', current_t));   
+            timetext = sprintf('Time %d/%d: ', current_t, number_t);
+            session.update(sprintf('%s0% - fetching image', timetext));   
             imn = image.slice([],current_t).remap(nuclear_channel).fetch();
 
             % filter using membraine channel
@@ -40,13 +40,12 @@ function NuclearDetector3D(mex_url, access_token, image_url, varargin)
             %% Run
             ns =  (nuclear_diameter/2.0) ./ res;
             
-            t = 0.025:0.025:0.5;
+            t = [0.025:0.025:0.5];
             if isinteger(imn),
                t = t * double(intmax(class(imn)));
             end
-
-            session.update(sprintf('Time %d: 10% - detecting', current_t));
-            np{current_t} = BONuclearDetector3D(imn, ns(1:3), t, session);   
+            
+            np{current_t} = BONuclearDetector3D(imn, ns(1:3), t, session, timetext);   
             count = count + length(np{current_t});
         end
         

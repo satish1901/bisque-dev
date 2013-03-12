@@ -6,24 +6,29 @@
 </head>
 
 <body>
-    <h2>Help and workflow</h2>
+    <h2>Help</h2>
     
-<p><em>This is a public Beta 4, so please, bear with us if something breaks and don't hesitate to leave <a href="mailto:bisque-help@biodev.ece.ucsb.edu">your comments, bug 
+<p><em>This is a public Beta 5, so please, bear with us if something breaks and don't hesitate to leave <a href="https://groups.google.com/group/bisque-bioimage">your comments, bug 
 reports and suggestions</a> to us!</em></p>
 
-<p>This application allows you to select local file or an image in the Bisque database and automatically identify nuclear centroid locations in 3D/4D fluorescent microscopic 
-imagery. These locations can be exported as text, excel file, XML or visualized overlayed on image. Simple statistics can be obtained from detected nuclei. Furthermore these 
-locations can be used for additional analysis such as segmentation.</p>    
+<p>This application allows you to select an image in the Bisque database (or upload a local file) and automatically identify nuclear centroid locations in 3D/4D fluorescent microscopic imagery. These locations can be exported as text, excel file, XML or visualized overlayed on image. Simple statistics can be obtained from detected nuclei. Furthermore these 
+locations can be used for additional analysis such as classification (PHFDetector module for example).</p> 
+
+<h3>Why not allow 2D?</h3>
+
+<p>It is too often that people look at 2D projections of already existing volumentric data and derive conclusions based on those projections that might not be correct, we strive to create tools that give you most correct answers.</p>
     
+<h2>Workflow</h2>   
     
-    <p>We start with a laser scanning confocal 3D stack that has a nuclear stain channel. In 3D the stack looks like this:</p>
+    <p>We start with a laser scanning confocal 3D stack that has a nuclear stain channel. In volumetric rendering the stack looks like this:</p>
     <p><img src="images/nucleur_3d.png" alt="3D stack" width="250" height="250" /></p>
     <p>Single plain of the stack looks like this:</p>
     <p><img src="images/nucleur_plain.png" alt="Plain" width="250" height="250" /></p>
     <h3>Parameters</h3>
-    <p><strong>Nuclear size: </strong>We have approximately measured the size of the nucleus and obtained 3 microns. This value we will enter as &quot;Nuclei Size&quot; parameter. </p>
-    <p><strong>Low intensity bound: </strong>We would also like to reject 20% of lower intensity levels as a valid response of a nuclei, so we set 0.2 as a &quot;Low intensity level&quot;.</p>
-    <p><strong>Pixel size: </strong>If the image has embedded meta-data then both pixel resolution X/Y and Z will be filled automatically. If you would want to change these values, they will be stored in the appropriate image tag and preserved.</p>
-    <p><strong>Channels</strong> are selected by number and nuclear channel must to be present. You can also select a membrane channel if it exists, this could help to filter out incorrectly detected centroids.</p>
+    <p><strong>Nuclear diameter:</strong> approximate average nuclear diameter observed in the image. Usually algorithm will do just fine, tweak this value if you see too few or too many points. Increase the size if you see one nucleus marked with two centroids. Reduce the size if you don't see smaller nuclei being detected.</p>
+
+    <p><strong>Membrane channel:</strong> you can choose a second channel that does not co-locolize with nuclei, this channel will be used for cleaning nuclear channel and defining the separation between nuclei a bit better.</p>
+    
+    <p>Other parameters are usually loaded automatically.</p>
 </body>
 </html>
