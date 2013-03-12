@@ -1,6 +1,20 @@
 /* CSS settings for resource tagger */
+.tab-arrow {
+    border-radius : 0px !important;
+    box-shadow : none !important;
+    background-color : transparent !important;
+    background-image : none !important;
+    border-color : transparent !important;
+}
+
 .icon-tag {
 	background-image: url('../ResourceTagger/Images/tag.png') !important;
+}
+
+.icon-arrow {
+    background-image: url('../ResourceTagger/Images/arrow.png') !important;
+    left : -8px !important;
+    opacity : 1 !important;
 }
 
 .icon-folder {
