@@ -208,7 +208,7 @@ class BisquikResource(Resource):
             
         resource = self.force_dbload(query)
         if resource is None:
-            log.info ("Permission check failure %s" % str(query))
+            log.info ("Permission check failure %s" % query)
             if identity.not_anonymous():
                 abort(403)
             else:
@@ -263,7 +263,7 @@ class BisquikResource(Resource):
                                    wpublic = wpublic,
                                    **kw)
             xtag = self.resource_type[1].xmltag
-            response = etree.Element ('resource', uri=str(request.url))
+            response = etree.Element ('resource', uri=request.url)
             etree.SubElement(response, 'tag', name="count", value=str(count), type="number")
         else:
             #if limit is None: limit = 1000
@@ -278,8 +278,7 @@ class BisquikResource(Resource):
                                         wpublic = wpublic,
                                         #limit = limit,
                                         **kw)
-            #log.debug ("DIR query " + str(resources))
-            response = etree.Element('resource', uri=str(request.url))
+            response = etree.Element('resource', uri=request.url)
             db2tree (resources,
                      parent=response,
                      view=view,
@@ -315,7 +314,7 @@ class BisquikResource(Resource):
         #if parent:
         parent = self.check_access(parent, RESOURCE_EDIT)
         resource = bisquik2db(doc=xml, parent = parent)
-        log.info ("NEW: => %s " %(str(resource)) )
+        log.info ("NEW: => %s " % resource )
         if resource is not None:
             return self.resource_output(resource, view=view,format=format)
         return "<response>FAIL</response>"
@@ -330,12 +329,12 @@ class BisquikResource(Resource):
         DBSession.autoflush = False
         parent = self.load_parent()
         if parent:
-            log.info('REPLACE ' + self.resource_name + " in " + str(parent))
-            log.debug ("replace: %s => %s" %(xml, str(resource)))
+            log.info('REPLACE %s in %s' % (self.resource_name , parent))
+            log.debug ("replace: %s => %s" %(xml, resource))
             # Here we clear the specific type (tag,gobject) etc. and 
             
             parent.clear([ self.resource_name ])
-            resource = bisquik2db(doc=xml,  parent=parent,  )
+            resource = bisquik2db(doc=xml, parent=parent)
             if resource is not None:
                 return self.resource_output(resource, **kw)
         return "<response>FAIL</response>"
@@ -362,7 +361,7 @@ class BisquikResource(Resource):
         view=kw.pop('view', 'short')
         format = kw.pop('format', None)
         resource = self.check_access(resource)
-        log.info ("GET ==>%s" % str(resource))
+        log.info ("GET ==>%s" % resource)
         
         return self.resource_output(resource, view=view, format=format)
             
