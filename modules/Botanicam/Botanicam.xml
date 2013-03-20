@@ -66,7 +66,8 @@
     <tag name="authors" value="Chris Wheat, Mike Korcha, &lt;a href=&quot;mailto:fedorov@ece.ucsb.edu&quot;&gt;Dmitry Fedorov&lt;/a&gt;, Kris Kvilekval, and alumni Golnaz Abdollahian" />    
     <tag name="help"      type="file" value="public/help.html" />
     <tag name="thumbnail" type="file" value="public/thumbnail.png" />   
-    <!--<tag name="description" type="string" value="This app accepts images of local Santa Barbara plants as input and automatically recognizes their species." />          
-    -->
+    <tag name="description" type="string" value="The Botanicam 3 can be used to identify bushes and leaves and find 
+	similar images available in the system." />          
+
 
 </module>

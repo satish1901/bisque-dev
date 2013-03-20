@@ -217,7 +217,7 @@
     </tag>    
 
     <tag name="title" value="Detector of nuclei in 3D/4D" /> 
-    <tag name="authors" value="Dmitry Fedorov and Boguslaw Obara" />    
+    <tag name="authors" value="&lt;a href=&quot;mailto:fedorov@ece.ucsb.edu&quot;&gt;Dmitry Fedorov&lt;/a&gt; and Boguslaw Obara" />    
     <tag name="help"      type="file" value="public/help.html" />
     <tag name="thumbnail" type="file" value="public/thumbnail.png" />   
     <tag name="description" type="string" value="This application detects centroids of nuclei in 3D/4D fluorescence images." />      
