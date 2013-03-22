@@ -24,12 +24,10 @@ locations can be used for additional analysis such as classification (PHFDetecto
 <p>It is too often that people look at 2D projections of already existing volumentric data and derive conclusions based on those projections that might not be correct, we strive to create tools that give you the most correct answers.</p>
     
 <h2>Workflow</h2>   
+
+<iframe width="290" height="240" src="http://www.youtube.com/embed/jp9uvl2_FCA" frameborder="0" allowfullscreen></iframe>
     
-<p>We start with a laser scanning confocal 3D stack that has a nuclear stain channel. In volumetric rendering the stack looks like this:</p>
-<p><img src="images/nucleur_3d.png" alt="3D stack" width="250" height="250" /></p>
-<p>Single plain of the stack looks like this:</p>
-<p><img src="images/nucleur_plain.png" alt="Plain" width="250" height="250" /></p>
-<h3>Parameters</h3>
+<h2>Parameters</h2>
 <p><strong>Nuclear diameter:</strong> approximate average nuclear diameter observed in the image. Usually algorithm will do just fine, tweak this value if you see too few or too many points. Increase the size if you see one nucleus marked with two centroids. Reduce the size if you don't see smaller nuclei being detected.</p>
 
 <p><strong>Membrane channel:</strong> you can choose a second channel that does not co-locolize with nuclei, this channel will be used for cleaning nuclear channel and defining the separation between nuclei a bit better.</p>
