@@ -448,6 +448,33 @@ Ext.define('BQ.is.Service.Negative', {
 });
 
 //----------------------------------------------------------------------------------
+// BQ.is.Service.Negative
+//----------------------------------------------------------------------------------
+
+Ext.define('BQ.is.Service.Deinterlace', {
+    extend: 'BQ.is.Service',
+    title: 'Deinterlace',
+    alias: 'widget.bqis-service-deinterlace',
+    
+    initComponent : function() {  
+        this.enabled = this.view.deinterlace==='deinterlace' ? true : false;
+        this.surface_config = {           
+            items: [{
+                xtype:'tbtext', 
+                text: '<p>Deinterlaces the input image<p>',            
+            }],            
+        };
+        this.callParent();
+    },  
+
+    getOperation: function() {
+        return 'deinterlace';
+    },    
+    
+});
+
+
+//----------------------------------------------------------------------------------
 // BQ.is.Service.Rotate
 //----------------------------------------------------------------------------------
 
@@ -652,6 +679,7 @@ BQ.is.services = [
     'BQ.is.Service.Resize',
     'BQ.is.Service.Rotate', 
     'BQ.is.Service.Negative',
+    'BQ.is.Service.Deinterlace',
 ];
 
 
