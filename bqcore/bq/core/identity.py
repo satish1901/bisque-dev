@@ -119,7 +119,7 @@ def get_admin_id():
 
 def is_admin ():
     'return whether current user has admin priveledges'
-    return in_group('admin').is_met(request.environ)
+    return in_group('admins').is_met(request.environ) or in_group('admin').is_met(request.environ)
     
 
 #     if request_available():
