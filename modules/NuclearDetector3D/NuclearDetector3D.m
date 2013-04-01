@@ -28,7 +28,7 @@ function NuclearDetector3D(mex_url, access_token, image_url, varargin)
         count = 0;
         for current_t=1:number_t,
             timetext = sprintf('Time %d/%d: ', current_t, number_t);
-            session.update(sprintf('%s0% - fetching image', timetext));   
+            session.update(sprintf('%s0%% - fetching image', timetext));   
             imn = image.slice([],current_t).remap(nuclear_channel).fetch();
 
             % filter using membraine channel
