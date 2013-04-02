@@ -1,7 +1,4 @@
 function c = seg(I,anno)
-    addpath( genpath('utils') );
-
-% matlabpool;
     F = makeRFSfilters;
     
     FR = zeros(size(I,1), size(I,2), 6);
@@ -12,12 +9,9 @@ function c = seg(I,anno)
         Is(:,:,ch) = imfilter(single(I(:,:,ch)), fspecial('gauss', [49 49], 5 ), 'same' );
     end
 
-
+    % matlabpool;
     parfor iter = 1:numel(FILTlist)
         temp = imfilter( Is, F(:,:,FILTlist(iter)), 'same' );
-        %tempG = imfilter( Is(:,:,2), F(:,:,FILTlist(iter)), 'same' );
-        %tempB = imfilter( Is(:,:,3), F(:,:,FILTlist(iter)), 'same' );
-        %FR(:,:,iter) = sqrt(tempR.^2 + tempG.^2 + tempB.^2);
         FR(:,:,iter) = sqrt(temp(:,:,1).^2 + temp(:,:,2).^2 + temp(:,:,3).^2);
     end
 
@@ -49,16 +43,17 @@ function c = seg(I,anno)
         
         s = sum(temp(:));
         if s < 50000 && s > 0
-            %figure(5); contour(temp);
-            c{iter} = contourc(double(temp), [1 1]);
-            c{iter}(:,1:2) = [];  
+            %c{iter} = contourc(double(temp), [1 1]);
+            %c{iter}(:,1:2) = [];  
+            c{iter} = bwboundaries(temp, 8, 'noholes');
         else
 %             figure(5);plot(anno(iter,1),anno(iter,2),'gs','markersize',32)
             temp2 = false(size(ww));
             temp2(anno(iter,2),anno(iter,1)) = true;
             temp2 = imdilate(temp2, strel('disk',32));
-            c{iter} = contourc(double(temp2), [1 1]);
-            c{iter}(:,1:2) = [];
+            %c{iter} = contourc(double(temp2), [1 1]);
+            %c{iter}(:,1:2) = [];
+            c{iter} = bwboundaries(temp2, 'noholes');
         end
     end
 

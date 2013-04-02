@@ -16,7 +16,21 @@
                     <tag name="fail_message" value="Requires a 2D image" />
                 </tag>
             </template>
+            <gobject name="centroids">
+                <template>
+                    <tag name="label" value="Points define centroids for segmented objects" />
+                    <tag name="gobject" value="point" />
+                </template>
+            </gobject>	            
         </tag>        
+
+        <tag name="xpath" type="xpath">
+            <template>
+                <tag name="label" value="Path for centroids in images" />
+                <tag name="reference" value="resource_url" />
+                <tag name="accepted_type" value="dataset" />    
+            </template>            
+        </tag>
         
     </tag>
   
