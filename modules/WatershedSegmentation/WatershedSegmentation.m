@@ -1,19 +1,25 @@
-function WatershedSegmentation(mex_url, access_token, image_url, varargin)
+function WatershedSegmentation(mex_url, access_token, varargin)
     session = bq.Session(mex_url, access_token);
     try
-        addpath( genpath('seg_amir') );
+        image_url = session.mex.findValue('//tag[@name="inputs"]/tag[@name="resource_url"]');   
+        
         session.update('0% - fetching image');   
         image = session.fetch([image_url '?view=deep']);        
         im = image.slice(1,1).depth(8, 'd').command('deinterlace', '').fetch();
 
-        points = image.findNodes('//gobject/point[@name="Centroid"]');
+        points = session.mex.findNodes('//tag[@name="inputs"]/tag[@name="resource_url"]/gobject[@name="centroids"]/point');
+        if length(points)<1,
+            xpath = session.mex.findValue('//tag[@name="inputs"]/tag[@name="xpath"]', '//point[@name="Centroid"]');  
+            points = image.findNodes(xpath);            
+        end
+        
         anno = zeros(length(points), 2);
         for i=1:length(points),
             v = points{i}.getVertices();
             anno(i,:) = [v(2) v(1)];
         end
-        
-        c = seg(im, anno);
+
+        cs = seg(im, anno);
         
         %% Store results
         session.update('90% - storing results');    
@@ -22,9 +28,13 @@ function WatershedSegmentation(mex_url, access_token, image_url, varargin)
         imref = outputs.addTag('MyImage', image_url, 'image'); 
         g = imref.addGobject('contours', 'contours');
 
-        for i=1:length(c),        
-            v = fliplr(c{i}');
-            g.addGobject('polygon', 'contour', v );
+        for i=1:length(cs), 
+            c = cs{i};
+            for j=1:length(c),              
+                v = c{j};
+                name = sprintf('contour-%d-%d', i, j);
+                g.addGobject('polygon', name, v );
+            end
         end
         
         session.finish();
