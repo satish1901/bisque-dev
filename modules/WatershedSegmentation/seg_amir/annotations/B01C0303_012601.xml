@@ -1,0 +1,116 @@
+<image name="B01C0303_012601.jpg" resource_uniq="759b59fadade5029869bd5f9c863f8c4154d219b" value="68/68183">
+<polyline name="resolution_line">
+<tag name="color" value="#ff0000"/>
+<tag name="auto_page_advance" value="false"/>
+<tag name="show_prev_points" value="false"/>
+<tag name="vertex_shape" value="rectangle"/>
+<tag name="line_width" value="1"/>
+<tag name="freehand" value="false"/>
+<tag name="line_style" value="solid"/>
+<tag name="simpleline" value="true"/>
+<vertex index="0" x="666.0" y="525.0"/>
+<vertex index="1" x="750.0" y="516.0"/>
+</polyline>
+<gobject name="Substrate - cobble" type="Substrate - cobble">
+<point name="Centroid">
+<tag name="color" value="#0404b4"/>
+<tag name="shape" value="0"/>
+<tag name="line_width" value="2"/>
+<vertex index="0" x="1396.0" y="300.0"/>
+</point>
+</gobject>
+<gobject name="Echinoderm - basket star" type="Echinoderm - basket star">
+<point name="Centroid">
+<tag name="color" value="#f1230f"/>
+<tag name="shape" value="0"/>
+<tag name="line_width" value="2"/>
+<vertex index="0" x="1276.0" y="300.0"/>
+</point>
+</gobject>
+<gobject name="Echinoderm - basket star" type="Echinoderm - basket star">
+<point name="Centroid">
+<tag name="color" value="#f1230f"/>
+<tag name="shape" value="0"/>
+<tag name="line_width" value="2"/>
+<vertex index="0" x="888.0" y="712.0"/>
+</point>
+</gobject>
+<gobject name="Echinoderm - basket star" type="Echinoderm - basket star">
+<point name="Centroid">
+<tag name="color" value="#f1230f"/>
+<tag name="shape" value="0"/>
+<tag name="line_width" value="2"/>
+<vertex index="0" x="480.0" y="74.0"/>
+</point>
+</gobject>
+<gobject name="Coral - Plumarella" type="Coral - Plumarella">
+<point name="Centroid">
+<tag name="color" value="#ff0000"/>
+<tag name="shape" value="0"/>
+<tag name="line_width" value="2"/>
+<vertex index="0" x="382.0" y="270.0"/>
+</point>
+</gobject>
+<gobject name="Coral - Plumarella" type="Coral - Plumarella">
+<point name="Centroid">
+<tag name="color" value="#ff0000"/>
+<tag name="shape" value="0"/>
+<tag name="line_width" value="2"/>
+<vertex index="0" x="194.0" y="310.0"/>
+</point>
+</gobject>
+<gobject name="Coral - Plumarella" type="Coral - Plumarella">
+<point name="Centroid">
+<tag name="color" value="#ff0000"/>
+<tag name="shape" value="0"/>
+<tag name="line_width" value="2"/>
+<vertex index="0" x="752.0" y="366.0"/>
+</point>
+</gobject>
+<gobject name="Coral - Plumarella" type="Coral - Plumarella">
+<point name="Centroid">
+<tag name="color" value="#ff0000"/>
+<tag name="shape" value="0"/>
+<tag name="line_width" value="2"/>
+<vertex index="0" x="812.0" y="412.0"/>
+</point>
+</gobject>
+<gobject name="Coral - Halipterus willemoesi" type="Coral - Halipterus willemoesi">
+<point name="Centroid">
+<tag name="color" value="#3300ee"/>
+<tag name="shape" value="0"/>
+<tag name="line_width" value="2"/>
+<vertex index="0" x="142.0" y="136.0"/>
+</point>
+</gobject>
+<gobject name="Coral - Halipterus willemoesi" type="Coral - Halipterus willemoesi">
+<point name="Centroid">
+<tag name="color" value="#3300ee"/>
+<tag name="shape" value="0"/>
+<tag name="line_width" value="2"/>
+<vertex index="0" x="670.0" y="264.0"/>
+</point>
+</gobject>
+<tag name="filename" value="B01C0303_012601.jpg"/>
+<tag name="attached-file">
+<tag name="original-name" value="B01C0303_012601.jpg.bix"/>
+<tag name="url" type="file" value="http://bisque.ece.ucsb.edu/image_service/68184"/>
+</tag>
+<tag name="image_type" value="Bering sea canyons"/>
+<tag name="canyon_name" value="Pribilof"/>
+<tag name="dive_number" value="15"/>
+<tag name="video_file" value="B01C0303.M2T"/>
+<tag name="video_frame" value="12601"/>
+<tag name="imagedate" value="2007-07-01 00:00:00"/>
+<tag name="pixel_resolution_x" value="0.00088998831898"/>
+<tag name="depth" value="269"/>
+<tag name="angle_pitch" value="30"/>
+<tag name="area" value="3.1686046951"/>
+<tag name="google_maps" value="http://goo.gl/maps/204S"/>
+<tag name="gps"/>
+<tag name="Acknowledgments" value="Acquisition and analysis: Greenpeace, USA. Auke Bay Laboratories, NOAA Fisheries Juneau. UC Santa Barbara"/>
+<tag name="Publication"/>
+<tag name="notes" value="Pixel resolution is in meters at the image center. Angles are in degrees. Area is in meters squared. Depth is in meters."/>
+<tag name="geometry" value="1440,1080,1,1,3"/>
+<tag name="sha1" value="aa8d7f89bb1edd9b123644cdde41259b717d149d"/>
+</image>
