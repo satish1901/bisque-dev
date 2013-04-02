@@ -1,0 +1,44 @@
+<image name="B01C0410_011401.jpg" resource_uniq="b6f28c5a54f8dc4dbc6756e71aac79a2e69ce9c5" value="68/68541">
+<gobject name="Echinoderm - basket star" type="Echinoderm - basket star">
+<point name="Centroid">
+<tag name="color" value="#f1230f"/>
+<tag name="shape" value="0"/>
+<tag name="line_width" value="2"/>
+<vertex index="0" x="594.0" y="270.0"/>
+</point>
+</gobject>
+<polyline name="resolution_line">
+<tag name="color" value="#ff0000"/>
+<tag name="auto_page_advance" value="false"/>
+<tag name="show_prev_points" value="false"/>
+<tag name="vertex_shape" value="rectangle"/>
+<tag name="line_width" value="1"/>
+<tag name="freehand" value="false"/>
+<tag name="line_style" value="solid"/>
+<tag name="simpleline" value="true"/>
+<vertex index="0" x="650.0" y="504.5"/>
+<vertex index="1" x="811.5" y="499.5"/>
+</polyline>
+<tag name="filename" value="B01C0410_011401.jpg"/>
+<tag name="attached-file">
+<tag name="original-name" value="B01C0410_011401.jpg.bix"/>
+<tag name="url" type="file" value="http://bisque.ece.ucsb.edu/image_service/68542"/>
+</tag>
+<tag name="image_type" value="Bering sea canyons"/>
+<tag name="canyon_name" value="Zhemchug"/>
+<tag name="dive_number" value="16"/>
+<tag name="video_file" value="B01C0410.M2T"/>
+<tag name="video_frame" value="11401"/>
+<tag name="imagedate" value="2007-09-01 00:00:00"/>
+<tag name="pixel_resolution_x" value="0.000464271143533"/>
+<tag name="depth" value="495"/>
+<tag name="angle_pitch" value="30"/>
+<tag name="area" value="0.832603555358"/>
+<tag name="google_maps" value="http://goo.gl/maps/ulRC"/>
+<tag name="gps"/>
+<tag name="Acknowledgments" value="Acquisition and analysis: Greenpeace, USA. Auke Bay Laboratories, NOAA Fisheries Juneau. UC Santa Barbara"/>
+<tag name="Publication"/>
+<tag name="notes" value="Pixel resolution is in meters at the image center. Angles are in degrees. Area is in meters squared. Depth is in meters."/>
+<tag name="geometry" value="1440,1080,1,1,3"/>
+<tag name="sha1" value="c45b9aff25bf9c474d5e9294967acc19ae2a6007"/>
+</image>
