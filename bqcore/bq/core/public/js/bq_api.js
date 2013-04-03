@@ -23,7 +23,7 @@ classExtend = function(subClass, baseClass) {
 */
 
 default_error_callback = function (o) {
-    clog(o.message);
+    console.log(o.message);
     BQ.ui.error(o.message); 
 }
 
@@ -119,7 +119,7 @@ BQFactory.createFromXml = function(xmlResource, resource, parent) {
             if (k.nodeType == 1 &&  ! (k.nodeName in BQFactory.ignored)) // Element nodes ONLY
                 stack.push ( [ k, null, resource ]);
             //else
-            //    clog ("Got Node type" + k.nodeType + " for " + k.text);
+            //    console.log ("Got Node type" + k.nodeType + " for " + k.text);
         }
     }
 
@@ -172,21 +172,21 @@ BQFactory.request = function(params) {
             uri = uri + '&' + pl.join('&');            
     }
 
-    clog ("Loading: " + uri);
+    console.log ("Loading: " + uri);
     if (! uri) {
-        clog("ERROR: trying to load null uri");
+        console.log("ERROR: trying to load null uri");
     }
     // if (cache && uri in BQFactory.session) {
     //     var o = BQFactory.session[uri];
     //     if (o instanceof XMLHttpRequest) {
-    //         clog ("outstanding request");
+    //         console.log ("outstanding request");
     //         if (cb) 
     //             chainRequest(o, callback(BQFactory, 'loaded_callback', uri, cb));
     //     } else {
-    //         //clog ("using cache result");
+    //         //console.log ("using cache result");
     //         //if (cb) cb(o);
     //         // Just redo the request
-    //         clog ('re-issuing cached result ' + uri);
+    //         console.log ('re-issuing cached result ' + uri);
     //         BQFactory.session[uri] = xmlrequest(uri, callback(BQFactory, 'on_xmlresponse', params), method, xmldata, params.errorcb);
     //     }
     // } else {
@@ -195,7 +195,7 @@ BQFactory.request = function(params) {
 };
 
 BQFactory.loaded_callback = function (uri, cb, xmldoc) {
-    clog ("Loaded callback for " + uri);
+    console.log ("Loaded callback for " + uri);
     var o = BQFactory.session[uri];
     cb (o);
 };
@@ -205,7 +205,7 @@ BQFactory.on_xmlresponse = function(params, xmldoc) {
     var cb  = params.cb;
     var errorcb = params.errorcb;
     
-    clog('Response: ' + uri);
+    console.log('Response: ' + uri);
     try { 
         var n = xmldoc.firstChild;
         if (!n) return null;
@@ -219,7 +219,7 @@ BQFactory.on_xmlresponse = function(params, xmldoc) {
         bq.doc = bq;
         BQFactory.session[uri] = bq;
     } catch  (err) {
-        clog ("on_xmlresponse error" + err);
+        console.log ("on_xmlresponse error" + err);
         if (errorcb) errorcb ({ xmldoc : xmldoc, message : 'parse error in BQFactory.on_xmlresponse' });
         return;
     }
@@ -514,7 +514,7 @@ BQObject.prototype.delete_ = function (cb, errorcb) {
 }
 
 BQObject.prototype.rename = function(newName, cb, errorcb) {
-    clog ('BQAPI: BQObject.prototype.rename - Not implemented');
+    console.log ('BQAPI: BQObject.prototype.rename - Not implemented');
 }
 
 BQObject.prototype.deleteTag = function(childTag, cb, errorcb) {
@@ -524,7 +524,7 @@ BQObject.prototype.deleteTag = function(childTag, cb, errorcb) {
         childTag.delete_(cb, errorcb);
     }
     else
-        clog ('BQAPI: deleteTag - Input is not a BQTag.');
+        console.log ('BQAPI: deleteTag - Input is not a BQTag.');
 }
 
 BQObject.prototype.find_tags  = function (name, deep, found) {
@@ -885,7 +885,7 @@ BQObject.prototype.response_ = function (code, errorcb, cb, xmldoc) {
         try {
             BQFactory.createFromXml(node, this, null)
         } catch  (err) {
-            clog ("save_" + err);
+            console.log ("save_" + err);
             if (errorcb) errorcb ({ xmldoc : xmldoc, message : 'parse error in BQObject.response_' });
             return;
         }
@@ -1411,7 +1411,7 @@ function combineValue( v1, v2, def ) {
 }
 
 BQImagePhys.prototype.normalizeMeta = function() {
-  clog ("BQImagePhys: Aggregate metadata");  
+  console.log ("BQImagePhys: Aggregate metadata");  
 
   // ensure values and their types
   for ( var i=0; i<this.pixel_size.length; i++ ) {
@@ -1445,7 +1445,7 @@ BQImagePhys.prototype.load = function(cb) {
 }
 
 BQImagePhys.prototype.onload = function() {
-  clog ("BQImagePhys: onload test: " + this.is_done + " " + this.ds_done );    
+  console.log ("BQImagePhys: onload test: " + this.is_done + " " + this.ds_done );    
   if (this.is_done==true && this.ds_done==true) {
     this.normalizeMeta();
     if (this.loadcallback != null) this.loadcallback (this);
@@ -1453,7 +1453,7 @@ BQImagePhys.prototype.onload = function() {
 }
 
 BQImagePhys.prototype.onloadIS = function (image) {
-  clog ("BQImagePhys: Got metadata from IS");   
+  console.log ("BQImagePhys: Got metadata from IS");   
   var hash = {};
   for (var t in image.tags ) 
       hash[image.tags[t].name] = image.tags[t].value;
@@ -1514,7 +1514,7 @@ BQImagePhys.prototype.onloadIS = function (image) {
 }
 
 BQImagePhys.prototype.onloadDS = function ( ) { 
-    clog ("BQImagePhys: Got metadata from DS");  
+    console.log ("BQImagePhys: Got metadata from DS");  
   
     var image = this.image;
     var ht = {};
@@ -1901,7 +1901,7 @@ BQMex.prototype.afterInitialized = function () {
 // with_member (members)
 //    for (var i =0; i<members.children.length;i++)
 //       resource = members.children[i]
-//       clog(resource.uri)
+//       console.log(resource.uri)
 // }
 
 //-------------------------------------------------------------------------------
@@ -2065,7 +2065,7 @@ BQSession.prototype.parseTags  = function (){
     var timeout = this.find_tags ('timeout');
     var expires = this.find_tags ('expires');
     if (expires && timeout) {
-        clog ("session (timeout, expires) " + timeout.value + ':' + expires.value);
+        console.log ("session (timeout, expires) " + timeout.value + ':' + expires.value);
         this.timeout = parseInt (timeout.value) * 1000;
         this.expires = parseInt (expires.value) * 1000; 
     }
@@ -2104,10 +2104,10 @@ BQSession.prototype.set_timeout  = function (baseurl, opts) {
     if (this.timeout) {
         this.callback = callback (this, 'check_timeout', baseurl);
         // tag value  is in seconds while timeout is in milliseconds
-        clog ("timeout in " + this.timeout/1000 + " s" );
+        console.log ("timeout in " + this.timeout/1000 + " s" );
         this.reset_timeout();
     } else {
-        clog ('no expire');
+        console.log ('no expire');
     }
 }
 
@@ -2115,7 +2115,7 @@ BQSession.prototype.reset_timeout  = function (){
     clearTimeout (this.current_timer);
     if (this.timeout)
         this.current_timer = setTimeout (this.callback, this.timeout);
-    //clog ('timeout reset:' + this.timeout);
+    //console.log ('timeout reset:' + this.timeout);
     BQSession.current_session = this;
 }
 BQSession.prototype.cancel_timeout  = function (){
@@ -2134,7 +2134,7 @@ BQSession.prototype.session_timeout = function (baseurl) {
     // timeout in more than 30 seconds ?  then just reset 
     // as something unexpected has accessed the session (another browser)?
     if (this.expires > 30000) {
-        clog ("session timeout is resetting: expires =" + this.expires );
+        console.log ("session timeout is resetting: expires =" + this.expires );
         this.set_timeout(baseurl);
         return;
     }
