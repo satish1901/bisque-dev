@@ -18,8 +18,13 @@ function WatershedSegmentation(mex_url, access_token, varargin)
             v = points{i}.getVertices();
             anno(i,:) = [v(2) v(1)];
         end
-
-        cs = seg(im, anno);
+        
+        if size(anno, 1)>0, % only run segmentation if there are any inputs
+            session.update('10% - segmenting'); 
+            cs = seg(im, round(anno));
+        else
+            cs = {};
+        end
         
         %% Store results
         session.update('90% - storing results');    
@@ -36,7 +41,7 @@ function WatershedSegmentation(mex_url, access_token, varargin)
                 g.addGobject('polygon', name, v );
             end
         end
-        
+
         session.finish();
     catch err
         ErrorMsg = [err.message, 10, 'Stack:', 10];
