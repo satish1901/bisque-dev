@@ -22,7 +22,7 @@ Ext.define('Bisque.Resource.Image',
             url         :   this.resource.src + '?meta',
             callback    :   function(opts, success, response) {
                                 if (response.status>=400)
-                                    clog(response.responseText);
+                                    console.log(response.responseText);
                                 else
                                     this.onMetaLoaded(response.responseXML);
                             },

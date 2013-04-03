@@ -158,7 +158,7 @@ function printXML(node) {
 function makeRequest(url, callback, callbackdata, method, postdata, errorcb) {
     function bindCallback() {
         if (ajaxRequest.readyState === XMLHttpRequest.DONE) {
-            //clog ("ajaxRequest.readyState == 4 and status: " + ajaxRequest.status);
+            //console.log ("ajaxRequest.readyState == 4 and status: " + ajaxRequest.status);
             BQSession.reset_timeout();
             if (ajaxRequest.status === 200 || ajaxRequest.status === 0) {
                 if (ajaxCallback) {
@@ -168,7 +168,7 @@ function makeRequest(url, callback, callbackdata, method, postdata, errorcb) {
                         ajaxCallback(ajaxCallbackData, ajaxRequest.responseText);
                     }
                 } else {
-                    clog("makeRequest - no callback defined: " + url);
+                    console.log("makeRequest - no callback defined: " + url);
                 }
             } else {
                 var consumed_status = {
@@ -228,7 +228,7 @@ function makeRequest(url, callback, callbackdata, method, postdata, errorcb) {
             return ajaxRequest;
         }
     } catch (e) {
-        clog("Exception in Ajax request: " + e.toString());
+        console.log("Exception in Ajax request: " + e.toString());
     }
 }
 
@@ -246,12 +246,12 @@ function xmlrequest(url, cb, method, postdata, errorcb) {
                         ajaxRequest.callback(ajaxRequest.responseXML);
                     }
                     else {
-                        clog('WARNING: xmlrequest return text/html');
+                        console.log('WARNING: xmlrequest return text/html');
                         ajaxRequest.callback(ajaxRequest.responseText);
                     }
                 }
                 else {
-                    clog("xmlrequest - no callback defined: " + url);
+                    console.log("xmlrequest - no callback defined: " + url);
                 }
             } else {
                 var error_short = "There was a problem with the request:\n";
@@ -311,7 +311,7 @@ function xmlrequest(url, cb, method, postdata, errorcb) {
             return ajaxRequest;
         }
     } catch (e) {
-        clog("Exception in Ajax request: " + e.toString());
+        console.log("Exception in Ajax request: " + e.toString());
     }
 }
 
@@ -325,22 +325,9 @@ function chainRequest(ajaxRequest, cb) {
     ajaxRequest.callback = chain;
 }
 
-function clog(str) {
-    if ( typeof (window['console']) != "undefined") {
-        var name = arguments.callee.caller.$name || arguments.callee.caller.name;
-        var owner = null;
-        try {
-            name = arguments.callee.caller.caller.$name || arguments.callee.caller.caller.name;
-            owner = arguments.callee.caller.caller.$owner.$className;
-        } catch(err) {
-            // do nothing really
-        }
-        var caller = '';
-        if (name)
-            caller = name + ': ';
-        if (owner)
-            caller = owner + '.' + caller;
-        console.log(caller + str);
+if(typeof console == "undefined"){ 
+    window.console = {
+        log : function (){};
     }
 }
 
