@@ -327,8 +327,8 @@ function chainRequest(ajaxRequest, cb) {
 
 if(typeof console == "undefined"){ 
     window.console = {
-        log : function (){};
-    }
+        log : function (){}
+    };
 }
 
 encodeParameters = function(obj) {
