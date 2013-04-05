@@ -2,16 +2,28 @@ function multi_mex_runner(mex_url, access_token)
     sess = bq.Session(mex_url, access_token);
     try
         mexs = sess.mex.findNodes('/mex/mex');
-        for i=1:length(mexs),
+        N = length(mexs);
+        fprintf('Running in parallel %d images\n\n', N); drawnow('update');
+        for i=1:N,
             mex = mexs{i};
             uri = mex.getAttribute('uri');
-            r = regexp(uri,'/','split');
-            access_token = r{end};
-            fprintf('%d/%d - %s\n', i, length(mexs), uri);
-            WatershedSegmentation(uri, access_token);
+            value = mex.getValue();     
+            if strcmp(value, 'FINISHED')==0,
+                r = regexp(uri,'/','split');
+                access_token = r{end};
+                fprintf('Running: %d/%d - %s\n', i, N, uri); drawnow('update');
+                try
+                    WatershedSegmentation(uri, access_token);
+                catch err
+                    fprintf('Error in WatershedSegmentation: %s\n', err.message);
+                end                
+            else
+                fprintf('Skipping: %d/%d - %s\n', i, N, uri); drawnow('update');
+            end
         end
-        
-        sess.finish();
+        fprintf('\nFinishing the session\n'); drawnow('update');        
+        sess.update('FINISHED');
+        %sess.finish();
     catch err
         ErrorMsg = [err.message, 10, 'Stack:', 10];
         for i=1:size(err.stack,1)

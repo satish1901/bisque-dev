@@ -29,8 +29,12 @@ function c = seg(I,anno)
     % figure;imagesc(ww)
 
     %%
-    for iter = 1 : size(anno,1)
-        id = ww(anno(iter,2)-10:anno(iter,2)+10,anno(iter,1)-10:anno(iter,1)+10);
+    for iter = 1 : size(anno,1),
+        ci = anno(iter,2)-10:anno(iter,2)+10;
+        cj = anno(iter,1)-10:anno(iter,1)+10;
+        ci = max(1, min(ci, size(ww,1)));
+        cj = max(1, min(cj, size(ww,2)));        
+        id = ww(ci,cj);
         id = double(id(:));
         id(id==0)=[];
         id(id==1)=[];
