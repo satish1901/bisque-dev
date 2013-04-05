@@ -470,7 +470,7 @@ Ext.define('BQ.Application.Toolbar', {
         }, this);
 
         BQ.Application.on('signedin', function() { 
-            //clog('signed in !!!!!');           
+            //console.log('signed in !!!!!');           
         });  
                  
         BQ.Application.on('signedout', function() { 

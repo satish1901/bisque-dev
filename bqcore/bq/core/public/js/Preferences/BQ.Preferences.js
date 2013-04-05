@@ -45,7 +45,7 @@ Ext.define('BQ.Preferences',
             }
             else
             {
-                clog('SYSTEM preferences tag not found!\n');
+                console.log('SYSTEM preferences tag not found!\n');
                 this.system.exists=false;
             }
         }
@@ -83,14 +83,14 @@ Ext.define('BQ.Preferences',
                 }
                 else
                 {
-                    clog('USER preferences tag not found!\n');
+                    console.log('USER preferences tag not found!\n');
                     this.user.exists = true;
                     this.user.tag = resource;
                 }
             }
             else
             {
-                clog('USER - no user found!\n');
+                console.log('USER - no user found!\n');
                 this.user.exists=false;
             }
         }
