@@ -95,7 +95,7 @@ ImgEdit.prototype.gobjects_loading = function (g) {
             this.visit_render.visitall(g, [this.viewer.current_view]);
             this.push_gobject(g);
         } catch (err ) {
-            clog ("error in rendering" + err.description);
+            console.log ("error in rendering" + err.description);
         }
 //    }
 }

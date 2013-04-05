@@ -51,7 +51,7 @@ ImgShare.prototype.editShare = function (resource) {
             },
         listeners: {
             load: function(records, options) {
-                clog ('loaded ' + records + ' records');
+                console.log ('loaded ' + records + ' records');
             }
         },
         });

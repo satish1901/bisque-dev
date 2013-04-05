@@ -46,7 +46,7 @@ SVGRenderer.prototype.getUserCoord = function (e ){
 
 
 SVGRenderer.prototype.addHandler = function (ty, cb){
-    clog ("addHandler " + ty + " func " + cb);
+    console.log ("addHandler " + ty + " func " + cb);
     if (cb) {
         this.svgimg.addEventListener (ty, cb, false);
         this.events[ty] = cb;
@@ -200,8 +200,8 @@ SVGRenderer.prototype.polyline = function (visitor, gob,  viewstate, visibility)
     for (var i=0; i < gob.vertices.length; i++) {
         var pnt = gob.vertices[i];
         if (pnt == null) {
-            clog("Null vertex in gob "+gob.type+":"+gob.name);
-            clog("vertex  "+i+" of "+gob.vertices.length);
+            console.log("Null vertex in gob "+gob.type+":"+gob.name);
+            console.log("vertex  "+i+" of "+gob.vertices.length);
             continue;
         }
         if (pnt.z!=null  && Math.round(pnt.z) != viewstate.z )
@@ -283,8 +283,8 @@ SVGRenderer.prototype.select_poly = function ( state ) {
 //     for (var i=0; i < gob.vertices.length; i++) {
 //         var pnt = gob.vertices[i];
 //         if (pnt == null) {
-//             clog("Null vertex in gob "+gob.type+":"+gob.name);
-//             clog("vertex  "+i+" of "+gob.vertices.length);
+//             console.log("Null vertex in gob "+gob.type+":"+gob.name);
+//             console.log("vertex  "+i+" of "+gob.vertices.length);
 //             continue;
 //         }
 //         if (pnt.z  && pnt.z > viewstate.z )
