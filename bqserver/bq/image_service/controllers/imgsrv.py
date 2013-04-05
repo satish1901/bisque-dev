@@ -843,8 +843,8 @@ class ResizeService(object):
         log.debug('Resize service: ' + ifile + ' to ' + ofile)
 
         if not os.path.exists(ofile):
-            size_arg = '-resize '+str(size[0])+','+str(size[1])+','+method+aspectRatio
-            imgcnv.convert( ifile, ofile, fmt=default_format, extra=['-multi',size_arg])
+            args = ['-multi', '-resize', '%s,%s,%s%s'%(size[0], size[1], method,aspectRatio)]
+            imgcnv.convert( ifile, ofile, fmt=default_format, extra=args)
 
         try:
             info = self.server.getImageInfo(filename=ofile)
@@ -1040,12 +1040,13 @@ class RemapService(object):
     """Provide an image with the requested channel mapping
        arg = channel,channel...
        output image will be constructed from channels 1 to n from input image, 0 means black channel
-       remap=display will use preferred mapping found in file's metadata
+       remap=display - will use preferred mapping found in file's metadata
+       remap=gray - will return gray scale image with visual weighted mapping from RGB or equal weights for other nuber of channels
        ex: remap=3,2,1"""
     def __init__(self, server):
         self.server = server
     def __repr__(self):
-        return 'RemapService: Returns an Image with the requested channel mapping, arg = channel,channel...'
+        return 'RemapService: Returns an Image with the requested channel mapping, arg = [channel,channel...]|gray|display'
 
     def hookInsert(self, data_token, image_id, hookpoint='post'):
         pass
