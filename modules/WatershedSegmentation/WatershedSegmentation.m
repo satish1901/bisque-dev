@@ -6,6 +6,11 @@ function WatershedSegmentation(mex_url, access_token, varargin)
         session.update('0% - fetching image');   
         image = session.fetch([image_url '?view=deep']);        
         im = image.slice(1,1).depth(8, 'd').command('deinterlace', '').fetch();
+        
+        if isempty(im),
+            fprintf('Failed to fetch image: %s\n', image_url);
+            return;
+        end
 
         points = session.mex.findNodes('//tag[@name="inputs"]/tag[@name="resource_url"]/gobject[@name="centroids"]/point');
         if length(points)<1,
@@ -43,11 +48,11 @@ function WatershedSegmentation(mex_url, access_token, varargin)
         end
 
         session.finish();
-    catch err
-        ErrorMsg = [err.message, 10, 'Stack:', 10];
-        for i=1:size(err.stack,1)
-            ErrorMsg = [ErrorMsg, '     ', err.stack(i,1).file, ':', num2str(err.stack(i,1).line), ':', err.stack(i,1).name, 10];
-        end
-        session.fail(ErrorMsg);
-    end
+     catch err
+         ErrorMsg = [err.message, 10, 'Stack:', 10];
+         for i=1:size(err.stack,1)
+             ErrorMsg = [ErrorMsg, '     ', err.stack(i,1).file, ':', num2str(err.stack(i,1).line), ':', err.stack(i,1).name, 10];
+         end
+         session.fail(ErrorMsg);
+     end
 end
