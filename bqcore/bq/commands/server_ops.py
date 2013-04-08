@@ -51,6 +51,7 @@ def readhostconfig (site_cfg):
     config = SafeConfigParser ()
     config.read (site_cfg)
     root = config.get ('app:main', 'bisque.root')
+    top_dir = config.get ('app:main', 'bisque.paths.root')
     service_items = config.items ('servers')
     hosts = [ x.strip() for x in config.get  ('servers', 'servers').split(',') ] 
 
@@ -75,15 +76,17 @@ def readhostconfig (site_cfg):
         #servers.setdefault(host_id, {})[param] = val
 
 
-    bisque = { 'root': root, 'servers': servers, 'log_dir': '.', 'pid_dir' : '.' }
+    bisque = { 'top_dir': top_dir,  'root': root, 'servers': servers, 'log_dir': '.', 'pid_dir' : '.' }
     if config.has_option('servers', 'log_dir'):
-        bisque['log_dir'] = config.get ('servers', 'log_dir')
+        bisque['log_dir'] = os.path.join (top_dir, config.get ('servers', 'log_dir'))
     if config.has_option('servers', 'pid_dir'):
-        bisque['pid_dir'] = config.get ('servers', 'pid_dir')
+        bisque['pid_dir'] = os.path.join (top_dir, config.get ('servers', 'pid_dir'))
     if config.has_option('servers','backend'):
         bisque['backend'] = config.get ('servers', 'backend')
     if config.has_option('servers','mex_dispatcher'):
         bisque['mex_dispatcher'] = config.get ('servers', 'mex_dispatcher')
+    if config.has_option('servers','logging_server'):
+        bisque['logging_server'] = config.get ('servers', 'logging_server')
     return bisque
 
 
@@ -191,7 +194,31 @@ def uwsgi_command(command, cfgopt, processes, options, default_cfg_file = None):
         if  call(uwsgi_cmd) != 0:
             print "Start failed"
     return processes
-            
+
+
+def logger_command(command, cfgopt, processes):
+    pidfile = os.path.join(cfgopt['pid_dir'], 'bisque_logger.pid')
+
+    print "%sing logging service" % command
+    if command is 'start':
+        with open(os.devnull, 'w') as fnull:
+            logger = Popen(cfgopt['logging_server'], stdout=fnull, stderr=fnull, shell=True)
+        if logger.returncode is None and logger.pid:
+            with open(pidfile, 'w') as pd:
+                pd.write("%s\n" % logger.pid)
+        else:
+            print "log_service pid %s with code %s" % (logger.pid, logger.returncode)
+        processes.append(logger)
+    elif command is 'stop':
+        if  os.path.exists (pidfile):
+            with open(pidfile, 'r') as pd:
+                pid = int (pd.read())
+            kill_process (pid)
+            os.remove (pidfile)
+        else:
+            print "No pid file for logging server"
+        
+        
 
 def operation(command, options, cfg_file=SITE_CFG, *args):
     """Run a multi-server command to start several bisque jobs
@@ -214,8 +241,15 @@ def operation(command, options, cfg_file=SITE_CFG, *args):
         cfgopt = {'root': config['root']}
         cfgopt['site_dir'] = site_dir
         cfgopt['site_cfg'] = site_cfg
-        cfgopt['virtualenv'] = os.getenv('VIRTUAL_ENV')          
-        mexrun = asbool(config.get('mex_dispatcher', True))
+        cfgopt['virtualenv'] = os.getenv('VIRTUAL_ENV')
+        for f in ('log_dir', 'pid_dir', 'logging_server'):
+            if f in config:
+                cfgopt[f] = config[f]
+
+        if not os.path.exists (config['top_dir']):
+            print "Please check your site.cfg.  bisque.paths.root is not set correctly"
+            return
+        os.chdir (config['top_dir'])
 
         backend = config.get('backend', None)
         verbose("using backend: " + str(backend))
@@ -223,6 +257,12 @@ def operation(command, options, cfg_file=SITE_CFG, *args):
         if backend == None:
             verbose("Backend not configured. defaulting to paster")
             backend = 'paster'
+
+        if 'logging_server' in cfgopt:
+            if command in ('stop', 'restart'):
+                logger_command ('stop', cfgopt, processes)
+            if command in ('start', 'restart'):
+                logger_command ('start', cfgopt, processes)
 
         for key, serverspec in sorted(config['servers'].items()):
             cfgopt['server'] = serverspec.pop('server', None)
