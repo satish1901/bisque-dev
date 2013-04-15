@@ -253,8 +253,8 @@ class statsController(ServiceController):
             for k in i:     
                 v = i[k]
                 if hasattr(v, '__iter__') and len(v)>0: 
-                    v = ','.join( [quote(str(x)) for x in v] )
-                BQTag(name=k, value=str(v)).toEtree(r)
+                    v = ','.join( [quote(unicode(x).encode ('utf8')) for x in v] )
+                BQTag(name=k, value=unicode(v)).toEtree(r)
         
         filename = kw.get('filename', 'stats.xml')
         try:
@@ -293,8 +293,8 @@ class statsController(ServiceController):
                     mytitles.append( title.replace(',', ';') )
                             
         it = izip_longest(fillvalue='', *myiters)
-        ts = [t for t in it]
-        stream = "\n".join([(', '.join([str(e) for e in t])) for t in ts])
+        ts = (t for t in it)
+        stream = "\n".join([(', '.join([unicode(e).encode('utf8') for e in t])) for t in ts])
         
         filename = kw.get('filename', 'stats.csv')
         try:
@@ -303,7 +303,7 @@ class statsController(ServiceController):
             disposition = 'attachment; filename="%s"; filename*="%s"'%(filename.encode('utf8'), filename.encode('utf8'))             
         response.headers['Content-Type'] = 'text/csv'
         response.headers['Content-Disposition'] = disposition
-        return '%s\n%s'%( ', '.join(mytitles), stream)
+        return '%s\n%s'%( ', '.join(mytitles).encode('utf8'), stream)
 
     #-------------------------------------------------------------   
     # this function will raise exceptions of operators or summarizers cannot take requested inputs

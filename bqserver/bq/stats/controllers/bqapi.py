@@ -135,7 +135,7 @@ class BQValue (BQNode):
           
     def __call__(self):
         if len(self.values<=0): return ''
-        elif len(self.values==1): return str(self.values[0])
+        elif len(self.values==1): return self.values[0]
         def str_join(x,y): return '%s,%s'%(x,y)
         return reduce(str_join, self.values)    
         
@@ -148,14 +148,14 @@ class BQValue (BQNode):
 
     def toEtree(self, element):
         if len(self.values)==1 and len(str(self.values[0]))<100:
-            element.attrib['value'] = str(self.values[0])
+            element.attrib['value'] = self.values[0]
         else:
             for v in self.values:
                 val = etree.SubElement (element, 'value')        
-                val.text = str(v)
+                val.text = v
 
     def toString(self):
-        return ','.join( [str(x) for x in self.values] )
+        return u','.join(  self.values )
         
         
 class BQTag (BQNode):
@@ -213,9 +213,8 @@ class BQVertex (BQNode):
         self.x=x; self.y=y; self.z=z; self.t=t
 
     def toString(self):
-        def toStr(a):
-            if a is not None: return str(a)
-            return ''
+        def toStr(a): 
+            return '' if a is None else a
         return '%s, %s, %s, %s, %s, %s'%(toStr(self.x), toStr(self.y), toStr(self.z), toStr(self.t), toStr(self.c), toStr(self.index))
 
 
