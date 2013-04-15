@@ -380,7 +380,7 @@ Ext.define('Bisque.ResourceTagger',
             },
             {
                 name : 'value',
-                type : 'string'
+                type : 'string',
             },
             {
                 name : 'type',
@@ -465,7 +465,7 @@ Ext.define('Bisque.ResourceTagger',
             if (txt.length>0) return txt.join(' : ');
         }    
         
-        return record.data.name + ' : ' + record.data.value;
+        return Ext.String.htmlEncode(record.data.name + ' : ' + record.data.value);
     },
 
     getStoreFields : function()
