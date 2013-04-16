@@ -145,7 +145,7 @@ def isrunning():
     
 if __name__ == "__main__":
 
-    client = httplib2.Http()
+    client = httplib2.Http(disable_ssl_certificate_validation=True)
 
     start_pool_handler()
     
