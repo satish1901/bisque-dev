@@ -17,7 +17,7 @@ from bq.util import irods_handler
 DEFAULT_URL = "irods://irods.iplantcollaborative.org"
 BISQUE_ADD_IMAGE = "/import/insert"
 
-http = httplib2.Http()
+http = httplib2.Http(disable_ssl_certificate_validation=True)
 
 def is_image(irods_url):
     return True
