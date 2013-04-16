@@ -2187,6 +2187,8 @@ class ImageServer(object):
             #process all the requested operations
             for action,args in query:
                 data_token = self.request(action, ident, data_token, args)
+                if data_token.isHttpError():
+                    break
 
             # test output, if it is a file but it does not exist, set 404 error
             data_token.testFile()

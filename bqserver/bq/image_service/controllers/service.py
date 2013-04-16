@@ -262,11 +262,11 @@ class image_serviceController(ServiceController):
         
         #first check if the output is an error
         if data_token.isHttpError():
-            log.error('Responce Code: ' +str(data_token.httpResponseCode) )
+            log.error('Responce Code: %s : %s' % (data_token.httpResponseCode, data_token.data))
             tg.response.status_int = data_token.httpResponseCode             
             tg.response.content_type = data_token.contentType
             tg.response.charset = 'utf8'
-            return data_token.data
+            return data_token.data.encode('utf8')
 
         #second check if the output is TEXT/HTML/XML                  
         if data_token.isText():
@@ -314,7 +314,8 @@ class image_serviceController(ServiceController):
                                    content_type=data_token.contentType,
                                    content_disposition=disposition,
                                    ).cache_control (max_age=60*60*24*7*6)) # 6 weeks
-        
+
+        log.error ("unknown image issue")
         tg.response.status_int = 404             
         return "File not found"
        
