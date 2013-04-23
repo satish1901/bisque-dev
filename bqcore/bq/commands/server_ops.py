@@ -5,6 +5,7 @@ import pkg_resources
 import getopt
 from urlparse import urlparse
 from ConfigParser import SafeConfigParser
+import shlex
 
 from bq.util.commands import asbool, find_site_cfg
 
@@ -26,20 +27,25 @@ if os.name == 'nt':
             handle = win32api.OpenProcess(win32con.PROCESS_TERMINATE, 0, pid)
             win32api.TerminateProcess(handle, 0)
             win32api.CloseHandle(handle)
+            return True
         except:
             print 'Error terminating %s, the process might be dead' % pid
-            pass
+        return False
         #import subprocess
         #subprocess.call(['taskkill', '/PID', str(pid), '/F'])
 
 else:        
     import signal
+    from bq.util.wait_pid import wait_pid
     def kill_process(pid):
         try:
             pid = os.getpgid(pid)
             os.killpg (pid, signal.SIGTERM)
+            wait_pid(pid)
+            return True
         except OSError, e:
             print "kill process %s failed with %s" % (pid, e)
+        return False
             
 
 #####################################################################
@@ -199,10 +205,13 @@ def uwsgi_command(command, cfgopt, processes, options, default_cfg_file = None):
 def logger_command(command, cfgopt, processes):
     pidfile = os.path.join(cfgopt['pid_dir'], 'bisque_logger.pid')
 
+    launcher  = shlex.split (cfgopt['logging_server'])
+
     print "%sing logging service" % command
     if command is 'start':
         with open(os.devnull, 'w') as fnull:
-            logger = Popen(cfgopt['logging_server'], stdout=fnull, stderr=fnull, shell=True)
+            #logger = Popen(cfgopt['logging_server'], stdout=fnull, stderr=fnull, shell=True)
+            logger = Popen(launcher, shell= (os.name == 'nt') )
         if logger.returncode is None and logger.pid:
             with open(pidfile, 'w') as pd:
                 pd.write("%s\n" % logger.pid)
@@ -259,7 +268,7 @@ def operation(command, options, cfg_file=SITE_CFG, *args):
             backend = 'paster'
 
         if 'logging_server' in cfgopt:
-            if command in ('stop', 'restart'):
+            if command in ('restart'):
                 logger_command ('stop', cfgopt, processes)
             if command in ('start', 'restart'):
                 logger_command ('start', cfgopt, processes)
@@ -309,6 +318,11 @@ def operation(command, options, cfg_file=SITE_CFG, *args):
                     prepare_log (cfgopt['logfile'])
                     processes = paster_command('start', options, cfgopt, processes, args)
 
+
+
+        if 'logging_server' in cfgopt:
+            if command in ('stop'):
+                logger_command ('stop', cfgopt, processes)
 
         if options.wait:
             for proc in processes:
