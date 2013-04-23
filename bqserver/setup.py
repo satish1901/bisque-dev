@@ -46,7 +46,7 @@ The bisque server
     blob_service     = bq.blob_service.controllers.blobsrv
     image_service    = bq.image_service.controllers.service
     stats            = bq.stats.controllers.stats_server
-    module_service   = bq.module_service
+    module_service   = bq.module_service.controllers.module_server
     export           = bq.export_service.controllers.export_service
     import           = bq.import_service.controllers.import_service
     registration     = bq.registration.controllers.registration_service
