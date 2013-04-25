@@ -1043,7 +1043,12 @@ function Polygon(svgNode){
 Polygon.prototype.init=function(svgNode){
   if(svgNode.localName=="polygon"){
     Polygon.superclass.init.call(this,svgNode);
-    var points=svgNode.getAttributeNS(null,"points").split(/[\s,]+/);
+    
+    var pointStr = svgNode.getAttributeNS(null,"points"), points=[];
+    
+    if (pointStr) 
+        points = pointStr.split(/[\s,]+/);
+    
     this.handles=new Array();
     for(var i=0;i<points.length;i+=2){
       var x=parseFloat(points[i]);
@@ -1099,7 +1104,12 @@ function Polyline(svgNode){
 Polyline.prototype.init=function(svgNode){
   if(svgNode.localName=="polyline"){
     Polygon.superclass.init.call(this,svgNode);
-    var points=svgNode.getAttributeNS(null,"points").split(/[\s,]+/);
+
+    var pointStr = svgNode.getAttributeNS(null,"points"), points=[];
+    
+    if (pointStr) 
+        points = pointStr.split(/[\s,]+/);
+
     this.handles=new Array();
     for(var i=0;i<points.length;i+=2){
       var x=parseFloat(points[i]);
