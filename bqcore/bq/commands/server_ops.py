@@ -65,22 +65,19 @@ def readhostconfig (site_cfg):
 
     # Service spec if server.key.url = url
     # Create a dictionary for each host listed
+    # h1.key.key1 = aa
+    # h1.key.key2 = bb
+    # => { 'h1' : { 'key' : { 'key1' : 'val', 'key2' : 'bb' }}}
     servers = {}
     for host_spec, val in service_items:
         path = host_spec.split('.')
-
-        #if not (path[0].startswith('e') or path[0].startswith('h')):
         if not path[0] in hosts:
             continue
-
         param = path[-1]
         d = servers
         for path_el in path[:-1]:
             d = d.setdefault(path_el, {})
         d[param] = val
-        #ign, host_id, param = 
-        #servers.setdefault(host_id, {})[param] = val
-
 
     bisque = { 'top_dir': top_dir,  'root': root, 'servers': servers, 'log_dir': '.', 'pid_dir' : '.' }
     if config.has_option('servers', 'log_dir'):
@@ -227,15 +224,15 @@ def logger_command(command, cfgopt, processes):
         else:
             print "No pid file for logging server"
         
-        
 
-def operation(command, options, cfg_file=SITE_CFG, *args):
+def operation(command, options, *args):
     """Run a multi-server command to start several bisque jobs
     """
     def verbose(msg):
         if options.verbose:
             print msg
 
+    cfg_file=SITE_CFG
     site_cfg = options.site or find_site_cfg(cfg_file)
     if site_cfg is None:
         print "Cannot find site.cfg.. please make sure you are in the bisque dir"
@@ -267,13 +264,25 @@ def operation(command, options, cfg_file=SITE_CFG, *args):
             verbose("Backend not configured. defaulting to paster")
             backend = 'paster'
 
-        if 'logging_server' in cfgopt:
+        if command == 'list':
+            print "ARGS: %s" % (args,)
+            for server, params in  config['servers'].items():
+                print "server %s  : %s " % (server, params)
+            return
+
+        if not args and 'logging_server' in cfgopt:
             if command in ('restart'):
                 logger_command ('stop', cfgopt, processes)
             if command in ('start', 'restart'):
                 logger_command ('start', cfgopt, processes)
 
         for key, serverspec in sorted(config['servers'].items()):
+
+            if args and key not in args:
+                continue
+
+            print "%sing %s" % (command, key)
+
             cfgopt['server'] = serverspec.pop('server', None)
             cfgopt['url'] = serverspec.pop('url')
             fullurl = urlparse (cfgopt['url'])
@@ -320,7 +329,7 @@ def operation(command, options, cfg_file=SITE_CFG, *args):
 
 
 
-        if 'logging_server' in cfgopt:
+        if not args and 'logging_server' in cfgopt:
             if command in ('stop'):
                 logger_command ('stop', cfgopt, processes)
 
