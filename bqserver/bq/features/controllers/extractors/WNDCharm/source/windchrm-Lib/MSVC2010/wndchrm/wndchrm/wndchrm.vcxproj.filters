@@ -1,0 +1,148 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source Files\colors">
+      <UniqueIdentifier>{14e91fe1-efe4-4317-8234-386f271e34d3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\gsl">
+      <UniqueIdentifier>{2d489044-73c6-490f-a2ba-ad2294250b24}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\statistics">
+      <UniqueIdentifier>{8f32de45-9bf6-4f73-a7f5-71c8577ee592}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\textures">
+      <UniqueIdentifier>{697862e7-fc79-4671-a1f7-38d9c6711593}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\transforms">
+      <UniqueIdentifier>{af2d7655-4b37-4e70-9199-77353efbc198}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\util">
+      <UniqueIdentifier>{fa650399-ab03-4e11-9404-51c36765cdb1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\transforms\wavelet">
+      <UniqueIdentifier>{80e28b72-bdc3-4220-8229-ac19badcb9ec}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\textures\haralick">
+      <UniqueIdentifier>{2e71384e-830a-4770-a96a-d9391add27a5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\textures\zernike">
+      <UniqueIdentifier>{9ca875b3-ec6d-4dc7-a6b3-e4951cd5980e}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\Source\colors\FuzzyCalc.cpp">
+      <Filter>Source Files\colors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\gsl\specfunc.cpp">
+      <Filter>Source Files\gsl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\util\readTiffData.c">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\transforms\chebyshev.cpp">
+      <Filter>Source Files\transforms</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\transforms\ChebyshevFourier.cpp">
+      <Filter>Source Files\transforms</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\transforms\radon.cpp">
+      <Filter>Source Files\transforms</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\transforms\wavelet\Common.cpp">
+      <Filter>Source Files\transforms\wavelet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\transforms\wavelet\convolution.cpp">
+      <Filter>Source Files\transforms\wavelet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\transforms\wavelet\DataGrid2D.cpp">
+      <Filter>Source Files\transforms\wavelet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\transforms\wavelet\DataGrid3D.cpp">
+      <Filter>Source Files\transforms\wavelet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\transforms\wavelet\Filter.cpp">
+      <Filter>Source Files\transforms\wavelet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\transforms\wavelet\FilterSet.cpp">
+      <Filter>Source Files\transforms\wavelet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\transforms\wavelet\Symlet5.cpp">
+      <Filter>Source Files\transforms\wavelet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\transforms\wavelet\Wavelet.cpp">
+      <Filter>Source Files\transforms\wavelet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\transforms\wavelet\WaveletHigh.cpp">
+      <Filter>Source Files\transforms\wavelet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\transforms\wavelet\WaveletLow.cpp">
+      <Filter>Source Files\transforms\wavelet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\transforms\wavelet\WaveletMedium.cpp">
+      <Filter>Source Files\transforms\wavelet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\transforms\wavelet\wt.cpp">
+      <Filter>Source Files\transforms\wavelet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\textures\gabor.cpp">
+      <Filter>Source Files\textures</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\textures\tamura.cpp">
+      <Filter>Source Files\textures</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\textures\zernike\zernike.cpp">
+      <Filter>Source Files\textures\zernike</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\textures\haralick\CVIPtexture.cpp">
+      <Filter>Source Files\textures\haralick</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\textures\haralick\haralick.cpp">
+      <Filter>Source Files\textures\haralick</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\textures\haralick\mapkit.cpp">
+      <Filter>Source Files\textures\haralick</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\textures\haralick\mapkit_generic.cpp">
+      <Filter>Source Files\textures\haralick</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\statistics\CombFirst4Moments.cpp">
+      <Filter>Source Files\statistics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\statistics\FeatureStatistics.cpp">
+      <Filter>Source Files\statistics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\cmatrix.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\FeatureAlgorithms.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\ImageTransforms.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\util\color_deconvolution.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Tasks.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\FeatureNames.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
