@@ -4,8 +4,16 @@
 
 from webhelpers import date, feedgenerator, html, number, misc, text
 from paste.deploy.converters import asbool
+from bq.util.paths import bisque_path
+from minimatic  import *
 
 import bq
+
+def file_root():
+    return bisque_path('')
+def file_public():
+    return bisque_path('public')
+
 def add_global_tmpl_vars ():
     #log.debug ("add_global_tmpl_vars")
     #return dict (widgets = widgets)
