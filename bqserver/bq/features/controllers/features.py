@@ -43,9 +43,14 @@ from bq.api.comm import BQServer
 
 import Feature
 
-#querylibraries
-import Query_Library.ANN.ann as ann
+try:
+    import Query_Library.ANN.ann as ann
+except:
+    ann = None
+    pass
 
+
+#querylibraries
 log = logging.getLogger("bq.features")
 
 #FUTURE:
@@ -436,7 +441,6 @@ class HDF5Table():
 
 
 #class Initalize_Queries():
-
 class Feature_Query():
     
     def __init__(self, query_type, feature_modules):
@@ -715,7 +719,11 @@ class featuresController(ServiceController):
         
         log.info ("initializing Trees")
         self.feature_modules = Feature_Modules() #initalizing all the feature modules
-        self.ANN = Feature_Query('ANN', self.feature_modules).return_query() #may need to create more genericlly to allow for other query types
+        try:
+            self.ANN = Feature_Query('ANN', self.feature_modules).return_query() #may need to create more genericlly to allow for other query types
+        except:
+            log.exception("Loading featurequery")
+        
         log.info ("Done initializing Trees Feature Server is ready to go")        
     
     ###################################################################
