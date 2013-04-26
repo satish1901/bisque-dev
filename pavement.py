@@ -50,10 +50,15 @@ options(
         packages_to_install=['pip'],
         paver_command_line="required"
     ),
+    sphinx = Bunch (
+        builddir = "build"
+        ),
 )
 
 server_subdirs=['bqdev', 'bqcore', 'bqserver', 'bqengine' ]
 engine_subdirs=['bqdev', 'bqcore', 'bqengine' ]
+
+#################################################################
 
 
 def getanswer(question, default, help=None):
@@ -77,7 +82,14 @@ def getanswer(question, default, help=None):
         break
     return a
 
+########################################################
+import urllib2
+import shutil
+import urlparse
+import os
 
+
+#############################################################
 #@cmdopts([('engine', 'e', 'install only the engine')])
 @task
 @consume_args 
@@ -151,3 +163,25 @@ def distclean():
 def package():
     'create distributable packages'
     pass
+
+@task
+@needs('paver.doctools.html')
+def html(options):
+    """Build docs"""
+    destdir = path('docs/html')
+    if destdir.exists():
+        destdir.rmtree()
+    builtdocs = path("docs") / options.builddir / "html"
+    builtdocs.move(destdir)
+
+@task
+def pastershell():
+    'setup env for paster shell config/shell.ini'
+    bisque_info = path('bisque.egg-info')
+    if not bisque_info.exists():
+        sh ('paver egg_info')
+    path ('bqcore/bqcore.egg-info/paster_plugins.txt').copy (bisque_info)
+    
+
+    
+    
