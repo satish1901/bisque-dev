@@ -1969,7 +1969,11 @@ class ImageServer(object):
                 if data_token is None: data_token = ProcessToken()
                 data_token.setImage(filename, format=default_format)
                 testfile = self.services['bioformats'].resultFilename(ident, data_token)                    
-                if not os.path.exists(testfile) and (bioformats.supported(filename, original)):
+                if os.path.exists(testfile): 
+                    info = self.server.getImageInfo(filename=testfile)
+                    data_token.setImage(testfile)
+                    data_token.dims = info
+                elif bioformats.supported(filename, original):
                     data_token = self.services['bioformats'].action (ident, data_token, '')
                     if not data_token.dims is None:
                         info = data_token.dims
