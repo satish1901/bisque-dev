@@ -1515,6 +1515,11 @@ class BioFormatsService(object):
     def hookInsert(self, data_token, image_id, hookpoint='post'):
         pass
 
+    def resultFilename(self, image_id, data_token):
+        ifile = self.server.getInFileName( data_token, image_id )
+        ofile = self.server.getOutFileName( ifile, '.ome.tif' )
+        return ofile        
+
     def action(self, image_id, data_token, arg):
 
         if not bioformats.installed(): return data_token
@@ -1959,11 +1964,12 @@ class ImageServer(object):
                 info = imgcnv.info(filename)
 
             # if not decoded try bioformats
-            if ident is not None:
+            if 'width' not in info and ident is not None:
                 original = self.originalFileName(ident)
-                if (not 'width' in info) and (bioformats.supported(filename, original)):
-                    if data_token is None: data_token = ProcessToken()
-                    data_token.setImage(filename, format=default_format)
+                if data_token is None: data_token = ProcessToken()
+                data_token.setImage(filename, format=default_format)
+                testfile = self.services['bioformats'].resultFilename(ident, data_token)                    
+                if not os.path.exists(testfile) and (bioformats.supported(filename, original)):
                     data_token = self.services['bioformats'].action (ident, data_token, '')
                     if not data_token.dims is None:
                         info = data_token.dims
