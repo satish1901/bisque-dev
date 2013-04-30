@@ -1,0 +1,15 @@
+Authors of wndchrm:
+
+Please reference the wndchrm utility paper if you use this code:
+"Wndchrm - an open source utility for biological image analysis"
+Lior Shamir, Nikita Orlov, D Mark Eckley, Tomasz Macura, Josiah Johnston, Ilya G Goldberg
+Source Code for Biology and Medicine 2008, 3:13
+http://www.scfbm.org/content/3/1/13
+
+This code is based on the WND-CHARM algorithm as published here:
+"WND-CHARM: Multi-purpose image classification using compound image transforms"
+Nikita Orlov, Lior Shamir, Tomasz Macura, Josiah Johnston, D. Mark Eckley, and Ilya G. Goldberg
+Pattern Recognit Lett. 2008 January; 29(11): 1684-1693.
+http://www.pubmedcentral.nih.gov/articlerender.fcgi?artid=2573471
+
+Thank You.

@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 import sys, os
 
 #from bq.release import __VERSION__
-__VERSION__ = '0.5.2'
+__VERSION__ = '0.5.3'
 
 setup(name='bqserver',
       version=__VERSION__,
@@ -34,6 +34,10 @@ The bisque server
         "tw.recaptcha",
         "tgext.registration2",
         "tw.output", #https://bitbucket.org/alexbodn/twoutput/get/af6904c504cf.zip
+        "importlib", # Feature
+        "cython",  # Feature
+        "numexpr", # Feature
+        "tables",  # Feature
       ],
       entry_points="""
       # -*- Entry points: -*-
@@ -46,13 +50,14 @@ The bisque server
     blob_service     = bq.blob_service.controllers.blobsrv
     image_service    = bq.image_service.controllers.service
     stats            = bq.stats.controllers.stats_server
-    module_service   = bq.module_service
+    module_service   = bq.module_service.controllers.module_server
     export           = bq.export_service.controllers.export_service
     import           = bq.import_service.controllers.import_service
     registration     = bq.registration.controllers.registration_service
     ingest_service   = bq.ingest.controllers.ingest_server
     dataset_service  = bq.dataset_service.controllers.dataset_service
     usage            = bq.usage.controllers.usage
+    features         = bq.features.controllers.features	
 
     [bq.commands]
     module = bq.module_service.commands.module_admin:module_admin
