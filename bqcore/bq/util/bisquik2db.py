@@ -354,7 +354,7 @@ def model_fields(dbo, baseuri=None):
             fn, attr_val = fn(dbo, fname, baseuri)
         else:
             attr_val = getattr(dbo, fn, None)
-        if attr_val is not None and attr_val!='':
+        if attr_val is not None: # and attr_val!='':
             if isinstance(attr_val, basestring):
                attrs[fn] = attr_val
             else:

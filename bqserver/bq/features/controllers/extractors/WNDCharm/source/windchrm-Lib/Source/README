@@ -1,0 +1,8 @@
+wndchrm depends on the following free libraries:
+LibTIFF: http://www.libtiff.org
+FFTW 3.x: http://www.fftw.org/download.html
+
+wndchrm itself can be compiled with the following command sequence:
+./configure
+make
+sudo make install

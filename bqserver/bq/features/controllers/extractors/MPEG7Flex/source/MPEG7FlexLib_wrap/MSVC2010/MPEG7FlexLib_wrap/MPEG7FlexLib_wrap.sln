@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MPEG7FlexLib_wrap", "MPEG7FlexLib_wrap\MPEG7FlexLib_wrap.vcxproj", "{A73CC3D6-EED4-41A3-A834-0BCD770E4A4D}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MPEG7FexLib", "..\..\..\MPEG7Flex-Lib\MSVC\MPEG7FexLib\MPEG7FexLib\MPEG7FexLib.vcxproj", "{3C894718-60C5-4FE2-AC11-B38EC8F3AD57}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Debug|x64 = Debug|x64
+		Release|Win32 = Release|Win32
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A73CC3D6-EED4-41A3-A834-0BCD770E4A4D}.Debug|Win32.ActiveCfg = Debug|x64
+		{A73CC3D6-EED4-41A3-A834-0BCD770E4A4D}.Debug|Win32.Build.0 = Debug|x64
+		{A73CC3D6-EED4-41A3-A834-0BCD770E4A4D}.Debug|x64.ActiveCfg = Debug|x64
+		{A73CC3D6-EED4-41A3-A834-0BCD770E4A4D}.Debug|x64.Build.0 = Debug|x64
+		{A73CC3D6-EED4-41A3-A834-0BCD770E4A4D}.Release|Win32.ActiveCfg = Release|Win32
+		{A73CC3D6-EED4-41A3-A834-0BCD770E4A4D}.Release|Win32.Build.0 = Release|Win32
+		{A73CC3D6-EED4-41A3-A834-0BCD770E4A4D}.Release|x64.ActiveCfg = Release|Win32
+		{A73CC3D6-EED4-41A3-A834-0BCD770E4A4D}.Release|x64.Build.0 = Release|Win32
+		{3C894718-60C5-4FE2-AC11-B38EC8F3AD57}.Debug|Win32.ActiveCfg = Debug|Win32
+		{3C894718-60C5-4FE2-AC11-B38EC8F3AD57}.Debug|Win32.Build.0 = Debug|Win32
+		{3C894718-60C5-4FE2-AC11-B38EC8F3AD57}.Debug|x64.ActiveCfg = Debug|x64
+		{3C894718-60C5-4FE2-AC11-B38EC8F3AD57}.Debug|x64.Build.0 = Debug|x64
+		{3C894718-60C5-4FE2-AC11-B38EC8F3AD57}.Release|Win32.ActiveCfg = Release|Win32
+		{3C894718-60C5-4FE2-AC11-B38EC8F3AD57}.Release|Win32.Build.0 = Release|Win32
+		{3C894718-60C5-4FE2-AC11-B38EC8F3AD57}.Release|x64.ActiveCfg = Release|x64
+		{3C894718-60C5-4FE2-AC11-B38EC8F3AD57}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
