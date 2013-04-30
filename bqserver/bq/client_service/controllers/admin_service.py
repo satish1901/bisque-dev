@@ -181,25 +181,21 @@ class AdminController(ServiceController):
 
         # Remove the user from the system for most purposes, but
         # leave the id for statistics purposes.
-        user = DBSession.query(User).filter (User.display_name == username).first()
+        user = DBSession.query(User).filter (User.user_name == username).first()
         log.debug ("Renaming internal user %s" % user)
         if user:
-            user.display_name = ("(R)" + user.display_name)[:255]
-            user.user_name = ("(R)" + user.user_name)[:255]
-            user.email_address = ("(R)" + user.email_address)[:16]
-        
-
+            DBSession.delete(user)
+            #user.display_name = ("(R)" + user.display_name)[:255]
+            #user.user_name = ("(R)" + user.user_name)[:255]
+            #user.email_address = ("(R)" + user.email_address)[:16]
 
         user = DBSession.query(BQUser).filter(BQUser.resource_name == username).first()
         log.debug("ADMIN: Deleting user: " + str(user) )
         # delete the access permission
-        #for p in DBSession.query(FileAcl).filter_by(user = user.user_name):
-        #    log.debug ("KILL FILEACL %s" % p)
-        #    DBSession.delete(p)
         for p in DBSession.query(TaggableAcl).filter_by(user_id=user.id):
             log.debug ("KILL ACL %s" % p)
             DBSession.delete(p)
-        DBSession.flush()
+        #DBSession.flush()
         
         self.deleteimages(username, will_redirect=False)
         DBSession.delete(user)
