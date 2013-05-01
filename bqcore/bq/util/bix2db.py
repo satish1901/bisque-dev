@@ -99,15 +99,18 @@ class BIXImporter(object):
     def save_file (self, fn, **kw):
         '''save a file in the image server and return info'''
         with open(self.fullname(fn), 'rb') as src:
-            return blob_service.store_blob(src, fn, permission = str(self.permission_flag) ) 
+            fr = etree.Element ('file', name=fn, permission=str(self.permission_flag) ) 
+            return blob_service.store_blob(fr, src ) 
             
 
     def save_image (self, fn, **kw):
         '''save a file in the image server and return info'''
         log.debug ("Store new image: " + fn + " " + str(self.image_info)) 
 
+        self.resource = etree.Element('image', name=fn, permission = str(self.permission_flag))
+
         with open(self.fullname(fn), 'rb') as src:
-            self.resource = blob_service.store_blob(src, fn, permission = str(self.permission_flag)) 
+            self.resource = blob_service.store_blob(self.resource, src ) 
 
         if 'uri' in self.resource.attrib:
             self.import_files[fn] = self.resource.get('uri')
