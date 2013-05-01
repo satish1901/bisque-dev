@@ -1970,8 +1970,8 @@ class ImageServer(object):
                 data_token.setImage(filename, format=default_format)
                 testfile = self.services['bioformats'].resultFilename(ident, data_token)                    
                 if os.path.exists(testfile): 
-                    info = self.server.getImageInfo(filename=testfile)
-                    data_token.setImage(testfile)
+                    info = self.getImageInfo(filename=testfile)
+                    data_token.setImage(testfile, format='tiff')
                     data_token.dims = info
                 elif bioformats.supported(filename, original):
                     data_token = self.services['bioformats'].action (ident, data_token, '')
