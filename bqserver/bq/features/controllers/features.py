@@ -130,8 +130,7 @@ class Feature_Modules():
                         log.debug('Imported Feature: %s'%item.name)
                         self.feature_module_dict[item.name] = item
             except Exception,e:                                   #feature failed to import
-                log.debug('Failed Imported Feature: %s'%module)
-                traceback.print_exc()
+                log.exception('Failed Imported Feature: %s'%module)
     
     def returnfeature(self, feature_type):
         """
