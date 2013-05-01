@@ -84,7 +84,9 @@ Ext.define('BQ.viewer.Image', {
         if (this.toolbar) 
             this.parameters.toolbar = this.toolbar;
         this.parameters.gobjectschanged = callback(this, 'onchanged');
-        this.viewer = new ImgViewer(this.getId(), this.resource, this.parameters);   
+        
+        var id = Ext.getVersion('core').isGreaterThan('4.2.0') ? this.getId()+'-innerCt' : this.getId();
+        this.viewer = new ImgViewer(id, this.resource, this.parameters);   
         this.fireEvent( 'loaded', this ); 
         this.viewer.resize();  
         
