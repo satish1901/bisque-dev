@@ -102,8 +102,13 @@ Ext.define('BQ.Application.Toolbar', {
     
     tools_none: [ 'menu_user_signin', 'menu_user_register', 'menu_user_register_sep','menu_user_recover' ],    
     tools_user: ['menu_user_name', 'menu_user_profile', 'menu_user_signout', 'menu_user_prefs', 
-                 'menu_user_signout_sep', 'menu_resource_template', 'menu_resource_create', ],
+                 'menu_user_signout_sep', 'menu_resource_template', 'menu_resource_create', 'button_create' ],
     tools_admin: ['menu_user_admin_separator', 'menu_user_admin', 'menu_user_admin_prefs', ],    
+    
+    types_required: {'dataset':null, 'template':null},
+    
+    types_ignore: { 'mex':null, 'user':null, 'image':null, 'module':null, 
+                    'service':null, 'system':null, 'file':null, }, 
     
     initComponent : function() {
         this.images_base_url = this.images_base_url || bq.url('/images/toolbar/');
@@ -142,6 +147,29 @@ Ext.define('BQ.Application.Toolbar', {
                 handler: Ext.Function.pass(pageAction, '/stats/'),
             }],       
         };                       
+
+        //--------------------------------------------------------------------------------------
+        // Create menu
+        //--------------------------------------------------------------------------------------   
+
+        this.menu_create = {
+            xtype: 'menu',
+            cls: 'toolbar-menu',
+            itemId  : 'menu_create', 
+            plain: true,
+            hidden: true,
+            items: [{
+                text    : 'Create a new resource', 
+                itemId  : 'menu_create_resource', 
+                handler : function() { this.createResource(); },
+                scope   : this, 
+            }, {
+                itemId  : 'menu_create_from_template', 
+                text    : 'Create resource from template', 
+                handler : this.createResourceFromTemplate,
+                scope   : this, 
+            }, '-'],       
+        };      
 
         //--------------------------------------------------------------------------------------
         // User menu
@@ -264,7 +292,7 @@ Ext.define('BQ.Application.Toolbar', {
             }, { 
                 text: 'System preferences', 
                 itemId: 'menu_user_admin_prefs', 
-                hidden:true, 
+                hidden: true, 
                 handler: this.systemPrefs, 
                 scope: this, 
             }, {
@@ -372,6 +400,13 @@ Ext.define('BQ.Application.Toolbar', {
                 iconCls : 'icon-export', 
                 handler: Ext.Function.pass(pageAction, '/export/'),
                 tooltip: '', 
+            }, {
+                xtype : 'button',
+                itemId: 'button_create', 
+                menu  : this.menu_create,
+                iconCls : 'icon-create', 
+                text  : 'Create', 
+                hidden: true,
             }, {
                 itemId: 'menu_images', 
                 xtype:'splitbutton', 
@@ -524,6 +559,18 @@ Ext.define('BQ.Application.Toolbar', {
     }, 
 
     onResourceTypes : function(resource) {
+        var types = {};
+        BQApp.resourceTypes = [];
+        var r=null;
+        for (var i=0; (r=resource.children[i]); i++) {
+            BQApp.resourceTypes.push({name:r.name, uri:r.uri});
+            types[r.name] = r.uri;  
+        }
+        this.addBrowseResourceTypes(types);      
+        this.addCreateResourceTypes(types);           
+    },
+    
+    addBrowseResourceTypes : function(types) {
         var menu = {
             xtype: 'menu',
             cls: 'toolbar-menu',
@@ -533,39 +580,34 @@ Ext.define('BQ.Application.Toolbar', {
                 handler: Ext.Function.pass(pageAction, '/client_service/browser?resource=/data_service/dataset'),
             }],
         };
-
-        BQApp.resourceTypes = [];
-        var r=null;
-        for (var i=0; (r=resource.children[i]); i++) {
-            BQApp.resourceTypes.push({name:r.name, uri:r.uri});
-            if (r.name == 'dataset') continue;
-            var name = r.name;
-            var uri = r.uri;            
+        
+        for (var name in types) {
+            if (name == 'dataset') continue;
             menu.items.push({
                 text: name, 
-                handler: Ext.Function.pass(pageAction, '/client_service/browser?resource='+uri),
+                handler: Ext.Function.pass(pageAction, '/client_service/browser?resource='+types[name]),
             });
-        }
-        
-        menu.items.push('-');
-        menu.items.push({
-            text    : 'Create a new resource', 
-            itemId  : 'menu_resource_create', 
-            handler : function() {this.createResource(resource);},
-            scope   : this, 
-            hidden  : !BQApp.hasUser(),
-        });
-        menu.items.push({
-            itemId  : 'menu_resource_template', 
-            text    : 'Create resource from template', 
-            handler : function() {this.createResourceFromTemplate()},
-            scope   : this, 
-            hidden  : !BQApp.hasUser()
-        });
+        }        
 
         menu = Ext.create('Ext.menu.Menu', menu);
         this.queryById('menu_images').menu = menu;
         this.queryById('menu_resources').menu = menu;        
+    },
+    
+    addCreateResourceTypes : function(types) {
+        var mytypes =  Ext.Object.merge(types, this.types_required);
+        for (var name in mytypes) {
+            if (!(name in this.types_ignore))
+            this.queryById('menu_create').add({
+                text    : 'Create '+name, 
+                itemId  : 'menu_create_'+name, 
+                //handler : function() {this.createResource(types, name);},
+                handler: Ext.Function.pass(this.createResource, [types, name], this),
+                scope   : this, 
+            });            
+        }        
+
+        this.queryById('menu_create_resource').handler = function() {this.createResource(mytypes);};
     },
     
     createResourceFromTemplate  :   function(template)
@@ -655,20 +697,19 @@ Ext.define('BQ.Application.Toolbar', {
         
     },
    
-    createResource : function(resource) {
-        var ignore = { 'mex':null, 'user':null, 'image':null, 'module':null, 'service':null, 'system':null, 'file':null, 'dataset':null, };        
-        var mydata = [['dataset']];
-        var r=null;
-        for (var i=0; (r=resource.children[i]); i++)
-            if (!(r.name in ignore))
-                mydata.push( [r.name] );   
-        delete ignore.dataset;
+    createResource : function(types, def) {
+        var mykeys =  Ext.Object.merge(types, this.types_required);
+        if (def) mykeys[def] = null;   
+        var mydata = [];
+        for (var k in mykeys)
+            if (!(k in this.types_ignore))
+                mydata.push([k]);
         
         store_types = Ext.create('Ext.data.ArrayStore', {
             fields: [ {name: 'name',}, ],        
             data: mydata,
         });                
-        
+        var ignore = this.types_ignore;
         var formpanel = Ext.create('Ext.form.Panel', {
             //url:'save-form.php',
             frame:true,
@@ -688,6 +729,7 @@ Ext.define('BQ.Application.Toolbar', {
                 fieldLabel: 'Type',
                 name: 'type',
                 allowBlank: false,
+                value: def,
                 
                 store     : store_types,
                 displayField: 'name',
