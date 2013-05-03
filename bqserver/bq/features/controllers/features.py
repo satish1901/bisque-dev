@@ -35,7 +35,7 @@ from datetime import datetime, timedelta
 import urllib
 
 import bq
-from bq.util.paths import data_path,bisque_root
+from bq.util.paths import data_path
 from bq.client_service.controllers import aggregate_service
 from bq import data_service
 from bq.image_service.controllers.locks import Locks
@@ -43,14 +43,10 @@ from bq.api.comm import BQServer
 
 import Feature
 
-try:
-    import Query_Library.ANN.ann as ann
-except:
-    ann = None
-    pass
-
-
+#query is commented out
 #querylibraries
+#import Query_Library.ANN.ann as ann
+
 log = logging.getLogger("bq.features")
 
 #FUTURE:
@@ -74,7 +70,7 @@ log = logging.getLogger("bq.features")
 #    multiple threads accessing one preloaded tree or set of trees (when reindexing other threads with have to redownload the tree)
 
 #Research
-#    Should a new feature module be able to be added even while the server is still active 
+#    Should a new feature module be able to be added even while the server is still active?
 #    Think of a better way to format the tables using uniques and commands instead of id tables
 #    as the table increases in size hdf5 becomes increasingly harder to search through
 
@@ -91,8 +87,6 @@ FEATURES_TEMP_CSV_DIR = os.path.join(FEATURES_STORAGE_FILE_DIR,'feature_temp_csv
 
 FEATURES_CONTOLLERS_DIR = bq.features.controllers.__path__[0]
 EXTRACTOR_DIR = os.path.join(FEATURES_CONTOLLERS_DIR,'extractors')
-#FEATURE_SERVER_DIR = 
-#EXTRACTORS = os.path.join(
 
 ################################################################# 
 ###  descriptor tables
@@ -121,7 +115,6 @@ class Feature_Modules():
         """
         self.feature_module_dict = {}
         extractors=[name for module_loader, name, ispkg in pkgutil.iter_modules([EXTRACTOR_DIR]) if ispkg]
-        log.debug('extractors: %s'% extractors)
         for module in extractors:
             try:
                 extractor = importlib.import_module('bq.features.controllers.extractors.'+module+'.extractor') # the module needs to have a file named
@@ -130,7 +123,8 @@ class Feature_Modules():
                         log.debug('Imported Feature: %s'%item.name)
                         self.feature_module_dict[item.name] = item
             except Exception,e:                                   #feature failed to import
-                log.exception('Failed Imported Feature: %s'%module)
+                log.debug('Failed Imported Feature: %s'%module)
+                traceback.print_exc()
     
     def returnfeature(self, feature_type):
         """
@@ -160,8 +154,8 @@ class IDTable():
     
     def __init__(self):        
         
-        import extractor.ID.ID
-        self.Table = HDF5Table(extraction_library.ID.ID.ID)
+        from ID import ID
+        self.Table = HDF5Table(ID)
         
     def returnID(self, uri):
         """
@@ -439,106 +433,107 @@ class HDF5Table():
 ###############################################################
 
 
-#class Initalize_Queries():
-class Feature_Query():
-    
-    def __init__(self, query_type, feature_modules):
-        self.query_type = query_type
-        self.feature_modules = feature_modules
-        
-    def return_query(self):
-        outputs = {'ANN' : ANN }
-        queryobject = outputs[self.query_type]
-        return queryobject(self.feature_modules)
-
-class ANN():
-    
-    ANN_DIR = os.path.join(FEATURES_STORAGE_FILE_DIR ,'ANN\\') #initalizing the directory
-    name = 'ANN'
-    ObjectType = 'Query'
-    
-    def __init__(self,feature_modules):
-        self.feature_modules = feature_modules
-        self.tree = {};
-        treeList = os.listdir(self.ANN_DIR)
-        for treename in treeList:
-            if treename.endswith('.tree'):
-                with Locks(self.ANN_DIR + treename): #read lock
-                    self.tree[treename[0:-5]]= ann.kd_tree(self.ANN_DIR + treename, import_kd_tree = True) #initializing all the trees
-                    
-    def index_tree(self, feature_type):
-        """Indexes tree of a specific descriptor table"""
-        feature_module = self.feature_modules.returnfeature(feature_type)
-        Table = HDF5Table(feature_module) #initalizing table
-        if Table.collen()>1:
-            
-            tree = Table.returndescriptorCol(ann.kd_tree)
-            
-            with Locks(None,self.ANN_DIR+feature_type+'.tree'):    
-                tree.save_kd_tree(self.ANN_DIR+feature_type+'.tree')   #saving tree to file
-            
-            self.tree[feature_type] = tree
-             
-            log.debug('saving tree was successful @ %s'% self.ANN_DIR+feature_type+'.tree')
-            return 1
-        else:
-            log.debug('saving tree was NOT successful') #500 Internal Server Error
-            return 0
-    
-    def query_tree(self, feature_type, discriptor, uri, limit ):
-        """searches query tree for nearest neighboring descriptors
-        returns a uri of the image with those descriptors"""
-        feature_module = self.feature_modules.returnfeature(feature_type)
-        Table = FeatureTable( HDF5Table(feature_module) )#initalizing table
-        vectors, dimensions = discriptor.shape
-        if os.path.exists(self.ANN_DIR+feature_type+'.tree'):
-            
-            Anntree=self.tree[feature_type]  #importing kd_tree, import tree at start of the server
-            
-            QueryObject=[]
-            
-            for i in range(0,int(vectors)):
-                total_nearestdescritpors=[]
-                
-                test = np.asarray([discriptor[i,:]], dtype='d', order='C')
-                nQPoints, dimension = test.shape
-                
-                searchtime=time.time()
-                idx, distance = Anntree.search( [discriptor[i,:]], k=limit)
-                log.debug('ann search: %s' % str(time.time()-searchtime))
-                
-                tabletime=time.time()
-                for j in range(0,len(idx[0])):
-                    total_nearestdescritpors.append(Table.return_FeatureObject( index = idx[0][j], short = 1)[0])
-                log.debug('hdf5 table search: %s' % str(time.time()-searchtime))
-                QueryObject.append( self.CreateQueryObject(total_nearestdescritpors, uri, feature_type,[]) )
-
-            return QueryObject
-        else:
-            abort(404, 'tree for feature type: '+feature_type)
-            log.debug('No Tree exists') #404 Not Found
-    
-    def setattributes(self, value, parameter, uri):
-        """creates an object with query outputs"""
-        self.feature = value
-        self.value = value
-        
-        self.parameter = parameter
-        self.uri = uri #image being queried
-        return
-    
-    class CreateQueryObject():
-        
-        def __init__(self, featureObject, uri, feature_type, parameter ):
-            self.query_type ='ANN'
-            self.name = 'ANN'
-            self.ObjectType = 'Query'
-            self.parameter_info = []
-            self.feature_type = feature_type
-            self.parameter = parameter
-            self.featureObject = featureObject
-            self.value = featureObject
-            self.uri = uri
+##class Initalize_Queries():
+#
+#class Feature_Query():
+#    
+#    def __init__(self, query_type, feature_modules):
+#        self.query_type = query_type
+#        self.feature_modules = feature_modules
+#        
+#    def return_query(self):
+#        outputs = {'ANN' : ANN }
+#        queryobject = outputs[self.query_type]
+#        return queryobject(self.feature_modules)
+#
+#class ANN():
+#    
+#    ANN_DIR = os.path.join(FEATURES_STORAGE_FILE_DIR ,'ANN\\') #initalizing the directory
+#    name = 'ANN'
+#    ObjectType = 'Query'
+#    
+#    def __init__(self,feature_modules):
+#        self.feature_modules = feature_modules
+#        self.tree = {};
+#        treeList = os.listdir(self.ANN_DIR)
+#        for treename in treeList:
+#            if treename.endswith('.tree'):
+#                with Locks(self.ANN_DIR + treename): #read lock
+#                    self.tree[treename[0:-5]]= ann.kd_tree(self.ANN_DIR + treename, import_kd_tree = True) #initializing all the trees
+#                    
+#    def index_tree(self, feature_type):
+#        """Indexes tree of a specific descriptor table"""
+#        feature_module = self.feature_modules.returnfeature(feature_type)
+#        Table = HDF5Table(feature_module) #initalizing table
+#        if Table.collen()>1:
+#            
+#            tree = Table.returndescriptorCol(ann.kd_tree)
+#            
+#            with Locks(None,self.ANN_DIR+feature_type+'.tree'):    
+#                tree.save_kd_tree(self.ANN_DIR+feature_type+'.tree')   #saving tree to file
+#            
+#            self.tree[feature_type] = tree
+#             
+#            log.debug('saving tree was successful @ %s'% self.ANN_DIR+feature_type+'.tree')
+#            return 1
+#        else:
+#            log.debug('saving tree was NOT successful') #500 Internal Server Error
+#            return 0
+#    
+#    def query_tree(self, feature_type, discriptor, uri, limit ):
+#        """searches query tree for nearest neighboring descriptors
+#        returns a uri of the image with those descriptors"""
+#        feature_module = self.feature_modules.returnfeature(feature_type)
+#        Table = FeatureTable( HDF5Table(feature_module) )#initalizing table
+#        vectors, dimensions = discriptor.shape
+#        if os.path.exists(self.ANN_DIR+feature_type+'.tree'):
+#            
+#            Anntree=self.tree[feature_type]  #importing kd_tree, import tree at start of the server
+#            
+#            QueryObject=[]
+#            
+#            for i in range(0,int(vectors)):
+#                total_nearestdescritpors=[]
+#                
+#                test = np.asarray([discriptor[i,:]], dtype='d', order='C')
+#                nQPoints, dimension = test.shape
+#                
+#                searchtime=time.time()
+#                idx, distance = Anntree.search( [discriptor[i,:]], k=limit)
+#                log.debug('ann search: %s' % str(time.time()-searchtime))
+#                
+#                tabletime=time.time()
+#                for j in range(0,len(idx[0])):
+#                    total_nearestdescritpors.append(Table.return_FeatureObject( index = idx[0][j], short = 1)[0])
+#                log.debug('hdf5 table search: %s' % str(time.time()-searchtime))
+#                QueryObject.append( self.CreateQueryObject(total_nearestdescritpors, uri, feature_type,[]) )
+#
+#            return QueryObject
+#        else:
+#            abort(404, 'tree for feature type: '+feature_type)
+#            log.debug('No Tree exists') #404 Not Found
+#    
+#    def setattributes(self, value, parameter, uri):
+#        """creates an object with query outputs"""
+#        self.feature = value
+#        self.value = value
+#        
+#        self.parameter = parameter
+#        self.uri = uri #image being queried
+#        return
+#    
+#    class CreateQueryObject():
+#        
+#        def __init__(self, featureObject, uri, feature_type, parameter ):
+#            self.query_type ='ANN'
+#            self.name = 'ANN'
+#            self.ObjectType = 'Query'
+#            self.parameter_info = []
+#            self.feature_type = feature_type
+#            self.parameter = parameter
+#            self.featureObject = featureObject
+#            self.value = featureObject
+#            self.uri = uri
     
 
 ###############################################################
@@ -716,14 +711,12 @@ class featuresController(ServiceController):
         super(featuresController, self).__init__(server_url)
         self.baseurl=server_url
         
-        log.info ("initializing Trees")
+        log.info('importing features')
         self.feature_modules = Feature_Modules() #initalizing all the feature modules
-        try:
-            self.ANN = Feature_Query('ANN', self.feature_modules).return_query() #may need to create more genericlly to allow for other query types
-        except:
-            log.exception("Loading featurequery")
         
-        log.info ("Done initializing Trees Feature Server is ready to go")        
+#        log.info ("initializing Trees")
+#        self.ANN = Feature_Query('ANN', self.feature_modules).return_query() #may need to create more genericlly to allow for other query types
+#        log.info ("Done initializing Trees Feature Server is ready to go")        
     
     ###################################################################
     ### Feature Service
@@ -780,45 +773,45 @@ class featuresController(ServiceController):
     ### Query Service
     ###################################################################
 
-    @expose(content_type="text/xml")
-    def index(self,query_type, feature_type, output_type='xml'): #may move to a query server
-        """indexes the features in the pytables for query type index"""
-        self.ANN.index_tree(feature_type) #index tree
-        resource = etree.Element('resource', status = 'FINISHED')
-        feature=etree.SubElement( resource, 'QueryType', featuretype = str(query_type))
-        feature=etree.SubElement( resource, 'FeatureType', featuretype = str(feature_type))
-        return etree.tostring(resource)
+#    @expose(content_type="text/xml")
+#    def index(self,query_type, feature_type, output_type='xml'): #may move to a query server
+#        """indexes the features in the pytables for query type index"""
+#        self.ANN.index_tree(feature_type) #index tree
+#        resource = etree.Element('resource', status = 'FINISHED')
+#        feature=etree.SubElement( resource, 'QueryType', featuretype = str(query_type))
+#        feature=etree.SubElement( resource, 'FeatureType', featuretype = str(feature_type))
+#        return etree.tostring(resource)
         
-    @expose(content_type="text/xml")
-    def query(self, query_type, feature_type, output_type='xml', **kw): #may move to a query server
-        """Given a vector it calculates the nearest neighbor to the vector"""
-        
-        args={'uri':'','limit':3,'descriptorlimit':10} #for all that remain empty the query will return nothing
-        for arg in kw:
-            if arg in args:
-                args[arg] = kw[arg]
-        for arg in args:
-            if not args[arg]:
-                return 
-
-        uri = args['uri']
-        feature = self.get(feature_type,'numpy',uri=uri) #returning numpy array of feature
-        vectors, dimensions = feature.shape
-        
-        if vectors>args['descriptorlimit']:
-            vectors = args['descriptorlimit']
-        querytime = time.time()
-        queryObject  = self.ANN.query_tree(feature_type , feature[0:int(vectors),:], uri, args['limit']) #querying feature
-        log.debug('querying time: %s'% str(time.time()-querytime)) 
-         #returning output
-        return Features_Outputs(queryObject).return_output(output_type)
+#    @expose(content_type="text/xml")
+#    def query(self, query_type, feature_type, output_type='xml', **kw): #may move to a query server
+#        """Given a vector it calculates the nearest neighbor to the vector"""
+#        
+#        args={'uri':'','limit':3,'descriptorlimit':10} #for all that remain empty the query will return nothing
+#        for arg in kw:
+#            if arg in args:
+#                args[arg] = kw[arg]
+#        for arg in args:
+#            if not args[arg]:
+#                return 
+#
+#        uri = args['uri']
+#        feature = self.get(feature_type,'numpy',uri=uri) #returning numpy array of feature
+#        vectors, dimensions = feature.shape
+#        
+#        if vectors>args['descriptorlimit']:
+#            vectors = args['descriptorlimit']
+#        querytime = time.time()
+#        queryObject  = self.ANN.query_tree(feature_type , feature[0:int(vectors),:], uri, args['limit']) #querying feature
+#        log.debug('querying time: %s'% str(time.time()-querytime)) 
+#         #returning output
+#        return Features_Outputs(queryObject).return_output(output_type)
     
     ###################################################################
     ### Documentation
     ###################################################################
     
     @expose(content_type="text/xml")
-    def doc(self, *arg):  
+    def docs(self, *arg):  
         """Ouputs documentation"""
         #Without any import 
         if not arg:
@@ -851,14 +844,6 @@ class featuresController(ServiceController):
                     info=etree.SubElement(feature,'info',attrib)   
                 return etree.tostring(resource)
     
-    @expose(content_type="text/xml")
-    def queries(self):
-        """query/index list"""
-        resource = etree.Element('resource', uri = self.baseurl)
-        feature = etree.SubElement( resource, 'feature', featuretype = 'ANN')
-        return etree.tostring(resource)
-
-
     
 #######################################################################
 ### Initializing Service

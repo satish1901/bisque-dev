@@ -10,7 +10,9 @@ import numpy as np
 
 from bq.image_service.controllers.locks import Locks
 from pylons.controllers.util import abort
-from config import *
+from bq.util.paths import data_path
+FEATURES_STORAGE_FILE_DIR = data_path('features')
+FEATURES_TABLES_FILE_DIR = os.path.join(FEATURES_STORAGE_FILE_DIR ,'feature_tables\\')
 
 class ID():
     """
