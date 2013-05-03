@@ -564,7 +564,7 @@ Ext.define('BQ.Application.Toolbar', {
         var r=null;
         for (var i=0; (r=resource.children[i]); i++) {
             BQApp.resourceTypes.push({name:r.name, uri:r.uri});
-            types[r.name] = r.uri;  
+            types[r.name] = '/data_service/' + r.name;  
         }
         this.addBrowseResourceTypes(types);      
         this.addCreateResourceTypes(types);           
