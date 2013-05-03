@@ -448,14 +448,11 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
                                 scope           :   this,
                                 'QUERY_CHANGED' :   function(uri) { this.msgBus.fireEvent('Browser_ReloadData', uri) }   
                             },
-                        
             // state variables
-            config      :   {
-                                tagList         :   ['habitat', 'Plant Structure', 'Genus', 'species'],
-                                resourceType    :   'image',
-                                resourceServer  :   'data_service',
-                                includePublic   :   this.browser.browserParams.wpublic,
-                            }
+            tagList         :   ['habitat', 'Plant Structure', 'Genus', 'species'],
+            resourceType    :   this.browser.browserState['baseURL'].split('/')[2],
+            resourceServer  :   this.browser.browserState['baseURL'].split('/')[1],
+            includePublic   :   this.browser.browserParams.wpublic,
         });
         
         this.westPanel.setWidth(this.organizerCt.width).show().expand();
