@@ -74,7 +74,7 @@ Ext.define('Bisque.ResourceFactoryWrapper',
             var resource = Bisque.ResourceFactory.getResource(config);
             var layoutCls = Bisque.ResourceBrowser.LayoutFactory.getLayout({browser:{layoutKey: config.layoutKey}});
             resource.setSize({width: layoutCls.layoutEl.width, height: layoutCls.layoutEl.height})
-            resource.addCls(layoutCls.layoutCSS);
+            resource.addCls(layoutCls.layoutCSS || '');
 
             BQ.Preferences.get(
             {
