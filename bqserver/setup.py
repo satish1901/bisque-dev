@@ -34,10 +34,12 @@ The bisque server
         "tw.recaptcha",
         "tgext.registration2",
         "tw.output", #https://bitbucket.org/alexbodn/twoutput/get/af6904c504cf.zip
-        "importlib", # Feature
+        # "importlib", # Feature, not needed for python 2.7
         "cython",  # Feature
         "numexpr", # Feature
         "tables",  # Feature
+        "mahotas",  # Feature
+        "opencv",  # Feature        
       ],
       entry_points="""
       # -*- Entry points: -*-
