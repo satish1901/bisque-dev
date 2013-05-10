@@ -1231,7 +1231,7 @@ def install_features ():
 
     platform_short = '%s-%s'%(platform.system(),platform.architecture()[0])
     filename_zip = os.path.join(BQDEPOT, 'feature_extractors-%s.zip'%platform_short)
-    filename_dest = to_sys_path('bqserver/bq/features')
+    filename_dest = to_sys_path('') # to_sys_path('bqserver/bq/features')
     filename_check = ''
     uncompress_dependencies (filename_zip, filename_dest, filename_check)
 
