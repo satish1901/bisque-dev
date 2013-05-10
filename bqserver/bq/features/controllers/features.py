@@ -40,6 +40,7 @@ from bq.client_service.controllers import aggregate_service
 from bq import data_service
 from bq.image_service.controllers.locks import Locks
 from bq.api.comm import BQServer
+from bq.util.mkdir import _mkdir
 
 import Feature
 
@@ -710,7 +711,8 @@ class featuresController(ServiceController):
     def __init__(self, server_url):
         super(featuresController, self).__init__(server_url)
         self.baseurl=server_url
-        
+        _mkdir (FEATURES_TABLES_FILE_DIR)
+        _mkdir (FEATURES_TEMP_IMAGE_DIR)        
         log.info('importing features')
         self.feature_modules = Feature_Modules() #initalizing all the feature modules
         
