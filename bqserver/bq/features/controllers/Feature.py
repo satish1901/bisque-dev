@@ -112,33 +112,33 @@ class ImageImport():
         file = 'image'+ str(s)+'.tiff'
         self.path = os.path.join( FEATURES_TEMP_IMAGE_DIR, file)
         
-#        if not content:
-#            abort(404, 'Image not found')
-#        
-#        with Locks(None, self.path):
-#            f = open(self.path, 'wb') 
-#            f.write(content.read())
-#            f.flush()
-#            f.close()
-        
-        #Hack for amir
-        #except only from data_service so cannot run image_service operations
-        from bq.api.comm import BQServer
-        from bq.api.util import fetch_image_pixels
-        username = 'botanicam'
-        password = 'plantvrl'
-
-        Session=BQServer()
-        Session.authenticate_basic(username,password,'http://bisque.ece.ucsb.edu')
-        content=Session.fetch( uri )
-        
         if not content:
             abort(404, 'Image not found')
-            
-        f = open(self.path, 'wb')
-        f.write(content)  
-        f.flush()
-        f.close()
+        
+        with Locks(None, self.path):
+            f = open(self.path, 'wb') 
+            f.write(content.read())
+            f.flush()
+            f.close()
+        
+#        #Hack for amir
+#        #except only from data_service so cannot run image_service operations
+#        from bq.api.comm import BQServer
+#        from bq.api.util import fetch_image_pixels
+#        username = 'botanicam'
+#        password = 'plantvrl'
+#
+#        Session=BQServer()
+#        Session.authenticate_basic(username,password,'http://bisque.ece.ucsb.edu')
+#        content=Session.fetch( uri )
+#        
+#        if not content:
+#            abort(404, 'Image not found')
+#            
+#        f = open(self.path, 'wb')
+#        f.write(content.read())
+#        f.flush()
+#        f.close()
         
     def returnpath(self):       
         return self.path
