@@ -1207,33 +1207,39 @@ def uncompress_extjs (extzip, public, extjs):
 def install_dependencies ():
     """Install dependencies that aren't handled by setup.py"""
 
-    binv = 'bin'
-    exev = ''
-    if sys.platform == 'win32':
-        binv = 'Scripts'
-        exev = '.exe'
-
     # install ExtJS
     extzip = os.path.join(BQDEPOT, 'extjs.zip')
     public = to_sys_path('bqcore/bq/core/public') 
     extjs =  os.path.join (public, "extjs")
     uncompress_extjs (extzip, public, extjs)
     
-    # install imgcnv
-    platform_short = '%s-%s'%(platform.system(),platform.architecture()[0])
-    filename_zip = os.path.join(BQDEPOT, 'imgcnv-%s.zip'%platform_short)
-    filename_dest = os.path.join(os.environ['VIRTUAL_ENV'], binv)
-    filename_check = os.path.join(filename_dest, 'imgcnv%s'%exev)
-    uncompress_dependencies (filename_zip, filename_dest, filename_check)
+def install_imgcnv ():
+    """Install dependencies that aren't handled by setup.py"""
+
+    if getanswer ("Install Bio-Image Convert", "Y",
+                  "imgcnv will allow image server to read pixel data") == "Y":
+
+        binv = 'bin'
+        exev = ''
+        if sys.platform == 'win32':
+            binv = 'Scripts'
+            exev = '.exe'
+        
+        filename_zip = os.path.join(BQDEPOT, 'imgcnv.zip')
+        filename_dest = os.path.join(os.environ['VIRTUAL_ENV'], binv)
+        filename_check = os.path.join(filename_dest, 'imgcnv%s'%exev)
+        uncompress_dependencies (filename_zip, filename_dest, filename_check)
 
 def install_features ():
     """Install dependencies that aren't handled by setup.py"""
 
-    platform_short = '%s-%s'%(platform.system(),platform.architecture()[0])
-    filename_zip = os.path.join(BQDEPOT, 'feature_extractors-%s.zip'%platform_short)
-    filename_dest = to_sys_path('') # to_sys_path('bqserver/bq/features')
-    filename_check = ''
-    uncompress_dependencies (filename_zip, filename_dest, filename_check)
+    if getanswer ("Install features", "Y",
+                  "Features will enable many descriptors in the feature server") == "Y":
+
+        filename_zip = os.path.join(BQDEPOT, 'feature_extractors.zip')
+        filename_dest = to_sys_path('') # to_sys_path('bqserver/bq/features')
+        filename_check = ''
+        uncompress_dependencies (filename_zip, filename_dest, filename_check)
 
 
 #######################################################
@@ -1366,6 +1372,7 @@ install_options= [
            'matlab',
            'modules',
            'runtime',
+           'imgcnv',
            'bioformats',
            'features',           
            'server',
@@ -1442,6 +1449,8 @@ def bisque_installer(options, args):
     if 'binaries' in installer:
         fetch_external_binaries()
         install_dependencies()
+    if 'imgcnv' in installer:
+        install_imgcnv()
     if 'bioformats' in installer:
         install_bioformats(params)
     if 'features' in installer:
