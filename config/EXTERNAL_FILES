@@ -18,11 +18,14 @@ BEBB0991B63A985A8C31D97942D4395E17F84444-extjs-4.1.1-gpl.zip=extjs.zip
 # These sections titles use shell like 'glob'ing to match
 # To add a new platform, start up python and do a 
 #   import platform
-#   platform.platform()
+#   platform.platform().replace('-', '-%s-'%platform.architecture()[0], 1)
 
-[Linux-*-x86_64-*-debian-*]
+[Windows-64bit-*]
+57B449074844542A9673B24D7259F07C2F15A7C0-imgcnv-Windows-64bit.zip
+A403723E30758BE9D0F5A762E427C3C24C54BD9E-feature_extractors-Windows-64bit.zip
+
+[Linux-64bit-*-debian-*]
 511B5E84692B123A89576086201B793C93096A74-libmbgl-linux-64-large.a
 
-[Darwin-10.4.0-*]
-
+[Darwin-64bit-*]
 

@@ -1153,7 +1153,8 @@ def fetch_external_binaries ():
         os.makedirs (BQDEPOT)
     conf = ConfigFile(config_path('EXTERNAL_FILES'))
     external_files = conf.get ('common')
-    local_platform = platform.platform()
+    #local_platform = platform.platform()
+    local_platform = platform.platform().replace('-', '-%s-'%platform.architecture()[0], 1) # dima: added 64bit
     for section in conf.section_names():
         if fnmatch.fnmatch(local_platform, section):
             print "Matched section %s" % section
@@ -1173,12 +1174,17 @@ def fetch_external_binaries ():
 
 #######################################################
 #
-def install_dependencies ():
+def uncompress_dependencies (filename_zip, filename_dest, filename_check):
     """Install dependencies that aren't handled by setup.py"""
 
-    extzip = os.path.join(BQDEPOT, 'extjs.zip')
-    public = to_sys_path('bqcore/bq/core/public') 
-    extjs =  os.path.join (public, "extjs")
+    if os.path.exists(filename_check) and os.path.getmtime(filename_zip) < os.path.getmtime(filename_check):
+        return
+
+    print "Unpacking %s into %s"  % (filename_zip, filename_dest)
+    unpack_zip(filename_zip, filename_dest)
+
+def uncompress_extjs (extzip, public, extjs):
+    """Install extjs"""
 
     if os.path.exists(extjs) and os.path.getmtime(extzip) < os.path.getmtime(extjs):
         return
@@ -1197,6 +1203,37 @@ def install_dependencies ():
                               unpackdir,
                               "Will rename whater top level dir to extjs")
     shutil.move (unpackdir, extjs)
+
+def install_dependencies ():
+    """Install dependencies that aren't handled by setup.py"""
+
+    binv = 'bin'
+    exev = ''
+    if sys.platform == 'win32':
+        binv = 'Scripts'
+        exev = '.exe'
+
+    # install ExtJS
+    extzip = os.path.join(BQDEPOT, 'extjs.zip')
+    public = to_sys_path('bqcore/bq/core/public') 
+    extjs =  os.path.join (public, "extjs")
+    uncompress_extjs (extzip, public, extjs)
+    
+    # install imgcnv
+    platform_short = '%s-%s'%(platform.system(),platform.architecture()[0])
+    filename_zip = os.path.join(BQDEPOT, 'imgcnv-%s.zip'%platform_short)
+    filename_dest = os.path.join(os.environ['VIRTUAL_ENV'], binv)
+    filename_check = os.path.join(filename_dest, 'imgcnv%s'%exev)
+    uncompress_dependencies (filename_zip, filename_dest, filename_check)
+
+def install_features ():
+    """Install dependencies that aren't handled by setup.py"""
+
+    platform_short = '%s-%s'%(platform.system(),platform.architecture()[0])
+    filename_zip = os.path.join(BQDEPOT, 'feature_extractors-%s.zip'%platform_short)
+    filename_dest = to_sys_path('bqserver/bq/features')
+    filename_check = ''
+    uncompress_dependencies (filename_zip, filename_dest, filename_check)
 
 
 #######################################################
@@ -1269,7 +1306,8 @@ def send_installation_report(params):
     parts = []
     text = textwrap.dedent(BISQUE_REPORT) % dict (host = socket.getfqdn(),
               admin = sender_email,
-              platform = platform.platform(),
+              #platform = platform.platform(),
+              platform = platform.platform().replace('-', '-%s-'%platform.architecture()[0], 1), # dima: added 64bit
               python_version = platform.python_version(),
               installtime = params['install_started'],
               duration = params['duration'],
@@ -1329,6 +1367,7 @@ install_options= [
            'modules',
            'runtime',
            'bioformats',
+           'features',           
            'server',
            'mail',
            'preferences',
@@ -1400,11 +1439,13 @@ def bisque_installer(options, args):
         params = install_server_defaults(params)
     if 'engine'  in installer:
         params = install_engine_defaults(params)
-    if 'binaries'  in installer:
+    if 'binaries' in installer:
         fetch_external_binaries()
         install_dependencies()
-    if 'bioformats'  in installer:
+    if 'bioformats' in installer:
         install_bioformats(params)
+    if 'features' in installer:
+        install_features()        
     if 'database'  in installer:
         params = install_database(params)
     if 'matlab'  in installer:
