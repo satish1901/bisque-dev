@@ -16,7 +16,7 @@ Ext.define('BQ.Organizer.Tree',
     
     constructor : function(config)
     {
-        var urlStateMgr = Ext.create('BQ.Organizer.URLState', {
+        this.urlStateMgr = Ext.create('BQ.Organizer.URLState', {
             resourceServer  :   config.resourceServer   ||  'data_service',
             resourceType    :   config.resourceType     ||  'image',
             includePublic   :   config.includePublic    ||  false,
@@ -30,7 +30,7 @@ Ext.define('BQ.Organizer.Tree',
         });
         
         this.dockedItems = this.tabPanel;        
-        this.store = this.getTreeStore(urlStateMgr);
+        this.store = this.getTreeStore(this.urlStateMgr);
         this.columns = this.getColumns();
         this.callParent(arguments);
         this.store.organizerTree = this;
@@ -50,41 +50,10 @@ Ext.define('BQ.Organizer.Tree',
                                                 if (childNodes[i].get('name') in parentNode.get('tagLineage'))
                                                     parentNode.removeChild(childNodes[i]);
                                 },
-                                'beforeexpand' : function(node)
-                                {
-                                    if (!node.isRoot())
-                                    {
-                                        var view = this.organizerTree.getView(), keys = urlStateMgr.getKeys(node); 
-                                        view.focusRow(view.indexOf(node));
-                                        
-                                        this.organizerTree.tabPanel.removeAll();
-                                        for (var i=keys.length-1; i>=0; i--)
-                                            this.organizerTree.tabPanel.add({title : ellipsis(keys[i], 8, "..")});
-                                        this.organizerTree.tabPanel.setActiveTab(keys.length-1);
-                                        
-                                        if (node.get('depth') % 2 == 1)
-                                            this.getProxy().url = urlStateMgr.getTagValues(node);
-                                        else
-                                        {
-                                            this.getProxy().url = urlStateMgr.getTagNames(node);
-                                            var iter = node.parentNode, tagLineage = {};
-                                            
-                                            if (Ext.isEmpty(node.get('tagLineage')))
-                                            {
-                                                while(!iter.isRoot())
-                                                {
-                                                    if (iter.get('depth') % 2 == 1)
-                                                        tagLineage[iter.get('name')] = 1;
-                                                    iter = iter.parentNode;
-                                                }
-                                                
-                                                node.set('tagLineage', tagLineage);
-                                            }
-                                        }
-                                        
-                                        this.organizerTree.fireEvent('QUERY_CHANGED', urlStateMgr.getBrowserURI(node, keys));
-                                    }
-                                },
+                                
+                                'beforeexpand'  :   Ext.bind(this.onExpand, this),
+                                'collapse'      :   Ext.bind(this.onCollapse, this),
+                                
                             },
             proxy       :   { 
                                 type        :   'ajax',
@@ -125,7 +94,71 @@ Ext.define('BQ.Organizer.Tree',
 
         return this.store;
     },
-
+    
+    onExpand : function(node)
+    {
+        if (!node.isRoot())
+        {
+            var view = this.getView(), nodeList = this.urlStateMgr.getKeys(node);
+            keys = nodeList.keys; nodes = nodeList.nodes;  
+            view.focusRow(view.indexOf(node));
+            
+            this.tabPanel.removeAll();
+            for (var i=keys.length-1; i>=0; i--)
+                this.tabPanel.add(this.getDirButton(keys[i], nodes[i]));
+            this.tabPanel.setActiveTab(keys.length-1);
+            
+            if (node.get('depth') % 2 == 1)
+                this.store.getProxy().url = this.urlStateMgr.getTagValues(node);
+            else
+            {
+                this.store.getProxy().url = this.urlStateMgr.getTagNames(node);
+                var iter = node.parentNode, tagLineage = {};
+                
+                if (Ext.isEmpty(node.get('tagLineage')))
+                {
+                    while(!iter.isRoot())
+                    {
+                        if (iter.get('depth') % 2 == 1)
+                            tagLineage[iter.get('name')] = 1;
+                        iter = iter.parentNode;
+                    }
+                    
+                    node.set('tagLineage', tagLineage);
+                }
+            }
+            this.fireEvent('QUERY_CHANGED', this.urlStateMgr.getBrowserURI(node, keys));
+        }
+    },
+    
+    onCollapse : function(node)
+    {
+        if (!this.flagCollapse)
+        {
+            this.onExpand(node.parentNode);
+            this.flagCollapse = true;
+            node.collapseChildren();
+            this.flagCollapse = false;
+        }
+        else
+            node.collapseChildren();
+    
+        if (node.parentNode.isRoot())
+            this.tabPanel.removeAll();
+    },
+    
+    getDirButton : function(name, node)
+    {
+        return  {
+                    closable    :   true,
+                    node        :   node,
+                    title       :   ellipsis(name, 8, ".."),
+                    listeners   :   {
+                                        'beforeclose'   :   function(me){me.node.collapse()},   
+                                    }
+                }
+    },
+    
     getColumns  :   function()
     {
         return  [{
@@ -162,15 +195,16 @@ Ext.define('BQ.Organizer.URLState',
     
     getKeys : function(node)
     {
-        var keys = [];
+        var keys = [], nodes=[];
         
         while(!node.isRoot())
         {
             keys.push(node.get('name'));
+            nodes.push(node);
             node = node.parentNode;
         }
         
-        return keys;
+        return {keys:keys, nodes:nodes};
     },
     
     tagQuery : function(node, tkeys)
@@ -178,7 +212,7 @@ Ext.define('BQ.Organizer.URLState',
         if (!Ext.isDefined(node))
             return '';
             
-        var keys = tkeys || this.getKeys(node), tagQuery = "", tpl = '"{0}":"{1}" AND ';
+        var keys = tkeys || this.getKeys(node).keys, tagQuery = "", tpl = '"{0}":"{1}" AND ';
         
         for (var i=keys.length-1; i>=keys.length%2; i=i-2)
             tagQuery = tagQuery + Ext.String.format(tpl, encodeURIComponent(keys[i]), encodeURIComponent(keys[i-1]));
@@ -188,7 +222,7 @@ Ext.define('BQ.Organizer.URLState',
     
     tagOrder : function(node, tkeys)
     {
-        var keys = tkeys || this.getKeys(node), tagOrder = "", tpl = '"{0}":asc,';
+        var keys = tkeys || this.getKeys(node).keys, tagOrder = "", tpl = '"{0}":asc,';
             
         for (var i=keys.length-1; i>=0; i=i-2)
             tagOrder = tagOrder + Ext.String.format(tpl, encodeURIComponent(keys[i]));
