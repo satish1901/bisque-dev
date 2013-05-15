@@ -1,0 +1,130 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source Files\AddressLib">
+      <UniqueIdentifier>{f81e4f70-3dae-4ebe-9761-e9ac22b91f5b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Descriptors">
+      <UniqueIdentifier>{dbe2f4da-0a2a-4b6d-8c0e-cb006ff6339a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Extraction">
+      <UniqueIdentifier>{55bdd024-3440-4271-9a87-a0ae9925e4b8}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\..\src\_MPEG7FlexLib.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\src\Convert.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\src\Feature.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\src\Frame.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\src\AddressLib\address.c">
+      <Filter>Source Files\AddressLib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\src\AddressLib\inter.c">
+      <Filter>Source Files\AddressLib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\src\AddressLib\intra.c">
+      <Filter>Source Files\AddressLib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\src\AddressLib\nhood.c">
+      <Filter>Source Files\AddressLib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\src\AddressLib\vopio.c">
+      <Filter>Source Files\AddressLib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\src\Descriptors\ColorLayout.cpp">
+      <Filter>Source Files\Descriptors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\src\Descriptors\ColorQuant.cpp">
+      <Filter>Source Files\Descriptors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\src\Descriptors\ColorSpace.cpp">
+      <Filter>Source Files\Descriptors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\src\Descriptors\ColorStructure.cpp">
+      <Filter>Source Files\Descriptors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\src\Descriptors\ContourShape.cpp">
+      <Filter>Source Files\Descriptors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\src\Descriptors\DominantColor.cpp">
+      <Filter>Source Files\Descriptors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\src\Descriptors\EdgeHist.cpp">
+      <Filter>Source Files\Descriptors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\src\Descriptors\FaceRecognition.cpp">
+      <Filter>Source Files\Descriptors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\src\Descriptors\HomoTexture.cpp">
+      <Filter>Source Files\Descriptors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\src\Descriptors\RegionShape.cpp">
+      <Filter>Source Files\Descriptors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\src\Descriptors\ScalableColor.cpp">
+      <Filter>Source Files\Descriptors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\src\Extraction\ColorLayoutExtraction.cpp">
+      <Filter>Source Files\Extraction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\src\Extraction\ColorSpaceExtraction.cpp">
+      <Filter>Source Files\Extraction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\src\Extraction\ColorStructureExtraction.cpp">
+      <Filter>Source Files\Extraction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\src\Extraction\ContourShapeExtraction.cpp">
+      <Filter>Source Files\Extraction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\src\Extraction\DominantColorExtraction.cpp">
+      <Filter>Source Files\Extraction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\src\Extraction\EdgeHistExtraction.cpp">
+      <Filter>Source Files\Extraction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\src\Extraction\FaceRecognitionExtraction.cpp">
+      <Filter>Source Files\Extraction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\src\Extraction\GoFGoPColorExtraction.cpp">
+      <Filter>Source Files\Extraction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\src\Extraction\homo_texture_extractor.cpp">
+      <Filter>Source Files\Extraction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\src\Extraction\HomoTextureExtraction.cpp">
+      <Filter>Source Files\Extraction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\src\Extraction\imgutil.c">
+      <Filter>Source Files\Extraction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\src\Extraction\RegionShapeExtraction.cpp">
+      <Filter>Source Files\Extraction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\src\Extraction\ScalableColorExtraction.cpp">
+      <Filter>Source Files\Extraction</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

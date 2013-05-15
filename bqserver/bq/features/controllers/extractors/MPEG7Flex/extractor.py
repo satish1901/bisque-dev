@@ -3,7 +3,7 @@
 import cv2
 import cv
 import numpy as np
-from MPEG7FexLib import extractCSD,extractSCD,extractCLD,extractDCD,extractHTD,extractEHD,extractRSD
+from pyMPEG7FlexLib import extractCSD,extractSCD,extractCLD,extractDCD,extractHTD,extractEHD,extractRSD
 import bq.features.controllers.Feature as Feature #import base class
 
 

@@ -23,6 +23,8 @@ import traceback
 import pkgutil
 import importlib
 
+from numpy.lib.recfunctions import append_fields
+
 from pylons.i18n import ugettext as _, lazy_ugettext as l_ 
 from pylons.controllers.util import abort
 from tg import expose, flash, config, response
@@ -33,6 +35,8 @@ from lxml import etree
 import lxml
 from datetime import datetime, timedelta
 import urllib
+
+from repoze.what.predicates import is_user, not_anonymous
 
 import bq
 from bq.util.paths import data_path
@@ -54,7 +58,6 @@ log = logging.getLogger("bq.features")
 #    Key point and region selection with gobjects (may need to api fixes to fit together everything wait on opinions)* everything will be recieving a unique
 #    add private and public access (all images must be public)
 #    package server for first release (better way of packaging libraries)
-#    adding delete options from the table (admin only command)
 
 #bisque API
 #    adding importing 3D 4D and 5D images for higher dimensional feature analysis (api limitation)
@@ -62,17 +65,18 @@ log = logging.getLogger("bq.features")
 
 #Feature Library maintenance
 #    create a VRL descriptor library wrapping C code (if i finish everything else)
+#    add gist
+#    look into nd features
 #    DOCUMENTATION!!! (it never ends)
 
-#Indexing service
-#    requires HDF5 Service
-#    Look into libspatialindex
-#    tree initalization (while initalizing tree it blocks all the servers) 
-#    multiple threads accessing one preloaded tree or set of trees (when reindexing other threads with have to redownload the tree)
+#Query
+#    Adding nearest nearbor search with libspacial
+#    Figure out index to work with deletes so that if a delete happens the index isnt thrown off
+#    integrate the hdf5 into the libspaical so index files do not store too much feature info
 
 #Research
 #    Should a new feature module be able to be added even while the server is still active?
-#    Think of a better way to format the tables using uniques and commands instead of id tables
+#    Think of a better way to format the tables using uniques and commands instead of id tables 
 #    as the table increases in size hdf5 becomes increasingly harder to search through
 
 #Note (when using the feature server)
@@ -84,16 +88,14 @@ log = logging.getLogger("bq.features")
 FEATURES_STORAGE_FILE_DIR = data_path('features')
 FEATURES_TABLES_FILE_DIR = os.path.join(FEATURES_STORAGE_FILE_DIR ,'feature_tables\\')
 FEATURES_TEMP_IMAGE_DIR = os.path.join(FEATURES_STORAGE_FILE_DIR,'feature_temp_images\\')
-FEATURES_TEMP_CSV_DIR = os.path.join(FEATURES_STORAGE_FILE_DIR,'feature_temp_csv\\')
-
 FEATURES_CONTOLLERS_DIR = bq.features.controllers.__path__[0]
 EXTRACTOR_DIR = os.path.join(FEATURES_CONTOLLERS_DIR,'extractors')
 
-################################################################# 
+#################################################################
 ###  descriptor tables
 #################################################################
 
-class Feature_Modules():
+class Feature_Achieve(dict):
     """
         List of included descriptors:
         SURF, ORB, SIFT, HTD, EHD, CLD, CSD, SCD, DCD
@@ -114,7 +116,6 @@ class Feature_Modules():
             to be initialized look at the documentation file in the 
             extraction_library directory.
         """
-        self.feature_module_dict = {}
         extractors=[name for module_loader, name, ispkg in pkgutil.iter_modules([EXTRACTOR_DIR]) if ispkg]
         for module in extractors:
             try:
@@ -122,29 +123,14 @@ class Feature_Modules():
                 for n,item in inspect.getmembers(extractor):                                                   # extractor.py to import correctly
                     if inspect.isclass(item) and issubclass(item, Feature.Feature):
                         log.debug('Imported Feature: %s'%item.name)
-                        self.feature_module_dict[item.name] = item
+                        self[item.name] = item
             except Exception,e:                                   #feature failed to import
                 log.debug('Failed Imported Feature: %s'%module)
                 traceback.print_exc()
-    
-    def returnfeature(self, feature_type):
-        """
-            Returns feature object. If feature object is not found
-            the server will return a 404 error 
-        """
-        try:
-            feature_module = self.feature_module_dict[feature_type]
-            self.feature_table_class = feature_module
-            return self.feature_table_class
-        except KeyError:
-            abort(404,'feature type:'+feature_type+' not found')
 
-    def returnfeaturelist(self):
-        """
-            Returns a list of features that are imported in the with the a 
-            Feature_Modules instance.
-        """
-        return self.feature_module_dict.keys()
+    def __missing__(self, feature_type):
+        abort(404,'feature type:'+feature_type+' not found')
+
 
 #################################################################
 ### IDTable
@@ -174,23 +160,21 @@ class IDTable():
         value : ID (type - string)
         """ 
         query = 'uri=="%s"'% str(uri)
-        value = self.Table.queryTable(query,'idnumber')
-        
+        value = self.Table.query(query)
+        log.debug(value)
         if len(value)>1:
-            log.debug('ERROR: Too many values returned from the IDTable')
-            value = self.Table.FeatureClass.temptable[0]['idnumber']
-            #log.debug('value: %s'%value)
-        elif len(value)<1:
-            idnumber = int(self.Table.collen()) #returns the length of the idtable to give an id
-            self.Table.append(uri,idnumber)
-            value = self.Table.FeatureClass.temptable[0]['idnumber'] 
-            #log.debug('value: %s'%value)
-        else:
-            value = value[0]
+            abort(500, 'ERROR: Too many values returned from the IDTable')
             
-        return value
+        elif len(value)<1:
+            self.Table.append(uri,'dumbnumber')
+            value = self.Table.query(query)
+            value=value['idnumber']
+            #value = self.Table.FeatureClass.temptable[0]['idnumber']
+        else:
+            value = value['idnumber']
+        return value[0]
     
-    def returnURI(self,id):
+    def returnURI(self, id):
         """
         Returns an ID to a URI stored in its dictionary.
         If the URI is not in its dictionary it returns nothing.
@@ -203,74 +187,80 @@ class IDTable():
         ------
         value : URI (type - string)
         """ 
-        value = self.Table.queryTableindex(id,'uri')
+        value = self.Table['uri'][id]
         value = value[0].strip()
         return value
-
-        
-########################################################
-###   Feature Tables
-########################################################
-
-class FeatureTable():
     
-    def __init__(self, HDF5_Table):
-        self.HDF5_Table = HDF5_Table #saving HDRFTable object
-        
-    def return_FeatureObject(self, uri = [], id = [], index = [], short = 0):
+    def deleteURI(self,uri):
         """
-        Read table and returns an feature object. If feature is not in the table
-        a feature will be calculated. If id is not in the tabel it will return nothing
-        
-        if short is set to 1 the FeatureObject will have parameters and features removed
+        Deletes URI and ID from the table
         """
-        #checks to see if image has been added to pytables 
-        if isinstance(index,(int,long )): 
-            feature_attributes = {}
-            for name in self.HDF5_Table.colnames():
-                feature_attributes[name] = self.HDF5_Table.queryTableindex(index, name)
-            
-            feature_attributes['uri'] = IDTable().returnURI( feature_attributes['idnumber'] )
+        query = 'uri=="%s"'% str(uri)
+        self.Table.delete(query)
         
-        elif uri and isinstance(id,(int,long)):
-            feature_attributes = {}
-            query = 'idnumber==%s' %id
-            feature_attributes['uri'] = uri
-            for name in self.HDF5_Table.colnames():
-                feature_attributes[name] = self.HDF5_Table.queryTable(query, name)
-            
+    def deleteTable(self):
+        """
+        Delete the IDTable
+        """
+        self.Table.delete()
         
-            if not feature_attributes['feature']: #features were not found
-                self.HDF5_Table.append(uri, id) #add feature to the table and requery
-                #self.HDF5_Table.index()
-                for name in self.HDF5_Table.colnames():
-                    feature_attributes[name] = self.HDF5_Table.queryTable(query, name)
-                    
-        
-        else:
-            abort(500, 'return_FeatureObject does not have the correct input')
-            
-        feature_object_list=[]
-        if short == 1:
-            FeatureClass = self.HDF5_Table.Feature()
-            setattr(FeatureClass, 'uri', feature_attributes['uri'])
-            setattr(FeatureClass, 'id', feature_attributes['idnumber'])
-            setattr(FeatureClass, 'value', [])
-            setattr(FeatureClass, 'parameter',[])
-            feature_object_list.append(FeatureClass)
-        
-        else:
-            for i in range(0,len(feature_attributes['feature'])):
-                FeatureClass = self.HDF5_Table.Feature() #creating a list of feature objects
-                setattr(FeatureClass, 'uri', uri)
-                setattr(FeatureClass, 'id', id)
-                setattr(FeatureClass, 'value', feature_attributes['feature'][i])
-                if 'parameter' in feature_attributes:
-                    setattr(FeatureClass, 'parameter',feature_attributes['parameter'][i])
-                else:
-                    setattr(FeatureClass, 'parameter',[])
-                feature_object_list.append(FeatureClass)
-        return feature_object_list
+########################################################
+###   Feature List
+########################################################
+
+class FeatureList(object):
+    
+    def __init__(self, FeatureClass):
+        self.FeatureClass = FeatureClass() #saving HDRFTable object
+        self.Table = HDF5Table(FeatureClass)
+        self.f_list=np.array([])
+    
+    def __len__(self):
+        return len(self.f_list)
+    
+    def __getitem__(self,i):
+        return self.f_list[i]
+    
+    def __getslice__(self,i,j):
+        return self.f_list[i:j]
+    
+    def __iter__(self):
+        return iter(self.f_list)
+    
+    def iappend(self,index):
+        """
+        appends to the list a feature info and feature called with the index from the table
+        """
+        id = IDTable().returnURI( feature_attributes['idnumber'] ) 
+        row=self.HDF5_Table[index]
+        r=append_fields(row,'id',np.array([id]),'i4',usemask=False)
+        if self.f_list.size<1:
+            self.f_list = r
+        self.f_list = np.append(self.f_list,r,axis=0)
+        return
+    
+    def uappend(self,uri,id):
+        """
+        appends to the list the feature info and feature requiring a uri and id 
+        """
+        query = 'idnumber=="%s"' %id
+        row=self.Table.query(query)
+        if row.size<1: #nothing matched from the table
+            self.Table.append(uri, id) #add feature to the table and requery
+            row=self.Table.query(query)
+        for r in row:
+            r=append_fields(r,'uri',np.array([uri]),'|S200',usemask=False)
+            if self.f_list.size<1:
+                self.f_list = r
+            self.f_list = np.append(self.f_list,r,axis=0)
+        return
+    
+    def fappend(self,feature):
+        """
+        appends to the list the feature info and feature using the feature vector
+        """
+        pass
+
 
 
 
@@ -278,112 +268,137 @@ class FeatureTable():
 ### HDF5 Tables
 #################################################################
 
-class HDF5Table():
+class HDF5Table(object):
     """ Class that deals with  HDF5 files"""
     
     def __init__(self, FeatureClass):
         """
-        Requires a Feature Class to intialize. Will search for table in the 
-        data\features\feature_tables directory. If it does not find the table
-        it will create a table.
+            Requires a Feature Class to intialize. Will search for table in the 
+            data\features\feature_tables directory. If it does not find the table
+            it will create a table.
         """
-        self.Feature = FeatureClass
         self.FeatureClass = FeatureClass()
         if not os.path.exists(self.FeatureClass.path):   #creates a table if it cannot find one
             self.create() #creates the table
             self.index() #indexes the table as commanded in the feature modules
+
+    def __getitem__(self, index):
+        """
+            Reads the table index and returns field value with that index (very fast)
+            
+            input
+            -----
+            index : index of the row (type - int)
+            
+            output
+            ------
+            row
+            
+            option
+            ------
+            row['field']
+        
+        """
+        with Locks( self.FeatureClass.path ):
+            h5file = tables.openFile( self.FeatureClass.path ,'r', title=self.FeatureClass.name)
+            table = h5file.root.values
+            value = table.read(index)
+            h5file.close()
+        return value 
+
         
     def create(self):
         """
-        Creates a feature.h5 file given in the feature class
+            Creates a feature.h5 file given in the feature class
         """
         self.FeatureClass.initalizeTable()
         with Locks(None, self.FeatureClass.path):
             h5file=tables.openFile(self.FeatureClass.path,'a', title=self.FeatureClass.name)  
             table = h5file.createTable('/', 'values', self.FeatureClass.Columns, expectedrows=1000000000)
-            #table.attrs.description = self.FeatureClass.description (is explained in the xml output)
             table.flush()       
             h5file.close()
 
-    def append(self, uri, ID):
+      
+
+    def append(self, uri, id):
         """
-        Calls the feature class to calculate feature and then appends the feature
-        to the feature.h5 file all given by the feature class
+            Calls the feature class to calculate feature and then appends the feature
+            to the feature.h5 file all given by the feature class
         """
-        self.FeatureClass.appendTable(uri, ID) #calculates the features
+        self.FeatureClass.appendTable(uri, id) #calculates the features
         with Locks(None, self.FeatureClass.path):
             h5file=tables.openFile(self.FeatureClass.path,'a', title=self.FeatureClass.name)
             table=h5file.root.values
             r = table.row
             for row in self.FeatureClass.temptable:
-                for keys in table.colnames: 
+                for keys in table.colnames:
                     r[keys] = row[keys]
                 r.append()
             table.flush()
             h5file.close()
+ 
+    def delete(self,query=None):
+        """
+            Deletes feature with query is given the table is deleted and a new tables
+            is initalized in its place
+        """
+        if not query:
+            with Locks(None, self.FeatureClass.path):
+                os.remove(self.FeatureClass.path)
+                self.create()
+                self.index()
+        else:
+            with Locks(None, self.FeatureClass.path):
+                index = table.getWhereList(query)
+                for i in index:
+                    table.removeRows(i) #not sure if this works
+ 
+    def query(self, query):
+        """
+            Reads a table from feature.h5 file and returns a query
+            
+            input
+            -----
+            query : pytables query format (type - string)
+                exmaple: '(column1 == 'hello')&&(column2 >12)'
+            name  : the name of the column one want to find the value for (type - string)
+            
+            output
+            ------
+            value 
+
+        """
+        with Locks(self.FeatureClass.path):
+            h5file=tables.openFile(self.FeatureClass.path,'r', title=self.FeatureClass.name)
+            table=h5file.root.values
+            q=table.getWhereList(query)
+            value=np.array([])
+            if q.size<1:
+                pass
+            else:
+                for i in q:
+                    if value.size<1:
+                        value=table.read(i)
+                    else:
+                        value=np.append(value,table.read(i),axis=0)
+            h5file.close()
+        return value 
             
     def index(self):
         """
-        Calls the feature class to index the table as specified in the class.
-        Disclaimer: 
-        Doesnt work right now :/
+            Calls the feature class to index the table as specified in the class.
+            Disclaimer: 
+            Requires monkey patch to work
         """
         with Locks(None, self.FeatureClass.path):
             h5file=tables.openFile(self.FeatureClass.path,'a', title=self.FeatureClass.name)
             table=h5file.root.values
             self.FeatureClass.indexTable(table)
             h5file.close()
-
-    def queryTable(self, query, name):
-        """
-        Reads a table from feature.h5 file and returns a query
         
-        input
-        -----
-        query : pytables query format (type - string)
-            exmaple: '(column1 == 'hello')&&(column2 >12)'
-        name  : the name of the column one want to find the value for (type - string)
-        
-        output
-        ------
-        value 
-
-        """
-        with Locks(self.FeatureClass.path):
-            h5file=tables.openFile(self.FeatureClass.path,'r', title=self.FeatureClass.name)
-            table=h5file.root.values
-            log.debug(table)
-            log.debug('query: %s'% query)
-            log.debug('name: %s'% name)
-            value=[row[name] for row in table.where(query)]
-            log.debug(value)
-            h5file.close()
-        return value
-    
-    def queryTableindex(self, index, field):
-        """
-        Reads the table index and returns field value with that index (very fast)
-        
-        input
-        -----
-        index : index of the row (type - int)
-        name  : the name of the column one want to find the value for (type - string)
-        
-        output
-        ------
-        value 
-        
-        """
-        with Locks(self.FeatureClass.path):
-            h5file=tables.openFile(self.FeatureClass.path,'r', title=self.FeatureClass.name)
-            table=h5file.root.values
-            value = table.read(index, field = field)
-            h5file.close()
-        return value
-                
     def returnCol(self, name):
         """Reads a column out of the table"""
-        with Locks(self.FeatureClass.path):
+        with Locks( self.FeatureClass.path ):
             h5file=tables.openFile(self.FeatureClass.path,'r', title=self.FeatureClass.name)
             table=h5file.root.values
             value = [row[name] for row in table.iterrows()]
@@ -399,18 +414,18 @@ class HDF5Table():
             h5file.close()
         return names
     
-    #look into making this more general
-    def returndescriptorCol(self, function): 
+    #for querying the tables
+    def returndescriptorCol(self, function):
         """
-        Reads the feature column out of the table 
-        
-        Input
-        -----
-        function - a function that accepts one value and that value has to be a numpy string
-        
-        Output
-        ------
-        results of that function
+            Reads the feature column out of the table 
+            
+            Input
+            -----
+            function - a function that accepts one value and that value has to be a numpy string
+            
+            Output
+            ------
+            results of that function
         """
         with Locks(self.FeatureClass.path):
             h5file=tables.openFile(self.FeatureClass.path,'r', title=self.FeatureClass.name)
@@ -420,7 +435,7 @@ class HDF5Table():
         return output
 
     
-    def collen(self):
+    def __len__(self):
         """Returns the number of rows in the table"""
         with Locks(self.FeatureClass.path):
             h5file=tables.openFile(self.FeatureClass.path,'r', title=self.FeatureClass.name)
@@ -546,12 +561,12 @@ class Features_Outputs():
     def __init__(self , resource, **kw): 
         """ initializing output """
         self.resource = resource
-    
+        
     def return_output(self,output_type):
         """ Returns an output function"""
         outputs={'xml'  : self.xml,
                  'none' : self.No_Output,
-                 'numpy': self.Numpy_Output,
+                 'numpy': self.Numpy,
                  'csv' : self.csv,
                  'bin' : self.bin}
         
@@ -571,59 +586,40 @@ class Features_Outputs():
     #-------------------------------------------------------------
     # Formatters - Numpy_Output
     #-------------------------------------------------------------  
-    def Numpy_Output(self): 
+    def Numpy(self): 
         """
         returns numpy array from tables
         only works for feature and only use for functions in this service or on the system
         """
-        
         feature = []
-        #parameter = []
-        #check for feature class type
-               
         for item in self.resource:
-            #if isinstance(self.resource, extraction_library.Feature.Feature):  
-                    #parameter.append( item.parameter)
-            feature.append( item.value)
-            #else:
-            #    abort(500, 'Numpy only works on features for now and not querys')
+            feature.append( item['feature'])
         return np.array(feature)#, np.array(parameter) 
     
     #-------------------------------------------------------------
     # Formatters - XML
     # MIME types: 
     #   text/xml
-    #-------------------------------------------------------------   
+    #-------------------------------------------------------------
     def xml(self): 
         """Drafts the xml output"""
-        resource_element = etree.Element('resource')
-        self.xml_return_object( self.resource , resource_element )
         response.headers['Content-Type'] = 'text/xml'
-        return etree.tostring(resource_element)
-        
-    def xml_return_object(self,ObjectList, element):
-        """
-        Formats query and feature objects for xml
-        Iterates through nested resource objects
-        """
-        for resource in ObjectList:
-            xml_attributes = {'type':str(resource.name),'name':str(resource.uri)}
-            subelement = etree.SubElement( element, resource.ObjectType , xml_attributes)
-                
-            #parameters
-            if resource.parameter_info and resource.parameter!=[]:
-                param={}
-                for i,item in enumerate(resource.parameter_info):
-                    param[str(item)] = str('%g'% resource.parameter[i])
-                parameters=etree.SubElement(subelement, 'parameters', param)
+        element = etree.Element('resource')
+        for res in self.resource:
+            subelement = etree.SubElement( element, 'feature' , type = str(self.resource.FeatureClass.name), name = str(res['uri']))
+            #values
+            if res['feature'].size>1:
+                value = etree.SubElement(subelement, 'value')
+                value.text = " ".join('%g'%item for item in res['feature'])
             
-            #value
-            if resource.value!=[]:
-                if isinstance(resource.value,np.ndarray):
-                    value = etree.SubElement(subelement, 'value')
-                    value.text = " ".join('%g'%item for item in resource.value) 
-                else:
-                    self.xml_return_object(resource.value, subelement) #allows for nexted objects in value
+            #parameter
+            if res['parameter'].size>1:
+                p={} #parameters
+                for i,name in enumerate(self.resource.FeatureClass.parameter_info):
+                    p[str(name)] = str('%g'% res['parameter'][i])
+                parameters=etree.SubElement(subelement, 'parameter', p)    
+        
+        return etree.tostring(element)
         
     #-------------------------------------------------------------
     # Formatters - CSV 
@@ -642,13 +638,10 @@ class Features_Outputs():
         titles = ['Feature Number','Feature_Type','Name','Value']
         writer.writerow(titles)
         for idx,item in enumerate(self.resource):
-            if isinstance(item, extraction_library.Feature.Feature):
                 #if isinstance(item.feature,np.ndarray):
-                value_string = ",".join('%g'%i for i in item.value)
+                value_string = ",".join('%g'%i for i in item['features'])
                 line = [idx,item.name,item.uri,value_string]
                 writer.writerow(line)
-            else:
-                abort(500, 'csv only works on features for now and not querys')
         
         #creating a file name
         filename = 'feature.csv' #think of how to name the files
@@ -677,15 +670,12 @@ class Features_Outputs():
         f = StringIO.StringIO()
     
         for item in self.resource:
-            if isinstance(self.resource, extraction_library.Feature.Feature): #test for Feature objects
-                vector = ''
-                vector+=struct.pack('<2s','<d')  #type stored
-                vector+=struct.pack('<I',len(item.value)) 
-                vector+=''.join([struct.pack('<d',i) for i in item.value])
-                vector+='\n'
-                f.write(vector)
-            else:
-                abort(500, 'bin only works on features for now and not querys')
+            vector = ''
+            vector+=struct.pack('<2s','<d')  #type stored
+            vector+=struct.pack('<I',len(item.value)) 
+            vector+=''.join([struct.pack('<d',i) for i in item['features']])
+            vector+='\n'
+            f.write(vector)
                 
         #creating a file name
         filename = 'feature.bin' #think of how to name the files
@@ -711,10 +701,11 @@ class featuresController(ServiceController):
     def __init__(self, server_url):
         super(featuresController, self).__init__(server_url)
         self.baseurl=server_url
-        _mkdir (FEATURES_TABLES_FILE_DIR)
-        _mkdir (FEATURES_TEMP_IMAGE_DIR)        
+        self.fullurl=ServiceController
+        _mkdir(FEATURES_TABLES_FILE_DIR)
+        _mkdir(FEATURES_TEMP_IMAGE_DIR) 
         log.info('importing features')
-        self.feature_modules = Feature_Modules() #initalizing all the feature modules
+        self.feature_achieve = Feature_Achieve() #initalizing all the feature classes
         
 #        log.info ("initializing Trees")
 #        self.ANN = Feature_Query('ANN', self.feature_modules).return_query() #may need to create more genericlly to allow for other query types
@@ -723,53 +714,86 @@ class featuresController(ServiceController):
     ###################################################################
     ### Feature Service
     ###################################################################
+    @expose(content_type="text/xml")
+    def _default(self, *path, **kw):
+        """
+        default page on feature server
+        """
+        resource = etree.Element('resource')
+        command=etree.SubElement( resource, 'command', name = 'get', type = 'string', value='fetches feature')
+        command=etree.SubElement( resource, 'command', name = 'docs', type = 'string', value='returns documentation')
+        return etree.tostring(resource)
     
     @expose()
     def get(self, feature_type, output_type='xml', **kw):
-        """Retreives a feature either stored in pytables or calculates it"""
-        args={'uri':'','short':0} #for all that remain empty get will return nothing
+        """
+        Retreives a feature either stored in pytables or calculates it
+        """
+        args={'uri':''} #for all that remain empty get will return nothing
         for arg in kw: #needs to be fixed
             if arg in args:
                 args[arg] = kw[arg]
         for arg in args:
             if not arg in args:
-                return
+                return 
             
-        response.headers['Content-Type'] = 'text'
-        uri = args['uri']
-        uri =uri.rstrip('\n') #there is a newline at the end of uri collected with **kwarg
-        log.debug('uri: %s'%uri)
-        ID=IDTable().returnID(uri) #find ID
-        feature_module = self.feature_modules.returnfeature(feature_type)
-        Table = FeatureTable( HDF5Table(feature_module) ) #initalizing table
-        featureObject = Table.return_FeatureObject( uri = uri, id = ID, short = args['short'])  #searching for feature object in table if not found will calculate feature
-        log.debug('calculated features')
-        return Features_Outputs( featureObject ).return_output(output_type)
+        #response.headers['Content-Type'] = 'text'
+        uri = args['uri'].rstrip('\n') #there is a newline at the end of uri collected with **kwarg
+        id=IDTable().returnID(uri) #find ID
+        Feature_Class = self.feature_achieve[feature_type]
+        F_list = FeatureList(Feature_Class)
+        F_list.uappend(uri,id) #searching for feature object in table if not found will calculate feature
+        return Features_Outputs( F_list ).return_output(output_type)
     
-    @expose(content_type="text/xml") #not intended to be used, main purpose is debug
-    def indexFeatureTable(self, feature_type, output_type = 'xml'):
-        feature_module = self.feature_modules.returnfeature(feature_type)
-        HDF5Table(feature_module).index()
-        resource = etree.Element('resource', status = 'FINISHED INDEXING FEATURE TABLE')
-        feature=etree.SubElement( resource, 'FeatureType', featuretype = str(feature_type))
-        return etree.tostring(resource)
+    @expose()
+    def delete(self,feature_type=None, **kw):
+        """
+        Delete features from the table or tables themselves
+        """
+        
+        if not not_anonymous:
+            abort(401)
+        elif not is_user('admin'):
+            abort(403)
+        else:
+            if not kw[uri] and not feature_type:
+                #mass deletion
+                #delete id
+                IDTable().deleteTable()
+                #delete feature tables
+                for feature_type in feature_achieve.keys():
+                    Table=HDF5Table(feature_achieve[feature_type])
+                    Table.delete()
+            elif not kw[uri]:
+                #deletes one table
+                FeatureClass = feature_achieve[feature_type]
+                Table=HDF5Table(FeatureClass)
+                Table.delete()
+            elif not feature_type:
+                kw[uri]
+                #delete from id tables
+                ID=IDTable()
+                id=ID.returnID(uri)
+                ID.deleteURI(uri)
+                #delete from feature tables
+                for feature_type in feature_achieve.keys():
+                    Table=HDF5Table(feature_achieve[feature_type])
+                    query='idnumber==%s' %id
+                    Table.delete(query)
+            else:
+                #delete feature from table
+                id=IDTable().returnID(uri)
+                Table=HDF5Table(feature_achieve[feature_type])
+                query='idnumber==%s' %id
+                Table.delete(query)
+        
+#    def index(self, feature_type, output_type = 'xml'):
+#        feature_module = self.feature_modules.returnfeature(feature_type)
+#        HDF5Table(feature_module).index()
+#        resource = etree.Element('resource', status = 'FINISHED INDEXING FEATURE TABLE')
+#        feature=etree.SubElement( resource, 'FeatureType', featuretype = str(feature_type))
+#        return etree.tostring(resource)
 
-    @expose(content_type="text/xml")
-    def tablelen(self, feature_type):
-        """
-        Finding the amount of vectors in a table
-        (for debugging purposes)
-        """
-        feature_module = self.feature_modules.returnfeature(feature_type)
-        Table = HDF5Table(feature_module) #initalizing table
-        resource = etree.Element('resource', feature = feature_type, table_length = str(Table.collen()))
-        return etree.tostring(resource)
-    
-    @expose(content_type="text/xml")
-    def featurelen(self,feature_type):
-        feature_module = self.feature_modules.returnfeature(feature_type)
-        resource = etree.Element('resource', feature = feature_type, table_length = str(feature_module.length))
-        return etree.tostring(resource)
 
     ###################################################################
     ### Query Service
@@ -814,13 +838,15 @@ class featuresController(ServiceController):
     
     @expose(content_type="text/xml")
     def docs(self, *arg):  
-        """Ouputs documentation"""
+        """
+        Ouputs documentation
+        """
         #Without any import 
         if not arg:
             resource = etree.Element('resource', uri = self.baseurl+'/doc')
             resource.attrib['description'] = 'List of working feature extractors'
-            for featuretype in self.feature_modules.returnfeaturelist():
-                feature_module = self.feature_modules.returnfeature(featuretype)
+            for featuretype in self.feature_achieve.keys():
+                feature_module = self.feature_achieve[featuretype]
                 feature=etree.SubElement( resource, 'feature', name = featuretype )
                 feature.attrib['description'] = str(feature_module.description)
             return etree.tostring(resource)
@@ -829,7 +855,7 @@ class featuresController(ServiceController):
             if len(arg)>1:
                 abort(500, 'too many inputs')
             else:
-                feature_module = self.feature_modules.returnfeature(arg[0])
+                feature_module = self.feature_achieve[arg[0]]
                 Table = HDF5Table(feature_module)
                 feature_module = feature_module()  
                 
@@ -837,15 +863,15 @@ class featuresController(ServiceController):
                                   'description':str(feature_module.description),
                                   'feature_length':str(feature_module.length),
                                   'parameter_info':str(feature_module.parameter_info),
-                                  'table_length':str(Table.collen())} 
+                                  'table_length':str(len(Table))} 
                  
-                resource = etree.Element('resource', uri = self.baseurl+'/feature'+'/'+str(arg[0]))
+                resource = etree.Element('resource', uri = self.baseurl+'/docs'+'/'+str(arg[0]))
                 feature=etree.SubElement( resource, 'feature', name = str(feature_module.name))
                 for key,value in xml_attributes.iteritems():
                     attrib={key:value}
                     info=etree.SubElement(feature,'info',attrib)   
                 return etree.tostring(resource)
-    
+
     
 #######################################################################
 ### Initializing Service

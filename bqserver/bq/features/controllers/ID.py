@@ -7,6 +7,9 @@ import tables
 import bq
 import random
 import numpy as np
+import uuid
+import logging
+log = logging.getLogger("bq.features")
 
 from bq.image_service.controllers.locks import Locks
 from pylons.controllers.util import abort
@@ -34,9 +37,8 @@ class ID():
             Initializes the ID table 
         """ 
         class Columns(tables.IsDescription):
-                idnumber  = tables.Int64Col()
-                uri   = tables.StringCol(2000) 
-                
+                idnumber  = tables.StringCol(32)
+                uri   = tables.StringCol(2000)
         self.Columns=Columns
         
         
@@ -44,16 +46,15 @@ class ID():
         """
             information for table to know what to index
         """
-        table.cols.idnumber.removeIndex()
-        table.cols.idnumber.createCSIndex()
-        table.cols.uri.removeIndex()
         table.cols.uri.createCSIndex()
         
-    def appendTable(self, uri, idnumber):
+    def appendTable(self, uri, id):
         """
             Appends IDs to the table   
         """    
         #initalizing rows for the table
+        id = uuid.uuid5(uuid.NAMESPACE_URL, str(uri))
+        idnumber = id.hex
         self.setRow(idnumber,uri)
 
     #re-adapted for id-table since its structure is not like the feature tables
@@ -67,7 +68,6 @@ class ID():
         self.temptable = [];
         temprow = {'uri':uri,'idnumber':idnumber}
         self.temptable.append(temprow)
-            
 
 
 

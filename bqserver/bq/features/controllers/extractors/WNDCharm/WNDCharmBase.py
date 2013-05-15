@@ -24,7 +24,7 @@ class WNDCharm(Feature.Feature): #base WNDCharm feature class
         image_path = Im.returnpath()
 
         # extract the feature keypoints and descriptor
-        I=Image.open(image_path)
+        #I=Image.open(image_path)
         descriptor = ReturnWNDCharmFeature(self.name,image_path)
         del Im 
  
