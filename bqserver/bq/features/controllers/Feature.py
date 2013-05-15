@@ -57,17 +57,18 @@ class Feature(object):
     
     def initalizeTable(self):
         """
-            Initializes the Feature table 
+            Initializes the Feature table returns the column class
         """ 
         featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
         if self.parameter_info:
             parameterAtom = tables.Atom.from_type(self.parameter_format, shape=(len(self.parameter_info)))
         class Columns(tables.IsDescription):
-                idnumber  = tables.UInt32Col(pos=1)
+                idnumber  = tables.StringCol(32,pos=1)
                 feature   = tables.Col.from_atom(featureAtom, pos=2)
                 if self.parameter_info:
                     parameter = tables.Col.from_atom(parameterAtom, pos=3)
-        self.Columns=Columns
+        self.Columns = Columns
+        return
     
     def indexTable(self,table):
         """
@@ -84,6 +85,7 @@ class Feature(object):
         #initalizing rows for the table
         parameters = []
         self.setRow(uri, idnumber, descriptors, parameters)
+        return
     
 
     def setRow(self,uri, idnumber, feature, parameters = []):
@@ -97,6 +99,8 @@ class Feature(object):
         if parameters and self.parameter_info:
             temprow['parameter'] = parameters
         self.temptable.append(temprow)
+        return
+            
             
 ###############################################################
 # Image Import

@@ -6,7 +6,8 @@ import sys
 import inspect, os
 
 path=os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) #find current dir of the file
-_WNDCharmFeatures = np.ctypeslib.load_library('lib//_WNDCharmFeatures', path)
+path=path+'/lib' 
+_WNDCharmFeatures = np.ctypeslib.load_library('_WNDCharmLib', path)
 
 
 def WNDCharmFeatures(filename,featuresize, extractor, transform1, transform2):

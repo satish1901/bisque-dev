@@ -6,6 +6,7 @@ import cv2
 import cv
 
 from bq.features.controllers import Feature #import base class
+from pyVRLLib import extractEHD, extractHTD
 
 class EHD(Feature.Feature):
     """
@@ -24,14 +25,13 @@ class EHD(Feature.Feature):
         
     def appendTable(self, uri, idnumber):
         #initalizing
-        import include.EHD.extractEHD as ehd
 
         Im = Feature.ImageImport(uri) #importing image from image service
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im    
         
-        descriptors=ehd.extract(im)
+        descriptors=extractEHD(im)
         
         #initalizing rows for the table
         self.setRow(uri, idnumber, descriptors)
@@ -72,7 +72,7 @@ class HTD(Feature.Feature):
         if max(im.shape)>1000:
             abort('Warning: Image is too large for HTD. Must be smaller than 1000 by 1000.')
         
-        descriptors = htd.extract(im) #calculating descriptor
+        descriptors = extractHTD(im) #calculating descriptor
 
         #initalizing rows for the table
         self.setRow(uri,idnumber,descriptors)
