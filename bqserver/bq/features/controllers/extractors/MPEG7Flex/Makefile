@@ -4,12 +4,13 @@ CFLAGS = -Wall -fPIC
 LFLAGS = -shared -Wl
 
 INCLUDE = -I/usr/include/ -I$(ROOT) -I$(EXDIR) -I$(DESCDIR) -I$(ADDRDIR)
-LINK =  /usr/local/lib/libopencv_core.so
+#LINK =  /usr/local/lib/libopencv_core.so
+LINK =   -llibfftw3.so -llibopencv_core.so
 
 ROOT:=
 
 RELEASE:= $(ROOT)release/
-BIN:=$(ROOT)bin/
+LIB:=$(ROOT)lib/
 EXDIR := $(ROOT)src/Extraction/
 DESCDIR := $(ROOT)src/Descriptors/
 ADDRDIR := $(ROOT)src/AddressLib/
@@ -33,15 +34,15 @@ OBJ = $(patsubst %.cpp, $(RELEASE)%.o, $(notdir $(SRC)))
 
 #commands
 
-all: $(BIN)_MPEG7FlexLib.pyd
+all: $(LIB)_MPEG7FlexLib.pyd
 
 clean: 
-	rm -f $(RELEASE)*.o $(BIN)*.pyd
+	rm -f $(RELEASE)*.o $(LIB)*.pyd
 
 #builds each group
 
-$(BIN)_MPEG7FlexLib.pyd : $(DESCOBJ) $(ADDROBJ) $(EXOBJ) $(EXOBJc) $(OBJ)
-	$(CXX) $(LFLAGS) $(INCLUDE) $(LINK) -o  $(BIN)_MPEG7FlexLib.pyd $(DESCOBJ) $(ADDROBJ) $(EXOBJ) $(EXOBJc) $(OBJ)
+$(LIB)_MPEG7FlexLib.pyd : $(DESCOBJ) $(ADDROBJ) $(EXOBJ) $(EXOBJc) $(OBJ)
+	$(CXX) $(LFLAGS) $(INCLUDE) $(LINK) -o  $(LIB)_MPEG7FlexLib.pyd $(DESCOBJ) $(ADDROBJ) $(EXOBJ) $(EXOBJc) $(OBJ)
 
 
 $(DESCOBJ):$(DESCSRC)
