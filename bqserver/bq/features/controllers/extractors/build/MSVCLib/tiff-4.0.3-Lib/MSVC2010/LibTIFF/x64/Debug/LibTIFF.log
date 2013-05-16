@@ -1,0 +1,239 @@
+﻿Build started 4/5/2013 1:50:11 PM.
+     1>Project "C:\Users\Chris\Desktop\MCVS\tiff-4.0.3-Lib\MSVC2010\LibTIFF\LibTIFF.vcxproj" on node 2 (build target(s)).
+     1>InitializeBuildStatus:
+         Creating "x64\Debug\LibTIFF.unsuccessfulbuild" because "AlwaysCreate" was specified.
+       ClCompile:
+         c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\x86_amd64\CL.exe /c /I"C:\Users\Chris\Desktop\MCVS\tiff-4.0.3-Lib\source" /Zi /nologo /W3 /WX- /MP /Od /D WIN32 /D _DEBUG /D _LIB /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"x64\Debug\\" /Fd"x64\Debug\vc100.pdb" /Gd /TC /errorReport:prompt ..\..\source\libtiff\mkg3states.c ..\..\source\libtiff\tif_aux.c ..\..\source\libtiff\tif_close.c ..\..\source\libtiff\tif_codec.c ..\..\source\libtiff\tif_color.c ..\..\source\libtiff\tif_compress.c ..\..\source\libtiff\tif_dir.c ..\..\source\libtiff\tif_dirinfo.c ..\..\source\libtiff\tif_dirread.c ..\..\source\libtiff\tif_dirwrite.c ..\..\source\libtiff\tif_dumpmode.c ..\..\source\libtiff\tif_error.c ..\..\source\libtiff\tif_extension.c ..\..\source\libtiff\tif_fax3.c ..\..\source\libtiff\tif_fax3sm.c ..\..\source\libtiff\tif_flush.c ..\..\source\libtiff\tif_getimage.c ..\..\source\libtiff\tif_jbig.c ..\..\source\libtiff\tif_jpeg.c ..\..\source\libtiff\tif_jpeg_12.c ..\..\source\libtiff\tif_luv.c ..\..\source\libtiff\tif_lzma.c ..\..\source\libtiff\tif_lzw.c ..\..\source\libtiff\tif_next.c ..\..\source\libtiff\tif_ojpeg.c ..\..\source\libtiff\tif_open.c ..\..\source\libtiff\tif_packbits.c ..\..\source\libtiff\tif_pixarlog.c ..\..\source\libtiff\tif_predict.c ..\..\source\libtiff\tif_print.c ..\..\source\libtiff\tif_read.c ..\..\source\libtiff\tif_strip.c ..\..\source\libtiff\tif_swab.c ..\..\source\libtiff\tif_thunder.c ..\..\source\libtiff\tif_tile.c ..\..\source\libtiff\tif_unix.c ..\..\source\libtiff\tif_version.c ..\..\source\libtiff\tif_warning.c ..\..\source\libtiff\tif_win32.c ..\..\source\libtiff\tif_write.c ..\..\source\libtiff\tif_zip.c
+     1>cl : Command line warning D9030: '/Gm' is incompatible with multiprocessing; ignoring /MP switch
+         tif_zip.c
+         tif_write.c
+     1>..\..\source\libtiff\tif_write.c(236): warning C4018: '<=' : signed/unsigned mismatch
+     1>..\..\source\libtiff\tif_write.c(382): warning C4018: '<=' : signed/unsigned mismatch
+         tif_win32.c
+     1>..\..\source\libtiff\tif_win32.c(377): warning C4133: 'initializing' : incompatible types - from 'char [11]' to 'LPCTSTR'
+     1>..\..\source\libtiff\tif_win32.c(378): warning C4133: 'initializing' : incompatible types - from 'char [8]' to 'LPCTSTR'
+     1>..\..\source\libtiff\tif_win32.c(379): warning C4133: ':' : incompatible types - from 'const char *' to 'LPCTSTR'
+     1>..\..\source\libtiff\tif_win32.c(380): warning C4133: 'function' : incompatible types - from 'LPCTSTR' to 'const char *'
+     1>..\..\source\libtiff\tif_win32.c(381): warning C4133: 'function' : incompatible types - from 'LPCTSTR' to 'const char *'
+     1>..\..\source\libtiff\tif_win32.c(385): warning C4133: 'function' : incompatible types - from 'LPTSTR' to 'char *'
+     1>..\..\source\libtiff\tif_win32.c(385): warning C4133: 'function' : incompatible types - from 'LPCTSTR' to 'const char *'
+     1>..\..\source\libtiff\tif_win32.c(385): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(371) : see declaration of 'sprintf'
+     1>..\..\source\libtiff\tif_win32.c(386): warning C4133: 'function' : incompatible types - from 'LPTSTR' to 'const char *'
+     1>..\..\source\libtiff\tif_win32.c(387): warning C4133: 'function' : incompatible types - from 'LPTSTR' to 'char *'
+     1>..\..\source\libtiff\tif_win32.c(387): warning C4133: 'function' : incompatible types - from 'LPTSTR' to 'const char *'
+     1>..\..\source\libtiff\tif_win32.c(387): warning C4996: 'vsnprintf': This function or variable may be unsafe. Consider using vsnprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(354) : see declaration of 'vsnprintf'
+     1>..\..\source\libtiff\tif_win32.c(388): warning C4133: 'function' : incompatible types - from 'LPTSTR' to 'LPCSTR'
+     1>..\..\source\libtiff\tif_win32.c(388): warning C4133: 'function' : incompatible types - from 'LPTSTR' to 'LPCSTR'
+     1>..\..\source\libtiff\tif_win32.c(408): warning C4133: 'initializing' : incompatible types - from 'char [9]' to 'LPCTSTR'
+     1>..\..\source\libtiff\tif_win32.c(409): warning C4133: 'initializing' : incompatible types - from 'char [8]' to 'LPCTSTR'
+     1>..\..\source\libtiff\tif_win32.c(410): warning C4133: ':' : incompatible types - from 'const char *' to 'LPCTSTR'
+     1>..\..\source\libtiff\tif_win32.c(411): warning C4133: 'function' : incompatible types - from 'LPCTSTR' to 'const char *'
+     1>..\..\source\libtiff\tif_win32.c(412): warning C4133: 'function' : incompatible types - from 'LPCTSTR' to 'const char *'
+     1>..\..\source\libtiff\tif_win32.c(416): warning C4133: 'function' : incompatible types - from 'LPTSTR' to 'char *'
+     1>..\..\source\libtiff\tif_win32.c(416): warning C4133: 'function' : incompatible types - from 'LPCTSTR' to 'const char *'
+     1>..\..\source\libtiff\tif_win32.c(416): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(371) : see declaration of 'sprintf'
+     1>..\..\source\libtiff\tif_win32.c(417): warning C4133: 'function' : incompatible types - from 'LPTSTR' to 'const char *'
+     1>..\..\source\libtiff\tif_win32.c(418): warning C4133: 'function' : incompatible types - from 'LPTSTR' to 'char *'
+     1>..\..\source\libtiff\tif_win32.c(418): warning C4133: 'function' : incompatible types - from 'LPTSTR' to 'const char *'
+     1>..\..\source\libtiff\tif_win32.c(418): warning C4996: 'vsnprintf': This function or variable may be unsafe. Consider using vsnprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(354) : see declaration of 'vsnprintf'
+     1>..\..\source\libtiff\tif_win32.c(419): warning C4133: 'function' : incompatible types - from 'LPTSTR' to 'LPCSTR'
+     1>..\..\source\libtiff\tif_win32.c(419): warning C4133: 'function' : incompatible types - from 'LPTSTR' to 'LPCSTR'
+         tif_warning.c
+         tif_version.c
+         tif_unix.c
+     1>..\..\source\libtiff\tif_unix.c(67): warning C4267: 'function' : conversion from 'size_t' to 'unsigned int', possible loss of data
+     1>..\..\source\libtiff\tif_unix.c(67): warning C4996: 'read': The POSIX name for this item is deprecated. Instead, use the ISO C++ conformant name: _read. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\io.h(313) : see declaration of 'read'
+     1>..\..\source\libtiff\tif_unix.c(79): warning C4267: 'function' : conversion from 'size_t' to 'unsigned int', possible loss of data
+     1>..\..\source\libtiff\tif_unix.c(79): warning C4996: 'write': The POSIX name for this item is deprecated. Instead, use the ISO C++ conformant name: _write. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\io.h(318) : see declaration of 'write'
+     1>..\..\source\libtiff\tif_unix.c(91): warning C4996: 'lseek': The POSIX name for this item is deprecated. Instead, use the ISO C++ conformant name: _lseek. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\io.h(310) : see declaration of 'lseek'
+     1>..\..\source\libtiff\tif_unix.c(97): warning C4996: 'close': The POSIX name for this item is deprecated. Instead, use the ISO C++ conformant name: _close. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\io.h(302) : see declaration of 'close'
+     1>..\..\source\libtiff\tif_unix.c(187): warning C4996: 'open': The POSIX name for this item is deprecated. Instead, use the ISO C++ conformant name: _open. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\io.h(312) : see declaration of 'open'
+     1>..\..\source\libtiff\tif_unix.c(189): warning C4996: 'strerror': This function or variable may be unsafe. Consider using strerror_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\string.h(157) : see declaration of 'strerror'
+     1>..\..\source\libtiff\tif_unix.c(190): warning C4996: 'strerror': This function or variable may be unsafe. Consider using strerror_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\string.h(157) : see declaration of 'strerror'
+     1>..\..\source\libtiff\tif_unix.c(199): warning C4996: 'close': The POSIX name for this item is deprecated. Instead, use the ISO C++ conformant name: _close. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\io.h(302) : see declaration of 'close'
+     1>..\..\source\libtiff\tif_unix.c(226): warning C4996: '_wopen': This function or variable may be unsafe. Consider using _wsopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\io.h(272) : see declaration of '_wopen'
+     1>..\..\source\libtiff\tif_unix.c(252): warning C4996: 'close': The POSIX name for this item is deprecated. Instead, use the ISO C++ conformant name: _close. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\io.h(302) : see declaration of 'close'
+         tif_tile.c
+         tif_thunder.c
+         tif_swab.c
+         tif_strip.c
+         tif_read.c
+         tif_print.c
+     1>..\..\source\libtiff\tif_print.c(399): warning C4244: 'initializing' : conversion from '__int64' to 'int', possible loss of data
+     1>..\..\source\libtiff\tif_print.c(678): warning C4267: 'function' : conversion from 'size_t' to 'int', possible loss of data
+         tif_predict.c
+         tif_pixarlog.c
+         tif_packbits.c
+         tif_open.c
+     1>..\..\source\libtiff\tif_open.c(126): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\string.h(105) : see declaration of 'strcpy'
+         tif_ojpeg.c
+         tif_next.c
+         tif_lzw.c
+         tif_lzma.c
+         Generating Code...
+         Compiling...
+         tif_luv.c
+         tif_jpeg_12.c
+         tif_jpeg.c
+         tif_jbig.c
+         tif_getimage.c
+     1>..\..\source\libtiff\tif_getimage.c(83): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(371) : see declaration of 'sprintf'
+     1>..\..\source\libtiff\tif_getimage.c(95): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(371) : see declaration of 'sprintf'
+     1>..\..\source\libtiff\tif_getimage.c(108): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(371) : see declaration of 'sprintf'
+     1>..\..\source\libtiff\tif_getimage.c(124): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(371) : see declaration of 'sprintf'
+     1>..\..\source\libtiff\tif_getimage.c(144): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(371) : see declaration of 'sprintf'
+     1>..\..\source\libtiff\tif_getimage.c(155): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(371) : see declaration of 'sprintf'
+     1>..\..\source\libtiff\tif_getimage.c(161): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(371) : see declaration of 'sprintf'
+     1>..\..\source\libtiff\tif_getimage.c(169): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(371) : see declaration of 'sprintf'
+     1>..\..\source\libtiff\tif_getimage.c(177): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(371) : see declaration of 'sprintf'
+     1>..\..\source\libtiff\tif_getimage.c(182): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(371) : see declaration of 'sprintf'
+     1>..\..\source\libtiff\tif_getimage.c(190): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(371) : see declaration of 'sprintf'
+     1>..\..\source\libtiff\tif_getimage.c(264): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(371) : see declaration of 'sprintf'
+     1>..\..\source\libtiff\tif_getimage.c(313): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(371) : see declaration of 'sprintf'
+     1>..\..\source\libtiff\tif_getimage.c(321): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(371) : see declaration of 'sprintf'
+     1>..\..\source\libtiff\tif_getimage.c(331): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(371) : see declaration of 'sprintf'
+     1>..\..\source\libtiff\tif_getimage.c(350): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(371) : see declaration of 'sprintf'
+     1>..\..\source\libtiff\tif_getimage.c(383): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(371) : see declaration of 'sprintf'
+     1>..\..\source\libtiff\tif_getimage.c(393): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(371) : see declaration of 'sprintf'
+     1>..\..\source\libtiff\tif_getimage.c(398): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(371) : see declaration of 'sprintf'
+     1>..\..\source\libtiff\tif_getimage.c(406): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(371) : see declaration of 'sprintf'
+     1>..\..\source\libtiff\tif_getimage.c(416): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(371) : see declaration of 'sprintf'
+     1>..\..\source\libtiff\tif_getimage.c(421): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(371) : see declaration of 'sprintf'
+     1>..\..\source\libtiff\tif_getimage.c(432): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(371) : see declaration of 'sprintf'
+     1>..\..\source\libtiff\tif_getimage.c(449): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(371) : see declaration of 'sprintf'
+     1>..\..\source\libtiff\tif_getimage.c(454): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(371) : see declaration of 'sprintf'
+         tif_flush.c
+         tif_fax3sm.c
+         tif_fax3.c
+         tif_extension.c
+     1>..\..\source\libtiff\tif_extension.c(107): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\string.h(105) : see declaration of 'strcpy'
+         tif_error.c
+         tif_dumpmode.c
+         tif_dirwrite.c
+         tif_dirread.c
+         tif_dirinfo.c
+     1>..\..\source\libtiff\tif_dirinfo.c(714): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(371) : see declaration of 'sprintf'
+         tif_dir.c
+         tif_compress.c
+     1>..\..\source\libtiff\tif_compress.c(211): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\string.h(105) : see declaration of 'strcpy'
+         tif_color.c
+         tif_codec.c
+     1>..\..\source\libtiff\tif_codec.c(111): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(371) : see declaration of 'sprintf'
+         tif_close.c
+         tif_aux.c
+         Generating Code...
+         Compiling...
+         mkg3states.c
+     1>..\..\source\libtiff\mkg3states.c(411): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(234) : see declaration of 'fopen'
+         Generating Code...
+         c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\x86_amd64\CL.exe /c /I"C:\Users\Chris\Desktop\MCVS\tiff-4.0.3-Lib\source" /Zi /nologo /W3 /WX- /MP /Od /D WIN32 /D _DEBUG /D _LIB /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"x64\Debug\\" /Fd"x64\Debug\vc100.pdb" /Gd /TP /errorReport:prompt ..\..\source\libtiff\tif_stream.cxx
+         tif_stream.cxx
+       Lib:
+         c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\x86_amd64\Lib.exe /OUT:"C:\Users\Chris\Desktop\MCVS\wndcharm_features_extractor\MSVC2010\feature_extractor\x64\Debug\LibTIFF.lib" /NOLOGO x64\Debug\mkg3states.obj
+         x64\Debug\tif_aux.obj
+         x64\Debug\tif_close.obj
+         x64\Debug\tif_codec.obj
+         x64\Debug\tif_color.obj
+         x64\Debug\tif_compress.obj
+         x64\Debug\tif_dir.obj
+         x64\Debug\tif_dirinfo.obj
+         x64\Debug\tif_dirread.obj
+         x64\Debug\tif_dirwrite.obj
+         x64\Debug\tif_dumpmode.obj
+         x64\Debug\tif_error.obj
+         x64\Debug\tif_extension.obj
+         x64\Debug\tif_fax3.obj
+         x64\Debug\tif_fax3sm.obj
+         x64\Debug\tif_flush.obj
+         x64\Debug\tif_getimage.obj
+         x64\Debug\tif_jbig.obj
+         x64\Debug\tif_jpeg.obj
+         x64\Debug\tif_jpeg_12.obj
+         x64\Debug\tif_luv.obj
+         x64\Debug\tif_lzma.obj
+         x64\Debug\tif_lzw.obj
+         x64\Debug\tif_next.obj
+         x64\Debug\tif_ojpeg.obj
+         x64\Debug\tif_open.obj
+         x64\Debug\tif_packbits.obj
+         x64\Debug\tif_pixarlog.obj
+         x64\Debug\tif_predict.obj
+         x64\Debug\tif_print.obj
+         x64\Debug\tif_read.obj
+         x64\Debug\tif_stream.obj
+         x64\Debug\tif_strip.obj
+         x64\Debug\tif_swab.obj
+         x64\Debug\tif_thunder.obj
+         x64\Debug\tif_tile.obj
+         x64\Debug\tif_unix.obj
+         x64\Debug\tif_version.obj
+         x64\Debug\tif_warning.obj
+         x64\Debug\tif_win32.obj
+         x64\Debug\tif_write.obj
+         x64\Debug\tif_zip.obj
+     1>tif_unix.obj : warning LNK4006: _TIFFwarningHandler already defined in tif_win32.obj; second definition ignored
+     1>tif_unix.obj : warning LNK4006: _TIFFerrorHandler already defined in tif_win32.obj; second definition ignored
+     1>tif_unix.obj : warning LNK4006: TIFFFdOpen already defined in tif_win32.obj; second definition ignored
+     1>tif_unix.obj : warning LNK4006: TIFFOpen already defined in tif_win32.obj; second definition ignored
+     1>tif_unix.obj : warning LNK4006: TIFFOpenW already defined in tif_win32.obj; second definition ignored
+     1>tif_unix.obj : warning LNK4006: _TIFFmalloc already defined in tif_win32.obj; second definition ignored
+     1>tif_unix.obj : warning LNK4006: _TIFFfree already defined in tif_win32.obj; second definition ignored
+     1>tif_unix.obj : warning LNK4006: _TIFFrealloc already defined in tif_win32.obj; second definition ignored
+     1>tif_unix.obj : warning LNK4006: _TIFFmemset already defined in tif_win32.obj; second definition ignored
+     1>tif_unix.obj : warning LNK4006: _TIFFmemcpy already defined in tif_win32.obj; second definition ignored
+     1>tif_unix.obj : warning LNK4006: _TIFFmemcmp already defined in tif_win32.obj; second definition ignored
+     1>tif_unix.obj : warning LNK4221: This object file does not define any previously undefined public symbols, so it will not be used by any link operation that consumes this library
+         LibTIFF.vcxproj -> C:\Users\Chris\Desktop\MCVS\wndcharm_features_extractor\MSVC2010\feature_extractor\x64\Debug\LibTIFF.lib
+       FinalizeBuildStatus:
+         Deleting file "x64\Debug\LibTIFF.unsuccessfulbuild".
+         Touching "x64\Debug\LibTIFF.lastbuildstate".
+     1>Done Building Project "C:\Users\Chris\Desktop\MCVS\tiff-4.0.3-Lib\MSVC2010\LibTIFF\LibTIFF.vcxproj" (build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:04.88

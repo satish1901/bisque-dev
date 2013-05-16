@@ -1,0 +1,19 @@
+﻿Build started 5/15/2013 3:02:37 PM.
+     1>Project "c:\bisque\bqserver\bq\features\controllers\extractors\build\MSVCLib\tiff-4.0.3-Lib\MSVC2010\LibTIFF\LibTIFF.vcxproj" on node 3 (build target(s)).
+     1>C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\Microsoft.CppBuild.targets(299,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+     1>InitializeBuildStatus:
+         Creating "x64\Release\LibTIFF.unsuccessfulbuild" because "AlwaysCreate" was specified.
+       ClCompile:
+         All outputs are up-to-date.
+         All outputs are up-to-date.
+       Lib:
+         All outputs are up-to-date.
+         LibTIFF.vcxproj -> C:\bisque\bqserver\bq\features\controllers\extractors\build\MSVCLib\tiff-4.0.3-Lib\MSVC2010\LibTIFF\..\..\lib\LibTIFF.lib
+       FinalizeBuildStatus:
+         Deleting file "x64\Release\LibTIFF.unsuccessfulbuild".
+         Touching "x64\Release\LibTIFF.lastbuildstate".
+     1>Done Building Project "c:\bisque\bqserver\bq\features\controllers\extractors\build\MSVCLib\tiff-4.0.3-Lib\MSVC2010\LibTIFF\LibTIFF.vcxproj" (build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:00.05
