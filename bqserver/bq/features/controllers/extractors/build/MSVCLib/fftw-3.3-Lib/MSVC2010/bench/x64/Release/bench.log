@@ -1,0 +1,86 @@
+﻿Build started 11/14/2012 6:35:43 PM.
+     1>Project "C:\Users\Chris\Desktop\fftw-3.3-libs\bench\bench.vcxproj" on node 3 (build target(s)).
+     1>InitializeBuildStatus:
+         Touching "x64\Release\bench.unsuccessfulbuild".
+       ClCompile:
+         c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\x86_amd64\CL.exe /c /I"C:\Users\Chris\Desktop\fftw-3.3-libs\bench\..\..\api\\" /I"C:\Users\Chris\Desktop\fftw-3.3-libs\bench\..\..\dft\\" /I"C:\Users\Chris\Desktop\fftw-3.3-libs\bench\..\..\rdft\\" /I"C:\Users\Chris\Desktop\fftw-3.3-libs\bench\..\..\kernel\\" /I"C:\Users\Chris\Desktop\fftw-3.3-libs\bench\..\libfftw-3.3\\" /I"C:\Users\Chris\Desktop\fftw-3.3-libs\bench\..\..\libbench2\\" /Zi /nologo /W3 /WX- /O2 /Oi /GL /D FFTW_DLL /D WIN64 /D _WIN64 /D NDEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm- /EHsc /MT /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /openmp /Fo"x64\Release\\" /Fd"x64\Release\vc100.pdb" /Gd /TC /errorReport:prompt "..\..\libbench2\after-ccopy-from.c" "..\..\libbench2\after-ccopy-to.c" "..\..\libbench2\after-hccopy-from.c" "..\..\libbench2\after-hccopy-to.c" "..\..\libbench2\after-rcopy-from.c" "..\..\libbench2\after-rcopy-to.c" "..\..\libbench2\aligned-main.c" ..\..\libbench2\allocate.c ..\..\libbench2\aset.c "..\..\libbench2\bench-cost-postprocess.c" "..\..\libbench2\bench-exit.c" "..\..\libbench2\bench-main.c" "..\..\libbench2\can-do.c" ..\..\libbench2\caset.c ..\..\libbench2\dotens2.c ..\..\libbench2\info.c ..\..\libbench2\main.c ..\..\libbench2\mflops.c ..\..\libbench2\mp.c "..\..\libbench2\my-getopt.c" ..\..\libbench2\ovtpvt.c ..\..\libbench2\pow2.c ..\..\libbench2\problem.c ..\..\libbench2\report.c ..\..\libbench2\speed.c ..\..\libbench2\tensor.c ..\..\libbench2\timer.c ..\..\libbench2\util.c "..\..\libbench2\verify-dft.c" "..\..\libbench2\verify-lib.c" "..\..\libbench2\verify-r2r.c" "..\..\libbench2\verify-rdft2.c" ..\..\libbench2\verify.c ..\..\libbench2\zero.c ..\..\tests\bench.c "..\..\tests\fftw-bench.c" ..\..\tests\hook.c
+         after-ccopy-from.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\libbench2\after-ccopy-from.c': No such file or directory
+         after-ccopy-to.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\libbench2\after-ccopy-to.c': No such file or directory
+         after-hccopy-from.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\libbench2\after-hccopy-from.c': No such file or directory
+         after-hccopy-to.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\libbench2\after-hccopy-to.c': No such file or directory
+         after-rcopy-from.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\libbench2\after-rcopy-from.c': No such file or directory
+         after-rcopy-to.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\libbench2\after-rcopy-to.c': No such file or directory
+         aligned-main.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\libbench2\aligned-main.c': No such file or directory
+         allocate.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\libbench2\allocate.c': No such file or directory
+         aset.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\libbench2\aset.c': No such file or directory
+         bench-cost-postprocess.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\libbench2\bench-cost-postprocess.c': No such file or directory
+         bench-exit.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\libbench2\bench-exit.c': No such file or directory
+         bench-main.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\libbench2\bench-main.c': No such file or directory
+         can-do.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\libbench2\can-do.c': No such file or directory
+         caset.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\libbench2\caset.c': No such file or directory
+         dotens2.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\libbench2\dotens2.c': No such file or directory
+         info.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\libbench2\info.c': No such file or directory
+         main.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\libbench2\main.c': No such file or directory
+         mflops.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\libbench2\mflops.c': No such file or directory
+         mp.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\libbench2\mp.c': No such file or directory
+         my-getopt.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\libbench2\my-getopt.c': No such file or directory
+         Compiling...
+         ovtpvt.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\libbench2\ovtpvt.c': No such file or directory
+         pow2.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\libbench2\pow2.c': No such file or directory
+         problem.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\libbench2\problem.c': No such file or directory
+         report.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\libbench2\report.c': No such file or directory
+         speed.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\libbench2\speed.c': No such file or directory
+         tensor.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\libbench2\tensor.c': No such file or directory
+         timer.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\libbench2\timer.c': No such file or directory
+         util.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\libbench2\util.c': No such file or directory
+         verify-dft.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\libbench2\verify-dft.c': No such file or directory
+         verify-lib.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\libbench2\verify-lib.c': No such file or directory
+         verify-r2r.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\libbench2\verify-r2r.c': No such file or directory
+         verify-rdft2.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\libbench2\verify-rdft2.c': No such file or directory
+         verify.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\libbench2\verify.c': No such file or directory
+         zero.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\libbench2\zero.c': No such file or directory
+         bench.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\tests\bench.c': No such file or directory
+         fftw-bench.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\tests\fftw-bench.c': No such file or directory
+         hook.c
+     1>c1 : fatal error C1083: Cannot open source file: '..\..\tests\hook.c': No such file or directory
+     1>Done Building Project "C:\Users\Chris\Desktop\fftw-3.3-libs\bench\bench.vcxproj" (build target(s)) -- FAILED.
+
+Build FAILED.
+
+Time Elapsed 00:00:00.14
