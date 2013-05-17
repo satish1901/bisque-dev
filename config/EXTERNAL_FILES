@@ -22,10 +22,11 @@ BEBB0991B63A985A8C31D97942D4395E17F84444-extjs-4.1.1-gpl.zip=extjs.zip
 
 [Windows-64bit-*]
 10F94AD833FC55E83E3491F9BE4829AC6020DA6F-imgcnv-Windows-64bit.zip=imgcnv.zip
-A403723E30758BE9D0F5A762E427C3C24C54BD9E-feature_extractors-Windows-64bit.zip=feature_extractors.zip
+0CD333EC6937124374F72D49A112D11188C960FD-feature_extractors-Windows-64bit.zip=feature_extractors.zip
 
 [Linux-64bit-*-debian-*]
 511B5E84692B123A89576086201B793C93096A74-libmbgl-linux-64-large.a
+96CE73116EA58BB03659331219DDC11FB9DE5092-feature_extractors-Linux-64bit.zip=feature_extractors.zip
 
 [Darwin-64bit-*]
 
