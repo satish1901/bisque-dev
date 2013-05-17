@@ -1,8 +1,0 @@
-﻿Build started 3/26/2013 10:07:21 AM.
-     1>Project "C:\Users\Chris\Desktop\MCVS\fftw-3.3-Lib\MSVC2010\libfftw-3.3\libfftw-3.3.vcxproj" on node 2 (build target(s)).
-     1>C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\Platforms\Win32\Microsoft.Cpp.Win32.Targets(511,5): error MSB8008: Specified platform toolset (Windows7.1SDK) is not installed or invalid. Please make sure that a supported PlatformToolset value is selected.
-     1>Done Building Project "C:\Users\Chris\Desktop\MCVS\fftw-3.3-Lib\MSVC2010\libfftw-3.3\libfftw-3.3.vcxproj" (build target(s)) -- FAILED.
-
-Build FAILED.
-
-Time Elapsed 00:00:00.02
