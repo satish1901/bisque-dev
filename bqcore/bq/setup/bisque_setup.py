@@ -1233,14 +1233,26 @@ def install_imgcnv ():
 def install_features ():
     """Install dependencies that aren't handled by setup.py"""
 
-    if getanswer ("Install features", "Y",
-                  "Features will enable many descriptors in the feature server") == "Y":
+    if getanswer ("Install feature extractors (Feature Server)", "Y",
+                  "Feature extractors will enable many descriptors in the Feature Server that require binary code") == "Y":
 
         filename_zip = os.path.join(BQDEPOT, 'feature_extractors.zip')
         filename_dest = to_sys_path('') # to_sys_path('bqserver/bq/features')
         filename_check = ''
         uncompress_dependencies (filename_zip, filename_dest, filename_check)
 
+def install_features_source ():
+    """Install dependencies that aren't handled by setup.py"""
+
+    if getanswer ("Install source code for feature extractors", "N",
+                  "Feature descriptors source code will allow recompiling external feature extractors on unsupported platforms") == "Y":
+
+        filename_zip = os.path.join(BQDEPOT, 'feature_extractors_source.zip')
+        import urllib
+        urllib.urlretrieve ('https://bitbucket.org/bisque/featureextractors/get/default.zip', filename_zip)
+        filename_dest = to_sys_path('bqserver/bq/features/controllers')
+        filename_check = ''
+        uncompress_dependencies (filename_zip, filename_dest, filename_check)
 
 #######################################################
 #
@@ -1374,7 +1386,8 @@ install_options= [
            'runtime',
            'imgcnv',
            'bioformats',
-           'features',           
+           'features',  
+           'features_source',                      
            'server',
            'mail',
            'preferences',
@@ -1454,7 +1467,9 @@ def bisque_installer(options, args):
     if 'bioformats' in installer:
         install_bioformats(params)
     if 'features' in installer:
-        install_features()        
+        install_features()
+    if 'features_source' in installer:
+        install_features_source()                   
     if 'database'  in installer:
         params = install_database(params)
     if 'matlab'  in installer:

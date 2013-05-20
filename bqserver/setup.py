@@ -39,7 +39,7 @@ The bisque server
         "numexpr", # Feature
         "tables",  # Feature
         "mahotas",  # Feature
-        "opencv",  # Feature        
+        #"opencv",  # Feature        
       ],
       entry_points="""
       # -*- Entry points: -*-
