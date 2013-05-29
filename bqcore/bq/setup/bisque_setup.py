@@ -241,23 +241,29 @@ def call(cmd, echo=False, **kw):
 
 
 
-def unpack_zip (zfile, dest):
+def unpack_zip (zfile, dest, strip_root=None):
     z = zipfile.ZipFile (zfile, 'r')
-    #for info in z.infolist():
-    #    filename = os.path.join (dest, info.filename)
-    #    if filename.endswith('/'):
-    #        if not os.path.exists(filename):
-    #            os.makedirs (filename)
-    #        continue
-    #    f = open(filename, 'wb')
-    #    f.write (z.read (info.filename))
-    #    f.close()
-    z.extractall(dest)
-    # Return top dirname
-    names = z.namelist()
+    if strip_root is None:
+        z.extractall(dest)
+        names = z.namelist()
+    else:
+        top_dir = z.infolist()[0].filename.split('/',1)[0]+'/'
+        names = []
+        for info in z.infolist():
+            new_path = info.filename.replace(top_dir, '')
+            filename = os.path.join (dest, new_path)
+            names.append(filename)
+            if os.name == 'nt':
+                filename = filename.replace('/', '\\')
+            mypath = os.path.dirname(filename)
+            if not os.path.exists(mypath):
+                os.makedirs(mypath)
+            # write the file, .extract would force the subpath and can't be used
+            f = open(filename, 'wb')
+            f.write(z.read(info))
+            f.close()            
     z.close()
     return names
-
 
 #############################################
 #  Setup some local constants
@@ -1174,14 +1180,14 @@ def fetch_external_binaries ():
 
 #######################################################
 #
-def uncompress_dependencies (filename_zip, filename_dest, filename_check):
+def uncompress_dependencies (filename_zip, filename_dest, filename_check, strip_root=None):
     """Install dependencies that aren't handled by setup.py"""
 
     if os.path.exists(filename_check) and os.path.getmtime(filename_zip) < os.path.getmtime(filename_check):
         return
 
     print "Unpacking %s into %s"  % (filename_zip, filename_dest)
-    unpack_zip(filename_zip, filename_dest)
+    return unpack_zip(filename_zip, filename_dest, strip_root)
 
 def uncompress_extjs (extzip, public, extjs):
     """Install extjs"""
@@ -1252,7 +1258,7 @@ def install_features_source ():
         urllib.urlretrieve ('https://bitbucket.org/bisque/featureextractors/get/default.zip', filename_zip)
         filename_dest = to_sys_path('bqserver/bq/features/controllers')
         filename_check = ''
-        uncompress_dependencies (filename_zip, filename_dest, filename_check)
+        uncompress_dependencies (filename_zip, filename_dest, filename_check, strip_root=True)
         
         print """Now you can recompile feature extractors. Follow instructions located in:
           bqserver/bq/features/controllers/extractors/build/Readme.txt
