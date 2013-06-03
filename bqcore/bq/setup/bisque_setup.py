@@ -1243,7 +1243,7 @@ def install_features ():
                   "Feature extractors will enable many descriptors in the Feature Server that require binary code") == "Y":
 
         filename_zip = os.path.join(BQDEPOT, 'feature_extractors.zip')
-        filename_dest = to_sys_path('') # to_sys_path('bqserver/bq/features')
+        filename_dest = to_sys_path('bqserver/bq/features')
         filename_check = ''
         uncompress_dependencies (filename_zip, filename_dest, filename_check)
 

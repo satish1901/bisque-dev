@@ -86,8 +86,9 @@ log = logging.getLogger("bq.features")
 #directories
 
 FEATURES_STORAGE_FILE_DIR = data_path('features')
-FEATURES_TABLES_FILE_DIR = os.path.join(FEATURES_STORAGE_FILE_DIR ,'feature_tables\\')
-FEATURES_TEMP_IMAGE_DIR = os.path.join(FEATURES_STORAGE_FILE_DIR,'feature_temp_images\\')
+from .ID import FEATURES_TABLES_FILE_DIR
+#FEATURES_TABLES_FILE_DIR = os.path.join(FEATURES_STORAGE_FILE_DIR ,'feature_tables\\')
+FEATURES_TEMP_IMAGE_DIR = os.path.join(FEATURES_STORAGE_FILE_DIR,'feature_temp_images')
 FEATURES_CONTOLLERS_DIR = bq.features.controllers.__path__[0]
 EXTRACTOR_DIR = os.path.join(FEATURES_CONTOLLERS_DIR,'extractors')
 
@@ -125,8 +126,7 @@ class Feature_Achieve(dict):
                         log.debug('Imported Feature: %s'%item.name)
                         self[item.name] = item
             except Exception,e:                                   #feature failed to import
-                log.debug('Failed Imported Feature: %s'%module)
-                traceback.print_exc()
+                log.exception('Failed Imported Feature: %s'%module)
 
     def __missing__(self, feature_type):
         abort(404,'feature type:'+feature_type+' not found')
@@ -166,9 +166,10 @@ class IDTable():
             abort(500, 'ERROR: Too many values returned from the IDTable')
             
         elif len(value)<1:
-            self.Table.append(uri,'dumbnumber')
+            self.Table.append(uri,'dummy_value')
             value = self.Table.query(query)
-            value=value['idnumber']
+            if value:
+                value=value['idnumber']
             #value = self.Table.FeatureClass.temptable[0]['idnumber']
         else:
             value = value['idnumber']
