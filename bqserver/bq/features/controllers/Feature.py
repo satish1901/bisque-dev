@@ -121,25 +121,6 @@ class ImageImport():
             f.flush()
             f.close()
         
-#        #Hack for amir
-#        #except only from data_service so cannot run image_service operations
-#        from bq.api.comm import BQServer
-#        from bq.api.util import fetch_image_pixels
-#        username = 'botanicam'
-#        password = 'plantvrl'
-#
-#        Session=BQServer()
-#        Session.authenticate_basic(username,password,'http://bisque.ece.ucsb.edu')
-#        content=Session.fetch( uri )
-#        
-#        if not content:
-#            abort(404, 'Image not found')
-#            
-#        f = open(self.path, 'wb')
-#        f.write(content.read())
-#        f.flush()
-#        f.close()
-        
     def returnpath(self):       
         return self.path
     
