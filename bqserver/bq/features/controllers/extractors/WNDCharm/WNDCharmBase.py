@@ -1,7 +1,8 @@
 from PyWNDCharmFeatureList import feature_list
-from PyWNDCharmFeatures import ReturnWNDCharmFeature
+from PyWNDCharmFeatures import extractWNDCharmFeature
 from bq.features.controllers import Feature #import base class
 from pylons.controllers.util import abort
+import cv2
 import logging
 log = logging.getLogger("bq.features")
 
@@ -22,10 +23,11 @@ class WNDCharm(Feature.Feature): #base WNDCharm feature class
         """ Append descriptors to SIFT h5 table """
         Im = Feature.ImageImport(uri) #importing image from image service
         image_path = Im.returnpath()
-
+        im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE) #CV_LOAD_IMAGE_UNCHANGED
         # extract the feature keypoints and descriptor
         #I=Image.open(image_path)
-        descriptor = ReturnWNDCharmFeature(self.name,image_path)
+        
+        descriptor = extractWNDCharmFeature(im,self.name)
         del Im 
  
             

@@ -12,20 +12,9 @@ import inspect
 #    add the other features
 
 path=os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) #find current dir of the file
-path=path+'/lib' 
+path=path+'/lib'
 
-# Load in MPEG7Fex library wrapper
-_MPEG7FlexLib = None
-for directory in sys.path:
-    try:
-        _MPEG7FlexLib = np.ctypeslib.load_library('_MPEG7FlexLib', path)
-        break
-    except:
-        pass
-
-if _MPEG7FlexLib is None:
-    raise 'MPEG7FlexLib not found.'
-
+_MPEG7FlexLib = np.ctypeslib.load_library('_MPEG7FlexLib', path)
 
 def extractCSD(im, descSize=64):
     """
@@ -39,7 +28,7 @@ def extractCSD(im, descSize=64):
     _MPEG7FlexLib.computeCSD.restype = c_void_p
     
     im = tmp.astype(np.intc)
-    result = np.empty([1,descSize], dtype=np.double)
+    result = np.empty([descSize], dtype=np.double)
     _MPEG7FlexLib.computeCSD(im, descSize, int(rows), int(cols), result)
     return result
 
@@ -56,7 +45,7 @@ def extractSCD(im, descSize=64):
     _MPEG7FlexLib.computeSCD.restype = c_void_p
 
     im = tmp.astype(np.intc)
-    result = np.empty([1,descSize], dtype=np.double)
+    result = np.empty([descSize], dtype=np.double)
     _MPEG7FlexLib.computeSCD(im, descSize, int(rows), int(cols), result)
     return result
 
@@ -73,7 +62,7 @@ def extractCLD(im, numYCoef=64, numCCoef = 28):
     _MPEG7FlexLib.computeCLD.restype = c_void_p
 
     im = tmp.astype(np.intc)
-    result = np.empty([1,(numYCoef+2*numCCoef)], dtype=np.double)
+    result = np.empty([(numYCoef+2*numCCoef)], dtype=np.double)
     _MPEG7FlexLib.computeCLD(im, numYCoef, numCCoef, int(rows), int(cols), result)
     return result
 
@@ -108,8 +97,8 @@ def extractDCD(im, normalize=True, variance=False, spatial=False, bin1=32, bin2=
     else:
         dcdlength = 4 * ndc[0,0]
     
-    results = np.empty([1,dcdlength], dtype=np.double)
-    spatial_output = np.empty([1,1], dtype=np.intc)
+    results = np.empty([dcdlength], dtype=np.double)
+    spatial_output = np.empty([1], dtype=np.intc)
     _MPEG7FlexLib.returnDCD( dcd, variance, spatial, results, spatial_output)
     
     if spatial:
@@ -135,7 +124,7 @@ def extractHTD(im, layerFlag=True):
     else:
         descSize = 32
         
-    result = np.empty([1,descSize], dtype=np.double)
+    result = np.empty([descSize], dtype=np.double)
     _MPEG7FlexLib.computeHTD(im, layerFlag, int(rows), int(cols), result)
     return result
 
@@ -151,7 +140,7 @@ def extractEHD(im):
     _MPEG7FlexLib.computeEHD.restype = c_void_p
     
     im = tmp.astype(np.intc)
-    result = np.empty([1,80], dtype=np.double)
+    result = np.empty([80], dtype=np.double)
     _MPEG7FlexLib.computeEHD(im, int(rows), int(cols), result)
     return result
 
@@ -175,7 +164,7 @@ def extractRSD(im, mask):
     
     im = tmp.astype(np.intc)
     mask = mask.astype(np.intc)
-    result = np.empty([1,35], dtype=np.double)
+    result = np.empty([35], dtype=np.double)
     _MPEG7FlexLib.computeRSD(im, mask, int(rows), int(cols), result)
     return result
 

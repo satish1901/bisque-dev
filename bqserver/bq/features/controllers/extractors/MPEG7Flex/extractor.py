@@ -113,11 +113,11 @@ class DCD(Feature.Feature):
         DCD = extractDCD(im)
         #log.debug('descriptors: %s'%descriptors)
         #log.debug('length of descriptors: %s'%len(descriptors[0]))
-        if len(DCD[0])>self.length:
+        if len(DCD)>self.length:
             log.debug('Warning: greater than 64 dimensions')
             desc_len = self.length
         else:
-            desc_len = len(DCD[0])
+            desc_len = len(DCD)
         descriptors = np.zeros((1,self.length))
         descriptors[:,0:desc_len]=DCD
         
