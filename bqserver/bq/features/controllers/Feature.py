@@ -12,15 +12,11 @@ import logging
 import string
 
 import bq
-from bq.util.paths import data_path
 from bq.image_service.controllers.locks import Locks
 from pylons.controllers.util import abort
 
+from .var import FEATURES_STORAGE_FILE_DIR,FEATURES_TABLES_FILE_DIR,FEATURES_TEMP_IMAGE_DIR
 
-FEATURES_STORAGE_FILE_DIR = data_path('features')
-FEATURES_TABLES_FILE_DIR = os.path.join(FEATURES_STORAGE_FILE_DIR ,'feature_tables\\')
-FEATURES_TEMP_IMAGE_DIR = os.path.join(FEATURES_STORAGE_FILE_DIR,'feature_temp_images\\')
-FEATURES_TEMP_file_DIR = os.path.join(FEATURES_STORAGE_FILE_DIR,'temp_files\\')
 log = logging.getLogger("bq.features")
 
 
@@ -216,8 +212,8 @@ class XMLImport():
         
         #hack for amir
         from bq.api.comm import BQSession
-        username = 'botanicam'
-        password = 'plantvrl'
+        username = 'user'
+        password = 'pass'
         self.uri = uri
         BQ=BQSession()
         BQ.init_local(username,password,bisque_root=r'http://bisque.ece.ucsb.edu',create_mex=False)

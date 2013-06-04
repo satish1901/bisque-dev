@@ -4,46 +4,69 @@ from numpy.ctypeslib import ndpointer
 import numpy as np
 import sys
 import inspect, os
+import cv2
 
 path=os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) #find current dir of the file
 path=path+'/lib' 
 _WNDCharmFeatures = np.ctypeslib.load_library('_WNDCharmLib', path)
 
-
-def WNDCharmFeatures(filename,featuresize, extractor, transform1, transform2):
+def WNDCharmFeatures( im, featuresize, extractor, transform1, transform2, is_color_transform):
     """
         Interface with the WNDCharm in C++
     """
-    _WNDCharmFeatures.WNDCharmFeatures.argtypes = [ \
-            c_char_p,\
-            c_char_p,\
-            c_char_p,\
-            c_char_p,\
-            np.ctypeslib.ndpointer(dtype = np.double),\
-            ]
+    tmp = np.asarray(im)
+    _WNDCharmFeatures.WNDCharmFeatures.argtypes = [ 
+        np.ctypeslib.ndpointer(dtype = np.intc ),                                       
+        c_int,
+        c_int,
+        c_char_p,
+        c_char_p,
+        c_char_p,
+        np.ctypeslib.ndpointer(dtype = np.double),
+        c_bool,
+        ]
     _WNDCharmFeatures.WNDCharmFeatures.restype = c_void_p
     
-    feature = np.empty([90], dtype=np.double)
-    _WNDCharmFeatures.WNDCharmFeatures(filename, extractor, transform1, transform2, feature )
-    
-    return feature[:featuresize]
+    if len(tmp.shape)==3:
+        (height,width,channel)=tmp.shape
+        color = 1
+    else:
+        (height,width)=tmp.shape
+        color = 0
+
+    if is_color_transform==color:
+        im = tmp.astype(np.intc)
+        feature = np.empty([featuresize], dtype=np.double)
+        _WNDCharmFeatures.WNDCharmFeatures( im, height, width, extractor, transform1, transform2, feature, color )
+    else:
+        print 'Warning: Incorrect Image Channels'
+        feature = None
+    return feature
 
 
-def ReturnWNDCharmFeature(feature_name,image_file):
+def extractWNDCharmFeature(im, feature_name):
     """
-        Given the feature name and the image file name ReturnWNDCharmFeature returns
+        Given the feature name and the numpy image matrix ReturnWNDCharmFeature returns
         the feature from WNDCharm
-        All the features that this calculates are in the WNDCharmFeatureList.py file
     """
     from PyWNDCharmFeatureList import feature_list
-    
     feature_info=feature_list[feature_name]
     if not feature_info:
         print "Not included in the feature list"
         return
-    elif feature_info[4]==True:
-        print "Require Grey Scale: Given Colored Image"
-        return
     else:
-        return WNDCharmFeatures(image_file,feature_info[3],feature_info[0],feature_info[1],feature_info[2])
+        return WNDCharmFeatures(im,feature_info[3],feature_info[0],feature_info[1],feature_info[2],feature_info[4])
+
+
+if __name__ == '__main__':
+    #test code
+    image_path = 'small_test.tiff'
+    #im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
+    im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
+    featuresize = 32
+    extractor = "Chebyshev Coefficients"
+    transform1 = "Color Transform"
+    transform2 = "Empty Transform"
+    
+    feature = WNDCharmFeatures(im, featuresize, extractor, transform1, transform2)
 
