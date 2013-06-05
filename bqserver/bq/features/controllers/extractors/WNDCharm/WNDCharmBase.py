@@ -3,6 +3,7 @@ from PyWNDCharmFeatures import extractWNDCharmFeature
 from bq.features.controllers import Feature #import base class
 from pylons.controllers.util import abort
 import cv2
+import numpy as np
 import logging
 log = logging.getLogger("bq.features")
 
@@ -25,7 +26,9 @@ class WNDCharm(Feature.Feature): #base WNDCharm feature class
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE) #CV_LOAD_IMAGE_UNCHANGED
         # extract the feature keypoints and descriptor
-        #I=Image.open(image_path)
+        im=np.asarray(im)
+        if not im.any():
+            abort(415, 'Format was not supported')
         
         descriptor = extractWNDCharmFeature(im,self.name)
         del Im 

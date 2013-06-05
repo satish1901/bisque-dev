@@ -4,7 +4,9 @@
 import cv2
 import cv
 import logging
+import numpy as np
 from bq.features.controllers import Feature #import base class
+from pylons.controllers.util import abort
 log = logging.getLogger("bq.features")
 
 class BRISK(Feature.Feature):
@@ -29,6 +31,9 @@ class BRISK(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im     
+        im=np.asarray(im)
+        if not im.any():
+            abort(415, 'Format was not supported')
         
         fs = cv2.BRISK().detect(im)                             # keypoints
         
@@ -70,6 +75,9 @@ class BRISKc(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im     
+        im=np.asarray(im)
+        if not im.any():
+            abort(415, 'Format was not supported')
         
         imagesize=im.shape
         if imagesize[0]>imagesize[1]:
@@ -121,6 +129,9 @@ class ORB(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im      
+        im=np.asarray(im)
+        if not im.any():
+            abort(415, 'Format was not supported')
         
         fs = cv2.ORB().detect (im)                             # keypoints
         
@@ -164,6 +175,10 @@ class ORBc(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im      
+        im=np.asarray(im)
+        if not im.any():
+            abort(415, 'Format was not supported')
+        
         imagesize=im.shape
         if imagesize[0]>imagesize[1]:
             scale=imagesize[1]
@@ -208,6 +223,9 @@ class SIFT(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im     
+        im=np.asarray(im)
+        if not im.any():
+            abort(415, 'Format was not supported')
         
         fs = cv2.SIFT().detect(im)                             # keypoints
         
@@ -250,6 +268,10 @@ class SIFTc(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im     
+        im=np.asarray(im)
+        if not im.any():
+            abort(415, 'Format was not supported')
+        
         imagesize=im.shape
         if imagesize[0]>imagesize[1]:
             scale=imagesize[1]/3
@@ -301,6 +323,10 @@ class SIFTg(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im     
+        im=np.asarray(im)
+        if not im.any():
+            abort(415, 'Format was not supported')
+        
         imagesize=im.shape
         fs=[]
         for vertex in vertices:
@@ -346,6 +372,9 @@ class SURF(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im
+        im=np.asarray(im)
+        if not im.any():
+            abort(415, 'Format was not supported')
         
         (kpts,descriptors)=cv.ExtractSURF(cv.fromarray(im), None, cv.CreateMemStorage(), (extended, HessianThresh, nOctaves, nOctaveLayers)) #calculating descriptor
         
@@ -381,6 +410,10 @@ class SURFc(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im
+        im=np.asarray(im)
+        if not im.any():
+            abort(415, 'Format was not supported')
+        
         imagesize=im.shape
         if imagesize[0]>imagesize[1]:
             scale=imagesize[1]
@@ -423,6 +456,9 @@ class FREAKc(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im     
+        im=np.asarray(im)
+        if not im.any():
+            abort(415, 'Format was not supported')
         
         imagesize=im.shape
         if imagesize[0]>imagesize[1]:

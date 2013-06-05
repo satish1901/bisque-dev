@@ -5,7 +5,9 @@ import cv
 import numpy as np
 from pyMPEG7FlexLib import extractCSD,extractSCD,extractCLD,extractDCD,extractHTD,extractEHD,extractRSD
 import bq.features.controllers.Feature as Feature #import base class
-
+from pylons.controllers.util import abort
+import logging
+log = logging.getLogger("bq.features")
 
 class SCD(Feature.Feature):
     """
@@ -27,6 +29,9 @@ class SCD(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
         del Im
+        im=np.asarray(im)
+        if not im.any():
+            abort(415, 'Format was not supported')
         
         descriptors = extractSCD(im, descSize=256) #calculating descriptor
         
@@ -52,6 +57,9 @@ class HTD2(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im
+        im=np.asarray(im)
+        if not im.any():
+            abort(415, 'Format was not supported')
         
         descriptors = extractHTD(im) #calculating descriptor
         
@@ -82,6 +90,9 @@ class EHD2(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
         del Im
+        im=np.asarray(im)
+        if not im.any():
+            abort(415, 'Format was not supported')
         
         descriptors = extractEHD(im) #calculating descriptor
         
@@ -106,10 +117,11 @@ class DCD(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
         del Im
+        im=np.asarray(im)
+        if not im.any():
+            abort(415, 'Format was not supported')
         
-        
-        
-         #calculating descriptor
+        #calculating descriptor
         DCD = extractDCD(im)
         #log.debug('descriptors: %s'%descriptors)
         #log.debug('length of descriptors: %s'%len(descriptors[0]))
@@ -146,6 +158,9 @@ class CSD(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
         del Im
+        im=np.asarray(im)
+        if not im.any():
+            abort(415, 'Format was not supported')
         
         descriptors = extractCSD(im, descSize=64) #calculating descriptor
         
@@ -173,65 +188,69 @@ class CLD(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
         del Im
+        im=np.asarray(im)
+        if not im.any():
+            abort(415, 'Format was not supported')
         
         descriptors = extractCLD(im, numYCoef=64, numCCoef = 28)
         self.setRow(uri, idnumber, descriptors)
 
+#shapes are not fully supported yet
 
-class RSD(Feature.Feature):
-    """
-        Initalizes table and calculates the SURF descriptor to be
-        placed into the HDF5 table.
-    """
-    
-    #parameters
-    file = 'features_rsd.h5'
-    name = 'RSD'
-    description = """Region Shape Descritpor"""
-    length = 35 
-        
-    def appendTable(self, uri, idnumber):
-        """ Append descriptors to SURF h5 table """
-        #initalizing
-
-        self.uri = uri
-        xml=Feature.XMLImport(self.uri+'?view=deep')
-        tree=xml.returnxml()
-        if tree.tag=='polygon':
-            vertices = tree.xpath('vertex')
-            contour = []
-            for vertex in vertices:
-                contour.append((int(float(vertex.attrib['x'])),int(float(vertex.attrib['y']))))
-        else:
-            abort(404, 'polygon not found: must be a polygon gobject')
-        
-        
-        gobject = self.uri.replace('/',' ').replace('?',' ').split()
-        image_id=[]
-        for i,split in enumerate(gobject):
-            if split == 'image':
-                image_id.append(gobject[i+1])
-        
-        if len(image_id)>1:
-            abort(500,'too many ids')
-        elif len(image_id)<1:
-            about(500,'no ids')
-        else:
-            self.image_uri = 'http://bisque.ece.ucsb.edu/data_service/image/'+image_id[0]
-        
-        Im = Feature.ImageImport(self.image_uri) #importing image from image service
-        image_path = Im.returnpath()
-        im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
-        
-        col,row,channel = im.shape
-        #creating mask
-        img = Image.new('L', (row, col), 0)
-        ImageDraw.Draw(img).polygon(contour, outline=1, fill=1)
-        mask = np.array(img)
-        
-        del Im
-        
-        #initalizing rows for the table
-        
-        descriptors = extractRSD(im, mask)
-        self.setRow(uri, idnumber, descriptors)
+#class RSD(Feature.Feature):
+#    """
+#        Initalizes table and calculates the SURF descriptor to be
+#        placed into the HDF5 table.
+#    """
+#    
+#    #parameters
+#    file = 'features_rsd.h5'
+#    name = 'RSD'
+#    description = """Region Shape Descritpor"""
+#    length = 35 
+#        
+#    def appendTable(self, uri, idnumber):
+#        """ Append descriptors to SURF h5 table """
+#        #initalizing
+#
+#        self.uri = uri
+#        xml=Feature.XMLImport(self.uri+'?view=deep')
+#        tree=xml.returnxml()
+#        if tree.tag=='polygon':
+#            vertices = tree.xpath('vertex')
+#            contour = []
+#            for vertex in vertices:
+#                contour.append((int(float(vertex.attrib['x'])),int(float(vertex.attrib['y']))))
+#        else:
+#            abort(404, 'polygon not found: must be a polygon gobject')
+#        
+#        
+#        gobject = self.uri.replace('/',' ').replace('?',' ').split()
+#        image_id=[]
+#        for i,split in enumerate(gobject):
+#            if split == 'image':
+#                image_id.append(gobject[i+1])
+#        
+#        if len(image_id)>1:
+#            abort(500,'too many ids')
+#        elif len(image_id)<1:
+#            about(500,'no ids')
+#        else:
+#            self.image_uri = 'http://bisque.ece.ucsb.edu/data_service/image/'+image_id[0]
+#        
+#        Im = Feature.ImageImport(self.image_uri) #importing image from image service
+#        image_path = Im.returnpath()
+#        im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
+#        
+#        col,row,channel = im.shape
+#        #creating mask
+#        img = Image.new('L', (row, col), 0)
+#        ImageDraw.Draw(img).polygon(contour, outline=1, fill=1)
+#        mask = np.array(img)
+#        
+#        del Im
+#        
+#        #initalizing rows for the table
+#        
+#        descriptors = extractRSD(im, mask)
+#        self.setRow(uri, idnumber, descriptors)

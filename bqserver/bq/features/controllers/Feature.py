@@ -106,14 +106,23 @@ class ImageImport():
     def __init__(self, uri):
         import urllib, urllib2, cookielib
         self.uri=uri
-        content = urllib.urlopen(self.uri)
+        header = {'Accept':'text/xml'}
+        req = urllib2.Request(url=uri,headers=header)
+        #req.add_header('Referer', 'http://www.python.org/')
+        try:
+            content = urllib2.urlopen(req)
+        except urllib2.HTTPError, e:
+            if e.code>=400:
+                abort(e.code)
+            else:
+                log.exception('Failed to get a correct http response code')
+                abort(500)
+            
         d =[random.choice(string.ascii_lowercase + string.digits) for x in xrange(10)]
         s = "".join(d)
         file = 'image'+ str(s)+'.tiff'
         self.path = os.path.join( FEATURES_TEMP_IMAGE_DIR, file)
-        
-        if not content:
-            abort(404, 'Image not found')
+            
         
         with Locks(None, self.path):
             f = open(self.path, 'wb') 
