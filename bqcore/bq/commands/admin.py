@@ -187,6 +187,7 @@ class deploy(object):
 
     def deploy_public(self):
         ''
+        from bq.util.copylink import copy_symlink
         import pkg_resources
         try:
             os.makedirs (self.dir)
@@ -211,7 +212,7 @@ class deploy(object):
                     path = os.path.join(self.dir, static_path)
                     if os.path.exists (path):
                         os.unlink (path)
-                    os.symlink (r, path)
+                    copy_symlink (r, path)
                     print "Deployed ", r
             except Exception, e:
                 #print "Exception: ", e
@@ -222,21 +223,8 @@ class deploy(object):
             path = os.path.join(self.dir, os.path.basename(l))
             if os.path.exists (path):
                 os.unlink (path)
-            os.symlink (os.path.join('..', l), path)
-        #check if grunt exists, if so, run it to pack and minify javascript
-        msg = """Unknown error while trying to run grunt. Are NodeJS and Grunt installed?
- install it by typing 'npm install -g grunt'"""
-        try:
-            r = subprocess.call(["grunt"])
-            if r != 0:
-                print msg
-                return
-            print "To use minified Javascript, edit site.cfg and configure bisque.js_environment = production"
-
-        except OSError as e:
-            if e.errno == errno.ENOENT:
-                msg =  "grunt not found.\n install it by typing 'npm install -g grunt'"
-            print msg
+            print "%s -> %s " % (os.path.join('..', l), path)
+            copy_symlink (os.path.join('..', l), path)
 
 class preferences (object):
     desc = "read and/or update preferences"
