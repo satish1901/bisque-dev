@@ -180,7 +180,7 @@ class deploy(object):
 
     def run(self):
         #if 'public' in self.args:
-        self.dir = self.args.pop(0) if len(self.args)>0 else 'public'
+        self.public_dir = self.args.pop(0) if len(self.args)>0 else 'public'
         self.deploy_public()
         
         
@@ -190,13 +190,26 @@ class deploy(object):
         from bq.util.copylink import copy_symlink
         import pkg_resources
         try:
-            os.makedirs (self.dir)
+            print "Creating %s" % self.public_dir
+            os.makedirs (self.public_dir)
         except OSError, e:
             pass
+        
+        rootdir = os.getcwd()
+        coredir = os.path.join(rootdir, 'bqcore/bq/core/public/').replace('/', os.sep)
+
+        os.chdir(self.public_dir)
+        currdir = os.getcwd()
+
+
         for x in pkg_resources.iter_entry_points ("bisque.services"):
             try:
                 #print ('found static service: ' + str(x))
-                service = x.load()
+                try:
+                    service = x.load()
+                except Exception, e:
+                    print "Problem loading %s: %s" % (x, e)
+                    continue
                 if not hasattr(service, 'get_static_dirs'):
                     continue
                 staticdirs  = service.get_static_dirs()
@@ -204,27 +217,40 @@ class deploy(object):
                     #print ( "adding static: %s %s" % ( d,r ))
                     static_path =  r[len(d)+1:]
                     #print "path =", os.path.dirname(static_path)
+                    basedir = os.path.dirname(static_path)
                     try:
-                        os.makedirs (os.path.join(self.dir, os.path.dirname(static_path)))
+                        #os.makedirs (os.path.join(self.dir, os.path.dirname(static_path)))
+                        os.makedirs (os.path.dirname(static_path))
+                        
                     except OSError,e:
                         pass
                     #print "link ", (r, os.path.join('public', static_path))
-                    path = os.path.join(self.dir, static_path)
-                    if os.path.exists (path):
-                        os.unlink (path)
-                    copy_symlink (r, path)
+                    dest = os.path.join(currdir, static_path)
+                    if os.path.exists (dest):
+                        os.unlink (dest)
+                    relpath = os.path.relpath(r, os.path.dirname(dest))
+                    #print "%s -> %s" % (relpath, dest)
+
+                    copydir = os.getcwd()
+                    os.chdir(basedir)
+                    copy_symlink (relpath, dest)
+                    os.chdir(copydir)
                     print "Deployed ", r
             except Exception, e:
-                #print "Exception: ", e
+                print "Exception: ", e
                 pass
         # Link all core dirs
         import glob
-        for l in glob.glob('bqcore/bq/core/public/*'):
-            path = os.path.join(self.dir, os.path.basename(l))
-            if os.path.exists (path):
-                os.unlink (path)
-            print "%s -> %s " % (os.path.join('..', l), path)
-            copy_symlink (os.path.join('..', l), path)
+        for l in glob.glob(os.path.join(coredir, '*')):
+            dest = os.path.join(currdir, os.path.basename(l))
+            if os.path.exists (dest):
+                os.unlink (dest)
+                
+            relpath = os.path.relpath(l, currdir)
+            #print "%s -> %s " % (relpath, dest)
+            copy_symlink (relpath, dest)
+        os.chdir (rootdir)
+
 
 class preferences (object):
     desc = "read and/or update preferences"
