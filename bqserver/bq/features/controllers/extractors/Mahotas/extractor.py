@@ -3,8 +3,10 @@
 """
 import cv2
 import cv
+import numpy as np
 from mahotas.features import haralick
 from bq.features.controllers import Feature #import base class
+from pylons.controllers.util import abort
 
 class HAR(Feature.Feature):
     """
@@ -27,6 +29,9 @@ class HAR(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im
+        im=np.asarray(im)
+        if not im.any():
+            abort(415, 'Format was not supported')
         
         #calculate descriptor 
         descritptors = haralick(im)
@@ -55,6 +60,9 @@ class LBP(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im
+        im=np.asarray(im)
+        if not im.any():
+            abort(415, 'Format was not supported')
         
          #calculating descriptor\
         radius = 5
@@ -84,6 +92,9 @@ class LBPbro(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im
+        im=np.asarray(im)
+        if not im.any():
+            abort(415, 'Format was not supported')
         
          #calculating descriptor\
         imagesize=im.shape
@@ -123,6 +134,9 @@ class PFTAS(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
         del Im
+        im=np.asarray(im)
+        if not im.any():
+            abort(415, 'Format was not supported')
 
         descritptor = pftas(im)
         #initalizing rows for the table
@@ -148,7 +162,9 @@ class TAS(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
         del Im
-
+        im=np.asarray(im)
+        if not im.any():
+            abort(415, 'Format was not supported')
         
         descriptor = tas(im)
         #initalizing rows for the table
@@ -174,6 +190,9 @@ class ZM(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im
+        im=np.asarray(im)
+        if not im.any():
+            abort(415, 'Format was not supported')
         
         radius=8
         degree=8

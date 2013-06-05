@@ -120,8 +120,8 @@ class Feature_Achieve(dict):
                     if inspect.isclass(item) and issubclass(item, Feature.Feature):
                         log.info('Imported Feature: %s'%item.name)
                         self[item.name] = item
-            except Exception,e:                                   #feature failed to import
-                log.exception('Failed Imported Feature: %s'%module)
+            except StandardError: #need to pick a narrower error band but not quite sure right now
+                log.exception('Failed Imported Feature: %s'%module) #failed to import feature 
 
     def __missing__(self, feature_type):
         abort(404,'feature type:'+feature_type+' not found')
@@ -161,6 +161,9 @@ class IDTable():
         elif len(id)<1:
             self.idtable.append(uri,'dumbnumber') #a filler value to keep the structure of HDF5Ftables the same
             id = self.idtable.query(query)
+            if not id:
+                log.debug('id: %s'%id)
+                abort(500, 'ERROR: Cannot read from HDF5 id tables')
             id = id['idnumber'][0]
         else:
             id = id['idnumber'][0]
@@ -220,17 +223,18 @@ class FeatureList(object):
     def __iter__(self):
         return iter(self.f_list)
     
-    def iappend(self,index):
-        """
-        appends to the list a feature info and feature called with the index from the table
-        """
-        id = IDTable().returnURI( feature_attributes['idnumber'] ) 
-        row=self.HDF5_Table[index]
-        r=append_fields(row,'id',np.array([id]),'i4',usemask=False)
-        if self.f_list.size<1:
-            self.f_list = r
-        self.f_list = np.append(self.f_list,r,axis=0)
-        return
+#    def iappend(self,index):
+#        """
+#        appends to the list a feature info and feature called with the index from the table
+#        """
+#        id = IDTable().returnURI( feature_attributes['idnumber'] ) 
+#        row=self.HDF5_Table[index]
+#        r=append_fields(row,'id',np.array([id]),'i4',usemask=False)
+#        if self.f_list.size<1:
+#            self.f_list = r
+#        else:
+#            self.f_list = np.append(self.f_list,r,axis=0)
+#        return
     
     def uappend(self,uri,id):
         """
@@ -241,6 +245,11 @@ class FeatureList(object):
         if row.size<1: #nothing matched from the table
             self.Table.append(uri, id) #add feature to the table and requery
             row=self.Table.query(query)
+            if row.size<1:
+                log.debug('id: %s'%id)
+                log.debug('row: %s'%row)
+                abort(500, 'ERROR: Cannot read from HDF5 feature tables')
+                
         for r in row:
             r=append_fields(r,'uri',np.array([uri]),'|S200',usemask=False)
             if self.f_list.size<1:
@@ -319,7 +328,11 @@ class HDF5Table(object):
             Calls the feature class to calculate feature and then appends the feature
             to the feature.h5 file all given by the feature class
         """
+        #try:
         self.FeatureClass.appendTable(uri, id) #calculates the features
+        #except StandardError: #need to pick a narrower error band but not quite sure right now
+        #    log.exception('Failed to extract feature: %s'%self.FeatureClass.name)
+        #    abort(500,'Failed to extract feature: %s'%self.FeatureClass.name)
         with Locks(None, self.FeatureClass.path):
             h5file=tables.openFile(self.FeatureClass.path,'a', title=self.FeatureClass.name)
             table=h5file.root.values
@@ -330,7 +343,7 @@ class HDF5Table(object):
                 r.append()
             table.flush()
             h5file.close()
- 
+
     def delete(self,query=None):
         """
             Deletes feature with query is given the table is deleted and a new tables

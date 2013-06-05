@@ -7,6 +7,10 @@ import cv
 
 from bq.features.controllers import Feature #import base class
 from pyVRLLib import extractEHD, extractHTD
+from pylons.controllers.util import abort
+import logging
+import numpy as np
+log = logging.getLogger("bq.features")
 
 class EHD(Feature.Feature):
     """
@@ -30,6 +34,9 @@ class EHD(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im    
+        im=np.asarray(im)
+        if not im.any():
+            abort(415, 'Format was not supported')
         
         descriptors=extractEHD(im)
         
@@ -67,6 +74,10 @@ class HTD(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im    
+
+        im=np.asarray(im)
+        if not im.any():
+            abort(415, 'Format was not supported')
         
         #check size and return a warning  
         if max(im.shape)>1000:
