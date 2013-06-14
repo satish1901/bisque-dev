@@ -330,12 +330,18 @@ class BlobServer(RestController, ServiceMixin):
         'create a resource from a blob and return new resource'
         # hashed filename + stuff
 
-        filename = resource.get ('name')
+        perm     = resource.get('permission', 'private')
+        filename = resource.get('name')
         resource.set('resource_type', resource.get('resource_type') or guess_type(filename))
         # KGK  
         # These are redundant (filename is the attribute name name upload is the ts
-        resource.insert(0, etree.Element('tag', name="filename", value=filename))
-        resource.insert(1, etree.Element('tag', name="upload_datetime", value=datetime.now().isoformat(' '), type='datetime' ))
+        resource.insert(0, etree.Element('tag', name="filename", value=filename, permission=perm))
+        resource.insert(1, etree.Element('tag', 
+                                         name="upload_datetime", 
+                                         value=datetime.now().isoformat(' '), 
+                                         type='datetime',
+                                         permission=perm),
+                        )
 
         log.info ("NEW RESOURCE <= %s" % (etree.tostring(resource)))
         return data_service.new_resource(resource = resource)

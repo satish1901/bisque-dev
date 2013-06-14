@@ -99,15 +99,18 @@ class BIXImporter(object):
     def save_file (self, fn, **kw):
         '''save a file in the image server and return info'''
         with open(self.fullname(fn), 'rb') as src:
-            return blob_service.store_blob(src, fn, permission = str(self.permission_flag) ) 
+            fr = etree.Element ('file', name=fn, permission=str(self.permission_flag) ) 
+            return blob_service.store_blob(fr, src ) 
             
 
     def save_image (self, fn, **kw):
         '''save a file in the image server and return info'''
         log.debug ("Store new image: " + fn + " " + str(self.image_info)) 
 
+        self.resource = etree.Element('image', name=fn, permission = str(self.permission_flag))
+
         with open(self.fullname(fn), 'rb') as src:
-            self.resource = blob_service.store_blob(src, fn, permission = str(self.permission_flag)) 
+            self.resource = blob_service.store_blob(self.resource, src ) 
 
         if 'uri' in self.resource.attrib:
             self.import_files[fn] = self.resource.get('uri')
@@ -144,8 +147,8 @@ class BIXImporter(object):
             
 
             e = etree.SubElement(self.resource, 'tag', name = 'attached-file')
-            etree.SubElement (e, 'tag', name='original-name', value = bixfile)
-            etree.SubElement (e, 'tag', name='url', type='file', value = rr.get('uri') )
+            etree.SubElement (e, 'tag', name='original-name', value=bixfile)
+            etree.SubElement (e, 'tag', name='url', type='file', value=rr.get('uri') )
 
             # Process all other nodes
             for config in et.getroot().getiterator('config'):
@@ -169,6 +172,9 @@ class BIXImporter(object):
                                          value=value)
                     log.debug ('tag ' + name +':' + value)
 
+            if self.permission_flag == 'published':
+                for child in self.resource.iter():
+                    child.set('permission', self.permission_flag)
             #  Should check if we have local changes (redirect to DS)
             log.debug ("update image" + etree.tostring(self.resource))
             data_service.update (self.resource)
@@ -255,7 +261,8 @@ class BIXImporter(object):
             bfi = etree.parse (StringIO(v))
             for g in bfi.getroot():
                 log.debug ("adding to " + str(type(self.resource)))
-                data_service.append_resource(self.resource, tree = g)
+                self.resource.append(g)
+                #data_service.append_resource(self.resource, tree = g)
 
 #    def tag_microtubule_track_file(self, item, **kw):
 #        '''special uploaded files manual mt tracks'''
@@ -287,11 +294,12 @@ class BIXImporter(object):
                 filepaths.append(path)
                 rr = self.save_file(f)
 
-                e = etree.Element('tag', name = 'attached-file')
-                etree.SubElement (e, 'tag', name='original-name', value = str(f))
-                etree.SubElement (e, 'tag', name='url', type='file', value = rr.get('uri'))
+                e = etree.Element('tag', name='attached-file' )
+                etree.SubElement(e, 'tag', name='original-name', value=str(f))
+                etree.SubElement(e, 'tag' ,name='url', type='file', value=rr.get('uri'))
                 
-                data_service.append_resource(self.resource, tree=e)
+                #data_service.append_resource(self.resource, tree=e)
+                self.resource.append(e)
                 
 
     def tag_image_plane_order(self, item, **kw):
