@@ -34,6 +34,7 @@ from datetime import datetime
 
 import tg
 from tg import config
+from pylons.controllers.util import abort
 
 #Project
 from bq import blob_service
@@ -52,7 +53,7 @@ default_format = 'bigtiff'
 imgsrv_thumbnail_cmd = config.get('bisque.image_service.thumbnail_command', '-depth 8,d -page 1 -display')
 imgsrv_default_cmd = config.get('bisque.image_service.default_command', '-depth 8,d')
 
-imgcnv_needed_version = '1.54.2' # dima: upcoming 1.54
+imgcnv_needed_version = '1.60' # dima: upcoming 1.54
 bioformats_needed_version = '4.3.0' # dima: upcoming 4.4.4
 
 # ImageServer
@@ -1380,6 +1381,47 @@ class DeinterlaceService(object):
         data_token.setImage(fname=ofile, format=default_format)
         return data_token
 
+class TransformService(object):
+    """Provide an image with the requested channel mapping
+       arg = channel,channel...
+       output image will be constructed from channels 1 to n from input image, 0 means black channel
+       remap=display - will use preferred mapping found in file's metadata
+       remap=gray - will return gray scale image with visual weighted mapping from RGB or equal weights for other nuber of channels
+       ex: remap=3,2,1"""
+    def __init__(self, server):
+        self.server = server
+    def __repr__(self):
+        return 'TransformService: Returns an Image with the requested channel mapping, arg = [channel,channel...]|gray|display'
+
+    def hookInsert(self, data_token, image_id, hookpoint='post'):
+        pass
+    def action(self, image_id, data_token, arg):
+
+        arg = arg.lower()
+        ifile = self.server.getInFileName( data_token, image_id )
+        ofile = self.server.getOutFileName( ifile, '.transform_' + arg )
+        log.debug('Transform service: ' + ifile + ' to '+ ofile +' with [' + arg + ']')
+
+        extra = ['-multi']
+        if not os.path.exists(ofile):
+            transforms = {'fourier'      : ['-transform', 'fft'], 
+                          'chebyshev'    : ['-transform', 'chebyshev'], 
+                          'wavelet'      : ['-transform', 'wavelet'],
+                          'radon'        : ['-transform', 'radon'], 
+                          'edge'         : ['-filter',    'edge'],
+                          'wndchrmcolor' : ['-filter',    'wndchrmcolor'], 
+                          'rgb2hsv'      : ['-transform_color', 'rgb2hsv'],
+                          'hsv2rgb'      : ['-transform_color', 'hsv2rgb'] }            
+            
+            if not arg in transforms:
+                abort(400)
+            
+            extra.extend(transforms[arg])
+            imgcnv.convert(ifile, ofile, fmt=default_format, extra=extra)
+
+        data_token.setImage(fname=ofile, format=default_format)
+        return data_token
+
 class SampleFramesService(object):
     '''Returns an Image composed of Nth frames form input
        arg = frames_to_skip
@@ -1514,7 +1556,7 @@ class BioFormatsService(object):
 
     def hookInsert(self, data_token, image_id, hookpoint='post'):
         pass
-
+    
     def resultFilename(self, image_id, data_token):
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, '.ome.tif' )
@@ -1873,6 +1915,7 @@ class ImageServer(object):
                           'projectmin'   : ProjectMinService(self),
                           'negative'     : NegativeService(self),
                           'deinterlace'  : DeinterlaceService(self),
+                          'transform'    : TransformService(self),
                           'sampleframes' : SampleFramesService(self),
                           'frames'       : FramesService(self),
                           'mask'         : MaskService(self),
