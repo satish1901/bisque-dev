@@ -227,7 +227,12 @@ class CellProfiler():
         
         if (command):
             self.bqSession = BQSession().init_mex(self.options.mexURL, self.options.token)
-            command()
+            try:
+                command()
+            except Exception, e:
+                log.exception("During Command %s" % command)
+                self.bqSession.fail_mex(msg = "Exception during %s: %s" (command,  str(e)))
+                sys.exit(1)
             
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
 

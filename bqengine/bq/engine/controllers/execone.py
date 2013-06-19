@@ -3,8 +3,9 @@ import os
 import subprocess
 
 import multiprocessing, logging
-logger = multiprocessing.log_to_stderr()
+#logger = multiprocessing.log_to_stderr()
 #logger.setLevel(multiprocessing.SUBDEBUG)
+logger = logging.getLogger('bq.engine.execone')
 
 def which(program):
     import os
@@ -45,9 +46,12 @@ def execone(params):
         command_line[0] = exe
     logger.debug( 'CALLing %s in %s' % (command_line,  rundir))
     os.chdir(current_dir)
-    return subprocess.call(params['command_line'],
-                           stdout = open(params['logfile'], 'a'),
-                           stderr = subprocess.STDOUT,
-                           shell  = (os.name == "nt"),
-                           cwd    = rundir,
-                           )
+    try:
+        return subprocess.call(params['command_line'],
+                               stdout = open(params['logfile'], 'a'),
+                               stderr = subprocess.STDOUT,
+                               shell  = (os.name == "nt"),
+                               cwd    = rundir,
+                               )
+    except Exception, e:
+        return 1

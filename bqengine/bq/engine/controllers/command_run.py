@@ -21,7 +21,7 @@ from mexparser import MexParser
 
 ENV_MAP = dict ([ (env.name, env) for env in MODULE_ENVS ])
 logging.basicConfig(level=logging.DEBUG, filename='module.log')
-log = logging.getLogger('bq.runtime')
+log = logging.getLogger('bq.engine.runtime')
 
 ####################
 # Helpers
