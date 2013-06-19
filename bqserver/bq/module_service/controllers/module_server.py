@@ -70,6 +70,7 @@ DESCRIPTION
 
 
 """
+import os
 import socket
 import copy
 import Queue
@@ -120,6 +121,7 @@ class MexDelegate (Resource):
     def __init__(self,  url, runner = None):
         super(MexDelegate, self).__init__(uri = url)
         self.runner = runner
+        log.info ("mexdelegate %s" % self.url)
 
     def remap_uri (self, mex):
         uri = mex.get('uri')
@@ -485,7 +487,7 @@ class ServiceDelegate(controllers.WSGIAppController):
 
     def remap_uri (self, mex):
         mexid = mex.get('uri').rsplit('/',1)[1]
-        log.debug ('remap -> %s' % self.mexurl)
+        log.debug ('delegate remap -> %s' % self.mexurl)
         mex.set ('uri', "%s%s" % (self.mexurl, mexid))
 
     # Example process
@@ -846,3 +848,24 @@ class EngineResource (Resource):
 
 
 
+
+import pkg_resources
+def initialize(uri):
+    """ Initialize the top level server for this microapp"""
+    # Add you checks and database initialize
+    #log.debug ("initialize " + uri)
+    service =  ModuleServer(uri)
+    return service
+
+
+def get_static_dirs():
+    """Return the static directories for this server"""
+    package = pkg_resources.Requirement.parse ("bqserver")
+    package_path = pkg_resources.resource_filename(package,'bq')
+    return [(package_path, os.path.join(package_path, 'module_service', 'public'))]
+
+def get_model():
+    from bq.module_service import model
+    return model
+
+__controller__ =  ModuleServer

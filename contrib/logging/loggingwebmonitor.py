@@ -60,6 +60,8 @@ import threading
 import datetime
 import cgi
 import time
+import signal
+import socket
 
 
 WEBHOST = ''
@@ -399,11 +401,33 @@ def main():
     print '%s started at %s' % (webmonitor.__class__.__name__, webmonitor.server_address)
     thr_webmonitor.start()
 
-    recv = LoggingReceiver()
+    try:
+        recv = LoggingReceiver()
+    except socket.error, e:
+        print "Couldn't start"
+        recv = LoggingReceiver()
+        
     thr_recv = threading.Thread(target=recv.serve_forever)
     thr_recv.daemon = True
     print '%s started at %s' % (recv.__class__.__name__, recv.server_address)
     thr_recv.start()
+
+
+    def shutdown():
+        recv.shutdown()
+        recv.server_close()
+        thr_recv.join()
+        webmonitor.shutdown()
+        webmonitor.server_close()
+        thr_webmonitor.join()
+
+    def terminate(signal, frame):
+        print "TERMINATED"
+        shutdown()
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, terminate)
+    signal.signal(signal.SIGTERM, terminate)
 
     #import webbrowser
     #webbrowser.open('http://%s:%s/' % webmonitor.server_address)
@@ -411,12 +435,10 @@ def main():
     while True:
         try: time.sleep(3600)
         except (KeyboardInterrupt, SystemExit):
-            recv.shutdown()
-            thr_recv.join()
-            webmonitor.shutdown()
-            thr_webmonitor.join()
+            shutdown()
             break
 
+    #print 'logging monitor:Shutting down'
     return 0
 
 if __name__ == '__main__':

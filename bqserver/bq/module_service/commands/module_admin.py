@@ -49,6 +49,7 @@ DESCRIPTION
 
 import optparse
 import os
+import sys
 import logging
 import urlparse
 import urllib
@@ -79,6 +80,10 @@ usage = """
   The module engine uri must be specified
   Optionaly include the the module_uri on the server to disambiguate
 """
+
+def error (msg):
+    print >>sys.stderr, msg
+    sys.exit(1)
 
 class module_admin(object):
     desc = 'module options'
@@ -145,6 +150,8 @@ class module_admin(object):
         'list module urls  at engine given path path'
         engine_path = norm(engine_path + '/') 
         modules = self.get_xml( url = urlparse.urljoin(engine_path, '_services'))
+        if modules is None:
+            error ('Cannot read modules from engine: %s' % engine_path)
         return  [ m.get('value') for m in modules ] 
 
     def register_one(self, module_path):
@@ -152,6 +159,8 @@ class module_admin(object):
         module_path = norm(module_path + '/')
         module_register = norm (urlparse.urljoin(bisque_root, "module_service/register_engine") + '/')
         module_xml = self.get_xml( url = urlparse.urljoin(module_path, 'definition'))
+        if module_xml is None:
+            error ("cannot read definition from %s!  Is engine address correct?")
         name = module_xml.get('name')
         if module_xml is not None:
             log.info ("POSTING %s to %s" % (name, module_register))
@@ -231,6 +240,8 @@ class module_admin(object):
         from collections import namedtuple
         Row = namedtuple ('Row', ('name', 'engine', 'module'))
         server_modules = self.get_xml( url = urlparse.urljoin(self.root, 'module_service'))
+        if server_modules is None:
+            error ("No modules registered at %s. Is this a bisque server?" % self.root)
 
         rows = [ Row(name=module.get('name'), engine=module.get('value'), module=module.get ('uri'))  
                  for module in server_modules ] 
