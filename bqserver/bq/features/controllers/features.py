@@ -898,10 +898,8 @@ def initialize(uri):
     """ Initialize the top level server for this microapp"""
     # Add you checks and database initialize
     log.info ("initialize " + uri)
-    
     service =  featuresController(uri)
     #directory.register_service ('features', service)
-
     return service
 
 
