@@ -26,7 +26,7 @@ else:
         
         chunksize = numpy.asarray(self.chunkshape).prod()
         if nrowsinbuf < chunksize:
-            nrowsinbuf = chunksize    
+            nrowsinbuf = chunksize
         
         # Safeguard against row sizes being extremely large
         if nrowsinbuf == 0:

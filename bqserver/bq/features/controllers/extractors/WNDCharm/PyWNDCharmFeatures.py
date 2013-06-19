@@ -55,7 +55,7 @@ def extractWNDCharmFeature(im, feature_name):
         print "Not included in the feature list"
         return
     else:
-        return WNDCharmFeatures(im,feature_info[3],feature_info[0],feature_info[1],feature_info[2],feature_info[4])
+        return WNDCharmFeatures(im,feature_info[3],feature_info[0],"Empty Transform","Empty Transform",feature_info[5])
 
 
 if __name__ == '__main__':
