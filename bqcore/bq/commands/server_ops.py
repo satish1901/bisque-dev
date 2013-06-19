@@ -5,6 +5,7 @@ import pkg_resources
 import getopt
 from urlparse import urlparse
 from ConfigParser import SafeConfigParser
+import shlex
 
 from bq.util.commands import asbool, find_site_cfg
 
@@ -26,20 +27,25 @@ if os.name == 'nt':
             handle = win32api.OpenProcess(win32con.PROCESS_TERMINATE, 0, pid)
             win32api.TerminateProcess(handle, 0)
             win32api.CloseHandle(handle)
+            return True
         except:
             print 'Error terminating %s, the process might be dead' % pid
-            pass
+        return False
         #import subprocess
         #subprocess.call(['taskkill', '/PID', str(pid), '/F'])
 
 else:        
     import signal
+    from bq.util.wait_pid import wait_pid
     def kill_process(pid):
         try:
             pid = os.getpgid(pid)
             os.killpg (pid, signal.SIGTERM)
+            wait_pid(pid)
+            return True
         except OSError, e:
             print "kill process %s failed with %s" % (pid, e)
+        return False
             
 
 #####################################################################
@@ -59,22 +65,19 @@ def readhostconfig (site_cfg):
 
     # Service spec if server.key.url = url
     # Create a dictionary for each host listed
+    # h1.key.key1 = aa
+    # h1.key.key2 = bb
+    # => { 'h1' : { 'key' : { 'key1' : 'val', 'key2' : 'bb' }}}
     servers = {}
     for host_spec, val in service_items:
         path = host_spec.split('.')
-
-        #if not (path[0].startswith('e') or path[0].startswith('h')):
         if not path[0] in hosts:
             continue
-
         param = path[-1]
         d = servers
         for path_el in path[:-1]:
             d = d.setdefault(path_el, {})
         d[param] = val
-        #ign, host_id, param = 
-        #servers.setdefault(host_id, {})[param] = val
-
 
     bisque = { 'top_dir': top_dir,  'root': root, 'servers': servers, 'log_dir': '.', 'pid_dir' : '.' }
     if config.has_option('servers', 'log_dir'):
@@ -199,10 +202,13 @@ def uwsgi_command(command, cfgopt, processes, options, default_cfg_file = None):
 def logger_command(command, cfgopt, processes):
     pidfile = os.path.join(cfgopt['pid_dir'], 'bisque_logger.pid')
 
+    launcher  = shlex.split (cfgopt['logging_server'])
+
     print "%sing logging service" % command
     if command is 'start':
         with open(os.devnull, 'w') as fnull:
-            logger = Popen(cfgopt['logging_server'], stdout=fnull, stderr=fnull, shell=True)
+            #logger = Popen(cfgopt['logging_server'], stdout=fnull, stderr=fnull, shell=True)
+            logger = Popen(launcher, shell= (os.name == 'nt') )
         if logger.returncode is None and logger.pid:
             with open(pidfile, 'w') as pd:
                 pd.write("%s\n" % logger.pid)
@@ -218,15 +224,15 @@ def logger_command(command, cfgopt, processes):
         else:
             print "No pid file for logging server"
         
-        
 
-def operation(command, options, cfg_file=SITE_CFG, *args):
+def operation(command, options, *args):
     """Run a multi-server command to start several bisque jobs
     """
     def verbose(msg):
         if options.verbose:
             print msg
 
+    cfg_file=SITE_CFG
     site_cfg = options.site or find_site_cfg(cfg_file)
     if site_cfg is None:
         print "Cannot find site.cfg.. please make sure you are in the bisque dir"
@@ -258,13 +264,25 @@ def operation(command, options, cfg_file=SITE_CFG, *args):
             verbose("Backend not configured. defaulting to paster")
             backend = 'paster'
 
-        if 'logging_server' in cfgopt:
-            if command in ('stop', 'restart'):
+        if command == 'list':
+            print "ARGS: %s" % (args,)
+            for server, params in  config['servers'].items():
+                print "server %s  : %s " % (server, params)
+            return
+
+        if not args and 'logging_server' in cfgopt:
+            if command in ('restart'):
                 logger_command ('stop', cfgopt, processes)
             if command in ('start', 'restart'):
                 logger_command ('start', cfgopt, processes)
 
         for key, serverspec in sorted(config['servers'].items()):
+
+            if args and key not in args:
+                continue
+
+            print "%sing %s" % (command, key)
+
             cfgopt['server'] = serverspec.pop('server', None)
             cfgopt['url'] = serverspec.pop('url')
             fullurl = urlparse (cfgopt['url'])
@@ -309,6 +327,11 @@ def operation(command, options, cfg_file=SITE_CFG, *args):
                     prepare_log (cfgopt['logfile'])
                     processes = paster_command('start', options, cfgopt, processes, args)
 
+
+
+        if not args and 'logging_server' in cfgopt:
+            if command in ('stop'):
+                logger_command ('stop', cfgopt, processes)
 
         if options.wait:
             for proc in processes:

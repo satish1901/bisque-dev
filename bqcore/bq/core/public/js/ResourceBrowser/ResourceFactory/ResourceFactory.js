@@ -74,7 +74,7 @@ Ext.define('Bisque.ResourceFactoryWrapper',
             var resource = Bisque.ResourceFactory.getResource(config);
             var layoutCls = Bisque.ResourceBrowser.LayoutFactory.getLayout({browser:{layoutKey: config.layoutKey}});
             resource.setSize({width: layoutCls.layoutEl.width, height: layoutCls.layoutEl.height})
-            resource.addCls(layoutCls.layoutCSS);
+            resource.addCls(layoutCls.layoutCSS || '');
 
             BQ.Preferences.get(
             {
@@ -151,8 +151,8 @@ Ext.define('Bisque.Resource',
     {
         var prefs = this.getImagePrefs('ImageParameters') || '?slice=,,{sliceZ},{sliceT}&thumbnail={width},{height}&format=jpeg';
 
-        prefs = prefs.replace('{sliceZ}', config.sliceZ || 1);
-        prefs = prefs.replace('{sliceT}', config.sliceT || 1);
+        prefs = prefs.replace('{sliceZ}', Math.max(config.sliceZ, 1));
+        prefs = prefs.replace('{sliceT}', Math.max(config.sliceT, 1));
         prefs = prefs.replace('{width}', config.width || 150);
         prefs = prefs.replace('{height}', config.height || 150);
         

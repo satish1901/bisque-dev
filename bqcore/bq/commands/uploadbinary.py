@@ -20,7 +20,7 @@ def upload_file(url, filename, user='', passwd='', opts=None):
     auth = urllib2.HTTPBasicAuthHandler(pm)
     try:
         if not opts.dryrun:
-            handle = open(filename)
+            handle = open(filename, 'rb')
             data = {'file': handle,
                     'package':opts.package,
                     'version': opts.version,
@@ -34,7 +34,7 @@ def upload_file(url, filename, user='', passwd='', opts=None):
             #print str( resp.info())
             handle.close()
 
-        handle = open(filename)
+        handle = open(filename, 'rb')
         sha1 = _sha1hash(handle.read())
         handle.close()
         filename = os.path.basename(filename)

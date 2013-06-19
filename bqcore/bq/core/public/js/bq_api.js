@@ -511,6 +511,8 @@ BQObject.prototype.delete_ = function (cb, errorcb) {
     if (this.uri != null) {
         xmlrequest(this.uri, callback(this, 'response_', 'delete', errorcb, cb), 'delete', null, errorcb);
     }
+    else
+        cb();
 }
 
 BQObject.prototype.rename = function(newName, cb, errorcb) {
