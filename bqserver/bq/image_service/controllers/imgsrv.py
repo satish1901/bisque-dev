@@ -1382,16 +1382,14 @@ class DeinterlaceService(object):
         return data_token
 
 class TransformService(object):
-    """Provide an image with the requested channel mapping
-       arg = channel,channel...
-       output image will be constructed from channels 1 to n from input image, 0 means black channel
-       remap=display - will use preferred mapping found in file's metadata
-       remap=gray - will return gray scale image with visual weighted mapping from RGB or equal weights for other nuber of channels
-       ex: remap=3,2,1"""
+    """Provide an image transform
+       arg = transform
+       Available transforms are: fourier, chebyshev, wavelet, radon, edge, wndchrmcolor, rgb2hsv, hsv2rgb
+       ex: transform=fourier"""
     def __init__(self, server):
         self.server = server
     def __repr__(self):
-        return 'TransformService: Returns an Image with the requested channel mapping, arg = [channel,channel...]|gray|display'
+        return 'TransformService: Returns a transformed image, transform=fourier|chebyshev|wavelet|radon|edge|wndchrmcolor|rgb2hsv|hsv2rgb'
 
     def hookInsert(self, data_token, image_id, hookpoint='post'):
         pass
@@ -2242,9 +2240,6 @@ class ImageServer(object):
                 data_token = self.request(action, ident, data_token, args)
                 if data_token.isHttpError():
                     break
-
-            # test output, if it is a file but it does not exist, set 404 error
-            data_token.testFile()
 
             # test output, if it is a file but it does not exist, set 404 error
             data_token.testFile()
