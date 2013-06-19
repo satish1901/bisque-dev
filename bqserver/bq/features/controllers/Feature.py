@@ -12,8 +12,10 @@ import logging
 import string
 
 import bq
+#from bq.image_service.controllers.service import local_file
 from bq.image_service.controllers.locks import Locks
 from pylons.controllers.util import abort
+from bq import image_service
 
 from .var import FEATURES_STORAGE_FILE_DIR,FEATURES_TABLES_FILE_DIR,FEATURES_TEMP_IMAGE_DIR
 
@@ -103,35 +105,46 @@ class Feature(object):
 ###############################################################
 class ImageImport():
     """ imports an image from image service and saves it in the feature temp image dir """
-    def __init__(self, uri):
-        import urllib, urllib2, cookielib
-        self.uri=uri
-        header = {'Accept':'text/xml'}
-        req = urllib2.Request(url=uri,headers=header)
-        #req.add_header('Referer', 'http://www.python.org/')
-        try:
-            content = urllib2.urlopen(req)
-        except urllib2.HTTPError, e:
-            if e.code>=400:
-                abort(e.code)
-            else:
-                log.exception('Failed to get a correct http response code')
-                abort(500)
-            
-        d =[random.choice(string.ascii_lowercase + string.digits) for x in xrange(10)]
-        s = "".join(d)
-        file = 'image'+ str(s)+'.tiff'
-        self.path = os.path.join( FEATURES_TEMP_IMAGE_DIR, file)
-            
+    def __init__(self, uri,file_type='tiff'):
         
-        with Locks(None, self.path):
-            f = open(self.path, 'wb') 
-            f.write(content.read())
-            f.flush()
-            f.close()
         
-    def returnpath(self):       
+        if uri.find('image_service')<1:        
+            import urllib, urllib2, cookielib
+            self.uri=uri
+            header = {'Accept':'text/xml'}
+            req = urllib2.Request(url=uri,headers=header)
+            #req.add_header('Referer', 'http://www.python.org/')
+            try:
+                content = urllib2.urlopen(req)
+            except urllib2.HTTPError, e:
+                if e.code>=400:
+                    abort(404)
+                else:
+                    log.debug('Response Code: %s'%e.code)
+                    log.exception('Failed to get a correct http response code')
+                    abort(500)
+       
+            d =[random.choice(string.ascii_lowercase + string.digits) for x in xrange(10)]
+            s = "".join(d)
+            file = 'image'+ str(s)+'.'+file_type
+            
+            self.path = os.path.join( FEATURES_TEMP_IMAGE_DIR, file)
+                
+            
+            with Locks(None, self.path):
+                f = open(self.path, 'wb') 
+                f.write(content.read())
+                f.flush()
+                f.close()
+        else:
+            self.path = image_service.local_file(uri)
+            log.debug("path: %s"% self.path)
+            if self.path is None:
+                abort(404)
+        
+    def returnpath(self):
         return self.path
+        #return self.path
     
     def __del__(self):
         """ When the ImageImport object is deleted the image path is removed for the temp dir """
@@ -148,7 +161,7 @@ class ImageImport():
 ############################################################### 
 
 class TempImport():
-    """ Keeps track of temp files """
+    """Deals with file produced by feature extractors"""
     status = 'Closed'
     def __init__(self, filetype):
         s = "".join([random.choice(string.ascii_lowercase + string.digits) for x in xrange(10)])
@@ -192,22 +205,38 @@ class TempImport():
 ############################################################### 
 
 class XMLImport():
-    """ Keeps track of XML """
+    """ Import XML from another service and returns the tree """
     def __init__(self, uri):
-#        from lxml import etree
-#        import urllib, urllib2, cookielib
-#        self.uri = uri
-#        content = urllib.urlopen(uri)
-#        self.tree=etree.XML(content.read())
-        
-        #hack for amir
-        from bq.api.comm import BQSession
-        username = 'user'
-        password = 'pass'
+        from lxml import etree
+        import urllib, urllib2, cookielib
         self.uri = uri
-        BQ=BQSession()
-        BQ.init_local(username,password,bisque_root=r'http://bisque.ece.ucsb.edu',create_mex=False)
-        self.tree = BQ.fetchxml(self.uri)
+        
+        header = {'Accept':'text/xml'}
+        req = urllib2.Request(url=uri,headers=header)
+        try:
+            content = urllib2.urlopen(req)
+        except urllib2.HTTPError, e:
+            if e.code>=400:
+                abort(404)
+            else:
+                log.debug('Response Code: %s'%e.code)
+                log.exception('Failed to get a correct http response code')
+                abort(500)        
+        content = urllib.urlopen(uri)
+        
+        try:
+            self.tree=etree.XML(content.read())
+        except etree.XMLSyntaxError:
+            abort(415, 'Requires: XML format')
+            
+#        #hack for amir
+#        from bq.api.comm import BQSession
+#        username = 'user'
+#        password = 'pass'
+#        self.uri = uri
+#        BQ=BQSession()
+#        BQ.init_local(username,password,bisque_root=r'http://bisque.ece.ucsb.edu',create_mex=False)
+#        self.tree = BQ.fetchxml(self.uri)
         
         
     def returnxml(self):       
