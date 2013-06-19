@@ -92,6 +92,7 @@ Ext.define('BQ.TemplateManager.Creator',
             items   :   [this.centerPanel, this.eastPanel],
         });
         
+        window.onbeforeunload = Ext.bind(this.checkUnsavedChanges, this);
         this.callParent(arguments);
     },
     
@@ -141,6 +142,15 @@ Ext.define('BQ.TemplateManager.Creator',
         this.eastPanel.add(this.grid);
     },
     
+    checkUnsavedChanges : function()
+    {
+        if (this.resource.dirty)
+        {
+            this.tplToolbar.getComponent('tbTplSave').getEl().highlight('FF9500', {duration:250, iterations:6});
+            return "You have unsaved changes which will be lost.";
+        }
+    },
+    
     saveTemplate : function()
     {
         function success(resource)
@@ -149,6 +159,7 @@ Ext.define('BQ.TemplateManager.Creator',
             this.tagger.setResource(resource);
         }
         
+        this.resource.dirty = false;
         this.resource.uri = this.resource.uri + '?view=deep';
         this.resource.save_(undefined, Ext.bind(success, this), Ext.pass(BQ.ui.error, ['Save failed!']));
     },

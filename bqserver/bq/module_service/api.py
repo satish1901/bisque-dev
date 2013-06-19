@@ -54,7 +54,6 @@ import os
 import pkg_resources
 from bq.core.service import service_registry
 from bq.exceptions import RequestError
-from controllers.module_server import ModuleServer
 
 def find_server(server):
     return service_registry.find_service ('module_service')
@@ -114,22 +113,3 @@ def engines(server = None):
     return server.engine.dir()
 
 
-def initialize(uri):
-    """ Initialize the top level server for this microapp"""
-    # Add you checks and database initialize
-    #log.debug ("initialize " + uri)
-    service =  ModuleServer(uri)
-    return service
-
-
-def get_static_dirs():
-    """Return the static directories for this server"""
-    package = pkg_resources.Requirement.parse ("bqserver")
-    package_path = pkg_resources.resource_filename(package,'bq')
-    return [(package_path, os.path.join(package_path, 'module_service', 'public'))]
-
-def get_model():
-    from bq.module_service import model
-    return model
-
-__controller__ =  ModuleServer

@@ -890,13 +890,13 @@ Ext.define('Bisque.ResourceTagger',
     
     isValidURL : function(url)
     {
-        var pattern = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/
+        var pattern = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
         return pattern.test(url);        
     },
 
     exportToXml : function()
     {
-        var url = '/export/initStream?urls='
+        var url = '/export/initStream?urls=';
         url += encodeURIComponent(this.resource.uri+'?view=deep');
         url += '&filename='+(this.resource.name || 'document');
         
