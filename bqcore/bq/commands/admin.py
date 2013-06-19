@@ -85,7 +85,7 @@ class server(object):
 
         options, args = parser.parse_args()
         self.command = self.options = None
-        if len(args) < 1 or args[0] not in ['start', 'stop', 'restart', 'echo', ]:
+        if len(args) < 1 or args[0] not in ['start', 'stop', 'restart', 'echo', 'list' ]:
             parser.print_help()
             return
 
