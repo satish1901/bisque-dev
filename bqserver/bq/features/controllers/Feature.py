@@ -144,16 +144,6 @@ class ImageImport():
         
     def returnpath(self):
         return self.path
-        #return self.path
-    
-    def __del__(self):
-        """ When the ImageImport object is deleted the image path is removed for the temp dir """
-        os.remove(self.path)
-        try:
-            os.remove(self.path)
-        except:
-            pass
-        
 
 
 ############################################################### 
