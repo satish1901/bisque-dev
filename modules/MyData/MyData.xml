@@ -68,6 +68,7 @@ For details on notation and configuration:
             <template>
                 <tag name="accepted_type" value="image" />
                 <tag name="accepted_type" value="dataset" />
+                <tag name="accepted_type" value="user" />
                 <tag name="label" value="Select input resource" />
             </template>            
         </tag>   
