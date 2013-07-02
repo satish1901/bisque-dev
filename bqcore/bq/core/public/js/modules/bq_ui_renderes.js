@@ -185,6 +185,8 @@ Ext.define('BQ.selectors.Resource', {
     layout: 'auto',
     cls: 'resourcerenderer',
     height: 75,
+    custom_resources: {'image':null, 'dataset':null},
+    btn_select: {},
 
     initComponent : function() {
         var resource = this.resource;
@@ -216,6 +218,13 @@ Ext.define('BQ.selectors.Resource', {
             });
             btns.push(this.btn_select_dataset);   
         }      
+    
+        // now create pickers for any other requested resource type 
+        for (res in accepted_type) {
+            if (res in this.custom_resources) continue;
+            this.btn_select[res] = this.createSelectorButton(res, template);
+            btns.push(this.btn_select[res]);   
+        }        
     
         if (template.example_query) {
             this.btn_select_example = Ext.create('Ext.button.Button', {
@@ -315,6 +324,26 @@ Ext.define('BQ.selectors.Resource', {
                     }, scope: this },              
         });        
     },
+    
+    createSelectorButton: function(res_type, template) {
+        return Ext.create('Ext.button.Button', {
+            text: 'Select '+res_type, 
+            scale: 'large', 
+            scope: this,
+            handler: function() {
+                var browser  = Ext.create('Bisque.ResourceBrowser.Dialog', {
+                    'height' : '85%',
+                    'width' :  '85%',
+                    dataset: bq.url('/data_service/'+res_type),
+                    tagQuery: template.query,
+                    listeners: {  
+                        'Select': function(me, resource) { this.onselected(resource); }, 
+                        scope: this 
+                    },
+                });          
+            },
+        });
+    },    
     
     onerror: function(message) {
         BQ.ui.error('Error fethnig resource:<br>' + message); 
