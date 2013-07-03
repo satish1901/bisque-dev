@@ -1775,10 +1775,16 @@ BQModule.prototype.updateTemplates = function () {
         if (e.template) {
             var act = {};
             if (e.type) act[e.type] = e.type;
-            if (e.template.accepted_type)
-            for (var p=0; (t=e.template.accepted_type[p]); p++) {
-                act[t] = t;
+            
+            if (e.template.accepted_type) {
+                if (e.template.accepted_type.constructor === String) {
+                    act[e.template.accepted_type] = e.template.accepted_type;                    
+                } else if (e.template.accepted_type.constructor === Array) {
+                    for (var p=0; (t=e.template.accepted_type[p]); p++)
+                        act[t] = t;
+                }
             }
+            
             e.template.accepted_type = act;
         }
     }
