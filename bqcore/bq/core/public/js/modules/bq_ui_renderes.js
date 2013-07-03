@@ -185,7 +185,7 @@ Ext.define('BQ.selectors.Resource', {
     layout: 'auto',
     cls: 'resourcerenderer',
     height: 75,
-    custom_resources: {'image':null, 'dataset':null},
+    custom_resources: {'resource':null, 'image':null, 'dataset':null, },
     btn_select: {},
 
     initComponent : function() {
