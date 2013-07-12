@@ -689,24 +689,32 @@ SVGRenderer.prototype.label = function ( visitor, gob, viewstate, visibility) {
     else if (gob.visible==undefined)	
     	gob.visible=true;
     
+    var label_text = gob.value || 'My label';
+    
     if (visible && gob.visible) {
         if (gob.shape == null ) {
             var rect = document.createElementNS(svgns, "text");
-            //rect.setAttributeNS(null, "x", x -3 + offset_x);
-            //rect.setAttributeNS(null, "y", y -3 + offset_y);
-            rect.setAttributeNS(null, "width", "8");
-            rect.setAttributeNS(null, "height", "8");
-            rect.setAttributeNS(null, "fill", "red");
-            rect.setAttributeNS(null, "display", "none");
+            
+            var innertext = document.createTextNode(label_text);
+            rect.appendChild(innertext);
+            
+            //rect.setAttributeNS(null, "width", "8");
+            //rect.setAttributeNS(null, "height", "8");
+            rect.setAttributeNS(null, "fill", "black");
             rect.setAttributeNS(null, 'fill-opacity', 0.7);
-            gob.shape = new Pnt(rect);
+            rect.setAttributeNS(null, "stroke", "white");
+            rect.setAttributeNS(null, 'stroke-width', '0.5px');  
+            rect.setAttributeNS(null, 'stroke-opacity', 0.7);
+            rect.setAttributeNS(null, 'font-size', '12px');
+            //rect.setAttributeNS(null, "display", "none");
+            gob.shape = new Label(rect);
         }
 
 		// scale to size
         var p = viewstate.transformPoint (pnt.x, pnt.y);
         var rect = gob.shape.svgNode;
 		rect.setAttributeNS(null, "x", p.x -4);
-		rect.setAttributeNS(null, "y", p.y -4);
+		rect.setAttributeNS(null, "y", p.y +4);
         this.viewShape (viewstate, gob, 
                         callback(this,"move_label"), 
                         callback(this,"select_label"));
@@ -728,6 +736,7 @@ SVGRenderer.prototype.move_label = function (state){
     pnt.x = newpnt.x;
     pnt.y = newpnt.y;
 }
+
 SVGRenderer.prototype.select_label = function (state){
     var gob = state.gob;
     var v   = state.view;
