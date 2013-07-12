@@ -1232,3 +1232,60 @@ Rectangle.prototype.selectHandles=function(select){this.p1.select(select);this.p
 Rectangle.prototype.showHandles=function(state){this.p1.show(state);this.p2.show(state);};
 Rectangle.prototype.getIntersectionParams=function() { return new IntersectionParams("Rectangle",[this.p1.point,this.p2.point]); };
 
+// label
+
+Label.prototype=new Shape();
+Label.prototype.constructor=Label;
+Label.superclass=Shape.prototype;
+
+function Label(svgNode){
+        if(arguments.length>0){
+            this.init(svgNode);
+        }
+}
+Label.prototype.init=function(svgNode){
+    if(svgNode.localName=="text"){
+        Label.superclass.init.call(this,svgNode);
+        var x=parseFloat(svgNode.getAttributeNS(null,"x"));
+        var y=parseFloat(svgNode.getAttributeNS(null,"y"));
+        var width=parseFloat(svgNode.getAttributeNS(null,"width"));
+        var height=parseFloat(svgNode.getAttributeNS(null,"height"));
+        this.p=new Handle(x+(width/2.0), y+(height/2.0),this);
+    }else{
+        throw new Error("Label.init: Invalid SVG Node: "+svgNode.localName);
+    }
+};
+
+Label.prototype.enhance = function(mode){
+    this.svgNode.setAttributeNS(null, 'fill-opacity', mode?1.0:0.7);
+};
+
+Label.prototype.unrealize=function(){
+  if(this.svgNode!=null){
+      this.p.unrealize();
+      this.svgNode.parentNode.removeChild(this.svgNode);
+  }
+};
+Label.prototype.realize=function(){
+    if(this.svgNode!=null){
+        this.p.realize();
+        this.p.show(false);
+    }
+};
+
+Label.prototype.refresh=function(){
+    var x=this.p.point.x;
+    var y=this.p.point.y;
+    this.svgNode.setAttributeNS(null,"x", x -3);
+    this.svgNode.setAttributeNS(null,"y", y -3);
+};
+Label.prototype.registerHandles=function() {
+  mouser.register(this.p);
+};
+Label.prototype.unregisterHandles=function() {
+  mouser.unregister(this.p);
+};
+Label.prototype.selectHandles=function(select){this.p.select(select);};
+Label.prototype.showHandles=function(state){this.p.show(state);};
+
+
