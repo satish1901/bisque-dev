@@ -66,10 +66,9 @@ For details on notation and configuration:
         
         <tag name="resource_url" type="resource">
             <template>
-                <tag name="accepted_type" value="image" />
-                <tag name="accepted_type" value="dataset" />
-                <tag name="accepted_type" value="user" />
-                <tag name="label" value="Select input resource" />
+                <tag name="accepted_type" value="patient" />
+                <tag name="label" value="Select my custom resource" />
+                <tag name="prohibit_upload" value="true" type="boolean" />
             </template>            
         </tag>   
         
