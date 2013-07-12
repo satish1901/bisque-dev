@@ -19,6 +19,7 @@ ImgViewer.BTN_TITLE_RECT     = 'Rectangle';
 ImgViewer.BTN_TITLE_POLYLINE = 'Polyline';
 ImgViewer.BTN_TITLE_POLYGON  = 'Polygon';
 ImgViewer.BTN_TITLE_CIRCLE   = 'Circle';
+ImgViewer.BTN_TITLE_LABEL    = 'Label';
 
 ImgViewer.BTN_TITLE_GROUP    = 'Annotations';
 
@@ -33,7 +34,7 @@ function ImgEdit (viewer,name){
   this.zindex_low  = 15;  
   
   //parse input parameters
-  var primitives = 'Point,Rectangle,Polyline,Polygon,Circle'.toLowerCase().split(',');
+  var primitives = 'Point,Rectangle,Polyline,Polygon,Circle,Label'.toLowerCase().split(',');
   if ('editprimitives' in this.viewer.parameters) 
     primitives = this.viewer.parameters['editprimitives'].toLowerCase().split(',');
   this.editprimitives = {};
@@ -151,6 +152,8 @@ ImgEdit.prototype.editImage = function () {
       bt.push(v.addCommandGroup(ImgViewer.BTN_TITLE_GROUP, ImgViewer.BTN_TITLE_POLYGON, callback(this, "setmode", callback(this,'newPolygon'))));
     if ('circle' in this.editprimitives)      
       bt.push(v.addCommandGroup(ImgViewer.BTN_TITLE_GROUP, ImgViewer.BTN_TITLE_CIRCLE, callback(this, "setmode", callback(this,'newCircle'))));
+    //if ('label' in this.editprimitives)
+    //  bt.push(v.addCommandGroup(ImgViewer.BTN_TITLE_GROUP, ImgViewer.BTN_TITLE_LABEL, callback(this, "setmode", callback(this, 'newLabel'))));    
     
     this.buttons_created = true;
 }
@@ -426,6 +429,20 @@ ImgEdit.prototype.newCircle = function (e, x, y) {
     var pt = v.inverseTransformPoint(x,y);
     g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, 0));
     g.vertices.push (new BQVertex (pt.x+50/v.scale, pt.y+50/v.scale, v.z, v.t, null, 1));
+    this.push_gobject (g);
+
+    this.visit_render.visitall(g, [v]);
+    this.dochange();
+}
+
+ImgEdit.prototype.newLabel = function (e, x, y) {
+    var v = this.viewer.current_view;
+    var g = new BQGObject("label");
+    var pt = v.inverseTransformPoint(x,y);
+    g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, 0));
+    
+    //Ext.MessageBox.prompt('Name', 'Please enter your text:');
+    g.value = 'SOME TEXT HERE';
     this.push_gobject (g);
 
     this.visit_render.visitall(g, [v]);
