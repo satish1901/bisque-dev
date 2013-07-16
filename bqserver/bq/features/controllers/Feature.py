@@ -27,9 +27,9 @@ log = logging.getLogger("bq.features")
 # maybe should use python api to import
 
 
-############################################################### 
+###############################################################
 # Feature Object
-############################################################### 
+###############################################################
 class Feature(object):
     """
         Initalizes Feature table and calculates descriptor to be
@@ -99,6 +99,26 @@ class Feature(object):
         self.temptable.append(temprow)
         return
             
+    def returnRows(self):
+        """
+            formats the temptables into a numpy field array
+        """
+        rows=np.array([])
+        #log.debug('temptable: %s'% self.temptable)
+        for temprow in self.temptable:
+            if self.parameter_info:
+                dt = np.dtype([('idnumber', np.str_, 32), ('feature', self.feature_format, self.length), ('parameter',self.parameter_format,len(self.parameter_info))])
+                r = np.array([(temprow['idnumber'], temprow['feature'],temprow['parameter'])], dtype=dt)
+            else:
+                dt = np.dtype([('idnumber', np.str_, 32), ('feature', self.feature_format, self.length)])
+                r = np.array([(temprow['idnumber'], temprow['feature'])], dtype=dt)
+            #log.debug('row: %s'%r)
+            if rows.size<1:
+                rows = r
+            else:
+                rows = np.append(rows,r,axis=0)
+        return rows
+            
             
 ###############################################################
 # Image Import
@@ -113,7 +133,6 @@ class ImageImport():
             self.uri=uri
             header = {'Accept':'text/xml'}
             req = urllib2.Request(url=uri,headers=header)
-            #req.add_header('Referer', 'http://www.python.org/')
             try:
                 content = urllib2.urlopen(req)
             except urllib2.HTTPError, e:
@@ -137,6 +156,7 @@ class ImageImport():
                 f.flush()
                 f.close()
         else:
+            self.uri=uri
             self.path = image_service.local_file(uri)
             log.debug("path: %s"% self.path)
             if self.path is None:
@@ -144,6 +164,16 @@ class ImageImport():
         
     def returnpath(self):
         return self.path
+    
+    def __del__(self):
+        #check if the temp dir was used
+        if self.uri.find('image_service')<1:
+            try:
+                os.remove(self.path)
+            except:
+                pass
+            
+               
 
 
 ############################################################### 

@@ -20,7 +20,7 @@ from .var import FEATURES_TABLES_FILE_DIR
 class ID():
     """
         Initalizes ID table, returns ID, and places ID into the HDF5 table
-    """
+    """ 
     #initalize parameters
     file = 'IDTable.h5'
     name = 'IDTable'
@@ -34,7 +34,7 @@ class ID():
     
     def initalizeTable(self):
         """
-            Initializes the ID table 
+            Initializes the ID table
         """ 
         class Columns(tables.IsDescription):
                 idnumber  = tables.StringCol(32)
@@ -46,16 +46,14 @@ class ID():
         """
             information for table to know what to index
         """
-        table.cols.uri.createCSIndex()
+        table.cols.idnumber.createCSIndex()
         
     def appendTable(self, uri, id):
         """
             Appends IDs to the table   
         """    
         #initalizing rows for the table
-        id = uuid.uuid5(uuid.NAMESPACE_URL, str(uri))
-        idnumber = id.hex
-        self.setRow(idnumber,uri)
+        self.setRow(id,uri)
 
     #re-adapted for id-table since its structure is not like the feature tables
     def setRow(self, idnumber, uri):
