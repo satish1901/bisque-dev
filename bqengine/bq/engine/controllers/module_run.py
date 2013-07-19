@@ -12,7 +12,7 @@ from condor_run import CondorRunner
 MODULE_RUNNERS = [CommandRunner, CondorRunner]
 RUNNER_MAP     = dict([(r.name, r) for r in MODULE_RUNNERS ])
 
-log = logging.getLogger('bq.engine.modulerunner')
+log = logging.getLogger('bq.engine_service.modulerunner')
 
 class ModuleRunner(object):
     """Top Level runner and entry point for the Runners and Environments
