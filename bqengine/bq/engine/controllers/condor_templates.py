@@ -2,7 +2,7 @@ import os
 import pkg_resources
 import logging
 
-log = logging.getLogger('bq.engine.condor_templates')
+log = logging.getLogger('bq.engine_service.condor_templates')
 
 
 # Variables (staging_id, post_exec, post_args)
