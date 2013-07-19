@@ -241,23 +241,29 @@ def call(cmd, echo=False, **kw):
 
 
 
-def unpack_zip (zfile, dest):
+def unpack_zip (zfile, dest, strip_root=None):
     z = zipfile.ZipFile (zfile, 'r')
-    #for info in z.infolist():
-    #    filename = os.path.join (dest, info.filename)
-    #    if filename.endswith('/'):
-    #        if not os.path.exists(filename):
-    #            os.makedirs (filename)
-    #        continue
-    #    f = open(filename, 'wb')
-    #    f.write (z.read (info.filename))
-    #    f.close()
-    z.extractall(dest)
-    # Return top dirname
-    names = z.namelist()
+    if strip_root is None:
+        z.extractall(dest)
+        names = z.namelist()
+    else:
+        top_dir = z.infolist()[0].filename.split('/',1)[0]+'/'
+        names = []
+        for info in z.infolist():
+            new_path = info.filename.replace(top_dir, '')
+            filename = os.path.join (dest, new_path)
+            names.append(filename)
+            if os.name == 'nt':
+                filename = filename.replace('/', '\\')
+            mypath = os.path.dirname(filename)
+            if not os.path.exists(mypath):
+                os.makedirs(mypath)
+            # write the file, .extract would force the subpath and can't be used
+            f = open(filename, 'wb')
+            f.write(z.read(info))
+            f.close()            
     z.close()
     return names
-
 
 #############################################
 #  Setup some local constants
@@ -742,6 +748,8 @@ def install_matlab(params, cfg = RUNTIME_CFG):
     matlab_home = which('matlab') 
     if matlab_home:
         params['runtime.matlab_home'] = os.path.abspath(os.path.join (matlab_home, '../..'))
+    if os.name == 'nt':
+        params['runtime.matlab_launcher'] = params['runtime.matlab_launcher'].replace('.tmpl', '_win.tmpl')
     for f in ['runtime.matlab_launcher' ] :
         if os.path.exists(params[f]):
             params[f] = os.path.abspath(params[f])
@@ -1153,7 +1161,8 @@ def fetch_external_binaries ():
         os.makedirs (BQDEPOT)
     conf = ConfigFile(config_path('EXTERNAL_FILES'))
     external_files = conf.get ('common')
-    local_platform = platform.platform()
+    #local_platform = platform.platform()
+    local_platform = platform.platform().replace('-', '-%s-'%platform.architecture()[0], 1) # dima: added 64bit
     for section in conf.section_names():
         if fnmatch.fnmatch(local_platform, section):
             print "Matched section %s" % section
@@ -1173,12 +1182,17 @@ def fetch_external_binaries ():
 
 #######################################################
 #
-def install_dependencies ():
+def uncompress_dependencies (filename_zip, filename_dest, filename_check, strip_root=None):
     """Install dependencies that aren't handled by setup.py"""
 
-    extzip = os.path.join(BQDEPOT, 'extjs.zip')
-    public = to_sys_path('bqcore/bq/core/public') 
-    extjs =  os.path.join (public, "extjs")
+    if os.path.exists(filename_check) and os.path.getmtime(filename_zip) < os.path.getmtime(filename_check):
+        return
+
+    print "Unpacking %s into %s"  % (filename_zip, filename_dest)
+    return unpack_zip(filename_zip, filename_dest, strip_root)
+
+def uncompress_extjs (extzip, public, extjs):
+    """Install extjs"""
 
     if os.path.exists(extjs) and os.path.getmtime(extzip) < os.path.getmtime(extjs):
         return
@@ -1198,6 +1212,60 @@ def install_dependencies ():
                               "Will rename whater top level dir to extjs")
     shutil.move (unpackdir, extjs)
 
+def install_dependencies ():
+    """Install dependencies that aren't handled by setup.py"""
+
+    # install ExtJS
+    extzip = os.path.join(BQDEPOT, 'extjs.zip')
+    public = to_sys_path('bqcore/bq/core/public') 
+    extjs =  os.path.join (public, "extjs")
+    uncompress_extjs (extzip, public, extjs)
+    
+def install_imgcnv ():
+    """Install dependencies that aren't handled by setup.py"""
+
+    if getanswer ("Install Bio-Image Convert", "Y",
+                  "imgcnv will allow image server to read pixel data") == "Y":
+
+        binv = 'bin'
+        exev = ''
+        if sys.platform == 'win32':
+            binv = 'Scripts'
+            exev = '.exe'
+        
+        filename_zip = os.path.join(BQDEPOT, 'imgcnv.zip')
+        filename_dest = os.path.join(os.environ['VIRTUAL_ENV'], binv)
+        filename_check = os.path.join(filename_dest, 'imgcnv%s'%exev)
+        uncompress_dependencies (filename_zip, filename_dest, filename_check)
+
+def install_features ():
+    """Install dependencies that aren't handled by setup.py"""
+
+    if getanswer ("Install feature extractors (Feature Server)", "Y",
+                  "Feature extractors will enable many descriptors in the Feature Server that require binary code") == "Y":
+
+        filename_zip = os.path.join(BQDEPOT, 'feature_extractors.zip')
+        filename_dest = to_sys_path('bqserver/bq/features')
+        filename_check = ''
+        uncompress_dependencies (filename_zip, filename_dest, filename_check)
+
+def install_features_source ():
+    """Install dependencies that aren't handled by setup.py"""
+
+    if getanswer ("Install source code for feature extractors", "N",
+                  "Feature descriptors source code will allow recompiling external feature extractors on unsupported platforms") == "Y":
+
+        filename_zip = os.path.join(BQDEPOT, 'feature_extractors_source.zip')
+        import urllib
+        urllib.urlretrieve ('https://bitbucket.org/bisque/featureextractors/get/default.zip', filename_zip)
+        filename_dest = to_sys_path('bqserver/bq/features/controllers')
+        filename_check = ''
+        uncompress_dependencies (filename_zip, filename_dest, filename_check, strip_root=True)
+        
+        print """Now you can recompile feature extractors. Follow instructions located in:
+          bqserver/bq/features/controllers/extractors/build/Readme.txt
+        """        
+        
 
 #######################################################
 #
@@ -1269,7 +1337,8 @@ def send_installation_report(params):
     parts = []
     text = textwrap.dedent(BISQUE_REPORT) % dict (host = socket.getfqdn(),
               admin = sender_email,
-              platform = platform.platform(),
+              #platform = platform.platform(),
+              platform = platform.platform().replace('-', '-%s-'%platform.architecture()[0], 1), # dima: added 64bit
               python_version = platform.python_version(),
               installtime = params['install_started'],
               duration = params['duration'],
@@ -1328,7 +1397,10 @@ install_options= [
            'matlab',
            'modules',
            'runtime',
+           'imgcnv',
            'bioformats',
+           'features',  
+           'features_source',                      
            'server',
            'mail',
            'preferences',
@@ -1400,11 +1472,17 @@ def bisque_installer(options, args):
         params = install_server_defaults(params)
     if 'engine'  in installer:
         params = install_engine_defaults(params)
-    if 'binaries'  in installer:
+    if 'binaries' in installer:
         fetch_external_binaries()
         install_dependencies()
-    if 'bioformats'  in installer:
+    if 'imgcnv' in installer:
+        install_imgcnv()
+    if 'bioformats' in installer:
         install_bioformats(params)
+    if 'features' in installer:
+        install_features()
+    if 'features_source' in installer:
+        install_features_source()                   
     if 'database'  in installer:
         params = install_database(params)
     if 'matlab'  in installer:

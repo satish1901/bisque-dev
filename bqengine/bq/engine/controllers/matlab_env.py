@@ -89,12 +89,10 @@ class MatlabEnvironment(BaseEnvironment):
         #    self.matlab_home = runner.named_args['matlab_home']
 
     def setup_environment(self, runner):
-        if os.name == 'nt':
-            return
         # Construct a special environment script
         for mex in runner.mexes:
             #if mex.executable:
-            condor_matlab = self.create_matlab_launcher(mex.staging_path)
+            condor_matlab = self.create_matlab_launcher(mex.rundir)
             condor_matlab = os.path.join('.', os.path.basename(condor_matlab))
             if mex.executable:
                 mex.executable.insert(0, condor_matlab)
@@ -105,11 +103,28 @@ class MatlabEnvironment(BaseEnvironment):
             matlab_launcher = open(self.matlab_launcher).read()
         content = string.Template(matlab_launcher)
         content = content.safe_substitute(MATLAB_HOME=self.matlab_home)
-        path = os.path.join(dest, 'matlab_launch' )
+        if os.name == 'nt':
+            path = os.path.join(dest, 'matlab_launch.bat' )
+        else:
+            path = os.path.join(dest, 'matlab_launch' )
         with open(path, 'w') as f:
             f.write (content)
         os.chmod (path, 0744)
         return path
 
-        
+class MatlabDebugEnvironment(MatlabEnvironment):
+
+    name = "MatlabDebug"
+
+    def setup_environment(self, runner):
+        # Construct a special environment script
+        for mex in runner.mexes:
+            #if mex.executable:
+            condor_matlab = self.create_matlab_launcher(mex.rundir)
+            condor_matlab = os.path.join('.', os.path.basename(condor_matlab))
+
+            if mex.executable:            
+                function = mex.executable.pop(0)
+                function = '%s(%s); exit;'%(function, ','.join("'%s'"%x for x in mex.executable))
+                mex.executable = [condor_matlab, 'matlab', '-r', function]        
 
