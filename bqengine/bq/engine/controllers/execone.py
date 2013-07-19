@@ -5,7 +5,7 @@ import subprocess
 import multiprocessing, logging
 #logger = multiprocessing.log_to_stderr()
 #logger.setLevel(multiprocessing.SUBDEBUG)
-logger = logging.getLogger('bq.engine.execone')
+logger = logging.getLogger('bq.engine_service.execone')
 
 def which(program):
     import os
