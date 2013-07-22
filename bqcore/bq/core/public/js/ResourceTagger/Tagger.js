@@ -381,19 +381,6 @@ Ext.define('Bisque.ResourceTagger',
             {
                 name : 'value',
                 type : 'string',
-                convert : function(value, record)
-                {
-                    var valueArr = [];
-                    
-                    if (record.raw instanceof BQGObject)
-                        if (!Ext.isEmpty(record.raw.values))
-                            for (var i=0; i<record.raw.values.length; i++)
-                                valueArr.push(record.raw.values[i].value);
-                    
-                    valueArr.unshift(value);
-                    
-                    return valueArr.join(", ");
-                }
             },
             {
                 name : 'type',
