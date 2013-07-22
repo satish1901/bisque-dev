@@ -862,6 +862,22 @@ class import_serviceController(ServiceController):
         'x_tags' where x can be any string. 
         
         """
+        try:
+            return self.transfer_internal(**kw)
+        except Exception e:
+            log.exception("During transfer: %s" % kw)
+            abort(500)
+            
+
+    def transfer_internal(self, **kw):
+        """Recieve a multipart form with images and possibly tag documents
+
+        :param kw: A keyword dictionary of file arguments.  The
+        arguments are organized as follows: Each datafile and its tag
+        document are associated by the parameters named 'x' and
+        'x_tags' where x can be any string. 
+        
+        """
         #log.debug("TRANSFER %s"  % kw)
         #log.debug("BODY %s " % request.body[:100])
         files = []
@@ -884,7 +900,11 @@ class import_serviceController(ServiceController):
                         resource = f.file.read()
                     if isinstance(resource, basestring):
                         log.debug ("reading XML %s" % resource)
-                        resource = etree.fromstring(resource)
+                        try:
+                            resource = etree.fromstring(resource)
+                        except etree.XMLSyntaxError:
+                            log.exception ("while parsing %s" %resource)
+                            raise
                 except:
                     log.exception("Couldn't read resource parameter %s" % resource)
                     resource = None
@@ -902,7 +922,11 @@ class import_serviceController(ServiceController):
             if pname.endswith('.uploaded'):
                 # Entry point for NGINX upload and insert
                 transfers.pop(pname)
-                resource = etree.fromstring (f)
+                try:
+                    resource = etree.fromstring (f)
+                except etree.XMLSyntaxError:
+                    log.exception ("while parsing %s" %f)
+                    abort(400)
                 payload_resource = find_upload_resource(transfers, pname.replace ('.uploaded', '')) or etree.Element('resource')
                 if payload_resource:
                     resource = merge_resources (resource, payload_resource)
@@ -914,7 +938,11 @@ class import_serviceController(ServiceController):
         for pname, f in transfers.items():
             if (pname.endswith ('_resource')): 
                 transfers.pop(pname)
-                resource = etree.fromstring(f)
+                try:
+                    resource = etree.fromstring(f)
+                except etree.XMLSyntaxError:
+                    log.exception ("while parsing %s" %f)
+                    abort(400)
                 files.append(UploadedResource(resource=resource))
 
         log.debug("TRANSFER after resources %s"  % transfers)
