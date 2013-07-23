@@ -314,7 +314,7 @@ function ImgViewer (parentid, image_or_uri, parameters) {
     this.imagediv.id="imgviewer_image";
     this.imagediv.className = "image_viewer_display";
     
-    this.preferences = undefined;
+    this.preferences = this.parameters.preferences;
     BQ.Preferences.get({
         key : 'Viewer',
         callback : Ext.bind(this.onPreferences, this),
@@ -360,7 +360,7 @@ function ImgViewer (parentid, image_or_uri, parameters) {
     }
     
     if (!BQSession.current_session)
-        BQFactory.request( {uri: '/auth_service/session', cb: callback(this, 'onsession') }); 
+        BQFactory.request( {uri: '/auth_service/session', cb: callback(this, 'onsession'), errorcb: callback(this, 'onsession'), }); 
     else
         this.onsession(BQSession.current_session);
 }
