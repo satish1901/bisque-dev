@@ -864,7 +864,7 @@ class import_serviceController(ServiceController):
         """
         try:
             return self.transfer_internal(**kw)
-        except Exception e:
+        except Exception, e:
             log.exception("During transfer: %s" % kw)
             abort(500)
             

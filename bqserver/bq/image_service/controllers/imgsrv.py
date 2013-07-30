@@ -661,7 +661,7 @@ class SliceService(object):
             pages_str = ",".join([str(p) for p in pages])
 
             # init parameters
-            params = ['-multi', '-page', str(pages_str)]
+            params = ['-multi', '-page', '%d'%pages_str]
 
             if not (x1==x2) or not (y1==y2):
                 x1s = ''; y1s = ''; x2s = ''; y2s = ''
@@ -1522,12 +1522,10 @@ class RotateService(object):
 
         if not os.path.exists(ofile):
             if not imgcnv.supported(ifile):
-                #data_token.setHtml('Rotate service: input file is not in supported image format...')
                 data_token.setHtmlErrorNotSupported()
                 return data_token
-
-            params = '-rotate %d' % (ang)
-            imgcnv.convert( ifile, ofile, fmt=default_format, extra=['-multi', params])
+            params = ['-multi', '-rotate', '%d'%ang]
+            imgcnv.convert( ifile, ofile, fmt=default_format, extra=params)
 
         try:
             info = self.server.getImageInfo(filename=ofile)
