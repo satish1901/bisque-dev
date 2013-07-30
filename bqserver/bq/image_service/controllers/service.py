@@ -6,6 +6,7 @@ import logging
 import pkg_resources
 import tg
 import urlparse
+import re
 
 from hashlib import md5
 from datetime import datetime
@@ -117,6 +118,27 @@ class image_serviceController(ServiceController):
         doc = self.srv.execute('info',  id, userId, None)
         log.debug('Info doc: %s'%(doc ) )           
         return doc
+
+    def local_file (self, url, **kw):
+        ''' returns local path if it exists otherwise None'''
+        userId = identity.current.user_name       
+        
+        m = re.search(r'(\/image_service\/image[s]?\/)(?P<id>\w+)', url)
+        id = m.group('id')         
+
+        # check for access permission
+        from bq.data_service.controllers.resource_query import RESOURCE_READ, RESOURCE_EDIT
+        self.check_access(id, RESOURCE_READ)
+
+        data_token = self.srv.process(url, id, userId)
+        
+        #first check if the output is an error
+        if data_token.isHttpError():
+            return None
+
+        return data_token.data        
+        
+
         
 #    def files_exist(self, hashes, **kw):
 #        #userId = identity.current.user_name  
