@@ -661,7 +661,7 @@ class SliceService(object):
             pages_str = ",".join([str(p) for p in pages])
 
             # init parameters
-            params = ['-multi', '-page', str(pages_str)]
+            params = ['-multi', '-page', '%d'%pages_str]
 
             if not (x1==x2) or not (y1==y2):
                 x1s = ''; y1s = ''; x2s = ''; y2s = ''
@@ -1412,7 +1412,7 @@ class TransformService(object):
                           'hsv2rgb'      : ['-transform_color', 'hsv2rgb'] }            
             
             if not arg in transforms:
-                abort(400)
+                abort(400, 'transform: requested transform is not yet supported')
             
             extra.extend(transforms[arg])
             imgcnv.convert(ifile, ofile, fmt=default_format, extra=extra)
@@ -1491,12 +1491,12 @@ class FramesService(object):
 class RotateService(object):
     '''Provides rotated versions for requested images:
        arg = angle
-       At this moment only supported values are 90, -90, 270 and 180
+       At this moment only supported values are 90, -90, 270, 180 and meta
        ex: rotate=90'''
     def __init__(self, server):
         self.server = server
     def __repr__(self):
-        return 'RotateService: Returns an Image rotated as requested, arg = angle'
+        return 'RotateService: Returns an Image rotated as requested, arg = 0|90|-90|180|270'#|meta'
 
     def hookInsert(self, data_token, image_id, hookpoint='post'):
         pass
@@ -1504,30 +1504,27 @@ class RotateService(object):
     def action(self, image_id, data_token, arg):
         log.debug('Service - Rotate: ' + arg )
 
-        ang = 0
-        try:
-            ang = int(arg)
-        except:
-            raise IllegalOperation('Rotate service: argument is incorrect' )
+        ang = arg
+        angles = ['0', '90', '-90', '270', '180'] #, 'meta']
+        if ang not in angles:
+            #raise IllegalOperation('Rotate service: angle value not yet supported' )
+            abort(400, 'rotate: angle value not yet supported' )
 
-        if not (ang==90 or ang==-90 or ang==270 or ang==180):
-            raise IllegalOperation('Rotate service: angle value not yet supported' )
-
-        if ang==270: ang=-90
+        if ang=='270': 
+            ang='-90'
 
         ifile = self.server.getInFileName( data_token, image_id )
-        ofile = self.server.getOutFileName( ifile, ('.rotated_%d' % (ang)) )
-        log.debug('Rotate service: ' + ifile + ' to ' + ofile)
-        if ang==0: ofile = ifile
+        ofile = self.server.getOutFileName( ifile, '.rotated_%s'%ang )
+        log.debug('Rotate service: %s to %s'%(ifile, ofile))
+        if ang=='0': 
+            ofile = ifile
 
         if not os.path.exists(ofile):
             if not imgcnv.supported(ifile):
-                #data_token.setHtml('Rotate service: input file is not in supported image format...')
                 data_token.setHtmlErrorNotSupported()
                 return data_token
-
-            params = '-rotate %d' % (ang)
-            imgcnv.convert( ifile, ofile, fmt=default_format, extra=['-multi', params])
+            params = ['-multi', '-rotate', ang]
+            imgcnv.convert( ifile, ofile, fmt=default_format, extra=params)
 
         try:
             info = self.server.getImageInfo(filename=ofile)
