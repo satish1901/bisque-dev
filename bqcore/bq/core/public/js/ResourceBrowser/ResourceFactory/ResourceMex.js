@@ -137,17 +137,20 @@ Ext.define('Bisque.Resource.Mex.Card',
                                                         name: tag,
                                                         value: tagsFlat[tag]
                                                     });
-            (tag.indexOf('inputs')!=-1 || tag.indexOf('outputs')!=-1)?tagArr.unshift(tagProp):tagArr.push(tagProp);
+            tagArr.push(tagProp);
+            //(tag.indexOf('inputs')!=-1 || tag.indexOf('outputs')!=-1)?tagArr.unshift(tagProp):tagArr.push(tagProp);
         }
         
-        this.setData('tags', tagArr.slice(0, 12));
+        tagArr.unshift(new Ext.grid.property.Property({name: 'Status', value: this.resource.value}));
+        tagArr.unshift(new Ext.grid.property.Property({name: 'Module', value: this.resource.name}));
+
+        this.setData('tags', tagArr);
         this.setData('fetched', 1); //Loaded
 
         var renderedRef=this.getData('renderedRef')
         if (renderedRef && !renderedRef.isDestroyed)
             renderedRef.updateContainer();
     },
-    
 });
 
 
@@ -169,6 +172,9 @@ Ext.define('Bisque.Resource.Mex.Full',
                                                     });
             tagArr.push(tagProp);
         }
+        
+        tagArr.unshift(new Ext.grid.property.Property({name: 'Status', value: this.resource.value}));
+        tagArr.unshift(new Ext.grid.property.Property({name: 'Module', value: this.resource.name}));
         
         this.setData('tags', tagArr);
         this.setData('fetched', 1); //Loaded
