@@ -34,6 +34,7 @@ from datetime import datetime
 
 import tg
 from tg import config
+from pylons.controllers.util import abort
 
 #Project
 from bq import blob_service
@@ -52,7 +53,7 @@ default_format = 'bigtiff'
 imgsrv_thumbnail_cmd = config.get('bisque.image_service.thumbnail_command', '-depth 8,d -page 1 -display')
 imgsrv_default_cmd = config.get('bisque.image_service.default_command', '-depth 8,d')
 
-imgcnv_needed_version = '1.54.2' # dima: upcoming 1.54
+imgcnv_needed_version = '1.60' # dima: upcoming 1.54
 bioformats_needed_version = '4.3.0' # dima: upcoming 4.4.4
 
 # ImageServer
@@ -660,7 +661,7 @@ class SliceService(object):
             pages_str = ",".join([str(p) for p in pages])
 
             # init parameters
-            params = ['-multi', '-page', str(pages_str)]
+            params = ['-multi', '-page', '%d'%pages_str]
 
             if not (x1==x2) or not (y1==y2):
                 x1s = ''; y1s = ''; x2s = ''; y2s = ''
@@ -1380,6 +1381,45 @@ class DeinterlaceService(object):
         data_token.setImage(fname=ofile, format=default_format)
         return data_token
 
+class TransformService(object):
+    """Provide an image transform
+       arg = transform
+       Available transforms are: fourier, chebyshev, wavelet, radon, edge, wndchrmcolor, rgb2hsv, hsv2rgb
+       ex: transform=fourier"""
+    def __init__(self, server):
+        self.server = server
+    def __repr__(self):
+        return 'TransformService: Returns a transformed image, transform=fourier|chebyshev|wavelet|radon|edge|wndchrmcolor|rgb2hsv|hsv2rgb'
+
+    def hookInsert(self, data_token, image_id, hookpoint='post'):
+        pass
+    def action(self, image_id, data_token, arg):
+
+        arg = arg.lower()
+        ifile = self.server.getInFileName( data_token, image_id )
+        ofile = self.server.getOutFileName( ifile, '.transform_' + arg )
+        log.debug('Transform service: ' + ifile + ' to '+ ofile +' with [' + arg + ']')
+
+        extra = ['-multi']
+        if not os.path.exists(ofile):
+            transforms = {'fourier'      : ['-transform', 'fft'], 
+                          'chebyshev'    : ['-transform', 'chebyshev'], 
+                          'wavelet'      : ['-transform', 'wavelet'],
+                          'radon'        : ['-transform', 'radon'], 
+                          'edge'         : ['-filter',    'edge'],
+                          'wndchrmcolor' : ['-filter',    'wndchrmcolor'], 
+                          'rgb2hsv'      : ['-transform_color', 'rgb2hsv'],
+                          'hsv2rgb'      : ['-transform_color', 'hsv2rgb'] }            
+            
+            if not arg in transforms:
+                abort(400, 'transform: requested transform is not yet supported')
+            
+            extra.extend(transforms[arg])
+            imgcnv.convert(ifile, ofile, fmt=default_format, extra=extra)
+
+        data_token.setImage(fname=ofile, format=default_format)
+        return data_token
+
 class SampleFramesService(object):
     '''Returns an Image composed of Nth frames form input
        arg = frames_to_skip
@@ -1451,12 +1491,12 @@ class FramesService(object):
 class RotateService(object):
     '''Provides rotated versions for requested images:
        arg = angle
-       At this moment only supported values are 90, -90, 270 and 180
+       At this moment only supported values are 90, -90, 270, 180 and meta
        ex: rotate=90'''
     def __init__(self, server):
         self.server = server
     def __repr__(self):
-        return 'RotateService: Returns an Image rotated as requested, arg = angle'
+        return 'RotateService: Returns an Image rotated as requested, arg = 0|90|-90|180|270'#|meta'
 
     def hookInsert(self, data_token, image_id, hookpoint='post'):
         pass
@@ -1464,30 +1504,27 @@ class RotateService(object):
     def action(self, image_id, data_token, arg):
         log.debug('Service - Rotate: ' + arg )
 
-        ang = 0
-        try:
-            ang = int(arg)
-        except:
-            raise IllegalOperation('Rotate service: argument is incorrect' )
+        ang = arg
+        angles = ['0', '90', '-90', '270', '180'] #, 'meta']
+        if ang not in angles:
+            #raise IllegalOperation('Rotate service: angle value not yet supported' )
+            abort(400, 'rotate: angle value not yet supported' )
 
-        if not (ang==90 or ang==-90 or ang==270 or ang==180):
-            raise IllegalOperation('Rotate service: angle value not yet supported' )
-
-        if ang==270: ang=-90
+        if ang=='270': 
+            ang='-90'
 
         ifile = self.server.getInFileName( data_token, image_id )
-        ofile = self.server.getOutFileName( ifile, ('.rotated_%d' % (ang)) )
-        log.debug('Rotate service: ' + ifile + ' to ' + ofile)
-        if ang==0: ofile = ifile
+        ofile = self.server.getOutFileName( ifile, '.rotated_%s'%ang )
+        log.debug('Rotate service: %s to %s'%(ifile, ofile))
+        if ang=='0': 
+            ofile = ifile
 
         if not os.path.exists(ofile):
             if not imgcnv.supported(ifile):
-                #data_token.setHtml('Rotate service: input file is not in supported image format...')
                 data_token.setHtmlErrorNotSupported()
                 return data_token
-
-            params = '-rotate %d' % (ang)
-            imgcnv.convert( ifile, ofile, fmt=default_format, extra=['-multi', params])
+            params = ['-multi', '-rotate', ang]
+            imgcnv.convert( ifile, ofile, fmt=default_format, extra=params)
 
         try:
             info = self.server.getImageInfo(filename=ofile)
@@ -1514,6 +1551,11 @@ class BioFormatsService(object):
 
     def hookInsert(self, data_token, image_id, hookpoint='post'):
         pass
+    
+    def resultFilename(self, image_id, data_token):
+        ifile = self.server.getInFileName( data_token, image_id )
+        ofile = self.server.getOutFileName( ifile, '.ome.tif' )
+        return ofile        
 
     def action(self, image_id, data_token, arg):
 
@@ -1868,6 +1910,7 @@ class ImageServer(object):
                           'projectmin'   : ProjectMinService(self),
                           'negative'     : NegativeService(self),
                           'deinterlace'  : DeinterlaceService(self),
+                          'transform'    : TransformService(self),
                           'sampleframes' : SampleFramesService(self),
                           'frames'       : FramesService(self),
                           'mask'         : MaskService(self),
@@ -1959,11 +2002,16 @@ class ImageServer(object):
                 info = imgcnv.info(filename)
 
             # if not decoded try bioformats
-            if ident is not None:
+            if 'width' not in info and ident is not None:
                 original = self.originalFileName(ident)
-                if (not 'width' in info) and (bioformats.supported(filename, original)):
-                    if data_token is None: data_token = ProcessToken()
-                    data_token.setImage(filename, format=default_format)
+                if data_token is None: data_token = ProcessToken()
+                data_token.setImage(filename, format=default_format)
+                testfile = self.services['bioformats'].resultFilename(ident, data_token)                    
+                if os.path.exists(testfile): 
+                    info = self.getImageInfo(filename=testfile)
+                    data_token.setImage(testfile, format='tiff')
+                    data_token.dims = info
+                elif bioformats.supported(filename, original):
                     data_token = self.services['bioformats'].action (ident, data_token, '')
                     if not data_token.dims is None:
                         info = data_token.dims
@@ -2189,9 +2237,6 @@ class ImageServer(object):
                 data_token = self.request(action, ident, data_token, args)
                 if data_token.isHttpError():
                     break
-
-            # test output, if it is a file but it does not exist, set 404 error
-            data_token.testFile()
 
             # test output, if it is a file but it does not exist, set 404 error
             data_token.testFile()
