@@ -48,7 +48,7 @@ Ext.define('BQ.TemplateManager',
                 {
                     var tag = template.tags[i];
                     parser.href = tag.uri;
-                    copyTags.call(this, tag, resource.addtag({name:tag.name, value:tag.template["Default value"] || '', type: parser.pathname}));
+                    copyTags.call(this, tag, resource.addtag({name:tag.name, value:tag.template["defaultValue"] || '', type: parser.pathname}));
                 }
                 return resource;
             }
@@ -117,15 +117,15 @@ Ext.define('BQ.TemplateManager.Creator',
                                     scope           :   this
                                 },
             customEditors   :   {
-                                    'Display values'    :   {
+                                    'select'            :   {
                                                                 xtype       :   'textareafield',
                                                                 emptyText   :   'Enter comma separated display values e.g. Alabama, Alaska'
                                                             },
-                                    'Passed values'     :   {
+                                    'passedValues'      :   {
                                                                 xtype       :   'textareafield',
                                                                 emptyText   :   'Enter comma separated passed values e.g. AL, AK (defaults to display values)'
                                                             },
-                                    'Resource type'     :   {
+                                    'resourceType'      :   {
                                                                 xtype       :   'combo',
                                                                 store       :   Ext.create('Ext.data.Store', {
                                                                                     fields  :   ['name', 'uri'],
