@@ -166,7 +166,7 @@ Ext.define('BQ.Application.Toolbar', {
             }, {
                 itemId  : 'menu_create_from_template', 
                 text    : 'Create resource from template', 
-                handler : this.createResourceFromTemplate,
+                handler : function() {this.createResourceFromTemplate()}, //this.createResourceFromTemplate, Utkarsh : arg passed to that function should be blank
                 scope   : this, 
             }, '-'],       
         };      
