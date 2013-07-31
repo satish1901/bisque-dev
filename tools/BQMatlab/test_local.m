@@ -32,6 +32,24 @@ g.addGobject('polyline', 'poly-in-z', p );
 p = [1,2,-1,3;4,5,-1,6;7,8,-1,9];
 g.addGobject('polyline', 'poly-in-t', p );
 
+%% creating tags in another document and attaching them to the current outputs
+
+% attaching a bq.Node
+alien = bq.Factory.new('tag', 'alien');
+alien.addTag('second_number_objects', 123);
+alien.addTag('second_float', 456.78);
+outputs.appendChild(alien);
+
+% attaching a DOM Node
+alien2 = bq.Factory.new('tag', 'alien2');
+alien2.addTag('third_number_objects', 123);
+alien2.addTag('third_float', 456.78);
+outputs.appendChild(alien2.element);
+
+% attaching an XML string
+alien3 = '<tag name="alien3"><tag name="fourth_number_objects" value="123"/><tag name="fourth_float" value="456.78"/></tag>';
+outputs.appendChild(alien3);
+
 
 outputs.save('my_document.xml');
 
