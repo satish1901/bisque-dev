@@ -3,7 +3,7 @@ user = 'admin';
 pass = 'admin';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% creating a new dataset using lower level post
+%% creating a new dataset using lower level post
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 input = [];
@@ -17,7 +17,7 @@ bq.post([url '/data_service/dataset'], input, user, pass);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% creating a new dataset using higher level API
+%% creating a new dataset using higher level API
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 dataset = bq.Factory.new('dataset', 'my-dataset-2');
@@ -26,3 +26,33 @@ dataset = bq.Factory.new('dataset', 'my-dataset-2');
 
 dataset.save([url '/data_service/dataset'], user, pass);
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% rename some tags within the dataset
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+url = 'http://128.111.185.26:8080/data_service/dataset/635?view=deep';
+user = 'admin';
+pass = 'admin';
+dataset = bq.Factory.fetch(url, [], user, pass);
+images = dataset.getValues('object');
+
+for i=1:size(images,2),
+    im = bq.Factory.fetch([images{i} '?view=deep'], [], user, pass);
+    t = im.tag('height');
+    dirty = 0;
+    if ~isempty(t),
+        t.setAttribute('name', 'Height');
+        dirty = 1;        
+    end
+
+    t = im.tag('Height ');
+    if ~isempty(t),
+        t.setAttribute('name', 'Height');
+        dirty = 1;                
+    end
+    
+    if dirty == 1,        
+        im.save();
+    end
+end
