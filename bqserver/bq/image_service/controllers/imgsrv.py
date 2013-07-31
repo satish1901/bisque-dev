@@ -53,7 +53,7 @@ default_format = 'bigtiff'
 imgsrv_thumbnail_cmd = config.get('bisque.image_service.thumbnail_command', '-depth 8,d -page 1 -display')
 imgsrv_default_cmd = config.get('bisque.image_service.default_command', '-depth 8,d')
 
-imgcnv_needed_version = '1.60' # dima: upcoming 1.54
+imgcnv_needed_version = '1.61' # dima: upcoming 1.54
 bioformats_needed_version = '4.3.0' # dima: upcoming 4.4.4
 
 # ImageServer
@@ -1491,12 +1491,12 @@ class FramesService(object):
 class RotateService(object):
     '''Provides rotated versions for requested images:
        arg = angle
-       At this moment only supported values are 90, -90, 270, 180 and meta
+       At this moment only supported values are 90, -90, 270, 180 and guess
        ex: rotate=90'''
     def __init__(self, server):
         self.server = server
     def __repr__(self):
-        return 'RotateService: Returns an Image rotated as requested, arg = 0|90|-90|180|270'#|meta'
+        return 'RotateService: Returns an Image rotated as requested, arg = 0|90|-90|180|270|guess'
 
     def hookInsert(self, data_token, image_id, hookpoint='post'):
         pass
@@ -1505,7 +1505,7 @@ class RotateService(object):
         log.debug('Service - Rotate: ' + arg )
 
         ang = arg
-        angles = ['0', '90', '-90', '270', '180'] #, 'meta']
+        angles = ['0', '90', '-90', '270', '180', 'guess']
         if ang not in angles:
             #raise IllegalOperation('Rotate service: angle value not yet supported' )
             abort(400, 'rotate: angle value not yet supported' )
