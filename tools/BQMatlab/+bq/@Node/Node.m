@@ -115,7 +115,26 @@ classdef Node < matlab.mixin.Copyable
             stream = java.io.StringWriter;
             transformer.transform(DOMSource(newdoc), StreamResult(stream));
             str = char(stream.toString);
-        end % toString          
+        end % toString       
+        
+        function appendChild(self, node)  
+        % appends a given child node to the current XML element
+        % node can be either: 
+        %     bq.Node
+        %     Java DOM Element
+        %     string with XML
+            
+            child = node; % if node is a Java DOM Element
+            if isa(node, 'bq.Node'),     
+                child = node.element; % if node is a bq.Node
+            elseif ischar(node),  
+                % if node is an XML string
+                d = bq.str2xml(node);
+                child = d.getDocumentElement();
+            end                
+            
+            self.element.appendChild(self.doc.adoptNode(child.cloneNode(true)));
+        end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Access attributes
