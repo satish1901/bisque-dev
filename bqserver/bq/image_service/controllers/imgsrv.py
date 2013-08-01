@@ -661,7 +661,7 @@ class SliceService(object):
             pages_str = ",".join([str(p) for p in pages])
 
             # init parameters
-            params = ['-multi', '-page', '%d'%pages_str]
+            params = ['-multi', '-page', '%s'%pages_str]
 
             if not (x1==x2) or not (y1==y2):
                 x1s = ''; y1s = ''; x2s = ''; y2s = ''
