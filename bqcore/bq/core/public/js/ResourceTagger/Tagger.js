@@ -379,8 +379,22 @@ Ext.define('Bisque.ResourceTagger',
                 }
             },
             {
-                name : 'value',
-                type : 'string',
+                name    : 'value',
+                type    : 'string',
+                convert : function(value, record)
+                {
+                    var valueArr = [];
+                    
+                    if (record.raw instanceof BQObject)
+                        if (!Ext.isEmpty(record.raw.values) && !record.editing)
+                            for (var i=0; i<record.raw.values.length; i++)
+                                valueArr.push(record.raw.values[i].value);
+                    
+                    if (!Ext.isEmpty(value))
+                        valueArr.unshift(value);
+                                        
+                    return valueArr.join(", ");
+                }                
             },
             {
                 name : 'type',
@@ -411,13 +425,27 @@ Ext.define('Bisque.ResourceTagger',
 
             applyModifications : function()
             {
-                var nodeHash = this.tree.nodeHash, status = false;
+                var nodeHash = this.tree.nodeHash, status = false, valueArr;
 
                 for(var node in nodeHash)
                     if(nodeHash[node].dirty)
                     {
                         status = true;
-                        Ext.apply(nodeHash[node].raw, {'name': nodeHash[node].get('name'), 'value': nodeHash[node].get('value')});
+                        
+                        if (nodeHash[node].raw.values.length>0)  // parse csv to multiple value elements
+                        {
+                            valueArr = nodeHash[node].get('value').split(',');
+                            nodeHash[node].raw.values = [];
+
+                            for (var i=0; i<valueArr.length; i++)
+                                nodeHash[node].raw.values.push(new BQValue('string', valueArr[i].trim()));
+
+                            Ext.apply(nodeHash[node].raw, {'name': nodeHash[node].get('name'), 'value': undefined});
+                            delete nodeHash[node].raw.value;
+                        }
+                        else
+                            Ext.apply(nodeHash[node].raw, {'name': nodeHash[node].get('name'), 'value': nodeHash[node].get('value')});
+
                         nodeHash[node].commit();
                     }
 
@@ -608,11 +636,13 @@ Ext.define('Bisque.ResourceTagger',
         
         this.editing = true;
         var newTag = new BQTag();
+        
         newTag = Ext.apply(newTag,
         {
             name : me.record.data.name,
             value : me.record.data.value,
         });
+        
         var parent = (me.record.parentNode.isRoot()) ? this.resource : me.record.parentNode.raw;
         parent.addtag(newTag);
 
