@@ -92,6 +92,10 @@
     background-image: url('/images/toolbar/services.png');
 }
 
+.toolbar-main .icon-create {
+    background-image: url('/images/toolbar/plus.png');
+}
+
 .toolbar-menu img {
     background-size: 16px;
 }
