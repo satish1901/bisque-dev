@@ -6,8 +6,8 @@ Ext.define('BQ.TagRenderer.Base',
                                 baseClass       :   'BQ.TagRenderer',
                                 template        :   {
                                                         'Type'          :   'Base',
-                                                        'Default value' :   '',
-                                                        'Allow blank'   :   false,
+                                                        'defaultValue'  :   '',
+                                                        'allowBlank'    :   true,
                                                         'Editable'      :   true,
                                                     },
 
@@ -94,7 +94,7 @@ Ext.define('BQ.TagRenderer.String',
                                 template        :   {
                                                         'Type'                  :   'String',
                                                         'minLength'             :   1,  
-                                                        'maxLength'             :   200,
+                                                        'maxLength'             :   Number.MAX_VALUE,
                                                         'RegEx'                 :   ''
                                                     }                    
                         },
@@ -160,10 +160,10 @@ Ext.define('BQ.TagRenderer.Number',
                                 componentName   :   'Number',
                                 template        :   {
                                                         'Type'                  :   'Number',
-                                                        'minValue'              :   0,  
+                                                        'minValue'              :   10,  
                                                         'maxValue'              :   100,
                                                         'allowDecimals'         :   true,
-                                                        'decimalPrecision'      :   2,
+                                                        'decimalPrecision'      :   4,
                                                     }                    
                             },
                                
@@ -208,7 +208,7 @@ Ext.define('BQ.TagRenderer.Date',
                                 componentName   :   'Date',
                                 template        :   {
                                                         'Type'      :   'Date',
-                                                        'format'    :   'm/d/Y',
+                                                        'format'    :   'YYYY:MM:DDThh:mm:ss',
                                                     }                    
                             },
 
@@ -233,18 +233,18 @@ Ext.define('BQ.TagRenderer.ComboBox',
                                 componentName   :   'ComboBox',
                                 template        :   {
                                                         'Type'              :   'ComboBox',
-                                                        'Display values'    :   '',
-                                                        'Passed values'     :   ''
+                                                        'select'            :   '',
+                                                        'passedValues'      :   ''
                                                     }                    
                         },
                         
     getRenderer         :   function(config)
                             {
-                                var values = config.tplInfo['Display values'] || '', passedValues = '';
+                                var values = config.tplInfo['select'] || '', passedValues = '';
                                 values = values.split(',');
                                 
-                                if (config.tplInfo['Passed values'])
-                                    passedValues = config.tplInfo['Passed values'].split(',');
+                                if (config.tplInfo['passedValues'])
+                                    passedValues = config.tplInfo['passedValues'].split(',');
                                 else
                                     passedValues = values;
 
@@ -296,7 +296,7 @@ Ext.define('BQ.TagRenderer.BisqueResource',
                                 componentName   :   'BisqueResource',
                                 template        :   {
                                                         'Type'          :   'BisqueResource',
-                                                        'Resource type' :   'image',
+                                                        'resourceType' :   'image',
                                                     }                    
                             },
 
@@ -304,7 +304,7 @@ Ext.define('BQ.TagRenderer.BisqueResource',
                             {
                                 return  {
                                             xtype       :   'BisqueResourcePicker',
-                                            dataset     :   config.tplInfo['Resource type'] || BQ.TagRenderer.BisqueResource.template['Resource type'],
+                                            dataset     :   config.tplInfo['resourceType'] || BQ.TagRenderer.BisqueResource.template['resourceType'],
                                             editable    :   false,
                                         }
                             }

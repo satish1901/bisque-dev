@@ -16,11 +16,13 @@ $matlabroot/sys/java/jre/glnxa64/jre/lib/amd64:
 XAPPLRESDIR=$matlabroot/X11/app-defaults 
 
 PATH=.:$matlabroot/bin:$PATH
-# Needed for 2012a
+
+# Needed for versions >= 2011b
 #unset HOME
-# Needed for 2011a
+# Needed for versions <= 2011a
 HOME=.
 export HOME
+
 #DISPLAY=:0.0
 unset DISPLAY
 

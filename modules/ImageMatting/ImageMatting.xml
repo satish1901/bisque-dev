@@ -9,6 +9,11 @@
             <template>
                 <tag name="label" value="Select input image" />
                 <tag name="accepted_type" value="image" />
+                <tag name="require_geometry">
+                    <tag name="z" value="single" />
+                    <tag name="t" value="single" />
+                    <tag name="fail_message" value="Only 2D images supported!" />
+                </tag>            
             </template>
             
             <gobject name="stroke">

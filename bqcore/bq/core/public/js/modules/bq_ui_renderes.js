@@ -444,6 +444,7 @@ Ext.define('BQ.selectors.Resource', {
 
     onPhys: function() {
         this.fireEvent( 'gotPhys', this, this.phys );
+        this.validate();
     },
 
     isValid: function() {
