@@ -147,7 +147,7 @@ def load_stores():
     log.debug ('requested stores = %s' % store_list)
     for store in store_list:
         params = dict ( (x[0].replace('bisque.stores.%s.' % store, ''), x[1]) 
-                        for x in  config.items() if x[0].startswith('bisque.stores.%s' % store))
+                        for x in  config.items() if x[0].startswith('bisque.stores.%s.' % store))
         if 'path' not in params:
             log.error ('cannot configure %s with out path parameter' % store)
             continue

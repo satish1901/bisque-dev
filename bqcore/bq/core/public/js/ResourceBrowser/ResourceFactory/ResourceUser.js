@@ -10,7 +10,7 @@ Ext.define('Bisque.Resource.User.Grid',
         this.resource.display_name = this.displayName;
         var fields = this.callParent();
         fields[1] = this.displayName;
-        fields[2] = record['email'] || '';
+        fields[2] = (record && record['email']) || '';
             
         return fields;
     }
