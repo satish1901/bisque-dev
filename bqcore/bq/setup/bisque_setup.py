@@ -992,10 +992,13 @@ def install_proxy(params):
 #
 def check_condor (params, cfg  = RUNTIME_CFG):
     try:
+        
         if os.path.exists('/dev/null'):
             devnull = open ('/dev/null') 
         else:
-            devnull = open('junk.txt', 'w')
+            import tempfile
+            devnull = tempfile.TemporaryFile(mode='w')
+        
         retcode = call ([ 'condor_status' ], stdout=devnull, stderr=devnull )
     except OSError:
         print "No condor was found. See bisque website for details on using condor"
@@ -1003,7 +1006,7 @@ def check_condor (params, cfg  = RUNTIME_CFG):
     print "Condor job management software has been found on your system"
     print "Bisque can use condor facilities for some module execution"
 
-    if getanswer("Condigure modules for condor", 'Y',
+    if getanswer("Configure modules for condor", 'Y',
                  "Configure condor shared directories for better performance")=="Y":
         if 'condor' not in params['runtime.platforms']:
             params['runtime.platforms'] = ','.join (['condor', params['runtime.platforms']])

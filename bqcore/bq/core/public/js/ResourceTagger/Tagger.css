@@ -1,24 +1,38 @@
 /* CSS settings for resource tagger */
 .tab-arrow {
-    border-radius : 0px !important;
-    box-shadow : none !important;
-    background-color : transparent !important;
-    background-image : none !important;
-    border-color : transparent !important;
+    width           :   11px !important;
+    border-radius   :   0px !important;
+    box-shadow      :   none !important;
+    background-color:   transparent !important;
+    background-image:   none !important;
+    border-color    :   transparent !important;
+}
+
+.tab-add {
+    width   :   24px !important;
 }
 
 .icon-tag {
 	background-image: url('../ResourceTagger/Images/tag.png') !important;
 }
 
+.icon-tab-add {
+    background-image: url('../ResourceTagger/Images/add.png') !important;
+    left    :   -6px !important;
+}
+
 .icon-arrow {
     background-image: url('../ResourceTagger/Images/arrow.png') !important;
-    left : -8px !important;
+    left : -12px !important;
     opacity : 1 !important;
 }
 
 .icon-folder {
 	background-image: url('../ResourceTagger/Images/folder.gif') !important;
+}
+
+.icon-file {
+    background-image: url('../ResourceTagger/Images/file.png') !important;
 }
 
 .icon-grid {
