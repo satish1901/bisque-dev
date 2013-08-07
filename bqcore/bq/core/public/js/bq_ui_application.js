@@ -44,13 +44,14 @@ Ext.define('BQ.Application', {
             "signedin" : true,
             "signedout" : true,
             "gotuser" : true,
-            "nouser" : true,                           
+            "nouser" : true,
+            "userListLoaded" : true,
         });
         config = config || {};
         this.callParent();
 
         config.config = config.config || {};                
-        this.onReady();        
+        this.onReady();
         this.main = Ext.create('BQ.Application.Window', config.config);
         
         BQSession.initialize_timeout('', { 
@@ -77,6 +78,8 @@ Ext.define('BQ.Application', {
             
             for (var i=0; i<data.children.length;i++)
                 this.userList[data.children[i].uri] = data.children[i];
+            
+            this.fireEvent('userListLoaded');
         }
     },
     

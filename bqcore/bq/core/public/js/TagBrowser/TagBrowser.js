@@ -9,22 +9,26 @@
  * @defaults :
  *  
  */
+
+Ext.Loader.setConfig({enabled: true});
+Ext.Loader.setPath('Ext.ux', '../extjs/examples/ux');
+Ext.require(['Ext.ux.TabReorderer']);
+
 Ext.define('BQ.TagBrowser',
 {
     extend      :   'Ext.tab.Panel',
     layout      :   'fit',
-    //frame       :   true,
     plain       :   true,
     border      :   false,
-    //padding     :   6,
     autoDestroy :   false,
-
+    plugins     :   Ext.create('Ext.ux.TabReorderer'),
     title       :   'Directory Browser',
 
     defaults    :   {
                         border      :   false,
                         header      :   false,
                         closable    :   true,
+                        reorderable :   false,
                         frame       :   true,
                         padding     :   6,
                         layout      :   {
@@ -32,7 +36,6 @@ Ext.define('BQ.TagBrowser',
                                             align   :   'stretch'
                                         },
                         closeText   :   'Disable filter',
-                        
                     },
     initComponent : function()
     {
@@ -53,65 +56,71 @@ Ext.define('BQ.TagBrowser',
             return;
         }
         
+        this.getPlugin().on('drop', this.filterSwap, this);
+        this.refresh(preferences);
+    },
+
+    // Reset all filters and reinstantiate from the original list
+    refresh : function(preferences)
+    {
+        // Init state
         this.config.preferences = preferences;
         this.config.tagBrowser = this;
         this.state = Ext.create('BQ.TagBrowser.State', this.config);
         this.relayEvents(this.state, ['QUERY_CHANGED']);
         
-        this.refresh();
-    },
-    
-    refresh : function()
-    {
         // Remove all existing filters
         this.removeAll();
         
+        // Button to add new filters to the collection
+        this.add(this.btnAdd());
+
         // Init all filters with the tagList
         for (var i=0; i<this.state.getLength(); i++)
-        {
-            this.add(
-            {
-                xtype       :   'BQ.TagBrowser.Filter',
-                state       :   this.state,
-                disabled    :   true,
-                data        :   {
-                                    index   :   i,
-                                    tag     :   this.state.tagAt(i),
-                                    value   :   ''
-                                },
-                listeners   :   {
-                                    scope   :   this,
-                                    SELECT  :   this.filterSelect,
-                                    CLOSE   :   this.filterClose,   
-                                }
-            });
-
-            // Add the arrow next to the tabs
-            if (i!=this.state.getLength()-1)            
-                this.add({
-                    iconCls     :   'icon-arrow',
-                    closable    :   false,
-                    disabled    :   true,
-                    tabConfig   :   { cls : 'tab-arrow' },
-                });
-        }
+            this.addFilter(i);
         
         // Activate the first filter
-        var filter = this.getComponent(this.mapIndex(0));
+        var firstFilter = this.getComponentAt(0);
         
-        if (filter)
+        if (firstFilter)
         {
-            filter.activate();
+            firstFilter.activate();
             this.state.queryChanged();
         }
         
-        this.setActiveTab(this.mapIndex(0));
-         
+        this.setActiveFilter(0);
     },
     
-    // Return actual filter index while ignoring indices for arrow tabs in-between
-    mapIndex : function(index) {
-        return 2*index;
+    addFilter : function(index)
+    {
+        // Add a filter to the directory browser
+        this.insert(this.items.getCount()-1,
+        {
+            xtype       :   'BQ.TagBrowser.Filter',
+            state       :   this.state,
+            disabled    :   true,
+            data        :   {
+                                index   :   index,
+                                tag     :   this.state.getTagAt(index),
+                                value   :   ''
+                            },
+            listeners   :   {
+                                scope   :   this,
+                                SELECT  :   this.filterSelect,
+                                CLOSE   :   this.filterClose,
+                                CHANGE  :   this.filterChange,   
+                            }
+        });
+
+        // Add the arrow next to the tabs
+        this.insert(this.items.getCount()-1,
+        {
+            iconCls     :   'icon-arrow',
+            reorderable :   false,
+            closable    :   false,
+            disabled    :   true,
+            tabConfig   :   { cls : 'tab-arrow' },
+        });
     },
     
     filterSelect : function(filter, grid, record)
@@ -120,7 +129,7 @@ Ext.define('BQ.TagBrowser',
 
         if (filter.getIndex()+1<this.state.getLength())
         {
-            this.getComponent(this.mapIndex(filter.getIndex()+1)).activate();
+            this.getComponentAt(filter.getIndex()+1).activate();
             this.setActiveTab(this.mapIndex(filter.getIndex()+1));
         }
 
@@ -138,7 +147,18 @@ Ext.define('BQ.TagBrowser',
             this.setActiveTab(0);
         }
         else
+        {
             this.setActiveTab(this.mapIndex(filter.getIndex()-1));
+            
+            // Remove the filter from the state
+            this.state.removeTagAt(filter.getIndex());
+            
+            this.remove(this.getComponent(this.mapIndex(filter.getIndex())+1), false);
+            this.remove(filter, false);
+            
+            // Recreate indices
+            this.recreateIndices();
+        }
         
         // Raise Browser Event
         this.state.queryChanged();
@@ -147,8 +167,139 @@ Ext.define('BQ.TagBrowser',
     filterDisable : function(index)
     {
         for (var i = index; i<this.state.getLength(); i++)
-            this.getComponent(this.mapIndex(i)).clear();
-    }
+            this.getComponentAt(i).clear();
+    },
+    
+    filterChange : function(filter, combo, record)
+    {
+        this.filterDisable(filter.getIndex()+1);
+        
+        filter.clear();
+        filter.activate();
+
+        this.setActiveTab(this.mapIndex(filter.getIndex()));
+        
+        // Raise Browser Event
+        this.state.queryChanged();
+    },
+    
+    filterSwap : function(plugin, browser, srcTab, oldPos, newPos)
+    {
+        if (oldPos==newPos)
+            return;
+        
+        // Recreate index of every filter based on new position
+        this.recreateIndices();
+
+        // Reload browser
+        this.state.queryChanged();
+    },
+    
+    recreateIndices : function()
+    {
+        for (var i=0, newTagList=[]; i<this.state.getLength(); i++)
+        {
+            var filter = this.getComponentAt(i);
+            filter.setIndex(i);
+            newTagList.push(filter.getTag());
+        }
+        
+        this.state.setTagList(newTagList);
+    },
+    
+    btnAdd : function()
+    {
+        this.tagCombo = Ext.create('Ext.form.field.ComboBox', {
+            padding         :   '10 0 0 0',
+            emptyText       :   'Select a tag...',
+            store           :   Ext.create('Ext.data.ArrayStore', { fields : ['name'] }),
+            queryMode       :   'local',
+            displayField    :   'name',
+            typeAhead       :   true,
+            forceSelection  :   true,
+        });
+         
+        this.loadData();
+        
+        return {
+                    iconCls     :   'icon-tab-add',
+                    tabConfig   :   { cls : 'tab-add' },
+                    closable    :   false,
+                    reorderable :   false,
+                    items       :   [ this.tagCombo, {
+                                        xtype   :   'button',
+                                        height  :   30,
+                                        text    :   'Add Filter',
+                                        handler :   this.filterAdd,
+                                        scope   :   this,        
+                                    }]
+                }
+    },
+    
+    loadData : function(tagData)
+    {
+        if (!tagData)
+            BQFactory.request({
+                uri     :   this.state.getTagNameURI(),
+                cb      :   Ext.bind(this.loadData, this),
+                cache   :   false
+            });
+        else
+        {
+            var tagNames = [];
+            
+            for (var i=0; i<tagData.tags.length; i++)
+                tagNames.push([tagData.tags[i].name || '']);
+        
+            this.tagCombo.getStore().loadData(tagNames);
+        }
+    },
+    
+    filterAdd : function(btn)
+    {
+        var value = this.tagCombo.getValue();
+        
+        if (Ext.isEmpty(value))
+            BQ.ui.message('Add Filter', 'Please select a value from the drop down first.');
+        else
+        {
+            var index = this.state.getLength();
+            var disabled = this.getComponentAt(index-1).isDisabled();
+            var record = this.getComponentAt(index-1).grid.getSelectionModel().getSelection();
+            
+            this.state.setTagAt(index, value);
+            this.addFilter(index);
+            
+            if (!disabled && !Ext.isEmpty(record))
+            {
+                this.getComponentAt(index).activate();
+                this.setActiveTab(this.mapIndex(index));
+            }
+        }
+    },
+    
+    // Utility functions
+    getLength : function()
+    {
+        // -1 due to the Add button
+        // /2 due to the arrow tabs inbetween
+          
+        return (this.items.getCount()-1) / 2;
+    },
+    
+    getComponentAt : function(index) {
+        return this.tabBar.getComponent(this.mapIndex(index)).card;
+    },
+    
+    setActiveFilter : function(index) {
+        this.setActiveTab(this.mapIndex(index));
+    },
+    
+    // Return actual filter index while ignoring indices for arrow tabs in-between
+    mapIndex : function(index) {
+        return 2*index;
+    },
+    
 });
 
 
@@ -161,7 +312,8 @@ Ext.define('BQ.TagBrowser.Filter',
     {
         this.callParent(arguments);
         this.on('beforeclose', this.closeFilter, this);
-        this.setTitle(Ext.String.capitalize(this.state.tagAt(this.data.index)));
+        this.setTitle(Ext.String.capitalize(this.state.getTagAt(this.data.index)));
+        
         this.addComponents();
     },
     
@@ -174,10 +326,11 @@ Ext.define('BQ.TagBrowser.Filter',
             store           :   Ext.create('Ext.data.ArrayStore', { fields : ['name'] }),
             queryMode       :   'local',
             typeAhead       :   true,
+            hidden          :   true,
             emptyText       :   'Loading...',
             listeners       :   {
-                                    //'select'    :   this.OnCBSelect,
-                                    scope       :   this
+                                    scope   :   this,
+                                    select  :   this.selectTag,
                                 }
         });
         
@@ -202,16 +355,11 @@ Ext.define('BQ.TagBrowser.Filter',
         this.add([this.combo, this.grid]);
     },
     
-    selectValue : function(grid, record)
-    {
-        this.setValue(record.get('value'));
-        this.setTitle(this.getValue());
-        this.fireEvent('SELECT', this, grid, record);
-    },
-    
     activate : function()
     {
         this.setDisabled(false);
+        this.reorderable = true;
+        this.tab.reorderable = true;
         this.loadValues();
         this.loadNames();
     },
@@ -219,6 +367,7 @@ Ext.define('BQ.TagBrowser.Filter',
     clear : function()
     {
         this.setDisabled(true);
+        this.tab.reorderable = false;
         this.setValue('');
         this.grid.getStore().loadData([]);
         this.setTitle(Ext.String.capitalize(this.getTag()));
@@ -233,8 +382,26 @@ Ext.define('BQ.TagBrowser.Filter',
     
     /* Utility functions */
     
+    selectTag : function(combo, record)
+    {
+        this.setTag(record[0].get('name'));
+        this.fireEvent('CHANGE', this, combo, record);
+    },
+    
+    selectValue : function(grid, record)
+    {
+        this.setValue(record.get('value'));
+        this.setTitle(this.getValue());
+        this.fireEvent('SELECT', this, grid, record);
+    },
+
     getTag : function() {
         return this.data.tag;
+    },
+    
+    setTag : function(tagName) {
+        this.data.tag = tagName;
+        this.state.setTagAt(this.getIndex(), tagName);
     },
     
     getValue : function() {
@@ -247,6 +414,10 @@ Ext.define('BQ.TagBrowser.Filter',
     
     getIndex : function() {
         return this.data.index;
+    },
+    
+    setIndex : function(idx) {
+        this.data.index = idx;
     },
 
     loadNames : function(tagData)
@@ -302,7 +473,6 @@ Ext.define('BQ.TagBrowser.State',
         
         Ext.apply(this,
         {
-            currentIndex    :   0,
             tagList         :   this.tagList        ||  this.preferences.tagList        ||  ['Project', 'Experimenter'],
             resourceType    :   this.resourceType   ||  this.preferences.resourceType   ||  'image',
             resourceServer  :   this.resourceServer ||  this.preferences.resourceServer ||  'data_service',
@@ -310,12 +480,24 @@ Ext.define('BQ.TagBrowser.State',
         })
     },
     
+    setTagList : function(tagList) {
+        this.tagList = tagList;
+    },
+    
     getLength : function() {
         return this.tagList.length;
     },
     
-    tagAt : function(index) {
+    getTagAt : function(index) {
         return this.tagList[index] || null;
+    },
+
+    setTagAt : function(index, tagName) {
+        this.tagList[index] = tagName;
+    },
+    
+    removeTagAt : function(index) {
+        this.tagList.splice(index, 1);
     },
     
     tagOrder : function()
@@ -324,7 +506,7 @@ Ext.define('BQ.TagBrowser.State',
         
         for (var i=0; i<this.getLength(); i++)
         {
-            var filter = this.tagBrowser.getComponent(this.tagBrowser.mapIndex(i));
+            var filter = this.tagBrowser.getComponentAt(i);
             if (!filter.isDisabled())
                 tagOrder = tagOrder + Ext.String.format(tpl, encodeURIComponent(filter.getTag()));
         }
@@ -338,7 +520,7 @@ Ext.define('BQ.TagBrowser.State',
         
         for (var i=0; i<this.getLength(); i++)
         {
-            var filter = this.tagBrowser.getComponent(this.tagBrowser.mapIndex(i));
+            var filter = this.tagBrowser.getComponentAt(i);
             if (!filter.isDisabled())
                 tagQuery = tagQuery + Ext.String.format(tpl, encodeURIComponent(filter.getTag()), encodeURIComponent(filter.getValue()));
         }
@@ -371,6 +553,6 @@ Ext.define('BQ.TagBrowser.State',
         var queryTpl = '/{0}/{1}?tag_values={2}&tag_query={3}&wpublic={4}';
         
         return Ext.String.format(queryTpl, this.resourceServer, this.resourceType,
-                    encodeURIComponent(this.tagAt(index)), this.tagQuery(), this.includePublic); 
+                    encodeURIComponent(this.tagBrowser.getComponentAt(index).getTag()), this.tagQuery(), this.includePublic); 
     }
 });

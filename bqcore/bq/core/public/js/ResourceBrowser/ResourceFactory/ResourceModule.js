@@ -245,7 +245,7 @@ Ext.define('Bisque.Resource.Module.IconList',
             margin:'0 0 0 4',
             width:110,
             height:110,
-            html: '<img style="position:relative;height:100%;width:100%" src="'+serviceURL+'/thumbnail"/>'
+            html: '<img style="position:relative;height:110px;width:110px" src="'+serviceURL+'/thumbnail"/>'
         });
 
         var moduleName=new Ext.form.Label({

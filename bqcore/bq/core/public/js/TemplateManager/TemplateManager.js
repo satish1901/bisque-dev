@@ -48,7 +48,7 @@ Ext.define('BQ.TemplateManager',
                 {
                     var tag = template.tags[i];
                     parser.href = tag.uri;
-                    copyTags.call(this, tag, resource.addtag({name:tag.name, value:tag.template["Default value"] || '', type: parser.pathname}));
+                    copyTags.call(this, tag, resource.addtag({name:tag.name, value:tag.template["defaultValue"] || '', type: parser.pathname}));
                 }
                 return resource;
             }
@@ -92,6 +92,7 @@ Ext.define('BQ.TemplateManager.Creator',
             items   :   [this.centerPanel, this.eastPanel],
         });
         
+        window.onbeforeunload = Ext.bind(this.checkUnsavedChanges, this);
         this.callParent(arguments);
     },
     
@@ -116,15 +117,15 @@ Ext.define('BQ.TemplateManager.Creator',
                                     scope           :   this
                                 },
             customEditors   :   {
-                                    'Display values'    :   {
+                                    'select'            :   {
                                                                 xtype       :   'textareafield',
                                                                 emptyText   :   'Enter comma separated display values e.g. Alabama, Alaska'
                                                             },
-                                    'Passed values'     :   {
+                                    'passedValues'      :   {
                                                                 xtype       :   'textareafield',
                                                                 emptyText   :   'Enter comma separated passed values e.g. AL, AK (defaults to display values)'
                                                             },
-                                    'Resource type'     :   {
+                                    'resourceType'      :   {
                                                                 xtype       :   'combo',
                                                                 store       :   Ext.create('Ext.data.Store', {
                                                                                     fields  :   ['name', 'uri'],
@@ -141,6 +142,15 @@ Ext.define('BQ.TemplateManager.Creator',
         this.eastPanel.add(this.grid);
     },
     
+    checkUnsavedChanges : function()
+    {
+        if (this.resource.dirty)
+        {
+            this.tplToolbar.getComponent('tbTplSave').getEl().highlight('FF9500', {duration:250, iterations:6});
+            return "You have unsaved changes which will be lost.";
+        }
+    },
+    
     saveTemplate : function()
     {
         function success(resource)
@@ -149,6 +159,7 @@ Ext.define('BQ.TemplateManager.Creator',
             this.tagger.setResource(resource);
         }
         
+        this.resource.dirty = false;
         this.resource.uri = this.resource.uri + '?view=deep';
         this.resource.save_(undefined, Ext.bind(success, this), Ext.pass(BQ.ui.error, ['Save failed!']));
     },
