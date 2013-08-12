@@ -7,7 +7,7 @@ Ext.define('Bisque.Resource.Template.Page',
     {
         this.setLoading(false);
         
-        var tplMan = new BQ.TemplateManager.create({resource:this.resource});
+        var tplMan = new BQ.TemplateManager.create({resource:this.resource, tplToolbar : this.toolbar});
         this.add(tplMan);
         
         this.toolbar.insert(0, 
@@ -16,7 +16,15 @@ Ext.define('Bisque.Resource.Template.Page',
             width   :   8
         },
         {
-            text    :   'Save',
+            itemId      :   'tbTplSave',
+            text        :   'Save',
+            width       :   75,
+            textAlign   :   'left',
+            border      :   2,
+            style       :   {
+                                borderColor: '#0178C1',
+                                borderStyle: 'dotted'
+                            },            
             iconCls :   'icon-save',
             handler :   tplMan.saveTemplate,
             scope   :   tplMan

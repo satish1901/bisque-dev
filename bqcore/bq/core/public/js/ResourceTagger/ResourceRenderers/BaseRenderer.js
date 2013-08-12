@@ -57,7 +57,11 @@ Bisque.ResourceTagger.RenderersAvailable =
 
 Bisque.ResourceTagger.BaseRenderer = function(value, metaData, record)
 {
-    var renderer = Bisque.ResourceTagger.RenderersAvailable[record.data.type.toLowerCase()];
+    var tagType = record.data.type.toLowerCase();
+    if (tagType.indexOf('data_service/template')!=-1)
+        tagType = record.raw.template.Type.toLowerCase();
+    
+    var renderer = Bisque.ResourceTagger.RenderersAvailable[tagType];
 
     if(renderer)
         return renderer.apply(this, arguments);

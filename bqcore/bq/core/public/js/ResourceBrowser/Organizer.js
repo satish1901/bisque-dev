@@ -471,7 +471,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
     {
         this.tagCombo = Ext.create('Ext.form.field.ComboBox',
         {
-            editable : false,
+            //editable : false,
             forceSelection : true,
             displayField : 'name',
             store : Ext.create('Ext.data.Store',
