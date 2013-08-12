@@ -74,7 +74,7 @@ Ext.define('Bisque.ResourceFactoryWrapper',
             var resource = Bisque.ResourceFactory.getResource(config);
             var layoutCls = Bisque.ResourceBrowser.LayoutFactory.getLayout({browser:{layoutKey: config.layoutKey}});
             resource.setSize({width: layoutCls.layoutEl.width, height: layoutCls.layoutEl.height})
-            resource.addCls(layoutCls.layoutCSS);
+            resource.addCls(layoutCls.layoutCSS || '');
 
             BQ.Preferences.get(
             {
@@ -151,8 +151,8 @@ Ext.define('Bisque.Resource',
     {
         var prefs = this.getImagePrefs('ImageParameters') || '?slice=,,{sliceZ},{sliceT}&thumbnail={width},{height}&format=jpeg';
 
-        prefs = prefs.replace('{sliceZ}', config.sliceZ || 1);
-        prefs = prefs.replace('{sliceT}', config.sliceT || 1);
+        prefs = prefs.replace('{sliceZ}', Math.max(config.sliceZ, 1));
+        prefs = prefs.replace('{sliceT}', Math.max(config.sliceT, 1));
         prefs = prefs.replace('{width}', config.width || 150);
         prefs = prefs.replace('{height}', config.height || 150);
         
@@ -608,7 +608,11 @@ Ext.define('Bisque.Resource.Page',
         this.callParent(arguments);
         this.toolbar = this.getDockedComponent(0);
 
-        this.testAuth(BQApp.user, false);
+        if (Ext.isEmpty(BQApp.userList))
+            BQApp.on('userListLoaded', function(){this.testAuth(BQApp.user, false)}, this);
+        else
+            this.testAuth(BQApp.user, false);
+            
         this.addListener('afterlayout', this.onResourceRender, this, {single:true});
     },
 
@@ -652,12 +656,14 @@ Ext.define('Bisque.Resource.Page',
                 var btn = this.toolbar.getComponent('btnOwner');
                 var mailto = Ext.String.format('mailto:{0}?subject={1}&body=Bisque resource -  {2} + ({3}) %0A%0A', owner.email_address,
                     '[Bisque] Regarding ' + this.resource.name, this.resource.name, document.URL);
-                
+
                 btn.setText(owner.display_name || '');
                 
                 function setMailTo(btn, mailto)
                 {
-                    btn.getEl().down('a', true).setAttribute('href', mailto);
+                    btn.setHref(mailto);
+                    // Old ExtJS code - Remove once moved to 4.2.1+
+                    //btn.getEl().down('a', true).setAttribute('href', mailto);
                     btn.setVisible(true);
                 }
                 

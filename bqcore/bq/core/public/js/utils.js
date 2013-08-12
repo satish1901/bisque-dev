@@ -60,6 +60,19 @@ function evaluateXPathIE(aNode, aExpr)
 if (Ext.isIE)
     evaluateXPath = evaluateXPathIE; 
 
+// e.g.
+// str = ellipsis("this is a test", 7, '...')
+// str = "this..."
+
+function ellipsis(value, len, eos)
+{
+    eos = eos || "...";
+    
+    if (value && value.length > len)
+        return value.substr(0, len-eos.length) + eos;        
+    return value;
+}
+
 // clean up an XML/HTML node by removing all its children nodes
 function removeAllChildren(element) {
     while (element.hasChildNodes()) {
