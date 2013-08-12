@@ -262,6 +262,10 @@ def find_server(url=None):
 def guess_image_type(filename):
     server = find_server()
     return server.guess_image_type(filename)
+
+def local_file(url):
+    server = find_server()
+    return server.local_file(url)
     
 #def new_file(src=None, name=None, **kw):
 #    ''' Find the preferred image server and store the file there

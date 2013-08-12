@@ -173,6 +173,7 @@ class ResourceFactory(object):
         elif xmlname == "value":
             node = Value()
             parent.values.append(node)
+            parent.resource_value = None
             node.indx = len(parent.values)-1   # Default value (maybe overridden)
             node.document = parent.document
         elif xmlname== "request" or xmlname=="response":
@@ -204,6 +205,7 @@ class ResourceFactory(object):
         elif xmlname == "value":
             if node not in parent.values:
                 parent.values.append(node)
+                parent.resource_value = None
                 node.indx = len(parent.values)-1   # Default value (maybe overridden)
         elif xmlname== "request" or xmlname=="response":
             pass

@@ -15,7 +15,7 @@ except ImportError:
     from setuptools import setup, find_packages
 
 #from bq.release import __VERSION__
-__VERSION__="0.5.2"
+__VERSION__="0.5.3"
 
 setup(
     name='bqcore',
@@ -68,6 +68,7 @@ setup(
         "virtualenv",
         "poster",
         "shortuuid",
+        "Minimatic",
         ],
     setup_requires=["PasteScript >= 1.7"],
     paster_plugins=['PasteScript', 'Pylons', 'TurboGears2'],
