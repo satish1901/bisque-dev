@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 import sys, os
 
 #from bq.release import __VERSION__
-__VERSION__ = '0.5.2'
+__VERSION__ = '0.5.3'
 
 setup(name='bqserver',
       version=__VERSION__,
@@ -34,6 +34,12 @@ The bisque server
         "tw.recaptcha",
         "tgext.registration2",
         "tw.output", #https://bitbucket.org/alexbodn/twoutput/get/af6904c504cf.zip
+        ##"importlib", # Feature, not needed for python 2.7
+        #"cython",  # Feature
+        #"numexpr", # Feature
+        #"tables",  # Feature
+        #"mahotas",  # Feature
+        ##"opencv",  # Feature        
       ],
       entry_points="""
       # -*- Entry points: -*-
@@ -53,6 +59,7 @@ The bisque server
     ingest_service   = bq.ingest.controllers.ingest_server
     dataset_service  = bq.dataset_service.controllers.dataset_service
     usage            = bq.usage.controllers.usage
+    #features         = bq.features.controllers.features	
 
     [bq.commands]
     module = bq.module_service.commands.module_admin:module_admin
