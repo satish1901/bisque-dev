@@ -5,6 +5,7 @@ import logging
 log = logging.getLogger('bq.util.copylink')
 
 def copy_link (*largs):
+    "Copy or make a hard link"
     largs = list (largs)
     d = largs.pop()
         
@@ -28,4 +29,17 @@ def copy_link (*largs):
             else:
                 shutil.copy2(f, dest)
         
-                              
+
+
+
+def copy_symlink (source, dest):
+    "Copy or make a symlink"
+    try:
+        os.symlink(source, dest)
+    except (OSError, AttributeError), e:
+        log.info ("Problem in link %s .. trying copy" % e)
+        if os.path.isdir(source):
+            shutil.copytree(source, dest)
+        else:
+            shutil.copy2(source, dest)
+
