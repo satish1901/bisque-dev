@@ -68,7 +68,7 @@ import pylons
 from pylons.controllers.util import abort
 
 import tg
-from tg import redirect, expose, request, session
+from tg import  expose, request, session
 from tg.util import Bunch
 from tg.configuration import  config
 #from tg.controllers import CUSTOM_CONTENT_TYPE
@@ -565,8 +565,8 @@ class Resource(ServiceController):
                 else:
                     #response = method(resource, doc = None, **kw)
                     # Raise illegal operation (you should provide XML)
-                    log.debug ("Bad media type in post/put:" + content)
-                    redirect("", 415)
+                    log.debug ("Bad media type in post/put:%s" % content)
+                    abort(415, "Bad media type in post/put:%s" % content )
                 self.server_cache.invalidate(request.url, user=user_id)
             elif http_method == 'delete':
                 value = method(resource, **kw)
