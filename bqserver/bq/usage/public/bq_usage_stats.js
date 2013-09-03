@@ -26,16 +26,16 @@ Ext.define('BQ.usage.Stats', {
     layout: 'fit', 
     defaults: {border: 0,},    
     resource: '/usage/stats',
-    tag_titles: {'number_images': 'All Images', 'number_images_user': 'My images', 'number_images_planes': '2D Planes', 'number_tags': 'Tags', },
+    tag_titles: {'number_images': 'All Images', 'number_images_user': 'My images', 'number_images_planes': '2D Planes', 'number_tags': 'Tags', 'number_gobs': 'GObjects' },
 
     initComponent : function() {
+        this.callParent();
         this.setLoading('Fetching usage...'); 
         BQFactory.request({
             uri: this.resource, 
             cb: callback(this, 'onStats'), 
             errorcb: callback(this, 'onError'),
         });
-        this.callParent();
     },
 
     onError: function() {
@@ -60,9 +60,11 @@ Ext.define('BQ.usage.Uploads', {
     alias: 'widget.uploadstats',  
     requires: ['Ext.chart.*', 'Ext.layout.container.Fit'],
     
-    heading: 'Image uploads',     
+    heading: 'Image uploads - daily',
+    tip: 'Image uploads on ',
     resource: '/usage/uploads',
     modelName: 'UsageUploads',
+    axisFormat: 'n/j',
     showAxisTitles: true,
 
     layout: {
@@ -73,18 +75,17 @@ Ext.define('BQ.usage.Uploads', {
     defaults: { border: 0, },   
 
     initComponent : function() {
-        
+        this.callParent();
+        this.setLoading('Fetching usage...');                
         Ext.define(this.modelName, {
             extend: 'Ext.data.Model',
             fields: ['count', 'date'],
         });
-        this.setLoading('Fetching usage...');    
         BQFactory.request({
             uri: this.resource, 
             cb: callback(this, 'onStats'), 
             errorcb: callback(this, 'onError'),
         });        
-        this.callParent();
     },
 
     onError: function() {
@@ -109,7 +110,9 @@ Ext.define('BQ.usage.Uploads', {
             data: data,
         }); 
         
+        var axisFormat = this.axisFormat;
         var heading = this.heading;
+        var tip = this.tip;        
         this.chart = Ext.create('Ext.chart.Chart', {
             //animate: true,
             flex: 1,
@@ -138,7 +141,7 @@ Ext.define('BQ.usage.Uploads', {
                 fields: ['date'],
                 label: {
                     renderer: function(v) {
-                        return Ext.Date.format(v, 'n/d');
+                        return Ext.Date.format(v, axisFormat);
                     }
                 },
             }],
@@ -165,7 +168,7 @@ Ext.define('BQ.usage.Uploads', {
                   width: 300,
                   //height: 28,
                   renderer: function(storeItem, item) {
-                      this.setTitle( storeItem.get('count') + ' ' + heading + ' on ' +
+                      this.setTitle( storeItem.get('count') + ' ' + tip +
                                      Ext.Date.format(new Date(storeItem.get('date')), 'M d, Y'));
                   }
                 },                
@@ -181,11 +184,34 @@ Ext.define('BQ.usage.Uploads', {
     
 });
 
+Ext.define('BQ.usage.UploadsMonthly', {
+    extend: 'BQ.usage.Uploads',
+    alias: 'widget.monthlyuploadstats', 
+    heading: 'Image uploads - monthly',
+    tip: 'Image uploads in ',
+    axisFormat: 'M j, y',
+    
+    resource: '/usage/uploads_monthly',
+    modelName: 'UsageMonthlyUploads',
+});
+
 Ext.define('BQ.usage.Analysis', {
     extend: 'BQ.usage.Uploads',
     alias: 'widget.analysisstats', 
-    heading: 'Module executions', 
+    heading: 'Module executions - daily',
+    tip: 'Module uploads on ',
     
     resource: '/usage/analysis',
     modelName: 'UsageAnalysis',
+});
+
+Ext.define('BQ.usage.AnalysisMonthly', {
+    extend: 'BQ.usage.Uploads',
+    alias: 'widget.monthlyanalysisstats', 
+    heading: 'Module executions - monthly',
+    tip: 'Module uploads in ', 
+    axisFormat: 'M j, y',
+    
+    resource: '/usage/analysis_monthly',
+    modelName: 'UsageMonthlyAnalysis',
 });

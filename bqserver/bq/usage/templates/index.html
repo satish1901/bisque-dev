@@ -22,20 +22,23 @@
 <script type="text/javascript" >
 
 Ext.onReady(function() {
-    
-    var usage_stats = Ext.create('BQ.usage.Stats', {border: 0,});   
-    var usage_uploads = Ext.create('BQ.usage.Uploads', { height: 250, });   
-    var usage_analysis = Ext.create('BQ.usage.Analysis', {height: 250, });           
 
-    var uploader = Ext.create('Ext.panel.Panel', {    
+    var uploader = Ext.create('Ext.panel.Panel', {
         closable: false,
         autoShow: true,
         autoScroll: true,
         border: 0,
-        defaults: {border: 0,},
+        defaults: {border: 0, },
         bodyPadding: 30,
 
-        items: [ {html: '<h1>Bisque usage statistics</h1>'}, usage_stats, usage_uploads, usage_analysis ],      
+        items: [ 
+            { html: '<h1>Bisque usage statistics</h1>' }, 
+            { xtype: 'usagestats', border: 0, },
+            { xtype: 'uploadstats', height: 250, }, 
+            { xtype: 'monthlyuploadstats', height: 250, },
+            { xtype: 'analysisstats', height: 250, },
+            { xtype: 'monthlyanalysisstats', height: 250, },
+        ],
     });
 
     BQApp.setCenterComponent(uploader);
