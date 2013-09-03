@@ -150,7 +150,7 @@ def load_services ( wanted = None):
         except ImportError, e:
             log.exception ("Failed to load bisque extension: %s" % x)
         except Exception, e:
-            log.error ("Couldn't load %s -- " % (x.name))
+            log.exception ("Couldn't load %s -- " % (x.name))
             raise
 
 
@@ -161,6 +161,7 @@ def mount_services (root, enabled = None, disabled = None):
         if (not enabled or  ty in enabled) and ty not in disabled:
             if  hasattr(entry.module, "initialize"):
                 service_url = root + '/' + entry.name
+                #service_url = '/' + entry.name
                 log.debug ('activating %s at %s' % (str(entry.name), service_url))
                 service = entry.module.initialize(service_url)
                 service_registry.register_instance (service)
