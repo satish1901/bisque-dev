@@ -26,7 +26,7 @@ Ext.define('BQ.usage.Stats', {
     layout: 'fit', 
     defaults: {border: 0,},    
     resource: '/usage/stats',
-    tag_titles: {'number_images': 'All Images', 'number_images_user': 'My images', 'number_images_planes': '2D Planes', 'number_tags': 'Tags', },
+    tag_titles: {'number_images': 'All Images', 'number_images_user': 'My images', 'number_images_planes': '2D Planes', 'number_tags': 'Tags', 'number_gobs': 'GObjects' },
 
     initComponent : function() {
         this.setLoading('Fetching usage...'); 

@@ -123,9 +123,10 @@ class image_serviceController(ServiceController):
         ''' returns local path if it exists otherwise None'''
         userId = identity.current.user_name       
         
-        m = re.search(r'(\/image_service\/image[s]?\/)(?P<id>\w+)', url)
+        m = re.search(r'(\/image_service\/image[s]?\/)(?P<id>[\w-]+)', url)
         id = m.group('id')         
 
+        log.debug ("Checking %s" % id)
         # check for access permission
         from bq.data_service.controllers.resource_query import RESOURCE_READ, RESOURCE_EDIT
         self.check_access(id, RESOURCE_READ)

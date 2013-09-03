@@ -13,6 +13,7 @@ from lxml import etree
 from datetime import datetime, timedelta
 
 import bq
+from bq.core import identity
 from bq.client_service.controllers import aggregate_service
 from bq import data_service
 
@@ -34,17 +35,23 @@ class usageController(ServiceController):
     @expose(content_type="text/xml")
     def stats(self, **kw):
         log.info('stats %s'%kw)        
-        wpublic = kw.pop('wpublic', not bq.core.identity.current)
-        images2d = aggregate_service.count("image", wpublic=wpublic, images2d=True)
-        all_count = aggregate_service.count("image", wpublic=wpublic, welcome=True)
-        image_count = aggregate_service.count("image", wpublic=wpublic)
-        tag_count = aggregate_service.count("tag", wpublic=wpublic, welcome=True )
+        wpublic = kw.pop('wpublic',  identity.anonymous())
+        #images2d = aggregate_service.count("image", wpublic=wpublic, images2d=True)
+        #all_count = aggregate_service.count("image", wpublic=wpublic, welcome=True)
+        #image_count = aggregate_service.count("image", wpublic=wpublic)
+        #tag_count = aggregate_service.count("tag", wpublic=wpublic, welcome=True )
+        all_count = data_service.count("image", wpublic=wpublic, images2d=True, parent=False)
+        image_count = data_service.count("image", wpublic=wpublic, welcome=wpublic)
+        #images2d = data_service.count("image", wpublic=wpublic, images2d=True)
+        tag_count = data_service.count ("tag", wpublic=wpublic, welcome=wpublic, parent=False)
+        gob_count = data_service.count ("gobject", wpublic=wpublic, welcome=wpublic, parent=False)
         
         resource = etree.Element('resource', uri='/usage/stats')
         etree.SubElement(resource, 'tag', name='number_images', value=str(all_count))
         etree.SubElement(resource, 'tag', name='number_images_user', value=str(image_count))
-        etree.SubElement(resource, 'tag', name='number_images_planes', value=str(images2d))  
+        #etree.SubElement(resource, 'tag', name='number_images_planes', value=str(images2d))  
         etree.SubElement(resource, 'tag', name='number_tags', value=str(tag_count))
+        etree.SubElement(resource, 'tag', name='number_gobs', value=str(gob_count))
                               
         return etree.tostring(resource)
 
