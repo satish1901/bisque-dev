@@ -1,5 +1,6 @@
-/*
+
 // Override several config options for default mask in Bisque
+/*
 Ext.define('Ext.LoadMask', {
     override: 'Ext.LoadMask',
     
@@ -8,5 +9,4 @@ Ext.define('Ext.LoadMask', {
         this.callParent([comp, config]);
     },
 });
-*/
-      
+*/      
