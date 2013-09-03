@@ -1451,6 +1451,9 @@ def bisque_installer(options, args):
     elif args[0] == 'engine':
         installer = engine_options[:]
         system_type = 'engine'
+    elif args[0] == 'server':
+        installer = engine_options[:]
+        system_type = 'bisque'
     else:
         installer = args
 

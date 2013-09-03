@@ -40,6 +40,7 @@ The bisque server
         "cython",  # Feature
         #"opencv",  # Feature        
         # "importlib", # Feature, not needed for python 2.7
+        "furl",
       ],
       entry_points="""
       # -*- Entry points: -*-

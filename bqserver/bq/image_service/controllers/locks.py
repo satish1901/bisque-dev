@@ -23,6 +23,8 @@ import  XFile
 
 
 rw = HashedReadWriteLock()
+LOCK_SLEEP = 0.3
+MAX_SLEEP  = 8
 
 class Locks (object):
     log = logging.getLogger('bq.image_service.locks')
@@ -53,6 +55,7 @@ class Locks (object):
 
         if ifnm and os.name != "nt":
             self.debug ("->RL")
+            lock_sleep=LOCK_SLEEP
             while True:
                 try:
                     self.rf = XFile.XFile(ifnm, 'r')
@@ -60,8 +63,12 @@ class Locks (object):
                     self.debug ("GOT RL")
                     break
                 except XFile.LockError:
-                    self.debug ("RL sleep")
-                    time.sleep(0.3)
+                    self.debug ("RL sleep %s" % lock_sleep)
+                    time.sleep(lock_sleep)
+                    lock_sleep *= 2
+                    if lock_sleep > MAX_SLEEP:
+                        lock_sleep = MAX_SLEEP
+
 
         if ofnm:
             self.debug ("acquire0 thread-w")

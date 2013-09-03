@@ -151,6 +151,7 @@ class LogRecordStreamHandler(SocketServer.StreamRequestHandler):
 
 class LoggingReceiver(SocketServer.ThreadingTCPServer):
     'Simple TCP socket-based logging receiver'
+    allow_reuse_address = True
 
     logname = None
 
