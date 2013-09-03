@@ -72,7 +72,7 @@ class usageController(ServiceController):
             # dima: some error happens in data_service and this throws
             try:
                 req = data_service.query(resource_type, view='count', ts=ts, welcome=True)
-                log.debug('=============================== %s'%etree.tostring(req))
+                log.debug('Usage for [%s - %s] %s'%(d1.isoformat(), d2.isoformat(), etree.tostring(req)))
                 c = req.xpath('//%s[@count]'%resource_type)
                 if len(c)>0:
                     counts.append( c[0].get('count') ) 
@@ -83,7 +83,32 @@ class usageController(ServiceController):
            
         counts.reverse()
         days.reverse()
-        return counts, days
+        return counts, days   
+
+    def get_counts_month(self, resource_type, num_months):
+        now = datetime.now() 
+        counts = []
+        months = []
+        for i in range(num_months): 
+            d1 = now - timedelta(weeks=i*4)
+            d2 = now - timedelta(weeks=i*4+4)
+            ts = ['>%s'%d2.isoformat(), '<=%s'%d1.isoformat()]
+            months.append(d2.isoformat(' '))
+            # dima: some error happens in data_service and this throws
+            try:
+                req = data_service.query(resource_type, view='count', ts=ts, welcome=True)
+                log.debug('Usage for [%s - %s] %s'%(d1.isoformat(), d2.isoformat(), etree.tostring(req)))
+                c = req.xpath('//%s[@count]'%resource_type)
+                if len(c)>0:
+                    counts.append( c[0].get('count') ) 
+                else:           
+                    counts.append('0')
+            except AttributeError:                    
+                    counts.append('0')
+           
+        counts.reverse()
+        months.reverse()
+        return counts, months   
 
     @expose(content_type="text/xml")
     def uploads(self, **kw):
@@ -93,6 +118,15 @@ class usageController(ServiceController):
         etree.SubElement(resource, 'tag', name='counts', value=','.join(counts))
         etree.SubElement(resource, 'tag', name='days', value=','.join(days))        
         return etree.tostring(resource)
+    
+    @expose(content_type="text/xml")
+    def uploads_monthly(self, **kw):
+        log.info('uploads %s'%kw)        
+        counts, days = self.get_counts_month('image', 13)
+        resource = etree.Element('resource', uri='/usage/uploads_monthly')
+        etree.SubElement(resource, 'tag', name='counts', value=','.join(counts))
+        etree.SubElement(resource, 'tag', name='days', value=','.join(days))        
+        return etree.tostring(resource)    
 
     @expose(content_type="text/xml")
     def analysis(self, **kw):
@@ -103,7 +137,14 @@ class usageController(ServiceController):
         etree.SubElement(resource, 'tag', name='days', value=','.join(days))            
         return etree.tostring(resource)
 
-
+    @expose(content_type="text/xml")
+    def analysis_monthly(self, **kw):
+        log.info('uploads %s'%kw)        
+        counts, days = self.get_counts_month('mex', 13)
+        resource = etree.Element('resource', uri='/usage/analysis_monthly')
+        etree.SubElement(resource, 'tag', name='counts', value=','.join(counts))
+        etree.SubElement(resource, 'tag', name='days', value=','.join(days))            
+        return etree.tostring(resource)
 
 
 def initialize(uri):
