@@ -612,6 +612,10 @@ class SliceService(object):
             if len(xs)>1 and xs[1].isdigit(): t2 = int(xs[1])
             if len(xs)==1: t2 = t1
 
+        # in case slices request an exact copy, skip
+        if x1==0 and x2==0 and y1==0 and y2==0 and z1==0 and z2==0 and t1==0 and t2==0:
+            return data_token        
+
         # construct a sliced filename
         ifname = self.server.getInFileName( data_token, image_id )
         ofname = self.server.getOutFileName( ifname, '.%d-%d,%d-%d,%d-%d,%d-%d' % (x1,x2,y1,y2,z1,z2,t1,t2) )
@@ -785,13 +789,13 @@ class FormatService(object):
 
 class ResizeService(object):
     '''Provide images in requested dimensions
-       arg = w,h,method[,AR]
+       arg = w,h,method[,AR|,MX]
        w - new width
        h - new height
        method - NN or BL, or BC (Nearest neighbor, Bilinear, Bicubic respectively)
        if either w or h is ommited or 0, it will be computed using aspect ratio of the image
        if ,AR is present then the size will be used as bounding box and aspect ration preserved
-       if ,MX is present then the size will be used as maximum bounding box and aspect ration preserved
+       if ,MX is present then the size will be used as maximum bounding box and aspect ratio preserved
        with MX: if image is smaller it will not be resized!
        #size_arg = '-resize 128,128,BC,AR'
        ex: resize=100,100'''
@@ -830,10 +834,10 @@ class ResizeService(object):
             aspectRatio = ',AR'
 
         if size[0]<=0 and size[1]<=0:
-            raise IllegalOperation('Resize service: size is unsupported ['+ arg + ']' )
+            abort(400, 'Resize service: size is unsupported: [%s]'%arg )
 
-        if not (method=='NN' or method=='BL' or method=='BC'):
-            raise IllegalOperation('Resize service: method is unsupported ['+ arg + ']' )
+        if method not in ['NN', 'BL', 'BC']:
+            abort(400, 'Resize service: method is unsupported: [%s]'%arg )
 
         # if the image is smaller and MX is used, skip resize
         if maxBounding and int(data_token.dims['width'])<=size[0] and int(data_token.dims['height'])<=size[1]:
@@ -851,6 +855,94 @@ class ResizeService(object):
             info = self.server.getImageInfo(filename=ofile)
             if 'width' in info:  data_token.dims['width']  = str(info['width'])
             if 'height' in info: data_token.dims['height'] = str(info['height'])
+            data_token.dims['format'] = default_format
+        finally:
+            pass
+
+        data_token.setImage(ofile, format=default_format)
+        return data_token
+
+class Resize3DService(object):
+    '''Provide images in requested dimensions
+       arg = w,h,d,method[,AR|,MX]
+       w - new width
+       h - new height
+       d - new depth       
+       method - NN or TL, or TC (Nearest neighbor, Trilinear, Tricubic respectively)
+       if either w or h or d are ommited or 0, missing value will be computed using aspect ratio of the image
+       if ,AR is present then the size will be used as bounding box and aspect ration preserved
+       if ,MX is present then the size will be used as maximum bounding box and aspect ratio preserved
+       with MX: if image is smaller it will not be resized!
+       ex: resize3d=100,100,100,TC'''
+    def __init__(self, server):
+        self.server = server
+    def __repr__(self):
+        return 'Resize3DService: Returns an Image in requested dimensions, arg = w,h,d,method[,AR|,MX]'
+
+    def hookInsert(self, data_token, image_id, hookpoint='post'):
+        pass
+
+    def action(self, image_id, data_token, arg):
+        log.debug('Service - Resize3D: ' + arg )
+
+        #size = tuple(map(int, arg.split(',')))
+        ss = arg.split(',')
+        size = [0,0,0]
+        method = 'TC'
+        aspectRatio = ''
+        maxBounding = False
+        textAddition = ''
+
+        if len(ss)>0 and ss[0].isdigit():
+            size[0] = int(ss[0])
+        if len(ss)>1 and ss[1].isdigit():
+            size[1] = int(ss[1])
+        if len(ss)>2 and ss[2].isdigit():
+            size[2] = int(ss[2])            
+        if len(ss)>3:
+            method = ss[3].upper()
+        if len(ss)>4:
+            textAddition = ss[4].upper()
+
+        if len(ss)>4 and (textAddition == 'AR'):
+            aspectRatio = ',AR'
+        if len(ss)>4 and (textAddition == 'MX'):
+            maxBounding = True
+            aspectRatio = ',AR'
+
+        if size[0]<=0 and size[1]<=0 and size[2]<=0:
+            abort(400, 'Resize3D service: size is unsupported: [%s]'%arg )
+
+        if method not in ['NN', 'TL', 'TC']:
+            abort(400, 'Resize3D service: method is unsupported: [%s]'%arg )
+
+        # if the image is smaller and MX is used, skip resize
+        w = int(data_token.dims['width'])
+        h = int(data_token.dims['height'])
+        z = int(data_token.dims['zsize'])
+        t = int(data_token.dims['tsize'])
+        d = max(z, t)
+        if w==size[0] and h==size[1] and d==size[3]:
+            return data_token
+        if maxBounding and w<=size[0] and h<=size[1] and d<=size[3]:
+            return data_token
+
+        ifile = self.server.getInFileName( data_token, image_id )
+        ofile = self.server.getOutFileName( ifile, '.size3d_%d,%d,%d,%s,%s' % (size[0], size[1], size[2], method,textAddition) )
+        log.debug('Resize3D service: %s to %s'%(ifile, ofile))
+
+        if not os.path.exists(ofile):
+            args = ['-multi', '-resize3d', '%s,%s,%s,%s%s'%(size[0], size[1], size[2], method, aspectRatio)]
+            imgcnv.convert( ifile, ofile, fmt=default_format, extra=args)
+
+        try:
+            info = self.server.getImageInfo(filename=ofile)
+            if 'width' in info:  data_token.dims['width']  = str(info['width'])
+            if 'height' in info: data_token.dims['height'] = str(info['height'])
+            if z>0:
+                data_token.dims['zsize']  = str(size[2])
+            elif t>0:
+                data_token.dims['tsize']  = str(size[2])
             data_token.dims['format'] = default_format
         finally:
             pass
@@ -1384,12 +1476,12 @@ class DeinterlaceService(object):
 class TransformService(object):
     """Provide an image transform
        arg = transform
-       Available transforms are: fourier, chebyshev, wavelet, radon, edge, wndchrmcolor, rgb2hsv, hsv2rgb
+       Available transforms are: fourier, chebyshev, wavelet, radon, edge, wndchrmcolor, rgb2hsv, hsv2rgb, superpixels
        ex: transform=fourier"""
     def __init__(self, server):
         self.server = server
     def __repr__(self):
-        return 'TransformService: Returns a transformed image, transform=fourier|chebyshev|wavelet|radon|edge|wndchrmcolor|rgb2hsv|hsv2rgb'
+        return 'TransformService: Returns a transformed image, transform=fourier|chebyshev|wavelet|radon|edge|wndchrmcolor|rgb2hsv|hsv2rgb|superpixels'
 
     def hookInsert(self, data_token, image_id, hookpoint='post'):
         pass
@@ -1409,7 +1501,8 @@ class TransformService(object):
                           'edge'         : ['-filter',    'edge'],
                           'wndchrmcolor' : ['-filter',    'wndchrmcolor'], 
                           'rgb2hsv'      : ['-transform_color', 'rgb2hsv'],
-                          'hsv2rgb'      : ['-transform_color', 'hsv2rgb'] }            
+                          'hsv2rgb'      : ['-transform_color', 'hsv2rgb'], 
+                          'superpixels'  : ['-superpixels'], } # requires passing parameters
             
             if not arg in transforms:
                 abort(400, 'transform: requested transform is not yet supported')
@@ -1897,6 +1990,7 @@ class ImageServer(object):
                           'slice'        : SliceService(self),
                           'format'       : FormatService(self),
                           'resize'       : ResizeService(self),
+                          'resize3d'     : Resize3DService(self),                          
                           'thumbnail'    : ThumbnailService(self),
                           'default'      : DefaultService(self),
                           'roi'          : RoiService(self),

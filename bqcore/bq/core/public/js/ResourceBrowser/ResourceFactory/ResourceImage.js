@@ -16,8 +16,8 @@ Ext.define('Bisque.Resource.Image',
         this.msgBus.fireEvent('ResourceDblClick', this.resource.uri);
     },
 
-    onMouseEnter : function(e, me)
-    {
+    onMouseEnter : function(e, me) {
+        if (!this.mmData)
         Ext.Ajax.request({
             url         :   this.resource.src + '?meta',
             callback    :   function(opts, success, response) {
@@ -31,22 +31,23 @@ Ext.define('Bisque.Resource.Image',
         });
     },
     
-    onMetaLoaded : function(xmlDoc)
-    {
+    onMetaLoaded : function(xmlDoc) {
         if(!xmlDoc) return;
-        
-        this.resource.t = evaluateXPath(xmlDoc, "//tag[@name='image_num_t']/@value")[0].value;
-        this.resource.z = evaluateXPath(xmlDoc, "//tag[@name='image_num_z']/@value")[0].value;
+        try {
+            this.resource.t = parseInt(evaluateXPath(xmlDoc, "//tag[@name='image_num_t']/@value")[0].value);
+            this.resource.z = parseInt(evaluateXPath(xmlDoc, "//tag[@name='image_num_z']/@value")[0].value);
+        } catch (e) {
+            this.resource.t = 1;
+            this.resource.z = 1;
+        }
 
         // only 1 frame available
-        if (this.resource.t==1 && this.resource.z==1)
+        if (this.resource.t===1 && this.resource.z===1)
             this.mmData={isLoadingImage:true};
-        else
-        {           
+        else {           
             var el = this.getEl();
             if (this.getData('fetched')==1)
-                this.mmData =
-                {
+                this.mmData = {
                     x : el.getX() + el.getOffsetsTo(this.resource.uri)[0],
                     y : el.getY() + el.getOffsetsTo(this.resource.uri)[1],
                     isLoadingImage : false
@@ -56,23 +57,20 @@ Ext.define('Bisque.Resource.Image',
 
     onMouseLeave : function()
     {
-        if (this.mmData)
-            this.mmData.isLoadingImage = true;
+        //if (this.mmData)
+        //    this.mmData.isLoadingImage = true;
     },
 
     onMouseMove : function(e, target)
     {
         if (this.mmData && !this.mmData.isLoadingImage)
         {
-            this.mmData.isLoadingImage = true;
+            //this.mmData.isLoadingImage = true;
 
-            var sliceX = Math.ceil((e.getX() - this.mmData.x) * this.resource.t / target.clientWidth);
-            var sliceY = Math.ceil((e.getY() - this.mmData.y) * this.resource.z / target.clientHeight);
-
-            if (sliceX > this.resource.t)
-                sliceX = this.resource.t
-            if (sliceY > this.resource.z)
-                sliceY = this.resource.z
+            var sliceX = Math.max(1, Math.ceil((e.getX() - this.mmData.x) * this.resource.t / target.clientWidth));
+            var sliceY = Math.max(1, Math.ceil((e.getY() - this.mmData.y) * this.resource.z / target.clientHeight));
+            sliceX = Math.min(sliceX, this.resource.t);
+            sliceY = Math.min(sliceY, this.resource.z);            
 
             var imgLoader = new Image();
             imgLoader.style.height = this.layoutMgr.layoutEl.imageHeight;
@@ -93,7 +91,7 @@ Ext.define('Bisque.Resource.Image',
                 if (Ext.isDefined(document.images[this.resource.uri]))
                 {
                     document.images[this.resource.uri].src = imgLoader.src;
-                    this.mmData.isLoadingImage = false;
+                    //this.mmData.isLoadingImage = false;
                 }
             }
         }
