@@ -23,7 +23,7 @@
 %   VERSION:
 %       0.1 - 2011-03-29 First implementation
 
-function [matches left1 left2] = match_points(pts1, pts2, ns)
+function [matches, left1, left2] = match_points(pts1, pts2, ns)
     
     dmax = sqrt( ns(1)^2 + ns(2)^2 + ns(3)^2 ); 
     sz1 = size(pts1,1);
@@ -61,8 +61,8 @@ function [matches left1 left2] = match_points(pts1, pts2, ns)
         dst(:,jj) = big;
     end
       
-    left1 = setdiff([1:sz1], matches(:,1));
-    left2 = setdiff([1:sz2], matches(:,2));
+    left1 = setdiff(1:sz1, matches(:,1));
+    left2 = setdiff(1:sz2, matches(:,2));
     
 end    
 

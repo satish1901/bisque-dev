@@ -922,9 +922,9 @@ class Resize3DService(object):
         z = int(data_token.dims['zsize'])
         t = int(data_token.dims['tsize'])
         d = max(z, t)
-        if w==size[0] and h==size[1] and d==size[3]:
+        if w==size[0] and h==size[1] and d==size[2]:
             return data_token
-        if maxBounding and w<=size[0] and h<=size[1] and d<=size[3]:
+        if maxBounding and w<=size[0] and h<=size[1] and d<=size[2]:
             return data_token
 
         ifile = self.server.getInFileName( data_token, image_id )

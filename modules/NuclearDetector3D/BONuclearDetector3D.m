@@ -38,28 +38,20 @@ function np = BONuclearDetector3D(imn, ns, t, session, timetext)
     if ~exist('timetext', 'var'), 
         timetext=''; 
     end
-
-    %% imdilate gets impossibly slow for large structuring elements
-    % we'll aproximate large kernels by using smaller interpolated data
-    max_ns = [21, 21, 9]; % [25, 25, 13];
-    scale = ns ./ max_ns;
-    scale(scale<1) = 1;
-    if max(scale)>1,
-        newsz = round(size(imn) ./ scale);
-        imn = imresize3d(imn, newsz, 'cubic');
-        ns = ns ./ scale;
-    else
-        scale = [1,1,1];
-    end    
-
+    
     %% Convolve with LoG
-    if exist('session', 'var'), session.update([timetext '10% - Blob detection']); end
+    if exist('session', 'var'), session.update([timetext '10% - Blob detection']); end 
+    fprintf('Blob detection\n');
+    tic;    
     imlog = BOBlobDetector3D(imn, ns);
+    toc
 
     %% Finding seeds
     if exist('session', 'var'), session.update([timetext '40% - Seed search']); end
+    fprintf('Seed search\n');    
     t = sort(t);
     np = BOSeedSearch3D(imlog, ns, t);
+    clearvars imlog; 
     
     %% removing unchanging point sets towards low thresholds
     dnp = zeros(size(np,1),1);
@@ -80,51 +72,37 @@ function np = BONuclearDetector3D(imn, ns, t, session, timetext)
         
     %% Filtering
     if exist('session', 'var'), session.update([timetext '70% - Filtering']); end
+    fprintf('Filtering\n');  
+    tic;
     for i=1:length(np),
-        dt = GetCentroidDescriptors3D(imn,imlog,np{i},ns);
-        np{i} = Filter3DPointsByDescriptor(np{i},dt,ns*1.1);
+        dt = GetCentroidDescriptors3D(imn, np{i}, ns);
+        np{i} = Filter3DPointsByDescriptor(np{i}, dt, ns*1.1);
     end
+    toc
 
     %% Merging    
     if exist('session', 'var'), session.update([timetext '90% - Merging']); end
+    fprintf('Merging\n');     
+    tic;
     np = MergeThresholds(np);
-    dt = GetCentroidDescriptors3D(imn, imlog, np, ns, 1);
-
-    %% scaling points to original size, for large kernel case  
-    np(:,1) = np(:,1) .* scale(1);
-    np(:,2) = np(:,2) .* scale(2);
-    np(:,3) = np(:,3) .* scale(3);
+    dt = GetCentroidDescriptors3D(imn, np, ns);
+    toc
     
-    %% Producing resuls     
+    %% Producing final list     
     sz = size(np,1);
     counts = np(:,4);
-    %sums = zeros(sz,1);
     img_mean = zeros(sz,1);
-    %img_mad = zeros(sz,1);
-    %log_mean = zeros(sz,1);
     for i=1:sz,   
-        %sums(i) = dt{i}.sum;
         img_mean(i) = dt{i}.mean;
-        %img_mad(i) = dt{i}.mad;    
-        %log_mean(i) = dt{i}.log_mean;    
     end  
 
-    %sums_orig = sums;
-    %sums = scalev(sums);
     img_mean = scalev(img_mean);
-    %img_mad = scalev(img_mad);
-    %log_mean = scalev(log_mean);
     counts = scalev(counts);
 
-    feature = (6*counts + 4*img_mean)/ 10;
+    feature = (5*counts + 5*img_mean)/ 10;
     feature = scalev(feature);
 
     np(:,5) = feature;
-    %np(:,6) = counts;
-    %np(:,7) = sums;
-    %np(:,8) = img_mean;
-    %np(:,9) = log_mean;
-    %np(:,10) = sums_orig;
 
     np = sortrows(np, 5);
 end
