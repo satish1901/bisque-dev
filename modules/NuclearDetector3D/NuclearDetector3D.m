@@ -1,4 +1,5 @@
 function NuclearDetector3D(mex_url, access_token, image_url, varargin)
+    %try matlabpool; catch, end; % requires more RAM
     session = bq.Session(mex_url, access_token);
     try
         nuclear_channel  = str2num(session.mex.findValue('//tag[@name="inputs"]/tag[@name="nuclear_channel"]'));
@@ -23,30 +24,79 @@ function NuclearDetector3D(mex_url, access_token, image_url, varargin)
             res(4) = getfield(image.info, 'pixel_resolution_t');
         end
         
+        ns =  (nuclear_diameter/2.0) ./ res; 
+        
+        %% imdilate gets impossibly slow for large structuring elements
+        % we'll aproximate large kernels by using smaller interpolated data
+        maxsz = [1024, 1024, 256];
+        imgsz = [image.info.image_num_x, image.info.image_num_y, image.info.image_num_z];
+        max_ns = [21, 21, 15]; % [25, 25, 25]; % reduce image size 
+        scale = ns(1:3) ./ max_ns;
+        scale(scale<1) = 1;
+        if max(scale)>1 || max(imgsz > maxsz)>0,
+            newsz = round(imgsz ./ scale);
+            newsz = min(maxsz, newsz);
+            scale = imgsz ./ newsz;
+            szcmd = sprintf('%d,%d,%d,TC', newsz(1), newsz(2), newsz(3));
+        else
+            scale = [1,1,1];
+            szcmd = [];
+        end 
+        
+        %% run detection per time point
         number_t = max(1, image.info.image_num_t);
         np = cell(number_t, 1);
         count = 0;
         for current_t=1:number_t,
+            fprintf('Time %d/%d\n', current_t, number_t);
             timetext = sprintf('Time %d/%d: ', current_t, number_t);
-            session.update(sprintf('%s0%% - fetching image', timetext));   
-            imn = image.slice([],current_t).remap(nuclear_channel).fetch();
+            session.update(sprintf('%s0%% - fetching image', timetext));
+            fprintf('Fetching image\n');
+            tic;
+            if ~isempty(szcmd),
+                imn = image.slice([],current_t).remap(nuclear_channel).command('resize3d', szcmd).fetch();
+            else
+                imn = image.slice([],current_t).remap(nuclear_channel).fetch();                
+            end
 
             % filter using membraine channel
             if membrane_channel>0,
-                imm = image.slice([],current_t).remap(membrane_channel).fetch();
+                if ~isempty(szcmd),                
+                    imm = image.slice([],current_t).remap(membrane_channel).command('resize3d', szcmd).fetch();
+                else
+                    imm = image.slice([],current_t).remap(membrane_channel).fetch();                    
+                end
                 imn = imdiff(imn, imm);
+                clearvars imm;
             end
+            toc
+            %imn = imresize3d(imn, newsz, 'cubic');            
             
             %% Run
-            ns =  (nuclear_diameter/2.0) ./ res;
-            
-            t = [0.025:0.025:0.5];
+            %t = 0.025:0.025:0.5;
+            t = 0.025:0.05:0.5;
             if isinteger(imn),
                t = t * double(intmax(class(imn)));
             end
             
-            np{current_t} = BONuclearDetector3D(imn, ns(1:3), t, session, timetext);   
+            fprintf('Detecting nuclei\n');
+            totalStart = tic;
+            sns = ns(1:3) ./ [scale(2) scale(1) scale(3)];
+            ps = BONuclearDetector3D(imn, sns, t, session, timetext);
+            clearvars imn;            
+            ps(:,1) = ps(:,1) .* scale(2);
+            ps(:,2) = ps(:,2) .* scale(1);
+            ps(:,3) = ps(:,3) .* scale(3);
+            np{current_t} = ps;
+            
+            fprintf('Total processing time: %4.4d seconds\n', toc(totalStart));
             count = count + length(np{current_t});
+            
+            %fprintf('Removing temp files\n');
+            %tmpnames = sprintf('8nyJ2VWWdfjf3RrkYZDiVb-bill_smith.ome.tif.0-0,0-0,0-0,%d-%d', current_t, current_t);
+            %delete(tmpnames);
+            %tmpnames = [tmpnames '*.*'];
+            %delete(tmpnames);
         end
         
         %% Store results
@@ -68,6 +118,7 @@ function NuclearDetector3D(mex_url, access_token, image_url, varargin)
             end
         end
         
+        %g.save('bill_smith.ome.tif.12um.t1.xml');             
         session.finish();
     catch err
         ErrorMsg = [err.message, 10, 'Stack:', 10];

@@ -80,7 +80,7 @@ function mat_rs = imresize3d(varargin)
         end
     else
         if isinteger(mat),
-            mat = double(mat);
+            mat = single(mat);
         end
         % create normalised plaid grids of current discretisation
         [x_mat, y_mat, z_mat] = ndgrid((0:Nx_input-1)/(Nx_input-1), (0:Ny_input-1)/(Ny_input-1), (0:Nz_input-1)/(Nz_input-1));       
