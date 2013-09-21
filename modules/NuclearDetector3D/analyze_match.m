@@ -28,7 +28,7 @@ function [f, p, r, rmse] = analyze_match(pts, gt, ns, res)
 
     %% N2: match once and then look at every combination of thresholds
     % this will show how stable the perfect solution is
-    [matches left_pts left_gt] = match_points(pts, gt, ns);
+    [matches, left_pts, left_gt] = match_points(pts, gt, ns);
     v_match_pt = pts(matches(:,1),:);
     v_match_gt = gt(matches(:,2),:);
 

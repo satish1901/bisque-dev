@@ -1,11 +1,11 @@
 function run_local(filename, nuclear_channel, nuclear_diameter, varargin)
      
-    [imn, dim, res] = bim.read_stack_ch(filename, nuclear_channel); 
+    [imn, ~, res] = bim.read_stack_ch(filename, nuclear_channel); 
        
     %% Run
     ns =  (nuclear_diameter/2.0) ./ [res.y res.x res.z];
 
-    t = [0.025:0.025:0.5];
+    t = 0.025:0.025:0.5;
     if isinteger(imn),
        t = t * double(intmax(class(imn)));
     end

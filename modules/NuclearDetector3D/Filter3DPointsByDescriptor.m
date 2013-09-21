@@ -36,7 +36,7 @@ function np = Filter3DPointsByDescriptor(np, dt, ns)
     sz = size(np,1);    
     for i=1:sz,   
         % use intensity sum feature
-        np(i,5) = dt{np(i,4)}.sum;        
+        np(i,5) = dt{np(i,4)}.sum;
     end    
     np = sortrows(np, 5);
     
