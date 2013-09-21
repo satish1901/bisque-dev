@@ -4,8 +4,10 @@ function imd = imdiff(im1, im2)
 %
 
     %% normalize diff image
-    d_std = std(double(im1(:))) / std(double(im2(:)));
-    im2 = im2 * d_std;
+    std1 = std(single(im1(:)));
+    std2 = std(single(im2(:)));    
+    d_std = double(std1) / double(std2);
+    im2 = im2 .* d_std;
     
     d_avg = mean(im1(:)) - mean(im2(:));
     im2 = im2 + d_avg;

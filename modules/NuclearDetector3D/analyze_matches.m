@@ -44,7 +44,7 @@ function [f, p, r, rmse] = analyze_matches(pts, gt, ns, res)
         i=i+1; j=0;
         for p_gt = range,
             gtProb = gt(gt(:,5)>=p_gt/100, :);
-            [matches left_pts left_gt] = match_points(ptsProb, gtProb, ns);
+            [matches, left_pts, left_gt] = match_points(ptsProb, gtProb, ns);
             j=j+1;
             m(i,j) = size(matches,1);
             un_pts(i,j) = size(left_pts,2);
