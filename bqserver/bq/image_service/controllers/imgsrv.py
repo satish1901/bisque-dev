@@ -612,6 +612,16 @@ class SliceService(object):
             if len(xs)>1 and xs[1].isdigit(): t2 = int(xs[1])
             if len(xs)==1: t2 = t1
 
+        imsz = [1,1,1,1]
+        if 'width'  in data_token.dims: imsz[0] = int(data_token.dims['width'])
+        if 'height' in data_token.dims: imsz[1] = int(data_token.dims['height'])
+        if 'zsize'  in data_token.dims: imsz[2] = int(data_token.dims['zsize'])
+        if 'tsize'  in data_token.dims: imsz[3] = int(data_token.dims['tsize'])
+        if x1<=1 and x2>=imsz[0]: x1=0; x2=0
+        if y1<=1 and y2>=imsz[1]: y1=0; y2=0
+        if z1<=1 and z2>=imsz[2]: z1=0; z2=0
+        if t1<=1 and t2>=imsz[3]: t1=0; t2=0
+
         # in case slices request an exact copy, skip
         if x1==0 and x2==0 and y1==0 and y2==0 and z1==0 and z2==0 and t1==0 and t2==0:
             return data_token        
@@ -651,16 +661,16 @@ class SliceService(object):
             pages = []
             for ti in range(t1, t2+1):
                 for zi in range(z1, z2+1):
-                     if int(info['tsize'])==1:
-                         page_num = zi
-                     elif int(info['zsize'])==1:
-                         page_num = ti
-                     elif info['dimensions'].startswith('X Y C Z'):
-                         page_num = (ti-1)*int(info['zsize']) + zi
-                     else:
-                         page_num = (zi-1)*int(info['tsize']) + ti
+                    if int(info['tsize'])==1:
+                        page_num = zi
+                    elif int(info['zsize'])==1:
+                        page_num = ti
+                    elif info['dimensions'].startswith('X Y C Z'):
+                        page_num = (ti-1)*int(info['zsize']) + zi
+                    else:
+                        page_num = (zi-1)*int(info['tsize']) + ti
 
-                     pages.append(page_num)
+                    pages.append(page_num)
 
             pages_str = ",".join([str(p) for p in pages])
 
@@ -682,8 +692,8 @@ class SliceService(object):
         try:
             new_num_z = z2 - z1 + 1;
             new_num_t = t2 - t1 + 1;
-            new_w=x2-x1;
-            new_h=y2-y1;
+            new_w=x2-x1+1;
+            new_h=y2-y1+1;
             data_token.dims['zsize']  = str(new_num_z)
             data_token.dims['tsize']  = str(new_num_t)
             data_token.dims['pages']  = str(new_num_z*new_num_t)
@@ -759,18 +769,18 @@ class FormatService(object):
                     extra_opt.extend( ['-options', (" ").join(args)])
                 else:
                     if fmt == 'jpg' or fmt == 'jpeg':
-                      extra_opt.extend(['-options', 'quality 95 progressive yes'])
+                        extra_opt.extend(['-options', 'quality 95 progressive yes'])
 
                 imgcnv.convert(ifile, ofile, fmt, extra=extra_opt)
 
             if stream:
-              ext = imgcnv.defaultExtension(fmt)
-              fpath = ofile.split('/')
-              filename = self.server.originalFileName(image_id) +'_'+ fpath[len(fpath)-1] +'.'+ext
-              data_token.setFile(fname=ofile)
-              data_token.outFileName = filename
+                ext = imgcnv.defaultExtension(fmt)
+                fpath = ofile.split('/')
+                filename = self.server.originalFileName(image_id) +'_'+ fpath[len(fpath)-1] +'.'+ext
+                data_token.setFile(fname=ofile)
+                data_token.outFileName = filename
             else:
-              data_token.setImage(fname=ofile, format=fmt)
+                data_token.setImage(fname=ofile, format=fmt)
 
             if (ofile != ifile) and (fmt != 'raw'):
                 try:
@@ -990,9 +1000,9 @@ class ThumbnailService(object):
 
         ifile = self.server.getInFileName( data_token, image_id )
         if size[0]==128 and size[1]==128:
-          ofile = self.server.getOutFileName( ifile, '.thumb' )
+            ofile = self.server.getOutFileName( ifile, '.thumb' )
         else:
-          ofile = self.server.getOutFileName( ifile, '.thumb'+'_'+str(size[0])+'x'+str(size[1]) )
+            ofile = self.server.getOutFileName( ifile, '.thumb'+'_'+str(size[0])+'x'+str(size[1]) )
 
         if not os.path.exists(ofile):
             log.debug('Service - Thumbnail: ' + ofile)
