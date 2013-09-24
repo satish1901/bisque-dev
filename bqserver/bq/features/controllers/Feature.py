@@ -10,6 +10,7 @@ import random
 import numpy as np
 import logging
 import string
+import uuid
 
 import bq
 #from bq.image_service.controllers.service import local_file
@@ -27,6 +28,34 @@ log = logging.getLogger("bq.features")
 # maybe should use python api to import
 
 
+#wrapper for the calculator function so the output
+#is in the correct format to be easily placed in the tables
+def wrapper(func):
+    def calc(self,kw):
+        id = self.returnhash(**kw)
+        #id = uuid.uuid5(uuid.NAMESPACE_URL, str(uri)) #no longer stores ids
+        #id = id.hex
+
+        results = func(self,**kw)
+        column_count = len(self.Columns.columns)-1 #finds length of columns to determin hoe to parse
+        if column_count==1:
+            results=tuple([results])
+        
+        rows=[]   
+        for i in range(len(results[0])): #iterating though rows returned
+            
+            if self.cache: #check for cache to see how to build the table
+                row = tuple([id])
+            else:
+                row = tuple([uri])
+                
+            for j in range(column_count): #iterating through columns returned
+                row += tuple([results[j][i]])
+            rows.append(row)
+        return rows
+    
+    return calc
+
 ###############################################################
 # Feature Object
 ###############################################################
@@ -36,88 +65,104 @@ class Feature(object):
         placed into the HDF5 table
     """
     #initalize parameters
+    
+    #feature name (the feature service will refer to the feature by this name)
     name = 'Feature'
-    file = 'features_feature.h5'
-    ObjectType = 'Feature'
+    
+    #A short descriptio of the feature
     description = """Feature vector is the generic feature object. If this description is 
     appearing in the description for this feature no description has been provided for this 
     feature"""
+    
+    #Limitations that may be imposed on the feature
     limitations = """This feature has no limitation"""
+    
+    #required resource type(s)
+    resource = ['image']
+    
+    #parameters that will be shown on the output
+    parameter = []
+    
+    #length of the feature
     length = 0
+    
+    #format the features are stored in
     feature_format = "float32"
-    parameter_format = "float32"
-    parameter_info = []
+    
+    #option for feature not to be stored to any table
+    cache = True
+    
+    #option of turing on the index
+    index = True
+    
+    #Number of characters to use from the hash to name
+    #the tables
+    hash = 2
     
     def __init__ (self):
-        self.path = os.path.join( FEATURES_TABLES_FILE_DIR, self.file)
-        self.temptable = []
+        self.path = os.path.join( FEATURES_TABLES_FILE_DIR, self.name)
+        self.columns()
     
+    def localfile(self,hash):
+        return os.path.join( self.path, hash[:self.hash]+'.h5')
+
+    def returnhash(self, **kw):
+        image_uri = kw['image']   
+        uri_hash = uuid.uuid5(uuid.NAMESPACE_URL, str(image_uri))
+        uri_hash = uri_hash.hex
+        return uri_hash
     
-    def initalizeTable(self):
+    def typecheck(self, **kw):
+        resource = {}
+        for r in self.resource:
+            if r not in kw:
+                log.debug('Argument Error: %s type was not found'%r)
+                abort(404,'Argument Error: %s type was not found'%r)   
+            else:
+                resource[r]=kw[r]
+        return resource
+    
+    def columns(self):
+        """
+            creates Columns to be initalized by the create table
+        """
+        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+        class Columns(tables.IsDescription):
+            idnumber  = tables.StringCol(32,pos=1)
+            feature   = tables.Col.from_atom(featureAtom, pos=2)
+            
+        self.Columns = Columns
+                
+    def createtable(self,filename):
         """
             Initializes the Feature table returns the column class
         """ 
-        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
-        if self.parameter_info:
-            parameterAtom = tables.Atom.from_type(self.parameter_format, shape=(len(self.parameter_info)))
-        class Columns(tables.IsDescription):
-                idnumber  = tables.StringCol(32,pos=1)
-                feature   = tables.Col.from_atom(featureAtom, pos=2)
-                if self.parameter_info:
-                    parameter = tables.Col.from_atom(parameterAtom, pos=3)
-        self.Columns = Columns
+        
+        #creating table
+        with Locks(None, filename), tables.openFile(filename,'a', title=self.name)  as h5file: 
+            table = h5file.createTable('/', 'values', self.Columns, expectedrows=1000000000)
+            
+            if self.index: #turns on the index
+                table.cols.idnumber.removeIndex()
+                table.cols.idnumber.createIndex()                    
+            
+            table.flush() 
         return
     
-    def indexTable(self,table):
+    def indexTable(self,hash):
         """
             information for table to know what to index
         """
-        table.cols.idnumber.removeIndex()
-        table.cols.idnumber.createIndex()
+        file = os.path.join( self.path, hash+'.h5')
+        with Locks(None, self.path), tables.openFile(self.localfile(hash),'a', title=self.name) as h5file:
+            table=h5file.root.values
+            table.cols.idnumber.removeIndex()
+            table.cols.idnumber.createIndex()
     
-    def appendTable(self, uri, idnumber):
-        """
-            Append features and parameters to the table   
-        """    
-        descriptors=[] #calculating descriptor
-        #initalizing rows for the table
-        parameters = []
-        self.setRow(uri, idnumber, descriptors, parameters)
-        return
-    
-
-    def setRow(self,uri, idnumber, feature, parameters = []):
-        """
-            allocate data to be added to the h5 tables
-            
-            Each entry will append a row to the data structure until data
-            is dumped into the h5 tables after which data structure is reset.
-        """
-        temprow = {'feature':feature, 'idnumber':idnumber, 'uri':uri}
-        if parameters and self.parameter_info:
-            temprow['parameter'] = parameters
-        self.temptable.append(temprow)
-        return
-            
-    def returnRows(self):
-        """
-            formats the temptables into a numpy field array
-        """
-        rows=np.array([])
-        #log.debug('temptable: %s'% self.temptable)
-        for temprow in self.temptable:
-            if self.parameter_info:
-                dt = np.dtype([('idnumber', np.str_, 32), ('feature', self.feature_format, self.length), ('parameter',self.parameter_format,len(self.parameter_info))])
-                r = np.array([(temprow['idnumber'], temprow['feature'],temprow['parameter'])], dtype=dt)
-            else:
-                dt = np.dtype([('idnumber', np.str_, 32), ('feature', self.feature_format, self.length)])
-                r = np.array([(temprow['idnumber'], temprow['feature'])], dtype=dt)
-            #log.debug('row: %s'%r)
-            if rows.size<1:
-                rows = r
-            else:
-                rows = np.append(rows,r,axis=0)
-        return rows
+    @wrapper
+    def calculate(self, **resource):
+        return [0]
+        
             
             
 ###############################################################
@@ -142,7 +187,8 @@ class ImageImport():
                     log.debug('Response Code: %s'%e.code)
                     log.exception('Failed to get a correct http response code')
                     abort(500)
-       
+            
+            #creates a random feature
             d =[random.choice(string.ascii_lowercase + string.digits) for x in xrange(10)]
             s = "".join(d)
             file = 'image'+ str(s)+'.'+file_type
@@ -151,10 +197,10 @@ class ImageImport():
                 
             
             with Locks(None, self.path):
-                f = open(self.path, 'wb') 
-                f.write(content.read())
-                f.flush()
-                f.close()
+                with open(self.path, 'wb')as f:
+                    f.write(content.read())
+                    f.flush()
+
         else:
             self.uri=uri
             self.path = image_service.local_file(uri)
@@ -199,7 +245,7 @@ class TempImport():
             del self.f
             status = 'Closed'
     
-    def returnpath(self):       
+    def returnpath(self):
         return self.path
     
     def returnstatus(self): 
@@ -231,32 +277,33 @@ class XMLImport():
         import urllib, urllib2, cookielib
         self.uri = uri
         
-        header = {'Accept':'text/xml'}
-        req = urllib2.Request(url=uri,headers=header)
-        try:
-            content = urllib2.urlopen(req)
-        except urllib2.HTTPError, e:
-            if e.code>=400:
-                abort(404)
-            else:
-                log.debug('Response Code: %s'%e.code)
-                log.exception('Failed to get a correct http response code')
-                abort(500)        
-        content = urllib.urlopen(uri)
-        
-        try:
-            self.tree=etree.XML(content.read())
-        except etree.XMLSyntaxError:
-            abort(415, 'Requires: XML format')
+#        header = {'Accept':'text/xml'}
+#        req = urllib2.Request(url=uri,headers=header)
+#        try:
+#            content = urllib2.urlopen(req)
+#        except urllib2.HTTPError, e:
+#            if e.code>=400:
+#                log.debug('XML not found at this URI')
+#                abort(404)
+#            else:
+#                log.debug('Response Code: %s'%e.code)
+#                log.exception('Failed to get a correct http response code')
+#                abort(500)        
+#        content = urllib.urlopen(uri)
+#        
+#        try:
+#            self.tree=etree.XML(content.read())
+#        except etree.XMLSyntaxError:
+#            abort(415, 'Requires: XML format')
             
-#        #hack for amir
-#        from bq.api.comm import BQSession
-#        username = 'user'
-#        password = 'pass'
-#        self.uri = uri
-#        BQ=BQSession()
-#        BQ.init_local(username,password,bisque_root=r'http://bisque.ece.ucsb.edu',create_mex=False)
-#        self.tree = BQ.fetchxml(self.uri)
+        #hack for amir
+        from bq.api.comm import BQSession
+        username = 'stuff'
+        password = 'stuff'
+        self.uri = uri
+        BQ=BQSession()
+        BQ.init_local(username,password,bisque_root=r'http://bisque',create_mex=False)
+        self.tree = BQ.fetchxml(self.uri)
         
         
     def returnxml(self):       

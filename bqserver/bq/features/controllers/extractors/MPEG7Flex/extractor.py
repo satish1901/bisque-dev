@@ -20,9 +20,9 @@ class SCD(Feature.Feature):
     name = 'SCD'
     description = """Scalable Color Descriptor"""
     length = 256 
-    temptable = []
         
-    def appendTable(self, uri, idnumber):
+    @Feature.wrapper
+    def calculate(self, uri):
         """ Append descriptors to h5 table """
         
         Im = Feature.ImageImport(uri) #importing image from image service
@@ -35,7 +35,7 @@ class SCD(Feature.Feature):
         
         descriptors = extractSCD(im, descSize=256) #calculating descriptor
         
-        self.setRow(uri, idnumber, descriptors)
+        return [descriptors]
 
 
 
@@ -47,9 +47,9 @@ class HTD2(Feature.Feature):
     name = 'HTD2'
     description = """Homogenious Texture Descritpor"""
     length = 62 
-    temptable = []
         
-    def appendTable(self, uri, idnumber):
+    @Feature.wrapper
+    def calculate(self, uri):
         #initalizing
         
 
@@ -63,8 +63,7 @@ class HTD2(Feature.Feature):
         
         descriptors = extractHTD(im) #calculating descriptor
         
-        
-        self.setRow(uri, idnumber, descriptors)
+        return [descriptors]
 
 
 class EHD2(Feature.Feature):
@@ -80,9 +79,9 @@ class EHD2(Feature.Feature):
     name = 'EHD2'
     description = """Edge histogram descriptor also known as EHD"""
     length = 80 
-    temptable = []
         
-    def appendTable(self, uri, idnumber):
+    @Feature.wrapper
+    def calculate(self, uri):
         #initalizing
         
 
@@ -96,7 +95,7 @@ class EHD2(Feature.Feature):
         
         descriptors = extractEHD(im) #calculating descriptor
         
-        self.setRow(uri, idnumber, descriptors)
+        return [descriptors]
 
 
 class DCD(Feature.Feature):
@@ -110,7 +109,8 @@ class DCD(Feature.Feature):
     description = """Dominant Color Descriptor"""
     length = 64 
         
-    def appendTable(self, uri, idnumber):
+    @Feature.wrapper
+    def calculate(self, uri):
         """ Append descriptors to SURF h5 table """
         
         Im = Feature.ImageImport(uri) #importing image from image service
@@ -134,7 +134,7 @@ class DCD(Feature.Feature):
         descriptors[:,0:desc_len]=DCD
         
         #initalizing rows for the table
-        self.setRow(uri, idnumber, descriptors)
+        return [descriptors]
         
         
 class CSD(Feature.Feature):
@@ -148,9 +148,9 @@ class CSD(Feature.Feature):
     name = 'CSD'
     description = """Color Structure Descriptor"""
     length = 64 
-    temptable = []
         
-    def appendTable(self, uri, idnumber):
+    @Feature.wrapper
+    def calculate(self, uri):
         
         """ Append descriptors to h5 table """
         #initalizing
@@ -164,8 +164,7 @@ class CSD(Feature.Feature):
         
         descriptors = extractCSD(im, descSize=64) #calculating descriptor
         
-        
-        self.setRow(uri, idnumber, descriptors)
+        return [descriptors]
 
 
 class CLD(Feature.Feature):
@@ -180,7 +179,8 @@ class CLD(Feature.Feature):
     description = """Color Layout Descriptor"""
     length = 120
         
-    def appendTable(self, uri, idnumber):
+    @Feature.wrapper
+    def calculate(self, uri):
         """ Append descriptors to h5 table """
         
         
@@ -193,64 +193,74 @@ class CLD(Feature.Feature):
             abort(415, 'Format was not supported')
         
         descriptors = extractCLD(im, numYCoef=64, numCCoef = 28)
-        self.setRow(uri, idnumber, descriptors)
+        return [descriptors]
 
 #shapes are not fully supported yet
+class RSD(Feature.Feature):
+    """
+        Initalizes table and calculates the SURF descriptor to be
+        placed into the HDF5 table.
+    """
+    
+    file = 'features_rsd.h5'
+    name = 'RSD'
+    description = """Region Shape Descritpor"""
+    length = 35 
+        
+    @Feature.wrapper
+    def calculate(self, uri):
+        """ Append descriptors to SURF h5 table """
+        #initalizing
 
-#class RSD(Feature.Feature):
-#    """
-#        Initalizes table and calculates the SURF descriptor to be
-#        placed into the HDF5 table.
-#    """
-#    
-#    #parameters
-#    file = 'features_rsd.h5'
-#    name = 'RSD'
-#    description = """Region Shape Descritpor"""
-#    length = 35 
-#        
-#    def appendTable(self, uri, idnumber):
-#        """ Append descriptors to SURF h5 table """
-#        #initalizing
-#
-#        self.uri = uri
-#        xml=Feature.XMLImport(self.uri+'?view=deep')
-#        tree=xml.returnxml()
-#        if tree.tag=='polygon':
-#            vertices = tree.xpath('vertex')
-#            contour = []
-#            for vertex in vertices:
-#                contour.append((int(float(vertex.attrib['x'])),int(float(vertex.attrib['y']))))
-#        else:
-#            abort(404, 'polygon not found: must be a polygon gobject')
-#        
-#        
-#        gobject = self.uri.replace('/',' ').replace('?',' ').split()
-#        image_id=[]
-#        for i,split in enumerate(gobject):
-#            if split == 'image':
-#                image_id.append(gobject[i+1])
-#        
-#        if len(image_id)>1:
-#            abort(500,'too many ids')
-#        elif len(image_id)<1:
-#            about(500,'no ids')
-#        else:
-#            self.image_uri = 'http://bisque.ece.ucsb.edu/data_service/image/'+image_id[0]
-#        
-#        Im = Feature.ImageImport(self.image_uri) #importing image from image service
-#        image_path = Im.returnpath()
-#        im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
-#        
-#        col,row,channel = im.shape
-#        #creating mask
-#        img = Image.new('L', (row, col), 0)
-#        ImageDraw.Draw(img).polygon(contour, outline=1, fill=1)
-#        mask = np.array(img)
-#        
-#        del Im
-#        
-#        #initalizing rows for the table
-#        
-#        descriptors = extractRSD(im, mask)
-#        self.setRow(uri, idnumber, descriptors)
+        xml=Feature.XMLImport(uri+'?view=deep')
+        tree=xml.returnxml()
+        if tree.tag=='polygon':
+            vertices = tree.xpath('vertex')
+            contour = []
+            for vertex in vertices:
+                contour.append((int(float(vertex.attrib['x'])),int(float(vertex.attrib['y']))))
+        else:
+            abort(404, 'polygon not found: must be a polygon gobject')
+        
+        
+        gobject = self.uri.replace('/',' ').replace('?',' ').split()
+        image_id=[]
+        for i,split in enumerate(gobject):
+            if split == 'image':
+                image_id.append(gobject[i+1])
+        
+        if len(image_id)>1:
+            abort(500,'too many ids')
+        elif len(image_id)<1:
+            about(500,'no ids')
+        else:
+            root = 'http://128.111.185.26:8080'
+            xml = Feature.XMLImport(root+'/data_service/image/'+image_id[0])
+            tree = xml.returnxml()
+            self.image_uri = root+'/image_service/image/'+tree.attrib['resource_uniq']
+        
+        Im = Feature.ImageImport(self.image_uri) #importing image from image service
+        image_path = Im.returnpath()
+        im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
+        
+        col,row,channel = im.shape
+        #creating mask
+        import Image
+        import ImageDraw
+        #parameters
+        log.debug('contour: %s'%contour)
+        img = Image.new('L', (row, col), 0)
+        ImageDraw.Draw(img).polygon(contour, outline=1, fill=1)
+        mask = np.array(img)*255
+        
+        cv2.imwrite("mask.png", mask)
+        cv2.imwrite("test.png", im)
+
+        
+        #initalizing rows for the table
+        log.debug('Image: %s'%im)
+        log.debug('Mask: %s'%mask)
+        descriptors = extractRSD(im, mask)
+        del Im
+        
+        return [descriptors]

@@ -8,6 +8,7 @@ import numpy as np
 from bq.features.controllers import Feature #import base class
 from pylons.controllers.util import abort
 log = logging.getLogger("bq.features")
+import tables
 
 class BRISK(Feature.Feature):
     """
@@ -16,15 +17,29 @@ class BRISK(Feature.Feature):
     """
     
     #parameters
-    file = 'features_brisk.h5'
     name = 'BRISK'
     description = """Scale-invariant feature transform also know as SIFT """
     length = 64
-    parameter_info = ['x','y','response','size','angle','octave']
     
+    def columns(self):
+        """
+            creates Columns to be initalized by the create table
+        """
+        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+        class Columns(tables.IsDescription):
+            idnumber  = tables.StringCol(32,pos=1)
+            feature   = tables.Col.from_atom(featureAtom, pos=2)
+            x         = tables.Float32Col(pos=3)
+            y         = tables.Float32Col(pos=4)
+            response  = tables.Float32Col(pos=5)
+            size      = tables.Float32Col(pos=6)
+            angle     = tables.Float32Col(pos=7)
+            octave    = tables.Float32Col(pos=8)
+            
+        self.Columns = Columns    
         
-        
-    def appendTable(self, uri, idnumber):
+    @Feature.wrapper        
+    def calculate(self, uri):
         """ Append descriptors to BRISK h5 table """
         
         Im = Feature.ImageImport(uri) #importing image from image service
@@ -42,17 +57,26 @@ class BRISK(Feature.Feature):
         # extract the feature keypoints and descriptor
         descriptor_extractor = cv2.DescriptorExtractor_create("BRISK")
         (kpts, descriptors) = descriptor_extractor.compute(im,fs)
-        
+
         if descriptors == None: #taking Nonetype into account
             descriptors=[]
-            self.setRow(uri, idnumber, [None], [None])
         
-        #initalizing rows for the table
-        else:
-            for i in range(0,len(descriptors)):
-                parameter=[kpts[i].pt[0],kpts[i].pt[1],kpts[i].response,kpts[i].size,kpts[i].angle,kpts[i].octave]
-                self.setRow(uri, idnumber, descriptors[i], parameter)
-
+        x=[]
+        y=[]
+        response=[]
+        size=[]
+        angle=[]
+        octave=[]
+        for k in kpts:
+            x.append(k.pt[0])
+            y.append(k.pt[1])
+            response.append(k.response)
+            size.append(k.size)
+            angle.append(k.angle)
+            octave.append(k.octave)
+        
+        return descriptors,x,y,response,size,angle,octave
+#
 class BRISKc(Feature.Feature):
     """
         Initalizes table and calculates the ORB descriptor to be
@@ -60,15 +84,29 @@ class BRISKc(Feature.Feature):
     """
     
     #parameters
-    file = 'features_briskc.h5'
     name = 'BRISKc'
     description = """Scale-invariant feature transform also know as SIFT """
     length = 64
-    parameter_info = ['x','y','response','size','angle','octave']
     
-
+    def columns(self):
+        """
+            creates Columns to be initalized by the create table
+        """
+        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+        class Columns(tables.IsDescription):
+            idnumber  = tables.StringCol(32,pos=1)
+            feature   = tables.Col.from_atom(featureAtom, pos=2)
+            x         = tables.Float32Col(pos=3)
+            y         = tables.Float32Col(pos=4)
+            response  = tables.Float32Col(pos=5)
+            size      = tables.Float32Col(pos=6)
+            angle     = tables.Float32Col(pos=7)
+            octave    = tables.Float32Col(pos=8)
+            
+        self.Columns = Columns
         
-    def appendTable(self, uri, idnumber):
+    @Feature.wrapper        
+    def calculate(self, uri):
         """ Append descriptors to SIFT h5 table """
         
         Im = Feature.ImageImport(uri) #importing image from image service
@@ -91,18 +129,28 @@ class BRISKc(Feature.Feature):
         # extract the feature keypoints and descriptor
         descriptor_extractor = cv2.DescriptorExtractor_create("BRISK")
         (kpts, descriptors) = descriptor_extractor.compute(im,[fs])
-        
+
         if descriptors == None: #taking Nonetype into account
             descriptors=[]
-            self.setRow(uri, idnumber, [None], [None])
         
-        #initalizing rows for the table
-        else:
-            for i in range(0,len(descriptors)):
-                parameter=[kpts[i].pt[0],kpts[i].pt[1],kpts[i].response,kpts[i].size,kpts[i].angle,kpts[i].octave]
-                self.setRow(uri, idnumber, descriptors[i], parameter)
+        x=[]
+        y=[]
+        response=[]
+        size=[]
+        angle=[]
+        octave=[]
+        for k in kpts:
+            x.append(k.pt[0])
+            y.append(k.pt[1])
+            response.append(k.response)
+            size.append(k.size)
+            angle.append(k.angle)
+            octave.append(k.octave)
+        
+        return descriptors,x,y,response,size,angle,octave
 
-            
+  
+          
 class ORB(Feature.Feature):
     """
         Initalizes table and calculates the ORB descriptor to be
@@ -110,7 +158,6 @@ class ORB(Feature.Feature):
     """
     
     #parameters
-    file = 'features_orb.h5'
     name = 'ORB'
     description = """The algorithm uses FAST in pyramids to detect stable keypoints, selects the 
     strongest features using FAST response, finds their orientation using first-order moments and
@@ -120,9 +167,26 @@ class ORB(Feature.Feature):
     the opencv library"""
     length = 32
     contents = 'several points are described in an image, each will have a position: X Y Scale'
-    parameter_info = ['x','y','response','size','angle','octave']
-        
-    def appendTable(self, uri, idnumber):
+
+    def columns(self):
+        """
+            creates Columns to be initalized by the create table
+        """
+        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+        class Columns(tables.IsDescription):
+            idnumber  = tables.StringCol(32,pos=1)
+            feature   = tables.Col.from_atom(featureAtom, pos=2)
+            x         = tables.Float32Col(pos=3)
+            y         = tables.Float32Col(pos=4)
+            response  = tables.Float32Col(pos=5)
+            size      = tables.Float32Col(pos=6)
+            angle     = tables.Float32Col(pos=7)
+            octave    = tables.Float32Col(pos=8)
+            
+        self.Columns = Columns
+
+    @Feature.wrapper        
+    def calculate(self, uri):
         """ Append descriptors to ORB h5 table """
         
         Im = Feature.ImageImport(uri) #importing image from image service
@@ -141,13 +205,22 @@ class ORB(Feature.Feature):
         
         if descriptors == None: #taking Nonetype into account
             descriptors=[]
-            self.setRow(uri, idnumber, [None], [None])
+            
+        x=[]
+        y=[]
+        response=[]
+        size=[]
+        angle=[]
+        octave=[]
+        for k in kpts:
+            x.append(k.pt[0])
+            y.append(k.pt[1])
+            response.append(k.response)
+            size.append(k.size)
+            angle.append(k.angle)
+            octave.append(k.octave)
         
-        #initalizing rows for the table
-        else:
-            for i in range(0,len(descriptors)):
-                parameter=[kpts[i].pt[0],kpts[i].pt[1],kpts[i].response,kpts[i].size,kpts[i].angle,kpts[i].octave]
-                self.setRow(uri, idnumber, descriptors[i], parameter)
+        return descriptors,x,y,response,size,angle,octave
 
 class ORBc(Feature.Feature):
     """
@@ -156,7 +229,6 @@ class ORBc(Feature.Feature):
     """
     
     #parameters
-    file = 'features_orbc.h5'
     name = 'ORBc'
     description = """The algorithm uses FAST in pyramids to detect stable keypoints, selects the 
     strongest features using FAST response, finds their orientation using first-order moments and
@@ -166,9 +238,27 @@ class ORBc(Feature.Feature):
     the opencv library"""
     length = 32
     contents = 'several points are described in an image, each will have a position: X Y Scale'
-    parameter_info = ['x','y','response','size','angle','octave']
-        
-    def appendTable(self, uri, idnumber):
+
+
+    def columns(self):
+        """
+            creates Columns to be initalized by the create table
+        """
+        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+        class Columns(tables.IsDescription):
+            idnumber  = tables.StringCol(32,pos=1)
+            feature   = tables.Col.from_atom(featureAtom, pos=2)
+            x         = tables.Float32Col(pos=3)
+            y         = tables.Float32Col(pos=4)
+            response  = tables.Float32Col(pos=5)
+            size      = tables.Float32Col(pos=6)
+            angle     = tables.Float32Col(pos=7)
+            octave    = tables.Float32Col(pos=8)
+            
+        self.Columns = Columns
+
+    @Feature.wrapper        
+    def calculate(self, uri):
         """ Append descriptors to ORB h5 table """
         
         Im = Feature.ImageImport(uri) #importing image from image service
@@ -193,13 +283,23 @@ class ORBc(Feature.Feature):
         
         if descriptors == None: #taking Nonetype into account
             descriptors=[]
-            self.setRow(uri, idnumber, [None], [None])
+            
+        x=[]
+        y=[]
+        response=[]
+        size=[]
+        angle=[]
+        octave=[]
+        for k in kpts:
+            x.append(k.pt[0])
+            y.append(k.pt[1])
+            response.append(k.response)
+            size.append(k.size)
+            angle.append(k.angle)
+            octave.append(k.octave)
         
-        #initalizing rows for the table
-        else:
-            for i in range(0,len(descriptors)):
-                parameter=[kpts[i].pt[0],kpts[i].pt[1],kpts[i].response,kpts[i].size,kpts[i].angle,kpts[i].octave]
-                self.setRow(uri, idnumber, descriptors[i], parameter)
+        return descriptors,x,y,response,size,angle,octave
+
 
 class SIFT(Feature.Feature):
     """
@@ -208,15 +308,30 @@ class SIFT(Feature.Feature):
     """
     
     #parameters
-    file = 'features_sift.h5'
     name = 'SIFT'
     description = """Scale-invariant feature transform also know as SIFT """
     length = 128
-    parameter_info = ['x','y','response','size','angle','octave']
+    feature_format = "int32"
     
-        
-        
-    def appendTable(self, uri, idnumber):
+    def columns(self):
+        """
+            creates Columns to be initalized by the create table
+        """
+        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+        class Columns(tables.IsDescription):
+            idnumber  = tables.StringCol(32,pos=1)
+            feature   = tables.Col.from_atom(featureAtom, pos=2)
+            x         = tables.Float32Col(pos=3)
+            y         = tables.Float32Col(pos=4)
+            response  = tables.Float32Col(pos=5)
+            size      = tables.Float32Col(pos=6)
+            angle     = tables.Float32Col(pos=7)
+            octave    = tables.Float32Col(pos=8)
+            
+        self.Columns = Columns
+    
+    @Feature.wrapper
+    def calculate(self, uri):
         """ Append descriptors to SIFT h5 table """
         
         Im = Feature.ImageImport(uri) #importing image from image service
@@ -229,39 +344,44 @@ class SIFT(Feature.Feature):
         
         fs = cv2.SIFT().detect(im)                             # keypoints
         
-        log.debug('fs: %s' %len(fs))
+        #log.debug('fs: %s' %len(fs))
         
         # extract the feature keypoints and descriptor
         descriptor_extractor = cv2.DescriptorExtractor_create("SIFT")
         (kpts, descriptors) = descriptor_extractor.compute(im,fs)
-        
+
         if descriptors == None: #taking Nonetype into account
             descriptors=[]
-            self.setRow(uri, idnumber, [None], [None])
+            
+        x=[]
+        y=[]
+        response=[]
+        size=[]
+        angle=[]
+        octave=[]
+        for k in kpts:
+            x.append(k.pt[0])
+            y.append(k.pt[1])
+            response.append(k.response)
+            size.append(k.size)
+            angle.append(k.angle)
+            octave.append(k.octave)
         
-        #initalizing rows for the table
-        else:
-            for i in range(0,len(descriptors)):
-                parameter=[kpts[i].pt[0],kpts[i].pt[1],kpts[i].response,kpts[i].size,kpts[i].angle,kpts[i].octave]
-                self.setRow(uri, idnumber, descriptors[i], parameter)
+        return descriptors,x,y,response,size,angle,octave
 
 
-class SIFTc(Feature.Feature):
+class SIFTc(SIFT):
     """
         Initalizes table and calculates the ORB descriptor to be
         placed into the HDF5 table.
     """
     
     #parameters
-    file = 'features_siftc.h5'
     name = 'SIFTc'
     description = """Scale-invariant feature transform also know as SIFT """
-    length = 128
-    parameter_info = ['x','y','response','size','angle','octave']
-    
-        
-        
-    def appendTable(self, uri, idnumber):
+     
+    @Feature.wrapper        
+    def calculate(self, uri):
         """ Append descriptors to SIFT h5 table """
         
         Im = Feature.ImageImport(uri) #importing image from image service
@@ -286,65 +406,71 @@ class SIFTc(Feature.Feature):
         
         if descriptors == None: #taking Nonetype into account
             descriptors=[]
-            self.setRow(uri, idnumber, [None], [None])
+            
+        x=[]
+        y=[]
+        response=[]
+        size=[]
+        angle=[]
+        octave=[]
+        for k in kpts:
+            x.append(k.pt[0])
+            y.append(k.pt[1])
+            response.append(k.response)
+            size.append(k.size)
+            angle.append(k.angle)
+            octave.append(k.octave)
         
-        #initalizing rows for the table
-        else:
-            for i in range(0,len(descriptors)):
-                parameter=[kpts[i].pt[0],kpts[i].pt[1],kpts[i].response,kpts[i].size,kpts[i].angle,kpts[i].octave]
-                self.setRow(uri, idnumber, descriptors[i], parameter)
+        return descriptors,x,y,response,size,angle,octave
+    
 
-class SIFTg(Feature.Feature):
-    """
-        Initalizes table and calculates the ORB descriptor to be
-        placed into the HDF5 table.
-    """
-    
-    #parameters
-    file = 'features_siftg.h5'
-    name = 'SIFTg'
-    description = """Scale-invariant feature transform also know as SIFT """
-    length = 128
-    parameter_info = ['x','y','response','size','angle','octave']
-    
-        
-        
-    def appendTable(self, uri, idnumber):
-        """ Append descriptors to SIFT h5 table """
-        
- 
-        
-        Session = BQSession().init_local('admin','admin',bisque_root='http://128.111.185.26:8080')
-        data = Session.fetchxml(uri+'?view=deep,clean') #needs to be changed only for prototyping purposes
-        vertices=data.xpath('point/vertex')
-        log.debug('vertices: %s' % vertices)
-        resource_uniq = data.attrib['resource_uniq']
-        Im = Feature.ImageImport('http://128.111.185.26:8080/image_service/images/'+resource_uniq) #importing image from image service
-        image_path = Im.returnpath()
-        im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
-        del Im     
-        im=np.asarray(im)
-        if not im.any():
-            abort(415, 'Format was not supported')
-        
-        imagesize=im.shape
-        fs=[]
-        for vertex in vertices:
-            fs.append(cv2.KeyPoint(float(vertex.attrib['x']),float(vertex.attrib['y']),50))  # keypoints
-        
-        # extract the feature keypoints and descriptor
-        descriptor_extractor = cv2.DescriptorExtractor_create("SIFT")
-        (kpts, descriptors) = descriptor_extractor.compute(im,fs)
-        
-        if descriptors == None: #taking Nonetype into account
-            descriptors=[]
-            self.setRow(uri, idnumber, [None], [None])
-        
-        #initalizing rows for the table
-        else:
-            for i in range(0,len(descriptors)):
-                parameter=[kpts[i].pt[0],kpts[i].pt[1],kpts[i].response,kpts[i].size,kpts[i].angle,kpts[i].octave]
-                self.setRow(uri, idnumber, descriptors[i], parameter)
+#class SIFTg(SIFT):
+#    """
+#        Initalizes table and calculates the ORB descriptor to be
+#        placed into the HDF5 table.
+#    """
+#    
+#    #parameters
+#    file = 'features_siftg.h5'
+#    name = 'SIFTg'
+#    description = """Scale-invariant feature transform also know as SIFT """
+#        
+#        
+#    def appendTable(self, uri, idnumber):
+#        """ Append descriptors to SIFT h5 table """
+#        
+#        Session = BQSession().init_local('admin','admin',bisque_root='')
+#        data = Session.fetchxml(uri+'?view=deep,clean') #needs to be changed only for prototyping purposes
+#        vertices=data.xpath('point/vertex')
+#        log.debug('vertices: %s' % vertices)
+#        resource_uniq = data.attrib['resource_uniq']
+#        Im = Feature.ImageImport(image_service/images/'+resource_uniq) #importing image from image service
+#        image_path = Im.returnpath()
+#        im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
+#        del Im     
+#        im=np.asarray(im)
+#        if not im.any():
+#            abort(415, 'Format was not supported')
+#        
+#        imagesize=im.shape
+#        fs=[]
+#        for vertex in vertices:
+#            fs.append(cv2.KeyPoint(float(vertex.attrib['x']),float(vertex.attrib['y']),50))  # keypoints
+#        
+#        # extract the feature keypoints and descriptor
+#        descriptor_extractor = cv2.DescriptorExtractor_create("SIFT")
+#        (kpts, descriptors) = descriptor_extractor.compute(im,fs)
+#        
+#        if descriptors == None: #taking Nonetype into account
+#            descriptors=[]
+#            self.setRow(uri, idnumber, [None], [None])
+#        
+#        #initalizing rows for the table
+#        else:
+#            for i in range(0,len(descriptors)):
+#                parameter=[kpts[i].pt[0],kpts[i].pt[1],kpts[i].response,kpts[i].size,kpts[i].angle,kpts[i].octave]
+#                self.setRow(uri, idnumber, descriptors[i], parameter)
+
                 
 class SURF(Feature.Feature):
     """
@@ -353,14 +479,29 @@ class SURF(Feature.Feature):
     """
     
     #parameters
-    file = 'features_surf.h5'
     name = 'SURF'
     description = """Speeded Up Robust Features also know as SURF"""
     length = 64 
-    parameter_info = ['x','y','laplacian','size','direction','hessian']
-    temptable = []
+
+    def columns(self):
+        """
+            creates Columns to be initalized by the create table
+        """
+        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+        class Columns(tables.IsDescription):
+            idnumber  = tables.StringCol(32,pos=1)
+            feature   = tables.Col.from_atom(featureAtom, pos=2)
+            x         = tables.Float32Col(pos=3)
+            y         = tables.Float32Col(pos=4)
+            laplacian = tables.Float32Col(pos=5)
+            size      = tables.Float32Col(pos=6)
+            direction = tables.Float32Col(pos=7)
+            hessian   = tables.Float32Col(pos=8)
+            
+        self.Columns = Columns
         
-    def appendTable(self, uri, idnumber):
+    @Feature.wrapper        
+    def calculate(self, uri):
         """ Append descriptors to SURF h5 table """
         #initalizing
         extended = 0
@@ -378,27 +519,38 @@ class SURF(Feature.Feature):
         
         (kpts,descriptors)=cv.ExtractSURF(cv.fromarray(im), None, cv.CreateMemStorage(), (extended, HessianThresh, nOctaves, nOctaveLayers)) #calculating descriptor
         
-        #initalizing rows for the table
-        for i in range(0,len(descriptors)):
-            parameters=[kpts[i][0][0],kpts[i][0][1],kpts[i][1],kpts[i][2],kpts[i][3],kpts[i][4]]
-            self.setRow(uri, idnumber, descriptors[i], parameters)
+        if descriptors == None: #taking Nonetype into account
+            descriptors=[]
+            
+        x=[]
+        y=[]
+        laplacian=[]
+        size=[]
+        direction=[]
+        hessian=[]
+        for k in kpts:
+            x.append(k[0][0])
+            y.append(k[0][1])
+            laplacian.append(k[1])
+            size.append(k[2])
+            direction.append(k[3])
+            hessian.append(k[4])
+        
+        return descriptors,x,y,laplacian,size,direction,hessian
 
     
-class SURFc(Feature.Feature):
+class SURFc(SURF):
     """
         Initalizes table and calculates the SURF descriptor to be
         placed into the HDF5 table.
     """
     
     #parameters
-    file = 'features_surfc.h5'
     name = 'SURFc'
     description = """Speeded Up Robust Features also know as SURF"""
-    length = 128 
-    parameter_info = ['x','y','response','size','angle','octave']
-    temptable = []
         
-    def appendTable(self, uri, idnumber):
+    @Feature.wrapper        
+    def calculate(self, uri):
         """ Append descriptors to SURF h5 table """
         #initalizing
         extended = 0
@@ -426,13 +578,22 @@ class SURFc(Feature.Feature):
         
         if descriptors == None: #taking Nonetype into account
             descriptors=[]
-            self.setRow(uri, idnumber, [None], [None])
+            
+        x=[]
+        y=[]
+        response=[]
+        size=[]
+        angle=[]
+        octave=[]
+        for k in kpts:
+            x.append(k.pt[0])
+            y.append(k.pt[1])
+            response.append(k.response)
+            size.append(k.size)
+            angle.append(k.angle)
+            octave.append(k.octave)
         
-        #initalizing rows for the table
-        else:
-            for i in range(0,len(descriptors)):
-                parameter=[kpts[i].pt[0],kpts[i].pt[1],kpts[i].response,kpts[i].size,kpts[i].angle,kpts[i].octave]
-                self.setRow(uri, idnumber, descriptors[i], parameter)
+        return descriptors,x,y,response,size,angle,octave
 
 class FREAKc(Feature.Feature):
     """
@@ -441,15 +602,27 @@ class FREAKc(Feature.Feature):
     """
     
     #parameters
-    file = 'features_freakc.h5'
     name = 'FREAKc'
     description = """Scale-invariant feature transform also know as SIFT """
     length = 64
-    parameter_info = ['x','y','response','size','angle','octave']
     
-
+    def columns(self):
+        """
+            creates Columns to be initalized by the create table
+        """
+        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+        class Columns(tables.IsDescription):
+            idnumber  = tables.StringCol(32,pos=1)
+            feature   = tables.Col.from_atom(featureAtom, pos=2)
+            x         = tables.Float32Col(pos=3)
+            y         = tables.Float32Col(pos=4)
+            response  = tables.Float32Col(pos=5)
+            size      = tables.Float32Col(pos=6)
+            angle     = tables.Float32Col(pos=7)
+            octave    = tables.Float32Col(pos=8)
         
-    def appendTable(self, uri, idnumber):
+    @Feature.wrapper        
+    def calculate(self, uri):
         """ Append descriptors to SIFT h5 table """
         
         Im = Feature.ImageImport(uri) #importing image from image service
@@ -475,11 +648,20 @@ class FREAKc(Feature.Feature):
         
         if descriptors == None: #taking Nonetype into account
             descriptors=[]
-            self.setRow(uri, idnumber, [None], [None])
+            
+        x=[]
+        y=[]
+        response=[]
+        size=[]
+        angle=[]
+        octave=[]
+        for k in kpts:
+            x.append(k.pt[0])
+            y.append(k.pt[1])
+            response.append(k.response)
+            size.append(k.size)
+            angle.append(k.angle)
+            octave.append(k.octave)
         
-        #initalizing rows for the table
-        else:
-            for i in range(0,len(descriptors)):
-                parameter=[kpts[i].pt[0],kpts[i].pt[1],kpts[i].response,kpts[i].size,kpts[i].angle,kpts[i].octave]
-                self.setRow(uri, idnumber, descriptors[i], parameter)
+        return descriptors,x,y,response,size,angle,octave
             

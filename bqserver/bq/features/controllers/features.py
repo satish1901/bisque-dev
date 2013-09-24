@@ -24,12 +24,14 @@ import pkgutil
 import importlib
 import uuid
 import threading
+import httplib2
+import Queue
 
 from numpy.lib.recfunctions import append_fields
 
 from pylons.i18n import ugettext as _, lazy_ugettext as l_ 
 from pylons.controllers.util import abort
-from tg import expose, flash, config, response
+from tg import expose, flash, config, response, request
 from repoze.what import predicates 
 from bq.core.service import ServiceController
 
@@ -48,7 +50,8 @@ from bq import data_service
 from bq.image_service.controllers.locks import Locks
 from bq.api.comm import BQServer
 from bq.util.mkdir import _mkdir
-
+import traceback
+#from ID import ID
 import Feature
 
 #query is commented out
@@ -60,39 +63,27 @@ log = logging.getLogger("bq.features")
 #FUTURE:
 #    Key point and region selection with gobjects (may need to api fixes to fit together everything wait on opinions)* everything will be recieving a unique
 #    add private and public access (all images must be public)
-#    package server for first release (better way of packaging libraries)
-
-#bisque API
-#    adding importing 3D 4D and 5D images for higher dimensional feature analysis (api limitation)
-#    import images as numpy arrays
+#    add callback to getting feature requests
 
 #Feature Library maintenance
-#    create a VRL descriptor library wrapping C code (if i finish everything else)
 #    add gist
+#    add vignish's features
 #    look into nd features
-#    DOCUMENTATION!!! (it never ends)
-
-#Query
-#    Adding nearest nearbor search with libspacial
-#    Figure out index to work with deletes so that if a delete happens the index isnt thrown off
-#    integrate the hdf5 into the libspaical so index files do not store too much feature info
 
 #Research
-#    Should a new feature module be able to be added even while the server is still active?
+#    Dynamicly adding new features to the service
+#    Large number of features returned needs to be separted
 #    Think of a better way to format the tables using uniques and commands instead of id tables 
 #    as the table increases in size hdf5 becomes increasingly harder to search through
 
 #Note (when using the feature server)
-#    building xml tree is a big bottle neck (maybe look into returning binary outputs to speed up the loop)
+#    building xml tree is a big bottle neck. Limit the amount of xml returned or page the xml
 
 
 #directories
-from .var import FEATURES_TABLES_FILE_DIR,FEATURES_TEMP_IMAGE_DIR,EXTRACTOR_DIR
+from .var import FEATURES_TABLES_FILE_DIR,FEATURES_TEMP_IMAGE_DIR,EXTRACTOR_DIR,FEATURES_TABLES_WORK_DIR
 
 
-#################################################################
-###  descriptor tables
-#################################################################
 
 class Feature_Achieve(dict):
     """
@@ -123,620 +114,461 @@ class Feature_Achieve(dict):
                     if inspect.isclass(item) and issubclass(item, Feature.Feature):
                         log.debug('Imported Feature: %s'%item.name)
                         self[item.name] = item
-            except StandardError: #need to pick a narrower error band but not quite sure right now
-                log.exception('Failed Imported Feature: %s'%module) #failed to import feature 
+            except StandardError, err: #need to pick a narrower error band but not quite sure right now
+                log.exception('Failed Imported Feature: %s\n'%module) #failed to import feature 
 
     def __missing__(self, feature_type):
+        log.debug('feature type:'+feature_type+' not found')
         abort(404,'feature type:'+feature_type+' not found')
 
 
-#################################################################
-### IDTable
-#################################################################
 
-class IDTable():
-    """The class that stores and returns values from the id table"""
+class Rows(object):
+    """
+    Generates rows to be placed into the tables
+    """
+    def __init__(self, feature):
+        self.feature_queue = {}
+        self.feature = feature
     
-    def __init__(self):
-        from ID import ID
-        self.initID = ID()
-        self.idtable = HDF5Table(self.initID)
-    
-    def returnID(self,uri):
-        """
-        Returns a HEX HASH char string of the
-        uri given 
-        """
-        id = uuid.uuid5(uuid.NAMESPACE_URL, str(uri))
-        id=id.hex
-        self.storeID(uri,id)
-        #threading.Thread(target=self.storeID(uri,id)).start()
-        return id
-    
-    def storeID(self,uri,id):
-        """
-        Stores a HEX HASH char string given by
-        returnID
-        (want to run on separate thread to not slow down
-        the main thread of the feature server)
-        """
-        start=time.time()
-        log.debug('Starting ID Storing thread') 
-        qry = 'idnumber=="%s"'%id
-        #log.debug('query: %s'%qry)
-        q = self.idtable.query(qry)
-        if len(q)>1:
-            abort(500, 'ERROR: Too many values returned from the IDTable')
-        elif len(q)<1:
-            self.initID.appendTable(uri,id)
-            log.debug('temptables: %s'%self.initID.temptable)
-            self.idtable.append()
-            q = self.idtable.query(qry)
-            log.debug('id: %s'%q)
-            if not q:
-                abort(500, 'ERROR: Cannot read from HDF5 id tables')
-            log.debug('Stored id in ID Table')   
-        end=time.time()
-        log.debug('Duration of Stored Thread: %s sec'%str(end-start))   
-        return
-
-#    def returnID(self, uri):
-#        """
-#        Returns the ID of a URI stored in its dictionary.
-#        If the URL is not stored in the dictionary the function
-#        creates an ID stores that in the dictionary and returns
-#        that same ID.
-#        
-#        input
-#        -----
-#        key : URL (type - string)
-#        
-#        output
-#        ------
-#        value : ID (type - string)
-#        """ 
-#        query = 'uri=="%s"'% str(uri)
-#        id = self.idtable.query(query)
-#        if len(id)>1:
-#            abort(500, 'ERROR: Too many values returned from the IDTable')
-#        elif len(id)<1:
-#            self.idtable.append(uri,'dumbnumber') #a filler value to keep the structure of HDF5Ftables the same
-#            id = self.idtable.query(query)
-#            if not id:
-#                log.debug('id: %s'%id)
-#                abort(500, 'ERROR: Cannot read from HDF5 id tables')
-#            id = id['idnumber'][0]
-#        else:
-#            id = id['idnumber'][0]
-#        log.debug('id: %s'% id)
-#        return id
-    
-    def returnURI(self, id):
-        """
-        Returns an ID to a URI stored in its dictionary.
-        If the URI is not in its dictionary it returns nothing.
-        
-        input
-        -----
-        key : ID (type - string)
-        
-        output
-        ------
-        value : URI (type - string)
-        """ 
-        uri = self.idtable['uri'][id]
-        uri = uri[0].strip()
-        return uri
-    
-    def deleteURI(self,uri):
-        """
-        Deletes URI and ID from the table
-        """
-        query = 'uri=="%s"'% str(uri)
-        self.idtable.delete(query)
-        
-    def deleteTable(self):
-        """
-        Delete the IDTable
-        """
-        self.idtable.delete()
-        
-########################################################
-###   Feature List
-########################################################
-
-class FeatureList(object):
-    
-    def __init__(self, FeatureClass):
-        self.FeatureClass = FeatureClass() #saving HDFTable object
-        self.Table = HDF5Table(self.FeatureClass)
-        self.f_list = np.array([])
+    def __repr__(self):
+        return 'Descritpor Generator: Feature: %s List Length: %s'%(self.feature.name, len(feature_list))
     
     def __len__(self):
-        return len(self.f_list)
+        return self.feature_queue.qsize()
     
-    def __getitem__(self,i):
-        return self.f_list[i]
-    
-    def __getslice__(self,i,j):
-        return self.f_list[i:j]
-    
-    def __iter__(self):
-        return iter(self.f_list)
-    
-#    def iappend(self,index):
-#        """
-#        appends to the list a feature info and feature called with the index from the table
-#        """
-#        id = IDTable().returnURI( feature_attributes['idnumber'] ) 
-#        row=self.HDF5_Table[index]
-#        r=append_fields(row,'id',np.array([id]),'i4',usemask=False)
-#        if self.f_list.size<1:
-#            self.f_list = r
-#        else:
-#            self.f_list = np.append(self.f_list,r,axis=0)
-#        return
-    
-    def uappend(self,uri,id):
-        """
-        appends to the list the feature info and feature requiring a uri and id
-        """
-        query = 'idnumber=="%s"'%id
-        row=self.Table.query(query)
-        row=np.array([])
-        if row.size<1: #nothing matched from the table
-            #calculate feature
-            start_calculating_feature=time.time()
-            self.FeatureClass.appendTable(uri,id)
-            end_calculating_feature=time.time()
-            log.debug('Duration to calculate feature: %s sec'%str(end_calculating_feature-start_calculating_feature))
-            
-            start_returning_feature=time.time()
-            row = self.FeatureClass.returnRows()
-            end_returnng_feature=time.time()
-            log.debug('Duration to returning feature: %s sec'%str(end_returnng_feature-start_returning_feature))
-            start_launching_thread=time.time()
-            self.storeFeature(id)
-            #threading.Thread(target=self.storeFeature(id)).start()
-            end_launching_thread=time.time()
-            log.debug('Duration to launch thread: %s sec'%str(end_launching_thread-start_launching_thread))
-            
-        for r in row:
-            r=append_fields(r,'uri',np.array([uri]),'|S2000',usemask=False)
-            if self.f_list.size<1:
-                self.f_list = r
+    def push(self, **resource):
+        try:
+            output = self.feature.calculate(resource) #finds the feature
+            log.debug('output: %s'% str(self.feature.localfile(output[0][0])))
+            if self.feature.localfile(output[0][0]) in self.feature_queue: # checking the first few element on the hash
+                self.feature_queue[self.feature.localfile(output[0][0])].put(output)
             else:
-                self.f_list = np.append(self.f_list,r,axis=0)
-        return
+                self.feature_queue[self.feature.localfile(output[0][0])] = Queue.Queue()
+                self.feature_queue[self.feature.localfile(output[0][0])].put(output)
+        except StandardError, err:
+            #creating a list of uri were the error occured
+            resource_string=''
+            for r in resource.keys():
+                resource_string+=r+' : '+resource[r]+', '
+            else:
+                resource_string=resource_string[:-2]
+                
+            log.exception('Calculation Error: URI:%s  %s Feature failed to be calculated'%(resource_string,self.feature.name))
+
+class UncachedRows(Rows):
+    """
+    Generates rows to be placed into the uncached tables
+    """
+    def push(self, **resource):
+        try:
+            output = self.feature.calculate(resource)
+            if 'feature' in self.feature_queue: # checking the first few element on the hash
+                self.feature_queue['feature'].put(output)
+            else:
+                self.feature_queue['feature'] = Queue.Queue()
+                self.feature_queue['feature'].put(output)
+        except StandardError, err:
+            #creating a list of uri were the error occured
+            resource_string=''
+            for r in resource.keys():
+                resource_string+=r+' : '+resource[r]+', '
+            else:
+                resource_string=resource_string[:-2]
+                
+            log.exception('Calculation Error: %s  %s feature failed to be calculated'%(resource_string,self.feature.name))
+
+class Tables(object):
     
-    def storeFeature(self,id):
-        """
-            Store feature to the HDF5 feature table
-            (This function is to be used with a different threads
-            then the main feature server thread to give performance
-            boosts)
-            Note: This function will not be needed when memcache is added
-            since storing times should no longer lead to a performance hit
-        """
-        start= time.time()
-        log.debug('Starting storefeature thread') 
-        self.Table.append() #add feature to the table and requery
-        qry = 'idnumber=="%s"'%id
-        row=self.Table.query(qry) #test to see if the feature was added correctly
-        if row.size<1:
-            log.debug('id: %s'%id)
-            log.debug('row: %s'%row)
-            abort(500, 'ERROR: Cannot read from HDF5 feature tables')
-        log.debug('Stored Feature to Table')      
-        end = time.time()
-        log.debug('Duration Stored Feature to Table: %s'% str(end-start))  
-        return  
-    
-    def fappend(self,feature):
-        """
-        appends to the list the feature info and feature using the feature vector
-        """
-        pass
-
-
-
-
-#################################################################
-### HDF5 Tables
-#################################################################
-
-class HDF5Table(object):
-    """ Class that deals with  HDF5 files"""
-    
-    def __init__(self, FeatureClass):
+    def __init__(self, feature):
         """
             Requires a Feature Class to intialize. Will search for table in the 
             data\features\feature_tables directory. If it does not find the table
             it will create a table.
         """
-        self.FeatureClass = FeatureClass
-        if not os.path.exists(self.FeatureClass.path):   #creates a table if it cannot find one
-            self.create() #creates the table
-            self.index() #indexes the table as commanded in the feature modules
+        self.feature = feature
+        if not os.path.exists(self.feature.path):   #creates a table if it cannot find one
+            _mkdir(self.feature.path)
 
-    def __getitem__(self, index):
+    
+    def isin(self, hash):
         """
-            Reads the table index and returns field value with that index (very fast)
+            queries the table to see if element is in the table
             
-            input
-            -----
-            index : index of the row (type - int)
-            
-            output
-            ------
-            row
-            
-            option
-            ------
-            row['field']
+            query - numexpr
+        """
+        filename = self.feature.localfile(hash)
+        query='idnumber=="%s"'% str(hash)
         
+        if not os.path.exists(filename):
+            self.feature.createtable(filename) #creates the table
+            
+        with Locks(self.feature.path), tables.openFile(filename,'r', title=self.feature.name) as h5file:
+            table=h5file.root.values
+            index = table.getWhereList(query)
+        return len(index)>0
+    
+    def store(self, rowgenorator):
         """
-        with Locks( self.FeatureClass.path ):
-            h5file = tables.openFile( self.FeatureClass.path ,'r', title=self.FeatureClass.name)
-            table = h5file.root.values
-            value = table.read(index)
-            h5file.close()
-        return value 
+            store elements to tables
+        """
+        for filename in rowgenorator.feature_queue.keys():
+            queue = rowgenorator.feature_queue[filename]
 
+            if not os.path.exists(filename):
+                self.feature.createtable(filename) #creates the table
+                
+            with Locks(None, filename), tables.openFile(filename,'a', title=self.feature.name) as h5file:
+                table = h5file.root.values
+                while not queue.empty():
+                    table.append(queue.get())
+                table.flush()
+        return
+    
+    def get(self, hash):
+        """
+            query for elements and return results
+        """
+        filename = self.feature.localfile(hash)
+        query='idnumber=="%s"'% str(hash)
         
-    def create(self):
-        """
-            Creates a feature.h5 file given in the feature class
-        """
-        self.FeatureClass.initalizeTable()
-        with Locks(None, self.FeatureClass.path):
-            h5file=tables.openFile(self.FeatureClass.path,'a', title=self.FeatureClass.name)  
-            table = h5file.createTable('/', 'values', self.FeatureClass.Columns, expectedrows=1000000000)
-            table.flush()       
-            h5file.close()
-
-      
-
-    def append(self):
-        """
-            Calls the feature class to calculate feature and then appends the feature
-            to the feature.h5 file all given by the feature class
-            Note: If there is nothing in the attribute temptable then nothing will be appended to the table
-        """
-#        try:
-#            self.FeatureClass.appendTable(uri, id) #calculates the features
-#            log.debug('extracted feature')
-#        except StandardError: #need to pick a narrower error band but not quite sure right now
-#            log.exception('Failed to extract feature: %s'%self.FeatureClass.name)
-#            abort(500,'Failed to extract feature: %s'%self.FeatureClass.name)
-        with Locks(None, self.FeatureClass.path):
-            h5file=tables.openFile(self.FeatureClass.path,'a', title=self.FeatureClass.name)
+        if not os.path.exists(filename):
+            self.feature.createtable(filename) #creates the table
+        
+        with Locks(filename), tables.openFile(filename,'r', title=self.feature.name) as h5file:
             table=h5file.root.values
-            r = table.row
-            for row in self.FeatureClass.temptable:
-                for keys in table.colnames:
-                    r[keys] = row[keys]
-                r.append()
-            table.flush()
-            h5file.close()
-
-    def delete(self,query=None):
-        """
-            Deletes feature with query is given the table is deleted and a new tables
-            is initalized in its place
-        """
-        if not query:
-            with Locks(None, self.FeatureClass.path):
-                os.remove(self.FeatureClass.path)
-                self.create()
-                self.index()
-        else:
-            with Locks(None, self.FeatureClass.path):
-                index = table.getWhereList(query)
-                for i in index:
-                    table.removeRows(i) #not sure if this works
- 
-    def query(self, query):
-        """
-            Reads a table from feature.h5 file and returns a query
-            
-            input
-            -----
-            query : pytables query format (type - string)
-                exmaple: '(column1 == 'hello')&&(column2 >12)'
-            name  : the name of the column one want to find the value for (type - string)
-            
-            output
-            ------
-            value 
-
-        """
-        with Locks(self.FeatureClass.path):
-            h5file=tables.openFile(self.FeatureClass.path,'r', title=self.FeatureClass.name)
-            table=h5file.root.values
-            q=table.getWhereList(query)
-            value=np.array([])
-            if q.size<1:
-                pass
+            index = table.getWhereList(query)
+            log.debug('index: %s'%str(index))
+            if index.size==0:
+                i = None
             else:
-                for i in q:
-                    if value.size<1:
-                        value=table.read(i)
-                    else:
-                        value=np.append(value,table.read(i),axis=0)
-            h5file.close()
-        return value 
-            
-    def index(self):
-        """
-            Calls the feature class to index the table as specified in the class.
-            Disclaimer: 
-            Requires monkey patch to work
-        """
-        with Locks(None, self.FeatureClass.path):
-            h5file=tables.openFile(self.FeatureClass.path,'a', title=self.FeatureClass.name)
-            table=h5file.root.values
-            self.FeatureClass.indexTable(table)
-            h5file.close()
+                i=table[index]
+        return i
+    
+    def copy(self):
+        pass
         
-    def returnCol(self, name):
-        """Reads a column out of the table"""
-        with Locks( self.FeatureClass.path ):
-            h5file=tables.openFile(self.FeatureClass.path,'r', title=self.FeatureClass.name)
-            table=h5file.root.values
-            value = [row[name] for row in table.iterrows()]
-            h5file.close()
-        return value 
+    def remove(self):
+        pass
     
-    def colnames(self):
-        """returns a list of column names"""
-        with Locks(self.FeatureClass.path):
-            h5file=tables.openFile(self.FeatureClass.path,'r', title=self.FeatureClass.name)
-            table=h5file.root.values
-            names=table.colnames
-            h5file.close()
-        return names
-    
-    #for querying the tables
-    def returndescriptorCol(self, function):
-        """
-            Reads the feature column out of the table 
-            
-            Input
-            -----
-            function - a function that accepts one value and that value has to be a numpy string
-            
-            Output
-            ------
-            results of that function
-        """
-        with Locks(self.FeatureClass.path):
-            h5file=tables.openFile(self.FeatureClass.path,'r', title=self.FeatureClass.name)
-            table=h5file.root.values
-            output = function( table.cols.feature )
-            h5file.close()
-        return output
-
+    def delete(self):
+        pass
     
     def __len__(self):
-        """Returns the number of rows in the table"""
-        with Locks(self.FeatureClass.path):
-            h5file=tables.openFile(self.FeatureClass.path,'r', title=self.FeatureClass.name)
-            table=h5file.root.values
-            nrows=table.nrows
-            h5file.close()
-        return nrows
+        import glob
+        feature_tables=glob.glob(self.feature.path+'*.h5')
+        l=0
+        for filename in feature_tables:
+            with Locks(filename), tables.openFile(filename,'r', title=self.feature.name) as h5file:
+                l+=len(h5file.root.values)
+        return l
+
+class UncachedTable(Tables):
+    """
+    Places a temporary table in the temp dir
+    """
     
-###############################################################
-### Feature Query
-###############################################################
+    def __init__(self, feature):
+        """
+            Requires a Feature Class to intialize. Will search for table in the 
+            data\features\feature_tables directory. If it does not find the table
+            it will create a table.
+        """
+        self.feature = feature
+        if not os.path.exists(FEATURES_TABLES_WORK_DIR):   #creates a table if it cannot find one
+            _mkdir(FEATURES_TABLES_WORK_DIR)
 
 
-##class Initalize_Queries():
-#
-#class Feature_Query():
-#    
-#    def __init__(self, query_type, feature_modules):
-#        self.query_type = query_type
-#        self.feature_modules = feature_modules
-#        
-#    def return_query(self):
-#        outputs = {'ANN' : ANN }
-#        queryobject = outputs[self.query_type]
-#        return queryobject(self.feature_modules)
-#
-#class ANN():
-#    
-#    ANN_DIR = os.path.join(FEATURES_STORAGE_FILE_DIR ,'ANN\\') #initalizing the directory
-#    name = 'ANN'
-#    ObjectType = 'Query'
-#    
-#    def __init__(self,feature_modules):
-#        self.feature_modules = feature_modules
-#        self.tree = {};
-#        treeList = os.listdir(self.ANN_DIR)
-#        for treename in treeList:
-#            if treename.endswith('.tree'):
-#                with Locks(self.ANN_DIR + treename): #read lock
-#                    self.tree[treename[0:-5]]= ann.kd_tree(self.ANN_DIR + treename, import_kd_tree = True) #initializing all the trees
-#                    
-#    def index_tree(self, feature_type):
-#        """Indexes tree of a specific descriptor table"""
-#        feature_module = self.feature_modules.returnfeature(feature_type)
-#        Table = HDF5Table(feature_module) #initalizing table
-#        if Table.collen()>1:
-#            
-#            tree = Table.returndescriptorCol(ann.kd_tree)
-#            
-#            with Locks(None,self.ANN_DIR+feature_type+'.tree'):    
-#                tree.save_kd_tree(self.ANN_DIR+feature_type+'.tree')   #saving tree to file
-#            
-#            self.tree[feature_type] = tree
-#             
-#            log.debug('saving tree was successful @ %s'% self.ANN_DIR+feature_type+'.tree')
-#            return 1
-#        else:
-#            log.debug('saving tree was NOT successful') #500 Internal Server Error
-#            return 0
-#    
-#    def query_tree(self, feature_type, discriptor, uri, limit ):
-#        """searches query tree for nearest neighboring descriptors
-#        returns a uri of the image with those descriptors"""
-#        feature_module = self.feature_modules.returnfeature(feature_type)
-#        Table = FeatureTable( HDF5Table(feature_module) )#initalizing table
-#        vectors, dimensions = discriptor.shape
-#        if os.path.exists(self.ANN_DIR+feature_type+'.tree'):
-#            
-#            Anntree=self.tree[feature_type]  #importing kd_tree, import tree at start of the server
-#            
-#            QueryObject=[]
-#            
-#            for i in range(0,int(vectors)):
-#                total_nearestdescritpors=[]
-#                
-#                test = np.asarray([discriptor[i,:]], dtype='d', order='C')
-#                nQPoints, dimension = test.shape
-#                
-#                searchtime=time.time()
-#                idx, distance = Anntree.search( [discriptor[i,:]], k=limit)
-#                log.debug('ann search: %s' % str(time.time()-searchtime))
-#                
-#                tabletime=time.time()
-#                for j in range(0,len(idx[0])):
-#                    total_nearestdescritpors.append(Table.return_FeatureObject( index = idx[0][j], short = 1)[0])
-#                log.debug('hdf5 table search: %s' % str(time.time()-searchtime))
-#                QueryObject.append( self.CreateQueryObject(total_nearestdescritpors, uri, feature_type,[]) )
-#
-#            return QueryObject
-#        else:
-#            abort(404, 'tree for feature type: '+feature_type)
-#            log.debug('No Tree exists') #404 Not Found
-#    
-#    def setattributes(self, value, parameter, uri):
-#        """creates an object with query outputs"""
-#        self.feature = value
-#        self.value = value
-#        
-#        self.parameter = parameter
-#        self.uri = uri #image being queried
-#        return
-#    
-#    class CreateQueryObject():
-#        
-#        def __init__(self, featureObject, uri, feature_type, parameter ):
-#            self.query_type ='ANN'
-#            self.name = 'ANN'
-#            self.ObjectType = 'Query'
-#            self.parameter_info = []
-#            self.feature_type = feature_type
-#            self.parameter = parameter
-#            self.featureObject = featureObject
-#            self.value = featureObject
-#            self.uri = uri
+    def store(self, rowgenorator, filename):
+        """
+            store elements to tables
+        """
+        filename = os.path.join(FEATURES_TABLES_WORK_DIR,filename)
+        for name in rowgenorator.feature_queue.keys():
+            queue = rowgenorator.feature_queue[name]
+
+            if not os.path.exists(filename):
+                self.createUncachedTable(filename) #creates the table
+                
+            with Locks(None, filename), tables.openFile(filename,'a', title=self.feature.name) as h5file:
+                table = h5file.root.values
+                while not queue.empty():
+                    table.append(queue.get())
+                table.flush()
+        return
+
+    def createUncachedTable(self, filename):
+        featureAtom = tables.Atom.from_type(self.feature.feature_format, shape=(self.feature.length ))
+        class Columns(tables.IsDescription):
+            uri  = tables.StringCol(2000,pos=1)
+            feature   = tables.Col.from_atom(featureAtom, pos=2)
+        
+        #creating table
+        with Locks(None, filename), tables.openFile(filename,'a', title=self.feature.name)  as h5file: 
+            table = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
+            table.flush()
+                
+        return
+
+    def isin(self, hash):
+        pass
+
+    def get(self, hash):
+        pass
+
+    def __len__(self):
+        pass
     
+###############################################################
+# Features Inputs
+###############################################################
+
+class Request(object):
+    """
+        Processes and stores the inputs of a request
+        and deals with exceptions
+    """
+
+
+    def __init__(self, feature_archieve, feature_name, format='xml',**kw):
+        
+        self.options =  {  
+                           'callback': None,
+                           'limit'   : None,
+                           'store'   : False,
+                           'calc'    : True,
+                        }
+        
+
+        #feature assignment
+        self.feature_name = feature_name
+        self.feature = feature_archieve[feature_name]    
+        
+        # check kw arg values
+        for i in kw.keys():
+            if i in self.options:
+                self.options[i] = kw[i]
+            #else:
+            #    log.debug('Argument Error: "%s" is not a valid argument'%i)
+            #    abort(404,'Argument Error: "%s" is not a valid argument'%i)
+        
+       
+        
+        #format check
+        self.format = format
+        self.Formats = Outputs()[self.format]
+        
+        #assign inputs
+        self.method = request.method
+        self.content_type = request.headers['Content-type']
+        
+        #validating request
+        if self.method =='POST' and 1>request.headers['Content-type'].count('xml/text'):
+            try:
+                self.body = etree.fromstring(request.body)
+                if self.body.tag!='dataset':
+                    abort(400, 'Document Error: Only excepts datasets')
+                self.element_list=[]
+                for value in self.body.xpath('value[@type="query"]'):
+                    query = value.text
+                    query = query.split('&')
+                    element = {}
+                    for q in query:
+                        q = q.split('=')
+                        element[q[0]] = q[1].replace('"','')
+                    self.element_list.append(element)
+            except:
+                log.exception('Request Error: Xml document is malformed')
+                abort(400, 'Xml document is malformed')
+                
+        elif self.method =='GET':
+            resource = self.feature().typecheck(**kw)
+            self.body = None
+            self.element_list = [resource]
+                         
+        else:
+            log.debug('Request Error: Xml document is malformed')
+            abort(400, 'uri was not formed correctly')
+    
+    def proccess(self):
+        """
+        Proccess request provided to the Feature Server
+        (main loop of calculating features)
+        """
+        
+        #does not cache the features in the tables
+
+        if self.feature.cache:
+            if self.options['calc']: #no features will be calculated if true
+                
+    #            HashTable = Tables(ID())
+    #            
+    #            elementlistintable=[]
+    #            for i,element in enumerate(self.element_list):
+    #                uri_hash = uuid.uuid5(uuid.NAMESPACE_URL, str(element))
+    #                uri_hash = uri_hash.hex
+    #                query='idnumber=="%s"'% str(uri_hash)                
+    #                elementlistintable.append(HashTable.isin(query))
+    #
+    #            #store hashes
+    #            HashRows=Rows(ID())
+    #            log.debug('elementlistintable: %s'%elementlistintable)
+    #            for i, element_bool in enumerate(elementlistintable):
+    #                if not element_bool:
+    #                    HashRows.push(self.element_list[i])
+    #            HashTable.store(HashRows)
+    
+                FeatureTable = Tables(self.feature())
+                
+                elementlistintable = []
+                log.debug('element_list: %s'% self.element_list)
+                for i,element in enumerate(self.element_list):
+                    uri_hash = self.feature().returnhash(**element)
+                    elementlistintable.append(FeatureTable.isin(uri_hash))
+                
+                #store features
+                FeatureRows = Rows(self.feature())
+                log.debug('elementlistintable: %s'%elementlistintable)
+                for i, element_bool in enumerate(elementlistintable):
+                    if not element_bool:
+                        FeatureRows.push(**self.element_list[i])
+                FeatureTable.store(FeatureRows)
+
+        else:
+            
+            name = self.feature.name+str(time.time())
+            self.uncachedTableName = self.feature().returnhash(name)+'.h5'
+            FeatureTable = UncachedTable(self.feature())
+
+            #store features
+            FeatureRows = UncachedRows(self.feature())
+            for i, element_bool in enumerate(self.element_list):
+                FeatureRows.push(self.element_list[i])
+            FeatureTable.store(FeatureRows, self.uncachedTableName)
+          
+        return
+    
+    def response(self):
+        """
+        Builds response
+        """
+        if self.feature.cache:
+            Table = Tables(self.feature())
+            return self.Formats(self.feature()).return_output(Table, self.element_list)
+        
+        else:
+            Table = UncachedTable(self.feature())
+            return self.Formats(self.feature()).return_output_uncached(Table, self.uncachedTableName)
 
 ###############################################################
 # Features Outputs 
 ###############################################################
 
-class Features_Outputs():
-    """Formats the output"""
-    def __init__(self , resource, **kw): 
-        """ initializing output """
-        self.resource = resource
-        
-    def return_output(self,output_type):
-        """ Returns an output function"""
-        outputs={'xml'  : self.xml,
-                 'none' : self.No_Output,
-                 'numpy': self.Numpy,
-                 'csv' : self.csv,
-                 'bin' : self.bin}
-        
-        try:
-            function = outputs[output_type]
-            return function()
-        except KeyError:
-            abort(404, 'Output Type:'+output_type+' not found')
-
-    #-------------------------------------------------------------
-    # Formatters - No Ouptut 
-    #-------------------------------------------------------------             
-    def No_Output(self):
-        response.headers['Content-Type'] = 'text'
-        return
-
-    #-------------------------------------------------------------
-    # Formatters - Numpy_Output
-    #-------------------------------------------------------------  
-    def Numpy(self): 
-        """
-        returns numpy array from tables
-        only works for feature and only use for functions in this service or on the system
-        """
-        feature = []
-        for item in self.resource:
-            feature.append( item['feature'])
-        return np.array(feature)#, np.array(parameter) 
+class Format(object):
+    """
+        Base Class of formats for output
+    """
+    name = 'Format'
+    limit = 'Unlimited'
+    description = 'Discription of the Format'
     
-    #-------------------------------------------------------------
-    # Formatters - XML
-    # MIME types: 
-    #   text/xml
-    #-------------------------------------------------------------
-    def xml(self): 
+    def __init__(self, feature, **kw):
+        self.feature = feature
+    
+    def return_output(self,table, element_list):
+        pass
+    
+    def return_output_uncached(self, table, filename):
+        pass
+    
+    def store(self):
+        pass
+
+
+class Xml(Format):
+    """
+        returns in xml
+    """
+    name = 'XML'
+    limit = 1000 #nodes
+    description = 'Extensible Markup Language'
+    
+    def return_output(self,  table, element_list):
         """Drafts the xml output"""
         response.headers['Content-Type'] = 'text/xml'
         element = etree.Element('resource')
-        for r in self.resource:
-            subelement = etree.SubElement( element, 'feature' , type = str(self.resource.FeatureClass.name), name = str(r['uri']))
-            #values (kind of annoying Looking to change the format)
-            ok=1
-            try:
-                r['feature']
-            except ValueError:
-                ok=0
-            
-            if ok:
+        nodes = 0
+        
+        if self.feature.cache:
+            for i,resource in enumerate(element_list):
+                uri_hash =self.feature.returnhash(**resource)
+                rows = table.get(uri_hash)
+                if rows!=None:
+                    for r in rows:
+                        subelement = etree.SubElement( element, 'feature' , resource ,type = str(self.feature.name))
+                        value = etree.SubElement(subelement, 'value')
+                        value.text = " ".join('%g'%item for item in r['feature'])
+                        nodes+=1
+                        #break out when there are too many nodes
+                        if nodes>self.limit:
+                            break
+                else:
+                    subelement = etree.SubElement( 
+                                                      element, 'feature' ,
+                                                      resource,
+                                                      type = str(self.feature.name),
+                                                      value = 'Return Error: Feature was not found in the table'
+                                                  )            
+                if nodes>self.limit:
+                    break
+
+        return etree.tostring(element)
+
+    def return_output_uncached(self, table, filename):
+
+        response.headers['Content-Type'] = 'text/xml'
+        element = etree.Element('resource')
+        nodes = 0
+                
+        filename = os.path.join(FEATURES_TABLES_WORK_DIR,filename)
+        with Locks(filename), tables.openFile(filename,'r', title=self.feature.name) as h5file:
+            Table = h5file.root.values  
+            for i, r in enumerate(Table):
+                subelement = etree.SubElement( element, 'feature' , type = str(self.feature.name), name = r['uri'])
                 value = etree.SubElement(subelement, 'value')
                 value.text = " ".join('%g'%item for item in r['feature'])
+                nodes+=1
+                #break out when there are too many nodes
+                if nodes>self.limit:
+                    break               
             
-            #parameter
-            ok=1
-            try:
-                r['parameter']
-            except IndexError:
-                ok=0
-            
-            if ok:
-                p={} #parameters
-                for i,name in enumerate(self.resource.FeatureClass.parameter_info):
-                    p[str(name)] = str('%g'% r['parameter'][i])
-                parameters=etree.SubElement(subelement, 'parameter', p)    
-        
         return etree.tostring(element)
-        
-    #-------------------------------------------------------------
-    # Formatters - CSV 
-    # MIME types: 
-    #   text/csv 
-    #   text/comma-separated-values
-    #-------------------------------------------------------------   
-    def csv(self):
-        """Drafts the csv output (only works for feature objects)"""
+
+
+class Csv(Format):
+    name = 'CSV'
+    
+    def return_output(self, table, element_list, **kw):
+        """Drafts the csv output"""
         ## plan to impliment for query and include parameters
         import csv
         import StringIO
 
         f = StringIO.StringIO()
         writer = csv.writer(f)
-        titles = ['Feature Number','Feature_Type','Name','Value']
+        resource_names = self.feature.resouce
+        parameter_names = self.feature.parameter
+        titles = ['Feature Number','Feature_Type']+resource_names+['Descirptor']+parameter_names
+        #titles = ['Feature Number','Feature_Type','Name','Value']
         writer.writerow(titles)
-        for idx,item in enumerate(self.resource):
-                log.debug('item: %s'% item['feature'])
-                #if isinstance(item.feature,np.ndarray):
-                value_string = ",".join('%g'%i for i in item['feature'])
-                line = [idx,self.resource.FeatureClass.name,item['uri'],value_string]
+        for idx,resource in enumerate(element_list):
+            uri_hash = self.feature.returnhash(**resource)
+            rows = table.get(uri_hash)
+            for r in rows:
+                value_string = ",".join('%g'%i for i in r['feature'])
+                resource_uri = [resource[r] for r in resource_names]
+                parameter = [r[pn] for pn in parameter_names]
+                line = [idx,self.feature.name]+resource_uri+[value_string]+parameter
                 writer.writerow(line)
         
         #creating a file name
@@ -750,40 +582,141 @@ class Features_Outputs():
         response.headers['Content-Type'] = 'text/csv' #setting the browser to save csv file
     
         return f.getvalue()
+    
+#class Binary(Format):
+#    
+#    def return_output(self):
+#        """Drafts the binary output (only works for feature objects)"""
+#        """return headered with [store type : len of feature : feature]/n"""
+#        import StringIO
+#        import struct
+#        
+#        f = StringIO.StringIO()
+#    
+#        for item in self.resource:
+#            vector = ''
+#            vector+=struct.pack('<2s','<d')  #type stored
+#            vector+=struct.pack('<I',len(item.value)) 
+#            vector+=''.join([struct.pack('<d',i) for i in item['features']])
+#            vector+='\n'
+#            f.write(vector)
+#                
+#        #creating a file name
+#        filename = 'feature.bin' #think of how to name the files
+#        try:
+#            disposition = 'filename="%s"'% filename.encode('ascii')
+#        except UnicodeEncodeError:
+#            disposition = 'attachment; filename="%s"; filename*="%s"'%(filename.encode('utf8'), filename.encode('utf8')) 
+#            
+#        response.headers['Content-Disposition'] = disposition #sets the file name of the csv file
+#        response.headers['Content-Type'] = 'text/bin' #setting the browser to save bin file
+#            
+#        return f.getvalue()
+
+
+class Hdf(Format):
+    
+    name = 'HDF'
+     
+    def return_output(self,  table, element_list, **kw):
+        """
+        Returns a newly formed hdf5 table
+        
+        A limit of table size should be placed to not overflow the ram
+        if store save the file in blob service
+        """
+        import io
+        #creating a file name
+        name = self.feature.name+str(time.time())
+        name = self.feature.returnhash(name)+'.h5'
+        filename = os.path.join(FEATURES_TABLES_WORK_DIR,name)
+        
+        #initalize the table
+        featureAtom = tables.Atom.from_type(self.feature.feature_format, shape=(self.feature.length ))
+        class Columns(tables.IsDescription):
+                uri  = tables.StringCol(2000,pos=1)
+                feature   = tables.Col.from_atom(featureAtom, pos=2)
+
+        with Locks(None, filename), tables.openFile(filename,'a', title=self.name) as h5file: 
+            outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
 
             
-    #-------------------------------------------------------------
-    # Formatters - Binary 
-    # MIME types: 
-    #   text 
-    #-------------------------------------------------------------   
-    def bin(self):
-        """Drafts the binary output (only works for feature objects)"""
-        """return headered with [store type : len of feature : feature]/n"""
-        import StringIO
-        import struct
+            #writing to table            
+            for i,element in enumerate(element_list):
+                uri_hash = self.feature.returnhash(**element)
+                rows = table.get(uri_hash)
+                for feature in rows['feature']:
+                    log.debug('feature: %s'% feature)
+                    outtable.append([(element[self.feature.resource[0]],feature)]) #hard coded image in
+            outtable.flush()
         
-        f = StringIO.StringIO()
+        f = io.FileIO(filename)
+        try:
+            disposition = 'filename="%s"'% name.encode('ascii')
+        except UnicodeEncodeError:
+            disposition = 'attachment; filename="%s"; filename*="%s"'% (name.encode('utf8'), name.encode('utf8')) 
+            
+        response.headers['Content-Disposition'] = disposition
+        response.headers['Content-Type'] = 'application/hdf5' #setting the browser to save bin file
+        return f.read()
     
-        for item in self.resource:
-            vector = ''
-            vector+=struct.pack('<2s','<d')  #type stored
-            vector+=struct.pack('<I',len(item.value)) 
-            vector+=''.join([struct.pack('<d',i) for i in item['features']])
-            vector+='\n'
-            f.write(vector)
-                
-        #creating a file name
-        filename = 'feature.bin' #think of how to name the files
+    
+    def return_output_uncached(self, table, filename):  
+        filename = os.path.join(FEATURES_TABLES_WORK_DIR,filename)
+        f = io.FileIO(filename)
         try:
             disposition = 'filename="%s"'% filename.encode('ascii')
         except UnicodeEncodeError:
-            disposition = 'attachment; filename="%s"; filename*="%s"'%(filename.encode('utf8'), filename.encode('utf8')) 
+            disposition = 'attachment; filename="%s"; filename*="%s"'% (filename.encode('utf8'), filename.encode('utf8')) 
             
-        response.headers['Content-Disposition'] = disposition #sets the file name of the csv file
-        response.headers['Content-Type'] = 'text/bin' #setting the browser to save bin file    
-            
-        return f.getvalue()
+        response.headers['Content-Disposition'] = disposition
+        response.headers['Content-Type'] = 'application/hdf5' #setting the browser to save bin file
+        return f.read()              
+    
+    def returnHDF(self, filename):
+        pass
+
+
+class NoOutput(Format):
+    name = 'No Output'
+    
+    def return_output(self, table, **kw):
+        pass
+  
+class Numpy(Format):
+    def __init__(self, *args, **kw):
+        pass
+    
+    def return_output(self):
+        pass
+
+
+class Local(Format):
+    def __init__(self, *args, **kw):
+        pass
+    
+    def return_output(self):
+        pass
+
+
+class Outputs(dict):
+    """
+        Reads the hdf5 tables and returns features in 
+        correct format
+    """
+    def __init__(self):
+        self['xml'] = Xml
+        self['csv'] = Csv #broken
+        #self['bin'] = Binary
+        self['hdf'] = Hdf #broken
+        self['none'] = NoOutput
+    
+    def __missing__(self, format):
+        log.debug('format type:'+format+' not found')
+        abort(404,'Format type: %s not found'% format)
+    
+
+    
         
 ###################################################################
 ###  Documentation
@@ -805,27 +738,47 @@ class FeatureDoc():
         response.headers['Content-Type'] = 'text/xml'
         resource = etree.Element('resource')
         command=etree.SubElement( resource, 'command', name = '/*feature name*', type = 'string', value='Documentation of specific feature')
-        command=etree.SubElement( resource, 'command', name = '/feature', type = 'string', value='List of features')
-        command=etree.SubElement( resource, 'command', name = '/*feature name*?uri=http...', type = 'string', value='Returns feature in format set to xml')
-        command=etree.SubElement( resource, 'command', name = '/*feature name*?uri=http...&format=*format option*', type = 'string', value='Returns feature in format set to xml')
-        command=etree.SubElement( resource, 'attribute', name = 'format', value='Format Options: xml,csv,bin,none')
+        command=etree.SubElement( resource, 'command', name = '/list', type = 'string', value='List of features')
+        command=etree.SubElement( resource, 'command', name = '/format', type = 'string', value='List of formats')
+        command=etree.SubElement( resource, 'command', name = '/*feature name*?uri=http://...', type = 'string', value='Returns feature in format set to xml')
+        command=etree.SubElement( resource, 'command', name = '/*feature name*/*format option*?uri=http://...', type = 'string', value='Returns feature in format specified')
         command=etree.SubElement( resource, 'attribute', name = 'uri', value='uri to the correct resource for that particular feature')
         return etree.tostring(resource)
-        
-    def features(self,feature_name,feature_achieve):
+
+
+    def feature_list(self, feature_achieve):  
+        """
+        Returns xml of given feature
+        """
+        response.headers['Content-Type'] = 'text/xml' 
+        resource = etree.Element('resource', uri = '/features/list')#self.baseurl+'/doc')
+        resource.attrib['description'] = 'List of working feature extractors'
+        for featuretype in feature_achieve.keys():
+            feature_module = feature_achieve[featuretype]
+            feature=etree.SubElement( resource, 
+                                      'feature', 
+                                      name = featuretype, 
+                                      permission="Published",
+                                      uri = 'features/list/'+featuretype )
+            #feature.attrib['description'] = str(feature_module.description)
+            
+        return etree.tostring(resource)
+
+       
+    def feature(self,feature_name,feature_achieve):
         """
         Returns xml of information about the features
         """
         response.headers['Content-Type'] = 'text/xml'
         feature_module = feature_achieve[feature_name]
         feature_module = feature_module() 
-        Table = HDF5Table(feature_module)
+        Table = Tables(feature_module)
          
         
         xml_attributes = {'file':str(feature_module.file),
                           'description':str(feature_module.description),
                           'feature_length':str(feature_module.length),
-                          'parameter_info':str(feature_module.parameter_info),
+                          #'parameter_info':str(feature_module.parameter_info),
                           'table_length':str(len(Table))} 
          
         resource = etree.Element('resource', uri = 'uri')#self.baseurl+'/docs'+'/'+str(feature_name))
@@ -835,20 +788,49 @@ class FeatureDoc():
             info=etree.SubElement(feature,'info',attrib)
         return etree.tostring(resource)
     
-    def feature(self, feature_achieve):  
+
+        return etree.tostring(resource)
+    
+    def format_list(self):
+        
+    
         """
-        Returns xml of given feature
+        Returns List of Formats
         """
         response.headers['Content-Type'] = 'text/xml' 
-        resource = etree.Element('resource', uri = 'uri')#self.baseurl+'/doc')
-        resource.attrib['description'] = 'List of working feature extractors'
-        for featuretype in feature_achieve.keys():
-            feature_module = feature_achieve[featuretype]
-            feature=etree.SubElement( resource, 'feature', name = featuretype )
-            feature.attrib['description'] = str(feature_module.description)
+        resource = etree.Element('resource', uri = '/format/list')#self.baseurl+'/doc')
+        resource.attrib['description'] = 'List of Return Formats'
+        format_archieve = Outputs()
+        log.debug('format_achieve: %s'%format_archieve)
+        for format_name in format_archieve.keys():
+            format = format_archieve[format_name]
+            feature=etree.SubElement( resource, 
+                                      'format', 
+                                      name = format_name, 
+                                      permission="Published",
+                                      uri = 'format/'+format_name )
+        response.headers['Content-Type'] = 'text/xml' 
         return etree.tostring(resource)
 
-            
+    def format(self,format_name):
+        """
+        Returns List of Formats
+        """
+        response.headers['Content-Type'] = 'text/xml' 
+        format_archieve = Outputs()
+        format = format_archieve[format_name]
+         
+        xml_attributes = {'Name':str(format.name),
+                          'Description':str(format.description),
+                          'Limit':str(format.limit)
+                          }
+         
+        resource = etree.Element('resource', uri = 'uri')#self.baseurl+'/docs'+'/'+str(feature_name))
+        feature=etree.SubElement( resource, 'format', name = str(format.name))
+        for key,value in xml_attributes.iteritems():
+            attrib={key:value}
+            info=etree.SubElement(feature,'info',attrib)
+        return etree.tostring(resource)
         
 ###################################################################
 ### Feature Service Controller
@@ -860,16 +842,13 @@ class featuresController(ServiceController):
 
     def __init__(self, server_url):
         super(featuresController, self).__init__(server_url)
-        self.baseurl=server_url
-        self.fullurl=ServiceController
+        self.baseurl = server_url
+        self.fullurl = ServiceController
         _mkdir(FEATURES_TABLES_FILE_DIR)
         _mkdir(FEATURES_TEMP_IMAGE_DIR) 
         log.info('importing features')
-        self.feature_achieve = Feature_Achieve() #initalizing all the feature classes
-        
-#        log.info ("initializing Trees")
-#        self.ANN = Feature_Query('ANN', self.feature_modules).return_query() #may need to create more genericlly to allow for other query types
-#        log.info ("Done initializing Trees Feature Server is ready to go")        
+        self.feature_achieve = Feature_Achieve() #initalizing all the feature classes     
+    
     
     ###################################################################
     ### Feature Service Entry Point
@@ -877,136 +856,45 @@ class featuresController(ServiceController):
     @expose()
     def _default(self, *args, **kw):
         """
-        Retreives a feature either stored in pytables or calculates it
+        Entry point for features service
         """
+        #documentation
+        if not args:
+            return FeatureDoc().feature_server() #print documentation
+
+        elif len(args)==1 and (request.method!='POST') and not kw:
+            return FeatureDoc().feature(args[0],self.feature_achieve)
+                    
+        #calculating features
+        elif len(args)<=2:
+            log.debug('Request: %s'%request.method )  
+            Feature_Request = Request(self.feature_achieve,*args,**kw)
+            Feature_Request.proccess()
+            return Feature_Request.response()
         
-        if len(args)>1: #right now only one argument is accepted
-            abort(400,'Malformed Request')
-        else:
-            if 'uri' in kw: #check to see if uri resource is given
-                uri = kw['uri'].rstrip('\n') #there is a newline at the end of uri collected with **kwarg    
-                if 'format' in kw:
-                    format=kw['format']
-                else:
-                    format='xml'
-                log.info('Extracting %s feature from object at uri: %s'%(args[0],uri))
-                start_return_id=time.time()
-                id=IDTable().returnID(uri) #find ID
-                end_return_id=time.time()
-                log.debug('store id time: %s'%str(end_return_id-start_return_id))
-                
-                Feature_Class = self.feature_achieve[args[0]]
-                F_list = FeatureList(Feature_Class)
-                
-                start_append_feature=time.time()
-                F_list.uappend(uri,id)  #searching for feature object in table if not found will calculate feature
-                end_append_feature=time.time()
-                log.debug('append feature time: %s'%str(end_append_feature-start_append_feature))
-                
-                start_output=time.time()
-                output=Features_Outputs( F_list ).return_output(format)
-                end_output=time.time()
-                log.debug('output time: %s'%str(end_output-start_output))
-                log.debug('Returning Feature')
-                return output
-                
-            elif not args: #no arguments were given
-                return FeatureDoc().feature_server() #print documentation\
-            elif args[0]=='feature':
-                return FeatureDoc().feature(self.feature_achieve)
-            else:     
-                return FeatureDoc().features(args[0],self.feature_achieve)
+        else: 
+            log.debug('Malformed Request: Not a valid uri request')
+            abort(400,'Malformed Request: Not a valid uri request')
             
-
+    @expose()        
+    def formats(self, *args):
+        if len(args)<1:
+            return FeatureDoc().format_list()
+        elif len(args)<2:
+            return FeatureDoc().format(args[0])
     
-#    @expose()
-#    def delete(self,feature_type=None, **kw):
-#        """
-#        Delete features from the table or tables themselves (untested)
-#        """
-#        if not not_anonymous:
-#            abort(401)
-#        elif not is_user('admin'):
-#            abort(403)
-#        else:
-#            if not kw['uri'] and not feature_type:
-#                #mass deletion
-#                #delete id
-#                log.info('Deleting all tables including idtable.')
-#                IDTable().deleteTable()
-#                #delete feature tables
-#                for feature_type in feature_achieve.keys():
-#                    Table=HDF5Table(feature_achieve[feature_type])
-#                    Table.delete()
-#            elif not kw['uri']:
-#                #deletes one table
-#                log.info('Deleting table storing %s feature.'%feature_type)
-#                FeatureClass = feature_achieve[feature_type]
-#                Table=HDF5Table(FeatureClass)
-#                Table.delete()
-#            elif not feature_type:
-#                log.info('Deleting from all tables features attach to uri:%s'%kw['uri'])
-#                kw[uri]
-#                #delete from id tables
-#                ID=IDTable()
-#                id=ID.returnID(uri)
-#                ID.deleteURI(uri)
-#                #delete from feature tables
-#                for feature_type in feature_achieve.keys():
-#                    Table=HDF5Table(feature_achieve[feature_type])
-#                    query='idnumber==%s' %id
-#                    Table.delete(query)
-#            else:
-#                #delete feature from table
-#                log.info('Deleting from %s tables features attach to uri:%s'%(feature_type,kw['uri']))
-#                id=IDTable().returnID(kw['uri'])
-#                Table=HDF5Table(feature_achieve[feature_type])
-#                query='idnumber==%s' %id
-#                Table.delete(query)
-
-#    def index(self, feature_type, output_type = 'xml'):
-#        feature_module = self.feature_modules.returnfeature(feature_type)
-#        HDF5Table(feature_module).index()
-#        resource = etree.Element('resource', status = 'FINISHED INDEXING FEATURE TABLE')
-#        feature=etree.SubElement( resource, 'FeatureType', featuretype = str(feature_type))
-#        return etree.tostring(resource)
-
-    ###################################################################
-    ### Query Service
-    ###################################################################
-
-#    @expose(content_type="text/xml")
-#    def index(self,query_type, feature_type, output_type='xml'): #may move to a query server
-#        """indexes the features in the pytables for query type index"""
-#        self.ANN.index_tree(feature_type) #index tree
-#        resource = etree.Element('resource', status = 'FINISHED')
-#        feature=etree.SubElement( resource, 'QueryType', featuretype = str(query_type))
-#        feature=etree.SubElement( resource, 'FeatureType', featuretype = str(feature_type))
-#        return etree.tostring(resource)
-        
-#    @expose(content_type="text/xml")
-#    def query(self, query_type, feature_type, output_type='xml', **kw): #may move to a query server
-#        """Given a vector it calculates the nearest neighbor to the vector"""
-#        
-#        args={'uri':'','limit':3,'descriptorlimit':10} #for all that remain empty the query will return nothing
-#        for arg in kw:
-#            if arg in args:
-#                args[arg] = kw[arg]
-#        for arg in args:
-#            if not args[arg]:
-#                return 
-#
-#        uri = args['uri']
-#        feature = self.get(feature_type,'numpy',uri=uri) #returning numpy array of feature
-#        vectors, dimensions = feature.shape
-#        
-#        if vectors>args['descriptorlimit']:
-#            vectors = args['descriptorlimit']
-#        querytime = time.time()
-#        queryObject  = self.ANN.query_tree(feature_type , feature[0:int(vectors),:], uri, args['limit']) #querying feature
-#        log.debug('querying time: %s'% str(time.time()-querytime)) 
-#         #returning output
-#        return Features_Outputs(queryObject).return_output(output_type)
+    @expose()    
+    def list(self):
+        return FeatureDoc().feature_list(self.feature_achieve)
+    
+    def diagnostic(self, *arg, **kw):
+        """
+        Calls tests suite for feature service
+        """
+        pass
+    
+    
+    
     
 
     
@@ -1018,11 +906,15 @@ def initialize(uri):
     """ Initialize the top level server for this microapp"""
     # Add you checks and database initialize
     log.info ("initialize " + uri)
-    
     service =  featuresController(uri)
     #directory.register_service ('features', service)
 
     return service
 
+#def get_static_dirs():
+#    """Return the static directories for this server"""
+#    package = pkg_resources.Requirement.parse ("features")
+#    package_path = pkg_resources.resource_filename(package,'bq')
+#    return [(package_path, os.path.join(package_path, 'features', 'public'))]
 
 __controller__ =  featuresController

@@ -16,56 +16,65 @@ from pylons.controllers.util import abort
 from bq.util.paths import data_path
 
 from .var import FEATURES_TABLES_FILE_DIR
-
+import Feature
 class ID():
     """
         Initalizes ID table, returns ID, and places ID into the HDF5 table
     """ 
     #initalize parameters
-    file = 'IDTable.h5'
     name = 'IDTable'
-    ObjectType = 'ID'
     description = 'ID table'
-    temptable = []
-    #contents = ''
+    hash = 2
     
     def __init__ (self):
-        self.path = os.path.join( FEATURES_TABLES_FILE_DIR, self.file)
+        self.path = os.path.join( FEATURES_TABLES_FILE_DIR, self.name)
+        self.temptable = []
     
-    def initalizeTable(self):
+    
+    def createtable(self,hash):
         """
-            Initializes the ID table
+            Initializes the Feature table returns the column class
         """ 
+        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+        if self.parameter_info:
+            parameterAtom = tables.Atom.from_type(self.parameter_format, shape=(len(self.parameter_info)))
         class Columns(tables.IsDescription):
-                idnumber  = tables.StringCol(32)
-                uri   = tables.StringCol(2000)
-        self.Columns=Columns
+                idnumber  = tables.StringCol(32,pos=1)
+                uri   = tables.StringCol(2000,pos=2)
+                if self.parameter_info:
+                    parameter = tables.Col.from_atom(parameterAtom, pos=3)
+        self.Columns = Columns
         
+        #creating table
+        file = os.path.join( self.path, hash+'.h5')
         
-    def indexTable(self,table):
+        with Locks(None, self.path), tables.openFile(file,'a', title=self.name)  as h5file: 
+                table = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
+                
+                if self.index: #turns on the index
+                    table.cols.idnumber.removeIndex()
+                    table.cols.idnumber.createIndex()                    
+                
+                table.flush() 
+        return
+    
+    def indexTable(self,hash):
         """
             information for table to know what to index
         """
-        table.cols.idnumber.createCSIndex()
-        
-    def appendTable(self, uri, id):
+        with Locks(None, self.path), tables.openFile(self.path+'_'hash+'.h5','a', title=self.name) as h5file:
+            table=h5file.root.values
+            table.cols.idnumber.removeIndex()
+            table.cols.idnumber.createIndex()    
+    
+
+    @Feature.wrapper
+    def calculate(self, uri):
         """
             Appends IDs to the table   
         """    
         #initalizing rows for the table
-        self.setRow(id,uri)
-
-    #re-adapted for id-table since its structure is not like the feature tables
-    def setRow(self, idnumber, uri):
-        """
-            allocate data to be added to the h5 tables
-            
-            Each entry will append a row to the data structure until data
-            is dumped into the h5 tables after which data structure is reset.
-        """
-        self.temptable = [];
-        temprow = {'uri':uri,'idnumber':idnumber}
-        self.temptable.append(temprow)
+        return [uri]
 
 
 
