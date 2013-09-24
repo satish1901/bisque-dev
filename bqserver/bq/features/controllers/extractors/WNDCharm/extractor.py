@@ -9,7 +9,6 @@ log = logging.getLogger("bq.features")
 from PyWNDCharmFeatureList import feature_list
 import sys
 import WNDCharmBase
-import PyWNDCharmFeatures
 
 for features_name in feature_list.keys():
     #initalizes a class for each feature in wndcharm

@@ -1,5 +1,4 @@
 from PyWNDCharmFeatureList import feature_list
-from PyWNDCharmFeatures import extractWNDCharmFeature
 from bq.features.controllers import Feature #import base class
 from pylons.controllers.util import abort
 import cv2
@@ -19,8 +18,8 @@ class WNDCharm(Feature.Feature): #base WNDCharm feature class
     description = """This is the WNDCharm Base Class. Is not a feature in the feature server."""
     length = 0
     
-    
-    def appendTable(self, uri, idnumber):
+    @Feature.wrapper
+    def calculate(self, uri):
         """ Append descriptors to SIFT h5 table """
         
         feature_info=feature_list[self.name]
@@ -60,10 +59,10 @@ class WNDCharm(Feature.Feature): #base WNDCharm feature class
         log.debug('im: %s'% im)
         if not im.any():
             abort(415, 'Format was not supported')
-        
-        descriptor = extractWNDCharmFeature(im,self.name)
+        extractWNDCharmFeature = feature_info[0]
+        descriptor = extractWNDCharmFeature(im)
         del Im 
  
             
         #initalizing rows for the table
-        self.setRow(uri, idnumber, descriptor)
+        return [descriptor]

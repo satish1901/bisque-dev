@@ -4,7 +4,7 @@
 import cv2
 import cv
 import numpy as np
-from mahotas.features import haralick
+from mahotas.features import haralick,lbp,pftas,tas,zernike_moments
 from bq.features.controllers import Feature #import base class
 from pylons.controllers.util import abort
 
@@ -21,8 +21,8 @@ class HAR(Feature.Feature):
     parameter_info = ['row']
     
         
-    def appendTable(self, uri, idnumber):
-        """ Append descriptors to SURF h5 table """
+    @Feature.wrapper
+    def calculate(self, uri):
         #initalizing 
 
         Im = Feature.ImageImport(uri) #importing image from image service
@@ -36,8 +36,8 @@ class HAR(Feature.Feature):
         #calculate descriptor 
         descritptors = haralick(im)
         #initalizing rows for the table
-        for i, descriptor in enumerate(descritptors):
-            self.setRow(uri, idnumber, descriptor,i)
+        
+        return descriptors
             
 
 class LBP(Feature.Feature):
@@ -52,8 +52,8 @@ class LBP(Feature.Feature):
     description = """Linear Binary Patterns: radius = 5 and points = 5"""
     length = 8
         
-    def appendTable(self, uri, idnumber):
-        """ Append descriptors to SURF h5 table """
+    @Feature.wrapper
+    def calculate(self, uri):
         #initalizing
         
         Im = Feature.ImageImport(uri) #importing image from image service
@@ -69,7 +69,7 @@ class LBP(Feature.Feature):
         points = 5
         descritptor = lbp(im,radius,points)
         #initalizing rows for the table
-        self.setRow(uri, idnumber, descriptor)
+        return [descriptor]
         
             
 class LBPbro(Feature.Feature):
@@ -84,7 +84,8 @@ class LBPbro(Feature.Feature):
     description = """Linear Binary Patterns"""
     length = 108
         
-    def appendTable(self, uri, idnumber):
+    @Feature.wrapper
+    def calculate(self, uri):
         """ Append descriptors to SURF h5 table """
         #initalizing
         
@@ -111,7 +112,7 @@ class LBPbro(Feature.Feature):
         
         descriptor = np.concatenate((l,b,p))
         #initalizing rows for the table
-        self.setRow(uri, idnumber, descriptor)
+        return [descriptor]
         
         
 class PFTAS(Feature.Feature):
@@ -126,7 +127,8 @@ class PFTAS(Feature.Feature):
     description = """parameter free Threshold Adjacency Statistics"""
     length = 162 
     
-    def appendTable(self, uri, idnumber):
+    @Feature.wrapper
+    def calculate(self, uri):
         """ Append descriptors to SURF h5 table """
         #initalizing
         
@@ -138,9 +140,9 @@ class PFTAS(Feature.Feature):
         if not im.any():
             abort(415, 'Format was not supported')
 
-        descritptor = pftas(im)
+        descriptor = pftas(im)
         #initalizing rows for the table
-        self.setRow(uri, idnumber, descriptor)
+        return [descriptor]
             
 class TAS(Feature.Feature):
     """
@@ -154,7 +156,8 @@ class TAS(Feature.Feature):
     description = """Threshold Adjacency Statistics"""
     length = 162 
     
-    def appendTable(self, uri, idnumber):
+    @Feature.wrapper
+    def calculate(self, uri):
         """ Append descriptors to TAS h5 table """
         #initalizing
         
@@ -168,7 +171,7 @@ class TAS(Feature.Feature):
         
         descriptor = tas(im)
         #initalizing rows for the table
-        self.setRow(uri, idnumber, descriptor)
+        return [descriptor]
             
 class ZM(Feature.Feature):
     """
@@ -182,7 +185,8 @@ class ZM(Feature.Feature):
     description = """Zernike Moment"""
     length = 25
         
-    def appendTable(self, uri, idnumber):
+    @Feature.wrapper
+    def calculate(self, uri):
         """ Append descriptors to SURF h5 table """
         #initalizing
        
@@ -198,4 +202,5 @@ class ZM(Feature.Feature):
         degree=8
         descritptor = zernike_moments(im,radius,degree)
         #initalizing rows for the table
-        self.setRow(uri, idnumber, descriptor)
+        return [descritptor]
+    

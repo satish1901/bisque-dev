@@ -15,7 +15,7 @@ def WNDCharmFeatures( im, featuresize, extractor, transform1, transform2, is_col
         Interface with the WNDCharm in C++
     """
     tmp = np.asarray(im)
-    _WNDCharmFeatures.WNDCharmFeatures.argtypes = [ 
+    _WNDCharmFeatures.WNDCharmFeatures.argtypes = [
         np.ctypeslib.ndpointer(dtype = np.intc ),                                       
         c_int,
         c_int,
@@ -60,13 +60,13 @@ def extractWNDCharmFeature(im, feature_name):
 
 if __name__ == '__main__':
     #test code
-    image_path = 'small_test.tiff'
-    #im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
-    im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
-    featuresize = 32
-    extractor = "Chebyshev Coefficients"
-    transform1 = "Color Transform"
+    image_path = 'test.jpg'
+    im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
+    #im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
+    featuresize = 48
+    extractor = "Comb Four Moments"
+    transform1 = "Empty Transform"
     transform2 = "Empty Transform"
-    
-    feature = WNDCharmFeatures(im, featuresize, extractor, transform1, transform2)
+    color = 0 
+    feature = extractWNDCharmFeature(im, 'Object_Feature')
 
