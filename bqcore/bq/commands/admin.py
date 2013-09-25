@@ -329,7 +329,7 @@ class preferences (object):
                 system = data_service.get_resource(uri, view='deep')
             elif self.args[0] == 'save':
                 logging.debug ('system = %s' % etree.tostring(system))
-                system = data_service.update_resource(system, view='deep')
+                system = data_service.update_resource(new_resource=system, resource=uri,  view='deep')
         transaction.commit()
         with open(prefs,'w') as f:
             f.write(etree.tostring(system, pretty_print=True))

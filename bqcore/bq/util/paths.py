@@ -30,7 +30,7 @@ def site_cfg_path():
     site_cfg = config.get('bisque.paths.site_cfg')
     if site_cfg is not None:
         return site_cfg
-    paths = ['.', 'config', '/etc/']
+    paths = ['.', 'config', '/etc/bisque']
     for d in paths:
         site_cfg = os.path.join(d, 'site.cfg')
         if os.path.exists(site_cfg):

@@ -72,6 +72,8 @@ class BQCommError(BQException):
     def __init__(self, status, headers):
         self.status = status
         self.headers = headers
+    def __str__(self):
+        return "CommError(status=%s, %s)" % (self.status, self.headers)
 
 class BQServer(object):
     """ A reference to Bisque server
@@ -84,7 +86,8 @@ class BQServer(object):
         self.root = None
 
     def authenticate_mex(self, token, root):
-        self.auth = { 'Mex' : token}
+        #self.auth = { 'Mex' : token}
+        self.auth = { 'Authorization' : "Mex %s" % token}
         self.root = root
 
     def authenticate_basic(self, user, pwd, root):
@@ -335,6 +338,7 @@ class BQSession(object):
             content = self.postxml(url, xml, **kw)
             return fromXml(content, session=self)
         except BQCommError, ce:
+            log.exception('communication issue while saving %s' % ce)
             return None
 
 

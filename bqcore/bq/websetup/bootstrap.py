@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Setup the bqcore application"""
 
+import os
 import logging
 from tg import config, session, request
 from paste.registry import Registry
@@ -8,6 +9,8 @@ from beaker.session import Session, SessionObject
 from pylons.controllers.util import Request
 from bq.release import __VERSION__
 from bq.core import model
+from bq.util.paths import config_path
+from bq.util.bisquik2db import bisquik2db
 
 import transaction
 
@@ -65,28 +68,35 @@ def bootstrap(command, conf, vars):
         print 'Continuing with bootstrapping...'
 
 
-    request.identity = {}
     try:
         ######
         # 
         #from bq.data_service.model import UniqueName
         initial_mex = model.DBSession.query(ModuleExecution).first()
-        request.identity['bisque.mex_id'] = initial_mex.id
+        session['mex_id'] = initial_mex.id
+        #request.identity['bisque.mex_id'] = initial_mex.id
 
 
         admin = model.DBSession.query(BQUser).filter_by(resource_name = 'admin').first()
         admin.mex_id = initial_mex.id
         initial_mex.owner = admin
         session['user'] = admin
-        
+
+
         system = model.DBSession.query(Taggable).filter_by (resource_type='system').first()
         if system is None:
-            system = Taggable(resource_type = 'system')
-            version = Tag(parent = system)
-            version.name ='version'
-            version.value  = __VERSION__
-            prefs = Tag(parent = system)
-            prefs.name = 'Preferences'
+            system_prefs = config_path('preferences.xml.default')
+            if os.path.exists(system_prefs):
+                with open (system_prefs) as f:
+                    system = bisquik2db (f)
+            else:
+                print( "Couldn't find %s: using minimal default preferences" % system_prefs)
+                system = Taggable(resource_type = 'system')
+                version = Tag(parent = system)
+                version.name ='version'
+                version.value  = __VERSION__
+                prefs = Tag(parent = system)
+                prefs.name = 'Preferences'
             model.DBSession.add(system)
             transaction.commit()
 

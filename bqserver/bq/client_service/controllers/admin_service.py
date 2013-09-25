@@ -51,10 +51,12 @@ DESCRIPTION
 
 """
 import operator
+import logging
+import transaction
+
 from datetime import datetime
 from lxml import etree
 from tg import expose, controllers, flash, url, response
-import logging
 from repoze.what.predicates import is_user, in_group
 from repoze.what.predicates import not_anonymous
 from sqlalchemy import func
@@ -76,7 +78,6 @@ from bq.core import model
 from bq.core.model import DBSession
 
 #from tgext.admin import AdminController
-
 #class BisqueAdminController(AdminController):
 #    allow_only = is_user('admin')
 
@@ -166,7 +167,7 @@ class AdminController(ServiceController):
         log.debug("image: " + str(imageid) )
         image = DBSession.query(Image).filter(Image.id == imageid).first()
         DBSession.delete(image)
-        DBSession.flush()
+        transaction.commit()
         redirect(request.headers.get("Referer", "/"))
 
     @expose ('bq.client_service.templates.admin.confirmdeleteuser')
@@ -199,8 +200,7 @@ class AdminController(ServiceController):
         
         self.deleteimages(username, will_redirect=False)
         DBSession.delete(user)
-
-        DBSession.flush()
+        transaction.commit()
         redirect('/admin/users')
 
     @expose ('bq.client_service.templates.admin.confirmdeleteimages')
@@ -217,7 +217,7 @@ class AdminController(ServiceController):
             log.debug("ADMIN: Deleting image: " + str(i) )
             DBSession.delete(i)
         if will_redirect:
-            DBSession.flush()
+            transaction.commit()
             redirect('/admin/users')
         return dict()
     
@@ -228,12 +228,11 @@ class AdminController(ServiceController):
         email_address = unicode( kw['email'] )
         display_name = unicode( kw['display_name'] )
                                 
+
         log.debug("ADMIN: Adding user: " + str(user_name) )
-       
         user = User(user_name=user_name, password=password, email_address=email_address, display_name=display_name)
         DBSession.add(user)
-        DBSession.flush()
-
+        transaction.commit()
         redirect('/admin/users')    
     
     @expose ()
@@ -263,20 +262,12 @@ class AdminController(ServiceController):
         if not tg_user:
             log.debug('No user was found with name of ' + user_name + '. Please check core tables?')
             redirect(url('/admin/'))
-
         tg_user.email_address = email_address
         tg_user.password = password
         #tg_user.display_name = display_name
-
-
         log.debug("ADMIN: Updated user: " + str(user_name) )
-        
-        DBSession.flush()
-        #flash ('User Updated')
-        #return ""
+        transaction.commit()
         redirect( '/admin/edituser?username='+ str(user_name) )
-
-
 
     @expose()
     def loginasuser(self, user):
