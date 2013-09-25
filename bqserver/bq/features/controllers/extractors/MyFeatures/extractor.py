@@ -20,14 +20,11 @@ class FFTSD(Feature.Feature):
     length = 500
 
     @Feature.wrapper        
-    def calculate(self, uri):
+    def calculate(self, **resource):
         """ Append descriptors to SURF h5 table """
         #initalizing
-
-        #from bq.util.request import Request
-        #content = Request(self.uri).get ()
-        #content = urllib.urlopen(self.uri+'?view=deep') #import xml
-        xml=Feature.XMLImport(uri+'?view=deep')
+        polygon_uri = resource['polygon']
+        xml=Feature.XMLImport(polygon_uri+'?view=deep')
         tree=xml.returnxml()
         if tree.tag=='polygon':
             vertices = tree.xpath('vertex')
@@ -43,6 +40,21 @@ class FFTSD(Feature.Feature):
         #initalizing rows for the table
         return [descriptor]
     
+    def outputTable(self,filename):
+        """
+        Output table for hdf output requests and uncached features
+        """
+        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+        class Columns(tables.IsDescription):
+            polygon = tables.StringCol(2000,pos=1)
+            feature = tables.Col.from_atom(featureAtom, pos=2)
+            
+        with Locks(None, filename), tables.openFile(filename,'a', title=self.name) as h5file: 
+            outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
+            outtable.flush()
+            
+        return
+    
 class DTFE(Feature.Feature):
     """
         Dummy Test Feature Extractor
@@ -53,7 +65,6 @@ class DTFE(Feature.Feature):
     #parameters
     file = 'features_dtfe'
     name = 'DTFE'
-    resource = ['image']
     description = """Dummy Test Feature Extractor (test feature) Calculates random numbers for features"""
     length = 64
     feature_format = 'int32'

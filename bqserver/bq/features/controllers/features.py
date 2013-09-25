@@ -367,33 +367,21 @@ class UncachedTable(Tables):
 
     def store(self, rowgenorator, filename):
         """
-            store elements to tables
+            store row elements to an output table
         """
         filename = os.path.join(FEATURES_TABLES_WORK_DIR,filename)
         for name in rowgenorator.feature_queue.keys():
             queue = rowgenorator.feature_queue[name]
 
             if not os.path.exists(filename):
-                self.createUncachedTable(filename) #creates the table
-                
+                self.feature.outputTable(filename) #creates the table
+            
+            #appends elements to the table
             with Locks(None, filename), tables.openFile(filename,'a', title=self.feature.name) as h5file:
                 table = h5file.root.values
                 while not queue.empty():
                     table.append(queue.get())
                 table.flush()
-        return
-
-    def createUncachedTable(self, filename):
-        featureAtom = tables.Atom.from_type(self.feature.feature_format, shape=(self.feature.length ))
-        class Columns(tables.IsDescription):
-            uri  = tables.StringCol(2000,pos=1)
-            feature   = tables.Col.from_atom(featureAtom, pos=2)
-        
-        #creating table
-        with Locks(None, filename), tables.openFile(filename,'a', title=self.feature.name)  as h5file: 
-            table = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
-            table.flush()
-                
         return
 
     def isin(self, hash):
@@ -723,7 +711,7 @@ class Hdf(Format):
 
         with Locks(None, filename), tables.openFile(filename,'a', title=self.name) as h5file:
             #writing to table      
-            outtable=h5file.root.values      
+            outtable=h5file.root.values
             for i,element in enumerate(element_list):
                 uri_hash = self.feature.returnhash(**element)
                 rows = table.get(uri_hash)

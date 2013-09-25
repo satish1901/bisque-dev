@@ -19,9 +19,9 @@ class WNDCharm(Feature.Feature): #base WNDCharm feature class
     length = 0
     
     @Feature.wrapper
-    def calculate(self, uri):
+    def calculate(self, **resource):
         """ Append descriptors to SIFT h5 table """
-        
+        image_uri = resource['image']
         feature_info=feature_list[self.name]
         tranforms=feature_info[1:3]
         #adds the correct delimiter
@@ -50,8 +50,8 @@ class WNDCharm(Feature.Feature): #base WNDCharm feature class
         args.append('format=tiff') #return tiff format
         uri += '&'.join(args)
         
-        log.debug('WNDCharm uri: %s'% uri)
-        Im = Feature.ImageImport(uri,'tiff') #importing image from image service
+        log.debug('WNDCharm uri: %s'% image_uri)
+        Im = Feature.ImageImport(image_uri,'tiff') #importing image from image service
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_UNCHANGED) #CV_LOAD_IMAGE_UNCHANGED CV_LOAD_IMAGE_ANYDEPTH
         # extract the feature keypoints and descriptor
