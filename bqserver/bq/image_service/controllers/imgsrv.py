@@ -692,13 +692,13 @@ class SliceService(object):
         try:
             new_num_z = z2 - z1 + 1;
             new_num_t = t2 - t1 + 1;
-            new_w=x2-x1+1;
-            new_h=y2-y1+1;
+            new_w=x2-x1;
+            new_h=y2-y1;
             data_token.dims['zsize']  = str(new_num_z)
             data_token.dims['tsize']  = str(new_num_t)
             data_token.dims['pages']  = str(new_num_z*new_num_t)
-            if new_w>0: data_token.dims['width']  = str(new_w)
-            if new_h>0: data_token.dims['height'] = str(new_h)
+            if new_w>0: data_token.dims['width']  = str(new_w+1)
+            if new_h>0: data_token.dims['height'] = str(new_h+1)
             data_token.dims['format'] = default_format
         finally:
             pass
