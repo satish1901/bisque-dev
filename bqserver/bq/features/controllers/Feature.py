@@ -33,15 +33,13 @@ log = logging.getLogger("bq.features")
 def wrapper(func):
     def calc(self,kw):
         id = self.returnhash(**kw)
-        #id = uuid.uuid5(uuid.NAMESPACE_URL, str(uri)) #no longer stores ids
-        #id = id.hex
 
         results = func(self,**kw)
         column_count = len(self.Columns.columns)-1 #finds length of columns to determin hoe to parse
-        if column_count==1:
+        if column_count == 1:
             results=tuple([results])
         
-        rows=[]   
+        rows=[]
         for i in range(len(results[0])): #iterating though rows returned
             
             if self.cache: #check for cache to see how to build the table
@@ -49,7 +47,9 @@ def wrapper(func):
             else:
                 row = tuple([uri])
                 
-            for j in range(column_count): #iterating through columns returned
+            #row = zip(row,*results)
+            #allows for varying column length
+            for j in range(column_count): #iterating through columns returned 
                 row += tuple([results[j][i]])
             rows.append(row)
         return rows
@@ -113,6 +113,10 @@ class Feature(object):
         return uri_hash
     
     def typecheck(self, **kw):
+        """
+            Checks resource type of the input to make sure
+            the correct resources have been used
+        """
         resource = {}
         for r in self.resource:
             if r not in kw:
@@ -149,15 +153,31 @@ class Feature(object):
             table.flush() 
         return
     
-    def indexTable(self,hash):
+    def outputTable(self,filename):
         """
-            information for table to know what to index
+        output table for hdf output requests and uncached features
         """
-        file = os.path.join( self.path, hash+'.h5')
-        with Locks(None, self.path), tables.openFile(self.localfile(hash),'a', title=self.name) as h5file:
-            table=h5file.root.values
-            table.cols.idnumber.removeIndex()
-            table.cols.idnumber.createIndex()
+        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+        class Columns(tables.IsDescription):
+            image  = tables.StringCol(2000,pos=1)
+            feature   = tables.Col.from_atom(featureAtom, pos=2)
+            
+        with Locks(None, filename), tables.openFile(filename,'a', title=self.name) as h5file: 
+            outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
+            outtable.flush()
+            
+        return
+   
+    
+#    def indexTable(self,hash):
+#        """
+#            information for table to know what to index
+#        """
+#        file = os.path.join( self.path, hash+'.h5')
+#        with Locks(None, self.path), tables.openFile(self.localfile(hash),'a', title=self.name) as h5file:
+#            table=h5file.root.values
+#            table.cols.idnumber.removeIndex()
+#            table.cols.idnumber.createIndex()
     
     @wrapper
     def calculate(self, **resource):
@@ -173,7 +193,9 @@ class ImageImport():
     def __init__(self, uri,file_type='tiff'):
         
         
-        if uri.find('image_service')<1:        
+        if uri.find('image_service')<1: #identify if is image service request
+            
+            #finds image resource thought http
             import urllib, urllib2, cookielib
             self.uri=uri
             header = {'Accept':'text/xml'}
@@ -188,22 +210,24 @@ class ImageImport():
                     log.exception('Failed to get a correct http response code')
                     abort(500)
             
-            #creates a random feature
+            #creates a random file name
             d =[random.choice(string.ascii_lowercase + string.digits) for x in xrange(10)]
             s = "".join(d)
             file = 'image'+ str(s)+'.'+file_type
             
             self.path = os.path.join( FEATURES_TEMP_IMAGE_DIR, file)
                 
-            
+            #Writes file to feature's image temp directory
             with Locks(None, self.path):
                 with open(self.path, 'wb')as f:
                     f.write(content.read())
                     f.flush()
 
+        
         else:
+            #finds image resource though image service
             self.uri=uri
-            self.path = image_service.local_file(uri)
+            self.path = image_service.local_file(uri) 
             log.debug("path: %s"% self.path)
             if self.path is None:
                 abort(404)
@@ -212,7 +236,7 @@ class ImageImport():
         return self.path
     
     def __del__(self):
-        #check if the temp dir was used
+        #check if the temp dir was used to remove file
         if self.uri.find('image_service')<1:
             try:
                 os.remove(self.path)
@@ -250,14 +274,6 @@ class TempImport():
     
     def returnstatus(self): 
         self.status 
-
-#removed for debuging
-#    def __exit__(self):
-#        self.close()
-#        try:
-#            os.remove(self.path)
-#        except:
-#            pass
     
     def __del__(self):
         """ When the ImageImport object is deleted the image path is removed for the temp dir """
@@ -277,33 +293,34 @@ class XMLImport():
         import urllib, urllib2, cookielib
         self.uri = uri
         
-#        header = {'Accept':'text/xml'}
-#        req = urllib2.Request(url=uri,headers=header)
-#        try:
-#            content = urllib2.urlopen(req)
-#        except urllib2.HTTPError, e:
-#            if e.code>=400:
-#                log.debug('XML not found at this URI')
-#                abort(404)
-#            else:
-#                log.debug('Response Code: %s'%e.code)
-#                log.exception('Failed to get a correct http response code')
-#                abort(500)        
-#        content = urllib.urlopen(uri)
-#        
-#        try:
-#            self.tree=etree.XML(content.read())
-#        except etree.XMLSyntaxError:
-#            abort(415, 'Requires: XML format')
+        header = {'Accept':'text/xml'}
+        req = urllib2.Request(url=uri,headers=header)
+        try:
+            content = urllib2.urlopen(req)
+        except urllib2.HTTPError, e:
+            if e.code>=400:
+                log.debug('XML not found at this URI')
+                abort(404)
+            else:
+                log.debug('Response Code: %s'%e.code)
+                log.exception('Failed to get a correct http response code')
+                abort(500)        
+        content = urllib.urlopen(uri)
+        
+        try:
+            self.tree=etree.XML(content.read())
+        except etree.XMLSyntaxError:
+            log.debug('Requires: XML format')
+            abort(415, 'Requires: XML format')
             
         #hack for amir
-        from bq.api.comm import BQSession
-        username = 'stuff'
-        password = 'stuff'
-        self.uri = uri
-        BQ=BQSession()
-        BQ.init_local(username,password,bisque_root=r'http://bisque',create_mex=False)
-        self.tree = BQ.fetchxml(self.uri)
+#        from bq.api.comm import BQSession
+#        username = 'user'
+#        password = 'pass'
+#        self.uri = uri
+#        BQ=BQSession()
+#        BQ.init_local(username,password,bisque_root=r'http://bisque',create_mex=False)
+#        self.tree = BQ.fetchxml(self.uri)
         
         
     def returnxml(self):       
