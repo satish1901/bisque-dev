@@ -61,6 +61,7 @@ from tg import config
 from bq.util.http import *
 from controllers.service import image_serviceController as LocalImageServer
 from bq.core import identity 
+from bq.exceptions import RequestError
 
 log = logging.getLogger('bq.image_service')
 
@@ -90,7 +91,7 @@ class proxy_dispatch (object):
     class dispatch_for(object):
         def __init__(self, parent):
             self.stack   = []
-            self.path    = None
+            self.path    = parent.baseurl
             self.proxy   = parent
         def __getattr__(self, method):
             log.debug ("proxy url %s" % method)
@@ -101,6 +102,10 @@ class proxy_dispatch (object):
         def get(self):
             fullurl = self.create_url()
             return self.proxy.dispatch (fullurl)
+        def post(self, body):
+            fullurl = self.create_url()
+            return self.proxy.dispatch (fullurl, body=body)
+
             
         def push_method (self, method, *largs, **kw):
             #print "url push %s %s " % (method, largs)
@@ -140,22 +145,26 @@ class proxy_dispatch (object):
         d =  proxy_dispatch.dispatch_for(self)
         return getattr(d, name)
 
-    def dispatch(self, fullurl):
+    
+
+    def dispatch(self, fullurl, body=None):
         if fullurl.startswith (self.baseurl):
-            return self.local_dispatch(fullurl)
+            return self.local_dispatch(fullurl, body)
         return self.remote_dispatch(fullurl)
     
-    def local_dispatch(self, fullurl):
-        path, params = urlparse.urlparse (fullurl)[2:4]
-        userId,p  = identity.get_user_pass()
-        #userId = identity.current.user_name
-        
-        id = int(path.split('/')[-1])
-        request = "%s?%s" (path, params)
+    def local_dispatch(self, fullurl, body=None):
+        path, params = urlparse.urlsplit (fullurl)[2:4]
+        userId  = identity.get_username()
+
+        try:
+            id = int(path.split('/')[-1])
+        except ValueError:
+            id = None
+        request = "%s?%s" % (path, params)
         data_token = self.server.srv.process(request, id, userId )
         if data_token.isHttpError():
-            log.debug('Responce Code: ' +str(data_token.httpResponseCode) )
-            raise IllegalOperation(data_token.httpResponseCode)
+            log.debug('Response Code: ' +str(data_token.httpResponseCode) )
+            raise RequestError(data_token.httpResponseCode)
 
         #second check if the output is TEXT/HTML/XML                  
         if data_token.isText():

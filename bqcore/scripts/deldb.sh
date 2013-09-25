@@ -21,5 +21,5 @@ done
 shift $(($OPTIND - 1))
 
 RESOURCE=$1
-curl -u $USER -X DELETE -H 'Content-type: text/xml'  $RESOURCE
+curl -k -u $USER -X DELETE -H 'Content-type: text/xml'  $RESOURCE
 

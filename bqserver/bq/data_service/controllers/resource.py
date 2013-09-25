@@ -436,6 +436,7 @@ class Resource(ServiceController):
                 last_modified = self.get_last_modified_date(resource)
                 if last_modified is not None:
                     if last_modified <= modified_check:
+                        log.error('Document has been modified before POST')
                         abort(304)
 
     def add_cache_header(self, resource):
@@ -531,11 +532,11 @@ class Resource(ServiceController):
         #classes children.
         if path:
             token = path.pop(0)
-            #log.debug('Token: ' + str(token))
+            log.debug('Token: ' + str(token))
             child = self.get_child_resource(token)
             if child is not None:
                 bisque.parent = resource
-                #log.debug ("parent = %s" % resource)
+                log.debug ("parent = %s" % resource)
                 #call down into the child resource.
                 return child._default(*path, **kw)
 

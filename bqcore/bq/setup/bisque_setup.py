@@ -711,7 +711,7 @@ Please resolve the problem(s) and re-run 'bisque-setup --database'.""")
                
     # Step 3: find out whether the database needs initialization
     db_initialized = test_db_initialized(DBURL)
-    newdb = False
+    params['new_database'] = False
     install_cfg(ALEMBIC_CFG, section="alembic", default_cfg=config_path('alembic.ini.default'))
     update_site_cfg(params, section='alembic', cfg = ALEMBIC_CFG, append=False)
     if not db_initialized and getanswer(
@@ -722,7 +722,7 @@ Please resolve the problem(s) and re-run 'bisque-setup --database'.""")
         """) == "Y":
         if call (['paster','setup-app', config_path('site.cfg')]) != 0:
             raise SetupError("There was a problem initializing the Database")
-        newdb = True
+        params['new_database'] = True
         
 
     if test_db_sqlmigrate(DBURL):
@@ -730,12 +730,12 @@ Please resolve the problem(s) and re-run 'bisque-setup --database'.""")
         call ([PYTHON, to_sys_path ('bqcore/migration/manage.py'), 'upgrade'])
 
 
-    if not newdb : #and test_db_alembic(DBURL):
+    if params['new_database'] : #and test_db_alembic(DBURL):
         print "Upgrading database version (alembic)"
         if call (["alembic", '-c', config_path('alembic.ini'), 'upgrade', 'head']) != 0:
             raise SetupError("There was a problem initializing the Database")
 
-    print params
+    #print params
     return params
         
         
@@ -1022,7 +1022,7 @@ def check_condor (params, cfg  = RUNTIME_CFG):
 
         params = read_site_cfg(cfg=cfg, section='condor', )
         params['condor.enabled'] = "True"
-        print params
+        #print params
         if getanswer("Advanced Bisque-Condor configuration", "N",
                      "Change the condor templates used for submitting jobs")!='Y':
             for f in ['condor.dag_template', 'condor.submit_template', 'condor.dag_config_template']:
@@ -1095,6 +1095,8 @@ def install_mail(params):
 #######################################################
 
 def install_preferences(params):
+    if params['new_database']: #already initialized
+        return params
     if getanswer ("Initialize Preferences ","N",
                   """Initialize system preferences.. new systems will 
 requires this while, upgraded system may depending on chnages""")!="Y":
@@ -1452,7 +1454,7 @@ def bisque_installer(options, args):
         installer = engine_options[:]
         system_type = 'engine'
     elif args[0] == 'server':
-        installer = engine_options[:]
+        installer = install_options[:]
         system_type = 'bisque'
     else:
         installer = args

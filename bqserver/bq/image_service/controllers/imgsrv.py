@@ -2302,21 +2302,12 @@ class ImageServer(object):
         # init the output to a simple file
         data_token = ProcessToken()
 
-        if id != -1:
-            try:
-                #intid = int(id)
-                pass
-            except:
-                data_token.setHtmlErrorNotFound()
-                return data_token
-
-            #if not self.accessPermission(id, userId):
-            #    data_token.setHtmlErrorUnauthorized()
-            #    return data_token
+        if ident is not None:
 
             if not blob_service.file_exists(ident):
                 data_token.setHtmlErrorNotFound()
                 return data_token
+
 
             data_token.setFile( self.imagepath(ident) )
 
@@ -2338,6 +2329,7 @@ class ImageServer(object):
         try:
             #process all the requested operations
             for action,args in query:
+                log.debug ("action = %s" % action)
                 data_token = self.request(action, ident, data_token, args)
                 if data_token.isHttpError():
                     break

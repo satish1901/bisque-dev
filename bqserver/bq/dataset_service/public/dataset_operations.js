@@ -247,7 +247,7 @@ Ext.define('BQ.dataset.Share',
 
     getStatus: function()
     {
-        return 'Applied dataset\'s <b>share</b> authorization to all elements.';
+        return 'Apply dataset\'s <b>share</b> authorization to all elements.';
     },
 });
 

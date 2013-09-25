@@ -15,14 +15,15 @@ function verbose () {
 if [ $# -lt 2 ] ; then 
   usage
 fi
-#USER="admin:testme"
-while getopts "vu:" options
+USER="admin:testme"
+while getopts "vu:M:" options
 do 
   case $options in
-  u) EXTRA="-u $OPTARG" ;;
+  u) EXTRA="$EXTRA -u $OPTARG" ;;
   -) shift; break ;;
-  ?) usage; exit 2 ;;
-  v) VERBOSE = 1;;
+#  ?) usage; exit 2 ;;
+  v) VERBOSE=1;;
+  M) EXTRA="$EXTRA -H \"Authorization: Mex $OPTARG\"";;
   esac
 done
 shift $(($OPTIND - 1))
@@ -32,7 +33,7 @@ RESOURCE=$2
 
 R=$(cat $FILE)
 verbose "Sending $R -> $RESOURCE"
-verbose "curl -k $EXTRA -X POST -H 'Content-type: text/xml' -d @- $RESOURCE < $FILE
+verbose "curl -k $EXTRA -X POST $MEX -H 'Content-type: text/xml' -d @- $RESOURCE < $FILE
 "
 curl -k $EXTRA -X POST -H 'Content-type: text/xml' -d @- $RESOURCE < $FILE
 
