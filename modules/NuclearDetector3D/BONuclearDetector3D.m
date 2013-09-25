@@ -76,7 +76,11 @@ function np = BONuclearDetector3D(imn, ns, t, session, timetext)
     tic;
     for i=1:length(np),
         dt = GetCentroidDescriptors3D(imn, np{i}, ns);
-        np{i} = Filter3DPointsByDescriptor(np{i}, dt, ns*1.1);
+        % use intensity sum feature for filtering
+        for ii=1:size(np{i},1),   
+            np{i}(ii,5) = dt{np{i}(ii,4)}.sum;
+        end
+        np{i} = Filter3DPointsByDescriptor(np{i}, ns*1.1);
     end
     toc
 
@@ -88,29 +92,16 @@ function np = BONuclearDetector3D(imn, ns, t, session, timetext)
     dt = GetCentroidDescriptors3D(imn, np, ns);
     toc
     
-    %% Producing final list     
-    sz = size(np,1);
-    counts = np(:,4);
-    img_mean = zeros(sz,1);
-    for i=1:sz,   
-        img_mean(i) = dt{i}.mean;
-    end  
-
-    img_mean = scalev(img_mean);
-    counts = scalev(counts);
-
-    feature = (5*counts + 5*img_mean)/ 10;
-    feature = scalev(feature);
-
-    np(:,5) = feature;
-
-    np = sortrows(np, 5);
-end
-
-function v = scalev(v)
-    if max(v)<=min(v),
-        v = ones(length(v),1);
-    else
-        v = ( v - min(v) ) / ( max(v) - min(v) );
-    end
+    %% Producing the final list     
+    for i=1:size(np,1),   
+        np(i,5) = dt{i}.mean;
+    end    
+    
+    
+%     img_cnts = scalev(np(:,4));
+%     img_mean = scalev(np(:,5));
+%     feature = (5*img_cnts + 5*img_mean)/ 10; % equally weighted
+%     feature = scalev(feature);
+%     np(:,5) = feature;
+%     np = sortrows(np, 5);
 end

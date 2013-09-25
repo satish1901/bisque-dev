@@ -1,10 +1,14 @@
 %% Filter3DPointsByDescriptor - pruning nuclei positions
 %   (this used to be called: BOStatDescriptor3D)
-%    np = Filter3DPointsByDescriptor(np, dt, ns)
+%    np = Filter3DPointsByDescriptor(np, ns)
 %
 %   INPUT:
 %       np      - detected nuclei positions
-%       dt      - descriptor values
+%                   np(:,1) -> Y coordinate (starting at 1)
+%                   np(:,2) -> X coordinate (starting at 1)
+%                   np(:,3) -> Z coordinate (starting at 1)
+%                   np(:,4) -> point IDs
+%                   np(:,5) -> feature value used for filtering
 %       ns      - nuclei size
 %
 %   OUTPUT:
@@ -13,6 +17,7 @@
 %                   np(:,2) -> X coordinate (starting at 1)
 %                   np(:,3) -> Z coordinate (starting at 1)
 %                   np(:,4) -> point IDs
+%                   np(:,5) -> feature value used for filtering
 %
 %   AUTHOR:
 %       Boguslaw Obara, http://boguslawobara.net/
@@ -26,21 +31,15 @@
 %                                   N1 - 6X speed improvement
 %                                   N2 - 127X speed improvement
 %%
-function np = Filter3DPointsByDescriptor(np, dt, ns)
+function np = Filter3DPointsByDescriptor(np, ns)
     
     %% dima N2 - 127X speed improvement
     % most optimized filtering, using find instead of a for loop
     % and a simple differemce instead of eucledian distance
-
-    %% set the feature to use for pruning
-    sz = size(np,1);    
-    for i=1:sz,   
-        % use intensity sum feature
-        np(i,5) = dt{np(i,4)}.sum;
-    end    
-    np = sortrows(np, 5);
-    
+   
     %% ascending sorted array is required before pruning
+    np = sortrows(np, 5);    
+    sz = size(np,1);      
     for i=sz:-1:2,
         if np(i,1)==-1, continue; end
         
