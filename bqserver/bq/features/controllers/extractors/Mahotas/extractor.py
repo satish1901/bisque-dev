@@ -8,36 +8,36 @@ from mahotas.features import haralick,lbp,pftas,tas,zernike_moments
 from bq.features.controllers import Feature #import base class
 from pylons.controllers.util import abort
 
-class HAR(Feature.Feature):
-    """
-        Initalizes table and calculates the SURF descriptor to be
-        placed into the HDF5 table.
-    """
-    #parameters
-    file = 'features_har.h5'
-    name = 'HAR'
-    description = """Haralick Texure Features"""
-    length = 13 
-    parameter_info = ['row']
-    
-        
-    @Feature.wrapper
-    def calculate(self, uri):
-        #initalizing 
-
-        Im = Feature.ImageImport(uri) #importing image from image service
-        image_path = Im.returnpath()
-        im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
-        del Im
-        im=np.asarray(im)
-        if not im.any():
-            abort(415, 'Format was not supported')
-        
-        #calculate descriptor 
-        descritptors = haralick(im)
-        #initalizing rows for the table
-        
-        return descriptors
+#class HAR(Feature.Feature):
+#    """
+#        Initalizes table and calculates the SURF descriptor to be
+#        placed into the HDF5 table.
+#    """
+#    #parameters
+#    file = 'features_har.h5'
+#    name = 'HAR'
+#    description = """Haralick Texure Features"""
+#    length = 13 
+#    parameter_info = ['row']
+#    
+#        
+#    @Feature.wrapper
+#    def calculate(self, uri):
+#        #initalizing 
+#
+#        Im = Feature.ImageImport(uri) #importing image from image service
+#        image_path = Im.returnpath()
+#        im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
+#        del Im
+#        im=np.asarray(im)
+#        if not im.any():
+#            abort(415, 'Format was not supported')
+#        
+#        #calculate descriptor 
+#        descritptors = haralick(im)
+#        #initalizing rows for the table
+#        
+#        return descriptors
             
 
 class LBP(Feature.Feature):
@@ -53,10 +53,10 @@ class LBP(Feature.Feature):
     length = 8
         
     @Feature.wrapper
-    def calculate(self, uri):
+    def calculate(self, **resource):
         #initalizing
-        
-        Im = Feature.ImageImport(uri) #importing image from image service
+        image_uri = resource['image']
+        Im = Feature.ImageImport(image_uri) #importing image from image service
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im
@@ -85,11 +85,11 @@ class LBPbro(Feature.Feature):
     length = 108
         
     @Feature.wrapper
-    def calculate(self, uri):
+    def calculate(self, **resource):
         """ Append descriptors to SURF h5 table """
         #initalizing
-        
-        Im = Feature.ImageImport(uri) #importing image from image service
+        image_uri = resource['image']
+        Im = Feature.ImageImport(image_uri) #importing image from image service
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im
@@ -128,11 +128,11 @@ class PFTAS(Feature.Feature):
     length = 162 
     
     @Feature.wrapper
-    def calculate(self, uri):
+    def calculate(self, **resource):
         """ Append descriptors to SURF h5 table """
         #initalizing
-        
-        Im = Feature.ImageImport(uri) #importing image from image service
+        image_uri = resource['image']
+        Im = Feature.ImageImport(image_uri) #importing image from image service
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
         del Im
@@ -157,11 +157,11 @@ class TAS(Feature.Feature):
     length = 162 
     
     @Feature.wrapper
-    def calculate(self, uri):
+    def calculate(self, **resource):
         """ Append descriptors to TAS h5 table """
         #initalizing
-        
-        Im = Feature.ImageImport(uri) #importing image from image service
+        image_uri = resource['image']
+        Im = Feature.ImageImport(image_uri) #importing image from image service
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
         del Im
@@ -186,11 +186,11 @@ class ZM(Feature.Feature):
     length = 25
         
     @Feature.wrapper
-    def calculate(self, uri):
+    def calculate(self, **resource):
         """ Append descriptors to SURF h5 table """
         #initalizing
-       
-        Im = Feature.ImageImport(uri) #importing image from image service
+        image_uri = resource['image']
+        Im = Feature.ImageImport(image_uri) #importing image from image service
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im

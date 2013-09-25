@@ -20,6 +20,7 @@ class BRISK(Feature.Feature):
     name = 'BRISK'
     description = """Scale-invariant feature transform also know as SIFT """
     length = 64
+    parameter = ['x','y','response','size','angle','octave']
     
     def columns(self):
         """
@@ -39,10 +40,11 @@ class BRISK(Feature.Feature):
         self.Columns = Columns    
         
     @Feature.wrapper        
-    def calculate(self, uri):
+    def calculate(self, **resource):
         """ Append descriptors to BRISK h5 table """
         
-        Im = Feature.ImageImport(uri) #importing image from image service
+        image_uri = resource['image']
+        Im = Feature.ImageImport(image_uri) #importing image from image service
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im     
@@ -76,7 +78,29 @@ class BRISK(Feature.Feature):
             octave.append(k.octave)
         
         return descriptors,x,y,response,size,angle,octave
-#
+    
+    def outputTable(self,filename):
+        """
+        Output table for hdf output requests and uncached features
+        """
+        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+        class Columns(tables.IsDescription):
+            image  = tables.StringCol(2000,pos=1)
+            feature   = tables.Col.from_atom(featureAtom, pos=2)
+            x         = tables.Float32Col(pos=3)
+            y         = tables.Float32Col(pos=4)
+            response  = tables.Float32Col(pos=5)
+            size      = tables.Float32Col(pos=6)
+            angle     = tables.Float32Col(pos=7)
+            octave    = tables.Float32Col(pos=8)
+            
+        with Locks(None, filename), tables.openFile(filename,'a', title=self.name) as h5file: 
+            outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
+            outtable.flush()
+            
+        return
+
+
 class BRISKc(Feature.Feature):
     """
         Initalizes table and calculates the ORB descriptor to be
@@ -87,6 +111,7 @@ class BRISKc(Feature.Feature):
     name = 'BRISKc'
     description = """Scale-invariant feature transform also know as SIFT """
     length = 64
+    parameter = ['x','y','response','size','angle','octave']
     
     def columns(self):
         """
@@ -149,7 +174,27 @@ class BRISKc(Feature.Feature):
         
         return descriptors,x,y,response,size,angle,octave
 
-  
+    def outputTable(self,filename):
+        """
+        Output table for hdf output requests and uncached features
+        """
+        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+        class Columns(tables.IsDescription):
+            image  = tables.StringCol(2000,pos=1)
+            feature   = tables.Col.from_atom(featureAtom, pos=2)
+            x         = tables.Float32Col(pos=3)
+            y         = tables.Float32Col(pos=4)
+            response  = tables.Float32Col(pos=5)
+            size      = tables.Float32Col(pos=6)
+            angle     = tables.Float32Col(pos=7)
+            octave    = tables.Float32Col(pos=8)
+            
+        with Locks(None, filename), tables.openFile(filename,'a', title=self.name) as h5file: 
+            outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
+            outtable.flush()
+            
+        return
+ 
           
 class ORB(Feature.Feature):
     """
@@ -165,6 +210,7 @@ class ORB(Feature.Feature):
     are rotated according to the measured orientation).
     This explination was taken from opencv documention on orb and the algorithm iself was taken from
     the opencv library"""
+    parameter = ['x','y','response','szie','angle','octave']
     length = 32
     contents = 'several points are described in an image, each will have a position: X Y Scale'
 
@@ -185,11 +231,12 @@ class ORB(Feature.Feature):
             
         self.Columns = Columns
 
-    @Feature.wrapper        
-    def calculate(self, uri):
+    @Feature.wrapper
+    def calculate(self, **resource):
         """ Append descriptors to ORB h5 table """
         
-        Im = Feature.ImageImport(uri) #importing image from image service
+        image_uri = resource['image']
+        Im = Feature.ImageImport(image_uri) #importing image from image service
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im      
@@ -222,6 +269,28 @@ class ORB(Feature.Feature):
         
         return descriptors,x,y,response,size,angle,octave
 
+    def outputTable(self,filename):
+        """
+        Output table for hdf output requests and uncached features
+        """
+        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+        class Columns(tables.IsDescription):
+            image  = tables.StringCol(2000,pos=1)
+            feature   = tables.Col.from_atom(featureAtom, pos=2)
+            x         = tables.Float32Col(pos=3)
+            y         = tables.Float32Col(pos=4)
+            response  = tables.Float32Col(pos=5)
+            size      = tables.Float32Col(pos=6)
+            angle     = tables.Float32Col(pos=7)
+            octave    = tables.Float32Col(pos=8)
+            
+        with Locks(None, filename), tables.openFile(filename,'a', title=self.name) as h5file: 
+            outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
+            outtable.flush()
+            
+        return
+ 
+ 
 class ORBc(Feature.Feature):
     """
         Initalizes table and calculates the ORB descriptor to be
@@ -237,6 +306,7 @@ class ORBc(Feature.Feature):
     This explination was taken from opencv documention on orb and the algorithm iself was taken from
     the opencv library"""
     length = 32
+    parameter = ['x','y','response','szie','angle','octave']
     contents = 'several points are described in an image, each will have a position: X Y Scale'
 
 
@@ -258,10 +328,10 @@ class ORBc(Feature.Feature):
         self.Columns = Columns
 
     @Feature.wrapper        
-    def calculate(self, uri):
+    def calculate(self, **resource):
         """ Append descriptors to ORB h5 table """
-        
-        Im = Feature.ImageImport(uri) #importing image from image service
+        image_uri = resource['image']
+        Im = Feature.ImageImport(image_uri) #importing image from image service
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im      
@@ -300,6 +370,26 @@ class ORBc(Feature.Feature):
         
         return descriptors,x,y,response,size,angle,octave
 
+    def outputTable(self,filename):
+        """
+        Output table for hdf output requests and uncached features
+        """
+        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+        class Columns(tables.IsDescription):
+            image  = tables.StringCol(2000,pos=1)
+            feature   = tables.Col.from_atom(featureAtom, pos=2)
+            x         = tables.Float32Col(pos=3)
+            y         = tables.Float32Col(pos=4)
+            response  = tables.Float32Col(pos=5)
+            size      = tables.Float32Col(pos=6)
+            angle     = tables.Float32Col(pos=7)
+            octave    = tables.Float32Col(pos=8)
+            
+        with Locks(None, filename), tables.openFile(filename,'a', title=self.name) as h5file: 
+            outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
+            outtable.flush()
+            
+        return
 
 class SIFT(Feature.Feature):
     """
@@ -311,6 +401,7 @@ class SIFT(Feature.Feature):
     name = 'SIFT'
     description = """Scale-invariant feature transform also know as SIFT """
     length = 128
+    parameter = ['x','y','response','szie','angle','octave']
     feature_format = "int32"
     
     def columns(self):
@@ -331,10 +422,11 @@ class SIFT(Feature.Feature):
         self.Columns = Columns
     
     @Feature.wrapper
-    def calculate(self, uri):
+    def calculate(self, **resource):
         """ Append descriptors to SIFT h5 table """
         
-        Im = Feature.ImageImport(uri) #importing image from image service
+        image_uri = resource['image']
+        Im = Feature.ImageImport(image_uri) #importing image from image service
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im     
@@ -369,7 +461,28 @@ class SIFT(Feature.Feature):
         
         return descriptors,x,y,response,size,angle,octave
 
-
+    def outputTable(self,filename):
+        """
+        Output table for hdf output requests and uncached features
+        """
+        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+        class Columns(tables.IsDescription):
+            image  = tables.StringCol(2000,pos=1)
+            feature   = tables.Col.from_atom(featureAtom, pos=2)
+            x         = tables.Float32Col(pos=3)
+            y         = tables.Float32Col(pos=4)
+            response  = tables.Float32Col(pos=5)
+            size      = tables.Float32Col(pos=6)
+            angle     = tables.Float32Col(pos=7)
+            octave    = tables.Float32Col(pos=8)
+            
+        with Locks(None, filename), tables.openFile(filename,'a', title=self.name) as h5file: 
+            outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
+            outtable.flush()
+            
+        return
+    
+    
 class SIFTc(SIFT):
     """
         Initalizes table and calculates the ORB descriptor to be
@@ -379,12 +492,13 @@ class SIFTc(SIFT):
     #parameters
     name = 'SIFTc'
     description = """Scale-invariant feature transform also know as SIFT """
-     
+    
     @Feature.wrapper        
-    def calculate(self, uri):
+    def calculate(self, **resource):
         """ Append descriptors to SIFT h5 table """
         
-        Im = Feature.ImageImport(uri) #importing image from image service
+        image_uri = resource['image']
+        Im = Feature.ImageImport(image_uri) #importing image from image service
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im     
@@ -481,6 +595,7 @@ class SURF(Feature.Feature):
     #parameters
     name = 'SURF'
     description = """Speeded Up Robust Features also know as SURF"""
+    parameter = ['x','y','laplacian','size','direction','hessian']    
     length = 64 
 
     def columns(self):
@@ -501,7 +616,7 @@ class SURF(Feature.Feature):
         self.Columns = Columns
         
     @Feature.wrapper        
-    def calculate(self, uri):
+    def calculate(self, **resource):
         """ Append descriptors to SURF h5 table """
         #initalizing
         extended = 0
@@ -509,7 +624,8 @@ class SURF(Feature.Feature):
         nOctaves = 3
         nOctaveLayers = 4
 
-        Im = Feature.ImageImport(uri) #importing image from image service
+        image_uri = resource['image']
+        Im = Feature.ImageImport(image_uri) #importing image from image service
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im
@@ -538,6 +654,26 @@ class SURF(Feature.Feature):
         
         return descriptors,x,y,laplacian,size,direction,hessian
 
+    def outputTable(self,filename):
+        """
+        Output table for hdf output requests and uncached features
+        """
+        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+        class Columns(tables.IsDescription):
+            image  = tables.StringCol(2000,pos=1)
+            feature   = tables.Col.from_atom(featureAtom, pos=2)
+            x         = tables.Float32Col(pos=3)
+            y         = tables.Float32Col(pos=4)
+            laplacian = tables.Float32Col(pos=5)
+            size      = tables.Float32Col(pos=6)
+            direction = tables.Float32Col(pos=7)
+            hessian   = tables.Float32Col(pos=8)
+            
+        with Locks(None, filename), tables.openFile(filename,'a', title=self.name) as h5file: 
+            outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
+            outtable.flush()
+            
+        return
     
 class SURFc(SURF):
     """
@@ -548,7 +684,8 @@ class SURFc(SURF):
     #parameters
     name = 'SURFc'
     description = """Speeded Up Robust Features also know as SURF"""
-        
+    
+    
     @Feature.wrapper        
     def calculate(self, uri):
         """ Append descriptors to SURF h5 table """
@@ -605,7 +742,8 @@ class FREAKc(Feature.Feature):
     name = 'FREAKc'
     description = """Scale-invariant feature transform also know as SIFT """
     length = 64
-    
+    parameter = ['x','y','response','size','angle','octave']   
+
     def columns(self):
         """
             creates Columns to be initalized by the create table
@@ -664,4 +802,25 @@ class FREAKc(Feature.Feature):
             octave.append(k.octave)
         
         return descriptors,x,y,response,size,angle,octave
+    
+    def outputTable(self,filename):
+        """
+        Output table for hdf output requests and uncached features
+        """
+        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+        class Columns(tables.IsDescription):
+            image  = tables.StringCol(2000,pos=1)
+            feature   = tables.Col.from_atom(featureAtom, pos=2)
+            x         = tables.Float32Col(pos=3)
+            y         = tables.Float32Col(pos=4)
+            response  = tables.Float32Col(pos=5)
+            size      = tables.Float32Col(pos=6)
+            angle     = tables.Float32Col(pos=7)
+            octave    = tables.Float32Col(pos=8)
+            
+        with Locks(None, filename), tables.openFile(filename,'a', title=self.name) as h5file: 
+            outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
+            outtable.flush()
+            
+        return  
             

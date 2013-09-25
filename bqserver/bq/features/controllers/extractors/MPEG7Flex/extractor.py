@@ -22,10 +22,10 @@ class SCD(Feature.Feature):
     length = 256 
         
     @Feature.wrapper
-    def calculate(self, uri):
+    def calculate(self, **resource):
         """ Append descriptors to h5 table """
-        
-        Im = Feature.ImageImport(uri) #importing image from image service
+        image_uri = resource['image']
+        Im = Feature.ImageImport(image_uri) #importing image from image service
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
         del Im
@@ -49,11 +49,11 @@ class HTD2(Feature.Feature):
     length = 62 
         
     @Feature.wrapper
-    def calculate(self, uri):
+    def calculate(self, **resource):
         #initalizing
         
-
-        Im = Feature.ImageImport(uri) #importing image from image service
+        image_uri = resource['image']
+        Im = Feature.ImageImport(image_uri) #importing image from image service
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im
@@ -81,11 +81,11 @@ class EHD2(Feature.Feature):
     length = 80 
         
     @Feature.wrapper
-    def calculate(self, uri):
+    def calculate(self, **resource):
         #initalizing
         
-
-        Im = Feature.ImageImport(uri) #importing image from image service
+        image_uri = resource['image']
+        Im = Feature.ImageImport(image_uri) #importing image from image service
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
         del Im
@@ -110,10 +110,11 @@ class DCD(Feature.Feature):
     length = 64 
         
     @Feature.wrapper
-    def calculate(self, uri):
+    def calculate(self, **resource):
         """ Append descriptors to SURF h5 table """
         
-        Im = Feature.ImageImport(uri) #importing image from image service
+        image_uri = resource['image']
+        Im = Feature.ImageImport(image_uri) #importing image from image service
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
         del Im
@@ -150,11 +151,12 @@ class CSD(Feature.Feature):
     length = 64 
         
     @Feature.wrapper
-    def calculate(self, uri):
-        
+    def calculate(self, **resource):
         """ Append descriptors to h5 table """
         #initalizing
-        Im = Feature.ImageImport(uri) #importing image from image service
+        
+        image_uri = resource['image']
+        Im = Feature.ImageImport(image_uri) #importing image from image service
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
         del Im
@@ -180,11 +182,11 @@ class CLD(Feature.Feature):
     length = 120
         
     @Feature.wrapper
-    def calculate(self, uri):
+    def calculate(self, **resource):
         """ Append descriptors to h5 table """
         
-        
-        Im = Feature.ImageImport(uri) #importing image from image service
+        image_uri = resource['image']
+        Im = Feature.ImageImport(image_uri) #importing image from image service
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
         del Im
@@ -205,15 +207,17 @@ class RSD(Feature.Feature):
     file = 'features_rsd.h5'
     name = 'RSD'
     description = """Region Shape Descritpor"""
-    length = 35 
+    length = 35
+    resource = ['image','polygon']
         
     @Feature.wrapper
-    def calculate(self, uri):
+    def calculate(self, **resource):
         """ Append descriptors to SURF h5 table """
         #initalizing
-
-        xml=Feature.XMLImport(uri+'?view=deep')
-        tree=xml.returnxml()
+        
+        polygon_uri = resource['polygon']
+        xml = Feature.XMLImport(polygon_uri+'?view=deep')
+        tree = xml.returnxml()
         if tree.tag=='polygon':
             vertices = tree.xpath('vertex')
             contour = []
@@ -223,22 +227,24 @@ class RSD(Feature.Feature):
             abort(404, 'polygon not found: must be a polygon gobject')
         
         
-        gobject = self.uri.replace('/',' ').replace('?',' ').split()
-        image_id=[]
-        for i,split in enumerate(gobject):
-            if split == 'image':
-                image_id.append(gobject[i+1])
+#        gobject = self.uri.replace('/',' ').replace('?',' ').split()
+#        image_id=[]
+#        for i,split in enumerate(gobject):
+#            if split == 'image':
+#                image_id.append(gobject[i+1])
+#        
+#        if len(image_id)>1:
+#            abort(500,'too many ids')
+#        elif len(image_id)<1:
+#            about(500,'no ids')
+#        else:
+#            root = 'http://128.111.185.26:8080'
+#            xml = Feature.XMLImport(root+'/data_service/image/'+image_id[0])
+#            tree = xml.returnxml()
+#            self.image_uri = root+'/image_service/image/'+tree.attrib['resource_uniq']
         
-        if len(image_id)>1:
-            abort(500,'too many ids')
-        elif len(image_id)<1:
-            about(500,'no ids')
-        else:
-            root = 'http://128.111.185.26:8080'
-            xml = Feature.XMLImport(root+'/data_service/image/'+image_id[0])
-            tree = xml.returnxml()
-            self.image_uri = root+'/image_service/image/'+tree.attrib['resource_uniq']
         
+        image_uri = resource['image']
         Im = Feature.ImageImport(self.image_uri) #importing image from image service
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
@@ -253,8 +259,8 @@ class RSD(Feature.Feature):
         ImageDraw.Draw(img).polygon(contour, outline=1, fill=1)
         mask = np.array(img)*255
         
-        cv2.imwrite("mask.png", mask)
-        cv2.imwrite("test.png", im)
+        #cv2.imwrite("mask.png", mask)
+        #cv2.imwrite("test.png", im)
 
         
         #initalizing rows for the table
@@ -264,3 +270,19 @@ class RSD(Feature.Feature):
         del Im
         
         return [descriptors]
+    
+    def outputTable(self,filename):
+        """
+        Output table for hdf output requests and uncached features
+        """
+        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+        class Columns(tables.IsDescription):
+            image  = tables.StringCol(2000,pos=1)
+            polygon = tables.StringCol(2000,pos=2)
+            feature   = tables.Col.from_atom(featureAtom, pos=3)
+            
+        with Locks(None, filename), tables.openFile(filename,'a', title=self.name) as h5file: 
+            outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
+            outtable.flush()
+            
+        return

@@ -12,7 +12,7 @@ import WNDCharmBase
 
 for features_name in feature_list.keys():
     #initalizes a class for each feature in wndcharm
-    WNDCharmFeature = type(features_name, 
+    WNDCharmFeature = type(features_name,
              (WNDCharmBase.WNDCharm,), 
              dict(
                   feature_list = feature_list,

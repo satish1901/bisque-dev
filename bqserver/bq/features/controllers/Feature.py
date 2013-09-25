@@ -107,8 +107,10 @@ class Feature(object):
         return os.path.join( self.path, hash[:self.hash]+'.h5')
 
     def returnhash(self, **kw):
-        image_uri = kw['image']   
-        uri_hash = uuid.uuid5(uuid.NAMESPACE_URL, str(image_uri))
+        uri = ''
+        for r in self.resource:
+            uri += str(kw[r]) #comines all the uris together to form the hash
+        uri_hash = uuid.uuid5(uuid.NAMESPACE_URL, uri)
         uri_hash = uri_hash.hex
         return uri_hash
     
@@ -155,7 +157,7 @@ class Feature(object):
     
     def outputTable(self,filename):
         """
-        output table for hdf output requests and uncached features
+        Output table for hdf output requests and uncached features
         """
         featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
         class Columns(tables.IsDescription):
