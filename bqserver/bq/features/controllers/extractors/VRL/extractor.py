@@ -11,6 +11,8 @@ from pylons.controllers.util import abort
 import logging
 import uuid
 import numpy as np
+from bq.image_service.controllers.locks import Locks
+
 log = logging.getLogger("bq.features")
 
 class EHD(Feature.Feature):
@@ -29,10 +31,10 @@ class EHD(Feature.Feature):
     length = 80 
     
     @Feature.wrapper    
-    def calculate(self, **kw):
+    def calculate(self, **resource):
         #initalizing
-
-        Im = Feature.ImageImport(uri) #importing image from image service
+        image_uri = resource['image']
+        Im = Feature.ImageImport(image_uri) #importing image from image service
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im    
@@ -63,11 +65,12 @@ class HTD(Feature.Feature):
     calculated and the descriptor is returned"""
     length = 48 
     
-    @Feature.wrapper   
-    def calculate(self, **kw):
+    @Feature.wrapper
+    def calculate(self, **resource):
         
         #importing images from bisque
-        Im = Feature.ImageImport(uri) #importing image from image service
+        image_uri = resource['image']
+        Im = Feature.ImageImport(image_uri) #importing image from image service
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im
@@ -90,6 +93,7 @@ class mHTD(Feature.Feature):
     file = 'features_htd.h5'
     name = 'mHTD'
     resource = ['image','mask']
+    parameter = ['label']
     description = """Homogenious Texture Descriptor also called HTD is a texture descritpor
     which applies the gabor filter with 6 different scales and 4 orientations. After applying
     the 24 different gabor filters the mean and standard deviation of all the pixels are 
@@ -116,9 +120,9 @@ class mHTD(Feature.Feature):
 
     
     @Feature.wrapper   
-    def calculate(self, **resouce):
-        image_uri = resouce['image']
-        mask_uri = resouce['mask']
+    def calculate(self, **resource):
+        image_uri = resource['image']
+        mask_uri = resource['mask']
         
         #importing images from bisque
         Im = Feature.ImageImport(image_uri) #importing image from image service
@@ -146,5 +150,21 @@ class mHTD(Feature.Feature):
 
         #initalizing rows for the table
         return descriptors, labels  
-    
+
+    def outputTable(self,filename):
+        """
+        output table for hdf output requests and uncached features
+        """
+        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+        class Columns(tables.IsDescription):
+            image   = tables.StringCol(2000,pos=1)
+            mask    = tables.StringCol(2000,pos=2)
+            feature = tables.Col.from_atom(featureAtom, pos=3)
+            label   = tables.Int32Col(pos=4)
+            
+        with Locks(None, filename), tables.openFile(filename,'a', title=self.name) as h5file: 
+            outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
+            outtable.flush()
+            
+        return    
     

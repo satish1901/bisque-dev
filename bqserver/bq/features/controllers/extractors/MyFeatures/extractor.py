@@ -15,6 +15,7 @@ class FFTSD(Feature.Feature):
     #parameters
     file = 'features_fftsd.h5'
     name = 'FFTSD'
+    resource = ['polygon']
     description = """Fast Fourier Transform Shape Descriptor"""
     length = 500
 

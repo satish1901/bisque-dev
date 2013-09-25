@@ -51,7 +51,7 @@ from bq.image_service.controllers.locks import Locks
 from bq.api.comm import BQServer
 from bq.util.mkdir import _mkdir
 import traceback
-#from ID import ID
+from ID import ID
 import Feature
 
 #query is commented out
@@ -131,21 +131,26 @@ class Rows(object):
         self.feature_queue = {}
         self.feature = feature
     
-    def __repr__(self):
-        return 'Descritpor Generator: Feature: %s List Length: %s'%(self.feature.name, len(feature_list))
+    #def __repr__(self):
+    #    return 'Descritpor Generator: Feature: %s List Length: %s'%(self.feature.name, len(feature_list))
     
-    def __len__(self):
-        return self.feature_queue.qsize()
+    #def __len__(self):
+    #    return self.feature_queue.qsize()
     
     def push(self, **resource):
+        """
+        Calculates features and organizes them into rows to be correctly placed
+        into the tables 
+        """
         try:
             output = self.feature.calculate(resource) #finds the feature
             log.debug('output: %s'% str(self.feature.localfile(output[0][0])))
             if self.feature.localfile(output[0][0]) in self.feature_queue: # checking the first few element on the hash
-                self.feature_queue[self.feature.localfile(output[0][0])].put(output)
+                self.feature_queue[self.feature.localfile(output[0][0])].put(output) #place the output in the queue
             else:
-                self.feature_queue[self.feature.localfile(output[0][0])] = Queue.Queue()
+                self.feature_queue[self.feature.localfile(output[0][0])] = Queue.Queue() #build queue since none were found
                 self.feature_queue[self.feature.localfile(output[0][0])].put(output)
+                
         except StandardError, err:
             #creating a list of uri were the error occured
             resource_string=''
@@ -156,9 +161,32 @@ class Rows(object):
                 
             log.exception('Calculation Error: URI:%s  %s Feature failed to be calculated'%(resource_string,self.feature.name))
 
+class IDRows(Rows):
+
+    def __init__(self, feature):
+        self.feature_queue = {}
+        self.ID = ID()
+        self.feature = feature
+    
+    def push(self, **resource):
+        """
+            creates the rows to store urls with there ids in the idtable
+        """
+        hash = self.feature.returnhash(**resource) #get hash from features
+        output = [hash]
+        for r in self.feature.resource:
+            output += [r+'='+resource[r]] #append the uris
+        if self.feature.localfile(hash) in self.feature_queue: # checking the first few element on the hash
+            self.feature_queue[self.ID.localfile(output[0][0])].put(output) #place the output in the queue
+        else:
+            self.feature_queue[self.ID.localfile(hash)] = Queue.Queue() #build queue since none were found
+            self.feature_queue[self.ID.localfile(hash)].put(output)        
+        pass
+    
+
 class UncachedRows(Rows):
     """
-    Generates rows to be placed into the uncached tables
+        Generates rows to be placed into the uncached tables
     """
     def push(self, **resource):
         try:
@@ -179,6 +207,9 @@ class UncachedRows(Rows):
             log.exception('Calculation Error: %s  %s feature failed to be calculated'%(resource_string,self.feature.name))
 
 class Tables(object):
+    """
+        Creates table to store features
+    """
     
     def __init__(self, feature):
         """
@@ -204,7 +235,7 @@ class Tables(object):
             self.feature.createtable(filename) #creates the table
             
         with Locks(self.feature.path), tables.openFile(filename,'r', title=self.feature.name) as h5file:
-            table=h5file.root.values
+            table = h5file.root.values
             index = table.getWhereList(query)
         return len(index)>0
     
@@ -263,9 +294,64 @@ class Tables(object):
                 l+=len(h5file.root.values)
         return l
 
+
+class IDTables(Tables):
+
+    def __init__(self):
+        """
+            Requires a Feature Class to intialize. Will search for table in the 
+            data\features\feature_tables directory. If it does not find the table
+            it will create a table.
+        """
+        self.ID = ID()
+        #self.feature = feature
+        
+        if not os.path.exists(self.ID.path):   #creates a table if it cannot find one
+            _mkdir(self.ID.path)
+
+
+    def isin(self, hash):
+        """
+            queries the table to see if element is in the table
+            
+            query - numexpr
+        """
+        log.debug('hash: %s'%hash)
+        filename = self.ID.localfile(hash)
+        query='idnumber=="%s"'% str(hash)
+        
+        if not os.path.exists(filename):
+            self.ID.createtable(filename) #creates the table
+            
+        with Locks(self.ID.path), tables.openFile(filename,'r', title=self.ID.name) as h5file:
+            table = h5file.root.values
+            index = table.getWhereList(query)
+        return len(index)>0
+
+    def store(self, rowgenorator):
+        """
+            store elements to tables
+        """
+        for filename in rowgenorator.feature_queue.keys():
+            queue = rowgenorator.feature_queue[filename]
+    
+            if not os.path.exists(filename):
+                self.ID.createtable(filename) #creates the table
+                
+            with Locks(None, filename), tables.openFile(filename,'a', title=self.ID.name) as h5file:
+                table = h5file.root.values
+                url_vlarray = h5file.root.URI
+                while not queue.empty():
+                    row=queue.get()
+                    table.append((row[0]))
+                    url_vlarray.append(row[1:])
+                    
+                table.flush()
+        return
+
 class UncachedTable(Tables):
     """
-    Places a temporary table in the temp dir
+    Places a table into the workdir without index
     """
     
     def __init__(self, feature):
@@ -395,29 +481,26 @@ class Request(object):
         Proccess request provided to the Feature Server
         (main loop of calculating features)
         """
-        
-        #does not cache the features in the tables
 
         if self.feature.cache:
             if self.options['calc']: #no features will be calculated if true
                 
-    #            HashTable = Tables(ID())
-    #            
-    #            elementlistintable=[]
-    #            for i,element in enumerate(self.element_list):
-    #                uri_hash = uuid.uuid5(uuid.NAMESPACE_URL, str(element))
-    #                uri_hash = uri_hash.hex
-    #                query='idnumber=="%s"'% str(uri_hash)                
-    #                elementlistintable.append(HashTable.isin(query))
-    #
-    #            #store hashes
-    #            HashRows=Rows(ID())
-    #            log.debug('elementlistintable: %s'%elementlistintable)
-    #            for i, element_bool in enumerate(elementlistintable):
-    #                if not element_bool:
-    #                    HashRows.push(self.element_list[i])
-    #            HashTable.store(HashRows)
+                HashTable = IDTables()
+                
+                elementlistintable=[]
+                for i,element in enumerate(self.element_list):
+                    uri_hash = self.feature().returnhash(**element)    
+                    elementlistintable.append(HashTable.isin(uri_hash))
     
+                #store hashes
+                HashRows=IDRows(self.feature())
+                log.debug('elementlistintable: %s'%elementlistintable)
+                for i, element_bool in enumerate(elementlistintable):
+                    if not element_bool:
+                        HashRows.push(**self.element_list[i])
+                HashTable.store(HashRows)
+    
+                #finding features
                 FeatureTable = Tables(self.feature())
                 
                 elementlistintable = []
@@ -506,6 +589,11 @@ class Xml(Format):
                 if rows!=None:
                     for r in rows:
                         subelement = etree.SubElement( element, 'feature' , resource ,type = str(self.feature.name))
+                        if self.feature.parameter:
+                            parameters = {}
+                            for parameter_name in self.feature.parameter:
+                                parameters[parameter_name] = str(r[parameter_name])
+                            etree.SubElement(subelement, 'parameters', parameters)
                         value = etree.SubElement(subelement, 'value')
                         value.text = " ".join('%g'%item for item in r['feature'])
                         nodes+=1
@@ -556,9 +644,9 @@ class Csv(Format):
 
         f = StringIO.StringIO()
         writer = csv.writer(f)
-        resource_names = self.feature.resouce
+        resource_names = self.feature.resource
         parameter_names = self.feature.parameter
-        titles = ['Feature Number','Feature_Type']+resource_names+['Descirptor']+parameter_names
+        titles = ['index','feature type']+resource_names+['descriptor']+parameter_names
         #titles = ['Feature Number','Feature_Type','Name','Value']
         writer.writerow(titles)
         for idx,resource in enumerate(element_list):
@@ -566,7 +654,7 @@ class Csv(Format):
             rows = table.get(uri_hash)
             for r in rows:
                 value_string = ",".join('%g'%i for i in r['feature'])
-                resource_uri = [resource[r] for r in resource_names]
+                resource_uri = [resource[rn] for rn in resource_names]
                 parameter = [r[pn] for pn in parameter_names]
                 line = [idx,self.feature.name]+resource_uri+[value_string]+parameter
                 writer.writerow(line)
@@ -622,32 +710,32 @@ class Hdf(Format):
         """
         Returns a newly formed hdf5 table
         
-        A limit of table size should be placed to not overflow the ram
-        if store save the file in blob service
+        All HDF files are saved in the work dir of the feature service
         """
         import io
         #creating a file name
         name = self.feature.name+str(time.time())
-        name = self.feature.returnhash(name)+'.h5'
+        name_hash = uuid.uuid5(uuid.NAMESPACE_URL, str(name))
+        name = name_hash.hex+'.h5'
         filename = os.path.join(FEATURES_TABLES_WORK_DIR,name)
+        self.feature.outputTable(filename)
         
-        #initalize the table
-        featureAtom = tables.Atom.from_type(self.feature.feature_format, shape=(self.feature.length ))
-        class Columns(tables.IsDescription):
-                uri  = tables.StringCol(2000,pos=1)
-                feature   = tables.Col.from_atom(featureAtom, pos=2)
 
-        with Locks(None, filename), tables.openFile(filename,'a', title=self.name) as h5file: 
-            outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
-
-            
-            #writing to table            
+        with Locks(None, filename), tables.openFile(filename,'a', title=self.name) as h5file:
+            #writing to table      
+            outtable=h5file.root.values      
             for i,element in enumerate(element_list):
                 uri_hash = self.feature.returnhash(**element)
                 rows = table.get(uri_hash)
-                for feature in rows['feature']:
-                    log.debug('feature: %s'% feature)
-                    outtable.append([(element[self.feature.resource[0]],feature)]) #hard coded image in
+                for r in rows:
+                    row=()
+                    for e in self.feature.resource:
+                        row+=tuple([element[e]])
+                    row += tuple([r['feature']])
+                    for p in self.feature.parameter:
+                        row += tuple([r[p]])
+                        log.debug('row: %s' % str(row))
+                    outtable.append([row]) 
             outtable.flush()
         
         f = io.FileIO(filename)
@@ -680,8 +768,11 @@ class Hdf(Format):
 class NoOutput(Format):
     name = 'No Output'
     
-    def return_output(self, table, **kw):
-        pass
+    def return_output(self,  table, element_list, **kw):
+        return
+    
+    def return_output_uncached(self, table, filename):
+        return
   
 class Numpy(Format):
     def __init__(self, *args, **kw):
@@ -775,11 +866,18 @@ class FeatureDoc():
         Table = Tables(feature_module)
          
         
-        xml_attributes = {'file':str(feature_module.file),
+        xml_attributes = {
+                          'file':str(feature_module.file),
                           'description':str(feature_module.description),
                           'feature_length':str(feature_module.length),
-                          #'parameter_info':str(feature_module.parameter_info),
-                          'table_length':str(len(Table))} 
+                          'required_resources': ','.join(feature_module.resource),
+                          'cache': feature_module.cache,
+                          'parameters': ','.join(feature_module.resource),
+                          'table_length':str(len(Table))
+                         } 
+        
+        if feature_module.parameter:
+            xml_attributes['parameters'] = ','.join(feature_module.parameter)
          
         resource = etree.Element('resource', uri = 'uri')#self.baseurl+'/docs'+'/'+str(feature_name))
         feature=etree.SubElement( resource, 'feature', name = str(feature_module.name))
