@@ -1,9 +1,6 @@
 function NuclearDetector3D(mex_url, access_token, image_url, varargin)
-    %try matlabpool; catch, end; % requires more RAM
     session = bq.Session(mex_url, access_token);
     try
-        nuclear_channel  = str2num(session.mex.findValue('//tag[@name="inputs"]/tag[@name="nuclear_channel"]'));
-        membrane_channel = str2num(session.mex.findValue('//tag[@name="inputs"]/tag[@name="membrane_channel"]', '0'));
         nuclear_diameter = session.mex.findValue('//tag[@name="inputs"]/tag[@name="nuclear_size"]');     
        
         t = session.mex.findNode('//tag[@name="inputs"]/tag[@name="pixel_resolution"]');
@@ -26,76 +23,90 @@ function NuclearDetector3D(mex_url, access_token, image_url, varargin)
         
         ns =  (nuclear_diameter/2.0) ./ res; 
         
-        %% imdilate gets impossibly slow for large structuring elements
+        % tiled processing is used for large images
+        maxsz = [1200, 1200, 256];
+
         % we'll aproximate large kernels by using smaller interpolated data
-        maxsz = [1024, 1024, 256];
-        imgsz = [image.info.image_num_x, image.info.image_num_y, image.info.image_num_z];
-        max_ns = [21, 21, 15]; % [25, 25, 25]; % reduce image size 
+        % considering most imaging modailities are anisotropic and
+        % usually lacking in Z resolution, thus the smaller size of max Z filter
+        max_ns = [21, 21, 15];
+        
+        imgsz = [image.info.image_num_x, image.info.image_num_y, image.info.image_num_z];        
+        newsz = imgsz;        
         scale = ns(1:3) ./ max_ns;
         scale(scale<1) = 1;
-        if max(scale)>1 || max(imgsz > maxsz)>0,
+        if max(scale)>1, % || max(imgsz > maxsz)>0,
             newsz = round(imgsz ./ scale);
-            newsz = min(maxsz, newsz);
-            scale = imgsz ./ newsz;
+            %newsz = min(maxsz, newsz);
             szcmd = sprintf('%d,%d,%d,TC', newsz(1), newsz(2), newsz(3));
         else
-            scale = [1,1,1];
             szcmd = [];
         end 
+        step = maxsz - round(ns(1:3));        
         
         %% run detection per time point
         number_t = max(1, image.info.image_num_t);
         np = cell(number_t, 1);
         count = 0;
         for current_t=1:number_t,
-            fprintf('Time %d/%d\n', current_t, number_t);
+            fprintf('\n\nTime %d/%d\n', current_t, number_t);
             timetext = sprintf('Time %d/%d: ', current_t, number_t);
-            session.update(sprintf('%s0%% - fetching image', timetext));
-            fprintf('Fetching image\n');
-            tic;
-            if ~isempty(szcmd),
-                imn = image.slice([],current_t).remap(nuclear_channel).command('resize3d', szcmd).fetch();
-            else
-                imn = image.slice([],current_t).remap(nuclear_channel).fetch();                
-            end
-
-            % filter using membraine channel
-            if membrane_channel>0,
-                if ~isempty(szcmd),                
-                    imm = image.slice([],current_t).remap(membrane_channel).command('resize3d', szcmd).fetch();
-                else
-                    imm = image.slice([],current_t).remap(membrane_channel).fetch();                    
-                end
-                imn = imdiff(imn, imm);
-                clearvars imm;
-            end
-            toc
-            %imn = imresize3d(imn, newsz, 'cubic');            
-            
-            %% Run
-            %t = 0.025:0.025:0.5;
-            t = 0.025:0.05:0.5;
-            if isinteger(imn),
-               t = t * double(intmax(class(imn)));
-            end
-            
-            fprintf('Detecting nuclei\n');
             totalStart = tic;
-            sns = ns(1:3) ./ [scale(2) scale(1) scale(3)];
-            ps = BONuclearDetector3D(imn, sns, t, session, timetext);
-            clearvars imn;            
-            ps(:,1) = ps(:,1) .* scale(2);
-            ps(:,2) = ps(:,2) .* scale(1);
-            ps(:,3) = ps(:,3) .* scale(3);
-            np{current_t} = ps;
+            if max(newsz > maxsz)<=0,
+                slicecmd = sprintf(',,,%d', current_t);              
+                ps = detect(image, slicecmd, szcmd, scale, ns, session, timetext);
+            else
+                % tiled processing
+                ps = [];
+                for x=1:step(1):imgsz(1),
+                for y=1:step(2):imgsz(2),
+                for z=1:step(3):imgsz(3),                
+                    offset = [x, y, z];
+                    to = min([x, y, z] + maxsz-1, imgsz); 
+                    fprintf('\nTile [%d,%d,%d] - [%d,%d,%d]\n', ...
+                        offset(1), offset(2), offset(3), to(1), to(2), to(3));
+                    
+                    xcmd = sprintf('%d-%d', offset(1), to(1));
+                    ycmd = sprintf('%d-%d', offset(2), to(2));
+                    zcmd = sprintf('%d-%d', offset(3), to(3));
+                    tcmd = sprintf('%d', current_t);
+                    slicecmd = sprintf('%s,%s,%s,%s', xcmd, ycmd, zcmd, tcmd);
+
+                    if max(scale)>1,
+                        newsz = round(to-offset+1 ./ scale);                     
+                        szcmd = sprintf('%d,%d,%d,TC', newsz(1), newsz(2), newsz(3));
+                    else
+                        szcmd = [];
+                    end                 
+
+                    pss = detect(image, slicecmd, szcmd, scale, ns, session, timetext);
+
+                    pss(:,1) = pss(:,1) + offset(2)-1;
+                    pss(:,2) = pss(:,2) + offset(1)-1;
+                    pss(:,3) = pss(:,3) + offset(3)-1;
+
+                    ps = [ps; pss];
+                end; % z
+                end; % y
+                end; % x
+
+                ps = Filter3DPointsByDescriptor(ps, ns(1:3)*1.2);
+            end
             
-            fprintf('Total processing time: %4.4d seconds\n', toc(totalStart));
-            count = count + length(np{current_t});
+            img_cnts = scalev(ps(:,4));
+            img_mean = scalev(ps(:,5));
+            feature = (5*img_cnts + 5*img_mean)/ 10; % equally weighted
+            feature = scalev(feature);
+            ps(:,5) = feature;
+            ps = sortrows(ps, 5);            
+            np{current_t} = ps;
+
+            count = count + length(np{current_t});            
+            
+            fprintf('Total processing time: %.4f seconds\n', toc(totalStart));
             
             %fprintf('Removing temp files\n');
-            %tmpnames = sprintf('8nyJ2VWWdfjf3RrkYZDiVb-bill_smith.ome.tif.0-0,0-0,0-0,%d-%d', current_t, current_t);
-            %delete(tmpnames);
-            %tmpnames = [tmpnames '*.*'];
+            %tmpnames = sprintf('8nyJ2VWWdfjf3RrkYZDiVb-bill_smith.ome.tif.0-0,0-0,*-*,%d-%d*', current_t, current_t);
             %delete(tmpnames);
         end
         
@@ -118,7 +129,7 @@ function NuclearDetector3D(mex_url, access_token, image_url, varargin)
             end
         end
         
-        %g.save('bill_smith.ome.tif.12um.t1.xml');             
+        %g.save('output.xml');             
         session.finish();
     catch err
         ErrorMsg = [err.message, 10, 'Stack:', 10];
@@ -127,4 +138,51 @@ function NuclearDetector3D(mex_url, access_token, image_url, varargin)
         end
         session.fail(ErrorMsg);
     end
+end
+
+function np = detect(image, slicecmd, szcmd, scale, ns, session, timetext)
+    nuclear_channel  = str2num(session.mex.findValue('//tag[@name="inputs"]/tag[@name="nuclear_channel"]'));
+    membrane_channel = str2num(session.mex.findValue('//tag[@name="inputs"]/tag[@name="membrane_channel"]', '0'));
+
+    session.update(sprintf('%s0%% - fetching image', timetext));
+    fprintf('Fetching image\n');
+    tic;
+    if ~isempty(szcmd),
+        %imn = image.slice([],current_t).remap(nuclear_channel).command('resize3d', szcmd).fetch();
+        imn = image.command('slice', slicecmd).remap(nuclear_channel).command('resize3d', szcmd).fetch();
+    else
+        %imn = image.slice([],current_t).remap(nuclear_channel).fetch();                
+        imn = image.command('slice', slicecmd).remap(nuclear_channel).fetch();  
+    end
+
+    % filter using membraine channel
+    if membrane_channel>0,
+        if ~isempty(szcmd),                
+            %imm = image.slice([],current_t).remap(membrane_channel).command('resize3d', szcmd).fetch();
+            imm = image.command('slice', slicecmd).remap(membrane_channel).command('resize3d', szcmd).fetch();
+        else
+            %imm = image.slice([],current_t).remap(membrane_channel).fetch();
+            imm = image.command('slice', slicecmd).remap(membrane_channel).fetch();  
+        end
+        imn = imdiff(imn, imm);
+        clearvars imm;
+    end
+    toc
+    %imn = imresize3d(imn, newsz, 'cubic');            
+
+    %% Run
+    %t = 0.025:0.025:0.5;
+    t = 0.025:0.05:0.5;
+    if isinteger(imn),
+       t = t * double(intmax(class(imn)));
+    end
+
+    fprintf('Detecting nuclei\n');
+    sns = ns(1:3) ./ [scale(2) scale(1) scale(3)];
+    pss = BONuclearDetector3D(imn, sns, t, session, timetext);
+    clearvars imn;            
+    pss(:,1) = pss(:,1) .* scale(2);
+    pss(:,2) = pss(:,2) .* scale(1);
+    pss(:,3) = pss(:,3) .* scale(3);
+    np = pss;
 end
