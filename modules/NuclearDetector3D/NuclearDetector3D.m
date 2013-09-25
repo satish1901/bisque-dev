@@ -1,6 +1,8 @@
 function NuclearDetector3D(mex_url, access_token, image_url, varargin)
     session = bq.Session(mex_url, access_token);
     try
+        nuclear_channel  = str2num(session.mex.findValue('//tag[@name="inputs"]/tag[@name="nuclear_channel"]'));
+        membrane_channel = str2num(session.mex.findValue('//tag[@name="inputs"]/tag[@name="membrane_channel"]', '0'));        
         nuclear_diameter = session.mex.findValue('//tag[@name="inputs"]/tag[@name="nuclear_size"]');     
        
         t = session.mex.findNode('//tag[@name="inputs"]/tag[@name="pixel_resolution"]');
@@ -23,21 +25,28 @@ function NuclearDetector3D(mex_url, access_token, image_url, varargin)
         
         ns =  (nuclear_diameter/2.0) ./ res; 
         
-        % tiled processing is used for large images
-        maxsz = [1200, 1200, 256];
+        % tile size used for processing large images
+        maxsz = [1024, 1024, 256];
+        
+        % max image buffer of 512MB, double without membrane
+        maxbytes = 512 * 1024 * 1024; 
+        if membrane_channel<=0, 
+            maxbytes = maxbytes * 2; 
+        end
 
         % we'll aproximate large kernels by using smaller interpolated data
         % considering most imaging modailities are anisotropic and
         % usually lacking in Z resolution, thus the smaller size of max Z filter
         max_ns = [21, 21, 15];
         
-        imgsz = [image.info.image_num_x, image.info.image_num_y, image.info.image_num_z];        
-        newsz = imgsz;        
+        imgsz = [image.info.image_num_x, image.info.image_num_y, image.info.image_num_z]; 
+        imgbytes = (image.info.image_pixel_depth / 8) * imgsz(1) * imgsz(2) * imgsz(3);
         scale = ns(1:3) ./ max_ns;
         scale(scale<1) = 1;
         if max(scale)>1, % || max(imgsz > maxsz)>0,
             newsz = round(imgsz ./ scale);
             %newsz = min(maxsz, newsz);
+            imgbytes = (image.info.image_pixel_depth / 8) * newsz(1) * newsz(2) * newsz(3);
             szcmd = sprintf('%d,%d,%d,TC', newsz(1), newsz(2), newsz(3));
         else
             szcmd = [];
@@ -52,9 +61,9 @@ function NuclearDetector3D(mex_url, access_token, image_url, varargin)
             fprintf('\n\nTime %d/%d\n', current_t, number_t);
             timetext = sprintf('Time %d/%d: ', current_t, number_t);
             totalStart = tic;
-            if max(newsz > maxsz)<=0,
+            if imgbytes<=maxbytes,
                 slicecmd = sprintf(',,,%d', current_t);              
-                ps = detect(image, slicecmd, szcmd, scale, ns, session, timetext);
+                ps = detect(image, nuclear_channel, membrane_channel, slicecmd, szcmd, ns, scale, session, timetext);
             else
                 % tiled processing
                 ps = [];
@@ -79,7 +88,7 @@ function NuclearDetector3D(mex_url, access_token, image_url, varargin)
                         szcmd = [];
                     end                 
 
-                    pss = detect(image, slicecmd, szcmd, scale, ns, session, timetext);
+                    pss = detect(image, nuclear_channel, membrane_channel, slicecmd, szcmd, ns, scale, session, timetext);
 
                     pss(:,1) = pss(:,1) + offset(2)-1;
                     pss(:,2) = pss(:,2) + offset(1)-1;
@@ -90,7 +99,7 @@ function NuclearDetector3D(mex_url, access_token, image_url, varargin)
                 end; % y
                 end; % x
 
-                ps = Filter3DPointsByDescriptor(ps, ns(1:3)*1.2);
+                ps = Filter3DPointsByDescriptor(ps, ns(1:3)*1.15);
             end
             
             img_cnts = scalev(ps(:,4));
@@ -140,10 +149,7 @@ function NuclearDetector3D(mex_url, access_token, image_url, varargin)
     end
 end
 
-function np = detect(image, slicecmd, szcmd, scale, ns, session, timetext)
-    nuclear_channel  = str2num(session.mex.findValue('//tag[@name="inputs"]/tag[@name="nuclear_channel"]'));
-    membrane_channel = str2num(session.mex.findValue('//tag[@name="inputs"]/tag[@name="membrane_channel"]', '0'));
-
+function np = detect(image, nuclear_channel, membrane_channel, slicecmd, szcmd, ns, scale, session, timetext)
     session.update(sprintf('%s0%% - fetching image', timetext));
     fprintf('Fetching image\n');
     tic;
