@@ -51,14 +51,15 @@ class ID():
         """ 
         
         #creating table
-        with Locks(None, filename), tables.openFile(filename,'a', title=self.name)  as h5file: 
-            table = h5file.createTable('/', 'values', self.Columns, expectedrows=1000000000)
-            
-            if self.index: #turns on the index
-                table.cols.idnumber.removeIndex()
-                table.cols.idnumber.createIndex()                    
-            
-            table.flush()
+        with Locks(None, filename):
+            with tables.openFile(filename,'a', title=self.name)  as h5file: 
+                table = h5file.createTable('/', 'values', self.Columns, expectedrows=1000000000)
+
+                if self.index: #turns on the index
+                    table.cols.idnumber.removeIndex()
+                    table.cols.idnumber.createIndex()                    
+
+                table.flush()
             
             vlarray = h5file.create_vlarray(h5file.root, 'URI',
                                             tables.StringAtom(itemsize=2000),

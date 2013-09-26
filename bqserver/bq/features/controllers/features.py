@@ -234,9 +234,10 @@ class Tables(object):
         if not os.path.exists(filename):
             self.feature.createtable(filename) #creates the table
             
-        with Locks(self.feature.path), tables.openFile(filename,'r', title=self.feature.name) as h5file:
-            table = h5file.root.values
-            index = table.getWhereList(query)
+        with Locks(self.feature.path):
+            with tables.openFile(filename,'r', title=self.feature.name) as h5file:
+                table = h5file.root.values
+                index = table.getWhereList(query)
         return len(index)>0
     
     def store(self, rowgenorator):
@@ -249,11 +250,12 @@ class Tables(object):
             if not os.path.exists(filename):
                 self.feature.createtable(filename) #creates the table
                 
-            with Locks(None, filename), tables.openFile(filename,'a', title=self.feature.name) as h5file:
-                table = h5file.root.values
-                while not queue.empty():
-                    table.append(queue.get())
-                table.flush()
+            with Locks(None, filename):
+                with tables.openFile(filename,'a', title=self.feature.name) as h5file:
+                    table = h5file.root.values
+                    while not queue.empty():
+                        table.append(queue.get())
+                    table.flush()
         return
     
     def get(self, hash):
@@ -266,14 +268,15 @@ class Tables(object):
         if not os.path.exists(filename):
             self.feature.createtable(filename) #creates the table
         
-        with Locks(filename), tables.openFile(filename,'r', title=self.feature.name) as h5file:
-            table=h5file.root.values
-            index = table.getWhereList(query)
-            log.debug('index: %s'%str(index))
-            if index.size==0:
-                i = None
-            else:
-                i=table[index]
+        with Locks(filename):
+            with tables.openFile(filename,'r', title=self.feature.name) as h5file:
+                table=h5file.root.values
+                index = table.getWhereList(query)
+                log.debug('index: %s'%str(index))
+                if index.size==0:
+                    i = None
+                else:
+                    i=table[index]
         return i
     
     def copy(self):
@@ -290,8 +293,9 @@ class Tables(object):
         feature_tables=glob.glob(self.feature.path+'*.h5')
         l=0
         for filename in feature_tables:
-            with Locks(filename), tables.openFile(filename,'r', title=self.feature.name) as h5file:
-                l+=len(h5file.root.values)
+            with Locks(filename):
+                with tables.openFile(filename,'r', title=self.feature.name) as h5file:
+                    l+=len(h5file.root.values)
         return l
 
 
@@ -323,9 +327,10 @@ class IDTables(Tables):
         if not os.path.exists(filename):
             self.ID.createtable(filename) #creates the table
             
-        with Locks(self.ID.path), tables.openFile(filename,'r', title=self.ID.name) as h5file:
-            table = h5file.root.values
-            index = table.getWhereList(query)
+        with Locks(self.ID.path):
+            with tables.openFile(filename,'r', title=self.ID.name) as h5file:
+                table = h5file.root.values
+                index = table.getWhereList(query)
         return len(index)>0
 
     def store(self, rowgenorator):
@@ -338,15 +343,16 @@ class IDTables(Tables):
             if not os.path.exists(filename):
                 self.ID.createtable(filename) #creates the table
                 
-            with Locks(None, filename), tables.openFile(filename,'a', title=self.ID.name) as h5file:
-                table = h5file.root.values
-                url_vlarray = h5file.root.URI
-                while not queue.empty():
-                    row=queue.get()
-                    table.append((row[0]))
-                    url_vlarray.append(row[1:])
-                    
-                table.flush()
+            with Locks(None, filename):
+                with tables.openFile(filename,'a', title=self.ID.name) as h5file:
+                    table = h5file.root.values
+                    url_vlarray = h5file.root.URI
+                    while not queue.empty():
+                        row=queue.get()
+                        table.append((row[0]))
+                        url_vlarray.append(row[1:])
+
+                    table.flush()
         return
 
 class UncachedTable(Tables):
@@ -377,11 +383,12 @@ class UncachedTable(Tables):
                 self.feature.outputTable(filename) #creates the table
             
             #appends elements to the table
-            with Locks(None, filename), tables.openFile(filename,'a', title=self.feature.name) as h5file:
-                table = h5file.root.values
-                while not queue.empty():
-                    table.append(queue.get())
-                table.flush()
+            with Locks(None, filename):
+                with tables.openFile(filename,'a', title=self.feature.name) as h5file:
+                    table = h5file.root.values
+                    while not queue.empty():
+                        table.append(queue.get())
+                    table.flush()
         return
 
     def isin(self, hash):
@@ -607,16 +614,17 @@ class Xml(Format):
         nodes = 0
                 
         filename = os.path.join(FEATURES_TABLES_WORK_DIR,filename)
-        with Locks(filename), tables.openFile(filename,'r', title=self.feature.name) as h5file:
-            Table = h5file.root.values  
-            for i, r in enumerate(Table):
-                subelement = etree.SubElement( element, 'feature' , type = str(self.feature.name), name = r['uri'])
-                value = etree.SubElement(subelement, 'value')
-                value.text = " ".join('%g'%item for item in r['feature'])
-                nodes+=1
-                #break out when there are too many nodes
-                if nodes>self.limit:
-                    break               
+        with Locks(filename):
+            with tables.openFile(filename,'r', title=self.feature.name) as h5file:
+                Table = h5file.root.values  
+                for i, r in enumerate(Table):
+                    subelement = etree.SubElement( element, 'feature' , type = str(self.feature.name), name = r['uri'])
+                    value = etree.SubElement(subelement, 'value')
+                    value.text = " ".join('%g'%item for item in r['feature'])
+                    nodes+=1
+                    #break out when there are too many nodes
+                    if nodes>self.limit:
+                        break               
             
         return etree.tostring(element)
 
@@ -709,22 +717,23 @@ class Hdf(Format):
         self.feature.outputTable(filename)
         
 
-        with Locks(None, filename), tables.openFile(filename,'a', title=self.name) as h5file:
-            #writing to table      
-            outtable=h5file.root.values
-            for i,element in enumerate(element_list):
-                uri_hash = self.feature.returnhash(**element)
-                rows = table.get(uri_hash)
-                for r in rows:
-                    row=()
-                    for e in self.feature.resource:
-                        row+=tuple([element[e]])
-                    row += tuple([r['feature']])
-                    for p in self.feature.parameter:
-                        row += tuple([r[p]])
-                        log.debug('row: %s' % str(row))
-                    outtable.append([row]) 
-            outtable.flush()
+        with Locks(None, filename):
+            with tables.openFile(filename,'a', title=self.name) as h5file:
+                #writing to table      
+                outtable=h5file.root.values
+                for i,element in enumerate(element_list):
+                    uri_hash = self.feature.returnhash(**element)
+                    rows = table.get(uri_hash)
+                    for r in rows:
+                        row=()
+                        for e in self.feature.resource:
+                            row+=tuple([element[e]])
+                        row += tuple([r['feature']])
+                        for p in self.feature.parameter:
+                            row += tuple([r[p]])
+                            log.debug('row: %s' % str(row))
+                        outtable.append([row]) 
+                outtable.flush()
         
         f = io.FileIO(filename)
         try:
