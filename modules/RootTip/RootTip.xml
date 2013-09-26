@@ -6,7 +6,7 @@
             <template>
                 <tag name="accepted_type" value="image" />
                 <tag name="accepted_type" value="dataset" />            
-                <tag name="require_gemetry" >
+                <tag name="require_geometry" >
                     <tag name="t" value="stack" />
                     <tag name="fail_message" value="we need time a series image" />
                 </tag>

@@ -58,15 +58,11 @@ def run_migrations_online():
                 prefix='sqlalchemy.', 
                 poolclass=pool.NullPool)
     connection = engine.connect()
-    #DBSession.configure(bind=engine)
-    #connection = DBSession.connection()
-
     context.configure(
                 connection=connection, 
                 target_metadata=target_metadata
                 )
 
-    import transaction
     try:
        with context.begin_transaction():
             context.run_migrations()
