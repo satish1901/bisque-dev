@@ -54,6 +54,7 @@ DESCRIPTION
 import logging
 #import cherrypy
 import base64
+import transaction
 
 from datetime import datetime, timedelta
 from lxml import etree
@@ -168,6 +169,7 @@ class AuthenticationServer(ServiceController):
 
         session.save()
         log.debug ("Current session %s" % session)
+        transaction.commit()
         redirect(came_from)
 
 
@@ -203,10 +205,12 @@ class AuthenticationServer(ServiceController):
         try:
             self._end_mex_session()
             session.delete()
+            transaction.commit()
         except:
             log.exception("post_logout")
         #redirect(came_from)
         log.debug ("POST_LOGOUT")
+        
         redirect(tg.url ('/'))
     
     @expose(content_type="text/xml")
@@ -259,9 +263,11 @@ class AuthenticationServer(ServiceController):
         #log.debug('begin_session '+ str(tgidentity.current.visit_link ))
         #log.debug ( str(tgidentity.current.visit_link.users))
         mex = module_service.begin_internal_mex()
-        mexid  = mex.get('uri').rsplit('/',1)[1]
-        session['mex_id']  = mexid
-        session['mex_uri'] = mex.get('uri')
+        mex_uri = mex.get('uri')
+        mex_uniq  = mex.get('resource_uniq')
+        session['mex_uniq']  = mex_uniq
+        session['mex_uri'] =  mex_uri
+        log.info ("MEX Session %s ( %s ) " % (mex_uri, mex_uniq))
         #v = Visit.lookup_visit (tgidentity.current.visit_link.visit_key)
         #v.mexid = mexid
         #session.flush()
@@ -277,40 +283,6 @@ class AuthenticationServer(ServiceController):
             pass
         return ""
     
-
-
-    def _begin_mex_session_old(self):
-        """Begin a mex associated with the visit to record changes"""
-
-        #
-        #log.debug('begin_session '+ str(identity.current.visit_link ))
-        #log.debug ( str(tgidentity.current.visit_link.users))
-        #log.debug ( str(tgidentity.current.visit_link.visit))
-
-
-        mexurl = session.get('mex.url', None)
-        if mexurl is None:
-            mex = None# module_service.begin_internal_mex(module='session')
-            if mex is not None:
-                mexurl = mex.get('uri')
-                session['mex.url'] = mexurl
-                session['mex.id']  = mexurl.split ('/')[-1]
-                session.save()
-                log.debug ("BEGIN MEX Session %s" % mexurl)
-        else:
-            log.warn ("ALREADY HAVE mex")
-
-    def _end_mex_session_old(self):
-        """Close a mex associated with the visit to record changes"""
-        if session.has_key('mex.url'):
-            mexurl =  session['mex.url']
-            #module_service.end_internal_mex (mexurl)
-            log.debug ("ENDED MEX Session %s" % mexurl)
-            del session['mex.url'];
-            del session['mex.id'];
-            session.save();
-    
-
 
 def initialize(url):
     service =  AuthenticationServer(url)

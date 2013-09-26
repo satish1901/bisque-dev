@@ -161,7 +161,7 @@
   </div> 
 
 
- <xi:include href="tracking.html" py:if="asbool(tg.config.get('bisque.tracking'))" />
+ <xi:include href="${tg.config.get('bisque.tracking')}" py:if="tg.config.get('bisque.tracking')" />
 </body>
 </py:match>
 
