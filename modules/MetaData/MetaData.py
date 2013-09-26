@@ -1,7 +1,11 @@
 import sys
 from lxml import etree as ET
 from bq.api import BQSession, BQTag
+import logging
 
+
+
+logging.basicConfig(filename='MetaData.log',level=logging.DEBUG)
 
 wanted_tags = [
     'data_time',

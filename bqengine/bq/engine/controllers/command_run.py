@@ -147,9 +147,9 @@ class BaseRunner(object):
                                default=False)
         self.session = None
 
-    def log (self, msg):
+    def log (self, msg, level = logging.INFO):
         #if self.options.verbose:
-        log.info( msg )
+        log.log( level, msg )
 
     ###########################################
     # Config 

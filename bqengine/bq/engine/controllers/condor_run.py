@@ -111,14 +111,15 @@ class CondorRunner (CommandRunner):
 
     def command_execute(self, **kw):
         cmd = ['condor_submit_dag', self.helper.dag_path]
+        process = dict(command_line = cmd, mex = self.mexes[0])
         self.log( "SUBMIT %s in %s " % (cmd, self.mexes[0].get('staging_path')))
         if not self.options.dryrun:
             submit =  subprocess.Popen (cmd, cwd=self.mexes[0].get('staging_path'),
                                          stdout = subprocess.PIPE)
             out, err = submit.communicate()
 
-            # Scan the message for the proper cluster number
-            #return message
+            if submit.returncode != 0:
+                self.command_failed(process, submit.returncode)
 
         # Don't do anything after execute
         return None
@@ -141,6 +142,19 @@ class CondorRunner (CommandRunner):
             return None
 
         return super(CondorRunner, self).command_finish(**kw)
+
+    def command_failed(self, process, retcode):
+        """Update the bisque server  with a failed command for a mex"""
+        mex = process['mex']
+        command = " ".join(process['command_line'])
+        msg = "%s: returned (non-zero) %s" % (command, retcode)
+        self.log(msg, logging.ERROR)
+        # update process mex
+        if self.session is None:
+            self.session = BQSession().init_mex(self.mexes[0].mex_url, self.mexes[0].bisque_token)
+        if self.session.mex.value not in ('FAILED', 'FINISHED'):
+            self.session.fail_mex (msg)
+
 
     def command_kill(self, **kw):
         """Kill the running module if possible
