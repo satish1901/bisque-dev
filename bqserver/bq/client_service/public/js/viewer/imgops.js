@@ -15,19 +15,19 @@ ImgOperations.prototype = new ViewerPlugin();
 ImgOperations.prototype.create = function (parent) {
     this.parent = parent;
     return parent;
-}
+};
 
 ImgOperations.prototype.newImage = function () {
     this.phys_inited = false;
-}
+};
 
 ImgOperations.prototype.updateImage = function () {
 
-}
+};
 
 ImgOperations.prototype.getParams = function () {
     return this.params || {};
-},
+};
 
 ImgOperations.prototype.updateView = function (view) {
     if (!this.menu) this.createMenu(); 
@@ -65,16 +65,16 @@ ImgOperations.prototype.updateView = function (view) {
             view.addParams(this.combo_negative.getValue());    
         }
     }       
-}
+};
 
 ImgOperations.prototype.doUpdate = function () {
     this.viewer.need_update();
-}
+};
 
 ImgOperations.prototype.changed = function () {
   if (!this.update_check || (this.update_check && this.update_check.checked) ) 
     this.viewer.need_update();
-}
+};
 
 /*
 ImgOperations.prototype.createButton = function (parentdiv, name, id, clbk) {
@@ -119,7 +119,7 @@ ImgOperations.prototype.createUpdateButton = function (parentdiv) {
     parentdiv.appendChild (group);
     return group;
     */
-}
+};
 
 ImgOperations.prototype.createMenu = function () {
     if (this.menu) return;    
@@ -183,7 +183,7 @@ ImgOperations.prototype.createMenu = function () {
     //create update button and checkbox
     //this.createUpdateButton (this.menu);                  
                         
-}
+};
 
 ImgOperations.prototype.createChannelMap = function ( ) {
     var channel_count = parseInt(this.viewer.current_view.imagedim.ch);
@@ -213,7 +213,7 @@ ImgOperations.prototype.createChannelMap = function ( ) {
         };
         this.menu.add(cc);
     }    
-}
+};
 
 ImgOperations.prototype.loadPreferences = function (p) {
     this.default_autoupdate  = 'autoUpdate'  in p ? p.autoUpdate  : this.default_autoupdate;
@@ -222,5 +222,5 @@ ImgOperations.prototype.loadPreferences = function (p) {
     this.default_rotate      = 'rotate'      in p ? p.rotate      : this.default_rotate;    
     this.default_fusion      = 'fusion'      in p ? p.fusion      : this.default_fusion;        
     this.default_enhancement_8bit = 'enhancement-8bit' in p ? p['enhancement-8bit'] : this.default_enhancement_8bit;    
-}
+};
 

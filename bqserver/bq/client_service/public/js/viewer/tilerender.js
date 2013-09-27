@@ -13,7 +13,7 @@ function TilesRenderer (viewer,name){
     this.tile_size = 256;
     this.template  = 'tile=0,0,0,'+this.tile_size;
     this.myTileProvider = new PanoJS.TileUrlProvider('','','');    
-}
+};
 TilesRenderer.prototype = new ViewerPlugin();
 
 TilesRenderer.prototype.create = function (parent) {
@@ -25,15 +25,15 @@ TilesRenderer.prototype.create = function (parent) {
     this.div.style.height = '100%';    
     this.parent.appendChild(this.div);
     return this.div;       
-}
+};
 
 TilesRenderer.prototype.newImage = function () {
   
-}
+};
 
 TilesRenderer.prototype.updateView = function (view) {
     view.addParams ( this.template ); // add a placeholder for tile request, replaced later by the actual tile request
-}
+};
 
 TilesRenderer.prototype.updateImage = function (){
     var viewstate = this.viewer.current_view;
@@ -49,7 +49,7 @@ TilesRenderer.prototype.updateImage = function (){
 
     this.myTileProvider.assembleUrl = function(xIndex, yIndex, zoom) {
         return myURL.replace(myTemplate, myPyramid.tile_filename( zoom, xIndex, yIndex ));
-    }
+    };
 
     // create tiled viewer
     if (!this.tiled_viewer) {
@@ -64,7 +64,9 @@ TilesRenderer.prototype.updateImage = function (){
       });
   
       // this listner will correctly resize and move SVG element
-      this.mySvgListener = new SvgControl( this.tiled_viewer, this.viewer.renderer.svgdoc );  
+      this.mySvgListener = new SvgControl( this.tiled_viewer, this.viewer.renderer.svgdoc );
+      this.myOverListener = new SvgControl( this.tiled_viewer, this.viewer.renderer.overlay );
+        
       // this listner will update viewer if scale has changed in the tiled viewer
       this.myZoomListener = new ZoomListner(this.tiled_viewer, this.viewer);        
            
@@ -76,9 +78,9 @@ TilesRenderer.prototype.updateImage = function (){
       this.tiled_viewer.tileUrlProvider = this.myTileProvider;
       this.tiled_viewer.update();
     }
-}
+};
 
 TilesRenderer.prototype.resize = function () {
     if (this.tiled_viewer)
         this.tiled_viewer.resize();
-}
+};

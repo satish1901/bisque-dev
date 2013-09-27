@@ -102,3 +102,7 @@
 .x-grid-row-editor-errors {
     display: none;  
 }
+
+.bq-row-gob-custom {
+    color: #00AA00;
+}

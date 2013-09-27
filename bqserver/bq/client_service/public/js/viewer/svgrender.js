@@ -1,6 +1,10 @@
 var mouser=null;
 
-function SVGRenderer (viewer,name){
+function SVGRenderer (viewer,name) {
+    var p = viewer.parameters || {};
+    //this.default_showOverlay           = p.rotate          || 0;   // values: 0, 270, 90, 180
+    this.default_showOverlay   = true;    
+    
     this.base = ViewerPlugin;
     this.base (viewer, name);
     this.events  = {};
@@ -11,17 +15,25 @@ SVGRenderer.prototype.create = function (parent) {
     this.svgdoc = document.createElementNS(svgns, "svg");
     this.svgdoc.setAttributeNS(null, 'class', 'gobjects_surface');
     this.svgdoc.setAttributeNS(null, 'id', 'gobjects_surface');
-    
     parent.appendChild(this.svgdoc);
     this.svgdoc.style.position = "absolute";    
     this.svgdoc.style.top = "0px";        
     this.svgdoc.style.left = "0px";       
 
+    this.overlay = document.createElementNS(svgns, "svg");
+    this.overlay.setAttributeNS(null, 'class', 'gobjects_overlay');
+    this.overlay.setAttributeNS(null, 'id', 'gobjects_overlay');
+    parent.appendChild(this.overlay);
+    this.overlay.style.position = "absolute";    
+    this.overlay.style.top = "0px";        
+    this.overlay.style.left = "0px";       
+
+
     // KGK
     // KGK THESE ARE GLOBAL Variables REQUIRED CURRENTLY BY 2D.js
     // KGK Please REVIEW and REMOVE if possible.
     _svgElement = this.svgdoc;
-}
+};
 
 SVGRenderer.prototype.enable_edit = function (enabled) {
     if (enabled && mouser == null) {
@@ -37,13 +49,12 @@ SVGRenderer.prototype.enable_edit = function (enabled) {
     var gobs =  this.viewer.gobjects();
     this.visit_render.visit_array(gobs, [this.viewer.current_view]);
     this.rendered_gobjects = gobs;
-}
+};
 
 
 SVGRenderer.prototype.getUserCoord = function (e ){
 	return mouser.getUserCoordinate(this.svgimg, e);
-}
-
+};
 
 SVGRenderer.prototype.addHandler = function (ty, cb){
     console.log ("addHandler " + ty + " func " + cb);
@@ -53,19 +64,24 @@ SVGRenderer.prototype.addHandler = function (ty, cb){
     }else{
         this.svgimg.removeEventListener (ty, this.events[ty], false);
     }
-}
+};
+
 SVGRenderer.prototype.setmousedown = function (cb ){
     this.addHandler ("mousedown", cb );
-}
+};
+
 SVGRenderer.prototype.setmouseup = function (cb, doadd ){
     this.addHandler ("mouseup", cb);
-}
+};
+
 SVGRenderer.prototype.setmousemove = function (cb, doadd ){
     this.addHandler ("mousemovice",cb );
-}
+};
+
 SVGRenderer.prototype.setclick = function (cb, doadd ){
     this.addHandler ("click", cb);
-}
+};
+
 SVGRenderer.prototype.setkeyhandler = function (cb, doadd ){
    var ty = 'keydown';
    if (cb) {
@@ -74,7 +90,7 @@ SVGRenderer.prototype.setkeyhandler = function (cb, doadd ){
    } else {
        document.documentElement.removeEventListener(ty, this.events[ty],false);
    }
-}
+};
 
 SVGRenderer.prototype.newImage = function () {
     removeAllChildren (this.svgdoc);
@@ -87,21 +103,28 @@ SVGRenderer.prototype.newImage = function () {
     this.svgimg = this.svgdoc;
 
     this.visit_render = new BQProxyClassVisitor (this);
+};
 
-}
+SVGRenderer.prototype.updateView = function (view) {
+    if (this.initialized) return; 
+    this.initialized = true; 
+    this.loadPreferences(this.viewer.preferences);
+    if (this.showOverlay === true || this.showOverlay == 'true')
+        this.populate_overlay();      
+};
 
 SVGRenderer.prototype.removeSvg = function (gob){
     if (gob.shape != null) {
         this.svggobs.removeChild(gob.shape.svgNode);
         delete gob.shape;
     }
-}
+};
 
 SVGRenderer.prototype.appendSvg = function (gob){
     if (gob.shape != null) {
         this.svggobs.appendChild(gob.shape.svgNode);
     }
-}
+};
 
 
 SVGRenderer.prototype.updateImage = function (){
@@ -111,6 +134,9 @@ SVGRenderer.prototype.updateImage = function (){
 
     this.svgdoc.setAttributeNS( null, 'width', viewstate.width);  
     this.svgdoc.setAttributeNS( null, 'height', viewstate.height);  
+
+    this.overlay.setAttributeNS( null, 'width', viewstate.width);  
+    this.overlay.setAttributeNS( null, 'height', viewstate.height);  
 
     //Show a waitcursor on long image loads.
     //this.svgimg.onload = function (){document.body.style.cursor = 'default';};
@@ -133,21 +159,22 @@ SVGRenderer.prototype.updateImage = function (){
     this.rendered_gobjects = gobs;
     if (mouser) 
         mouser.selectShapes(selected);
-    
-}
+};
 
 SVGRenderer.prototype.is_selected = function (gob){
     if (gob.shape != null)
         return gob.shape.selected;
     return false;
-}
+};
+
 SVGRenderer.prototype.set_select_handler = function (callback){
     this.select_callback = callback;
-}
+};
+
 SVGRenderer.prototype.default_select = function (gob, view) {
     if (this.select_callback)
         this.select_callback(gob);
-}
+};
 
 
 SVGRenderer.prototype.viewShape = function (view, gob, move, select){
@@ -185,7 +212,7 @@ SVGRenderer.prototype.hideShape = function (view, gob){
 
 SVGRenderer.prototype.polygon = function (visitor, gob , viewstate, visibility) {
     this.polyline (visitor, gob, viewstate, visibility);
-}
+};
     
 SVGRenderer.prototype.polyline = function (visitor, gob,  viewstate, visibility) {
 
@@ -239,7 +266,7 @@ SVGRenderer.prototype.polyline = function (visitor, gob,  viewstate, visibility)
                         callback(this,'move_poly'), 
                         callback(this,'select_poly'));
     } else {
-        this.hideShape (viewstate, gob)
+        this.hideShape (viewstate, gob);
     }
 };
 
@@ -258,7 +285,7 @@ SVGRenderer.prototype.move_poly = function ( state ) {
         if (i % 2 == 0) {
             var np = view.inverseTransformPoint (x, y);
             if (i/2 >= gob.vertices.length) 
-                gob.vertices[i/2] = new BQVertex()
+                gob.vertices[i/2] = new BQVertex();
             gob.vertices[i/2].x = np.x;
             gob.vertices[i/2].y = np.y;
         }
@@ -407,9 +434,9 @@ SVGRenderer.prototype.point = function ( visitor, gob, viewstate, visibility) {
                         callback(this,"select_point"));
 
     } else {
-        this.hideShape (viewstate, gob)
+        this.hideShape (viewstate, gob);
     }
-}
+};
 
 SVGRenderer.prototype.move_point = function (state){
     var gob = state.gob;
@@ -422,12 +449,13 @@ SVGRenderer.prototype.move_point = function (state){
     var pnt = gob.vertices[0] ;
     pnt.x = newpnt.x;
     pnt.y = newpnt.y;
-}
+};
+
 SVGRenderer.prototype.select_point = function (state){
     var gob = state.gob;
     var v   = state.view;
     this.default_select(gob, v);
-}
+};
 
 ////////////////////////////////////////////////////////////
 SVGRenderer.prototype.rectangle = function ( visitor, gob,  viewstate, visibility) {
@@ -479,9 +507,9 @@ SVGRenderer.prototype.rectangle = function ( visitor, gob,  viewstate, visibilit
                         callback(this,'move_rectangle'), 
                         callback(this,'select_rectangle'));
     } else {
-        this.hideShape (viewstate, gob)
+        this.hideShape (viewstate, gob);
     }
-}
+};
 
 SVGRenderer.prototype.move_rectangle = function (state){
     var gob = state.gob;
@@ -501,13 +529,13 @@ SVGRenderer.prototype.move_rectangle = function (state){
     pnt = gob.vertices[1] ;
     pnt.x = newpnt.x;
     pnt.y = newpnt.y;
-}
+};
 
 SVGRenderer.prototype.select_rectangle = function (state){
     var gob = state.gob;
     var v   = state.view;
     this.default_select(gob, v);
-}
+};
 
 
 ////////////////////////////////////////////////////////////
@@ -550,9 +578,9 @@ SVGRenderer.prototype.circle = function ( visitor, gob,  viewstate, visibility) 
                         callback(this,"move_circle"), 
                         callback(this,"select_circle"));
     } else {
-        this.hideShape (viewstate, gob)
+        this.hideShape (viewstate, gob);
     }
-}
+};
 
 SVGRenderer.prototype.move_circle = function (state){
     var gob = state.gob;
@@ -571,12 +599,13 @@ SVGRenderer.prototype.move_circle = function (state){
     var p2 = gob.vertices[1] ;
     p2.x = rpnt.x;
     p2.y = rpnt.y;
-}
+};
+
 SVGRenderer.prototype.select_circle = function (state){
     var gob = state.gob;
     var v   = state.view;
     this.default_select(gob, v);
-}
+};
 
 
 ////////////////////////////////////////////////////////////
@@ -626,9 +655,9 @@ SVGRenderer.prototype.ellipse = function ( visitor, gob,  viewstate, visibility)
                         callback(this,"move_ellipse"), 
                         callback(this,"select_ellipse"));
     } else {
-        this.hideShape (viewstate, gob)
+        this.hideShape (viewstate, gob);
     }
-}
+};
 
 SVGRenderer.prototype.move_ellipse = function (state){
     var gob = state.gob;
@@ -653,12 +682,13 @@ SVGRenderer.prototype.move_ellipse = function (state){
     var p3 = gob.vertices[2] ;
     p3.x = rpnt.x;
     p3.y = rpnt.y;
-}
+};
+
 SVGRenderer.prototype.select_ellipse = function (state){
     var gob = state.gob;
     var v   = state.view;
     this.default_select(gob, v);
-}
+};
 
 ///////////////////////////////////////
 // LABEL is not really implemented .. need to extend 2D.js
@@ -720,9 +750,9 @@ SVGRenderer.prototype.label = function ( visitor, gob, viewstate, visibility) {
                         callback(this,"select_label"));
 
     } else {
-        this.hideShape (viewstate, gob)
+        this.hideShape (viewstate, gob);
     }
-}
+};
 
 SVGRenderer.prototype.move_label = function (state){
     var gob = state.gob;
@@ -735,10 +765,45 @@ SVGRenderer.prototype.move_label = function (state){
     var pnt = gob.vertices[0] ;
     pnt.x = newpnt.x;
     pnt.y = newpnt.y;
-}
+};
 
 SVGRenderer.prototype.select_label = function (state){
     var gob = state.gob;
     var v   = state.view;
     this.default_select(gob, v);
-}
+};
+
+SVGRenderer.prototype.loadPreferences = function (p) {
+    this.showOverlay  = 'showOverlay' in p ? p.showOverlay  : this.default_showOverlay;
+};
+
+SVGRenderer.prototype.populate_overlay = function () {
+    removeAllChildren (this.overlay);
+
+    var gobs = document.createElementNS(svgns, "g");
+    this.overlay.appendChild(gobs);
+    
+    for (var x=5; x<=95; x+=10)
+    for (var y=5; y<=95; y+=10) {    
+        var circ = document.createElementNS( svgns, 'circle');
+        circ.setAttributeNS(null, 'fill-opacity', 0.0);
+        circ.setAttributeNS(null, 'fill', 'black');
+        circ.setAttributeNS(null, 'stroke', 'black');
+        circ.setAttributeNS(null, 'stroke-width', 2);
+        circ.setAttributeNS(null, 'cx', ''+x+'%' );
+        circ.setAttributeNS(null, 'cy', ''+y+'%');
+        circ.setAttributeNS(null, 'r', '1%' );  
+        gobs.appendChild(circ);  
+        
+        var circ = document.createElementNS( svgns, 'circle');
+        circ.setAttributeNS(null, 'fill-opacity', 0.0);
+        circ.setAttributeNS(null, 'fill', 'black');
+        circ.setAttributeNS(null, 'stroke', 'white');
+        circ.setAttributeNS(null, 'stroke-width', 1);
+        circ.setAttributeNS(null, 'cx', ''+x+'%' );
+        circ.setAttributeNS(null, 'cy', ''+y+'%');
+        circ.setAttributeNS(null, 'r', '1%' );  
+        gobs.appendChild(circ);
+    }
+};
+
