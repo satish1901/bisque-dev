@@ -73,7 +73,7 @@
 
 if (bq) {
     bq.html5uploads = (window.File && window.FileList); // && window.FileReader); // - safari does not have FileReader...
-}
+};
 
 //Ext.require(['BQ.is.Formats']);
 
@@ -85,14 +85,14 @@ var annotators = {
     'application/gzip'             : 'BQ.upload.ZipAnnotator',    
     'application/x-tar'            : 'BQ.upload.ZipAnnotator',
     'application/x-gtar'           : 'BQ.upload.ZipAnnotator',    
-}
+};
 
 var mymime = {
     'zip' : 'application/zip',
     'tar' : 'application/x-tar',
     'gz'  : 'application/x-gzip',
     'tgz' : 'application/x-gzip',        
-}
+};
 
 var view_resource = '/client_service/view?resource=';
 
@@ -974,7 +974,7 @@ Ext.define('BQ.upload.Panel', {
         // this is used for capturing window closing and promting the user if upload is in progress        
         //Ext.EventManager.on(window, 'beforeunload', this.onClose, this);
         var me = this;
-        window.onbeforeunload = function(){ return me.onClose(); }
+        window.onbeforeunload = function(){ return me.onClose(); };
     },   
 
     onDestroy : function() {
@@ -1173,7 +1173,7 @@ Ext.define('BQ.upload.Panel', {
             if (!nomessage) {
                 var time_finished = new Date();
                 var s = ''+(total-failed)+' files uploaded successfully in '+time_finished.diff(this._time_started).toString();
-                if (failed>0) s += '<br>Although '+failed+' files have failed to upload.'
+                if (failed>0) s += '<br>Although '+failed+' files have failed to upload.';
                 BQ.ui.notification(s);
             }
 

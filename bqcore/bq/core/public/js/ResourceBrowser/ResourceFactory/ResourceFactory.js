@@ -22,7 +22,7 @@ Ext.define('Bisque.ResourceFactory', {
             }
         }
     }
-})
+});
 
 // Returns standalone resources 
 Ext.define('Bisque.ResourceFactoryWrapper',
@@ -659,11 +659,11 @@ Ext.define('Bisque.Resource.Page',
 
                 btn.setText(owner.display_name || '');
                 
-                function setMailTo(btn, mailto)
-                {
-                    btn.setHref(mailto);
-                    // Old ExtJS code - Remove once moved to 4.2.1+
-                    //btn.getEl().down('a', true).setAttribute('href', mailto);
+                function setMailTo(btn, mailto) {
+                    if (btn.setHref) // works with ExtJS 4.2.1+
+                        btn.setHref(mailto);
+                    else // dima: Remove once moved away from 4.1
+                        btn.getEl().down('a', true).setAttribute('href', mailto); 
                     btn.setVisible(true);
                 }
                 

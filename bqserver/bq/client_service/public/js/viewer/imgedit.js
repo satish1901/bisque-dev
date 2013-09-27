@@ -23,6 +23,15 @@ ImgViewer.BTN_TITLE_LABEL    = 'Label';
 
 ImgViewer.BTN_TITLE_GROUP    = 'Annotations';
 
+ImgViewer.gobFunction = {
+    'point'   : 'newPoint',
+    'rect'    : 'newRect',
+    'polyline': 'newPolyline',
+    'polygon' : 'newPolygon',
+    'circle'  : 'newCircle',
+    //'label'   : 'newLabel', // not implemented
+};
+
 function ImgEdit (viewer,name){
   this.base = ViewerPlugin;
   this.base (viewer, name);
@@ -42,22 +51,25 @@ function ImgEdit (viewer,name){
     this.editprimitives[ primitives[i] ] = '';
 	
   // create interface	
-  if ( !('noedit' in this.viewer.parameters) )  
-    this.bt_edit = this.viewer.addCommand (ImgViewer.BTN_TITLE_ANNOTATE, callback (this, 'editImage'));
+  if (!this.viewer.gob_annotator)
+  if ( !('noedit' in this.viewer.parameters) ) {
+      //this.bt_edit = this.viewer.addCommand (ImgViewer.BTN_TITLE_ANNOTATE, callback (this, 'editImage'));
+  }
   this.edit_buttons = new Array(0);
   
   this.keymap = { 46: callback(this, 'delete_item'),  // key delete
                    8: callback(this, 'delete_item') };
   
-  if ('alwaysedit' in this.viewer.parameters)
-    this.bt_edit.style.display = "none";
+  //if ('alwaysedit' in this.viewer.parameters)
+  //  this.bt_edit.style.display = "none";
 }
 ImgEdit.prototype = new ViewerPlugin();
 
 ImgEdit.prototype.newImage = function () {
     this.gobjects = new Array(0);
     this.visit_render = new BQProxyClassVisitor (this.viewer.renderer);
-
+    if ( !('noedit' in this.viewer.parameters) )
+        this.editImage();   
 	return;
 /*    var gobjects_url = null;
 
@@ -84,7 +96,7 @@ ImgEdit.prototype.newImage = function () {
     // Load gobjects from net
     this.viewer.start_wait({op: 'gobjects', message: 'Fetching gobjects'});
     this.viewer.loadGObjects(gobjects_url, callback(this,'gobjects_loading'), callback(this,'gobjects_done'));*/
-}
+};
 
 ImgEdit.prototype.gobjects_loading = function (g) {
 //    while (goblist.length) {
@@ -99,26 +111,126 @@ ImgEdit.prototype.gobjects_loading = function (g) {
             console.log ("error in rendering" + err.description);
         }
 //    }
-}
+};
+
 ImgEdit.prototype.gobjects_done = function () {
     this.gobjects = this.viewer.image.gobjects;
     this.viewer.end_wait({op: 'gobjects', message: 'Fetching gobjects'});    
     //this.viewer.gobjects = this.gobjects;
     //this.viewer.end_wait();
-}
+};
 
 ImgEdit.prototype.updateImage = function () {
     //var gobs  = this.gobjects;
     //this.visit_render.visit_array(gobs, [this.viewer.current_view]);
-    if ('alwaysedit' in this.viewer.parameters && !this.buttons_created) this.editImage();      
-}
+    if ('alwaysedit' in this.viewer.parameters && !this.buttons_created) 
+        this.editImage();      
+};
 
+ImgEdit.prototype.updateView = function (view) {
+    if (!this.viewer.gob_annotator && !this.menu) {
+        var v = this.viewer;
+        var surf = v.viewer_controls_surface ? v.viewer_controls_surface : this.parent;
+        if (surf) {
+            this.menu = v.createEditMenu();
+            surf.appendChild(v.editbutton);
+                   
+            this.menu.add({
+                xtype: 'button',
+                itemId: 'btnNavigate',
+                text: ImgViewer.BTN_TITLE_NAVIGATE,
+                scale: 'small',
+                //iconCls: 'icon-add',
+                handler: this.navigate,
+                scope: this,            
+            }, {
+                xtype: 'button',                
+                itemId: 'btnSelect',
+                text: ImgViewer.BTN_TITLE_SELECT,
+                scale: 'small',
+                //iconCls: 'icon-add',
+                handler: this.select,
+                scope: this,            
+            }, {
+                xtype: 'button',
+                itemId: 'btnSave',
+                hidden: ('nosave' in v.parameters),
+                text: ImgViewer.BTN_TITLE_SAVE,
+                scale: 'small',
+                //iconCls: 'icon-add',
+                handler: this.save_edit,
+                scope: this,            
+            }, {
+                xtype: 'button',                
+                itemId: 'btnDelete',
+                text: ImgViewer.BTN_TITLE_DELETE,
+                scale: 'small',
+                //iconCls: 'icon-add',
+                handler: this.delete_item,
+                scope: this,           
+            },{
+                xtype: 'displayfield',
+                fieldLabel: 'Annotations:',
+                //cls: 'heading',
+            }, {
+                xtype: 'button',                
+                itemId: 'btnPoint',
+                hidden: !('point' in this.editprimitives),
+                text: ImgViewer.BTN_TITLE_POINT,
+                scale: 'small',
+                //iconCls: 'icon-add',
+                handler: function() { this.setmode(callback(this,'newPoint')); },
+                scope: this,          
+            }, {
+                xtype: 'button',                
+                itemId: 'btnRectangle',
+                hidden: !('rectangle' in this.editprimitives),
+                text: ImgViewer.BTN_TITLE_RECT,
+                scale: 'small',
+                //iconCls: 'icon-add',
+                handler: function() { this.setmode(callback(this,'newRect')); },
+                scope: this,          
+            }, {
+                xtype: 'button',                
+                itemId: 'btnPolyline',
+                hidden: !('polyline' in this.editprimitives),
+                text: ImgViewer.BTN_TITLE_POLYLINE,
+                scale: 'small',
+                //iconCls: 'icon-add',
+                handler: function() { this.setmode(callback(this,'newPolyline')); },
+                scope: this,          
+            }, {
+                xtype: 'button',                
+                itemId: 'btnPolygon',
+                hidden: !('polygon' in this.editprimitives),
+                text: ImgViewer.BTN_TITLE_POLYGON,
+                scale: 'small',
+                //iconCls: 'icon-add',
+                handler: function() { this.setmode(callback(this,'newPolygon')); },
+                scope: this,          
+            }, {
+                xtype: 'button',                
+                itemId: 'btnCircle',
+                hidden: !('circle' in this.editprimitives),
+                text: ImgViewer.BTN_TITLE_CIRCLE,
+                scale: 'small',
+                //iconCls: 'icon-add',
+                handler: function() { this.setmode(callback(this,'newCircle')); },
+                scope: this,          
+            });  
+              
+        } 
+    };    
+    
+};
 
 ImgEdit.prototype.editImage = function () {
   
-    if (this.bt_edit.innerHTML != ImgViewer.BTN_TITLE_ANNOTATE) {
-      this.cancelEdit();
-      return;
+    if (!this.viewer.gob_annotator && this.bt_edit) {  
+        if (this.bt_edit.innerHTML != ImgViewer.BTN_TITLE_ANNOTATE) {
+          this.cancelEdit();
+          return;
+        }
     }
     
     if (!(this.viewer.user_uri && (this.viewer.image.owner == this.viewer.user_uri)))
@@ -131,39 +243,60 @@ ImgEdit.prototype.editImage = function () {
     // For SOME weird reseaon this does not seem to work.
     //this.gobject_backup = deep_clone (this.viewer.gobjects);
     
+    if (!this.viewer.gob_annotator && this.bt_edit) {      
     this.bt_edit.innerHTML = ImgViewer.BTN_TITLE_CANCEL;
+    }
     
-    if (!('nosave' in this.viewer.parameters)) 
-      bt.push(v.addCommandGroup(ImgViewer.BTN_TITLE_GROUP, ImgViewer.BTN_TITLE_SAVE, callback(this, "save_edit")));	
-
-    //bt.push(v.addCommandGroup("edit", ImgViewer.BTN_TITLE_SELECT, callback(this, "setmode", callback(this, 'select'), "help me")));
-    bt.push( v.addCommandGroup(ImgViewer.BTN_TITLE_GROUP, ImgViewer.BTN_TITLE_NAVIGATE, callback(this, 'navigate')) );
-    bt.push( v.addCommandGroup(ImgViewer.BTN_TITLE_GROUP, ImgViewer.BTN_TITLE_SELECT, callback(this, 'select')) );
-    bt.push( v.addCommandGroup(ImgViewer.BTN_TITLE_GROUP, ImgViewer.BTN_TITLE_DELETE, callback(this, 'delete_item')) );
-    
-    
-    if ('point' in this.editprimitives)
-      bt.push(v.addCommandGroup(ImgViewer.BTN_TITLE_GROUP, ImgViewer.BTN_TITLE_POINT, callback(this, "setmode", callback(this, 'newPoint'))));
-    if ('rectangle' in this.editprimitives)
-      bt.push(v.addCommandGroup(ImgViewer.BTN_TITLE_GROUP, ImgViewer.BTN_TITLE_RECT, callback(this, "setmode", callback(this,'newRect'))));
-    if ('polyline' in this.editprimitives)
-      bt.push(v.addCommandGroup(ImgViewer.BTN_TITLE_GROUP, ImgViewer.BTN_TITLE_POLYLINE, callback(this, "setmode", callback(this,'newPolyline'))));
-    if ('polygon' in this.editprimitives)      
-      bt.push(v.addCommandGroup(ImgViewer.BTN_TITLE_GROUP, ImgViewer.BTN_TITLE_POLYGON, callback(this, "setmode", callback(this,'newPolygon'))));
-    if ('circle' in this.editprimitives)      
-      bt.push(v.addCommandGroup(ImgViewer.BTN_TITLE_GROUP, ImgViewer.BTN_TITLE_CIRCLE, callback(this, "setmode", callback(this,'newCircle'))));
-    //if ('label' in this.editprimitives)
-    //  bt.push(v.addCommandGroup(ImgViewer.BTN_TITLE_GROUP, ImgViewer.BTN_TITLE_LABEL, callback(this, "setmode", callback(this, 'newLabel'))));    
-    
+    if (this.viewer.gob_annotator) {
+        if (!('nosave' in this.viewer.parameters)) 
+            this.viewer.gob_annotator.on('btnSave', this.save_edit, this);        
+        this.viewer.gob_annotator.on('btnNavigate', this.navigate, this);
+        this.viewer.gob_annotator.on('btnSelect', this.select, this);
+        this.viewer.gob_annotator.on('btnDelete', this.delete_item, this);
+        this.viewer.gob_annotator.on('createGob', this.onCreateGob, this);
+    } else {
+        /* 
+        bt.push( v.addCommandGroup(ImgViewer.BTN_TITLE_GROUP, ImgViewer.BTN_TITLE_SAVE, callback(this, "save_edit")));          
+        bt.push( v.addCommandGroup(ImgViewer.BTN_TITLE_GROUP, ImgViewer.BTN_TITLE_NAVIGATE, callback(this, 'navigate')) ); 
+        bt.push( v.addCommandGroup(ImgViewer.BTN_TITLE_GROUP, ImgViewer.BTN_TITLE_SELECT, callback(this, 'select')) );
+        bt.push( v.addCommandGroup(ImgViewer.BTN_TITLE_GROUP, ImgViewer.BTN_TITLE_DELETE, callback(this, 'delete_item')) );       
+        if ('point' in this.editprimitives)
+          bt.push(v.addCommandGroup(ImgViewer.BTN_TITLE_GROUP, ImgViewer.BTN_TITLE_POINT, callback(this, "setmode", callback(this, 'newPoint'))));
+        if ('rectangle' in this.editprimitives)
+          bt.push(v.addCommandGroup(ImgViewer.BTN_TITLE_GROUP, ImgViewer.BTN_TITLE_RECT, callback(this, "setmode", callback(this,'newRect'))));
+        if ('polyline' in this.editprimitives)
+          bt.push(v.addCommandGroup(ImgViewer.BTN_TITLE_GROUP, ImgViewer.BTN_TITLE_POLYLINE, callback(this, "setmode", callback(this,'newPolyline'))));
+        if ('polygon' in this.editprimitives)      
+          bt.push(v.addCommandGroup(ImgViewer.BTN_TITLE_GROUP, ImgViewer.BTN_TITLE_POLYGON, callback(this, "setmode", callback(this,'newPolygon'))));
+        if ('circle' in this.editprimitives)      
+          bt.push(v.addCommandGroup(ImgViewer.BTN_TITLE_GROUP, ImgViewer.BTN_TITLE_CIRCLE, callback(this, "setmode", callback(this,'newCircle'))));
+        //if ('label' in this.editprimitives)
+        //  bt.push(v.addCommandGroup(ImgViewer.BTN_TITLE_GROUP, ImgViewer.BTN_TITLE_LABEL, callback(this, "setmode", callback(this, 'newLabel'))));
+        */    
+    };
+    //this.setmode(callback(this, 'newPoint'));
     this.buttons_created = true;
-}
+};
+
+ImgEdit.prototype.onCreateGob = function (type) {
+    this.gob_type = type;
+    if (type in ImgViewer.gobFunction) {
+        this.mode_primitive = null;
+        var f = ImgViewer.gobFunction[type];
+        this.setmode(callback(this, f));
+    } else { // creating a complex gob
+        this.mode_primitive = this.mode ? this.mode : callback(this, 'newPoint');
+        this.setmode(callback(this, 'newComplex'));
+    }
+};
 
 ImgEdit.prototype.cancelEdit = function () {
     this.viewer.remCommandGroup(ImgViewer.BTN_TITLE_GROUP);
     this.endEdit();
-    this.bt_edit.innerHTML = ImgViewer.BTN_TITLE_ANNOTATE;      
+    if (!this.viewer.gob_annotator && this.bt_edit)
+        this.bt_edit.innerHTML = ImgViewer.BTN_TITLE_ANNOTATE;      
     this.viewer.need_update();
-}
+};
 
 ImgEdit.prototype.startEdit = function () {
     if (this.editing_gobjects) return;
@@ -182,7 +315,7 @@ ImgEdit.prototype.startEdit = function () {
     //this.renderer.setmousemove(callback(this, "mousemove"));
     //v.current_view.edit_graphics = true;
     this.viewer.renderer.enable_edit (true);
-}
+};
 
 ImgEdit.prototype.endEdit = function () {
     this.viewer.renderer.svgdoc.style.zIndex = this.zindex_low;
@@ -204,12 +337,12 @@ ImgEdit.prototype.endEdit = function () {
         delete this.tageditor;
     }
     this.editing_gobjects = false;     
-}
+};
 
 ImgEdit.prototype.dochange = function () {
     if (this.viewer.parameters.gobjectschanged) 
         this.viewer.parameters.gobjectschanged(this.gobjects);
-}
+};
 
 
 ImgEdit.prototype.save_edit = function (mode) {
@@ -230,7 +363,7 @@ ImgEdit.prototype.save_edit = function (mode) {
 
     this.viewer.image.gobjects = this.viewer.image.gobjects.concat(findDirty(this.gobjects));
     this.viewer.image.save_gobjects();
-}
+};
 
 ImgEdit.prototype.gobjectSelected = function (gob) {
     
@@ -238,13 +371,14 @@ ImgEdit.prototype.gobjectSelected = function (gob) {
     //var tg= new Tagger( , this.viewer.imageuri+'/tag' , "gobject tags", true  );
     //tg.load();
     //tg.renderHTML();
-}
+};
 
 ImgEdit.prototype.keyhandler = function (e) {
 	var unicode=e.keyCode? e.keyCode : e.charCode;
     if (unicode in this.keymap) 
         this.keymap[unicode] (e);
-}
+};
+
 ImgEdit.prototype.delete_item1 =  function (e){
     var r = this.viewer.renderer;
     var found = false;
@@ -263,14 +397,14 @@ ImgEdit.prototype.delete_item1 =  function (e){
     }
     if (!found) confirm("You must select an object to delete");
     this.dochange();
-}
+};
 
 ImgEdit.prototype.delete_item = function(e) {
 
     var gobjVisitor = Ext.create('BQGObjectVisitor');
     gobjVisitor.visit_array(this.gobjects, this);
 
-}
+};
 
 Ext.define('BQGObjectVisitor', {
     extend  :   BQVisitor,
@@ -300,7 +434,8 @@ ImgEdit.prototype.mousedown = function (e) {
       if (e.stopPropagation) e.stopPropagation(); // DOM Level 2
       else e.cancelBubble = true;                 // IE               
   }
-}
+};
+
 /*
 ImgEdit.prototype.mouseup = function (e) {
   if (!e) e = window.event;  // IE event model  
@@ -341,7 +476,7 @@ ImgEdit.prototype.push_gobject = function (gob){
         this.viewer.parameters.gobjectCreated(gob);
     
     //this.viewer.image.addgobjects(gob);
-}
+};
 
 ImgEdit.prototype.remove_gobject = function (gi){
     this.gobjects.splice(gi,1);
@@ -350,104 +485,161 @@ ImgEdit.prototype.remove_gobject = function (gi){
         this.viewer.parameters.gobjectDeleted(gi);
     
     //this.viewer.image.addgobjects(gob);
-}
+};
 
 ImgEdit.prototype.setmode = function (mode) {
     if (mode) this.startEdit();  
     this.mode = mode;
-}
+};
 
 ImgEdit.prototype.select = function (e, x, y) {
   this.mode = null;
   this.current_gob = null;  
   this.startEdit();   
-}
+};
 
 ImgEdit.prototype.navigate = function (e, x, y) {
   this.endEdit();       
-}
+};
 
 ImgEdit.prototype.newPoint = function (e, x, y) {
     var v = this.viewer.current_view;
-    var g = new BQGObject("point");
+    //var g = new BQGObject("point");
+    
+    var g = this.current_gob;    
+    if (!g && !this.mode_primitive) {
+        g = new BQGObject('point');
+        this.push_gobject (g);
+    } else if (this.mode_primitive) {
+        g = g.addgobjects(new BQGObject('point'));
+    }    
+    
     var pt = v.inverseTransformPoint(x,y);
     g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, 0));
-    this.push_gobject (g);
+    //this.push_gobject (g);
 
+    this.current_gob = null;
     this.visit_render.visitall(g, [v]);
     this.dochange();
-}
+};
 
 ImgEdit.prototype.newRect = function (e, x, y) {
     var v = this.viewer.current_view;
-    var g = new BQGObject("rectangle");
+    var g = this.current_gob;    
+    if (!g && !this.mode_primitive) {
+        g = new BQGObject('rectangle');
+        this.push_gobject (g);
+    } else if (this.mode_primitive) {
+        g = g.addgobjects(new BQGObject('rectangle'));
+    }       
+    
     var pt = v.inverseTransformPoint(x,y);
     g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, 0));
     g.vertices.push (new BQVertex (pt.x+50/v.scale, pt.y+50/v.scale, v.z, v.t, null, 1));
-    this.push_gobject (g);
+    
+    this.current_gob = null;
     this.visit_render.visitall(g, [v]);
     this.dochange();
-}
+};
 
 ImgEdit.prototype.newPolygon = function (e, x, y) {
     var v = this.viewer.current_view;
     var g = this.current_gob;
-    if (g == null) {
-        g = new BQGObject("polygon");
+    if (!g && !this.mode_primitive) {
+        g = new BQGObject('polygon');
         this.push_gobject (g);
+    } else if (g && !g.isPrimitive()) {
+        g = g.addgobjects(new BQGObject('polygon'));
     }
+    
     var pt = v.inverseTransformPoint(x,y);
     var index = g.vertices.length;
     g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, index));
+    
     // Double click ends the object otherwise add points 
     this.current_gob =  (e.detail > 1)?null:g;
     this.visit_render.visitall(g, [v]);
     this.dochange();
-}
+};
 
 
 ImgEdit.prototype.newPolyline = function (e, x, y) {
     var v = this.viewer.current_view;
     var g = this.current_gob;
-    if (g == null) {
-        g = new BQGObject("polyline");
+    if (!g && !this.mode_primitive) {
+        g = new BQGObject('polyline');
         this.push_gobject (g);
-    }
+    } else if (g && !g.isPrimitive()) {
+        g = g.addgobjects(new BQGObject('polyline'));
+    }  
+    
     var pt = v.inverseTransformPoint(x,y);
     var index = g.vertices.length;
     g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, index));
+    
     // Double click ends the object otherwise add points 
     this.current_gob =  (e.detail > 1)?null:g;
     this.visit_render.visitall(g, [v]);
     this.dochange();
-}
+};
 
 
 ImgEdit.prototype.newCircle = function (e, x, y) {
     var v = this.viewer.current_view;
-    var g = new BQGObject("circle");
+    var g = this.current_gob;    
+    if (!g && !this.mode_primitive) {
+        g = new BQGObject('circle');
+        this.push_gobject (g);
+    } else if (this.mode_primitive) {
+        g = g.addgobjects(new BQGObject('circle'));
+    }        
+    
     var pt = v.inverseTransformPoint(x,y);
     g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, 0));
     g.vertices.push (new BQVertex (pt.x+50/v.scale, pt.y+50/v.scale, v.z, v.t, null, 1));
-    this.push_gobject (g);
-
+    
+    this.current_gob = null;
     this.visit_render.visitall(g, [v]);
     this.dochange();
-}
+};
 
 ImgEdit.prototype.newLabel = function (e, x, y) {
     var v = this.viewer.current_view;
-    var g = new BQGObject("label");
+    var g = this.current_gob;    
+    if (!g && !this.mode_primitive) {
+        g = new BQGObject('label');
+        this.push_gobject (g);
+    } else if (this.mode_primitive) {
+        g = g.addgobjects(new BQGObject('label'));
+    }      
+    
     var pt = v.inverseTransformPoint(x,y);
     g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, 0));
     
     //Ext.MessageBox.prompt('Name', 'Please enter your text:');
     g.value = 'SOME TEXT HERE';
-    this.push_gobject (g);
-
+    
+    this.current_gob = null;
     this.visit_render.visitall(g, [v]);
     this.dochange();
-}
+};
+
+ImgEdit.prototype.newComplex = function (e, x, y) {
+    var v = this.viewer.current_view;
+    var g = this.current_gob;
+    if (!g || !g.isPrimitive()) {
+        if (!g) {
+            g = new BQGObject(this.gob_type);
+            this.push_gobject (g);
+        } else {
+            g = g.addgobjects(new BQGObject(this.gob_type));
+        }     
+        this.current_gob = g;
+    }
+
+    if (this.mode_primitive) 
+        this.mode_primitive(e, x, y);
+};
 
 /*
 ImgEdit.prototype.select_object = function (gob){
@@ -473,6 +665,6 @@ ImgEdit.prototype.helpBox = function () {
                 "Black handles move entire object",
                 "Delete Key to remove object",
         ];
-}
+};
 
 

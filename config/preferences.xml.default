@@ -109,6 +109,23 @@
                 </template>
             </tag>
 
+            <tag name="showOverlay" value="false" type="boolean">
+                <template>
+                    <tag type="string" name="Type" value="Boolean"/>
+                    <tag type="string" name="Default value" value="false"/>
+                    <tag type="boolean" name="Allow blank" value="false"/>
+                    <tag type="boolean" name="Editable" value="true"/>
+                </template>
+            </tag>
+
+            <tag name="channel_color_0" value="255,0,0" type="string">
+                <template>
+                    <tag name="Type" value="color" type="string"/>
+                    <tag type="boolean" name="Allow blank" value="false"/>
+                    <tag type="boolean" name="Editable" value="true"/>
+                </template>
+            </tag>
+
         </tag>  
     </tag>
 </system>

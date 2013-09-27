@@ -394,7 +394,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
         this.westPanel.doComponentLayout(null, null, true);
 	},
 
-	btnOrganizerClick1 : function(reload)
+	btnOrganizerClickOriginal : function(reload)
 	{
         this.westPanel.removeAll(false);
         
@@ -412,7 +412,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
         this.westPanel.doComponentLayout(null, null, true);
 	},
 
-    btnOrganizerClick2 : function(reload)
+    btnOrganizerClickSomeOldCode : function(reload)
     {
         this.westPanel.removeAll(false);
         
@@ -437,7 +437,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
         this.westPanel.add(this.organizerCt);
     },
     
-    btnOrganizerClick : function(reload)
+    btnOrganizerClickTree : function(reload)
     {
         this.westPanel.removeAll(false);
 
@@ -450,13 +450,19 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
                             },
             // state variables
             tagList         :   ['habitat', 'Plant Structure', 'Genus', 'species'],
-            resourceType    :   this.browser.browserState['baseURL'].split('/')[2],
-            resourceServer  :   this.browser.browserState['baseURL'].split('/')[1],
+            resourceType    :   '', //this.browser.browserState['baseURL'].split('/')[2],
+            resourceServer  :   this.browser.browserState['baseURL'], //.split('/')[1],
             includePublic   :   this.browser.browserParams.wpublic,
         });
         
         this.westPanel.setWidth(this.organizerCt.width).show().expand();
         this.westPanel.add(this.organizerCt);
+    },
+
+    btnOrganizerClick : function(reload) {
+        // dima: choose type of organizer here
+        //this.btnOrganizerClickTree(reload);
+        this.btnOrganizerClickOriginal(reload);
     },
 
 	btnLayoutClick : function(item)
@@ -541,4 +547,4 @@ Ext.define('Bisque.ResourceBrowser.CommandBar',
             this.toggleLayoutBtn();
         this.getComponent('btnGear').menu.getComponent('btnWpublic').setChecked(this.browser.browserParams.wpublic, true);
 	}
-})
+});

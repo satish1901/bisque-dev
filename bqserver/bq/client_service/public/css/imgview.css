@@ -14,7 +14,7 @@
   /*height: 450px;*/
 
   height: 100%;
-  padding-bottom: 24px;
+  padding-bottom: 0px;
   
   /* relative position is a key for using absolute in the children elements */
   position: relative;
@@ -41,6 +41,18 @@
   min-width: auto;
 }
 
+.bq-gob-tagger .x-panel-body { 
+    background: transparent;
+}
+
+.bq-gob-header { 
+    background-color: #d3e1f1;
+    /*border-top: 1px solid #99bce8 !important;*/
+}
+
+.bq-gob-tagger h3 { 
+    padding-left: 5px;
+}
 
 /***********************************************************/
 
@@ -362,6 +374,13 @@
   left: 0px;    
 }
 
+.gobjects_overlay {
+  z-index: 16;    
+  position: absolute;
+  top: 0px;
+  left: 0px;    
+}
+
 /*******************************************************************************
  info
 *******************************************************************************/
@@ -430,6 +449,36 @@
     background-size: 36px;
 }
 
+.viewer .editmenu {
+    position: absolute; 
+    z-index: 30; 
+    width: 20px;
+    height: 20px;
+    right: 80px; 
+    top: 10px;
+    bottom: none;   
+    right: none;
+  
+    background-image: url('/images/viewer/64px_gobs.png');
+    background-size: 20px;
+    background-color: transparent;  
+}
+
+.viewer .editmenu-phone {
+    width: 96px;
+    height: 96px;
+    right: 100px; 
+    top: 30px;
+    background-size: 96px;
+}
+
+.viewer .editmenu-touch {
+    width: 36px;
+    height: 36px;
+    right: 85px; 
+    top: 15px;
+    background-size: 36px;
+}
 
 /*******************************************************************************
  progress
@@ -504,8 +553,11 @@ table.x-form-color {
 
 .bq-viewer-menu .x-tool img {
     background-image: url('/images/viewer/16px_close.png');
+    background-repeat: no-repeat;
     background-size: 10px;
     margin: 4px 4px 0px 0px;
+    background-color: transparent;
+    background-position: 0px 0px;    
 }
 
 /*******************************************************************************

@@ -39,7 +39,7 @@ function ImageDim (x, y, z, t, ch){
     this.z = z;
     this.t = t;
     this.ch = ch;
-}
+};
 ImageDim.prototype.clone = function () {
     return new ImageDim(this.x, this.y, this.z, this.t, this.ch);
 };
@@ -66,7 +66,7 @@ function Viewstate (w, h, z, t, scale, rot, offx, offy,origw,origh) {
     this.imagesrc = null;
 
     this.src_args = [];         // Array of arguments
-}
+};
 
 Viewstate.prototype.clone = function  () {
     var v =  new Viewstate (this.width, this.height, this.z, this.t, 
@@ -76,7 +76,7 @@ Viewstate.prototype.clone = function  () {
         v.imagedim = this.imagedim.clone();
     v.imagesrc = this.imagesrc;
     return v;
-}
+};
 
 
 Viewstate.prototype.setSizeTo = function  (w, h) {
@@ -85,7 +85,7 @@ Viewstate.prototype.setSizeTo = function  (w, h) {
     this.original_width = w;
     this.original_height = h; 
     this.scaleBy(1);   
-}
+};
 
 Viewstate.prototype.scaleBy = function  (scale_by) {
     if (scale_by<1 && Math.min(this.width*scale_by, this.height*scale_by) < imgview_min_width )
@@ -94,7 +94,7 @@ Viewstate.prototype.scaleBy = function  (scale_by) {
     this.scale *= scale_by;
     this.width *= scale_by;
     this.height *= scale_by;
-}
+};
 
 Viewstate.prototype.scaleToBox = function  (bound_w, bound_h) {
     bound_w = Math.max(bound_w, imgview_min_width);
@@ -104,17 +104,17 @@ Viewstate.prototype.scaleToBox = function  (bound_w, bound_h) {
     this.scale  = scale;
     this.width  = scale*this.original_width;
     this.height = scale*this.original_height;
-}
+};
 
 Viewstate.prototype.scaleTo = function  (new_scale) {
     this.scale  = new_scale;
     this.width  = this.scale*this.original_width;
     this.height = this.scale*this.original_height;
-}
+};
 
 Viewstate.prototype.scaleToSmallest = function  () {
     this.scaleToBox(imgview_min_width, imgview_min_width);
-}
+};
 
 Viewstate.prototype.rotateTo = function(alfa) {
     this.rotation = alfa;
@@ -137,7 +137,7 @@ Viewstate.prototype.rotateTo = function(alfa) {
     
     this.width = wp;
     this.height = hp;
-}
+};
 
 Viewstate.prototype.transformPoint = function  (ix, iy) {
     var x = ix * this.scale + this.offset_x;
@@ -172,7 +172,7 @@ Viewstate.prototype.inverseTransformPoint = function  (ix, iy) {
     yp += this.original_height/2.0;
              
     return { x: Ext.util.Format.round(xp, 2), y: Ext.util.Format.round(yp, 2) };
-}
+};
 
 
 Viewstate.prototype.addParams = function (params) {
@@ -183,7 +183,7 @@ Viewstate.prototype.addParams = function (params) {
         return;
     }
     this.src_args.push (params);
-}
+};
  
 Viewstate.prototype.image_url = function (auxparams) {
     var url = this.imagesrc;
@@ -204,7 +204,7 @@ Viewstate.prototype.image_url = function (auxparams) {
             args += "&" + arglist[i];
     }
     return url + args;
-}
+};
 
 
 
@@ -215,7 +215,7 @@ function ImagePhys () {
     this.pixel_size = new Array (0); 
     this.channel_names = new Array (0);     
     this.display_channels = new Array (0);         
-}
+};
 
 ImagePhys.prototype.setPixelSize = function ( x, y, z, t ) {
     this.pixel_size[0] = x;
@@ -233,21 +233,21 @@ function ViewerPlugin (viewer, name) {
     this.child = null;          // Next in line viewer or html element
     this.viewer= viewer || null;   // The top level viewer 
     this.name  = name || "";    // name for logging and such
-}
+};
 ViewerPlugin.prototype.create = function (parent){
     return parent;
-}
+};
 ViewerPlugin.prototype.newImage = function (){
-}
+};
 ViewerPlugin.prototype.updateImage = function (){
-}
+};
 ViewerPlugin.prototype.updateView = function (view){
-}
+};
 
 // this will be called after all updateImage were called, if any elements are to be positioned
 // relative to elements resized later in updateImage queue
 ViewerPlugin.prototype.updatePosition = function (){
-}
+};
 
 ViewerPlugin.prototype.setSize = function (size)
 {
@@ -255,7 +255,7 @@ ViewerPlugin.prototype.setSize = function (size)
         this.imagediv.style.height = size.height+"px";
     if (size.width)
         this.imagediv.style.width = size.width+"px";
-}
+};
 
 ////////////////////////////////////////////////////////////
 // DefaultPlugin
@@ -267,7 +267,7 @@ function DefaultImgPlugin (viewer, name) {
     this.base (viewer, name);
 
 //    this.viewer.addCommand ('blink', callback (this, 'blink'));
-}
+};
 
 DefaultImgPlugin.prototype = new ViewerPlugin();
 DefaultImgPlugin.prototype.newImage = function () {
@@ -277,11 +277,11 @@ DefaultImgPlugin.prototype.newImage = function () {
     //var view = this.viewer.view();
     //this.viewer.src_args.push ('resize=' + view.width + ',' + view.height );
     //this.viewer.src_args.push ('format=jpeg');
-}
+};
 
 DefaultImgPlugin.prototype.blink = function (){
     alert ('blink');
-}
+};
 
 //////////////////////////////////////////////////////
 //  Image Viewer shell for Bisquik viewer
@@ -306,9 +306,9 @@ function ImgViewer (parentid, image_or_uri, parameters) {
 
     this.parameters = Ext.apply(parameters || {}, this.getAttributes());
 
-    this.menudiv = document.createElementNS (xhtmlns, "div");
-    this.menudiv.id =  "imgmenu";
-    this.menudiv.className = "buttonbar";
+    //this.menudiv = document.createElementNS (xhtmlns, "div");
+    //this.menudiv.id =  "imgmenu";
+    //this.menudiv.className = "buttonbar";
 
     this.imagediv = document.createElementNS (xhtmlns, "div");
     this.imagediv.id="imgviewer_image";
@@ -320,7 +320,7 @@ function ImgViewer (parentid, image_or_uri, parameters) {
         callback : Ext.bind(this.onPreferences, this),
     });    
 
-    this.target.appendChild (this.menudiv);
+    //this.target.appendChild (this.menudiv);
     this.target.appendChild (this.imagediv);
     
     this.toolbar = this.parameters.toolbar;  
@@ -363,12 +363,12 @@ function ImgViewer (parentid, image_or_uri, parameters) {
         BQFactory.request( {uri: '/auth_service/session', cb: callback(this, 'onsession'), errorcb: callback(this, 'onsession'), }); 
     else
         this.onsession(BQSession.current_session);
-}
+};
 
 ImgViewer.prototype = new ViewerPlugin();
 ImgViewer.prototype.close = function (){
     history.back();
-}
+};
 
 ImgViewer.prototype.getAttributes = function () {
     var s = window.location.hash.replace(/^#/, '') || window.location.search.replace(/^\?/, '');
@@ -380,7 +380,7 @@ ImgViewer.prototype.getAttributes = function () {
         attributes[b[0]] =  decodeURIComponent(b[1]);
     }
     return attributes;
-}
+};
 
 ImgViewer.prototype.onsession = function (session) {
     this.user_uri = session && session.user_uri?session.user_uri:null;
@@ -392,7 +392,7 @@ ImgViewer.prototype.onsession = function (session) {
         });
     }    
     this.init();
-}
+};
 
 ImgViewer.prototype.init = function () {
     this.renderer = this.plugins_by_name["renderer"];
@@ -403,10 +403,10 @@ ImgViewer.prototype.init = function () {
         throw BQOperationError;
     else if (this.image_or_uri)
         this.load(this.image_or_uri);
-}
+};
 
 ImgViewer.prototype.cleanup = function() {
-    this.target.removeChild (this.menudiv);
+    //this.target.removeChild (this.menudiv);
     //this.target.removeChild (this.optiondiv);
     this.target.removeChild (this.imagediv); 
     mouser=null;   
@@ -425,8 +425,9 @@ ImgViewer.prototype.createPlugins = function (parent) {
         var plugin = this.plugins[i];
         currentdiv = plugin.create (currentdiv);
     }
-}
+};
 
+/*
 function XButtonGroup(name, menu){
     this.name = name;
     this.menu = menu;
@@ -439,7 +440,7 @@ function XButtonGroup(name, menu){
     this.head.className = "group";    
     this.head.innerHTML = name + ': ';
     this.menu.appendChild (this.head);
-}
+};
 
 XButtonGroup.prototype.selected = function (text, cb){
     for (var bt in this.buttons) {
@@ -447,7 +448,7 @@ XButtonGroup.prototype.selected = function (text, cb){
     }
     this.buttons[text].setAttribute('id','selected');
     if (cb) cb();
-}
+};
 
 // DIMA: deprecated addCommand etc...
 
@@ -459,7 +460,7 @@ ImgViewer.prototype.addCommandGroup = function (group, text, cb) {
     var newbt = this.addCommand (text, callback (bg, 'selected', text, cb));
     bg.buttons[text] = newbt;
     return newbt;
-}
+};
 
 ImgViewer.prototype.remCommandGroup = function (group) {
     var menu = this.menudiv;    
@@ -472,7 +473,8 @@ ImgViewer.prototype.remCommandGroup = function (group) {
         if (bg.head) menu.removeChild(bg.head);        
         this.groups[group] = null;
     }
-}
+};
+*/
 
 ImgViewer.prototype.addMenu = function (m) {
     if (!this.toolbar) return;
@@ -480,9 +482,9 @@ ImgViewer.prototype.addMenu = function (m) {
     var n = toolbar.items.getCount()-4;
     toolbar.insert(n, m);  
     toolbar.doLayout();
-}
+};
 
-
+/*
 ImgViewer.prototype.addCommand =function (text, callback, helptext){
     var menu = this.menudiv;
     var button = document.createElementNS (xhtmlns, "button");
@@ -502,7 +504,7 @@ ImgViewer.prototype.addCommand =function (text, callback, helptext){
 //     }
     menu.appendChild (button);
     return button;
-}
+};
 
 ImgViewer.prototype.remCommand =function (button){
     var menu= this.menudiv;
@@ -514,17 +516,18 @@ ImgViewer.prototype.remCommand =function (button){
         }
         bt = bt.nextSibling;
     }
-}
+};
 
 ImgViewer.prototype.active_submenu = function  (menu) {
     if (this.submenu != null && this.submenu != menu) 
         this.submenu.style.display="none";
     this.submenu = menu;
-}
+};
+*/
 
 ImgViewer.prototype.view = function  () {
     return this.current_view;
- };
+};
 
 ImgViewer.prototype.resize = function  (sz) {
     if (sz && sz.height)
@@ -536,7 +539,7 @@ ImgViewer.prototype.resize = function  (sz) {
     
   if ('tiles' in this.plugins_by_name)
     this.plugins_by_name['tiles'].resize();
- };
+};
 
 
 ImgViewer.prototype.need_update = function () {
@@ -544,7 +547,7 @@ ImgViewer.prototype.need_update = function () {
 //         this.update_needed = setTimeout(callback(this, 'updateImage'), 50);
 //     }
     this.updateImage();
-}
+};
 
 ImgViewer.prototype.load = function (uri){
     BQFactory.load (uri, callback(this, 'newImage'));
@@ -569,9 +572,7 @@ ImgViewer.prototype.newImage = function (bqimage) {
     // in order to disable the use of "default" service at all!
     // here we would have to init a certain waiting widget
     //this.updateImage (); // dima
-}
-
-
+};
 
 ImgViewer.prototype.updateView = function (view) {
     view = view || this.current_view;
@@ -584,12 +585,12 @@ ImgViewer.prototype.updateView = function (view) {
         plugin.updateView (view);
     }
     return view;
-}
+};
 
 ImgViewer.prototype.image_url = function (view, auxparams) {
     view = this.updateView(view);
     return view.image_url(auxparams);
-}
+};
 
 ImgViewer.prototype.doUpdateImage = function () {
     // Plugins use current view to calculate actual src url.
@@ -605,24 +606,22 @@ ImgViewer.prototype.doUpdateImage = function () {
         plugin = this.plugins[i];
         plugin.updatePosition ();
     }    
-
-
-}
+};
 
 ImgViewer.prototype.updateImage = function () {
     this.requires_update = undefined;
     if (this.update_needed) clearTimeout(this.update_needed);
     this.update_needed = setTimeout(callback(this, 'doUpdateImage'), this.update_delay_ms);
-}
+};
 
 ImgViewer.prototype.findPlugin = function(name) {
     return this.plugins_by_name[name];
-}
+};
 
 ImgViewer.prototype.gobjects = function() {
     if (this.gObjects && this.gObjects.length>0) return this.gObjects;
     return this.plugins_by_name['edit'].gobjects || [];
-}
+};
 
 ImgViewer.prototype.loadGObjects = function(gObjects, renderWhileLoading) 
 {
@@ -651,7 +650,7 @@ ImgViewer.prototype.loadGObjects = function(gObjects, renderWhileLoading)
         this.start_wait({op: 'gobjects', message: 'Fetching gobjects'});
         this.image.load_gobjects(callback(this, 'gobjectsLoaded'), gObjects, callback(this, 'gobjectsLoadProgress'));
     }
-}
+};
 
 ImgViewer.prototype.gobjectsLoadProgress = function(gObj)
 {
@@ -660,7 +659,7 @@ ImgViewer.prototype.gobjectsLoadProgress = function(gObj)
         this.visit_render.visitall(gObj, [this.current_view]);
         this.gObjects.push(gObj);
     }
-}
+};
 
 ImgViewer.prototype.gobjectsLoaded = function(render, gObjects)
 {
@@ -678,7 +677,7 @@ ImgViewer.prototype.gobjectsLoaded = function(render, gObjects)
         Ext.Array.insert(editPlgin.gobjects, 0, this.gObjects);
     if (render)
         this.showGObjects(this.gObjects);
-} 
+}; 
 
 ImgViewer.prototype.showGObjects = function(gObjects)
 {
@@ -686,7 +685,7 @@ ImgViewer.prototype.showGObjects = function(gObjects)
         this.visit_render.visit_array(gObjects, [this.current_view, true]);
     else
         this.visit_render.visitall(gObjects, [this.current_view, true]);
-}
+};
 
 ImgViewer.prototype.hideGObjects = function(gObjects)
 {
@@ -694,7 +693,7 @@ ImgViewer.prototype.hideGObjects = function(gObjects)
         this.visit_render.visit_array(gObjects, [this.current_view, false]);
     else
         this.visit_render.visitall(gObjects, [this.current_view, false]);
-}
+};
 
 ImgViewer.prototype.start_wait = function (o) {
     var p = this.plugins_by_name["progressbar"]; // dima
@@ -703,7 +702,7 @@ ImgViewer.prototype.start_wait = function (o) {
     } else {
       p.start(o);
     }    
-}
+};
 
 ImgViewer.prototype.end_wait = function (o) {
     var p = this.plugins_by_name["progressbar"]; // dima
@@ -712,7 +711,7 @@ ImgViewer.prototype.end_wait = function (o) {
     } else {
       p.end(o);      
     }
-}
+};
 
 
 ImgViewer.prototype.newPhys = function (bqimagephys) {
@@ -740,13 +739,13 @@ ImgViewer.prototype.newPhys = function (bqimagephys) {
     if ('gobjects_xml' in this.parameters) {
         var gobjects_xml = this.parameters['gobjects_xml'];
         var gobjects = BQFactory.parseBQDocument (gobjects_xml);
-        this.loadGObjects(gobjects)
+        this.loadGObjects(gobjects);
     }else if ('gobjects' in this.parameters){
         var gobjects_url = this.parameters['gobjects'];
         this.loadGObjects(gobjects_url);
     }    
 
-}
+};
 
 //----------------------------------------------------------------------
 // viewer preferences
@@ -783,7 +782,7 @@ ImgViewer.prototype.createCombo = function (label, items, def, scope, cb) {
         },
     });    
     return combo;
-}
+};
 
 ImgViewer.prototype.createViewMenu = function() {
     if (!this.menubutton) {
@@ -804,14 +803,14 @@ ImgViewer.prototype.createViewMenu = function() {
             anchor: 'top',
             anchorToTarget: true,
             cls: 'bq-viewer-menu',
-            maxWidth: 470,
+            maxWidth: 460,
             anchorOffset: -10,
             autoHide: false,
             shadow: false,
             closable: true,
             layout: {
                 type: 'vbox',
-                align: 'stretch',
+                //align: 'stretch',
             },  
             defaults: {
                 labelSeparator: '',
@@ -829,7 +828,52 @@ ImgViewer.prototype.onMenuClick = function () {
         this.menu_view.hide();    
     else
         this.menu_view.show();
-}
+};
+
+ImgViewer.prototype.createEditMenu = function() {
+    if (!this.editbutton) {
+        this.editbutton = document.createElement('span');
+        
+        // temp fix to work similar to panojs3, will be updated to media queries
+        if (isClientTouch())
+            this.editbutton.className = 'editmenu editmenu-touch';
+        else if (isClientPhone())
+            this.editbutton.className = 'editmenu editmenu-phone';
+        else                 
+            this.editbutton.className = 'editmenu';            
+    }
+    
+    if (!this.menu_edit) {
+        this.menu_edit = Ext.create('Ext.tip.ToolTip', {
+            target: this.editbutton,
+            anchor: 'top',
+            anchorToTarget: true,
+            cls: 'bq-viewer-menu',
+            maxWidth: 460,
+            anchorOffset: -10,
+            autoHide: false,
+            shadow: false,
+            closable: true,
+            layout: {
+                type: 'vbox',
+                //align: 'stretch',
+            },  
+            defaults: {
+                labelSeparator: '',
+                labelWidth: 200,
+            },    
+        }); 
+        var el = Ext.get(this.editbutton);
+        var m = this.menu_edit;
+        el.on('click', function(){
+            if (m.isVisible())
+                m.hide();    
+            else
+                m.show();            
+        });        
+    }
+    return this.menu_edit;  
+};
 
 ////////////////////////////////////////////////
 // Simple  renderer for testing
@@ -837,14 +881,16 @@ ImgViewer.prototype.onMenuClick = function () {
 function SimpleImgRenderer (viewer,name){
     this.base = ViewerPlugin;
     this.base (viewer, name);
-}
+};
 SimpleImgRenderer.prototype = new ViewerPlugin();
 SimpleImgRenderer.prototype.create = function (parent) {
     this.image = document.createElementNS(xhtmlns, "img");
     parent.appendChild(this.image);
     return this.image
-}
+};
+
 SimpleImgRenderer.prototype.updateImage = function () {
     var src = this.viewer.image_url();
     this.image.setAttributeNS(null, "src",   src);
-}
+};
+

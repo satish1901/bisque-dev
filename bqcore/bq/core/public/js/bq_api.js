@@ -25,7 +25,7 @@ classExtend = function(subClass, baseClass) {
 default_error_callback = function (o) {
     console.log(o.message);
     BQ.ui.error(o.message); 
-}
+};
 
 //-----------------------------------------------------------------------------
 // BQFactory for creating Bisque Objects
@@ -74,7 +74,7 @@ BQFactory.escapeXML = function(xml) {
         return true;
     });
     return xml;
-}
+};
 
 BQFactory.session = {};
 
@@ -87,7 +87,7 @@ BQFactory.make = function(ty, uri, name, value) {
     o.name = name;
     o.value = value;
     return o;
-}
+};
 
 BQFactory.createFromXml = function(xmlResource, resource, parent) {
     var stack = [];
@@ -131,7 +131,7 @@ BQFactory.createFromXml = function(xmlResource, resource, parent) {
         if (r.afterInitialized) r.afterInitialized(); 
     
     return response;
-}
+};
 
 
 /** 
@@ -160,7 +160,7 @@ BQFactory.request = function(params) {
         var v;
         for (var x in url_params) {
             if (url_params[x]) {
-                v = encodeURIComponent(url_params[x])
+                v = encodeURIComponent(url_params[x]);
                 pl.push(x+'='+v);
             } else {
                 pl.push(x);
@@ -225,7 +225,7 @@ BQFactory.on_xmlresponse = function(params, xmldoc) {
     }
     if (cb)
         return cb(bq);    
-}
+};
 
 BQFactory.parseBQDocument = function (xmltxt) {
     var parser  = new DOMParser ();
@@ -240,7 +240,7 @@ BQFactory.parseBQDocument = function (xmltxt) {
     BQFactory.createFromXml(n, bq, null);
     bq.doc = bq;
     return bq;
-}
+};
 
 //-----------------------------------------------------------------------------
 // BQValue
@@ -256,7 +256,7 @@ function parseValueType(v, t) {
         return v;          
     }
     return v;    
-}
+};
 
 function BQValue (t, v, i) {
     this.resource_type = "value";
@@ -269,23 +269,23 @@ function BQValue (t, v, i) {
     if (t != undefined) this.type = t;
     if (v != undefined) this.value = parseValueType(v, this.type);    
     if (i != undefined) this.index = i;       
-}
+};
 BQValue.prototype = new BQXml();
 
 BQValue.prototype.initializeXml = function (node) {
     this.type  = attribStr(node, 'type');
     this.value = parseValueType(node.textContent || node.text, this.type);
     this.index = attribInt(node, 'index');    
-}
+};
 
 BQValue.prototype.setParent = function (p) {
     p.values = p.values || [];
     p.values.push(this);
-}
+};
 
 BQValue.prototype.xmlNode = function () {
     return BQXml.prototype.xmlNode.call (this, BQFactory.escapeXML(this.value));
-}
+};
 
 //-----------------------------------------------------------------------------
 // BQVertex
@@ -304,13 +304,13 @@ function BQVertex(x, y, z, t, ch, index) {
     this.t =t;
     this.ch =ch;
     this.index = index;
-}
+};
 BQVertex.prototype = new BQXml();
 
 BQVertex.prototype.setParent = function (p) {
     p.vertices = p.vertices || [];
     p.vertices.push(this);
-}
+};
 
 BQVertex.prototype.initializeXml = function (node) {
     this.x     = attribFloat(node, "x");
@@ -319,7 +319,7 @@ BQVertex.prototype.initializeXml = function (node) {
     this.t     = attribFloat(node, "t");
     this.ch    = attribInt(node, "ch");
     this.index = attribInt(node, "index");
-}
+};
 
 
 //-----------------------------------------------------------------------------
@@ -329,11 +329,11 @@ BQVertex.prototype.initializeXml = function (node) {
 function BQXml() {
     this.resource_type = '';
     this.xmlfields = [];
-}
+};
 
 BQXml.prototype.toXML = function (){ 
     return this.xmlNode ();
-}
+};
 
 BQXml.prototype.xmlNode = function (content) {
     var v = '<' + this.resource_type + ' ';
@@ -345,13 +345,13 @@ BQXml.prototype.xmlNode = function (content) {
     if (content && content != "") {
         v += ">";
         v += content;
-        v += "</" + this.resource_type +">"
+        v += "</" + this.resource_type +">";
     } else {
         v += "/>";
     }
 
     return v;
-}
+};
 
 //-----------------------------------------------------------------------------
 // BQObject
@@ -379,7 +379,7 @@ function BQObject (uri, doc) {
     this.mex = null;
     this.resource_type = 'resource';
     this.xmlfields  = [ 'type', 'name', 'value', 'uri', 'owner', 'permission', 'ts', 'resource_uniq', 'index', 'hidden'];
-}
+};
 BQObject.prototype = new BQXml();
 
 BQObject.prototype.initializeXml = function (node) {
@@ -414,7 +414,7 @@ BQObject.prototype.initializeXml = function (node) {
         // in the case the data is coming from another server, make sure to load proper URL
         this.src = this.uri.replace(/\/data_service\/.*$/i, this.src);
     }
-}
+};
 
 BQObject.prototype.afterInitialized = function () {
     // try to set template
@@ -434,7 +434,7 @@ BQObject.prototype.afterInitialized = function () {
         this.template = ta[0].toDict(true);
     else if (ta)
         this.template = ta.toDict(true);
-}
+};
 
 
 // dima: this function takes an array of strings or an object value_name - value_type and 
@@ -451,39 +451,40 @@ BQObject.prototype.setValues = function (vals) {
         for (var i in vals)
             this.values.push(new BQValue(vals[i], i));
     }
-}
+};
 
 BQObject.prototype.testReadonly = function () {
   if (this.readonly)
       throw "This object is read only!";
-}
+};
 
 BQObject.prototype.setParent = function (p) {
     p.children = p.children || [];
     p.children.push (this);
     this.parent = p;
-}
+};
 
 BQObject.prototype.getkids = function (){
     // Note concat make new array
     var allkids = this.children.concat( this.tags, this.gobjects);
     return allkids;
-}
+};
 
 BQObject.prototype.load = function (uri, cb) {
     this.uri = uri;
     makeRequest(this.uri, callback(this, 'load_response', cb), null, "get");
-}
+};
+
 BQObject.prototype.load_response = function (cb, ign, xmldoc) {
     // Reach past response object.
     //var node = xmldoc.firstChild.firstChild;
     var node = xmldoc.firstChild;
     if (node.nodeName == "response") 
         node = node.firstChild;
-    BQFactory.createFromXml(node, this, null)
+    BQFactory.createFromXml(node, this, null);
     if (cb)
         cb(this);
-}
+};
 
 BQObject.prototype.toXML = function() {
     var xmlrep = '';
@@ -503,7 +504,7 @@ BQObject.prototype.toXML = function() {
         for (var i=0; i < this.children.length; i++ ) 
             xmlrep += this.children[i].toXML();
     return this.xmlNode(xmlrep);
-}
+};
 
 BQObject.prototype.delete_ = function (cb, errorcb) {
     this.testReadonly();
@@ -513,11 +514,11 @@ BQObject.prototype.delete_ = function (cb, errorcb) {
     }
     else
         cb();
-}
+};
 
 BQObject.prototype.rename = function(newName, cb, errorcb) {
     console.log ('BQAPI: BQObject.prototype.rename - Not implemented');
-}
+};
 
 BQObject.prototype.deleteTag = function(childTag, cb, errorcb) {
     if (childTag instanceof BQTag)
@@ -527,7 +528,7 @@ BQObject.prototype.deleteTag = function(childTag, cb, errorcb) {
     }
     else
         console.log ('BQAPI: deleteTag - Input is not a BQTag.');
-}
+};
 
 BQObject.prototype.find_tags  = function (name, deep, found) {
     found = found || [];
@@ -543,7 +544,7 @@ BQObject.prototype.find_tags  = function (name, deep, found) {
     if (found.length == 1) 
         return found[0];
     return found;
-}
+};
 
 BQObject.prototype.find_children  = function (type, name, deep, found) {
     found = found || [];
@@ -559,7 +560,7 @@ BQObject.prototype.find_children  = function (type, name, deep, found) {
     if (found.length == 1) 
         return found[0];
     return found;
-}
+};
 
 // findTags         :   finds tags whose (input) attribute matches an input value
 // config params    : 
@@ -578,16 +579,16 @@ BQObject.prototype.findTags = function(config)
         currentObj = this.tags[i];
         if (currentObj[config.attr] == config.value)
         {
-            found.push(currentObj)
+            found.push(currentObj);
             if (config.returnFirst)
                 break;
         }
         else if (config.deep)
-            found = found.concat(currentObj.findTags(config))
+            found = found.concat(currentObj.findTags(config));
     }
     
     return found;
-}
+};
 
 BQObject.prototype.testAuth = function(user, cb, loaded, authRecord)
 {
@@ -615,7 +616,7 @@ BQObject.prototype.testAuth = function(user, cb, loaded, authRecord)
         // no user matching the uri was found
         cb(false);
     }
-}
+};
 
 BQObject.prototype.getAuth = function(cb, loaded, authRecord)
 {
@@ -628,7 +629,7 @@ BQObject.prototype.getAuth = function(cb, loaded, authRecord)
     }
     else
         cb(authRecord);
-}
+};
 
 BQObject.attributes_skip = { 'uri':undefined, 'src':undefined, 'permission':undefined, 
                              'ts':undefined, 'owner':undefined, 'parent':undefined, 
@@ -672,13 +673,13 @@ function clean_resources(resource, skiptemplate) {
     
     for (var p=0; (r=resource.children[p]); p++)
         clean_resources(r, skiptemplate);        
-}
+};
 
 BQObject.prototype.clone = function (skiptemplate) {
     var resource = Ext.clone(this);
     clean_resources(resource, skiptemplate);
     return resource;
-}
+};
 
 BQObject.prototype.toDict  = function (deep, found, prefix) {
     deep = deep || false;
@@ -717,7 +718,7 @@ BQObject.prototype.toDict  = function (deep, found, prefix) {
             t.toDict (deep, found, prefix+t.name+'/');
     }
     return found;
-}
+};
 
 BQObject.prototype.toNestedDict1 = function(deep)
 {
@@ -736,7 +737,7 @@ BQObject.prototype.toNestedDict1 = function(deep)
     }
     
     return dict;
-}
+};
 
 BQObject.prototype.toNestedDict = function(deep)
 {
@@ -756,15 +757,15 @@ BQObject.prototype.toNestedDict = function(deep)
             tags[this.tags[i].name] = this.tags[i].toNestedDict(deep);
 
     return {data:data, tags:tags};
-}
+};
 
 BQObject.prototype.fromNestedDict = function(dict)
 {
     Ext.apply(this, dict.data);
     
     for (var tag in dict.tags)
-        this.addtag().fromNestedDict(dict.tags[tag])
-} 
+        this.addtag().fromNestedDict(dict.tags[tag]);
+};
 
 BQObject.prototype.fromNestedDict1 = function(dict)
 {
@@ -785,7 +786,7 @@ BQObject.prototype.fromNestedDict1 = function(dict)
         else
             this.addtag({name:tag, value:value});
     }
-} 
+};
 
 BQObject.prototype.create_flat_index = function ( index, prefix ) {
     index = index || {};
@@ -800,7 +801,7 @@ BQObject.prototype.create_flat_index = function ( index, prefix ) {
             index = t.create_flat_index(index, prefix+t.name+'/');
     }
     return index;
-} 
+};
 
 // dima: not being used
 BQObject.prototype.find_resource  = function (ty) {
@@ -808,7 +809,7 @@ BQObject.prototype.find_resource  = function (ty) {
         if (this.children[i].type == ty) 
             return this.children[i];
     return null;
-}
+};
 
 // dima: used in template, needs different name, e.g. remove_resource_by_uri ?
 BQObject.prototype.remove_resource = function (uri) {
@@ -818,7 +819,7 @@ BQObject.prototype.remove_resource = function (uri) {
             this.children.splice(i,1);
         }
     return null;
-}
+};
 
 BQObject.prototype.remove = function (o) {
     var index = this.tags.indexOf (o);
@@ -831,7 +832,7 @@ BQObject.prototype.remove = function (o) {
           if (index != -1) this.children.splice(index,1);
       }
     }
-}
+};
 
 BQObject.prototype.save_ = function (parenturi, cb, errorcb) {
     this.testReadonly();    
@@ -844,7 +845,7 @@ BQObject.prototype.save_ = function (parenturi, cb, errorcb) {
         parenturi = parenturi || '/data_service/'+this.resource_type+'/';
         xmlrequest(parenturi, callback(docobj, 'response_', 'created', errorcb, cb),'post', req, errorcb);
     }
-}
+};
 
 BQObject.prototype.save_ww = function (parenturi, cb, errorcb) {
     this.testReadonly();    
@@ -857,7 +858,7 @@ BQObject.prototype.save_ww = function (parenturi, cb, errorcb) {
         parenturi = parenturi || '/data_service/'+this.resource_type+'/';
         xmlrequest(parenturi, callback(obj, 'response_', 'created', errorcb, cb),'post', req, errorcb);
     }
-}
+};
 
 
 // dima: used in browser factory, same thing as save but always does POST 
@@ -869,7 +870,7 @@ BQObject.prototype.append = function (cb, errorcb)
     var req = docobj.toXML();
     
     xmlrequest(docobj.uri, callback(docobj, 'response_', 'update', errorcb, cb),'post', req, errorcb);
-}
+};
 
 BQObject.prototype.response_ = function (code, errorcb, cb, xmldoc) {
     // The response with FAIL or the save URI is here
@@ -885,7 +886,7 @@ BQObject.prototype.response_ = function (code, errorcb, cb, xmldoc) {
         this.tags = [];
         this.gobjects = [];
         try {
-            BQFactory.createFromXml(node, this, null)
+            BQFactory.createFromXml(node, this, null);
         } catch  (err) {
             console.log ("save_" + err);
             if (errorcb) errorcb ({ xmldoc : xmldoc, message : 'parse error in BQObject.response_' });
@@ -895,7 +896,7 @@ BQObject.prototype.response_ = function (code, errorcb, cb, xmldoc) {
     if (cb != null) {
         cb (this);
     }
-}
+};
 
 
 // Load tags should setup a resource if does not exist and mark
@@ -913,7 +914,7 @@ BQObject.prototype.load_tags = function (cb, url, progress) {
     BQFactory.load (url + "?view=deep", 
                     callback(this, 'loaded_tags', cb), 
                     progress);
-}
+};
 
 
 // load_children : function to facilitate progressive fetching of tags/gobjects etc. 
@@ -931,7 +932,7 @@ BQObject.prototype.load_children = function (config)
         depth : config.depth || 'deep',
         vector : config.vector || 'tags',
         cb : config.cb || Ext.emptyFn
-    })
+    });
     
     Ext.apply(config,
     {
@@ -950,7 +951,7 @@ BQObject.prototype.load_children = function (config)
         }, this, [config], true), 
         progresscb : config.progress
     });
-}
+};
 
 // dima: repeated from load_tags
 BQObject.prototype.loadTags = function (config)
@@ -958,7 +959,7 @@ BQObject.prototype.loadTags = function (config)
     config.attrib='tag';
     config.vector='tags';
     BQObject.prototype.load_children.call(this, config);
-}
+};
 
 // dima: repeated from load_gobjects
 BQObject.prototype.loadGObjects = function (config)
@@ -966,12 +967,12 @@ BQObject.prototype.loadGObjects = function (config)
     config.attrib='gobject';
     config.vector='gobjects';
     BQObject.prototype.load_children.call(this, config);
-}
+};
 
 BQObject.prototype.loaded_tags = function (cb, resource) {
     this.tags = resource.tags;
     if (cb) cb(resource.tags);
-}
+};
 
 BQObject.prototype.load_gobjects = function (cb, url, progress) {
     if (!url) url = this.uri + "/gobject";
@@ -979,12 +980,12 @@ BQObject.prototype.load_gobjects = function (cb, url, progress) {
     BQFactory.load (url + "?view=deep", 
                     callback(this, 'loaded_gobjects', cb), 
                     progress);
-}
+};
 
 BQObject.prototype.loaded_gobjects = function (cb, resource) {
     this.gobjects = resource.gobjects;
     if (cb) cb(resource.gobjects);
-}
+};
 
 BQObject.prototype.save_gobjects = function (cb, url, progress, errorcb) {
     this.testReadonly();    
@@ -993,7 +994,8 @@ BQObject.prototype.save_gobjects = function (cb, url, progress, errorcb) {
     resource.gobjects = this.gobjects;
     resource.created = false;   // HACK 
     resource.save_(resource.uri, cb, errorcb);
-}
+};
+
 BQObject.prototype.save_tags = function (cb, url, progress, errorcb) {
     this.testReadonly();    
     if (!url) url = this.uri;
@@ -1001,12 +1003,12 @@ BQObject.prototype.save_tags = function (cb, url, progress, errorcb) {
     resource.tags = this.tags;
     resource.created = false;   // HACK 
     resource.save_(resource.uri, cb, errorcb);
-}
+};
 
 BQObject.prototype.dispose = function (){
     visit = new BQVisitor();
     visit.visit = function (n) { n.doc = null;  };
-    visit.visitall(this)
+    visit.visitall(this);
 };
     
 BQObject.prototype.addtag = function (tag, deep){
@@ -1021,12 +1023,12 @@ BQObject.prototype.addtag = function (tag, deep){
     tag.doc = this.doc;
     this.dirty = true;
     return tag;    
-}
+};
 
 BQObject.prototype.addtags = function (tags, deep) {
     for (var i=0; i<tags.length; i++)
         this.addtag(tags[i], deep);   
-}
+};
 
 BQObject.prototype.addgobjects=function (gob){
     if (! (gob instanceof BQGObject)) {
@@ -1040,13 +1042,14 @@ BQObject.prototype.addgobjects=function (gob){
     gob.doc = this.doc;
     this.dirty = true;
     return gob;
-}
+};
 
 BQObject.prototype.addchild = function (kid) {
     kid.setParent(this);
     kid.doc = this.doc;
     this.dirty = true;
-}
+};
+
 BQObject.prototype.convert_tags=function (){
      for (var i=0; i < this.tags.length; i++) {
          var tag = this.tags[i];
@@ -1061,7 +1064,7 @@ BQObject.prototype.convert_tags=function (){
              this[nm].push (vl);
          }
      }
-}
+};
 
 //-----------------------------------------------------------------------------
 // BQResource represents an addressable resource.
@@ -1076,7 +1079,7 @@ BQObject.prototype.convert_tags=function (){
 function BQResource (uri, doc) {
     BQObject.call(this, uri, doc);
     this.resource_type = 'resource';
-}
+};
 
 BQResource.prototype = new BQObject();
 
@@ -1088,7 +1091,7 @@ BQResource.prototype = new BQObject();
 function BQTemplate (uri, doc) {
     BQObject.call(this, uri, doc);
     this.resource_type = 'template';
-}
+};
 BQTemplate.prototype = new BQObject();
 
 
@@ -1099,7 +1102,7 @@ BQTemplate.prototype = new BQObject();
 function BQImage (uri){
     BQObject.call(this, uri);
     this.resource_type = "image";
-}
+};
 BQImage.prototype = new BQObject();
 //extend(BQImage, BQObject);
 
@@ -1118,7 +1121,7 @@ BQImage.prototype.initializeXml = function (node) {
     this.t    = attribInt(node,'t');
     this.ch   = attribInt(node,'ch');
     */
-}
+};
 
 //-----------------------------------------------------------------------------
 // BQFile
@@ -1127,13 +1130,13 @@ BQImage.prototype.initializeXml = function (node) {
 function BQFile (uri){
     BQObject.call(this, uri);
     this.resource_type = 'file';
-}
+};
 BQFile.prototype = new BQObject();
 //extend(BQFile, BQObject);
 
 BQFile.prototype.initializeXml = function (node) {
     BQObject.prototype.initializeXml.call(this, node);
-}
+};
 
 //-----------------------------------------------------------------------------
 // BQTag
@@ -1146,7 +1149,7 @@ function BQTag (uri, name, value, type) {
     this.name  = name;
     this.value = value;
     this.type  = type;
-}
+};
 BQTag.prototype = new BQObject();
 //extend(BQTag, BQObject);
 
@@ -1156,7 +1159,7 @@ BQTag.prototype.setParent = function (p) {
     p.tags = p.tags || [];
     p.tags.push (this);
     this.parent = p;
-}
+};
 
 //-----------------------------------------------------------------------------
 // BQGObject
@@ -1169,9 +1172,20 @@ function BQGObject(ty, uri){
     this.name = null;
     this.vertices = [];
     this.resource_type = "gobject";
-}
+};
 BQGObject.prototype = new BQObject();
 //extend(BQGObject,BQObject)
+
+BQGObject.primitives = {
+    circle   : 'circle',
+    ellipse  : 'ellipse',
+    label    : 'label',
+    point    : 'point',
+    polygon  : 'polygon',
+    polyline : 'polyline',
+    rectangle: 'rectangle',
+    square   : 'square',
+};
 
 BQGObject.prototype.initializeXml = function (node) {
     BQObject.prototype.initializeXml.call(this, node);
@@ -1189,13 +1203,17 @@ BQGObject.prototype.initializeXml = function (node) {
     for (var i=0; i<vertices.length; i++)
         this.vertices.push(new BQVertex(vertices[i]));
 
-}
+};
 
 BQGObject.prototype.setParent = function (p) {
     p.gobjects = p.gobjects || [];    
     p.gobjects.push (this);
     this.parent = p;    
-}
+};
+
+BQGObject.prototype.isPrimitive = function () {
+    return this.type in BQGObject.primitives;
+};
 
 //-----------------------------------------------------------------------------
 // BQVisitor
@@ -1203,20 +1221,20 @@ BQGObject.prototype.setParent = function (p) {
 //-----------------------------------------------------------------------------
 
 function BQVisitor () {
-}
+};
 BQVisitor.prototype.visit_array = function (l, arglist){
     for (var i=0; i < l.length; i++) {
         this.visitall(l[i], arglist);
     }
-}
+};
 BQVisitor.prototype.visit_special_array = function (l, arglist){
     for (var i=0; i < l.length; i++) {
         this.visit_special(l[i], arglist);
     }
-}
-BQVisitor.prototype.visit = function(n, arglist) {}
-BQVisitor.prototype.start = function(n, arglist) {}
-BQVisitor.prototype.finish = function(n, arglist) {}
+};
+BQVisitor.prototype.visit = function(n, arglist) {};
+BQVisitor.prototype.start = function(n, arglist) {};
+BQVisitor.prototype.finish = function(n, arglist) {};
 BQVisitor.prototype.visitall = function (root, arglist) {
     var stack = [];
     stack.push (root);
@@ -1229,7 +1247,7 @@ BQVisitor.prototype.visitall = function (root, arglist) {
         for (var i=0; i < kids.length; i++) 
             stack.push (kids[i]);
     }
-}
+};
 BQVisitor.prototype.visit_special = function(root,arglist) {
     var stack = [];
     stack.push ([root,null]);
@@ -1244,13 +1262,13 @@ BQVisitor.prototype.visit_special = function(root,arglist) {
         var kids  = node.getkids();
         if (kids.length > 0) { // push an end of parent mark/
             stack.push([null, node]);
-            this.start (node, arglist)
+            this.start (node, arglist);
         }
         this.visit (node,  arglist);
         for (var i=0; i < kids.length; i++ ) 
             stack.push ([kids[i], node]);
     }
-}
+};
 ////////////////////////////////////////////////
 // A visitor with nodes on the class
 // A visitor supporting type visits 
@@ -1265,7 +1283,7 @@ function BQClassVisitor () {
     this.START = 'start';
     this.FINISH = 'finish';
     this.state = null;
-}
+};
 BQClassVisitor.prototype = new BQVisitor();
 BQClassVisitor.prototype.callnode = function (n, arglist){
     var f = this[n.type] || this['default_visit'] || null;
@@ -1273,19 +1291,19 @@ BQClassVisitor.prototype.callnode = function (n, arglist){
         var args = [n].concat(arglist);
         f.apply (this, args);
     }
-}
+};
 BQClassVisitor.prototype.visit = function (n, arglist){
     this.state=this.VISIT;
     this.callnode(n, arglist);
-}
+};
 BQClassVisitor.prototype.start = function (n,arglist){
     this.state=this.START;
     this.callnode(n, arglist);
-}
+};
 BQClassVisitor.prototype.finish = function (n,arglist){
     this.state=this.FINISH;
     this.callnode(n, arglist);
-}
+};
 //////////////////////////////////////////////////
 // Forward node function to another proxy class
 // The node should have a type field which 
@@ -1294,7 +1312,7 @@ BQClassVisitor.prototype.finish = function (n,arglist){
 
 function BQProxyClassVisitor (visitor) {
     this.proxy = visitor;
-}
+};
 BQProxyClassVisitor.prototype = new BQClassVisitor();
 BQProxyClassVisitor.prototype.callnode = function (n, arglist){
     var f = this.proxy[n.type] || this.proxy['default_visit'] || null;
@@ -1302,7 +1320,7 @@ BQProxyClassVisitor.prototype.callnode = function (n, arglist){
         var args = [this, n].concat (arglist);
         f.apply (this.proxy, args);
     }
-}
+};
 //////////////////////////////////////////////////
 // Visitor Utility function 
 // Usage:   visit_array (some_array, function (n[,args]) {..}[,args]);
@@ -1312,13 +1330,13 @@ function visit_all (node, cb) {
     var v = new BQVisitor();
     v.visit = cb;
     v.visitall(node, args);
-}
+};
 function visit_array (arr, cb) {
     var args = Array.prototype.slice.call(arguments,2);
     var v = new BQVisitor();
     v.visit = cb;
     v.visit_array(arr, args);
-}
+};
 
 
 //-------------------------------------------------------------------------------
@@ -1364,7 +1382,7 @@ function BQImagePhys(bqimage) {
     this.loadcallback = null;
     this.image = bqimage;
     //this.init();
-}
+};
 
 BQImagePhys.prototype.init = function () {
   if (!this.image) return;
@@ -1403,14 +1421,14 @@ BQImagePhys.prototype.init = function () {
     this.channel_names[1] = 'Green';
     this.channel_names[2] = 'Blue';        
   }             
-}
+};
 
 function combineValue( v1, v2, def ) {
   //if (v1 && v1 != undefined && v1 != NaN && v1 != '') return v1;  
   //if (v2 && v2 != undefined && v2 != NaN && v2 != '') return v2;  
   //return def;  
   return v1 || v2 || def;
-}
+};
 
 BQImagePhys.prototype.normalizeMeta = function() {
   console.log ("BQImagePhys: Aggregate metadata");  
@@ -1434,7 +1452,7 @@ BQImagePhys.prototype.normalizeMeta = function() {
       this.channel_colors = this.channel_colors_ds;
   
   this.initialized = true;  
-}
+};
 
 BQImagePhys.prototype.load = function(cb) {
     this.initialized = undefined;
@@ -1444,7 +1462,7 @@ BQImagePhys.prototype.load = function(cb) {
       this.image.load_tags(callback(this, 'onloadDS'));
     else
       this.onloadDS();
-}
+};
 
 BQImagePhys.prototype.onload = function() {
   console.log ("BQImagePhys: onload test: " + this.is_done + " " + this.ds_done );    
@@ -1452,7 +1470,7 @@ BQImagePhys.prototype.onload = function() {
     this.normalizeMeta();
     if (this.loadcallback != null) this.loadcallback (this);
   }          
-}
+};
 
 BQImagePhys.prototype.onloadIS = function (image) {
   console.log ("BQImagePhys: Got metadata from IS");   
@@ -1513,7 +1531,7 @@ BQImagePhys.prototype.onloadIS = function (image) {
   
   this.is_done = true; 
   this.onload();
-}
+};
 
 BQImagePhys.prototype.onloadDS = function ( ) { 
     console.log ("BQImagePhys: Got metadata from DS");  
@@ -1570,7 +1588,7 @@ BQImagePhys.prototype.onloadDS = function ( ) {
 
     this.ds_done = true; 
     this.onload(); 
-}
+};
 
 BQImagePhys.prototype.getPixelInfo = function (i) { 
     var r = [undefined, undefined];
@@ -1579,15 +1597,15 @@ BQImagePhys.prototype.getPixelInfo = function (i) {
         r[1] = this.pixel_units[i];        
     }
     return r;
-}
+};
 
 BQImagePhys.prototype.getPixelInfoZ = function () { 
     return this.getPixelInfo(2);
-}
+};
 
 BQImagePhys.prototype.getPixelInfoT = function () { 
     return this.getPixelInfo(3);
-}
+};
 
 //-------------------------------------------------------------------------------
 // parseUri 
@@ -1623,19 +1641,19 @@ function parseUri(sourceUri){
     }
     
     return uri;
-}
+};
 
 function BQUrl (u){
   this.uri = parseUri(u);
-}
+};
 
 BQUrl.prototype.toString = function () {
   return this.uri['source'];
-}
+};
 
 BQUrl.prototype.server = function () {
   return this.uri['protocol'] + '://' + this.uri['authority'];
-}
+};
 
 //-------------------------------------------------------------------------------
 // BQUser
@@ -1644,7 +1662,7 @@ BQUrl.prototype.server = function () {
 function BQUser (){
     BQObject.call(this);
     this.resource_type = "user";
-}
+};
 
 BQUser.prototype = new BQObject();
 //extend(BQUser, BQObject);
@@ -1655,12 +1673,12 @@ BQUser.prototype.initializeXml = function (node) {
     this.display_name  = this.user_name;
     this.email         = this.value;
     this.email_address = this.email;
-}
+};
 
 BQUser.prototype.afterInitialized = function () {
     var display_name  = this.find_tags('display_name');
     this.display_name = (display_name && display_name.value)?display_name.value:this.user_name;
-}
+};
 
 BQUser.prototype.get_credentials = function( cb) {
 //    var u = new BQUrl(this.uri);
@@ -1668,13 +1686,13 @@ BQUser.prototype.get_credentials = function( cb) {
 //    BQFactory.load (this.server_uri+bq.url("/auth_service/credentials/"), 
 //                    callback (this, 'on_credentials', cb));
     BQFactory.load (bq.url('/auth_service/credentials/'));
-}
+};
 
 BQUser.prototype.on_credentials = function(cb, cred) {
     this.credentials = cred;
     this.credentials.convert_tags();
     if (cb) cb(cred);
-}
+};
 
 
 //-------------------------------------------------------------------------------
@@ -1685,7 +1703,7 @@ function BQAuth (){
     BQObject.call(this);
     this.resource_type = "auth";
     this.xmlfields = [ "action", "user", "email" ] ;
-}
+};
 
 BQAuth.prototype = new BQObject();
 //extend(BQAuth, BQObject);
@@ -1697,12 +1715,12 @@ BQAuth.prototype.initializeXml = function (node) {
     this.action = attribStr(node, 'action');
     this.email  = attribStr(node, 'email');
     this.user   = attribStr(node, 'user');
-}
+};
 
 BQAuth.prototype.save_ = function (node)
 {
     debugger;
-}
+};
 
 //-------------------------------------------------------------------------------
 // BQModule
@@ -1725,7 +1743,7 @@ function BQModule () {
 
     BQObject.call(this);
     this.resource_type = "module";
-}
+};
 BQModule.prototype = new BQObject();
 
 BQModule.prototype.afterInitialized = function () {
@@ -1764,7 +1782,7 @@ BQModule.prototype.afterInitialized = function () {
     }
     
     this.updateTemplates();
-}
+};
 
 BQModule.prototype.updateTemplates = function () {
     // create accepted_type
@@ -1788,12 +1806,12 @@ BQModule.prototype.updateTemplates = function () {
             e.template.accepted_type = act;
         }
     }
-}
+};
 
 
 BQModule.prototype.fromNode = function (node) {
     this.initializeXml(node);
-}
+};
 
 BQModule.prototype.createMEX = function( ) {
     var mex = new BQMex();
@@ -1823,7 +1841,7 @@ BQModule.prototype.createMEX = function( ) {
     }
     
     return mex;
-}
+};
 
 
 //-------------------------------------------------------------------------------
@@ -1833,18 +1851,18 @@ BQModule.prototype.createMEX = function( ) {
 function BQMex (){
     BQObject.call(this);
     this.resource_type = "mex";
-}
+};
 
 BQMex.prototype = new BQObject();
 BQMex.prototype.initializeXml = function (node) {
     BQObject.prototype.initializeXml.call(this, node);    
     this.status = this.value;
-}
+};
 
 BQMex.prototype.hasIterables = function () {
     if (!this.iterables) return false;
     return (Object.keys(this.iterables).length>0);
-}
+};
 
 // creates mapping from iterable resources in sub MEXes to their MEXes
 BQMex.prototype.findMexsForIterable = function (name, root) {
@@ -1864,7 +1882,7 @@ BQMex.prototype.findMexsForIterable = function (name, root) {
             if (resource) this.iterables[name][resource] = o;
         }
     }
-}
+};
 
 BQMex.prototype.afterInitialized = function () {
     //BQObject.prototype.afterInitialized.call ();
@@ -1896,7 +1914,7 @@ BQMex.prototype.afterInitialized = function () {
             this.outputs_index[name] = r;   
         }
     }    
-}
+};
 
 
 //-------------------------------------------------------------------------------
@@ -1916,7 +1934,7 @@ BQMex.prototype.afterInitialized = function () {
 function BQDataset (){
     BQObject.call(this);
     this.resource_type = "dataset";
-}
+};
 BQDataset.prototype = new BQObject();
 
 // dima: some method is required to figure out if an additional fetch is required
@@ -1944,24 +1962,25 @@ BQDataset.prototype.getMembers = function (cb) {
         if (cb) cb(this);
     }
     return this;    
-}
+};
 BQDataset.prototype._loaded = function (cb, resource) {
     this.members = resource.children || [];
     if (cb) cb(this);
-}
+};
 
 BQDataset.prototype.setMembers = function (nvs) {
     this.values = nvs;
-}
+};
 
 BQDataset.prototype.appendMembers = function (newmembers, cb) {
-    this.getMembers (callback (this, this.appendMembersResp, newmembers, cb))
-}
+    this.getMembers (callback (this, this.appendMembersResp, newmembers, cb));
+};
+
 BQDataset.prototype.appendMembersResp = function (newmembers, cb, members_tag) {
     var members = members_tag.values.concat(newmembers);
     this.setMembers (members);
     if (cb) cb();
-}
+};
 
 // deleteMembers    : Deletes members of a temporary dataset (which hasn't been saved, hence no URI)
 //                  : Calls individual deletes on the resources and collects results
@@ -1977,7 +1996,7 @@ BQDataset.prototype.tmp_deleteMembers = function(cb)
         tmp_success :   0,
         tmp_failure :   0,
         tmp_final   :   this.tmp_members.length
-    })
+    });
     
     function result(success)
     {
@@ -1989,7 +2008,7 @@ BQDataset.prototype.tmp_deleteMembers = function(cb)
     
     for (var i=0; i<this.tmp_members.length; i++)
         this.tmp_members[i].resource.delete_(Ext.pass(result, [true], this), Ext.pass(result, [false], this));
-}
+};
 
 // method for a temporary dataset to set new members
 // assumes members are BQResources for now
@@ -1999,7 +2018,7 @@ BQDataset.prototype.tmp_setMembers = function(members)
         members = [members];
     
     this.tmp_members = members;
-}
+};
 
 // method for a temporary dataset to download all member resources into one TARball
 BQDataset.prototype.tmp_downloadMembers = function()
@@ -2010,7 +2029,7 @@ BQDataset.prototype.tmp_downloadMembers = function()
         members.push(this.tmp_members[i].resource);
         
     exporter.downloadResource(members, 'tar');
-}
+};
 
 // method for a temporary dataset to change permission on all member resources
 BQDataset.prototype.tmp_changePermission = function(permission, success, failure)
@@ -2024,13 +2043,13 @@ BQDataset.prototype.tmp_changePermission = function(permission, success, failure
     
     for (var i=0; i<this.tmp_members.length; i++)
         this.tmp_members[i].changePrivacy(permission, Ext.pass(result, [no, success]));
-}
+};
 
 // method for a temporary dataset to share all member resources
 BQDataset.prototype.tmp_shareMembers = function()
 {
     var exporter = Ext.create('BQ.ShareDialog.Offline', {resources : this.tmp_members});
-}
+};
 
 
 
@@ -2045,7 +2064,7 @@ function BQSession () {
     this.expires = null;
     this.user = undefined;
     this.user_uri = undefined;    
-}
+};
 
 BQSession.prototype= new BQObject();
 BQSession.current_session = undefined;
@@ -2053,7 +2072,7 @@ BQSession.current_session = undefined;
 BQSession.reset_timeout  = function (){
     if (BQSession.current_session)
         BQSession.current_session.reset_timeout();
-}
+};
 BQSession.initialize_timeout = function (baseurl, opts) {
     BQFactory.load (baseurl + bq.url("/auth_service/session"), 
                     function (session) {
@@ -2061,13 +2080,13 @@ BQSession.initialize_timeout = function (baseurl, opts) {
                         session.set_timeout (baseurl, opts);
                         if (session.onsignedin) session.onsignedin(session); 
                     }, null, false);
-}
+};
 BQSession.clear_timeout = function (baseurl) {
     if (BQSession.current_session) {
         clearTimeout(BQSession.current_session.current_timer);
         BQSession.current_session = undefined;
     }
-}
+};
 
 BQSession.prototype.parseTags  = function (){
     var timeout = this.find_tags ('timeout');
@@ -2088,17 +2107,17 @@ BQSession.prototype.parseTags  = function (){
         var sess = this;        
         if (sess.onnouser) sess.onnouser();    
     } 
-}
+};
 
 BQSession.prototype.hasUser = function () {
     return this.user ? true : false;
-}
+};
 
 BQSession.prototype.setUser = function (user) {
     this.user = user;
     if (this.ongotuser) 
         this.ongotuser(this.user);   
-}
+};
 
 BQSession.prototype.set_timeout  = function (baseurl, opts) {
     if (opts) {
@@ -2117,7 +2136,7 @@ BQSession.prototype.set_timeout  = function (baseurl, opts) {
     } else {
         console.log ('no expire');
     }
-}
+};
 
 BQSession.prototype.reset_timeout  = function (){
     clearTimeout (this.current_timer);
@@ -2125,10 +2144,10 @@ BQSession.prototype.reset_timeout  = function (){
         this.current_timer = setTimeout (this.callback, this.timeout);
     //console.log ('timeout reset:' + this.timeout);
     BQSession.current_session = this;
-}
+};
 BQSession.prototype.cancel_timeout  = function (){
     clearTimeout (this.current_timer);
-}
+};
 
 BQSession.prototype.check_timeout = function (baseurl) {
     BQSession.clear_timeout();
@@ -2136,7 +2155,7 @@ BQSession.prototype.check_timeout = function (baseurl) {
                     function (session){
                         session.session_timeout (baseurl);
                     }, null, false);
-}
+};
 BQSession.prototype.session_timeout = function (baseurl) {
     this.parseTags();
     // timeout in more than 30 seconds ?  then just reset 
@@ -2149,7 +2168,7 @@ BQSession.prototype.session_timeout = function (baseurl) {
     if (this.onsignedout) this.onsignedout(); 
     //window.location = baseurl + "/auth_service/logout";
     //alert("Your session has  timed out");
-}
+};
 
 
 //-------------------------------------------------------------------------
@@ -2161,7 +2180,7 @@ function BQQuery(uri, parent, callback) {
     this.tags = new Array();
     this.callback = callback;  
     makeRequest( uri, this.parseResponse, this , "GET", null ); 
-} 
+};
 
 BQQuery.prototype.parseResponse = function(o, data) {
     var tags = data.getElementsByTagName("tag");
@@ -2169,6 +2188,6 @@ BQQuery.prototype.parseResponse = function(o, data) {
         o.tags[i] = tags[i].getAttribute('value');
     }
     o.callback(o);
-}
+};
 
 

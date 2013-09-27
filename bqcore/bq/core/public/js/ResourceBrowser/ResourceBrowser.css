@@ -205,6 +205,34 @@ dima: Global mask style is defined and overriden in bisquik_extjs_fixes in js an
 }
 
 /* Customized resourceQueue slider */
+
+/* dima: extjs 4.1 version */
+.sliderBackground .x-slider-horz,.sliderBackground .x-slider-horz .x-slider-end,.sliderBackground .x-slider-horz .x-slider-inner {
+    background-image:url('../ResourceBrowser/Images/res-slider-bg.png') !important;
+}
+
+
+.sliderLeftButton .x-slider-horz {
+    padding-left:12px;
+    background:transparent no-repeat 0 -61px;
+}
+
+.sliderRightButton .x-slider-horz .x-slider-end {
+    margin-right:-5px;
+    background:transparent no-repeat right -61px;
+}
+
+.sliderBothButtons .x-slider-horz .x-slider-end {
+    margin-right:-10px;
+    background:transparent no-repeat right -61px;
+}
+
+.sliderBothButtons .x-slider-horz {
+    padding-left:12px;
+    background:transparent no-repeat 0 -61px;
+}
+
+/* dima: extjs 4.2.1+ version
 .sliderBackground .x-slider-horz,.sliderBackground .x-slider-horz .x-slider-end,.sliderBackground .x-slider-horz .x-slider-inner {
     z-index : -1;
 	background-image:url('../ResourceBrowser/Images/res-slider-bg.png') !important;
@@ -230,6 +258,7 @@ dima: Global mask style is defined and overriden in bisquik_extjs_fixes in js an
 	padding-left:12px;
 	background:transparent no-repeat 0 -62px;
 }
+*/
 
 .fieldSet {
 	border-left:0;
