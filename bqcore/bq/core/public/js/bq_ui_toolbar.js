@@ -44,7 +44,6 @@ function analysisAction(o, e) {
     var w = Math.round(Math.min(500, BQApp?BQApp.getCenterComponent().getWidth()*0.8:document.width*0.8));    
     var h = Math.round(BQApp?BQApp.getCenterComponent().getHeight()*0.99:document.height*0.99);
     
-    //var resourceBrowser  = new Bisque.ResourceBrowser.Dialog({    
     var resourceBrowser  = Ext.create('Bisque.ResourceBrowser.Browser', {
         layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.IconList,
         wpublic: true,
@@ -55,16 +54,17 @@ function analysisAction(o, e) {
         listeners : { 
             'Select' : function(rb, module) {
                 if (BQApp.resource) 
-                    pageAction('/module_service/' + module.name + '/?resource=' + BQApp.resource.uri)
+                    pageAction('/module_service/' + module.name + '/?resource=' + BQApp.resource.uri);
                 else    
-                    pageAction('/module_service/' + module.name)
+                    pageAction('/module_service/' + module.name);
             },
         }
     });
 
     var tip = Ext.create('Ext.tip.ToolTip', {
         target: o.el,
-        anchor: "right",
+        //anchor: "right",
+        anchor: 'bottom',
         width :  w,
         maxWidth: w,
         minWidth: w,
@@ -96,7 +96,7 @@ Ext.define('BQ.Application.Toolbar', {
     
     title: 'Bisque demo', 
     toolbar_opts: { 'browse':true, 'upload':true, 'download':true, 'services':true, 'query':true },   
-    image_query_text: 'Find images using tags',
+    image_query_text: 'Find resources using tags',
 
     tools_big_screen: [ 'button_upload', 'button_download' ],  
     
@@ -109,6 +109,9 @@ Ext.define('BQ.Application.Toolbar', {
     
     types_ignore: { 'mex':null, 'user':null, 'image':null, 'module':null, 
                     'service':null, 'system':null, 'file':null, }, 
+                    
+    resource_preferred : {'image':null, 'dataset':null, 'template':null, 'mex':null, 'file':null, },                    
+    resource_system: { 'user':null, 'module':null, 'service':null, 'system':null, }, 
     
     initComponent : function() {
         this.images_base_url = this.images_base_url || bq.url('/images/toolbar/');
@@ -159,16 +162,26 @@ Ext.define('BQ.Application.Toolbar', {
             plain: true,
             hidden: true,
             items: [{
+                text    : 'Create a new <b>dataset</b>', 
+                itemId  : 'menu_create_dataset', 
+                handler: Ext.Function.pass(this.createNewResource, ['dataset'], this),
+                scope   : this, 
+            },{
+                text    : 'Create a new <b>template</b>', 
+                itemId  : 'menu_create_template', 
+                handler: Ext.Function.pass(this.createNewResource, ['template'], this),
+                scope   : this, 
+            }, '-', '-', {
                 text    : 'Create a new resource', 
                 itemId  : 'menu_create_resource', 
                 handler : function() { this.createResource(); },
                 scope   : this, 
-            }, {
+            }/*, {
                 itemId  : 'menu_create_from_template', 
                 text    : 'Create resource from template', 
                 handler : function() {this.createResourceFromTemplate()}, //this.createResourceFromTemplate, Utkarsh : arg passed to that function should be blank
                 scope   : this, 
-            }, '-'],       
+            }*/],       
         };      
 
         //--------------------------------------------------------------------------------------
@@ -384,10 +397,11 @@ Ext.define('BQ.Application.Toolbar', {
                 width: 40, 
             }, {
                 xtype : 'button',
-                itemId: 'button_services', 
-                menu  : this.menu_services,
-                iconCls : 'icon-services', 
-                text  : 'Services', 
+                itemId: 'button_create', 
+                menu  : this.menu_create,
+                iconCls : 'icon-create', 
+                text  : 'Create', 
+                hidden: true,
             }, { 
                 text: 'Upload', 
                 itemId: 'button_upload', 
@@ -402,31 +416,39 @@ Ext.define('BQ.Application.Toolbar', {
                 tooltip: '', 
             }, {
                 xtype : 'button',
-                itemId: 'button_create', 
-                menu  : this.menu_create,
-                iconCls : 'icon-create', 
-                text  : 'Create', 
-                hidden: true,
+                itemId: 'button_analysis', 
+                //menu  : this.menu_services,
+                iconCls : 'icon-services', 
+                text  : 'Analyze', 
+                handler: analysisAction, 
+            }, {
+                xtype : 'button',
+                itemId: 'button_services', 
+                menu  : this.menu_services,
+                iconCls : 'icon-services', 
+                text  : 'Services', 
+                hidden: true, 
             }, {
                 itemId: 'menu_images', 
-                xtype:'splitbutton', 
-                text: 'Images', 
+                xtype:'button', 
+                text: 'Browse', 
                 iconCls : 'icon-browse', 
-                hidden: !browse_vis, 
-                tooltip: 'Browse images',
+                //hidden: !browse_vis, 
+                tooltip: 'Browse resources',
                 //menu: [{text: 'Menu Button 1'}], 
-                handler: function(c) { 
+                /*handler: function(c) { 
                     var q = '';
                     var m = toolbar.queryById('menu_query');
                     if (m && m.value != toolbar.image_query_text) { q = '?tag_query='+escape(m.value); }
                     document.location = bq.url('/client_service/browser'+q); 
-                },
+                },*/
             }, {
                 itemId: 'menu_resources', 
                 text: 'Resources', 
                 iconCls : 'icon-browse', 
-                hidden: browse_vis, 
                 tooltip: 'Browse resources',
+                //hidden: browse_vis, 
+                hidden: true, 
             }, { 
                 xtype: 'tbspacer', 
                 width: 10, 
@@ -553,9 +575,23 @@ Ext.define('BQ.Application.Toolbar', {
     },
 
     fetchResourceTypes : function() {
-        BQFactory.request ({uri : '/data_service/', 
-                            cb : callback(this, 'onResourceTypes'),
-                            cache : false});             
+        BQFactory.request ({
+            uri : '/data_service/', 
+            cb : callback(this, 'onResourceTypes'),
+            errorcb : function(error) { 
+                BQ.ui.error('Error fetching resource types:<br>'+error.message, 4000); 
+            },            
+            cache : false,
+        });  
+
+        BQFactory.request ({
+            uri : '/data_service/template/', 
+            cb : callback(this, 'onTemplateTypes'),
+            errorcb : function(error) { 
+                BQ.ui.error('Error fetching template types:<br>'+error.message, 4000); 
+            },            
+            cache : false,
+        });  
     }, 
 
     onResourceTypes : function(resource) {
@@ -567,25 +603,52 @@ Ext.define('BQ.Application.Toolbar', {
             types[r.name] = '/data_service/' + r.name;  
         }
         this.addBrowseResourceTypes(types);      
-        this.addCreateResourceTypes(types);           
+        this.addCreateResourceTypes(types); 
+    },
+
+    onTemplateTypes : function(resource) {
+        var types = [];
+        var r;
+        for (var i=0; (r=resource.children[i]); i++) {
+            types.push(r.name);  
+        }
+        types.sort();
+        types.reverse();
+        var name;
+        for (var i=0; (name=types[i]); i++) {
+            this.queryById('menu_create').insert(3, {
+                text    : 'Create a new <b>'+name+'</b>', 
+                itemId  : 'menu_create_'+name, 
+                handler: Ext.Function.pass(this.createNewTemplate, [name], this),
+                scope   : this, 
+            });            
+        }               
     },
     
     addBrowseResourceTypes : function(types) {
+        //types['image']   = '/data_service/image';        
+        //types['dataset'] = '/data_service/dataset'; 
+        //types['mex']     = '/data_service/mex'; 
+        
+        //resource_preferred : {'image':null, 'dataset':null, 'template':null, 'mex':null, 'file':null, },                    
+        //resource_system: { 'user':null, 'module':null, 'service':null, 'system':null, }, 
+        
         var menu = {
             xtype: 'menu',
             cls: 'toolbar-menu',
             plain: true,
-            items: [{
-                text: 'dataset', 
-                handler: Ext.Function.pass(pageAction, '/client_service/browser?resource=/data_service/dataset'),
-            }],
+            items: [],
         };
         
-        for (var name in types) {
-            if (name == 'dataset') continue;
+        var keys = Object.keys(types).sort();
+        //for (var name in types) {
+        var name = null;
+        for (var i=0; name=keys[i]; ++i) {            
+            //if (name == 'dataset') continue;
             menu.items.push({
                 text: name, 
-                handler: Ext.Function.pass(pageAction, '/client_service/browser?resource='+types[name]),
+                scope: this,
+                handler: Ext.Function.pass(this.doBrowse, '/client_service/browser?resource='+types[name]),
             });
         }        
 
@@ -594,8 +657,16 @@ Ext.define('BQ.Application.Toolbar', {
         this.queryById('menu_resources').menu = menu;        
     },
     
+    doBrowse : function (url) {
+        var q = '';
+        var m = this.queryById('menu_query');
+        if (m && m.value != this.image_query_text) { q = '&tag_query='+escape(m.value); }
+        pageAction(url+q);
+    },
+    
     addCreateResourceTypes : function(types) {
         var mytypes =  Ext.Object.merge(types, this.types_required);
+        /*
         for (var name in mytypes) {
             if (!(name in this.types_ignore))
             this.queryById('menu_create').add({
@@ -605,11 +676,12 @@ Ext.define('BQ.Application.Toolbar', {
                 handler: Ext.Function.pass(this.createResource, [types, name], this),
                 scope   : this, 
             });            
-        }        
+        }*/       
 
         this.queryById('menu_create_resource').handler = function() {this.createResource(mytypes);};
     },
     
+    /*
     createResourceFromTemplate  :   function(template)
     {
         if (!template)
@@ -619,7 +691,7 @@ Ext.define('BQ.Application.Toolbar', {
                 cb      :   Ext.bind(this.createResourceFromTemplate, this),
                 errorcb :   function(error){BQ.ui.error('createResourceFromTemplate: Error occured while fetching list of available templates.'+error.message, 4000)}
                 }
-            )
+        );
             
             return;
         }
@@ -696,6 +768,7 @@ Ext.define('BQ.Application.Toolbar', {
         }).show();
         
     },
+    */
    
     createResource : function(types, def) {
         var mykeys =  Ext.Object.merge(types, this.types_required);
@@ -763,7 +836,7 @@ Ext.define('BQ.Application.Toolbar', {
                 handler: function () {
                     var form = formpanel.getForm();
                     if (form.isValid()) {
-                        var v = form.getValues()
+                        var v = form.getValues();
                         var resource = BQFactory.make(v.type, undefined, v.name);
                         resource.save_('/data_service/'+v.type, 
                                        callback(this, this.onResourceCreated), 
@@ -782,6 +855,22 @@ Ext.define('BQ.Application.Toolbar', {
         }).show();
     },    
 
+    createNewResource : function(type) {
+        var t = type;
+        Ext.MessageBox.prompt(
+            'Create '+type, 
+            'Please enter a new <b>'+type+'</b> name:', 
+            function(btn, name) {
+                if (btn !== 'ok' || !name) return;
+                var resource = BQFactory.make(t, undefined, name);
+                resource.save_('/data_service/'+t, 
+                               callback(this, this.onResourceCreated), 
+                               callback(this, this.onResourceError));                
+            },
+            this
+        );
+    },    
+
     onResourceCreated: function(resource) {
         document.location = '/client_service/view?resource='+resource.uri;
     },
@@ -789,6 +878,19 @@ Ext.define('BQ.Application.Toolbar', {
     onResourceError: function(message) {
         BQ.ui.error('Error creating resource: <br>'+message);
     },
+   
+    createNewTemplate : function(type) {
+        var t = type;
+        Ext.MessageBox.prompt(
+            'Create an instance of '+type, 
+            'Please enter a new <b>'+type+'</b> name:', 
+            function(btn, name) {
+                if (btn !== 'ok' || !name) return;
+                BQ.TemplateManager.createResource({name: name}, this.onResourceCreated, t+'?view=deep');
+            },
+            this
+        );
+    },    
    
     onPreferences: function(pref) {
         this.preferences = pref;  
