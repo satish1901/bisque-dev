@@ -242,9 +242,9 @@ Ext.define('BQ.renderers.dataset', {
         this.preview.setTitle(this.resource.name?'Preview for "'+this.resource.name+'"':'Preview');    
     },     
 
-    changedError : function(message) {
+    changedError : function(o) {
         this.setLoading(false);
-        BQ.ui.error('Error creating resource: <br>'+message);
+        BQ.ui.error('Error creating resource: <br>'+o.message_short);
     },  
 
     checkAllowWrites : function(warn) {

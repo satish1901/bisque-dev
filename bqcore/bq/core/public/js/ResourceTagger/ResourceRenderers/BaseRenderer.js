@@ -31,7 +31,7 @@ Bisque.ResourceTagger.VertexRenderer = function(value, metaData, record)
     }
     comboHtml += '</select>';
 
-    return comboHtml
+    return comboHtml;
 };
 
 Bisque.ResourceTagger.RenderersAvailable =
@@ -58,9 +58,9 @@ Bisque.ResourceTagger.RenderersAvailable =
 Bisque.ResourceTagger.BaseRenderer = function(value, metaData, record)
 {
     var tagType = record.data.type.toLowerCase();
-    if (tagType.indexOf('data_service/template')!=-1)
+    if (tagType.indexOf('data_service/template')!=-1 && record.raw.template && record.raw.template.Type )
         tagType = record.raw.template.Type.toLowerCase();
-    
+            
     var renderer = Bisque.ResourceTagger.RenderersAvailable[tagType];
 
     if(renderer)

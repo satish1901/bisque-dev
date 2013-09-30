@@ -30,14 +30,19 @@ Ext.define('BQ.TemplateManager',
                 Ext.apply(resource, {
                     resource_type   :   template.name,
                     type            :   parser.pathname,
-                }, config)
+                }, config);
                 
                 resource = copyTags.call(this, template, resource);
                 
                 if (config.noSave)
                     cb(resource, template);
                 else
-                    resource.save_('/data_service/' + resource.resource_type + '?view=deep', cb, function(msg) {BQ.ui.error('An error occured while trying to create a resource from template: ' + msg)});
+                    //resource.save_('/data_service/' + resource.resource_type + '?view=deep', 
+                    resource.save_('/data_service/resource?view=deep',
+                      cb, 
+                      function(e) {
+                          BQ.ui.error('An error occured while trying to create a resource from template: <br>' + e.message_short);
+                    });
             }
 
             function copyTags(template, resource)

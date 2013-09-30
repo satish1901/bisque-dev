@@ -133,7 +133,10 @@ if hasattr(cgi, 'file_upload_handler'):
     #register callables here
     def import_transfer_handler(filename):
         import tempfile
-        return tempfile.NamedTemporaryFile('w+b', suffix = os.path.basename(filename), dir=tmp_upload_dir, delete = False)
+        try:
+            return tempfile.NamedTemporaryFile('w+b', suffix = os.path.basename(filename), dir=tmp_upload_dir, delete = False)
+        except:
+            return tempfile.TemporaryFile('w+b', dir=tmp_upload_dir, delete = False)
     
     #map callables to paths here
     cgi.file_upload_handler['/import/transfer'] = import_transfer_handler
@@ -951,7 +954,7 @@ class import_serviceController(ServiceController):
         # process the file list see if some files need special processing
         # e.g. ZIP needs to be unpacked
         # then ingest all
-        log.debug ("ingesting files %s " % files)
+        log.debug ('ingesting files %s'%[o.filename.encode('utf8') for o in files])
         response = self.ingest(files)
         # respopnd with an XML containing links to created resources
         return etree.tostring(response)
