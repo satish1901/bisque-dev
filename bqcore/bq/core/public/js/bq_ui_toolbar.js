@@ -610,16 +610,21 @@ Ext.define('BQ.Application.Toolbar', {
         var types = [];
         var r;
         for (var i=0; (r=resource.children[i]); i++) {
-            types.push(r.name);  
+            types.push({
+                name: r.name, 
+                uri: r.uri,
+            });  
         }
         types.sort();
         types.reverse();
-        var name;
-        for (var i=0; (name=types[i]); i++) {
+        var t;
+        for (var i=0; (t=types[i]); i++) {
+            var name = t.name;
+            var uri = t.uri;
             this.queryById('menu_create').insert(3, {
                 text    : 'Create a new <b>'+name+'</b>', 
                 itemId  : 'menu_create_'+name, 
-                handler: Ext.Function.pass(this.createNewTemplate, [name], this),
+                handler: Ext.Function.pass(this.createNewTemplate, [name, uri], this),
                 scope   : this, 
             });            
         }               
@@ -768,8 +773,8 @@ Ext.define('BQ.Application.Toolbar', {
         }).show();
         
     },
-    */
-   
+   */
+  
     createResource : function(types, def) {
         var mykeys =  Ext.Object.merge(types, this.types_required);
         if (def) mykeys[def] = null;   
@@ -879,14 +884,15 @@ Ext.define('BQ.Application.Toolbar', {
         BQ.ui.error('Error creating resource: <br>'+message);
     },
    
-    createNewTemplate : function(type) {
+    createNewTemplate : function(type, uri) {
         var t = type;
+        var u = uri;
         Ext.MessageBox.prompt(
             'Create an instance of '+type, 
             'Please enter a new <b>'+type+'</b> name:', 
             function(btn, name) {
                 if (btn !== 'ok' || !name) return;
-                BQ.TemplateManager.createResource({name: name}, this.onResourceCreated, t+'?view=deep');
+                BQ.TemplateManager.createResource({name: name}, this.onResourceCreated, u+'?view=deep');
             },
             this
         );

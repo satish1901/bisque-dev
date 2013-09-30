@@ -32,6 +32,31 @@ default_error_callback = function (o) {
 //-----------------------------------------------------------------------------
 
 function BQFactory (){}
+
+BQFactory.objects =  { 
+                       vertex   : BQVertex, // dima: speed optimization, using xpath for sub vertices is much faster
+                       value    : BQValue,  // dima: speed optimization, using xpath for sub values is much faster
+                       tag      : BQTag,
+                       image    : BQImage,
+                       file     : BQFile,
+                       gobject  : BQGObject,
+                       point    : BQGObject,
+                       rectangle: BQGObject,
+                       ellipse  : BQGObject,
+                       polygon  : BQGObject,
+                       polyline : BQGObject,
+                       circle   : BQGObject,
+                       label    : BQGObject,
+                       module   : BQModule,
+                       mex      : BQMex,
+                       session  : BQSession,
+                       user     : BQUser,
+                       auth     : BQAuth,
+                       dataset  : BQDataset,
+                       resource : BQResource,
+                       template : BQTemplate,
+};
+
 BQFactory.ctormap =  { 
                        //vertex  : BQVertex, // dima: speed optimization, using xpath for sub vertices is much faster
                        //value   : BQValue,  // dima: speed optimization, using xpath for sub values is much faster
@@ -336,7 +361,15 @@ BQXml.prototype.toXML = function (){
 };
 
 BQXml.prototype.xmlNode = function (content) {
-    var v = '<' + this.resource_type + ' ';
+    var tag_name = 'resource';
+
+    var v = '<';
+    if (this.resource_type in BQFactory.objects) {
+        v += this.resource_type + ' ';
+        tag_name = this.resource_type;
+    } else {
+        v += 'resource resource_type="'+this.resource_type+'" ';
+    }
     var fields = this.xmlfields;
     for (var f in fields ){
         if (this[fields[f]] != undefined  &&  this[fields[f]] != null )
@@ -345,7 +378,7 @@ BQXml.prototype.xmlNode = function (content) {
     if (content && content != "") {
         v += ">";
         v += content;
-        v += "</" + this.resource_type +">";
+        v += "</" + tag_name +">";
     } else {
         v += "/>";
     }
@@ -842,7 +875,10 @@ BQObject.prototype.save_ = function (parenturi, cb, errorcb) {
     if (docobj.uri) {
         xmlrequest(docobj.uri, callback(docobj, 'response_', 'update', errorcb, cb),'put', req, errorcb);
     } else {
-        parenturi = parenturi || '/data_service/'+this.resource_type+'/';
+        if (this.resource_type in BQFactory.objects)
+            parenturi = parenturi || '/data_service/'+this.resource_type+'/';        
+        else
+            parenturi = parenturi || '/data_service/resource/';
         xmlrequest(parenturi, callback(docobj, 'response_', 'created', errorcb, cb),'post', req, errorcb);
     }
 };

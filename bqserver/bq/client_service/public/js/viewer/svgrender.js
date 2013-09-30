@@ -783,8 +783,8 @@ SVGRenderer.prototype.populate_overlay = function () {
     var gobs = document.createElementNS(svgns, "g");
     this.overlay.appendChild(gobs);
     
-    for (var x=5; x<=95; x+=10)
-    for (var y=5; y<=95; y+=10) {    
+    for (var x=9; x<=95; x+=9)
+    for (var y=12; y<=95; y+=9) {    
         var circ = document.createElementNS( svgns, 'circle');
         circ.setAttributeNS(null, 'fill-opacity', 0.0);
         circ.setAttributeNS(null, 'fill', 'black');

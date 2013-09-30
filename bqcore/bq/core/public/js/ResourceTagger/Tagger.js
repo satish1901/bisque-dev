@@ -102,10 +102,13 @@ Ext.define('Bisque.ResourceTagger', {
             this.loadResourceInfo(resource);
         else
             // assume it is a resource URI otherwise
-            BQFactory.request(
-            {
+            BQFactory.request({
                 uri: resource,
-                cb: Ext.bind(this.loadResourceInfo, this)
+                cb: Ext.bind(this.loadResourceInfo, this), 
+                errorcb: function(error) { 
+                    BQ.ui.error('Error fetching resource:<br>'+error.message_short, 4000); 
+                }, 
+                uri_params: { view:'deep' },
             });
     },
 
