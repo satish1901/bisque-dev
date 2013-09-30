@@ -21,12 +21,12 @@ BEBB0991B63A985A8C31D97942D4395E17F84444-extjs-4.1.1-gpl.zip=extjs.zip
 #   platform.platform().replace('-', '-%s-'%platform.architecture()[0], 1)
 
 [Windows-64bit-*]
-2FCFF59860F02FDDEAEB80DA2E57D58B768A0191-imgcnv-Windows-64bit.zip=imgcnv.zip
-743FB2442628209894B382BCA2D7ABAEF37116D6-feature_extractors-Windows-64bit.zip=feature_extractors.zip
+29B9F3BF3B668D2E408B97360E7B64D7C86DF67F-imgcnv-Windows-64bit.zip=imgcnv.zip
+9009F644950E91C59B18F95D244BEEEFDE3DCDE0-feature_extractors-Windows-64bit.zip=feature_extractors.zip
 
 [Linux-64bit-*-debian-*]
 511B5E84692B123A89576086201B793C93096A74-libmbgl-linux-64-large.a
-ABF76CBCF86DA35725A6599310187E457E919594-feature_extractors-Linux-64bit.zip=feature_extractors.zip
+DA1E7B4EAD67AA346112835480547B4C8605A98F-feature_extractors-Linux-64bit.zip=feature_extractors.zip
 
 [Darwin-64bit-*]
 
