@@ -208,7 +208,8 @@ Ext.define('BQ.TagRenderer.Date',
                                 componentName   :   'Date',
                                 template        :   {
                                                         'Type'      :   'Date',
-                                                        'format'    :   'YYYY:MM:DDThh:mm:ss',
+                                                        'format'    :   'Y:m:d H:i:s',
+                                                        'help'      :   '/html/dateformat.html',
                                                     }                    
                             },
 
@@ -221,8 +222,8 @@ Ext.define('BQ.TagRenderer.Date',
                                             {
                                                 return this.getRawValue();
                                             }
-                                        }
-                            }
+                                    };
+                            },
 });
 
 Ext.define('BQ.TagRenderer.ComboBox',
