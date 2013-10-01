@@ -10,7 +10,7 @@ function TilesRenderer (viewer,name){
     this.base = ViewerPlugin;
     this.base (viewer, name);
     this.events    = {};
-    this.tile_size = 256;
+    this.tile_size = 512;
     this.template  = 'tile=0,0,0,'+this.tile_size;
     this.myTileProvider = new PanoJS.TileUrlProvider('','','');    
 };
