@@ -235,7 +235,7 @@ ImgEdit.prototype.editImage = function () {
     
     if (!(this.viewer.user_uri && (this.viewer.image.owner == this.viewer.user_uri)))
         if (!('nosave' in this.viewer.parameters)) {
-            alert ("You are not the owner the image and may not save graphical annotations");
+            BQ.ui.notification('You are not the owner the image and may not save graphical annotations'); 
         }      
     
     var bt = this.edit_buttons;
