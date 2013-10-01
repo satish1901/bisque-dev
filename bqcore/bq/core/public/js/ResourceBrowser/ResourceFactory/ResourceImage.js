@@ -642,12 +642,12 @@ Ext.define('Bisque.Resource.Image.Page', {
         resTab.add(this.gobjectTagger);
 
         resTab.add({
-            xtype: 'bqgmap',
+            xtype: 'bqmap',
             title: 'Map',
-            url: this.resource.src + '?meta',
             zoomLevel: 16,
             gmapType: 'map',
             autoShow: true,
+            resource: this.resource,            
         });
 
         this.setLoading(false);
