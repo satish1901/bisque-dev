@@ -114,35 +114,62 @@ Ext.define('BQ.TemplateManager.Creator',
                                 },
         });
         
-        this.grid = Ext.create('Ext.grid.property.Grid',
-        {
-            source          :   {},
-            listeners       :   {
-                                    'edit'          :   this.onPropertyEdit,
-                                    scope           :   this
-                                },
-            customEditors   :   {
-                                    'select'            :   {
-                                                                xtype       :   'textareafield',
-                                                                emptyText   :   'Enter comma separated display values e.g. Alabama, Alaska'
-                                                            },
-                                    'passedValues'      :   {
-                                                                xtype       :   'textareafield',
-                                                                emptyText   :   'Enter comma separated passed values e.g. AL, AK (defaults to display values)'
-                                                            },
-                                    'resourceType'      :   {
-                                                                xtype       :   'combo',
-                                                                store       :   Ext.create('Ext.data.Store', {
-                                                                                    fields  :   ['name', 'uri'],
-                                                                                    data    :   BQApp.resourceTypes,   
-                                                                                }),
-                                                                queryMode   :   'local',       
-                                                                displayField:   'name',
-                                                                editable    :   false
-                                                            }
-                                }
+        this.grid = Ext.create('Ext.grid.property.Grid', {
+            source: {},
+            listeners: {
+                'edit': this.onPropertyEdit,
+                scope: this
+            },
+            customEditors: {
+                'select': {
+                    xtype: 'textareafield',
+                    emptyText: 'Enter comma separated display values e.g. Alabama, Alaska'
+                },
+                'passedValues': {
+                    xtype: 'textareafield',
+                    emptyText: 'Enter comma separated passed values e.g. AL, AK (defaults to display values)'
+                },
+                'resourceType': {
+                    xtype: 'combo',
+                    /* // dima: BQApp.resourceTypes can't be used due to race condition
+                    store: Ext.create('Ext.data.Store', {
+                        fields  :   ['name', 'uri'],
+                        data    :   BQApp.resourceTypes,   
+                    }), */
+                    store: {
+                        //fields  :   ['name', 'uri'],
+                        //data    :   BQApp.resourceTypes,
+                        fields : [ 
+                            { name: 'name', mapping: '@name' },
+                            { name: 'uri', mapping: '@uri' },                
+                        ],                        
+                        proxy : { 
+                            limitParam : undefined,
+                            pageParam: undefined,
+                            startParam: undefined,
+                            noCache: false,
+                            type: 'ajax',
+                            url : '/data_service/',
+                            reader : {
+                                type :  'xml',
+                                root :  '/',
+                                record: '/*:not(value or vertex or template)',    
+                            }
+                        }, 
+                        autoLoad : true,
+                        autoSync : false,                           
+                    },
+                    queryMode   :   'local',       
+                    displayField:   'name',
+                    editable    :   false
+                },
+                'help' : {
+                    xtype    : 'hyperreference',
+                    viewMode : 'widget',       
+                },                                                            
+            },
         });
-        
+       
         this.centerPanel.add(this.tagger);
         this.eastPanel.add(this.grid);
     },
@@ -185,4 +212,15 @@ Ext.define('BQ.TemplateManager.Creator',
         if (tag)
             tag.value = record.value.toString();
     }
+});
+
+Ext.define('BQ.form.field.HyperReference', {
+    extend: 'Ext.form.field.Display',
+    alias: 'widget.hyperreference',
+
+    setValue : function(value) {
+        this.callParent(arguments);
+        if (value) 
+            htmlAction(bq.url(value), 'Help'); 
+    }, 
 });
