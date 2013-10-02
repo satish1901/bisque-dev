@@ -3,7 +3,7 @@ var mouser=null;
 function SVGRenderer (viewer,name) {
     var p = viewer.parameters || {};
     //this.default_showOverlay           = p.rotate          || 0;   // values: 0, 270, 90, 180
-    this.default_showOverlay   = true;    
+    this.default_showOverlay   = false;    
     
     this.base = ViewerPlugin;
     this.base (viewer, name);
