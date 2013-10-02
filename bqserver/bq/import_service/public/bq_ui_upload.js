@@ -630,6 +630,7 @@ Ext.define('BQ.upload.Item', {
         if (this.tagger) {
             //resource.tags = this.tagger.getTagDocument();
             resource.addtags( this.tagger.getTagDocument(), true );
+            resource.type = this.tagger.resource.type;
         }
         
         // create the ingest tag

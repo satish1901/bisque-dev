@@ -45,6 +45,9 @@ virtualenv = $virtualenv
 #create a master process to manage all the workers
 master = true
 
+# stats Allow a program like uwsgitop to view uwsgi statistics
+# stats = :1717 
+
 #limits
 
 #socket timeout
