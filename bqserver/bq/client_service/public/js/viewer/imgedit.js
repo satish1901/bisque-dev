@@ -44,8 +44,8 @@ function ImgEdit (viewer,name){
   
   //parse input parameters
   var primitives = 'Point,Rectangle,Polyline,Polygon,Circle,Label'.toLowerCase().split(',');
-  if ('editprimitives' in this.viewer.parameters) 
-    primitives = this.viewer.parameters['editprimitives'].toLowerCase().split(',');
+  if ('editprimitives' in this.viewer.parameters && this.viewer.parameters.editprimitives) 
+    primitives = this.viewer.parameters.editprimitives.toLowerCase().split(',');
   this.editprimitives = {};
   for (var i=0; i < primitives.length; i++)
     this.editprimitives[ primitives[i] ] = '';
