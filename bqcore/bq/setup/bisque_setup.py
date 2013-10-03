@@ -1229,6 +1229,15 @@ def install_dependencies ():
 def install_imgcnv ():
     """Install dependencies that aren't handled by setup.py"""
 
+    filename_zip = os.path.join(BQDEPOT, 'imgcnv.zip')
+
+    if not os.path.exists(filename_zip):
+        print "No pre-compiled version of imgcnv exists for your system"
+        print "Please visit biodev.ece.ucsb.edu/projects/imgcnv"
+        print "or visit our mailing list https://groups.google.com/forum/#!forum/bisque-bioimage"
+        print "for help"
+        return
+        
     if getanswer ("Install Bio-Image Convert", "Y",
                   "imgcnv will allow image server to read pixel data") == "Y":
 
@@ -1238,7 +1247,6 @@ def install_imgcnv ():
             binv = 'Scripts'
             exev = '.exe'
         
-        filename_zip = os.path.join(BQDEPOT, 'imgcnv.zip')
         filename_dest = os.path.join(os.environ['VIRTUAL_ENV'], binv)
         filename_check = os.path.join(filename_dest, 'imgcnv%s'%exev)
         uncompress_dependencies (filename_zip, filename_dest, filename_check)
