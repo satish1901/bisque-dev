@@ -41,7 +41,7 @@
 
 #include <string.h>
 #include <stdio.h>
-#include <stdlib.h>
+#include <stdlib.h>
 #include "block.h"
 
 #include <assert.h>
@@ -1288,6 +1288,6 @@ template <typename captype, typename tcaptype, typename flowtype>
 			if (i->TS == i->parent->head->TS) assert(i->DIST > i->parent->head->DIST);
 		}
 	}
-}
+}
 
 #endif
