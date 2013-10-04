@@ -60,6 +60,8 @@ from datetime import datetime
 from sqlalchemy import Integer, String, DateTime, Unicode, Float, Boolean
 from sqlalchemy.sql import select, func, exists, and_, or_, not_, asc, desc, operators, cast
 from sqlalchemy.orm import Query, aliased
+from pylons.controllers.util import abort
+
 #from datetime import strptime 
 
 from bq.core.model import DBSession 
@@ -92,6 +94,7 @@ PUBLIC=0
 PRIVATE=1
 RESOURCE_READ=0
 RESOURCE_EDIT=1
+RESOURCE_SHARE=2
 
 # Legal attributes for Taggable
 LEGAL_ATTRIBUTES = {
@@ -395,18 +398,23 @@ def prepare_parent(resource_type, query, parent_query=None):
         #query  = query.filter(dbtype.resource_parent_id == parent.id)
     elif isinstance(parent_query, Taggable):
         query = query.filter_by(resource_parent_id = parent_query.id)
+    elif parent_query is False:
+        pass
     else:
         query = query.filter_by(resource_parent_id = None)
     return query
 
 
 def prepare_order_expr (query, tag_order, **kw):
-    def ign (x): return x
-    order_lookup = { 'asc': asc, 'desc': desc } 
     if tag_order:
+        ordering = lambda x:  x
         for order in tag_order.split(','):
-            order, d, ordering = order.partition (':')
-            ordering = order_lookup.get (ordering, ign)
+            if order.endswith(':asc'):
+                order = order[:-4]
+                ordering = asc
+            elif order.endswith(':desc'):
+                order = order[:-5]
+                ordering = desc
             order = order.strip('"\'')
 
             log.debug ("tag_order: %s" % (order))
@@ -571,9 +579,9 @@ def tags_special(dbtype, query, params):
         sq1 = query.with_labels().subquery()
         #sq2 = DBSession.query(Tag).filter(and_(Tag.parent_id == sq1.c.taggable_id,
         #                                     Tag.name_id == tv.id)).with_labels().subquery()
-        sq2 = DBSession.query(Tag).filter(
-            and_(Tag.resource_name == tv,
-                 Tag.document_id == sq1.c.taggable_document_id)).with_labels().subquery()
+        #sq2 = DBSession.query(Tag).filter(
+        #    and_(Tag.resource_name == tv,
+        #         Tag.document_id == sq1.c.taggable_document_id)).with_labels().subquery()
         sq2 = DBSession.query(Tag).filter(
             and_(Tag.resource_name == tv,
                  Tag.document_id == sq1.c.taggable_document_id)).distinct(Tag.resource_value).order_by(Tag.resource_value)
@@ -673,6 +681,13 @@ def resource_query(resource_type,
     query = prepare_type(resource_type)
     #query = DBSession.query(Taggable)
 
+    ## Extra attributes
+    if kw.has_key('hidden'):
+        query = query.filter(Taggable.resource_hidden == asbool(kw.pop('hidden')))
+    else:
+        query = query.filter(Taggable.resource_hidden == None)
+
+
     query = prepare_parent(resource_type, query, parent)
 
     # This converts an request for values to the actual
@@ -685,11 +700,6 @@ def resource_query(resource_type,
 
     if not kw.pop('welcome', None):
         query = prepare_permissions(query, user_id, with_public = wpublic, action=action)
-    # HACK
-    #  If type of the query is a value then assume we are extracting
-    #  objects from a dataset and apply and tag filter/ordering to the
-    #  objects in the data set.
-    #  THIS NEEDS MORE THOUGHT.
 
     query = prepare_tag_expr(query, tag_query)
 
@@ -711,11 +721,6 @@ def resource_query(resource_type,
         query = query.filter (or_(*[ taggable.c.resource_name == k
                                      for k in tv.split(',')]))
 
-    ## Extra attributes
-    if kw.has_key('hidden'):
-        query = query.filter(Taggable.resource_hidden == asbool(kw.pop('hidden')))
-    else:
-        query = query.filter(Taggable.resource_hidden == None)
 
 
     for ky,v in kw.items():
@@ -764,7 +769,7 @@ def resource_query(resource_type,
 
 
 
-def resource_load(resource_type, 
+def resource_load(resource_type = ('resource', Taggable), 
                   id=None,
                   uniq = None,
                   user_id=None,
@@ -774,7 +779,7 @@ def resource_load(resource_type,
     name, dbtype = resource_type
 #    resource = prepare_permissions (resource, user_id, with_public = with_public, action=action)
     if uniq is not None:
-        resource = DBSession.query(Taggable).filter_by (resource_uniq = uniq)
+        resource = DBSession.query(dbtype).filter_by (resource_uniq = uniq)
     else:
         resource = prepare_type (resource_type)
         resource = resource.filter_by (id = id)
@@ -794,12 +799,9 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
     q = DBSession.query (TaggableAcl).filter_by (taggable_id = resource.id)
     if not user_id:
         user_id = get_user_id()
-    # If you are amin or have edit permission then you can see other
-    # user that have permission over this resource
-    if resource.owner_id != user_id and not is_admin(): #user_id != get_admin_id():
-        q = q.filter (TaggableAcl.user_id == user_id)
-        
-    if action == RESOURCE_READ:
+                
+    # If simply trying to read permissions then, we can answer right away.
+    if action==RESOURCE_READ:
         #if user_id == get_admin_id():
         if is_admin():
             q = list (q.all())
