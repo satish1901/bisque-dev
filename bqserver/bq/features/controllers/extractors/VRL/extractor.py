@@ -24,7 +24,6 @@ class EHD(Feature.Feature):
         rotation = 4
     """
     #initalize parameters
-    file = 'features_ehd.h5'
     name = 'EHD'
     resource = ['image']
     description = """Edge histogram descriptor also known as EHD"""
@@ -39,7 +38,7 @@ class EHD(Feature.Feature):
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im    
         im = np.asarray(im)
-        if not im.any():
+        if im==None:
             abort(415, 'Format was not supported')
         
         descriptors=extractEHD(im)
@@ -56,7 +55,6 @@ class HTD(Feature.Feature):
         rotation = 4
     """
     #initalize parameters
-    file = 'features_htd.h5'
     name = 'HTD'
     resource = ['image']
     description = """Homogenious Texture Descriptor also called HTD is a texture descritpor
@@ -76,7 +74,7 @@ class HTD(Feature.Feature):
         del Im
 
         im = np.asarray(im)
-        if not im.any():
+        if im==None:
             abort(415, 'Format was not supported')
         
         return [extractHTD(im)] #calculating descriptor and return
@@ -90,7 +88,6 @@ class mHTD(Feature.Feature):
         rotation = 4
     """
     #initalize parameters
-    file = 'features_htd.h5'
     name = 'mHTD'
     resource = ['image','mask']
     parameter = ['label']
@@ -138,11 +135,11 @@ class mHTD(Feature.Feature):
          
  
         im=np.asarray(im)
-        if not im.any():
+        if im==None:
             abort(415, 'Format was not supported')
                 
         mask = np.asarray(mask)
-        if not mask.any():
+        if im==None:
             abort(415, 'Format was not supported')
             
         descriptors,labels = extractHTD(im, mask=mask) #calculating descriptor
@@ -162,9 +159,10 @@ class mHTD(Feature.Feature):
             feature = tables.Col.from_atom(featureAtom, pos=3)
             label   = tables.Int32Col(pos=4)
             
-        with Locks(None, filename), tables.openFile(filename,'a', title=self.name) as h5file: 
-            outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
-            outtable.flush()
+        with Locks(None, filename):
+            with tables.openFile(filename,'a', title=self.name) as h5file: 
+                outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
+                outtable.flush()
             
         return    
     

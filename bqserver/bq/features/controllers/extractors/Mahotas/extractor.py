@@ -47,7 +47,6 @@ class LBP(Feature.Feature):
     """
     
     #parameters
-    file = 'features_lbp.h5'
     name = 'LBP'
     description = """Linear Binary Patterns: radius = 5 and points = 5"""
     length = 8
@@ -61,7 +60,7 @@ class LBP(Feature.Feature):
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im
         im=np.asarray(im)
-        if not im.any():
+        if im==None:
             abort(415, 'Format was not supported')
         
          #calculating descriptor\
@@ -94,7 +93,7 @@ class LBPbro(Feature.Feature):
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im
         im=np.asarray(im)
-        if not im.any():
+        if im==None:
             abort(415, 'Format was not supported')
         
          #calculating descriptor\
@@ -122,7 +121,6 @@ class PFTAS(Feature.Feature):
     """
     
     #parameters
-    file = 'features_pftas.h5'
     name = 'PFTAS'
     description = """parameter free Threshold Adjacency Statistics"""
     length = 162 
@@ -137,7 +135,7 @@ class PFTAS(Feature.Feature):
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
         del Im
         im=np.asarray(im)
-        if not im.any():
+        if im==None:
             abort(415, 'Format was not supported')
 
         descriptor = pftas(im)
@@ -151,7 +149,6 @@ class TAS(Feature.Feature):
     """
     
     #parameters
-    file = 'features_tas.h5'
     name = 'TAS'
     description = """Threshold Adjacency Statistics"""
     length = 162 
@@ -166,7 +163,7 @@ class TAS(Feature.Feature):
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
         del Im
         im=np.asarray(im)
-        if not im.any():
+        if im==None:
             abort(415, 'Format was not supported')
         
         descriptor = tas(im)
@@ -180,7 +177,6 @@ class ZM(Feature.Feature):
     """
     
     #parameters
-    file = 'features_zm.h5'
     name = 'SURF'
     description = """Zernike Moment"""
     length = 25
@@ -195,7 +191,7 @@ class ZM(Feature.Feature):
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im
         im=np.asarray(im)
-        if not im.any():
+        if im==None:
             abort(415, 'Format was not supported')
         
         radius=8

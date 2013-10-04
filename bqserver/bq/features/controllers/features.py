@@ -27,8 +27,6 @@ import threading
 import httplib2
 import Queue
 
-from numpy.lib.recfunctions import append_fields
-
 from pylons.i18n import ugettext as _, lazy_ugettext as l_ 
 from pylons.controllers.util import abort
 from tg import expose, flash, config, response, request
@@ -72,32 +70,18 @@ log = logging.getLogger("bq.features")
 
 #Research
 #    Dynamicly adding new features to the service
-#    Large number of features returned needs to be separted
-#    Think of a better way to format the tables using uniques and commands instead of id tables 
-#    as the table increases in size hdf5 becomes increasingly harder to search through
 
-#Note (when using the feature server)
-#    building xml tree is a big bottle neck. Limit the amount of xml returned or page the xml
 
 
 #directories
 from .var import FEATURES_TABLES_FILE_DIR,FEATURES_TEMP_IMAGE_DIR,EXTRACTOR_DIR,FEATURES_TABLES_WORK_DIR
 
-
-
-class Feature_Achieve(dict):
+class Feature_Archieve(dict):
     """
         List of included descriptors:
         SURF, ORB, SIFT, HTD, EHD, CLD, CSD, SCD, DCD
         FREAK, BRISK, TAS, PFTAS, ZM, HAR, ShCoD, FFTSD
         RSD, many more...
-        
-        Disclaimer:
-        The proper use of each feature extractor is documented
-        in the extractor module. The documentation is only so good as the
-        creator of each extractor module. Some extractors will 
-        require different types of urls and the responsibility will
-        be left to the user of each extractor
     """
     def __init__(self):
         """
@@ -134,9 +118,6 @@ class Rows(object):
     #def __repr__(self):
     #    return 'Descritpor Generator: Feature: %s List Length: %s'%(self.feature.name, len(feature_list))
     
-    #def __len__(self):
-    #    return self.feature_queue.qsize()
-    
     def push(self, **resource):
         """
         Calculates features and organizes them into rows to be correctly placed
@@ -162,7 +143,9 @@ class Rows(object):
             log.exception('Calculation Error: URI:%s  %s Feature failed to be calculated'%(resource_string,self.feature.name))
 
 class IDRows(Rows):
-
+    """
+    Generates rows to be placed into the ID tables
+    """
     def __init__(self, feature):
         self.feature_queue = {}
         self.ID = ID()
@@ -191,9 +174,9 @@ class UncachedRows(Rows):
     def push(self, **resource):
         try:
             output = self.feature.calculate(resource)
-            if 'feature' in self.feature_queue: # checking the first few element on the hash
-                self.feature_queue['feature'].put(output)
-            else:
+            if 'feature' in self.feature_queue: #feature is used to maintain the structure
+                self.feature_queue['feature'].put(output) #the row is pushed into the queue
+            else: #creates a queue if no queue is found
                 self.feature_queue['feature'] = Queue.Queue()
                 self.feature_queue['feature'].put(output)
         except StandardError, err:
@@ -225,8 +208,6 @@ class Tables(object):
     def isin(self, hash):
         """
             queries the table to see if element is in the table
-            
-            query - numexpr
         """
         filename = self.feature.localfile(hash)
         query='idnumber=="%s"'% str(hash)
@@ -253,8 +234,14 @@ class Tables(object):
             with Locks(None, filename):
                 with tables.openFile(filename,'a', title=self.feature.name) as h5file:
                     table = h5file.root.values
+                    
                     while not queue.empty():
-                        table.append(queue.get())
+                        row=queue.get()
+                        query='idnumber=="%s"'% str(row[0][0]) #queries the hash to see if a feature has been
+                        log.debug('query: %s'%query)
+                        index = table.getWhereList(query)   #appended already
+                        if len(index)==0: 
+                            table.append(row)
                     table.flush()
         return
     
@@ -290,7 +277,8 @@ class Tables(object):
     
     def __len__(self):
         import glob
-        feature_tables=glob.glob(self.feature.path+'*.h5')
+        feature_tables=glob.glob(os.path.join( self.feature.path,'*.h5' ))
+        log.debug('feature table list %s'%str(os.path.join(self.feature.path,'*.h5')))
         l=0
         for filename in feature_tables:
             with Locks(filename):
@@ -300,6 +288,9 @@ class Tables(object):
 
 
 class IDTables(Tables):
+    """
+        a subclass of tables but operates only on the ID table
+    """
 
     def __init__(self):
         """
@@ -317,10 +308,8 @@ class IDTables(Tables):
     def isin(self, hash):
         """
             queries the table to see if element is in the table
-            
-            query - numexpr
         """
-        log.debug('hash: %s'%hash)
+        #log.debug('hash: %s'%hash)
         filename = self.ID.localfile(hash)
         query='idnumber=="%s"'% str(hash)
         
@@ -345,13 +334,18 @@ class IDTables(Tables):
                 
             with Locks(None, filename):
                 with tables.openFile(filename,'a', title=self.ID.name) as h5file:
+                    
+                    
                     table = h5file.root.values
-                    url_vlarray = h5file.root.URI
+                    url_vlarray = h5file.root.URI #finding the variable length array
                     while not queue.empty():
                         row=queue.get()
-                        table.append((row[0]))
-                        url_vlarray.append(row[1:])
-
+                        query='idnumber=="%s"'% str(row[0]) #queries the hash to see if a feature has been
+                        index = table.getWhereList(query)   #appended already
+                        if len(index)==0:
+                            table.append((row[0]))
+                            url_vlarray.append(row[1:])
+                        
                     table.flush()
         return
 
@@ -433,9 +427,7 @@ class Request(object):
             #    log.debug('Argument Error: "%s" is not a valid argument'%i)
             #    abort(404,'Argument Error: "%s" is not a valid argument'%i)
         
-       
-        
-        #format check
+        #check if proper format
         self.format = format
         self.Formats = Outputs()[self.format]
         
@@ -445,7 +437,8 @@ class Request(object):
         
         #validating request
         if self.method =='POST' and 1>request.headers['Content-type'].count('xml/text'):
-            try:
+            try: #parse the resquest
+                log.debug('request :%s' %request.body)
                 self.body = etree.fromstring(request.body)
                 if self.body.tag!='dataset':
                     abort(400, 'Document Error: Only excepts datasets')
@@ -457,6 +450,8 @@ class Request(object):
                     for q in query:
                         q = q.split('=')
                         element[q[0]] = q[1].replace('"','')
+                    element = self.feature().typecheck(**element)
+                    log.debug('element %s'% element)
                     self.element_list.append(element)
             except:
                 log.exception('Request Error: Xml document is malformed')
@@ -468,20 +463,20 @@ class Request(object):
             self.element_list = [resource]
                          
         else:
-            log.debug('Request Error: Xml document is malformed')
-            abort(400, 'uri was not formed correctly')
+            log.debug('Request Error: http request was not formed correctly')
+            abort(400, 'http request was not formed correctly')
     
     def proccess(self):
         """
         Proccess request provided to the Feature Server
         (main loop of calculating features)
         """
-
         if self.feature.cache:
             if self.options['calc']: #no features will be calculated if true
                 
                 HashTable = IDTables()
                 
+                #finding hashes
                 elementlistintable=[]
                 for i,element in enumerate(self.element_list):
                     uri_hash = self.feature().returnhash(**element)    
@@ -489,7 +484,7 @@ class Request(object):
     
                 #store hashes
                 HashRows=IDRows(self.feature())
-                log.debug('elementlistintable: %s'%elementlistintable)
+                log.debug('In Hash Table List: %s'%elementlistintable)
                 for i, element_bool in enumerate(elementlistintable):
                     if not element_bool:
                         HashRows.push(**self.element_list[i])
@@ -506,19 +501,21 @@ class Request(object):
                 
                 #store features
                 FeatureRows = Rows(self.feature())
-                log.debug('elementlistintable: %s'%elementlistintable)
+                log.debug('In Feature Table List: %s'%elementlistintable)
                 for i, element_bool in enumerate(elementlistintable):
                     if not element_bool:
                         FeatureRows.push(**self.element_list[i])
                 FeatureTable.store(FeatureRows)
 
         else:
-            
+            #creating name for uncached table
             name = self.feature.name+str(time.time())
             self.uncachedTableName = self.feature().returnhash(name)+'.h5'
             FeatureTable = UncachedTable(self.feature())
-
-            #store features
+            
+            log.debug('element_list: %s'% self.element_list)
+            
+            #store features in an unindexed table in the workdir
             FeatureRows = UncachedRows(self.feature())
             for i, element_bool in enumerate(self.element_list):
                 FeatureRows.push(self.element_list[i])
@@ -530,11 +527,11 @@ class Request(object):
         """
         Builds response
         """
-        if self.feature.cache:
+        if self.feature.cache: #queries for results in the feature tables
             Table = Tables(self.feature())
             return self.Formats(self.feature()).return_output(Table, self.element_list)
         
-        else:
+        else: #builds output from the unindexed table built in the workdir
             Table = UncachedTable(self.feature())
             return self.Formats(self.feature()).return_output_uncached(Table, self.uncachedTableName)
 
@@ -573,88 +570,158 @@ class Xml(Format):
     
     def return_output(self,  table, element_list):
         """Drafts the xml output"""
+        
         response.headers['Content-Type'] = 'text/xml'
         element = etree.Element('resource')
         nodes = 0
         
-        if self.feature.cache:
-            for i,resource in enumerate(element_list):
-                uri_hash =self.feature.returnhash(**resource)
-                rows = table.get(uri_hash)
-                if rows!=None:
-                    for r in rows:
-                        subelement = etree.SubElement( element, 'feature' , resource ,type = str(self.feature.name))
-                        if self.feature.parameter:
-                            parameters = {}
-                            for parameter_name in self.feature.parameter:
-                                parameters[parameter_name] = str(r[parameter_name])
-                            etree.SubElement(subelement, 'parameters', parameters)
-                        value = etree.SubElement(subelement, 'value')
-                        value.text = " ".join('%g'%item for item in r['feature'])
-                        nodes+=1
-                        #break out when there are too many nodes
-                        if nodes>self.limit:
-                            break
-                else:
-                    subelement = etree.SubElement( 
-                                                      element, 'feature' ,
-                                                      resource,
-                                                      type = str(self.feature.name),
-                                                      value = 'Return Error: Feature was not found in the table'
-                                                  )            
-                if nodes>self.limit:
-                    break
+        for i,resource in enumerate(element_list):
+            uri_hash =self.feature.returnhash(**resource)
+            rows = table.get(uri_hash)
+            if rows!=None: #a feature was found for the query
+                for r in rows:
+                    subelement = etree.SubElement( element, 'feature' , resource ,type = str(self.feature.name))
+                    
+                    if self.feature.parameter:
+                        parameters = {}
+                        
+                        #creates list of parameters to append to the xml
+                        for parameter_name in self.feature.parameter:
+                            parameters[parameter_name] = str(r[parameter_name]) 
+                        etree.SubElement(subelement, 'parameters', parameters)
+                        
+                    value = etree.SubElement(subelement, 'value')
+                    value.text = " ".join('%g'%item for item in r['feature']) #writes the feature vector to the xml
+                    nodes+=1
+                    #break out when there are too many nodes
+                    if nodes>self.limit: #checks to see if the number of lines has surpassed the limit
+                        break
+            else: #not feature was found for the query, adds an error message to the xml
+                subelement = etree.SubElement( 
+                                                  element, 'feature' ,
+                                                  resource,
+                                                  type = str(self.feature.name),
+                                                  value = 'Return Error: Feature was not found in the table'
+                                              )            
+            if nodes>self.limit: #checks to see if the number of lines has surpassed the limit
+                break
 
         return etree.tostring(element)
 
     def return_output_uncached(self, table, filename):
-
+        """Drafts the xml output for uncached tables"""
         response.headers['Content-Type'] = 'text/xml'
         element = etree.Element('resource')
         nodes = 0
                 
         filename = os.path.join(FEATURES_TABLES_WORK_DIR,filename)
         with Locks(filename):
-            with tables.openFile(filename,'r', title=self.feature.name) as h5file:
-                Table = h5file.root.values  
-                for i, r in enumerate(Table):
+            with tables.openFile(filename,'r', title=self.feature.name) as h5file: #opens table
+                Table = h5file.root.values
+                
+                #reads through each line in the table and writes an xml node for it
+                for i, r in enumerate(Table): 
+                    
                     subelement = etree.SubElement( element, 'feature' , type = str(self.feature.name), name = r['uri'])
+                    
+                    if self.feature.parameter:
+                        parameters = {}
+                        
+                        #creates list of parameters to append to the xml node
+                        for parameter_name in self.feature.parameter:
+                            parameters[parameter_name] = str(r[parameter_name]) 
+                        etree.SubElement(subelement, 'parameters', parameters)
+                    
                     value = etree.SubElement(subelement, 'value')
-                    value.text = " ".join('%g'%item for item in r['feature'])
+                    value.text = " ".join('%g'%item for item in r['feature']) #writes the feature vector to the xml
                     nodes+=1
+                    
                     #break out when there are too many nodes
                     if nodes>self.limit:
                         break               
-            
+                
         return etree.tostring(element)
 
 
 class Csv(Format):
+    """
+        returns in csv
+    """
     name = 'CSV'
     
     def return_output(self, table, element_list, **kw):
         """Drafts the csv output"""
         ## plan to impliment for query and include parameters
+        
         import csv
         import StringIO
-
         f = StringIO.StringIO()
         writer = csv.writer(f)
         resource_names = self.feature.resource
         parameter_names = self.feature.parameter
+        
+        #creates a title row and writes it to the document
         titles = ['index','feature type']+resource_names+['descriptor']+parameter_names
-        #titles = ['Feature Number','Feature_Type','Name','Value']
         writer.writerow(titles)
+        
+        
         for idx,resource in enumerate(element_list):
             uri_hash = self.feature.returnhash(**resource)
             rows = table.get(uri_hash)
-            for r in rows:
-                value_string = ",".join('%g'%i for i in r['feature'])
+            
+            if rows!=None: #check to see if nothing is return from the tables
+                
+                for r in rows:
+                    value_string = ",".join('%g'%i for i in r['feature']) #parses the table output and returns a string of the vector separated by commas
+                    resource_uri = [resource[rn] for rn in resource_names] 
+                    parameter = [r[pn] for pn in parameter_names]
+                    line = [idx,self.feature.name]+resource_uri+[value_string]+parameter
+                    writer.writerow(line) #write line to the document
+                    
+            else: #if nothing is return from the tables enter Nan into each vector element
+                value_string = ",".join(['Nan' for i in range(feature.length)])
                 resource_uri = [resource[rn] for rn in resource_names]
-                parameter = [r[pn] for pn in parameter_names]
-                line = [idx,self.feature.name]+resource_uri+[value_string]+parameter
-                writer.writerow(line)
+                line = [idx,self.feature.name]+resource_uri+[value_string] #appends all the row elements
+                writer.writerow(line) #write line to the document
         
+        #creating a file name
+        filename = 'feature.csv' #think of how to name the files
+        try:
+            disposition = 'filename="%s"'% filename.encode('ascii')
+        except UnicodeEncodeError:
+            disposition = 'attachment; filename="%s"; filename*="%s"'%(filename.encode('utf8'), filename.encode('utf8')) 
+            
+        response.headers['Content-Disposition'] = disposition #sets the file name of the csv file
+        response.headers['Content-Type'] = 'text/csv' #setting the browser to save csv file
+    
+        return f.getvalue()
+    
+    def return_output_uncached(self, table, filename):
+        """
+            returns csv for features without cache
+        """
+        import csv
+        import StringIO
+        f = StringIO.StringIO()
+        writer = csv.writer(f)
+        resource_names = self.feature.resource
+        parameter_names = self.feature.parameter
+        
+        #creates a title row and writes it to the document
+        titles = ['index','feature type']+resource_names+['descriptor']+parameter_names
+        writer.writerow(titles)
+                
+        filename = os.path.join(FEATURES_TABLES_WORK_DIR,filename)
+        with Locks(filename):
+            with tables.openFile(filename,'r', title=self.feature.name) as h5file: #opens table
+                Table = h5file.root.values  
+                for i, r in enumerate(Table):
+                    value_string = ",".join('%g'%i for i in r['feature']) #parses the table output and returns a string of the vector separated by commas
+                    resource_uri = [resource[rn] for rn in resource_names]
+                    parameter = [r[pn] for pn in parameter_names]
+                    line = [idx,self.feature.name]+resource_uri+[value_string]+parameter #appends all the row elements
+                    writer.writerow(line) #writes line to the document
+            
         #creating a file name
         filename = 'feature.csv' #think of how to name the files
         try:
@@ -709,22 +776,23 @@ class Hdf(Format):
         All HDF files are saved in the work dir of the feature service
         """
         import io
+        
         #creating a file name
         name = self.feature.name+str(time.time())
         name_hash = uuid.uuid5(uuid.NAMESPACE_URL, str(name))
         name = name_hash.hex+'.h5'
         filename = os.path.join(FEATURES_TABLES_WORK_DIR,name)
-        self.feature.outputTable(filename)
         
+        self.feature.outputTable(filename) #create new table in workdir
 
         with Locks(None, filename):
-            with tables.openFile(filename,'a', title=self.name) as h5file:
+            with tables.openFile(filename,'a', title=self.name) as h5file: #open table
                 #writing to table      
                 outtable=h5file.root.values
                 for i,element in enumerate(element_list):
                     uri_hash = self.feature.returnhash(**element)
                     rows = table.get(uri_hash)
-                    for r in rows:
+                    for r in rows: #taking rows out of one and placing them into the rows of the output table
                         row=()
                         for e in self.feature.resource:
                             row+=tuple([element[e]])
@@ -735,6 +803,7 @@ class Hdf(Format):
                         outtable.append([row]) 
                 outtable.flush()
         
+        #
         f = io.FileIO(filename)
         try:
             disposition = 'filename="%s"'% name.encode('ascii')
@@ -742,11 +811,13 @@ class Hdf(Format):
             disposition = 'attachment; filename="%s"; filename*="%s"'% (name.encode('utf8'), name.encode('utf8')) 
             
         response.headers['Content-Disposition'] = disposition
-        response.headers['Content-Type'] = 'application/hdf5' #setting the browser to save bin file
+        response.headers['Content-Type'] = 'application/hdf5' #setting the browser to save hdf5 file
         return f.read()
     
     
-    def return_output_uncached(self, table, filename):  
+    def return_output_uncached(self, table, filename):
+        #since the uncached table is already saved in the workdir the file is just
+        #returned
         filename = os.path.join(FEATURES_TABLES_WORK_DIR,filename)
         f = io.FileIO(filename)
         try:
@@ -755,7 +826,7 @@ class Hdf(Format):
             disposition = 'attachment; filename="%s"; filename*="%s"'% (filename.encode('utf8'), filename.encode('utf8')) 
             
         response.headers['Content-Disposition'] = disposition
-        response.headers['Content-Type'] = 'application/hdf5' #setting the browser to save bin file
+        response.headers['Content-Type'] = 'application/hdf5' #setting the browser to save hdf5 file
         return f.read()              
     
     def returnHDF(self, filename):
@@ -771,21 +842,20 @@ class NoOutput(Format):
     def return_output_uncached(self, table, filename):
         return
   
-class Numpy(Format):
-    def __init__(self, *args, **kw):
-        pass
-    
-    def return_output(self):
-        pass
-
-
-class Local(Format):
-    def __init__(self, *args, **kw):
-        pass
-    
-    def return_output(self):
-        pass
-
+#class Numpy(Format):
+#    def __init__(self, *args, **kw):
+#        pass
+#    
+#    def return_output(self):
+#        pass
+#
+#
+#class Local(Format):
+#    def __init__(self, *args, **kw):
+#        pass
+#    
+#    def return_output(self):
+#        pass
 
 class Outputs(dict):
     """
@@ -794,14 +864,14 @@ class Outputs(dict):
     """
     def __init__(self):
         self['xml'] = Xml
-        self['csv'] = Csv #broken
+        self['csv'] = Csv
         #self['bin'] = Binary
-        self['hdf'] = Hdf #broken
+        self['hdf'] = Hdf
         self['none'] = NoOutput
     
     def __missing__(self, format):
         log.debug('format type:'+format+' not found')
-        abort(404,'Format type: %s not found'% format)
+        abort(404,'Format type: %s not found'% format) #if element type is not found
     
 
     
@@ -824,76 +894,70 @@ class FeatureDoc():
         Returns xml of the commands allowed on the feature server
         """
         response.headers['Content-Type'] = 'text/xml'
-        resource = etree.Element('resource')
+        resource = etree.Element('resource', uri = str(request.url))
         command=etree.SubElement( resource, 'command', name = '/*feature name*', type = 'string', value='Documentation of specific feature')
         command=etree.SubElement( resource, 'command', name = '/list', type = 'string', value='List of features')
         command=etree.SubElement( resource, 'command', name = '/format', type = 'string', value='List of formats')
+        command=etree.SubElement( resource, 'command', name = '/format/*format name*', type = 'string', value='Documentation of specific format')
         command=etree.SubElement( resource, 'command', name = '/*feature name*?uri=http://...', type = 'string', value='Returns feature in format set to xml')
-        command=etree.SubElement( resource, 'command', name = '/*feature name*/*format option*?uri=http://...', type = 'string', value='Returns feature in format specified')
-        command=etree.SubElement( resource, 'attribute', name = 'uri', value='uri to the correct resource for that particular feature')
+        command=etree.SubElement( resource, 'command', name = '/*feature name*/*format name*?*resource type*=http://...(&*resource type*=http://...)', type = 'string', value='Returns feature in format specified')
+        command=etree.SubElement( resource, 'attribute', name = 'resource', value='The name of the resource depends on the requested feature')
         return etree.tostring(resource)
 
 
-    def feature_list(self, feature_achieve):  
+    def feature_list(self, feature_archieve):  
         """
         Returns xml of given feature
         """
         response.headers['Content-Type'] = 'text/xml' 
-        resource = etree.Element('resource', uri = '/features/list')#self.baseurl+'/doc')
+        resource = etree.Element('resource', uri = str(request.url))#self.baseurl+'/doc')
         resource.attrib['description'] = 'List of working feature extractors'
-        for featuretype in feature_achieve.keys():
-            feature_module = feature_achieve[featuretype]
+        for featuretype in feature_archieve.keys():
+            feature_module = feature_archieve[featuretype]
             feature=etree.SubElement( resource, 
                                       'feature', 
                                       name = featuretype, 
                                       permission="Published",
                                       uri = 'features/list/'+featuretype )
-            #feature.attrib['description'] = str(feature_module.description)
-            
         return etree.tostring(resource)
 
        
-    def feature(self,feature_name,feature_achieve):
+    def feature(self,feature_name,feature_archieve):
         """
         Returns xml of information about the features
         """
         response.headers['Content-Type'] = 'text/xml'
-        feature_module = feature_achieve[feature_name]
+        feature_module = feature_archieve[feature_name]
         feature_module = feature_module() 
         Table = Tables(feature_module)
          
         
         xml_attributes = {
-                          'file':str(feature_module.file),
                           'description':str(feature_module.description),
                           'feature_length':str(feature_module.length),
                           'required_resources': ','.join(feature_module.resource),
-                          'cache': feature_module.cache,
-                          'parameters': ','.join(feature_module.resource),
+                          'cache': str(feature_module.cache),
                           'table_length':str(len(Table))
-                         } 
-        
-        if feature_module.parameter:
+                         }
+        if len(feature_module.parameter)>0:
             xml_attributes['parameters'] = ','.join(feature_module.parameter)
          
-        resource = etree.Element('resource', uri = 'uri')#self.baseurl+'/docs'+'/'+str(feature_name))
+        resource = etree.Element('resource', uri = str(request.url))
         feature=etree.SubElement( resource, 'feature', name = str(feature_module.name))
         for key,value in xml_attributes.iteritems():
             attrib={key:value}
-            info=etree.SubElement(feature,'info',attrib)
+            info=etree.SubElement(feature,'info',**attrib)
         return etree.tostring(resource)
     
 
         return etree.tostring(resource)
     
     def format_list(self):
-        
-    
         """
-        Returns List of Formats
+            Returns List of Formats
         """
         response.headers['Content-Type'] = 'text/xml' 
-        resource = etree.Element('resource', uri = '/format/list')#self.baseurl+'/doc')
+        resource = etree.Element('resource', uri = str(request.url)) 
         resource.attrib['description'] = 'List of Return Formats'
         format_archieve = Outputs()
         log.debug('format_achieve: %s'%format_archieve)
@@ -902,16 +966,16 @@ class FeatureDoc():
             feature=etree.SubElement( resource, 
                                       'format', 
                                       name = format_name, 
-                                      permission="Published",
+                                      permission = "Published",
                                       uri = 'format/'+format_name )
         response.headers['Content-Type'] = 'text/xml' 
         return etree.tostring(resource)
 
     def format(self,format_name):
         """
-        Returns List of Formats
+            Returns documentation about format
         """
-        response.headers['Content-Type'] = 'text/xml' 
+        response.headers['Content-Type'] = 'text/xml'
         format_archieve = Outputs()
         format = format_archieve[format_name]
          
@@ -920,7 +984,7 @@ class FeatureDoc():
                           'Limit':str(format.limit)
                           }
          
-        resource = etree.Element('resource', uri = 'uri')#self.baseurl+'/docs'+'/'+str(feature_name))
+        resource = etree.Element('resource', uri = str(request.url))
         feature=etree.SubElement( resource, 'format', name = str(format.name))
         for key,value in xml_attributes.iteritems():
             attrib={key:value}
@@ -938,32 +1002,31 @@ class featuresController(ServiceController):
     def __init__(self, server_url):
         super(featuresController, self).__init__(server_url)
         self.baseurl = server_url
-        self.fullurl = ServiceController
         _mkdir(FEATURES_TABLES_FILE_DIR)
         _mkdir(FEATURES_TEMP_IMAGE_DIR) 
         log.info('importing features')
-        self.feature_achieve = Feature_Achieve() #initalizing all the feature classes     
+        self.feature_archieve = Feature_Archieve() #initalizing all the feature classes     
     
     
     ###################################################################
-    ### Feature Service Entry Point
+    ### Feature Service Entry Points
     ###################################################################
     @expose()
     def _default(self, *args, **kw):
         """
-        Entry point for features service
+        Entry point for features calculation and command and feature documentation
         """
         #documentation
         if not args:
             return FeatureDoc().feature_server() #print documentation
 
         elif len(args)==1 and (request.method!='POST') and not kw:
-            return FeatureDoc().feature(args[0],self.feature_achieve)
+            return FeatureDoc().feature(args[0],self.feature_archieve)
                     
         #calculating features
         elif len(args)<=2:
-            log.debug('Request: %s'%request.method )  
-            Feature_Request = Request(self.feature_achieve,*args,**kw)
+            log.debug('Request: %s'%request.method)
+            Feature_Request = Request(self.feature_archieve,*args,**kw)
             Feature_Request.proccess()
             return Feature_Request.response()
         
@@ -973,6 +1036,9 @@ class featuresController(ServiceController):
             
     @expose()        
     def formats(self, *args):
+        """
+            entry point for format documetation
+        """
         if len(args)<1:
             return FeatureDoc().format_list()
         elif len(args)<2:
@@ -980,14 +1046,22 @@ class featuresController(ServiceController):
     
     @expose()    
     def list(self):
-        return FeatureDoc().feature_list(self.feature_achieve)
+        """
+            entry point for list of features
+        """
+        return FeatureDoc().feature_list(self.feature_archieve)
     
     def diagnostic(self, *arg, **kw):
         """
-        Calls tests suite for feature service
+            Calls tests suite for feature service
         """
         pass
     
+    def local(self):
+        """
+            Local entry point for feature calculations
+        """
+        pass
     
     
     

@@ -16,7 +16,6 @@ class SCD(Feature.Feature):
     """
     
     #parameters
-    file = 'features_scd.h5'
     name = 'SCD'
     description = """Scalable Color Descriptor"""
     length = 256 
@@ -30,7 +29,7 @@ class SCD(Feature.Feature):
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
         del Im
         im=np.asarray(im)
-        if not im.any():
+        if im==None:
             abort(415, 'Format was not supported')
         
         descriptors = extractSCD(im, descSize=256) #calculating descriptor
@@ -43,7 +42,6 @@ class HTD2(Feature.Feature):
     """
     """
     #initalize parameters
-    file = 'features_htd2.h5'
     name = 'HTD2'
     description = """Homogenious Texture Descritpor"""
     length = 62 
@@ -58,7 +56,7 @@ class HTD2(Feature.Feature):
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im
         im=np.asarray(im)
-        if not im.any():
+        if im==None:
             abort(415, 'Format was not supported')
         
         descriptors = extractHTD(im) #calculating descriptor
@@ -75,7 +73,6 @@ class EHD2(Feature.Feature):
         rotation = 4
     """
     #initalize parameters
-    file = 'features_ehd2.h5'
     name = 'EHD2'
     description = """Edge histogram descriptor also known as EHD"""
     length = 80 
@@ -90,7 +87,7 @@ class EHD2(Feature.Feature):
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
         del Im
         im=np.asarray(im)
-        if not im.any():
+        if im==None:
             abort(415, 'Format was not supported')
         
         descriptors = extractEHD(im) #calculating descriptor
@@ -104,10 +101,10 @@ class DCD(Feature.Feature):
     """
     
     #parameters
-    file = 'features_dcd.h5'
     name = 'DCD'
-    description = """Dominant Color Descriptor"""
-    length = 64 
+    description = """Dominant Color Descriptor can be of any length. The arbitrary length decided to be stored in the
+    tables is 100"""
+    length = 100 
         
     @Feature.wrapper
     def calculate(self, **resource):
@@ -119,20 +116,22 @@ class DCD(Feature.Feature):
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
         del Im
         im=np.asarray(im)
-        if not im.any():
+        if im==None:
             abort(415, 'Format was not supported')
         
         #calculating descriptor
         DCD = extractDCD(im)
         #log.debug('descriptors: %s'%descriptors)
         #log.debug('length of descriptors: %s'%len(descriptors[0]))
+        
+        #DCD has a potentional to be any length
+        #the arbitrary decided length to store in the tables is 100
         if len(DCD)>self.length:
-            log.debug('Warning: greater than 64 dimensions')
-            desc_len = self.length
-        else:
-            desc_len = len(DCD)
-        descriptors = np.zeros((1,self.length))
-        descriptors[:,0:desc_len]=DCD
+            log.debug('Warning: greater than 100 dimensions')
+            DCD=DCD[:self.length]
+
+        descriptors = np.zeros((self.length))
+        descriptors[:len(DCD)]=DCD
         
         #initalizing rows for the table
         return [descriptors]
@@ -145,7 +144,6 @@ class CSD(Feature.Feature):
     """
     
     #parameters
-    file = 'features_csd.h5'
     name = 'CSD'
     description = """Color Structure Descriptor"""
     length = 64 
@@ -161,7 +159,7 @@ class CSD(Feature.Feature):
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
         del Im
         im=np.asarray(im)
-        if not im.any():
+        if im==None:
             abort(415, 'Format was not supported')
         
         descriptors = extractCSD(im, descSize=64) #calculating descriptor
@@ -176,7 +174,6 @@ class CLD(Feature.Feature):
     """
     
     #parameters
-    file = 'features_cld.h5'
     name = 'CLD'
     description = """Color Layout Descriptor"""
     length = 120
@@ -191,20 +188,18 @@ class CLD(Feature.Feature):
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
         del Im
         im=np.asarray(im)
-        if not im.any():
+        if im==None:
             abort(415, 'Format was not supported')
         
         descriptors = extractCLD(im, numYCoef=64, numCCoef = 28)
         return [descriptors]
 
-#shapes are not fully supported yet
 class RSD(Feature.Feature):
     """
         Initalizes table and calculates the SURF descriptor to be
         placed into the HDF5 table.
     """
     
-    file = 'features_rsd.h5'
     name = 'RSD'
     description = """Region Shape Descritpor"""
     length = 35
@@ -258,14 +253,9 @@ class RSD(Feature.Feature):
         img = Image.new('L', (row, col), 0)
         ImageDraw.Draw(img).polygon(contour, outline=1, fill=1)
         mask = np.array(img)*255
-        
-        #cv2.imwrite("mask.png", mask)
-        #cv2.imwrite("test.png", im)
 
         
         #initalizing rows for the table
-        log.debug('Image: %s'%im)
-        log.debug('Mask: %s'%mask)
         descriptors = extractRSD(im, mask)
         del Im
         

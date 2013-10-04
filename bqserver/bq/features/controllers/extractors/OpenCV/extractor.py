@@ -49,7 +49,7 @@ class BRISK(Feature.Feature):
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im     
         im=np.asarray(im)
-        if not im.any():
+        if im==None:
             abort(415, 'Format was not supported')
         
         fs = cv2.BRISK().detect(im)                             # keypoints
@@ -94,9 +94,10 @@ class BRISK(Feature.Feature):
             angle     = tables.Float32Col(pos=7)
             octave    = tables.Float32Col(pos=8)
             
-        with Locks(None, filename), tables.openFile(filename,'a', title=self.name) as h5file: 
-            outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
-            outtable.flush()
+        with Locks(None, filename):
+            with tables.openFile(filename,'a', title=self.name) as h5file: 
+                outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
+                outtable.flush()
             
         return
 
@@ -139,7 +140,7 @@ class BRISKc(Feature.Feature):
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im     
         im=np.asarray(im)
-        if not im.any():
+        if im==None:
             abort(415, 'Format was not supported')
         
         imagesize=im.shape
@@ -189,9 +190,10 @@ class BRISKc(Feature.Feature):
             angle     = tables.Float32Col(pos=7)
             octave    = tables.Float32Col(pos=8)
             
-        with Locks(None, filename), tables.openFile(filename,'a', title=self.name) as h5file: 
-            outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
-            outtable.flush()
+        with Locks(None, filename):
+            with tables.openFile(filename,'a', title=self.name) as h5file: 
+                outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
+                outtable.flush()
             
         return
  
@@ -212,7 +214,6 @@ class ORB(Feature.Feature):
     the opencv library"""
     parameter = ['x','y','response','szie','angle','octave']
     length = 32
-    contents = 'several points are described in an image, each will have a position: X Y Scale'
 
     def columns(self):
         """
@@ -241,7 +242,7 @@ class ORB(Feature.Feature):
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im      
         im=np.asarray(im)
-        if not im.any():
+        if im==None:
             abort(415, 'Format was not supported')
         
         fs = cv2.ORB().detect (im)                             # keypoints
@@ -284,9 +285,10 @@ class ORB(Feature.Feature):
             angle     = tables.Float32Col(pos=7)
             octave    = tables.Float32Col(pos=8)
             
-        with Locks(None, filename), tables.openFile(filename,'a', title=self.name) as h5file: 
-            outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
-            outtable.flush()
+        with Locks(None, filename):
+            with tables.openFile(filename,'a', title=self.name) as h5file: 
+                outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
+                outtable.flush()
             
         return
  
@@ -336,7 +338,7 @@ class ORBc(Feature.Feature):
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im      
         im=np.asarray(im)
-        if not im.any():
+        if im==None:
             abort(415, 'Format was not supported')
         
         imagesize=im.shape
@@ -385,9 +387,10 @@ class ORBc(Feature.Feature):
             angle     = tables.Float32Col(pos=7)
             octave    = tables.Float32Col(pos=8)
             
-        with Locks(None, filename), tables.openFile(filename,'a', title=self.name) as h5file: 
-            outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
-            outtable.flush()
+        with Locks(None, filename):
+            with tables.openFile(filename,'a', title=self.name) as h5file: 
+                outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
+                outtable.flush()
             
         return
 
@@ -431,7 +434,7 @@ class SIFT(Feature.Feature):
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im     
         im=np.asarray(im)
-        if not im.any():
+        if im==None:
             abort(415, 'Format was not supported')
         
         fs = cv2.SIFT().detect(im)                             # keypoints
@@ -476,9 +479,10 @@ class SIFT(Feature.Feature):
             angle     = tables.Float32Col(pos=7)
             octave    = tables.Float32Col(pos=8)
             
-        with Locks(None, filename), tables.openFile(filename,'a', title=self.name) as h5file: 
-            outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
-            outtable.flush()
+        with Locks(None, filename):
+            with tables.openFile(filename,'a', title=self.name) as h5file: 
+                outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
+                outtable.flush()
             
         return
     
@@ -503,7 +507,7 @@ class SIFTc(SIFT):
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im     
         im=np.asarray(im)
-        if not im.any():
+        if im==None:
             abort(415, 'Format was not supported')
         
         imagesize=im.shape
@@ -630,7 +634,7 @@ class SURF(Feature.Feature):
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im
         im=np.asarray(im)
-        if not im.any():
+        if im==None:
             abort(415, 'Format was not supported')
         
         (kpts,descriptors)=cv.ExtractSURF(cv.fromarray(im), None, cv.CreateMemStorage(), (extended, HessianThresh, nOctaves, nOctaveLayers)) #calculating descriptor
@@ -669,9 +673,10 @@ class SURF(Feature.Feature):
             direction = tables.Float32Col(pos=7)
             hessian   = tables.Float32Col(pos=8)
             
-        with Locks(None, filename), tables.openFile(filename,'a', title=self.name) as h5file: 
-            outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
-            outtable.flush()
+        with Locks(None, filename):
+            with tables.openFile(filename,'a', title=self.name) as h5file: 
+                outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
+                outtable.flush()
             
         return
     
@@ -700,7 +705,7 @@ class SURFc(SURF):
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im
         im=np.asarray(im)
-        if not im.any():
+        if im==None:
             abort(415, 'Format was not supported')
         
         imagesize=im.shape
@@ -768,7 +773,7 @@ class FREAKc(Feature.Feature):
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im     
         im=np.asarray(im)
-        if not im.any():
+        if im==None:
             abort(415, 'Format was not supported')
         
         imagesize=im.shape
@@ -818,9 +823,10 @@ class FREAKc(Feature.Feature):
             angle     = tables.Float32Col(pos=7)
             octave    = tables.Float32Col(pos=8)
             
-        with Locks(None, filename), tables.openFile(filename,'a', title=self.name) as h5file: 
-            outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
-            outtable.flush()
+        with Locks(None, filename):
+            with tables.openFile(filename,'a', title=self.name) as h5file: 
+                outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
+                outtable.flush()
             
         return  
             
