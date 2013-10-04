@@ -13,7 +13,6 @@ class WNDCharm(Feature.Feature): #base WNDCharm feature class
     """
     
     #parameters
-    file = 'features_WNDCharmBase'+'.h5'
     name = 'WNDCharmBase'
     description = """This is the WNDCharm Base Class. Is not a feature in the feature server."""
     length = 0
@@ -25,10 +24,10 @@ class WNDCharm(Feature.Feature): #base WNDCharm feature class
         feature_info=feature_list[self.name]
         tranforms=feature_info[1:3]
         #adds the correct delimiter
-        if uri.count('?')<1:
-            uri+='?'
+        if image_uri.count('?')<1:
+            image_uri+='?'
         else:
-            uri+='&'
+            image_uri+='&'
         
         args = []
         if feature_info[4] == True:
@@ -47,17 +46,17 @@ class WNDCharm(Feature.Feature): #base WNDCharm feature class
                     args.append('format=png') #forces the tiff to output in a format cv2.imread can handle
                 else:
                     args.append('transform='+t)
-        args.append('format=tiff') #return tiff format
-        uri += '&'.join(args)
+        args.append('format=png') #return tiff format
+        image_uri += '&'.join(args)
         
         log.debug('WNDCharm uri: %s'% image_uri)
-        Im = Feature.ImageImport(image_uri,'tiff') #importing image from image service
+        Im = Feature.ImageImport(image_uri,'png') #importing image from image service
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_UNCHANGED) #CV_LOAD_IMAGE_UNCHANGED CV_LOAD_IMAGE_ANYDEPTH
         # extract the feature keypoints and descriptor
         im=np.asarray(im)
-        log.debug('im: %s'% im)
-        if not im.any():
+        #log.debug('im: %s'% im)
+        if im==None:
             abort(415, 'Format was not supported')
         extractWNDCharmFeature = feature_info[0]
         descriptor = extractWNDCharmFeature(im)

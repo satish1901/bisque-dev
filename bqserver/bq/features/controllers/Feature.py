@@ -13,7 +13,6 @@ import string
 import uuid
 
 import bq
-#from bq.image_service.controllers.service import local_file
 from bq.image_service.controllers.locks import Locks
 from pylons.controllers.util import abort
 from bq import image_service
@@ -23,19 +22,14 @@ from .var import FEATURES_STORAGE_FILE_DIR,FEATURES_TABLES_FILE_DIR,FEATURES_TEM
 log = logging.getLogger("bq.features")
 
 
-#Needed Changes
-# Temp directory needs to be built properly
-# maybe should use python api to import
-
-
 #wrapper for the calculator function so the output
 #is in the correct format to be easily placed in the tables
 def wrapper(func):
     def calc(self,kw):
         id = self.returnhash(**kw)
 
-        results = func(self,**kw)
-        column_count = len(self.Columns.columns)-1 #finds length of columns to determin hoe to parse
+        results = func(self,**kw) #runs calculation
+        column_count = len(self.Columns.columns)-1 #finds length of columns to determin how to parse
         if column_count == 1:
             results=tuple([results])
         
@@ -47,7 +41,6 @@ def wrapper(func):
             else:
                 row = tuple([uri])
                 
-            #row = zip(row,*results)
             #allows for varying column length
             for j in range(column_count): #iterating through columns returned 
                 row += tuple([results[j][i]])
@@ -64,7 +57,7 @@ class Feature(object):
         Initalizes Feature table and calculates descriptor to be
         placed into the HDF5 table
     """
-    #initalize parameters
+    #initalize feature attributes
     
     #feature name (the feature service will refer to the feature by this name)
     name = 'Feature'
@@ -102,11 +95,17 @@ class Feature(object):
     def __init__ (self):
         self.path = os.path.join( FEATURES_TABLES_FILE_DIR, self.name)
         self.columns()
-    
+
     def localfile(self,hash):
+        """
+            returns the path to the table given the hash
+        """
         return os.path.join( self.path, hash[:self.hash]+'.h5')
 
     def returnhash(self, **kw):
+        """
+            returns a hash given all the uris
+        """
         uri = ''
         for r in self.resource:
             uri += str(kw[r]) #comines all the uris together to form the hash
@@ -123,7 +122,7 @@ class Feature(object):
         for r in self.resource:
             if r not in kw:
                 log.debug('Argument Error: %s type was not found'%r)
-                abort(404,'Argument Error: %s type was not found'%r)   
+                abort(400,'Argument Error: %s type was not found'%r)   
             else:
                 resource[r]=kw[r]
         return resource
@@ -133,6 +132,7 @@ class Feature(object):
             creates Columns to be initalized by the create table
         """
         featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+        
         class Columns(tables.IsDescription):
             idnumber  = tables.StringCol(32,pos=1)
             feature   = tables.Col.from_atom(featureAtom, pos=2)
@@ -148,11 +148,11 @@ class Feature(object):
         with Locks(None, filename):
             with tables.openFile(filename,'a', title=self.name)  as h5file: 
                 table = h5file.createTable('/', 'values', self.Columns, expectedrows=1000000000)
-
+                
                 if self.index: #turns on the index
                     table.cols.idnumber.removeIndex()
                     table.cols.idnumber.createIndex()                    
-
+                
                 table.flush() 
         return
     
@@ -161,6 +161,7 @@ class Feature(object):
         Output table for hdf output requests and uncached features
         """
         featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+        
         class Columns(tables.IsDescription):
             image  = tables.StringCol(2000,pos=1)
             feature   = tables.Col.from_atom(featureAtom, pos=2)
@@ -171,20 +172,12 @@ class Feature(object):
                 outtable.flush()
             
         return
-   
-    
-#    def indexTable(self,hash):
-#        """
-#            information for table to know what to index
-#        """
-#        file = os.path.join( self.path, hash+'.h5')
-#        with Locks(None, self.path), tables.openFile(self.localfile(hash),'a', title=self.name) as h5file:
-#            table=h5file.root.values
-#            table.cols.idnumber.removeIndex()
-#            table.cols.idnumber.createIndex()
     
     @wrapper
     def calculate(self, **resource):
+        """
+            place holder for feature calculations
+        """
         return [0]
         
             
