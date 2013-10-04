@@ -681,13 +681,6 @@ def resource_query(resource_type,
     query = prepare_type(resource_type)
     #query = DBSession.query(Taggable)
 
-    ## Extra attributes
-    if kw.has_key('hidden'):
-        query = query.filter(Taggable.resource_hidden == asbool(kw.pop('hidden')))
-    else:
-        query = query.filter(Taggable.resource_hidden == None)
-
-
     query = prepare_parent(resource_type, query, parent)
 
     # This converts an request for values to the actual
@@ -700,6 +693,12 @@ def resource_query(resource_type,
 
     if not kw.pop('welcome', None):
         query = prepare_permissions(query, user_id, with_public = wpublic, action=action)
+
+    ## Extra attributes
+    if kw.has_key('hidden'):
+        query = query.filter(Taggable.resource_hidden == asbool(kw.pop('hidden')))
+    else:
+        query = query.filter(Taggable.resource_hidden == None)
 
     query = prepare_tag_expr(query, tag_query)
 
