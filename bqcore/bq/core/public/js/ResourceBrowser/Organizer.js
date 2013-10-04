@@ -539,6 +539,8 @@ Ext.define('Bisque.ResourceBrowser.Organizer.TagFilterCt',
                     str += '"' + encodeURIComponent(this.tag) + '":"' + encodeURIComponent(this.value[i]) + '" OR ';
                 return str.substring(0, str.length - 4);
             }
+            else if (this.tag != "")
+                return '"' + encodeURIComponent(this.tag) + '":';
             else
                 return "";
         }
