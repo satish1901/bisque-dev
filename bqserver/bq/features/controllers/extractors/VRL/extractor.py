@@ -76,8 +76,8 @@ class HTD(Feature.Feature):
         im = np.asarray(im)
         if im==None:
             abort(415, 'Format was not supported')
-        
-        return [extractHTD(im)] #calculating descriptor and return
+        descriptor,label = extractHTD(im)
+        return [descriptor] #calculating descriptor and return
     
 class mHTD(Feature.Feature):
     """
