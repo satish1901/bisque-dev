@@ -73,7 +73,7 @@ class HTD(Feature.Feature):
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im
 
-        im = np.asarray(im)
+        im= np.asarray(im)
         if im==None:
             abort(415, 'Format was not supported')
         descriptor,label = extractHTD(im)

@@ -763,6 +763,8 @@ class FREAKc(Feature.Feature):
             size      = tables.Float32Col(pos=6)
             angle     = tables.Float32Col(pos=7)
             octave    = tables.Float32Col(pos=8)
+            
+        self.Columns = Columns
         
     @Feature.wrapper        
     def calculate(self, uri):

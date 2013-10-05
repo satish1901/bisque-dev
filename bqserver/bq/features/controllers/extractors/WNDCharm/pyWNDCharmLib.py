@@ -52,6 +52,12 @@ def extractChebyshevFourierCoefficients(im):
         output;
             size: array[32]
             type: int
+
+        target time: 3.84899997711
+        array([ 242.,  160.,   68.,   25.,   12.,    6.,    4.,    0.,    2.,
+          0.,    0.,    0.,    5.,    0.,    2.,    0.,    0.,    0.,
+          1.,    0.,    0.,    0.,    0.,    1.,    0.,    0.,    0.,
+          0.,    0.,    0.,    0.,    1.])
     """
     descSize = 32
     tmp = np.asarray(im)
@@ -114,7 +120,6 @@ def extractGaborTextures(im):
 
 def extractHaralickTextures(im):
     """
-    target time: 0.778000116348
     Haralick Textures:
         input:
             size: mxn
@@ -139,8 +144,13 @@ def extractHaralickTextures(im):
 
 def extractMultiscaleHistograms(im):
     """
-    # target time:  0.155999898911
-    # cant make it any better right now
+    Multiscale Histograms
+        input:
+            size: mxn
+            type: double
+        output:
+            size: array[24]
+            type: double    
     """
     descSize = 24
     tmp = np.asarray(im)
@@ -163,8 +173,8 @@ def extractRadonCoefficients(im):
             size: mxn
             type: double
         output:
-            size array[12]
-            type double
+            size: array[12]
+            type: double
     """
     descSize = 12
     tmp = np.asarray(im)
@@ -254,9 +264,13 @@ def extractPixelIntensityStatistics(im):
 
 def extractColorHistogram(im):
     """
-    target time: 29.0840001106
-    resulting time: 
-    still need to merge the imgcvr
+    Color Histogram
+        input:
+            size: mxn
+            type: double
+        output;
+            size: array[20]
+            type: double  
     """
     descSize = 20
     tmp = np.asarray(im)
@@ -391,7 +405,7 @@ if __name__ == '__main__':
     import time
     im=cv2.imread('test.jpg',cv2.CV_LOAD_IMAGE_GRAYSCALE) #CV_LOAD_IMAGE_GRAYSCALE CV_LOAD_IMAGE_COLOR
     start=time.time()
-    feature=extractGiniCoefficient(im)
+    feature=extractChebyshevFourierCoefficients(im)
     end=time.time()
     print 'time elapsed: %s'%str(end-start)  
     
