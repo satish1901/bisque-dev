@@ -35,7 +35,7 @@ The bisque server
         "tgext.registration2",
         "tw.output", #https://bitbucket.org/alexbodn/twoutput/get/af6904c504cf.zip
         "mahotas",  # Feature
-        "tables==2.4.0",  # Feature
+        "tables==3.0.0",  # Feature
         "numexpr==1.4.2", # Feature
         "cython",  # Feature
         #"opencv",  # Feature        
