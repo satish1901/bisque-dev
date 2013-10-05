@@ -32,6 +32,7 @@ def extractEHD(im):
         rows, cols = tmp.shape
         im = tmp.astype(np.int)
         result = np.empty([80], dtype=np.double)
+
         _VRLLib_warp.extractEHD(im, rows, cols, result)
         return result
     except ValueError:
@@ -64,9 +65,9 @@ def extractHTD(im, mask = None):
     mask_labels = np.unique(mask)
     label_count = len(mask_labels)
 
-    im = tmp.astype(np.intc)
-    mask = mask.astype(np.intc)
-    mask_labels = mask_labels.astype(np.intc)
+    im = tmp.astype(np.int)
+    mask = mask.astype(np.int)
+    mask_labels = mask_labels.astype(np.int)
     result = np.empty([48*label_count], dtype=np.double)
     _VRLLib_warp.extractHTD(im, mask, mask_labels, label_count, rows, cols, result)
     result = np.reshape(result,(label_count,48))
