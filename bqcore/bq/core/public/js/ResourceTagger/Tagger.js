@@ -1408,6 +1408,7 @@ Ext.define('BQ.grid.GobsPanel', {
                     this.onTypes(response.responseXML);
             },
             scope: this,
+            disableCaching: false, 
         });  
     },     
 
