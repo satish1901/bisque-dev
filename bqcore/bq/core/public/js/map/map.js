@@ -60,6 +60,7 @@ Ext.define('BQ.map.Map', {
                         this.onImagesLoaded(response.responseXML);
                 },
                 scope: this,
+                disableCaching: false,
                 listeners: {
                     scope: this,
                     beforerequest   : function() { this.setLoading('Loading images...'); },
