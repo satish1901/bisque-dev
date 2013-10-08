@@ -900,15 +900,17 @@ Ext.define('Bisque.GObjectTagger', {
     },
 
     onLoaded: function () {
-        this.tree.addDocked([{
+        this.tree.addDocked([/*{
             xtype: 'container',
             cls: 'bq-gob-header',
             html: '<h3>Add annotations</h3>',
             border: 0,
             dock: 'top',
-        }, {
+        },*/ {
             xtype: 'gobspanel',
             itemId: 'panelGobTypes',
+            title: 'Add annotations',
+            collapsible: true,
             border: 0,
             dock: 'top',
             height: 250,
