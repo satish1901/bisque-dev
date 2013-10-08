@@ -49,9 +49,9 @@ class FFTSD(Feature.Feature):
             polygon = tables.StringCol(2000,pos=1)
             feature = tables.Col.from_atom(featureAtom, pos=2)
             
-        with Locks(None, filename), tables.openFile(filename,'a', title=self.name) as h5file: 
-            outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
-            outtable.flush()
+        with Locks(None, filename):
+            with tables.openFile(filename,'a', title=self.name) as h5file: 
+                outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
             
         return
     
