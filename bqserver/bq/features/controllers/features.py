@@ -215,7 +215,7 @@ class Tables(object):
         if not os.path.exists(filename):
             self.feature.createtable(filename) #creates the table
             
-        with Locks(self.feature.path):
+        with Locks(filename):
             with tables.openFile(filename,'r', title=self.feature.name) as h5file:
                 table = h5file.root.values
                 index = table.getWhereList(query)
@@ -316,7 +316,7 @@ class IDTables(Tables):
         if not os.path.exists(filename):
             self.ID.createtable(filename) #creates the table
             
-        with Locks(self.ID.path):
+        with Locks(filename):
             with tables.openFile(filename,'r', title=self.ID.name) as h5file:
                 table = h5file.root.values
                 index = table.getWhereList(query)

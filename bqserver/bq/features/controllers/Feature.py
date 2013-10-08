@@ -11,11 +11,17 @@ import numpy as np
 import logging
 import string
 import uuid
+import shutil
+import socket
+import tempfile
 
-import bq
-from bq.image_service.controllers.locks import Locks
-from pylons.controllers.util import abort
+from tg import abort
+from webob import Request
+
 from bq import image_service
+from bq.image_service.controllers.locks import Locks
+from bq.core import identity
+from bq.util import http
 
 from .var import FEATURES_STORAGE_FILE_DIR,FEATURES_TABLES_FILE_DIR,FEATURES_TEMP_IMAGE_DIR
 
@@ -188,56 +194,61 @@ class Feature(object):
 class ImageImport():
     """ imports an image from image service and saves it in the feature temp image dir """
     def __init__(self, uri,file_type='tiff'):
+        from bq.config.middleware import bisque_app
         
-        
-        if uri.find('image_service')<1: #identify if is image service request
-            
-            #finds image resource thought http
-            import urllib, urllib2, cookielib
-            self.uri=uri
-            header = {'Accept':'text/xml'}
-            req = urllib2.Request(url=uri,headers=header)
-            try:
-                content = urllib2.urlopen(req)
-            except urllib2.HTTPError, e:
-                if e.code>=400:
-                    abort(404)
-                else:
-                    log.debug('Response Code: %s'%e.code)
-                    log.exception('Failed to get a correct http response code')
-                    abort(500)
-            
-            #creates a random file name
-            d =[random.choice(string.ascii_lowercase + string.digits) for x in xrange(10)]
-            s = "".join(d)
-            file = 'image'+ str(s)+'.'+file_type
-            
-            self.path = os.path.join( FEATURES_TEMP_IMAGE_DIR, file)
-                
-            #Writes file to feature's image temp directory
-            with Locks(None, self.path):
-                with open(self.path, 'wb')as f:
-                    f.write(content.read())
-                    f.flush()
-
-        
-        else:
-            #finds image resource though image service
+        if 'image_service' in uri:
+            #finds image resource though local image service
             self.uri=uri
             self.path = image_service.local_file(uri) 
             log.debug("path: %s"% self.path)
             if self.path is None:
                 abort(404)
+            return
+
+        with tempfile.NamedTemporaryFile(dir=FEATURES_TEMP_IMAGE_DIR, prefix='image', delete=False) as f:
+            self.path = f.name
+            try:
+                # Try to route internally
+
+                req = Request.blank(uri)
+                req.headers['Authorization'] = "Mex %s" % identity.mex_authorization_token()
+                req.headers['Accept'] = 'text/xml'
+                log.debug("begin routing internally %s" % uri)
+                response = req.get_response(bisque_app)
+                log.debug("end routing internally: status %s" % response.status_int)
+                if response.status_int == 200:
+                    f.write(response.body)
+                    return
+                
+                # Try to route externally
+
+                req = Request.blank(uri)
+                req.headers['Authorization'] = "Mex %s" % identity.mex_authorization_token()
+                req.headers['Accept'] = 'text/xml'
+                log.debug("begin routing externally: %s" % uri)
+                response = http.send(req)
+                log.debug("end routing externally: status %s" % response.status_int)
+                if response.status_int == 200:
+                    f.write(response.body)
+                    return
+            except:
+                log.exception ("While retrieving URL %s" % uri)
+        try:
+            os.remove (self.path)
+        except OSError:
+            pass
+        abort (response.status_int)
+
         
     def returnpath(self):
         return self.path
     
     def __del__(self):
         #check if the temp dir was used to remove file
-        if self.uri.find('image_service')<1:
+        if 'image_service' not in self.uri:
             try:
                 os.remove(self.path)
-            except:
+            except OSError:
                 pass
             
                
