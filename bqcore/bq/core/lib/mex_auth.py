@@ -14,39 +14,56 @@ class MexAuthenticatePlugin(object):
     
     def identify(self, environ):
         """Lookup the owner """
-        # OLD Way using custom header 
-        mexid = environ.get('HTTP_MEX', None)
-        #log.info ("MexAuthenticate %s" % mexid)
-        if mexid :
-            return { 'bisque.mex_id' : mexid }
-
         # New way using standard Authencation header
+        # Authentication: Mex user_id mex_token
         authorization = AUTHORIZATION(environ)
         try:
-            authmeth, auth = authorization.split(' ', 1)
+            auth = authorization.split(' ')
         except ValueError: # not enough values to unpack
-            return None
-        if authmeth.lower() == 'mex':
-            return { 'bisque.mex_id' : auth }
+            auth =  None
 
+        if auth and auth[0].lower() == 'mex':
+            log.debug ("MexIdentify %s" % auth)
+            try:
+                user, token = auth[1].split(':')
+                return { 'bisque.mex_user': user, 'bisque.mex_token' : token }
+            except ValueError:
+                pass
+
+        # OLD Way using custom header  (deprecated)
+        mexheader = environ.get('HTTP_MEX', None)
+        if  mexheader:
+            try:
+                # OLD code may ship a NEW token with the OLD header.
+                user, token = mexheader.split(':')
+                return { 'bisque.mex_user': user, 'bisque.mex_token' : token }
+            except ValueError:
+                return { 'bisque.mex_token' : mexheader }
         return None
+
+
     def remember(self, environ, identity):
         pass
     def forget(self, environ, identity):
         pass
     def authenticate(self, environ, identity):
         try:
-            mexid = identity['bisque.mex_id']
+            mex_token = identity['bisque.mex_token']
         except KeyError:
             return None
 
         if not config.get('has_database'):
-            environ['repoze.what.credentials'] = { 'repoze.who.userid': mexid }
+            environ['repoze.what.credentials'] = { 'repoze.who.userid': mex_token }
             return mexid
 
         from bq.data_service.model import ModuleExecution
         log.debug("MexAuthenticate:auth %s" % (identity))
-        mex = DBSession.query(ModuleExecution).get (mexid)
+        try:
+            mex_id = int(mex_token)
+            mex = DBSession.query(ModuleExecution).get(mex_id)
+        except ValueError:
+            mex = DBSession.query(ModuleExecution).filter_by (resource_uniq = mex_token).first()
+
 
         # NOTE: Commented out during system debugging
         # 
@@ -55,10 +72,12 @@ class MexAuthenticatePlugin(object):
         #    return None
         if mex:
             identity['bisque.mex'] = mex
-            owner = mex.owner.tguser
-            log.info ("MEX_IDENTITY %s->%s" % (mexid, owner.user_name))
-            return owner.user_name
-        log.warn("Mex authentication failed due to invalid mex %s" % mexid)
+            owner = identity.get ('bisque.mex_user') or mex.owner.tguser.user_name
+            identity ['bisque.mex_auth'] = '%s:%s' % (owner, mex_token)
+
+            log.info ("MEX_IDENTITY %s->%s" % (mex_token, owner))
+            return owner
+        log.warn("Mex authentication failed due to invalid mex %s" % mex_token)
         return None
             
     #def challenge(self, environ, status, app_headers, forget_headers):
