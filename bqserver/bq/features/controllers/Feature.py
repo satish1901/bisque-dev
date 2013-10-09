@@ -11,6 +11,7 @@ import numpy as np
 import logging
 import string
 import uuid
+import urllib2
 import shutil
 import socket
 import tempfile
@@ -129,9 +130,16 @@ class Feature(object):
             if r not in kw:
                 log.debug('Argument Error: %s type was not found'%r)
                 abort(400,'Argument Error: %s type was not found'%r)   
-            else:
-                resource[r]=kw[r]
-        return resource
+            else: #to take care of when elements have more then uri attached. not allowed in the features
+                  #server for now
+                if type(kw[r])==list:
+                    log.debug('Argument Error: %s type was found to have more then one URI'%r)
+                    abort(400,'Argument Error: %s type was found to have more then one URI'%r)
+                else:                  
+                    
+                    resource[r]=urllib2.unquote(kw[r]) #deecode url
+                    del kw[r]
+        return resource,kw
     
     def columns(self):
         """
@@ -202,8 +210,11 @@ class ImageImport():
             self.path = image_service.local_file(uri) 
             log.debug("path: %s"% self.path)
             if self.path is None:
-                abort(404)
-            return
+                #log.exception ("While retrieving URL %s" % uri)
+                #abort(404)
+                log.debug('Not found in image_service: %s'%uri)
+            else:
+                return
 
         with tempfile.NamedTemporaryFile(dir=FEATURES_TEMP_IMAGE_DIR, prefix='image', delete=False) as f:
             self.path = f.name
@@ -219,6 +230,8 @@ class ImageImport():
                 if response.status_int == 200:
                     f.write(response.body)
                     return
+                if response.status_int in set([401,403]):
+                    raise ValueError('polygon not found: must be a polygon gobject') 
                 
                 # Try to route externally
 
@@ -243,6 +256,14 @@ class ImageImport():
     def returnpath(self):
         return self.path
     
+#    def __close__(self):
+#        #check if the temp dir was used to remove file
+#        if 'image_service' not in self.uri:
+#            try:
+#                os.remove(self.path)
+#            except OSError:
+#                pass
+                
     def __del__(self):
         #check if the temp dir was used to remove file
         if 'image_service' not in self.uri:
@@ -251,9 +272,32 @@ class ImageImport():
             except OSError:
                 pass
             
-               
+      
+############################################################### 
+# Mex Validation
+############################################################### 
 
-
+#needs to be replaced with a HEAD instead of using a POST
+def mex_validation(**resource):
+    """
+    Checks the mex of the resource to see if the user has access to all the resources 
+    """
+    from bq.config.middleware import bisque_app
+    for r in resource.keys():
+        
+        # Try to route internally
+        req = Request.blank(resource[r])
+        req.headers['Authorization'] = "Mex %s" % identity.mex_authorization_token()
+        req.headers['Accept'] = 'text/xml'
+        log.debug("begin routing internally %s" % resource[r])
+        response = req.get_response(bisque_app)
+        log.debug("end routing internally: status %s" % response.status_int)
+        if response.status_int == 200:
+            pass
+        if response.status_int in set([401,403]):
+            return False
+    return True
+    
 ############################################################### 
 # Temp Import
 ############################################################### 
@@ -287,7 +331,7 @@ class TempImport():
         """ When the ImageImport object is deleted the image path is removed for the temp dir """
         try:
             os.remove(self.path)
-        except:
+        except OSError:
             pass
 
 ############################################################### 
@@ -300,36 +344,22 @@ class XMLImport():
         from lxml import etree
         import urllib, urllib2, cookielib
         self.uri = uri
-        
-        header = {'Accept':'text/xml'}
-        req = urllib2.Request(url=uri,headers=header)
+        from bq.config.middleware import bisque_app
+        self.tree = etree.Element('Empty')
         try:
-            content = urllib2.urlopen(req)
-        except urllib2.HTTPError, e:
-            if e.code>=400:
-                log.debug('XML not found at this URI')
-                abort(404)
-            else:
-                log.debug('Response Code: %s'%e.code)
-                log.exception('Failed to get a correct http response code')
-                abort(500)        
-        content = urllib.urlopen(uri)
-        
-        try:
-            self.tree=etree.XML(content.read())
-        except etree.XMLSyntaxError:
-            log.debug('Requires: XML format')
-            abort(415, 'Requires: XML format')
+            # Try to route internally
             
-        #hack for amir
-#        from bq.api.comm import BQSession
-#        username = 'user'
-#        password = 'pass'
-#        self.uri = uri
-#        BQ=BQSession()
-#        BQ.init_local(username,password,bisque_root=r'http://bisque',create_mex=False)
-#        self.tree = BQ.fetchxml(self.uri)
-        
+            req = Request.blank(uri)
+            req.headers['Authorization'] = "Mex %s" % identity.mex_authorization_token()
+            req.headers['Accept'] = 'text/xml'
+            log.debug("begin routing internally %s" % uri)
+            response = req.get_response(bisque_app)
+            log.debug("end routing internally: status %s" % response.status_int)
+            if response.status_int == 200:
+                self.tree = etree.fromstring(response.body)
+                return
+        except:
+            log.exception ("While retrieving URL %s" % uri)
         
     def returnxml(self):       
         return self.tree
@@ -337,7 +367,8 @@ class XMLImport():
     def __del__(self):
         pass
 
-
+#    def __close__(self):
+#        pass
 
 
 

@@ -3,13 +3,18 @@
 """
 import cv2
 import cv
+import tables
+import logging
 from pylons.controllers.util import abort
 from bq.features.controllers import Feature #import base class
 from fftsd_extract import FFTSD as fftsd
 from lxml import etree
 import urllib, urllib2, cookielib
+from bq.image_service.controllers.locks import Locks
 import random
-        
+
+log = logging.getLogger("bq.features")
+
 class FFTSD(Feature.Feature):
     
     #parameters
@@ -32,13 +37,17 @@ class FFTSD(Feature.Feature):
             for vertex in vertices:
                 contour.append([int(float(vertex.attrib['x'])),int(float(vertex.attrib['y']))])
         else:
+
             log.debug('polygon not found: must be a polygon gobject')
-            abort(404, 'polygon not found: must be a polygon gobject')
+            raise ValueError('polygon not found: must be a polygon gobject') #an excpetion instead of abort so work flow is not interupted
+
+            #abort(404, 'polygon not found: must be a polygon gobject')
+            #raise ValueError('polygon not found: must be a polygon gobject')
         
         descriptor = fftsd(contour,self.length)
                 
         #initalizing rows for the table
-        return [descriptor]
+        return [descriptor[:500]]
     
     def outputTable(self,filename):
         """

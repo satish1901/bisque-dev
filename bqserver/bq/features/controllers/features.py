@@ -125,7 +125,7 @@ class Rows(object):
         """
         try:
             output = self.feature.calculate(resource) #finds the feature
-            log.debug('output: %s'% str(self.feature.localfile(output[0][0])))
+            #log.debug('output: %s'% str(self.feature.localfile(output[0][0])))
             if self.feature.localfile(output[0][0]) in self.feature_queue: # checking the first few element on the hash
                 self.feature_queue[self.feature.localfile(output[0][0])].put(output) #place the output in the queue
             else:
@@ -405,7 +405,7 @@ class Request(object):
     """
 
 
-    def __init__(self, feature_archieve, feature_name, format='xml',**kw):
+    def __init__(self, feature_archieve, kw, feature_name, format='xml'):
         
         self.options =  {  
                            'callback': None,
@@ -417,24 +417,12 @@ class Request(object):
 
         #feature assignment
         self.feature_name = feature_name
-        self.feature = feature_archieve[feature_name]    
-        
-        # check kw arg values
-        for i in kw.keys():
-            if i in self.options:
-                self.options[i] = kw[i]
-            #else:
-            #    log.debug('Argument Error: "%s" is not a valid argument'%i)
-            #    abort(404,'Argument Error: "%s" is not a valid argument'%i)
-        
-        #check if proper format
-        self.format = format
-        self.Formats = Outputs()[self.format]
-        
+        self.feature = feature_archieve[feature_name]   
+
         #assign inputs
         self.method = request.method
         self.content_type = request.headers['Content-type']
-        
+
         #validating request
         if self.method =='POST' and 1>request.headers['Content-type'].count('xml/text'):
             try: #parse the resquest
@@ -444,13 +432,16 @@ class Request(object):
                     abort(400, 'Document Error: Only excepts datasets')
                 self.element_list=[]
                 for value in self.body.xpath('value[@type="query"]'):
+                    
                     query = value.text
+                    query=query.decode("utf8")
+                    log.debug('query: %s'% query)
                     query = query.split('&')
                     element = {}
                     for q in query:
                         q = q.split('=')
                         element[q[0]] = q[1].replace('"','')
-                    element = self.feature().typecheck(**element)
+                    element,n = self.feature().typecheck(**element)
                     log.debug('element %s'% element)
                     self.element_list.append(element)
             except:
@@ -458,13 +449,27 @@ class Request(object):
                 abort(400, 'Xml document is malformed')
                 
         elif self.method =='GET':
-            resource = self.feature().typecheck(**kw)
+            resource,kw = self.feature().typecheck(**kw)
             self.body = None
             self.element_list = [resource]
                          
         else:
             log.debug('Request Error: http request was not formed correctly')
             abort(400, 'http request was not formed correctly')
+        
+        # check kw arg values
+        for i in kw.keys():
+            if i in self.options:
+                self.options[i] = kw[i]
+            else:
+                log.debug('Argument Error: "%s" is not a valid argument'%i)
+                abort(404,'Argument Error: "%s" is not a valid argument'%i)
+        
+        #check if proper format
+        self.format = format
+        self.Formats = Outputs()[self.format]
+        
+
     
     def proccess(self):
         """
@@ -576,32 +581,41 @@ class Xml(Format):
         nodes = 0
         
         for i,resource in enumerate(element_list):
-            uri_hash =self.feature.returnhash(**resource)
+            uri_hash =self.feature.returnhash( **resource )
             rows = table.get(uri_hash)
             if rows!=None: #a feature was found for the query
                 for r in rows:
-                    subelement = etree.SubElement( element, 'feature' , resource ,type = str(self.feature.name))
-                    
-                    if self.feature.parameter:
-                        parameters = {}
+                    if Feature.mex_validation(**resource): #check to see if the current user has acces to the feature
+                        subelement = etree.SubElement( element, 'feature' , resource ,type = str(self.feature.name))
                         
-                        #creates list of parameters to append to the xml
-                        for parameter_name in self.feature.parameter:
-                            parameters[parameter_name] = str(r[parameter_name]) 
-                        etree.SubElement(subelement, 'parameters', parameters)
-                        
-                    value = etree.SubElement(subelement, 'value')
-                    value.text = " ".join('%g'%item for item in r['feature']) #writes the feature vector to the xml
-                    nodes+=1
-                    #break out when there are too many nodes
-                    if nodes>self.limit: #checks to see if the number of lines has surpassed the limit
-                        break
-            else: #not feature was found for the query, adds an error message to the xml
+                        if self.feature.parameter:
+                            parameters = {}
+                            #creates list of parameters to append to the xml
+                            for parameter_name in self.feature.parameter:
+                                parameters[parameter_name] = str(r[parameter_name])
+                            etree.SubElement(subelement, 'parameters', parameters)
+                            
+                        value = etree.SubElement(subelement, 'value')
+                        value.text = " ".join('%g'%item for item in r['feature']) #writes the feature vector to the xml
+                        nodes += 1
+                        #break out when there are too many nodes
+                        if nodes>self.limit: #checks to see if the number of lines has surpassed the limit
+                            break
+                    else: #the user did not have access to the element the feature is being calcualted on
+                        subelement = etree.SubElement( 
+                                                  element, 'feature' ,
+                                                  resource,
+                                                  type = str(self.feature.name),
+                                                  error = '403 Forbidden: The current user does not have access to this feature'
+                                              )  
+                        if nodes>self.limit: #checks to see if the number of lines has surpassed the limit
+                            break                        
+            else: #no feature was found from the query, adds an error message to the xml
                 subelement = etree.SubElement( 
                                                   element, 'feature' ,
                                                   resource,
                                                   type = str(self.feature.name),
-                                                  value = 'Return Error: Feature was not found in the table'
+                                                  error = 'The feature was not found in the table. Check feature logs for traceback'
                                               )            
             if nodes>self.limit: #checks to see if the number of lines has surpassed the limit
                 break
@@ -674,12 +688,13 @@ class Csv(Format):
                 for r in rows:
                     value_string = ",".join('%g'%i for i in r['feature']) #parses the table output and returns a string of the vector separated by commas
                     resource_uri = [resource[rn] for rn in resource_names] 
+                    parameter = []
                     parameter = [r[pn] for pn in parameter_names]
                     line = [idx,self.feature.name]+resource_uri+[value_string]+parameter
                     writer.writerow(line) #write line to the document
                     
             else: #if nothing is return from the tables enter Nan into each vector element
-                value_string = ",".join(['Nan' for i in range(feature.length)])
+                value_string = ",".join(['Nan' for i in range(self.feature.length)])
                 resource_uri = [resource[rn] for rn in resource_names]
                 line = [idx,self.feature.name]+resource_uri+[value_string] #appends all the row elements
                 writer.writerow(line) #write line to the document
@@ -799,7 +814,7 @@ class Hdf(Format):
                         row += tuple([r['feature']])
                         for p in self.feature.parameter:
                             row += tuple([r[p]])
-                            log.debug('row: %s' % str(row))
+                            #log.debug('row: %s' % str(row))
                         outtable.append([row]) 
                 outtable.flush()
         
@@ -1003,7 +1018,7 @@ class featuresController(ServiceController):
         super(featuresController, self).__init__(server_url)
         self.baseurl = server_url
         _mkdir(FEATURES_TABLES_FILE_DIR)
-        _mkdir(FEATURES_TEMP_IMAGE_DIR) 
+        _mkdir(FEATURES_TEMP_IMAGE_DIR)
         log.info('importing features')
         self.feature_archieve = Feature_Archieve() #initalizing all the feature classes     
     
@@ -1025,14 +1040,13 @@ class featuresController(ServiceController):
                     
         #calculating features
         elif len(args)<=2:
-            log.debug('Request: %s'%request.method)
-            Feature_Request = Request(self.feature_archieve,*args,**kw)
+            Feature_Request = Request(self.feature_archieve,kw,*args)
             Feature_Request.proccess()
             return Feature_Request.response()
         
         else: 
-            log.debug('Malformed Request: Not a valid uri request')
-            abort(400,'Malformed Request: Not a valid uri request')
+            log.debug('Malformed Request: Not a valid features request')
+            abort(400,'Malformed Request: Not a valid features request')
             
     @expose()        
     def formats(self, *args):

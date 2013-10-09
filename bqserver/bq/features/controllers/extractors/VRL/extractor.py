@@ -37,10 +37,12 @@ class EHD(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im    
-        im = np.asarray(im)
+
         if im==None:
-            abort(415, 'Format was not supported')
-        
+            raise ValueError('Format was not supported')
+            #abort(415, 'Format was not supported')
+
+        im = np.asarray(im)        
         descriptors=extractEHD(im)
         
         #initalizing rows for the table
@@ -72,12 +74,15 @@ class HTD(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im
-
-        im= np.asarray(im)
-        if im==None:
-            abort(415, 'Format was not supported')
+        if im == None:
+            raise ValueError('Format was not supported') #though an excpetion instead of abort so work flow is not interupted
+            #abort(415, 'Format was not supported')
+            
+        im = np.asarray(im)
         descriptor,label = extractHTD(im)
+        #log.debug('descriptor : %s'%str(descriptor))
         return [descriptor] #calculating descriptor and return
+    
     
 class mHTD(Feature.Feature):
     """
@@ -134,14 +139,17 @@ class mHTD(Feature.Feature):
         del Mask  
          
  
-        im=np.asarray(im)
+
         if im==None:
-            abort(415, 'Format was not supported')
+            raise ValueError('Format was not supported') #though an excpetion instead of abort so work flow is not interupted
+            #abort(415, 'Format was not supported')
                 
-        mask = np.asarray(mask)
-        if im==None:
-            abort(415, 'Format was not supported')
+        if mask==None:
+            raise ValueError('Format was not supported') #though an excpetion instead of abort so work flow is not interupted
+            #abort(415, 'Format was not supported')
             
+        im=np.asarray(im)
+        mask = np.asarray(mask)                    
         descriptors,labels = extractHTD(im, mask=mask) #calculating descriptor
             
 

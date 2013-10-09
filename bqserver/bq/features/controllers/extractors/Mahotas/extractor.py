@@ -92,9 +92,11 @@ class LBPbro(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im
-        im=np.asarray(im)
+
         if im==None:
-            abort(415, 'Format was not supported')
+            raise ValueError('Format was not supported')
+
+        im=np.asarray(im)
         
          #calculating descriptor\
         imagesize=im.shape
@@ -134,10 +136,11 @@ class PFTAS(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
         del Im
-        im=np.asarray(im)
-        if im==None:
-            abort(415, 'Format was not supported')
 
+        if im==None:
+            raise ValueError('Format was not supported')
+        im=np.asarray(im)
+        
         descriptor = pftas(im)
         #initalizing rows for the table
         return [descriptor]
@@ -162,10 +165,11 @@ class TAS(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
         del Im
-        im=np.asarray(im)
+
         if im==None:
-            abort(415, 'Format was not supported')
-        
+            raise ValueError('Format was not supported')
+        im=np.asarray(im) 
+               
         descriptor = tas(im)
         #initalizing rows for the table
         return [descriptor]
@@ -177,7 +181,7 @@ class ZM(Feature.Feature):
     """
     
     #parameters
-    name = 'SURF'
+    name = 'ZM'
     description = """Zernike Moment"""
     length = 25
         
@@ -190,10 +194,10 @@ class ZM(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im
-        im=np.asarray(im)
+
         if im==None:
-            abort(415, 'Format was not supported')
-        
+            raise ValueError('Format was not supported')
+        im=np.asarray(im)        
         radius=8
         degree=8
         descritptor = zernike_moments(im,radius,degree)
