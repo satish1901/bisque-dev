@@ -28,9 +28,9 @@ class SCD(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
         del Im
-        im=np.asarray(im)
         if im==None:
-            abort(415, 'Format was not supported')
+            raise ValueError('Format was not supported')
+        im=np.asarray(im)
         
         descriptors = extractSCD(im, descSize=256) #calculating descriptor
         
@@ -55,9 +55,9 @@ class HTD2(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im
-        im=np.asarray(im)
         if im==None:
-            abort(415, 'Format was not supported')
+            raise ValueError('Format was not supported')
+        im=np.asarray(im)
         
         descriptors = extractHTD(im) #calculating descriptor
         
@@ -86,9 +86,9 @@ class EHD2(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
         del Im
-        im=np.asarray(im)
         if im==None:
-            abort(415, 'Format was not supported')
+            raise ValueError('Format was not supported')
+        im=np.asarray(im)
         
         descriptors = extractEHD(im) #calculating descriptor
         
@@ -115,9 +115,9 @@ class DCD(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
         del Im
-        im=np.asarray(im)
         if im==None:
-            abort(415, 'Format was not supported')
+            raise ValueError('Format was not supported')
+        im=np.asarray(im)
         
         #calculating descriptor
         DCD = extractDCD(im)
@@ -158,9 +158,9 @@ class CSD(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
         del Im
-        im=np.asarray(im)
         if im==None:
-            abort(415, 'Format was not supported')
+            raise ValueError('Format was not supported')
+        im=np.asarray(im)
         
         descriptors = extractCSD(im, descSize=64) #calculating descriptor
         
@@ -187,9 +187,9 @@ class CLD(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
         del Im
-        im=np.asarray(im)
         if im==None:
-            abort(415, 'Format was not supported')
+            raise ValueError('Format was not supported')
+        im=np.asarray(im)
         
         descriptors = extractCLD(im, numYCoef=64, numCCoef = 28)
         return [descriptors]
@@ -219,8 +219,8 @@ class RSD(Feature.Feature):
             for vertex in vertices:
                 contour.append((int(float(vertex.attrib['x'])),int(float(vertex.attrib['y']))))
         else:
-            abort(404, 'polygon not found: must be a polygon gobject')
-        
+            raise ValueError(404, 'polygon not found: must be a polygon gobject')
+
         
 #        gobject = self.uri.replace('/',' ').replace('?',' ').split()
 #        image_id=[]
@@ -239,7 +239,7 @@ class RSD(Feature.Feature):
 #            self.image_uri = root+'/image_service/image/'+tree.attrib['resource_uniq']
         
         
-        image_uri = resource['image']
+        self.image_uri = resource['image']
         Im = Feature.ImageImport(self.image_uri) #importing image from image service
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)

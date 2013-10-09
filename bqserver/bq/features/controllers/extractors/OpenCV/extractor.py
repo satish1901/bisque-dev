@@ -8,6 +8,7 @@ import numpy as np
 from bq.features.controllers import Feature #import base class
 from pylons.controllers.util import abort
 log = logging.getLogger("bq.features")
+from bq.image_service.controllers.locks import Locks
 import tables
 
 class BRISK(Feature.Feature):
@@ -48,9 +49,10 @@ class BRISK(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im     
-        im=np.asarray(im)
+
         if im==None:
-            abort(415, 'Format was not supported')
+            raise ValueError('Format was not supported')
+        im=np.asarray(im)
         
         fs = cv2.BRISK().detect(im)                             # keypoints
         
@@ -139,9 +141,9 @@ class BRISKc(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im     
-        im=np.asarray(im)
         if im==None:
-            abort(415, 'Format was not supported')
+            raise ValueError('Format was not supported')
+        im=np.asarray(im)
         
         imagesize=im.shape
         if imagesize[0]>imagesize[1]:
@@ -212,7 +214,7 @@ class ORB(Feature.Feature):
     are rotated according to the measured orientation).
     This explination was taken from opencv documention on orb and the algorithm iself was taken from
     the opencv library"""
-    parameter = ['x','y','response','szie','angle','octave']
+    parameter = ['x','y','response','size','angle','octave']
     length = 32
 
     def columns(self):
@@ -241,9 +243,9 @@ class ORB(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im      
-        im=np.asarray(im)
         if im==None:
-            abort(415, 'Format was not supported')
+            raise ValueError('Format was not supported')
+        im=np.asarray(im)
         
         fs = cv2.ORB().detect (im)                             # keypoints
         
@@ -308,7 +310,7 @@ class ORBc(Feature.Feature):
     This explination was taken from opencv documention on orb and the algorithm iself was taken from
     the opencv library"""
     length = 32
-    parameter = ['x','y','response','szie','angle','octave']
+    parameter = ['x','y','response','size','angle','octave']
     contents = 'several points are described in an image, each will have a position: X Y Scale'
 
 
@@ -337,9 +339,9 @@ class ORBc(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im      
-        im=np.asarray(im)
         if im==None:
-            abort(415, 'Format was not supported')
+            raise ValueError('Format was not supported')
+        im=np.asarray(im)
         
         imagesize=im.shape
         if imagesize[0]>imagesize[1]:
@@ -404,7 +406,7 @@ class SIFT(Feature.Feature):
     name = 'SIFT'
     description = """Scale-invariant feature transform also know as SIFT """
     length = 128
-    parameter = ['x','y','response','szie','angle','octave']
+    parameter = ['x','y','response','size','angle','octave']
     feature_format = "int32"
     
     def columns(self):
@@ -433,9 +435,9 @@ class SIFT(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im     
-        im=np.asarray(im)
         if im==None:
-            abort(415, 'Format was not supported')
+            raise ValueError('Format was not supported')
+        im=np.asarray(im)
         
         fs = cv2.SIFT().detect(im)                             # keypoints
         
@@ -506,9 +508,9 @@ class SIFTc(SIFT):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im     
-        im=np.asarray(im)
         if im==None:
-            abort(415, 'Format was not supported')
+            raise ValueError('Format was not supported')
+        im=np.asarray(im)
         
         imagesize=im.shape
         if imagesize[0]>imagesize[1]:
@@ -633,9 +635,9 @@ class SURF(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im
-        im=np.asarray(im)
         if im==None:
-            abort(415, 'Format was not supported')
+            raise ValueError('Format was not supported')
+        im=np.asarray(im)
         
         (kpts,descriptors)=cv.ExtractSURF(cv.fromarray(im), None, cv.CreateMemStorage(), (extended, HessianThresh, nOctaves, nOctaveLayers)) #calculating descriptor
         
@@ -704,9 +706,9 @@ class SURFc(SURF):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im
-        im=np.asarray(im)
         if im==None:
-            abort(415, 'Format was not supported')
+            raise ValueError('Format was not supported')
+        im=np.asarray(im)
         
         imagesize=im.shape
         if imagesize[0]>imagesize[1]:
@@ -774,9 +776,9 @@ class FREAKc(Feature.Feature):
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
         del Im     
-        im=np.asarray(im)
         if im==None:
-            abort(415, 'Format was not supported')
+            raise ValueError('Format was not supported')
+        im=np.asarray(im)
         
         imagesize=im.shape
         if imagesize[0]>imagesize[1]:
