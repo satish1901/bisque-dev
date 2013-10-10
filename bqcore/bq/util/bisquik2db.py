@@ -57,12 +57,12 @@ import functools
 import urlparse
 import time
 import copy
+import io
 
 from lxml import etree
 from datetime import datetime
 from sqlalchemy.orm import object_mapper
 
-from StringIO import StringIO
 from tg import config
 import transaction
 
@@ -172,6 +172,7 @@ class ResourceFactory(object):
             node.document = parent.document
         elif xmlname == "value":
             node = Value()
+            parent.resource_value = None
             parent.values.append(node)
             parent.resource_value = None
             node.indx = len(parent.values)-1   # Default value (maybe overridden)
@@ -204,6 +205,7 @@ class ResourceFactory(object):
                 node.indx = len(parent.vertices)-1 # Default value (maybe overridden)
         elif xmlname == "value":
             if node not in parent.values:
+                parent.resource_value = None
                 parent.values.append(node)
                 parent.resource_value = None
                 node.indx = len(parent.values)-1   # Default value (maybe overridden)
@@ -260,6 +262,7 @@ def make_owner (dbo, fn, baseuri):
     return ('owner', baseuri + str(dbo.owner))
 def make_uri(dbo, fn, baseuri):
     return ('uri', "%s%s" % (baseuri , str (dbo.uri)))
+    #return ('uri', "%s" % (dbo.uri))
 def get_email (dbo, fn, baseuri):
     return ('email', dbo.user.resource_value)
 def make_user (dbo, fn, baseuri):
@@ -273,7 +276,7 @@ mapping_fields = {
 #    'table_name':'type',
     'engine_id' : 'engine',
     'gobjects':None,
-    'id': make_uri,
+    'id': make_uri, 
     'indx': 'index',
 #    'name_id':None,
     # Taggable
@@ -441,7 +444,7 @@ def resource2nodes(dbo, parent=None, view=[], baseuri=None,  **kw):
             try:
                 node_parent = nodes[node.resource_parent_id]
             except KeyError:
-                log.error("Missing parent node %s (permission error) in document %s" % (node.resource_parent_id, doc_id))
+                log.error("Missing parent node %s (permission error?) in document %s" % (node.resource_parent_id, doc_id))
                 continue
             #elem = etree.SubElement(parent, node.resource_type)
             elem = xmlnode (node, node_parent, baseuri, view)
@@ -469,17 +472,21 @@ def resource2nodes(dbo, parent=None, view=[], baseuri=None,  **kw):
 def resource2tree(dbo, parent=None, view=[], baseuri=None, nodes= {}, doc_id = None, **kw):
     'load an entire document tree for a particular node'
 
-    if doc_id != dbo.document_id:
-        nodes, doc_id = resource2nodes(dbo, parent, view, baseuri, **kw)
-    if parent is not None:
-        log.debug ("parent %s + %s" % (parent, nodes[dbo.id]))
-        parent.append ( nodes[dbo.id])
-    # Make a copy of the document from the request position to e
-    if dbo.document_id != dbo.id:
-        return copy.deepcopy(nodes[dbo.id]), nodes, doc_id
-    else:
-        return nodes[dbo.id], nodes, doc_id
-    #return root
+    try:
+        if doc_id != dbo.document_id:
+            nodes, doc_id = resource2nodes(dbo, parent, view, baseuri, **kw)
+        if parent is not None:
+            log.debug ("parent %s + %s" % (parent, nodes[dbo.id]))
+            parent.append ( nodes[dbo.id])
+        # Make a copy of the document from the request position to e
+        if dbo.document_id != dbo.id:
+            return copy.deepcopy(nodes[dbo.id]), nodes, doc_id
+        else:
+            return nodes[dbo.id], nodes, doc_id
+    except KeyError:
+        log.exception ("Problem loading tree for document %s: nodes %s" % (doc_id, nodes))
+
+    return xmlnode(dbo, parent=parent, baseuri=baseuri, view=view), nodes, doc_id
 
 
 def db2tree(dbo, parent=None, view=[], baseuri=None, progressive=False, **kw):
@@ -626,7 +633,7 @@ def parse_uri(uri):
     parts = url[2].split('/')
     name, ida = parts[-2:]
     rest = []
-    while not ida.isdigit() and len(parts)> 2:
+    while not ida[0].isdigit() and len(parts)> 2:
         rest.append( parts.pop() )
         name,ida = parts[-2:]
     return url[1], name, ida, rest
@@ -641,9 +648,17 @@ def load_uri (uri):
     # Check that we are looking at the right resource.
     
     net, name, ida, rest = parse_uri(uri)
-    name, dbcls = dbtype_from_tag(name)
-    resource = DBSession.query(dbcls).get (ida)
-    log.debug("loading uri name/type (%s/%s)(%s) => %s" %(name,  str(dbcls), ida, str(resource)))
+    if name == 'data_service': # and ida.startswith('00-'):
+        log.debug("loading resource_uniq %s" % ida)
+        resource = DBSession.query(Taggable).filter_by(resource_uniq = ida).first()
+    else:
+        if ida.startswith("00-"):
+            log.debug("loading resource_uniq %s" % ida)
+            resource = DBSession.query(Taggable).filter_by(resource_uniq = ida).first()
+        else:
+            name, dbcls = dbtype_from_tag(name)
+            log.debug("loading uri name/type (%s/%s)(%s) " %(name,  str(dbcls), ida))
+            resource = DBSession.query(dbcls).get (int (ida))
     return resource
 
 
@@ -659,10 +674,10 @@ def updateDB(root=None, parent=None, resource = None, factory = ResourceFactory,
     '''Update the database type resource with doc or tree'''
     try:
         evnodes = etree.iterwalk(root, events=('start','end'))
-        log.debug ("walking " + str(root))
-    except TypeError:
-        log.exception ("blech:" + str( [ root, resource ] ))
-        return parent
+        log.debug ("updateDB: walking " + str(root))
+    except TypeError, e:
+        log.exception ("bad parse of tree: %s" % [ root, resource ] )
+        raise e
 
     last_resource = None
     stack = [  ]
@@ -700,9 +715,10 @@ def updateDB(root=None, parent=None, resource = None, factory = ResourceFactory,
                 elif uri:
                     resource = factory.load_uri (uri, parent)
                     if resource is None:
+                        log.debug ("load failed %s: creating" % uri)
                         resource = factory.new (obj, parent, uri=uri)
                         resource.created = ts
-                    if replace:
+                    elif replace:
                         cleared = resource.clear()
                 elif indx is not None:
                     log.debug('index of %s[%s] on parent %s'%(obj.tag, indx, parent))
@@ -777,8 +793,10 @@ def bisquik2db(doc= None, parent=None, resource = None, xmlschema=None, replace=
     '''Parse a document (either as a doc, or an etree.
     Verify against xmlschema if present
     '''
+    if hasattr(doc,'read'):
+        doc = etree.parse(doc)
     if isinstance(doc, basestring):
-        doc = etree.parse(StringIO(doc))
+        doc = etree.parse(io.BytesIO(doc))
 
     log.debug ("Bisquik2db parent:" + str (parent))
     if isinstance(doc , etree._ElementTree):
