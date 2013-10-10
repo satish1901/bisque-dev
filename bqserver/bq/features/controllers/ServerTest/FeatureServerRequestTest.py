@@ -2,16 +2,7 @@ import unittest
 #from bq.api.comm import BQSession
 from lxml import etree
 from bqapi.comm import BQSession
-
-
-##class TestParameters():
-##    self.feature_name = 'HTD'
-##    self.root = 'http://128.111.185.26:8080'
-##    self.user = 'admin'
-##    self.pwd  = 'admin'
-##    self.dataset = 'http://128.111.185.26:8080/data_service/dataset/257970' #test dataset to post features
-##    self.image = 'http://128.111.185.26:8080/image_service/image/JWfRGcDzmqgFyzP7tvgytW' #test image to get features
-##    self.polygon = ''    
+ 
     
 
 class TestFeatureRequests(unittest.TestCase):
@@ -364,7 +355,7 @@ def feature_test_generator(feature_name,expected_ouptut):
             generates feature tests
         """
         image = 'http://128.111.185.26:8080/image_service/image/JWfRGcDzmqgFyzP7tvgytW'
-        uri = self.root+'/features/'+feature_name+'/'+'csv?image="'+image+'"'
+        uri = self.root+'/features/'+feature_name+'/'+'hdf?image="'+image+'"'
         #manually set up request
         headers = self.session.c.prepare_headers(None)
         header, content = self.session.c.http.request(uri, headers = headers)
@@ -390,9 +381,9 @@ def run_feature_test(feature_name=None):
     
         
 if __name__=='__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(TestFeatureRequests)
-    unittest.TextTestRunner(verbosity=2).run(suite)
-    #run_feature_test()
+    #suite = unittest.TestLoader().loadTestsFromTestCase(TestFeatureRequests)
+    #unittest.TextTestRunner(verbosity=2).run(suite)
+    run_feature_test()
 
 
 
