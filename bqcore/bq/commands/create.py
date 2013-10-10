@@ -62,7 +62,7 @@ class create(object):
                 self.package = package
 
         while not self.mount:
-            mount = self.name.lower()
+            mount = self.package.lower()
             mount = beginning_letter.sub("", mount)
             mount = valid_only.sub("", mount)
             self.mount = raw_input("Enter mount point (url point) [%s]: " % mount)
@@ -82,34 +82,24 @@ class create(object):
         command.run(self.cmd_args)
 
 class createService(create):
-    desc = "Create a template for a bisque service"
+    desc = "Create a bisque service"
     templates = "bisque_service"
     package = None
     name = None
 
 class createCoreService(create):
-    desc = "Create a template for a bisque core service"
+    desc = "Create a bisque core service.. it will be under  <name>/<package>/bq.<package>"
     templates = "bisque_core"
-    name = "you_core_service"
+    name = None
     def run(self):
         if not os.path.exists('bqcore'):
             print "Must be run in the top level Bisque directory"
             sys.exit(1)
-        os.chdir('bqcore')
         super(createCoreService, self).run()
-        if os.path.exists ('bq/%s' % self.package):
-            print "WARNING service bq/%s already exists.. not moving %s from current directory" % (self.package, self.package)
-        else:
-            shutil.move("%s/%s" % (self.package,self.package), "bq/%s" % self.package)
-            shutil.rmtree(self.package)
-            
-        print; print
-        print ("Don't forget to add your new service to the setup.py %s=%s" % (self.mount, self.package))
-        print ("And enable it site.cfg")
                 
 
 class createModule(create):
-    desc = "Create a template for a bisque analysis module"
+    desc = "Create a blank bisque analysis module"
     templates = "bisque_module"
     package = None
     name = None

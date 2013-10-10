@@ -1,9 +1,6 @@
-[egg_info]
-tag_build = dev
-tag_svn_revision = true
-
 [easy_install]
-find_links = http://www.pylonshq.com/download/
+find_links = http://www.turbogears.org/2.1/downloads/current/index
+             http://biodev.ece.ucsb.edu/binaries/depot/
 
 [nosetests]
 with-pylons=test.ini
