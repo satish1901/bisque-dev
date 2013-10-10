@@ -68,9 +68,6 @@ import time
 from thread_pool import  ThreadPool, WorkRequest, NoResultsPending
 import httplib2 
 
-def print_args (*l, **kw):
-    print l, kw
-
 
 main_pool = None
 class HTTPAsyncRequest(WorkRequest):
