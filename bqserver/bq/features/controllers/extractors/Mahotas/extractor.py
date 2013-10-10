@@ -66,7 +66,7 @@ class LBP(Feature.Feature):
          #calculating descriptor\
         radius = 5
         points = 5
-        descritptor = lbp(im,radius,points)
+        descriptor = lbp(im,radius,points)
         #initalizing rows for the table
         return [descriptor]
         

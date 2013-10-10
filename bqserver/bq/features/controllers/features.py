@@ -584,8 +584,10 @@ class Xml(Format):
             uri_hash =self.feature.returnhash( **resource )
             rows = table.get(uri_hash)
             if rows!=None: #a feature was found for the query
-                for r in rows:
-                    if Feature.mex_validation(**resource): #check to see if the current user has acces to the feature
+                
+                if Feature.mex_validation(**resource): #check to see if the current user has acces to the feature
+                    
+                    for r in rows:
                         subelement = etree.SubElement( element, 'feature' , resource ,type = str(self.feature.name))
                         
                         if self.feature.parameter:
@@ -601,15 +603,15 @@ class Xml(Format):
                         #break out when there are too many nodes
                         if nodes>self.limit: #checks to see if the number of lines has surpassed the limit
                             break
-                    else: #the user did not have access to the element the feature is being calcualted on
-                        subelement = etree.SubElement( 
-                                                  element, 'feature' ,
-                                                  resource,
-                                                  type = str(self.feature.name),
-                                                  error = '403 Forbidden: The current user does not have access to this feature'
-                                              )  
-                        if nodes>self.limit: #checks to see if the number of lines has surpassed the limit
-                            break                        
+                else: #the user did not have access to the element the feature is being calcualted on
+                    subelement = etree.SubElement( 
+                                              element, 'feature' ,
+                                              resource,
+                                              type = str(self.feature.name),
+                                              error = '403 Forbidden: The current user does not have access to this feature'
+                                          )  
+                    if nodes>self.limit: #checks to see if the number of lines has surpassed the limit
+                        break                        
             else: #no feature was found from the query, adds an error message to the xml
                 subelement = etree.SubElement( 
                                                   element, 'feature' ,
@@ -622,6 +624,7 @@ class Xml(Format):
 
         return etree.tostring(element)
 
+    #not working
     def return_output_uncached(self, table, filename):
         """Drafts the xml output for uncached tables"""
         response.headers['Content-Type'] = 'text/xml'
@@ -635,24 +638,36 @@ class Xml(Format):
                 
                 #reads through each line in the table and writes an xml node for it
                 for i, r in enumerate(Table): 
-                    
-                    subelement = etree.SubElement( element, 'feature' , type = str(self.feature.name), name = r['uri'])
-                    
-                    if self.feature.parameter:
-                        parameters = {}
+                    resource = {} #creating a resource dictionary to story all the uris
+                    for res in self.feature.resource:
+                        resource[res]=r[res]
+                    if Feature.mex_validation(**resource): #check to see if the current user has acces to the feature
+                        subelement = etree.SubElement( element, 'feature' ,resource, type = str(self.feature.name))
                         
-                        #creates list of parameters to append to the xml node
-                        for parameter_name in self.feature.parameter:
-                            parameters[parameter_name] = str(r[parameter_name]) 
-                        etree.SubElement(subelement, 'parameters', parameters)
+                        if self.feature.parameter:
+                            parameters = {}
+                            
+                            #creates list of parameters to append to the xml node
+                            for parameter_name in self.feature.parameter:
+                                parameters[parameter_name] = str(r[parameter_name]) 
+                            etree.SubElement(subelement, 'parameters', parameters)
+                        
+                        value = etree.SubElement(subelement, 'value')
+                        value.text = " ".join('%g'%item for item in r['feature']) #writes the feature vector to the xml
+                        nodes+=1
+                        
+                        #break out when there are too many nodes
+                        if nodes>self.limit:
+                            break               
                     
-                    value = etree.SubElement(subelement, 'value')
-                    value.text = " ".join('%g'%item for item in r['feature']) #writes the feature vector to the xml
-                    nodes+=1
-                    
-                    #break out when there are too many nodes
-                    if nodes>self.limit:
-                        break               
+                    else:
+                        subelement = etree.SubElement( 
+                                                          element, 
+                                                          'feature' ,
+                                                          resource,
+                                                          type = str(self.feature.name),
+                                                          error = '403 Forbidden: The current user does not have access to this feature'
+                                                      )  
                 
         return etree.tostring(element)
 
@@ -680,24 +695,25 @@ class Csv(Format):
         
         
         for idx,resource in enumerate(element_list):
-            uri_hash = self.feature.returnhash(**resource)
-            rows = table.get(uri_hash)
-            
-            if rows!=None: #check to see if nothing is return from the tables
+            if Feature.mex_validation(**resource): #just skips if mex is not valid
+                uri_hash = self.feature.returnhash(**resource)
+                rows = table.get(uri_hash)
                 
-                for r in rows:
-                    value_string = ",".join('%g'%i for i in r['feature']) #parses the table output and returns a string of the vector separated by commas
-                    resource_uri = [resource[rn] for rn in resource_names] 
-                    parameter = []
-                    parameter = [r[pn] for pn in parameter_names]
-                    line = [idx,self.feature.name]+resource_uri+[value_string]+parameter
-                    writer.writerow(line) #write line to the document
+                if rows!=None: #check to see if nothing is return from the tables
                     
-            else: #if nothing is return from the tables enter Nan into each vector element
-                value_string = ",".join(['Nan' for i in range(self.feature.length)])
-                resource_uri = [resource[rn] for rn in resource_names]
-                line = [idx,self.feature.name]+resource_uri+[value_string] #appends all the row elements
-                writer.writerow(line) #write line to the document
+                    for r in rows:
+                        value_string = ",".join('%g'%i for i in r['feature']) #parses the table output and returns a string of the vector separated by commas
+                        resource_uri = [resource[rn] for rn in resource_names] 
+                        parameter = []
+                        parameter = [r[pn] for pn in parameter_names]
+                        line = [idx,self.feature.name]+resource_uri+[value_string]+parameter
+                        writer.writerow(line) #write line to the document
+                        
+                else: #if nothing is return from the tables enter Nan into each vector element
+                    value_string = ",".join(['Nan' for i in range(self.feature.length)])
+                    resource_uri = [resource[rn] for rn in resource_names]
+                    line = [idx,self.feature.name]+resource_uri+[value_string] #appends all the row elements
+                    writer.writerow(line) #write line to the document
         
         #creating a file name
         filename = 'feature.csv' #think of how to name the files
@@ -731,11 +747,17 @@ class Csv(Format):
             with tables.openFile(filename,'r', title=self.feature.name) as h5file: #opens table
                 Table = h5file.root.values  
                 for i, r in enumerate(Table):
-                    value_string = ",".join('%g'%i for i in r['feature']) #parses the table output and returns a string of the vector separated by commas
-                    resource_uri = [resource[rn] for rn in resource_names]
-                    parameter = [r[pn] for pn in parameter_names]
-                    line = [idx,self.feature.name]+resource_uri+[value_string]+parameter #appends all the row elements
-                    writer.writerow(line) #writes line to the document
+                    
+                    resource = {} #creating a resource dictionary to story all the uris
+                    for res in self.feature.resource:
+                        resource[res]=r[res]
+                        
+                    if Feature.mex_validation(**resource): #check to see if the current user has acces to the feature
+                        value_string = ",".join('%g'%i for i in r['feature']) #parses the table output and returns a string of the vector separated by commas
+                        resource_uri = [resource[rn] for rn in resource_names]
+                        parameter = [r[pn] for pn in parameter_names]
+                        line = [idx,self.feature.name]+resource_uri+[value_string]+parameter #appends all the row elements
+                        writer.writerow(line) #writes line to the document
             
         #creating a file name
         filename = 'feature.csv' #think of how to name the files
@@ -804,19 +826,20 @@ class Hdf(Format):
             with tables.openFile(filename,'a', title=self.name) as h5file: #open table
                 #writing to table      
                 outtable=h5file.root.values
-                for i,element in enumerate(element_list):
-                    uri_hash = self.feature.returnhash(**element)
-                    rows = table.get(uri_hash)
-                    for r in rows: #taking rows out of one and placing them into the rows of the output table
-                        row=()
-                        for e in self.feature.resource:
-                            row+=tuple([element[e]])
-                        row += tuple([r['feature']])
-                        for p in self.feature.parameter:
-                            row += tuple([r[p]])
-                            #log.debug('row: %s' % str(row))
-                        outtable.append([row]) 
-                outtable.flush()
+                for i,resource in enumerate(element_list):
+                    if Feature.mex_validation(**resource): #check to see if the current user has acces to the feature
+                        uri_hash = self.feature.returnhash(**resource)
+                        rows = table.get(uri_hash)
+                        for r in rows: #taking rows out of one and placing them into the rows of the output table
+                            row=()
+                            for e in self.feature.resource:
+                                row+=tuple([resource[e]])
+                            row += tuple([r['feature']])
+                            for p in self.feature.parameter:
+                                row += tuple([r[p]])
+                                #log.debug('row: %s' % str(row))
+                            outtable.append([row]) 
+                    outtable.flush()
         
         #
         f = io.FileIO(filename)

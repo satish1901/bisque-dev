@@ -284,6 +284,16 @@ def mex_validation(**resource):
     """
     from bq.config.middleware import bisque_app
     for r in resource.keys():
+
+        if 'image_service' in resource[r]:
+            #finds image resource though local image service
+            path = image_service.local_file(resource[r])
+            log.debug("path: %s"% path)
+            if path is None:
+                log.debug('Not found in image_service: %s'%resource[r])
+                return False
+            else:
+                continue
         
         # Try to route internally
         req = Request.blank(resource[r])
