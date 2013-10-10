@@ -119,9 +119,9 @@ setup(
       database  = bq.commands.admin:database
       
       [paste.paster_create_template]
-      bisque_core = bq.bisque_template:CoreServiceTemplate
-      bisque_service = bq.bisque_template:ServiceTemplate
-      bisque_module = bq.bisque_template:ModuleTemplate
+      bisque_core = bq.commands.bisque_template:CoreServiceTemplate
+      bisque_service = bq.commands.bisque_template:ServiceTemplate
+      bisque_module = bq.commands.bisque_template:ModuleTemplate
 
     """,
 )

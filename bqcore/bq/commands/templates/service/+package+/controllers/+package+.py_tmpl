@@ -8,14 +8,13 @@ from pylons.i18n import ugettext as _, lazy_ugettext as l_
 from tg import expose, flash
 from repoze.what import predicates 
 from bq.core.service import ServiceController
-from bq.{{package}} import model
 
 
-log = logging.getLogger("bq.{{package}}")
+log = logging.getLogger("{{package}}")
 class {{package}}Controller(ServiceController):
     #Uncomment this line if your controller requires an authenticated user
     #allow_only = predicates.not_anonymous()
-    service_type = "{{mount}}"
+    service_type = "{{package}}"
 
     def __init__(self, server_url):
         super({{package}}Controller, self).__init__(server_url)
@@ -36,12 +35,12 @@ def initialize(uri):
 
 def get_static_dirs():
     """Return the static directories for this server"""
-    package = pkg_resources.Requirement.parse ("bqcore")
-    package_path = pkg_resources.resource_filename(package,'bq')
+    package = pkg_resources.Requirement.parse ("{{project}}")
+    package_path = pkg_resources.resource_filename(package,'.')
     return [(package_path, os.path.join(package_path, '{{package}}', 'public'))]
 
 def get_model():
-    from bq.{{package}} import model
+    from {{package}} import model
     return model
 
 __controller__ =  {{package}}Controller
