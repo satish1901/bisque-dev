@@ -93,9 +93,11 @@ def randomPath (format_path, user, filename, uniq, **params):
     """
     if uniq is None:
         uniq = make_short_uuid(filename)
+
+    dirhash = uniq[2]=='-' and uniq[3] or uniq[0]
     return string.Template(format_path).substitute(
         user=user,
-        dirhash=uniq[0],
+        dirhash=dirhash,
         filehash=uniq,
         filename=os.path.basename(filename), **params)
 

@@ -259,17 +259,16 @@ class image_serviceController(ServiceController):
 
     @expose()
     #@identity.require(identity.not_anonymous())
-    def images(self, id, **kw):
+    def images(self, ident, **kw):
         request = tg.request
         response = tg.response
         log.info ('Request: %s' % request.url)
       
         path   = request.path+'?'+request.query_string
-        userId = identity.current.user_name
 
         # check for access permission
         from bq.data_service.controllers.resource_query import RESOURCE_READ, RESOURCE_EDIT
-        self.check_access(id, RESOURCE_READ)
+        self.check_access(ident, RESOURCE_READ)
         
         
         # dima: patch for incorrect /auth requests for image service
@@ -277,7 +276,7 @@ class image_serviceController(ServiceController):
             tg.response.headers['Content-Type']  = 'text/xml'
             return '<resource />'
                             
-        data_token = self.srv.process(path, id, userId, **kw)
+        data_token = self.srv.process(path, ident, **kw)
         tg.response.headers['Content-Type']  = data_token.contentType
         #tg.response.content_type  = data_token.contentType
         #tg.response.headers['Cache-Control'] = ",".join ([data_token.cacheInfo, "public"])
