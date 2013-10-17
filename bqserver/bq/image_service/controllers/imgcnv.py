@@ -8,13 +8,13 @@ from __future__ import with_statement
 
 __module__    = "imgcnv"
 __author__    = "Dmitry Fedorov and Kris Kvilekval"
-__version__   = "1.1"
+__version__   = "1.2"
 __revision__  = "$Rev$"
 __date__      = "$Date$"
 __copyright__ = "Center for BioImage Informatics, University California, Santa Barbara"
 
 
-import os
+#import os
 from lxml import etree
 from subprocess import Popen, call, PIPE
 from locks import Locks
@@ -22,7 +22,7 @@ from locks import Locks
 import logging
 log = logging.getLogger('bq.image_service.imgcnv')
 
-IMGCNV='imgcnv'
+IMGCNV = 'imgcnv'
         
 ################################################################################
 # imgcnv interface
@@ -44,18 +44,18 @@ def check_version ( needed ):
     # check the version
     inst = version()
     if not inst:            
-        raise Exception('imgcnv is too old, cannot procede')
+        raise Exception('imgcnv is too old, cannot proceed')
     inst_ver = inst.split('.')
     need_ver = needed.split('.')
     if int(inst_ver[0])<int(need_ver[0]) or int(inst_ver[1])<int(need_ver[1]): 
-        log.error('Imgcnv needs update! Has: '+inst+' Needs: '+needed)                  
-        raise Exception('Imgcnv needs update! Has: '+inst+' Needs: '+needed)            
+        log.error('Imgcnv needs update! Has: %s Needs: %s'%(inst, needed))                  
+        raise Exception('Imgcnv needs update! Has: %s Needs: %s'%(inst, needed))            
 
 def installed_formats():
     return Popen ([IMGCNV,'-fmtxml'], stdout=PIPE).communicate()[0]
 
 def supported(ifnm):
-    log.debug('IMGCNV: supported for: %s'%ifnm )
+    log.debug('Supported for: %s'%ifnm )
     # dima: there will be an error here if the file name is in unicode, mitigate until teh real fix
     try:
         ifnm.encode('ascii')
@@ -67,90 +67,92 @@ def supported(ifnm):
     return supported.startswith('yes')
 
 
-def convert(ifnm, ofnm, fmt, extra=[]):
+def convert(ifnm, ofnm, fmt=None, extra=[]):
     '''return list of output filenames'''
     with Locks(ifnm, ofnm) as l:
         if not l.locked:
             return 
-        command = [IMGCNV, '-i', ifnm, '-o', ofnm, '-t', fmt]
+        command = [IMGCNV, '-i', ifnm]
+        if ofnm is not None:
+            command.extend (['-o', ofnm])
+        if fmt is not None:
+            command.extend (['-t', fmt])
         command.extend (extra)
         cmds = " ".join(command)
-        log.debug('IMGCNV: execute %s'% cmds) 
+        log.debug('Convert command: [%s]'% cmds) 
         retcode = call (command)
         if retcode != 0:
-            log.error (" '%s' returned %s" % (cmds,retcode))
+            log.error ('Error: [%s] returned [%s]'%(cmds, retcode))
 
 def convert_list(ifnl, ofnm, fmt, extra=''):
     '''return list of output filenames'''
-    log.debug('IMGCNV: convertlist for: '+str(ifnl) )
+    log.debug('Convertlist for: %s'%(ifnl))
     command = [ IMGCNV ] 
-    #ifnm = ''
     for fn in ifnl:
-    #    ifnm = ifnm + ' -i ' + fn
-        command.extend ( [ '-i', fn] )
+        command.extend(['-i', fn])
 
     with Locks(ifnl[0], ofnm) as l:
         if not l.locked:
             return
         command.extend ( [ '-o', ofnm, '-t', fmt] )
         command.extend (extra.split())
-        cmds = " ".join(command)
-        log.debug('IMGCNV: %s ' % cmds )
+        cmds = ' '.join(command)
+        log.debug('Convertlist command: %s'%cmds)
         retcode = call (command)
         if retcode != 0:
-            log.error (" '%s'   returned %s" % (cmds, retcode))
+            log.error ('Error: [%s] returned [%s]'%(cmds, retcode))
+
+info_map = { 
+    'width'      : 'image_num_x', 
+    'height'     : 'image_num_y', 
+    'zsize'      : 'image_num_z', 
+    'tsize'      : 'image_num_t',
+    'channels'   : 'image_num_c',
+    'pages'      : 'image_num_p',
+    'format'     : 'format',
+    'pixelType'  : 'image_pixel_format',
+    'depth'      : 'image_pixel_depth',
+    'endian'     : 'endian',
+    'dimensions' : 'dimensions' }
 
 def info(ifnm):
-    log.debug('IMGCNV: info for: '+str(ifnm) )
+    log.debug('Info for: %s'%ifnm )
     with Locks(ifnm):
         info = Popen ([IMGCNV, '-info', '-i', ifnm], stdout=PIPE).communicate()[0]
 
     rd = {} 
     for line in info.splitlines():
         if not line: continue
-        #log.debug('line: '+unicode(line) )
         try:        
             tag, val = [ l.lstrip() for l in line.split(':',1) ]
         except:
             return rd
+        if tag not in info_map: 
+            continue
+        else:
+            tag = info_map[tag]
         val = val.replace('\n', '')
-        rd[tag] = val
         try:
-            rd[tag] = float(val)
+            val = int(val)
         except ValueError:
-            pass
-        try:
-            rd[tag] = int(val)
-        except ValueError:
-            pass
-            
-    if len(rd) < 1: return rd
-    if not 'zsize' in rd: rd['zsize'] = 1
-    if not 'tsize' in rd: rd['tsize'] = 1    
-    if not 'pages' in rd: rd['pages'] = 1        
-    if rd['zsize']==1 and rd['tsize']==1 and rd['pages']>1:
-    	  rd['tsize'] = rd['pages']
-        
+            try:
+                val = float(val)
+            except ValueError:
+                pass
+        rd[tag] = val        
+
+    if len(rd)<1: return rd
+    if not 'image_num_z' in rd: rd['image_num_z'] = 1
+    if not 'image_num_t' in rd: rd['image_num_t'] = 1    
+    if not 'image_num_p' in rd: rd['image_num_p'] = 1        
+    if rd['image_num_z']==1 and rd['image_num_t']==1 and rd['image_num_p']>1:
+        rd['image_num_t'] = rd['image_num_p']
     return rd
     
 def isTiff(ifnm):
-    log.debug('IMGCNV: isTiff for: '+str(ifnm) )
-    with Locks (ifnm):
-        info = Popen ([IMGCNV, '-info','-i',ifnm], stdout=PIPE).communicate()[0]
-
-    rd = {} 
-    for line in info.splitlines():
-        if not line: continue
-        if line == 'Input format is not supported': break          
-        try:
-            tag, val = [ l.lstrip() for l in line.split(':', 1) ]
-            rd[tag] = val
-        finally:
-            pass
-    
-    if 'format' not in rd:
-        return False
-    return 'tiff' in rd['format'].lower()
+    log.debug('isTiff for: %s'%(ifnm) )
+    rd = info(ifnm)
+    return 'tiff' in rd.get('format','').lower()
 
 def formats():
     return formatList()
@@ -160,11 +162,11 @@ def formatListRead():
     xml = Popen ([IMGCNV, '-fmtxml'], stdout=PIPE).communicate()[0]
     xml = "<formats>\n" + xml + "\n</formats>\n"
     root = etree.fromstring( xml )
-    for format in root:
-      for codec in format:
-        for tag in codec:
-          if tag.attrib["name"]=='support' and tag.attrib["value"]=='reading': 
-            fmts.append( codec.attrib["name"].lower() )  
+    for frmt in root:
+        for codec in frmt:
+            for tag in codec:
+                if tag.attrib["name"]=='support' and tag.attrib["value"]=='reading': 
+                    fmts.append( codec.attrib["name"].lower() )  
     return fmts    
 
 def formatList():
@@ -172,9 +174,9 @@ def formatList():
     xml = Popen ([IMGCNV, '-fmtxml'], stdout=PIPE).communicate()[0]
     xml = "<formats>\n" + xml + "\n</formats>\n"
     root = etree.fromstring( xml )
-    for format in root:
-      for codec in format:
-        fmts.append( codec.attrib["name"].lower() )  
+    for frmt in root:
+        for codec in frmt:
+            fmts.append( codec.attrib["name"].lower() )  
     return fmts   
 
 def formatListWrite():
@@ -182,11 +184,11 @@ def formatListWrite():
     xml = Popen ([IMGCNV, '-fmtxml'], stdout=PIPE).communicate()[0]
     xml = "<formats>\n" + xml + "\n</formats>\n"
     root = etree.fromstring( xml )
-    for format in root:
-      for codec in format:
-        for tag in codec:
-          if tag.attrib["name"]=='support' and tag.attrib["value"]=='writing': 
-            fmts.append( codec.attrib["name"].lower() )  
+    for frmt in root:
+        for codec in frmt:
+            for tag in codec:
+                if tag.attrib["name"]=='support' and tag.attrib["value"]=='writing': 
+                    fmts.append( codec.attrib["name"].lower() )  
     return fmts    
  
 
@@ -195,11 +197,11 @@ def formatListWriteMultiPage():
     xml = Popen ([IMGCNV, '-fmtxml'], stdout=PIPE).communicate()[0]
     xml = "<formats>\n" + xml + "\n</formats>\n"
     root = etree.fromstring( xml )
-    for format in root:
-      for codec in format:
-        for tag in codec:
-          if tag.attrib["name"]=='support' and tag.attrib["value"]=='writing multiple pages': 
-            fmts.append( codec.attrib["name"].lower() )  
+    for frmt in root:
+        for codec in frmt:
+            for tag in codec:
+                if tag.attrib["name"]=='support' and tag.attrib["value"]=='writing multiple pages': 
+                    fmts.append( codec.attrib["name"].lower() )  
     return fmts    
     
 def defaultExtension(formatName):
@@ -207,15 +209,15 @@ def defaultExtension(formatName):
     ext = ''
     xml = Popen ([IMGCNV, '-fmtxml'], stdout=PIPE).communicate()[0]
     xml = "<formats>\n" + xml + "\n</formats>\n"
-    root = etree.fromstring( xml )
-    for format in root:
-      for codec in format:
-        if codec.attrib["name"].lower()==formatName:
-          for tag in codec:
-            if tag.attrib["name"]=='extensions': 
-              ext = tag.attrib["value"]
-              exts = ext.split('|')
-              ext = exts[0]
+    root = etree.fromstring(xml)
+    for frmt in root:
+        for codec in frmt:
+            if codec.attrib["name"].lower()==formatName:
+                for tag in codec:
+                    if tag.attrib["name"]=='extensions': 
+                        ext = tag.attrib["value"]
+                        exts = ext.split('|')
+                        ext = exts[0]
     return ext    
 
 def canWriteMultipage(formatName):
@@ -235,20 +237,15 @@ def meta(ifnm):
     for line in meta.splitlines():
         if not line: continue
         try:
-          tag, val = [ l.lstrip() for l in line.split(':', 1) ]
+            tag, val = [ l.lstrip() for l in line.split(':', 1) ]
         except:
-          continue
+            continue
         val = val.replace('\n', '')
-        rd[tag] = val
-        
         try:
-            rd[tag] = float(val)
+            val = float(val)
         except ValueError:
             pass
-        try:
-            rd[tag] = int(val)
-        except ValueError:
-            pass
+        rd[tag] = val        
     
     metatxt = ''
     for line in rmeta.splitlines():
@@ -258,7 +255,7 @@ def meta(ifnm):
     rd['raw_metadata'] = metatxt  
      
     if rd['image_num_z']==1 and rd['image_num_t']==1 and rd['image_num_p']>1:
-    	  rd['image_num_t'] = rd['image_num_p']
+        rd['image_num_t'] = rd['image_num_p']
         
     return rd    
 
