@@ -631,7 +631,10 @@ def parse_uri(uri):
     '''
     url = urlparse.urlsplit(uri)
     parts = url[2].split('/')
-    name, ida = parts[-2:]
+    if len(parts)>=2:
+        name, ida = parts[-2:]
+    else:
+        name, ida = 'data_service', parts[0]
     rest = []
     while not ida[0].isdigit() and len(parts)> 2:
         rest.append( parts.pop() )

@@ -191,8 +191,10 @@ class StorageManager(object):
                 if store.valid(blob_id):
                     path =  store.localpath(blob_id)
                     break
-        if log.isEnabledFor(logging.INFO):
+        if log.isEnabledFor(logging.INFO) and path:
             log.info (transfer_msg (path, t.interval))
+        if path is None:
+            log.warn ("failed to fetch blob %s" % blob_id)
         return path
 
     def save_blob(self, fileobj, filename, user_name, uniq):
@@ -411,7 +413,6 @@ class BlobServer(RestController, ServiceMixin):
             log.debug('using %s full=%s localpath=%s' % (uniq_ident, blob_id, path))
             return path
         raise IllegalOperation("bad resource value %s" % uniq_ident)
-
 
     def getBlobInfo(self, ident): 
         resource = DBSession.query(Taggable).filter_by (resource_uniq = ident).first()

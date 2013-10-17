@@ -40,6 +40,7 @@ from pylons.controllers.util import abort
 
 #Project
 from bq import blob_service
+from bq import data_service
 from bq.core import  identity
 #from bq.util.http import request
 from bq.util.mkdir import _mkdir
@@ -2370,7 +2371,7 @@ class ImageServer(object):
                 log.debug('Bioformats needs update! Has: '+bioformats.version()['full']+' Needs: '+ bioformats_needed_version)
 
     def ensureOriginalFile(self, ident):
-        return blob_service.localpath(ident)
+        return blob_service.localpath(ident) or abort (404, 'File not available from blob service')
 
     def originalFileName(self, ident):
         return blob_service.original_name(ident)
@@ -2522,7 +2523,10 @@ class ImageServer(object):
     #    return False
 
     def initialWorkPath(self, image_id):
-        user_name = identity.current.user_name
+        image = data_service.get_resource(image_id)
+        owner = data_service.get_resource(image.get('owner'))
+        user_name = owner.get ('name')
+        
         if len(image_id)>3 and image_id[2]=='-':
             subdir = image_id[3]
         else:
@@ -2581,7 +2585,7 @@ class ImageServer(object):
             r = service.action (image_id, imgfile, argument)
         return r
 
-    def process(self, url, ident, userId, **kw):
+    def process(self, url, ident, **kw):
         query = getQuery4Url(url)
         os.chdir(self.workdir)
         log.debug('Query: %s'%query)
