@@ -292,7 +292,7 @@ class image_serviceController(ServiceController):
             return data_token.data.encode('utf8')
 
         #second check if the output is TEXT/HTML/XML                  
-        if data_token.isText():
+        if data_token.isText() and not data_token.isFile():
             return data_token.data
 
         #third check if the output is actually a file
@@ -308,7 +308,7 @@ class image_serviceController(ServiceController):
           
             #Content-Disposition: attachment; filename=genome.jpeg; 
             disposition = ''
-            if data_token.isImage() is not True and data_token.isXml() is not True:
+            if data_token.isImage() is not True and data_token.isText() is not True:
                 disposition = 'attachment; '
 
             try:

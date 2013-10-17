@@ -239,7 +239,7 @@ class ProcessToken(object):
         #    return False
 
     def isText (self):
-        return not self.is_file and self.contentType.startswith('text/')
+        return self.contentType.startswith('text/')
 
     def isHtml (self):
         if self.contentType == 'text/html':
@@ -1668,7 +1668,7 @@ class PixelCounterService(object):
         arg = arg.lower()
         ifile = self.server.getInFileName(data_token, image_id)
         ofile = self.server.getOutFileName(ifile, image_id, '.pixelcount_%s.xml'%arg)        
-        return data_token.setImage(fname=ofile, format=default_format)            
+        return data_token.setXmlFile(fname=ofile)            
     
     def action(self, image_id, data_token, arg):
 
@@ -1680,7 +1680,7 @@ class PixelCounterService(object):
         if not os.path.exists(ofile):
             imgcnv.convert(ifile, ofile, extra=['-pixelcounts', arg])
 
-        return data_token.setXmlFile(ofile)
+        return data_token.setXmlFile(fname=ofile)
 
 class HistogramService(object):
     '''Returns histogram of an image
@@ -1695,7 +1695,7 @@ class HistogramService(object):
     def dryrun(self, image_id, data_token, arg): 
         ifile = self.server.getInFileName(data_token, image_id)
         ofile = self.server.getOutFileName(ifile, image_id, '.histogram.xml')        
-        return data_token.setImage(fname=ofile, format=default_format)         
+        return data_token.setXmlFile(fname=ofile)         
     
     def action(self, image_id, data_token, arg):
 
@@ -1706,7 +1706,7 @@ class HistogramService(object):
         if not os.path.exists(ofile):
             imgcnv.convert(ifile, None, extra=['-ohstxml', ofile])
 
-        return data_token.setXmlFile(ofile)
+        return data_token.setXmlFile(fname=ofile)
 
 class LevelsService(object):
     '''Adjust levels in an image
@@ -2614,7 +2614,7 @@ class ImageServer(object):
 
             # if the output is a file but not an image or no processing was done to it
             # set to the original file name
-            if data_token.isFile() and not data_token.isImage() and not data_token.hasFileName():
+            if data_token.isFile() and not data_token.isImage() and not data_token.isText() and not data_token.hasFileName():
                 data_token.contentType = 'application/octet-stream'
                 data_token.outFileName = self.originalFileName(ident)
 
