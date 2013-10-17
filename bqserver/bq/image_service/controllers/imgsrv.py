@@ -754,12 +754,13 @@ class FormatService(object):
     
     def dryrun(self, image_id, data_token, arg):
         arg = arg.lower()
-        fmt = default_format
         args = arg.split(',')
+        fmt = default_format
         if len(args)>0:
             fmt = args[0].lower()
             args.pop(0)
 
+        stream = False
         if 'stream' in args:
             stream = True
             args.remove('stream')
@@ -774,27 +775,34 @@ class FormatService(object):
             ext = imgcnv.defaultExtension(fmt)
             fpath = ofile.split('/')
             filename = '%s_%s.%s'%(self.server.originalFileName(image_id), image_id, fpath[len(fpath)-1], ext)
+            #log.debug('Format dryrun: stream from %s to %s' % (ifile, ofile) )            
             data_token.setFile(fname=ofile)
             data_token.outFileName = filename
         else:
+            #log.debug('Format dryrun: from %s to %s' % (ifile, ofile) )
             data_token.setImage(fname=ofile, format=fmt)        
         return data_token
     
     def action(self, image_id, data_token, arg):
 
         arg = arg.lower()
-        fmt = default_format
-        stream = False
         args = arg.split(',')
+        fmt = default_format
         if len(args)>0:
             fmt = args[0].lower()
             args.pop(0)
 
+        stream = False
         if 'stream' in args:
             stream = True
             args.remove('stream')
 
         if fmt in imgcnv.formats():
+            # avoid doing anything if requested format is is in requested format
+            if data_token.dims is not None and 'format' in data_token.dims and data_token.dims['format'].lower() == fmt:
+                log.debug('Input is in requested format, avoid reconvert...')
+                return data_token
+
             name_extra = ''
             if len(args) > 0:
                 name_extra = '.%s'%'.'.join(args)
@@ -802,11 +810,6 @@ class FormatService(object):
             ifile = self.server.getInFileName( data_token, image_id )
             ofile = self.server.getOutFileName( ifile, image_id, '.%s%s'%(name_extra, fmt) )
             log.debug('Format: %s -> %s with %s opts=[%s]'%(ifile, ofile, fmt, args))
-
-            # avoid doing anything if requested format is is in requested format
-            if data_token.dims is not None and 'format' in data_token.dims and data_token.dims['format'].lower() == fmt:
-                log.debug('Input is in requested format, avoid reconvert...')
-                ofile = ifile
 
             if not os.path.exists(ofile):
                 # allow multiple pages to be saved in MP format
@@ -1286,7 +1289,9 @@ class FuseService(object):
             (arg, method) = arg.split(':', 1)
         argenc = ''.join([hex(int(i)).replace('0x', '') for i in arg.replace(';', ',').split(',') if i is not ''])
         ifile = self.server.getInFileName( data_token, image_id )
-        ofile = self.server.getOutFileName( ifile, image_id, '.fuse_%s'%(argenc) )        
+        ofile = self.server.getOutFileName( ifile, image_id, '.fuse_%s'%(argenc) )   
+        if method != 'a':
+            ofile = '%s_%s'%(ofile, method)             
         return data_token.setImage(fname=ofile, format=default_format)
 
     def action(self, image_id, data_token, arg):
@@ -1307,7 +1312,7 @@ class FuseService(object):
             
         if method != 'a':
             arg.extend(['-fusemethod', method])
-            ofile += '_%s'%(method)
+            ofile = '%s_%s'%(ofile, method)        
             
         if data_token.histogram is not None:
             arg.extend(['-ihst', data_token.histogram])            
@@ -1444,9 +1449,11 @@ class TileService(object):
         data_token.dims['image_num_z'] = 1
         data_token.dims['image_num_t'] = 1
         
-        ifname    = self.server.getInFileName( data_token, image_id )
-        base_name = self.server.getOutFileName( '%s.tiles/%d'%(ifname, tsz), image_id, '' )
+        ifname   = self.server.getInFileName( data_token, image_id )
+        base_name = self.server.getOutFileName(ifname, image_id, '' )
+        base_name = self.server.getOutFileName(os.path.join('%s.tiles'%(base_name), '%s'%tsz), image_id, '' )                    
         ofname    = '%s_%.3d_%.3d_%.3d.tif' % (base_name, l, tnx, tny)
+        #log.debug('Tiles dryrun: from %s to %s' % (ifname, ofname) )
         return data_token.setImage(ofname, format=default_format)
 
     def action(self, image_id, data_token, arg):
@@ -1471,10 +1478,11 @@ class TileService(object):
             pass
 
         # construct a sliced filename
-        ifname    = self.server.getInFileName( data_token, image_id )
-        base_name = self.server.getOutFileName( '%s.tiles/%d'%(ifname, tsz), image_id, '' )
+        ifname   = self.server.getInFileName( data_token, image_id )
+        base_name = self.server.getOutFileName(ifname, image_id, '' )
+        base_name = self.server.getOutFileName(os.path.join('%s.tiles'%(base_name), '%s'%tsz), image_id, '' )                      
         ofname    = '%s_%.3d_%.3d_%.3d.tif' % (base_name, l, tnx, tny)
-        hist_name = self.server.getOutFileName( '%s.tiles/%s_histogram'%(ifname, tsz), image_id, '' )
+        hist_name = '%s_histogram'%(base_name)
         hstl_name = hist_name
 
         # tile the image
@@ -1637,13 +1645,26 @@ class ThresholdService(object):
     
     def dryrun(self, image_id, data_token, arg): 
         arg = arg.lower()
+        args = arg.split(',')
+        if len(args)<1:
+            return data_token
+        method = 'both'
+        if len(args)>1:
+            method = args[1]
+        arg = '%s,%s'%(args[0], method)          
         ifile = self.server.getInFileName(data_token, image_id)
         ofile = self.server.getOutFileName(ifile, image_id, '.threshold_%s'%arg)        
         return data_token.setImage(fname=ofile, format=default_format)        
     
     def action(self, image_id, data_token, arg):
-
         arg = arg.lower()
+        args = arg.split(',')
+        if len(args)<1:
+            abort(400, 'Threshold: requires at least one parameter')
+        method = 'both'
+        if len(args)>1:
+            method = args[1]
+        arg = '%s,%s'%(args[0], method)        
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.threshold_%s'%arg )
         log.debug('Threshold: %s to %s with [%s]'%(ifile, ofile, arg))
@@ -2510,7 +2531,8 @@ class ImageServer(object):
 
     def ensureWorkPath(self, path, image_id):
         # change ./imagedir to ./workdir if needed
-        if path.find( self.workdir ) == -1:
+        path = os.path.abspath(path)
+        if path.find(self.workdir) == -1:
             #if path.find (self.imagedir)>=0:
             #    path = path.replace(self.imagedir, self.workdir, 1)
             #elif path.find(self.datadir)>=0:
@@ -2522,6 +2544,8 @@ class ImageServer(object):
                 if len(path)>0 and (path[0]=='/' or path=='\\'):
                     path=path[1:]
                 path = os.path.join(self.workdir, path)
+        # keep paths relative to workdir to reduce file name size
+        path = os.path.relpath(path, self.workdir)
         # make sure that the path directory exists
         _mkdir( os.path.dirname(path) )
         return path
@@ -2534,7 +2558,7 @@ class ImageServer(object):
  
     def getOutFileName(self, infilename, image_id, appendix):
         ofile = self.ensureWorkPath(infilename, image_id)
-        ofile = os.path.relpath(ofile, self.workdir)
+        #ofile = os.path.relpath(ofile, self.workdir)
         return '%s%s'%(ofile, appendix)
 
     def request(self, method, image_id, imgfile, argument):
@@ -2583,6 +2607,8 @@ class ImageServer(object):
                 log.debug('Dryrun result: [%s] [%s]'%(localpath, data_token))
                 if os.path.exists(localpath) and data_token.isFile():
                     log.debug('Returning pre-cached result: %s'%data_token.data)
+                    with imgcnv.Locks(data_token.data) as l:
+                        pass
                     return data_token
                     
             # start the processing

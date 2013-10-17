@@ -23,6 +23,10 @@ import logging
 log = logging.getLogger('bq.image_service.imgcnv')
 
 IMGCNV = 'imgcnv'
+
+# runtime defined variables
+format_list = [] # this is updated later
+
         
 ################################################################################
 # imgcnv interface
@@ -155,7 +159,7 @@ def isTiff(ifnm):
     return 'tiff' in rd.get('format','').lower()
 
 def formats():
-    return formatList()
+    return format_list
 
 def formatListRead():
     fmts = []
@@ -178,6 +182,9 @@ def formatList():
         for codec in frmt:
             fmts.append( codec.attrib["name"].lower() )  
     return fmts   
+
+if len(format_list)<1:
+    format_list = formatList()
 
 def formatListWrite():
     fmts = []
