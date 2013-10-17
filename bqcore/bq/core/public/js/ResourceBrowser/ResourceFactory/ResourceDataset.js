@@ -65,7 +65,7 @@ Ext.define('Bisque.Resource.Dataset.Compact',
                 {
                     case 'image':
                     {
-                        thumbnail = resource.children[i].src+'?slice=,,1,1&thumbnail=280,280&format=jpeg';
+                        thumbnail = resource.children[i].src+'?slice=,,1,1&thumbnail=280,280';
                         break;
                     }
                     case 'dataset':

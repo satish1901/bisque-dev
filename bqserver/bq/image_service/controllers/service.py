@@ -308,7 +308,7 @@ class image_serviceController(ServiceController):
           
             #Content-Disposition: attachment; filename=genome.jpeg; 
             disposition = ''
-            if data_token.isImage() is not True:
+            if data_token.isImage() is not True and data_token.isXml() is not True:
                 disposition = 'attachment; '
 
             try:

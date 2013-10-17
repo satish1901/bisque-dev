@@ -314,14 +314,14 @@ class BIXImporter(object):
         s = item[1].text
         if s.lower() != '0':
             log.debug ('setting image_num_z to ' + s)
-            self.image_info['zsize'] = s
+            self.image_info['image_num_z'] = s
 
     def tag_image_num_t(self, item, **kw):
         '''set image_num_t for image v'''
         s = item[1].text
         if s.lower() != '0':
             log.debug ('setting image_num_t to ' + s)
-            self.image_info['tsize'] = s
+            self.image_info['image_num_t'] = s
 
     def parse_image_meta(self):
         doc = image_service.meta(self.resource.get('src'))
