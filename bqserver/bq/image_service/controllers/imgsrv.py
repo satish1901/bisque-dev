@@ -112,7 +112,7 @@ def getFileDateTimeString(filename):
 class ProcessToken(object):
     'Keep data with correct content type and cache info'
     
-    def __repr__(self):
+    def __str__(self):
         return '{data: %s, contentType: %s, is_file: %s}'%(self.data, self.contentType, self.is_file)
     
     def __init__(self):
@@ -315,7 +315,7 @@ class ServicesService(object):
     def __init__(self, server):
         self.server = server
     
-    def __repr__(self):
+    def __str__(self):
         return 'services: returns XML with services information'
     
     def dryrun(self, image_id, data_token, arg):
@@ -334,7 +334,7 @@ class FormatsService(object):
     def __init__(self, server):
         self.server = server
     
-    def __repr__(self):
+    def __str__(self):
         return 'formats: Returns XML with supported formats'
     
     def dryrun(self, image_id, data_token, arg):
@@ -353,7 +353,7 @@ class InfoService(object):
     def __init__(self, server):
         self.server = server
     
-    def __repr__(self):
+    def __str__(self):
         return 'info: returns XML with image information'
     
     def dryrun(self, image_id, data_token, arg):
@@ -380,7 +380,7 @@ class DimService(object):
     def __init__(self, server):
         self.server = server
     
-    def __repr__(self):
+    def __str__(self):
         return 'dims: returns XML with image dimension information'
     
     def dryrun(self, image_id, data_token, arg):
@@ -401,7 +401,7 @@ class MetaService(object):
     def __init__(self, server):
         self.server = server
     
-    def __repr__(self):
+    def __str__(self):
         return 'meta: returns XML with image meta-data'
 
     def dryrun(self, image_id, data_token, arg):
@@ -486,7 +486,7 @@ class MetaService(object):
 #
 #    def __init__(self, server):
 #        self.server = server
-#    def __repr__(self):
+#    def __str__(self):
 #        return 'FileNameService: Returns XML with image file name'
 #    def hookInsert(self, data_token, image_id, hookpoint='post'):
 #        pass
@@ -511,7 +511,7 @@ class LocalPathService(object):
     def __init__(self, server):
         self.server = server
 
-    def __repr__(self):
+    def __str__(self):
         return 'localpath: returns XML with local path to the processed image'
 
     def dryrun(self, image_id, data_token, arg):
@@ -548,7 +548,7 @@ class SliceService(object):
     def __init__(self, server):
         self.server = server
 
-    def __repr__(self):
+    def __str__(self):
         return 'slice: returns an image of requested slices, arg = x1-x2,y1-y2,z|z1-z2,t|t1-t2. All values are in ranges [1..N]'
 
     def dryrun(self, image_id, data_token, arg):
@@ -750,7 +750,7 @@ class FormatService(object):
     def __init__(self, server):
         self.server = server
     
-    def __repr__(self):
+    def __str__(self):
         return 'format: Returns an Image in the requested format, arg = format[,stream][,OPT1][,OPT2][,...]'
     
     def dryrun(self, image_id, data_token, arg):
@@ -864,7 +864,7 @@ class ResizeService(object):
     def __init__(self, server):
         self.server = server
     
-    def __repr__(self):
+    def __str__(self):
         return 'resize: returns an Image in requested dimensions, arg = w,h,method[,AR|,MX]'
 
     def dryrun(self, image_id, data_token, arg):        
@@ -955,7 +955,7 @@ class Resize3DService(object):
     def __init__(self, server):
         self.server = server
 
-    def __repr__(self):
+    def __str__(self):
         return 'resize3d: returns an image in requested dimensions, arg = w,h,d,method[,AR|,MX]'
 
     def dryrun(self, image_id, data_token, arg):   
@@ -1057,7 +1057,7 @@ class Rearrange3DService(object):
     def __init__(self, server):
         self.server = server
     
-    def __repr__(self):
+    def __str__(self):
         return 'rearrange3d: rearrange dimensions of a 3D image, arg = [xzy,yzx]'
 
     def dryrun(self, image_id, data_token, arg):  
@@ -1109,7 +1109,7 @@ class ThumbnailService(object):
     def __init__(self, server):
         self.server = server
     
-    def __repr__(self):
+    def __str__(self):
         return 'thumbnail: returns an image as a thumbnail, arg = [w,h][,method]'
 
     def dryrun(self, image_id, data_token, arg):  
@@ -1184,7 +1184,7 @@ class RoiService(object):
     def __init__(self, server):
         self.server = server
 
-    def __repr__(self):
+    def __str__(self):
         return 'roi: returns an image in specified ROI, arg = x1,y1,x2,y2, all values are in ranges [1..N]'
 
     def dryrun(self, image_id, data_token, arg): 
@@ -1237,7 +1237,7 @@ class RemapService(object):
     def __init__(self, server):
         self.server = server
         
-    def __repr__(self):
+    def __str__(self):
         return 'remap: returns an image with the requested channel mapping, arg = [channel,channel...]|gray|display'
 
     def dryrun(self, image_id, data_token, arg): 
@@ -1281,7 +1281,7 @@ class FuseService(object):
     def __init__(self, server):
         self.server = server
         
-    def __repr__(self):
+    def __str__(self):
         return 'fuse: returns an RGB image with the requested channel fusion, arg = W1R,W1G,W1B;W2R,W2G,W2B;...[:METHOD]'
 
     def dryrun(self, image_id, data_token, arg): 
@@ -1352,7 +1352,7 @@ class DepthService(object):
     def __init__(self, server):
         self.server = server
         
-    def __repr__(self):
+    def __str__(self):
         return 'depth: returns an image with converted depth per pixel, arg = depth,method[,format][,channelmode]'
     
     def dryrun(self, image_id, data_token, arg):         
@@ -1426,7 +1426,7 @@ class TileService(object):
     def __init__(self, server):
         self.server = server
         
-    def __repr__(self):
+    def __str__(self):
         return 'tile: returns a tile, arg = l,tnx,tny,tsz. All values are in range [0..N]'
 
     def dryrun(self, image_id, data_token, arg): 
@@ -1530,7 +1530,7 @@ class ProjectMaxService(object):
     def __init__(self, server):
         self.server = server
         
-    def __repr__(self):
+    def __str__(self):
         return 'projectmax: returns a maximum intensity projection image'
     
     def dryrun(self, image_id, data_token, arg): 
@@ -1559,7 +1559,7 @@ class ProjectMinService(object):
     def __init__(self, server):
         self.server = server
         
-    def __repr__(self):
+    def __str__(self):
         return 'projectmin: returns a minimum intensity projection image'
     
     def dryrun(self, image_id, data_token, arg): 
@@ -1588,7 +1588,7 @@ class NegativeService(object):
     def __init__(self, server):
         self.server = server
     
-    def __repr__(self):
+    def __str__(self):
         return 'negative: returns an image negative'
     
     def dryrun(self, image_id, data_token, arg): 
@@ -1614,7 +1614,7 @@ class DeinterlaceService(object):
     def __init__(self, server):
         self.server = server
     
-    def __repr__(self):
+    def __str__(self):
         return 'deinterlace: returns a deinterlaced image'
     
     def dryrun(self, image_id, data_token, arg): 
@@ -1641,7 +1641,7 @@ class ThresholdService(object):
     def __init__(self, server):
         self.server = server
     
-    def __repr__(self):
+    def __str__(self):
         return 'threshold: returns a thresholded image, threshold=value[,upper|,lower|,both], ex: threshold=128,both'
     
     def dryrun(self, image_id, data_token, arg): 
@@ -1683,7 +1683,7 @@ class PixelCounterService(object):
     def __init__(self, server):
         self.server = server
     
-    def __repr__(self):
+    def __str__(self):
         return 'pixelcount: returns a count of pixels in a thresholded image, ex: pixelcount=128'
     
     def dryrun(self, image_id, data_token, arg): 
@@ -1711,7 +1711,7 @@ class HistogramService(object):
     def __init__(self, server):
         self.server = server
     
-    def __repr__(self):
+    def __str__(self):
         return 'histogram: returns a histogram of an image, ex: histogram'
     
     def dryrun(self, image_id, data_token, arg): 
@@ -1738,7 +1738,7 @@ class LevelsService(object):
     def __init__(self, server):
         self.server = server
     
-    def __repr__(self):
+    def __str__(self):
         return 'levels: adjust levels in an image, levels=minvalue,maxvalue,gamma ex: levels=15,200,1.2'
 
     def dryrun(self, image_id, data_token, arg): 
@@ -1767,7 +1767,7 @@ class BrightnessContrastService(object):
     def __init__(self, server):
         self.server = server
     
-    def __repr__(self):
+    def __str__(self):
         return 'brightnesscontrast: Adjust brightness and contrast in an image, brightnesscontrast=brightness,contrast both in range [-100,100] ex: brightnesscontrast=0,30'
 
     def dryrun(self, image_id, data_token, arg): 
@@ -1798,7 +1798,7 @@ class TransformService(object):
     def __init__(self, server):
         self.server = server
     
-    def __repr__(self):
+    def __str__(self):
         return 'transform: returns a transformed image, transform=fourier|chebyshev|wavelet|radon|edge|wndchrmcolor|rgb2hsv|hsv2rgb|superpixels'
 
     def dryrun(self, image_id, data_token, arg): 
@@ -1847,7 +1847,7 @@ class SampleFramesService(object):
     def __init__(self, server):
         self.server = server
     
-    def __repr__(self):
+    def __str__(self):
         return 'sampleframes: returns an Image composed of Nth frames form input, arg=n'
     
     def dryrun(self, image_id, data_token, arg): 
@@ -1885,7 +1885,7 @@ class FramesService(object):
     def __init__(self, server):
         self.server = server
     
-    def __repr__(self):
+    def __str__(self):
         return 'frames: Returns an image composed of user defined frames form input, arg = frames'
     
     def dryrun(self, image_id, data_token, arg): 
@@ -1925,7 +1925,7 @@ class RotateService(object):
     def __init__(self, server):
         self.server = server
         
-    def __repr__(self):
+    def __str__(self):
         return 'rotate: returns an image rotated as requested, arg = 0|90|-90|180|270|guess'
 
     def dryrun(self, image_id, data_token, arg): 
@@ -1976,7 +1976,7 @@ class BioFormatsService(object):
     def __init__(self, server):
         self.server = server
         
-    def __repr__(self):
+    def __str__(self):
         return 'bioformats: returns an image in OME-TIFF format'
 
     def dryrun(self, image_id, data_token, arg): 
@@ -2028,7 +2028,7 @@ class BioFormatsService(object):
 #       ex: uri=http%3A%2F%2Fwww.google.com%2Fintl%2Fen_ALL%2Fimages%2Flogo.gif'''
 #    def __init__(self, server):
 #        self.server = server
-#    def __repr__(self):
+#    def __str__(self):
 #        return 'UriService: Fetches an image from remote URL and passes it from further processing, url=http%3A%2F%2Fwww.google.com%2Fintl%2Fen_ALL%2Fimages%2Flogo.gif.'
 #
 #    def hookInsert(self, data_token, image_id, hookpoint='post'):
@@ -2073,7 +2073,7 @@ class BioFormatsService(object):
 #       ex: mask=999'''
 #    def __init__(self, server):
 #        self.server = server
-#    def __repr__(self):
+#    def __str__(self):
 #        return 'MaskService: Returns an Image with mask superimposed, arg = mask_id'
 #
 #    def hookInsert(self, data_token, image_id, hookpoint='post'):
@@ -2135,7 +2135,7 @@ class BioFormatsService(object):
 #    '''Create new images'''
 #    def __init__(self, server):
 #        self.server = server
-#    def __repr__(self):
+#    def __str__(self):
 #        return 'CreateImageService: Create new images, arg = ...'
 #
 #    def hookInsert(self, data_token, image_id, hookpoint='post'):
@@ -2196,7 +2196,7 @@ class BioFormatsService(object):
 #       empty params imply entire available range'''
 #    def __init__(self, server):
 #        self.server = server
-#    def __repr__(self):
+#    def __str__(self):
 #        return 'SetSliceService: Writes a slice into an image, arg = x,y,z,t,c'
 #
 #    def hookInsert(self, data_token, image_id, hookpoint='post'):
@@ -2264,7 +2264,7 @@ class BioFormatsService(object):
 #    '''Create new images'''
 #    def __init__(self, server):
 #        self.server = server
-#    def __repr__(self):
+#    def __str__(self):
 #        return 'CloseImageService: Closes requested image, created with CreateImageService'
 #
 #    def hookInsert(self, data_token, image_id, hookpoint='post'):

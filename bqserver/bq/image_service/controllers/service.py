@@ -303,7 +303,7 @@ class image_serviceController(ServiceController):
             fname = fpath[len(fpath)-1]
 
             if data_token.hasFileName():
-               fname = data_token.outFileName
+                fname = data_token.outFileName
           
             #Content-Disposition: attachment; filename=genome.jpeg; 
             disposition = ''
