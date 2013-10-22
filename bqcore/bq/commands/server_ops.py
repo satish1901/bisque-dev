@@ -137,7 +137,7 @@ def paster_command(command, options, cfgopt, processes, args):
     def verbose(msg):
         if options.verbose:
             print msg
-        
+      
     paster_verbose = '-v' if options.verbose else '-q'
     msg = { 'start': 'starting', 'stop':'stopping', 'restart':'restarting'}[command]
     verbose ("%s bisque on %s .. please wait" % (msg, cfgopt['port']))
@@ -312,6 +312,7 @@ def operation(command, options, *args):
                         operation("stop", options, cfg_file, *args)
                         time.sleep(5)
                     else:
+                        print "Can't start because of existing PID file"
                         sys.exit(2)
                 if backend == 'uwsgi':
                     cfgopt["server"] = cfgopt['server'].replace('unix://','').strip()

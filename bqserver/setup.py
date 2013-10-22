@@ -34,12 +34,6 @@ The bisque server
         "tw.recaptcha",
         "tgext.registration2",
         "tw.output", #https://bitbucket.org/alexbodn/twoutput/get/af6904c504cf.zip
-        "mahotas",  # Feature
-        "tables==3.0.0",  # Feature
-        "numexpr==1.4.2", # Feature
-        "cython",  # Feature
-        #"opencv",  # Feature        
-        # "importlib", # Feature, not needed for python 2.7
         "furl",
       ],
       entry_points="""
@@ -60,7 +54,7 @@ The bisque server
     ingest_service   = bq.ingest.controllers.ingest_server
     dataset_service  = bq.dataset_service.controllers.dataset_service
     usage            = bq.usage.controllers.usage
-    features         = bq.features.controllers.features	
+
 
     [bq.commands]
     module = bq.module_service.commands.module_admin:module_admin

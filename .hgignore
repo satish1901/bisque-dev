@@ -23,6 +23,7 @@ bqcore/Bisquik.egg-info/*
 bqcore/*-info
 bqcore/doc/generated/*
 bqcore/bq/core/public/extjs/*
+bqfeature/bq/src/*
 *_mcr/
 local-packages/*
 pydist/*
