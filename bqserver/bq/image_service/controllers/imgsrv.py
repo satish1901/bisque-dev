@@ -980,7 +980,7 @@ class Resize3DService(object):
         return data_token.setImage(ofile, format=default_format)
 
     def action(self, image_id, data_token, arg):
-        log.debug('Resize3D service: %s'%arg )
+        log.debug('Resize3D: %s'%arg )
 
         #size = tuple(map(int, arg.split(',')))
         ss = arg.split(',')
@@ -1008,10 +1008,10 @@ class Resize3DService(object):
             aspectRatio = ',AR'
 
         if size[0]<=0 and size[1]<=0 and size[2]<=0:
-            abort(400, 'Resize3D service: size is unsupported: [%s]'%arg )
+            abort(400, 'Resize3D: size is unsupported: [%s]'%arg )
 
         if method not in ['NN', 'TL', 'TC']:
-            abort(400, 'Resize3D service: method is unsupported: [%s]'%arg )
+            abort(400, 'Resize3D: method is unsupported: [%s]'%arg )
 
         # if the image is smaller and MX is used, skip resize
         w = data_token.dims['image_num_x']
