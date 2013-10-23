@@ -734,6 +734,8 @@ class ImageServiceTests(ImageServiceTestBase):
         meta_required = [
             { 'xpath': '//tag[@name="image_num_x"]', 'attr': 'value', 'val': '128' },
             { 'xpath': '//tag[@name="image_num_y"]', 'attr': 'value', 'val': '128' },
+            { 'xpath': '//tag[@name="image_num_c"]', 'attr': 'value', 'val': '2' },                
+            { 'xpath': '//tag[@name="image_pixel_depth"]', 'attr': 'value', 'val': '16' },                   
         ]
         self.validate_xml(resource, filename, commands, meta_required)    
 
@@ -754,6 +756,8 @@ class ImageServiceTests(ImageServiceTestBase):
         meta_required = [
             { 'xpath': '//histogram[@value="0"]/tag[@name="data_value_max"]', 'attr': 'value', 'val': '65535.000000' },
             { 'xpath': '//histogram[@value="0"]/tag[@name="data_bits_per_pixel"]', 'attr': 'value', 'val': '16' },
+            { 'xpath': '//histogram[@value="1"]/tag[@name="data_value_max"]', 'attr': 'value', 'val': '65535.000000' },
+            { 'xpath': '//histogram[@value="1"]/tag[@name="data_bits_per_pixel"]', 'attr': 'value', 'val': '16' },                
         ]
         self.validate_xml(resource, filename, commands, meta_required)     
         
@@ -762,8 +766,10 @@ class ImageServiceTests(ImageServiceTestBase):
         filename = 'im_3d_uint16.pixelcounter.xml'
         commands = [('pixelcounter', '128')]
         meta_required = [
-            { 'xpath': '//pixelcounts[@value="0"]/tag[@name="above"]', 'attr': 'value', 'val': '54912' },
-            { 'xpath': '//pixelcounts[@value="0"]/tag[@name="below"]', 'attr': 'value', 'val': '207232' },
+            { 'xpath': '//pixelcounts[@value="0"]/tag[@name="above"]', 'attr': 'value', 'val': '206168' },
+            { 'xpath': '//pixelcounts[@value="0"]/tag[@name="below"]', 'attr': 'value', 'val': '55976' },
+            { 'xpath': '//pixelcounts[@value="1"]/tag[@name="above"]', 'attr': 'value', 'val': '125912' },
+            { 'xpath': '//pixelcounts[@value="1"]/tag[@name="below"]', 'attr': 'value', 'val': '136232' },                
         ]
         self.validate_xml(resource, filename, commands, meta_required)          
 
