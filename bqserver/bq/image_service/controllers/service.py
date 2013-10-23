@@ -102,27 +102,25 @@ class image_serviceController(ServiceController):
 #        log.debug("new_image %s, %s, %s, %s, %s, %s, %s [%s]"%(str(image_id), path, str(x), str(y), str(ch), str(z), str#(t), str(userPerm) ) )           
 #        url = self.makeurl( str(image_id) )
 #        return dict(src=url, x=x, y=y, ch=ch, z=z, t=t)
-
-    def meta(self, imgsrc, **kw):
-        id = get_image_id(imgsrc)
-        userId = identity.current.user_name   
-        log.debug('Meta: %s %s %s'%(imgsrc, id, userId ) )     
-        doc = self.srv.execute('meta',  id, userId, None)
-        log.debug('Meta doc: %s'%(doc ) )         
-        return doc
-
-    def info(self, imgsrc, **kw):
-        id = get_image_id(imgsrc)
-        userId = identity.current.user_name
-        log.debug('Info: %s %s %s'%(imgsrc, id, userId ) )        
-        doc = self.srv.execute('info',  id, userId, None)
-        log.debug('Info doc: %s'%(doc ) )           
-        return doc
+#
+#    def meta(self, imgsrc, **kw):
+#        id = get_image_id(imgsrc)
+#        userId = identity.current.user_name   
+#        log.debug('Meta: %s %s %s'%(imgsrc, id, userId ) )     
+#        doc = self.srv.execute('meta',  id, userId, None)
+#        log.debug('Meta doc: %s'%(doc ) )         
+#        return doc
+#
+#    def info(self, imgsrc, **kw):
+#        id = get_image_id(imgsrc)
+#        userId = identity.current.user_name
+#        log.debug('Info: %s %s %s'%(imgsrc, id, userId ) )        
+#        doc = self.srv.execute('info',  id, userId, None)
+#        log.debug('Info doc: %s'%(doc ) )           
+#        return doc
 
     def local_file (self, url, **kw):
         ''' returns local path if it exists otherwise None'''
-        userId = identity.current.user_name       
-        
         m = re.search(r'(\/image_service\/image[s]?\/)(?P<id>[\w-]+)', url)
         id = m.group('id')         
 
@@ -131,7 +129,7 @@ class image_serviceController(ServiceController):
         from bq.data_service.controllers.resource_query import RESOURCE_READ, RESOURCE_EDIT
         self.check_access(id, RESOURCE_READ)
 
-        data_token = self.srv.process(url, id, userId)
+        data_token = self.srv.process(url, id)
         
         #first check if the output is an error
         if data_token.isHttpError():
