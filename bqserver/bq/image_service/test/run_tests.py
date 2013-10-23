@@ -10,8 +10,12 @@ __revision__  = "$Rev$"
 __date__      = "$Date$"
 __copyright__ = "Center for BioImage Informatics, University California, Santa Barbara"
 
-import unittest
 import sys
+if sys.version_info  < ( 2, 7 ):
+    import unittest2 as unittest
+else:
+    import unittest
+
 import urllib
 import os
 import posixpath
@@ -20,12 +24,12 @@ import ConfigParser
 from lxml import etree
 from subprocess import Popen, call, PIPE
 
-#from bq.api.bqclass import fromXml # bisque
-#from bq.api.comm import BQSession, BQCommError # bisque
-#from bq.api.util import save_blob # bisque
-from bqapi.bqclass import fromXml # local
-from bqapi.comm import BQSession, BQCommError # local
-from bqapi.util import save_blob # local
+from bq.api.bqclass import fromXml # bisque
+from bq.api.comm import BQSession, BQCommError # bisque
+from bq.api.util import save_blob # bisque
+#from bqapi.bqclass import fromXml # local
+#from bqapi.comm import BQSession, BQCommError # local
+#from bqapi.util import save_blob # local
 
 IMGCNV='imgcnv'
 
@@ -779,6 +783,10 @@ class ImageServiceTests(ImageServiceTestBase):
 #    return unittest.TestSuite(map(ImageServiceTests, tests))
         
 if __name__=='__main__':
+    if not os.path.exists('images'):
+        os.makedirs('images')
+    if not os.path.exists('tests'):
+        os.makedirs('tests')
     unittest.main(verbosity=2)
 
 
