@@ -146,7 +146,7 @@ bisque.login.local = /auth_service/login
 # You can use google (http://www.google.com/analytics/)  or piwik (http://piwik.org/), etc.  
 #bisque.tracking = piwik.html
 #bisque.tracking = google.html
-#bisque.tracking.piwik = http://yourpiwikhost.org
+#bisque.tracking.piwik_url = http://yourpiwikhost.org
 #bsique.tracking.google_id  = 
 
 
