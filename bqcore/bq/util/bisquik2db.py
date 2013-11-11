@@ -758,7 +758,7 @@ def bisquik2db_internal(inputs, parent, resource,  replace):
         log.debug ("returned %s " % str(node))
         log.debug ('modifyed : new (%d), dirty (%d), deleted(%d)' %
                    (len(DBSession.new), len(DBSession.dirty), len(DBSession.deleted)))
-        if not node in DBSession:
+        if node not in DBSession:
             DBSession.add(node)
         results.append(node)
 
@@ -778,7 +778,8 @@ def bisquik2db(doc= None, parent=None, resource = None, xmlschema=None, replace=
     Verify against xmlschema if present
     '''
     if isinstance(doc, basestring):
-        doc = etree.parse(StringIO(doc))
+        doc = StringIO(doc)
+    doc = etree.parse(doc)
 
     log.debug ("Bisquik2db parent:" + str (parent))
     if isinstance(doc , etree._ElementTree):
