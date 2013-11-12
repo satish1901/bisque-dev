@@ -475,7 +475,7 @@ class Resource(ServiceController):
 
         #check the http method is supported.
         try:
-            method_name = dict(get='get', head='head', post='append',
+            method_name = dict(get='get', head='check', post='append',
                                put='modify', delete='delete')[http_method]
         except KeyError:
             abort(501)
@@ -511,8 +511,8 @@ class Resource(ServiceController):
                 method_name = 'delete_all'
             elif http_method == 'head':
                 # Determine whether the collection has changed
-                self.add_cache_header(None)
-                return dict()
+                resource = bisque.parent
+                method_name = "check"
             else:
                 #Any other methods get rejected.
                 abort(501)
@@ -572,7 +572,7 @@ class Resource(ServiceController):
             elif http_method == 'delete':
                 value = method(resource, **kw)
                 self.server_cache.invalidate(request.url, user=user_id)
-            else:  # http_method is in ('get', 'head')
+            elif  http_method == 'get':
                 headers, value = self.server_cache.fetch(request.url, user=user_id)
                 if value:
                     response.headers.update (headers)
@@ -582,10 +582,13 @@ class Resource(ServiceController):
                     self.server_cache.save (request.url,
                                             response.headers,
                                             value, user=user_id)
+            else: # http_method == HEAD
+                value = method(resource, **kw)
                     
             #set the last modified date header for the response
             self.add_cache_header(resource)
             return value
+          
         except identity.BQIdentityException:
             response.status_int = 401    
             return "<response>FAIL</response>"
@@ -657,5 +660,11 @@ class Resource(ServiceController):
         Delete the resource from the database
         """
         raise abort(501)
+
+    def check(self, resource,  **kw):
+        """
+        Check that you can read the object
+        """
+        abort(501)
 
     

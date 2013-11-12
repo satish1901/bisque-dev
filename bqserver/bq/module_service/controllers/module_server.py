@@ -366,23 +366,25 @@ def wait_for_query (query, retries = 10, interval = 1):
 
 def POST_mex (service_uri, mex, username):
     "POST A MEX in a subthread"
-    mex_url = mex.get ('uri')
-    mex_id = mex_url.split('/')[-1]
+    mex_url =  mex.get ('uri')
+    mex_uniq = mex.get('resource_uniq')
     
     log.debug ("MEX Dispatch : waiting for mex")
-    mexq = wait_for_query (DBSession.query(ModuleExecution).filter_by (id = mex_id)).first()
+    mexq = wait_for_query (DBSession.query(ModuleExecution).filter_by (resource_uniq =  mex_uniq)).first()
     if mexq is None:
         log.error('Mex not in DB: abondoning dispatch')
         POST_error(mex_url, username, {'status':'500'}, '')
         return
 
-    log.info("DISPATCH: POST %s  with %s" % (service_uri,  mex_url ))
+    mex_token = "%(user)s:%(uniq)s" % dict(user=username, uniq=mex_uniq)
+    log.info("DISPATCH: POST %s  with %s for %s" % (service_uri,  mex_token, mex_url ))
 
     body = etree.tostring(mex)
     try: 
         resp, content = http.xmlrequest(service_uri +"/execute", "POST", 
                                         body = body,
-                                        headers = {'Mex': mex_id})
+                                        headers = {'Mex': mex_uniq, 
+                                                   'Authorization' : "Mex %s" % mex_token})
     except socket.error:
         resp = {'status':'503', }
         content = ""
@@ -519,7 +521,7 @@ class ModuleServer(ServiceController):
         super(ModuleServer, self).__init__(uri = server_url)
 
         self.runner = None
-        self.__class__.mex = self.mex = MexDelegate (self.url + 'mex',
+        self.__class__.mex = self.mex = MexDelegate (self.fulluri + 'mex',
                                                      self.runner)
         self.__class__.modules = self.modules = resource_controller ("module" , cache=False )
         self.__class__.engine = self.engine = EngineResource (server_url,
@@ -546,10 +548,13 @@ class ModuleServer(ServiceController):
         #self.runner.start()
 
 
-    def load_services(self):
+    def load_services(self, name = None):
         "(re)Load all registered service points "
         
-        modules = data_service.query('module' , view='deep')
+        if name:
+            modules = data_service.query('module', name=name, view='deep')
+        else:
+            modules = data_service.query('module', view='deep')
         service_list = {}
         for module in modules:
             log.debug ("FOUND module: %s" % (module.get('uri')))
@@ -557,9 +562,8 @@ class ModuleServer(ServiceController):
             name = module.get('name')
             log.info ("SERVICE PROXY %s -> %s " % (name, engine))
             if name and engine :
-                service = ServiceDelegate(name,  engine, module, self.mex.url)
+                service = ServiceDelegate(name,  engine, module, self.mex.fulluri)
                 service_list[name] = service
-            
         return service_list
         #self.runner.start()
 
@@ -601,6 +605,14 @@ class ModuleServer(ServiceController):
         for service in services.values():
             resource.append(service.module)
         return etree.tostring (resource)
+
+
+    @expose(template='bq.module_service.templates.register')
+    @require(not_anonymous())
+    def register(self,**kw):
+        "Show module registration page for module writers"
+        return dict()
+        
 
     @expose(content_type='text/xml')
     @require(not_anonymous())
