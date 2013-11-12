@@ -152,3 +152,21 @@ def get_file (url, path = None):
     return f.name
     
     
+####################
+
+def send (req):
+    'Send a webob request and return a webresponse object'
+
+    from webob import Response
+    headers, content = request(req.url,
+                            method = req.method,
+                            headers = req.headers,
+                            body = req.body)
+
+    response = Response()
+    response.code = headers.pop ('status')
+    response.headers = headers 
+    response.body    = content
+    return response
+                            
+                            

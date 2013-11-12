@@ -102,27 +102,25 @@ class image_serviceController(ServiceController):
 #        log.debug("new_image %s, %s, %s, %s, %s, %s, %s [%s]"%(str(image_id), path, str(x), str(y), str(ch), str(z), str#(t), str(userPerm) ) )           
 #        url = self.makeurl( str(image_id) )
 #        return dict(src=url, x=x, y=y, ch=ch, z=z, t=t)
-
-    def meta(self, imgsrc, **kw):
-        id = get_image_id(imgsrc)
-        userId = identity.current.user_name   
-        log.debug('Meta: %s %s %s'%(imgsrc, id, userId ) )     
-        doc = self.srv.execute('meta',  id, userId, None)
-        log.debug('Meta doc: %s'%(doc ) )         
-        return doc
-
-    def info(self, imgsrc, **kw):
-        id = get_image_id(imgsrc)
-        userId = identity.current.user_name
-        log.debug('Info: %s %s %s'%(imgsrc, id, userId ) )        
-        doc = self.srv.execute('info',  id, userId, None)
-        log.debug('Info doc: %s'%(doc ) )           
-        return doc
+#
+#    def meta(self, imgsrc, **kw):
+#        id = get_image_id(imgsrc)
+#        userId = identity.current.user_name   
+#        log.debug('Meta: %s %s %s'%(imgsrc, id, userId ) )     
+#        doc = self.srv.execute('meta',  id, userId, None)
+#        log.debug('Meta doc: %s'%(doc ) )         
+#        return doc
+#
+#    def info(self, imgsrc, **kw):
+#        id = get_image_id(imgsrc)
+#        userId = identity.current.user_name
+#        log.debug('Info: %s %s %s'%(imgsrc, id, userId ) )        
+#        doc = self.srv.execute('info',  id, userId, None)
+#        log.debug('Info doc: %s'%(doc ) )           
+#        return doc
 
     def local_file (self, url, **kw):
         ''' returns local path if it exists otherwise None'''
-        userId = identity.current.user_name       
-        
         m = re.search(r'(\/image_service\/image[s]?\/)(?P<id>[\w-]+)', url)
         id = m.group('id')         
 
@@ -131,7 +129,7 @@ class image_serviceController(ServiceController):
         from bq.data_service.controllers.resource_query import RESOURCE_READ, RESOURCE_EDIT
         self.check_access(id, RESOURCE_READ)
 
-        data_token = self.srv.process(url, id, userId)
+        data_token = self.srv.process(url, id)
         
         #first check if the output is an error
         if data_token.isHttpError():
@@ -259,17 +257,16 @@ class image_serviceController(ServiceController):
 
     @expose()
     #@identity.require(identity.not_anonymous())
-    def images(self, id, **kw):
+    def images(self, ident, **kw):
         request = tg.request
         response = tg.response
         log.info ('Request: %s' % request.url)
       
         path   = request.path+'?'+request.query_string
-        userId = identity.current.user_name
 
         # check for access permission
         from bq.data_service.controllers.resource_query import RESOURCE_READ, RESOURCE_EDIT
-        self.check_access(id, RESOURCE_READ)
+        self.check_access(ident, RESOURCE_READ)
         
         
         # dima: patch for incorrect /auth requests for image service
@@ -277,7 +274,7 @@ class image_serviceController(ServiceController):
             tg.response.headers['Content-Type']  = 'text/xml'
             return '<resource />'
                             
-        data_token = self.srv.process(path, id, userId, **kw)
+        data_token = self.srv.process(path, ident, **kw)
         tg.response.headers['Content-Type']  = data_token.contentType
         #tg.response.content_type  = data_token.contentType
         #tg.response.headers['Cache-Control'] = ",".join ([data_token.cacheInfo, "public"])
@@ -292,7 +289,7 @@ class image_serviceController(ServiceController):
             return data_token.data.encode('utf8')
 
         #second check if the output is TEXT/HTML/XML                  
-        if data_token.isText():
+        if data_token.isText() and not data_token.isFile():
             return data_token.data
 
         #third check if the output is actually a file
@@ -304,11 +301,11 @@ class image_serviceController(ServiceController):
             fname = fpath[len(fpath)-1]
 
             if data_token.hasFileName():
-               fname = data_token.outFileName
+                fname = data_token.outFileName
           
             #Content-Disposition: attachment; filename=genome.jpeg; 
             disposition = ''
-            if data_token.isImage() is not True:
+            if data_token.isImage() is not True and data_token.isText() is not True:
                 disposition = 'attachment; '
 
             try:

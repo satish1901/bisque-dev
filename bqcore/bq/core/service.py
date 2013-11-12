@@ -210,7 +210,9 @@ class ServiceMixin(object):
         self.service_type = self.__class__.service_type
         if uri[-1] != '/':
             uri += '/'
+        self.fulluri = uri
         self.baseuri = uri
+        #self.baseuri = urlparse.urlparse(uri).path
         log.debug ("creating %s at %s" % (self.service_type, self.baseuri))
         urituple = urlparse.urlparse(uri)
         self.host, self.path = urituple.netloc , urituple.path

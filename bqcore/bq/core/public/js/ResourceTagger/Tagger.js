@@ -900,15 +900,17 @@ Ext.define('Bisque.GObjectTagger', {
     },
 
     onLoaded: function () {
-        this.tree.addDocked([{
+        this.tree.addDocked([/*{
             xtype: 'container',
             cls: 'bq-gob-header',
             html: '<h3>Add annotations</h3>',
             border: 0,
             dock: 'top',
-        }, {
+        },*/ {
             xtype: 'gobspanel',
             itemId: 'panelGobTypes',
+            title: 'Add annotations',
+            collapsible: true,
             border: 0,
             dock: 'top',
             height: 250,
@@ -1331,6 +1333,8 @@ Ext.define('BQ.grid.GobsPanel', {
     extend: 'Ext.panel.Panel',
     requires: ['Ext.toolbar.Toolbar', 'Ext.tip.QuickTipManager', 'Ext.tip.QuickTip'],
     layout: 'fit', 
+    
+    types_ignore: {},
 
     initComponent : function() {
         /*       
@@ -1399,6 +1403,21 @@ Ext.define('BQ.grid.GobsPanel', {
         this.callParent();
         
         this.setLoading('Fetching types of graphical annotations');  
+        BQ.Preferences.get({
+            key : 'Viewer',
+            callback : Ext.bind(this.onPreferences, this),
+        });           
+    },     
+
+    onPreferences: function(pref) {
+        this.preferences = Ext.apply(pref, this.parameters || {}); // local defines overwrite preferences
+        if (this.preferences.hide_gobjects_creation) {
+            var l = this.preferences.hide_gobjects_creation.split(',');
+            var n=null;
+            for (var i=0; n=l[i]; ++i)
+                this.types_ignore[n] = n;            
+        }
+
         Ext.Ajax.request({
             url: '/data_service/image/?gob_types=true&wpublic=false',
             callback: function(opts, succsess, response) {
@@ -1408,8 +1427,9 @@ Ext.define('BQ.grid.GobsPanel', {
                     this.onTypes(response.responseXML);
             },
             scope: this,
-        });  
-    },     
+            disableCaching: false, 
+        });          
+    },
 
     onError : function() {
         this.setLoading(false);          
@@ -1435,10 +1455,12 @@ Ext.define('BQ.grid.GobsPanel', {
 
         // add primitives
         for (var g in BQGObject.primitives) {
-            var ix = this.types.push({
-                Type   : g,
-                Custom : '',
-            });            
+            if (!(g in this.types_ignore)){            
+                var ix = this.types.push({
+                    Type   : g,
+                    Custom : '',
+                });     
+            }       
             //this.formats_index[name] = this.formats[ix-1];
         } // for primitives            
 
@@ -1446,11 +1468,12 @@ Ext.define('BQ.grid.GobsPanel', {
         var g=undefined;
         for (var i=0; g=gobs[i]; ++i) {
             var t = g.getAttribute('type');
-            
-            var ix = this.types.push({
-                Type   : t,
-                Custom : t,
-            });            
+            if (!(t in this.types_ignore)){
+                var ix = this.types.push({
+                    Type   : t,
+                    Custom : t,
+                });            
+            }
             //this.formats_index[name] = this.formats[ix-1];
         } // for types
         

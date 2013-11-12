@@ -470,8 +470,8 @@ class import_serviceController(ServiceController):
         # extract all the series from the file
         if bioformats.supported(filepath):
             info = bioformats.info(filepath)
-            if 'number_series' in info:
-                n = info['number_series']
+            if 'image_num_series' in info:
+                n = info['image_num_series']
                 for i in range(n):
                     fn = 'series_%.5d.ome.tif'%i
                     outfile = '%s/%s'%(unpack_dir, fn)

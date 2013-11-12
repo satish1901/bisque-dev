@@ -87,6 +87,7 @@ from bq.core.model import DeclarativeBase, metadata
 from bq.core.model import User, Group
 from bq.core.permission import PUBLIC, PRIVATE, perm2code, perm2str
 from bq.util.memoize import memoized
+from bq.util.hash import make_uniq_code
 
 #from bq.MS import module_service
 #session.mex = None
@@ -228,6 +229,8 @@ taggable_acl = Table('taggable_acl', metadata,
 
 ######################################################################
 #
+
+
 def parse_uri(uri):
     ''' Parse a bisquik uri into host , dbclass , and ID
     @type  uri: string
@@ -277,6 +280,7 @@ class Taggable(object):
             self.document = parent.document
         else:
             self.document = self
+            self.resource_uniq = make_uniq_code()
 
         #if self.resource_type == 'mex':
         #    self.mex = self
@@ -292,6 +296,7 @@ class Taggable(object):
         mex_id = current_mex_id()
         log.debug ("owner = %s mex = %s" % (owner, mex_id))
         if mex_id is not None:
+            log.debug ("setting mex_id %s " % mex_id)
             self.mex_id = mex_id
         if owner:
             self.owner_id = owner.id
@@ -309,10 +314,12 @@ class Taggable(object):
     resource = property(resource)
 
     def uri (self):
-        if hasattr(self,'parent') and self.parent is not None:
-            parent = self.parent.loadFull()
-            return "%s/%s/%s" % (parent.uri , self.resource_type, self.id)
+        if getattr(self,'parent',None):
+            #parent = self.parent.loadFull()
+            return "%s/%s/%s" % (self.parent.uri , self.resource_type, self.id)
+            #return "%s/%s" % (self.resource_type, self.id)
         else:
+            #return "%s/%s" % (self.resource_type, self.resource_uniq)
             return "%s/%s" % (self.resource_type, self.id)
             
     uri = property(uri)
@@ -671,6 +678,7 @@ class ModuleExecution(Taggable):
     '''
     xmltag ='mex'
 
+
     def closed(self):
         return self.status in ('FINISHED', 'FAILED')
     # alias for resource_value
@@ -818,7 +826,6 @@ mapper( Taggable, taggable,
     'tagq' : relation(Taggable, lazy='dynamic',
                       primaryjoin= and_(taggable.c.resource_parent_id==taggable.c.id,
                                         taggable.c.resource_type == 'tag')),
-
 
     #'document' : relation(Taggable, uselist=False,
     #                      primaryjoin=(taggable.c.document_id==taggable.c.id),
@@ -978,9 +985,14 @@ def current_mex_id ():
     mex_id = None
     if hasattr(request,'identity'):
         mex_id = request.identity.get('bisque.mex_id', None)
+        log.debug ("IDENTITY request %s" % mex_id == 'None')
     if mex_id is None:
         try:
-            mex_id = session.get('mex_id', None)
+            mex_id = session.get('mex_id', None) 
+            if mex_id is None and 'mex_uniq' in session :
+                mex = DBSession.query(ModuleExecution).filter_by(resource_uniq = session['mex_uniq']).first()
+                mex_id = session['mex_id'] = mex.id
+            log.debug ("IDENTITY session %s" % mex_id == 'None')
         except TypeError:
             # ignore bad session object
             pass
@@ -1006,7 +1018,7 @@ def current_mex_id ():
             if mex_id:
                 request.initial_mex_id = mex_id
 
-    log.debug ('IDENTITY mex %s' % mex_id)
+    log.debug ('IDENTITY mex_id %s' % mex_id)
 
     return mex_id
 
