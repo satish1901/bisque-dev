@@ -57,12 +57,12 @@ import functools
 import urlparse
 import time
 import copy
+import io
 
 from lxml import etree
 from datetime import datetime
 from sqlalchemy.orm import object_mapper
 
-from StringIO import StringIO
 from tg import config
 import transaction
 
@@ -777,9 +777,10 @@ def bisquik2db(doc= None, parent=None, resource = None, xmlschema=None, replace=
     '''Parse a document (either as a doc, or an etree.
     Verify against xmlschema if present
     '''
+    if hasattr(doc,'read'):
+        doc = etree.parse(doc)
     if isinstance(doc, basestring):
-        doc = StringIO(doc)
-    doc = etree.parse(doc)
+        doc = etree.parse(io.BytesIO(doc))
 
     log.debug ("Bisquik2db parent:" + str (parent))
     if isinstance(doc , etree._ElementTree):
