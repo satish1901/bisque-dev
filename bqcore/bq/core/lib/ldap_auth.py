@@ -115,7 +115,8 @@ class LDAPAuthenticatorPluginExt(LDAPSearchAuthenticatorPlugin):
             log.debug ('LDAP metadata %s' % r)
             info = dict((attr, identity[attr]) for attr in self.attributes)
             info .update ( { 'display_name' : info.get('cn', [r])[0],
-                             'email_address' : info.get('mail', [None])[0] })
+                             'email_address' : info.get('mail', [None])[0],
+                             'identifier'    : 'ldap' } )
                              
             r = register.register_user (r, info)
         return r
