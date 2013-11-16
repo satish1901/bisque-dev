@@ -92,6 +92,9 @@ class LDAPAuthenticatorPluginExt(LDAPSearchAuthenticatorPlugin):
 
 
     def _auto_register(self, environ, identity):
+        """ Autoregister the user by passing looking up user metadata 
+        and passing to the autoregister plugin if available.
+        """
         log  = environ.get('repoze.who.logger', bqlog)
         register = environ['repoze.who.plugins'].get(self.auto_register)
         log.debug('looking for %s found %s ' % (self.auto_register, register))
@@ -119,6 +122,7 @@ class LDAPAuthenticatorPluginExt(LDAPSearchAuthenticatorPlugin):
                              'identifier'    : 'ldap' } )
                              
             r = register.register_user (r, info)
+            #identity['repoze.who.userid'] = r
         return r
 
     def reconnect(self,environ, identity):
@@ -132,8 +136,12 @@ class LDAPAuthenticatorPluginExt(LDAPSearchAuthenticatorPlugin):
             environ, identity)
 
     def authenticate(self, environ, identity):
-        """ Extending the repoze.who.plugins.ldap plugin to make it much
-        more secure. """
+        """ Authenticate the user and password against the LDAP 
+        server if available
+
+        Extending the repoze.who.plugins.ldap plugin to make it much
+        more secure. 
+        """
         log  = environ.get('repoze.who.logger', bqlog)
         log.debug ("LDAP:authenticate %s" % identity)
         res = None
@@ -150,7 +158,7 @@ class LDAPAuthenticatorPluginExt(LDAPSearchAuthenticatorPlugin):
                     recover = self.reconnect, 
                     exc = ldap.LDAPError)
 
-        if res is not None:
+        if self.auto_register is not None and res is not None:
             res = self._auto_register (environ, identity)
             log.debug ('LDAP:authenticated user=%s' % res)
 

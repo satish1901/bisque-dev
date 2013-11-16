@@ -52,8 +52,8 @@ class AutoRegister (object):
 
         email_match= values.get('email_address') and model.User.by_email_address(values['email_address'])
         if email_match is not None:
-            log.info("found existing user: name %s by email %s " % (user_name, email_match))
-            return user_name
+            log.info("found existing user: name %s (%s) by email %s " % (user_name, email_match.user_name, email_match))
+            return email_match.user_name
 
         identifier = values.pop('identifier', None)
         try:
