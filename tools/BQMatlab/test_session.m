@@ -64,7 +64,7 @@ f = s.storeFile('my_file.bin');
 
 image = zeros(128, 128, 'double');
 args = struct('filename', 'my_2d_double_image.ome.tif');
-im = s.storeimage(image, args);
+im = s.storeImage(image, args);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % finish

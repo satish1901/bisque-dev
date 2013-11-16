@@ -2,7 +2,7 @@
 #from turbogears.util import request_available
 
 from repoze.what.predicates import in_group
-from tg import request
+from tg import request, session
 import logging
 from bq.exceptions import BQException
 from bq.core.model import DBSession, User
@@ -161,14 +161,7 @@ def set_admin_mode (v=True):
 
 
 def mex_authorization_token():
-    try:
-        mex_id =  request.identity['bisque.mex_id']
-        return mex_id
-    except (TypeError, KeyError):
-        pass
-    return None
-        
-    mex_token = current_mex()
-    return str(mex_token)
+    mex_auth = request.identity.get ('bisque.mex_auth') or session.get('mex_auth')
+    return mex_auth
 
 

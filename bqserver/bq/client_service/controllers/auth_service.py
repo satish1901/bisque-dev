@@ -267,6 +267,7 @@ class AuthenticationServer(ServiceController):
         mex_uniq  = mex.get('resource_uniq')
         session['mex_uniq']  = mex_uniq
         session['mex_uri'] =  mex_uri
+        session['mex_auth'] = "%s:%s" % (identity.get_username(), mex_uniq)
         log.info ("MEX Session %s ( %s ) " % (mex_uri, mex_uniq))
         #v = Visit.lookup_visit (tgidentity.current.visit_link.visit_key)
         #v.mexid = mexid

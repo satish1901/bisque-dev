@@ -65,7 +65,8 @@ import socket
 
 
 WEBHOST = ''
-LOGHOST = 'localhost'
+#LOGHOST = 'localhost'
+LOGHOST = '0.0.0.0'
 
 
 try:

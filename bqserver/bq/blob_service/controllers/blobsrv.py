@@ -74,7 +74,6 @@ from bq.core.permission import perm2str
 from bq.exceptions import IllegalOperation
 from bq.util.paths import data_path
 from bq.util.mkdir import _mkdir
-from bq.util.hash import make_uniq_hash, make_short_uuid
 from bq.util.timer import Timer
 from bq.util.sizeoffmt import sizeof_fmt
 
@@ -192,8 +191,10 @@ class StorageManager(object):
                 if store.valid(blob_id):
                     path =  store.localpath(blob_id)
                     break
-        if log.isEnabledFor(logging.INFO):
+        if log.isEnabledFor(logging.INFO) and path:
             log.info (transfer_msg (path, t.interval))
+        if path is None:
+            log.warn ("failed to fetch blob %s" % blob_id)
         return path
 
     def save_blob(self, fileobj, filename, user_name, uniq):
@@ -243,7 +244,7 @@ class BlobServer(RestController, ServiceMixin):
     @expose()
     def get_one(self, ident,  **kw):
         "Fetch a blob based on uniq ID"
-        log.info("get_one() called %s" % kw)
+        log.info("get_one(%s) %s" % (ident, kw))
         from bq.data_service.controllers.resource_query import RESOURCE_READ, RESOURCE_EDIT
         #ident = args[0]
         self.check_access(ident, RESOURCE_READ)
@@ -351,8 +352,7 @@ class BlobServer(RestController, ServiceMixin):
         'Store a resource in the DB must be a valid resource'
         fhash = resource.get ('resource_uniq')
         if fhash is None:
-            fhash = make_short_uuid()
-            resource.set('resource_uniq', fhash)
+            resource.set('resource_uniq', data_service.resource_uniq() )
         if fileobj is not None:
             return self.store_fileobj(resource, fileobj)
         return self.store_reference(resource, resource.get('value') )
@@ -377,7 +377,7 @@ class BlobServer(RestController, ServiceMixin):
 
         resource.set('name', filename)
         resource.set('value', blob_id)
-        resource.set('resouce_uniq', uniq)
+        #resource.set('resource_uniq', uniq)
         return self.create_resource(resource)
 
     def _make_url_local(self, urlref):
@@ -413,7 +413,6 @@ class BlobServer(RestController, ServiceMixin):
             log.debug('using %s full=%s localpath=%s' % (uniq_ident, blob_id, path))
             return path
         raise IllegalOperation("bad resource value %s" % uniq_ident)
-
 
     def getBlobInfo(self, ident): 
         resource = DBSession.query(Taggable).filter_by (resource_uniq = ident).first()

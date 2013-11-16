@@ -1258,7 +1258,7 @@ def install_features ():
                   "Feature extractors will enable many descriptors in the Feature Server that require binary code") == "Y":
 
         filename_zip = os.path.join(BQDEPOT, 'feature_extractors.zip')
-        filename_dest = to_sys_path('bqserver/bq/features')
+        filename_dest = to_sys_path('bqfeature/bq')
         filename_check = ''
         uncompress_dependencies (filename_zip, filename_dest, filename_check)
 
@@ -1271,20 +1271,20 @@ def install_features_source ():
         filename_zip = os.path.join(BQDEPOT, 'feature_extractors_source.zip')
         import urllib
         urllib.urlretrieve ('https://bitbucket.org/bisque/featureextractors/get/default.zip', filename_zip)
-        filename_dest = to_sys_path('bqserver/bq/features/controllers')
+        filename_dest = to_sys_path('bqfeature/bq/src')
         filename_check = ''
         uncompress_dependencies (filename_zip, filename_dest, filename_check, strip_root=True)
         
         print """Now you can recompile feature extractors. Follow instructions located in:
           bqserver/bq/features/controllers/extractors/build/Readme.txt
-        """        
+        """
         
 
 #######################################################
 #
 def setup_admin(params):
     try:
-        params, DBURL = get_dburi(params) 
+        params, DBURL = get_dburi(params)
     except sa.exc.ArgumentError:
         log.exception( "Unable to understand DB url. Please see SqlAlchemy" )
         return 

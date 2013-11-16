@@ -4,6 +4,28 @@ import sys, os
 #from bq.release import __VERSION__
 __VERSION__ = '0.5.3'
 
+# -*- Extra requirements: -*-
+install_requires = [
+#        "bqcore",
+        "ply",
+        "gdata",
+        "Turbomail",
+        "genshi",
+        "TGScheduler",
+        "boto",
+        "numpy",
+        "ordereddict",
+        # Installed from http://biodev.ece.ucsb.edu/binaries/depot
+        "tw.recaptcha",
+        "tgext.registration2",
+        "tw.output", #https://bitbucket.org/alexbodn/twoutput/get/af6904c504cf.zip
+        "furl",
+      ]
+
+if sys.version_info  < ( 2, 7 ):
+    install_requires.append('unittest2')
+
+
 setup(name='bqserver',
       version=__VERSION__,
       description="Main Bisque server",
@@ -19,29 +41,7 @@ The bisque server
       packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
       include_package_data=True,
       zip_safe=False,
-      install_requires=[
-          # -*- Extra requirements: -*-
-#        "bqcore",
-        "ply",
-        "gdata",
-        "Turbomail",
-        "genshi",
-        "TGScheduler",
-        "boto",
-        "numpy",
-        "ordereddict",
-        # Installed from http://biodev.ece.ucsb.edu/binaries/depot
-        "tw.recaptcha",
-        "tgext.registration2",
-        "tw.output", #https://bitbucket.org/alexbodn/twoutput/get/af6904c504cf.zip
-        "mahotas",  # Feature
-        "tables==2.4.0",  # Feature
-        "numexpr==1.4.2", # Feature
-        "cython",  # Feature
-        #"opencv",  # Feature        
-        # "importlib", # Feature, not needed for python 2.7
-        "furl",
-      ],
+      install_requires=install_requires,
       entry_points="""
       # -*- Entry points: -*-
     [bisque.services]
@@ -60,7 +60,7 @@ The bisque server
     ingest_service   = bq.ingest.controllers.ingest_server
     dataset_service  = bq.dataset_service.controllers.dataset_service
     usage            = bq.usage.controllers.usage
-    features         = bq.features.controllers.features	
+
 
     [bq.commands]
     module = bq.module_service.commands.module_admin:module_admin
