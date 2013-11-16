@@ -1003,8 +1003,8 @@ def current_mex_id ():
                 #mex = initial_mex
 
             mex_id = mex and mex.id
-            if mex_id:
-                request.initial_mex_id = mex_id
+    if hasattr(request, 'identity') and mex_id is not None:
+        request.identity['bisque.mex_id'] = mex_id
 
     log.debug ('IDENTITY mex %s' % mex_id)
 
