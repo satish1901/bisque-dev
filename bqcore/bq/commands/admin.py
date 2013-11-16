@@ -322,8 +322,10 @@ class preferences (object):
             system = data_service.new_resource(system, view='deep')
         else:
             system = etree.parse(prefs).getroot()
+            # Esnure all elements are published 
             for el in system.getiterator(tag=etree.Element):
                 el.set ('permission', 'published')
+            # Read system object
             uri = system.get('uri')
             if self.args[0].startswith('read'):
                 system = data_service.get_resource(uri, view='deep')
@@ -333,6 +335,7 @@ class preferences (object):
         transaction.commit()
         with open(prefs,'w') as f:
             f.write(etree.tostring(system, pretty_print=True))
+            print "Wrote %s" % prefs
 
 
 class sql(object):

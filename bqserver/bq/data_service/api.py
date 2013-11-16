@@ -123,6 +123,11 @@ def update_resource(resource, server=None, replace=True,  **kw):
     if server is None: server = service_registry.find_service ('data_service')
     return server.update_resource(resource=resource, replace=replace, **kw)
 
+def resource_uniq(server=None, **kw):
+    ''' Create a new resource
+    '''
+    if server is None: server = service_registry.find_service ('data_service')
+    return server.resource_uniq(**kw)
 
 def load(resource_url, **kw):
     '''Return XML resource document

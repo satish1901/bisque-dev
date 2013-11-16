@@ -70,9 +70,9 @@ from bq.exceptions import BadValue
 from bq.core import identity
 from bq.util.paths import data_path
 from bq.util.urlutil import strip_url_params
+from bq.util.hash import make_uniq_code, is_uniq_code
 
-
-from .bisquik_resource import BisquikResource
+from .bisquik_resource import BisquikResource, force_dbload, check_access
 from .resource_query import resource_query, resource_count, resource_load, resource_delete, resource_types, resource_auth
 from .resource_query import RESOURCE_READ, RESOURCE_EDIT
 from .resource import HierarchicalCache
@@ -115,9 +115,10 @@ class DataServerController(ServiceController):
         path = list(path)
         log.info ("path = %s %s " % (path, kw))
         token = path.pop(0)
-        if token.startswith ('00-'):
+        if is_uniq_code(token):
+            log.debug('using uniq token')
             resource_controller = self.get_child_resource('taggable')
-            path.append(token)
+            path.insert(0,token)
         else:
             resource_controller = self.get_child_resource (token)
         return resource_controller._default (*path, **kw)
@@ -148,6 +149,10 @@ class DataServerController(ServiceController):
         if user_id is None and identity.not_anonymous():
             user_id = identity.get_user_id()
         self.server_cache.invalidate(url, user_id)
+
+    def resource_uniq(self, **kw):
+        'generate a unique code to be used for a resource'
+        return make_uniq_code()
 
     def new_image(self, resource = None, **kw):
         ''' place the data file in a local '''
@@ -186,6 +191,8 @@ class DataServerController(ServiceController):
             log.debug ('attributes= %s ' % str(kw) )
             resource = etree.Element (resource, **kw)
             log.debug ('created %s ' % etree.tostring (resource))
+        if parent is None:
+            resource.set('resource_uniq', self.resource_uniq())
         node = bisquik2db(doc = resource, parent = parent)
         log.debug ("new_resource %s" % (node)) 
         r =  db2tree (node, baseuri=self.url, view=view)
