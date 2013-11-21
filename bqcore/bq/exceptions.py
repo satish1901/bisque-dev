@@ -86,12 +86,15 @@ class EngineError(BQException):
 
 class BadValue(BQException):
     '''The Module Engine exception'''
-    def __init__(self, msg, o):
+    def __init__(self, msg, obj):
         super(BadValue, self).__init__(msg)
         self.obj = obj
     def __str__ (self):
         return "BadValue("+str(type(self.obj)) + ")" 
-        
+
+
+class DuplicateFile(BQException):
+    "A duplicate file or resource detected"
 
 class RequestError(BQException):
     '''Used for any request that cannot be satisfied

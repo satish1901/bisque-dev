@@ -50,6 +50,7 @@ DESCRIPTION
 ===========
 
 """
+import os
 import operator
 import logging
 import transaction
@@ -57,13 +58,14 @@ import transaction
 from datetime import datetime
 from lxml import etree
 from tg import expose, controllers, flash, url, response
-from repoze.what.predicates import is_user, in_group
+from repoze.what.predicates import is_user, in_group, Any
 from repoze.what.predicates import not_anonymous
 from sqlalchemy import func
 
 import bq
 from bq.core.service import ServiceController
 from bq.core import identity
+from bq.util.paths import data_path
 from bq.core.model import   User,Group #, Visit
 from bq.core.model import DBSession 
 from bq.data_service.model import  BQUser, Image, TaggableAcl
@@ -77,9 +79,11 @@ log = logging.getLogger('bq.admin')
 from bq.core import model
 from bq.core.model import DBSession
 
-#from tgext.admin import AdminController
+from tgext.admin import AdminController
 #class BisqueAdminController(AdminController):
-#    allow_only = is_user('admin')
+#    'admin controller'
+#    allow_only = Any (in_group("admin"), in_group('admins'))
+
 
 class AdminController(ServiceController):
     """The admin controller is a central point for
@@ -88,8 +92,8 @@ class AdminController(ServiceController):
     service_type = "admin"
 
 
-    #require = identity.in_group("admin")
-    allow_only = is_user('admin')
+    allow_only = Any (in_group("admin"), in_group('admins'))
+    #allow_only = is_user('admin')
 
     #admin = BisqueAdminController([User, Group], DBSession)
 
@@ -281,6 +285,25 @@ class AdminController(ServiceController):
     def default (*l, **kw):
         log.debug ("got " + str(l) + str(kw))
         return dict(query=None, wpublic=None, search=None, analysis=None)
+
+
+    @expose('bq.client_service.templates.admin.index')
+    def clearcache(self):
+        log.info("CLEARING CACHE")
+        def clearfiles (folder):
+            for the_file in os.listdir(folder):
+                file_path = os.path.join(folder, the_file)
+                try:
+                    if os.path.isfile(file_path):
+                        os.unlink(file_path)
+                except Exception, e:
+                    log.exception('while removing %s' % file_path)
+                    
+        server_cache = data_path('server_cache')
+        clearfiles(server_cache)
+        log.info("CLEARED CACHE")
+        return dict()
+        
 
 
 def initialize(url):

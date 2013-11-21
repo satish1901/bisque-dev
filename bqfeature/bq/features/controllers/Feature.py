@@ -230,9 +230,8 @@ class ImageImport():
                 if response.status_int == 200:
                     f.write(response.body)
                     return
-                if response.status_int in set([401,403]):
+                if response.status_int in (401,403):
                     raise ValueError('polygon not found: must be a polygon gobject') 
-                
                 # Try to route externally
 
                 req = Request.blank(uri)

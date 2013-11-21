@@ -14,15 +14,7 @@ try:
 except:
     from xml.etree import ElementTree as ET
 
-try:
-    from bq.data_service.model.xmlstore import SQLXMLStore
-    STORES = [ SQLXMLStore ]
-    from bq.data_service.model.dbxmlstore import DBXMLStore
-    STORES.append (DBXMLStore)
-except ImportError:
-    pass
-except:
-    pass
+
 
 __module__    = "bqstore"
 __author__    = "Kris Kvilekval"
@@ -33,6 +25,20 @@ __copyright__ = "Center for BioImage Informatics, University California, Santa B
 
 
 log = logging.getLogger('bq.data_service.store')
+
+STORES = []
+try:
+    from bq.data_service.model.xmlstore import SQLXMLStore
+    STORES.append ( SQLXMLStore )
+except ImportError:
+    log.info("SQLXMLStore is unavailable")
+
+try:
+    from bq.data_service.model.dbxmlstore import DBXMLStore
+    STORES.append (DBXMLStore)
+except ImportError:
+    log.info("DBXMLStore is unavailable")
+
 
 class StoreError(Exception):
     pass
@@ -84,8 +90,6 @@ class BQStoreBase (object):
         "Close the store"
         
     # Document functions
-    def exists (self, path):
-        return False
     def create(self, path, xml):
         """construct and insert a new document returning a unique
         document id
@@ -150,7 +154,7 @@ class BQStoreManager (object):
                 cls.stores[dburl] =  BQStoreManager(driver)
                 log.info ("CREATING MANAGER %s" %(dburl))
             else:
-                log.error ('NO Driver for db %s' % dburl)
+                log.error ('NO XML Driver for db %s' % dburl)
                 return None
         return cls.stores[dburl]
 
@@ -196,6 +200,16 @@ class BQStoreManager (object):
         self.attribute_out(root)
         if path:
             root = root.xpath(self._xpath_expr(docid, path))
+
+            if len(root) == 0:
+                log.error ("Expected fragment not found %s %s" %(docid, path))
+                return doc, None
+
+            if len(root) != 1:
+                log.error("Multiple fragments mathced partial documents %s",
+                          "\n".join([ etree.tostring(f) for f in root ] ))
+            root = root[0]
+                
         #self.store.close(doc)
         return doc, root
 
@@ -233,6 +247,7 @@ class BQStoreManager (object):
         Create a new resource by adding it to an existing document 
         or creating  a new document
         """
+        log.info ("CREATE")
         xml = make_et(xml)
         self.attribute_in (root=xml, mex="/ds/mex/new")
         docid = xml.get('uri')
@@ -241,8 +256,11 @@ class BQStoreManager (object):
 
     def fetch(self, path):
         docid, partial = self.find_document(path)
-        doc, element =  self._get(docid, path=partial)
-        return doc, element
+        log.debug ("doc %s # %s" % (docid, partial))
+        if docid:
+            doc, element =  self._get(docid, path=partial)
+            return doc, element
+        return None, None
         
 
     def update (self, path, xml):
