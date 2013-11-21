@@ -1,12 +1,13 @@
-""" Store BQDocument in an XML Simple Store (relation tables)
+""" Store BQDocument in an DB XML 
 """
+import os
 import logging
 from lxml import etree
 from itertools import groupby
 
 #from store import BQStoreBase, BQDocumentBase
 
-
+from bsddb3.db import *
 import dbxml
 
 
@@ -36,10 +37,24 @@ class DBXMLStore (object):
     """Base class for a Bisque Database"""
     driver = "dbxml"
 
-    def __init__(self, name, **kw):
-        self.mgr =  dbxml.XmlManager()
+    def __init__(self, name, folder = 'dbxml', **kw):
+        self.env = DBEnv()
+        self.env.set_cachesize (2,0,1)
+        folder = os.path.abspath(folder)
+        self.env.open(folder, DB_INIT_LOCK|DB_CREATE| DB_RECOVER|
+                      DB_THREAD| DB_INIT_MPOOL|DB_INIT_TXN,
+                      #DB_INIT_LOG
+                      0)
+
+        self.mgr =  dbxml.XmlManager(self.env, 0)
         driver, dbname = name.split ('://')
-        self.container = self.mgr.createContainer(dbname)
+        full = os.path.join (folder, dbname)
+        if not os.path.exists(full):
+            log.info ("creating %s" % name)
+            self.container = self.mgr.createContainer(dbname)
+        else:
+            log.info ("opening %s" % name) 
+            self.container = self.mgr.openContainer(dbname)
         self.session = {}
         self.container_name = dbname
 
@@ -84,7 +99,7 @@ class DBXMLStore (object):
         doc = DBXmlDocument(xml = xml)
         if docid is None:
             docid = doc.root().get('uri')
-        #log.debug( "XML=>%s" % etree.tostring(xml))
+        log.debug( "XML=>%s %s" % (docid, etree.tostring(xml)))
         uc = self.mgr.createUpdateContext()
         self.container.putDocument(docid, str(doc), uc)
         del uc

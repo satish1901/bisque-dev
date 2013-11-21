@@ -55,6 +55,7 @@ options(
         ),
 )
 
+all_subdirs=['bqdev', 'bqcore', 'bqserver', 'bqengine', 'bqfeature' ]
 server_subdirs=['bqdev', 'bqcore', 'bqserver', 'bqengine' ]
 engine_subdirs=['bqdev', 'bqcore', 'bqengine' ]
 
@@ -98,9 +99,20 @@ def setup(options):
 
     engine_install = (len(options.args) or None) and options.args[0] == 'engine'
     if engine_install is None:
-        if getanswer("install server or engine", "engine", 
-                  "answer 'server' or 'engine' depending what sort of bisque server you wish to install") == 'engine':
-            engine_install = True
+        installing =  getanswer("install [server, engine or all", "engine", 
+"""server installs component to run a basic bisque server
+engine will provide just enough components to run a module engine,
+all will install everything including the feature service""")
+
+    if installing == 'engine':
+        engine_install = True
+        subdirs = engine_subdirs
+    elif installing == 'server':
+        subdirs = server_subdirs
+    else:
+        subdirs = all_subdirs
+    print "installing all components from  %s" % subdirs
+
 
     if not engine_install:
         # Hack as numpy fails to install when in setup.py dependencies
@@ -114,10 +126,6 @@ def setup(options):
     sh('easy_install http://biodev.ece.ucsb.edu/binaries/depot/bq053/Minimatic-1.0.1.zip')
 
     top = os.getcwd()
-    subdirs = server_subdirs
-    if engine_install:
-        print "INSTALLING ENGINE"
-        subdirs = engine_subdirs
 
     for d in subdirs:
         app_dir = path('.') / d

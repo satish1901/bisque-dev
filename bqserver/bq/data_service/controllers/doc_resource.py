@@ -77,7 +77,8 @@ from formats import find_formatter
 from bq.data_service.model import BQStoreManager
 
 
-xmldb = config.get ('bisque.dburl', 'sqlxml://memory')
+#xmldb = config.get ('bisque.dburl', 'sqlxml://memory')
+xmldb = config.get ('bisque.dburl', 'dbxml://docs.dbx')
 
 
 class XMLDocumentResource(controllers.RestController):
@@ -87,7 +88,16 @@ class XMLDocumentResource(controllers.RestController):
 
     def __init__(self):
         self.store = BQStoreManager.get_manager(xmldb)
-    
+
+    @expose(content_type="text/xml")
+    def get_all(self, *kw):
+        log.debug ("GET_ALL")
+        docs = self.store.dir()
+        doc = etree.Element ('resource')
+        for d in docs:
+            etree.SubElement (doc, 'doc', name=d )
+        return etree.tostring(doc)
+
     @expose(content_type="text/xml")
     def post(self, *path, **kw):
         docid = "/".join ([''] + list (path))
@@ -113,6 +123,11 @@ class XMLDocumentResource(controllers.RestController):
         progressive = kw.pop('progressive', False)
 
         doc, elem = self.store.fetch (docid)
+
+        if doc is None:
+            elem = etree.Element('resource')
+
+        log.debug ("doc %s # %s " % (doc, elem))
             
         return etree.tostring(elem)
     
