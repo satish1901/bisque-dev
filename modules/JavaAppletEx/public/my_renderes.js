@@ -39,12 +39,15 @@ Ext.define('BQ.javaappletex.AppletRunner', {
         var par = new Ext.Template('<param name="{name}" value="{value}">');
         var ii = undefined;
         for (var i=0; ii=inputs[i]; ++i) {
-            params += par.apply({name: ii.name, value: ii.value});
+            if (ii.type !== 'system-input')
+                params += par.apply({name: ii.name, value: ii.value});
         }
         var html = new Ext.Template('<object type="application/x-java-applet" height="100%" width="100%" >\
             <param name="code" value="Sample" />\
             <param name="archive" value="Sample.jar" />\
             <param name="java_arguments" value="-Djnlp.packEnabled=true"/>\
+            <param name="scriptable" value="true" />\
+            <param name="mayscript" value="true" />\
             <param name="mex" value="{url}">\
             {params}\
             Applet failed to run.  No Java plug-in was found.\
