@@ -55,7 +55,7 @@ options(
         ),
 )
 
-all_subdirs=['bqdev', 'bqcore', 'bqserver', 'bqengine', 'bqfeature' ]
+feature_subdirs=['bqfeature' ]
 server_subdirs=['bqdev', 'bqcore', 'bqserver', 'bqengine' ]
 engine_subdirs=['bqdev', 'bqcore', 'bqengine' ]
 
@@ -97,24 +97,27 @@ import os
 def setup(options):
     'install local version and setup local packages'
 
-    engine_install = (len(options.args) or None) and options.args[0] == 'engine'
-    if engine_install is None:
-        installing =  getanswer("install [server, engine or all", "engine", 
+    installing = None
+    if len(options.args) :
+        installing = options.args[0]
+
+    if installing not in ('engine', 'server', 'features'):
+        installing =  getanswer("install [server, engine or features", "engine", 
 """server installs component to run a basic bisque server
 engine will provide just enough components to run a module engine,
 all will install everything including the feature service""")
 
-    if installing == 'engine':
-        engine_install = True
-        subdirs = engine_subdirs
-    elif installing == 'server':
-        subdirs = server_subdirs
-    else:
-        subdirs = all_subdirs
+    if installing not in ('engine', 'server', 'features'):
+        print "Must choose 'engine', 'server', or 'features'"
+        sys.exit(1)
+
+    subdirs  = dict (engine=engine_subdirs,
+                     server = server_subdirs,
+                     features = feature_subdirs) [ installing]
     print "installing all components from  %s" % subdirs
 
 
-    if not engine_install:
+    if installing != "engine":
         # Hack as numpy fails to install when in setup.py dependencies
         sh('easy_install numpy==1.6.0')
         sh('easy_install numpy==1.6.0')
@@ -142,7 +145,7 @@ all will install everything including the feature service""")
     #if getanswer('Run bq-admin setup' , 'Y', 
     #             "Run the setup (appropiate for this install") == 'Y':
     #    sh ('bq-admin setup %s' % ( 'engine' if engine_install else '' ))
-    print  'now run bq-admin setup %s' % ( 'engine' if engine_install else '' )
+    print  'now run bq-admin setup %s' % ( 'engine' if installing =='engine' else '' )
 
 @task
 @needs('generate_setup', 'minilib', 'setuptools.command.sdist')
