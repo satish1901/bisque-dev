@@ -337,7 +337,7 @@ For details on notation and configuration:
     </tag>
     
     <tag name="display_options" >
-       <tag name="group" value="Generic" />
+       <tag name="group" value="Examples" />
     </tag>
 
     <!--  Interface     
