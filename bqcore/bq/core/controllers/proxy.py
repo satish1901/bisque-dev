@@ -9,7 +9,7 @@ from tg import expose, flash, require, url, request, response, redirect, config
 from lxml import etree
 from bq.core.lib.base import BaseController
 from bq.exceptions import ConfigurationError, IllegalOperation, RequestError
-from bq.util.http import http_client 
+from bq.util.http import http_client
 
 
 log = logging.getLogger("bq.proxy")
@@ -42,10 +42,10 @@ class ProxyController (BaseController):
                                                body  = request.body,
                                                headers = request.headers)
 
-        
+
         response.content_type = header['content-type']
-        if not headers['status'].startswith ('200'):
-            log.debug ("request result %s \n %s" % (headers, content))
+        if not header['status'].startswith ('200'):
+            log.debug ("request result %s \n %s" % (header, content))
             return ""
         return content
 
@@ -84,9 +84,9 @@ class service_proxy (object):
                 kwargs[largs.pop(0)] = arg
         else:
             httpmethod = "POST"
-            
+
         url = urljoin(self.proxy_url, method + '?' + urlencode(kwargs))
-        
+
         #log.debug('%s request to %s with %s' % (httpmethod, url, body[:80]+".."+body[len(body)-80:] if body is not None else None))
         #log.debug('%s request to %s with %s ...' % (httpmethod, url, body))
         try:
@@ -139,9 +139,9 @@ def etree_wrap (f):
             return tuple (encode_etrees (result))
         else:
             return encode_etrees (result)
-        
+
     return wrapper
-        
+
 
 def exposexml(func):
     @expose(content_type="application/xml")
@@ -162,9 +162,9 @@ def exposexml(func):
 
 
 
-            
-        
-        
+
+
+
 
 #from bisquik.util import urlnorm
 import urlparse
@@ -172,7 +172,7 @@ def fullpathurl(url):
     parts = list(urlparse.urlparse (url))
     parts [2] = parts[2] if parts[2].endswith('/') else parts[2]+'/'
     return urlparse.urlunparse(parts)
-    
+
 #active_proxy = config.get('bisquik.proxy.on')
 #bisquik_root = fullpathurl(config.get('bisquik.root', ''))
 #external_url = fullpathurl(config.get('base_url_filter.base_url', ''))
@@ -200,7 +200,7 @@ def fullpathurl(url):
 #                 log.debug ("BODY=%s " % body)
 #                 raise
 
-#     @classmethod 
+#     @classmethod
 #     def for_output(cls, body):
 #         if cls.active_proxy:
 #             return body.replace (cls.bisquik_root, cls.external_url)

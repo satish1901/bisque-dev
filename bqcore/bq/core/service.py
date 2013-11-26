@@ -59,13 +59,13 @@ import posixpath
 import pkg_resources
 
 from urllib import urlencode
-import urlparse 
+import urlparse
 from tg import config, expose
 from bq.core.lib.base import BaseController
 
 log = logging.getLogger ("bq.service")
 
-__all__=["ServiceController", "find_service", "load_services", "get_all_services" ] 
+__all__=["ServiceController", "find_service", "load_services", "get_all_services" ]
 
 class ServiceDirectory(object):
     """Specialized dict of service_type -> to bq.service"""
@@ -77,7 +77,7 @@ class ServiceDirectory(object):
             self.name  = None
             self.controller = None
             self.instances = []
-            
+
     def __init__(self):
         # Services is a hash of service_type : Entry
         self.services = {}
@@ -88,7 +88,7 @@ class ServiceDirectory(object):
                 yield i
     def _get_entry (self, service_type):
         return self.services.setdefault (service_type, ServiceDirectory.Entry())
-    
+
     def register_service (self, name, service, service_type = None):
         """Register a new service (type)"""
         if service_type is None:
@@ -107,7 +107,7 @@ class ServiceDirectory(object):
         """Find the service class by service type"""
         e = self._get_entry (service_type)
         return  e.controller
-    
+
     def has_service(self, service_type = None, service_uri = None):
         """Check the existance of a service type and/or service url"""
         r = []
@@ -146,7 +146,7 @@ def load_services ( wanted = None):
             service = x.load()
             log.debug ('found %s' % (service.__file__))
             service_registry.register_service (x.name, service)
-                
+
         except ImportError, e:
             log.exception ("Failed to load bisque extension: %s" % x)
         except Exception, e:
@@ -176,8 +176,8 @@ def mount_services (root, enabled = None, disabled = None):
         log.warn ("Following service were not found: %s" % missing)
     return pairs
 
-        
-    
+
+
 def start_services (root, enabled = None, disabled=None):
     for ty, entry in service_registry.get_services().items():
         if (not enabled or ty in enabled) and ty not in disabled :
@@ -223,7 +223,7 @@ class ServiceMixin(object):
         before the first request is delivered
         """
         pass
-    
+
 
     def get_uri(self):
         return self.baseuri
@@ -238,7 +238,7 @@ class ServiceMixin(object):
         self.makeurl ("/view", option='deep', resource="http://aa.com" )
         http://baseuri/view?option=deep&resource=http%2f%fc%fcaa.com
         """
-        
+
         return urljoin (self.baseuri, path, **kw)
     def __str__(self):
         return self.localuri
@@ -250,7 +250,7 @@ class ServiceMixin(object):
     def get_static (self):
         pass
     staticuri = property (get_static)
-    
+
 
     def servicelist(self):
         entries = []
@@ -268,4 +268,4 @@ class ServiceMixin(object):
 class ServiceController(BaseController, ServiceMixin):
     def __init__(self, uri):
         ServiceMixin.__init__(self, uri)
-    
+

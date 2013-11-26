@@ -11,32 +11,32 @@ from repoze.who.interfaces import IRequestClassifier, IChallengeDecider
 
 log = logging.getLogger('bq.auth.cas')
 
-def make_plugin(cas_base_url, 
+def make_plugin(cas_base_url,
                 saml_validate = None,
                 login_form="/login",
-                login_path="/login_handler", 
-                logout_path="/logout_handler", 
+                login_path="/login_handler",
+                logout_path="/logout_handler",
                 post_logout = "/post_logout",
                 remember_name="auth_tkt",
                 auto_register = None,
                 ):
     return CASPlugin (cas_base_url,  saml_validate,
-                      login_form, login_path, 
-                      logout_path, post_logout, 
+                      login_form, login_path,
+                      logout_path, post_logout,
                       remember_name, auto_register)
 
 
 class CASPlugin(object):
     implements(IChallenger, IIdentifier, IAuthenticator)
 
-    def __init__(self, 
+    def __init__(self,
                  cas_base_url,
                  saml_validate,
                  login_form,
                  login_path,
                  logout_path,
                  post_logout,
-                 rememberer_name, 
+                 rememberer_name,
                  auto_register):
         if cas_base_url[-1] == '/':
             cas_base_url = cas_base_url[0:-1]
@@ -55,7 +55,7 @@ class CASPlugin(object):
         self.auto_register = auto_register
         self.http = httplib2.Http(disable_ssl_certificate_validation=True)
 
-    
+
     # IChallenger
     def challenge(self, environ, status, app_headers, forget_headers):
         log.debug ('cas:challenge')
@@ -72,7 +72,7 @@ class CASPlugin(object):
         #     else:
         #         # Redirect to the referrer URL.
         #         script_name = environ.get('SCRIPT_NAME', '')
-        #         destination = came_from or script_name or '/' 
+        #         destination = came_from or script_name or '/'
         # else:
         if login_type == 'cas':
             log.debug ('CAS challenge redirect to %s' % self.cas_login_url)
@@ -99,7 +99,7 @@ class CASPlugin(object):
         log.debug("cas:forget")
         rememberer = self._get_rememberer(environ)
         return rememberer.forget(environ, identity)
-    
+
     # IIdentifier
     def identify(self, environ):
         request = Request(environ)
@@ -123,7 +123,7 @@ class CASPlugin(object):
                 #app = HTTPFound(location = destination, headers=headers)
                 #environ['repoze.who.application'] = app
                 # The above doesn't work
-                
+
                 for a,v in self.forget(environ,{}):
                     res.headers.add(a,v)
                 res.status = 302
@@ -219,7 +219,7 @@ class CASPlugin(object):
     def _auto_register(self, environ, identity, user_id):
         registration = environ['repoze.who.plugins'].get(self.auto_register)
         log.debug('looking for %s found %s ' % (self.auto_register, registration))
-        
+
         if registration:
             user_name = identity["repoze.who.plugins.cas.user_id"]
             name  = user_name

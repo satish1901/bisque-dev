@@ -1,6 +1,8 @@
+
 #from turbogears import identity
 #from turbogears.util import request_available
 
+#pylint:disable=E0611
 from repoze.what.predicates import in_group
 from tg import request, session
 import logging
@@ -29,11 +31,11 @@ def anonymous():
         return request.identity.get('repoze.who.userid') is None
     except (TypeError, AttributeError):
         return True
-    
+
 def not_anonymous():
     return not anonymous()
 
-    
+
 
 # NOTE:
 # BisqueIdentity is an object even though the methods could be imlemented as classmethod
@@ -56,15 +58,7 @@ class BisqueIdentity(object):
             return None
 
         return request.identity.get ('user')
-        # user = request.identity.get ('bisque.user')
-        # if user:
-        #     return user
-        # user_name = self.user_name
-        # if user_name is None:
-        #     return None
-        # user = DBSession.query (User).filter_by(user_name = user_name).first()
-        # request.identity['bisque.user'] = user
-        return user
+
     #user = property(get_user)
 
     def _get_bquser(self):
@@ -120,7 +114,7 @@ def get_admin_id():
 def is_admin ():
     'return whether current user has admin priveledges'
     return in_group('admins').is_met(request.environ) or in_group('admin').is_met(request.environ)
-    
+
 
 #     if request_available():
 #         return identity.not_anonymous()
@@ -128,11 +122,11 @@ def is_admin ():
 
 def get_user_id():
     bquser = current._get_bquser()
-    return bquser and bquser.id 
+    return bquser and bquser.id
 
 def get_username():
     return current.get_username()
-    
+
 def get_user():
     """Get the current user object"""
     return current._get_bquser()

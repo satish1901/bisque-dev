@@ -52,7 +52,7 @@ class create(object):
         while not self.name:
             self.name = raw_input("Enter bisque project [egg] name: ")
 
-        # The package name to be used internally 
+        # The package name to be used internally
         while not self.package:
             package = self.name.lower()
             package = beginning_letter.sub("", package)
@@ -70,7 +70,7 @@ class create(object):
                 self.mount = mount
 
 
-        
+
         command = create_distro.CreateDistroCommand("create")
         for template in self.templates.split(" "):
             self.cmd_args.append("--template=%s" % template)
@@ -78,7 +78,7 @@ class create(object):
         # Variables
         self.cmd_args.append("package=%s" % self.package)
         self.cmd_args.append("mount=%s" % self.mount)
-        
+
         command.run(self.cmd_args)
 
 class createService(create):
@@ -96,14 +96,14 @@ class createCoreService(create):
             print "Must be run in the top level Bisque directory"
             sys.exit(1)
         super(createCoreService, self).run()
-                
+
 
 class createModule(create):
     desc = "Create a blank bisque analysis module"
     templates = "bisque_module"
     package = None
     name = None
-    
+
 
 
 

@@ -27,7 +27,7 @@ def parse_args():
 #    parser.add_argument("conf_file", help="configuration to use")
     parser = OptionParser(description=__doc__)
     #parser.add_option("config", help="configuration to use", default="development.ini")
-    
+
     return parser.parse_args()
 
 
@@ -38,14 +38,14 @@ def main():
     opts, args = parse_args()
 
     if len(args) == 0:
-        args = [ 'config/site.cfg' ] 
+        args = [ 'config/site.cfg' ]
     load_config(args[0])
 
     root = tg.config.get('bisque.root', None)
     log.info ("using site.cfg for bisque.root=%s" % root)
     if root[-1] != '/':
         root = root + '/'
-        
+
 
     from bq.module_service.controllers.mexrunner import MexRunner
 
@@ -55,7 +55,7 @@ def main():
 
 
     qwait = int(tg.config.get('bisque.module_service.queue_wait', 5))
-    
+
     time.sleep(10)
     while True:
         try:

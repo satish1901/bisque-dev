@@ -50,12 +50,8 @@ DESCRIPTION
 ===========
 
 """
-import traceback
-
 class BQException(Exception):
     "Base Bisquik Exception"
-    
-
 
 class IllegalOperation(BQException):
     pass
@@ -82,7 +78,7 @@ class EngineError(BQException):
         if self.exc:
             msg.append('exception = %s' % self.exc)
         return '\n'.join(msg)
-        
+
 
 class BadValue(BQException):
     '''The Module Engine exception'''
@@ -90,7 +86,7 @@ class BadValue(BQException):
         super(BadValue, self).__init__(msg)
         self.obj = obj
     def __str__ (self):
-        return "BadValue("+str(type(self.obj)) + ")" 
+        return "BadValue("+str(type(self.obj)) + ")"
 
 
 class DuplicateFile(BQException):

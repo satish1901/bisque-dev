@@ -42,4 +42,4 @@ def setup_schema(command, conf, vars):
     alembic_cfg = Config(config_path ("alembic.ini"))
     command.stamp(alembic_cfg, "head")
     transaction.commit()
-    
+

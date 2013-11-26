@@ -23,7 +23,7 @@ class TestRootController(TestController):
         msg = 'Welcome'
         response = self.app.get('/', status=302)
         response = response.follow(status=200)
-                                     
+
         # You can look for specific strings:
         assert_true(msg in response)
 

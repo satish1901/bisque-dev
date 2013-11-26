@@ -83,7 +83,7 @@ usage = """
 
 def error (msg):
     print >>sys.stderr, msg
-    sys.exit(1)
+    
 
 class module_admin(object):
     desc = 'module options'
@@ -151,7 +151,7 @@ class module_admin(object):
         engine_path = norm(engine_path + '/') 
         modules = self.get_xml( url = urlparse.urljoin(engine_path, '_services'))
         if modules is None:
-            error ('Cannot read modules from engine: %s' % engine_path)
+            return error ('Cannot read modules from engine: %s' % engine_path)
         return  [ m.get('value') for m in modules ] 
 
     def register_one(self, module_path):
@@ -227,12 +227,10 @@ class module_admin(object):
         print "UnRegistered"
         
     def list_engine(self):
-        if self.options.all:
-            module_paths = self.get_modules(self.engine_path)
-        else:
-            module_paths = [ self.engine_path ] 
-
-        for module in module_paths:
+        module_paths = self.get_modules(self.engine_path)
+        if module_paths is None:
+            module_paths = self.get_modules(self.engine_path + '/engine_service/')
+        for module in module_paths or []:
             print module
         
 

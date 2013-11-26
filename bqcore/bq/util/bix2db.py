@@ -340,16 +340,16 @@ class BIXImporter(object):
         log.debug('bix2db meta:' + str(meta))
         return meta
 
-    @classmethod
-    def reload_log(logfile = BIXLOG):
-        # Rename original files and re-execute import
-        biximport = BIXImporter('./', reimport = True)
-        for line in open(logfile):
-            exec ('file_map = ' + line)
-            for orig, local in file_map:
-                print orig, local
-                shutils.move (local, orig)
-            biximport.process_bix(file_map['BIX'])
+    # @classmethod
+    # def reload_log(logfile = BIXLOG):
+    #     # Rename original files and re-execute import
+    #     biximport = BIXImporter('./', reimport = True)
+    #     for line in open(logfile):
+    #         exec ('file_map = ' + line)
+    #         for orig, local in file_map:
+    #             print orig, local
+    #             shutils.move (local, orig)
+    #         biximport.process_bix(file_map['BIX'])
 
 
 

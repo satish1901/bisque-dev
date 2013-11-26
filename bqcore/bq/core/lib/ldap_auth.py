@@ -15,7 +15,7 @@ def retry(fn, args = (), kw = {}, count=2, exc=Exception, recover = int):
             if tries == count:
                 raise
             recover(*args, **kw)
-                
+
 class LDAPAuthenticatorPluginExt(LDAPSearchAuthenticatorPlugin):
     """ Special Bisque LDAP authenticator:
 
@@ -30,7 +30,7 @@ class LDAPAuthenticatorPluginExt(LDAPSearchAuthenticatorPlugin):
 
 
 
-    def __init__(self, ldap_connection, base_dn, 
+    def __init__(self, ldap_connection, base_dn,
                  auto_register = None,
                  attributes=None,
                  filterstr='(objectClass=*)',
@@ -46,7 +46,7 @@ class LDAPAuthenticatorPluginExt(LDAPSearchAuthenticatorPlugin):
         self.attributes = attributes
         self.filterstr = filterstr
         self.auto_register = auto_register
-        
+
         # The following option was need to login to certain ldaps servers
         # http://stackoverflow.com/questions/7716562/pythonldapssl
         ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
@@ -56,12 +56,12 @@ class LDAPAuthenticatorPluginExt(LDAPSearchAuthenticatorPlugin):
     def _add_metadata(self, environ, identity):
         """
         Add metadata about the authenticated user to the identity.
-        
+
         It modifies the C{identity} dictionary to add the metadata.
-        
+
         @param environ: The WSGI environment.
         @param identity: The repoze.who's identity dictionary.
-        
+
         """
         # Search arguments:
         dnmatch = self.dnrx.match(identity.get('userdata',''))
@@ -92,7 +92,7 @@ class LDAPAuthenticatorPluginExt(LDAPSearchAuthenticatorPlugin):
 
 
     def _auto_register(self, environ, identity):
-        """ Autoregister the user by passing looking up user metadata 
+        """ Autoregister the user by passing looking up user metadata
         and passing to the autoregister plugin if available.
         """
         log  = environ.get('repoze.who.logger', bqlog)
@@ -112,15 +112,15 @@ class LDAPAuthenticatorPluginExt(LDAPSearchAuthenticatorPlugin):
         r = identity['login']
         if register and userdata:
             log.debug('metadata identity=%s' % userdata)
-            retry (self._add_metadata, args = (environ, identity), 
-                   recover=self.reconnect, 
+            retry (self._add_metadata, args = (environ, identity),
+                   recover=self.reconnect,
                    exc = ldap.LDAPError)
             log.debug ('LDAP metadata %s' % r)
             info = dict((attr, identity[attr]) for attr in self.attributes)
             info .update ( { 'display_name' : info.get('cn', [r])[0],
                              'email_address' : info.get('mail', [None])[0],
                              'identifier'    : 'ldap' } )
-                             
+
             r = register.register_user (r, info)
             #identity['repoze.who.userid'] = r
         return r
@@ -136,11 +136,11 @@ class LDAPAuthenticatorPluginExt(LDAPSearchAuthenticatorPlugin):
             environ, identity)
 
     def authenticate(self, environ, identity):
-        """ Authenticate the user and password against the LDAP 
+        """ Authenticate the user and password against the LDAP
         server if available
 
         Extending the repoze.who.plugins.ldap plugin to make it much
-        more secure. 
+        more secure.
         """
         log  = environ.get('repoze.who.logger', bqlog)
         log.debug ("LDAP:authenticate %s" % identity)
@@ -154,8 +154,8 @@ class LDAPAuthenticatorPluginExt(LDAPSearchAuthenticatorPlugin):
         #except (KeyError, TypeError, ValueError):
         #    return None
 
-        res = retry(self._authenticate, args = (environ, identity), 
-                    recover = self.reconnect, 
+        res = retry(self._authenticate, args = (environ, identity),
+                    recover = self.reconnect,
                     exc = ldap.LDAPError)
 
         if self.auto_register is not None and res is not None:

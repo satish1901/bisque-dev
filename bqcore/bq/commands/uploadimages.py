@@ -3,7 +3,7 @@ import os, sys
 
 import urlparse
 from optparse import OptionParser
-from bq.util import http 
+from bq.util import http
 import logging
 
 logging.basicConfig(level = logging.WARN)
@@ -29,11 +29,11 @@ except:
 DESTINATION = "/import/transfer"
 
 def upload(dest, filename, userpass, tags=None):
-    files = [] 
+    files = []
     if tags:
         files.append( ('file_resource', tags ) )
     files.append( ("file",  open(filename, "rb")) )
-        
+
     headers, content = http.post_files (dest, files, userpass = userpass)
     if headers['status'] != '200':
         print "error while copying %s: Server response %s" % (filename, headers['status'])
@@ -41,7 +41,7 @@ def upload(dest, filename, userpass, tags=None):
         open(filename + "-transfer.err",'wb').write(content)
         return
     return content
-    
+
 
 def main():
     usage="usage %prog [options] f1 [f2 f2 d1 ] bisque-url"
@@ -68,9 +68,9 @@ def main():
     dest =  urlparse.urlunsplit(dest_tuple)
     if options.debug:
         logging.getLogger().setLevel(logging.DEBUG)
-        
 
-    # Prepare username 
+
+    # Prepare username
     if options.user is None:
         parser.error ("Need username:password")
     userpass = tuple(options.user.split (':'))
@@ -95,7 +95,7 @@ def main():
             #tags = StringIO(et.tostring(resource))
             #tags.name = "stringio"
             tags = et.tostring(resource)
-        
+
 
     #Upload copied files
     for p in args:
@@ -113,8 +113,8 @@ def main():
                 response = upload(dest, path, userpass, tags)
                 if options.verbose:
                     print response
-            
-            
+
+
 
 
 if __name__=="__main__":

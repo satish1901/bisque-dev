@@ -3,7 +3,7 @@ from migrate import *
 from sqlalchemy.orm import relation, class_mapper, object_mapper, validates, backref, synonym
 from sqlalchemy.orm import scoped_session, sessionmaker, mapper as sa_mapper
 from zope.sqlalchemy import ZopeTransactionExtension
-import transaction 
+import transaction
 
 maker = sessionmaker(autoflush=True, autocommit=False,
                      extension=ZopeTransactionExtension())
@@ -46,7 +46,7 @@ def maptables(meta):
                       backref = backref('resource', enable_typechecks=False, remote_side=[taggable.c.document_id])),
 
     'children' : relation(Taggable, lazy=True, cascade="all, delete-orphan",
-                          enable_typechecks = False, 
+                          enable_typechecks = False,
                           backref = backref('parent', enable_typechecks=False, remote_side = [ taggable.c.id]),
                           primaryjoin = (taggable.c.id == taggable.c.resource_parent_id)),
     'values' : relation(Value,  lazy=True, cascade="all, delete-orphan",
@@ -67,12 +67,12 @@ def maptables(meta):
                                         taggable.c.resource_type == 'tag')),
 
 
-    'docnodes': relation(Taggable, lazy=True, 
+    'docnodes': relation(Taggable, lazy=True,
                          cascade = "all, delete-orphan",
-                         enable_typechecks = False, 
+                         enable_typechecks = False,
                          post_update=True,
                          primaryjoin = (taggable.c.id == taggable.c.document_id),
-                         backref = backref('document', post_update=True, 
+                         backref = backref('document', post_update=True,
                                            enable_typechecks=False, remote_side=[taggable.c.id]),
                          )
     }
@@ -110,7 +110,7 @@ def upgrade(migrate_engine):
 
     transaction.commit()
 
-    
+
 
 
 

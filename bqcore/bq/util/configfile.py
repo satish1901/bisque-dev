@@ -15,8 +15,8 @@ line_re = re.compile (r'#(?=(?:[^"]*"[^"]*")*[^"]*$).*', re.MULTILINE)
 GLOBAL_SECTION="__GLOBAL__"
 
 class peekable(object):
-    def __init__(self, iter):
-        self.iter = iter
+    def __init__(self, it):
+        self.iter = it
         self.buffer = []
     def __iter__(self):
         return self
@@ -55,14 +55,14 @@ class ConfigFile(object):
     Parses simple config file (.ini style) and maintains
     ordered lines for editing.
     """
-    
+
     def __init__(self, config = None, **kw):
         """Create and editor and read the option config
 
         @type config: string or file-like object
         @param config: The name of the file or a file-like object
         """
-        # Keep the sections ordered 
+        # Keep the sections ordered
         self.section_order = [ GLOBAL_SECTION ]
         # Each section in the hash is a list of single lines..
         self.sections = { GLOBAL_SECTION : [] }
@@ -72,7 +72,7 @@ class ConfigFile(object):
         if hasattr(config, 'read'):
             self.read (config)
             config.close()
-        
+
     def read(self, f):
         """Reads .ini file, remembering the section order"""
         section = self.sections.get (GLOBAL_SECTION)
@@ -84,8 +84,8 @@ class ConfigFile(object):
                 self.section_order.append (name)
                 continue
             section.append (l)
-                
-        
+
+
     def edit_config (self, section, key, line, env = {}, append=True):
         """Edit a single config file entry
 
@@ -101,7 +101,7 @@ class ConfigFile(object):
 
         if not section:
             section = GLOBAL_SECTION
-        
+
         # Find the sections
         s = self.sections.get (section, None)
         if s is None:
@@ -110,7 +110,7 @@ class ConfigFile(object):
                 self.section_order.append(section)
                 self.sections[section] = [ line ]
             return
-        
+
         if key is None:
             self.sections[section].append(line)
             return
@@ -147,7 +147,7 @@ class ConfigFile(object):
         items = dict(dic)
         lines = self.get (section)
         for l in lines:
-            k,p,ov = [ x.strip() for x in l.partition('=') ] 
+            k,p,ov = [ x.strip() for x in l.partition('=') ]
             if p and k in items:
                 rv = string.Template(ov).safe_substitute(items)
                 nv = items.pop(k)
@@ -176,13 +176,13 @@ class ConfigFile(object):
         s =dict([(x[0].strip(), x[2].strip(' \'\"'))
                  for x in [a.partition('=') for a in s]])
         if  key is None:
-            return s 
-        
+            return s
+
         return s.get (key, None)
 
     def section_names(self):
         return list(self.section_order)
-    
+
     def update_values (self, section, dic):
         """Given a dict of known keys, extract from the
         given section the associated values
@@ -190,7 +190,7 @@ class ConfigFile(object):
         for key in dic.keys():
             v = self.get( section, key)
             #print 'key: [%s] value: [%s]'%(str(key), str(v))
-            if v is not None: 
+            if v is not None:
                 dic[key] = v
         return dic
 
@@ -199,7 +199,7 @@ class ConfigFile(object):
         """Write the .ini file out in section order
 
         @type f: a string or file-like object
-        @param f: Name or file to write to 
+        @param f: Name or file to write to
         """
         if isinstance(f, basestring):
             f = open(f, 'wb')
@@ -208,7 +208,7 @@ class ConfigFile(object):
                 f.write ("[%s]\n" % section)
             s = self.sections[section]
             s = "\n".join ( [ l.strip('\n') for l in s ] )
-            #s = "\n".join ( s ) 
+            #s = "\n".join ( s )
             f.write (s)
             f.write ("\n")
 
@@ -238,18 +238,18 @@ options1 = 2
 
 def test_edit():
     f = StringIO.StringIO (configfile)
-    c = EditConfig()
+    c = ConfigFile()
     c.read (f)
     print "------ read i the following ----- "
     print c
     print "------ edit the following ----- "
-    c.edit_config ('advanced', 'options1', 'options1 = 1', {}) 
+    c.edit_config ('advanced', 'options1', 'options1 = 1', {})
     print c
 
 
     print "------ edit the following ----- "
-    c.edit_config ('advanced', 'options3', 'options3 = 2', {}) 
-    c.edit_config ('test', 'options1', 'options1 = 2', {}) 
+    c.edit_config ('advanced', 'options3', 'options3 = 2', {})
+    c.edit_config ('test', 'options1', 'options1 = 2', {})
     print c
 
 

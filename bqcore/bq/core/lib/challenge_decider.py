@@ -52,7 +52,7 @@ def bisque_challenge_decider(environ, status, headers):
         # and we do the challenge
         return True
     return False
-    
+
 zope.interface.directlyProvides(bisque_challenge_decider, IChallengeDecider)
 
 

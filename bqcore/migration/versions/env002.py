@@ -4,8 +4,8 @@ from zope.sqlalchemy import ZopeTransactionExtension
 from sqlalchemy.orm import scoped_session, sessionmaker, mapper as sa_mapper
 from bq.util.configfile import ConfigFile
 
-tc = ConfigFile()      
-if os.path.exists ('config/site.cfg'): 
+tc = ConfigFile()
+if os.path.exists ('config/site.cfg'):
     tc.read(open('config/site.cfg'))
 db = tc.get('app:main', 'sqlalchemy.url')
 if db is None:

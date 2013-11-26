@@ -1,5 +1,5 @@
 #
-# Simple test of tostring iterator 
+# Simple test of tostring iterator
 
 from lxml import etree
 
@@ -21,7 +21,7 @@ def head(node):
     if len(node):
         return "<%s%s>" % (node.tag, attributes)
     return "<%s%s/>" % (node.tag, attributes)
-        
+
 def tail(node):
     return "<%s/>" % node.tag
 
@@ -34,4 +34,4 @@ if __name__ == '__main__':
 
 
 
-                    
+

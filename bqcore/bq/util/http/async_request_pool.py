@@ -54,19 +54,17 @@ SYNOPSIS
     for url in sites:
         request(url, callback = mycallback)
 
-        
+
 
 DESCRIPTION
 ===========
 
 """
 
-import threading,time
-import Queue
-import time
+import threading
 
-from thread_pool import  ThreadPool, WorkRequest, NoResultsPending
-import httplib2 
+from .thread_pool import  ThreadPool, WorkRequest, NoResultsPending
+import httplib2
 
 
 main_pool = None
@@ -80,7 +78,7 @@ class HTTPAsyncRequest(WorkRequest):
             args = [ uri ],
             kwds = { 'method': method, 'body':body, 'headers':headers },
             callback = callback)
-            
+
 class HTTPThreadPool (threading.Thread):
     """Maintain a thread pool"""
     def __init__(self, num_workers = 3, **kw):
@@ -90,10 +88,10 @@ class HTTPThreadPool (threading.Thread):
         self.stopping =False
         self.pool =  ThreadPool( num_workers, **kw)
         self.start()
-        
+
     def putRequest(self, r):
         return self.pool.putRequest(r)
-            
+
     def run(self):
         while True:
             if  self.stopping:
@@ -139,13 +137,13 @@ def stop_pool_handler():
 
 def isrunning():
     return main_pool != None
-    
+
 if __name__ == "__main__":
 
     client = httplib2.Http(disable_ssl_certificate_validation=True)
 
     start_pool_handler()
-    
+
     def mycallback(request, result):
         headers, content = result
         print request, " ==> " , headers, len(content)

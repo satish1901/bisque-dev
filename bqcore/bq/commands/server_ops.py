@@ -1,17 +1,15 @@
 #!/usr/bin/python
 import os, sys, time
 from subprocess import Popen, call
-import pkg_resources
-import getopt
 from urlparse import urlparse
 from ConfigParser import SafeConfigParser
 import shlex
 
-from bq.util.commands import asbool, find_site_cfg
+from bq.util.commands import find_site_cfg
 
 #from bq.commands.server_ops import root
 
-PID_TEMPL = "bisque_%s.pid" 
+PID_TEMPL = "bisque_%s.pid"
 LOG_TEMPL = 'bisque_%s.log'
 
 RUNNER_CMD = ['mexrunner']
@@ -21,6 +19,7 @@ UWSGI_ENGINE_CFG = 'uwsgi_engine.cfg.default'
 UWSGI_CLIENT_CFG = 'uwsgi_client.cfg.default'
 
 if os.name == 'nt':
+    #pylint:diable=F0401
     import win32api, win32con
     def kill_process(pid):
         try:
@@ -34,7 +33,7 @@ if os.name == 'nt':
         #import subprocess
         #subprocess.call(['taskkill', '/PID', str(pid), '/F'])
 
-else:        
+else:
     import signal
     from bq.util.wait_pid import wait_pid
     def kill_process(pid):
@@ -46,7 +45,7 @@ else:
         except OSError, e:
             print "kill process %s failed with %s" % (pid, e)
         return False
-            
+
 
 #####################################################################
 # utils
@@ -59,7 +58,7 @@ def readhostconfig (site_cfg):
     root = config.get ('app:main', 'bisque.root')
     top_dir = config.get ('app:main', 'bisque.paths.root')
     service_items = config.items ('servers')
-    hosts = [ x.strip() for x in config.get  ('servers', 'servers').split(',') ] 
+    hosts = [ x.strip() for x in config.get  ('servers', 'servers').split(',') ]
 
     #print "SECTION", config.has_section('servers')
 
@@ -132,12 +131,12 @@ def check_running (pid_file):
             return True
         else:
             return False
-        
+
 def paster_command(command, options, cfgopt, processes, args):
     def verbose(msg):
         if options.verbose:
             print msg
-      
+
     paster_verbose = '-v' if options.verbose else '-q'
     msg = { 'start': 'starting', 'stop':'stopping', 'restart':'restarting'}[command]
     verbose ("%s bisque on %s .. please wait" % (msg, cfgopt['port']))
@@ -164,16 +163,16 @@ def paster_command(command, options, cfgopt, processes, args):
         processes.append(Popen(server_cmd))
     return processes
 
-def uwsgi_command(command, cfgopt, processes, options, default_cfg_file = None): 
+def uwsgi_command(command, cfgopt, processes, options, default_cfg_file = None):
     def verbose(msg):
         if options.verbose:
             print msg
-            
+
     if command is 'stop':
         pidfile = cfgopt['pidfile']
         uwsgi_cmd = ['uwsgi', '--stop', pidfile]
         #processes.append(Popen(uwsgi_cmd,shell=True,stdout=sys.stdout))
-        
+
         verbose('Executing: ' + ' '.join(uwsgi_cmd))
         if  call(uwsgi_cmd) != 0:
             print "Stop failed .. process already dead?"
@@ -187,7 +186,7 @@ def uwsgi_command(command, cfgopt, processes, options, default_cfg_file = None):
         f = open(final_cfg, 'w')
         f.write(t.safe_substitute(cfgopt))
         f.close()
-        
+
         uwsgi_cmd = ['uwsgi', '--ini-paste', final_cfg]
 
         #if cfgopt['http_serv'] == 'true':
@@ -223,7 +222,7 @@ def logger_command(command, cfgopt, processes):
             os.remove (pidfile)
         else:
             print "No pid file for logging server"
-        
+
 
 def operation(command, options, *args):
     """Run a multi-server command to start several bisque jobs
@@ -259,7 +258,7 @@ def operation(command, options, *args):
 
         backend = config.get('backend', None)
         verbose("using backend: " + str(backend))
-        
+
         if backend == None:
             verbose("Backend not configured. defaulting to paster")
             backend = 'paster'
@@ -322,7 +321,7 @@ def operation(command, options, *args):
                         def_cfg = UWSGI_CLIENT_CFG
                     if not find_site_cfg(def_cfg):
                         print ("Cannot find config file %s" % def_cfg)
-                        return 
+                        return
                     processes = uwsgi_command('start', cfgopt, processes, options, def_cfg)
                 else:
                     prepare_log (cfgopt['logfile'])

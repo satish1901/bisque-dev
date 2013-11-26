@@ -9,7 +9,7 @@ def elem_to_pesterfish(elem):
     """
     turns an elementtree-compatible object into a pesterfish dictionary
     (not json).
-    
+
     """
     d=dict(tag=elem.tag)
     if elem.text:
@@ -28,7 +28,7 @@ def render_bq(template_name, template_vars, **kwargs):
     # turn vars into an xml string.
     st = StringIO.StringIO()
     root = etree.Element (template_name)
-    
+
     def writeElem( obj, node):
         if isinstance( obj, dict ):
             for k in obj:
@@ -63,4 +63,4 @@ def render_bq(template_name, template_vars, **kwargs):
         _log.debug("render_bq %s", st.getvalue() )
     except Exception,ex:
         _log.exception("")
-    return st.getvalue() 
+    return st.getvalue()

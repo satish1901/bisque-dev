@@ -12,6 +12,7 @@ class DirectCascade(Cascade):
     """
 
     def __call__(self, environ, start_response):
+        # pylint: disable=E1101
         failed = []
         def repl_start_response(status, headers, exc_info=None):
             code = int(status.split(None, 1)[0])

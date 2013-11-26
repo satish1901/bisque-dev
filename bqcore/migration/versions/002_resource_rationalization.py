@@ -19,7 +19,7 @@ def upgrade(migrate_engine):
     resource_type =  Column('resource_type',Unicode(255))  # will be same as tb_id UniqueName
     resource_name =  Column('resource_name', Unicode (1023) )
     resource_user_type =  Column('resource_user_type', Unicode(1023) )
-    resource_value = Column('resource_value', UnicodeText ) 
+    resource_value = Column('resource_value', UnicodeText )
 
     # New columns
     resource_created.create(taggable)
@@ -31,8 +31,8 @@ def upgrade(migrate_engine):
     resource_name.create(taggable)
     resource_user_type.create(taggable)
     resource_value.create(taggable)
-    
-    # Adding document_id 
+
+    # Adding document_id
     document_id = Column('document_id', Integer, ForeignKey('taggable.id')) # Unique Element
     document_id.create(taggable)
     document_id = Column('document_id', Integer, ForeignKey('taggable.id')) # Unique Element
@@ -40,7 +40,7 @@ def upgrade(migrate_engine):
     document_id = Column('document_id', Integer, ForeignKey('taggable.id')) # Unique Element
     document_id.create(vertices)
 
-    
+
 
 def downgrade(migrate_engine):
     # Operations to reverse the above upgrade go here.

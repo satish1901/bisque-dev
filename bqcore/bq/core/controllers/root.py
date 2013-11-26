@@ -64,15 +64,13 @@ from paste.httpexceptions import HTTPNotFound
 #from turbogears import identity as tgidentity
 import simplejson as json
 from lxml import etree
-import pylons
-from tg import expose, flash, require, url, request, redirect, config, response, abort
+from tg import expose,  request, redirect, config, response, abort
 from tg.controllers import CUSTOM_CONTENT_TYPE
 #from tgext.admin import AdminController
 
-from bq.core import model
 from bq.core.model import DBSession
 from bq.core.lib.base import BaseController
-from bq.exceptions import ConfigurationError, RequestError
+from bq.exceptions import ConfigurationError
 from bq.core.controllers.proxy import ProxyController, service_proxy
 from bq.core.service import ServiceController, service_registry
 from bq.core.service import load_services, mount_services, start_services
@@ -88,21 +86,19 @@ class MDWrap(object):
   """A Multidictionary that provides attribute-style access."""
 
   def __init__(self, md):
-      self.md = md
-  
+    self.md = md
+
   def __getitem__(self, key):
-      return  self.md.__getitem__(self, key)
-  
+    return  self.md.__getitem__(self, key)
+
   def __getattr__(self, name):
-      return self.md.getone(name)
-#  def __setattr__(self, name,v):
-#       self.md[name] =v 
-  
+    return self.md.getone(name)
+
   def __delattr__(self, name):
-      try:
-          del self.md[name]
-      except KeyError:
-          raise AttributeError(name)
+    try:
+      del self.md[name]
+    except KeyError:
+      raise AttributeError(name)
 
 
 
@@ -121,9 +117,9 @@ class ServiceRegistryController (ServiceController):
                                             type=ty,
                                             value=i.url)
         return dict (resource = resource)
-        
-        
-    @expose () 
+
+
+    @expose ()
     def register(self, service_type, service_url):
         """Allow external services to register here for use by our local
         services.. For example several, engine  servers may register with
@@ -133,12 +129,12 @@ class ServiceRegistryController (ServiceController):
                                                            service_url))
         log.debug ("Registered remote %s  %s" % (service_type, service_url))
 
-    @expose () 
+    @expose ()
     def services(self, service_type, service_url):
         """Return the list of URL of internal services known
         by this instance.  Include only services locally mounted.
         """
-        resource = etree.Element ('resource') 
+        resource = etree.Element ('resource')
         return etree.tostring(resource)
 
 
@@ -154,7 +150,7 @@ class RootController(BaseController):
 
     error  = ErrorController()
     root = config.get ('bisque.root')
-    
+
     @classmethod
     def mount_local_services(cls, root, wanted = None, unwanted=None):
         """Find services and add them to the list of available
@@ -170,7 +166,7 @@ class RootController(BaseController):
           pass
 
 
-                 
+
     @expose()
     def _lookup(self, service_type, *rest):
         """Default handler for bisque root.
@@ -186,7 +182,7 @@ class RootController(BaseController):
         if service_type in oldnames:
             log.warn ('found oldname( %s ) in request' % (service_type))
             service_type = oldnames[service_type]
-        
+
         #log.debug ("find controller for %s  " % (str(service_type) ))
         log.debug ("lookup for %s/%s" % (service_type,str (rest) ))
         #import pdb
@@ -242,7 +238,7 @@ def update_remote_proxies (proxy):
         for service in response:
             service_type  = service.tag
             service_uri   = service.text
-        
+
             log.debug ('remote %s -> %s' % (service_type, service_uri))
             if not service_registry.has_service(service_type, service_uri):
                 cls = service_registry.find_class (service_type)
@@ -252,7 +248,7 @@ def update_remote_proxies (proxy):
                 else:
                     log.error ("unknown class for service type '%s'" %service_type)
         break
-            
+
 
 def startup():
     root = config.get ('bisque.root')
@@ -280,10 +276,10 @@ def startup():
     #           break
     #       except RequestError, e:
     #         log.debug ("root_service request failed")
-            
+
     #       log.debug ("Waiting for Root server %s" % content )
     #       time.sleep(5)
-          
+
     #     log.debug ("Root response %s " % content )
     #     for service_tag in response:
     #         service_type = service_tag.get('type')
@@ -308,9 +304,9 @@ def startup():
                             for ty,e in service_registry.get_services().items()))
     log.debug ("STARTIN")
     start_services(root, enabled, disabled)
-    
 
-        
+
+
 #if  server_type == 'root' and ProxyRewriteURL.active_proxy:
 #    cherrypy.filters.input_filters.append(ProxyRewriteURL)
 

@@ -32,7 +32,7 @@ def upgrade(migrate_engine):
     print "END MIGRATING DATA"
     print "cleaning up"
     #END MIGRATION OF DATA
-    
+
 
 
 def downgrade(migrate_engine):

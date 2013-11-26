@@ -18,8 +18,8 @@ def sqltext(DBURI, statement):
 
 # first pull initial values from config files
 #iv = initial
-tc = ConfigFile()      
-if os.path.exists ('config/site.cfg'): 
+tc = ConfigFile()
+if os.path.exists ('config/site.cfg'):
     tc.read(open('config/site.cfg'))
 
 db = tc.get('app:main', 'sqlalchemy.url')
@@ -37,9 +37,9 @@ def check_upgrade(db):
         version = int(rows[0][0])
         if version >3:
             sqltext(db, 'update migrate_version set version=0;');
-    
-    
-    
+
+
+
 check_upgrade(db=db)
 main(url=db, repository='bqcore/migration/')
 

@@ -10,8 +10,8 @@ log = logging.getLogger("bq.mex_auth")
 
 class MexAuthenticatePlugin(object):
 
-    implements(IIdentifier) 
-    
+    implements(IIdentifier)
+
     def identify(self, environ):
         """Lookup the owner """
         # New way using standard Authencation header
@@ -66,7 +66,7 @@ class MexAuthenticatePlugin(object):
 
 
         # NOTE: Commented out during system debugging
-        # 
+        #
         #if  mex.closed():
         #    log.warn ('attempt with  closed mex %s' % mexid)
         #    return None
@@ -79,7 +79,7 @@ class MexAuthenticatePlugin(object):
             return owner
         log.warn("Mex authentication failed due to invalid mex %s" % mex_token)
         return None
-            
+
     #def challenge(self, environ, status, app_headers, forget_headers):
     #    pass
 

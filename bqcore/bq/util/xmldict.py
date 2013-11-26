@@ -14,7 +14,7 @@ def xml2d(e):
     def _xml2d(e):
         kids = dict(e.attrib)
         for k, g in groupby(e, lambda x: x.tag):
-            g = [ _xml2d(x) for x in g ] 
+            g = [ _xml2d(x) for x in g ]
             kids[k]=  g
         return kids
     return { e.tag : _xml2d(e) }
@@ -43,7 +43,7 @@ def d2xml(d):
        <tag name="c" value="d"/>
     </module>
 
-    @type  d: dict 
+    @type  d: dict
     @param d: A dictionary formatted as an XML document
     @return:  A etree Root element
     """
@@ -63,8 +63,8 @@ def d2xml(d):
     node = etree.Element(k)
     _d2xml(v, node)
     return node
-    
-    
+
+
 
 if __name__=="__main__":
 
