@@ -5,7 +5,7 @@ import shortuuid
 
 def make_uniq_hash(filename, dt = None):
     rand_str = str(random.randint(1, 1000000))
-    rand_str = filename.encode('utf-8') + rand_str + str( (dt or datetime.datetime.now()).isoformat()) 
+    rand_str = filename.encode('utf-8') + rand_str + str( (dt or datetime.datetime.now()).isoformat())
     rand_hash = hashlib.sha1(rand_str).hexdigest()
     return rand_hash
 
@@ -18,7 +18,7 @@ def make_short_uuid (filename=None, dt=None):
 
 def make_uniq_code (version = 0, length=40):
     return "00-%s" % shortuuid.uuid()
-    
+
 
 def is_uniq_code(uniq, version = None):
     """Check that the code is a bisque uniq code
@@ -29,5 +29,5 @@ def is_uniq_code(uniq, version = None):
     """
     return uniq.startswith('00-') or None
 
-    
-    
+
+

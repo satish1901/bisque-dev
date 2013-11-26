@@ -24,4 +24,4 @@ def _mkdir(newdir):
             try:
                 os.mkdir(newdir)
             except OSError, e:
-                log.error ('MKDIR: '+ str(e))            
+                log.error ('MKDIR: '+ str(e))

@@ -491,7 +491,7 @@ def db2tree(dbo, parent=None, view=[], baseuri=None, progressive=False, **kw):
     log.debug ("db2tree dbo=%s, parent=%s, view=%s, baseuri=%s" %
                (dbo, parent, view, baseuri))
     if isinstance(view, basestring):
-        # pylint:disable=E1101
+        # pylint:disable=E1103
         view = [ x.strip() for x in view.split(',') ]
     view = view or []
 

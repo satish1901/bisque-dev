@@ -2,10 +2,9 @@
 """Setup the bqcore application"""
 
 import os
-import logging
 from tg import config, session, request
 from paste.registry import Registry
-from beaker.session import Session, SessionObject
+from beaker.session import  SessionObject
 from pylons.controllers.util import Request
 from bq.release import __VERSION__
 from bq.core import model
@@ -43,14 +42,14 @@ def bootstrap(command, conf, vars):
             email_address = config.get('bisque.admin_email', 'manager@somedomain.com'),
             password = u'admin')
         model.DBSession.add(admin)
-        
+
         for g in [ u'admins', u'managers' ] :
             group = model.Group()
             group.group_name = g
             group.display_name = u'Administrators Group'
             group.users.append(admin)
             model.DBSession.add(group)
-            
+
         permission = model.Permission()
         permission.permission_name = u'root'
         permission.description = u'This permission give an administrative right to the bearer'
@@ -70,7 +69,7 @@ def bootstrap(command, conf, vars):
 
     try:
         ######
-        # 
+        #
         #from bq.data_service.model import UniqueName
         initial_mex = model.DBSession.query(ModuleExecution).first()
         session['mex_id'] = initial_mex.id
@@ -108,6 +107,6 @@ def bootstrap(command, conf, vars):
         transaction.abort()
         print 'Continuing with bootstrapping...'
 
-        
+
 
     # <websetup.bootstrap.after.auth>

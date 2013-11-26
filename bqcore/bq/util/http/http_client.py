@@ -9,12 +9,12 @@ from tg import config
 
 
 from httplib2 import Http
+
 import sync_request
 import async_request
 import async_request_pool
-
-from poster import encode
-from poster import streaminghttp
+from .poster import encode
+from .poster import streaminghttp
 
 from bq.util.paths import data_path
 
@@ -23,10 +23,8 @@ log = logging.getLogger("bq.http_client")
 local_client = None
 
 try:
-    from bisquik.identity import add_credentials 
-    def add_default_credentials(headers):
-        add_credentials(headers)
-except:
+    from bq.core.identity import add_credentials
+except ImportError:
     def add_default_credentials(headers):
         pass
 
@@ -44,12 +42,12 @@ def finish(cleanup_cache=False):
     cachedir=config.get('bisque.http_client.cache_dir', data_path('client_cache'))
     if async_request_pool.isrunning():
         async_request_pool.stop_pool_handler()
-    
+
     if cleanup_cache:
         import os
         for filename in os.listdir(cachedir):
             os.remove(filename)
-            
+
 
 #base_config.call_on_startup.append(start)
 #base_config.call_on_shutdown.append(finish)
@@ -61,23 +59,23 @@ def prepare_credentials (client, headers, userpass=None):
     if userpass is not None:
         client.add_credentials (userpass[0], userpass[1])
         headers['authorization'] =  'Basic ' + base64.encodestring("%s:%s" % userpass ).strip()
-        return 
+        return
     cred = {}
-    add_default_credentials (cred) 
-    if cred: 
+    add_default_credentials (cred)
+    if cred:
         headers.update (cred)
-        return 
+        return
     client.clear_credentials()
 
 
 def request(url, method="GET", body=None, headers = {},
             async=False, callback=None, client=None, **kw):
     """Create an http  request
-    
+
     :param url:  The url for the request
     :param method: GET, PUT, POST, HEAD, DELETE
     :param body: body of post or put (maybe string, file or iterable)
-    :param async: 
+    :param async:
     :rtype response_headers, content
     """
     userpass = kw.pop('userpass', None)
@@ -102,15 +100,15 @@ def request(url, method="GET", body=None, headers = {},
                                                 client = client,)
         if callable(callback):
             callback(url, response_tuple)
-        
+
     return  response_tuple
-    
+
 
 def xmlrequest(url, method="GET", body=None, headers= {}, **kw):
     headers['content-type'] = 'text/xml'
     return request(url, method=method, body=body, headers=headers, **kw)
 
-    
+
 
 
 def local_request(url, method="GET", body=None, headers = {}, **kw):
@@ -118,7 +116,7 @@ def local_request(url, method="GET", body=None, headers = {}, **kw):
     from webob import Request
     req = Request (url)
     resp = req.get_response (wsgiapp)
-    
+
 
 
 def post_files (url,  fields = None, **kw):
@@ -132,10 +130,10 @@ def post_files (url,  fields = None, **kw):
     example:
       post_files ('http://..',
       fields = {'file1': open('file.jpg','rb'), 'name':'file' })
-      post_files ('http://..', fields = [('file1', 'file.jpg', buffer), ('f1', 'v1' )] )  
+      post_files ('http://..', fields = [('file1', 'file.jpg', buffer), ('f1', 'v1' )] )
     """
 
-    
+
     body, headers = encode.multipart_encode(fields)
     return request(url, 'POST', headers=headers, body=body, **kw)
 
@@ -145,13 +143,13 @@ def get_file (url, path = None):
         f = NamedTemporaryFile(delete=False)
     else:
         f = open(path, 'wb')
-        
+
     header, content = request(url)
     f.write (content)
     f.close()
     return f.name
-    
-    
+
+
 ####################
 
 def send (req):
@@ -165,8 +163,8 @@ def send (req):
 
     response = Response()
     response.code = headers.pop ('status')
-    response.headers = headers 
+    response.headers = headers
     response.body    = content
     return response
-                            
-                            
+
+

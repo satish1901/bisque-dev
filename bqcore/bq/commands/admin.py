@@ -61,7 +61,7 @@ Commands:""" % (__VERSION__, sys.argv[0])
         logging.getLogger().setLevel(logging.DEBUG)
 
     commandname = args[0]
-        
+
     # strip command and any global options from the sys.argv
     sys.argv = [sys.argv[0],] + args[1:]
     command = commands[commandname][1]
@@ -71,7 +71,7 @@ Commands:""" % (__VERSION__, sys.argv[0])
 
 class server(object):
     desc = "Start or stop a bisque server"
-    
+
     def __init__(self, version):
         parser = optparse.OptionParser(
                     usage="%prog servers [options] start|stop|restart",
@@ -91,7 +91,7 @@ class server(object):
 
         if options.dryrun:
             options.verbose = True
-        
+
         self.options = options
         self.command = args[0]
         self.args = args[1:]
@@ -120,7 +120,7 @@ class database(object):
         parser = optparse.OptionParser(
                     usage="%prog database [admin]",
                     version="%prog " + version)
-    
+
 
         parser.add_option('-c','--config', default="config/site.cfg")
         parser.add_option('-n','--dryrun', action="store_true", default=False)
@@ -140,9 +140,9 @@ class database(object):
         load_config(self.options.config)
         import cleandb
         cleandb.clean_images(self.options)
-            
 
-        
+
+
 class setup(object):
     desc = 'Setup or update a bisque server'
     def __init__(self, version):
@@ -157,7 +157,7 @@ class setup(object):
         for arg in args:
             if arg not in install_options + ['bisque', 'engine']:
                 parser.error('argument must be install option')
-        
+
         self.args = args
         self.options = options
 
@@ -182,8 +182,8 @@ class deploy(object):
         #if 'public' in self.args:
         self.public_dir = self.args.pop(0) if len(self.args)>0 else 'public'
         self.deploy_public()
-        
-        
+
+
 
     def deploy_public(self):
         ''
@@ -194,7 +194,7 @@ class deploy(object):
             os.makedirs (self.public_dir)
         except OSError, e:
             pass
-        
+
         rootdir = os.getcwd()
         coredir = os.path.join(rootdir, 'bqcore/bq/core/public/').replace('/', os.sep)
 
@@ -221,7 +221,7 @@ class deploy(object):
                     try:
                         #os.makedirs (os.path.join(self.dir, os.path.dirname(static_path)))
                         os.makedirs (os.path.dirname(static_path))
-                        
+
                     except OSError,e:
                         pass
                     #print "link ", (r, os.path.join('public', static_path))
@@ -245,7 +245,7 @@ class deploy(object):
             dest = os.path.join(currdir, os.path.basename(l))
             if os.path.exists (dest):
                 os.unlink (dest)
-                
+
             relpath = os.path.relpath(l, currdir)
             #print "%s -> %s " % (relpath, dest)
             copy_symlink (relpath, dest)
@@ -315,14 +315,14 @@ class preferences (object):
                 else:
                     print ('NO ACTION: %s exists.. cannot init' % prefs)
                     sys.exit(1)
-            
+
             system = etree.parse('config/preferences.xml.default').getroot()
             for el in system.getiterator(tag=etree.Element):
                 el.set ('permission', 'published')
             system = data_service.new_resource(system, view='deep')
         else:
             system = etree.parse(prefs).getroot()
-            # Esnure all elements are published 
+            # Esnure all elements are published
             for el in system.getiterator(tag=etree.Element):
                 el.set ('permission', 'published')
             # Read system object

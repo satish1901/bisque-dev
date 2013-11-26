@@ -1,17 +1,17 @@
-from threading import Thread, enumerate
+from threading import Thread
 from urllib import urlopen
 from time import time
+import http_client
 
 
 
- 
 class URLThread(Thread):
     def __init__(self, **kw):
         super(URLThread, self).__init__()
         self.callback = kw.pop('callback', None)
         self.request_params  = kw
         self.setDaemon(True)
- 
+
     def run(self):
         response_headers, content  = http_client.request (**self.request_params)
 
@@ -38,9 +38,9 @@ def xmlrequest(url, op = 'GET', body='', headers={}, **kw):
     '''
     prepare_credentials(headers)
     headers['content-type'] = 'text/xml'
-    return URLThread (uri=uri,
-                      method=method,
+    return URLThread (uri=url,
+                      method=op,
                       body=body,
                       headers=headers,
-                      callback=callback,**kw)
+                      **kw)
 

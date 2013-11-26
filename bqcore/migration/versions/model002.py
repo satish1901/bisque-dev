@@ -92,12 +92,12 @@ files = Table('files', metadata, autoload=True)
 #              Column('id', Integer, primary_key=True),
 #              Column('sha1', String(40), index=True), # new column v2
 #              Column('uri', Unicode(512), index=True),
-#              Column('owner', Text), 
+#              Column('owner', Text),
 #              Column('perm', Integer),
 #              Column('ts', DateTime(timezone=False)),
 #              Column('original', Text),
 #              Column('file_type', Text), # new column v2
-#              Column('local', Text) # new column v3              
+#              Column('local', Text) # new column v3
 #              )
 files_acl = Table('file_acl', metadata, autoload=True)
 
@@ -109,7 +109,7 @@ names = Table('names', metadata, autoload=True)
 #               )
 
 
-taggable = Table('taggable', metadata, 
+taggable = Table('taggable', metadata,
                  Column('id', Integer, primary_key=True),
                  Column('tb_id', Integer, ForeignKey('names.id')),
     Column('mex', Integer, ForeignKey('taggable.id'), key='mex_id'),
@@ -340,27 +340,27 @@ def parse_uri(uri):
 
 def map_url (uri):
     '''Load the object specified by the root tree and return a rsource
-    @type   root: Element 
+    @type   root: Element
     @param  root: The db object root with a uri attribute
     @rtype:  tag_model.Taggable
     @return: The resource loaded from the database
     '''
     # Check that we are looking at the right resource.
-    
+
     net, name, ida = parse_uri(uri)
     name, dbcls = dbtype_from_name(name)
     resource = DBSession.query(dbcls).get (ida)
     #log.debug("loading uri name (%s) type (%s) = %s" %(name,  str(dbcls), str(resource)))
     return resource
 
-    
+
 
 ################################
 # Taggable types
-# 
+#
 
 class FileEntry(object):
-  
+
 #    def __init__(self):
 #        self.id = None
 
@@ -372,7 +372,7 @@ class FileEntry(object):
       return self._id_db-1
 
     id = property( _get_id, _set_id )
-  
+
     def str(self):
         return "FileEntry(%s, %s, %s, %s, %s)" % (self.id, self.sha1, self.uri, self.owner, self.perm, self.ts, self.original, self.file_type )
 
@@ -385,7 +385,7 @@ class Taggable(object):
     associated with it.
     """
     xmltag = 'resource'
-    
+
     def __init__(self, resource_type = None, owner = None):
         #if self.__class__ == Taggable and resource_type:
         #    self.table = resource_type
@@ -419,7 +419,7 @@ class Taggable(object):
         #    if admin:
         #        log.warn("Setting owner to admin")
         #        self.owner_id = admin.id
-    
+
     def resource (self):
         return "%s/%s" % ( self.table , self.id)
     resource = property(resource)
@@ -430,7 +430,7 @@ class Taggable(object):
             return "%s/%s/%s" % (parent.uri , self.table, self.id)
         else:
             return "%s/%s" % (self.table, self.id)
-            
+
     uri = property(uri)
 
     def gettable(self):
@@ -448,7 +448,7 @@ class Taggable(object):
         if isinstance(owner, basestring) and owner.startswith ('http'):
             return map_url (owner)
         return owner
-        
+
 
 #    def get_owner (self):
 #        if self.owner_ob:
@@ -495,10 +495,10 @@ class Taggable(object):
         if dbtype != Taggable:
             return DBSession.query(dbtype).get (self.id)
         return self
-        
+
     def __str__(self):
         #return "%s/%s" % (self.__class__.xmltag,  str(self.id))
-        return self.uri 
+        return self.uri
 
 
 class Image(Taggable):
@@ -566,7 +566,7 @@ class Tag(Taggable):
             return self.values[0].value
         else:
             # call SimpleValue decoder
-            return [ v.value for v in self.values ] 
+            return [ v.value for v in self.values ]
 
     def setvalue(self, v):
         if type(v) == list:
@@ -586,13 +586,13 @@ class Tag(Taggable):
         old = self.values
         self.values = []
         return old
-        
+
     # Tag.values
     #  List of SimpleValues
 
     # Tag.vertices
     #  List of vertices
-    
+
 
 
 #    def match(nm, value):
@@ -601,13 +601,13 @@ class Tag(Taggable):
 #    match = staticmethod (match)
 class Value(object):
     xmltag = 'value'
-    
+
     def __init__(self, ind=None, s = None, n = None, o = None):
         self.indx = ind
         self.valstr = s
         self.valnum = n
         self.object = o
-    
+
     def getvalue(self):
         value = ''
         if self.valstr: value = self.valstr
@@ -627,17 +627,17 @@ class Value(object):
             self.objref = v
             self.valnum = None
             self.valstr = None
-        
+
     def remvalue(self):
         self.valstr = None
         self.valnum = None
         self.valobj = None
-        
+
     value = property(fget=getvalue,
                      fset=setvalue,
                      fdel=remvalue,
                      doc="Value of tag")
-    
+
     def gettype (self):
         if self.valobj: return "object"
         elif self.valnum: return "number"
@@ -656,7 +656,7 @@ class Value(object):
     def set_index(self, v):
         self.indx = v
     index = property(get_index, set_index)
-    
+
 
     def __str__ (self):
         return unicode( self.value )
@@ -676,7 +676,7 @@ class Vertex(object):
 
 class GObject(Taggable):
     xmltag = 'gobject'
-        
+
     # Tag.name helper functions
     def getname(self):
         if self.tagname:
@@ -687,7 +687,7 @@ class GObject(Taggable):
         if self.tagname is None or self.tagname.name != v :
             self.tagname = UniqueName(v)
         #log.debug ("Setting gobject name " + str(UniqueName(v)));
-        
+
     name = property(getname, setname)
 
     # Tag.type helper functions
@@ -716,12 +716,12 @@ class GObject(Taggable):
         old = self.vertices
         self.vertices = []
         return old
-    
+
 #    def __str__(self):
 #        return 'gobject %s:%s' % (self.name, str(self.type))
 
 
-    
+
 
 
 class BQGroup(Taggable):
@@ -731,22 +731,22 @@ class BQGroup(Taggable):
     as tag/value pairs with tag=='group_member'
     '''
     xmltag = 'group'
-    
+
     def __init__(self, group_name):
         #super(Group, self).__init__()
         self.group_name = group_name
         self.members    = self.fieldTag ('members')
-        
+
     def __str__(self):
         return self.group_name
-    
+
     def __repr__(self):
         return self.group_name
 
     def group_id(self):
         return self.id
     group_id = property(group_id)
-    
+
     def addMember(self, member):
         self.members.value = self.members.value + [ member ]
 
@@ -768,7 +768,7 @@ class BQGroup(Taggable):
 
     def contains(self, m):
         return m in self.members.values
-                                       
+
 
 
 
@@ -779,7 +779,7 @@ class BQUser(Taggable):
     '''
     xmltag = 'user'
 
-    def __init__(self, user_name=None, password=None, 
+    def __init__(self, user_name=None, password=None,
 					email_address=None, display_name=None,
 					create_tg=False, tg_user = None, **kw):
         super(BQUser, self).__init__()
@@ -804,7 +804,7 @@ class BQUser(Taggable):
 
         #tg_user.dough_user_id = self.id
         self.owner_id = self.id
-        
+
     @classmethod
     def new_user (cls, email, password, create_tg = False):
         bquser =  cls( user_name= email,
@@ -827,8 +827,8 @@ class BQUser(Taggable):
             DBSession.flush()
 
         return bquser
-    
-        
+
+
 #     def init_permissions(self):
 #         if not self.user_name:
 #             raise IllegalOperation('no user_name for permission')
@@ -847,30 +847,30 @@ class BQUser(Taggable):
 #         permissions.add(r_all)
 #         permissions.add(w_all)
 #         #self.permission = permissions
-        
-        
+
+
 #    def __str__(self):
 #        return "%s/%d" % (self.user_name, self.id)
-    
+
     def __repr__(self):
         return "BQUser<user_name: '%s', display_name: '%s'>" % (self.user_name, self.display_name)
-    
+
     def user_id(self):
         return self.id
     user_id = property(user_id)
-    
+
     def addPermission(self, perm):
         self.perm.addTag('permission', perm)
-    
+
     def groups(self):
         # Find group objects that have a member == self.
         # 1.  iterate groups searching for group_member == self
         # 2.  find taggables with tag=='group_member' and value=='self'
         #     and convert to groups
         pass
-    
+
     groups = property(groups)
-    
+
     def permissions(self):
         return self.selectTags('permission')
 
@@ -885,7 +885,7 @@ class Template(Taggable):
     A pre-canned group of tags
     '''
     xmltag = 'template'
-    
+
 class Module(Taggable):
     '''
     A module is a runnable routine that modifies the database
@@ -893,7 +893,7 @@ class Module(Taggable):
     for each input/output a type tag exists:
        (formal_input: [string, float, tablename])
        (formal_output: [tagname, tablename])
-    
+
     '''
     xmltag ='module'
     def get_module_type(self):
@@ -917,7 +917,7 @@ class ModuleExecution(Taggable):
 
 class Dataset(Taggable):
     xmltag = 'dataset'
-    
+
 
 class PermissionToken(object):
     '''
@@ -931,7 +931,7 @@ class PermissionSetToken(object):
 
 class PermissionSet(object):
     '''
-    A Set of permissions.  
+    A Set of permissions.
     '''
     def __init__(self, o):
         '''Create a permissionSet for object o'''
@@ -941,7 +941,7 @@ class PermissionSet(object):
         pst = PermissionSetToken()
         pst.token=token
         pst.set = self
-            
+
         self.tokens.append (pst)
 
 class TaggableAcl(object):
@@ -954,9 +954,9 @@ class TaggableAcl(object):
         self.permission = { "read":0, "edit":1 } .get(perm, 0)
     def getperm(self):
         return [ "read", "edit"] [self.permission]
-        
+
     action = property(getperm, setperm)
-    
+
     def __str__(self):
         return "resource:%s  user:%s permission:%s" % (self.taggable_id,
                                                        self.user_id,
@@ -965,15 +965,15 @@ class TaggableAcl(object):
 class Service (Taggable):
     """A executable service"""
     xmltag = "service"
-    
+
     def __str__(self):
         return "%s module=%s engine=%s" % (self.uri, self.module, self.engine)
-    
+
 #################################################
 # Simple Mappers
 mapper( UniqueName, names)
 #session.mapper(UniqueName, names)
-        
+
 mapper( Value, values,
               properties = {
     'parent' : relation (Tag, lazy=True,
@@ -988,15 +988,15 @@ mapper( Value, values,
 mapper( Vertex, vertices)
 mapper(TaggableAcl, taggable_acl,
        properties = {
-           'user'    : relation(BQUser, 
+           'user'    : relation(BQUser,
                                 passive_deletes="all",
                                 uselist=False,
                                 primaryjoin=(taggable_acl.c.user_id==
                                              users.c.id),
                                 foreign_keys=[users.c.id])
            })
-       
-       
+
+
 
 mapper(FileEntry, files, properties={
     '_id_db' : files.c.id,
@@ -1039,7 +1039,7 @@ mapper( Taggable, taggable,
                           foreign_keys=[vertices.c.parent_id]
                           ),
 
-    'docnodes': relation(Taggable, 
+    'docnodes': relation(Taggable,
                          lazy='dynamic',
                          cascade = "all",
                          post_update=True,
@@ -1076,7 +1076,7 @@ mapper( GObject, gobjects, inherits=Taggable,
                         primaryjoin =(gobjects.c.name_id==names.c.id)),
     'parent' : relation (Taggable, lazy=True,
                          primaryjoin =(gobjects.c.parent_id == taggable.c.id)),
-    'type_name' : relation (UniqueName, 
+    'type_name' : relation (UniqueName,
                        primaryjoin =(gobjects.c.type_id==names.c.id)),
 #    'vertices' : relation(Vertex, cascade="all, delete-orphan",
 #                          primaryjoin =(taggable.c.id == vertices.c.parent_id),
@@ -1090,19 +1090,19 @@ mapper( GObject, gobjects, inherits=Taggable,
 
 mapper(BQGroup, groups, inherits=Taggable)
 mapper(BQUser, users, inherits=Taggable,
-    properties = { 
-#        'tguser' : relation(User, uselist=False, 
+    properties = {
+#        'tguser' : relation(User, uselist=False,
 #            primaryjoin=(User.user_name == users.c.user_name),
 #            foreign_keys=[User.user_name]),
 
-        'owned' : relation(Taggable, 
+        'owned' : relation(Taggable,
                            lazy = True,
                            cascade = None,
                            primaryjoin = (users.c.id == taggable.c.owner_id),
                            foreign_keys=[taggable.c.owner_id],
                            backref = backref('owner', post_update=True),
                            )
-                           
+
     }
 )
 def bquser_callback (tg_user, operation, **kw):
@@ -1118,31 +1118,31 @@ def bquser_callback (tg_user, operation, **kw):
     if operation  == 'update':
         u = DBSession.query(BQUser).filter_by(user_name=tg_user.user_name).first()
         if u is not None:
-            u.email_address = tg_user.email_address 
+            u.email_address = tg_user.email_address
             u.password = tg_user.password
             u.display_name = tg_user.display_name
         return
-        
 
-        
+
+
 #User.callbacks.append (bquser_callback)
 
 
 mapper(Template, templates, inherits=Taggable)
-    
+
 mapper(Module, modules, inherits=Taggable,
               properties = {
     'module_type' : relation(UniqueName,
                       primaryjoin = (modules.c.module_type_id==names.c.id)),
 
-           
-    }                             
+
+    }
               )
 
 mapper(ModuleExecution, mex, inherits=Taggable,
        inherit_condition=(mex.c.id == taggable.c.id),
        properties = {
-        'owned' : relation(Taggable, 
+        'owned' : relation(Taggable,
                            lazy = True,
                            cascade = None,
                            primaryjoin = (mex.c.id == taggable.c.mex_id),
@@ -1151,11 +1151,11 @@ mapper(ModuleExecution, mex, inherits=Taggable,
                            )
         },
        )
-mapper( Dataset, dataset, 
+mapper( Dataset, dataset,
               inherits=Taggable,
               inherit_condition=(dataset.c.id == taggable.c.id))
 
-mapper( Service, services, 
+mapper( Service, services,
         inherits=Taggable,
         inherit_condition=(services.c.id == taggable.c.id),
         properties = {
@@ -1187,14 +1187,14 @@ def registration_hook(action, **kw):
             bquser = DBSession.query(BQUser).filter_by(email_adress=u.email_address).first()
             if not bquser:
                 bquser = BQUser.new_user (u.email_adress)
-                
+
             bquser.display_name = u.display_name
             bquser.user_name = u.user_name
-            
+
     elif action =="delete_user":
         pass
 
-        
+
 def db_setup():
     global admin_user, init_module, init_mex
     admin_user = BQUser.query.filter(BQUser.user_name == u'admin').first()
@@ -1205,7 +1205,7 @@ def db_setup():
         DBSession.add (init_module)
         DBSession.add (init_mex)
         DBSession.flush()
-    
+
         DBSession.refresh (init_module)
         DBSession.refresh (init_mex)
         admin_user.mex_id = init_mex.id
@@ -1219,7 +1219,7 @@ def db_setup():
         init_mex.module = "initialize"
         init_mex.status = "FINISH"
     identity.set_admin (admin_user)
-        
+
 
 def db_load():
     global admin_user, init_module, init_mex
@@ -1235,7 +1235,7 @@ def init_admin():
 #        admin_group = Group(group_name = u'admin', display_name = u'Administrators')
 #        session.add(admin_group)
 #        session.flush()
-        
+
     log.debug ("admin user = %s" %  admin_user)
     return admin_user
 
@@ -1273,5 +1273,5 @@ def all_resources ():
     log.debug ('all_resources' + str(names))
     return names
 
-    
+
 

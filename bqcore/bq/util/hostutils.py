@@ -62,13 +62,13 @@ log = logging.getLogger("bisquik.controllers")
 
 def fqdn(h=None):
     ''' return the fqdn and port'''
-    
+
     if not h:
         h = socket.gethostname()
         port = config.get('server.socket_port')
     else:
         h, port = h.split(':')
-        
+
     nm, aliases, ipaddr = socket.gethostbyaddr(h)
     log.debug("name is"+str(nm))
     if nm.find('.')>0: return nm, int(port)

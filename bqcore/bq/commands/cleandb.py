@@ -1,13 +1,13 @@
 
 import os
 from tg import config
-from sqlalchemy.sql import and_, or_ 
+from sqlalchemy.sql import and_, or_
 from bq.util.paths import data_path
 from bq.util.sizeoffmt import sizeof_fmt
 from bq.util.diskusage import disk_usage
 
 __all__  = [ "clean_images" ]
-    
+
 
 
 def clean_store(local, options):
@@ -25,7 +25,7 @@ def clean_store(local, options):
     print "file count ", len(localfiles)
 
     dbfiles = set()
-    locs = DBSession.query(Taggable).filter(or_(Taggable.resource_type=='image', 
+    locs = DBSession.query(Taggable).filter(or_(Taggable.resource_type=='image',
                                                   Taggable.resource_type=='file'))
     for f in locs:
         if f.resource_value is None or f.resource_value.startswith ('irods')  or f.resource_value.startswith ('s3'):
@@ -43,15 +43,15 @@ def clean_store(local, options):
         print "would delete %s" % missing
     after = disk_usage(top)
     print "Reclaimed %s space" % sizeof_fmt(before.used - after.used)
-    
+
 
 def clean_images(options):
     "Clean unreferenced images/files from bisque storage"
 
     from bq.blob_service.controllers.blobsrv import load_stores
     stores = load_stores()
-    
-    # Collect ALL files in 'imagedir' 
+
+    # Collect ALL files in 'imagedir'
     for name, store in stores.items():
         if store.scheme == 'file':
             clean_store(store, options)

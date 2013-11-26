@@ -9,7 +9,7 @@ from bq.core import model
 log = logging.getLogger('bq.auth.autoreg')
 
 class AutoRegister (object):
-    """This plugin attempts to register users that are so far unknown 
+    """This plugin attempts to register users that are so far unknown
     to the system.  During the metadata phase it looks to see if the user
     name is currently known and if  not so will create a local user structure
     """
@@ -38,7 +38,7 @@ class AutoRegister (object):
         if g is None:
             g = model.Group()
             g.group_name = login_identifier
-            g.display_name = u'%s Group' % login_identifier 
+            g.display_name = u'%s Group' % login_identifier
             model.DBSession.add(g)
         return g
 
@@ -58,11 +58,11 @@ class AutoRegister (object):
         identifier = values.pop('identifier', None)
         try:
             log.info("adding user %s with %s" % (user_name, values ))
-                
-            u = model.User(user_name = user_name, 
+
+            u = model.User(user_name = user_name,
                            display_name = values.get('display_name'),
                            email_address = values.get('email_address'))
-                
+
             model.DBSession.add(u)
             if identifier:
                 g = self.login_group(identifier)
@@ -76,7 +76,7 @@ class AutoRegister (object):
     def add_metadata( self, environ, identity ):
         """Add our stored metadata to given identity if available"""
         user = identity.get('repoze.who.userid', None)
-        log.debug ("metadata with user: %s" % user) 
+        log.debug ("metadata with user: %s" % user)
         try:
             from bq.data_service.model import BQUser
             if user:

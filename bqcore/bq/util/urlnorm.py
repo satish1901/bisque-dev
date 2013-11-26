@@ -12,7 +12,7 @@ urlnorm normalizes a URL by:
   * unescaping any percent escape sequences (where possible)
   * upercase percent escape (ie: %3f => %3F)
   * converts spaces to %20
-  * converts ip encoded as an integer to dotted quad notation 
+  * converts ip encoded as an integer to dotted quad notation
 
 Available functions:
   norm - given a URL (string), returns a normalized URL
@@ -35,7 +35,7 @@ CHANGES:
 0.92 - unknown schemes now pass the port through silently
 0.91 - general cleanup
      - changed dictionaries to lists where appropriate
-     - more fine-grained authority parsing and normalisation    
+     - more fine-grained authority parsing and normalisation
 """
 
 __license__ = """
@@ -160,7 +160,7 @@ def norm_tuple(scheme, authority, path, parameters, query, fragment):
     path = norm_path(scheme, path)
     # TODO: put query in sorted order; or at least group parameters together
     # Note that some websites use positional parameters or the name part of a query so this would break the internet
-    # query = urlencode(parse_qs(query, keep_blank_values=1), doseq=1) 
+    # query = urlencode(parse_qs(query, keep_blank_values=1), doseq=1)
     parameters = unquote_params(parameters)
     query = unquote_qs(query)
     fragment = unquote_fragment(fragment)
@@ -189,14 +189,14 @@ def int2ip(ipnum):
     ip3 = ipnum >> 8 & 0xFF
     ip4 = ipnum & 0xFF
     return "%d.%d.%d.%d" % (ip1, ip2, ip3, ip4)
-    
+
 def norm_netloc(scheme, netloc):
     if not netloc:
         return netloc
     match = _server_authority.match(netloc)
     if not match:
         raise InvalidUrl('no host in netloc %r' % netloc)
-    
+
     userinfo, host, port = match.groups()
     # catch a few common errors:
     if host.isdigit():
@@ -206,16 +206,16 @@ def norm_netloc(scheme, netloc):
             raise InvalidUrl('host %r does not escape to a valid ip' % host)
     if host[-1] == '.':
         host = host[:-1]
-    
+
     # bracket check is for ipv6 hosts
     #if '.' not in host and not (host[0] == '[' and host[-1] == ']'):
     #    raise InvalidUrl('host %r is not valid' % host)
-    
+
     authority = lower(host)
     if 'xn--' in authority:
         subdomains = [_idn(subdomain) for subdomain in authority.split('.')]
         authority = '.'.join(subdomains)
-        
+
     if userinfo:
         authority = "%s@%s" % (userinfo, authority)
     if port and port != _default_port.get(scheme, None):

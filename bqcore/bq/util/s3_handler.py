@@ -1,6 +1,6 @@
 import os
-import re
 import logging
+import shutil
 from boto.s3.key import Key
 
 from bq.util.mkdir import _mkdir

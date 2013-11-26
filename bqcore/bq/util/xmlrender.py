@@ -44,4 +44,4 @@ def render_xml(template_name, template_vars, **kwargs):
         _log.debug("render_xml %s", st.getvalue() )
     except Exception,ex:
         _log.exception("")
-    return st.getvalue() 
+    return st.getvalue()

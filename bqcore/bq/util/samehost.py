@@ -59,13 +59,13 @@ import socket
 
 def fqdn(h=None):
     ''' return the fqdn and port'''
-    
+
     if not h:
         h = socket.gethostname()
         port = config.get('server.socket_port')
     else:
         h, port = h.split(':')
-        
+
     nm, aliases, ipaddr = socket.gethostbyaddr(h)
     if nm.find('.')>0: return nm, int(port)
     for a in aliases:
@@ -97,4 +97,4 @@ def whataremyips():
             for address in iface_data[family]:
                 addresses.append(address['addr'])
     return addresses
- 
+

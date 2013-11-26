@@ -10,13 +10,13 @@ def bisque_path(*names):
     'return a path constructed from the installation path'
     root = bisque_root()
     return os.path.join(root, *names)
-    
+
 def data_path(*names):
     'return a path constructed from the data directory path'
     data = config.get('bisque.paths.data')
     data = data or os.path.join(bisque_root(), 'data')
     return os.path.join(data, *names)
-    
+
 
 def config_path(*names):
     'return a path constructed from the config directory path'
@@ -36,5 +36,5 @@ def site_cfg_path():
         if os.path.exists(site_cfg):
             return site_cfg
     return None
-        
-                              
+
+

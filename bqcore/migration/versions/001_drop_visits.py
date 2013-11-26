@@ -16,7 +16,7 @@ def upgrade(migrate_engine):
             table.drop()
         except sa.exc.NoSuchTableError:
             pass
-    
+
 def downgrade(migrate_engine):
     # Operations to reverse the above upgrade go here.
     pass

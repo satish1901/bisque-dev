@@ -34,18 +34,18 @@ from bq.data_service.model import Taggable, Image, Tag, Value
 #               Column('id', Integer, primary_key=True),
 #               Column('sha1', String(40)), # new column v2
 #               Column('uri', Text),
-#               Column('owner', Text), 
+#               Column('owner', Text),
 #               Column('perm', Integer),
 #               Column('ts', DateTime(timezone=False)),
 #               Column('original', Text),
 #               Column('file_type', Text), # new column v2
-#               Column('local', Text) # new column v3              
+#               Column('local', Text) # new column v3
 #               )
 # BlobSession = sessionmaker(bind=blobdb, autoflush=True, transactional=True)
 
 
 # class FileEntry(object):
-  
+
 # #    def __init__(self):
 # #        self.id = None
 
@@ -57,7 +57,7 @@ from bq.data_service.model import Taggable, Image, Tag, Value
 #       return self._id_db-1
 
 #     id = property( _get_id, _set_id )
-  
+
 #     def __repr__(self):
 #         return "FileEntry(%r, %r, %r, %r, %r)" % (self.id, self.sha1, self.uri, self.owner, self.perm, self.ts, self.original, self.file_type )
 
@@ -89,8 +89,8 @@ class Msg(object):
             print "count of %s = %d" % (k, v)
             if verbose:
                 print "items of %s = %s" % (k, str(self.count_items[k]))
-                
-    
+
+
 msg = Msg()
 
 def ask(question):
@@ -99,7 +99,7 @@ def ask(question):
     if  fixall:
         print question + "fixing"
         return True
-    
+
     a = raw_input( question + "(Y/N)" )
     if a=="" or a=="Y":
         return True
@@ -131,12 +131,12 @@ def visit_all_files (callbacks, *l, **kw):
         count = count + 1
         if count % 2048 == 0:
             flush()
-            msg.dump ("in blob %d" % blob.id) 
-        msg.dump ("in blob %d" % blob.id) 
+            msg.dump ("in blob %d" % blob.id)
+        msg.dump ("in blob %d" % blob.id)
     flush()
     return True
 
-                                    
+
 def find_misreferenced_blob(blob, host, fix):
     host_tuple = urlparse.urlparse (host)
     blob_tuple = urlparse.urlparse (blob.value)
@@ -166,10 +166,10 @@ def move_blob_image_service(blob, host, **kw):
 def find_unattached_bix_files(blob, host, fix):
     pass
 
-        
+
 
 #################################################################
-    
+
 def visit_all_images (callbacks, start=0, **kw):
     """Visit all images and list and fix possible errors"""
     print "VISIT IMAGES"
@@ -190,7 +190,7 @@ def visit_all_images (callbacks, start=0, **kw):
         #    else:
         #        print ("No blob for %s" %image.src)
         #        continue
-        # 
+        #
         msg.count('images')
         for cb in callbacks:
             cb (image=image, **kw)
@@ -210,14 +210,14 @@ def fix_image_value(image,  host, old_host=None, **kw):
         oldhost_t = urlparse.urlparse(old_host)
 
     # Check if we have old_host and the src is old_host
-    # otherwise check 
+    # otherwise check
     if (old_host and  image_t[1] == oldhost_t[1]) and  ask("image %d host %s -> %s" % (image.id, image_t[1], host_t[1]) ):
     #if or image_t[1] != host_t[1]:
         image_t [1] = host_t[1]
         image.value = urlparse.urlunparse (image_t)
         msg.count ('image.src modified', image.id)
         #blob.uri = urlparse.urlunparse (image_t)
-        
+
 
 def move_image_service(image,  host, old_host=None, **kw):
     "Change the old imgsrv address to image_service"
@@ -282,9 +282,9 @@ if __name__ == "__main__":
     quiet = False
     import getopt
 
-    from optparse import OptionParser 
+    from optparse import OptionParser
     parser = OptionParser (usage=help)
-    
+
     parser.add_option ('-v', '--verbose', action="count", default=0)
     parser.add_option('-f', '--fixall', action="store_true",
                       help = "(fix all) Don't ask for confirmation")
@@ -298,8 +298,8 @@ if __name__ == "__main__":
     parser.add_option ('-c', '--config', action="store", default='shell.ini',
                        help="Provide an alternate config default=site.cfg")
     parser.add_option('--blobonly', action="store_true", default=False)
-    
-                       
+
+
     (opts, args) = parser.parse_args()
     if  len(args) < 1:
         parser.error ("You must supply the correct host URL")
@@ -316,7 +316,7 @@ if __name__ == "__main__":
     if not ask("Continue"):
         sys.exit(0)
 
-    
+
     start = opts.start
     verbose = opts.verbose
     fixall = opts.fixall
@@ -331,9 +331,9 @@ if __name__ == "__main__":
     if verbose>0:
         print "Fixing bisquik database %s" % conf.get('sqlalchemy.url')
 
-    
 
-    ### CALLBACK for taggable objects in database 
+
+    ### CALLBACK for taggable objects in database
     callbacks = [
         fix_image_value,
         move_image_service,
@@ -346,8 +346,8 @@ if __name__ == "__main__":
     blobcalls = [
 #        find_misreferenced_blob,
 #        move_blob_image_service,
-        # find_unreferenced_blobs 
-        ] 
+        # find_unreferenced_blobs
+        ]
     try:
         ok = True
         if not opts.blobonly:
@@ -365,6 +365,6 @@ if __name__ == "__main__":
         msg.dump("Finishing")
         msg.dump_counts()
 
-    
+
 
 

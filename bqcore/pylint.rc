@@ -10,8 +10,8 @@
 # Profiled execution.
 profile=no
 
-# Add <file or directory> to the black list. It should be a base name, not a
-# path. You may set this option multiple times.
+# Add files or directories to the blacklist. They should be base names, not
+# paths.
 ignore=CVS
 
 # Pickle collected data for later comparisons.
@@ -26,13 +26,19 @@ load-plugins=
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
-# multiple time.
+# multiple time. See also the "--disable" option for examples.
 #enable=
 
 # Disable the message, report, category or checker with the given id(s). You
-# can either give multiple identifier separated by comma (,) or put this option
-# multiple time (only on the command line, not in the configuration file where
-# it should appear only once).
+# can either give multiple identifiers separated by comma (,) or put this
+# option multiple times (only on the command line, not in the configuration
+# file where it should appear only once).You can also use "--disable=all" to
+# disable everything first and then reenable specific checks. For example, if
+# you want to run only the similarities checker, you can use "--disable=all
+# --enable=similarities". If you want to run only the classes checker, but have
+# no Warning level messages displayed, use"--disable=all --enable=classes
+# --disable=W"
+#disable=
 disable=C0111,C0322,C0323,C0324, C0301, C0103
 # C0111     Doc string 
 # C032[234] Disable 'space' around operator messages
@@ -40,15 +46,12 @@ disable=C0111,C0322,C0323,C0324, C0301, C0103
 # C0103     Invalid Name
 
 
-# R0903
 [REPORTS]
 
 # Set the output format. Available formats are text, parseable, colorized, msvs
-# (visual studio) and html
+# (visual studio) and html. You can also give a reporter class, eg
+# mypackage.mymodule.MyReporterClass.
 output-format=text
-
-# Include message's id in output
-include-ids=yes
 
 # Put messages in a separate file for each module / package specified on the
 # command line instead of printing them on stdout. Reports (if any) will be
@@ -56,7 +59,7 @@ include-ids=yes
 files-output=no
 
 # Tells whether to display a full report or only the messages
-reports=no
+reports=yes
 
 # Python expression which should return a note less than 10 (10 is the highest
 # note). You have access to the variables errors warning, statement which
@@ -69,50 +72,10 @@ evaluation=10.0 - ((float(5 * error + warning + refactor + convention) / stateme
 # evaluation report (RP0004).
 comment=no
 
-
-[FORMAT]
-
-# Maximum number of characters on a single line.
-max-line-length=80
-
-# Maximum number of lines in a module
-max-module-lines=1000
-
-# String used as indentation unit. This is usually " " (4 spaces) or "\t" (1
-# tab).
-indent-string='    '
-
-
-[MISCELLANEOUS]
-
-# List of note tags to take in consideration, separated by a comma.
-notes=FIXME,XXX,TODO
-
-
-[VARIABLES]
-
-# Tells whether we should check for unused import in __init__ files.
-init-import=no
-
-# A regular expression matching the beginning of the name of dummy variables
-# (i.e. not used).
-dummy-variables-rgx=_|dummy
-
-# List of additional names supposed to be defined in builtins. Remember that
-# you should avoid to define new builtins when possible.
-additional-builtins=
-
-
-[SIMILARITIES]
-
-# Minimum lines number of a similarity.
-min-similarity-lines=4
-
-# Ignore comments when computing similarities.
-ignore-comments=yes
-
-# Ignore docstrings when computing similarities.
-ignore-docstrings=yes
+# Template used to display messages. This is a python new-style format string
+# used to format the massage information. See doc for all details
+#msg-template='{msg_id}:{line:3d},{column}: {obj}: {msg}'
+msg-template='{msg_id}:{line:3d},{column}:  {msg}'
 
 
 [BASIC]
@@ -127,8 +90,7 @@ bad-functions=map,filter,apply,input
 module-rgx=(([a-z_][a-z0-9_]*)|([A-Z][a-zA-Z0-9]+))$
 
 # Regular expression which should only match correct module level names
-#const-rgx=(([A-Z_][A-Z0-9_]*)|(__.*__))$
-const-rgx=(([A-Za-z_][A-Za-z0-9_]*)|(__.*__))$
+const-rgx=(([A-Z_][A-Z0-9_]*)|(__.*__))$
 
 # Regular expression which should only match correct class names
 class-rgx=[A-Z_][a-zA-Z0-9]+$
@@ -143,10 +105,14 @@ method-rgx=[a-z_][a-z0-9_]{2,30}$
 attr-rgx=[a-z_][a-z0-9_]{2,30}$
 
 # Regular expression which should only match correct argument names
-argument-rgx=[a-z_][a-z0-9_]{1,30}$
+argument-rgx=[a-z_][a-z0-9_]{2,30}$
 
 # Regular expression which should only match correct variable names
-variable-rgx=[a-z_][a-z0-9_]{0,30}$
+variable-rgx=[a-z_][a-z0-9_]{2,30}$
+
+# Regular expression which should only match correct attribute names in class
+# bodies
+class-attribute-rgx=([A-Za-z_][A-Za-z0-9_]{2,30}|(__.*__))$
 
 # Regular expression which should only match correct list comprehension /
 # generator expression variable names
@@ -158,9 +124,43 @@ good-names=i,j,k,ex,Run,_
 # Bad variable names which should always be refused, separated by a comma
 bad-names=foo,bar,baz,toto,tutu,tata
 
-# Regular expression which should only match functions or classes name which do
-# not require a docstring
+# Regular expression which should only match function or class names that do
+# not require a docstring.
 no-docstring-rgx=__.*__
+
+# Minimum line length for functions/classes that require docstrings, shorter
+# ones are exempt.
+docstring-min-length=-1
+
+
+[VARIABLES]
+
+# Tells whether we should check for unused import in __init__ files.
+init-import=no
+
+# A regular expression matching the beginning of the name of dummy variables
+# (i.e. not used).
+dummy-variables-rgx=_$|dummy
+
+# List of additional names supposed to be defined in builtins. Remember that
+# you should avoid to define new builtins when possible.
+additional-builtins=
+
+
+[FORMAT]
+
+# Maximum number of characters on a single line.
+max-line-length=80
+
+# Regexp for a line that is allowed to be longer than the limit.
+ignore-long-lines=^\s*(# )?<?https?://\S+>?$
+
+# Maximum number of lines in a module
+max-module-lines=1000
+
+# String used as indentation unit. This is usually " " (4 spaces) or "\t" (1
+# tab).
+indent-string='    '
 
 
 [TYPECHECK]
@@ -171,15 +171,38 @@ ignore-mixin-members=yes
 
 # List of classes names for which member attributes should not be checked
 # (useful for classes with attributes dynamically set).
-ignored-classes=ScopedSession, Taggable, Value, Vertex
+#ignored-classes=SQLObject
+ignored-classes=ScopedSession, Taggable, Value, Vertex, Group, User, RelationshipProperty
 
 # When zope mode is activated, add a predefined set of Zope acquired attributes
 # to generated-members.
 zope=no
 
 # List of members which are set dynamically and missed by pylint inference
-# system, and so shouldn't trigger E0201 when accessed.
+# system, and so shouldn't trigger E0201 when accessed. Python regular
+# expressions are accepted.
 generated-members=REQUEST,acl_users,aq_parent
+
+
+[MISCELLANEOUS]
+
+# List of note tags to take in consideration, separated by a comma.
+notes=FIXME,XXX,TODO
+
+
+[SIMILARITIES]
+
+# Minimum lines number of a similarity.
+min-similarity-lines=4
+
+# Ignore comments when computing similarities.
+ignore-comments=yes
+
+# Ignore docstrings when computing similarities.
+ignore-docstrings=yes
+
+# Ignore imports when computing similarities.
+ignore-imports=no
 
 
 [CLASSES]
@@ -191,11 +214,16 @@ ignore-iface-methods=isImplementedBy,deferred,extends,names,namesAndDescriptions
 # List of method names used to declare (i.e. assign) instance attributes.
 defining-attr-methods=__init__,__new__,setUp
 
+# List of valid names for the first argument in a class method.
+valid-classmethod-first-arg=cls
+
+# List of valid names for the first argument in a metaclass class method.
+valid-metaclass-classmethod-first-arg=mcs
+
 
 [IMPORTS]
 
 # Deprecated modules which should not be used, separated by a comma
-#deprecated-modules=regsub,string,TERMIOS,Bastion,rexec
 deprecated-modules=regsub,TERMIOS,Bastion,rexec
 
 # Create a graph of every (i.e. internal and external) dependencies in the
@@ -227,7 +255,7 @@ max-locals=15
 max-returns=6
 
 # Maximum number of branch for function / method body
-max-branchs=12
+max-branches=12
 
 # Maximum number of statements in function / method body
 max-statements=50
@@ -243,3 +271,10 @@ min-public-methods=2
 
 # Maximum number of public methods for a class (see R0904).
 max-public-methods=20
+
+
+[EXCEPTIONS]
+
+# Exceptions that will emit a warning when being caught. Defaults to
+# "Exception"
+overgeneral-exceptions=Exception

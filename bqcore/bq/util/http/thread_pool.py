@@ -322,12 +322,12 @@ class ThreadPool(object):
                     #print "-----------------------"
                     #print  request.callback, request, result
                     #print "-----------------------"
-                    
+
                     request.callback(request, result)
                 del self.workRequests[request.requestID]
             except Queue.Empty:
                 break
-                    
+
     def wait(self, block= False):
         """Wait for results, blocking until all have arrived."""
         while 1:

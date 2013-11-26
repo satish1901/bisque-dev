@@ -7,10 +7,10 @@ This file complements development/deployment.ini.
 Please note that **all the argument values are strings**. If you want to
 convert them into boolean, for example, you should use the
 :func:`paste.deploy.converters.asbool` function, as in::
-    
+
     from paste.deploy.converters import asbool
     setting = asbool(global_conf.get('the_setting'))
- 
+
 """
 import os
 import tg
@@ -96,14 +96,14 @@ class BisqueAppConfig(AppConfig):
         # Pass the engine to initmodel, to be able to introspect tables
         self.package.model.init_model(engine)
         self.register_hook('controller_wrapper', transaction_retry_wrapper)
-        
+
 
     def after_init_config(self):
         "after config"
         config['pylons.response_options']['headers'].pop('Cache-Control', None)
         config['pylons.response_options']['headers'].pop('Pragma', None)
         ##print "DATA", config.get('use_sqlalchemy'), config.get('bisque.use_database')
-    
+
     #kage - patch to use direct cascade
     def add_static_file_middleware(self, app):
         static_app = StaticURLParser(config['pylons.paths']['static_files'])
@@ -124,7 +124,7 @@ base_config.paths = Bunch(root=root,
                           templates=[os.path.join(root, 'templates')])
 
 
-#base_config.call_on_startup = [ tgscheduler.start_scheduler ] 
+#base_config.call_on_startup = [ tgscheduler.start_scheduler ]
 base_config.renderers = []
 base_config.package = bq.core
 
@@ -141,7 +141,7 @@ base_config.render_functions.etree = render_etree
 # warning: for the moment chameleon does not handle i18n translations
 #base_config.renderers.append('chameleon_genshi')
 
-#  add a set of variable to the template 
+#  add a set of variable to the template
 base_config.variable_provider = helpers.add_global_tmpl_vars
 
 
@@ -151,7 +151,7 @@ base_config.use_sqlalchemy = True
 base_config.model = bq.core.model
 base_config.DBSession = bq.core.model.DBSession
 
-# from repoze.who.plugins import basicauth 
+# from repoze.who.plugins import basicauth
 # from bq.core.lib.mex_auth import MexAuthenticatePlugin
 # # Configure the authentication backend
 # # Undocumented TG2.1 way of adding identifiers
@@ -160,21 +160,21 @@ base_config.DBSession = bq.core.model.DBSession
 # base_config.sa_auth.identifiers = [
 #     ('mexuath',  MexAuthenticatePlugin() ),
 #     ('basicauth', basicauth.make_plugin() )
-#     ] 
+#     ]
 
 # try:
 #      #from repoze.who.plugins.ldap import LDAPAuthenticatorPlugin, LDAPAttributesPlugin
 #     from bq.core.lib.auth import LDAPAuthenticatorPluginExt, LDAPAttributesPluginExt
 #     ldap_host='ldap://directory.ucsb.edu'
 #     ldap_basedn ='o=ucsb'
-    
+
 #     base_config.sa_auth.authenticators = [
 #         ('mexuath',  MexAuthenticatePlugin() ),
 #         #('ldap', LDAPAuthenticatorPlugin(ldap_host, ldap_basedn)),
 #         ('ldap', LDAPAuthenticatorPluginExt(ldap_host, ldap_basedn)),
-#         ] 
+#         ]
 
-#     base_config.sa_auth.mdproviders = [ 
+#     base_config.sa_auth.mdproviders = [
 #         #('ldap_attributes', LDAPAttributesPlugin (ldap_host, ['cn', 'sn', 'email']))
 #         #('ldap_attributes', LDAPAttributesPluginExt (ldap_host, None))
 #         ]
@@ -182,8 +182,11 @@ base_config.DBSession = bq.core.model.DBSession
 #     pass
 
 
-# YOU MUST CHANGE THIS VALUE IN PRODUCTION TO SECURE YOUR APP 
-base_config.sa_auth.cookie_secret = "images" 
+# YOU MUST CHANGE THIS VALUE IN PRODUCTION TO SECURE YOUR APP
+base_config.sa_auth.cookie_secret = "images"
+#base_config.sa_auth.cookie_timeout = 60
+#base_config.sa_auth.cookie_reissue_time = 50
+
 base_config.auth_backend = 'bisque' # dummy name we setup in who.ini
 base_config.sa_auth.dbsession = model.DBSession
 # what is the class you want to use to search for users in the database

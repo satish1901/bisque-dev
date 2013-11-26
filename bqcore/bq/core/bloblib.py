@@ -76,11 +76,11 @@ class BlobLib() :
         # First check to see if bloburl is in our local cache.  Hash the bloburl and check for a file with that name in local_cache_dir.
         # If it's there, return it.
         # If it's not there:
-        # Query the blob server.  IF we get a URL and it's a local file URL, return that path.  
+        # Query the blob server.  IF we get a URL and it's a local file URL, return that path.
         # If we get a URL and it's not a local file URL, fetch it and cache it locally, then return that path.
         myhash = self._hashurl(bloburl)
         localpath = self.local_cache_dir + "/" + myhash
-        if os.path.exists(localpath): 
+        if os.path.exists(localpath):
             print("returning from cache")
             return "file://%s/%s" % (socket.getfqdn(), localpath)
         else:
@@ -90,7 +90,7 @@ class BlobLib() :
             req = urllib2.Request(bloburl)
             authstring = base64.b64encode(self.basic_auth_user + ":" + self.basic_auth_password)
             req.add_header('Authorization', "Basic " + authstring)
-            try: 
+            try:
                 resp = urllib2.urlopen(req)
             except URLError, e:
                 log.info("localfile(): error fetching url - %s" % e)
@@ -123,7 +123,7 @@ class BlobLib() :
         authstring = base64.b64encode(self.basic_auth_user + ":" + self.basic_auth_password)
         req = urllib2.Request(self._streamurl(bloburl))
         req.add_header('Authorization', "Basic " + authstring)
-        try: 
+        try:
             resp = urllib2.urlopen(req)
         except URLError, e:
             return
@@ -143,9 +143,9 @@ class BlobLib() :
         - already exists, silently complete
         - regular file in the way, raise an exception
         - parent directory(ies) does not exist, make them as well
-        """ 
+        """
         if os.path.isdir(newdir):
-            pass 
+            pass
         elif os.path.isfile(newdir):
             raise OSError("a file with the same name as the desired " \
                               "dir, '%s', already exists." % newdir)
@@ -168,7 +168,7 @@ class BlobLibParser:
     url = ''
     def start(self, tag, attrib):
         if tag == 'blob':
-           self.url = attrib['original_uri'] 
+           self.url = attrib['original_uri']
     def end(self, tag):
         pass
     def data(self, data):

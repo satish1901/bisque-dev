@@ -10,7 +10,7 @@ import sys
 from sqlalchemy import *
 from sqlalchemy.sql import *
 
-import transaction 
+import transaction
 import os
 import logging
 
@@ -18,7 +18,7 @@ import bq
 from bq.util.hash import make_uniq_hash
 
 from migration.versions.env002 import *
-## Build database connection BEFORE model002 import 
+## Build database connection BEFORE model002 import
 if __name__ == '__main__':
     if len(sys.argv)>1:
         url = sys.argv[1]
@@ -35,7 +35,7 @@ def new_tag(r, name, val, ty_=None):
     t= Taggable('tag')
     t.table = 'tag'
     t.mex = r.mex
-    t.owner_id = r.owner_id 
+    t.owner_id = r.owner_id
     t.resource_name = name
     t.resource_value = val
     t.resouce_user_type = ty_
@@ -72,7 +72,7 @@ def move_files_to_resources():
             #image.src = "/image_service/images/%s" % hash_id
             resource.resource_type   = 'image'
 
-        resource.resource_name   = fi.original 
+        resource.resource_name   = fi.original
         resource.resource_uniq   = hash_id
         resource.resource_value  = fi.local
         new_tag(resource, 'sha1', fi.sha1).resource_hidden=True
@@ -87,8 +87,8 @@ def nunicode (v):
 
 def move_all_to_resource():
     print "MOVING Images, etc to RESOURCE"
-    alltypes_ =  [ Taggable, Image, Tag, GObject, Dataset, Module, ModuleExecution, Service, 
-                   Template, BQUser ] 
+    alltypes_ =  [ Taggable, Image, Tag, GObject, Dataset, Module, ModuleExecution, Service,
+                   Template, BQUser ]
 
     def map_(r, ty):
         r.resource_type = ty.xmltag
@@ -144,7 +144,7 @@ def move_all_to_resource():
     for r in DBSession.query(Image):
         #r.resource_type = u'image'
         #map_(r, Image)
-        new_tag(r, 'geometry', 
+        new_tag(r, 'geometry',
                 "%s,%s,%s,%s,%s" % (r.x or '', r.y or '',r.z or '',r.t or '',r.ch or '')
                 ).resource_hidden = True
 
@@ -158,7 +158,7 @@ def move_values():
         for v in r.values:
             v.document_id = r.document_id
         if len(r.values) == 1:
-            v = r.values[0] 
+            v = r.values[0]
             if v.valstr is not None:
                 r.resource_value = unicode(v.valstr)
             elif v.valnum is not None:
@@ -188,11 +188,11 @@ def move_values():
         #    x=';'.join(["%s,%s,%s,%s,%s" % (v.x or '', v.y or '',v.z or '',v.t or '',v.ch or '')
         #                for v in r.vertices])
         #    r.resource_value = x
-                
+
 
     transaction.commit()
-        
-        
+
+
 def apply_to_all(resource, parent_id, document_id):
     resource.document_id = document_id
     resource.resource_parent_id = parent_id
@@ -203,13 +203,13 @@ def apply_to_all(resource, parent_id, document_id):
         apply_to_all(tag, resource.id, document_id)
     for gob in resource.gobjects:
         apply_to_all(gob, resource.id,  document_id)
-        
+
 def build_document_pointers():
-    """Visit all top level resource and apply a document_id (root) to 
+    """Visit all top level resource and apply a document_id (root) to
     all children: tags and gobjects
     """
     DBSession.autoflush = False
-    types_ =  [ Image, Dataset, Module, ModuleExecution, Service, Template, BQUser ] 
+    types_ =  [ Image, Dataset, Module, ModuleExecution, Service, Template, BQUser ]
     print "ADDING DOCUMENT POINTERS"
     visited = {}
     for ty_ in types_:
@@ -222,8 +222,8 @@ def build_document_pointers():
             #    print "VISTED %s before when visiting %s" % (resource, visited[resource.id][1])
             #else:
             #    visited[resource.id] = (resource, ty_)
-            
-            # Given a top level resource create a document 
+
+            # Given a top level resource create a document
             #document = Document()
             #document.uniq = resource.resource_uniq
             #document.owner_id = resource.owner_id
@@ -233,7 +233,7 @@ def build_document_pointers():
     transaction.commit()
 
     # Taggable
-    user_types = [ (nm, ty) for nm, ty in [ dbtype_from_name(str(y)) for y in all_resources() ] 
+    user_types = [ (nm, ty) for nm, ty in [ dbtype_from_name(str(y)) for y in all_resources() ]
                     if ty == Taggable ]
     for table, ty_ in user_types:
         print "processing %s" % table

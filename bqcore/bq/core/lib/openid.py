@@ -17,7 +17,7 @@ class OpenIDAuth(object):
     def _auto_register(self, environ, identity, user_name):
         registration = environ['repoze.who.plugins'].get(self.auto_register)
         self.log.debug('looking for %s found %s ' % (self.auto_register, registration))
-        
+
         if registration:
             name = user_name
             if identity.has_key('repoze.who.plugins.openid.firstname'):

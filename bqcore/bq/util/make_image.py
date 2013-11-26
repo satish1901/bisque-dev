@@ -12,11 +12,11 @@ def new_image (url, tags):
     http.xmlrequest ('flour.ece.ucsb.edu:8080/bisquik/upload_file',
                      'POST',
                      etree.tostring(image))
-    
+
 
 
 
 new_image('http://aaa', { 'filename': 'aaa' })
 
 
-    
+

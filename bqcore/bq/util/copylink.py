@@ -8,7 +8,7 @@ def copy_link (*largs):
     "Copy or make a hard link"
     largs = list (largs)
     d = largs.pop()
-        
+
     for f in largs:
         if not os.path.exists(f):
             log.error("can't copy %s to %s: missing file" % (f, d))
@@ -28,7 +28,7 @@ def copy_link (*largs):
                 shutil.copytree(f, dest)
             else:
                 shutil.copy2(f, dest)
-        
+
 
 
 

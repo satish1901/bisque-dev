@@ -22,7 +22,7 @@ class BQFileApp(FileApp):
         elif frontend == 'lighttpd':
             self.content = '1'
             self.headers.append(('X-LIGHTTPD-send-file', str(self.filename)))
-            
+
         return FileApp.get(self, environ, start_response)
 
 

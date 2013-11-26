@@ -6,7 +6,7 @@ from tempita import paste_script_template_renderer
 
 class BisqueTemplate(templates.Template):
     """Bisque default template class"""
-    
+
     _template_dir = 'templates'
     template_renderer = staticmethod(paste_script_template_renderer)
     summary = 'Bisque Template'
@@ -27,7 +27,7 @@ class BisqueTemplate(templates.Template):
                                                                  ' ' * 8)
         else:
             vars['babel_templates_extractor'] = ''
-    
+
     def run(self, command, output_dirs, vars):
         vars.setdefault('einame', vars['project'].replace('-', '_'))
         print (vars )

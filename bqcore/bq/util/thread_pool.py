@@ -1,4 +1,4 @@
-# 
+#
 """Easy to use object-oriented thread pool framework.
 
 A thread pool is an object that maintains a pool of worker threads to perform
@@ -326,12 +326,12 @@ class ThreadPool(object):
                     #print "-----------------------"
                     #print  request.callback, request, result
                     #print "-----------------------"
-                    
+
                     request.callback(request, result)
                 del self.workRequests[request.requestID]
             except Queue.Empty:
                 break
-                    
+
     def wait(self, block= False):
         """Wait for results, blocking until all have arrived."""
         while 1:

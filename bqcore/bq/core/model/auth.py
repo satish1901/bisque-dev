@@ -25,7 +25,7 @@ except ImportError:
 from sqlalchemy import Table, ForeignKey, Column
 from sqlalchemy.types import Unicode, Integer, DateTime
 from sqlalchemy.orm import relation, synonym
-from sqlalchemy import event 
+from sqlalchemy import event
 
 from bq.core.model import DeclarativeBase, metadata, DBSession
 
@@ -73,7 +73,7 @@ def hashed_password(password):
     # columns
     if not isinstance(hashed_password, unicode):
         hashed_password = hashed_password.decode('UTF-8')
-    
+
     return hashed_password
 def freetext_password(password):
     return password
@@ -150,7 +150,7 @@ class User(DeclarativeBase):
     #{ Special methods
     def __init__(self, **kw):
         super(User, self).__init__(**kw)
-           
+
 
     def __repr__(self):
         return ('<User: name=%r, email=%r, display=%r>' % (

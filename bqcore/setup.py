@@ -19,7 +19,7 @@ __VERSION__="0.5.3"
 
 setup(
     name='bqcore',
-    version=__VERSION__, 
+    version=__VERSION__,
     description='',
     author='',
     author_email='',
@@ -46,10 +46,10 @@ setup(
         "tw.forms",
         #"repoze.who.plugins.ldap",  #Optional for LDAP login
         #"repoze.who.plugins.openid",  #Optional for OpenID login
-        
+
 
         # "TurboGears2 == 2.1.2",
-        # "SQLAlchemy >= 0.7.2",      
+        # "SQLAlchemy >= 0.7.2",
         # "zope.sqlalchemy >= 0.4",
         # "repoze.tm2 >= 1.0a5",
         # "repoze.what-quickstart",
@@ -117,7 +117,7 @@ setup(
       sql     = bq.commands.admin:sql
       preferences= bq.commands.admin:preferences
       database  = bq.commands.admin:database
-      
+
       [paste.paster_create_template]
       bisque_core = bq.commands.bisque_template:CoreServiceTemplate
       bisque_service = bq.commands.bisque_template:ServiceTemplate

@@ -1,14 +1,14 @@
-#!/usr/bin/env python  
+#!/usr/bin/env python
 
 import virtualenv, textwrap
 output = virtualenv.create_bootstrap_script(textwrap.dedent("""
 import os, subprocess, shutil,glob
 
 def extend_parser(optparse_parser):
-    optparse_parser.add_option('--repo', help='Specify a repository to bootstrap from', 
+    optparse_parser.add_option('--repo', help='Specify a repository to bootstrap from',
                                default= 'http://biodev.ece.ucsb.edu/hg/bisque-stable')
 
-    optparse_parser.add_option('--tg', help='Specify turbogears repo to bootstrap', 
+    optparse_parser.add_option('--tg', help='Specify turbogears repo to bootstrap',
                                 default = 'http://www.turbogears.org/2.1/downloads/current/index',)
 
 def adjust_options(options, args):
@@ -22,7 +22,7 @@ def after_install(options, home_dir):
         bindir = 'Scripts'
     else:
        bindir = 'bin'
-    
+
     subprocess.call([os.path.join(home_dir, bindir, 'easy_install'), 'paver'])
     subprocess.call([os.path.join(home_dir, bindir, 'easy_install'),
                      '-i', options.tg, 'tg.devtools'])
@@ -46,7 +46,7 @@ def bisque_install(options, home_dir, bindir):
     print "**     Fetching bisque        **"
     print "********************************"
     print "Cloning: ", options.repo
-    print 
+    print
     subprocess.call([mercurial, 'clone', options.repo, 'tmp'])
     for df in glob.glob('tmp/*') + glob.glob('tmp/.hg*'):
         if not os.path.exists(os.path.basename(df)):
@@ -54,7 +54,7 @@ def bisque_install(options, home_dir, bindir):
     print "********************************"
     print "**Dowload and layout completed**"
     print "********************************"
-    print 
+    print
     print "*********************************"
     print "* Execute the following commands*"
     if sys.platform == 'win32':

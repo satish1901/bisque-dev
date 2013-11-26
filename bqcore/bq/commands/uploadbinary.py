@@ -40,7 +40,7 @@ def upload_file(url, filename, user='', passwd='', opts=None):
         filename = os.path.basename(filename)
 
         return "%s-%s" % (sha1, filename)
-        
+
     except IOError, err:
         raise Abort('Problem uploading %s to %s (try it manually using a web browser): %s\n' % (filename, url, err))
 
@@ -88,7 +88,7 @@ class MultipartPostHandler(urllib2.BaseHandler):
             request.add_data(data)
         return request
 
-    def multipart_encode(vars, files, boundary = None, buffer = None):
+    def multipart_encode(self, vars, files, boundary = None, buffer = None):
         if boundary is None:
             boundary = mimetools.choose_boundary()
         if buffer is None:
@@ -125,7 +125,7 @@ Use --help for more info.
 
 
 def main():
-    from optparse import OptionParser 
+    from optparse import OptionParser
     parser = OptionParser (usage=help)
     parser.add_option ('-u', '--user', action="store", default='')
     parser.add_option('-p', '--password', action="store", default='')
@@ -153,7 +153,7 @@ def main():
 
     print "Please add the following files to EXTERNAL_FILES:"
     print "\n".join (uploaded)
-            
+
 
 if __name__ == "__main__":
     main()
