@@ -52,9 +52,9 @@ def mcc (command,  *largs, **kw):
 def mex_compile (command_list, where = None, **kw):
     """mex compile a command_list a list of arguments to the matlab mex_compiler
 
-    :param: command_list - a list of command 
+    :param: command_list - a list of command
     :param: where - directory in which mex will be compiled"""
-    
+
     if where:
         cwd = os.getcwd()
         os.chdir(where)
@@ -91,7 +91,7 @@ def copy_files (files, dest):
         dname = os.path.join (dest, fname)
         if os.path.exists (dname): os.unlink (dname)
         copy_link (f, dest)
-    
+
 
 def matlab_setup(main_path, files = [], bisque_deps = False, dependency_dir = "mbuild",  params = {}, **kw):
     'prepare a matlab script for execution  by compiling with mcc'
@@ -112,13 +112,13 @@ def matlab_setup(main_path, files = [], bisque_deps = False, dependency_dir = "m
 
 
     rest = []
-    
+
     if isinstance(main_path, list):
         mpath = main_path.pop(0)
         rest = main_path
         main_path = mpath
-    
-    ext_map = { 'nt' : '.exe' } 
+
+    ext_map = { 'nt' : '.exe' }
     if main_path.endswith (".m"):
         main_path = main_path [0:-2]
     main_name = os.path.basename(main_path)
@@ -144,13 +144,13 @@ def python_setup(scripts,  package_scripts =True, dependency_dir = 'pydist', par
     if package_script is true then a runner scripts will be generated
     for each script
     """
-    f = bbfreeze.Freezer(dependency_dir)
-    f.include_py = False
+    fr = bbfreeze.Freezer(dependency_dir)
+    fr.include_py = False
     if not isinstance(scripts, list):
-        scripts = [ scripts ] 
+        scripts = [ scripts ]
     for script in scripts:
-        f.addScript(script)
-    f()
+        fr.addScript(script)
+    fr()
     if not package_scripts:
         return
     data = dict(params)
@@ -169,13 +169,13 @@ def python_setup(scripts,  package_scripts =True, dependency_dir = 'pydist', par
         except Exception,e:
             print ("Could not create python launcher script %s" % e)
 
-    
-def ensure_binary(exe):
-    'make sure executable is available to the module'
-    import distutils.spawn
-    p = distutils.spawn.find_executable(exe)
-    if p is None:
-        raise SetupError("Executable required but not found: %s" % exe)    
+
+#def ensure_binary(exe):
+#    'make sure executable is available to the module'
+#    import distutils.spawn
+#    p = distutils.spawn.find_executable(exe)
+#    if p is None:
+#        raise SetupError("Executable required but not found: %s" % exe)
 
 def require(expression, params, throws = True):
     """Require everying in expression
@@ -202,7 +202,7 @@ def require(expression, params, throws = True):
         raise SetupError("required expression failed %s" % expression)
 
     return valid
-        
+
 def read_config(filename):
     return ConfigFile(filename).get (None, asdict = True)
 

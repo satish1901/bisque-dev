@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 from __future__ import with_statement
 import traceback
-import optparse
 #import package_resources
 import os,sys,stat,platform, datetime
 import socket
 import shutil
 import fnmatch
-import subprocess 
+import subprocess
 import zipfile
 import StringIO
 import textwrap
@@ -15,6 +14,7 @@ import getpass
 import string
 import re
 import logging
+import time
 
 import pkg_resources
 from setuptools.command import easy_install
@@ -38,23 +38,22 @@ answer_file = None
 save_answers = False
 
 try:
-    import bq
     import sqlalchemy as sa
     from bq.util.configfile import ConfigFile
     #from bq.model import db_version
 except ImportError, e:
     log.exception( "There was a problem with the bisque environment\n"
-                   "Have you run %s setup.py yet?" % sys.executable)
-    
+                   "Have you run %s setup.py yet?" , sys.executable)
+
     sys.exit(0)
 
 try:
+    #pylint:disable=W0611
     import readline
     #readline.parse_and_bind('tab: complete')
     #readline.parse_and_bind('set editing-mode emacs')
 except ImportError, e:
     log.info( "No readline available" )
-    pass
 
 try:
     import pty
@@ -68,7 +67,7 @@ class SetupError(Exception):
 
 class InstallError(Exception):
     pass
-    
+
 
 ############################################
 # HELPER FUNCTIONS
@@ -111,7 +110,7 @@ def check_exec(command):
 def copy_link (*largs):
     largs = list (largs)
     d = largs.pop()
-        
+
     for f in largs:
         try:
             dest = d
@@ -133,7 +132,7 @@ def getanswer(question, default, help=None):
     while 1:
         if not save_answers and answer_file:
             a = answer_file.readline().strip()
-            if question.strip() != a: 
+            if question.strip() != a:
                 raise SetupError( "Mismatch '%s' !=  '%s' " % (question, a) )
             a = answer_file.readline().strip()
             answer_file.readline()
@@ -142,7 +141,7 @@ def getanswer(question, default, help=None):
             a =  capture.logged_input ("%s [%s]? " % (question, default))
         else:
             a =  raw_input ("%s [%s]? " % (question, default))
-        
+
         if a=='?':
             if help is not None:
                 print textwrap.dedent(help)
@@ -152,7 +151,7 @@ def getanswer(question, default, help=None):
         y_n = ['Y', 'y', 'N', 'n']
         if default in y_n and a in y_n:
             a = a.upper()
-            
+
         if a == '': a = default
         if save_answers and answer_file:
             answer_file.write(question)
@@ -177,8 +176,8 @@ def patch_file (path, mapping, destination=None, **kw):
         destination = os.path.join(destination, os.path.basename(path))
     with open(destination,'w') as f:
         f.write (template)
-    
-   
+
+
 def sql(DBURI, statement, verbose = False):
 
     from sqlalchemy import create_engine, sql
@@ -190,7 +189,7 @@ def sql(DBURI, statement, verbose = False):
         if verbose:
             log.exception('in sql %s' % statement)
         return 1, ''
-    
+
 
     print "SQL: NOT IMPLEMEMENT %s" % statement
     return 0, ''
@@ -233,11 +232,11 @@ def call(cmd, echo=False, **kw):
             #p.wait()
     else:
         p = subprocess.Popen(cmd, **kw)
-        
+
     p.wait()
-        
+
     return p.returncode
-    
+
 
 
 
@@ -261,7 +260,7 @@ def unpack_zip (zfile, dest, strip_root=None):
             # write the file, .extract would force the subpath and can't be used
             f = open(filename, 'wb')
             f.write(z.read(info))
-            f.close()            
+            f.close()
     z.close()
     return names
 
@@ -323,7 +322,7 @@ initial_vars = {
 
 linked_vars = {
     'h1.url' : '${bisque.root}',
-    'smtp_server' : '${mail.smtp.server}',        
+    'smtp_server' : '${mail.smtp.server}',
     'registration.site_name' : '${bisque.title} (${bisque.root})',
     'registration.host' : '${bisque.root}',
     'registration.mail.smtp_server' : '${mail.smtp.server}',
@@ -340,7 +339,7 @@ the proxy address and see AdvancedInstalls"""),
               "This will show up in the upper left of every page display"),
              ('bisque.title', 'The main title for the web page header',
               "The title of your collection, group or project" ),
-             ('bisque.paths.root', 'Installation Directory', 
+             ('bisque.paths.root', 'Installation Directory',
               'Location of bisque installation.. used for find configuration and data')
              ]
 
@@ -350,7 +349,7 @@ ENGINE_QUESTIONS=[
 #     "A URL of Bisque site where this engine will register modules"),
     ('bisque.engine', "Enter the URL of this bisque module engine",
      "A module engine offers services over an open URL like a web-server. Please make sure any firewall software allows access to the selected port"),
-    ('bisque.paths.root', 'Installation Directory', 
+    ('bisque.paths.root', 'Installation Directory',
      'Location of bisque installation.. used for find configuration and data'),
     ]
 
@@ -411,7 +410,7 @@ def update_variables (qs, store):
     for key in values.keys():
         if isinstance (values[key], basestring):
             values[key] = STemplate (values[key]).safe_substitute(values)
-        
+
     return values
 
 #######################################################
@@ -426,11 +425,11 @@ def install_cfg (site_cfg, section, default_cfg):
 
 def read_site_cfg(cfg , section):
     bisque_vars = {}
-    
+
     # first pull initial values from config files
     #iv = initial
-    tc = ConfigFile()      
-    if os.path.exists (cfg): 
+    tc = ConfigFile()
+    if os.path.exists (cfg):
         tc.read(open(cfg))
         bisque_vars.update(tc.get(section, asdict=True))
 
@@ -504,11 +503,11 @@ def create_postgres (dburl):
              stdin = stdin) != 0:
         print db_create_error
         return False
-    
+
     return True
-    
-    
-        
+
+
+
 ###############
 #
 
@@ -520,7 +519,7 @@ def create_mysql(dburl):
         command.append ('-u%s' % dburl.username)
     if dburl.password:
         command.append ('-p%s' % dburl.password)
-    
+
     print "PLEASE ignore 'ERROR (...)Unknown database ..' "
     if call (command+[dburl.database, '-e', 'quit'], echo=True) == 0:
         print "Database exists, not creating"
@@ -530,8 +529,8 @@ def create_mysql(dburl):
         print db_create_error
         return False
     return True
-          
-            
+
+
 ###############
 #
 def create_sqlite (dburl):
@@ -548,9 +547,9 @@ known_db_types = {
 def install_driver(DBURL):
     """For known database types: check whether required driver is installed;
     install it if not installed.
-    
+
     Argument: sqlalchemy.engine.url.URL object.
-    
+
     Returns True if driver is available (so it makes sense to continue),
     False otherwise (database configuration should be cancelled).
     """
@@ -563,7 +562,7 @@ def install_driver(DBURL):
             Make sure that you have installed appropriate driver
             so SQLAlchemy can use it to access your database.
             Continue?
-            """, 
+            """,
             'N',
             """
             Bisque knows what driver is required for SQLite, PostreSQL, and MySQL
@@ -572,7 +571,7 @@ def install_driver(DBURL):
             It is also recommended that you create empty database manually,
             as some databases may use proprietary syntax for database creation.
             """)
-            
+
     else:
         try:
             print 'Trying to import driver %s...' % py_drname,
@@ -607,9 +606,9 @@ def test_db_existance(DBURL):
     (like Bisque database user was created, but no rigts were granted to it).
     Even if this function succeeds, later steps may fail due to misconfigured
     access rights.
-    
+
     Argument: sqlalchemy.engine.url.URL object.
-    
+
     Returns True if database exists and is accessible, False otherwise.
     """
     try:
@@ -637,7 +636,7 @@ def get_dburi(params):
 def test_db_alembic (DBURL):
     r, out = sql(DBURL, 'select * from alembic_version')
     return r == 0
-    
+
 def test_db_sqlmigrate(DBURL):
     r, out = sql(DBURL, 'select * from migrate_version')
     return r == 0
@@ -645,24 +644,24 @@ def test_db_sqlmigrate(DBURL):
 def test_db_initialized(DBURL):
     r, out = sql(DBURL, 'select * from taggable limit 1')
     return r == 0
-    
+
 
 def install_database(params):
     """Main database configuration routine.
     To succeed, database server should run, be accessible using the specified
     dburi, and have the specified database.
-    
+
     Note: this always is true for SQLite.
-    
+
     Note: for all other database types, database should be created manually
     before running Bisque setup.
     """
     try:
-        params, DBURL = get_dburi(params) 
+        params, DBURL = get_dburi(params)
     except sa.exc.ArgumentError:
         log.exception( "Unable to understand DB url. Please see SqlAlchemy" )
         return params
-    
+
     # 'dburi' is a string entered by the user
     # 'DBURL' is an object with attributes:
     #   drivername  -- string like 'sqlite', 'postgres', 'mysql'
@@ -672,15 +671,15 @@ def install_database(params):
     #   port        -- string
     #   database    -- string
     #   query       -- map from query's names to values
-    
+
     # Step 1: check whether database driver is available (install it if needed)
     if not install_driver(DBURL):
         print(
             """Database was NOT prepared due to absence of database driver
 Please resolve the problem(s) and re-run 'bisque-setup --database'.""")
         return params
-        
-        
+
+
     # Step 2: check whether the database exists and is accessible
     db_exists = test_db_existance(DBURL)
     if not db_exists:
@@ -708,7 +707,7 @@ Please resolve the problem(s) and re-run 'bisque-setup --database'.""")
         Please fix the problem(s) and re-run 'bisque-setup --database'
         """ % (DBURL.database,DBURL.username) )
         return params
-               
+
     # Step 3: find out whether the database needs initialization
     db_initialized = test_db_initialized(DBURL)
     params['new_database'] = False
@@ -723,7 +722,7 @@ Please resolve the problem(s) and re-run 'bisque-setup --database'.""")
         if call (['paster','setup-app', config_path('site.cfg')]) != 0:
             raise SetupError("There was a problem initializing the Database")
         params['new_database'] = True
-        
+
 
     if test_db_sqlmigrate(DBURL):
         print "Upgrading database version (sqlmigrate)"
@@ -737,15 +736,15 @@ Please resolve the problem(s) and re-run 'bisque-setup --database'.""")
 
     #print params
     return params
-        
-        
+
+
 
 
 #######################################################
 # Matlab
 def install_matlab(params, cfg = RUNTIME_CFG):
     #print params
-    matlab_home = which('matlab') 
+    matlab_home = which('matlab')
     if matlab_home:
         params['runtime.matlab_home'] = os.path.abspath(os.path.join (matlab_home, '../..'))
     if os.name == 'nt':
@@ -758,13 +757,13 @@ def install_matlab(params, cfg = RUNTIME_CFG):
         params = modify_site_cfg(MATLAB_QUESTIONS, params, section=None, cfg=cfg)
         if  os.path.exists(params['runtime.matlab_home']):
             break
-        if  getanswer("Matlab not found: Try again", 'Y', 
+        if  getanswer("Matlab not found: Try again", 'Y',
                       "Matlab (and compile) is needed for many modules") == 'Y':
             continue
         print "Matlab must be provided to install modules"
         params['matlab_installed'] = False
         break
-        
+
 
     #install_matlabwrap(params)
     return params
@@ -786,9 +785,9 @@ def install_matlabwrap(params):
     and running python setup.py.. Please watch for errors
 
     Please visit for more information:
-    
+
     http://biodev.ece.ucsb.edu/projects/bisquik/wiki/RequiredAndSuggestedSoftware
-    
+
     """
     import tarfile
 
@@ -834,7 +833,7 @@ def install_modules(params):
             try:
                 r = call ([PYTHON, '-u', 'setup.py'], env=environ)
                 if r != 0:
-                    print "setup in %s returned error " % modpath 
+                    print "setup in %s returned error " % modpath
             except Exception, e:
                 log.exception ("An exception occured during the module setup: %s" % str(e))
             os.chdir (cwd)
@@ -867,7 +866,7 @@ def install_bioformats(params):
 
         #for bf in bio_files:
         #    copy_link (os.path.join(BQDEPOT, bf), BQBIN)
-             
+
         biozip = zipfile.ZipFile (os.path.join(BQDEPOT, 'bioformats-pack.zip'))
         for fname in  biozip.namelist():
             if fname[-1] == '/':  # skip dirs
@@ -883,11 +882,11 @@ def install_bioformats(params):
             if not fname.endswith ('jar'):
                 os.chmod (dest, os.fstat(f.fileno()).st_mode | stat.S_IXUSR)  # User exec
             f.close()
-                
+
         # python >2.6
         #biozip.extractall(os.path.join(BQENV, "bin"))
         biozip.close()
-                           
+
 
 
 
@@ -924,7 +923,7 @@ def install_server_defaults(params):
 
     if getanswer("Change a site variable", 'Y')!='Y':
         return params
-        
+
     params = modify_site_cfg(SITE_QUESTIONS, params)
     return params
 
@@ -963,7 +962,7 @@ def install_engine_defaults(params):
 
     if getanswer("Change a site variable", 'Y')!='Y':
         return params
-        
+
     params = modify_site_cfg(ENGINE_QUESTIONS, params,  append=False)
 
     if getanswer("Update servers", 'Y' if new_install else 'N', 'Modify [server] section of site.cfg') == 'Y':
@@ -992,13 +991,13 @@ def install_proxy(params):
 #
 def check_condor (params, cfg  = RUNTIME_CFG):
     try:
-        
+
         if os.path.exists('/dev/null'):
-            devnull = open ('/dev/null') 
+            devnull = open ('/dev/null')
         else:
             import tempfile
             devnull = tempfile.TemporaryFile(mode='w')
-        
+
         retcode = call ([ 'condor_status' ], stdout=devnull, stderr=devnull )
     except OSError:
         print "No condor was found. See bisque website for details on using condor"
@@ -1066,7 +1065,7 @@ def install_runtime(params, cfg = RUNTIME_CFG):
         print "%s does not exist and cannot create: %s" % (staging, e)
 
     return params
-    
+
 
 
 
@@ -1098,7 +1097,7 @@ def install_preferences(params):
     if params['new_database']: #already initialized
         return params
     if getanswer ("Initialize Preferences ","N",
-                  """Initialize system preferences.. new systems will 
+                  """Initialize system preferences.. new systems will
 requires this while, upgraded system may depending on chnages""")!="Y":
         return params
     cmd = ['bq-admin', 'preferences', 'init', ]
@@ -1131,7 +1130,7 @@ def fetch_external_binaries ():
 
         if localname is not None:
             name = localname
-        
+
         if os.path.isdir (where):
             dest = os.path.join(where,name)
         else:
@@ -1143,20 +1142,20 @@ def fetch_external_binaries ():
             if sha1 == shash:
                 print "%s found locally" % name
                 return
-            
+
         fetch_url = urlparse.urljoin(EXT_SERVER,  hash_name)
         print "Fetching %s" % fetch_url
         handle = urllib2.urlopen (fetch_url)
         data   = handle.read()
         handle.close()
-        
+
         if sha1 != _sha1hash(data):
-            raise Exception('hash mismatch in %s' % filename) 
+            raise Exception('hash mismatch in %s' % name)
         handle = open(dest, 'wb')
         handle.write(data)
         print "Wrote %s in %s" % (name, where)
         handle.close()
-    
+
     if getanswer ("Fetch external binary files from Bisque development server",
                   "Y",
                   "This action is required only on first download") != 'Y':
@@ -1222,10 +1221,10 @@ def install_dependencies ():
 
     # install ExtJS
     extzip = os.path.join(BQDEPOT, 'extjs.zip')
-    public = to_sys_path('bqcore/bq/core/public') 
+    public = to_sys_path('bqcore/bq/core/public')
     extjs =  os.path.join (public, "extjs")
     uncompress_extjs (extzip, public, extjs)
-    
+
 def install_imgcnv ():
     """Install dependencies that aren't handled by setup.py"""
 
@@ -1237,7 +1236,7 @@ def install_imgcnv ():
         print "or visit our mailing list https://groups.google.com/forum/#!forum/bisque-bioimage"
         print "for help"
         return
-        
+
     if getanswer ("Install Bio-Image Convert", "Y",
                   "imgcnv will allow image server to read pixel data") == "Y":
 
@@ -1246,7 +1245,7 @@ def install_imgcnv ():
         if sys.platform == 'win32':
             binv = 'Scripts'
             exev = '.exe'
-        
+
         filename_dest = os.path.join(os.environ['VIRTUAL_ENV'], binv)
         filename_check = os.path.join(filename_dest, 'imgcnv%s'%exev)
         uncompress_dependencies (filename_zip, filename_dest, filename_check)
@@ -1274,11 +1273,11 @@ def install_features_source ():
         filename_dest = to_sys_path('bqfeature/bq/src')
         filename_check = ''
         uncompress_dependencies (filename_zip, filename_dest, filename_check, strip_root=True)
-        
+
         print """Now you can recompile feature extractors. Follow instructions located in:
           bqserver/bq/features/controllers/extractors/build/Readme.txt
         """
-        
+
 
 #######################################################
 #
@@ -1287,7 +1286,7 @@ def setup_admin(params):
         params, DBURL = get_dburi(params)
     except sa.exc.ArgumentError:
         log.exception( "Unable to understand DB url. Please see SqlAlchemy" )
-        return 
+        return
 
     # Not sure why, but needs to separate script
     r = call ([PYTHON, 'scripts/create_admin.py'])
@@ -1296,19 +1295,19 @@ def setup_admin(params):
     if r!= 0:
         print("There was a problem fetching the initial admin password")
         return
-    
+
     #admin_pass = eval(admin_pass)[0][0]
     new_pass = getpass.getpass ("Please set the bisque admin password >")
-    
+
     #sql(DBURL, "update tg_user set password='%s' where user_name='admin';" % (new_pass))
     print "Set new admin password"
-        
 
-    
-    
-            
+
+
+
+
 #######################################################
-#  Send the installation report 
+#  Send the installation report
 # http://stackoverflow.com/questions/92438/stripping-non-printable-characters-from-a-string-in-python
 import re
 unprintable = "".join(set(unichr(x) for x in range(0,255)) - set(string.printable))
@@ -1326,7 +1325,7 @@ def send_installation_report(params):
     import turbomail
     import platform
     import textwrap
-    
+
     BISQUE_REPORT="""
     Host: %(host)s
     Platform : %(platform)s
@@ -1334,14 +1333,14 @@ def send_installation_report(params):
     Admin: %(admin)s
     Time: %(installtime)s
     Duration: %(duration)s
-    
+
     """
     sender_email = params.get ('bisque.admin_email', 'YOUR EMAIL')
 
     sender_email  = getanswer ("Enter the site administrator's email",
                                sender_email,
                                """This will us to contact you (very rarely) with updates""")
-    
+
     turbomail.control.interface.start ({'mail.on':True,
                                         'mail.transport': 'smtp',
 #                                        'mail.transport': 'debug',
@@ -1363,7 +1362,7 @@ def send_installation_report(params):
 
     try:
         msg = turbomail.Message(sender_email, "bisque-install@biodev.ece.ucsb.edu", "Installation report")
-    
+
         msg.plain = "\n-----------\n".join (parts)
         msg.send()
     except Exception,e:
@@ -1412,8 +1411,8 @@ install_options= [
            'runtime',
            'imgcnv',
            'bioformats',
-           'features',  
-           'features_source',                      
+           'features',
+           'features_source',
            'server',
            'mail',
            'preferences',
@@ -1472,9 +1471,9 @@ def bisque_installer(options, args):
         return
 
     print "Beginning install of %s" % (system_type)
-        
+
     params = {}
-    if  os.path.exists (SITE_CFG): 
+    if  os.path.exists (SITE_CFG):
         params = read_site_cfg(cfg = SITE_CFG, section=BQ_SECTION)
         #print params
 
@@ -1482,7 +1481,7 @@ def bisque_installer(options, args):
         runtime_params = install_cfg(RUNTIME_CFG, section=None, default_cfg=config_path('runtime-bisque.default'))
     else:
         runtime_params = read_site_cfg(cfg=RUNTIME_CFG, section = None)
-    
+
     params['bisque.installed'] = "inprogress"
     if 'server'  in installer:
         params = install_server_defaults(params)
@@ -1498,7 +1497,7 @@ def bisque_installer(options, args):
     if 'features' in installer:
         install_features()
     if 'features_source' in installer:
-        install_features_source()                   
+        install_features_source()
     if 'database'  in installer:
         params = install_database(params)
     if 'matlab'  in installer:
@@ -1539,11 +1538,11 @@ class CaptureIO(object):
     def close(self):
         self.f.close()
         sys.stdout = self.o
-        
+
     def __del__(self):
         if 'CaptureIO' in locals() and isinstance(sys.stdout, CaptureIO):
             self.close()
-        
+
     def write(self,s):
         self.o.write(s)
         self.f.write(s); self.f.flush()
@@ -1558,8 +1557,8 @@ class CaptureIO(object):
 
 
 def typescript(command, filename="typescript"):
-    import sys, os, time
-    import pty
+#    import sys, os, time
+#    import pty
     mode = 'wb'
     script = open(filename, mode)
     def read(fd):
@@ -1568,9 +1567,9 @@ def typescript(command, filename="typescript"):
         return data
 
     script.write(('Script started on %s\n' % time.asctime()).encode())
-    r = pty.spawn(command, read)
+    pty.spawn(command, read)
     script.write(('Script done on %s\n' % time.asctime()).encode())
-    return r
+    return 0
 
 def setup(options, args):
     virtenv = os.environ.get ('VIRTUAL_ENV', None)
@@ -1587,7 +1586,7 @@ def setup(options, args):
     BQENV = virtenv
     BQBIN = os.path.join(BQENV, 'bin') # Our local bin
     if os.name == "nt":
-        BQBIN = os.path.join(BQENV, 'Scripts') # windows local bin 
+        BQBIN = os.path.join(BQENV, 'Scripts') # windows local bin
 
     begin_install = datetime.datetime.now()
     if options.read:
@@ -1605,13 +1604,13 @@ def setup(options, args):
         if not cancelled:
             end_install = datetime.datetime.now()
             params = read_site_cfg(cfg= SITE_CFG, section=BQ_SECTION)
-            params['install_started'] = begin_install 
+            params['install_started'] = begin_install
             params['duration'] = str(end_install-begin_install)
             print "got ", r
             send_installation_report(params)
         sys.exit(r)
-        
-    
+
+
     try:
         r  = bisque_installer(options, args)
         return r
@@ -1633,7 +1632,7 @@ def setup(options, args):
 #    finally:
 #        capture.close();
 #        capture = None
-#        
+#
 #        if not cancelled:
 #            end_install = datetime.datetime.now()
 #            send_installation_report(params)

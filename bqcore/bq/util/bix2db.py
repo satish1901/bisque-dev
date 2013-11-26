@@ -52,18 +52,14 @@ DESCRIPTION
 """
 
 import traceback, sys
-from datetime import datetime
 from time import strptime
 from StringIO import StringIO
 from datetime import datetime, time, date
 from lxml import etree
 
 from bq import blob_service
-from bq import image_service 
+from bq import image_service
 from bq import data_service
-
-from bq.util.bisquik2db import bisquik2db
-from bq.data_service.model import Image, Tag
 
 from bq.exceptions import BQException
 BIXLOG='biximport.log'
@@ -81,7 +77,7 @@ class BIXImporter(object):
     pmap = {'public': 'published',
             'private': 'private',
             'group': 'private' }
-             
+
 
 
     def __init__(self, updir, **kw):
@@ -94,33 +90,33 @@ class BIXImporter(object):
         if name[0] != '/':
             return '/'.join([self.upload_dir, name])
         return name
-        
+
 
     def save_file (self, fn, **kw):
         '''save a file in the image server and return info'''
         with open(self.fullname(fn), 'rb') as src:
-            fr = etree.Element ('file', name=fn, permission=str(self.permission_flag) ) 
-            return blob_service.store_blob(fr, src ) 
-            
+            fr = etree.Element ('file', name=fn, permission=str(self.permission_flag) )
+            return blob_service.store_blob(fr, src )
+
 
     def save_image (self, fn, **kw):
         '''save a file in the image server and return info'''
-        log.debug ("Store new image: " + fn + " " + str(self.image_info)) 
+        log.debug ("Store new image: " + fn + " " + str(self.image_info))
 
         self.resource = etree.Element('image', name=fn, permission = str(self.permission_flag))
 
         with open(self.fullname(fn), 'rb') as src:
-            self.resource = blob_service.store_blob(self.resource, src ) 
+            self.resource = blob_service.store_blob(self.resource, src )
 
         if 'uri' in self.resource.attrib:
             self.import_files[fn] = self.resource.get('uri')
         else:
-            log.debug ("Image service could not create image %s" % fn) 
+            log.debug ("Image service could not create image %s" % fn)
             raise BIXError ("Image service could not create image %s" % fn)
 
 
     def process_bix(self, bixfile, name_map = {} ):
-        if bixfile == None or bixfile == '': return '','';
+        if bixfile == None or bixfile == '': return '',''
         self.import_files = name_map
         fullname = self.fullname(bixfile)
         log.debug ("BIX:" + fullname)
@@ -143,8 +139,8 @@ class BIXImporter(object):
             rr = self.save_file (bixfile)
             self.import_files[bixfile] = rr.get('uri')
             self.import_files['BIX'] = rr.get('uri')
-            
-            
+
+
 
             e = etree.SubElement(self.resource, 'tag', name = 'attached-file')
             etree.SubElement (e, 'tag', name='original-name', value=bixfile)
@@ -154,7 +150,7 @@ class BIXImporter(object):
             for config in et.getroot().getiterator('config'):
                 etree.SubElement (self.resource,
                                   'tag', name='image_type', value =config.get ('type'))
-        
+
             for item in et.getroot().getiterator('item'):
                 name = item[0].text                # item[0] == <name>
                 value = self.parseValue(item[1])   # item[1] == <value>
@@ -196,7 +192,7 @@ class BIXImporter(object):
         #    log.error ("Upexpected %s " % ( sys.exc_info()[0]))
         del et
         return self.resource.get('name'), self.resource.get('uri')
-            
+
     def parseValue(self, vs):
         if not len(vs): return vs.text
         for v in vs:
@@ -205,7 +201,7 @@ class BIXImporter(object):
                 return parser(v)
             else:
                 raise KeyError ('No parser available for '+ v.tag)
-            
+
     def parse_datetime(self, v):
         '''return parsed datetime.. attributes of v must be compatible
         with datetime
@@ -217,14 +213,14 @@ class BIXImporter(object):
         with datetime
         '''
         return str(date(**dict([ (x,int(y)) for x,y in v.attrib.items() ])))
-        
+
     def parse_time(self, v):
         '''return parsed datetime.. attributes of v must be compatible
         with datetime
         '''
         return str(time(**dict([ (x,int(y)) for x,y in v.attrib.items() ])))
 
-    
+
     #####
     ## Special tags are listed below
     def tag_dataset(self, item, **kw):
@@ -234,7 +230,7 @@ class BIXImporter(object):
     def tag_filemetadata(self, item, **kw):
         '''Deal with long metadata string stored in meta'''
         pass
-    
+
     def tag_filename(self, item, **kw):
         '''associate the values from the parsed file with image v'''
 
@@ -249,10 +245,10 @@ class BIXImporter(object):
         perm = item[1].text
         log.debug ('setting permission by ' + perm)
         self.permission_flag = BIXImporter.pmap.get(perm, 'private')
-    
+
     def tag_microtubule_tracks(self, item, **kw):
         self.tag_graphics_annotation(item, **kw)
-        
+
     def tag_graphics_annotation(self, item, **kw):
         '''parse the embedded gobjects'''
         v = item[1].text
@@ -276,7 +272,7 @@ class BIXImporter(object):
 #                path = self.fullname(f)
 #                filepaths.append(path)
 #                info = self.save_file(f)
-#                
+#
 #            bfis, missing = trackimport.trackimport(filepaths, imagemeta)
 #            for bfi in bfis:
 #                for tb in bfi:
@@ -297,10 +293,10 @@ class BIXImporter(object):
                 e = etree.Element('tag', name='attached-file' )
                 etree.SubElement(e, 'tag', name='original-name', value=str(f))
                 etree.SubElement(e, 'tag' ,name='url', type='file', value=rr.get('uri'))
-                
+
                 #data_service.append_resource(self.resource, tree=e)
                 self.resource.append(e)
-                
+
 
     def tag_image_plane_order(self, item, **kw):
         '''set image_plane_order for image v'''
@@ -354,10 +350,10 @@ class BIXImporter(object):
                 print orig, local
                 shutils.move (local, orig)
             biximport.process_bix(file_map['BIX'])
-            
-            
-            
-        
+
+
+
+
 
 if __name__ == '__main__':
     import sys

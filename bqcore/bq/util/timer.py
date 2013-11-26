@@ -9,7 +9,7 @@ else:
         return time.time()
 
 
-class Timer(object):
+class Timer(object):#pylint disable-msg=R0903
     """
     Time a set of statement or a function
     with Timer() as t:
