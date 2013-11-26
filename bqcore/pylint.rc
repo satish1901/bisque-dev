@@ -33,11 +33,14 @@ load-plugins=
 # can either give multiple identifier separated by comma (,) or put this option
 # multiple time (only on the command line, not in the configuration file where
 # it should appear only once).
-disable=C0111,C0322,C0323,C0324
+disable=C0111,C0322,C0323,C0324, C0301, C0103
 # C0111     Doc string 
 # C032[234] Disable 'space' around operator messages
+# C0301     Line to long
+# C0103     Invalid Name
 
 
+# R0903
 [REPORTS]
 
 # Set the output format. Available formats are text, parseable, colorized, msvs
@@ -168,7 +171,7 @@ ignore-mixin-members=yes
 
 # List of classes names for which member attributes should not be checked
 # (useful for classes with attributes dynamically set).
-ignored-classes=SQLObject
+ignored-classes=ScopedSession, Taggable, Value, Vertex
 
 # When zope mode is activated, add a predefined set of Zope acquired attributes
 # to generated-members.
@@ -192,7 +195,8 @@ defining-attr-methods=__init__,__new__,setUp
 [IMPORTS]
 
 # Deprecated modules which should not be used, separated by a comma
-deprecated-modules=regsub,string,TERMIOS,Bastion,rexec
+#deprecated-modules=regsub,string,TERMIOS,Bastion,rexec
+deprecated-modules=regsub,TERMIOS,Bastion,rexec
 
 # Create a graph of every (i.e. internal and external) dependencies in the
 # given file (report RP0402 must not be disabled)

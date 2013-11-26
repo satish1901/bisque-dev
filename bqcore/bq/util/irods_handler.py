@@ -45,7 +45,7 @@ class IrodsConnection(object):
         self.user  = user or env['user'] or irods_env.getRodsUserName()
         self.host  = host or env['host'] or irods_env.getRodsHost()
         self.port  = port or env['port'] or irods_env.getRodsPort() or 1247
-        self.password = password or env['password'] 
+        self.password = password or env['password']
 
         path = ''
         zone = ''
@@ -73,7 +73,7 @@ class IrodsConnection(object):
 
         coll = irods.irodsCollection(conn)
         nm = coll.getCollName()
-        
+
         self.irods_url = urlparse.urlunparse(list(self.irods_url)[:2] + ['']*4)
         if self.path in ['', '/']:
             self.path = nm
@@ -81,7 +81,7 @@ class IrodsConnection(object):
         self.conn = conn
         self.base_dir = nm
         return self
-        
+
     def close(self):
         if self.conn:
             self.conn.disconnect()
@@ -90,15 +90,12 @@ class IrodsConnection(object):
 
     def __enter__(self):
         if self.conn is None:
-             self.open()
+            self.open()
         return self
 
     def __exit__(self, ty, val, tb):
         self.close()
         return False
-
-        
-
 
 BLOCK_SZ=512*1024
 def copyfile(f1, *dest):
@@ -127,19 +124,19 @@ def irods_cache_save(f, path, *dest):
     _mkdir(os.path.dirname(cache_filename))
     with open(cache_filename, 'wb') as fw:
         copyfile(f, fw, *dest)
-    
+
     return cache_filename
-    
+
 def irods_fetch_file(url, **kw):
     ic = IrodsConnection(url, **kw)
-    log.debug( "irods-path %s" %  ic.path)
+    log.debug( "irods-path %s" ,  ic.path)
     localname = irods_cache_fetch(ic.path)
     if localname is None:
         with ic:
-            log.debug( "irods_fetching %s -> %s" % (url, ic.path))
+            log.debug( "irods_fetching %s -> %s" , url, ic.path)
             f = irods.iRodsOpen(ic.conn, ic.path)
             if not f:
-                raise IrodsError("can't read from %s" % url)
+                raise IrodsError("can't read from %s" , url)
             localname = irods_cache_save(f, ic.path)
             f.close()
     return localname
@@ -150,10 +147,10 @@ def irods_fetch_file_IGET(url, **kw):
     localname = irods_cache_fetch(ic.path)
     if localname is None:
         with ic:
-            log.debug( "irods_fetching %s -> %s" % (url, ic.path))
+            log.debug( "irods_fetching %s -> %s" , url, ic.path)
             localname = irods_cache_name(ic.path)
             _mkdir(os.path.dirname(localname))
-            log.info('irods %s' %  ['iget', ic.path, localname])
+            log.info('irods %s' ,   ['iget', ic.path, localname])
             retcode = subprocess.call(['iget',ic.path, localname])
             if retcode:
                 raise IrodsError("can't read from %s  %s %s error (%s)" % (url, ic.path, localname, retcode))
@@ -162,7 +159,7 @@ def irods_fetch_file_IGET(url, **kw):
 
 def irods_push_file(fileobj, url, savelocal=True, **kw):
     with IrodsConnection(url, **kw) as ic:
-        # Hmm .. if an irodsEnv exists then it is used over our login name provided above, 
+        # Hmm .. if an irodsEnv exists then it is used over our login name provided above,
         # meaning even though we have logged in as user X we may be the homedir of user Y (in .irodsEnv)
         # irods.mkCollR(conn, basedir, os.path.dirname(path))
         retcode = irods.mkCollR(ic.conn, '/', os.path.dirname(ic.path))
@@ -176,7 +173,7 @@ def irods_push_file(fileobj, url, savelocal=True, **kw):
 
 def irods_push_file_IPUT(fileobj, url, savelocal=True, **kw):
     with IrodsConnection(url, **kw) as ic:
-        # Hmm .. if an irodsEnv exists then it is used over our login name provided above, 
+        # Hmm .. if an irodsEnv exists then it is used over our login name provided above,
         # meaning even though we have logged in as user X we may be the homedir of user Y (in .irodsEnv)
         # irods.mkCollR(conn, basedir, os.path.dirname(path))
         retcode = irods.mkCollR(ic.conn, '/', os.path.dirname(ic.path))
@@ -190,13 +187,25 @@ def irods_push_file_IPUT(fileobj, url, savelocal=True, **kw):
             raise IrodsError("can't write irods url %s" % url)
         return localname
 
-
+def irods_delete_file(url, **kw):
+    ic = IrodsConnection(url, **kw)
+    log.debug( "irods-path %s" %  ic.path)
+    localname = irods_cache_fetch(ic.path)
+    if localname is not None:
+        os.remove (localname)
+    with ic:
+        log.debug( "irods_delete %s -> %s" % (url, ic.path))
+        f = irods.iRodsOpen(ic.conn, ic.path)
+        if not f:
+            raise IrodsError("can't read from %s" % url)
+        f.close()
+        f.delete()
 
 def irods_fetch_dir(url, **kw):
 
     with IrodsConnection(url, **kw) as ic:
         coll = irods.irodsCollection(ic.conn)
-        path = coll.openCollection(ic.path); 
+        path = coll.openCollection(ic.path)
         # Bug in openCollection (appends \0)
         path = path.strip('\x00')
         #print 'path2 Null', '\x00' in path
@@ -208,7 +217,7 @@ def irods_fetch_dir(url, **kw):
             #print 'nm Null', '\x00' in nm
             #print 'path3 Null', '\x00' in path
             result.append('/'.join([ic.base_url, ic.path[1:], nm, '']))
-        
+
         for nm, resource in  coll.getObjects():
             result.append( '/'.join([ic.base_url, ic.path[1:], nm]))
         return result
@@ -217,7 +226,7 @@ def irods_fetch_dir(url, **kw):
 
 
 
-    
-    
-    
-    
+
+
+
+

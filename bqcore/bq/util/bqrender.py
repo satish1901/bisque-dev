@@ -39,7 +39,7 @@ def render_bq(template_name, template_vars, **kwargs):
                     node = node.SubElement ('tag', name=k)
                     for val in obj[k]:
                         v = node.SubElement ('value')
-                        v.text = value
+                        v.text = val
 
                 elif isinstance( obj[k], dict ):
                     # element
