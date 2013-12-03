@@ -1,4 +1,4 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
                     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml"
     xmlns:py="http://genshi.edgewall.org/"
@@ -13,44 +13,46 @@
 </head>
 
 <script type="text/javascript">
-function login_cas() {
-    document.location = '/auth_service/login_handler?login_type=cas';
+
+
+function redirect_login (login) {
+    document.location  = ${providers_json} [ login ] ;
 }
 
-function login_openid(provider) {
-    var providers = {
-        google : 'https://www.google.com/accounts/o8/id',
-    };
-    
-    //var openid_field = document.getElementById('openid_provider');
-    //openid_field.value = providers[provider];
-    document.location = '/auth_service/openid_login_handler?openid_provider=' + providers[provider];
-}
 </script>
 
 
 <body>
-  
+
 <div id="loginform" class="loginform">
 
 <form action="${tg.url('/auth_service/login_handler', came_from = came_from.encode('utf-8'), __logins = login_counter.encode('utf-8'))}" method="POST" id='login_form' class="loginfields">
 
-
     <h2>Login</h2>
 
-  <!-- 
     <div class="alternativelogin">
-        <input type="hidden" id="openid_provider" value="google" />        
-        <input py:if="h.asbool(config.get('bisque.login.cas'))" type="button" id="submit_cas" value="Login with CAS" onclick="login_cas()" />
-        <input py:if="h.asbool(config.get('bisque.login.google'))" type="button" id="submit_google" value="Login with Google" onclick="login_openid('google')" />
-    </div>
- -->
+        <input type="hidden" id="openid_provider" value="google" />
 
-    <div class="mainlogin">
+        <input py:if="'cas' in providers" type="button" id="submit_cas" value="Login with CAS" onclick="redirect_login('cas')" />
+        <input py:if="'google' in providers" type="button" id="submit_google" value="Login with Google" onclick="redirect_login('google')" />
+    </div>
+
+    <div class="mainlogin" py:if="'local' in providers" >
         <label for="loginusername">Username:<input type="text" id="loginusername" name="login" value="$username" class="text"></input></label>
         <label for="loginpassword">Password:<input type="password" id="loginpassword" name="password" class="text"></input></label>
         <input type="submit" id="submit" value="Login" />
-    </div>    
+
+        <a href="/registration/"> Register local user </a><br/>
+        <a href="/registration/lost_password"> Reset local password </a><br/>
+
+        <a href="/registration/edit_user"> Edit local profile </a><br/>
+
+    </div>
+
+
+
+
+
 </form>
 
 
