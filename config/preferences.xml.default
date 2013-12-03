@@ -11,7 +11,8 @@
             <tag name="Species" value="species" />
         </tag>
         <tag name="Toolbar">
-            <tag name="registration" value="/registration" />
+            <tag name="registration" value="/auth_service/login" /> <!-- /registration -->
+            <tag name="password_recovery" value="/auth_service/login" /> <!-- /registration/lost_password -->         
         </tag>  
         <tag name="ResourceBrowser">
             <tag name="Browser">
