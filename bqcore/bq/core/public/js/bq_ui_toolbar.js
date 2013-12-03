@@ -189,6 +189,7 @@ Ext.define('BQ.Application.Toolbar', {
         //--------------------------------------------------------------------------------------   
         
         // Sign in menu item
+        /*
         var signin = { 
             itemId: 'menu_user_signin', 
             plain: true,
@@ -266,7 +267,15 @@ Ext.define('BQ.Application.Toolbar', {
                     this.el.set({ autocomplete: 'on' });
                 },
             },                                    
-        };      
+        };     
+        */
+       
+        var signin = { 
+            itemId: 'menu_user_signin',         
+            xtype: 'button',
+            text: 'Sign in',                
+            handler: Ext.Function.pass(pageAction, bq.url('/auth_service/login')),   
+        }; 
         
         this.menu_user = {
             xtype: 'menu',
@@ -282,12 +291,12 @@ Ext.define('BQ.Application.Toolbar', {
                 indent: true, 
                 hidden: true, 
                 cls: 'menu-heading', 
-            }, {
+            }, /*{
                 text: 'Profile', 
                 itemId: 'menu_user_profile', 
                 hidden: true, 
                 handler: Ext.Function.pass(pageAction, bq.url('/registration/edit_user')),
-            }, { 
+            },*/ { 
                 xtype:'menuseparator', 
                 itemId: 'menu_user_admin_separator', 
                 hidden: true, 
@@ -295,7 +304,7 @@ Ext.define('BQ.Application.Toolbar', {
                 text: 'Website admin', 
                 itemId: 'menu_user_admin', 
                 hidden: true, 
-                handler: Ext.Function.pass(pageAction, bq.url('/admin')), 
+                handler: Ext.Function.pass(pageAction, bq.url('/admin')),   
             }, { 
                 text: 'User preferences', 
                 itemId: 'menu_user_prefs', 
@@ -323,11 +332,13 @@ Ext.define('BQ.Application.Toolbar', {
             }, {
                 text: 'Register new user', 
                 itemId: 'menu_user_register', 
-                handler: Ext.Function.pass(pageAction, bq.url(this.preferences.registration || '/registration')), 
+                //handler: Ext.Function.pass(pageAction, bq.url(this.preferences.registration || '/registration')),
+                handler: Ext.Function.pass(pageAction, bq.url('/auth_service/login')),
             }, {
                 text: 'Recover Password', 
-                itemId: 'menu_user_recover', 
-                handler: Ext.Function.pass(pageAction, bq.url(this.preferences.registration || '/registration/lost_password')), 
+                itemId: 'menu_user_recover',
+                //handler: Ext.Function.pass(pageAction, bq.url(this.preferences.registration || '/registration/lost_password')),
+                handler: Ext.Function.pass(pageAction, bq.url('/auth_service/login')),
             }],
         };
 
