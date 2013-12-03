@@ -14,9 +14,10 @@
 
 <script type="text/javascript">
 
+var providers = ${providers_json};
 
 function redirect_login (login) {
-    document.location  = ${providers_json} [ login ] ;
+    document.location  = providers[login]['url'] + '?came_from=${came_from}' ;
 }
 
 </script>
@@ -28,25 +29,27 @@ function redirect_login (login) {
 
 <form action="${tg.url('/auth_service/login_handler', came_from = came_from.encode('utf-8'), __logins = login_counter.encode('utf-8'))}" method="POST" id='login_form' class="loginfields">
 
-    <h2>Log-in</h2>  
+    <h2>Log-in</h2>
 
     <div class="local" py:if="'local' in providers" >
-        <h2>Local users</h2>        
+        <h2>Local users</h2>
+
         <label for="loginusername">Username:<input type="text" id="loginusername" name="login" value="$username" class="text"></input></label>
         <label for="loginpassword">Password:<input type="password" id="loginpassword" name="password" class="text"></input></label>
         <input type="submit" id="submit" value="Log-in" />
-        
+
         <div class="registration">
             <p><a href="/registration/">Register local user</a></p>
             <p><a href="/registration/lost_password">Reset local password</a></p>
         </div>
     </div>
-    
+
     <div class="remote" py:if="len(providers)>1 or 'local' not in providers">
         <h2>External providers</h2>
-        <input py:if="'cas' in providers" type="button" id="submit_cas" value="Login with CAS" onclick="redirect_login('cas')" />
-        <input py:if="'google' in providers" type="button" id="submit_google" value="Login with Google" onclick="redirect_login('google')" />
-    </div>    
+
+                <input py:if="'iplant' in providers" type="button" id="submit_cas" value="${providers['iplant']['text']}" onclick="redirect_login('iplant')" />
+        <input py:if="'google' in providers" type="button" id="submit_google" value="${providers['google']['text']}" onclick="redirect_login('google')" />
+    </div>
 </form>
 
 

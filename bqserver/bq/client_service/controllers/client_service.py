@@ -61,13 +61,11 @@ import logging
 import pkg_resources
 
 from urllib import urlencode
-from StringIO import StringIO
 from lxml import etree
 
 from pylons import app_globals
 from pylons.i18n import ugettext as _, lazy_ugettext as l_, N_
 from pylons.controllers.util import abort
-from pylons.controllers.util import forward
 from webob import Request
 
 import tg
@@ -84,7 +82,6 @@ import bq.release as __VERSION__
 from bq.core import identity
 
 #import aggregate_service
-from bq import image_service
 from bq import data_service
 
 
@@ -102,7 +99,7 @@ log = logging.getLogger('bq.client_service')
 
 class ClientServer(ServiceController):
     service_type = "client_service"
-    
+
     def viewlink(self, resource):
         return self.baseuri + "view?" + urlencode ({'resource': resource})
 
@@ -112,7 +109,7 @@ class ClientServer(ServiceController):
         response = etree.Element('resource', type='version')
         etree.SubElement (response, 'tag', name='version', value=__VERSION__)
         server = etree.SubElement (response, 'tag', name='server')
-        
+
         #etree.SubElement (server, 'tag', name='environment', value=config.get('server.environment'))
         return etree.tostring(response)
 
@@ -151,12 +148,12 @@ class ClientServer(ServiceController):
             if image_count:
                 im = random.randint(0, image_count-1)
                 #image = aggregate_service.retrieve("image", view=None, wpublic=wpublic)[im]
-                image  = data_service.query('image', tag_query=tag_query, wpublic=wpublic_query, 
+                image  = data_service.query('image', tag_query=tag_query, wpublic=wpublic_query,
                                             offset = im, limit = 1)[0]
                 imageurl = self.viewlink(image.attrib['uri'])
                 #thumbnail = image.attrib['src'] +'?thumbnail'
                 thumbnail = "/image_service/images/%s?thumbnail" % image.get('resource_uniq')
-       
+
         return dict(imageurl=imageurl,
                     thumbnail=thumbnail,
                     wpublicjs = pybool[str(wpublic)],
@@ -172,7 +169,7 @@ class ClientServer(ServiceController):
             wpublicVal='false'
         else:
             wpublicVal='true'
-        
+
         #log.debug ('DDDDDDDDDDDDDDDDDDDDDD'+query)
         return dict(query=kw.pop('tag_query', None),
                     layout=kw.pop('layout', None),
@@ -180,22 +177,22 @@ class ClientServer(ServiceController):
                     tagQuery=kw.pop('tag_query', None),
                     offset=kw.pop('offset', None),
                     dataset=kw.pop('dataset', None),
-                    resource=kw.pop('resource', None),                    
+                    resource=kw.pop('resource', None),
                     search=0,
                     user_id = "",
                     page = kw.pop('page', 'null'),
                     view  = kw.pop('view', ''),
                     count = kw.pop ('count', '10'),
-                    wpublic = kw.pop('wpublic', wpublicVal),                    
+                    wpublic = kw.pop('wpublic', wpublicVal),
                     analysis = None)
 
     @expose(template='bq.client_service.templates.about')
     def about(self, **kw):
         from bq.release import __VERSION__
         version = '%s'%__VERSION__
-        return dict(version=version)    
-    
-    
+        return dict(version=version)
+
+
     # Test
 
     @expose ()
@@ -207,11 +204,11 @@ class ClientServer(ServiceController):
         return response.body
 
 
-    
+
     @expose(template='bq.client_service.templates.test')
     def test(self):
         """from bq.export_service.controllers.tar_streamer import TarStreamer
-        tarStreamer = TarStreamer() 
+        tarStreamer = TarStreamer()
         tarStreamer.sendResponseHeader('Bisque.tar')
         return tarStreamer.stream(['C:\\Python27\\TarStreamer\\file1.tif', 'C:\\Python27\\TarStreamer\\file2.tif', 'C:\\Python27\\TarStreamer\\file3.tif'])
         """
@@ -224,10 +221,10 @@ class ClientServer(ServiceController):
         for service_type, service_list in service_registry.items():
             for service in service_list:
                 etree.SubElement (resource, 'tag', name=service_type, value=service.uri)
-        
+
         #tg.response.content_type = "text/xml"
         return etree.tostring(resource)
-        
+
 
 
     @expose("bq.client_service.templates.view")
@@ -238,7 +235,7 @@ class ClientServer(ServiceController):
         #if resource is None:
         #    abort(404)
 
-        return dict(resource=resource) 
+        return dict(resource=resource)
 
     @expose("bq.client_service.templates.view")
     def create(self, **kw):
@@ -247,23 +244,23 @@ class ClientServer(ServiceController):
 
         if type_:
             resource = data_service.new_resource (type_, **kw)
-        
+
             # Choose widgets to instantiate on the viewer by the type
             # of the resource.
             log.debug ('created %s  -> %s' % (type_, uri))
             return dict(resource=resource) #, tag_views=None, wpublic = None, search = None)
         raise IllegalOperation("create operation requires type")
 
-    
+
     @expose("bq.client_service.templates.movieplayer")
     def movieplayer(self, **kw):
         resource=kw.pop('resource', None)
-        return dict(resource=resource)    
+        return dict(resource=resource)
 
     @expose("bq.client_service.templates.help")
     def help(self, **kw):
         resource=kw.pop('resource', None)
-        return dict(resource=resource)    
+        return dict(resource=resource)
 
 
 
@@ -277,5 +274,5 @@ def initialize(uri):
 
 def uri():
     return client_server.baseuri
-   
-       
+
+

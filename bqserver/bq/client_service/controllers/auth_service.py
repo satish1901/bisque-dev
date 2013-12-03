@@ -59,11 +59,10 @@ import json
 
 from datetime import datetime, timedelta
 from lxml import etree
-from sqlalchemy import or_
 
 import tg
 from tg import request, response, session, flash, require
-from tg import controllers, expose, redirect, url
+from tg import  expose, redirect, url
 from tg import config, validate
 from pylons.i18n import _
 from repoze.what import predicates
@@ -71,9 +70,10 @@ from repoze.what import predicates
 from bq.core.service import ServiceController
 from bq.core import identity
 from bq.core.model import DBSession
-from bq.data_service.model import ModuleExecution, BQUser, User
+from bq.data_service.model import  BQUser, User
 from bq import module_service
 from bq.util.urlutil import update_url
+from bq.exceptions import ConfigurationError
 
 from bq import data_service
 log = logging.getLogger("bq.auth")
@@ -95,15 +95,24 @@ except ImportError:
 
 class AuthenticationServer(ServiceController):
     service_type = "auth_service"
-    identifiers = {}
+    providers = {}
 
-    def login_map(self):
-        if self.identifiers:
-            return self.identifiers
+
+    @classmethod
+    def login_map(cls):
+        if cls.providers:
+            return cls.providers
         identifiers = OrderedDict()
-        for key in [x.strip() for x in config.get('bisque.login.identifiers').split(',')]:
-            identifiers[key] =  config.get('bisque.login.%s' % key)
-        self.identifiers = identifiers
+        for key in (x.strip() for x in config.get('bisque.login.providers').split(',')):
+            entries = {}
+            for kent in ('url', 'text', 'icon'):
+                kval = config.get('bisque.login.%s.%s' % (key, kent))
+                if kval is not None:
+                    entries[kent] = kval
+            identifiers[key] =  entries
+            if 'url' not in entries:
+                raise ConfigurationError ('Missing url for bisque login provider %s' % key)
+        cls.providers = identifiers
         return identifiers
 
     @expose()
@@ -116,12 +125,12 @@ class AuthenticationServer(ServiceController):
             user = DBSession.query (User).filter_by(user_name=login).first()
             # REDIRECT to registration page?
             if user is None:
-                redirect(update_url(default_login, dict(username=login, came_from=came_from)))
+                redirect(update_url(default_login['url'], dict(username=login, came_from=came_from)))
             # Find a matching identifier
             login_identifiers = [ g.group_name for g in user.groups ]
             for identifier in login_urls.keys():
                 if  identifier in login_identifiers:
-                    login_url  = login_urls[identifier]
+                    login_url  = login_urls[identifier]['url']
                     log.debug ("redirecting to %s handler" % identifier)
                     redirect(update_url(login_url, dict(username=login, came_from=came_from)))
 

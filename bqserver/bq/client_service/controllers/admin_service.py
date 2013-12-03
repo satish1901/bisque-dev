@@ -67,7 +67,7 @@ from bq.core.service import ServiceController
 from bq.core import identity
 from bq.util.paths import data_path
 from bq.core.model import   User,Group #, Visit
-from bq.core.model import DBSession 
+from bq.core.model import DBSession
 from bq.data_service.model import  BQUser, Image, TaggableAcl
 
 #from bq.image_service.model import  FileAcl
@@ -123,7 +123,7 @@ class AdminController(ServiceController):
         if order == "images":
             results.sort (key = operator.itemgetter (1) )
             results.reverse()
-            
+
         query = kw.pop('query', '')
         wpublic = kw.pop('wpublic', not bq.core.identity.not_anonymous())
         return dict(users = results, query = query, wpublic = wpublic, analysis = None, search = None)
@@ -131,20 +131,20 @@ class AdminController(ServiceController):
     @expose ('bq.client_service.templates.admin.edituser')
     def edituser(self, username=None, **kw):
         options = {}
-        
+
         #Grab passed args
         if options.has_key('page'):
             options['page'] = int(kw.pop('page'))
         else:
             options['page'] = 1
-        
+
         if not options['page'] > 0:
             options['page'] = 1
         options['perpage'] = 20
 
         #Grab the user passed from url
         user = BQUser.query.filter(BQUser.resource_name == username).first()
-        
+
         #If we got a handle on the user
         if user:
             #Find all his images
@@ -153,10 +153,10 @@ class AdminController(ServiceController):
             flash('No user was found with name of ' + username + '. Perhaps something odd happened?')
             redirect(url('/admin/error'))
         options['totalimages'] = len(results)
-    
+
         #Calculate paging ranges
         myrange = range(0, len(results), options['perpage'])
-        
+
         #Bounds checking
         if options['page'] <= len(myrange):
             x = myrange[options['page']-1]
@@ -178,7 +178,7 @@ class AdminController(ServiceController):
     def confirmdeleteuser(self, username=None, **kw):
         flash("Caution. You are deleting " + username + " from the system. All of their images will also be deleted. Are you sure you want to continue?")
         return dict(username = username, query=None, wpublic=None, search=None, analysis=None)
-    
+
     @expose ()
     def deleteuser(self, username=None,  **kw):
         #DBSession.autoflush = False
@@ -201,7 +201,7 @@ class AdminController(ServiceController):
             log.debug ("KILL ACL %s" % p)
             DBSession.delete(p)
         #DBSession.flush()
-        
+
         self.deleteimages(username, will_redirect=False)
         DBSession.delete(user)
         transaction.commit()
@@ -224,28 +224,28 @@ class AdminController(ServiceController):
             transaction.commit()
             redirect('/admin/users')
         return dict()
-    
+
     @expose ()
     def adduser(self, **kw):
         user_name = unicode( kw['user_name'] )
         password = unicode( kw['user_password'] )
         email_address = unicode( kw['email'] )
         display_name = unicode( kw['display_name'] )
-                                
+
 
         log.debug("ADMIN: Adding user: " + str(user_name) )
         user = User(user_name=user_name, password=password, email_address=email_address, display_name=display_name)
         DBSession.add(user)
         transaction.commit()
-        redirect('/admin/users')    
-    
+        redirect('/admin/users')
+
     @expose ()
     def updateuser(self, **kw):
         user_name = unicode( kw.get('user_name', '') )
         password = unicode( kw.get('user_password', '') )
         email_address = unicode( kw.get('email', '') )
         display_name = unicode( kw.get('display_name', '') )
-                                
+
         log.debug("ADMIN: Updating user: " + str(user_name) )
 
         ####NOTE###
@@ -253,7 +253,7 @@ class AdminController(ServiceController):
 
         #Grab the user passed from url
         #user = BQUser.query.filter(BQUser.name == user_name).first()
-        
+
         #If we haven't got a handle on the user
         #if not user:
         #    log.debug('No user was found with name of ' + user_name + '. Perhaps something odd happened?')
@@ -276,7 +276,7 @@ class AdminController(ServiceController):
     @expose()
     def loginasuser(self, user):
         log.debug ('forcing login as user')
-        
+
         response.headers = request.environ['repoze.who.plugins']['friendlyform'].remember(request.environ,
                                                                                           {'repoze.who.userid':user})
         redirect("/")
@@ -298,18 +298,18 @@ class AdminController(ServiceController):
                         os.unlink(file_path)
                 except Exception, e:
                     log.exception('while removing %s' % file_path)
-                    
+
         server_cache = data_path('server_cache')
         clearfiles(server_cache)
         log.info("CLEARED CACHE")
         return dict()
-        
+
 
 
 def initialize(url):
     return AdminController(url)
-    
-        
+
+
 __controller__ = AdminController
 __staticdir__ = None
 __model__ = None
