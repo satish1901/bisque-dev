@@ -10,14 +10,14 @@
 backend = paster
 # backend = uwsgi
 
-# control which servers are active 
+# control which servers are active
 #servers = h1,h2,h3,h4,e1
 servers = h1
-# Server definitions 
-# url = full url to proxy server 
+# Server definitions
+# url = full url to proxy server
 # services_enabled  = list of bisque_service to enable
 # services_disabled = list of bisque_service to disable
-# proxyroot =  the value of bisque.root for engines 
+# proxyroot =  the value of bisque.root for engines
 
 h1.url = http://localhost:8080
 # h1.server = :3031
@@ -30,7 +30,7 @@ h1.services_disabled = engine_service
 #h4.url = http://localhost:9094
 #h4.services_disabled = engine_service
 
-# Engine on this host 
+# Engine on this host
 # e1.url = http://biobisque.org:27000
 # e1.server = unix:///tmp/engine.sock
 # e1.server = :3091
@@ -41,25 +41,25 @@ h1.services_disabled = engine_service
 #pid_dir = /var/run/bisque
 
 # Run a logging server.. very important if multiple bisques are running(uwsgi, paster)
-# See 
+# See
 #logging_server = python contrib/logging/loggingwebmonitor.py  -c config/loggingwebmonitor.ini
 
 
 ###############################
-# Extra filters to be added 
+# Extra filters to be added
 #[filter:linesman]
 # Linesname can be used for profiling
 #use = egg:linesman#profiler
 
 
 [app:main]
-# pylons/paster config 
+# pylons/paster config
 use = egg:bqcore
 full_stack = true
 #filter-with = linesman
 
 ##########################################################
-# Bisque Configuration 
+# Bisque Configuration
 ##########################################################
 # Visible titles
 bisque.organization = ORG
@@ -82,7 +82,7 @@ bisque.services_disabled = engine_service
 #bisque.services_enabled = client_service
 bisque.site = http://localhost:8080
 bisque.installed = pending
-bisque.paths.root  = 
+bisque.paths.root  =
 #bisque.paths.data  = installationdir/data
 #bisque.paths.config  = installationdir/config
 
@@ -95,7 +95,7 @@ bisque.blob_service.stores=local
 bisque.stores.local.path = file:$datadir/imagedir/$user/$dirhash/$filehash-$filename
 #bisque.stores.local.top= file:$datadir/imagedir
 # Example irods store
-#bisque.stores.irods1.path=irods://data.iplantcollaborative.org/iplant/home/$user/bisque_data/uploads/$dirhash/$filehash-$filename, 
+#bisque.stores.irods1.path=irods://data.iplantcollaborative.org/iplant/home/$user/bisque_data/uploads/$dirhash/$filehash-$filename,
 #bisque.stores.irods1.user=bisque
 #bisque.stores.irods1.password=<guess>
 #bisque.stores.irods1.readonly = true
@@ -129,23 +129,40 @@ bisque.engine =  http://localhost:8080
 
 #
 # Login identification  systems
-# NOTE: you must also edit config/who.ini to enable these 
-#bisque.login.identifiers = cas,google,local
+# NOTE: you must also edit config/who.ini to enable these
+bisque.login.providers =  local
+#bisque.login.providers =  iplant, local
+#bisque.login.iplant.text = iPlant Login
+#bisque.login.iplant.icon = /images/login-iplant.jpg
+#bisque.login.iplant.url = /auth_service/cas_login_handler
+#bisque.login.google.text = Google Login
+#bisque.login.google.url = /auth_service/openid_login_handler?openid_provider=https://www.google.com/accounts/o9/id
+#bisque.login.google.icon = /images/login-google.jpg
+#bisque.login.yahoo.text = Yahoo Login
+#bisque.login.yahoo.url = /auth_service/openid_login_handler?openid_provider=https://www.yahoo.com/
+#bisque.login.yahoo.icon = /images/login-yahoo.jpg
+
+bisque.login.local.text = Local Login
+bisque.login.local.url = /auth_service/login
+bisque.login.local.icon = /images/login-bisque.jpg
+
+
+
 bisque.login.identifiers = local
 bisque.login.local = /auth_service/login
 #bisque.login.cas = /auth_service/login_handler?login_type=cas
 #bisque.login.google = /auth_service/openid_login_handler?openid_provider=https://www.google.com/accounts/o8/id
 #bisque.password = hashed
 
-# User traffic tracking 
-# You can use google (http://www.google.com/analytics/)  or piwik (http://piwik.org/), etc.  
+# User traffic tracking
+# You can use google (http://www.google.com/analytics/)  or piwik (http://piwik.org/), etc.
 #bisque.tracking = piwik.html
 #bisque.tracking = google.html
 #bisque.tracking.piwik_url = http://yourpiwikhost.org
 #bsique.tracking.google_id  = <your google id> i.e. UA-3923721-4
 
 
-# Bisque Cluster Runtime  
+# Bisque Cluster Runtime
 condor.enabled = False
 condor.dag_template =
 condor.submit_template =
@@ -196,8 +213,8 @@ sqlalchemy.echo_pool = false
 sqlalchemy.pool_recycle = 3600
 
 # Repoze.who stuff
-#  log_level is  'debug', 'info', 'warning', 'error' 
-#  log_file  is [ 'stdout' or path/to/who.log ] 
+#  log_level is  'debug', 'info', 'warning', 'error'
+#  log_file  is [ 'stdout' or path/to/who.log ]
 who.config_file = %(here)s/who.ini
 who.log_level = error
 who.log_stream = stdout
@@ -258,7 +275,7 @@ keys = console
 keys = generic
 
 ###########################
-# Loggers 
+# Loggers
 # If you create additional loggers, add them as a key to [loggers] above
 
 [logger_root]
@@ -333,7 +350,7 @@ formatter = generic
 
 
 #[handler_pylog]
-## Install a SocketListener like python-loggingserver 
+## Install a SocketListener like python-loggingserver
 ## see contrib/logging and enable the logging server in the [servers] section.
 #class= handlers.SocketHandler
 #level=INFO

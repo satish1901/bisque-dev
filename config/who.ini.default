@@ -60,6 +60,7 @@ use = bq.core.lib.autoreg:AutoRegister
 # use = repoze.who.plugins.openid:make_identification_plugin
 # store = file
 # store_file_path = %(here)s/data/sstore
+# # Arguments for login_handler giving provider url and return page
 # openid_field = openid_provider
 # came_from_field = came_from
 # error_field = error
@@ -74,14 +75,14 @@ use = bq.core.lib.autoreg:AutoRegister
 # ax_require=email=http://axschema.org/contact/email firstname=http://axschema.org/namePerson/first lastname=http://axschema.org/namePerson/last
 
 # [plugin:openid_auth]
-# # # Local plugin maps 
+# # # Local plugin maps
 # use = bq.core.lib.openid:make_plugin
 # # Provide a plugin name that will register unknown users.
 # auto_register=autoregister
 
 
 # # CAS : Central Authentication Service
-# dependency:  
+# dependency:
 # [plugin:cas_auth]
 # use = bq.core.lib.cas_auth:make_plugin
 # cas_base_url = https://auth.iplantcollaborative.org/cas
@@ -126,7 +127,7 @@ plugins =
 
 [authenticators]
 plugins =
-    sqlauth       
+    sqlauth
 #    ldap_auth
     mexauth
 #    cas_auth
@@ -139,4 +140,3 @@ plugins =
     bq.core.lib.sqlauth:md_group_plugin
 #    autoregister
 
-       
