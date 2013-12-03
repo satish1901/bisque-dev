@@ -297,7 +297,7 @@ Ext.define('BQ.Application.Toolbar', {
                 text: 'Profile', 
                 itemId: 'menu_user_profile', 
                 hidden: true, 
-                handler: Ext.Function.pass(pageAction, bq.url('/registration/edit_user')),
+                handler: Ext.Function.pass(pageAction, bq.url(this.preferences.user_profile || '/registration/edit_user')),      
             }, { 
                 xtype:'menuseparator', 
                 itemId: 'menu_user_admin_separator', 
