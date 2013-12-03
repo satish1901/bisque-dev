@@ -13,6 +13,7 @@
         <tag name="Toolbar">
             <tag name="registration" value="/auth_service/login" /> <!-- /registration -->
             <tag name="password_recovery" value="/auth_service/login" /> <!-- /registration/lost_password -->         
+            <tag name="user_profile" value="/registration/edit_user" />
         </tag>  
         <tag name="ResourceBrowser">
             <tag name="Browser">
