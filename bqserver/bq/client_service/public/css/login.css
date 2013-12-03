@@ -2,67 +2,89 @@
 /*  */
 /**************************************************************************/
 
-.loginform {
-  width: 550px;
-  margin-top: 80px;
-  margin-bottom: 100px;
-  margin-right: 80px;
-  margin-left: 80px;
+.login {
+  width: 650px;
+  height: 330px;  
+  margin: 80px 80px 100px 80px;
   background: #EEEEEE;
-  padding: 40px;
-  padding-top: 10px;
-  
+  padding: 10px 40px 40px 15px;
   border: #CCCCCC solid 1px;
   border-radius: 5px;
   -moz-border-radius: 5px;  
 }
 
-.loginform h2 {
-  font-size: 25px;
-  margin-bottom: 30px;  
-  color: #666666;
-  text-shadow: #AAAAAA 2px 2px 5px;
+.login h2 {
+  font-size: 40px;
+  margin: 0px 0px 0px 0px;  
+  color: #AAAAAA;
+  /*text-shadow: #AAAAAA 2px 2px 5px;*/
+  position: absolute;
 }
 
-.loginform label {
+.login label {
   display:block;
   margin-bottom: 15px;
   margin-top: 10px;
   width: 250px;  
 }
 
-.loginform label>input {
+.login label>input {
   margin-left: 20px;
   width: 150px;
   float: right;
 }
 
-.loginform input[type=submit] {
+.login input[type=submit] {
   margin-top: 15px;  
   display:block;
   padding: 4px;
 }
 
-
-
-.mainlogin {
-    padding-top: 5px; 
-}
-
-.alternativelogin {
-    float: right;
-    border-left: solid 1px gray;
-    padding: 15px; 
-    padding-left: 30px;     
-    height: 120px;
-}
-
-
-.loginform input[type=button] {
+.login input[type=button] {
     width: 130px;
     padding: 6px;
     display:block;    
 }
 
+.login .remote {
+    width: 250px;
+    float: left;
+    border-left: solid 1px gray;
+    padding: 5px 15px 15px 30px; 
+    margin: 80px 0px 0px 0px;
+}
 
+.login .local {
+    padding: 5px 0px 0px 0px;
+    margin: 80px 0px 0px 10px;
+    float: left; 
+    width: 300px;
+}
 
+.login .local h2, .login .remote h2 {
+    font-size: 18px;
+    margin: 0px 0px 15px 0px;  
+    color: #666666;
+    text-shadow: none;
+    position: relative;    
+}
+
+.login .local .registration {
+    margin: 2em 20px 0px 0px;
+    padding-top: 10px;
+    border-top: dotted 1px #AAAAAA;  
+}
+
+.login .local .registration p {
+    margin: 0.5em 0px 0px 0px; 
+    font-size: 12px;
+}
+
+.login .local .registration a {
+    text-decoration: underline;
+    color: #333333;
+}
+
+.login .local .registration a:hover {
+    color: #CC6600;
+}

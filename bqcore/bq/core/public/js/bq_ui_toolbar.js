@@ -293,12 +293,12 @@ Ext.define('BQ.Application.Toolbar', {
                 indent: true, 
                 hidden: true, 
                 cls: 'menu-heading', 
-            }, /*{
+            }, {
                 text: 'Profile', 
                 itemId: 'menu_user_profile', 
                 hidden: true, 
                 handler: Ext.Function.pass(pageAction, bq.url('/registration/edit_user')),
-            },*/ { 
+            }, { 
                 xtype:'menuseparator', 
                 itemId: 'menu_user_admin_separator', 
                 hidden: true, 

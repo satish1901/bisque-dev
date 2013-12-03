@@ -24,35 +24,29 @@ function redirect_login (login) {
 
 <body>
 
-<div id="loginform" class="loginform">
+<div id="loginform" class="login">
 
 <form action="${tg.url('/auth_service/login_handler', came_from = came_from.encode('utf-8'), __logins = login_counter.encode('utf-8'))}" method="POST" id='login_form' class="loginfields">
 
-    <h2>Login</h2>
+    <h2>Log-in</h2>  
 
-    <div class="alternativelogin">
-        <input type="hidden" id="openid_provider" value="google" />
-
-        <input py:if="'cas' in providers" type="button" id="submit_cas" value="Login with CAS" onclick="redirect_login('cas')" />
-        <input py:if="'google' in providers" type="button" id="submit_google" value="Login with Google" onclick="redirect_login('google')" />
-    </div>
-
-    <div class="mainlogin" py:if="'local' in providers" >
+    <div class="local" py:if="'local' in providers" >
+        <h2>Local users</h2>        
         <label for="loginusername">Username:<input type="text" id="loginusername" name="login" value="$username" class="text"></input></label>
         <label for="loginpassword">Password:<input type="password" id="loginpassword" name="password" class="text"></input></label>
-        <input type="submit" id="submit" value="Login" />
-
-        <a href="/registration/"> Register local user </a><br/>
-        <a href="/registration/lost_password"> Reset local password </a><br/>
-
-        <a href="/registration/edit_user"> Edit local profile </a><br/>
-
+        <input type="submit" id="submit" value="Log-in" />
+        
+        <div class="registration">
+            <p><a href="/registration/">Register local user</a></p>
+            <p><a href="/registration/lost_password">Reset local password</a></p>
+        </div>
     </div>
-
-
-
-
-
+    
+    <div class="remote" py:if="len(providers)>1 or 'local' not in providers">
+        <h2>External providers</h2>
+        <input py:if="'cas' in providers" type="button" id="submit_cas" value="Login with CAS" onclick="redirect_login('cas')" />
+        <input py:if="'google' in providers" type="button" id="submit_google" value="Login with Google" onclick="redirect_login('google')" />
+    </div>    
 </form>
 
 
