@@ -289,6 +289,7 @@ SITE_VARS = {
     'bisque.organization': 'Your Organization',
     'bisque.title': 'Image Repository',
     'bisque.admin_email' : 'YourEmail@YourOrganization',
+    'bisque.admin_id' : 'admin',
     'bisque.paths.root' : os.getcwd(),
     }
 
@@ -307,6 +308,7 @@ initial_vars = {
     'bisque.organization': 'Your Organization',
     'bisque.title': 'Image Repository',
     'bisque.admin_email' : 'YourEmail@YourOrganization',
+    'bisque.admin_id'    : 'admin',
     'sqlalchemy.url': 'sqlite:///bisque.db',
     'mail.on' : 'False',
     'mail.manager' : "immediate",
@@ -334,6 +336,8 @@ SITE_QUESTIONS = [('bisque.root' , 'Enter the root URL of the server ',
 """A complete URL where your application will be mounted i.e. http://someserver:8080/
 If you server will be mounted behind a proxy, please enter
 the proxy address and see AdvancedInstalls"""),
+             ('bisque.admin_displayname', 'Your real name  administrator account', None),
+             ('bisque.admin_id', 'A login ID for the administrator account', None),
              ('bisque.admin_email' , 'An email for the administrator', None),
              ('bisque.organization', 'A small organization title for the main page',
               "This will show up in the upper left of every page display"),
