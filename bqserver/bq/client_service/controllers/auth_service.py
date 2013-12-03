@@ -55,6 +55,7 @@ import logging
 #import cherrypy
 import base64
 import transaction
+import json
 
 from datetime import datetime, timedelta
 from lxml import etree
@@ -117,7 +118,7 @@ class AuthenticationServer(ServiceController):
             if user is None:
                 redirect(update_url(default_login, dict(username=login, came_from=came_from)))
             # Find a matching identifier
-            login_identifiers = [ g.group_name for g in user.groups ] 
+            login_identifiers = [ g.group_name for g in user.groups ]
             for identifier in login_urls.keys():
                 if  identifier in login_identifiers:
                     login_url  = login_urls[identifier]
@@ -134,8 +135,13 @@ class AuthenticationServer(ServiceController):
         login_counter = request.environ['repoze.who.logins']
         if login_counter > 0:
             flash(_('Wrong credentials'), 'warning')
-            
-        return dict(page='login', login_counter=str(login_counter), came_from=came_from, username=username)
+
+        login_urls = self.login_map()
+        if len(login_urls) == 1 and login_urls.keys()[0] != 'local':
+            redirect (update_url(login_urls.values()[0], dict(username=username, came_from=came_from)))
+
+        return dict(page='login', login_counter=str(login_counter), came_from=came_from, username=username,
+                    providers_json = json.dumps (login_urls), providers = login_urls )
 
     #@expose ()
     #def login_handler(self, **kw):
@@ -153,7 +159,7 @@ class AuthenticationServer(ServiceController):
         """
         Redirect the user to the initially requested page on successful
         authentication or redirect her back to the login page if login failed.
-        
+
         """
         log.debug ('POST_LOGIN')
         if not request.identity:
@@ -197,7 +203,7 @@ class AuthenticationServer(ServiceController):
         """
         Redirect the user to the initially requested page on logout and say
         goodbye as well.
-        
+
         """
         #self._end_mex_session()
         #flash(_('We hope to see you soon!'))
@@ -210,9 +216,9 @@ class AuthenticationServer(ServiceController):
             log.exception("post_logout")
         #redirect(came_from)
         log.debug ("POST_LOGOUT")
-        
+
         redirect(tg.url ('/'))
-    
+
     @expose(content_type="text/xml")
     def credentials(self, **kw):
         response = etree.Element('resource', type='credentials')
@@ -238,9 +244,9 @@ class AuthenticationServer(ServiceController):
             #log.debug ("session_timout for visit %s" % str(vk))
             #visit = Visit.lookup_visit (vk)
             #expire =  (visit.expiry - datetime.now()).seconds
-            timeout = int(session.get ('timeout', 600 )) 
+            timeout = int(session.get ('timeout', 600 ))
             expires = session.get ('expires', datetime(2100, 1,1))
-            
+
             current_user = identity.get_user()
             if current_user:
                 etree.SubElement(sess,'tag',
@@ -248,14 +254,14 @@ class AuthenticationServer(ServiceController):
             etree.SubElement (sess, 'tag', name='expires', value= expires.isoformat() )
             etree.SubElement (sess, 'tag', name='timeout', value= str(timeout) )
         return etree.tostring(sess)
-            
+
 
     @expose(content_type="text/xml")
     @require(predicates.not_anonymous())
     def newmex (self, module_url=None):
         mexurl  = self._begin_mex_session()
         return mexurl
-            
+
     def _begin_mex_session(self):
         """Begin a mex associated with the visit to record changes"""
 
@@ -283,7 +289,7 @@ class AuthenticationServer(ServiceController):
         except AttributeError:
             pass
         return ""
-    
+
 
 def initialize(url):
     service =  AuthenticationServer(url)
