@@ -145,9 +145,12 @@ class AuthenticationServer(ServiceController):
         if login_counter > 0:
             flash(_('Wrong credentials'), 'warning')
 
+        # Check if we have only 1 provider that is not local and just redirect there.
         login_urls = self.login_map()
-        if len(login_urls) == 1 and login_urls.keys()[0] != 'local':
-            redirect (update_url(login_urls.values()[0], dict(username=username, came_from=came_from)))
+        if len(login_urls) == 1:
+            provider, entries =  login_urls.items()[0]
+            if provider != 'local':
+                redirect (update_url(entries['url'], dict(username=username, came_from=came_from)))
 
         return dict(page='login', login_counter=str(login_counter), came_from=came_from, username=username,
                     providers_json = json.dumps (login_urls), providers = login_urls )
