@@ -48,7 +48,7 @@ function redirect_login (url) {
         <?python
         remote = [k for k in providers.keys() if k != 'local']
         ?>
-        <button py:for="p in remote" class="sigin_button" name="${p}" onclick="redirect_login('${providers[p]['url']}')" value="${providers[p]['text']}"><img src="${providers[p]['icon']}" /></button>
+        <button py:for="p in remote" type="button" class="sigin_button" name="${p}" onclick="redirect_login('${providers[p]['url']}')" value="${providers[p]['text']}"><img src="${providers[p]['icon']}" /></button>
     </div>
 </form>
 
