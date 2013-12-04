@@ -74,7 +74,8 @@ class CASPlugin(object):
         #         script_name = environ.get('SCRIPT_NAME', '')
         #         destination = came_from or script_name or '/'
         # else:
-        if login_type == 'cas':
+        #if login_type == 'cas':
+        if request.path == self.login_path and environ.get('repoze.who.plugins.cas'): #  and request.params.get('login_type', None)=='cas':
             log.debug ('CAS challenge redirect to %s' % self.cas_login_url)
             destination =  "%s?service=%s" % (self.cas_login_url, quote_plus(service_url))
             return HTTPFound(location=destination)
@@ -103,10 +104,10 @@ class CASPlugin(object):
     # IIdentifier
     def identify(self, environ):
         request = Request(environ)
+        identity = {}
 
         # first test for logout as we then don't need the rest
         if request.path == self.logout_path:
-
             log.debug ("cas logout:  %s " % environ)
             tokens = environ.get('REMOTE_USER_TOKENS', '')
             cas_ticket = None
@@ -127,29 +128,43 @@ class CASPlugin(object):
                 for a,v in self.forget(environ,{}):
                     res.headers.add(a,v)
                 res.status = 302
-                logout_url = 'http://%s%s' % (environ['HTTP_HOST'], self.post_logout)
+                logout_url = '%s://%s%s' % (environ['UWSGI_SCHEME'], environ['HTTP_HOST'], self.post_logout)
                 res.location = "%s?service=%s" % (self.cas_logout_url, logout_url)
                 environ['repoze.who.application'] = res
-            return {}
+            return identity
 
-        identity = {}
 
         # first we check we are actually on the URL which is supposed to be the
         # url to return to (login_handler_path in configuration)
         # this URL is used for both: the answer for the login form and
         # when the openid provider redirects the user back.
-        if request.path == self.login_path and request.params.get('login_type', None)=='cas':
+        if request.path == self.login_path: #  and request.params.get('login_type', None)=='cas':
             ticket = request.params.get('ticket', None)
             log.debug ("login_path ticket=%s" % ticket)
-            environ['repoze.who.plugins.cas'] = True
-            if ticket is not None:
+            if ticket is None:
+                res = Response()
+                log.debug ('CAS challenge redirect to %s' % self.cas_login_url)
+                res.location =  "%s?service=%s" % (self.cas_login_url, quote_plus(request.url))
+                res.status = 302
+                environ['repoze.who.application'] = res
+            else:
+                # we are returning with a ticket set
                 ticket = ticket.encode('utf-8')
                 identity['tokens'] =  "cas:%s" % ticket
                 identity['repoze.who.plugins.cas.ticket' ] = ticket
-                del environ['repoze.who.plugins.cas']
-                return identity
+
             #identity.update(self._validate(environ, identity))
-        return None
+        return identity
+
+
+    def _redirect_to_loggedin (self,environ):
+        request = Request(environ)
+        came_from = request.params.get('came_from', '/')
+        res = Response()
+        res.status = 302
+        res.location = came_from
+        environ['repoze.who.application'] = res
+
 
     def _validate_simple(self, environ, identity):
         request = Request(environ)
@@ -198,20 +213,17 @@ class CASPlugin(object):
     def authenticate(self, environ, identity):
         ''
         user_id = None
-        if self.cas_saml_validate:
-            user_id =  self._validate_saml(environ, identity)
-            if user_id:
+        if identity.get ('repoze.who.plugins.cas.ticket'):
+            if self.cas_saml_validate:
+                user_id =  self._validate_saml(environ, identity)
                 log.debug ('CAS authenticate : %s' % user_id)
-        #else:
-        #    return self._validate_simple(environ, identity)
-
-        try:
+            # CAS validate the ticket and found the user so check if there is a local user.
             if self.auto_register and user_id:
                 log.debug ('CAS autoregister')
                 user_id = self._auto_register(environ, identity, user_id)
-        except:
-            log.exception ("couldn't authenticate %s"  % user_id)
-            return None
+            del identity['repoze.who.plugins.cas.ticket']
+            if user_id :
+                self._redirect_to_loggedin(environ)
 
         return user_id
 
