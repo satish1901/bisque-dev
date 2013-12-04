@@ -29,7 +29,7 @@ options(
     #package_data=find_package_data(),
     #packages=find_packages(exclude=['ez_setup']),
     #packages=["bqcore/bq"],
-    
+
     setup_requires=["PasteScript >= 1.7"],
     paster_plugins=['PasteScript', 'Pylons', 'TurboGears2', 'bqengine'],
     build_top=path("build"),
@@ -68,7 +68,7 @@ def getanswer(question, default, help=None):
         question = textwrap.dedent (question)
     while 1:
         a =  raw_input ("%s [%s]? " % (question, default))
-        
+
         if a=='?':
             if help is not None:
                 print textwrap.dedent(help)
@@ -78,7 +78,7 @@ def getanswer(question, default, help=None):
         y_n = ['Y', 'y', 'N', 'n']
         if default in y_n and a in y_n:
             a = a.upper()
-            
+
         if a == '': a = default
         break
     return a
@@ -93,7 +93,7 @@ import os
 #############################################################
 #@cmdopts([('engine', 'e', 'install only the engine')])
 @task
-@consume_args 
+@consume_args
 def setup(options):
     'install local version and setup local packages'
 
@@ -102,7 +102,7 @@ def setup(options):
         installing = options.args[0]
 
     if installing not in ('engine', 'server', 'features'):
-        installing =  getanswer("install [server, engine or features", "engine", 
+        installing =  getanswer("install [server, engine or features", "engine",
 """server installs component to run a basic bisque server
 engine will provide just enough components to run a module engine,
 all will install everything including the feature service""")
@@ -122,7 +122,7 @@ all will install everything including the feature service""")
         sh('easy_install numpy==1.6.0')
         sh('easy_install numpy==1.6.0')
         # End Hack
-        sh('easy_install http://biodev.ece.ucsb.edu/binaries/download/tw.output/tw.output-0.5.0dev-20110906.tar.gz') 
+        sh('easy_install http://biodev.ece.ucsb.edu/binaries/download/tw.output/tw.output-0.5.0dev-20110906.tar.gz')
         sh('easy_install http://biodev.ece.ucsb.edu/binaries/depot/tgext.registration2/tgext.registration2-0.5.2.tar.gz')
     sh('easy_install http://biodev.ece.ucsb.edu/binaries/depot/httplib2/httplib2-0.7.1.tar.gz')
     sh('easy_install http://biodev.ece.ucsb.edu/binaries/depot/Paste/Paste-1.7.5.1bisque2.tar.gz')
@@ -142,7 +142,7 @@ all will install everything including the feature service""")
     sh('easy_install http://biodev.ece.ucsb.edu/binaries/depot/Paste/Paste-1.7.5.1bisque2.tar.gz')
     sh('easy_install pastescript==1.7.3')
 
-    #if getanswer('Run bq-admin setup' , 'Y', 
+    #if getanswer('Run bq-admin setup' , 'Y',
     #             "Run the setup (appropiate for this install") == 'Y':
     #    sh ('bq-admin setup %s' % ( 'engine' if engine_install else '' ))
     print  'now run bq-admin setup %s' % ( 'engine' if installing =='engine' else '' )
@@ -163,7 +163,6 @@ def install():
 def test():
     os.chdir('bqcore')
     sh('python setup.py test')
-    
 
 @task
 def distclean():
@@ -193,7 +192,14 @@ def pastershell():
     if not bisque_info.exists():
         sh ('paver egg_info')
     path ('bqcore/bqcore.egg-info/paster_plugins.txt').copy (bisque_info)
-    
 
-    
-    
+
+@task
+@consume_args
+def pylint(options):
+    args = 'bqcore/bq bqserver/bq bqengine/bq bqfeature/bq'
+    if options.args:
+        args = " ".join(options.args)
+    sh('PYTHONPATH=bqcore/bq:bqserver/bq:bqengine/bq:bqfeature/bq pylint %s --rcfile=bqcore/pylint.rc' % args)
+
+

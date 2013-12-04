@@ -563,6 +563,8 @@ class import_serviceController(ServiceController):
         #---------------------------------------------------------------
         
         unpack_dir, members = self.unpackPackagedFile(file, preserve_structure=True)
+        # memberHash is a nested hash of directories and info for each file
+        # a/b/t.img -> { 'a' : { 'isDataset': True, 'b' : { 'isDataset': True, t : { 'FILE': 'path-info' },}}}
         memberHash = {}
 
         # create a hash that maps flat file structure into a hierarchy
@@ -573,10 +575,10 @@ class import_serviceController(ServiceController):
             
             (dirs, name) = parsePath(member)
             parent = memberHash
-            for dir in dirs:
-                parent[dir] = parent.get(dir) or {}
-                parent[dir]['isDataset'] = True
-                parent = parent[dir]
+            for d in dirs:
+                parent[d] = parent.get(d) or {}
+                parent[d]['isDataset'] = True
+                parent = parent[d]
             
             (fname, ext) = os.path.splitext(name)
             value = 'XML' if ext.lower() == '.xml' else 'FILE' 
