@@ -70,7 +70,7 @@
 }
 
 .login .local .registration {
-    margin: 2em 20px 0px 0px;
+    margin: 10px 20px 0px 0px;
     padding-top: 10px;
     border-top: dotted 1px #AAAAAA;  
 }
@@ -87,4 +87,18 @@
 
 .login .local .registration a:hover {
     color: #CC6600;
+}
+
+.login .sigin_button {
+    padding: 0px 0px 10px 0px;
+    margin: 0px;
+    border: none;
+}
+
+.login .sigin_button#submit {
+    margin-top: 10px;
+}
+
+.login .sigin_button img {
+    width: 200px;
 }

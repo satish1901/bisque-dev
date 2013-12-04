@@ -16,8 +16,8 @@
 
 var providers = ${providers_json};
 
-function redirect_login (login) {
-    document.location  = providers[login]['url'] + '?came_from=${came_from}' ;
+function redirect_login (url) {
+    document.location = Ext.String.urlAppend( url, 'came_from=${came_from}' );
 }
 
 </script>
@@ -33,11 +33,10 @@ function redirect_login (login) {
 
     <div class="local" py:if="'local' in providers" >
         <h2>Local users</h2>
-
         <label for="loginusername">Username:<input type="text" id="loginusername" name="login" value="$username" class="text"></input></label>
         <label for="loginpassword">Password:<input type="password" id="loginpassword" name="password" class="text"></input></label>
-        <input type="submit" id="submit" value="Log-in" />
-
+        <button type="submit" id="submit" class="sigin_button" value="Sign-in with Bisque"><img src="/images/signin/signin_bisque.png" /></button>
+        
         <div class="registration">
             <p><a href="/registration/">Register local user</a></p>
             <p><a href="/registration/lost_password">Reset local password</a></p>
@@ -46,9 +45,10 @@ function redirect_login (login) {
 
     <div class="remote" py:if="len(providers)>1 or 'local' not in providers">
         <h2>External providers</h2>
-
-                <input py:if="'iplant' in providers" type="button" id="submit_cas" value="${providers['iplant']['text']}" onclick="redirect_login('iplant')" />
-        <input py:if="'google' in providers" type="button" id="submit_google" value="${providers['google']['text']}" onclick="redirect_login('google')" />
+        <?python
+        remote = [k for k in providers.keys() if k != 'local']
+        ?>
+        <button py:for="p in remote" class="sigin_button" name="${p}" onclick="redirect_login('${providers[p]['url']}')" value="${providers[p]['text']}"><img src="${providers[p]['icon']}" /></button>
     </div>
 </form>
 
