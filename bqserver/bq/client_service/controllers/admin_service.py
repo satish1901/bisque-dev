@@ -79,7 +79,7 @@ log = logging.getLogger('bq.admin')
 from bq.core import model
 from bq.core.model import DBSession
 
-from tgext.admin import AdminController
+#from tgext.admin import AdminController
 #class BisqueAdminController(AdminController):
 #    'admin controller'
 #    allow_only = Any (in_group("admin"), in_group('admins'))

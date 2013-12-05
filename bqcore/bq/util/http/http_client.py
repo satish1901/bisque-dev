@@ -25,7 +25,7 @@ local_client = None
 try:
     from bq.core.identity import add_credentials
 except ImportError:
-    def add_default_credentials(headers):
+    def add_credentials(headers):
         pass
 
 def start(need_async=False):
@@ -61,7 +61,7 @@ def prepare_credentials (client, headers, userpass=None):
         headers['authorization'] =  'Basic ' + base64.encodestring("%s:%s" % userpass ).strip()
         return
     cred = {}
-    add_default_credentials (cred)
+    add_credentials (cred)
     if cred:
         headers.update (cred)
         return
