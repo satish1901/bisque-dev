@@ -81,7 +81,6 @@ classdef File < bq.Node
             [output, info] = bq.post_mpform(url.toString(), filename, user, password);
             output = char(output);
             if ~isempty(output) && info.status<300 && isempty(regexpi(output, '(<html)', 'tokenExtents')),
-                output = char(output);
                 output = regexprep(output, '<resource type="uploaded">', '');
                 output = regexprep(output, '</resource>$', '');
                 doc = bq.str2xml(output);

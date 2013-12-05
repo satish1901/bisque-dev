@@ -55,25 +55,27 @@ function info = iminfo(url, user, password)
         doc_meta = bq.get_xml( [info.pixles_url '?meta'], user, password );
     else
         doc_meta = bq.get_xml( [info.pixles_url '?meta'] );    
-    end    
-    template = '//image/tag[@name=''%s'']';
-    tags = { 'filename',    'str'; 
-             'image_num_x', 'int'; 
-             'image_num_y', 'int';              
-             'image_num_z', 'int'; 
-             'image_num_t', 'int';
-             'image_num_c', 'int';             
-             'image_pixel_depth',  'int';
-             'image_pixel_format', 'str';             
-             'pixel_resolution_x', 'double';
-             'pixel_resolution_y', 'double';
-             'pixel_resolution_z', 'double';
-             'pixel_resolution_t', 'double';
-           };
-    info = bq.parsetags(doc_meta, tags, template, info);
+    end  
+    if ~isempty(doc_meta),
+        template = '//tag[@name=''%s'']';
+        tags = { 'filename',    'str'; 
+                 'image_num_x', 'int'; 
+                 'image_num_y', 'int';              
+                 'image_num_z', 'int'; 
+                 'image_num_t', 'int';
+                 'image_num_c', 'int';             
+                 'image_pixel_depth',  'int';
+                 'image_pixel_format', 'str';             
+                 'pixel_resolution_x', 'double';
+                 'pixel_resolution_y', 'double';
+                 'pixel_resolution_z', 'double';
+                 'pixel_resolution_t', 'double';
+               };
+        info = bq.parsetags(doc_meta, tags, template, info);
+    end
     
     %% parse image resource tags overwriting some tag values
-    template = '//image/tag[@name=''%s'']';
+    template = '//tag[@name=''%s'']';
     tags = { 'filename',             'str';
              'pixel_resolution_x_y', 'double';             
              'pixel_resolution_x',   'double';

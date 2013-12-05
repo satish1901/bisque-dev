@@ -277,7 +277,38 @@ classdef Node < matlab.mixin.Copyable
             for i=1:xnodes.getLength(),
                 nodes{i} = bq.Factory.fetch(self.doc, xnodes.item(i-1), self.user, self.password);
             end
-        end         
+        end   
+        
+        function values = findValues(self, expression, default)
+        % Returns a vector of bq.Node found with xpath expression
+        %
+        % INPUT:
+        %    expression - an xpath expression 
+        %
+        % OUTPUT:
+        %    s - a struct containing tag values by their names
+        %        for tags example above will produce:
+        %            s.width, s.descr, s.pix_res
+        %                 
+            import javax.xml.xpath.*;
+            factory = XPathFactory.newInstance;
+            xpath = factory.newXPath;    
+            xnodes = xpath.evaluate(expression, self.element, XPathConstants.NODESET);
+            if isempty(xnodes) || xnodes.getLength()<1,
+                values = cell(0,1);
+                return;
+            end            
+            values = cell(xnodes.getLength(),1);
+            for i=1:xnodes.getLength(),
+                t = bq.Factory.fetch(self.doc, xnodes.item(i-1), self.user, self.password);
+                if exist('default', 'var'),
+                    values{i} = t.getValue(default);
+                else
+                    values{i} = t.getValue();
+                end   
+            end
+        end           
+        
         
         function s = getNameValueMap(self, expression)
         % Returns tags found with xpath expression in proper formats
