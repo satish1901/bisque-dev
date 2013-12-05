@@ -108,8 +108,8 @@ function [output, info] = post_mpform(url, input, user, password)
         connection = server.openConnection(proxy);
     end    
     % new: end    
-
-    boundary = '----BisqueMatlabAPI***********************';
+    
+    boundary = ['----BisqueMatlabAPIBoundary' randomstring(20)];
     connection.setReadTimeout(1200000);
     connection.setRequestMethod('POST');
     connection.setRequestProperty('Connection', 'Keep-Alive');
@@ -126,24 +126,43 @@ function [output, info] = post_mpform(url, input, user, password)
           connection.setRequestProperty('Mex', password);
         end
     end
-
- 
-    %connection.setRequestProperty('Content-Length', int2str(length(input)));        
-    
-    connection.connect();
-
+  
+    % construct body parts
     eol = [char(13),char(10)];    
     [~, name, ext] = fileparts(input);
     filename = [name ext];
     
+    file_length = 0;
+    if ischar(input),
+        file_length = getfilesize(input);
+    else
+        file_length = length(input);
+    end      
+    
+    
+    initial = [eol];
+%     initial = [initial, '--', boundary, eol];
+%     initial = [initial, 'Content-Disposition: form-data; name="file_tags"', eol];
+%     initial = [initial, eol];
+%     initial = [initial, '<resource type="file" name="', filename,'" uri="', filename,'" />', eol];    
+    
+    initial = [initial, '--', boundary, eol];
+    initial = [initial, 'Content-Disposition: form-data; name="file"; filename="', filename,'"', eol];
+    %initial = [initial, 'Content-Length: ',int2str(file_length), eol]; % dima: this creates incorrect file!
+    initial = [initial, 'Content-Type: application/octet-stream', eol];
+    initial = [initial, eol];
+       
+    final = [eol, '--', boundary, '--', eol]; 
+    
+    content_length = length(initial) + length(final) + file_length;
+    connection.setRequestProperty('Content-Length', int2str(content_length)); 
+    connection.connect();  
+    
+    % write body out
     out = java.io.BufferedOutputStream(connection.getOutputStream());
     outp = java.io.PrintStream(connection.getOutputStream); % stream for textual output
-    outp.print(['--', boundary, eol]);
-    outp.print(['Content-Disposition: form-data; name="file"']);
-    outp.print(['; filename="' filename '"', eol]);
-    outp.print(['Content-Type: application/octet-stream',eol]);
-    outp.print([eol]);
 
+    outp.print(initial);
     % write actual payload
     if ischar(input),
         file2stream(out, input);
@@ -151,9 +170,7 @@ function [output, info] = post_mpform(url, input, user, password)
     else
         %out.write(input); % if the input is a vector
     end    
-    
-    outp.print([eol]);
-    outp.print(['--',boundary,'--',eol]);
+    outp.print(final);
     outp.close;    
     out.close; 
     
@@ -162,7 +179,7 @@ function [output, info] = post_mpform(url, input, user, password)
 
     if info.status>=300,
         output = [];
-        error(['bq.post_mpform:error\nStatus: ' int2str(info.status) '\nMethod: ' method '\nURL: ' url.toString() '\nError:\n' info.error], '');
+        error(['bq.post_mpform:error\nStatus: ' int2str(info.status) '\nMethod: POST\nURL: ' url.toString() '\nError:\n' info.error], '');
     %elseif exist('location', 'var') && ~isempty(location),    
     %    output = stream2file(connection.getInputStream(), location);        
     %    %output = stream2file( java.io.BufferedInputStream(connection.getInputStream(), 4*1024), location);
@@ -176,6 +193,12 @@ function out = base64encode(str)
     % Uses Sun-specific class, but we know that is the JVM Matlab ships with
     encoder = sun.misc.BASE64Encoder();
     out = char(encoder.encode(java.lang.String(str).getBytes()));
+end
+
+function str = randomstring(N)
+    myset = char(['A':'Z' 'a':'z' '0':'9']);
+    i = ceil(length(myset)*rand(1,N));
+    str = myset(i);
 end
 
 function output = readstream(inputStream)
@@ -208,5 +231,13 @@ function file2stream(output, location)
     catch err,
         input.close;
         error('bq.post_mpform.file2stream', ['Error while reading file stream: ' err.message]);
+    end
+end
+
+function fileSize = getfilesize(fileName)
+    fileSize = 0;
+    dirStruct = dir(fileName);
+    if ~isempty(dirStruct),
+        fileSize = dirStruct.bytes;
     end
 end

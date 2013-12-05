@@ -130,6 +130,7 @@ function [output, info] = connect(method, url, location, input, user, password)
           connection.setRequestProperty('Authorization', ['Basic ' base64encode([user ':' password])]);
         else
           connection.setRequestProperty('Mex', password);
+          connection.setRequestProperty('Authorization', ['Mex ' password ]);
         end
     end
     

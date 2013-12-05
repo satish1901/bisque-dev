@@ -49,14 +49,14 @@ function I = imreadND(url, user, password)
     end 
     
     template = '//image/tag[@name=''%s'']';
-    tags = { 'zsize',       'int'; 
-             'tsize',       'int';              
-             'channels',    'int'; 
-             'width',       'int';
-             'height',      'int';             
-             'depth',       'int';
-             'pixelType',   'str';
-             'pixelFormat', 'str';
+    tags = { 'image_num_z',        'int'; 
+             'image_num_t',        'int';              
+             'image_num_c',        'int'; 
+             'image_num_x',        'int';
+             'image_num_y',        'int';             
+             'image_pixel_depth',  'int';
+             'image_pixel_format', 'str';
+             'pixelFormat',        'str';
            };
     info = bq.parsetags(doc, tags, template);
     purl.popQuery();    
@@ -73,7 +73,7 @@ function I = imreadND(url, user, password)
         I = []; return;
     end
     I = typecast(I, info.pixelFormat);
-    I = squeeze(reshape(I, info.width, info.height, info.channels, info.zsize, info.tsize)); 
+    I = squeeze(reshape(I, info.image_num_x, info.image_num_y, info.image_num_c, info.image_num_z, info.image_num_t)); 
     
     % matlab uses row-major order, opposite to column-major in Bisque
     % we need to transpose all the image planes

@@ -24,7 +24,7 @@ function str = xml2str(doc)
         factory = DocumentBuilderFactory.newInstance;
         builder = factory.newDocumentBuilder;
         newdoc = builder.newDocument;
-        newdoc.appendChild(newdoc.adoptNode(self.element.cloneNode(true)));
+        newdoc.appendChild(newdoc.adoptNode(doc.cloneNode(true)));
 
         %% create a string from DOM doc
         import javax.xml.transform.*;
