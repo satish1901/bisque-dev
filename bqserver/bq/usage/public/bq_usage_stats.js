@@ -21,30 +21,30 @@
 
 Ext.define('BQ.usage.Stats', {
     extend: 'Ext.container.Container',
-    alias: 'widget.usagestats',  
-    
-    layout: 'fit', 
-    defaults: {border: 0,},    
+    alias: 'widget.usagestats',
+
+    layout: 'fit',
+    defaults: {border: 0,},
     resource: '/usage/stats',
     tag_titles: {'number_images': 'All Images', 'number_images_user': 'My images', 'number_images_planes': '2D Planes', 'number_tags': 'Tags', 'number_gobs': 'GObjects' },
 
     initComponent : function() {
         this.callParent();
-        this.setLoading('Fetching usage...'); 
+        this.setLoading('Fetching usage...');
         BQFactory.request({
-            uri: this.resource, 
-            cb: callback(this, 'onStats'), 
+            uri: this.resource,
+            cb: callback(this, 'onStats'),
             errorcb: callback(this, 'onError'),
         });
     },
 
     onError: function() {
         this.setLoading(false);
-    },    
-   
+    },
+
     onStats: function(stats) {
         this.setLoading(false);
-        var dict = stats.toDict(true);   
+        var dict = stats.toDict(true);
         var s = '<h2><a href="/usage/">Usage statistics</a></h2>';
         for (var i in this.tag_titles) {
             if (i in dict)
@@ -52,19 +52,20 @@ Ext.define('BQ.usage.Stats', {
         }
         this.add({html: s});
     },
-    
+
 });
 
 Ext.define('BQ.usage.Uploads', {
     extend: 'Ext.container.Container',
-    alias: 'widget.uploadstats',  
+    alias: 'widget.uploadstats',
     requires: ['Ext.chart.*', 'Ext.layout.container.Fit'],
-    
+
     heading: 'Image uploads - daily',
     tip: 'Image uploads on ',
     resource: '/usage/uploads',
     modelName: 'UsageUploads',
     axisFormat: 'n/j',
+    tipFormat: 'M d, Y',
     showAxisTitles: true,
 
     layout: {
@@ -72,47 +73,48 @@ Ext.define('BQ.usage.Uploads', {
         align : 'stretch',
         pack  : 'start',
     },
-    defaults: { border: 0, },   
+    defaults: { border: 0, },
 
     initComponent : function() {
         this.callParent();
-        this.setLoading('Fetching usage...');                
+        this.setLoading('Fetching usage...');
         Ext.define(this.modelName, {
             extend: 'Ext.data.Model',
             fields: ['count', 'date'],
         });
         BQFactory.request({
-            uri: this.resource, 
-            cb: callback(this, 'onStats'), 
+            uri: this.resource,
+            cb: callback(this, 'onStats'),
             errorcb: callback(this, 'onError'),
-        });        
+        });
     },
 
     onError: function() {
         this.setLoading(false);
-    },   
-   
+    },
+
     onStats: function(stats) {
         this.setLoading(false);
-        var dict = stats.toDict(true);   
+        var dict = stats.toDict(true);
         var counts = dict.counts.split(',');
         var dates  = dict.days.split(',');
-        
+
         var data = [];
         for (var i=0; i<counts.length; i++) {
             var date = new Date();
             date.setISO8601(dates[i]);
-            data.push({ index: i, count: parseFloat(counts[i]), date: date });  
+            data.push({ index: i, count: parseFloat(counts[i]), date: date });
         }
-        
+
         var store = Ext.create('Ext.data.Store', {
             model: 'UsageUploads',
             data: data,
-        }); 
-        
+        });
+
         var axisFormat = this.axisFormat;
         var heading = this.heading;
-        var tip = this.tip;        
+        var tip = this.tip;
+        var tipFormat = this.tipFormat;
         this.chart = Ext.create('Ext.chart.Chart', {
             //animate: true,
             flex: 1,
@@ -124,8 +126,8 @@ Ext.define('BQ.usage.Uploads', {
                 type: 'Numeric',
                 position: 'left',
                 fields: ['count'],
-                minimum: 0,                
-                //grid: true,                
+                minimum: 0,
+                //grid: true,
                 /*grid: {
                     odd: {
                         opacity: 1,
@@ -145,17 +147,17 @@ Ext.define('BQ.usage.Uploads', {
                     }
                 },
             }],
-            
+
             series: [{
                 type: 'line',
-                fill: true,  
-                smooth: 3, 
-                highlight: true, 
-                showMarkers: false,                            
+                fill: true,
+                smooth: 3,
+                highlight: true,
+                showMarkers: false,
                 selectionTolerance: 3, // dima: this here is a problem, gives wrong items if large, no way to split x and y tolerances
                 xField: 'date',
                 yField: 'count',
-                
+
                 style: {
                     stroke: 'rgb(234, 102, 17)',
                     fill: 'rgb(234, 102, 17)',
@@ -169,49 +171,51 @@ Ext.define('BQ.usage.Uploads', {
                   //height: 28,
                   renderer: function(storeItem, item) {
                       this.setTitle( storeItem.get('count') + ' ' + tip +
-                                     Ext.Date.format(new Date(storeItem.get('date')), 'M d, Y'));
+                                     Ext.Date.format(new Date(storeItem.get('date')), tipFormat));
                   }
-                },                
-                
-                                     
+                },
+
+
             }],
-            
-        }); 
+
+        });
 
         this.add({html: '<h2><a href="/usage/">'+this.heading+'</a></h2>'});
         this.add(this.chart);
     },
-    
+
 });
 
 Ext.define('BQ.usage.UploadsMonthly', {
     extend: 'BQ.usage.Uploads',
-    alias: 'widget.monthlyuploadstats', 
+    alias: 'widget.monthlyuploadstats',
     heading: 'Image uploads - monthly',
     tip: 'Image uploads in ',
-    axisFormat: 'M j, y',
-    
+    axisFormat: 'M y',
+    tipFormat : 'M y',
+
     resource: '/usage/uploads_monthly',
     modelName: 'UsageMonthlyUploads',
 });
 
 Ext.define('BQ.usage.Analysis', {
     extend: 'BQ.usage.Uploads',
-    alias: 'widget.analysisstats', 
+    alias: 'widget.analysisstats',
     heading: 'Module executions - daily',
     tip: 'Module uploads on ',
-    
+
     resource: '/usage/analysis',
     modelName: 'UsageAnalysis',
 });
 
 Ext.define('BQ.usage.AnalysisMonthly', {
     extend: 'BQ.usage.Uploads',
-    alias: 'widget.monthlyanalysisstats', 
+    alias: 'widget.monthlyanalysisstats',
     heading: 'Module executions - monthly',
-    tip: 'Module uploads in ', 
-    axisFormat: 'M j, y',
-    
+    tip: 'Module executions in ',
+    axisFormat: 'M y',
+    tipFormat : 'M y',
+
     resource: '/usage/analysis_monthly',
     modelName: 'UsageMonthlyAnalysis',
 });
