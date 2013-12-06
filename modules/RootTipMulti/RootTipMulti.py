@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import os
 import sys
-import optparse 
+import optparse
 import subprocess
 import glob
 import csv
@@ -23,7 +23,7 @@ def gettag (el, tagname):
         if kid.get ('name') == tagname:
             return kid, kid.get('value')
     return None,None
-            
+
 class RootTip(object):
 
     def setup(self):
@@ -31,9 +31,9 @@ class RootTip(object):
         #    os.makedirs(self.images)
 
         self.bq.update_mex('initializing')
-        results = fetch_image_planes(self.bq, self.resource_url, '.') 
-        
-        # extract gobject inputs 
+        results = fetch_image_planes(self.bq, self.resource_url, '.')
+
+        # extract gobject inputs
         tips = self.bq.mex.tag('inputs').tag('image_url').gob('tips')
         with open('inputtips.csv', 'w') as TIPS:
             for point in tips.gobjects:
@@ -45,7 +45,7 @@ class RootTip(object):
         self.bq.update_mex('executing')
         # Matlab requires trailing slash
         subprocess.call([EXEC, './'])
-        
+
 
     def teardown(self):
         # Post all submex for files and return xml list of results
@@ -83,8 +83,8 @@ class RootTip(object):
                 gobs.append(
                     {'type': 'tipangle',
                      'tag': [{ 'name': 'angle', 'value': angles[t_plane][pt] }],
-                     'point':[{'vertex' : 
-                               [{ 't': str(t_plane), 'x': str(tips[t_plane][pt*2]), 
+                     'point':[{'vertex' :
+                               [{ 't': str(t_plane), 'x': str(tips[t_plane][pt*2]),
                                   'y': str(tips[t_plane][pt*2+1]) }]
                                }]
                      })
@@ -144,7 +144,7 @@ class RootTip(object):
             sys.exit(1)
 
         sys.exit(0)
-            
+
         #command = args.pop(0)
 
         #if command not in ('setup','teardown', 'start'):
@@ -157,14 +157,14 @@ class RootTip(object):
         #self.config = options
         #self.is_dataset = 'dataset' in self.resource_url
 
-            
+
         #command = getattr(self, command)
         #command()
 
-        
+
 
 
 
 if __name__ == "__main__":
     RootTip().run()
-    
+

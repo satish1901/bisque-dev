@@ -27,11 +27,11 @@ BFCONVERT = 'bfconvert'
 BFORMATS  = 'formatlist'
 
 if os.name == 'nt':
-    BFINFO    = 'showinf.bat' 
+    BFINFO    = 'showinf.bat'
     BFCONVERT = 'bfconvert.bat'
     BFORMATS  = 'formatlist.bat'
 
- 
+
 ################################################################################
 # bioformats interface
 ################################################################################
@@ -43,12 +43,12 @@ def run_command(command):
     try:
         p = Popen (command, stdout=PIPE, stderr=PIPE)
         o,e = p.communicate()
-        
-        if p.returncode!=0: 
+
+        if p.returncode!=0:
             return None
-        if e is not None and len(e)>0: 
+        if e is not None and len(e)>0:
             return None
-       
+
         return o
     except OSError, e:
         log.warn ('%s command not found' % command[0])
@@ -70,17 +70,17 @@ def run_command(command):
 #Build date: 14 September 2011
 
 def get_version ():
-    '''returns the version of bioformats'''    
+    '''returns the version of bioformats'''
     o = run_command( [BFINFO, '-version'] )
     if o is None: return None
 
-    v = {}    
+    v = {}
     for line in o.splitlines():
         if not line: continue
         d = line.split(': ', 1)
         if len(d)<2: continue
         v[d[0]] = d[1]
-    
+
     if 'Version' in v:
         v['full'] =  v['Version']
 
@@ -91,23 +91,23 @@ def get_version ():
             v['major']    = d[0]
             v['minor']    = d[1]
             v['build']    = d[2]
-            #v['revision'] = d[3]            
+            #v['revision'] = d[3]
 
     return v
 
 is_version = get_version()
 def version ():
-    '''returns the version of bioformats'''    
+    '''returns the version of bioformats'''
     return is_version
-    
+
 ################################################################################
 # Installed
-################################################################################    
+################################################################################
 
 def check_installed ():
     '''Returns true if bioformats are installed'''
     if is_version is None: return False
-    if 'full' in is_version: return True      
+    if 'full' in is_version: return True
     return False
 
 is_installed = check_installed()
@@ -115,18 +115,18 @@ is_installed = check_installed()
 def installed ():
     '''return true if bioformats are installed'''
     return is_installed
-        
+
 def check_version ( needed ):
-    '''checks if bioformats are of proper version'''  
+    '''checks if bioformats are of proper version'''
     if is_version is None or not 'numeric' in is_version: return False
     if isinstance(needed, str): needed = [int(s) for s in needed.split('.')]
     has = is_version['numeric']
     return needed < has
 
 def ensure_version ( needed ):
-    '''checks if bioformats are of proper version and sets installed to false if its older'''  
+    '''checks if bioformats are of proper version and sets installed to false if its older'''
     is_installed = check_version ( needed )
-    return is_installed    
+    return is_installed
 
 ################################################################################
 # Formats
@@ -135,11 +135,11 @@ def ensure_version ( needed ):
 def installed_formats():
     '''return the XML with supported file formats'''
     fs = run_command( [BFORMATS, '-xml'] )
-    if fs is None: 
-        return ''    
+    if fs is None:
+        return ''
     fs = fs.replace('format', 'codec')
     fs = fs.replace('<response>', "<format name='bioformats' version='%s'>"%is_version['full'])
-    fs = fs.replace('</response>', '</format>') 
+    fs = fs.replace('</response>', '</format>')
     return fs
 
 #./showinf -nopix -nometa 13_1.lsm
@@ -150,10 +150,10 @@ def supported(ifnm, original=None):
 
 ################################################################################
 # Conversion
-################################################################################                            
+################################################################################
 
 # '.ome.tiff' or '.ome.tif'.
-# 
+#
 #sh bfconvert -bigtiff -compression LZW  ../53676.svs ../output.ome.tiff
 
 def convert(ifnm, ofnm, original=None, series=-1):
@@ -161,17 +161,17 @@ def convert(ifnm, ofnm, original=None, series=-1):
     if not is_installed: return None
     with Locks(ifnm, ofnm) as l:
         if not l.locked:
-            return       
+            return
         if original is None:
             command = [BFCONVERT, ifnm, ofnm]
         else:
             command = [BFCONVERT, '-map', ifnm, original, ofnm]
-        command.extend(['-bigtiff', '-compression', 'LZW'])            
+        command.extend(['-bigtiff', '-compression', 'LZW'])
         if series>=0:
             command.append('-series')
             command.append('%s'%series)
         log.debug('Convert: %s' % ' '.join (command) )
-            
+
         #retcode = call (command)
         if os.path.exists(ofnm):
             log.error ('Convert: %s exists before command' % ofnm)
@@ -180,15 +180,15 @@ def convert(ifnm, ofnm, original=None, series=-1):
         o,e = p.communicate(input='y\n')
         if p.returncode != 0:
             log.error ('Convert: returned %s %s %s' % (p.returncode, o, e))
-            #raise RuntimeError( "BioFormats failed: %s" % '.'.join(command) )      
-    return ofnm 
+            #raise RuntimeError( "BioFormats failed: %s" % '.'.join(command) )
+    return ofnm
 
 
 ################################################################################
 # Info
-################################################################################  
+################################################################################
 
-#This command will give you the "core" metadata (width, height, number of planes, etc.), 
+#This command will give you the "core" metadata (width, height, number of planes, etc.),
 #the original metadata as a list of key/value pairs, and the converted OME-XML:
 #showinf -nopix -omexml
 #If you don't want the original metadata to be displayed, add the '-nometa' option.
@@ -222,38 +222,38 @@ def convert(ifnm, ofnm, original=None, series=-1):
 
 def info(ifnm, original=None):
     '''returns the dict with file info'''
-    if not os.path.exists(ifnm): 
-        return {}   
-    if not is_installed: 
+    if not os.path.exists(ifnm):
+        return {}
+    if not is_installed:
         return {}
 
     if original is None:
         command = [BFINFO, '-nopix', '-nometa', ifnm]
     else:
         command = [BFINFO, '-nopix', '-nometa', '-map', ifnm, original ]
-        
+
     log.debug('Info for: %s'%(ifnm) )
     with Locks(ifnm):
         o = run_command( command )
     if o is None: return {}
 
-    bfmap = { 'Image count': 'image_num_p', 
-              'Width': 'image_num_x', 
-              'Height': 'image_num_y', 
-              'SizeZ': 'image_num_z', 
-              'SizeT': 'image_num_t', 
-              'SizeC': 'image_num_c', 
+    bfmap = { 'Image count': 'image_num_p',
+              'Width': 'image_num_x',
+              'Height': 'image_num_y',
+              'SizeZ': 'image_num_z',
+              'SizeT': 'image_num_t',
+              'SizeC': 'image_num_c',
               'Dimension order': 'dimensions' }
-    
-    rd = { 'image_num_z': 1, 
-           'image_num_t': 1, 
+
+    rd = { 'image_num_z': 1,
+           'image_num_t': 1,
            'image_num_p': 1 }
-    
+
     in_series = False
     for line in o.splitlines():
         if not line: continue
         line = line.strip()
-        
+
         if line.startswith('Checking file format ['):
             rd['format'] = line.replace('Checking file format [', '').replace(']', '')
             continue
@@ -263,7 +263,7 @@ def info(ifnm, original=None):
             try:
                 rd['image_num_series'] = int(val)
             except ValueError:
-                pass            
+                pass
             continue
 
         if line.startswith('Series #0'):
@@ -272,15 +272,15 @@ def info(ifnm, original=None):
 
         if line.startswith('Series #1'):
             break
-          
+
         if not in_series: continue
-          
-        try:        
+
+        try:
             tag, val = [ l.strip(' \n') for l in line.split('=',1) ]
         except:
             break
 
-        if not tag in bfmap: 
+        if not tag in bfmap:
             continue
         try:
             val = int(val)

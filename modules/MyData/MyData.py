@@ -26,13 +26,13 @@ class MyData(object):
     Read tags from image server and store tags on image directly
     """
     def main(self, image_url,  mex_url = None, bisque_token=None, bq = None):
-        #  Allow for testing by passing an alreay initialized session 
+        #  Allow for testing by passing an alreay initialized session
         if bq is None:
             bq = BQSession().init_mex(mex_url, bisque_token)
         # Fetch the image metadata
         image = bq.load(image_url)
 
-        # Fetch embedded tags from image service 
+        # Fetch embedded tags from image service
         meta = image.pixels().meta().fetch()
         meta = ET.XML(meta)
         tags = []
@@ -54,7 +54,7 @@ if __name__ == "__main__":
     parser = optparse.OptionParser()
     parser.add_option("-c", "--credentials", dest="credentials",
                       help="credentials are in the form user:password")
-                      
+
     (options, args) = parser.parse_args()
 
     image_url = args.pop(0)
