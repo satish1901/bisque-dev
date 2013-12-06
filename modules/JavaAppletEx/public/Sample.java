@@ -11,10 +11,16 @@ public class Sample extends JApplet
     private int fontStyle = Font.BOLD;
     private String fontName = "Monospaced";
 
-    public Sample()
+    public Sample(String args[])
     {
         // create the label and assign default values to its font
-        final JLabel label = new JLabel("Java Test");
+        String labelText ="";
+
+        for (String arg:args){
+            labelText += arg + "\n";
+        }
+
+        final JLabel label = new JLabel(labelText);
         label.setFont(new Font(fontName, fontStyle, fontSize));
 
         // add a JPanel with a GridBagLayout to the center of
@@ -173,7 +179,7 @@ public class Sample extends JApplet
         // exit the application when the JFrame is closed
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         // add the applet to the frame
-        frame.getContentPane().add(new Sample());
+        frame.getContentPane().add(new Sample(args));
         // set the size of the frame (applet will be width by height in size)
         int height = 300;
         int width = 450;

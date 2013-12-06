@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import os
 import sys
-import optparse 
+import optparse
 import subprocess
 import glob
 import csv
@@ -22,7 +22,7 @@ def gettag (el, tagname):
         if kid.get ('name') == tagname:
             return kid, kid.get('value')
     return None,None
-            
+
 class SeedSize(object):
 
     def setup(self):
@@ -33,12 +33,12 @@ class SeedSize(object):
         if self.is_dataset:
             results = fetch_dataset(self.bq, self.resource_url, self.images, True)
         else:
-            results = fetch_image_pixels(self.bq, self.resource_url, self.images, True) 
+            results = fetch_image_pixels(self.bq, self.resource_url, self.images, True)
 
         with open(self.image_map_name, 'wb') as f:
             pickle.dump(results, f)
         return 0
-        
+
 
     def start(self):
         self.bq.update_mex('executing')
@@ -48,7 +48,7 @@ class SeedSize(object):
 
     def teardown(self):
         with  open(self.image_map_name, 'rb') as f:
-            self.url2file = pickle.load(f) # 
+            self.url2file = pickle.load(f) #
             self.file2url =  dict((v,k) for k,v in self.url2file.iteritems())
 
         summary    = os.path.join(self.images, 'summary.csv')
@@ -72,7 +72,7 @@ class SeedSize(object):
             submexes = self._get_submexes()
             tags = [
                 { 'name': 'execute_options',
-                  'tag' : [ {'name': 'iterable', 'value' : 'image_url' } ] 
+                  'tag' : [ {'name': 'iterable', 'value' : 'image_url' } ]
                   },
                 { 'name': 'outputs',
                   'tag' : [{'name': 'Summary',  'tag' : summary_tags },
@@ -83,7 +83,7 @@ class SeedSize(object):
             # for i, submex in enumerate(mexlist):
             #     tag, image_url = gettag(submex, 'image_url')
             #     gob, gob_url = gettag(submex, 'SeedSize')
-            #     mexlink = { 'name' : 'submex', 
+            #     mexlink = { 'name' : 'submex',
             #                 'tag'  : [{ 'name':'mex_url', 'value':submex.get('uri')},
             #                           { 'name':'image_url', 'value' : image_url},
             #                           { 'name':'gobject_url', 'value' : gob.get('uri') } ]
@@ -100,14 +100,14 @@ class SeedSize(object):
         for result in localfiles:
             gobs = self._read_results(result)
             if result not in result2url:
-                log.error ("Can't find url for %s given files %s and map %s" % 
-                           result, localfile, result2url)
+                logging.error ("Can't find url for %s given files %s and map %s" %
+                           result, localfiles, result2url)
             mex = { 'type' : self.bq.mex.type,
                     'name' : self.bq.mex.name,
-                    'value': 'FINISHED', 
+                    'value': 'FINISHED',
                     'tag': [ { 'name': 'inputs',
-                               'tag' : [ {'name': 'image_url', 'value' : result2url [result] } ] 
-                             },    
+                               'tag' : [ {'name': 'image_url', 'value' : result2url [result] } ]
+                             },
                              { 'name': 'outputs',
                               'tag' : [{'name': 'seed-resource', 'type':'image', 'value':  result2url [result],
                                         'gobject':{ 'name': 'seeds', 'type': 'seedsize', 'gobject': gobs}, }] }]
@@ -118,7 +118,7 @@ class SeedSize(object):
         #url = self.bq.service_url('data_service', 'mex', query={ 'view' : 'deep' })
         #response = self.bq.postxml(url, d2xml({'request' : {'mex': submex}} ))
         #return response
-        
+
 
     def _read_summary(self, csvfile):
         #%mean(area), mean(minoraxislen), mean(majoraxislen), standarddev(area),
@@ -129,15 +129,15 @@ class SeedSize(object):
         tag_names = [ 'mean_area', 'mean_minoraxis', 'mean_majoraxis',
                       'std_area', 'std_minoraxis', 'std_majoraxis',
                       'seedcount',
-                      'mean_threshhold', 
+                      'mean_threshhold',
                       'weighted_mean_cluster_1','weighted_mean_cluster_2',
                       ]
 
         # Read one row(rows.next()) and zip ( name, col) unpacking in d2xml format
-        summary_tags = [ { 'name': n[0], 'value' : n[1] } 
-                         for n in itertools.izip(tag_names, rows.next()) ] 
+        summary_tags = [ { 'name': n[0], 'value' : n[1] }
+                         for n in itertools.izip(tag_names, rows.next()) ]
         f.close()
-        
+
         return summary_tags
 
     def _read_results(self, csvfile):
@@ -150,7 +150,7 @@ class SeedSize(object):
                     'tag' : [ { 'name': 'area', 'value': col[0]},
                               { 'name': 'major', 'value': col[2]},
                               { 'name': 'minor', 'value': col[1]} ],
-                    'ellipse' : { 
+                    'ellipse' : {
                         'vertex' : [ { 'x': col[3], 'y':col[4], 'index':0 },
                                      { 'x': col[8], 'y':col[9], 'index':1 },
                                      { 'x': col[6], 'y':col[7], 'index':2 }]
@@ -204,13 +204,13 @@ class SeedSize(object):
             r = command()
         except Exception, e:
             logging.exception ("problem during %s" % command)
-            self.bq.fail_mex(msg = "Exception during %s: %s" (command,  str(e)))
+            self.bq.fail_mex(msg = "Exception during %s: %s" % (command,  str(e)))
             sys.exit(1)
-        
+
         sys.exit(r)
 
 
 
 if __name__ == "__main__":
     SeedSize().run()
-    
+

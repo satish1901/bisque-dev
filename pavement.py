@@ -203,3 +203,13 @@ def pylint(options):
     sh('PYTHONPATH=bqcore/bq:bqserver/bq:bqengine/bq:bqfeature/bq pylint %s --rcfile=bqcore/pylint.rc' % args)
 
 
+
+@task
+@consume_args
+def pylint_modules(options):
+    args = 'modules/*/*.py'
+    if options.args:
+        args = " ".join(options.args)
+    sh('PYTHONPATH=bqcore/bq:bqserver/bq:bqengine/bq:bqfeature/bq pylint %s --rcfile=bqcore/pylint.rc' % args)
+
+

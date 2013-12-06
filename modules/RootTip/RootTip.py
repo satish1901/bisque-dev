@@ -1,17 +1,14 @@
 #!/usr/bin/env python
 import os
 import sys
-import optparse 
+import optparse
 import subprocess
-import glob
 import csv
-import pickle
 import logging
 import itertools
 
 from bq.api import BQSession
 from bq.api.util import fetch_image_planes, AttrDict
-from lxml.builder import E
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -23,7 +20,7 @@ def gettag (el, tagname):
         if kid.get ('name') == tagname:
             return kid, kid.get('value')
     return None,None
-            
+
 class RootTip(object):
 
     def setup(self):
@@ -31,14 +28,14 @@ class RootTip(object):
         #    os.makedirs(self.images)
 
         self.bq.update_mex('initializing')
-        results = fetch_image_planes(self.bq, self.resource_url, '.') 
-        
+        results = fetch_image_planes(self.bq, self.resource_url, '.')
+
 
     def start(self):
         self.bq.update_mex('executing')
         # Matlab requires trailing slash
         subprocess.call([EXEC, './'])
-        
+
 
     def teardown(self):
         # Post all submex for files and return xml list of results
@@ -61,7 +58,7 @@ class RootTip(object):
                     'type' : 'tipangle',
                     'tag' : [{ 'name': 'angle', 'value': angle[0]},
                              { 'name': 'growth', 'value': gr[0]}, ],
-                    'point' : { 
+                    'point' : {
                         'vertex' : [ { 'x': str(xmax - int(tip[1])), 'y':tip[0], 't':index } ] ,
                         }
                     })
@@ -118,8 +115,8 @@ class RootTip(object):
             sys.exit(1)
 
         sys.exit(0)
-            
+
 
 if __name__ == "__main__":
     RootTip().run()
-    
+
