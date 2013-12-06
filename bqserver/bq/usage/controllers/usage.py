@@ -6,11 +6,13 @@ import logging
 import pkg_resources
 from pylons.i18n import ugettext as _, lazy_ugettext as l_
 from tg import expose, flash
-from repoze.what import predicates 
+from repoze.what import predicates
 from bq.core.service import ServiceController
 
 from lxml import etree
 from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
+
 
 import bq
 from bq.core import identity
@@ -25,16 +27,16 @@ class usageController(ServiceController):
 
     def __init__(self, server_url):
         super(usageController, self).__init__(server_url)
-        
+
     @expose('bq.usage.templates.index')
     def index(self, **kw):
         """Add your first page here.. """
         return dict(msg=_('Hello from usage'))
-        
-        
+
+
     @expose(content_type="text/xml")
     def stats(self, **kw):
-        log.info('stats %s'%kw)        
+        log.info('stats %s'%kw)
         wpublic = kw.pop('wpublic',  identity.anonymous())
         #images2d = aggregate_service.count("image", wpublic=wpublic, images2d=True)
         #all_count = aggregate_service.count("image", wpublic=wpublic, welcome=True)
@@ -45,14 +47,14 @@ class usageController(ServiceController):
         #images2d = data_service.count("image", wpublic=wpublic, images2d=True)
         tag_count = data_service.count ("tag", wpublic=wpublic, welcome=wpublic, parent=False)
         gob_count = data_service.count ("gobject", wpublic=wpublic, welcome=wpublic, parent=False)
-        
+
         resource = etree.Element('resource', uri='/usage/stats')
         etree.SubElement(resource, 'tag', name='number_images', value=str(all_count))
         etree.SubElement(resource, 'tag', name='number_images_user', value=str(image_count))
-        #etree.SubElement(resource, 'tag', name='number_images_planes', value=str(images2d))  
+        #etree.SubElement(resource, 'tag', name='number_images_planes', value=str(images2d))
         etree.SubElement(resource, 'tag', name='number_tags', value=str(tag_count))
         etree.SubElement(resource, 'tag', name='number_gobs', value=str(gob_count))
-                              
+
         return etree.tostring(resource)
 
 
@@ -61,89 +63,89 @@ class usageController(ServiceController):
     #<image count="3673"/>
     #</resource>
     def get_counts(self, resource_type, num_days):
-        now = datetime.now() 
+        now = datetime.now().replace (hour=11, minute=59,second =59, microsecond=0)
         counts = []
         days = []
-        for i in range(num_days): 
+        for i in range(num_days):
             d1 = now - timedelta(days=i)
             d2 = now - timedelta(days=i+1)
             ts = ['>%s'%d2.isoformat(), '<=%s'%d1.isoformat()]
-            days.append(d2.isoformat(' '))
+            days.append(d1.isoformat(' '))
             # dima: some error happens in data_service and this throws
             try:
                 req = data_service.query(resource_type, view='count', ts=ts, welcome=True)
-                log.debug('Usage for [%s - %s] %s'%(d1.isoformat(), d2.isoformat(), etree.tostring(req)))
+                log.debug('Daily Usage for [%s - %s] %s'%(d2.isoformat(), d1.isoformat(), etree.tostring(req)))
                 c = req.xpath('//%s[@count]'%resource_type)
                 if len(c)>0:
-                    counts.append( c[0].get('count') ) 
-                else:           
+                    counts.append( c[0].get('count') )
+                else:
                     counts.append('0')
-            except AttributeError:                    
+            except AttributeError:
                     counts.append('0')
-           
+
         counts.reverse()
         days.reverse()
-        return counts, days   
+        return counts, days
 
     def get_counts_month(self, resource_type, num_months):
-        now = datetime.now() 
+        now = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)+ relativedelta(months=1)
         counts = []
         months = []
-        for i in range(num_months): 
-            d1 = now - timedelta(weeks=i*4)
-            d2 = now - timedelta(weeks=i*4+4)
+        for i in range(num_months):
+            d1 = now - relativedelta(months=i)
+            d2 = now - relativedelta(months=i+1)
             ts = ['>%s'%d2.isoformat(), '<=%s'%d1.isoformat()]
-            months.append(d2.isoformat(' '))
+            months.append(d1.isoformat(' '))
             # dima: some error happens in data_service and this throws
             try:
                 req = data_service.query(resource_type, view='count', ts=ts, welcome=True)
-                log.debug('Usage for [%s - %s] %s'%(d1.isoformat(), d2.isoformat(), etree.tostring(req)))
+                log.debug('Monthly Usage for [%s - %s] %s'%(d2.isoformat(), d1.isoformat(), etree.tostring(req)))
                 c = req.xpath('//%s[@count]'%resource_type)
                 if len(c)>0:
-                    counts.append( c[0].get('count') ) 
-                else:           
+                    counts.append( c[0].get('count') )
+                else:
                     counts.append('0')
-            except AttributeError:                    
+            except AttributeError:
                     counts.append('0')
-           
+
         counts.reverse()
         months.reverse()
-        return counts, months   
+        return counts, months
 
     @expose(content_type="text/xml")
     def uploads(self, **kw):
-        log.info('uploads %s'%kw)        
+        log.info('uploads %s'%kw)
         counts, days = self.get_counts('image', 31)
         resource = etree.Element('resource', uri='/usage/uploads')
         etree.SubElement(resource, 'tag', name='counts', value=','.join(counts))
-        etree.SubElement(resource, 'tag', name='days', value=','.join(days))        
+        etree.SubElement(resource, 'tag', name='days', value=','.join(days))
         return etree.tostring(resource)
-    
+
     @expose(content_type="text/xml")
     def uploads_monthly(self, **kw):
-        log.info('uploads %s'%kw)        
+        log.info('uploads %s'%kw)
         counts, days = self.get_counts_month('image', 13)
         resource = etree.Element('resource', uri='/usage/uploads_monthly')
         etree.SubElement(resource, 'tag', name='counts', value=','.join(counts))
-        etree.SubElement(resource, 'tag', name='days', value=','.join(days))        
-        return etree.tostring(resource)    
+        etree.SubElement(resource, 'tag', name='days', value=','.join(days))
+        return etree.tostring(resource)
 
     @expose(content_type="text/xml")
     def analysis(self, **kw):
-        log.info('uploads %s'%kw)        
+        log.info('uploads %s'%kw)
         counts, days = self.get_counts('mex', 31)
         resource = etree.Element('resource', uri='/usage/analysis')
         etree.SubElement(resource, 'tag', name='counts', value=','.join(counts))
-        etree.SubElement(resource, 'tag', name='days', value=','.join(days))            
+        etree.SubElement(resource, 'tag', name='days', value=','.join(days))
         return etree.tostring(resource)
 
     @expose(content_type="text/xml")
     def analysis_monthly(self, **kw):
-        log.info('uploads %s'%kw)        
+        log.info('uploads %s'%kw)
         counts, days = self.get_counts_month('mex', 13)
         resource = etree.Element('resource', uri='/usage/analysis_monthly')
         etree.SubElement(resource, 'tag', name='counts', value=','.join(counts))
-        etree.SubElement(resource, 'tag', name='days', value=','.join(days))            
+        etree.SubElement(resource, 'tag', name='days', value=','.join(days))
         return etree.tostring(resource)
 
 
