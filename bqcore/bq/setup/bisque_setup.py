@@ -751,8 +751,11 @@ def install_matlab(params, cfg = RUNTIME_CFG):
     matlab_home = which('matlab')
     if matlab_home:
         params['runtime.matlab_home'] = os.path.abspath(os.path.join (matlab_home, '../..'))
-    if os.name == 'nt':
-        params['runtime.matlab_launcher'] = params['runtime.matlab_launcher'].replace('.tmpl', '_win.tmpl')
+    if params['runtime.matlab_launcher'] == 'config/templates/matlab_launcher_SYS.tmpl':
+        if os.name == 'nt':
+            params['runtime.matlab_launcher'] = 'config/templates/matlab_launcher_win.tmpl'
+        else:
+            params['runtime.matlab_launcher'] = 'config/templates/matlab_launcher.tmpl'
     for f in ['runtime.matlab_launcher' ] :
         if os.path.exists(params[f]):
             params[f] = os.path.abspath(params[f])

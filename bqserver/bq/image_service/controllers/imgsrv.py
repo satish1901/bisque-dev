@@ -55,7 +55,6 @@ log = logging.getLogger('bq.image_service.server')
 default_format = 'bigtiff'
 
 imgsrv_thumbnail_cmd = config.get('bisque.image_service.thumbnail_command', '-depth 8,d -page 1 -display')
-imgsrv_default_cmd = config.get('bisque.image_service.default_command', '-depth 8,d')
 
 imgcnv_needed_version = '1.65' # dima: upcoming 1.54
 bioformats_needed_version = '4.3.0' # dima: upcoming 4.4.4
@@ -1126,7 +1125,8 @@ class ThumbnailService(object):
         
         data_token.dims['image_num_p']  = 1
         data_token.dims['image_num_z']  = 1
-        data_token.dims['image_num_t']  = 1        
+        data_token.dims['image_num_t']  = 1
+        data_token.dims['image_pixel_depth'] = 8         
         
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.thumb_%s,%s,%s.jpeg'%(size[0],size[1],method) )
@@ -1155,7 +1155,10 @@ class ThumbnailService(object):
         ofile = self.server.getOutFileName( ifile, image_id, '.thumb_%s,%s,%s.jpeg'%(size[0],size[1],method) )
 
         if not os.path.exists(ofile):
-            conv_arg = imgsrv_thumbnail_cmd.split(' ')
+            if 'image_pixel_depth' in data_token.dims and data_token.dims['image_pixel_depth'] == 8: 
+                conv_arg = imgsrv_thumbnail_cmd.replace('-depth 8,d', '-depth 8,f').split(' ')
+            else:
+                conv_arg = imgsrv_thumbnail_cmd.split(' ')
             conv_arg.extend([ '-resize', '%s,%s,%s,AR'%(size[0],size[1],method)])
             conv_arg.extend([ '-options', 'quality 95 progressive yes'])
             imgcnv.convert( ifile, ofile, fmt='jpeg', extra=conv_arg)
@@ -1167,6 +1170,7 @@ class ThumbnailService(object):
             data_token.dims['image_num_p']  = 1
             data_token.dims['image_num_z']  = 1
             data_token.dims['image_num_t']  = 1
+            data_token.dims['image_pixel_depth'] = 8 
         finally:
             pass
 
