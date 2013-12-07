@@ -70,10 +70,7 @@ from repoze.what import predicates
 from bq.core.service import ServiceMixin
 from bq.core.service import ServiceController
 from bq.core import  identity
-from bq.core.permission import perm2str
-from bq.exceptions import IllegalOperation
-from bq.util.paths import data_path
-from bq.util.mkdir import _mkdir
+from bq.exceptions import IllegalOperation, DuplicateFile, ServiceError
 from bq.util.timer import Timer
 from bq.util.sizeoffmt import sizeof_fmt
 
@@ -164,11 +161,10 @@ def transfer_msg(flocal, transfer_t):
     name  = os.path.basename(flocal)
     if transfer_t == 0:
         return "transferred %s in 0 sec!" % fsize
-    return "{name} transferred {size} in {time} ({speed}/sec)".format(name=name, size=sizeof_fmt(fsize),
-                                                                      time=timedelta(seconds=transfer_t), 
-                                                                      speed = sizeof_fmt(fsize/transfer_t))
-
-
+    return "{name} transferred {size} in {time} ({speed}/sec)".format(
+        name=name, size=sizeof_fmt(fsize),
+        time=timedelta(seconds=transfer_t), 
+        speed = sizeof_fmt(fsize/transfer_t))
 
 class StorageManager(object):
     'Manage multiple stores'
@@ -206,6 +202,8 @@ class StorageManager(object):
                     log.debug("skipping %s: is readonly" % store_id)
                     continue
                 return  store.write(fileobj, filename_safe, user_name = user_name, uniq=uniq)
+            except DuplicateFile, e:
+                raise e
             except Exception, e:
                 log.exception('storing blob failed')
         return (None,None)
@@ -350,13 +348,19 @@ class BlobServer(RestController, ServiceMixin):
 
     def store_blob(self, resource, fileobj = None):
         'Store a resource in the DB must be a valid resource'
-        fhash = resource.get ('resource_uniq')
-        if fhash is None:
-            resource.set('resource_uniq', data_service.resource_uniq() )
-        if fileobj is not None:
-            return self.store_fileobj(resource, fileobj)
-        return self.store_reference(resource, resource.get('value') )
-        
+
+        for x in range(3):
+            try:
+                fhash = resource.get ('resource_uniq')
+                if fhash is None:
+                    resource.set('resource_uniq', data_service.resource_uniq() )
+                if fileobj is not None:
+                    return self.store_fileobj(resource, fileobj)
+                return self.store_reference(resource, resource.get('value') )
+            except DuplicateFile, e:
+                log.warn("Duplicate file. reseting uniq")
+                resource.set('resource_uniq', data_service.resource_uniq())
+        raise ServiceError("Unable to store blob")
 
     def store_fileobj(self, resource, fileobj ):
         'Create a blob from a file'
