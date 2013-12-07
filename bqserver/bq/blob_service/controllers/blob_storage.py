@@ -55,7 +55,7 @@ import shutil
 from tg import config
 from paste.deploy.converters import asbool
 
-from bq.exceptions import ConfigurationError, ServiceError, IllegalOperation
+from bq.exceptions import ConfigurationError, ServiceError, IllegalOperation, DuplicateFile
 
 from bq.util.paths import data_path
 from bq.util.mkdir import _mkdir
@@ -67,10 +67,10 @@ log = logging.getLogger('bq.blobs.storage')
 
 __all__ = [ 'make_storage_driver' ]
 
-supported_storage_schemes = [ '', 'file' ] 
+supported_storage_schemes = [ '', 'file' ]
 
 try:
-    from bq.util import irods_handler
+    from bq.util import irods_handler, IrodsError
     supported_storage_schemes.append('irods')
 except ImportError:
     #log.warn ("Can't import irods: irods storage not supported")
@@ -87,7 +87,7 @@ except ImportError:
 
 
 
-def randomPath (format_path, user, filename, uniq, **params):
+def formatPath (format_path, user, filename, uniq, **params):
     """Create a unique path using a format and hash of filename
     i.e. {user}/{dirhash}/{filehash}-{filename}
     """
@@ -133,9 +133,9 @@ def move_file (fp, newpath):
     else:
         with open(newpath, 'wb') as trg:
             shutil.copyfileobj(fp, trg)
-        
-        
-        
+
+
+
 
 
 ###############################################
@@ -158,22 +158,25 @@ class LocalStorage(BlobStorage):
         if self.format_path.startswith('file:') and not self.top.startswith('file:'):
             self.top = 'file:' + self.top
         if not self.format_path.startswith(self.top):
-            raise ConfigurationError('local storage %s does not begin with blob_service.local.dir %s' 
+            raise ConfigurationError('local storage %s does not begin with blob_service.local.dir %s'
                                      % (self.format_path, self.top))
 
         log.info("created localstore %s (%s)" % (self.format_path, self.top))
 
 
     def valid(self, ident):
-        return ((ident.startswith(self.top)  or not ident.startswith('file://')) 
+        return ((ident.startswith(self.top)  or not ident.startswith('file://'))
                 and os.path.exists(self.localpath(ident)))
 
     def write(self, fp, filename, user_name='', uniq=None):
         'store blobs given local path'
-        filepath = self.nextEmptyBlob(user_name, filename, uniq)
-        localpath = urlparse.urlparse(filepath).path 
+        filepath = formatPath(self.format_path, user_name, filename, uniq)
+        localpath = urlparse.urlparse(filepath).path
         log.debug('local.write: %s -> %s' % (filename, localpath))
-        
+        _mkdir (os.path.dirname(localpath))
+        if os.path.exists (localpath):
+            raise DuplicateFile(localpath)
+
         #patch for no copy file uploads - check for regular file or file like object
         move_file (fp, localpath)
         ident = filepath[len(self.top) + 1:]
@@ -184,27 +187,15 @@ class LocalStorage(BlobStorage):
             path = os.path.join(self.top, path)
         return urlparse.urlparse(path).path
 
-    def nextEmptyBlob(self, user, filename, uniq):
-        "Return a file object to the next empty blob"
-        while 1:
-            fn = randomPath(self.format_path, user, filename, uniq)
-            fp = urlparse.urlparse(fn).path
-            _mkdir (os.path.dirname(fp))
-            if os.path.exists (fp):
-                log.warning('%s already exists' % fn)
-            else:
-                break
-        return fn
-
     def walk(self):
         'walk store returning all elements'
-        for tp in os.walk (self.top[5:]):   # remove file: 
+        for tp in os.walk (self.top[5:]):   # remove file:
             yield tp
+
     def delete(self, ident):
         fullpath = os.path.join(self.top[5:], ident) # remove file
         log.debug("deleting %s" %  fullpath)
-        os.remove (fullpath) 
-            
+        os.remove (fullpath)
 
 ###############################################
 # Irods
@@ -216,8 +207,8 @@ class iRodsStorage(BlobStorage):
         """Create a iRods storage driver:
 
         :param path: irods:// url format_path for where to store files
-        :param  user: the irods users 
-        :param  password: the irods password 
+        :param  user: the irods users
+        :param  password: the irods password
         :param readonly: set repo readonly
         """
         self.format_path = path
@@ -231,29 +222,42 @@ class iRodsStorage(BlobStorage):
         # Get the constant portion of the path
         self.top = path.split('$')[0]
         log.info("created irods store %s (%s)" % (self.format_path, self.top))
-            
+
     def valid(self, irods_ident):
         return irods_ident and irods_ident.startswith(self.top)
 
     def write(self, fp, filename, user_name=None, uniq=None):
-        blob_ident = randomPath(self.format_path, user_name, filename, uniq)
+        blob_ident = formatPath(self.format_path, user_name, filename, uniq)
         log.debug('irods.write: %s -> %s' % (filename, blob_ident))
         flocal = irods_handler.irods_push_file(fp, blob_ident, user=self.user, password=self.password)
         return blob_ident, flocal
 
     def localpath(self, irods_ident):
-        path = irods_handler.irods_fetch_file(irods_ident, user=self.user, password=self.password)
-        return  path
+        try:
+            path = irods_handler.irods_fetch_file(irods_ident, user=self.user, password=self.password)
+            return  path
+        except IrodsError, e:
+            log.exception ("Error fetching %s ", irods_ident)
+        return None
+
+
+    def delete(self, ident):
+        try:
+            irods_handler.irods_delete(file, irods_ident, user=self.user, password=self.password)
+        except IrodsError, e:
+            log.exception ("Error deleteing %s ", ident)
+        return None
+
 
 ###############################################
 # S3
 class S3Storage(BlobStorage):
-    'blobs on s3' 
+    'blobs on s3'
 
     scheme = 's3'
 
-    def __init__(self, path, 
-                 access_key=None, secret_key=None, bucket_id=None, location=Location.USWest, 
+    def __init__(self, path,
+                 access_key=None, secret_key=None, bucket_id=None, location=Location.USWest,
                  readonly = False):
         """Create a iRods storage driver:
 
@@ -264,7 +268,7 @@ class S3Storage(BlobStorage):
         :param location: The S3 location identifier (default is USWest)
         :param readonly: set repo readonly
         """
-                
+
         self.format_path = path
         self.access_key = access_key #config.get('bisque.blob_service.s3.access_key')
         self.secret_key = secret_key #config.get('bisque.blob_service.s3.secret_key')
@@ -272,12 +276,12 @@ class S3Storage(BlobStorage):
         self.bucket = None
         self.readonly = asbool(readonly)
         self.top = path.split('$')[0]
-        
+
         if self.access_key is None or self.secret_key is None or self.bucket_id is None:
             raise ConfigurationError('bisque.blob_service.s3 incomplete config')
-        
+
         self.conn = S3Connection(self.access_key, self.secret_key)
-        
+
         try:
             self.bucket = self.conn.get_bucket(self.bucket_id)
         except:
@@ -287,16 +291,16 @@ class S3Storage(BlobStorage):
                 raise ConfigurationError('bisque.blob_service.s3.bucket_id already owned by someone else. Please use a different bucket_id')
             except:
                 raise ServiceError('error while creating bucket in s3 blob storage')
-        
+
         log.info("created S3 store %s (%s)" % (self.format_path, self.top))
 
-        
+
     def valid(self, s3_ident):
         return s3_ident and s3_ident.startswith(self.top)
 
     def write(self, fp, filename, user_name=None, uniq=None):
         'write a file to s3'
-        blob_ident = randomPath(self.format_path, user_name, filename, uniq)
+        blob_ident = formatPath(self.format_path, user_name, filename, uniq)
         log.debug('s3.write: %s -> %s' % (filename, blob_ident))
         s3_key = blob_ident.replace("s3://","")
         flocal = s3_handler.s3_push_file(fp, self.bucket , s3_key)
@@ -307,6 +311,10 @@ class S3Storage(BlobStorage):
         s3_key = s3_ident.replace("s3://","")
         path = s3_handler.s3_fetch_file(self.bucket, s3_key)
         return  path
+
+    def delete(self, ident):
+        s3_key = s3_ident.replace("s3://","")
+        s3_handler.s3_delete_file(self.bucket, s3_key)
 
 
 
@@ -320,8 +328,8 @@ class HttpStorage(BlobStorage):
         """Create a HTTP storage driver:
 
         :param path: http:// url format_path for where to read/store files
-        :param  user: the irods users 
-        :param  password: the irods password 
+        :param  user: the irods users
+        :param  password: the irods password
         :param readonly: set repo readonly
         """
         self.format_path = path
@@ -335,28 +343,28 @@ class HttpStorage(BlobStorage):
         # Get the constant portion of the path
         self.top = path.split('$')[0]
         log.info("created irods store %s (%s)" % (self.format_path, self.top))
-            
+
     def valid(self, http_ident):
         return http_ident and http_ident.startswith(self.top)
 
     def write(self, fp, filename, user_name=None):
-        raise IllegalOperation('HTTP(S) write is not implemented') 
+        raise IllegalOperation('HTTP(S) write is not implemented')
 
     def localpath(self, irods_ident):
-        raise IllegalOperation('HTTP(S) localpath is not implemented') 
+        raise IllegalOperation('HTTP(S) localpath is not implemented')
 
 class HttpsStorage (HttpStorage):
     "HTTPS storage"
     scheme = 'https'
 
-        
+
 
 ###############################################
-# Construct a driver 
+# Construct a driver
 
 def make_storage_driver(path, **kw):
     """construct a driver using the URL path
-    
+
     :param path: URL of storage path
     :param kw:   arguments to passed to storage constructor
     """
@@ -377,4 +385,4 @@ def make_storage_driver(path, **kw):
         return store(path=path, **kw)
     log.error ('request storage scheme %s unavailable' % scheme)
     return None
- 
+
