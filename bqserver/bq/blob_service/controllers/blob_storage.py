@@ -70,7 +70,7 @@ __all__ = [ 'make_storage_driver' ]
 supported_storage_schemes = [ '', 'file' ]
 
 try:
-    from bq.util import irods_handler, IrodsError
+    from bq.util import irods_handler
     supported_storage_schemes.append('irods')
 except ImportError:
     #log.warn ("Can't import irods: irods storage not supported")
@@ -236,7 +236,7 @@ class iRodsStorage(BlobStorage):
         try:
             path = irods_handler.irods_fetch_file(irods_ident, user=self.user, password=self.password)
             return  path
-        except IrodsError, e:
+        except irods_handler.IrodsError, e:
             log.exception ("Error fetching %s ", irods_ident)
         return None
 
@@ -244,7 +244,7 @@ class iRodsStorage(BlobStorage):
     def delete(self, ident):
         try:
             irods_handler.irods_delete(file, irods_ident, user=self.user, password=self.password)
-        except IrodsError, e:
+        except irods_handler.IrodsError, e:
             log.exception ("Error deleteing %s ", ident)
         return None
 
