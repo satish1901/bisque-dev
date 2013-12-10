@@ -56,7 +56,6 @@ DESCRIPTION
 """
 import logging
 import time
-from paste.util.multidict import MultiDict
 from paste.httpexceptions import HTTPNotFound
 
 #from turbogears import controllers, expose, config

@@ -3,7 +3,7 @@ import tarfile
 import copy
 import string
 import logging
-import httplib2 
+import httplib2
 import urlparse
 import os
 import datetime
@@ -19,32 +19,32 @@ from bq.export_service.controllers.archiver.archiver_factory import ArchiverFact
 log = logging.getLogger("bq.export_service.archive_streamer")
 
 class ArchiveStreamer():
-    
+
     block_size = 1024 * 64
 
     def __init__(self, compressionType):
         self.archiver = ArchiverFactory().getClass(compressionType)
-    
-    
+
+
     def init(self, archiveName='Bisque archive', fileList=[], datasetList=[], urlList=[]):
         self.fileList = fileList
         self.datasetList = datasetList
         self.urlList = urlList
-        
+
         filename = archiveName + self.archiver.getFileExtension()
         try:
             disposition = 'attachment; filename="%s"'%filename.encode('ascii')
         except UnicodeEncodeError:
-            disposition = 'attachment; filename="%s"; filename*="%s"'%(filename.encode('utf8'), filename.encode('utf8'))        
+            disposition = 'attachment; filename="%s"; filename*="%s"'%(filename.encode('utf8'), filename.encode('utf8'))
         response.headers['Content-Type'] = self.archiver.getContentType()
         response.headers['Content-Disposition'] = disposition
-    
+
     def stream(self):
         log.debug("ArchiveStreamer: Begin stream %s" % request.url)
-        
+
         flist = self.fileInfoList(self.fileList, self.datasetList, self.urlList)
         flist = self.writeSummary(flist, self.archiver)
-        
+
         for finfo in flist:
             log.debug ('archiving %s' % finfo)
             self.archiver.beginFile(finfo)
@@ -57,9 +57,9 @@ class ArchiveStreamer():
         log.debug ("ArchiveStreamer: End stream %s" % request.url)
 
     # ------------------------------------------------------------------------------------------
-    # Utility functions 
+    # Utility functions
     # ------------------------------------------------------------------------------------------
-    
+
     # Creates an export summary file
     def writeSummary(self, flist, archiver):
         if len(flist) == 1:
@@ -75,39 +75,39 @@ class ArchiveStreamer():
                             content     =   etree.tostring(summary),
                             dataset     =   '',
                             extension   =   'URL'))
-        
+
         return flist
 
-    
+
     # Returns a list of fileInfo objects based on files' URIs
     def fileInfoList(self, fileList, datasetList, urlList):
-        
+
         def fileInfo(dataset, uri, index=0):
             xml     =   data_service.get_resource(uri, view='deep,clean')
-            name    =   xml.get('name') 
+            name    =   xml.get('name')
 
             # try to figure out a name for the resource
             if not name:
                 name = xml.xpath('./tag[@name="filename"]') or xml.xpath('./tag[@name="name"]')
                 name = name and name[0].get('value')
             if not name and xml.get('resource_uniq'):
-                name = xml.get('resource_uniq')[-4] 
-            if not name: 
+                name = xml.get('resource_uniq')[-4]
+            if not name:
                 name = str(index)
-            
+
             if xml.get('resource_uniq') is not None:
                 path = blob_service.localpath(xml.get('resource_uniq'))
             else:
                 path = None
-                
-            return  dict(XML        =   xml, 
+
+            return  dict(XML        =   xml,
                          type       =   xml.tag,
                          name       =   name ,
                          uniq       =   xml.get('resource_uniq'),
                          path       =   path,
                          dataset    =   dataset,
                          extension  =   '' if xml.get('resource_uniq') is not None else '.xml')
-        
+
         def xmlInfo(finfo):
             file = finfo.copy()
             file['extension'] = '.xml'
@@ -115,7 +115,7 @@ class ArchiveStreamer():
 
         def urlInfo(url, index=0):
             httpReader = httplib2.Http( disable_ssl_certificate_validation=True)
-            # This hack gets around bisque internal authentication mechanisms 
+            # This hack gets around bisque internal authentication mechanisms
             # please refer to http://biodev.ece.ucsb.edu/projects/bisquik/ticket/597
             headers  = dict ( (name, request.headers.get(name)) for name in ['Authorization', 'Mex', 'Cookie' ]
                               if name in request.headers)
@@ -123,19 +123,19 @@ class ArchiveStreamer():
             # test if URL is relative, httplib2 does not fetch relative
             if urlparse.urlparse(url).scheme == '':
                 url = urlparse.urljoin(config.get('bisque.root'), url)
-            
+
             log.debug ('ArchiveStreamer: Sending %s with %s'  % (url, headers))
             header, content = httpReader.request(url, headers=headers)
-            
+
             if not header['status'].startswith('200'):
                 log.error("URL request returned %s" % header['status'])
                 return None
             items = (header.get('content-disposition') or header.get('Content-Disposition') or '').split(';')
             fileName = str(index) + '.'
-            
+
             log.debug('Respose headers: %s'%header)
             log.debug('items: %s'%items)
-            
+
             for item in items:
                 pair = item.split('=')
                 if (pair[0].lower().strip()=='filename'):
@@ -143,14 +143,14 @@ class ArchiveStreamer():
                 if (pair[0].lower().strip()=='filename*'):
                     try:
                         fileName = pair[1].strip('"\'').decode('utf8')
-                    except UnicodeDecodeError:                    
+                    except UnicodeDecodeError:
                         pass
-            
+
             return  dict(name       =   fileName,
                          content    =   content,
                          dataset    =   '',
                          extension  =   'URL')
-                    
+
         flist = []
         fileHash = {}   # Use a URI hash to look out for file repetitions
 
@@ -163,7 +163,7 @@ class ArchiveStreamer():
                     finfo['name'] = namef + '_' + str(fileHash.get(finfo.get('name'))-1) + ext
                 else:
                     fileHash[finfo.get('name')] = 1
-                    
+
                 flist.append(finfo)      # blank dataset name for orphan files
                 if finfo.get('uniq') is not None:
                     flist.append(xmlInfo(finfo))
@@ -172,7 +172,7 @@ class ArchiveStreamer():
             for uri in datasetList:
                 fileHash = {}
 
-                dataset = data_service.get_resource(uri, view='full,clean')
+                dataset = data_service.get_resource(uri, view='deep,clean')
                 name = dataset.xpath('/dataset/@name')[0]
                 members = dataset.xpath('/dataset/value')
 
@@ -182,7 +182,7 @@ class ArchiveStreamer():
                                     dataset     =   '',
                                     extension   =   'URL'))
 
-                
+
                 for index, member in enumerate(members):
                     finfo = fileInfo(name, member.text, index)
 
