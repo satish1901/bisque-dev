@@ -1,6 +1,8 @@
 #!/usr/bin/python 
 
 """ Image service testing framework
+update config to your system: config.cfg
+call by: python run_tests.py
 """
 
 __module__    = "run_tests"
@@ -50,7 +52,7 @@ image_float         = 'autocorrelation.tif'
 ###############################################################
 
 def print_failed(s, f='-'):
-    print 'X FAILED %s'%(s)
+    print 'FAILED %s'%(s)
       
 class InfoComparator(object):
     '''Compares two info dictionaries''' 
@@ -739,7 +741,7 @@ class ImageServiceTests(ImageServiceTestBase):
             { 'xpath': '//tag[@name="image_num_x"]', 'attr': 'value', 'val': '128' },
             { 'xpath': '//tag[@name="image_num_y"]', 'attr': 'value', 'val': '128' },
             { 'xpath': '//tag[@name="image_num_c"]', 'attr': 'value', 'val': '2' },                
-            { 'xpath': '//tag[@name="image_pixel_depth"]', 'attr': 'value', 'val': '16' },                   
+            { 'xpath': '//tag[@name="image_pixel_depth"]', 'attr': 'value', 'val': '8' },                   
         ]
         self.validate_xml(resource, filename, commands, meta_required)    
 
