@@ -732,11 +732,10 @@ Please resolve the problem(s) and re-run 'bisque-setup --database'.""")
         print "Upgrading database version (sqlmigrate)"
         call ([PYTHON, to_sys_path ('bqcore/migration/manage.py'), 'upgrade'])
 
-
-    if params['new_database'] : #and test_db_alembic(DBURL):
-        print "Upgrading database version (alembic)"
-        if call (["alembic", '-c', config_path('alembic.ini'), 'upgrade', 'head']) != 0:
-            raise SetupError("There was a problem initializing the Database")
+    #if not params['new_database'] : #and test_db_alembic(DBURL):
+    print "Upgrading database version (alembic)"
+    if call (["alembic", '-c', config_path('alembic.ini'), 'upgrade', 'head']) != 0:
+        raise SetupError("There was a problem initializing the Database")
 
     #print params
     return params

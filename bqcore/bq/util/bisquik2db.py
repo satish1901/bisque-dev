@@ -434,23 +434,36 @@ def resource2nodes(dbo, parent=None, view=[], baseuri=None,  **kw):
     doc_id = dbo.document_id
     docnodes = DBSession.query(Taggable).filter(Taggable.document_id == doc_id)
     docnodes = resource_permission(docnodes)
-    docnodes = docnodes.order_by(Taggable.id)
-    log.debug('resource2nodes :%s doc %s' % (dbo.id , doc_id))
+    #docnodes = docnodes.order_by(Taggable.id)
+    log.debug("reosurce2nodes: %s",  docnodes)
+    log.debug('resource2nodes: %s %s doc %s' % (docnodes, dbo.id , doc_id))
     nodes = {}
+    parents = {}
+
     for node in docnodes:
-        if node.resource_parent_id is not None:
-            try:
-                node_parent = nodes[node.resource_parent_id]
-            except KeyError:
-                log.error("Missing parent node %s (permission error?) in document %s" % (node.resource_parent_id, doc_id))
-                continue
-            #elem = etree.SubElement(parent, node.resource_type)
-            elem = xmlnode (node, node_parent, baseuri, view)
-            nodes[node.id] = elem
-        else:
-            #elem = root = etree.Element(node.resource_type)
-            elem = root = xmlnode(node, None, baseuri, view)
-            nodes[node.id] = elem
+        nodes[node.id]   = xmlnode(node, None, baseuri, view)
+        parents[node.id] = node.resource_parent_id
+    for node_id, parent_id in parents.items():
+        try:
+            if parent_id is not None:
+                nodes[parent_id].append(nodes[node_id])
+        except KeyError:
+            log.error("Missing parent node %s (permission error?) in document %s" , parent_id, doc_id)
+            continue
+    # for node in docnodes:
+    #     if node.resource_parent_id is not None:
+    #         try:
+    #             node_parent = nodes[node.resource_parent_id]
+    #         except KeyError:
+    #             log.error("Missing parent node %s (permission error?) in document %s" % (node.resource_parent_id, doc_id))
+    #             continue
+    #         #elem = etree.SubElement(parent, node.resource_type)
+    #         elem = xmlnode (node, node_parent, baseuri, view)
+    #         nodes[node.id] = elem
+    #     else:
+    #         #elem = root = etree.Element(node.resource_type)
+    #         elem = root = xmlnode(node, None, baseuri, view)
+    #         nodes[node.id] = elem
 
     vnodes = DBSession.query(Value).filter(Value.document_id == doc_id).order_by(
         Value.resource_parent_id, Value.indx)
@@ -488,6 +501,7 @@ def resource2tree(dbo, parent=None, view=[], baseuri=None, nodes= {}, doc_id = N
 
 
 def db2tree(dbo, parent=None, view=[], baseuri=None, progressive=False, **kw):
+    "Convert a Database Object into ElementTree representation"
     log.debug ("db2tree dbo=%s, parent=%s, view=%s, baseuri=%s" %
                (dbo, parent, view, baseuri))
     if isinstance(view, basestring):
@@ -540,7 +554,10 @@ def db2tree_int(dbo, parent = None, view=None, baseuri=None, endtime=None):
 
 
 def db2node(dbo, parent, view, baseuri, nodes, doc_id):
-    #log.debug ("dbo=%s view=%s" % ( dbo, view))
+    log.debug ("dbo=%s view=%s" % ( dbo, view))
+    if dbo is None:
+        log.error ("None pass to as DB object parent = %s", parent)
+        return None, nodes, doc_id
     if 'deep' in view:
         n, nodes, doc_id = resource2tree(dbo, parent, view, baseuri, nodes, doc_id)
         return n, nodes, doc_id
