@@ -48,7 +48,8 @@ Ext.define('Bisque.Resource.Image',
                 this.mmData = {
                     x: el.getX() + el.getOffsetsTo(this.resource.uri)[0],
                     y: el.getY() + el.getOffsetsTo(this.resource.uri)[1],
-                    isLoadingImage: false
+                    isLoadingImage: false,
+                    sliceLoader  : new Ext.util.DelayedTask(this.loadThumbSlice),
                 };
         }
     },
@@ -56,39 +57,49 @@ Ext.define('Bisque.Resource.Image',
     onMouseLeave: function () {
         //if (this.mmData)
         //    this.mmData.isLoadingImage = true;
+        if (this.mmData && this.mmData.sliceLoader)
+            this.mmData.sliceLoader.cancel();
     },
+
 
     onMouseMove: function (e, target) {
         if (this.mmData && !this.mmData.isLoadingImage) {
             //this.mmData.isLoadingImage = true;
+            var thingy = this;
+            this.mmData.sliceLoader.delay (300, thingy, [e, target]);
+        }
+    },
 
-            var sliceX = Math.max(1, Math.ceil((e.getX() - this.mmData.x) * this.resource.t / target.clientWidth));
-            var sliceY = Math.max(1, Math.ceil((e.getY() - this.mmData.y) * this.resource.z / target.clientHeight));
-            sliceX = Math.min(sliceX, this.resource.t);
-            sliceY = Math.min(sliceY, this.resource.z);
 
-            var imgLoader = new Image();
-            imgLoader.style.height = this.layoutMgr.layoutEl.imageHeight;
-            imgLoader.style.width = this.layoutMgr.layoutEl.imageWidth;
+    loadThumbSlice: function (e, target) {
+        var sliceX = Math.max(1, Math.ceil((e.getX() - this.mmData.x) * this.resource.t / target.clientWidth));
+        var sliceY = Math.max(1, Math.ceil((e.getY() - this.mmData.y) * this.resource.z / target.clientHeight));
+        sliceX = Math.min(sliceX, this.resource.t);
+        sliceY = Math.min(sliceY, this.resource.z);
+        
+        var imgLoader = new Image();
+        imgLoader.style.height = this.layoutMgr.layoutEl.imageHeight;
+        imgLoader.style.width = this.layoutMgr.layoutEl.imageWidth;
+        
+        imgLoader.onload = Ext.bind(ImgOnLoad, this);
+        imgLoader.onerror = Ext.emtpyFn;
+        
+        imgLoader.src = this.resource.src + this.getImageParams({
+            sliceZ: sliceY,
+            sliceT: sliceX,
+            width: this.layoutMgr.layoutEl.stdImageWidth,
+            height: this.layoutMgr.layoutEl.stdImageHeight
+        });
 
-            imgLoader.onload = Ext.bind(ImgOnLoad, this);
-            imgLoader.onerror = Ext.emtpyFn;
-
-            imgLoader.src = this.resource.src + this.getImageParams({
-                sliceZ: sliceY,
-                sliceT: sliceX,
-                width: this.layoutMgr.layoutEl.stdImageWidth,
-                height: this.layoutMgr.layoutEl.stdImageHeight
-            });
-
-            function ImgOnLoad() {
-                if (Ext.isDefined(document.images[this.resource.uri])) {
-                    document.images[this.resource.uri].src = imgLoader.src;
-                    //this.mmData.isLoadingImage = false;
-                }
+        function ImgOnLoad() {
+            if (Ext.isDefined(document.images[this.resource.uri])) {
+                document.images[this.resource.uri].src = imgLoader.src;
+                //this.mmData.isLoadingImage = false;
             }
         }
     },
+
+
 
     /* Resource operations */
     downloadOriginal: function () {
