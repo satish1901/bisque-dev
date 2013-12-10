@@ -15,21 +15,31 @@ Ext.define('Bisque.Resource.Image',
     },
 
     onMouseEnter: function (e, me) {
-        if (!this.mmData)
+        if (!this.sliceLoader)
+            this.sliceLoader = new Ext.util.DelayedTask(this.fetchMeta, this);
+        this.sliceLoader.delay (400, this.fetchMeta, this, [e, me]);
+    },
+
+    fetchMeta: function (e, target) {
+        if (this.mmData && this.mmData.needsFetchingSlices) {
+            this.mmData.isFetchingSlices = true;
+            this.onMouseMove (e, target);
+        } else {
             Ext.Ajax.request({
                 url: this.resource.src + '?meta',
                 callback: function (opts, success, response) {
                     if (response.status >= 400)
                         console.log(response.responseText);
                     else
-                        this.onMetaLoaded(response.responseXML);
+                        this.onMetaLoaded(response.responseXML, [e, target]);
                 },
                 scope: this,
                 disableCaching: false,
             });
+        }
     },
 
-    onMetaLoaded: function (xmlDoc) {
+    onMetaLoaded: function (xmlDoc, args) {
         if (!xmlDoc) return;
         try {
             this.resource.t = parseInt(evaluateXPath(xmlDoc, "//tag[@name='image_num_t']/@value")[0].value);
@@ -39,39 +49,36 @@ Ext.define('Bisque.Resource.Image',
             this.resource.z = 1;
         }
 
-        // only 1 frame available
-        if (this.resource.t === 1 && this.resource.z === 1)
-            this.mmData = { isLoadingImage: true };
-        else {
+        if (this.resource.t === 1 && this.resource.z === 1) {
+            // only 1 frame available
+            this.mmData = { needsFetchingSlices: false, isFetchingSlices: false };
+        } else {
             var el = this.getEl();
             if (this.getData('fetched') == 1)
                 this.mmData = {
                     x: el.getX() + el.getOffsetsTo(this.resource.uri)[0],
                     y: el.getY() + el.getOffsetsTo(this.resource.uri)[1],
-                    isLoadingImage: false,
-                    sliceLoader  : new Ext.util.DelayedTask(this.loadThumbSlice),
+                    needsFetchingSlices: true,
+                    isFetchingSlices: true,
+                    //sliceLoader  : new Ext.util.DelayedTask(this.loadThumbSlice, this),
                 };
+            if (args && args.length>1) 
+                this.onMouseMove (args[0], args[1]);
         }
     },
 
     onMouseLeave: function () {
-        //if (this.mmData)
-        //    this.mmData.isLoadingImage = true;
-        if (this.mmData && this.mmData.sliceLoader)
-            this.mmData.sliceLoader.cancel();
+        if (this.sliceLoader)
+            this.sliceLoader.cancel();
+        if (this.mmData)
+            this.mmData.isFetchingSlices = false;
     },
 
 
     onMouseMove: function (e, target) {
-        if (this.mmData && !this.mmData.isLoadingImage) {
-            //this.mmData.isLoadingImage = true;
-            var thingy = this;
-            this.mmData.sliceLoader.delay (300, thingy, [e, target]);
-        }
-    },
-
-
-    loadThumbSlice: function (e, target) {
+        if (!this.mmData || !this.mmData.isFetchingSlices)
+            return;
+            
         var sliceX = Math.max(1, Math.ceil((e.getX() - this.mmData.x) * this.resource.t / target.clientWidth));
         var sliceY = Math.max(1, Math.ceil((e.getY() - this.mmData.y) * this.resource.z / target.clientHeight));
         sliceX = Math.min(sliceX, this.resource.t);
@@ -94,12 +101,9 @@ Ext.define('Bisque.Resource.Image',
         function ImgOnLoad() {
             if (Ext.isDefined(document.images[this.resource.uri])) {
                 document.images[this.resource.uri].src = imgLoader.src;
-                //this.mmData.isLoadingImage = false;
             }
         }
     },
-
-
 
     /* Resource operations */
     downloadOriginal: function () {

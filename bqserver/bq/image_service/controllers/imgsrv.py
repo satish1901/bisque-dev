@@ -2433,7 +2433,7 @@ class ImageServer(object):
     def getImageInfo(self, ident=None, data_token=None, filename=None):
         if ident==None and filename==None:
             return {}
-        if filename==None:
+        if filename is None:
             filename = self.ensureOriginalFile(ident)
 
         return_token = data_token is not None
