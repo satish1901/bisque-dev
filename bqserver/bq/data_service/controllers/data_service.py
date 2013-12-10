@@ -49,7 +49,7 @@ SYNOPSIS
 DESCRIPTION
 ===========
 
-  Data server for local database 
+  Data server for local database
 
 """
 import os
@@ -58,10 +58,13 @@ import pkg_resources
 import urlparse
 import tg
 
+# pylint: disable=E0611
+# pylint: disable=E1103
+
 from pylons.i18n import ugettext as _, lazy_ugettext as l_
 from lxml import etree
 from tg import expose, flash, config
-from repoze.what import predicates 
+from repoze.what import predicates
 
 from bq.core.service import ServiceController
 from bq.data_service.model  import dbtype_from_tag, dbtype_from_name, all_resources
@@ -87,12 +90,12 @@ class DataServerController(ServiceController):
     service_type = "data_service"
 
     doc = XMLDocumentResource ()
-    
+
     def __init__(self, url = None):
         super(DataServerController, self).__init__(url)
         self.children = {}
         self.server_cache = HierarchicalCache(cachedir)
-    
+
     def get_child_resource(self, token, **kw):
         child = self.children.get (token, None)
         if not child:
@@ -108,12 +111,12 @@ class DataServerController(ServiceController):
             etree.SubElement(resource, 'resource', name = str(r), uri = self.makeurl(str(r)))
 
         return etree.tostring(resource)
-        
+
     @expose()
     def _default(self, *path, **kw):
         #log.debug ('headers:'+ str(cherrypy.request.headers))
         path = list(path)
-        log.info ("path = %s %s " % (path, kw))
+        log.info ("path = %s %s " , path, kw)
         token = path.pop(0)
         if is_uniq_code(token):
             log.debug('using uniq token')
@@ -122,26 +125,25 @@ class DataServerController(ServiceController):
         else:
             resource_controller = self.get_child_resource (token)
         return resource_controller._default (*path, **kw)
-            
+
 
     #################################################################
     #################################################################
     # program access
     # Uses etree nodes as internal format
     def cache_check(self, url, user_id=None, **kw):
-        log.debug ("CACHE CHECK")
         args = [ "%s=%s" % (k, v) for k,v in kw.items()]
         full_url = "%s?%s" % (url, "&".join (args))
         if user_id is None and identity.not_anonymous():
             user_id = identity.get_user_id()
-        log.debug ("CACHE CHECK %s" % full_url)
+        log.debug ("CACHE CHECK url %s" , full_url)
         header, response = self.server_cache.fetch(full_url, user_id)
         return response
 
     def cache_save(self, url, user_id=None, response=None, **kw):
         args = [ "%s=%s" % (k, v) for k,v in kw.items()]
         full_url = "%s?%s" % (url, "&".join (args))
-        log.debug ("CACHE SAVE %s" % full_url)
+        log.debug ("CACHE SAVE url %s" , full_url)
         if user_id is None and identity.not_anonymous():
             user_id = identity.get_user_id()
         self.server_cache.save (full_url, {'Content-Type':'text/xml'}, response, user_id)
@@ -159,7 +161,7 @@ class DataServerController(ServiceController):
 
         if resource is not None and resource.tag != 'image':
             raise BadValue('new_image resource must be an image: received %s' % resource.tag)
-            
+
         if resource is None:
             resource = etree.Element ('image')
         for k,v in kw.items():
@@ -188,13 +190,13 @@ class DataServerController(ServiceController):
         '''
         view = kw.pop('view', None)
         if isinstance(resource, basestring):
-            log.debug ('attributes= %s ' % str(kw) )
+            log.debug ('attributes= %s ' , kw )
             resource = etree.Element (resource, **kw)
-            log.debug ('created %s ' % etree.tostring (resource))
+            log.debug ('created %s ' , resource)
         if parent is None:
             resource.set('resource_uniq', self.resource_uniq())
         node = bisquik2db(doc = resource, parent = parent)
-        log.debug ("new_resource %s" % (node)) 
+        log.debug ("new_resource %s" , node)
         r =  db2tree (node, baseuri=self.url, view=view)
         # Invalidate the top level container i.e. /data_service/<resource_type>
         self.cache_invalidate(r.get('uri').rsplit('/', 1)[0])
@@ -240,14 +242,14 @@ class DataServerController(ServiceController):
 
     def update_resource(self, resource, new_resource=None, replace=True, **kw):
         """update a resource with a new values
-        @param resource: an etree element or uri 
+        @param resource: an etree element or uri
         @param new_resource:  an etree element if resource is a uri
         @param replace: replace all members (if false then appends only)
-        @param kw: view parameters for return 
+        @param kw: view parameters for return
         """
-        
+
         uri = None
-        log.debug ('resource  = %s' % ( resource))
+        log.debug ('resource  = %s' ,  resource)
         if isinstance (resource, etree._Element):
             uri = resource.get ('uri')
         elif isinstance(resource, basestring):
@@ -256,7 +258,7 @@ class DataServerController(ServiceController):
                 raise BadValue('update_resource uri %s needs new_value to update  ' % uri )
         if uri is not None:
             resource = load_uri (uri)
-        log.debug ('resource %s = %s' % (uri, resource))
+        log.debug ('resource %s = %s' , uri, resource)
         r = bisquik2db(doc=new_resource, resource=resource, replace=replace)
         #response  = etree.Element ('response')
         r =  db2tree (r, baseuri = self.url, **kw)
@@ -266,7 +268,7 @@ class DataServerController(ServiceController):
     def update(self, resource_tree, replace_all=False, **kw):
         view=kw.pop('view', None)
         #if replace_all:
-        #    uri = resource_tree.get ('uri') 
+        #    uri = resource_tree.get ('uri')
         #    r = load_uri(resource_tree.get('uri'))
         #    r.clear()
         r = bisquik2db(doc=resource_tree, replace=replace_all)
@@ -286,7 +288,7 @@ class DataServerController(ServiceController):
         response = etree.Element ('resource')
         db2tree(auth, parent=response, view=None, baseuri=self.url)
         return response
-        
+
 
 
     def query(self, resource_tag,  parent=None, **kw):
@@ -298,7 +300,7 @@ class DataServerController(ServiceController):
         if response:
             xml =  etree.XML (response)
             return xml
-        
+
         if isinstance (parent, etree._Element):
             parent = parent.get ('uri')
         if isinstance(parent, basestring):
@@ -307,8 +309,8 @@ class DataServerController(ServiceController):
         if view == 'count':
             count = resource_count (resource_type,  parent=parent,**kw)
             response = etree.Element ('resource')
-            etree.SubElement(response, resource_tag, count = str(count))            
-        else:    
+            etree.SubElement(response, resource_tag, count = str(count))
+        else:
             nodelist = resource_query (resource_type, parent=parent, **kw)
             response  = etree.Element ('resource', uri='/data_service/%s' % resource_tag)
             db2tree (nodelist, parent=response,
@@ -320,7 +322,7 @@ class DataServerController(ServiceController):
 
     def load (self, resource_url, **kw):
         """Simulate a webfetch """
-        log.debug ('parsing ' + resource_url)
+        log.debug ('parsing %s' , resource_url)
         #if resource_url.startswith(self.url):
         url = urlparse.urlsplit (resource_url)
         if url[3]:
@@ -333,8 +335,8 @@ class DataServerController(ServiceController):
         requesturl =  url[2][len(commonurl):]
         path = requesturl.split ('/')
         # remove initial /ds
-        log.debug ('path server(%s) req(%s) common( %s)' % (serverpath,url[2],path))
-        log.debug ('passing to self.default ' + str(path[2:]) + str(kwargs) )
+        log.debug ('path server(%s) req(%s) common( %s)' , serverpath,url[2],path )
+        log.debug ('passing to self.default %s %s', path[2:] , kwargs )
 
         format = kwargs.pop('format', None)
         view  = kwargs.pop('view', None)
@@ -344,13 +346,13 @@ class DataServerController(ServiceController):
         while path:
             resource_type = None
             resource = None
-            
+
             token = path.pop(0)
             if not token: continue
 
             #resource_type = dbtype_from_tag (token)
             resource_type = dbtype_from_name (token)
-            
+
             if path:
                 token = path.pop(0)
                 resource = resource_load (resource_type, ident=int(token))
@@ -361,7 +363,7 @@ class DataServerController(ServiceController):
         if resource is None:
             if view == "count":
                 count = resource_count(resource_type, parent=parent, **kwargs)
-                xtag = resource_type.xmltag
+                xtag = resource_type[0]
                 etree.SubElement(response, xtag, count = count)
             else:
                 resource = resource_query(resource_type,
@@ -370,28 +372,28 @@ class DataServerController(ServiceController):
         if view != "count":
             tree = db2tree(resource, baseuri=self.url, view=view,
                            parent=response, **kwargs)
-        
+
         formatter, content_type  = find_formatter (format)
         return formatter(response)
-        
+
     def count(self, resource_tag,  **kw):
-        log.debug('count %s %s' % (resource_tag, kw))
+        log.debug('count %s %s' , resource_tag, kw)
         resource_type = dbtype_from_tag(resource_tag)
         return resource_count (resource_type, **kw)
 
     def retrieve (self, resource_tag, tag_query = None, **kw):
         view=kw.pop('view', None)
         resource_type = dbtype_from_tag(resource_tag)
-        log.debug ('retrieving type ' + str(resource_type))
+        log.debug ('retrieving type %s' , resource_type)
         nodes =  resource_query(resource_type, tag_query, **kw)
         response  = etree.Element ('response')
         db2tree (nodes, parent=response, view=view, baseuri = self.url)
-        log.debug("tree converted: %s" % view)
+        log.debug("tree converted: %s" , view)
         #log.debug("tree converrted: %s" % etree.tostring(response))
 
         return response
 
-        
+
 def initialize(uri):
     """ Initialize the top level server for this microapp"""
     # Add you checks and database initialize

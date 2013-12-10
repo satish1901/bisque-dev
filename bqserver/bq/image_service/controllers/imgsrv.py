@@ -1,10 +1,10 @@
 # imgsrv.py
 # Author: Dmitry Fedorov and Kris Kvilekval
 # Center for BioImage Informatics, University California, Santa Barbara
-from __future__ import with_statement
-
 """ ImageServer for Bisque system.
 """
+
+from __future__ import with_statement
 
 __module__    = "imgsrv"
 __author__    = "Dmitry Fedorov and Kris Kvilekval"
@@ -46,7 +46,7 @@ from bq.core import  identity
 from bq.util.mkdir import _mkdir
 
 # Locals
-from exceptions import *
+from .exceptions import *
 import imgcnv
 import bioformats
 
@@ -714,10 +714,10 @@ class SliceService(object):
             imgcnv.convert(ifname, ofname, fmt=default_format, extra=params )
 
         try:
-            new_num_z = z2 - z1 + 1;
-            new_num_t = t2 - t1 + 1;
-            new_w=x2-x1;
-            new_h=y2-y1;
+            new_num_z = z2 - z1 + 1
+            new_num_t = t2 - t1 + 1
+            new_w=x2-x1
+            new_h=y2-y1
             data_token.dims['image_num_z']  = new_num_z
             data_token.dims['image_num_t']  = new_num_t
             data_token.dims['image_num_p']  = new_num_z*new_num_t
@@ -774,7 +774,7 @@ class FormatService(object):
         if stream:
             ext = imgcnv.defaultExtension(fmt)
             fpath = ofile.split('/')
-            filename = '%s_%s.%s'%(self.server.originalFileName(image_id), image_id, fpath[len(fpath)-1], ext)
+            filename = '%s_%s.%s'%(self.server.originalFileName(image_id), fpath[len(fpath)-1], ext)
             #log.debug('Format dryrun: stream from %s to %s' % (ifile, ofile) )
             data_token.setFile(fname=ofile)
             data_token.outFileName = filename
@@ -1370,7 +1370,7 @@ class DepthService(object):
         ds = '8|16|32|64'.split('|')
         fs = ['u', 's', 'f']
         cm = ['cs', 'cc']
-        d=None; m=None; f=None; c=None;
+        d=None; m=None; f=None; c=None
         arg = arg.lower()
         args = arg.split(',')
         if len(args)>0: d = args[0]
@@ -1493,15 +1493,15 @@ class TileService(object):
         # tile the image
         tiles_name = '%s.tif' % (base_name)
         if not os.path.exists(hist_name):
-            with imgcnv.Locks(ifname, hstl_name) as l:
-                if l.locked:
+            with imgcnv.Locks(ifname, hstl_name) as lck:
+                if lck.locked:
                     params = ['-tile', str(tsz), '-ohst', hist_name]
                     log.debug('Generate tiles: from %s to %s with %s' % (ifname, tiles_name, params) )
                     imgcnv.convert(ifname, tiles_name, fmt=default_format, extra=params )
                 else:
                     log.debug('Locking failed for %s'%(hist_name) )
 
-        with imgcnv.Locks(hstl_name) as l:
+        with imgcnv.Locks(hstl_name) as lck:
             log.debug("Tile read lock %s"%(hist_name))
             pass
         if os.path.exists(ofname):
@@ -2535,7 +2535,7 @@ class ImageServer(object):
             subdir = image_id[3]
         else:
             subdir = image_id[0]
-        path =  os.path.join(self.workdir, user_name, subdir, image_id)
+        path =  os.path.realpath(os.path.join(self.workdir, user_name, subdir, image_id))
         log.debug ("initialWorkPath %s", path)
         return path
 
@@ -2577,12 +2577,12 @@ class ImageServer(object):
             service = self.services[method]
         except:
             #do nothing
-            service = False
+            service = None
 
         #if not service:
         #    raise UnknownService(method)
         r = imgfile
-        if service:
+        if service is not None:
             r = service.action (image_id, imgfile, argument)
         return r
 
