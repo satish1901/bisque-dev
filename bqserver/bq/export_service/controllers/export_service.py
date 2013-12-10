@@ -71,10 +71,9 @@ import logging
 import pkg_resources
 from pylons.i18n import ugettext as _, lazy_ugettext as l_
 from tg import expose, flash
-from repoze.what import predicates 
+from repoze.what import predicates
 
 
-from bq.core.service import ServiceController
 
 # additional includes
 import sys
@@ -97,14 +96,14 @@ except:
 
 from urllib import quote
 from lxml import etree
-from time import strftime
 
 import tg
 from tg import request, response, session, flash, require
 from repoze.what import predicates
 
+from bq.core.service import ServiceController
 from bq import data_service
-from create_archive import CreateArchive
+
 
 #---------------------------------------------------------------------------------------
 # inits
@@ -116,7 +115,7 @@ CHARREGEX=re.compile("\W+")
 log  = logging.getLogger('bq.export_service')
 
 #---------------------------------------------------------------------------------------
-# controller 
+# controller
 #---------------------------------------------------------------------------------------
 
 log = logging.getLogger("bq.export_service")
@@ -127,7 +126,7 @@ class export_serviceController(ServiceController):
 
     def __init__(self, server_url):
         super(export_serviceController, self).__init__(server_url)
-        
+
     @expose('bq.export_service.templates.index')
     def index(self, **kw):
         """Add your first page here.. """
@@ -141,7 +140,7 @@ class export_serviceController(ServiceController):
     @expose(template='bq.export_service.templates.to_gdocs')
     @require(predicates.not_anonymous())
     def to_gdocs (self, **kw):
-        return { 'opts': kw }        
+        return { 'opts': kw }
 
     @expose(template='bq.export_service.templates.to_gdocs_send')
     @require(predicates.not_anonymous())
@@ -157,7 +156,7 @@ class export_serviceController(ServiceController):
 
         s = data_service.load(url+'?view=deep&format=csv')
         #s = data_service.get_resource(url, view='deep', format='csv')
-        
+
         input_file = StringIO(s)
         #log.debug('Google Docs input: ' + s )
 
@@ -186,7 +185,7 @@ class export_serviceController(ServiceController):
     def exportString(self, **kw):
         value = kw.pop('value', '')
         return value
-    
+
     #------------------------------------------------------------------
     # new ArchiveStreamer - Utkarsh
     #------------------------------------------------------------------
@@ -203,15 +202,15 @@ class export_serviceController(ServiceController):
         ------------------------------------
         Sample XML when POSTing to this app
         ------------------------------------
-        
+
         <resource>
             <value type="FILE">    ...    </value>
             <value type="URL">     ...    </value>
             <value type="DATASET"> ...    </value>
         </resource>
-        
+
         """
-        
+
         from bq.export_service.controllers.archive_streamer import ArchiveStreamer
         files    = []
         datasets = []
@@ -223,7 +222,7 @@ class export_serviceController(ServiceController):
             except etree.ParseError:
                 data = []
             for resource in data:
-                type = resource.get('type', 'URL').upper() 
+                type = resource.get('type', 'URL').upper()
                 if (type == 'FILE'):
                     files.append(resource.text)
                 elif (type == 'DATASET'):
@@ -234,20 +233,20 @@ class export_serviceController(ServiceController):
                     urls.append(resource.text)
 
         compressionType = kw.pop('compressionType', '')
-        
+
         def extractData(kw, field):
             if field in kw:
                 str = kw.pop(field)
                 if (str):
                     return str.split(',')
             return []
-        
+
         files       =   files + extractData(kw, 'files')
         datasets    =   datasets + extractData(kw, 'datasets')
         urls        =   urls + extractData(kw, 'urls')
-        
+
         filename = kw.pop('filename', None) or 'Bisque-archive '+time.strftime('%H.%M.%S')
-        
+
         archiveStreamer = ArchiveStreamer(compressionType)
         archiveStreamer.init(archiveName=filename, fileList=files, datasetList=datasets, urlList=urls)
         return archiveStreamer.stream()
