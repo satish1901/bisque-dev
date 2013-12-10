@@ -110,10 +110,10 @@ def getFileDateTimeString(filename):
 
 class ProcessToken(object):
     'Keep data with correct content type and cache info'
-    
+
     def __str__(self):
         return '{data: %s, contentType: %s, is_file: %s}'%(self.data, self.contentType, self.is_file)
-    
+
     def __init__(self):
         self.data        = False
         self.contentType = ''
@@ -135,7 +135,7 @@ class ProcessToken(object):
         self.contentType = 'text/html'
         self.cacheInfo = 'no-cache'
         self.is_file = False
-        return self        
+        return self
 
     def setXml (self, xml_str):
         self.data = xml_str
@@ -184,10 +184,10 @@ class ProcessToken(object):
         self.contentType = 'application/octet-stream'
         self.cacheInfo = 'max-age=302400' # one week
         return self
-    
+
     def setNone (self):
         self.data = False
-        self.is_file = False            
+        self.is_file = False
         self.contentType = ''
         return self
 
@@ -201,7 +201,7 @@ class ProcessToken(object):
 
     def setHtmlErrorNotFound (self):
         self.data = 'File not found...'
-        self.is_file = False        
+        self.is_file = False
         self.contentType = 'text/html'
         self.cacheInfo = 'no-cache'
         self.httpResponseCode = 404
@@ -209,7 +209,7 @@ class ProcessToken(object):
 
     def setHtmlErrorNotSupported (self):
         self.data = 'File is not in supported image format...'
-        self.is_file = False        
+        self.is_file = False
         self.contentType = 'text/html'
         self.cacheInfo = 'no-cache'
         self.httpResponseCode = 415
@@ -310,16 +310,16 @@ class ProcessToken(object):
 
 class ServicesService(object):
     '''Provide services information'''
-    
+
     def __init__(self, server):
         self.server = server
-    
+
     def __str__(self):
         return 'services: returns XML with services information'
-    
+
     def dryrun(self, image_id, data_token, arg):
         return data_token.setXml('')
-    
+
     def action(self, image_id, data_token, arg):
         response = etree.Element ('response')
         servs    = etree.SubElement (response, 'services', uri='/image_service/services')
@@ -329,16 +329,16 @@ class ServicesService(object):
 
 class FormatsService(object):
     '''Provide information on supported formats'''
-    
+
     def __init__(self, server):
         self.server = server
-    
+
     def __str__(self):
         return 'formats: Returns XML with supported formats'
-    
+
     def dryrun(self, image_id, data_token, arg):
         return data_token.setXml('')
-    
+
     def action(self, image_id, data_token, arg):
         xmlout = '<response>\n' + imgcnv.installed_formats()
         if bioformats.installed():
@@ -348,16 +348,16 @@ class FormatsService(object):
 
 class InfoService(object):
     '''Provide image information'''
-    
+
     def __init__(self, server):
         self.server = server
-    
+
     def __str__(self):
         return 'info: returns XML with image information'
-    
+
     def dryrun(self, image_id, data_token, arg):
         return data_token.setXml('')
-    
+
     def action(self, image_id, data_token, arg):
 
         info = self.server.getImageInfo(ident=image_id)
@@ -375,16 +375,16 @@ class InfoService(object):
 
 class DimService(object):
     '''Provide image dimension information'''
-    
+
     def __init__(self, server):
         self.server = server
-    
+
     def __str__(self):
         return 'dims: returns XML with image dimension information'
-    
+
     def dryrun(self, image_id, data_token, arg):
         return data_token.setXml('')
-    
+
     def action(self, image_id, data_token, arg):
         info = data_token.dims
         response = etree.Element ('response')
@@ -399,7 +399,7 @@ class MetaService(object):
 
     def __init__(self, server):
         self.server = server
-    
+
     def __str__(self):
         return 'meta: returns XML with image meta-data'
 
@@ -407,7 +407,7 @@ class MetaService(object):
         ifile = self.server.getInFileName( data_token, image_id )
         metacache = self.server.getOutFileName( ifile, image_id, '.meta' )
         return data_token.setXmlFile(metacache)
-    
+
     def action(self, image_id, data_token, arg):
         ifile = self.server.getInFileName( data_token, image_id )
         infoname = self.server.getOutFileName( ifile, image_id, '.info' )
@@ -452,7 +452,7 @@ class MetaService(object):
                 k = unicode(str(k), 'latin1')
                 v = unicode(str(v), 'latin1')
                 #log.debug('meta %s: %s'%(k, v))
-                
+
                 tl = k.split('/')
                 parent = image
                 for i in range(0,len(tl)):
@@ -514,8 +514,8 @@ class LocalPathService(object):
         return 'localpath: returns XML with local path to the processed image'
 
     def dryrun(self, image_id, data_token, arg):
-        return data_token.setXml('')  
-    
+        return data_token.setXml('')
+
     def action(self, image_id, data_token, arg):
         ifile = self.server.getInFileName( data_token, image_id )
         ifile = os.path.abspath(ifile)
@@ -592,7 +592,7 @@ class SliceService(object):
         # in case slices request an exact copy, skip
         if x1==0 and x2==0 and y1==0 and y2==0 and z1==0 and z2==0 and t1==0 and t2==0:
             return data_token
-        
+
         try:
             if not data_token.dims is None:
                 skip = True
@@ -601,7 +601,7 @@ class SliceService(object):
                 elif 'image_num_p' in data_token.dims and data_token.dims['image_num_p']>1: skip = False
                 if skip: return data_token
         finally:
-            pass        
+            pass
 
         ifname = self.server.getInFileName( data_token, image_id )
         ofname = self.server.getOutFileName( ifname, image_id, '.%d-%d,%d-%d,%d-%d,%d-%d' % (x1,x2,y1,y2,z1,z2,t1,t2) )
@@ -650,7 +650,7 @@ class SliceService(object):
 
         # in case slices request an exact copy, skip
         if x1==0 and x2==0 and y1==0 and y2==0 and z1==0 and z2==0 and t1==0 and t2==0:
-            return data_token        
+            return data_token
 
         # if input image has only one T and Z skip slice alltogether
         try:
@@ -745,13 +745,13 @@ class FormatService(object):
        where V is quality 0-100, 100 being best
 
        ex: format=jpeg'''
-    
+
     def __init__(self, server):
         self.server = server
-    
+
     def __str__(self):
         return 'format: Returns an Image in the requested format, arg = format[,stream][,OPT1][,OPT2][,...]'
-    
+
     def dryrun(self, image_id, data_token, arg):
         arg = arg.lower()
         args = arg.split(',')
@@ -775,14 +775,14 @@ class FormatService(object):
             ext = imgcnv.defaultExtension(fmt)
             fpath = ofile.split('/')
             filename = '%s_%s.%s'%(self.server.originalFileName(image_id), image_id, fpath[len(fpath)-1], ext)
-            #log.debug('Format dryrun: stream from %s to %s' % (ifile, ofile) )            
+            #log.debug('Format dryrun: stream from %s to %s' % (ifile, ofile) )
             data_token.setFile(fname=ofile)
             data_token.outFileName = filename
         else:
             #log.debug('Format dryrun: from %s to %s' % (ifile, ofile) )
-            data_token.setImage(fname=ofile, format=fmt)        
+            data_token.setImage(fname=ofile, format=fmt)
         return data_token
-    
+
     def action(self, image_id, data_token, arg):
 
         arg = arg.lower()
@@ -859,14 +859,14 @@ class ResizeService(object):
        with MX: if image is smaller it will not be resized!
        #size_arg = '-resize 128,128,BC,AR'
        ex: resize=100,100'''
-    
+
     def __init__(self, server):
         self.server = server
-    
+
     def __str__(self):
         return 'resize: returns an Image in requested dimensions, arg = w,h,method[,AR|,MX]'
 
-    def dryrun(self, image_id, data_token, arg):        
+    def dryrun(self, image_id, data_token, arg):
         ss = arg.split(',')
         size = [0,0]
         method = 'BL'
@@ -882,7 +882,7 @@ class ResizeService(object):
             textAddition = ss[3].upper()
 
         ifile = self.server.getInFileName( data_token, image_id )
-        ofile = self.server.getOutFileName( ifile, image_id, '.size_%d,%d,%s,%s' % (size[0], size[1], method, textAddition) )    
+        ofile = self.server.getOutFileName( ifile, image_id, '.size_%d,%d,%s,%s' % (size[0], size[1], method, textAddition) )
         return data_token.setImage(ofile, format=default_format)
 
     def action(self, image_id, data_token, arg):
@@ -943,21 +943,21 @@ class Resize3DService(object):
        arg = w,h,d,method[,AR|,MX]
        w - new width
        h - new height
-       d - new depth       
+       d - new depth
        method - NN or TL, or TC (Nearest neighbor, Trilinear, Tricubic respectively)
        if either w or h or d are ommited or 0, missing value will be computed using aspect ratio of the image
        if ,AR is present then the size will be used as bounding box and aspect ration preserved
        if ,MX is present then the size will be used as maximum bounding box and aspect ratio preserved
        with MX: if image is smaller it will not be resized!
        ex: resize3d=100,100,100,TC'''
-    
+
     def __init__(self, server):
         self.server = server
 
     def __str__(self):
         return 'resize3d: returns an image in requested dimensions, arg = w,h,d,method[,AR|,MX]'
 
-    def dryrun(self, image_id, data_token, arg):   
+    def dryrun(self, image_id, data_token, arg):
         ss = arg.split(',')
         size = [0,0,0]
         method = 'TC'
@@ -968,12 +968,12 @@ class Resize3DService(object):
         if len(ss)>1 and ss[1].isdigit():
             size[1] = int(ss[1])
         if len(ss)>2 and ss[2].isdigit():
-            size[2] = int(ss[2])            
+            size[2] = int(ss[2])
         if len(ss)>3:
             method = ss[3].upper()
         if len(ss)>4:
             textAddition = ss[4].upper()
-    
+
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.size3d_%d,%d,%d,%s,%s' % (size[0], size[1], size[2], method,textAddition) )
         return data_token.setImage(ofile, format=default_format)
@@ -994,7 +994,7 @@ class Resize3DService(object):
         if len(ss)>1 and ss[1].isdigit():
             size[1] = int(ss[1])
         if len(ss)>2 and ss[2].isdigit():
-            size[2] = int(ss[2])            
+            size[2] = int(ss[2])
         if len(ss)>3:
             method = ss[3].upper()
         if len(ss)>4:
@@ -1052,19 +1052,19 @@ class Rearrange3DService(object):
        xz: XYZ -> XZY
        yz: XYZ -> YZX
        ex: rearrange3d=xz'''
-    
+
     def __init__(self, server):
         self.server = server
-    
+
     def __str__(self):
         return 'rearrange3d: rearrange dimensions of a 3D image, arg = [xzy,yzx]'
 
-    def dryrun(self, image_id, data_token, arg):  
+    def dryrun(self, image_id, data_token, arg):
         arg = arg.lower()
         ifile = self.server.getInFileName( data_token, image_id )
-        ofile = self.server.getOutFileName( ifile, image_id, '.rearrange3d_%s'%arg )    
+        ofile = self.server.getOutFileName( ifile, image_id, '.rearrange3d_%s'%arg )
         return data_token.setImage(ofile, format=default_format)
-    
+
     def action(self, image_id, data_token, arg):
         log.debug('Rearrange3D: %s'%arg )
         arg = arg.lower()
@@ -1104,14 +1104,14 @@ class ThumbnailService(object):
        h - new height
        method - NN or BL, or BC (Nearest neighbor, Bilinear, Bicubic respectively)
        ex: ?thumbnail'''
-    
+
     def __init__(self, server):
         self.server = server
-    
+
     def __str__(self):
         return 'thumbnail: returns an image as a thumbnail, arg = [w,h][,method]'
 
-    def dryrun(self, image_id, data_token, arg):  
+    def dryrun(self, image_id, data_token, arg):
         ss = arg.split(',')
         size = [128,128]
         method = 'BC'
@@ -1122,16 +1122,16 @@ class ThumbnailService(object):
             size[1] = int(ss[1])
         if len(ss)>2:
             method = ss[2].upper()
-        
+
         data_token.dims['image_num_p']  = 1
         data_token.dims['image_num_z']  = 1
         data_token.dims['image_num_t']  = 1
-        data_token.dims['image_pixel_depth'] = 8         
-        
+        data_token.dims['image_pixel_depth'] = 8
+
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.thumb_%s,%s,%s.jpeg'%(size[0],size[1],method) )
         return data_token.setImage(ofile, format='jpeg')
-    
+
     def action(self, image_id, data_token, arg):
 
         ss = arg.split(',')
@@ -1155,7 +1155,7 @@ class ThumbnailService(object):
         ofile = self.server.getOutFileName( ifile, image_id, '.thumb_%s,%s,%s.jpeg'%(size[0],size[1],method) )
 
         if not os.path.exists(ofile):
-            if 'image_pixel_depth' in data_token.dims and data_token.dims['image_pixel_depth'] == 8: 
+            if 'image_pixel_depth' in data_token.dims and data_token.dims['image_pixel_depth'] == 8:
                 conv_arg = imgsrv_thumbnail_cmd.replace('-depth 8,d', '-depth 8,f').split(' ')
             else:
                 conv_arg = imgsrv_thumbnail_cmd.split(' ')
@@ -1170,7 +1170,7 @@ class ThumbnailService(object):
             data_token.dims['image_num_p']  = 1
             data_token.dims['image_num_z']  = 1
             data_token.dims['image_num_t']  = 1
-            data_token.dims['image_pixel_depth'] = 8 
+            data_token.dims['image_pixel_depth'] = 8
         finally:
             pass
 
@@ -1184,14 +1184,14 @@ class RoiService(object):
        all values are in ranges [1..N]
        0 or empty - means first/last element
        ex: roi=10,10,100,100'''
-    
+
     def __init__(self, server):
         self.server = server
 
     def __str__(self):
         return 'roi: returns an image in specified ROI, arg = x1,y1,x2,y2, all values are in ranges [1..N]'
 
-    def dryrun(self, image_id, data_token, arg): 
+    def dryrun(self, image_id, data_token, arg):
         vs = arg.split(',', 4)
         x1=0; x2=0; y1=0; y2=0
         if len(vs)>0 and vs[0].isdigit(): x1 = int(vs[0])
@@ -1199,7 +1199,7 @@ class RoiService(object):
         if len(vs)>2 and vs[2].isdigit(): x2 = int(vs[2])
         if len(vs)>3 and vs[3].isdigit(): y2 = int(vs[3])
         ifile = self.server.getInFileName( data_token, image_id )
-        ofile = self.server.getOutFileName( ifile, image_id, '.roi_%d,%d,%d,%d'%(x1,y1,x2,y2) ) 
+        ofile = self.server.getOutFileName( ifile, image_id, '.roi_%d,%d,%d,%d'%(x1,y1,x2,y2) )
         return data_token.setImage(ofile, format=default_format)
 
     def action(self, image_id, data_token, arg):
@@ -1237,19 +1237,19 @@ class RemapService(object):
        remap=display - will use preferred mapping found in file's metadata
        remap=gray - will return gray scale image with visual weighted mapping from RGB or equal weights for other nuber of channels
        ex: remap=3,2,1"""
-       
+
     def __init__(self, server):
         self.server = server
-        
+
     def __str__(self):
         return 'remap: returns an image with the requested channel mapping, arg = [channel,channel...]|gray|display'
 
-    def dryrun(self, image_id, data_token, arg): 
+    def dryrun(self, image_id, data_token, arg):
         arg = arg.lower()
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.map_%s'%arg )
-        return data_token.setImage(fname=ofile, format=default_format)        
-    
+        return data_token.setImage(fname=ofile, format=default_format)
+
     def action(self, image_id, data_token, arg):
 
         arg = arg.lower()
@@ -1274,29 +1274,29 @@ class RemapService(object):
             pass
 
         return data_token.setImage(fname=ofile, format=default_format)
-        
+
 class FuseService(object):
     """Provide an RGB image with the requested channel fusion
        arg = W1R,W1G,W1B;W2R,W2G,W2B;W3R,W3G,W3B;W4R,W4G,W4B
        output image will be constructed from channels 1 to n from input image mapped to RGB components with desired weights
        fuse=display will use preferred mapping found in file's metadata
        ex: fuse=255,0,0;0,255,0;0,0,255;255,255,255:A"""
-       
+
     def __init__(self, server):
         self.server = server
-        
+
     def __str__(self):
         return 'fuse: returns an RGB image with the requested channel fusion, arg = W1R,W1G,W1B;W2R,W2G,W2B;...[:METHOD]'
 
-    def dryrun(self, image_id, data_token, arg): 
+    def dryrun(self, image_id, data_token, arg):
         arg = arg.lower()
         if ':' in arg:
             (arg, method) = arg.split(':', 1)
         argenc = ''.join([hex(int(i)).replace('0x', '') for i in arg.replace(';', ',').split(',') if i is not ''])
         ifile = self.server.getInFileName( data_token, image_id )
-        ofile = self.server.getOutFileName( ifile, image_id, '.fuse_%s'%(argenc) )   
+        ofile = self.server.getOutFileName( ifile, image_id, '.fuse_%s'%(argenc) )
         if method != 'a':
-            ofile = '%s_%s'%(ofile, method)             
+            ofile = '%s_%s'%(ofile, method)
         return data_token.setImage(fname=ofile, format=default_format)
 
     def action(self, image_id, data_token, arg):
@@ -1305,7 +1305,7 @@ class FuseService(object):
         if ':' in arg:
             (arg, method) = arg.split(':', 1)
         argenc = ''.join([hex(int(i)).replace('0x', '') for i in arg.replace(';', ',').split(',') if i is not ''])
-        
+
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.fuse_%s'%(argenc) )
         log.debug('Fuse: %s to %s with [%s:%s]'%(ifile, ofile, arg, method))
@@ -1314,13 +1314,13 @@ class FuseService(object):
             arg = ['-multi', '-fusemeta']
         else:
             arg = ['-multi', '-fusergb', arg]
-            
+
         if method != 'a':
             arg.extend(['-fusemethod', method])
-            ofile = '%s_%s'%(ofile, method)        
-            
+            ofile = '%s_%s'%(ofile, method)
+
         if data_token.histogram is not None:
-            arg.extend(['-ihst', data_token.histogram])            
+            arg.extend(['-ihst', data_token.histogram])
 
         if not os.path.exists(ofile):
             imgcnv.convert(ifile, ofile, fmt=default_format, extra=arg)
@@ -1333,7 +1333,7 @@ class FuseService(object):
 
         data_token.setImage(fname=ofile, format=default_format)
         data_token.histogram = None # fusion ideally should not be changing image histogram
-        return data_token        
+        return data_token
 
 class DepthService(object):
     '''Provide an image with converted depth per pixel:
@@ -1352,24 +1352,24 @@ class DepthService(object):
          cs - channels separate
          cc - channels combined
        ex: depth=8,d'''
-    
+
     def __init__(self, server):
         self.server = server
-        
+
     def __str__(self):
         return 'depth: returns an image with converted depth per pixel, arg = depth,method[,format][,channelmode]'
-    
-    def dryrun(self, image_id, data_token, arg):         
+
+    def dryrun(self, image_id, data_token, arg):
         arg = arg.lower()
         ifile = self.server.getInFileName(data_token, image_id)
-        ofile = self.server.getOutFileName(ifile, image_id, '.depth_%s'%arg)        
-        return data_token.setImage(fname=ofile, format=default_format)    
-    
+        ofile = self.server.getOutFileName(ifile, image_id, '.depth_%s'%arg)
+        return data_token.setImage(fname=ofile, format=default_format)
+
     def action(self, image_id, data_token, arg):
         ms = 'f|d|t|e|c|n'.split('|')
         ds = '8|16|32|64'.split('|')
         fs = ['u', 's', 'f']
-        cm = ['cs', 'cc']        
+        cm = ['cs', 'cc']
         d=None; m=None; f=None; c=None;
         arg = arg.lower()
         args = arg.split(',')
@@ -1377,7 +1377,7 @@ class DepthService(object):
         if len(args)>1: m = args[1]
         if len(args)>2: f = args[2]
         if len(args)>3: c = args[3]
-        
+
         if d is None or d not in ds:
             abort(400, 'Depth: depth is unsupported: %s'%d)
         if m is None or m not in ms:
@@ -1390,7 +1390,7 @@ class DepthService(object):
         ifile = self.server.getInFileName(data_token, image_id)
         ofile = self.server.getOutFileName(ifile, image_id, '.depth_%s'%arg)
         log.debug('Depth: %s to %s with [%s]'%(ifile, ofile, arg))
-        
+
         if data_token.histogram is not None:
             ohist = self.server.getOutFileName(ifile, image_id, '.histogram_depth_' + arg)
 
@@ -1409,7 +1409,7 @@ class DepthService(object):
 
         data_token.setImage(fname=ofile, format=default_format)
         if data_token.histogram is not None:
-            data_token.histogram = ohist                    
+            data_token.histogram = ohist
         return data_token
 
 
@@ -1426,21 +1426,21 @@ class TileService(object):
        tsz: tile size
        All values are in range [0..N]
        ex: tile=0,2,3,512'''
-    
+
     def __init__(self, server):
         self.server = server
-        
+
     def __str__(self):
         return 'tile: returns a tile, arg = l,tnx,tny,tsz. All values are in range [0..N]'
 
-    def dryrun(self, image_id, data_token, arg): 
+    def dryrun(self, image_id, data_token, arg):
         tsz=512;
         vs = arg.split(',', 4)
         if len(vs)>0 and vs[0].isdigit():   l = int(vs[0])
         if len(vs)>1 and vs[1].isdigit(): tnx = int(vs[1])
-        if len(vs)>2 and vs[2].isdigit(): tny = int(vs[2])        
-        if len(vs)>3 and vs[3].isdigit(): tsz = int(vs[3])        
-        
+        if len(vs)>2 and vs[2].isdigit(): tny = int(vs[2])
+        if len(vs)>3 and vs[3].isdigit(): tsz = int(vs[3])
+
         try:
             if not data_token.dims is None:
                 skip = True
@@ -1448,15 +1448,15 @@ class TileService(object):
                 elif 'image_num_y' in data_token.dims and data_token.dims['image_num_y']>tsz: skip = False
                 if skip: return data_token
         finally:
-            pass        
-        
+            pass
+
         data_token.dims['image_num_p'] = 1
         data_token.dims['image_num_z'] = 1
         data_token.dims['image_num_t'] = 1
-        
+
         ifname   = self.server.getInFileName( data_token, image_id )
         base_name = self.server.getOutFileName(ifname, image_id, '' )
-        base_name = self.server.getOutFileName(os.path.join('%s.tiles'%(base_name), '%s'%tsz), image_id, '' )                    
+        base_name = self.server.getOutFileName(os.path.join('%s.tiles'%(base_name), '%s'%tsz), image_id, '' )
         ofname    = '%s_%.3d_%.3d_%.3d.tif' % (base_name, l, tnx, tny)
         #log.debug('Tiles dryrun: from %s to %s' % (ifname, ofname) )
         return data_token.setImage(ofname, format=default_format)
@@ -1485,7 +1485,7 @@ class TileService(object):
         # construct a sliced filename
         ifname   = self.server.getInFileName( data_token, image_id )
         base_name = self.server.getOutFileName(ifname, image_id, '' )
-        base_name = self.server.getOutFileName(os.path.join('%s.tiles'%(base_name), '%s'%tsz), image_id, '' )                      
+        base_name = self.server.getOutFileName(os.path.join('%s.tiles'%(base_name), '%s'%tsz), image_id, '' )
         ofname    = '%s_%.3d_%.3d_%.3d.tif' % (base_name, l, tnx, tny)
         hist_name = '%s_histogram'%(base_name)
         hstl_name = hist_name
@@ -1513,7 +1513,7 @@ class TileService(object):
                 data_token.dims['image_num_z'] = 1
                 data_token.dims['image_num_t'] = 1
                 data_token.setImage(ofname, format=default_format)
-                data_token.histogram = hist_name                
+                data_token.histogram = hist_name
             finally:
                 pass
         else:
@@ -1530,18 +1530,18 @@ class TileService(object):
 class ProjectMaxService(object):
     '''Provide an image combined of all input planes by MAX
        ex: projectmax'''
-    
+
     def __init__(self, server):
         self.server = server
-        
+
     def __str__(self):
         return 'projectmax: returns a maximum intensity projection image'
-    
-    def dryrun(self, image_id, data_token, arg): 
+
+    def dryrun(self, image_id, data_token, arg):
         ifile = self.server.getInFileName(data_token, image_id)
-        ofile = self.server.getOutFileName(ifile, image_id, '.projectmax')        
+        ofile = self.server.getOutFileName(ifile, image_id, '.projectmax')
         return data_token.setImage(fname=ofile, format=default_format)
-    
+
     def action(self, image_id, data_token, arg):
 
         ifile = self.server.getInFileName(data_token, image_id)
@@ -1559,18 +1559,18 @@ class ProjectMaxService(object):
 class ProjectMinService(object):
     '''Provide an image combined of all input planes by MIN
        ex: projectmin'''
-    
+
     def __init__(self, server):
         self.server = server
-        
+
     def __str__(self):
         return 'projectmin: returns a minimum intensity projection image'
-    
-    def dryrun(self, image_id, data_token, arg): 
+
+    def dryrun(self, image_id, data_token, arg):
         ifile = self.server.getInFileName(data_token, image_id)
-        ofile = self.server.getOutFileName(ifile, image_id, '.projectmin')        
-        return data_token.setImage(fname=ofile, format=default_format)    
-    
+        ofile = self.server.getOutFileName(ifile, image_id, '.projectmin')
+        return data_token.setImage(fname=ofile, format=default_format)
+
     def action(self, image_id, data_token, arg):
 
         ifile = self.server.getInFileName(data_token, image_id)
@@ -1588,18 +1588,18 @@ class ProjectMinService(object):
 class NegativeService(object):
     '''Provide an image negative
        ex: negative'''
-    
+
     def __init__(self, server):
         self.server = server
-    
+
     def __str__(self):
         return 'negative: returns an image negative'
-    
-    def dryrun(self, image_id, data_token, arg): 
+
+    def dryrun(self, image_id, data_token, arg):
         ifile = self.server.getInFileName(data_token, image_id)
-        ofile = self.server.getOutFileName(ifile, image_id, '.negative')        
-        return data_token.setImage(fname=ofile, format=default_format)        
-    
+        ofile = self.server.getOutFileName(ifile, image_id, '.negative')
+        return data_token.setImage(fname=ofile, format=default_format)
+
     def action(self, image_id, data_token, arg):
 
         ifile = self.server.getInFileName(data_token, image_id)
@@ -1614,18 +1614,18 @@ class NegativeService(object):
 class DeinterlaceService(object):
     '''Provides a deinterlaced image
        ex: deinterlace'''
-    
+
     def __init__(self, server):
         self.server = server
-    
+
     def __str__(self):
         return 'deinterlace: returns a deinterlaced image'
-    
-    def dryrun(self, image_id, data_token, arg): 
+
+    def dryrun(self, image_id, data_token, arg):
         ifile = self.server.getInFileName(data_token, image_id)
-        ofile = self.server.getOutFileName(ifile, image_id, '.deinterlace')        
-        return data_token.setImage(fname=ofile, format=default_format)     
-    
+        ofile = self.server.getOutFileName(ifile, image_id, '.deinterlace')
+        return data_token.setImage(fname=ofile, format=default_format)
+
     def action(self, image_id, data_token, arg):
 
         ifile = self.server.getInFileName(data_token, image_id)
@@ -1641,14 +1641,14 @@ class ThresholdService(object):
     '''Threshold an image
        threshold=value[,upper|,lower|,both]
        ex: threshold=128,both'''
-    
+
     def __init__(self, server):
         self.server = server
-    
+
     def __str__(self):
         return 'threshold: returns a thresholded image, threshold=value[,upper|,lower|,both], ex: threshold=128,both'
-    
-    def dryrun(self, image_id, data_token, arg): 
+
+    def dryrun(self, image_id, data_token, arg):
         arg = arg.lower()
         args = arg.split(',')
         if len(args)<1:
@@ -1656,11 +1656,11 @@ class ThresholdService(object):
         method = 'both'
         if len(args)>1:
             method = args[1]
-        arg = '%s,%s'%(args[0], method)          
+        arg = '%s,%s'%(args[0], method)
         ifile = self.server.getInFileName(data_token, image_id)
-        ofile = self.server.getOutFileName(ifile, image_id, '.threshold_%s'%arg)        
-        return data_token.setImage(fname=ofile, format=default_format)        
-    
+        ofile = self.server.getOutFileName(ifile, image_id, '.threshold_%s'%arg)
+        return data_token.setImage(fname=ofile, format=default_format)
+
     def action(self, image_id, data_token, arg):
         arg = arg.lower()
         args = arg.split(',')
@@ -1669,7 +1669,7 @@ class ThresholdService(object):
         method = 'both'
         if len(args)>1:
             method = args[1]
-        arg = '%s,%s'%(args[0], method)        
+        arg = '%s,%s'%(args[0], method)
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.threshold_%s'%arg )
         log.debug('Threshold: %s to %s with [%s]'%(ifile, ofile, arg))
@@ -1678,24 +1678,24 @@ class ThresholdService(object):
             imgcnv.convert(ifile, ofile, fmt=default_format, extra=['-threshold', arg])
 
         return data_token.setImage(fname=ofile, format=default_format)
-    
+
 class PixelCounterService(object):
     '''Return pixel counts of a thresholded image
        pixelcount=value, where value is a threshold
        ex: pixelcount=128'''
-    
+
     def __init__(self, server):
         self.server = server
-    
+
     def __str__(self):
         return 'pixelcount: returns a count of pixels in a thresholded image, ex: pixelcount=128'
-    
-    def dryrun(self, image_id, data_token, arg): 
+
+    def dryrun(self, image_id, data_token, arg):
         arg = arg.lower()
         ifile = self.server.getInFileName(data_token, image_id)
-        ofile = self.server.getOutFileName(ifile, image_id, '.pixelcount_%s.xml'%arg)        
-        return data_token.setXmlFile(fname=ofile)            
-    
+        ofile = self.server.getOutFileName(ifile, image_id, '.pixelcount_%s.xml'%arg)
+        return data_token.setXmlFile(fname=ofile)
+
     def action(self, image_id, data_token, arg):
 
         arg = arg.lower()
@@ -1711,18 +1711,18 @@ class PixelCounterService(object):
 class HistogramService(object):
     '''Returns histogram of an image
        ex: histogram'''
-    
+
     def __init__(self, server):
         self.server = server
-    
+
     def __str__(self):
         return 'histogram: returns a histogram of an image, ex: histogram'
-    
-    def dryrun(self, image_id, data_token, arg): 
+
+    def dryrun(self, image_id, data_token, arg):
         ifile = self.server.getInFileName(data_token, image_id)
-        ofile = self.server.getOutFileName(ifile, image_id, '.histogram.xml')        
-        return data_token.setXmlFile(fname=ofile)         
-    
+        ofile = self.server.getOutFileName(ifile, image_id, '.histogram.xml')
+        return data_token.setXmlFile(fname=ofile)
+
     def action(self, image_id, data_token, arg):
 
         ifile = self.server.getInFileName( data_token, image_id )
@@ -1738,18 +1738,18 @@ class LevelsService(object):
     '''Adjust levels in an image
        levels=minvalue,maxvalue,gamma
        ex: levels=15,200,1.2'''
-    
+
     def __init__(self, server):
         self.server = server
-    
+
     def __str__(self):
         return 'levels: adjust levels in an image, levels=minvalue,maxvalue,gamma ex: levels=15,200,1.2'
 
-    def dryrun(self, image_id, data_token, arg): 
+    def dryrun(self, image_id, data_token, arg):
         arg = arg.lower()
         ifile = self.server.getInFileName(data_token, image_id)
-        ofile = self.server.getOutFileName(ifile, image_id, '.levels_%s'%arg)        
-        return data_token.setImage(fname=ofile, format=default_format)        
+        ofile = self.server.getOutFileName(ifile, image_id, '.levels_%s'%arg)
+        return data_token.setImage(fname=ofile, format=default_format)
 
     def action(self, image_id, data_token, arg):
 
@@ -1767,19 +1767,19 @@ class BrightnessContrastService(object):
     '''Adjust brightnesscontrast in an image
        brightnesscontrast=brightness,contrast with both values in range [-100,100]
        ex: brightnesscontrast=0,30'''
-    
+
     def __init__(self, server):
         self.server = server
-    
+
     def __str__(self):
         return 'brightnesscontrast: Adjust brightness and contrast in an image, brightnesscontrast=brightness,contrast both in range [-100,100] ex: brightnesscontrast=0,30'
 
-    def dryrun(self, image_id, data_token, arg): 
+    def dryrun(self, image_id, data_token, arg):
         arg = arg.lower()
         ifile = self.server.getInFileName(data_token, image_id)
-        ofile = self.server.getOutFileName(ifile, image_id, '.brightnesscontrast_%s'%arg)        
-        return data_token.setImage(fname=ofile, format=default_format)            
-    
+        ofile = self.server.getOutFileName(ifile, image_id, '.brightnesscontrast_%s'%arg)
+        return data_token.setImage(fname=ofile, format=default_format)
+
     def action(self, image_id, data_token, arg):
 
         arg = arg.lower()
@@ -1798,44 +1798,44 @@ class TransformService(object):
        Available transforms are: fourier, chebyshev, wavelet, radon, edge, wndchrmcolor, rgb2hsv, hsv2rgb, superpixels
        ex: transform=fourier
        superpixels requires two parameters: superpixel size in pixels and shape regularity 0-1, ex: transform=superpixels,32,0.5"""
-    
+
     def __init__(self, server):
         self.server = server
-    
+
     def __str__(self):
         return 'transform: returns a transformed image, transform=fourier|chebyshev|wavelet|radon|edge|wndchrmcolor|rgb2hsv|hsv2rgb|superpixels'
 
-    def dryrun(self, image_id, data_token, arg): 
+    def dryrun(self, image_id, data_token, arg):
         arg = arg.lower()
         ifile = self.server.getInFileName(data_token, image_id)
-        ofile = self.server.getOutFileName(ifile, image_id, '.transform_%s'%arg)        
-        return data_token.setImage(fname=ofile, format=default_format)        
-    
+        ofile = self.server.getOutFileName(ifile, image_id, '.transform_%s'%arg)
+        return data_token.setImage(fname=ofile, format=default_format)
+
     def action(self, image_id, data_token, arg):
 
         arg = arg.lower()
         args = arg.split(',')
         transform = args[0]
-        params = args[1:]        
+        params = args[1:]
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.transform_%s'%arg )
         log.debug('Transform: %s to %s with [%s]'%(ifile, ofile, arg))
 
         extra = ['-multi']
         if not os.path.exists(ofile):
-            transforms = {'fourier'      : ['-transform', 'fft'], 
-                          'chebyshev'    : ['-transform', 'chebyshev'], 
+            transforms = {'fourier'      : ['-transform', 'fft'],
+                          'chebyshev'    : ['-transform', 'chebyshev'],
                           'wavelet'      : ['-transform', 'wavelet'],
-                          'radon'        : ['-transform', 'radon'], 
+                          'radon'        : ['-transform', 'radon'],
                           'edge'         : ['-filter',    'edge'],
-                          'wndchrmcolor' : ['-filter',    'wndchrmcolor'], 
+                          'wndchrmcolor' : ['-filter',    'wndchrmcolor'],
                           'rgb2hsv'      : ['-transform_color', 'rgb2hsv'],
-                          'hsv2rgb'      : ['-transform_color', 'hsv2rgb'], 
+                          'hsv2rgb'      : ['-transform_color', 'hsv2rgb'],
                           'superpixels'  : ['-superpixels'], } # requires passing parameters
-            
+
             if not transform in transforms:
                 abort(400, 'transform: requested transform is not yet supported')
-            
+
             extra.extend(transforms[transform])
             if len(params)>0:
                 extra.extend([','.join(params)])
@@ -1847,19 +1847,19 @@ class SampleFramesService(object):
     '''Returns an Image composed of Nth frames form input
        arg = frames_to_skip
        ex: sampleframes=10'''
-    
+
     def __init__(self, server):
         self.server = server
-    
+
     def __str__(self):
         return 'sampleframes: returns an Image composed of Nth frames form input, arg=n'
-    
-    def dryrun(self, image_id, data_token, arg): 
+
+    def dryrun(self, image_id, data_token, arg):
         arg = arg.lower()
         ifile = self.server.getInFileName(data_token, image_id)
-        ofile = self.server.getOutFileName(ifile, image_id, '.framessampled_%s'%arg)        
-        return data_token.setImage(fname=ofile, format=default_format)            
-    
+        ofile = self.server.getOutFileName(ifile, image_id, '.framessampled_%s'%arg)
+        return data_token.setImage(fname=ofile, format=default_format)
+
     def action(self, image_id, data_token, arg):
         if not arg:
             abort(400, 'SampleFrames: no frames to skip provided')
@@ -1885,19 +1885,19 @@ class FramesService(object):
     '''Returns an image composed of user defined frames form input
        arg = frames
        ex: frames=1,2,5 or ex: frames=1,-,5 or ex: frames=-,5 or ex: frames=4,-'''
-    
+
     def __init__(self, server):
         self.server = server
-    
+
     def __str__(self):
         return 'frames: Returns an image composed of user defined frames form input, arg = frames'
-    
-    def dryrun(self, image_id, data_token, arg): 
+
+    def dryrun(self, image_id, data_token, arg):
         arg = arg.lower()
         ifile = self.server.getInFileName(data_token, image_id)
-        ofile = self.server.getOutFileName(ifile, image_id, '.frames_%s'%arg)        
-        return data_token.setImage(fname=ofile, format=default_format)      
-    
+        ofile = self.server.getOutFileName(ifile, image_id, '.frames_%s'%arg)
+        return data_token.setImage(fname=ofile, format=default_format)
+
     def action(self, image_id, data_token, arg):
 
         if not arg:
@@ -1925,33 +1925,33 @@ class RotateService(object):
        arg = angle
        At this moment only supported values are 90, -90, 270, 180 and guess
        ex: rotate=90'''
-    
+
     def __init__(self, server):
         self.server = server
-        
+
     def __str__(self):
         return 'rotate: returns an image rotated as requested, arg = 0|90|-90|180|270|guess'
 
-    def dryrun(self, image_id, data_token, arg): 
+    def dryrun(self, image_id, data_token, arg):
         ang = arg.lower()
-        if ang=='270': 
-            ang='-90'          
+        if ang=='270':
+            ang='-90'
         ifile = self.server.getInFileName(data_token, image_id)
-        ofile = self.server.getOutFileName(ifile, image_id, '.rotated_%s'%ang)        
-        return data_token.setImage(fname=ofile, format=default_format)         
+        ofile = self.server.getOutFileName(ifile, image_id, '.rotated_%s'%ang)
+        return data_token.setImage(fname=ofile, format=default_format)
 
     def action(self, image_id, data_token, arg):
         ang = arg.lower()
         angles = ['0', '90', '-90', '270', '180', 'guess']
-        if ang=='270': 
-            ang='-90'        
+        if ang=='270':
+            ang='-90'
         if ang not in angles:
             abort(400, 'rotate: angle value not yet supported' )
 
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.rotated_%s'%ang )
         log.debug('Rotate service: %s to %s'%(ifile, ofile))
-        if ang=='0': 
+        if ang=='0':
             ofile = ifile
 
         if not os.path.exists(ofile):
@@ -1976,22 +1976,22 @@ class RotateService(object):
 class BioFormatsService(object):
     '''Provides BioFormats conversion to OME-TIFF
        ex: bioformats'''
-    
+
     def __init__(self, server):
         self.server = server
-        
+
     def __str__(self):
         return 'bioformats: returns an image in OME-TIFF format'
 
-    def dryrun(self, image_id, data_token, arg): 
+    def dryrun(self, image_id, data_token, arg):
         ifile = self.server.getInFileName(data_token, image_id)
-        ofile = self.server.getOutFileName(ifile, image_id, '.ome.tif')        
-        return data_token.setImage(fname=ofile, format=default_format)          
-    
+        ofile = self.server.getOutFileName(ifile, image_id, '.ome.tif')
+        return data_token.setImage(fname=ofile, format=default_format)
+
     def resultFilename(self, image_id, data_token):
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.ome.tif' )
-        return ofile        
+        return ofile
 
     def action(self, image_id, data_token, arg):
 
@@ -2020,7 +2020,7 @@ class BioFormatsService(object):
         if not os.path.exists(ofile) or not imgcnv.supported(ofile):
             return data_token
 
-        if bfinfo is None: 
+        if bfinfo is None:
             bfinfo = self.server.getImageInfo(ident=image_id)
         data_token.dims = bfinfo
         return data_token.setImage(ofile, format='ome-bigtiff')
@@ -2334,7 +2334,7 @@ class ImageServer(object):
                           'format'       : FormatService(self),
                           'resize'       : ResizeService(self),
                           'resize3d'     : Resize3DService(self),
-                          'rearrange3d'  : Rearrange3DService(self),  
+                          'rearrange3d'  : Rearrange3DService(self),
                           'thumbnail'    : ThumbnailService(self),
                           #'default'      : DefaultService(self),
                           'roi'          : RoiService(self),
@@ -2348,10 +2348,10 @@ class ImageServer(object):
                           'projectmin'   : ProjectMinService(self),
                           'negative'     : NegativeService(self),
                           'deinterlace'  : DeinterlaceService(self),
-                          'threshold'    : ThresholdService(self),    
-                          'pixelcounter' : PixelCounterService(self), 
+                          'threshold'    : ThresholdService(self),
+                          'pixelcounter' : PixelCounterService(self),
                           'histogram'    : HistogramService(self),
-                          'levels'       : LevelsService(self), 
+                          'levels'       : LevelsService(self),
                           'brightnesscontrast' : BrightnessContrastService(self),
                           'transform'    : TransformService(self),
                           'sampleframes' : SampleFramesService(self),
@@ -2381,12 +2381,12 @@ class ImageServer(object):
         return blob_service.original_name(ident)
 
     def getFileInfo(self, id=None, filename=None):
-        if id is None and filename is None: 
+        if id is None and filename is None:
             return {}
-        if filename is None: 
+        if filename is None:
             filename = self.ensureOriginalFile(id)
         filename = self.getOutFileName( filename, id, '.info' )
-        if not os.path.exists(filename): 
+        if not os.path.exists(filename):
             return {}
 
         image = etree.parse(filename).getroot()
@@ -2398,14 +2398,14 @@ class ImageServer(object):
                 try:
                     v = float(v)
                 except ValueError:
-                    pass            
+                    pass
             info[k] = v
         return info
 
     def setFileInfo(self, id=None, filename=None, **kw):
-        if id is None and filename is None: 
+        if id is None and filename is None:
             return {}
-        if filename is None: 
+        if filename is None:
             filename = self.ensureOriginalFile(id)
         filename = self.getOutFileName( filename, id, '.info' )
 
@@ -2416,9 +2416,9 @@ class ImageServer(object):
         return etree.tostring(image)
 
     def fileInfoCached(self, id=None, filename=None):
-        if id==None and filename==None: 
+        if id==None and filename==None:
             return False
-        if filename==None: 
+        if filename==None:
             filename = self.ensureOriginalFile(id)
         filename = self.getOutFileName( filename, id, '.info' )
         return os.path.exists(filename)
@@ -2431,9 +2431,9 @@ class ImageServer(object):
         return xmlstr
 
     def getImageInfo(self, ident=None, data_token=None, filename=None):
-        if ident==None and filename==None: 
+        if ident==None and filename==None:
             return {}
-        if filename==None: 
+        if filename==None:
             filename = self.ensureOriginalFile(ident)
 
         return_token = data_token is not None
@@ -2454,8 +2454,8 @@ class ImageServer(object):
                 original = self.originalFileName(ident)
                 if data_token is None: data_token = ProcessToken()
                 data_token.setImage(filename, format=default_format)
-                testfile = self.services['bioformats'].resultFilename(ident, data_token)                    
-                if os.path.exists(testfile): 
+                testfile = self.services['bioformats'].resultFilename(ident, data_token)
+                if os.path.exists(testfile):
                     info = self.getImageInfo(filename=testfile)
                     data_token.setImage(testfile, format='tiff')
                     data_token.dims = info
@@ -2530,30 +2530,27 @@ class ImageServer(object):
         image = data_service.get_resource(image_id)
         owner = data_service.get_resource(image.get('owner'))
         user_name = owner.get ('name')
-        
+
         if len(image_id)>3 and image_id[2]=='-':
             subdir = image_id[3]
         else:
-            subdir = image_id[0]            
-        return os.path.join(self.workdir, user_name, subdir, image_id)
+            subdir = image_id[0]
+        path =  os.path.join(self.workdir, user_name, subdir, image_id)
+        log.debug ("initialWorkPath %s", path)
+        return path
 
     def ensureWorkPath(self, path, image_id):
+        """path may be a workdir path OR an original image path to transformed into
+        a workdir path
+        """
         # change ./imagedir to ./workdir if needed
-        path = os.path.abspath(path)
-        if path.find(self.workdir) == -1:
-            #if path.find (self.imagedir)>=0:
-            #    path = path.replace(self.imagedir, self.workdir, 1)
-            #elif path.find(self.datadir)>=0:
-            #    path = path.replace(self.datadir, self.workdir, 1)
-
-            if path.find (self.imagedir)>=0 or path.find(self.datadir)>=0:
-                path = self.initialWorkPath(image_id)
-            else:
-                if len(path)>0 and (path[0]=='/' or path=='\\'):
-                    path=path[1:]
-                path = os.path.join(self.workdir, path)
+        path = os.path.realpath(path)
+        workpath = os.path.realpath(self.workdir)
+        log.debug ("ensureWorkPath : path=%s image_id=%s wd=%s", path, image_id, workpath)
+        if image_id and not path.startswith (workpath):
+            path = self.initialWorkPath(image_id)
         # keep paths relative to workdir to reduce file name size
-        path = os.path.relpath(path, self.workdir)
+        path = os.path.relpath(path, workpath)
         # make sure that the path directory exists
         _mkdir( os.path.dirname(path) )
         return path
@@ -2563,7 +2560,7 @@ class ImageServer(object):
         if not data_token.isFile():
             data_token.setFile( self.ensureOriginalFile(image_id) )
         return data_token.data
- 
+
     def getOutFileName(self, infilename, image_id, appendix):
         ofile = self.ensureWorkPath(infilename, image_id)
         #ofile = os.path.relpath(ofile, self.workdir)
@@ -2600,29 +2597,31 @@ class ImageServer(object):
         if ident is not None:
 
             # pre-compute final filename and check if it exists before starting any other processing
-            if len(query)>0: 
+            if len(query)>0:
                 data_token.setFile(self.initialWorkPath(ident))
                 data_token.dims = self.getFileInfo(id=ident, filename=data_token.data)
                 for action, args in query:
                     try:
                         service = self.services[action]
+                        log.debug ("DRY run %s", action)
                         data_token = service.dryrun(ident, data_token, args)
                     except:
                         pass
                     if data_token.isHttpError():
-                        break 
-                localpath = os.path.join(self.workdir, data_token.data)
+                        break
+                localpath = os.path.join(os.path.realpath(self.workdir), data_token.data)
+                #localpath = os.path.realpath(data_token.data)
                 log.debug('Dryrun result: [%s] [%s]'%(localpath, data_token))
                 if os.path.exists(localpath) and data_token.isFile():
                     log.debug('Returning pre-cached result: %s'%data_token.data)
                     with imgcnv.Locks(data_token.data) as l:
                         pass
                     return data_token
-                    
+
             # start the processing
             original_filename = self.ensureOriginalFile(ident)
             data_token.setFile(original_filename)
-            
+
             #if not blob_service.file_exists(ident):
             if not os.path.exists(original_filename):
                 data_token.setHtmlErrorNotFound()
@@ -2639,10 +2638,12 @@ class ImageServer(object):
         try:
             #process all the requested operations
             for action,args in query:
+                log.debug (" ACTION %s",  action)
                 data_token = self.request(action, ident, data_token, args)
                 if data_token.isHttpError():
                     break
 
+            log.debug ("PROCESSING END")
             # test output, if it is a file but it does not exist, set 404 error
             data_token.testFile()
 
