@@ -63,7 +63,7 @@ class usageController(ServiceController):
     #<image count="3673"/>
     #</resource>
     def get_counts(self, resource_type, num_days):
-        now = datetime.now().replace (hour=11, minute=59,second =59, microsecond=0)
+        now = datetime.now().replace (hour=23, minute=59,second =59, microsecond=0)
         counts = []
         days = []
         for i in range(num_days):

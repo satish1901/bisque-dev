@@ -26,7 +26,7 @@ class ArchiveStreamer():
         self.archiver = ArchiverFactory().getClass(compressionType)
 
 
-    def init(self, archiveName='Bisque archive', fileList=[], datasetList=[], urlList=[]):
+    def init(self, archiveName='Bisque', fileList=[], datasetList=[], urlList=[]):
         self.fileList = fileList
         self.datasetList = datasetList
         self.urlList = urlList
