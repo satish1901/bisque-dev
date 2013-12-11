@@ -297,7 +297,7 @@ Ext.define('BQ.Application.Toolbar', {
                 text: 'Profile', 
                 itemId: 'menu_user_profile', 
                 hidden: true, 
-                handler: Ext.Function.pass(pageAction, bq.url(this.preferences.user_profile || '/registration/edit_user')),      
+                handler: Ext.Function.pass(pageAction, bq.url('/registration/edit_user')), // preferences loaded in onPreferences     
             }, { 
                 xtype:'menuseparator', 
                 itemId: 'menu_user_admin_separator', 
@@ -334,13 +334,11 @@ Ext.define('BQ.Application.Toolbar', {
             }, {
                 text: 'Register new user', 
                 itemId: 'menu_user_register', 
-                //handler: Ext.Function.pass(pageAction, bq.url(this.preferences.registration || '/registration')),
-                handler: Ext.Function.pass(pageAction, bq.url(this.preferences.registration || '/auth_service/login')),                
+                handler: Ext.Function.pass(pageAction, bq.url('/auth_service/login')),  // preferences loaded in onPreferences                
             }, {
                 text: 'Recover Password', 
                 itemId: 'menu_user_recover',
-                //handler: Ext.Function.pass(pageAction, bq.url(this.preferences.registration || '/registration/lost_password')),
-                handler: Ext.Function.pass(pageAction, bq.url(this.preferences.password_recovery || '/auth_service/login')),                
+                handler: Ext.Function.pass(pageAction, bq.url('/auth_service/login')), // preferences loaded in onPreferences                 
             }],
         };
 
@@ -917,10 +915,20 @@ Ext.define('BQ.Application.Toolbar', {
         if (this.preferences.registration === 'disabled')
             this.queryById('menu_user_register').setVisible(false);        
         
-        this.queryById('menu_user_register').setHandler( 
-            Ext.Function.pass(pageAction, bq.url(this.preferences.registration || '/registration')), 
+        this.queryById('menu_user_profile').setHandler( 
+            Ext.Function.pass(pageAction, bq.url(this.preferences.user_profile || '/registration/edit_user')), // '/registration/lost_password'
             this 
         );
+
+        this.queryById('menu_user_register').setHandler( 
+            Ext.Function.pass(pageAction, bq.url(this.preferences.registration || '/registration')), // '/registration'
+            this 
+        );
+        
+        this.queryById('menu_user_recover').setHandler( 
+            Ext.Function.pass(pageAction, bq.url(this.preferences.password_recovery || '/auth_service/login')), // '/registration/lost_password'
+            this 
+        );        
 
         if (this.preferences.title)
             this.queryById('menu_title').setText( '<h3><a href="/">'+this.preferences.title+'</a></h3>' );
