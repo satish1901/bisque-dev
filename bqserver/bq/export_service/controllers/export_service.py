@@ -236,16 +236,16 @@ class export_serviceController(ServiceController):
 
         def extractData(kw, field):
             if field in kw:
-                str = kw.pop(field)
-                if (str):
-                    return str.split(',')
+                vals = kw.pop(field)
+                if vals:
+                    return vals.split(',')
             return []
 
         files       =   files + extractData(kw, 'files')
         datasets    =   datasets + extractData(kw, 'datasets')
         urls        =   urls + extractData(kw, 'urls')
 
-        filename = kw.pop('filename', None) or 'Bisque-archive '+time.strftime('%H.%M.%S')
+        filename = kw.pop('filename', None) or 'bisque-'+time.strftime("%Y%m%d.%H%M%S")
 
         archiveStreamer = ArchiveStreamer(compressionType)
         archiveStreamer.init(archiveName=filename, fileList=files, datasetList=datasets, urlList=urls)
