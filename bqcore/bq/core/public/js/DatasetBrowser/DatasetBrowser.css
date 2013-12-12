@@ -1,10 +1,10 @@
 /* CSS settings for dataset browser */
 .icon-select {
-	background-image: url('../DatasetBrowser/Images/accept.png') !important;
+    background-image: url('../DatasetBrowser/Images/accept.png') !important;
 }
 
 .icon-cancel {
-	background-image: url('../DatasetBrowser/Images/cancel.png') !important;
+    background-image: url('../DatasetBrowser/Images/cancel.png') !important;
 }
 
 .icon-select24 {

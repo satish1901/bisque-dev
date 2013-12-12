@@ -1,80 +1,72 @@
-Ext.define('Bisque.ResourceBrowser.viewStateManager',
-{
-	//	ResourceBrowser view-state 
-	constructor : function(mode)
-	{
-        this.cBar = 
-        {
+Ext.define('Bisque.ResourceBrowser.viewStateManager', {
+    //	ResourceBrowser view-state
+    constructor : function(mode) {
+        this.cBar = {
             cbar : false,
-            
+
             searchBar : false,
-            
+
             btnActivate : false,
             btnTS : false,
             btnRefresh : false,
-            
+
             btnLayoutThumb : false,
             btnLayoutCard : false,
             btnLayoutGrid : false,
             btnLayoutFull : false,
-    
+
             btnLayoutLeft : false,
             btnLayoutRight : false,
-            
+
             slider : false,
-            
+
             btnGear : false,
             btnOrganizer : false,
             btnDataset : false,
             btnLink : false,
             btnPreferences : false
         };
-	    
-		switch(mode)
-		{
-			case 'MexBrowser':
-			case 'ViewerOnly':
-			case 'DatasetBrowser':
-			{
-				this.cBar.searchBar=true;
-				
-				this.cBar.btnLayoutThumb=true;
-				this.cBar.btnLayoutCard=true;
-				this.cBar.btnLayoutGrid=true;
-				this.cBar.btnLayoutFull=true;
-				
-				this.cBar.btnGear=true;
-				break;
-			}
-            case 'ViewSearch':
-            {
+
+        switch(mode) {
+            case 'MexBrowser':
+            case 'ViewerOnly':
+            case 'DatasetBrowser': {
+                this.cBar.searchBar = true;
+
+                this.cBar.btnLayoutThumb = true;
+                this.cBar.btnLayoutCard = true;
+                this.cBar.btnLayoutGrid = true;
+                this.cBar.btnLayoutFull = true;
+
+                this.cBar.btnGear = true;
+                break;
+            }
+            case 'ViewSearch': {
                 this.cBar.btnActivate = true;
                 this.cBar.btnTS = true;
                 this.cBar.btnRefresh = true;
 
-                this.cBar.btnLayoutThumb=true;
-                this.cBar.btnLayoutCard=true;
-                this.cBar.btnLayoutGrid=true;
-                this.cBar.btnLayoutFull=true;
-                
+                this.cBar.btnLayoutThumb = true;
+                this.cBar.btnLayoutCard = true;
+                this.cBar.btnLayoutGrid = true;
+                this.cBar.btnLayoutFull = true;
+
                 this.cBar.slider = true;
                 this.cBar.btnGear = true;
-                
+
                 break;
             }
-			case 'ViewerLayouts':
-			{
-                this.cBar.searchBar=true;
-                this.cBar.btnGear=true;
-			    break;
-			}
-			case 'ModuleBrowser':
-			{
-                this.cBar.cbar=true;
+            case 'ViewerLayouts': {
+                this.cBar.searchBar = true;
+                this.cBar.btnGear = true;
                 break;
-			}
-		}
-		
-		return this;
-	}
+            }
+            case 'ModuleBrowser': {
+                this.cBar.cbar = true;
+                break;
+            }
+        }
+
+        return this;
+    }
 })
