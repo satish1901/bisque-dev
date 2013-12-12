@@ -1,34 +1,34 @@
 /* CSS settings for resource tagger */
 .tab-arrow {
-    width           :   11px !important;
-    border-radius   :   0px !important;
-    box-shadow      :   none !important;
-    background-color:   transparent !important;
-    background-image:   none !important;
-    border-color    :   transparent !important;
+    width: 11px !important;
+    border-radius: 0px !important;
+    box-shadow: none !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    border-color: transparent !important;
 }
 
 .tab-add {
-    width   :   24px !important;
+    width: 24px !important;
 }
 
 .icon-tag {
-	background-image: url('../ResourceTagger/Images/tag.png') !important;
+    background-image: url('../ResourceTagger/Images/tag.png') !important;
 }
 
 .icon-tab-add {
     background-image: url('../ResourceTagger/Images/add.png') !important;
-    left    :   -6px !important;
+    left: -6px !important;
 }
 
 .icon-arrow {
     background-image: url('../ResourceTagger/Images/arrow.png') !important;
-    left : -12px !important;
-    opacity : 1 !important;
+    left: -12px !important;
+    opacity: 1 !important;
 }
 
 .icon-folder {
-	background-image: url('../ResourceTagger/Images/folder.gif') !important;
+    background-image: url('../ResourceTagger/Images/folder.gif') !important;
 }
 
 .icon-file {
@@ -36,15 +36,15 @@
 }
 
 .icon-grid {
-	background-image: url('../ResourceTagger/Images/grid.png') !important;
+    background-image: url('../ResourceTagger/Images/grid.png') !important;
 }
 
 .icon-add {
-	background-image: url('../ResourceTagger/Images/add.png') !important;
+    background-image: url('../ResourceTagger/Images/add.png') !important;
 }
 
 .icon-delete {
-	background-image: url('../ResourceTagger/Images/delete.gif') !important;
+    background-image: url('../ResourceTagger/Images/delete.gif') !important;
 }
 
 .icon-refresh {
@@ -52,7 +52,7 @@
 }
 
 .icon-save {
-	background-image: url('../ResourceTagger/Images/save.png') !important;
+    background-image: url('../ResourceTagger/Images/save.png') !important;
 }
 
 .icon-check {
@@ -71,7 +71,6 @@
     background-image: url('../ResourceTagger/Images/export.png') !important;
 }
 
-
 .icon-add-large {
     background-image: url('../ResourceTagger/Images/add.png') !important;
 }
@@ -84,23 +83,20 @@
     background-image: url('../ResourceTagger/Images/save.png') !important;
 }
 
-
-
 .editGrid {
-	color: #444;
-	font-size: 11px;
+    color: #444;
+    font-size: 11px;
 }
 
 .x-grid-row-checker {
-	margin-left: 5px;
-	margin-top: 2px;
+    margin-left: 5px;
+    margin-top: 2px;
 }
 
-
 /* This is to block the tag name validation message box, since there's no way to configure this
-*/
+ */
 .x-grid-row-editor-errors {
-    display: none;  
+    display: none;
 }
 
 .bq-row-gob-custom {

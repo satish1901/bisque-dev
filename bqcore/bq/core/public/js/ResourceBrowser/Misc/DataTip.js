@@ -18,7 +18,7 @@
  */
 Ext.ux.DataTip = Ext.extend(Ext.ToolTip, (function() {
 
-//  Target the body (if the host is a Panel), or, if there is no body, the main Element.
+    //  Target the body (if the host is a Panel), or, if there is no body, the main Element.
     function onHostRender() {
         var e = this.body || this.el;
         if (this.dataTip.renderToTarget) {
@@ -38,11 +38,10 @@ Ext.ux.DataTip = Ext.extend(Ext.ToolTip, (function() {
             }
         }
     }
-    
+
     function beforeTreeTipShow(tip) {
-        var e = Ext.fly(tip.triggerElement).findParent('div.x-tree-node-el', null, true),
-            node = e ? tip.host.getNodeById(e.getAttribute('tree-node-id', 'ext')) : null;
-        if(node){
+        var e = Ext.fly(tip.triggerElement).findParent('div.x-tree-node-el', null, true), node = e ? tip.host.getNodeById(e.getAttribute('tree-node-id', 'ext')) : null;
+        if (node) {
             updateTip(tip, node.attributes);
         } else {
             return false;
@@ -51,8 +50,8 @@ Ext.ux.DataTip = Ext.extend(Ext.ToolTip, (function() {
 
     function beforeGridTipShow(tip) {
         var rec = this.host.getStore().getAt(tip.triggerElement.viewIndex);
-        
-        if (rec){
+
+        if (rec) {
             updateTip(tip, rec.data);
         } else {
             return false;
@@ -61,7 +60,7 @@ Ext.ux.DataTip = Ext.extend(Ext.ToolTip, (function() {
 
     function beforeViewTipShow(tip) {
         var rec = this.host.getRecord(tip.triggerElement);
-        if (rec){
+        if (rec) {
             updateTip(tip, rec.data);
         } else {
             return false;
@@ -69,9 +68,8 @@ Ext.ux.DataTip = Ext.extend(Ext.ToolTip, (function() {
     }
 
     function beforeFormTipShow(tip) {
-        var el = Ext.fly(tip.triggerElement).child('input,textarea'),
-            field = el ? this.host.getForm().findField(el.id) : null;
-        if (field && (field.tooltip || tip.tpl)){
+        var el = Ext.fly(tip.triggerElement).child('input,textarea'), field = el ? this.host.getForm().findField(el.id) : null;
+        if (field && (field.tooltip || tip.tpl)) {
             updateTip(tip, field.tooltip || field);
         } else {
             return false;
@@ -80,7 +78,7 @@ Ext.ux.DataTip = Ext.extend(Ext.ToolTip, (function() {
 
     function beforeComboTipShow(tip) {
         var rec = this.host.store.getAt(this.host.selectedIndex);
-        if (rec){
+        if (rec) {
             updateTip(tip, rec.data);
         } else {
             return false;
@@ -88,22 +86,22 @@ Ext.ux.DataTip = Ext.extend(Ext.ToolTip, (function() {
     }
 
     return {
-        init: function(host) {
+        init : function(host) {
             host.dataTip = this;
             this.host = host;
-            if (host instanceof Ext.tree.TreePanel) {
+            if ( host instanceof Ext.tree.TreePanel) {
                 this.delegate = this.delegate || 'div.x-tree-node-el';
                 this.on('beforeshow', beforeTreeTipShow);
-            } else if (host instanceof Ext.grid.GridPanel) {
+            } else if ( host instanceof Ext.grid.GridPanel) {
                 this.delegate = this.delegate || host.getView().itemSelector;
                 this.on('beforeshow', beforeGridTipShow);
-            } else if (host instanceof Ext.DataView) {
+            } else if ( host instanceof Ext.DataView) {
                 this.delegate = this.delegate || host.itemSelector;
                 this.on('beforeshow', beforeViewTipShow);
-            } else if (host instanceof Ext.FormPanel) {
+            } else if ( host instanceof Ext.FormPanel) {
                 this.delegate = 'div.x-form-item';
                 this.on('beforeshow', beforeFormTipShow);
-            } else if (host instanceof Ext.form.ComboBox) {
+            } else if ( host instanceof Ext.form.ComboBox) {
                 this.delegate = this.delegate || host.itemSelector;
                 this.on('beforeshow', beforeComboTipShow);
             }
