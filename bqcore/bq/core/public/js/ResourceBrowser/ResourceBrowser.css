@@ -207,6 +207,7 @@
 /* Customized resourceQueue slider */
 
 /* dima: extjs 4.1 version */
+/*
 .sliderBackground .x-slider-horz, .sliderBackground .x-slider-horz .x-slider-end, .sliderBackground .x-slider-horz .x-slider-inner {
     background-image: url('../ResourceBrowser/Images/res-slider-bg.png') !important;
 }
@@ -230,33 +231,35 @@
     padding-left: 12px;
     background: transparent no-repeat 0 -61px;
 }
+/* End: extjs 4.1 version */
 
-/* dima: extjs 4.2.1+ version
- .sliderBackground .x-slider-horz,.sliderBackground .x-slider-horz .x-slider-end,.sliderBackground .x-slider-horz .x-slider-inner {
- z-index : -1;
- background-image:url('../ResourceBrowser/Images/res-slider-bg.png') !important;
- }
+/* dima: extjs 4.2.1+ version */
+.sliderBackground .x-slider-horz,.sliderBackground .x-slider-horz .x-slider-end,.sliderBackground .x-slider-horz .x-slider-inner {
+    z-index : -1;
+    background-image:url('../ResourceBrowser/Images/res-slider-bg.png') !important;
+}
 
- .sliderLeftButton .x-slider-horz {
- padding-left:12px;
- background:transparent no-repeat 0 -62px;
- }
+.sliderLeftButton .x-slider-horz {
+    padding-left:12px;
+    background:transparent no-repeat 0 -62px;
+}
 
- .sliderRightButton .x-slider-horz .x-slider-end {
- margin-right:-5px;
- background:transparent no-repeat right -62px;
- }
+.sliderRightButton .x-slider-horz .x-slider-end {
+    margin-right:-5px;
+    background:transparent no-repeat right -62px;
+}
 
- .sliderBothButtons .x-slider-horz .x-slider-end {
- margin-right:-10px;
- background:transparent no-repeat right -62px;
- }
+.sliderBothButtons .x-slider-horz .x-slider-end {
+    margin-right:-10px;
+    background:transparent no-repeat right -62px;
+}
 
- .sliderBothButtons .x-slider-horz {
- padding-left:12px;
- background:transparent no-repeat 0 -62px;
- }
- */
+.sliderBothButtons .x-slider-horz {
+    padding-left:12px;
+    background:transparent no-repeat 0 -62px;
+}
+
+/* End: extjs 4.2.1+ version */
 
 .fieldSet {
     border-left: 0;

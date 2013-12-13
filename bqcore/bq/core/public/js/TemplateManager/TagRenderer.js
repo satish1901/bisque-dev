@@ -1,6 +1,6 @@
 Ext.define('BQ.TagRenderer.Base', {
 
-    alias : 'BQ.TagRenderer.Base',
+    alias : 'widget.bqfieldbase',
     inheritableStatics : {
         baseClass : 'BQ.TagRenderer',
         template : {
@@ -77,7 +77,7 @@ Ext.define('BQ.TagRenderer.Base', {
 
 Ext.define('BQ.TagRenderer.String', {
     extend : 'BQ.TagRenderer.Base',
-    alias : 'BQ.TagRenderer.String',
+    alias : 'widget.bqfieldstring',
     inheritableStatics : {
         componentName : 'String',
         template : {
@@ -141,7 +141,7 @@ Ext.define('BQ.TagRenderer.String', {
 
 Ext.define('BQ.TagRenderer.Number', {
     extend : 'BQ.TagRenderer.Base',
-    alias : 'BQ.TagRenderer.Number',
+    alias : 'widget.bqfieldnumber',
     inheritableStatics : {
         componentName : 'Number',
         template : {
@@ -167,7 +167,7 @@ Ext.define('BQ.TagRenderer.Number', {
 
 Ext.define('BQ.TagRenderer.Boolean', {
     extend : 'BQ.TagRenderer.Base',
-    alias : 'BQ.TagRenderer.Boolean',
+    alias : 'widget.bqfieldboolean',
     inheritableStatics : {
         componentName : 'Boolean',
         template : {
@@ -185,7 +185,7 @@ Ext.define('BQ.TagRenderer.Boolean', {
 
 Ext.define('BQ.TagRenderer.Date', {
     extend : 'BQ.TagRenderer.Base',
-    alias : 'BQ.TagRenderer.Date',
+    alias : 'widget.bqfielddate',
     inheritableStatics : {
         componentName : 'Date',
         template : {
@@ -208,7 +208,7 @@ Ext.define('BQ.TagRenderer.Date', {
 
 Ext.define('BQ.TagRenderer.ComboBox', {
     extend : 'BQ.TagRenderer.Base',
-    alias : 'BQ.TagRenderer.ComboBox',
+    alias : 'widget.bqfieldcombobox',
     inheritableStatics : {
         componentName : 'ComboBox',
         template : {
@@ -250,26 +250,27 @@ Ext.define('BQ.TagRenderer.ComboBox', {
 });
 
 Ext.define('BQ.TagRenderer.Hyperlink', {
-    extend : 'BQ.TagRenderer.Base',
-    alias : 'BQ.TagRenderer.Hyperlink',
+    //extend : 'BQ.TagRenderer.Base',
+    extend : 'BQ.TagRenderer.String',
+    alias : 'widget.bqfieldlink',
     inheritableStatics : {
         componentName : 'Hyperlink',
         template : {
             'Type' : 'Hyperlink'
         }
     },
-
+/*
     getRenderer : function(config) {
         return {
             xtype : 'textfield',
             vtype : 'url'
         };
-    }
+    }*/
 });
 
 Ext.define('BQ.TagRenderer.BisqueResource', {
     extend : 'BQ.TagRenderer.Base',
-    alias : 'BQ.TagRenderer.BisqueResource',
+    alias : 'widget.bqfieldresource',
     inheritableStatics : {
         componentName : 'BisqueResource',
         template : {
@@ -311,20 +312,22 @@ Ext.define('Bisque.Resource.Picker', {
 });
 
 Ext.define('BQ.TagRenderer.Email', {
-    extend : 'BQ.TagRenderer.Base',
-    alias : 'BQ.TagRenderer.Email',
+    //extend : 'BQ.TagRenderer.Base',
+    extend : 'BQ.TagRenderer.String',
+    alias : 'widget.bqfieldemail',
     inheritableStatics : {
         componentName : 'Email',
         template : {
             'Type' : 'Email'
         }
     },
-
+    
+    /*
     getRenderer : function(config) {
         return {
             xtype : 'textfield',
             vtype : 'email'
         };
-    }
+    }*/
 });
 

@@ -1,16 +1,16 @@
 /*
- @class BQ.grid.plugin.RowEditing
- @extends Ext.grid.plugin.RowEditing
+@class BQ.grid.plugin.RowEditing
+@extends Ext.grid.plugin.RowEditing
 
- This is just a error fix for original Ext.grid.plugin.RowEditing
+This is just an error fix for original Ext.grid.plugin.RowEditing
+ExtJS 4.1, 4.2.1
 
- Author: Dima Fedorov
- */
+Author: Dima Fedorov
+*/
+
 Ext.define('BQ.grid.plugin.RowEditing', {
     extend : 'Ext.grid.plugin.RowEditing',
     alias : 'bq.rowediting',
-
-    requires : ['Ext.grid.RowEditor'],
 
     cancelEdit : function() {
         var me = this;
@@ -19,5 +19,36 @@ Ext.define('BQ.grid.plugin.RowEditing', {
         var form = me.getEditor().getForm();
         if (!form.isValid())
             me.fireEvent('canceledit', me.grid, {});
+        this.finishEdit();
+    },
+
+    completeEdit : function() {
+        this.callParent(arguments);
+        this.finishEdit();
+    },
+
+    finishEdit : function() {
+        if (this.context)
+            this.context.grid.getSelectionModel().deselect(this.context.record);
+    },
+
+    // dima: fix for extjs 4.2.1
+    setColumnField: function(column, field) {
+        var me = this,
+            editor = me.getEditor();
+         
+        editor.removeColumnEditor(column);
+
+        field = Ext.apply({
+            name: column.dataIndex,
+            column: column,
+            flex: 1,
+            _marginWidth: 1,
+        }, field);
+        
+        var fieldContainer = column.isLocked() ? editor.lockedColumnContainer : editor.normalColumnContainer;
+        field = fieldContainer.insert(column.getVisibleIndex(), field);
+        column.field = field;
+        field.on('change', editor.onFieldChange, editor); 
     },
 });
