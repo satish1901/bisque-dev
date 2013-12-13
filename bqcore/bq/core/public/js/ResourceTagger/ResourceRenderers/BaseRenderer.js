@@ -7,6 +7,11 @@ Bisque.ResourceTagger.ResourceRenderer = function(value, metaData, record) {
     return Ext.String.format('<a href={0} target="_blank">{1}</a>', bq.url("/client_service/view?resource=" + value), value);
 };
 
+/*
+Bisque.ResourceTagger.ResourceRenderer = function(value, metaData, record) {
+    return Ext.String.format('<a href={0} target="_blank">{1}</a>', bq.url("/client_service/view?resource=" + value), value);
+};*/
+
 Bisque.ResourceTagger.EmailRenderer = function(value, metaData, record) {
     return Ext.String.format('<a href={0} target="_blank">{1}</a>', 'mailto:' + value, value);
 };

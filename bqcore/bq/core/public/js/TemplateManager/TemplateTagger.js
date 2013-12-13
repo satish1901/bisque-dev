@@ -96,6 +96,17 @@ Ext.define('Bisque.TemplateTagger', {
                 tabIndex : 0,
                 allowBlank : false,
                 blankText : 'Field name is required!',
+                listeners: {
+                    'change': {
+                        fn: function (field, newValue, oldValue, eOpts) {
+                            if (this.rowEditor) 
+                                this.rowEditor.editor.onFieldChange();                           
+                        },
+                        buffer: 250,
+                    },
+
+                    scope: this,
+                },                
             }
         }, {
             text : 'Type',

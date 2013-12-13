@@ -183,40 +183,47 @@ Ext.define('Bisque.ResourceTagger', {
     },
 
     getTagTree: function (data) {
-        this.rowEditor = Ext.create('Bisque.ResourceTagger.Editor',
-        {
+        this.rowEditor = Ext.create('BQ.grid.plugin.RowEditing', {
+            autoCancel: false,
+            clicksToEdit: 2,
             clicksToMoveEditor: 1,
             tagger: this,
             errorSummary: false,
-
+            //triggerEvent: 'rowfocus',
             listeners: {
                 'edit': this.finishEdit,
                 'cancelEdit': this.cancelEdit,
                 scope: this
             },
-
+            
             beforeEdit: function (editor) {
-                if (this.tagger.editable && !isEmptyObject(editor.record.raw.template) && this.tagger.resource.resource_type != 'template') {
-                    if (editor.record.raw.template.Editable) {
-                        try {
-                            this.tagger.tree.columns[1].setEditor(BQ.TagRenderer.Base.getRenderer({ tplType: editor.record.get('type'), tplInfo: editor.record.raw.template }));
-                        }
-                        catch (error) {
-                            alert(error);
-                        }
-                        return true;
-                    }
-                    else
-                        return false;
-                }
-
+                
                 if (this.tagger.editable) {
                     this.tagger.updateQueryTagValues(editor.record.get('name'));
-                    this.tagger.tree.columns[1].setEditor(BQ.TagRenderer.Base.getRenderer({ tplType: '', tplInfo: '', valueStore: this.tagger.store_values }));
+                    
+                    if (!isEmptyObject(editor.record.raw.template) && this.tagger.resource.resource_type != 'template') {
+                        if (editor.record.raw.template.Editable) {
+                            var editor = BQ.TagRenderer.Base.getRenderer({ 
+                                tplType: editor.record.get('type'), 
+                                tplInfo: editor.record.raw.template, 
+                                valueStore: this.tagger.store_values,
+                            });
+                            this.tagger.tree.columns[1].setEditor(editor);
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    } else {
+                        var editor = BQ.TagRenderer.Base.getRenderer({ 
+                            tplType: '', 
+                            tplInfo: '', 
+                            valueStore: this.tagger.store_values,
+                        });
+                        this.tagger.tree.columns[1].setEditor(editor);
+                    }
                 }
-
                 return this.tagger.editable;
-            }
+            },
         });
 
         this.tree = Ext.create('Ext.tree.Panel', {
@@ -231,6 +238,9 @@ Ext.define('Bisque.ResourceTagger', {
             iconCls: 'icon-grid',
             animate: this.animate,
             header: false,
+            deferRowRender: true, 
+            enableColumnMove: false,
+            allowDeselect: true,
 
             store: this.getTagStore(data),
             multiSelect: true,
@@ -245,8 +255,7 @@ Ext.define('Bisque.ResourceTagger', {
                     allowParentInserts: true,
                 }
             },
-            listeners:
-            {
+            listeners: {
                 'checkchange': function (node, checked) {
                     //Recursively check/uncheck all children of a parent node
                     (checked) ? this.fireEvent('select', this, node) : this.fireEvent('deselect', this, node);
@@ -255,6 +264,7 @@ Ext.define('Bisque.ResourceTagger', {
                 scope: this
             }
         });
+        
 
         this.store.tagTree = this.tree;
 
@@ -283,7 +293,6 @@ Ext.define('Bisque.ResourceTagger', {
     updateQueryTagValues: function (tag_name) {
         var proxy = this.store_values.getProxy();
         proxy.url = '/data_service/image?tag_values=' + encodeURIComponent(tag_name);
-
         this.store_values.load();
     },
 
@@ -294,6 +303,8 @@ Ext.define('Bisque.ResourceTagger', {
             text: this.colNameText || 'Name',
             flex: 0.8,
             sortable: true,
+            draggable: false,
+            
             field: {
                 // dima: combo box instead of the normal text edit that will be populated with existing tag names
                 xtype: 'bqcombobox',
@@ -315,6 +326,9 @@ Ext.define('Bisque.ResourceTagger', {
                     'change': {
                         fn: function (field, newValue, oldValue, eOpts) {
                             this.updateQueryTagValues(newValue);
+                            //field.on('change', editor.onFieldChange, editor); 
+                            if (this.rowEditor) 
+                                this.rowEditor.editor.onFieldChange();                           
                         },
                         buffer: 250,
                     },
@@ -322,19 +336,19 @@ Ext.define('Bisque.ResourceTagger', {
                     scope: this,
                 },
             }
-        },
-            {
-                text: this.colValueText || 'Value',
-                itemId: 'colValue',
-                dataIndex: 'value',
-                flex: 1,
-                sortable: true,
-                editor: {
-                    allowBlank: false
-                },
-                renderer: Bisque.ResourceTagger.BaseRenderer
-            }
-        ];
+        }, {
+            text: this.colValueText || 'Value',
+            itemId: 'colValue',
+            dataIndex: 'value',
+            flex: 1,
+            sortable: true,
+            editor: {
+                xtype : 'bqcombobox',
+                valueStore: this.store_values,
+                allowBlank: false,
+            },
+            renderer: Bisque.ResourceTagger.BaseRenderer,
+        }];
     },
 
     getTagStore: function (data) {
@@ -1188,29 +1202,8 @@ Ext.define('Bisque.GObjectTagger', {
 });
 
 //-----------------------------------------------------------------------
-// Bisque.ResourceTagger.Editor
+// OwnershipStripper
 //-----------------------------------------------------------------------
-
-Ext.define('Bisque.ResourceTagger.Editor',
-{
-    extend: 'BQ.grid.plugin.RowEditing',
-
-    completeEdit: function () {
-        this.callParent(arguments);
-        this.finishEdit();
-    },
-
-    cancelEdit: function () {
-        this.callParent(arguments);
-        this.finishEdit();
-    },
-
-    finishEdit: function () {
-        if (this.context)
-            this.context.grid.getSelectionModel().deselect(this.context.record);
-    }
-
-});
 
 Ext.define('Bisque.ResourceTagger.OwnershipStripper',
 {
