@@ -326,7 +326,6 @@ Ext.define('Bisque.ResourceTagger', {
                     'change': {
                         fn: function (field, newValue, oldValue, eOpts) {
                             this.updateQueryTagValues(newValue);
-                            //field.on('change', editor.onFieldChange, editor); 
                             if (this.rowEditor) 
                                 this.rowEditor.editor.onFieldChange();                           
                         },
