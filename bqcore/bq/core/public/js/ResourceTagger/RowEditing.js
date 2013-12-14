@@ -8,6 +8,9 @@ ExtJS 4.1, 4.2.1
 Author: Dima Fedorov
 */
 
+if (Ext.getVersion().version !== '4.2.1.883')
+    console.warn('BQ.grid.plugin.RowEditing: Patches ExtJS 4.2.1 and may not work in other versions and should be checked!');
+
 Ext.define('BQ.grid.plugin.RowEditing', {
     extend : 'Ext.grid.plugin.RowEditing',
     alias : 'bq.rowediting',
