@@ -109,8 +109,8 @@ SVGRenderer.prototype.updateView = function (view) {
     if (this.initialized) return; 
     this.initialized = true; 
     this.loadPreferences(this.viewer.preferences);
-    if (this.showOverlay === true || this.showOverlay == 'true')
-        this.populate_overlay();      
+    if (this.showOverlay !== 'false')
+        this.populate_overlay(this.showOverlay);      
 };
 
 SVGRenderer.prototype.removeSvg = function (gob){
@@ -777,33 +777,59 @@ SVGRenderer.prototype.loadPreferences = function (p) {
     this.showOverlay  = 'showOverlay' in p ? p.showOverlay  : this.default_showOverlay;
 };
 
-SVGRenderer.prototype.populate_overlay = function () {
+SVGRenderer.prototype.populate_overlay = function (mode) {
     removeAllChildren (this.overlay);
 
     var gobs = document.createElementNS(svgns, "g");
     this.overlay.appendChild(gobs);
-    
-    for (var x=9; x<=95; x+=9)
-    for (var y=12; y<=95; y+=9) {    
-        var circ = document.createElementNS( svgns, 'circle');
-        circ.setAttributeNS(null, 'fill-opacity', 0.0);
-        circ.setAttributeNS(null, 'fill', 'black');
-        circ.setAttributeNS(null, 'stroke', 'black');
-        circ.setAttributeNS(null, 'stroke-width', 2);
-        circ.setAttributeNS(null, 'cx', ''+x+'%' );
-        circ.setAttributeNS(null, 'cy', ''+y+'%');
-        circ.setAttributeNS(null, 'r', '1%' );  
-        gobs.appendChild(circ);  
-        
-        var circ = document.createElementNS( svgns, 'circle');
-        circ.setAttributeNS(null, 'fill-opacity', 0.0);
-        circ.setAttributeNS(null, 'fill', 'black');
-        circ.setAttributeNS(null, 'stroke', 'white');
-        circ.setAttributeNS(null, 'stroke-width', 1);
-        circ.setAttributeNS(null, 'cx', ''+x+'%' );
-        circ.setAttributeNS(null, 'cy', ''+y+'%');
-        circ.setAttributeNS(null, 'r', '1%' );  
-        gobs.appendChild(circ);
+
+    if (mode === 'dots') {
+        for (var x=9; x<=95; x+=9)
+        for (var y=12; y<=95; y+=9) {    
+            var circ = document.createElementNS( svgns, 'circle');
+            circ.setAttributeNS(null, 'fill-opacity', 0.0);
+            circ.setAttributeNS(null, 'fill', 'black');
+            circ.setAttributeNS(null, 'stroke', 'black');
+            circ.setAttributeNS(null, 'stroke-width', 2);
+            circ.setAttributeNS(null, 'cx', ''+x+'%' );
+            circ.setAttributeNS(null, 'cy', ''+y+'%');
+            circ.setAttributeNS(null, 'r', '1%' );  
+            gobs.appendChild(circ);  
+            
+            var circ = document.createElementNS( svgns, 'circle');
+            circ.setAttributeNS(null, 'fill-opacity', 0.0);
+            circ.setAttributeNS(null, 'fill', 'black');
+            circ.setAttributeNS(null, 'stroke', 'white');
+            circ.setAttributeNS(null, 'stroke-width', 1);
+            circ.setAttributeNS(null, 'cx', ''+x+'%' );
+            circ.setAttributeNS(null, 'cy', ''+y+'%');
+            circ.setAttributeNS(null, 'r', '1%' );  
+            gobs.appendChild(circ);
+        }
+    } else if (mode === 'grid') {
+        for (var y=12; y<=95; y+=9) {    
+            var circ = document.createElementNS( svgns, 'line');
+            circ.setAttributeNS(null, 'fill-opacity', 0.0);
+            circ.setAttributeNS(null, 'fill', 'black');
+            circ.setAttributeNS(null, 'stroke', 'black');
+            circ.setAttributeNS(null, 'stroke-width', 2);
+            circ.setAttributeNS(null, 'x1', '0%' );
+            circ.setAttributeNS(null, 'x2', '100%' );
+            circ.setAttributeNS(null, 'y1', ''+y+'%');
+            circ.setAttributeNS(null, 'y2', ''+y+'%');
+            gobs.appendChild(circ);  
+            
+            var circ = document.createElementNS( svgns, 'line');
+            circ.setAttributeNS(null, 'fill-opacity', 0.0);
+            circ.setAttributeNS(null, 'fill', 'black');
+            circ.setAttributeNS(null, 'stroke', 'white');
+            circ.setAttributeNS(null, 'stroke-width', 1);
+            circ.setAttributeNS(null, 'x1', '0%' );
+            circ.setAttributeNS(null, 'x2', '100%' );
+            circ.setAttributeNS(null, 'y1', ''+y+'%');
+            circ.setAttributeNS(null, 'y2', ''+y+'%');
+            gobs.appendChild(circ);
+        }
     }
 };
 

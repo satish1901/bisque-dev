@@ -113,10 +113,12 @@
 
             <tag name="showOverlay" value="false" type="boolean">
                 <template>
-                    <tag type="string" name="Type" value="Boolean"/>
+                    <tag type="string" name="Type" value="ComboBox"/>
                     <tag type="string" name="Default value" value="false"/>
                     <tag type="boolean" name="Allow blank" value="false"/>
                     <tag type="boolean" name="Editable" value="true"/>
+                    <tag type="string" name="Display values" value="None,Dots,Grid"/>
+                    <tag type="string" name="Passed values" value="false,dots,grid"/>                    
                 </template>
             </tag>
 
