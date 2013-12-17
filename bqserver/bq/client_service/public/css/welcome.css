@@ -174,17 +174,8 @@ body {
 
 
 .x-carousel-bar .x-tab {
-    background: url('/js/carousel/images/tabs_white.png') -0px 0px no-repeat !important;
+    background-image: url('/js/carousel/images/tabs_white.png') !important;    
 }
-
-.x-carousel-bar .x-tab-active {
-    background: url('/js/carousel/images/tabs_white.png') -15px 0px no-repeat !important;    
-}
-
-.x-carousel-bar .x-tab-over {
-    background: url('/js/carousel/images/tabs_white.png') -30px 0px no-repeat !important;    
-}
-
 
 /* resource browser  */
 
