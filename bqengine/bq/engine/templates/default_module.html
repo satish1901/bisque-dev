@@ -8,7 +8,13 @@
     <!-- ExtJS -->
     <!--<link rel="stylesheet" type="text/css" href="/extjs/resources/css/ext-all.css" />-->
     <link rel="stylesheet" type="text/css" href="${bq.url('/extjs/resources/css/ext-all-gray.css')}" /> 
-    <script type="text/javascript" src="${bq.url('/extjs/bootstrap.js')}"></script>
+    <!--<script type="text/javascript" src="${bq.url('/extjs/bootstrap.js')}"></script>-->
+    
+    <!-- ExtJS -->
+    <script py:if="tg.config.get('bisque.js_environment', None) == 'production'" type="text/javascript" src="${tg.url('/extjs/ext-all.js')}"></script>
+    <script py:if="tg.config.get('bisque.js_environment', None) != 'production'" type="text/javascript" src="${tg.url('/extjs/ext-all-debug.js')}"></script>
+    
+    
     
     <!-- Bisque styles -->
     <link rel="stylesheet" type="text/css" href="${bq.url('/css/bisquik_extjs_fix.css')}" />
