@@ -442,11 +442,12 @@ Ext.define('BQ.stats.plotter.Line', {
             animate: false,
             shadow: false,            
             border: 0,
+            /*
             legend: {
                 position: 'bottom',
                 boxStroke: '',
                 boxStrokeWidth: '0',
-            },           
+            },*/           
             
             store: this.store,
             axes: [{

@@ -1,5 +1,5 @@
 <system name="system" >
-    <tag name="version" value="0.5.3" />
+    <tag name="version" value="0.5.4" />
     <tag name="Preferences">
         <tag name="titles">
             <tag name="organization" value="" />
@@ -21,17 +21,17 @@
                 <tag name="Layout" value="Compact">
                     <template>
                         <tag type="string" name="Type" value="ComboBox"/>
-                        <tag type="string" name="Default value" value="Compact"/>
-                        <tag type="boolean" name="Allow blank" value="false"/>
+                        <tag type="string" name="defaultValue" value="Compact"/>
+                        <tag type="boolean" name="allowBlank" value="false"/>
                         <tag type="boolean" name="Editable" value="true"/>
-                        <tag type="string" name="Display values" value="Compact,Grid,Card,Full"/>
+                        <tag type="string" name="select" value="Compact,Grid,Card,Full"/>
                     </template>
                 </tag>                
                 <tag name="Include Public Resources" value="false">
                     <template>
                         <tag type="string" name="Type" value="Boolean"/>
-                        <tag type="string" name="Default value" value="false"/>
-                        <tag type="boolean" name="Allow blank" value="false"/>
+                        <tag type="string" name="defaultValue" value="false"/>
+                        <tag type="boolean" name="allowBlank" value="false"/>
                         <tag type="boolean" name="Editable" value="true"/>
                     </template>
                 </tag>                
@@ -52,8 +52,8 @@
             <tag type="boolean" name="autoUpdate" value="true">
                 <template>
                     <tag type="string" name="Type" value="Boolean"/>
-                    <tag type="string" name="Default value" value="true"/>
-                    <tag type="boolean" name="Allow blank" value="false"/>
+                    <tag type="string" name="defaultValue" value="true"/>
+                    <tag type="boolean" name="allowBlank" value="false"/>
                     <tag type="boolean" name="Editable" value="true"/>
                 </template>
             </tag>
@@ -61,8 +61,8 @@
             <tag type="boolean" name="negative" value="false">
                 <template>
                     <tag type="string" name="Type" value="Boolean"/>
-                    <tag type="string" name="Default value" value="false"/>
-                    <tag type="boolean" name="Allow blank" value="false"/>
+                    <tag type="string" name="defaultValue" value="false"/>
+                    <tag type="boolean" name="allowBlank" value="false"/>
                     <tag type="boolean" name="Editable" value="true"/>
                 </template>
             </tag>
@@ -70,62 +70,62 @@
             <tag name="enhancement" value="d">
                 <template>
                     <tag type="string" name="Type" value="ComboBox"/>
-                    <tag type="string" name="Default value" value="d"/>
-                    <tag type="boolean" name="Allow blank" value="false"/>
+                    <tag type="string" name="defaultValue" value="d"/>
+                    <tag type="boolean" name="allowBlank" value="false"/>
                     <tag type="boolean" name="Editable" value="true"/>
-                    <tag type="string" name="Display values" value="Data range,Full range,Data range + tolerance,Equalized"/>
-                    <tag type="string" name="Passed values" value="d,f,t,e"/>
+                    <tag type="string" name="select" value="Data range,Full range,Data range + tolerance,Equalized"/>
+                    <tag type="string" name="passedValues" value="d,f,t,e"/>
                 </template>
             </tag>
             
             <tag name="projection" value="">
                 <template>
                     <tag type="string" name="Type" value="ComboBox"/>
-                    <tag type="string" name="Default value" value=""/>
-                    <tag type="boolean" name="Allow blank" value="false"/>
+                    <tag type="string" name="defaultValue" value=""/>
+                    <tag type="boolean" name="allowBlank" value="false"/>
                     <tag type="boolean" name="Editable" value="true"/>
-                    <tag type="string" name="Display values" value="None,projectmax,projectmin,projectmaxt,projectmint,projectmaxz,projectminz"/>
-                    <tag type="string" name="Passed values" value=" ,projectmax,projectmin,projectmaxt,projectmint,projectmaxz,projectminz"/>
+                    <tag type="string" name="select" value="None,projectmax,projectmin,projectmaxt,projectmint,projectmaxz,projectminz"/>
+                    <tag type="string" name="passedValues" value=" ,projectmax,projectmin,projectmaxt,projectmint,projectmaxz,projectminz"/>
                 </template>
             </tag>
 
             <tag name="enhancement-8bit" value="f">
                 <template>
                     <tag type="string" name="Type" value="ComboBox"/>
-                    <tag type="string" name="Default value" value="f"/>
-                    <tag type="boolean" name="Allow blank" value="false"/>
+                    <tag type="string" name="defaultValue" value="f"/>
+                    <tag type="boolean" name="allowBlank" value="false"/>
                     <tag type="boolean" name="Editable" value="true"/>
-                    <tag type="string" name="Display values" value="Data range,Full range,Data range + tolerance,Equalized"/>
-                    <tag type="string" name="Passed values" value="d,f,t,e"/>
+                    <tag type="string" name="select" value="Data range,Full range,Data range + tolerance,Equalized"/>
+                    <tag type="string" name="passedValues" value="d,f,t,e"/>
                 </template>
             </tag>
             
             <tag name="fusion" value="m">
                 <template>
                     <tag type="string" name="Type" value="ComboBox"/>
-                    <tag type="string" name="Default value" value="m"/>
-                    <tag type="boolean" name="Allow blank" value="false"/>
+                    <tag type="string" name="defaultValue" value="m"/>
+                    <tag type="boolean" name="allowBlank" value="false"/>
                     <tag type="boolean" name="Editable" value="true"/>
-                    <tag type="string" name="Display values" value="Average,Maximum"/>
-                    <tag type="string" name="Passed values" value="a,m"/>
+                    <tag type="string" name="select" value="Average,Maximum"/>
+                    <tag type="string" name="passedValues" value="a,m"/>
                 </template>
             </tag>
 
             <tag name="showOverlay" value="false" type="boolean">
                 <template>
                     <tag type="string" name="Type" value="ComboBox"/>
-                    <tag type="string" name="Default value" value="false"/>
-                    <tag type="boolean" name="Allow blank" value="false"/>
+                    <tag type="string" name="defaultValue" value="false"/>
+                    <tag type="boolean" name="allowBlank" value="false"/>
                     <tag type="boolean" name="Editable" value="true"/>
-                    <tag type="string" name="Display values" value="None,Dots,Grid"/>
-                    <tag type="string" name="Passed values" value="false,dots,grid"/>                    
+                    <tag type="string" name="select" value="None,Dots,Grid"/>
+                    <tag type="string" name="passedValues" value="false,dots,grid"/>                    
                 </template>
             </tag>
 
             <tag name="channel_color_0" value="255,0,0" type="string">
                 <template>
                     <tag name="Type" value="color" type="string"/>
-                    <tag type="boolean" name="Allow blank" value="false"/>
+                    <tag type="boolean" name="allowBlank" value="false"/>
                     <tag type="boolean" name="Editable" value="true"/>
                 </template>
             </tag>
