@@ -62,9 +62,9 @@ from sqlalchemy.sql import select, func, exists, and_, or_, not_, asc, desc, ope
 from sqlalchemy.orm import Query, aliased
 from pylons.controllers.util import abort
 
-#from datetime import strptime 
+#from datetime import strptime
 
-from bq.core.model import DBSession 
+from bq.core.model import DBSession
 #from bq.image_service import image_service
 #from bq.notify_service import notify_service
 
@@ -99,12 +99,12 @@ RESOURCE_SHARE=2
 # Legal attributes for Taggable
 LEGAL_ATTRIBUTES = {
      'name': 'resource_name',  'resource_name' : 'resource_name',
-     'type': 'resource_user_type', 'resource_user_type': 'resource_user_type', 
-     'value': 'resource_value', 'resource_value' : 'resource_value', 
-     'hidden': 'resource_hidden', 'resource_hidden': 'resource_hidden', 
-     'ts': 'ts', 'created': 'created', 
+     'type': 'resource_user_type', 'resource_user_type': 'resource_user_type',
+     'value': 'resource_value', 'resource_value' : 'resource_value',
+     'hidden': 'resource_hidden', 'resource_hidden': 'resource_hidden',
+     'ts': 'ts', 'created': 'created',
      }
-    
+
 
 #####################################################
 # tag_query parser
@@ -137,7 +137,7 @@ def is_number(s):
     except ValueError:
         return False
 
-# Lexer 
+# Lexer
 tokens = ('TAGVAL',  'SEP', 'TYSEP', 'AND', 'OR', 'LP', 'RP', 'QUOTED', 'REL')
 reserved = { 'and':'AND', 'AND':'AND', 'or':'OR', 'OR':'OR', }
 
@@ -167,20 +167,20 @@ def t_TAGVAL(t):
 
 
 # def t_TAGVAL(t):
-#     r'([^:"\'\t\n\t\f\v() ]+)|(?P<q>["\'])[^"\']*(?P=q)' 
+#     r'([^:"\'\t\n\t\f\v() ]+)|(?P<q>["\'])[^"\']*(?P=q)'
 #     t.type = reserved.get(t.value, 'TAGVAL')
 #     if t.type != 'TAGVAL':
 #         t.value = t.value.upper()
 #     t.value = t.value.strip('"\'')
 #     return t
-    
+
 def t_error(t):
     global report_errors
     if (report_errors):
         print "Illegal character '%s'" % t.value[0]
-    t.lexer.skip(1) 
+    t.lexer.skip(1)
 
-lex.lex() 
+lex.lex()
 
 # End Lexer
 #############
@@ -196,13 +196,13 @@ def p_expr_binop(p):
     '''
     op = { 'AND' : and_, 'OR' : or_ } [ p[2] ]
     p[0] = op (p[1], p[3])
-    
+
 def p_expr_default(p):
     ''' expr : expr term '''
     p[0] = and_(p[1], p[2])
 #    p[0] = and_ (Taggable.id.in_ (select([Taggable.id], p[1]).correlate(None)),
 #                 Taggable.id.in_ (select([Taggable.id], p[2]).correlate(None)))
-    
+
 def p_expr_paren(p):
     '''term : LP expr RP'''
     p[0] = p[2]
@@ -238,7 +238,7 @@ def p_term_tagvaltype(p):
         else:
             namexpr = tag.c.resource_name == name
         tagfilter = namexpr
-    
+
     if val:
         v = val.lower()
         valexpr = None
@@ -253,7 +253,7 @@ def p_term_tagvaltype(p):
                 #valexpr = op(valexpr ,  float(v))
                 valexpr = op(tag.c.resource_value ,  v)
             else:
-                valexpr = func.lower(tag.c.resource_value) 
+                valexpr = func.lower(tag.c.resource_value)
                 valexpr = op(valexpr ,  v)
 
         tagfilter = and_(tagfilter, valexpr)
@@ -262,7 +262,7 @@ def p_term_tagvaltype(p):
         ty = type_.lower()
         tyexpr = (func.lower(tag.c.resource_user_type) == ty)
         tagfilter = and_(tagfilter, tyexpr)
-    
+
     p[0] = exists([tag.c.id]).where(
         and_(tagfilter, tag.c.document_id == taggable.c.id))
 
@@ -286,7 +286,7 @@ def p_sexpr_namevaltype (p):
     p[0] = (p[3][0], p[3][1], p[1], p[3][2])
 
 def p_reltagval (p):
-    ''' reltagval : tagval 
+    ''' reltagval : tagval
                   | REL tagval'''
     if len(p) == 3:
         p[0] = (p[2], p[1])
@@ -309,13 +309,13 @@ def p_error(p):
     print "Syntax error at token", p
     #yacc.errok()
 
-#  We generate the table once and leave it in generated.  This should be 
-#  move to some system directory like "/var/run/bisque" 
+#  We generate the table once and leave it in generated.  This should be
+#  move to some system directory like "/var/run/bisque"
 # http://www.dabeaz.com/ply/ply.html#ply_nn18
 #_mkdir("generated")
 yacc.yacc(outputdir=data_path(), debug= 0)
 
-# End Parser 
+# End Parser
 #############################################################
 
 def prepare_permissions (query, user_id, with_public, action = RESOURCE_READ):
@@ -329,12 +329,10 @@ def prepare_permissions (query, user_id, with_public, action = RESOURCE_READ):
         #user_id = session.get('bq_user_id', None) #get_user_id()
         user_id = get_user_id()
 
-    # don't use None for next test .. if not logged in, the user will be None 
-    #if user_id == session.get('bq_admin_id', -1): #get_admin_id()
-    #if user_id == get_admin_id():
     if is_admin():
-        log.debug('user (%s) =admin skipping protection filters' % (user_id))
-        return query
+        if with_public:
+            log.info('user (%s) is admin. Skipping protection filters' , user_id)
+            return query
 
     # Check if logged in, else just check for public items.
     if user_id:
@@ -351,7 +349,7 @@ def prepare_permissions (query, user_id, with_public, action = RESOURCE_READ):
 
 
 def prepare_tag_expr (query, tag_query=None):
-        
+
     if tag_query:
         tag_query = tag_query.strip()
         if tag_query=='*':
@@ -418,7 +416,7 @@ def prepare_order_expr (query, tag_order, **kw):
             order = order.strip('"\'')
 
             log.debug ("tag_order: %s" % (order))
-            
+
             if order.startswith('@'):
                 # skip illegal attributes
                 attribute = LEGAL_ATTRIBUTES.get(order[1:])
@@ -429,15 +427,15 @@ def prepare_order_expr (query, tag_order, **kw):
             ordervals = values.alias()
             query_expr = and_ (#query_expr,
                                Taggable.id == ordertags.c.document_id,
-                               ordertags.c.resource_type == 'tag', 
+                               ordertags.c.resource_type == 'tag',
                                ordertags.c.resource_name == order)
                                #ordertags.c.id == ordervals.c.resource_parent_id)
-            
+
             query = query.filter(query_expr).order_by (ordering(ordertags.c.resource_value))
             #query = query.filter(query_expr).order_by (ordering(ordervals.c.valstr))
     else:
         query = query.order_by(Taggable.id)
-            
+
     return query
 
 def count_special(**kw):
@@ -475,7 +473,7 @@ class fobject(object):
     @classmethod
     def fromdict (cls, d):
         if isinstance(d, list):
-            return [ cls.fromdict (x) for x in d ] 
+            return [ cls.fromdict (x) for x in d ]
         if isinstance(d, dict):
             o = fobject(xmltag = d.pop('xmltag') )
             for k,v in d.items():
@@ -483,9 +481,9 @@ class fobject(object):
             return o
         return str(d)
 
-            
 
-##   NOTE: Please examine for a better way of handling 
+
+##   NOTE: Please examine for a better way of handling
 ##   specilized attribute queries esp.  'name' and 'value' queries
 ##
 
@@ -496,8 +494,8 @@ def unique(l, fn):
         if fn(x) != fn(current):
             current = x
             yield current
-        
-    
+
+
 
 def tags_special(dbtype, query, params):
     '''Specialized query for tags to support tag based browsing
@@ -511,7 +509,7 @@ def tags_special(dbtype, query, params):
 
     tn = params.pop('gob_types', None)
     if tn:
-        
+
         ### Return all tha available tag names for the given superquery
         sq1 = query.with_labels().subquery()
         # Fetch all name on all 'top' level tags from the query
@@ -519,12 +517,12 @@ def tags_special(dbtype, query, params):
         sq3 = sq2.distinct(GObject.resource_user_type).order_by(Tag.resource_user_type)
         vsall = sq3.all()
         # for sqlite (no distinct on)
-        try:        
+        try:
             vsall = unique(vsall, lambda x: x.resource_user_type)
             #log.debug ("tag_names query = %s" % sq1)
             q = [ fobject (resource_type='gobject' , type=tg.resource_user_type ) for tg in vsall]
         except (IndexError, StopIteration):
-            return []            
+            return []
         return q
 
     tv = params.pop('gob_names', None)
@@ -555,7 +553,7 @@ def tags_special(dbtype, query, params):
 
     tn = params.pop('tag_names', None)
     if tn:
-        
+
         ### Return all tha available tag names for the given superquery
         sq1 = query.with_labels().subquery()
         # Fetch all name on all 'top' level tags from the query
@@ -563,14 +561,14 @@ def tags_special(dbtype, query, params):
         sq3 = sq2.distinct(Tag.resource_name).order_by(Tag.resource_name)
         vsall = sq3.all()
         # for sqlite (no distinct on)
-        try:        
+        try:
             vsall = unique(vsall, lambda x: x.resource_name)
             #log.debug ("tag_names query = %s" % sq1)
             q = [ fobject (resource_type='tag' , name=tg.resource_name, type=tg.resource_user_type ) for tg in vsall]
         except (IndexError, StopIteration):
-            return []            
+            return []
         return q
-    
+
     tv = params.pop('tag_values', None)
     if tv:
         ### Given a query and a tag_name, return all the possible values for the tag
@@ -592,7 +590,7 @@ def tags_special(dbtype, query, params):
                  for v in vsall ]
         except (IndexError, StopIteration):
             return []
-        
+
         #vs=DBSession.query(Value.valstr).filter(Value.resource_parent_id == sq2.c.taggable_id).distinct()
         #vsall = vs.all()
         #log.debug ('tag_values = %s' % vsall)
@@ -626,10 +624,10 @@ def tags_special(dbtype, query, params):
         ### Find tags with name
         ## Equiv .../tag[@value=param]
         return DBSession.query(Tag).filter(
-            and_(Tag.id == Value.resource_parent_id, 
+            and_(Tag.id == Value.resource_parent_id,
                  Value.valstr == params.pop('value')))
-                 
-        
+
+
 
     #if params.has_key('name') and dbtype==Tag:
         ### Find tags with name
@@ -638,7 +636,7 @@ def tags_special(dbtype, query, params):
         #           names.c.name == params.pop('name'),
         #           Taggable.id == Tag.id)
         #return DBSession.query(Tag).filter(q)
-        
+
 
 
     #if params.has_key('value') and dbtype==Tag:
@@ -647,9 +645,9 @@ def tags_special(dbtype, query, params):
     #    q  = and_(Tag.id == Value.parent_id,
     #              Value.valstr == params.pop('value'),
     #              Taggable.id == Tag.id)
-    #    
+    #
     #    return DBSession.query(Tag).filter(q)
-    
+
     return None
 
 ATTR_EXPR = re.compile('([><=]*)([^><=]+)')
@@ -675,7 +673,7 @@ def resource_query(resource_type,
     '''
 
     name, dbtype = resource_type
-    
+
     log.debug ("query %s: %s order %s parent %s attributes %s" % (name, tag_query, tag_order, parent, str(kw)))
 
     query = prepare_type(resource_type)
@@ -716,7 +714,7 @@ def resource_query(resource_type,
     # /ds/images/19292/tags?names=experimenter,date
     tv = kw.pop('names', None)
     if tv and dbtype==Tag:
-#        query = query.filter (or_(*[ dbtype.name_id==UniqueName(k).id 
+#        query = query.filter (or_(*[ dbtype.name_id==UniqueName(k).id
         query = query.filter (or_(*[ taggable.c.resource_name == k
                                      for k in tv.split(',')]))
 
@@ -727,11 +725,11 @@ def resource_query(resource_type,
         k = LEGAL_ATTRIBUTES.get(ky)
         if k and hasattr(dbtype, k):
             if not hasattr(v, '__iter__'):
-                v = [v] 
+                v = [v]
             for val  in v:
                 val  = val.strip('"\'')
                 op, val = ATTR_EXPR.match(val).groups()
-                if k in ('ts', 'created'): 
+                if k in ('ts', 'created'):
                     try:
                         if '.' not in val:
                             val = datetime.strptime(val, "%Y-%m-%dT%H:%M:%S")
@@ -763,12 +761,12 @@ def resource_query(resource_type,
 
     #log.debug ("query = %s" % query)
     #query =  query.distinct()
-    
+
     return query
 
 
 
-def resource_load(resource_type = ('resource', Taggable), 
+def resource_load(resource_type = ('resource', Taggable),
                   id=None,
                   uniq = None,
                   user_id=None,
@@ -798,7 +796,7 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
     q = DBSession.query (TaggableAcl).filter_by (taggable_id = resource.id)
     if not user_id:
         user_id = get_user_id()
-                
+
     # If simply trying to read permissions then, we can answer right away.
     if action==RESOURCE_READ:
         #if user_id == get_admin_id():
@@ -806,9 +804,9 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
             q = list (q.all())
             q.append(fobject('auth', user = get_admin(), action = "edit", resource_value=''))
         return q
-                          
+
     # setup for an edit of auth records
-    # 
+    #
     if action==RESOURCE_EDIT:
         owner  = DBSession.query(BQUser).get(user_id)
         owner_name = owner.name
@@ -821,12 +819,12 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
         shares = []
         for acl in resource.acl:
             previous_shares.append (acl.user)
-            
+
         invite_msg = """
         You've been invited by $owner_name <$owner_email> to view an image at
         $image_url
 
-         A login has been created for you at $root.  Please login 
+         A login has been created for you at $root.  Please login
         using $name as login ID and bisque as your password.
         """
 
@@ -848,7 +846,7 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
             action = auth.get ('action', RESOURCE_READ)
             log.debug ("AUTH : %s %s " % (email, action))
             # Hack for admin (simply skip users with out an email i.e. admin)
-            if email is None: 
+            if email is None:
                 continue
 
             if email is not None and action is not None:
@@ -870,8 +868,8 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
                             name = check_name
                             break
                         check_name = name + str(count)
-                        count += 1 
-                        
+                        count += 1
+
                     log.debug('AUTH: tg_user name=%s email=%s display=%s' %
                               ( name, email, email))
 
@@ -879,7 +877,7 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
                     DBSession.add(tg_user)
                     DBSession.flush()
                     log.debug ("AUTH: tg_user = %s" % tg_user)
-                    
+
                     #user = BQUser(create_tg=True,
                     #              user_name = name,
                     #              password  = 'bisque',
@@ -935,14 +933,14 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
         resource.acl = shares
         for user in set(previous_shares) - set(current_shares):
             Resource.hier_cache.invalidate ('/', user = user.id)
-    
+
     return []
 
 
 def resource_delete(resource, user_id=None):
     """Delete the given resource:
        1. if owner delete the resource
-       2. else remove ACL permissions 
+       2. else remove ACL permissions
        3. Ensure all references are deleted also.
        """
     log.info('resource_delete %s: start' % resource)
@@ -957,8 +955,8 @@ def resource_delete(resource, user_id=None):
         Resource.hier_cache.invalidate ('/', user = user_id)
         return
     # owner so first delete all referneces.
-    # ACL, values etc.. 
-    # 
+    # ACL, values etc..
+    #
     DBSession.autoflush = False
     value_count = DBSession.query(Value).filter_by(valobj = resource.id).count()
     if value_count:
@@ -980,10 +978,10 @@ def resource_types(user_id=None, wpublic=False):
     query = prepare_permissions(query, user_id=user_id, with_public=wpublic)
     vsall = query.distinct(Taggable.resource_type).order_by(Taggable.resource_type).all()
     # for sqlite (no distinct on)
-    try:        
+    try:
         vsall = unique(vsall, lambda x: x.resource_type)
         #log.debug ("tag_names query = %s" % sq1)
-        return [ x.resource_type for x in vsall ] 
+        return [ x.resource_type for x in vsall ]
     except (IndexError, StopIteration):
         return []
     return vsall
@@ -994,7 +992,7 @@ def prepare_query_expr (query, resource_type, user_id, wpublic, parent, tag_quer
 
     query = prepare_type (resource_type, query)
 
-    ## Check permission 
+    ## Check permission
     welcome = kw.pop ('welcome', None)
     if not welcome:
         query = prepare_permissions(query, user_id, wpublic)
@@ -1008,7 +1006,7 @@ def prepare_query_expr (query, resource_type, user_id, wpublic, parent, tag_quer
             query = query.filter(dbtype.resource_parent_id == parent.id)
         elif hasattr(dbtype.c, 'id'):
             query = query.filter(dbtype.id == parent.id)
-            
+
 
     ## Subtag expressions
     if tag_query:
