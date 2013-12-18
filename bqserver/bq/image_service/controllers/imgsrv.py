@@ -2312,15 +2312,11 @@ class BioFormatsService(object):
 #
 
 class ImageServer(object):
-    def __init__(self, image_dir, work_dir, data_dir, server_url):
+    def __init__(self, work_dir):
         '''Start an image server, using local dir imagedir,
         and loading extensions as methods'''
         #super(ImageServer, self).__init__(image_dir, server_url)
-        self.imagedir = image_dir
         self.workdir = work_dir
-        self.datadir = data_dir
-        #self.cache = FileCache()
-        self.url = server_url
 
         self.services = {}
         self.services = { 'services'     : ServicesService(self),
@@ -2367,7 +2363,12 @@ class ImageServer(object):
         self.image_formats = imgcnv.formats()
         if not imgcnv.installed():
             raise Exception('imgcnv not installed')
-        imgcnv.check_version( imgcnv_needed_version )
+        imgcnv.check_version( imgcnv_needed_version)
+        img_threads = config.get ('bisque.image_service.imgcnv.omp_num_threads', None)
+        if img_threads is not None:
+            log.info ("Setting OMP_NUM_THREADS = ", img_threads)
+            os.environ['OMP_NUM_THREADS'] = "%s" % img_threads
+
 
         # check the bioformats version if installed
         if bioformats.installed():
