@@ -2317,6 +2317,7 @@ class ImageServer(object):
         and loading extensions as methods'''
         #super(ImageServer, self).__init__(image_dir, server_url)
         self.workdir = work_dir
+        self.url = "/image_service"
 
         self.services = {}
         self.services = { 'services'     : ServicesService(self),
