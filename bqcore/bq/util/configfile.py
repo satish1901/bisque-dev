@@ -101,41 +101,45 @@ class ConfigFile(object):
 
         if not section:
             section = GLOBAL_SECTION
+        sections = section.split (',')
+        if sections == ['*']:
+            sections = self.sections.keys()
 
-        # Find the sections
-        s = self.sections.get (section, None)
-        if s is None:
-            # new section
-            if line is not None:
-                self.section_order.append(section)
-                self.sections[section] = [ line ]
-            return
-
-        if key is None:
-            self.sections[section].append(line)
-            return
-
-        # Search sections for key
-        n = []
-        found = False
-        for l in s:
-            # Skip continuation lines and comments
-            if l.startswith((' ', '\t' )):
-                #n.append(l)
-                continue
-            # match the key looked for
-            k,p,v = l.partition('=')
-            if k.strip() == key:
+        for section in sections:
+            # Find the sections
+            s = self.sections.get (section, None)
+            if s is None:
+                # new section
                 if line is not None:
-                    n.append(line)
-                found = True
-                continue
-            # append all other lines
-            n.append (l)
-        if not found and append:
-            if line is not None:
-                n.append (line)
-        self.sections[section] = n
+                    self.section_order.append(section)
+                    self.sections[section] = [ line ]
+                return
+
+            if key is None:
+                self.sections[section].append(line)
+                return
+
+            # Search sections for key
+            n = []
+            found = False
+            for l in s:
+                # Skip continuation lines and comments
+                if l.startswith((' ', '\t' )):
+                    #n.append(l)
+                    continue
+                # match the key looked for
+                k,p,v = l.partition('=')
+                if k.strip() == key:
+                    if line is not None:
+                        n.append(line)
+                    found = True
+                    continue
+                # append all other lines
+                n.append (l)
+            if not found and append:
+                if line is not None:
+                    n.append (line)
+            self.sections[section] = n
 
     def edit_update (self, section, dic, env={}):
         """Update the section given the key value pairs of a dictionary

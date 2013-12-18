@@ -2,10 +2,12 @@
 Supervisord
 ===========
 
+(linux/mac os only).
+
 Bisque can be used as a system service using supervisord_ which will manage the starting
 and stoping of the process when the system boots.   Our demonstration file will
 only manage  bisque and the module engine and not web-server, database as those are usually
-started by other means
+started by other means.
 
 Installation
 ------------
@@ -17,6 +19,9 @@ Use your standard installation too if available
 
 
 On redhat system, please google it or follow instructions in supervisord_.
+
+You will need to edit the paths contained in the ``contrib/supervisord/supervisord.conf`` and
+``contrib/supervisord/bisque.conf`` and then copy them to the proper system location.
 
 ::
    cp  contrib/supervisord/supervisord.conf  /etc/supervisord/
