@@ -6,20 +6,19 @@ from ConfigParser import SafeConfigParser
 import shlex
 
 from bq.util.commands import find_site_cfg
+from bq.util.dotnested import parse_nested
 
 #from bq.commands.server_ops import root
 
 PID_TEMPL = "bisque_%s.pid"
 LOG_TEMPL = 'bisque_%s.log'
-
 RUNNER_CMD = ['mexrunner']
-
 SITE_CFG = 'site.cfg'
-UWSGI_ENGINE_CFG = 'uwsgi_engine.cfg.default'
-UWSGI_CLIENT_CFG = 'uwsgi_client.cfg.default'
+ENGINE_UWSGI_CFG = 'engine_uwsgi.cfg'
+BISQUE_UWSGI_CFG = 'bisque_uwsgi.cfg'
 
 if os.name == 'nt':
-    #pylint:diable=F0401
+    #pylint:disable=F0401
     import win32api, win32con
     def kill_process(pid):
         try:
@@ -67,16 +66,18 @@ def readhostconfig (site_cfg):
     # h1.key.key1 = aa
     # h1.key.key2 = bb
     # => { 'h1' : { 'key' : { 'key1' : 'val', 'key2' : 'bb' }}}
-    servers = {}
-    for host_spec, val in service_items:
-        path = host_spec.split('.')
-        if not path[0] in hosts:
-            continue
-        param = path[-1]
-        d = servers
-        for path_el in path[:-1]:
-            d = d.setdefault(path_el, {})
-        d[param] = val
+    # servers = {}
+    # for host_spec, val in service_items:
+    #     path = host_spec.split('.')
+    #     if not path[0] in hosts:
+    #         continue
+    #     param = path[-1]
+    #     d = servers
+    #     for path_el in path[:-1]:
+    #         d = d.setdefault(path_el, {})
+    #     d[param] = val
+
+    servers = parse_nested (service_items, hosts)
 
     bisque = { 'top_dir': top_dir,  'root': root, 'servers': servers, 'log_dir': '.', 'pid_dir' : '.' }
     if config.has_option('servers', 'log_dir'):
@@ -179,15 +180,17 @@ def uwsgi_command(command, cfgopt, processes, options, default_cfg_file = None):
         if os.path.exists (pidfile):
             os.remove (pidfile)
     elif command is 'start':
-        cfg_file = find_site_cfg(default_cfg_file)
-        final_cfg = os.path.join(os.path.dirname(cfg_file), default_cfg_file.replace('.default', ''))
-        from string import Template
-        t = Template(open(cfg_file, 'r').read())
-        f = open(final_cfg, 'w')
-        f.write(t.safe_substitute(cfgopt))
-        f.close()
+        final_cfg = find_site_cfg(default_cfg_file)
+        #cfg_file = find_site_cfg(default_cfg_file)
+        # final_cfg = os.path.join(os.path.dirname(cfg_file), default_cfg_file.replace('.default', ''))
+        # from string import Template
+        # t = Template(open(cfg_file, 'r').read())
+        # f = open(final_cfg, 'w')
+        # f.write(t.safe_substitute(cfgopt))
+        # f.close()
 
-        uwsgi_cmd = ['uwsgi', '--ini-paste', final_cfg]
+        uwsgi_cmd = ['uwsgi', '--ini-paste', final_cfg,
+                     '--daemonize', cfgopt['logfile'], '--pidfile', cfgopt['pidfile']]
 
         #if cfgopt['http_serv'] == 'true':
         #    uwsgi_cmd.extend(['--http', cfgopt['url']])
@@ -314,11 +317,7 @@ def operation(command, options, *args):
                         print "Can't start because of existing PID file"
                         sys.exit(2)
                 if backend == 'uwsgi':
-                    cfgopt["server"] = cfgopt['server'].replace('unix://','').strip()
-                    if cfgopt['services_enabled'] == 'engine_service':
-                        def_cfg = UWSGI_ENGINE_CFG
-                    if cfgopt['services_disabled'] == 'engine_service':
-                        def_cfg = UWSGI_CLIENT_CFG
+                    def_cfg  = "%s_uwsgi.cfg" % key
                     if not find_site_cfg(def_cfg):
                         print ("Cannot find config file %s" % def_cfg)
                         return

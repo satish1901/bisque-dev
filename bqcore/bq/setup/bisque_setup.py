@@ -15,6 +15,7 @@ import string
 import re
 import logging
 import time
+import pprint
 
 import pkg_resources
 from setuptools.command import easy_install
@@ -82,6 +83,9 @@ def to_posix_path( p ):
 
 def config_path(*names):
     return to_sys_path(os.path.join(BQDIR, 'config', *names))
+
+def contrib_path(*names):
+    return to_sys_path(os.path.join(BQDIR, 'contrib', *names))
 
 def bisque_path(*names):
     return to_sys_path(os.path.join(BQDIR, *names))
@@ -279,6 +283,8 @@ ALEMBIC_CFG  = config_path('alembic.ini')
 SITE_CFG     = config_path('site.cfg')
 SITE_DEFAULT = config_path('site.cfg.default')
 RUNTIME_CFG  = config_path('runtime-bisque.cfg')
+UWSGI_DEFAULT = config_path('uwsgi.cfg.default')
+
 HOSTNAME = socket.getfqdn()
 
 
@@ -849,7 +855,7 @@ def install_modules(params):
 #
 
 def install_scripts ():
-    scripts = [ 'bq-start-servers', 'bq-kill-servers' ]
+    #scripts = [ 'bq-start-servers', 'bq-kill-servers' ]
     mapping = { 'BQENV' : BQENV,
                 'BQDIR' : BQDIR,
                 'BQBIN' : BQBIN,
@@ -927,18 +933,41 @@ def install_server_defaults(params):
             params[k] = SITE_VARS[k]
         print "  %s=%s" % (k,params[k])
 
-    if getanswer("Change a site variable", 'Y')!='Y':
-        return params
-
-    params = modify_site_cfg(SITE_QUESTIONS, params)
-    return params
+    if getanswer("Change a site variable", 'Y')=='Y':
+        params = modify_site_cfg(SITE_QUESTIONS, params)
 
     if new_install:
         server_params = { 'bisque.root' : params['bisque.root'], 'h1.url' : params['bisque.root']}
-        params = update_site_cfg(server_params, 'servers', append=False)
-    else:
-        print "Warning: Please review the [server] section of site.cfg after modifying site variables"
+        server_params = update_site_cfg(server_params, 'servers', append=False)
+
+    if getanswer ('DO you want to reconfigure your servers(advanced)', 'N',
+                  "Use an editor to edit the server section (see http://biodev.ece.ucsb.edu/projects/bisquik/wiki/Installation/ParsingSiteCfg )") == 'Y':
+        setup_servers(params)
+
     return params
+
+
+def setup_servers (params):
+    'Edit the server section of the site.cfg'
+
+    server_params = read_site_cfg (SITE_CFG, 'servers')
+    pprint.pprint (server_params)
+    previous_backend = server_params['backend']
+
+    status = 0
+    if getanswer ('Edit servers in site.cfg ', 'N',
+                  "Please edit only the server section ") != 'N':
+        status = subprocess.call ([os.environ['EDITOR'], SITE_CFG])
+
+    if status != 0:
+        print "GOT status", status
+        return params
+
+    server_params = read_site_cfg (SITE_CFG, 'servers')
+    if server_params['backend'] == 'uwsgi':
+        setup_uwsgi(params, server_params)
+
+
 
 
 def install_engine_defaults(params):
@@ -1114,6 +1143,45 @@ requires this while, upgraded system may depending on chnages""")!="Y":
         print "Problem initializing preferences.. please use bq-admin preferences"
     return params
 
+
+#######################################################
+#
+def setup_uwsgi(params, server_params):
+    if getanswer("Install uwsgi (application server and configs)", 'N',
+                 "Uwsgi can act as backend server when utilized with web-front end (Nginx)") != 'Y':
+        return params
+
+    if which ('uwsgi') is None:
+        easy_install.main(['-U','uwsgi'])
+
+    from bq.util.dotnested import parse_nested
+    servers = [ x.strip() for x in server_params['servers'].split(',') ]
+    servers =  parse_nested (server_params, servers)
+    print servers
+
+    for server, sv in servers.items():
+        cfg = config_path ("%s_uwsgi.cfg" % server)
+        install_cfg (cfg, section="*", default_cfg=UWSGI_DEFAULT)
+
+        svars = { 'bisque.root' : sv['url'],
+                  'bisque.server' : sv['server'],
+                  'bisque.services_disabled' : sv.get ('services_disabled', ''),
+                  'bisque.services_enabled'  : sv.get ('services_enabled', ''),
+                  }
+
+        uwsgi_vars = {'virtualenv' : BQENV,
+                      'socket' : sv['server'].replace('unix://','').strip(),
+                      'threads' : sv.get('threads', '1'),
+                      'master' : sv.get('master', 'false'),
+                      'processes' : sv.get ('processes', 1),
+                      }
+
+        update_site_cfg(cfg=cfg, bisque_vars=svars)
+        update_site_cfg(cfg=cfg, section='uwsgi',bisque_vars = uwsgi_vars )
+
+
+    return params
+
 #######################################################
 #
 
@@ -1133,10 +1201,8 @@ def fetch_external_binaries ():
 
     def fetch_file (hash_name, where, localname=None):
         sha1, name = hash_name.split ('-', 1)
-
         if localname is not None:
             name = localname
-
         if os.path.isdir (where):
             dest = os.path.join(where,name)
         else:
@@ -1422,7 +1488,8 @@ install_options= [
            'server',
            'mail',
            'preferences',
-           'admin']
+           'admin',
+           ]
 
 
 engine_options= [
@@ -1517,6 +1584,7 @@ def bisque_installer(options, args):
     if 'preferences' in installer:
         params = install_preferences(params)
 
+
     #if options.admin:
     #    setup_admin(params)
 
@@ -1575,6 +1643,10 @@ def typescript(command, filename="typescript"):
     script.write(('Script started on %s\n' % time.asctime()).encode())
     pty.spawn(command, read)
     script.write(('Script done on %s\n' % time.asctime()).encode())
+    script.close()
+    with open(filename) as install:
+        if 'Cancel' in install.read():
+            return 128
     return 0
 
 def setup(options, args):
@@ -1607,13 +1679,15 @@ def setup(options, args):
         script.extend (args)
         r = typescript(script, 'bisque-install.log')
         #print "RETURN is ", r
-        if not cancelled:
+        if not cancelled and r != 128:
             end_install = datetime.datetime.now()
             params = read_site_cfg(cfg= SITE_CFG, section=BQ_SECTION)
             params['install_started'] = begin_install
             params['duration'] = str(end_install-begin_install)
-            print "got ", r
-            send_installation_report(params)
+            try:
+                send_installation_report(params)
+            except KeyboardInterrupt:
+                print "Cancelled"
         sys.exit(r)
 
 
@@ -1623,9 +1697,9 @@ def setup(options, args):
     except InstallError, e:
         cancelled = True
     except KeyboardInterrupt:
-        print "Interuppted"
+        print "Interupted"
         print "Cancelling Installation"
-        cancelled = True
+        sys.exit (128)
     except Exception,e :
         print "An Unknown exception occured %s" % e
         excType, excVal, excTrace  = sys.exc_info()
