@@ -20,9 +20,17 @@ servers = h1
 # proxyroot =  the value of bisque.root for engines
 
 h1.url = http://localhost:8080
-# h1.server = :3031
-# h1.server = unix:///tmp/bisque.sock
 h1.services_disabled = engine_service
+# Extra params for uwsgi servers
+# h1.server = unix:///tmp/bisque.sock
+# h1.threads = 8
+# h1.master = true
+# h1.processes = 4
+# Example h1 with only image service, feature and helpers
+#h1.services_enabled = blob_service, data_service, image_service, features
+
+# You can define more than one host for paster when used with frontent proxy (haproxy)
+# Not needed by uwsgi as it already run multiple background processes
 #h2.url = http://localhost:9092
 #h2.services_disabled = engine_service
 #h3.url = http://localhost:9093
@@ -30,11 +38,12 @@ h1.services_disabled = engine_service
 #h4.url = http://localhost:9094
 #h4.services_disabled = engine_service
 
+
 # Engine on this host
 # e1.url = http://biobisque.org:27000
-# e1.server = unix:///tmp/engine.sock
-# e1.server = :3091
 # e1.services_enabled = engine_service
+# Extra params uwsgi
+# e1.server = unix:///tmp/engine.sock
 
 # Define where the logs and PID files will go (otherwise will create in local dir)
 #log_dir = /var/log/bisque
@@ -124,6 +133,8 @@ bisque.engine =  http://localhost:8080
 #bisque.image_service.thumbnail_command = -depth 8,d -page 1 -display
 #bisque.image_service.default_command = -depth 8,d
 #bisque.image_service.remove_uploads = False
+bisque.image_service.imgcnv.omp_num_threads = 4
+
 # HTTP client
 #bisque.http_client.cache_dir = data/client_cache
 
