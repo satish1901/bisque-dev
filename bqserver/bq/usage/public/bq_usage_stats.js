@@ -61,7 +61,7 @@ Ext.define('BQ.usage.Uploads', {
     requires: ['Ext.chart.*', 'Ext.layout.container.Fit'],
 
     heading: 'Image uploads - daily',
-    tip: 'Image uploads on ',
+    tip: 'Image uploads in ',
     resource: '/usage/uploads',
     modelName: 'UsageUploads',
     axisFormat: 'n/j',
@@ -190,9 +190,9 @@ Ext.define('BQ.usage.UploadsMonthly', {
     extend: 'BQ.usage.Uploads',
     alias: 'widget.monthlyuploadstats',
     heading: 'Image uploads - monthly',
-    tip: 'Image uploads in ',
-    axisFormat: 'M y',
-    tipFormat : 'M y',
+    tip: 'Image uploads during ',
+    axisFormat: "M 'y",
+    tipFormat : "M 'y",
 
     resource: '/usage/uploads_monthly',
     modelName: 'UsageMonthlyUploads',
@@ -202,7 +202,7 @@ Ext.define('BQ.usage.Analysis', {
     extend: 'BQ.usage.Uploads',
     alias: 'widget.analysisstats',
     heading: 'Module executions - daily',
-    tip: 'Module uploads on ',
+    tip: 'Module executions in ',
 
     resource: '/usage/analysis',
     modelName: 'UsageAnalysis',
@@ -212,9 +212,9 @@ Ext.define('BQ.usage.AnalysisMonthly', {
     extend: 'BQ.usage.Uploads',
     alias: 'widget.monthlyanalysisstats',
     heading: 'Module executions - monthly',
-    tip: 'Module executions in ',
-    axisFormat: 'M y',
-    tipFormat : 'M y',
+    tip: 'Module executions during ',
+    axisFormat: "M 'y",
+    tipFormat : "M 'y",
 
     resource: '/usage/analysis_monthly',
     modelName: 'UsageMonthlyAnalysis',
