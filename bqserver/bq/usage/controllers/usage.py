@@ -95,7 +95,7 @@ class usageController(ServiceController):
             d1 = now - relativedelta(months=i)
             d2 = now - relativedelta(months=i+1)
             ts = ['>%s'%d2.isoformat(), '<=%s'%d1.isoformat()]
-            months.append(d1.isoformat(' '))
+            months.append(d2.isoformat(' '))
             # dima: some error happens in data_service and this throws
             try:
                 req = data_service.query(resource_type, view='count', ts=ts, welcome=True)
