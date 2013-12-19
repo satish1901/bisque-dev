@@ -299,7 +299,7 @@ Ext.apply(Bisque.ResourceBrowser.ResourceQueue.prototype, {
                     msgBus : this.msgBus,
                     resQ : this,
                     browser : this.browser
-                }))
+                }));
         }
 
         //console.timeEnd("resourceQueue - changeLayout");
@@ -323,7 +323,8 @@ Ext.apply(Bisque.ResourceBrowser.ResourceQueue.prototype, {
             right : this.hasMoreData.right,
             min : this.dbOffset.left + 1,
             max : this.dbOffset.left + this.length,
-            value : this.dbOffset.left + this.rqOffset + 1
+            value : this.dbOffset.left + this.rqOffset + 1,
+            increment: this.visLimit,
         };
 
         return {

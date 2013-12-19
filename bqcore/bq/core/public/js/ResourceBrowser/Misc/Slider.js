@@ -22,6 +22,8 @@ Ext.define('Bisque.Misc.Slider', {
         style : 'text-align:center'
     }, {
         xtype : 'slider',
+        //increment: 1,  
+        animate: true,      
         minValue : 0,
         hideLabel : true,
         maxValue : 100,
@@ -69,6 +71,8 @@ Ext.define('Bisque.Misc.Slider', {
             this.slider.setMaxValue(mySt.max);
 
             this.slider.setValue(mySt.value);
+            if (mySt.increment) 
+                this.slider.increment = mySt.increment;            
         }
     },
 

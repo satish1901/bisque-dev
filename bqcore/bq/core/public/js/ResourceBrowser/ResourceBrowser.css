@@ -235,7 +235,7 @@
 
 /* dima: extjs 4.2.1+ version */
 .sliderBackground .x-slider-horz,.sliderBackground .x-slider-horz .x-slider-end,.sliderBackground .x-slider-horz .x-slider-inner {
-    z-index : -1;
+    /*z-index : -1;*/
     background-image:url('../ResourceBrowser/Images/res-slider-bg.png') !important;
 }
 
