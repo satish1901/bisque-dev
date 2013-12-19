@@ -8,7 +8,7 @@ Ext.define('Bisque.ResourceFactory', {
             var layoutKey = Ext.Object.getKey(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS, config.layoutKey);
             // resource naming convention : baseClass.resourceType.layoutKey
             var className = Bisque.ResourceFactory.baseClass + '.' + Ext.String.capitalize(config.resource.resource_type.toLowerCase()) + '.' + layoutKey;
-            
+
             if (Ext.ClassManager.get(className))
                 return Ext.create(className, config);
             else
@@ -24,22 +24,22 @@ Ext.define('Bisque.ResourceFactory', {
     }
 });
 
-// Returns standalone resources 
+// Returns standalone resources
 Ext.define('Bisque.ResourceFactoryWrapper',
 {
-    statics : 
+    statics :
     {
         getResource : function(config)
         {
-    		config.resourceManager = Ext.create('Ext.Component', 
+    		config.resourceManager = Ext.create('Ext.Component',
     		{
     			store : {},
-    			
+
     			storeMyData : function(uri, tag, value)
     			{
     				this.store[tag]=value;
     			},
-    			
+
     			getMyData : function(uri, tag)
     			{
                     if (this.store[tag])
@@ -47,7 +47,7 @@ Ext.define('Bisque.ResourceFactoryWrapper',
     				return 0;
     			}
     		});
-    		
+
     		Ext.apply(config,
     		{
     			layoutKey    :   config.layoutKey || Bisque.ResourceBrowser.LayoutFactory.DEFAULT_LAYOUT,
@@ -55,7 +55,7 @@ Ext.define('Bisque.ResourceFactoryWrapper',
     			resQ         :   config.resQ || config.resourceManager,
     			browser      :   config.browser || {},
     		});
-    		
+
             function preferencesLoaded(preferences, resource, layoutCls)
             {
                 Ext.apply(resource, {
@@ -67,7 +67,7 @@ Ext.define('Bisque.ResourceFactoryWrapper',
                         return '';
                     },
                 })
-                
+
                 resource.prefetch(layoutCls);
             }
 
@@ -82,7 +82,7 @@ Ext.define('Bisque.ResourceFactoryWrapper',
                 key         :   'ResourceBrowser',
                 callback    :   Ext.bind(preferencesLoaded, this, [resource, layoutCls], true)
             });
-    			
+
     		return resource;
         }
     }
@@ -116,17 +116,17 @@ Ext.define('Bisque.Resource',
             overCls : 'resource-view-over',
 			style: 'float:left;'
         });
-        
+
         this.callParent(arguments);
         this.manageEvents();
     },
-    
+
     setLoadingMask : function()
     {
         if (this.getData('fetched')!=1)
             this.setLoading({msg:''});
     },
-    
+
     GetImageThumbnailRel : function(params, actualSize, displaySize)
     {
         return  Ext.String.format('<img class="imageCenterHoz" style="\
@@ -134,7 +134,7 @@ Ext.define('Bisque.Resource',
                     max-height  :   {1}px;  \
                     margin-top  :   {2}px;" \
                     src         =   "{3}"   \
-                    id          =   "{4}"   />', 
+                    id          =   "{4}"   />',
                     displaySize.width,
                     displaySize.height,
                     (0.5*displaySize.height/params.height) * (params.height-actualSize.height),
@@ -146,7 +146,7 @@ Ext.define('Bisque.Resource',
     {
         return this.resource.src + this.getImageParams(params);
     },
-    
+
     getImageParams : function(config)
     {
         var prefs = this.getImagePrefs('ImageParameters') || '?slice=,,{sliceZ},{sliceT}&thumbnail={width},{height}';
@@ -155,10 +155,10 @@ Ext.define('Bisque.Resource',
         prefs = prefs.replace('{sliceT}', Math.max(config.sliceT || 1, 1));
         prefs = prefs.replace('{width}', config.width || 150);
         prefs = prefs.replace('{height}', config.height || 150);
-        
+
         return prefs;
     },
-    
+
     getImagePrefs : function(key)
     {
         if (this.browser.preferences && this.browser.preferences.Images && this.browser.preferences.Images[key])
@@ -202,18 +202,18 @@ Ext.define('Bisque.Resource',
         return propsGrid
     },
 
-    getData : function(tag) 
+    getData : function(tag)
     {
         if (this.resQ)
             return this.resQ.getMyData(this.resource.uri, tag);
     },
     setData : function(tag, value) {this.resQ.storeMyData(this.resource.uri, tag, value)},
-    // Resource functions 
+    // Resource functions
     prefetch : function(layoutMgr)	//Code to prefetch resource data
     {
     	this.layoutMgr=layoutMgr;
     },
-    loadResource : Ext.emptyFn,	//Callback fn when data is loaded 
+    loadResource : Ext.emptyFn,	//Callback fn when data is loaded
 
     //Render a default resource view into container when resource data is loaded
     //(can be overridden for a customized view of the resource)
@@ -229,24 +229,28 @@ Ext.define('Bisque.Resource',
             cls : 'lblHeading2',
             html : this.resource.resource_type,
         })
-        
+
         var owner = BQApp.userList[this.resource.owner] || {};
 
         var value = Ext.create('Ext.container.Container', {
             cls : 'lblContent',
             html : owner.display_name,
         })
+        var ts = Ext.create('Ext.container.Container', {
+            cls : 'lblContent',
+            html : Ext.Date.format(new Date(this.resource.ts), "Y-m-d H:i:s"),
+        })
 
-        this.add([name, type, value]);
+        this.add([name, type, value, ts]);
         this.setLoading(false);
     },
-    
+
     // getFields : returns an array of data used in the grid view
     getFields : function()
     {
         var resource = this.resource, record = BQApp.userList[this.resource.owner];
         var name = record ? record.find_tags('display_name').value : ''
-       
+
         return ['', resource.name || '', name || '', resource.resource_type, resource.ts, this, {height:21}];
     },
 
@@ -255,7 +259,7 @@ Ext.define('Bisque.Resource',
         if (loaded!=true)
         {
             var user = BQSession.current_session.user_uri;
-            this.resource.testAuth(user, Ext.bind(this.testAuth1, this, [btn, true], 0));            
+            this.resource.testAuth(user, Ext.bind(this.testAuth1, this, [btn, true], 0));
         }
         else
         {
@@ -265,7 +269,7 @@ Ext.define('Bisque.Resource',
                 BQ.ui.attention('You do not have permission to perform this action!');
         }
     },
-    
+
     afterRenderFn : function()
     {
         this.updateContainer();
@@ -275,7 +279,7 @@ Ext.define('Bisque.Resource',
     {
     	this.on('afterrender', Ext.Function.createInterceptor(this.afterRenderFn, this.preAfterRender, this));
     },
-    
+
     preAfterRender : function()
     {
 		this.setLoadingMask();	// Put a mask on the resource container while loading
@@ -287,23 +291,23 @@ Ext.define('Bisque.Resource',
 		el.on('click', Ext.Function.createSequence(this.preClick, this.onClick, this), this);
 		el.on('contextmenu', this.onRightClick, this);
 		el.on('dblclick', Ext.Function.createSequence(this.preDblClick, this.onDblClick, this), this);
-		
+
 		/*
 		// dima: taps are really not needed: double should not be needed anymore with edit mode on the browser
 		// and single is being imitated as a click, otherwise we're getting multiple clicks...
 		if (this.browser.gestureMgr)
 			this.browser.gestureMgr.addListener(
 			[
-				{ 
+				{
 					dom: el.dom,
 					eventName: 'doubletap',
-					listener: Ext.bind(Ext.Function.createSequence(this.preDblClick, this.onDblClick, this), this), 
+					listener: Ext.bind(Ext.Function.createSequence(this.preDblClick, this.onDblClick, this), this),
 					//options: {holdThreshold:500}
 				},
 				{
 					dom: el.dom,
 					eventName: 'singletap',
-					listener: Ext.bind(Ext.Function.createSequence(this.preClick, this.onClick, this), this), 
+					listener: Ext.bind(Ext.Function.createSequence(this.preClick, this.onClick, this), this),
 				}
 			]);
 	   */
@@ -324,7 +328,7 @@ Ext.define('Bisque.Resource',
     		this.fireEvent('select', this);
     	}
     },
-    
+
     toggleSelect : function(state)
     {
     	if (state)
@@ -338,7 +342,7 @@ Ext.define('Bisque.Resource',
 			this.addCls('LightShadow');
     	}
     },
-    
+
     preDblClick : function()
     {
 		this.msgBus.fireEvent('ResourceDblClick', this.resource);
@@ -347,7 +351,7 @@ Ext.define('Bisque.Resource',
     preMouseEnter : function()
     {
     	this.removeCls('LightShadow');
-    	
+
     	if (this.browser.selectState == 'SELECT')
     	{
             if (!this.operationBar)
@@ -357,14 +361,14 @@ Ext.define('Bisque.Resource',
                     resourceCt  :   this,
                     browser     :   this.browser
                 });
-    
+
                 this.operationBar.alignTo(this, "tr-tr");
             }
 
             this.operationBar.setVisible(true);
         }
     },
-    
+
     preMouseLeave : function()
     {
         if (this.browser.selectState == 'SELECT')
@@ -381,7 +385,7 @@ Ext.define('Bisque.Resource',
     onDblClick : Ext.emptyFn,
     onClick : Ext.emptyFn,
     onRightClick : Ext.emptyFn,
-    
+
 
     /* Resource operations */
     shareResource : function()
@@ -396,7 +400,7 @@ Ext.define('Bisque.Resource',
         var exporter = Ext.create('BQ.Export.Panel');
         exporter.downloadResource(this.resource, 'none');
     },
-    
+
     changePrivacy : function(permission, success, failure)
     {
         function loaded(resource, permission, success, failure)
@@ -405,13 +409,13 @@ Ext.define('Bisque.Resource',
                 resource.permission = permission;
             else
                 resource.permission = (this.resource.permission=='private')?'published':'private';
-            
+
             resource.append(Ext.bind(success, this), Ext.bind(failure, this));
         }
-        
+
         BQFactory.request({
             uri :   this.resource.uri + '?view=short',
-            cb  :   Ext.bind(loaded, this, [permission, success, failure], 1) 
+            cb  :   Ext.bind(loaded, this, [permission, success, failure], 1)
         });
     }
 });
@@ -422,17 +426,17 @@ Ext.define('Bisque.Resource.Compact', {
 
 Ext.define('Bisque.Resource.Card', {
     extend:'Bisque.Resource',
-    
+
     constructor : function()
     {
         Ext.apply(this,
         {
             layout : 'fit'
         });
-        
+
         this.callParent(arguments);
     },
-    
+
     prefetch : function(layoutMgr)
     {
         this.callParent(arguments);
@@ -448,7 +452,7 @@ Ext.define('Bisque.Resource.Card', {
     {
         this.resource.tags = data.tags;
         var tag, tagProp, tagArr=[], tags = this.getSummaryTags();
-        
+
         // Show preferred tags first
         for (var i=0;i<this.resource.tags.length;i++)
         {
@@ -459,7 +463,7 @@ Ext.define('Bisque.Resource.Card', {
                                                     });
             (tags[tag.name])?tagArr.unshift(tagProp):tagArr.push(tagProp);
         }
-        
+
         this.setData('tags', tagArr.slice(0, 7));
         this.setData('fetched', 1); //Loaded
 
@@ -467,7 +471,7 @@ Ext.define('Bisque.Resource.Card', {
         if (renderedRef && !renderedRef.isDestroyed)
             renderedRef.updateContainer();
     },
-    
+
     afterRenderFn : function()
     {
         this.setData('renderedRef', this);
@@ -475,7 +479,7 @@ Ext.define('Bisque.Resource.Card', {
         if (this.getData('fetched')==1 && !this.isDestroyed)
             this.updateContainer();
     },
-    
+
     getSummaryTags : function()
     {
         return {};
@@ -485,11 +489,11 @@ Ext.define('Bisque.Resource.Card', {
     {
         var propsGrid=this.GetPropertyGrid({/*autoHeight:true}*/}, this.getData('tags'));
         propsGrid.determineScrollbars=Ext.emptyFn;
-        
+
         this.add([propsGrid]);
         this.setLoading(false);
     },
-    
+
     onMouseMove : Ext.emptyFn,
 });
 
@@ -511,10 +515,10 @@ Ext.define('Bisque.Resource.Full', {
         {
             layout : 'fit'
         });
-        
+
         this.callParent(arguments);
     },
-    
+
     afterRenderFn : function()
     {
         this.setData('renderedRef', this);
@@ -522,7 +526,7 @@ Ext.define('Bisque.Resource.Full', {
         if (this.getData('fetched')==1 && !this.isDestroyed)
             this.updateContainer();
     },
-    
+
     prefetch : function(layoutMgr)
     {
         this.callParent(arguments);
@@ -543,12 +547,12 @@ Ext.define('Bisque.Resource.Full', {
         if (renderedRef && !renderedRef.isDestroyed)
             renderedRef.updateContainer();
     },
-    
+
     updateContainer : function()
     {
         var propsGrid=this.GetPropertyGrid({/*autoHeight:true}*/}, this.getData('tags'));
         propsGrid.determineScrollbars=Ext.emptyFn;
-        
+
         this.add([propsGrid]);
         this.setLoading(false);
     },
@@ -562,12 +566,12 @@ Ext.define('Bisque.Resource.List', {
 });
 
 // Default page view is a full page ResourceTagger
-Ext.define('Bisque.Resource.Page', 
+Ext.define('Bisque.Resource.Page',
 {
     extend   :'Ext.panel.Panel',
     defaults : { border: false, },
     layout   : 'fit',
-        
+
     constructor : function(config)
     {
         var name = config.resource.name || '';
@@ -576,8 +580,8 @@ Ext.define('Bisque.Resource.Page',
         Ext.apply(this,
         {
             border  :   false,
-            
-            tbar    :   Ext.create('Ext.toolbar.Toolbar', 
+
+            tbar    :   Ext.create('Ext.toolbar.Toolbar',
                         {
                             defaults    :   {
                                                 scale       :   'medium',
@@ -604,7 +608,7 @@ Ext.define('Bisque.Resource.Page',
                                              ])
                         }),
         }, config);
-        
+
         this.callParent(arguments);
         this.toolbar = this.getDockedComponent(0);
 
@@ -612,11 +616,11 @@ Ext.define('Bisque.Resource.Page',
             BQApp.on('userListLoaded', function(){this.testAuth(BQApp.user, false)}, this);
         else
             this.testAuth(BQApp.user, false);
-            
+
         this.addListener('afterlayout', this.onResourceRender, this, {single:true});
     },
 
-    onResourceRender : function() 
+    onResourceRender : function()
     {
         this.setLoading(true);
 
@@ -627,11 +631,11 @@ Ext.define('Bisque.Resource.Page',
             resource    :   this.resource,
             split       :   true,
         });
-        
+
         this.add(resourceTagger);
         this.setLoading(false);
     },
-    
+
     testAuth : function(user, loaded, permission, action)
     {
         function disableOperations(action)
@@ -658,23 +662,23 @@ Ext.define('Bisque.Resource.Page',
                     '[Bisque] Regarding ' + this.resource.name, this.resource.name, document.URL);
 
                 btn.setText(owner.display_name || '');
-                
+
                 function setMailTo(btn, mailto) {
                     if (btn.setHref) // works with ExtJS 4.2.1+
                         btn.setHref(mailto);
                     else // dima: Remove once moved away from 4.1
-                        btn.getEl().down('a', true).setAttribute('href', mailto); 
+                        btn.getEl().down('a', true).setAttribute('href', mailto);
                     btn.setVisible(true);
                 }
-                
+
                 if (btn.getEl())
                     setMailTo(btn, mailto);
                 else
                     btn.mon('afterrender', Ext.bind(setMailTo, this, [mailto], 1), this, { single:true });
             }
-            
+
             if (!loaded)
-                this.resource.testAuth(user.uri, Ext.bind(this.testAuth, this, [user, true], 0));            
+                this.resource.testAuth(user.uri, Ext.bind(this.testAuth, this, [user, true], 0));
             else
                 if (!permission)
                     disableOperations.call(this, action);
@@ -685,7 +689,7 @@ Ext.define('Bisque.Resource.Page',
         else if (user == null)
             disableOperations.call(this)
     },
-    
+
     getOperations : function(resource)
     {
         var items=[];
@@ -746,7 +750,7 @@ Ext.define('Bisque.Resource.Page',
             setBtnText  :   function(me)
                             {
                                 var text = 'Visibility: ';
-                                
+
                                 if (this.resource.permission == 'published')
                                 {
                                     text += '<span style="font-weight:bold;color: #079E0C">published</span>';
@@ -757,7 +761,7 @@ Ext.define('Bisque.Resource.Page',
                                     text += 'private';
                                     me.setIconCls('icon-eye-close')
                                 }
-                                
+
                                 me.setText(text);
                             },
             listeners   :   {
@@ -766,20 +770,20 @@ Ext.define('Bisque.Resource.Page',
                                                         me.setBtnText.call(this, me);
                                                     },
                                 scope           :   this
-                
+
                             }
         });
-        
-        
+
+
         return items;
     },
-    
+
     testAuth1 : function(btn, loaded, permission)
     {
         if (loaded!=true)
         {
             var user = BQSession.current_session.user_uri;
-            this.resource.testAuth(user, Ext.bind(this.testAuth1, this, [btn, true], 0));            
+            this.resource.testAuth(user, Ext.bind(this.testAuth1, this, [btn, true], 0));
         }
         else
         {
@@ -789,7 +793,7 @@ Ext.define('Bisque.Resource.Page',
                 BQ.ui.attention('You do not have permission to perform this action!');
         }
     },
-    
+
     /* Resource operations */
 
     shareResource : function()
@@ -804,7 +808,7 @@ Ext.define('Bisque.Resource.Page',
         function success()
         {
             this.setLoading(false);
-            
+
             Ext.MessageBox.show({
                 title   :   'Success',
                 msg     :   'Resource deleted successfully! You will be redirected to your BISQUE homepage.',
@@ -813,7 +817,7 @@ Ext.define('Bisque.Resource.Page',
                 fn      :   function(){window.location = bq.url('/')}
             });
         }
-        
+
         function deleteRes(response)
         {
             if (response == 'yes')
@@ -822,10 +826,10 @@ Ext.define('Bisque.Resource.Page',
                 this.resource.delete_(Ext.bind(success, this), Ext.Function.pass(this.failure, ['Delete operation failed!']));
             }
         }
-        
+
         Ext.MessageBox.confirm('Confirm operation', 'Are you sure you want to delete ' + this.resource.name + '?', Ext.bind(deleteRes, this));
     },
-    
+
     renameResource : function(btn, name, authRecord)
     {
         function success(msg)
@@ -834,7 +838,7 @@ Ext.define('Bisque.Resource.Page',
             var type = this.resource.resource_type || this.resource.type;
             this.toolbar.getComponent('btnRename').setText(type + ': <b>' + (this.resource.name || '') + '</b>');
         }
-        
+
         if (btn == 'ok' && this.resource.name != name) {
             var type = this.resource.resource_type || this.resource.type;
             var successMsg = type + ' <b>' + this.resource.name + '</b> renamed to <b>' + name + '</b>.';
@@ -842,7 +846,7 @@ Ext.define('Bisque.Resource.Page',
             this.resource.save_(undefined, success.call(this, successMsg), Ext.bind(this.failure, this));
         }
     },
-    
+
     downloadResource : function(btn)
     {
         if (btn.compression == 'none')
@@ -853,7 +857,7 @@ Ext.define('Bisque.Resource.Page',
             exporter.downloadResource(this.resource, btn.compression);
         }
     },
-    
+
     downloadOriginal : function()
     {
         if (this.resource.src ) {
@@ -863,7 +867,7 @@ Ext.define('Bisque.Resource.Page',
         var exporter = Ext.create('BQ.Export.Panel');
         exporter.downloadResource(this.resource, 'none');
     },
-    
+
     changePrivacy : function(btn)
     {
         function loaded(resource)
@@ -871,7 +875,7 @@ Ext.define('Bisque.Resource.Page',
             resource.permission = (this.resource.permission=='private')?'published':'private';
             resource.append(Ext.bind(success, this), Ext.bind(this.failure, this));
         }
-        
+
         function success(resource)
         {
             this.setLoading(false);
@@ -881,15 +885,15 @@ Ext.define('Bisque.Resource.Page',
             var btnPerm = this.toolbar.getComponent('btnPerm');
             btnPerm.setBtnText.call(this, btnPerm);
         };
-        
+
         this.setLoading({msg:''});
-        
+
         BQFactory.request({
             uri :   this.resource.uri + '?view=short',
             cb  :   Ext.bind(loaded, this)
         });
     },
-       
+
     promptName : function(btn)
     {
         Ext.MessageBox.prompt('Rename "' + this.resource.name+'"', 'Please, enter new name:', this.renameResource, this, false, this.resource.name);
@@ -899,12 +903,12 @@ Ext.define('Bisque.Resource.Page',
     {
         BQ.ui.notification(msg || 'Operation successful.');
     },
-    
+
     failure : function(msg)
     {
         BQ.ui.error(msg || 'Operation failed!');
     },
-    
+
     prefetch : Ext.emptyFn
 });
 

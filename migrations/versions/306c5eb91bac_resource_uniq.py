@@ -13,7 +13,7 @@ down_revision = '156205cd1d39'
 from alembic import op, context
 import sqlalchemy as sa
 from sqlalchemy.orm import sessionmaker
-from bq.util.hash import make_short_uuid
+from bq.util.hash import make_uniq_code
 from bq.data_service.model.tag_model import Taggable
 
 
@@ -35,16 +35,16 @@ def upgrade():
     toplevel = DBSession.query(Taggable).filter(Taggable.resource_parent_id == None)
     for resource in toplevel:
         if resource.resource_uniq is None:
-            uid = make_short_uuid()
-            resource.resource_uniq = "00-%s" % uid
+            uid = make_uniq_code()
+            resource.resource_uniq =  uid
+        elif resource.resource_uniq.startswith ('00-'):
             continue
-        if not resource.resource_uniq.startswith ('00-'):
-            if len(resource.resource_uniq) == 40:
-                uid = make_short_uuid()
-                resource.resource_uniq = "00-%s" % uid
-                continue
-            print "updating %s" % resource.id
+        elif len(resource.resource_uniq) == 40:
+            uid = make_uniq_code()
+            resource.resource_uniq =  uid
+        else:
             resource.resource_uniq = "00-%s" % resource.resource_uniq
+        print "updating %s -> %s" % (resource.id, resource.resource_uniq)
     DBSession.flush()
 
 
