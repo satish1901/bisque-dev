@@ -133,6 +133,8 @@ def get_user():
 
 def set_current_user(username):
     "set the current user by name"
+    if not hasattr (request, 'identity'):
+        request.identity = {}
     return current.set_current_user(username)
 
 

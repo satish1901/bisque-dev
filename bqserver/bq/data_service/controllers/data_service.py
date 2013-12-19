@@ -291,7 +291,7 @@ class DataServerController(ServiceController):
 
 
 
-    def query(self, resource_tag,  parent=None, **kw):
+    def query(self, resource_tag = None,  parent=None, **kw):
         '''Query the local database with expr'''
         resource_type = dbtype_from_tag(resource_tag)
         uri = "%s/%s" % (self.url , resource_tag)
@@ -312,7 +312,9 @@ class DataServerController(ServiceController):
             etree.SubElement(response, resource_tag, count = str(count))
         else:
             nodelist = resource_query (resource_type, parent=parent, **kw)
-            response  = etree.Element ('resource', uri='/data_service/%s' % resource_tag)
+            full_url = "%s?%s" % ('/data_service/%s' % (resource_tag or ''),
+                                  "&".join ("%s=%s" % (k, v) for k,v in kw.items()))
+            response  = etree.Element ('resource', uri=full_url)
             db2tree (nodelist, parent=response,
                      view=view, baseuri = self.url)
 

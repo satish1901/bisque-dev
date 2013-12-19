@@ -198,10 +198,10 @@ taggable_acl = Table('taggable_acl', metadata,
 
 
 #dataset_members = Table ('dataset_member',
-#                         Column ('dataset_id', 
+#                         Column ('dataset_id',
 #                                 ForeignKey('taggable.id'), primary_key=True),
-#                         Column ('item_id', 
-                 
+#                         Column ('item_id',
+
 
 #
 # Registered services
@@ -244,23 +244,23 @@ def parse_uri(uri):
 
 def map_url (uri):
     '''Load the object specified by the root tree and return a rsource
-    @type   root: Element 
+    @type   root: Element
     @param  root: The db object root with a uri attribute
     @rtype:  tag_model.Taggable
     @return: The resource loaded from the database
     '''
     # Check that we are looking at the right resource.
-    
+
     net, name, ida = parse_uri(uri)
     name, dbcls = dbtype_from_name(name)
     resource = DBSession.query(dbcls).get (ida)
     #log.debug("loading uri name (%s) type (%s) = %s" %(name,  str(dbcls), str(resource)))
     return resource
-    
+
 
 ################################
 # Taggable types
-# 
+#
 
 class Taggable(object):
     """
@@ -269,13 +269,13 @@ class Taggable(object):
     associated with it.
     """
     xmltag = 'resource'
-    
+
     def __init__(self, resource_type = None, parent = None):
         if resource_type is None:
             resource_type = self.xmltag
         self.resource_type = resource_type
         # By defualt you are the document
-        if parent: 
+        if parent:
             parent.children.append(self)
             self.document = parent.document
         else:
@@ -308,7 +308,7 @@ class Taggable(object):
             if admin:
                 log.warn("Setting owner to admin")
                 self.owner_id = admin.id
-    
+
     def resource (self):
         return "%s/%s" % ( self.table , self.id)
     resource = property(resource)
@@ -321,7 +321,7 @@ class Taggable(object):
         else:
             #return "%s/%s" % (self.resource_type, self.resource_uniq)
             return "%s/%s" % (self.resource_type, self.id)
-            
+
     uri = property(uri)
 
 
@@ -331,7 +331,7 @@ class Taggable(object):
             log.warn ("validating owner  %s" % owner)
             return map_url (owner)
         return owner
-        
+
 
 #    def get_owner (self):
 #        if self.owner_ob:
@@ -400,7 +400,7 @@ class Taggable(object):
     def set_type(self, v):
         self.resource_user_type = v
     type = property(get_type, set_type)
-    
+
     def get_permission(self):
         return perm2str.get(self.perm)
     def set_permission(self, v):
@@ -438,7 +438,7 @@ class Taggable(object):
     #         return self.resource_value
     #     else:
     #         # call SimpleValue decoder
-    #         values =  [ v.value for v in self.values ] 
+    #         values =  [ v.value for v in self.values ]
     #         if len(values) == 0:
     #             return None
     #         return values
@@ -466,7 +466,7 @@ class Taggable(object):
     #    return u"<%s: %s=%s>" % (self.resource_type, self.resource_name, self.resource_value)
     def __str__(self):
         #return "%s/%s" % (self.__class__.xmltag,  str(self.id))
-        return self.uri 
+        return self.uri
 
 
 class Image(Taggable):
@@ -493,16 +493,16 @@ class Tag(Taggable):
         old = self.values
         self.values = []
         return old
-        
+
 class Value(object):
     xmltag = 'value'
-    
+
     def __init__(self, ind=None, s = None, n = None, o = None):
         self.indx = ind
         self.valstr = s
         self.valnum = n
         self.object = o
-    
+
     def getvalue(self):
         value = ''
         if self.valstr: value = self.valstr
@@ -522,17 +522,17 @@ class Value(object):
             self.objref = v
             self.valnum = None
             self.valstr = None
-        
+
     def remvalue(self):
         self.valstr = None
         self.valnum = None
         self.valobj = None
-        
+
     value = property(fget=getvalue,
                      fset=setvalue,
                      fdel=remvalue,
                      doc="Value of tag")
-    
+
     def gettype (self):
         if self.valobj: return "object"
         elif self.valnum: return "number"
@@ -551,7 +551,7 @@ class Value(object):
     def set_index(self, v):
         self.indx = v
     index = property(get_index, set_index)
-    
+
 
     def __str__ (self):
         return "<value %s>" % self.value
@@ -571,7 +571,7 @@ class Vertex(object):
 
 class GObject(Taggable):
     xmltag = 'gobject'
-        
+
     def clear(self, what=None):
         '''Clear all the children'''
         super(GObject, self).clear()
@@ -579,7 +579,7 @@ class GObject(Taggable):
         old = self.vertices
         self.vertices = []
         return old
-    
+
 #    def __str__(self):
 #        return 'gobject %s:%s' % (self.name, str(self.type))
 
@@ -591,7 +591,7 @@ class BQUser(Taggable):
     '''
     xmltag = 'user'
 
-    def __init__(self, user_name=None, password=None, 
+    def __init__(self, user_name=None, password=None,
 					email_address=None, display_name=None,
 					create_tg=False, tg_user = None, **kw):
         super(BQUser, self).__init__()
@@ -614,7 +614,7 @@ class BQUser(Taggable):
         dn.owner = self
         self.owner = self
         self.permission = 'published'
-        
+
     @classmethod
     def new_user (cls, email, password, create_tg = False):
         bquser =  cls( user_name= email,
@@ -650,7 +650,7 @@ class Template(Taggable):
     A pre-canned group of tags
     '''
     xmltag = 'template'
-    
+
 class Module(Taggable):
     '''
     A module is a runnable routine that modifies the database
@@ -658,7 +658,7 @@ class Module(Taggable):
     for each input/output a type tag exists:
        (formal_input: [string, float, tablename])
        (formal_output: [tagname, tablename])
-    
+
     '''
     xmltag ='module'
     # def get_module_type(self):
@@ -694,7 +694,7 @@ class ModuleExecution(Taggable):
 
 class Dataset(Taggable):
     xmltag = 'dataset'
-    
+
 
 class PermissionToken(object):
     '''
@@ -708,7 +708,7 @@ class PermissionSetToken(object):
 
 class PermissionSet(object):
     '''
-    A Set of permissions.  
+    A Set of permissions.
     '''
     def __init__(self, o):
         '''Create a permissionSet for object o'''
@@ -718,7 +718,7 @@ class PermissionSet(object):
         pst = PermissionSetToken()
         pst.token=token
         pst.set = self
-            
+
         self.tokens.append (pst)
 
 class TaggableAcl(object):
@@ -731,9 +731,9 @@ class TaggableAcl(object):
         self.action_code = { "read":0, "edit":1 } .get(perm, 0)
     def getaction(self):
         return [ "read", "edit"] [self.action_code]
-        
+
     action = property(getaction, setaction)
-    
+
     def __str__(self):
         return "resource:%s  user:%s permission:%s" % (self.taggable_id,
                                                        self.user_id,
@@ -743,15 +743,15 @@ class TaggableAcl(object):
 class Service (Taggable):
     """A executable service"""
     xmltag = "service"
-    
+
     def __str__(self):
         return "<service %s %s %s>" % (self.resource_name, self.resource_value, self.resource_user_type)
-    
+
 #################################################
 # Simple Mappers
 #mapper( UniqueName, names)
 #session.mapper(UniqueName, names)
-        
+
 mapper( Value, values,
         properties = {
         #'resource_parent_id' : values.c.parent_id,
@@ -768,7 +768,7 @@ mapper( Value, values,
         }
         )
 
-mapper( Vertex, vertices, 
+mapper( Vertex, vertices,
         properties = {
         #'document' : relation(Taggable, uselist=False, lazy=True,
         #                      primaryjoin=(vertices.c.document_id==taggable.c.id),
@@ -787,11 +787,11 @@ taggable_discr = case (
      (taggable.c.resource_type=='gobject', "gobject")],
      else_ = "taggable"
     )
-     
+
 
 mapper( Taggable, taggable,
 #        polymorphic_on = taggable_discr,
-#        polymorphic_identity = 'taggable', 
+#        polymorphic_identity = 'taggable',
                        properties = {
     'tags' : relation(Taggable, lazy=True, viewonly=True, cascade="all, delete-orphan",
                       passive_deletes=True,
@@ -807,7 +807,7 @@ mapper( Taggable, taggable,
                       backref = backref('resource', enable_typechecks=False, remote_side=[taggable.c.document_id])),
 
     'children' : relation(Taggable, lazy=True, cascade="all, delete-orphan", passive_deletes=True,
-                          enable_typechecks = False, 
+                          enable_typechecks = False,
                           backref = backref('parent', enable_typechecks=False, remote_side = [ taggable.c.id]),
                           primaryjoin = (taggable.c.id == taggable.c.resource_parent_id)),
     'values' : relation(Value,  lazy=True, cascade="all, delete-orphan", passive_deletes=True,
@@ -834,29 +834,29 @@ mapper( Taggable, taggable,
     #                      ),
 
 
-     'docnodes': relation(Taggable, lazy=True, 
+     'docnodes': relation(Taggable, lazy=True,
                           cascade = "all, delete-orphan", passive_deletes=True,
-                          enable_typechecks = False, 
+                          enable_typechecks = False,
                           post_update=True,
                           primaryjoin = (taggable.c.id == taggable.c.document_id),
-                          backref = backref('document', post_update=True, 
+                          backref = backref('document', post_update=True,
                                             enable_typechecks=False, remote_side=[taggable.c.id]),
                           ),
 
-     'docvalues' : relation (Value, lazy=True, 
+     'docvalues' : relation (Value, lazy=True,
                           cascade = "all, delete-orphan", passive_deletes=True,
-                          enable_typechecks = False, 
+                          enable_typechecks = False,
                           primaryjoin = (taggable.c.id == values.c.document_id),
     #                      post_update=True,
-                          backref = backref('document', #post_update=True, 
+                          backref = backref('document', #post_update=True,
                                             enable_typechecks=False, remote_side=[taggable.c.id]),
                           ),
-     'docvertices' : relation (Vertex, lazy=True, 
+     'docvertices' : relation (Vertex, lazy=True,
                           cascade = "all, delete-orphan", passive_deletes=True,
-                          enable_typechecks = False, 
+                          enable_typechecks = False,
                           primaryjoin = (taggable.c.id == vertices.c.document_id),
     #                      post_update=True,
-                          backref = backref('document', #post_update=True, 
+                          backref = backref('document', #post_update=True,
                                             enable_typechecks=False, remote_side=[taggable.c.id]),
                            ),
     }
@@ -875,8 +875,8 @@ mapper( GObject,  inherits=Taggable,
 mapper(BQUser,  inherits=Taggable,
        polymorphic_on = taggable.c.resource_type,
        polymorphic_identity = 'user',
-       properties = { 
-        'tguser' : relation(User, uselist=False, 
+       properties = {
+        'tguser' : relation(User, uselist=False,
             primaryjoin=(User.user_name == taggable.c.resource_name),
             foreign_keys=[User.user_name]),
 
@@ -893,7 +893,7 @@ mapper(BQUser,  inherits=Taggable,
                               primaryjoin= (taggable.c.id == taggable_acl.c.user_id),
                               backref = backref('user', enable_typechecks=False),
                               )
-                              
+
         }
        )
 def bquser_callback (tg_user, operation, **kw):
@@ -933,7 +933,7 @@ def registration_hook(action, **kw):
                 bquser = BQUser.new_user (u.email_adress)
             dn = bq_user.findtag('display_name', create=True)
             dn.value = tg_user.display_name
-                
+
             #bquser.display_name = u.display_name
             bquser.resource_name = u.user_name
             log.error('Fix the display_name')
@@ -953,7 +953,7 @@ mapper(ModuleExecution,  inherits=Taggable,
        polymorphic_identity = 'mex',
        properties = {
         #"status":synonym("resource_value"), # map_column=True) ,
-        'owns' : relation(Taggable, 
+        'owns' : relation(Taggable,
                           lazy = True,
                           cascade = "all, delete-orphan", passive_deletes=True,
                           #cascade = None,
@@ -988,7 +988,7 @@ def current_mex_id ():
         log.debug ("IDENTITY request %s" % mex_id == 'None')
     if mex_id is None:
         try:
-            mex_id = session.get('mex_id', None) 
+            mex_id = session.get('mex_id', None)
             if mex_id is None and 'mex_uniq' in session :
                 mex = DBSession.query(ModuleExecution).filter_by(resource_uniq = session['mex_uniq']).first()
                 mex_id = session['mex_id'] = mex.id
@@ -1054,5 +1054,5 @@ def all_resources ():
 
     return names
 
-    
+
 

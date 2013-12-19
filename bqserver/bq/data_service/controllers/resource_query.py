@@ -372,7 +372,7 @@ def prepare_type (resource_type, query = None):
         log.debug ("query type %s %s" % (name, dbtype))
         query = DBSession.query(dbtype)
 
-    if dbtype == Taggable:
+    if dbtype == Taggable and name is not None:
         log.debug ("query resource_type %s" % name)
         #query_expr = (Taggable.tb_id == UniqueName(name).id)
         query_expr = (Taggable.resource_type == name)
@@ -673,11 +673,8 @@ def resource_query(resource_type,
     '''
 
     name, dbtype = resource_type
-
-    log.debug ("query %s: %s order %s parent %s attributes %s" % (name, tag_query, tag_order, parent, str(kw)))
-
     query = prepare_type(resource_type)
-    #query = DBSession.query(Taggable)
+    log.debug ("query %s: %s order %s parent %s attributes %s" % (name, tag_query, tag_order, parent, str(kw)))
 
     query = prepare_parent(resource_type, query, parent)
 

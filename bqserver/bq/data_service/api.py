@@ -56,7 +56,7 @@ DESCRIPTION
 import urlparse
 import logging
 
-from bq.util import http 
+from bq.util import http
 from bq.core.service import service_registry
 
 RESOURCE_READ=0
@@ -83,7 +83,7 @@ def new_image(server=None, **kw):
     '''
 
     if server is None: server = service_registry.find_service ('data_service')
-    
+
     return server.new_image(**kw)
 
 def append_resource(resource, tree, server = None, **kw):
@@ -139,7 +139,7 @@ def load(resource_url, **kw):
     log.debug('no server found')
     return None
 
-def query(resource_type, server=None, **kw):
+def query(resource_type=None, server=None, **kw):
     '''Return query results as list of XML documents
     '''
     if server is None: server = service_registry.find_service ('data_service')
