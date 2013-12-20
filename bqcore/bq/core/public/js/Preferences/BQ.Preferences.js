@@ -95,7 +95,7 @@ Ext.define('BQ.Preferences', {
         function fromDictionary(dict) {
             var obj = {};
             for (var tag in dict.tags)
-            obj[dict.tags[tag].data.name] = fromDictionary(dict.tags[tag])
+            obj[dict.tags[tag].data.name] = fromDictionary(dict.tags[tag]);
             return isEmptyObject(obj) ? (isEmptyObject(dict) ? {} : (Ext.isString(dict.data.value) ? dict.data.value.trim() : dict.data.value ) ) : obj;
         }
 
@@ -139,4 +139,4 @@ Ext.define('BQ.Preferences', {
         treeVisitor.visit_array(tagDocument);
         return tagDocument;
     }
-})
+});

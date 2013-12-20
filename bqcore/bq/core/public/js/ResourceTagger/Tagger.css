@@ -102,3 +102,15 @@
 .bq-row-gob-custom {
     color: #00AA00;
 }
+
+.bq_tagger_progress {
+    text-align: right;
+    padding: 0px 20px 0px 0px !important;
+}
+
+.bq_inprogress {
+    background-image: url('/images/progress_circles.gif') !important;
+    background-size: 15px 15px;
+    background-position: right center;
+    background-repeat: no-repeat;
+}

@@ -28,24 +28,33 @@ Ext.define('Bisque.PreferenceTagger', {
     },
 
     saveTags : function(tag, silent, child) {
+        if (silent === undefined)
+            silent = this.silent !== undefined ? this.silent : false;
+        
         if (tag)
             if (this.store.applyModifications()) {
                 if (this.prefType == 'user') {
                     if (child)
                         tag = child;
                     var parents = this.getTagParents(tag);
-                    this.savePrefs(tag, parents);
-                    if (!silent)
-                        BQ.ui.message('Save', 'Changes were saved successfully!');
+                    this.savePrefs(tag, parents, silent);
                 } else {
                     this.resource.doc = this.resource;
-                    this.resource.save_();
+                    var me = this;
+                    this.setProgress('Saving');
+                    this.resource.save_(
+                        undefined,
+                        function() { me.ondone('Changes were saved successfully!', silent); },
+                        callback(this, 'onerror')                         
+                    );
                 }
             } else
-                BQ.ui.message('Save', 'No records modified!');
+                if (!silent) BQ.ui.notification('No records modified, save canceled!');
     },
 
-    savePrefs : function(changedTag, parents) {
+    savePrefs : function(changedTag, parents, silent) {
+        if (silent === undefined)
+            silent = this.silent !== undefined ? this.silent : false;        
         var root = BQ.Preferences.user.object;
 
         // Recursively find if the saved tag exist in user preferences or not
@@ -65,8 +74,13 @@ Ext.define('Bisque.PreferenceTagger', {
             root.name = changedTag.name;
             root.value = changedTag.value || '';
         }
-
-        BQ.Preferences.user.tag.save_();
+        this.setProgress('Saving');
+        var me = this;
+        BQ.Preferences.user.tag.save_(
+            undefined,
+            function() { me.ondone('Changes were saved successfully!', silent); },
+            callback(this, 'onerror')
+        );
     },
 
     deleteTags : function() {
@@ -105,8 +119,7 @@ Ext.define('Bisque.PreferenceTagger', {
             }
 
             this.tree.setLoading(false);
-
-            BQ.ui.message('Resource tagger - Delete', selectedItems.length + ' record(s) deleted!');
+            BQ.ui.notification(selectedItems.length + ' record(s) deleted!');
             this.tree.getSelectionModel().deselectAll();
         }
     },
@@ -121,6 +134,6 @@ Ext.define('Bisque.PreferenceTagger', {
 
         parents.push(tag);
 
-        return parents
+        return parents;
     }
-})
+});

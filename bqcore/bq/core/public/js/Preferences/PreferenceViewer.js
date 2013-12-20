@@ -43,4 +43,4 @@ Ext.define('BQ.Preferences.Dialog', {
 
         this.add(this.tagger);
     }
-})
+});
