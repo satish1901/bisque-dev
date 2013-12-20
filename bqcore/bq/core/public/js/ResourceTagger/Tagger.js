@@ -1,6 +1,7 @@
 Ext.define('Bisque.ResourceTagger', {
     extend: 'Ext.panel.Panel',
     layout: 'fit',
+    silent: false,
             
     constructor: function (config) {
         config = config || {};
@@ -569,9 +570,27 @@ Ext.define('Bisque.ResourceTagger', {
                 handler: this.saveTags,
                 scope: this
             }]
+        }, {
+            xtype:'tbtext', 
+            itemId: 'toolbar_progress', 
+            cls: 'bq_tagger_progress',
+            flex: 2,
+            //text: 'Saving',             
         }];
 
         return tbar;
+    },
+    
+    setProgress: function(msg) {
+        var p = this.queryById('toolbar_progress');
+        if (!p) return;
+        if (msg === undefined || msg === false) {
+            p.setText('');
+            p.removeCls('bq_inprogress');
+        } else {
+            p.setText(msg);
+            p.addCls('bq_inprogress');            
+        }       
     },
 
     addTags: function () {
@@ -602,7 +621,7 @@ Ext.define('Bisque.ResourceTagger', {
     finishEdit: function (_editor, me) {
         if (me.record.raw instanceof BQObject) {
             if (this.autoSave) {
-                this.saveTags(me.record.raw, true);
+                this.saveTags(me.record.raw);
                 me.record.data.qtip = this.getTooltip('', me.record);
                 me.record.commit();
             }
@@ -628,7 +647,7 @@ Ext.define('Bisque.ResourceTagger', {
         }
 
         if (this.autoSave)
-            this.saveTags(parent, true, newTag);
+            this.saveTags(parent, undefined, newTag);
 
         me.record.raw = newTag;
         me.record.loaded = true;
@@ -661,20 +680,36 @@ Ext.define('Bisque.ResourceTagger', {
                 selectedItems[i].parentNode.removeChild(selectedItems[i], true);
             }
 
-            BQ.ui.message('Resource tagger - Delete', selectedItems.length + ' record(s) deleted!');
+            BQ.ui.notification(selectedItems.length + ' record(s) deleted!');
             this.tree.getSelectionModel().deselectAll();
         }
     },
 
     saveTags: function (parent, silent) {
+        if (silent === undefined)
+            silent = this.silent !== undefined ? this.silent : false;
+        
         var resource = (typeof parent == BQObject) ? parent : this.resource;
-
+        var me = this;
         if (this.store.applyModifications()) {
-            resource.save_(undefined);
-            if (!silent) BQ.ui.message('', 'Changes were saved successfully!');
-        }
-        else
-            BQ.ui.message('', 'No records modified!');
+            this.setProgress('Saving');
+            resource.save_(
+                undefined,
+                function() { me.ondone('Changes were saved successfully!', silent); },
+                callback(this, 'onerror') 
+            );
+        } else
+            BQ.ui.notification('No records modified!');
+    },
+
+    ondone : function(message, silent) {
+        this.setProgress(false);
+        if (!silent) BQ.ui.notification(message);
+    },
+
+    onerror : function(error) {
+        this.setProgress(false);
+        BQ.ui.error(error.message);         
     },
 
     importMenu: function (btn, e) {
@@ -760,7 +795,7 @@ Ext.define('Bisque.ResourceTagger', {
             }
 
             if (this.autoSave)
-                this.saveTags(null, true);
+                this.saveTags(null);
         }
 
         this.tree.setLoading(false);
@@ -786,7 +821,7 @@ Ext.define('Bisque.ResourceTagger', {
             currentItem.expand();
 
             if (this.autoSave)
-                this.saveTags(null, true);
+                this.saveTags(null);
         }
 
         this.tree.setLoading(false);
