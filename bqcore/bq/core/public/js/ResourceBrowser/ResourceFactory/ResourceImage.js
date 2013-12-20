@@ -578,13 +578,13 @@ Ext.define('Bisque.Resource.Image.Page', {
                 }, this),
             },
             listeners : {
-                'changed' : function(me, gobjects) {
+                changed : function(me, gobjects) {
                     this.gobjectTagger.tree.getView().refresh();
                 },
-                'working': this.onworking, 
-                'done'   : this.ondone,
-                'error'  : this.onerror,
-                scope : this
+                working : this.onworking, 
+                done    : this.ondone,
+                error   : this.onerror,
+                scope   : this
             }
         });
 
