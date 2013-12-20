@@ -568,6 +568,7 @@ Ext.define('Bisque.Resource.Image.Page', {
             resource : this.resource,
             toolbar : this.toolbar,
             parameters : {
+                blockforsaves: false,
                 gobjectCreated : Ext.bind(function(gob) {
                     this.gobjectTagger.appendGObjects([gob]);
                 }, this),
@@ -580,6 +581,9 @@ Ext.define('Bisque.Resource.Image.Page', {
                 'changed' : function(me, gobjects) {
                     this.gobjectTagger.tree.getView().refresh();
                 },
+                'working': this.onworking, 
+                'done'   : this.ondone,
+                'error'  : this.onerror,
                 scope : this
             }
         });
@@ -661,5 +665,18 @@ Ext.define('Bisque.Resource.Image.Page', {
 
     downloadOriginal : function() {
         window.open(this.resource.src);
-    }
+    },
+    
+    onworking : function(msg) {
+        if (this.gobjectTagger) this.gobjectTagger.setLoading(msg);        
+    },
+
+    ondone : function() {
+        if (this.gobjectTagger) this.gobjectTagger.setLoading(false);
+    },
+
+    onerror : function(error) {
+        if (this.gobjectTagger) this.gobjectTagger.setLoading(false);
+    },
+    
 });
