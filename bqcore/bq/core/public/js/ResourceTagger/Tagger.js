@@ -1,7 +1,7 @@
 Ext.define('Bisque.ResourceTagger', {
     extend: 'Ext.panel.Panel',
     layout: 'fit',
-    silent: false,
+    silent: true,
             
     constructor: function (config) {
         config = config || {};
