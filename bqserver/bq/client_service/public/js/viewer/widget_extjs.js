@@ -10,6 +10,9 @@
   Events:
       loaded     - event fired when the viewer is loaded
       changed    - event fired when the gobjects in the viewer have changed
+      working
+      done
+      error
         
   Parameters:
     simpleviewer   - sets a minimal set of plug-ins and also read-only view for gobjects
@@ -23,6 +26,9 @@
       nosave         - disables saving gobjects
       editprimitives - only load edit for given primitives, 'editprimitives':'point,polyline'
                        can be one of: 'Point,Rectangle,Polyline,Polygon,Circle'  
+ 
+    blockforsaves  - set to true to show saving of gobjects, def: true
+
 
   Example:
     var myviewer = Ext.create('BQ.viewer.Image', {
@@ -81,9 +87,13 @@ Ext.define('BQ.viewer.Image', {
         this.resource = resource; 
 
         this.parameters = this.parameters || {};
+        this.parameters.blockforsaves = 'blockforsaves' in this.parameters ? this.parameters.blockforsaves : true;
         if (this.toolbar) 
             this.parameters.toolbar = this.toolbar;
         this.parameters.gobjectschanged = callback(this, 'onchanged');
+        this.parameters.onworking = callback(this, 'onworking');
+        this.parameters.ondone    = callback(this, 'ondone');
+        this.parameters.onerror   = callback(this, 'onerror');        
         
         var id = Ext.getVersion('core').isGreaterThan('4.2.0') ? this.getId()+'-innerCt' : this.getId();
         this.viewer = new ImgViewer(id, this.resource, this.parameters);   
@@ -110,6 +120,22 @@ Ext.define('BQ.viewer.Image', {
     setGobjects : function(g) {
         if (!this.viewer) return;
         this.viewer.loadGObjects(g);
+    },
+
+    onworking : function(msg) {
+        if (this.parameters.blockforsaves) this.setLoading(msg);        
+        this.fireEvent( 'working', this, msg );
+    },
+
+    ondone : function() {
+        if (this.parameters.blockforsaves) this.setLoading(false);
+        this.fireEvent( 'done', this );
+    },
+
+    onerror : function(error) {
+        if (this.parameters.blockforsaves) this.setLoading(false);
+        BQ.ui.error(error.message);         
+        this.fireEvent( 'error', this, error );
     },
 
 });

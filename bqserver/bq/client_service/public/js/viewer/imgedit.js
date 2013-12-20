@@ -362,7 +362,11 @@ ImgEdit.prototype.save_edit = function (mode) {
     }
 
     this.viewer.image.gobjects = this.viewer.image.gobjects.concat(findDirty(this.gobjects));
-    this.viewer.image.save_gobjects();
+    
+    var pars = this.viewer.parameters;
+    if (pars.onworking)
+        pars.onworking('Saving annotations...');
+    this.viewer.image.save_gobjects(pars.ondone, undefined, undefined, pars.onerror);
 };
 
 ImgEdit.prototype.gobjectSelected = function (gob) {

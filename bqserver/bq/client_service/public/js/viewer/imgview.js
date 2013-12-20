@@ -23,6 +23,10 @@
 
     gobjectschanged - callback to call when graphical objects have changed
 
+    onworking - callback to call when graphical objects have changed
+    ondone - callback to call when graphical objects have changed
+    onerror - callback to call when graphical objects have changed
+
 */
 
 
