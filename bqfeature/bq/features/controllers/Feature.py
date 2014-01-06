@@ -29,6 +29,49 @@ from .var import FEATURES_STORAGE_FILE_DIR,FEATURES_TABLES_FILE_DIR,FEATURES_TEM
 log = logging.getLogger("bq.features")
 
 
+
+
+def type_check( resources, feature_name, feature_archieve):
+    """
+        Checks resource type of the input to make sure
+        the correct resources have been used, if it can 
+        find an alternative feature it will output the name
+        of the new suggested feature
+    """
+    resource = {}
+    feature = feature_archieve[feature_name]
+    if sorted(resources.keys()) == sorted(feature.resource):
+        feature_name = feature.name
+    else:
+        for cf in feature.child_feature:
+            if sorted(resources.keys()) == sorted(feature_archieve[cf].resource):
+                log.debug('Reassigning from %s to %s'%(feature_name,cf))
+                feature_name = cf
+                feature = feature_archieve[feature_name]    
+                break
+        else:
+            log.debug('Argument Error: No resource type(s) that matched the feature')
+            abort(400,'Argument Error: No resource type(s) that matched the feature')
+            
+    for resource_name in resources.keys():
+        
+        if resource_name not in feature.resource:
+            
+            log.debug('Argument Error: %s type was not found'%resource_name)
+            abort(400,'Argument Error: %s type was not found'%resource_name)
+            
+        elif type(resources[resource_name]) == list: #to take care of when elements have more then uri attached. not allowed in the features
+              #server for now
+
+            log.debug('Argument Error: %s type was found to have more then one URI'%resource_name)
+            abort(400,'Argument Error: %s type was found to have more then one URI'%resource_name)
+        else:
+               
+            resource[resource_name] = urllib2.unquote(resources[resource_name]) #decode url
+                         
+    return resource ,feature_name
+
+
 #wrapper for the calculator function so the output
 #is in the correct format to be easily placed in the tables
 def wrapper(func):
@@ -74,6 +117,9 @@ class Feature(object):
     appearing in the description for this feature no description has been provided for this 
     feature"""
     
+    #parent class tag
+    child_feature = []
+    
     #Limitations that may be imposed on the feature
     limitations = """This feature has no limitation"""
     
@@ -99,6 +145,10 @@ class Feature(object):
     #the tables
     hash = 2
     
+    #list of feature catagories. ex. color,texture...
+    type = []
+    
+    
     def __init__ (self):
         self.path = os.path.join( FEATURES_TABLES_FILE_DIR, self.name)
         self.columns()
@@ -109,37 +159,18 @@ class Feature(object):
         """
         return os.path.join( self.path, hash[:self.hash]+'.h5')
 
+
     def returnhash(self, **kw):
         """
             returns a hash given all the uris
         """
         uri = ''
         for r in self.resource:
-            uri += str(kw[r]) #comines all the uris together to form the hash
+            uri += str(kw[r]) #combines all the uris together to form the hash
         uri_hash = uuid.uuid5(uuid.NAMESPACE_URL, uri)
         uri_hash = uri_hash.hex
         return uri_hash
-    
-    def typecheck(self, **kw):
-        """
-            Checks resource type of the input to make sure
-            the correct resources have been used
-        """
-        resource = {}
-        for r in self.resource:
-            if r not in kw:
-                log.debug('Argument Error: %s type was not found'%r)
-                abort(400,'Argument Error: %s type was not found'%r)   
-            else: #to take care of when elements have more then uri attached. not allowed in the features
-                  #server for now
-                if type(kw[r])==list:
-                    log.debug('Argument Error: %s type was found to have more then one URI'%r)
-                    abort(400,'Argument Error: %s type was found to have more then one URI'%r)
-                else:                  
-                    
-                    resource[r]=urllib2.unquote(kw[r]) #deecode url
-                    del kw[r]
-        return resource,kw
+        
     
     def columns(self):
         """
@@ -153,6 +184,7 @@ class Feature(object):
             
         self.Columns = Columns
                 
+                
     def createtable(self,filename):
         """
             Initializes the Feature table returns the column class
@@ -165,10 +197,11 @@ class Feature(object):
                 
                 if self.index: #turns on the index
                     table.cols.idnumber.removeIndex()
-                    table.cols.idnumber.createIndex()                    
+                    table.cols.idnumber.createIndex()                  
                 
                 table.flush() 
         return
+    
     
     def outputTable(self,filename):
         """
@@ -207,7 +240,7 @@ class ImageImport():
         if 'image_service' in uri:
             #finds image resource though local image service
             self.uri=uri
-            self.path = image_service.local_file(uri) 
+            self.path = image_service.local_file(uri)
             log.debug("path: %s"% self.path)
             if self.path is None:
                 #log.exception ("While retrieving URL %s" % uri)
@@ -230,8 +263,9 @@ class ImageImport():
                 if response.status_int == 200:
                     f.write(response.body)
                     return
-                if response.status_int in (401,403):
+                if response.status_int in set([401,403]):
                     raise ValueError('polygon not found: must be a polygon gobject') 
+                
                 # Try to route externally
 
                 req = Request.blank(uri)
@@ -283,28 +317,39 @@ def mex_validation(**resource):
     """
     from bq.config.middleware import bisque_app
     for r in resource.keys():
+        log.debug("resource: %s"% resource[r])
 
-        if 'image_service' in resource[r]:
-            #finds image resource though local image service
-            path = image_service.local_file(resource[r])
-            log.debug("path: %s"% path)
-            if path is None:
-                log.debug('Not found in image_service: %s'%resource[r])
-                return False
-            else:
+        try:
+            # Try to route internally
+            req = Request.blank(resource[r])
+            req.headers['Authorization'] = "Mex %s" % identity.mex_authorization_token()
+            log.debug("Mex %s" % identity.mex_authorization_token())
+            req.headers['Accept'] = 'text/xml'
+            log.debug("begin routing internally %s" % resource[r])
+            resp = req.get_response(bisque_app)
+            log.debug("end routing internally: status %s" % resp.status_int)
+            if resp.status_int == 200:
                 continue
-        
-        # Try to route internally
-        req = Request.blank(resource[r])
-        req.headers['Authorization'] = "Mex %s" % identity.mex_authorization_token()
-        req.headers['Accept'] = 'text/xml'
-        log.debug("begin routing internally %s" % resource[r])
-        response = req.get_response(bisque_app)
-        log.debug("end routing internally: status %s" % response.status_int)
-        if response.status_int == 200:
-            pass
-        if response.status_int in set([401,403]):
+            elif resp.status_int in set([401,403]):
+                log.debug("User is not authorized to read resource: %s",resource[r])
+                return False
+            
+            # Try to route externally
+            req = Request.blank(resource[r])
+            req.headers['Authorization'] = "Mex %s" % identity.mex_authorization_token()
+            req.headers['Accept'] = 'text/xml'
+            log.debug("begin routing externally: %s" % resource[r])
+            resp = http.send(req)
+            log.debug("end routing externally: status %s" % resp.status_int)
+            if resp.status_int == 200:
+                continue
+            else: 
+                log.debug("User is not authorized to read resource: %s",resource[r])
+                return False
+        except:
+            log.exception ("While retrieving URL %s" % resource[r])
             return False
+            
     return True
     
 ############################################################### 

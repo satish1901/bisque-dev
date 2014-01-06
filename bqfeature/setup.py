@@ -40,6 +40,6 @@ setup(
 
     entry_points="""
     [bisque.services]
-    features = bq.features.controllers.features
+    features = bq.features.controllers.service
     """,
 )

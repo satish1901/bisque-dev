@@ -12,8 +12,7 @@ import inspect
 #    add the other features
 
 path=os.path.dirname(__file__) #find current dir of the file#find current dir of the file
-#path=path+'/lib'
-path = path+'../../../../../src/extractors/MPEG7Flex/lib'
+path = path+'../../../../src/extractors/MPEG7Flex/lib'
 _MPEG7FlexLib = np.ctypeslib.load_library('_MPEG7FlexLib', path)
 
 def extractCSD(im, mask = np.array([]), descSize=64):
