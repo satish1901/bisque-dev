@@ -21,6 +21,7 @@ class SCD(Feature.Feature):
     name = 'SCD'
     description = """Scalable Color Descriptor"""
     length = 256 
+    type = ['color']
         
     @Feature.wrapper
     def calculate(self, **resource):
@@ -38,8 +39,6 @@ class SCD(Feature.Feature):
         
         return [descriptors]
 
-
-
 class HTD2(Feature.Feature):
     """
     """
@@ -47,6 +46,7 @@ class HTD2(Feature.Feature):
     name = 'HTD2'
     description = """Homogenious Texture Descritpor"""
     length = 62 
+    type = ['texture']
         
     @Feature.wrapper
     def calculate(self, **resource):
@@ -78,6 +78,8 @@ class EHD2(Feature.Feature):
     name = 'EHD2'
     description = """Edge histogram descriptor also known as EHD"""
     length = 80 
+    type = ['texture']
+    
         
     @Feature.wrapper
     def calculate(self, **resource):
@@ -95,18 +97,62 @@ class EHD2(Feature.Feature):
         descriptors = extractEHD(im) #calculating descriptor
         
         return [descriptors]
+ 
+    
+class DCD(Feature.Feature):
+    """
+    """
+    
+    #parameters
+    name = 'DCD'
+    description = """Dominant Color Descriptor can be of any length. The arbitrary length decided to be stored in the
+    tables is 100"""
+    length = 100 
+    type = ['color']
+        
+    @Feature.wrapper
+    def calculate(self, **resource):
+        """ Append descriptors to SURF h5 table """
+        
+        image_uri = resource['image']
+        Im = Feature.ImageImport(image_uri) #importing image from image service
+        image_path = Im.returnpath()
+        im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
+        del Im
+        if im==None:
+            raise ValueError('Format was not supported')
+        im=np.asarray(im)
+        
+        #calculating descriptor
+        DCD = extractDCD(im)
+        #log.debug('descriptors: %s'%descriptors)
+        #log.debug('length of descriptors: %s'%len(descriptors[0]))
+        
+        #DCD has a potentional to be any length
+        #the arbitrary decided length to store in the tables is 100
+        if len(DCD)>self.length:
+            log.debug('Warning: greater than 100 dimensions')
+            DCD=DCD[:self.length]
 
-class mDCD(Feature.Feature):
+        descriptors = np.zeros((self.length))
+        descriptors[:len(DCD)]=DCD
+        
+        #initalizing rows for the table
+        return [descriptors]
+
+class mDCD(DCD):
     """
     """
     
     #parameters
     name = 'mDCD'
+    parent_feature = 'DCD'
     description = """Dominant Color Descriptor can be of any length. The arbitrary length decided to be stored in the
     tables is 100"""
     length = 100 
     parameter = ['label']
     resource = ['image','mask']
+    type = ['color']
  
  
     def columns(self):
@@ -184,21 +230,25 @@ class mDCD(Feature.Feature):
                 outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
                 outtable.flush()
             
-        return    
-    
-class DCD(Feature.Feature):
+        return   
+
+class CSD(Feature.Feature):
     """
+        Initalizes table and calculates the SURF descriptor to be
+        placed into the HDF5 table.
     """
     
     #parameters
-    name = 'DCD'
-    description = """Dominant Color Descriptor can be of any length. The arbitrary length decided to be stored in the
-    tables is 100"""
-    length = 100 
+    name = 'CSD'
+    description = """Color Structure Descriptor"""
+    length = 64 
+    type = ['color']
+    child_feature = ['mCSD']
         
     @Feature.wrapper
     def calculate(self, **resource):
-        """ Append descriptors to SURF h5 table """
+        """ Append descriptors to h5 table """
+        #initalizing
         
         image_uri = resource['image']
         Im = Feature.ImageImport(image_uri) #importing image from image service
@@ -209,24 +259,11 @@ class DCD(Feature.Feature):
             raise ValueError('Format was not supported')
         im=np.asarray(im)
         
-        #calculating descriptor
-        DCD = extractDCD(im)
-        #log.debug('descriptors: %s'%descriptors)
-        #log.debug('length of descriptors: %s'%len(descriptors[0]))
+        descriptors = extractCSD(im, descSize=64) #calculating descriptor
         
-        #DCD has a potentional to be any length
-        #the arbitrary decided length to store in the tables is 100
-        if len(DCD)>self.length:
-            log.debug('Warning: greater than 100 dimensions')
-            DCD=DCD[:self.length]
-
-        descriptors = np.zeros((self.length))
-        descriptors[:len(DCD)]=DCD
-        
-        #initalizing rows for the table
         return [descriptors]
         
-class mCSD(Feature.Feature):
+class mCSD(CSD):
     """
         Initalizes table and calculates the SURF descriptor to be
         placed into the HDF5 table.
@@ -234,11 +271,13 @@ class mCSD(Feature.Feature):
     
     #parameters
     name = 'mCSD'
+    parent_feature = 'CSD'
     description = """Color Structure Descriptor"""
     length = 64 
     parameter = ['label']
     resource = ['image','mask']
- 
+    type = ['color']
+     
     def columns(self):
         """
             creates Columns to be initalized by the create table
@@ -305,22 +344,21 @@ class mCSD(Feature.Feature):
             
         return  
 
-
-class CSD(Feature.Feature):
+class CLD(Feature.Feature):
     """
         Initalizes table and calculates the SURF descriptor to be
         placed into the HDF5 table.
     """
     
     #parameters
-    name = 'CSD'
-    description = """Color Structure Descriptor"""
-    length = 64 
+    name = 'CLD'
+    description = """Color Layout Descriptor"""
+    length = 120
+    child_feature = ['mCLD']
         
     @Feature.wrapper
     def calculate(self, **resource):
         """ Append descriptors to h5 table """
-        #initalizing
         
         image_uri = resource['image']
         Im = Feature.ImageImport(image_uri) #importing image from image service
@@ -331,12 +369,10 @@ class CSD(Feature.Feature):
             raise ValueError('Format was not supported')
         im=np.asarray(im)
         
-        descriptors = extractCSD(im, descSize=64) #calculating descriptor
-        
+        descriptors = extractCLD(im, numYCoef=64, numCCoef = 28)
         return [descriptors]
 
-
-class mCLD(Feature.Feature):
+class mCLD(CLD):
     """
         Initalizes table and calculates the SURF descriptor to be
         placed into the HDF5 table.
@@ -344,11 +380,14 @@ class mCLD(Feature.Feature):
     
     #parameters
     name = 'mCLD'
+    parent_feature = 'CLD'
     description = """masked Color Layout Descriptor"""
     length = 120
     parameter = ['label']
     resource = ['image','mask']
+    type = ['color']
 
+    
     def columns(self):
         """
             creates Columns to be initalized by the create table
@@ -414,112 +453,6 @@ class mCLD(Feature.Feature):
             
         return  
 
-
-class CLD(Feature.Feature):
-    """
-        Initalizes table and calculates the SURF descriptor to be
-        placed into the HDF5 table.
-    """
-    
-    #parameters
-    name = 'CLD'
-    description = """Color Layout Descriptor"""
-    length = 120
-        
-    @Feature.wrapper
-    def calculate(self, **resource):
-        """ Append descriptors to h5 table """
-        
-        image_uri = resource['image']
-        Im = Feature.ImageImport(image_uri) #importing image from image service
-        image_path = Im.returnpath()
-        im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
-        del Im
-        if im==None:
-            raise ValueError('Format was not supported')
-        im=np.asarray(im)
-        
-        descriptors = extractCLD(im, numYCoef=64, numCCoef = 28)
-        return [descriptors]
-
-class mRSD(Feature.Feature):
-    """
-        Initalizes table and calculates the SURF descriptor to be
-        placed into the HDF5 table.
-    """
-    
-    name = 'mRSD'
-    description = """Region Shape Descritpor"""
-    length = 35
-    parameter = ['label']
-    resource = ['image','mask']
-
-    def columns(self):
-        """
-            creates Columns to be initalized by the create table
-        """
-        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
-        class Columns(tables.IsDescription):
-            idnumber  = tables.StringCol(32,pos=1)
-            feature   = tables.Col.from_atom(featureAtom, pos=2)
-            label     = tables.Int32Col(pos=3) 
-        self.Columns = Columns
-        
-    @Feature.wrapper
-    def calculate(self, **resource):
-        """ Append descriptors to SURF h5 table """
-        #initalizing
-        
-        image_uri = resource['image']
-        Im = Feature.ImageImport(image_uri) #importing image from image service
-        image_path = Im.returnpath()
-        im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
-        del Im
-        if im==None:
-            raise ValueError('Format was not supported')
-        im=np.asarray(im)
-        
-        mask_uri = resource['mask']
-        Im = Feature.ImageImport(mask_uri) #importing image from image service
-        mask_path = Im.returnpath()
-        mask = cv2.imread(mask_path, 2)
-        del Im
-        if mask==None:
-            raise ValueError('Format was not supported')
-        
-        im=np.asarray(im)
-        mask = np.asarray(mask)
-        
-        descritptor_list = []
-        label_list = []
-        #calculating descriptor
-        for label in np.unique(mask):
-            lmask = np.array((mask==label)*255,dtype='uint8')
-            descriptors = extractRSD(im,mask=lmask)
-            descritptor_list.append(descriptors)
-            label_list.append(label)
-        #initalizing rows for the table
-        
-        return descritptor_list, label_list
-    
-    def outputTable(self,filename):
-        """
-        output table for hdf output requests and uncached features
-        """
-        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
-        class Columns(tables.IsDescription):
-            image   = tables.StringCol(2000,pos=1)
-            mask    = tables.StringCol(2000,pos=2)
-            feature = tables.Col.from_atom(featureAtom, pos=3)
-            label   = tables.Int32Col(pos=4)
-            
-        with Locks(None, filename):
-            with tables.openFile(filename,'a', title=self.name) as h5file: 
-                outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
-                outtable.flush()
-            
-        return  
-
 class RSD(Feature.Feature):
     """
         Initalizes table and calculates the SURF descriptor to be
@@ -530,7 +463,9 @@ class RSD(Feature.Feature):
     description = """Region Shape Descritpor"""
     length = 35
     resource = ['image','polygon']
-        
+    type = ['shape','texture']
+    child_feature = ['mRSD']
+            
     @Feature.wrapper
     def calculate(self, **resource):
         """ Append descriptors to SURF h5 table """
@@ -602,3 +537,84 @@ class RSD(Feature.Feature):
             outtable.flush()
             
         return
+    
+class mRSD(RSD):
+    """
+        Initalizes table and calculates the SURF descriptor to be
+        placed into the HDF5 table.
+    """
+    
+    name = 'mRSD'
+    parent_feature = 'RSD'
+    description = """Region Shape Descritpor"""
+    length = 35
+    parameter = ['label']
+    resource = ['image','mask']
+    type = ['shape','texture']
+
+    def columns(self):
+        """
+            creates Columns to be initalized by the create table
+        """
+        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+        class Columns(tables.IsDescription):
+            idnumber  = tables.StringCol(32,pos=1)
+            feature   = tables.Col.from_atom(featureAtom, pos=2)
+            label     = tables.Int32Col(pos=3) 
+        self.Columns = Columns
+        
+    @Feature.wrapper
+    def calculate(self, **resource):
+        """ Append descriptors to SURF h5 table """
+        #initalizing
+        
+        image_uri = resource['image']
+        Im = Feature.ImageImport(image_uri) #importing image from image service
+        image_path = Im.returnpath()
+        im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
+        del Im
+        if im==None:
+            raise ValueError('Format was not supported')
+        im=np.asarray(im)
+        
+        mask_uri = resource['mask']
+        Im = Feature.ImageImport(mask_uri) #importing image from image service
+        mask_path = Im.returnpath()
+        mask = cv2.imread(mask_path, 2)
+        del Im
+        if mask==None:
+            raise ValueError('Format was not supported')
+        
+        im=np.asarray(im)
+        mask = np.asarray(mask)
+        
+        descritptor_list = []
+        label_list = []
+        #calculating descriptor
+        for label in np.unique(mask):
+            lmask = np.array((mask==label)*255,dtype='uint8')
+            descriptors = extractRSD(im,mask=lmask)
+            descritptor_list.append(descriptors)
+            label_list.append(label)
+        #initalizing rows for the table
+        
+        return descritptor_list, label_list
+    
+    def outputTable(self,filename):
+        """
+        output table for hdf output requests and uncached features
+        """
+        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+        class Columns(tables.IsDescription):
+            image   = tables.StringCol(2000,pos=1)
+            mask    = tables.StringCol(2000,pos=2)
+            feature = tables.Col.from_atom(featureAtom, pos=3)
+            label   = tables.Int32Col(pos=4)
+            
+        with Locks(None, filename):
+            with tables.openFile(filename,'a', title=self.name) as h5file: 
+                outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
+                outtable.flush()
+            
+        return  
+

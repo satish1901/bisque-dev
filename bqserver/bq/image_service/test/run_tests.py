@@ -22,7 +22,7 @@ import urllib
 import os
 import posixpath
 import ConfigParser
-
+import os
 from lxml import etree
 from subprocess import Popen, call, PIPE
 
@@ -32,6 +32,7 @@ from bq.api.util import save_blob # bisque
 #from bqapi.bqclass import fromXml # local
 #from bqapi.comm import BQSession, BQCommError # local
 #from bqapi.util import save_blob # local
+
 
 IMGCNV='imgcnv'
 
@@ -143,13 +144,14 @@ class ImageServiceTestBase(unittest.TestCase):
         self.root = config.get('Host', 'root') or 'localhost:8080'
         self.user = config.get('Host', 'user') or 'test'
         self.pswd = config.get('Host', 'password') or 'test'
-
+        
         self.session = BQSession().init_local(self.user, self.pswd,  bisque_root=self.root, create_mex=False)
         
+
         # download and upload test images ang get their IDs        
         self.uniq_2d_uint8  = self.ensure_bisque_file(image_rgb_uint8)
         self.uniq_3d_uint16 = self.ensure_bisque_file(image_zstack_uint16)
-        self.uniq_2d_float  = self.ensure_bisque_file(image_float)                
+        self.uniq_2d_float  = self.ensure_bisque_file(image_float)       
 
     @classmethod
     def tearDownClass(self):
@@ -161,6 +163,8 @@ class ImageServiceTestBase(unittest.TestCase):
 
     @classmethod        
     def fetch_file(self, filename):
+        os.mkdir(local_store_images)
+        os.mkdir(local_store_tests)
         url = posixpath.join(url_image_store, filename)
         path = os.path.join(local_store_images, filename)  
         if not os.path.exists(path): 
