@@ -6,8 +6,7 @@ import warnings
 
 
 path=os.path.dirname(__file__) #find current dir of the file
-#path=path+'/lib'
-path = path+'../../../../src/extractors/VRL/lib'
+path = os.path.join(path,'..','..','..','..','src','extractors','VRL','lib')
 _VRLLib_warp= np.ctypeslib.load_library('_VRLLib', path)
 
 #EHD
