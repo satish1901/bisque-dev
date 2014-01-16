@@ -12,8 +12,7 @@ import inspect
 #    have all the features return the correct type
 
 path=os.path.dirname(__file__) #os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) #find current dir of the file
-#path=path+'/lib'
-path = path+'../../../../src/extractors/WNDCharm/lib'
+path = os.path.join(path,'..','..','..','..','src','extractors','WNDCharm','lib')
 _WNDCharmLib = np.ctypeslib.load_library('_WNDCharmLib', path)
 
 def extractChebyshevCoefficients(im):
