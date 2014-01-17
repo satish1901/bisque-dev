@@ -34,6 +34,8 @@ import logging as log
 from bqapi.bqclass import fromXml # local
 from bqapi.comm import BQSession, BQCommError # local
 from bqapi.util import save_blob # local
+import urllib
+import zipfile
 
 import time 
 import pdb
@@ -46,7 +48,8 @@ log.basicConfig(filename='test.log',level=log.DEBUG)
 
 FEATURES = 'features'
 
-url_file_store       = 'http://hammer.ece.ucsb.edu/~bisque/test_data/images/' 
+#url_file_store       = 'http://hammer.ece.ucsb.edu/~bisque/test_data/images/'
+url_file_store       = 'http://biodev.ece.ucsb.edu/binaries/download/'
 local_store_images   = 'images'
 local_features_store = 'features'
 local_store_tests    = 'tests'
@@ -55,6 +58,12 @@ service_data         = 'data_service'
 service_image        = 'image_service'
 resource_image       = 'image'
 features             = 'features'
+
+image_archive_zip    = 'D91AC09AB1A1086F71BF6EC03E518DA3DF701870-feature_test_images.zip'
+feature_archive_zip  = '4236628712FCF4543F640513AB9DA9F28616BEC5-feature_test_features.zip'
+
+feature_zip          = 'feature_test_features'
+image_zip            = 'feature_test_images'  
 
 #imported files
 bisque_archive_1     = 'image_08093.tar'
@@ -109,8 +118,25 @@ class ResponseCheckError(Exception):
     def __init__(self, value):
         self.value = value
     def __str__(self): 
-        return repr(self.value)        
-
+        return repr(self.value)
+    
+class UploadError(Exception):  
+    """
+        Return when upload error occurs
+    """
+    def __init__(self, filename):
+        self.filename = filename
+    def __str__(self): 
+        return repr('file: %s failed to be uploaded'%self.filename)
+    
+class DownloadError(Exception):  
+    """
+        Return when upload error occurs
+    """
+    def __init__(self, filename):
+        self.filename = filename
+    def __str__(self): 
+        return repr('file: %s failed to be downloaded'%self.filename)
 
 ##################################################################
 # FeatureServiceTestBase
@@ -125,7 +151,7 @@ class FeatureServiceTestBase(unittest.TestCase):
 
 #test initalization
     @classmethod
-    def ensure_bisque_file(self, filename,achieve=False, local_dir='.'):
+    def ensure_bisque_file(self, filename, achieve=False, local_dir='.'):
         """
             Checks for test files stored locally
             If not found fetches the files from a store
@@ -135,6 +161,37 @@ class FeatureServiceTestBase(unittest.TestCase):
             return self.upload_achieve_file(path)
         else:
             return self.upload_new_file(path)
+
+
+    @classmethod
+    def check_for_file(self, filename, zip_filename,local_dir='.'):
+        """
+            Checks for test files stored locally
+            If not found fetches the files from a store
+        """
+        path = os.path.join(local_dir, filename)        
+        
+        if not os.path.exists(path):
+            self.fetch_zip(zip_filename, local_dir)
+            if not os.path.exists(path):
+                raise DownloadError(filename)
+    
+    @classmethod
+    def fetch_zip(self, filename, local_dir='.'):
+        """
+            Fetches and unpacks a zip file into the same dir
+        """
+        url = posixpath.join(url_file_store, filename)
+        path = os.path.join(local_dir, filename)
+        if not os.path.exists(local_dir):
+            os.makedirs(local_dir)
+            
+        if not os.path.exists(path):
+            urllib.urlretrieve(url, path)
+        
+        Zip = zipfile.ZipFile(path)
+        Zip.extractall(local_dir)
+        return
     
     @classmethod
     def fetch_file(self, filename, local_dir='.'):
@@ -157,7 +214,7 @@ class FeatureServiceTestBase(unittest.TestCase):
         return r
 
     @classmethod    
-    def upload_achieve_file(self, path):
+    def upload_achive_file(self, path):
         """
             upload bisque archive files
         """
@@ -171,9 +228,20 @@ class FeatureServiceTestBase(unittest.TestCase):
 
     @classmethod
     def return_archive_info(self, bisque_archive, mask):
-        bisque_archive_data_xml_top    = self.ensure_bisque_file(bisque_archive,achieve=True,local_dir=local_store_images)
+        
+        
+        path = os.path.join(local_store_images,bisque_archive)
+        self.check_for_file(bisque_archive, image_archive_zip,local_dir=local_store_images)
+                
+        bisque_archive_data_xml_top    = self.upload_achive_file(path)
+        
         bisque_archive_image_uri       = self.root+'/image_service/image/'+bisque_archive_data_xml_top.attrib['resource_uniq']
-        mask_xml_top                   = self.ensure_bisque_file(mask,local_dir=local_store_images)
+ 
+
+        path = os.path.join(local_store_images, mask)
+        self.check_for_file(mask, image_archive_zip,local_dir=local_store_images)
+        
+        mask_xml_top                   = self.upload_new_file(path)
         
         bisque_archive_xml         = self.session.fetchxml(bisque_archive_data_xml_top.attrib['uri']+'?view=deep')
         polygon_xml                = bisque_archive_xml.xpath('//polygon')
@@ -312,9 +380,15 @@ def setUpTest():
 
     if 'features' in FeatureServiceTestBase.test_type or 'all' in FeatureServiceTestBase.test_type:
         #importing pre-calculated features on images
+        
+        
+        FeatureServiceTestBase.check_for_file(bisque_archive_1+'.h5', feature_archive_zip,local_dir=local_features_store)
         FeatureServiceTestBase.fetch_file(bisque_archive_1+'.h5',local_dir=local_features_store)
+        FeatureServiceTestBase.check_for_file(bisque_archive_2+'.h5', feature_archive_zip,local_dir=local_features_store)
         FeatureServiceTestBase.fetch_file(bisque_archive_2+'.h5',local_dir=local_features_store)
+        FeatureServiceTestBase.check_for_file(bisque_archive_3+'.h5', feature_archive_zip,local_dir=local_features_store)
         FeatureServiceTestBase.fetch_file(bisque_archive_3+'.h5',local_dir=local_features_store)
+        FeatureServiceTestBase.check_for_file(bisque_archive_4+'.h5', feature_archive_zip,local_dir=local_features_store)
         FeatureServiceTestBase.fetch_file(bisque_archive_4+'.h5',local_dir=local_features_store)        
 
         
