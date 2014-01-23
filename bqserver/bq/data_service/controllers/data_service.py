@@ -210,6 +210,7 @@ class DataServerController(ServiceController):
             uri,params = strip_url_params(resource)
             params.update(kw)
             kw = params
+        #log.debug ("get_resource %s %s",  uri, str(kw))
         if uri is not None:
             response =  self.cache_check(uri, **kw)
             if response:
@@ -219,9 +220,9 @@ class DataServerController(ServiceController):
             else:
                 net, name, ida, rest = parse_uri(uri)
                 resource = load_uri (uri)
-                if rest:
-                    resource = self.query(rest[-1], parent=resource)
-                    self.cache_save (uri, response=etree.tostring(resource), **kw)
+                if rest:  # Fetch resource is really a query
+                    resource = self.query(resource_tag=rest[-1], parent=resource,**kw)
+                    #self.cache_save (uri, response=etree.tostring(resource), **kw)
                     return resource
         xtree = db2tree(resource, baseuri = self.url, **kw)
         uri = uri or xtree.get('uri')
@@ -294,8 +295,9 @@ class DataServerController(ServiceController):
     def query(self, resource_tag = None,  parent=None, **kw):
         '''Query the local database with expr'''
         resource_type = dbtype_from_tag(resource_tag)
-        uri = "%s/%s" % (self.url , resource_tag)
+        uri = "%s%s/%s" % (self.url, parent and parent.uri or '', resource_tag or '')
 
+        #log.debug ("query parent=%s tag=%s %s", parent, resource_tag, str(kw))
         response = self.cache_check (uri, **kw)
         if response:
             xml =  etree.XML (response)
@@ -305,15 +307,15 @@ class DataServerController(ServiceController):
             parent = parent.get ('uri')
         if isinstance(parent, basestring):
             parent = load_uri(parent)
-        view = kw.get('view')
+        params = kw.copy()
+        view = params.pop('view', None)
         if view == 'count':
-            count = resource_count (resource_type,  parent=parent,**kw)
+            count = resource_count (resource_type,  parent=parent,**params)
             response = etree.Element ('resource')
             etree.SubElement(response, resource_tag, count = str(count))
         else:
-            nodelist = resource_query (resource_type, parent=parent, **kw)
-            full_url = "%s?%s" % ('/data_service/%s' % (resource_tag or ''),
-                                  "&".join ("%s=%s" % (k, v) for k,v in kw.items()))
+            nodelist = resource_query (resource_type, parent=parent, **params)
+            full_url = "%s?%s" % (uri, "&".join ("%s=%s" % (k, v) for k,v in kw.items()))
             response  = etree.Element ('resource', uri=full_url)
             db2tree (nodelist, parent=response,
                      view=view, baseuri = self.url)

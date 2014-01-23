@@ -435,8 +435,8 @@ def resource2nodes(dbo, parent=None, view=[], baseuri=None,  **kw):
     docnodes = DBSession.query(Taggable).filter(Taggable.document_id == doc_id)
     docnodes = resource_permission(docnodes)
     #docnodes = docnodes.order_by(Taggable.id)
-    log.debug("reosurce2nodes: %s",  docnodes)
-    log.debug('resource2nodes: %s %s doc %s' % (docnodes, dbo.id , doc_id))
+    log.debug("reosurce2nodes: %s",  str(docnodes))
+    log.debug('resource2nodes: %s %s doc %s' , str(docnodes), dbo.id , doc_id)
     nodes = {}
     parents = {}
 
