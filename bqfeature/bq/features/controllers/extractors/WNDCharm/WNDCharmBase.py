@@ -19,7 +19,7 @@ class WNDCharm(Feature.Feature): #base WNDCharm feature class
     
     @Feature.wrapper
     def calculate(self, **resource):
-        """ Append descriptors to SIFT h5 table """
+        """ Append descriptors to h5 table """
         image_uri = resource['image']
         feature_info=feature_list[self.name]
         tranforms=feature_info[1:3]
@@ -43,14 +43,14 @@ class WNDCharm(Feature.Feature): #base WNDCharm feature class
                     args.append('depth=8,d')
                     args.append('transform=rgb2hsv') #converts rgb to hsv and then selects the hue channel
                     args.append('remap=1')
-                    args.append('format=png') #forces the tiff to output in a format cv2.imread can handle
+                    args.append('format=tiff') #forces the tiff to output in a format cv2.imread can handle
                 else:
                     args.append('transform='+t)
-        args.append('format=png') #return tiff format
+        args.append('format=tiff') #return tiff format
         image_uri += '&'.join(args)
         
         log.debug('WNDCharm uri: %s'% image_uri)
-        Im = Feature.ImageImport(image_uri,'png') #importing image from image service
+        Im = Feature.ImageImport(image_uri,'tiff') #importing image from image service
         image_path = Im.returnpath()
         im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_UNCHANGED) #CV_LOAD_IMAGE_UNCHANGED CV_LOAD_IMAGE_ANYDEPTH
         # extract the feature keypoints and descriptor
