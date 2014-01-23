@@ -1347,7 +1347,7 @@ def install_features_source ():
         uncompress_dependencies (filename_zip, filename_dest, filename_check, strip_root=True)
 
         print """Now you can recompile feature extractors. Follow instructions located in:
-          bqserver/bq/features/controllers/extractors/build/Readme.txt
+          bqserver/bq/features/src/extractors/build/Readme.txt
         """
 
 
