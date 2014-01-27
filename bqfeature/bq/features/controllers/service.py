@@ -431,8 +431,8 @@ class FeatureElements(object):
     """
     
     def __init__(self, feature_archieve, feature_name):
-        self.elements = []
-        self.element_dict = {}
+        self.uri_hash_list = []  #list of the resource uris hashed
+        self.element_dict = {} #a dictionary with keys as the hash of the resource uris and values as elements
         self.feature_name = feature_name
         self.feature_archieve = feature_archieve
         self.feature = feature_archieve[feature_name]
@@ -441,45 +441,58 @@ class FeatureElements(object):
         """
             Hashes the list of hashed ordered elements
         """
-        hash = ''.join([e[0] for e in self.elements])
+        hash = ''.join([e[0] for e in self.uri_hash_list])
         hash = uuid.uuid5(uuid.NAMESPACE_URL, hash)
         return hash.hex
     
-    def append(self, element):
+    def append(self, input_dict):
         """
             appends to element lists and orders the list by hash
             on the first append the types are checked
+            
+            input_dict : dictionary where the keys are the input types and the values are the uris
         """
-        kw = {}
         
         # checking type
-        if self.elements == []:  # check on the first entry
-            element, self.feature_name = type_check(element , self.feature_name, self.feature_archieve)  # separates options from resources
+        if self.uri_hash_list == []:  # check on the first entry
+            input_dict, self.feature_name = type_check(input_dict , self.feature_name, self.feature_archieve)  # separates options from resources
             self.feature = self.feature_archieve[self.feature_name]  # reassign new feature
         else:  # check if the types match the original feature
-            element, new_feature_name = type_check(element , self.feature_name, self.feature_archieve)  # separates options from resources
+            input_dict, new_feature_name = type_check(input_dict , self.feature_name, self.feature_archieve)  # separates options from resources
             if new_feature_name != self.feature_name:
                 log.debug('Argument Error: types are not consistance')
                 abort(400, 'Argument Error: types are not consistance')
                              
-        if Feature.mex_validation(**element):
-            uri_hash = self.feature().returnhash(**element)
+        if Feature.mex_validation(**input_dict):
+            uri_hash = self.feature().returnhash(**input_dict)
             if uri_hash not in self.element_dict:
-                self.element_dict[uri_hash] = element
-                self.elements.append(uri_hash)
-                self.elements.sort()
+                self.element_dict[uri_hash] = input_dict
+                self.uri_hash_list.append(uri_hash)
+                self.uri_hash_list.sort()
         return  # returns options
     
-    def remove(self, element):
-        uri_hash = self.feature().returnhash(**element)
+    def remove(self, input_dict):
+        """
+            Removes the given element from the uri hash list and the element dictionary
+        """
+        uri_hash = self.feature().returnhash(**input_dict)
         del self.element_dict[uri_hash]
-        self.elements.remove(uri_hash)
+        self.uri_hash_list.remove(uri_hash)
+    
+    def get(self,hash):
+        """ get with hash name """
+        if hash in self.uri_hash_list:
+            return (hash, self.element_dict[hash])
+        else:
+            return 
     
     def __getitem__(self, index):
-        return (self.elements[index], self.element_dict[self.elements[index]])
+        """ get with index """
+        return (self.uri_hash_list[index], self.element_dict[self.uri_hash_list[index]])
 
     def __len__(self):
-        return len(self.elements)
+        return len(self.uri_hash_list)
+    
 
 class Request(object):
     """
@@ -501,10 +514,12 @@ class Request(object):
             if i in self.options:
                 self.options[i] = kw[i]
                 del kw[i] #removes options from the kw list to not interfere with error checking when reading in the resources
+                          #kw is a dictionary where the keys are the input types and the values are the uris
 
+        
         # feature assignment
         self.feature_name = feature_name  
-        self.element_list = FeatureElements(feature_archieve, feature_name)
+        self.ElementList = FeatureElements(feature_archieve, feature_name)
         
         # check if proper format
         self.format = format
@@ -523,7 +538,7 @@ class Request(object):
                     abort(400, 'Document Error: Only excepts datasets')
                 
                 
-                # iterating through elements in the dataset parsing and adding to the element list
+                # iterating through elements in the dataset parsing and adding to ElementList
                 for value in self.body.xpath('value[@type="query"]'):
                     
                     query = value.text
@@ -536,14 +551,14 @@ class Request(object):
                         element[q[0]] = q[1].replace('"', '')
                     
                     log.debug('Resource: %s' % element)
-                    self.element_list.append(element)
+                    self.ElementList.append(element)
             except:
                 log.exception('Request Error: Xml document is malformed')
                 abort(400, 'Xml document is malformed')
                 
         elif self.method == 'GET':
             self.body = None
-            kw = self.element_list.append(kw)
+            kw = self.ElementList.append(kw) #kw is a dictionary where the keys are the input types and the values are the uris
         else:
             log.debug('Request Error: http request was not formed correctly')
             abort(400, 'http request was not formed correctly')
@@ -560,103 +575,122 @@ class Request(object):
         """
         
         # check work dir for the output
-        filename = self.element_list.hash() + '.h5'
+        filename = self.ElementList.hash() + '.h5'
         
-        self.filename = os.path.join(self.element_list.feature.name, filename)
+        self.filename = os.path.join(self.ElementList.feature.name, filename)
         self.filename = os.path.join(FEATURES_TABLES_WORK_DIR, filename)
         
         #initalizes workdir dir if it doesnt exist
-        feature_workdir= os.path.join(FEATURES_TABLES_WORK_DIR, self.element_list.feature.name)
+        feature_workdir= os.path.join(FEATURES_TABLES_WORK_DIR, self.ElementList.feature.name)
         if not os.path.exists(feature_workdir):
             _mkdir(feature_workdir)
         
+        #checking for cached output in the workdir, if not found starts to calculate features
         if not os.path.exists(self.filename):
-            if self.element_list.feature.cache:
+            if self.ElementList.feature.cache: #checks if the feature caches
 
                 # finding features
-                FeatureTable = Tables(self.element_list.feature())
-                
+                FeatureTable = Tables(self.ElementList.feature())
                 element_list_in_table = []
-                for i, uri_hash in enumerate(self.element_list.elements):
+                
+                for i, uri_hash in enumerate(self.ElementList.uri_hash_list):
                     contains_uri_hash = FeatureTable.isin(uri_hash)
+                    
                     if contains_uri_hash:
-                        log.info("Returning Resource: %s from the feature table"%self.element_list.element_dict[uri_hash])
+                        log.info("Returning Resource: %s from the feature table"%self.ElementList.element_dict[uri_hash])
+                        
                     else:
-                        log.info("Resource: %s was not found in the feature table"%self.element_list.element_dict[uri_hash])
+                        log.info("Resource: %s was not found in the feature table"%self.ElementList.element_dict[uri_hash])
                         log.info("Calculating feature on resource")
-                    element_list_in_table.append(contains_uri_hash)
+                        
+                    element_list_in_table.append(contains_uri_hash) #create a binary list confirming if an element is in the table
                 
                 # store features
-                FeatureRows = Rows(self.element_list.feature())
+                FeatureRows = Rows(self.ElementList.feature())
                 #log.debug('In Feature Table List: %s' % element_list_in_table)
+                frozen_uri_hash_list = self.ElementList.uri_hash_list[:]
                 for i, element_bool in enumerate(element_list_in_table):
                     if not element_bool:
+                        
                         # pushes to the table list unless feature failed to be calculated
                         # then the element is removed from the element list
-                        if not FeatureRows.push(**self.element_list[i][1]):
-                            self.element_list.remove(self.element_list[i][1])
-                FeatureTable.store(FeatureRows)
+                        resource_uris_dict = self.ElementList.get(frozen_uri_hash_list[i])[1]
+                        
+                        #checks to see if the feature calculation succeeded, if error 
+                        #then the resource is removed from the element list
+                        if not FeatureRows.push(**resource_uris_dict): 
+                            self.ElementList.remove(resource_uris_dict)
+                            
+                FeatureTable.store(FeatureRows) #addes all the features to the h5 tables
 
-                # store in id table after just in case some features fail
+                # store in id table after just in case some features fail so their ids are not stored
                 HashTable = IDTables()
                 
                 # finding hashes
                 element_list_in_table = []
-                for i, uri_hash in enumerate(self.element_list.elements): 
+                for i, uri_hash in enumerate(self.ElementList.uri_hash_list): 
                     contains_uri_hash = FeatureTable.isin(uri_hash)
                     if contains_uri_hash:
-                        log.info("Returning Resource: %s from the uri table"%self.element_list.element_dict[uri_hash])
+                        log.info("Returning Resource: %s from the uri table"%self.ElementList.element_dict[uri_hash])
                     else:
-                        log.info("Resource: %s was not found in the uri table"%self.element_list.element_dict[uri_hash])
+                        log.info("Resource: %s was not found in the uri table"%self.ElementList.element_dict[uri_hash])
                         log.info("Calculating hash on resource")
                     element_list_in_table.append(contains_uri_hash)
     
                 # store hashes
-                HashRows = IDRows(self.element_list.feature())
+                HashRows = IDRows(self.ElementList.feature())
                 #log.debug('In Hash Table List: %s' % element_list_in_table)
                 for i, element_bool in enumerate(element_list_in_table):
                     if not element_bool:
-                        HashRows.push(**self.element_list[i][1])
+                        HashRows.push(**self.ElementList[i][1])
                 HashTable.store(HashRows)
     
             else: #creating table for uncached features
 
-                if len(self.element_list)<1: #if list is empty no table is created
-                    FeatureTable = UncachedTable(self.element_list.feature())
+                if len(self.ElementList)<1: #if list is empty no table is created
+                    FeatureTable = UncachedTable(self.ElementList.feature())
                     
                     
                     # store features in an unindexed table in the workdir
                     FeatureRows = UncachedRows(self.feature())
-                    for i, element_bool in enumerate(self.element_list.elements):
+                    frozen_uri_hash_list = self.ElementList.uri_hash_list[:]
+                    for i, uri_hash in enumerate(frozen_uri_hash_list):
                         # pushes to the table list unless feature failed to be calculated
                         # then the element is removed from the element list
-                        if not FeatureRows.push(self.element_list[i][1]):
-                            self.element_list.remove(self.element_list[i][1])
+                        
+                        resource_uris_dict = self.ElementList.get(uri_hash)[1]
+                        
+                        if not FeatureRows.push(resource_uris_dict):
+                            self.ElementList.remove(resource_uris_dict)
                     FeatureTable.store(FeatureRows, self.filename)
         else:
             log.info('Getting request from the workdir')
+            
         return
     
     def response(self):
         """
         Builds response
         """
-        if len(self.element_list)<1:
-            Table = Tables(self.element_list.feature())
+        if len(self.ElementList)<1:
+            
+            Table = Tables(self.ElementList.feature())
             self.Formats = Outputs()['none'] #return nothing since nothing was found in the element_list
             log.debug('No valid element was found in the element tree') #either a failure to calculate a feature occured or user did not have access to resource
             log.info('Returning with response type as: none')            
-            return self.Formats(self.element_list.feature(),self.feature_request_uri).return_output(Table, self.element_list)
-        elif self.element_list.feature.cache and not os.path.exists(self.filename):  # queries for results in the feature tables
-            Table = Tables(self.element_list.feature())
-            log.info('Returning with response type as: %s'%self.format)
-            return self.Formats(self.element_list.feature(),self.feature_request_uri).return_output(Table, self.element_list)
+            return self.Formats(self.ElementList.feature(),self.feature_request_uri).return_output(Table, self.ElementList)
         
-        else:  # returns unindexed table in the workdir
-
-            Table = UncachedTable(self.element_list.feature())
+        elif self.ElementList.feature.cache and not os.path.exists(self.filename):  # queries for results in the feature tables
+            
+            Table = Tables(self.ElementList.feature())
             log.info('Returning with response type as: %s'%self.format)
-            return self.Formats(self.element_list.feature(),self.feature_request_uri).return_from_workdir(Table, self.filename, self.element_list)
+            return self.Formats(self.ElementList.feature(),self.feature_request_uri).return_output(Table, self.ElementList)
+        
+        else:  # returns unindexed table from the workdir
+
+            Table = UncachedTable(self.ElementList.feature())
+            log.info('Returning with response type as: %s'%self.format)
+            return self.Formats(self.ElementList.feature(),self.feature_request_uri).return_from_workdir(Table, self.filename, self.ElementList)
 
 ###############################################################
 # Features Outputs 
@@ -701,7 +735,7 @@ class Xml(Format):
         element = etree.Element('resource', uri=str(self.feature_request_uri))
         nodes = 0
         
-        for i, uri_hash in enumerate(element_list.elements):
+        for i, uri_hash in enumerate(element_list.uri_hash_list):
             rows = table.get(uri_hash)
             if rows != None:  # a feature was found for the query
                 resource = element_list[i][1]
@@ -810,7 +844,7 @@ class Csv(Format):
         writer.writerow(titles)
         
         
-        for idx, uri_hash in enumerate(element_list.elements):
+        for idx, uri_hash in enumerate(element_list.uri_hash_list):
             
             resource = element_list[idx][1]
             
@@ -950,7 +984,7 @@ class Hdf(Format):
             with tables.openFile(filename, 'a', title=self.name) as h5file:  # open table
                 # writing to table
                 outtable = h5file.root.values
-                for i, uri_hash in enumerate(element_list.elements):
+                for i, uri_hash in enumerate(element_list.uri_hash_list):
                     rows = table.get(uri_hash)
                     for r in rows:  # taking rows out of one and placing them into the rows of the output table
                         row = ()
@@ -1012,16 +1046,22 @@ class NoOutput(Format):
 #   text/xml
 #-------------------------------------------------------------
 class LocalPath(Format):
+    """
+        
+    """
 
     name = 'localpath'
     description = 'Returns location of the file along with the location of the feature in the table'
     
     def return_output(self, table, element_list, **kw):
+        """
+            
+        """
 
         response.headers['Content-Type'] = 'text/xml'
         element = etree.Element('resource', uri=str(self.feature_request_uri))
         file_path = {}
-        for i, uri_hash in enumerate(element_list.elements):
+        for i, uri_hash in enumerate(element_list.uri_hash_list):
             local_file = self.feature.localfile(uri_hash)
             if local_file not in file_path :
                 file_path[local_file] = etree.SubElement(element, 'hdf', src='file:'+local_file)
@@ -1032,11 +1072,15 @@ class LocalPath(Format):
 
 
     def return_from_workdir(self, table, filename, **kw):
+        """
+        Reading hdf5 from wordir and returning it in the 
+        local path format
+        """
         element_list = kw['element_list']
         response.headers['Content-Type'] = 'text/xml' 
         element = etree.Element('resource', uri=str(self.feature_request_uri))
         file_paths = {}
-        for i, uri_hash in enumerate( element_list.elements):
+        for i, uri_hash in enumerate( element_list.uri_hash_list):
             local_file = self.feature.localfile( uri_hash)
             if local_file not in file_path :
                 file_path[local_file] = etree.SubElement(element, 'hdf', src='file:'+local_file)
