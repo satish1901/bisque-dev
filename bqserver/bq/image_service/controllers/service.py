@@ -25,10 +25,10 @@ from bq.util.paths import data_path
 from bq.util.mkdir import _mkdir
 from imgsrv import ImageServer
 from imgsrv import ProcessToken
-import imgcnv
-import bioformats
 
 log = logging.getLogger("bq.image_service")
+
+extensions_ignore = set(['amiramesh', 'cfg', 'csv', 'dat', 'grey', 'htm', 'html', 'hx', 'inf', 'labels', 'log', 'lut', 'mdb', 'pst', 'pty', 'rec', 'tim', 'txt', 'xlog', 'xml', 'zip', 'zpo'])
 
 
 def get_image_id(url):
@@ -38,23 +38,6 @@ def get_image_id(url):
 
     id = path.split('/')[-1]
     return id
-
-def get_format_map():
-    bformats = ""
-    if bioformats.installed() :
-        bformats = bioformats.installed_formats()
-    xmlout='<response>%s%s</response>'  % (imgcnv.installed_formats(),bformats)
-    format_tree = etree.XML(xmlout)
-    formats = {}
-    for ex in format_tree.xpath ('./format/codec/tag[@name="extensions"]'):
-        codec = ex.getparent().get('name')
-        for ext in ex.get('value').split('|'):
-            formats.setdefault(ext, []).append(codec)
-    for format in ('amiramesh', 'cfg', 'csv', 'dat', 'grey', 'htm', 'html', 'hx', 'inf', 'labels', 'log', 'lut', 'mdb', 'pst', 'pty', 'rec', 'tim', 'txt', 'xlog', 'xml', 'zip', 'zpo' ) :
-        if format in formats:
-            del formats[format] # some formats should not be accepted as an image format
-    return formats
-
 
 def cache_control (value):
     tg.response.headers.pop('Pragma', None)
@@ -71,7 +54,7 @@ class image_serviceController(ServiceController):
 
         _mkdir (workdir)
         log.info('ROOT=%s work=%s' , config.get('bisque.root'),  workdir)
-        self.format_map = None
+        self.format_exts = None
 
         self.srv = ImageServer(work_dir = workdir)
 
@@ -155,15 +138,16 @@ class image_serviceController(ServiceController):
 #    def set_file_acl( self, image_uri, owner_name, permission ):
 #        self.srv.set_file_acl(image_uri, owner_name, permission )
 
-    def guess_image_type (self, filename):
+    def is_image_type (self, filename):
         """guess whether the file is an image based on the filename
         and whether we think we can decode
         """
-        if self.format_map is None:
-            self.format_map = get_format_map()
+        if self.format_exts is None:
+            self.format_exts = set(self.srv.converters.extensions()) - extensions_ignore
+            
         filename = filename.strip()
         ext = os.path.splitext(filename)[1][1:].lower()
-        return self.format_map.get(ext)
+        return ext in self.format_exts
 
 
     @expose()
@@ -178,13 +162,15 @@ class image_serviceController(ServiceController):
 
         methods = {}
         methods['/ID'] = 'Returns a file for this ID'
-        methods['/images/ID'] = 'same as /ID'
+        methods['/image/ID'] = 'same as /ID'
+        methods['/images/ID'] = 'same as /ID, deprecated and will be removed in the future'
         methods['/ID?SERVICE1=PAR1&SERVICE2=PAR2'] = 'Execute services for image ID and return result. Call /services to check available'
-        methods['/services'] = 'Returns XML list of supported services'
+        methods['/operations'] = 'Returns XML list of supported image processing operations'
+        methods['/services'] = 'Same as /operations, deprecated and will be removed in the future'
         methods['/formats'] = 'Returns XML list of supported formats'
-        methods['/upload_image'] = 'Upload image using HTTP upload form'
-        methods['/find?hash=HASH'] = 'Find all images with a given HASH'
-        methods['/update_image_permission'] = 'Changes file permissions using received XML'
+        #methods['/upload_image'] = 'Upload image using HTTP upload form'
+        #methods['/find?hash=HASH'] = 'Find all images with a given HASH'
+        #methods['/update_image_permission'] = 'Changes file permissions using received XML'
 
         response = etree.Element ('response')
         for m,d in methods.items():
@@ -194,19 +180,15 @@ class image_serviceController(ServiceController):
         return etree.tostring(response)
 
     @expose()
-    #@identity.require(identity.not_anonymous())
     def services(self, **kw):
-        #request = cherrypy.request
-        #response = cherrypy.response
-        #path   = request.path+'?'+request.query_string
-        #userId = identity.current.user_name
+        return self.operations(self, kw)
 
+    @expose()
+    def operations(self, **kw):
         data_token = ProcessToken()
         data_token = self.srv.request( 'services', None, data_token, None )
         tg.response.headers['Content-Type']  = data_token.contentType
-        #tg.response.headers['Cache-Control'] = data_token.cacheInfo
         cache_control( data_token.cacheInfo )
-
         return data_token.data
 
     @expose(content_type="application/xml")
@@ -255,7 +237,7 @@ class image_serviceController(ServiceController):
     def images(self, ident, **kw):
         request = tg.request
         response = tg.response
-        log.info ('Request: %s' % request.url)
+        log.info ('STARTING Request: %s' % request.url)
 
         path   = request.path+'?'+request.query_string
 

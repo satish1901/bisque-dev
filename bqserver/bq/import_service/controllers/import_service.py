@@ -112,8 +112,11 @@ from bq import image_service
 from bq import data_service
 from bq import blob_service
 
-import bq.image_service.controllers.imgcnv as imgcnv
-import bq.image_service.controllers.bioformats as bioformats
+#import bq.image_service.controllers.imgcnv as imgcnv
+#import bq.image_service.controllers.bioformats as bioformats
+from bq.image_service.controllers.converter_imgcnv import ConverterImgcnv as imgcnv
+from bq.image_service.controllers.converter_bioformats import ConverterBioformats as bioformats
+
 from bq.util.mkdir import _mkdir
 
 log = logging.getLogger("bq.import_service")
@@ -141,12 +144,12 @@ if hasattr(cgi, 'file_upload_handler'):
     #map callables to paths here
     cgi.file_upload_handler['/import/transfer'] = import_transfer_handler
 
-#---------------------------------------------------------------------------------------
-# inits 
-#---------------------------------------------------------------------------------------
-
-imgcnv_needed_version = '1.43'
-bioformats_needed_version = '4.3.0'
+# #---------------------------------------------------------------------------------------
+# # inits 
+# #---------------------------------------------------------------------------------------
+# 
+# imgcnv_needed_version = '1.43'
+# bioformats_needed_version = '4.3.0'
 
 
 
@@ -251,18 +254,18 @@ class import_serviceController(ServiceController):
 #------------------------------------------------------------------------------
 # misc functions
 #------------------------------------------------------------------------------
-
-
+ 
+ 
     def check_imgcnv (self):
-        if not imgcnv.installed():
+        if not imgcnv.installed:
             raise Exception('imgcnv not installed')
-        imgcnv.check_version( imgcnv_needed_version )
-
+        #imgcnv.check_version( imgcnv_needed_version )
+ 
     def check_bioformats (self):
-        if not bioformats.installed():
+        if not bioformats.installed:
             raise Exception('bioformats not installed')
-        if not bioformats.ensure_version( bioformats_needed_version ):
-            raise Exception('Bioformats needs update! Has: '+bioformats.version()['full']+' Needs: '+ bioformats_needed_version)        
+        #if not bioformats.ensure_version( bioformats_needed_version ):
+        #    raise Exception('Bioformats needs update! Has: '+bioformats.version()['full']+' Needs: '+ bioformats_needed_version)        
 
 #------------------------------------------------------------------------------
 # zip/tar.gz support functions
@@ -438,14 +441,18 @@ class import_serviceController(ServiceController):
         members = [ '%s/%s'%(unpack_dir, m) for m in members ]
         
         # geometry is needed
-        extra = '-multi -geometry %d,%d'%(params['z'], params['t'])
+        extra = ['-multi', '-geometry', '%d,%d'%(params['z'], params['t'])]
         
         # if any resolution value was given, spec the resolution  
         if sum([float(params[k]) for k in res.keys()])>0:
-            extra = '%s -resolution %s,%s,%s,%s'%(extra, params['resolution_x'], params['resolution_y'], params['resolution_z'], params['resolution_t'])        
+            extra.extend(['-resolution', '%s,%s,%s,%s'%(params['resolution_x'], params['resolution_y'], params['resolution_z'], params['resolution_t'])])        
             
+        ifnm = members.pop(0)
+        for f in members:
+            extra.extend(['-i', f])
         log.debug('assemble5DImage ========================== extra: \n%s'% extra )
-        imgcnv.convert_list(members, combined_filepath, fmt='ome-tiff', extra=extra )
+        imgcnv.convert(ifnm, combined_filepath, fmt='ome-bigtiff', series=0, extra=extra)
+        
         return combined_filepath
 
 #------------------------------------------------------------------------------
@@ -468,14 +475,14 @@ class import_serviceController(ServiceController):
         members = []
         
         # extract all the series from the file
-        if bioformats.supported(filepath):
-            info = bioformats.info(filepath)
+        info = bioformats.info(filepath)
+        if len(info)>0:
             if 'image_num_series' in info:
                 n = info['image_num_series']
                 for i in range(n):
                     fn = 'series_%.5d.ome.tif'%i
                     outfile = '%s/%s'%(unpack_dir, fn)
-                    bioformats.convert(ifnm=filepath, ofnm=outfile, original=None, series=i)
+                    bioformats.convertToOmeTiff(ifnm=filepath, ofnm=outfile, series=i)
                     if os.path.exists(outfile) and imgcnv.supported(outfile):
                         members.append(fn)
 
@@ -501,10 +508,9 @@ class import_serviceController(ServiceController):
                 fn = '%s.ome.tif'%m 
                 fn_in  = os.path.join(unpack_dir, m)
                 fn_out = os.path.join(unpack_dir, fn)
-                if bioformats.supported(fn_in):
-                    bioformats.convert(ifnm=fn_in, ofnm=fn_out)
-                    if os.path.exists(fn_out) and imgcnv.supported(fn_out):
-                        mvd2.append(fn)
+                bioformats.convertToOmeTiff(ifnm=fn_in, ofnm=fn_out)
+                if os.path.exists(fn_out) and imgcnv.supported(fn_out):
+                    mvd2.append(fn)
                              
         log.debug('Converted: \n%s'% mvd2 )    
         return unpack_dir, mvd2
