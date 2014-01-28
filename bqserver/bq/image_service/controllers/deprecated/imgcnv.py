@@ -88,23 +88,23 @@ def convert(ifnm, ofnm, fmt=None, extra=[]):
         if retcode != 0:
             log.error ('Error: [%s] returned [%s]'%(cmds, retcode))
 
-def convert_list(ifnl, ofnm, fmt, extra=''):
-    '''return list of output filenames'''
-    log.debug('Convertlist for: %s'%(ifnl))
-    command = [ IMGCNV ] 
-    for fn in ifnl:
-        command.extend(['-i', fn])
-
-    with Locks(ifnl[0], ofnm) as l:
-        if not l.locked:
-            return
-        command.extend ( [ '-o', ofnm, '-t', fmt] )
-        command.extend (extra.split())
-        cmds = ' '.join(command)
-        log.debug('Convertlist command: %s'%cmds)
-        retcode = call (command)
-        if retcode != 0:
-            log.error ('Error: [%s] returned [%s]'%(cmds, retcode))
+# def convert_list(ifnl, ofnm, fmt, extra=''):
+#     '''return list of output filenames'''
+#     log.debug('Convertlist for: %s'%(ifnl))
+#     command = [ IMGCNV ] 
+#     for fn in ifnl:
+#         command.extend(['-i', fn])
+# 
+#     with Locks(ifnl[0], ofnm) as l:
+#         if not l.locked:
+#             return
+#         command.extend ( [ '-o', ofnm, '-t', fmt] )
+#         command.extend (extra.split())
+#         cmds = ' '.join(command)
+#         log.debug('Convertlist command: %s'%cmds)
+#         retcode = call (command)
+#         if retcode != 0:
+#             log.error ('Error: [%s] returned [%s]'%(cmds, retcode))
 
 info_map = { 
     'width'      : 'image_num_x', 
@@ -152,26 +152,26 @@ def info(ifnm):
     if rd['image_num_z']==1 and rd['image_num_t']==1 and rd['image_num_p']>1:
         rd['image_num_t'] = rd['image_num_p']
     return rd
-    
-def isTiff(ifnm):
-    log.debug('isTiff for: %s'%(ifnm) )
-    rd = info(ifnm)
-    return 'tiff' in rd.get('format','').lower()
+#     
+# def isTiff(ifnm):
+#     log.debug('isTiff for: %s'%(ifnm) )
+#     rd = info(ifnm)
+#     return 'tiff' in rd.get('format','').lower()
 
 def formats():
     return format_list
 
-def formatListRead():
-    fmts = []
-    xml = Popen ([IMGCNV, '-fmtxml'], stdout=PIPE).communicate()[0]
-    xml = "<formats>\n" + xml + "\n</formats>\n"
-    root = etree.fromstring( xml )
-    for frmt in root:
-        for codec in frmt:
-            for tag in codec:
-                if tag.attrib["name"]=='support' and tag.attrib["value"]=='reading': 
-                    fmts.append( codec.attrib["name"].lower() )  
-    return fmts    
+# def formatListRead():
+#     fmts = []
+#     xml = Popen ([IMGCNV, '-fmtxml'], stdout=PIPE).communicate()[0]
+#     xml = "<formats>\n" + xml + "\n</formats>\n"
+#     root = etree.fromstring( xml )
+#     for frmt in root:
+#         for codec in frmt:
+#             for tag in codec:
+#                 if tag.attrib["name"]=='support' and tag.attrib["value"]=='reading': 
+#                     fmts.append( codec.attrib["name"].lower() )  
+#     return fmts    
 
 def formatList():
     fmts = []
@@ -186,30 +186,30 @@ def formatList():
 if len(format_list)<1:
     format_list = formatList()
 
-def formatListWrite():
-    fmts = []
-    xml = Popen ([IMGCNV, '-fmtxml'], stdout=PIPE).communicate()[0]
-    xml = "<formats>\n" + xml + "\n</formats>\n"
-    root = etree.fromstring( xml )
-    for frmt in root:
-        for codec in frmt:
-            for tag in codec:
-                if tag.attrib["name"]=='support' and tag.attrib["value"]=='writing': 
-                    fmts.append( codec.attrib["name"].lower() )  
-    return fmts    
- 
-
-def formatListWriteMultiPage():
-    fmts = []
-    xml = Popen ([IMGCNV, '-fmtxml'], stdout=PIPE).communicate()[0]
-    xml = "<formats>\n" + xml + "\n</formats>\n"
-    root = etree.fromstring( xml )
-    for frmt in root:
-        for codec in frmt:
-            for tag in codec:
-                if tag.attrib["name"]=='support' and tag.attrib["value"]=='writing multiple pages': 
-                    fmts.append( codec.attrib["name"].lower() )  
-    return fmts    
+# def formatListWrite():
+#     fmts = []
+#     xml = Popen ([IMGCNV, '-fmtxml'], stdout=PIPE).communicate()[0]
+#     xml = "<formats>\n" + xml + "\n</formats>\n"
+#     root = etree.fromstring( xml )
+#     for frmt in root:
+#         for codec in frmt:
+#             for tag in codec:
+#                 if tag.attrib["name"]=='support' and tag.attrib["value"]=='writing': 
+#                     fmts.append( codec.attrib["name"].lower() )  
+#     return fmts    
+#  
+# 
+# def formatListWriteMultiPage():
+#     fmts = []
+#     xml = Popen ([IMGCNV, '-fmtxml'], stdout=PIPE).communicate()[0]
+#     xml = "<formats>\n" + xml + "\n</formats>\n"
+#     root = etree.fromstring( xml )
+#     for frmt in root:
+#         for codec in frmt:
+#             for tag in codec:
+#                 if tag.attrib["name"]=='support' and tag.attrib["value"]=='writing multiple pages': 
+#                     fmts.append( codec.attrib["name"].lower() )  
+#     return fmts    
     
 def defaultExtension(formatName):
     formatName = formatName.lower()  

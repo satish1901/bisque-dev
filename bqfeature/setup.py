@@ -20,7 +20,7 @@ setup(
                       "tables==3.0.0",  # Feature
                       "numexpr==1.4.2", # Feature
                       "cython",  # Feature
-                      "opencv",  # Feature      
+                      #"opencv",  # Feature      
                       # "importlib", # Feature, not needed for python 2.7
                       ],
     setup_requires=["PasteScript>=1.6.3"],

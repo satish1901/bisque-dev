@@ -21,33 +21,33 @@ function xpath(node, expression) {
 }
 
 function getReading(v, record) {
-    var expression = "tag[@value='reading']/@value";    
+    var expression = "tag[@name='support']/@value";    
     var r = xpath(record.raw, expression);
-    return r=='reading'?'yes':'';
+    return r.indexOf('reading')!==-1?'yes':'';
 }
 
 function getWriting(v, record) {
-    var expression = "tag[@value='writing']/@value";    
+    var expression = "tag[@name='support']/@value";    
     var r = xpath(record.raw, expression);
-    return r=='writing'?'yes':'';
+    return r.indexOf('writing')!==-1?'yes':'';
 }
 
 function getMetadata(v, record) {
-    var expression = "tag[@value='reading metadata']/@value";    
+    var expression = "tag[@name='support']/@value";    
     var r = xpath(record.raw, expression);
-    return r=='reading metadata'?'yes':'';
+    return r.indexOf('metadata')!==-1?'yes':'';
 }
 
 function getExtensions(v, record) {
     var expression = "tag[@name='extensions']/@value";    
     var r = xpath(record.raw, expression);
-    return r.replace(/\|/gi, ', ');
+    return r //.replace(/\|/gi, ', ');
 }
 
 function getSource(v, record) {
     var r = xpath(record.raw.parentNode, '@name');
     var v = xpath(record.raw.parentNode, '@version');
-    return r.replace(/DIMIN|CODEC/gi, '') + ' ' + v;
+    return r + ' ' + v;
 }
 
 Ext.define('BQ.is.Formats', {
@@ -74,7 +74,7 @@ Ext.define('BQ.is.Formats', {
                 url : '/image_service/formats',
                 reader : {
                     type :  'xml',
-                    root :  'response',
+                    root :  'resource',
                     record: 'codec', 
                 }
             },                       

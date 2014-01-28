@@ -268,9 +268,9 @@ def find_server(url=None):
 #        # Find a remote image server that is writable and send image there
 #        pass
 
-def guess_image_type(filename):
+def is_image_type(filename):
     server = find_server()
-    return server.guess_image_type(filename)
+    return server.is_image_type(filename)
 
 def local_file(url):
     server = find_server()
