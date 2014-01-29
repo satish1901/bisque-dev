@@ -146,14 +146,17 @@ class ConverterImaris(ConverterBase):
             misc.run_command( [self.CONVERTERCOMMAND, '-i', ifnm, '-m', metafile] )
             with open(metafile, 'r') as f: 
                 meta = f.read()
-            os.remove(metafile)
+            #os.remove(metafile) # felix suggested error
         
     
         # fix a bug in Imaris Convert exporting XML with invalid chars
         # by removing the <ImplParameters> tag
         # params is formatted in INI format
         try:
-            params = misc.between('<ImplParameters>', '</ImplParameters>', meta)
+            if '<ImplParameters><![CDATA[' in meta: # v8
+                params = misc.between('<ImplParameters><![CDATA[', ']]>\n</ImplParameters>', meta)
+            else: # v7
+                params = misc.between('<ImplParameters>', '</ImplParameters>', meta)
             # Meta is an XML
             meta = meta.replace(params, '', 1)
         except UnboundLocalError:
@@ -164,9 +167,14 @@ class ConverterImaris(ConverterBase):
         ########################################
         rd = {}
         mee = etree.fromstring(meta)
-        rd['image_num_series'] = misc.safeint(misc.xpathtextnode(mee, '/FileInfo2/NumberOfImages'), 1)
-        imagenodepath = '/FileInfo2/Image[@mIndex="%s"]'%series
         
+        if '<FileInfo2>' in meta: # v7
+            rd['image_num_series'] = misc.safeint(misc.xpathtextnode(mee, '/FileInfo2/NumberOfImages'), 1)
+            imagenodepath = '/FileInfo2/Image[@mIndex="%s"]'%series
+        else: # v8
+            rd['image_num_series'] = misc.safeint(misc.xpathtextnode(mee, '/MetaData/NumberOfImages'), 1)
+            imagenodepath = '/MetaData/Image[@mIndex="%s"]'%series
+
         rd['date_time'] = misc.xpathtextnode(mee, '%s/ImplTimeInfo'%imagenodepath).split(';', 1)[0]
         rd['format']    = misc.xpathtextnode(mee, '%s/BaseDescription'%imagenodepath).split(':', 1)[1].strip(' ')
         
@@ -269,7 +277,8 @@ class ConverterImaris(ConverterBase):
     # Conversion
     #######################################
 
-    def convert(self, ifnm, ofnm, fmt=None, series=0, extra=[]):
+    @classmethod
+    def convert(cls, ifnm, ofnm, fmt=None, series=0, extra=[]):
         '''converts a file and returns output filename'''
         log.debug('convert: [%s] -> [%s] into %s for series %s with [%s]', ifnm, ofnm, fmt, series, extra)        
         command = ['-i', ifnm]
@@ -280,21 +289,24 @@ class ConverterImaris(ConverterBase):
         if series is not None:
             command.extend (['-ii', str(series)])            
         #command.extend (extra)
-        return self.run(ifnm, ofnm, command )
+        return cls.run(ifnm, ofnm, command )
             
-    def convertToOmeTiff(self, ifnm, ofnm, series=0, extra=[]):
+    @classmethod
+    def convertToOmeTiff(cls, ifnm, ofnm, series=0, extra=[]):
         '''converts input filename into output in OME-TIFF format'''
         log.debug('convertToOmeTiff: [%s] -> [%s] for series %s with [%s]', ifnm, ofnm, series, extra)
-        return self.run(ifnm, ofnm, ['-i', ifnm, '-o', ofnm, '-of', 'OmeTiff', '-ii', '%s'%series] )
+        return cls.run(ifnm, ofnm, ['-i', ifnm, '-o', ofnm, '-of', 'OmeTiff', '-ii', '%s'%series] )
 
-    def thumbnail(self, ifnm, ofnm, width, height, series=0, **kw):
+    @classmethod
+    def thumbnail(cls, ifnm, ofnm, width, height, series=0, **kw):
         '''converts input filename into output thumbnail'''
         log.debug('Thumbnail: %s %s %s for [%s]', width, height, series, ifnm)        
-        command = ['-i', ifnm, '-o', ofnm, '-of', 'jpeg', '-ii', '%s'%series]
+        command = ['-i', ifnm, '-t', ofnm, '-of', 'jpeg', '-ii', '%s'%series]
         command.extend (['-tl', '%s,%s'%(width, height)]) 
-        return self.run(ifnm, ofnm, command)
+        return cls.run(ifnm, ofnm, command)
 
-    def slice(self, ifnm, ofnm, z, t, roi=None, series=0, **kw):
+    @classmethod
+    def slice(cls, ifnm, ofnm, z, t, roi=None, series=0, **kw):
         '''extract Z,T plane from input filename into output in OME-TIFF format'''
         log.debug('Slice: %s %s %s %s for [%s]', z, t, roi, series, ifnm)
         z1,z2 = z
@@ -306,11 +318,11 @@ class ConverterImaris(ConverterBase):
         ometiff = kw['intermediate']
         
         if z1>z2 and z2==0 and t1>t2 and t2==0 and x1==0 and x2==0 and y1==0 and y2==0:
-            return self.run(ifnm, ofnm, ['-i', ifnm, '-o', ofnm, '-of', 'OmeTiff', '-ii', '%s'%series, '-tm', 'Slice', '-tz', '%s'%z, '-th', '%s'%t] )
+            return cls.run(ifnm, ofnm, ['-i', ifnm, '-t', ofnm, '-of', 'OmeTiff', '-ii', '%s'%series, '-tm', 'Slice', '-tz', '%s'%z1, '-th', '%s'%t1] )
         else:
             # create an intermediate OME-TIFF
             if not os.path.exists(ometiff):
-                self.convertToOmeTiff(ifnm, ometiff, series=series)
+                cls.convertToOmeTiff(ifnm, ometiff, series=series)
             # extract slices
             return ConverterImgcnv.slice(ometiff, ofnm=ofnm, z=z, t=t, roi=roi, series=series, **kw)
 

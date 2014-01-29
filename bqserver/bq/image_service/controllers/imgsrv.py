@@ -122,6 +122,7 @@ class ConverterDict(OrderedDict):
         for c in self.itervalues():
             for f in c.formats().itervalues():
                 exts.extend(f.ext)
+        return exts
      
     def canWriteMultipage(self, formatName):
         formats = []
@@ -2455,22 +2456,6 @@ class ImageServer(object):
             if not 'image_num_z' in info: info['image_num_z'] = 1
             if not 'format'      in info: info['format']      = default_format
             if not 'image_num_p' in info: info['image_num_p'] = info['image_num_t'] * info['image_num_z']
-
-        if not 'pixelFormat' in info and 'image_pixel_format' in info and 'image_pixel_depth' in info:
-            ppd = int(info['image_pixel_depth'])
-            ppt = int(info['image_pixel_format'])
-            pxtypes = { 0: 'unknown', 1: 'unsigned', 2:'signed', 3:'float' }
-            pxdepths = { 8 : ['unknown8',  'uint8',  'int8',  'unknown8'],
-                         16: ['unknown16', 'uint16', 'int16', 'unknown16'],
-                         32: ['unknown32', 'uint32', 'int32', 'single'],
-                         64: ['unknown64', 'uint64', 'int64', 'double'] }
-            info['image_pixel_format'] = pxtypes[ppt]
-            pxf = '%s%d'%(pxtypes[ppt], ppd)
-            if ppd in pxdepths:
-                pxf = pxdepths[ppd][ppt]
-            info['pixelFormat'] = pxf
-            # backwards compatibility, store pixelFormat if it was not found
-            #self.setImageInfo( id=id, filename=filename, info=info )
 
         if return_token is True:
             if 'converted_file' in info:

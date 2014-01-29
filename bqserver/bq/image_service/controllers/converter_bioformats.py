@@ -336,21 +336,23 @@ class ConverterBioformats(ConverterBase):
     # Conversion
     #######################################
 
-    def convert(self, ifnm, ofnm, fmt=None, series=0, extra=[]):
+    @classmethod
+    def convert(cls, ifnm, ofnm, fmt=None, series=0, extra=[]):
         '''converts a file and returns output filename'''
         log.debug('convert: [%s] -> [%s] into %s for series %s with [%s]', ifnm, ofnm, fmt, series, extra)        
         if fmt is not None:
-            ofnm = '%s.%s'%(ofnm, self.installed_formats[fmt].ext[0])
+            ofnm = '%s.%s'%(ofnm, cls.installed_formats[fmt].ext[0])
         command = [ifnm, ofnm]
         if series>=0:
             command.extend(['-series', '%s'%series])
         #command.extend(extra)
-        return self.run(ifnm, ofnm, command )
+        return cls.run(ifnm, ofnm, command )
 
     # '.ome.tiff' or '.ome.tif'.
     #sh bfconvert -bigtiff -compression LZW  ../53676.svs ../output.ome.tiff
 
-    def convertToOmeTiff(self, ifnm, ofnm, series=0, extra=[]):
+    @classmethod
+    def convertToOmeTiff(cls, ifnm, ofnm, series=0, extra=[]):
         '''converts input filename into output in OME-TIFF format'''
         log.debug('convertToOmeTiff: [%s] -> [%s] for series %s with [%s]', ifnm, ofnm, series, extra)
                 
@@ -361,22 +363,24 @@ class ConverterBioformats(ConverterBase):
         if series>=0:
             command.extend(['-series', '%s'%series])
         command.extend(extra)            
-        return self.run(ifnm, ofnm, command )
+        return cls.run(ifnm, ofnm, command )
 
-    def thumbnail(self, ifnm, ofnm, width, height, series=0, **kw):
+    @classmethod
+    def thumbnail(cls, ifnm, ofnm, width, height, series=0, **kw):
         '''converts input filename into output thumbnail'''
         log.debug('Thumbnail: %s %s %s for [%s]', width, height, series, ifnm)
                 
-        ometiff = kw['intermediate'].replace('.ome.tif', 't0.z0.ome.tif')
+        ometiff = kw['intermediate'].replace('.ome.tif', '.t0.z0.ome.tif')
         
         # create an intermediate OME-TIFF
         if not os.path.exists(ometiff):
-            self.convertToOmeTiff(ifnm, ometiff, series=series, extra=['-z', '0', '-timepoint', '0'])
+            cls.convertToOmeTiff(ifnm, ometiff, series=series, extra=['-z', '0', '-timepoint', '0'])
             
         # extract thumbnail
         return ConverterImgcnv.thumbnail(ometiff, ofnm=ofnm, width=width, height=height, series=series, **kw)
 
-    def slice(self, ifnm, ofnm, z, t, roi=None, series=0, **kw):
+    @classmethod
+    def slice(cls, ifnm, ofnm, z, t, roi=None, series=0, **kw):
         '''extract Z,T plane from input filename into output in OME-TIFF format'''
         log.debug('Slice: %s %s %s %s for [%s]', z, t, roi, series, ifnm)        
         z1,z2 = z
@@ -386,11 +390,11 @@ class ConverterBioformats(ConverterBase):
         ometiff = kw['intermediate']
         
         if z1>z2 and z2==0 and t1>t2 and t2==0 and x1==0 and x2==0 and y1==0 and y2==0:
-            return self.convertToOmeTiff(ifnm, ometiff, series=series, extra=['-z', '%s'%z1, '-timepoint', '%s'%t1])
+            return cls.convertToOmeTiff(ifnm, ometiff, series=series, extra=['-z', '%s'%z1, '-timepoint', '%s'%t1])
         else:        
             # create an intermediate OME-TIFF
             if not os.path.exists(ometiff):
-                self.convertToOmeTiff(ifnm, ometiff, series=series)
+                cls.convertToOmeTiff(ifnm, ometiff, series=series)
             # extract slices
             return ConverterImgcnv.slice(ometiff, ofnm=ofnm, z=z, t=t, roi=roi, series=series, **kw)
     
