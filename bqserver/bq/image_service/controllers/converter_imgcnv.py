@@ -148,7 +148,8 @@ class ConverterImgcnv(ConverterBase):
     
         with Locks (ifnm):
             meta = misc.run_command( [self.CONVERTERCOMMAND, '-meta', '-i', ifnm] )  
-
+        if meta is None:
+            return {}
         rd = {} 
         for line in meta.splitlines():
             if not line: continue
@@ -177,7 +178,8 @@ class ConverterImgcnv(ConverterBase):
 
         with Locks(ifnm):
             info = misc.run_command( [self.CONVERTERCOMMAND, '-info', '-i', ifnm] ) 
-
+        if info is None:
+            return {}
         rd = {} 
         for line in info.splitlines():
             if not line: continue
@@ -201,7 +203,8 @@ class ConverterImgcnv(ConverterBase):
     # Conversion
     #######################################
 
-    def convert(self, ifnm, ofnm, fmt=None, series=0, extra=[]):
+    @classmethod
+    def convert(cls, ifnm, ofnm, fmt=None, series=0, extra=[]):
         '''converts a file and returns output filename'''
         log.debug('convert: [%s] -> [%s] into %s for series %s with [%s]', ifnm, ofnm, fmt, series, extra)
         command = ['-i', ifnm]
@@ -209,18 +212,19 @@ class ConverterImgcnv(ConverterBase):
             command.extend (['-o', ofnm])
         if fmt is not None:
             command.extend (['-t', fmt])
-            if self.installed_formats[fmt].multipage is True:
+            if cls.installed_formats[fmt].multipage is True:
                 extra.extend(['-multi'])
             else:
                 extra.extend(['-page', '1'])
         command.extend (extra)
-        return self.run(ifnm, ofnm, command )
+        return cls.run(ifnm, ofnm, command )
         
-    #def convertToOmeTiff(self, ifnm, ofnm, series=0, extra=[]):
+    #def convertToOmeTiff(cls, ifnm, ofnm, series=0, extra=[]):
     #    '''converts input filename into output in OME-TIFF format'''
-    #    return self.convert(ifnm, ofnm, ['-input', ifnm, '-output', ofnm, '-format', 'OmeTiff', '-series', '%s'%series] )
+    #    return cls.convert(ifnm, ofnm, ['-input', ifnm, '-output', ofnm, '-format', 'OmeTiff', '-series', '%s'%series] )
 
-    def thumbnail(self, ifnm, ofnm, width, height, series=0, **kw):
+    @classmethod
+    def thumbnail(cls, ifnm, ofnm, width, height, series=0, **kw):
         '''converts input filename into output thumbnail'''
         log.debug('Thumbnail: %s %s %s for [%s]', width, height, series, ifnm)
                 
@@ -235,9 +239,10 @@ class ConverterImgcnv(ConverterBase):
         command.extend([ '-resize', '%s,%s,%s,AR'%(width,height,method)])
         command.extend([ '-options', 'quality 95 progressive yes'])
         
-        return self.run(ifnm, ofnm, command )
+        return cls.run(ifnm, ofnm, command )
 
-    def slice(self, ifnm, ofnm, z, t, roi=None, series=0, **kw):
+    @classmethod
+    def slice(cls, ifnm, ofnm, z, t, roi=None, series=0, **kw):
         '''extract Z,T plane from input filename into output in OME-TIFF format'''
         log.debug('Slice: %s %s %s %s for [%s]', z, t, roi, series, ifnm)        
         z1,z2 = z
@@ -277,7 +282,7 @@ class ConverterImgcnv(ConverterBase):
                 if y2>0: y2 = y2-1
             command.extend(['-roi', '%s,%s,%s,%s' % (x1,y1,x2,y2)])
         
-        return self.run(ifnm, ofnm, command )
+        return cls.run(ifnm, ofnm, command )
 
 
 ConverterImgcnv.init()

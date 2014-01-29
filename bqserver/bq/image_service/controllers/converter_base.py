@@ -165,14 +165,15 @@ class ConverterBase:
     # Conversion
     #######################################
 
-    def run(self, ifnm, ofnm, args ):
+    @classmethod
+    def run(cls, ifnm, ofnm, args ):
         '''converts input filename into output using exact arguments as provided in args'''
-        if not self.installed: 
+        if not cls.installed: 
             return None
         with Locks(ifnm, ofnm) as l:
             if not l.locked:
                 return None
-            command = [self.CONVERTERCOMMAND]
+            command = [cls.CONVERTERCOMMAND]
             command.extend(args)   
             log.debug('Convert command: [%s]', ' '.join(command))
             if os.path.exists(ofnm):
@@ -192,7 +193,8 @@ class ConverterBase:
                 return None
             return ofnm
     
-    def convert(self, ifnm, ofnm, fmt=None, series=0, extra=[]):
+    @classmethod
+    def convert(cls, ifnm, ofnm, fmt=None, series=0, extra=[]):
         '''converts a file and returns output filename'''
         command = ['-input', ifnm]
         if ofnm is not None:
@@ -202,27 +204,30 @@ class ConverterBase:
         if series is not None:
             command.extend (['-series', str(series)])               
         #command.extend (extra)
-        return self.run(ifnm, ofnm, command )
+        return cls.run(ifnm, ofnm, command )
     
     # overwrite with appropriate implementation 
-    def convertToOmeTiff(self, ifnm, ofnm, series=0, extra=[]):
+    @classmethod
+    def convertToOmeTiff(cls, ifnm, ofnm, series=0, extra=[]):
         '''converts input filename into output in OME-TIFF format'''
-        return self.run(ifnm, ofnm, ['-input', ifnm, '-output', ofnm, '-format', 'OmeTiff', '-series', '%s'%series] )
+        return cls.run(ifnm, ofnm, ['-input', ifnm, '-output', ofnm, '-format', 'OmeTiff', '-series', '%s'%series] )
 
     # overwrite with appropriate implementation
-    def thumbnail(self, ifnm, ofnm, width, height, series=0, **kw):
+    @classmethod
+    def thumbnail(cls, ifnm, ofnm, width, height, series=0, **kw):
         '''converts input filename into output thumbnail'''
-        return self.run(ifnm, ofnm, ['-input', ifnm, '-output', ofnm, '-format', 'jpeg', '-series', '%s'%series, '-thumbnail'] )
+        return cls.run(ifnm, ofnm, ['-input', ifnm, '-output', ofnm, '-format', 'jpeg', '-series', '%s'%series, '-thumbnail'] )
 
     # overwrite with appropriate implementation
-    def slice(self, ifnm, ofnm, z, t, roi=None, series=0, **kw):
+    @classmethod
+    def slice(cls, ifnm, ofnm, z, t, roi=None, series=0, **kw):
         '''extract Z,T plane from input filename into output in OME-TIFF format'''
         z1,z2 = z
         t1,t2 = t
         x1,x2,y1,y2 = roi
         info = kw['info']
                 
-        return self.run(ifnm, ofnm, ['-input', ifnm, '-output', ofnm, '-format', 'OmeTiff', '-series', '%s'%series, 'z', '%s'%z, 't', '%s'%t] )
+        return cls.run(ifnm, ofnm, ['-input', ifnm, '-output', ofnm, '-format', 'OmeTiff', '-series', '%s'%series, 'z', '%s'%z, 't', '%s'%t] )
     
 
 #ConverterBase.init()
