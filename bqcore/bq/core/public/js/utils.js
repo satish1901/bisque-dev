@@ -31,6 +31,27 @@ function callback(obj, method) {
         return thismeth.apply(thisobj, thisextra.concat(args));
     };
 }
+// Create a method callback on a javascript objects.
+// Used for event handlers binding an object instance
+// to a method invocation.
+// Usage:
+//  on_event =  callback (m, 'some_method' [, arg1, ... ])
+// When the event fires the callback will be called with
+// both the static arguments and the dynamic arguments provided
+// by the event
+// Example:
+//   m.some_method( evt_arg1, evt_arg2, ... arg1, arg,...,])
+// callback_app{end_args} .. append the fixed args instead of prepending
+function callback_app(obj, method) {
+    var thisobj = obj;
+    var thismeth = ( typeof method == "string") ? thisobj[method] : method;
+    var thisextra = Array.prototype.slice.call(arguments, 2);
+
+    return function() {
+        var args = Array.prototype.slice.call(arguments);
+        return thismeth.apply(thisobj, args.concat (thisextra));
+    };
+}
 
 function evaluateXPath(aNode, aExpr)
 {
@@ -58,7 +79,7 @@ function evaluateXPathIE(aNode, aExpr)
 
 // Use IE specific code for XPath evaluation
 if (Ext.isIE)
-    evaluateXPath = evaluateXPathIE; 
+    evaluateXPath = evaluateXPathIE;
 
 // e.g.
 // str = ellipsis("this is a test", 7, '...')
@@ -67,9 +88,9 @@ if (Ext.isIE)
 function ellipsis(value, len, eos)
 {
     eos = eos || "...";
-    
+
     if (value && value.length > len)
-        return value.substr(0, len-eos.length) + eos;        
+        return value.substr(0, len-eos.length) + eos;
     return value;
 }
 
@@ -279,7 +300,7 @@ function xmlrequest(url, cb, method, postdata, errorcb) {
                     //error_str = "You do not have permission for this operation\nAre you logged in?\n\n"+url;
                     window.location = "/auth_service/login?came_from=" + window.location;
                 }  else if (ajaxRequest.status === 403) {
-                    error_str = "You do not have permission for this operation:\n" + url;                    
+                    error_str = "You do not have permission for this operation:\n" + url;
                 } else if (ajaxRequest.status === 404) {
                     error_str = "Requested resource does not exist:\n" + url;
                 }
@@ -293,9 +314,9 @@ function xmlrequest(url, cb, method, postdata, errorcb) {
                 }
 
                 // Utkarsh : This shouldn't be called again if a default_error_callback is configured for all requests
-                //           Leads to two error message popups                     
+                //           Leads to two error message popups
                 //BQ.ui.error(error_str);
-                
+
                 //throw(error_str);
             }
         }
@@ -338,7 +359,7 @@ function chainRequest(ajaxRequest, cb) {
     ajaxRequest.callback = chain;
 }
 
-if(typeof console == "undefined"){ 
+if(typeof console == "undefined"){
     window.console = {
         log : function (){}
     };
