@@ -16,13 +16,12 @@ __copyright__ = "Center for BioImage Informatics, University California, Santa B
 import logging
 import os.path
 from lxml import etree
-#from subprocess import Popen, call, PIPE
 from subprocess import call
 from locks import Locks
 
 from tg import config
+#from collections import OrderedDict
 from bq.util.compat import OrderedDict
-
 
 from . import misc
 from .converter_base import ConverterBase, Format
@@ -246,7 +245,7 @@ class ConverterImgcnv(ConverterBase):
     @classmethod
     def slice(cls, ifnm, ofnm, z, t, roi=None, series=0, **kw):
         '''extract Z,T plane from input filename into output in OME-TIFF format'''
-        log.debug('Slice: %s %s %s %s for [%s]', z, t, roi, series, ifnm)
+        log.debug('Slice: z=%s t=%s roi=%s series=%s for [%s]', z, t, roi, series, ifnm)
         z1,z2 = z
         t1,t2 = t
         x1,x2,y1,y2 = roi

@@ -26,6 +26,8 @@ import os
 from lxml import etree
 from subprocess import Popen, call, PIPE
 
+from bq.util.mkdir import _mkdir
+
 from bq.api.bqclass import fromXml # bisque
 from bq.api.comm import BQSession, BQCommError # bisque
 from bq.api.util import save_blob # bisque
@@ -163,8 +165,8 @@ class ImageServiceTestBase(unittest.TestCase):
 
     @classmethod        
     def fetch_file(self, filename):
-        os.mkdir(local_store_images)
-        os.mkdir(local_store_tests)
+        _mkdir(local_store_images)
+        _mkdir(local_store_tests)
         url = posixpath.join(url_image_store, filename)
         path = os.path.join(local_store_images, filename)  
         if not os.path.exists(path): 
