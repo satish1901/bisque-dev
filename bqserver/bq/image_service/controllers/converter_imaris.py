@@ -19,6 +19,7 @@ import re
 import tempfile
 import cStringIO as StringIO
 import ConfigParser
+#from collections import OrderedDict
 from bq.util.compat import OrderedDict
 
 from . import misc
@@ -140,6 +141,7 @@ class ConverterImaris(ConverterBase):
     def meta(self, ifnm, series=0):
         if not self.installed:
             return {}
+        log.debug('Meta for: %s', ifnm )
         with Locks (ifnm):
             t = tempfile.mkstemp(suffix='.xml')
             metafile = t[1]
@@ -262,9 +264,9 @@ class ConverterImaris(ConverterBase):
         '''returns a dict with file info'''
         if not self.installed:
             return {}
+        log.debug('Info for: %s', ifnm )
         if not os.path.exists(ifnm):
             return {}
-
         rd = self.meta(ifnm, series)
         core = [ 'image_num_series', 'image_num_x', 'image_num_y', 'image_num_z', 'image_num_c', 'image_num_t',
                  'image_pixel_format', 'image_pixel_depth',
@@ -296,6 +298,7 @@ class ConverterImaris(ConverterBase):
     def convertToOmeTiff(cls, ifnm, ofnm, series=0, extra=[]):
         '''converts input filename into output in OME-TIFF format'''
         log.debug('convertToOmeTiff: [%s] -> [%s] for series %s with [%s]', ifnm, ofnm, series, extra)
+        # bug: produces multi-file output, will be fixed later in imarisconvert
         return cls.run(ifnm, ofnm, ['-i', ifnm, '-o', ofnm, '-of', 'OmeTiff', '-ii', '%s'%series] )
 
     @classmethod
@@ -319,7 +322,7 @@ class ConverterImaris(ConverterBase):
         ometiff = kw['intermediate']
 
         if z1>z2 and z2==0 and t1>t2 and t2==0 and x1==0 and x2==0 and y1==0 and y2==0:
-            return cls.run(ifnm, ofnm, ['-i', ifnm, '-t', ofnm, '-of', 'OmeTiff', '-ii', '%s'%series, '-tm', 'Slice', '-tz', '%s'%z1, '-th', '%s'%t1] )
+            return cls.run(ifnm, ofnm, ['-i', ifnm, '-t', ofnm, '-of', 'OmeTiff', '-ii', str(series), '-tm', 'Slice', '-tz', str(z1-1), '-th', str(t1-1), '-tl', '100000,100000'] )
         else:
             # create an intermediate OME-TIFF
             if not os.path.exists(ometiff):

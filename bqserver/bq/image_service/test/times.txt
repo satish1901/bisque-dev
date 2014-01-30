@@ -2,3 +2,6 @@
 
 Ran 37 tests in 16.957s
 Ran 37 tests in 18.809s
+
+After plug-in converters update
+Ran 37 tests in 17.464s

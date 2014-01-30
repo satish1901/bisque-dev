@@ -15,6 +15,7 @@ __copyright__ = "Center for BioImage Informatics, University California, Santa B
 
 import os.path
 from subprocess import call
+#from collections import OrderedDict
 from bq.util.compat import OrderedDict
 
 from .locks import Locks
@@ -177,20 +178,22 @@ class ConverterBase:
                 return None
             command = [cls.CONVERTERCOMMAND]
             command.extend(args)
-            log.debug('Convert command: [%s]', ' '.join(command))
-            if os.path.exists(ofnm):
-                log.warning ('Run: [%s] exists before command', ofnm)
+            log.debug('Run command: [%s]', command)
+            if ofnm is not None and os.path.exists(ofnm):
+                log.warning ('Run: output exists before command [%s]', ofnm)
             retcode = call (command)
             if retcode != 0:
-                log.error ('Run: [%s] returned [%s]', ' '.join(command), retcode)
+                log.warning ('Run: returned [%s] for [%s]', retcode, command)
                 return None
+            if ofnm is None:
+                return str(retcode)
             # tile command does not produce a file with this filename
 #             if not os.path.exists(ofnm):
-#                 log.error ('Run: [%s] does not exist after command', ofnm)
+#                 log.error ('Run: output does not exist after command [%s]', ofnm)
 #                 return None
             # safeguard for incorrectly converted files, sometimes only the tiff header can be written
             if os.path.exists(ofnm) and os.path.getsize(ofnm) < 16:
-                log.error ('Run: [%s] file is smaller than 16 bytes, probably an error, removing', ofnm)
+                log.error ('Run: output file is smaller than 16 bytes, probably an error, removing [%s]', ofnm)
                 os.remove(ofnm)
                 return None
             return ofnm
