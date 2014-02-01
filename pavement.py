@@ -200,7 +200,10 @@ def pylint(options):
     args = 'bqcore/bq bqserver/bq bqengine/bq bqfeature/bq'
     if options.args:
         args = " ".join(options.args)
-    sh('PYTHONPATH=bqcore/bq:bqserver/bq:bqengine/bq:bqfeature/bq pylint %s --rcfile=bqcore/pylint.rc' % args)
+    if os.name != 'nt':
+        sh('PYTHONPATH=bqcore/bq:bqserver/bq:bqengine/bq:bqfeature/bq pylint %s --rcfile=bqcore/pylint.rc' % args)
+    else:
+        sh('set PYTHONPATH=bqcore\\bq;bqserver\\bq;bqengine\\bq;bqfeature\\bq & pylint %s --rcfile=bqcore\\pylint.rc' % args)
 
 
 
@@ -210,6 +213,8 @@ def pylint_modules(options):
     args = 'modules/*/*.py'
     if options.args:
         args = " ".join(options.args)
-    sh('PYTHONPATH=bqcore/bq:bqserver/bq:bqengine/bq:bqfeature/bq pylint %s --rcfile=bqcore/pylint.rc' % args)
-
+    if os.name != 'nt':        
+        sh('PYTHONPATH=bqcore/bq:bqserver/bq:bqengine/bq:bqfeature/bq pylint %s --rcfile=bqcore/pylint.rc' % args)
+    else:
+        sh('set PYTHONPATH=bqcore\\bq;bqserver\\bq;bqengine\\bq;bqfeature\\bq & pylint %s --rcfile=bqcore\\pylint.rc' % args)
 

@@ -49,7 +49,7 @@ def safefloat(s, default=0.0):
         v = default
     return v
 
-def safetypeparse(v):    
+def safetypeparse(v):
     try:
         v = int(v)
     except ValueError:
@@ -59,7 +59,7 @@ def safetypeparse(v):
             pass
     return v
 
-def safeencode(s):    
+def safeencode(s):
     try:
         s.encode('ascii')
     except UnicodeEncodeError:
@@ -73,7 +73,7 @@ def run_command(command):
         o,e = p.communicate()
         if p.returncode!=0:
             return None
-        # Qt reports an error: 'Qt: Untested Windows version 6.2 detected!\r\n' 
+        # Qt reports an error: 'Qt: Untested Windows version 6.2 detected!\r\n'
         #if e is not None and len(e)>0:
         #    return None
         return o
@@ -82,6 +82,3 @@ def run_command(command):
     except:
         log.exception ('Exception during execution [%s]', command )
     return None
-
-
- 

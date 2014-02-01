@@ -385,7 +385,7 @@ class ConverterBioformats(ConverterBase):
         z1,z2 = z
         t1,t2 = t
         x1,x2,y1,y2 = roi
-        info = kw['info']
+        #info = kw['info']
         ometiff = kw['intermediate']
 
         if z1>z2 and z2==0 and t1>t2 and t2==0 and x1==0 and x2==0 and y1==0 and y2==0:

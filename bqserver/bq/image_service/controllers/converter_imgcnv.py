@@ -16,8 +16,8 @@ __copyright__ = "Center for BioImage Informatics, University California, Santa B
 import logging
 import os.path
 from lxml import etree
-from subprocess import call
-from locks import Locks
+#from subprocess import call
+from .locks import Locks
 
 from tg import config
 #from collections import OrderedDict
@@ -254,8 +254,10 @@ class ConverterImgcnv(ConverterBase):
 
         command = ['-i', ifnm, '-o', ofnm, '-t', fmt]
 
-        if t2==0: t2=t1
-        if z2==0: z2=z1
+        if t2==0: 
+            t2=t1
+        if z2==0: 
+            z2=z1
 
         pages = []
         for ti in range(t1, t2+1):
@@ -274,11 +276,11 @@ class ConverterImgcnv(ConverterBase):
         command.extend(['-multi', '-page', ','.join([str(p) for p in pages])])
 
         # roi
-        if not (x1==x2) or not (y1==y2):
-            if not (x1==x2):
+        if not x1==x2 or not y1==y2:
+            if not x1==x2:
                 if x1>0: x1 = x1-1
                 if x2>0: x2 = x2-1
-            if not (y1==y2):
+            if not y1==y2:
                 if y1>0: y1 = y1-1
                 if y2>0: y2 = y2-1
             command.extend(['-roi', '%s,%s,%s,%s' % (x1,y1,x2,y2)])
