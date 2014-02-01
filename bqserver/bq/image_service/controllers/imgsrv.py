@@ -36,12 +36,12 @@ from bq.util.mkdir import _mkdir
 from bq.util.compat import OrderedDict
 
 # Locals
-from locks import Locks
-import misc
+from .locks import Locks
+from . import misc
 
-from converter_imgcnv import ConverterImgcnv
-from converter_imaris import ConverterImaris
-from converter_bioformats import ConverterBioformats
+from .converter_imgcnv import ConverterImgcnv
+from .converter_imaris import ConverterImaris
+from .converter_bioformats import ConverterBioformats
 
 
 log = logging.getLogger('bq.image_service.server')
@@ -2301,7 +2301,6 @@ class ImageServer(object):
             #'bioformats'   : BioFormatsService(self)
         }
 
-        
         self.converters = ConverterDict([
             ('imgcnv',     ConverterImgcnv()), 
             ('imaris',     ConverterImaris()),

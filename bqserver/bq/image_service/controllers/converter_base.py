@@ -28,7 +28,8 @@ log = logging.getLogger('bq.image_service.converter')
 # Format - the definition of a format
 ################################################################################
 
-class Format:
+class Format(object):
+    
     def __init__(self, name='', fullname='', ext=[], reading=False, writing=False, multipage=False, metadata=False, samples=(0,0), bits=(0,0)):
         self.name      = name
         self.fullname  = fullname
@@ -42,17 +43,21 @@ class Format:
 
     def supportToString(self):
         s = []
-        if self.reading   is True: s.append('reading')
-        if self.writing   is True: s.append('writing')
-        if self.multipage is True: s.append('multipage')
-        if self.metadata  is True: s.append('metadata')
+        if self.reading   is True: 
+            s.append('reading')
+        if self.writing   is True: 
+            s.append('writing')
+        if self.multipage is True: 
+            s.append('multipage')
+        if self.metadata  is True: 
+            s.append('metadata')
         return ','.join(s)
 
 ################################################################################
 # ConverterBase
 ################################################################################
 
-class ConverterBase:
+class ConverterBase(object):
     installed = False
     version = None
     installed_formats = None # OrderedDict containing Format and keyed by format name
@@ -227,10 +232,10 @@ class ConverterBase:
     @classmethod
     def slice(cls, ifnm, ofnm, z, t, roi=None, series=0, **kw):
         '''extract Z,T plane from input filename into output in OME-TIFF format'''
-        z1,z2 = z
-        t1,t2 = t
-        x1,x2,y1,y2 = roi
-        info = kw['info']
+        #z1,z2 = z
+        #t1,t2 = t
+        #x1,x2,y1,y2 = roi
+        #info = kw['info']
 
         return cls.run(ifnm, ofnm, ['-input', ifnm, '-output', ofnm, '-format', 'OmeTiff', '-series', '%s'%series, 'z', '%s'%z, 't', '%s'%t] )
 

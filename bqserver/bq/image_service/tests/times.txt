@@ -5,3 +5,10 @@ Ran 37 tests in 18.809s
 
 After plug-in converters update
 Ran 37 tests in 17.464s
+
+
+dough: 3 servers
+
+Ran 37 tests in 25.776s
+Ran 37 tests in 26.653s
+Ran 37 tests in 24.436s
