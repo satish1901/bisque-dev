@@ -107,10 +107,19 @@ BQFactory.make = function(ty, uri, name, value) {
     var ctor = BQResource;
     if (ty in BQFactory.ctormap)
         ctor = BQFactory.ctormap[ty];
-    o =  new ctor(uri);
+    var o = new ctor(uri);
     if (ctor == BQResource && ty) o.resource_type = ty;
     o.name = name;
     o.value = value;
+    return o;
+};
+
+BQFactory.makeShortCopy = function(resource) {
+    var ctor = BQFactory.ctormap[resource.resource_type];
+    var o = new ctor();
+    var a = undefined;
+    for (var i=0; (a=resource.xmlfields[i]); i++)
+        o[a] = resource[a];
     return o;
 };
 

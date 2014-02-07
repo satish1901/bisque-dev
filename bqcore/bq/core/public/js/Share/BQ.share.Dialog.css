@@ -1,0 +1,68 @@
+/*******************************************************************************
+
+  Styles for BQ.share.Dialog.js
+
+  Author: Dima Fedorov
+
+  Version: 1
+
+  History:
+    2014-05-02 13:57:30 - first creation
+
+*******************************************************************************/
+
+.bq-share-dialog {
+    padding: 0px 10px 10px 10px;
+    background-color: #ffffff;
+}
+
+.bq-share-panel h2 {
+    margin: 20px 0px 12px 0px;
+}
+
+.bq-share-panel p {
+    margin: 5px 0px 8px 0px;
+}
+
+.bq-share-bar {
+    margin-bottom: 10px;
+}
+
+.bq-share-bar .x-btn {
+    margin-left: 5px;
+}
+
+.bq-visibility-bar {
+}
+
+.bq-visibility-bar h3 {
+    margin-top: 12px;
+    margin-right: 10px;
+}
+
+.bq-visibility-bar p {
+    margin: 2px 0px 5px 10px;
+}
+
+
+.bq-button-visibility {
+    padding: 4px 8px 4px 8px;
+}
+
+.bq-button-visibility .x-btn-inner {
+    font-weight: bold;
+}
+
+.published .x-btn-inner {
+    color: #008000;
+}
+
+.bq-icon-visibility {
+    background-image: url('images/lock.png');
+    background-size: 64px 32px;
+    background-repeat:no-repeat;
+}
+
+.published .bq-icon-visibility {
+    background-position: -32px 0px;
+}

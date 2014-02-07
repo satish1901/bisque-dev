@@ -798,8 +798,13 @@ Ext.define('Bisque.Resource.Page',
 
     shareResource : function()
     {
+/*
         var shareDialog = Ext.create('BQ.ShareDialog', {
             resource    :   this.resource
+        });*/
+
+        var shareDialog = Ext.create('BQ.share.Dialog', {
+            resource: this.resource,
         });
     },
 
