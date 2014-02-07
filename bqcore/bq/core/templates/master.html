@@ -1,4 +1,4 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:py="http://genshi.edgewall.org/"
       xmlns:xi="http://www.w3.org/2001/XInclude"
@@ -9,24 +9,23 @@
 
     <meta content="text/html; charset=UTF-8" http-equiv="content-type" py:replace="''"/>
     <meta name = "viewport" content="width=900, maximum-scale=1" />
-    
+
     <title py:with="title = list(select('title/text()'))">
     Bisque<py:if test="title">: ${title}</py:if>
-    </title>  
-    
+    </title>
+
     <!-- Bisque styles -->
     <link rel="stylesheet" type="text/css" href="${tg.url('/extjs/resources/css/ext-all.css')}" />
-    <!--    
-    <link rel="stylesheet" type="text/css" href="${tg.url('/extjs/resources/css/ext-all-neptune.css')}"/>
-    -->
-    
+    <!--<link rel="stylesheet" type="text/css" href="${tg.url('/extjs/resources/css/ext-all-neptune.css')}"/>-->
+
     ${h.stylesheet_link (
     '/css/bq.css',
     '/css/bq_ui_toolbar.css',
     '/js/bq_ui_misc.css',
-    '/js/ResourceBrowser/ResourceBrowser.css', 
-    '/js/ResourceTagger/Tagger.css', 
-    '/js/DatasetBrowser/DatasetBrowser.css', 
+    '/js/ResourceBrowser/ResourceBrowser.css',
+    '/js/ResourceTagger/Tagger.css',
+    '/js/DatasetBrowser/DatasetBrowser.css',
+    '/js/Share/BQ.share.Dialog.css',
     {'file' : '/export_service/public/css/BQ.Export.css', 'path' : h.file_root() + 'bqserver/bq'},
     '/css/bisquik_extjs_fix.css',
     # combined will not work for now due to relative urls in .css files
@@ -46,10 +45,10 @@
       else:
           link_kw = {}
     ?>
-    
+
 
     ${h.javascript_link(
-    '/js/bq_ui_extjs_fix.js', 
+    '/js/bq_ui_extjs_fix.js',
     # --Bisque JsApi - this needs cleaning and updating--
     '/js/utils.js',
     '/js/bq_api.js',
@@ -86,10 +85,11 @@
     # -- Share dialog files --
     '/js/Share/BQ.ShareDialog.js',
     '/js/Share/BQ.ShareDialog.Offline.js',
-    '/js/ResourceTagger/ComboBox.js',  
-    '/js/ResourceTagger/RowEditing.js',    
+    '/js/Share/BQ.share.Dialog.js',
+    '/js/ResourceTagger/ComboBox.js',
+    '/js/ResourceTagger/RowEditing.js',
     '/js/ResourceTagger/Tagger.js',
-    '/js/ResourceTagger/TaggerOffline.js', 
+    '/js/ResourceTagger/TaggerOffline.js',
     '/js/ResourceTagger/ResourceRenderers/BaseRenderer.js',
     # -- Preferences --
     '/js/Preferences/BQ.Preferences.js',
@@ -114,9 +114,9 @@
     **link_kw
     )}
 
-    
-    <!-- Configuration variables   -->  
-    <script type="text/javascript" > 
+
+    <!-- Configuration variables   -->
+    <script type="text/javascript" >
         // update the configuration in your template
         bq = Ext.create('BQ', {
           title : "${tg.config.get('bisque.title', 'CBI Repository')}",
@@ -124,31 +124,31 @@
         });
     </script>
 
-    <!-- Derived template configuration includes   -->  
+    <!-- Derived template configuration includes   -->
     ${select('*[@id="config" and local-name()="script"]')}
 
-    <!-- Bisque Application instantiation   -->   
-    <script type="text/javascript" > 
-        Ext.onReady( function(){ 
-            BQApp = Ext.create('BQ.Application', bq); 
+    <!-- Bisque Application instantiation   -->
+    <script type="text/javascript" >
+        Ext.onReady( function(){
+            BQApp = Ext.create('BQ.Application', bq);
         });
-    </script>  
+    </script>
 
-    <!-- Derived template includes   -->  
+    <!-- Derived template includes   -->
     ${select('*[local-name()!="title" and not(@id="config" and local-name()="script")]')}
-  
-    <script type="text/javascript" py:if="tg.flash" > 
-        Ext.onReady( function(){ 
+
+    <script type="text/javascript" py:if="tg.flash" >
+        Ext.onReady( function(){
             BQ.ui.popup( '${tg.flash_obj.status}', '${tg.flash_obj.message}' );
         });
     </script>
-  
-    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" > 
-        Ext.onReady( function() {     
+
+    <script type="text/javascript" py:if="tg.config.get('bisque.environment', None) == 'development'" >
+        Ext.onReady( function() {
             //BQ.ui.warning( 'This a test environment, all your data may be lost!' );
-        });     
+        });
     </script>
-  
+
 </head>
 </py:match>
 
@@ -157,8 +157,8 @@
 
 <body py:attrs="select('@*')">
 	<div id="content" class="content" >
-    ${select('*|text()')} 
-  </div> 
+    ${select('*|text()')}
+  </div>
 
 
  <xi:include href="${tg.config.get('bisque.tracking')}" py:if="tg.config.get('bisque.tracking')" />
