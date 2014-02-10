@@ -12,3 +12,10 @@ dough: 3 servers
 Ran 37 tests in 25.776s
 Ran 37 tests in 26.653s
 Ran 37 tests in 24.436s
+
+bovary: 1 servers
+
+Ran 37 tests in 52.199s
+Ran 37 tests in 43.292s
+Ran 37 tests in 28.721s
+Ran 37 tests in 32.531s
