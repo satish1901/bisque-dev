@@ -79,31 +79,47 @@ function getFull(v, record) {
     return Ext.util.Format.format('{0} - {1} - {2}', username, name, email);
 }
 
-Ext.define('BQ.model.Users', {
-    extend : 'Ext.data.Model',
-    fields : [ {name: 'user', mapping: '@name' },
-               {name: 'name', convert: getName },
-               {name: 'email', mapping: '@value' },
-               {name: 'uri', mapping: '@uri' },
-               {name: 'full', convert: getFull },
-             ],
-});
-
 Ext.define('BQ.model.Auth', {
     extend : 'Ext.data.Model',
     fields : [ {name: 'user', mapping: "@user" },
                {name: 'email', mapping: '@email' },
                {name: 'action', mapping: '@action' },
              ],
-    associations: [{
+    /*associations: [{
         type: 'hasOne',
         model: 'BQ.model.Users',
-        primaryKey: 'user',
-        foreignKey: 'uri',
+        name: 'username',
+        instanceName: 'username',
+        //associationKey: 'username',
+        primaryKey: 'uri',
+        foreignKey: 'user',
         getterName: 'getUserName',
-        associationKey: 'user',
-    }],
+    }],*/
 
+});
+
+Ext.define('BQ.model.Users', {
+    extend : 'Ext.data.Model',
+    fields : [ {name: 'username', mapping: '@name' },
+               {name: 'name', convert: getName },
+               {name: 'email', mapping: '@value' },
+               {name: 'uri', mapping: '@uri' },
+               {name: 'full', convert: getFull },
+             ],
+    //belongsTo: 'BQ.model.Auth',
+    proxy : {
+        limitParam : undefined,
+        pageParam: undefined,
+        startParam: undefined,
+        noCache: false,
+        type: 'ajax',
+        url : '/data_service/user?view=full&tag_order="@ts":desc&wpublic=true',
+        reader : {
+            type :  'xml',
+            root :  'resource',
+            record: 'user',
+        },
+    },
 });
 
 Ext.define('BQ.share.Panel', {
@@ -124,25 +140,15 @@ Ext.define('BQ.share.Panel', {
             model : 'BQ.model.Users',
             autoLoad : true,
             autoSync : false,
-            proxy : {
-                limitParam : undefined,
-                pageParam: undefined,
-                startParam: undefined,
-                noCache: false,
-                type: 'ajax',
-                url : '/data_service/user?view=full&tag_order="@ts":desc&wpublic=true',
-                reader : {
-                    type :  'xml',
-                    root :  'resource',
-                    record: 'user',
-                },
+            listeners : {
+                'load': this.onUsersStoreLoaded,
+                scope: this,
             },
         });
 
         this.store = Ext.create('BQ.share.Store', {
             model : 'BQ.model.Auth',
-            autoLoad : true,
-            //autoSync : false,
+            autoLoad : false,
             autoSync : true,
             proxy : {
                 actionMethods: {
@@ -192,13 +198,16 @@ Ext.define('BQ.share.Panel', {
                 text: 'User',
                 flex: 1,
                 dataIndex: 'user',
-                //dataIndex: 'userName',
                 sortable: true,
-                renderer: function(value, meta, record) {
+                renderer: function(value, meta, record, row, col, store, view) {
+                    if (me.users_xml)
+                        return xpath(me.users_xml, '//user[@uri="'+value+'"]/@name');
+
+                    //me.store_users.clearFilter(true);
                     var r = me.store_users.findRecord( 'uri', value );
                     if (r && r.data)
-                        return r.data.user;
-                    return value;
+                        return r.data.username;
+                    return '';
                 },
             }, {
                 text: 'Name',
@@ -206,23 +215,30 @@ Ext.define('BQ.share.Panel', {
                 dataIndex: 'user',
                 sortable: true,
                 renderer: function(value) {
+                    if (me.users_xml)
+                        return xpath(me.users_xml, '//user[@uri="'+value+'"]/tag[@name="display_name"]/@value');
+
+                    //me.store_users.clearFilter(true);
                     var r = me.store_users.findRecord( 'uri', value );
                     if (r && r.data)
                         return r.data.name;
-                    return value;
+                    return '';
                 },
             }, {
                 text: 'E-Mail',
                 flex: 2,
                 dataIndex: 'email',
-                //dataIndex: 'user',
                 sortable: true,
                 renderer: function(value, meta, record) {
                     if (value!=='') return value;
+                    if (me.users_xml)
+                        return xpath(me.users_xml, '//user[@uri="'+record.data.user+'"]/@value');
+
+                    //me.store_users.clearFilter(true);
                     var r = me.store_users.findRecord( 'uri', record.data.user );
                     if (r && r.data)
                         return r.data.email;
-                    return value;
+                    return '';
                 },
             }, {
                 text: 'Permission',
@@ -244,7 +260,6 @@ Ext.define('BQ.share.Panel', {
                 sortable: false,
                 menuDisabled: true,
                 items: [{
-                    //icon: 'resources/images/icons/fam/delete.gif',
                     icon : bq.url('../export_service/public/images/delete.png'),
                     tooltip: 'Delete share',
                     scope: this,
@@ -267,7 +282,7 @@ Ext.define('BQ.share.Panel', {
                 xtype: 'combobox',
                 itemId: 'user_combo',
                 flex: 2,
-                //fieldLabel: 'Add new shares nu user name or any e-mail',
+                //fieldLabel: 'Add new shares by user name or any e-mail',
                 store: this.store_users,
                 queryMode: 'local',
                 displayField: 'full',
@@ -328,6 +343,11 @@ Ext.define('BQ.share.Panel', {
         this.callParent();
     },
 
+    onUsersStoreLoaded: function( store, records, successful, eOpts) {
+        this.users_xml = this.store_users.proxy.reader.rawData;
+        this.store.load();
+    },
+
     onNotifyUsers: function(box) {
         var notify = box.getValue();
         var url = this.url;
@@ -351,17 +371,11 @@ Ext.define('BQ.share.Panel', {
             user = r.data.uri;
 
         // Create a model instance
-        var rec = {
+        this.store.add({
             user: user,
             email: email,
             action: 'read',
-        };
-
-        this.store.add(rec);
-        /*this.cellEditing.startEditByPosition({
-            row: 0,
-            column: 0
-        });*/
+        });z
     },
 
     onRemoveShare: function(grid, rowIndex) {
