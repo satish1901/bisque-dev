@@ -876,19 +876,21 @@ BQObject.prototype.remove = function (o) {
     }
 };
 
-BQObject.prototype.save_ = function (parenturi, cb, errorcb) {
+BQObject.prototype.save_ = function (parenturi, cb, errorcb, method) {
     this.testReadonly();
     var docobj = this.doc;
     var req = docobj.toXML();
     errorcb = errorcb || default_error_callback;
     if (docobj.uri) {
-        xmlrequest(docobj.uri, callback(docobj, 'response_', 'update', errorcb, cb),'put', req, errorcb);
+        var m = method || 'put';
+        xmlrequest(docobj.uri, callback(docobj, 'response_', 'update', errorcb, cb), method, req, errorcb);
     } else {
         if (this.resource_type in BQFactory.objects)
             parenturi = parenturi || '/data_service/'+this.resource_type+'/';
         else
             parenturi = parenturi || '/data_service/resource/';
-        xmlrequest(parenturi, callback(docobj, 'response_', 'created', errorcb, cb),'post', req, errorcb);
+        var m = method || 'post';
+        xmlrequest(parenturi, callback(docobj, 'response_', 'created', errorcb, cb), method, req, errorcb);
     }
 };
 
@@ -2096,7 +2098,6 @@ BQDataset.prototype.tmp_changePermission = function(permission, success, failure
 
 // method for a temporary dataset to share all member resources
 BQDataset.prototype.tmp_shareMembers = function() {
-    //var exporter = Ext.create('BQ.ShareDialog.Offline', {resources : this.tmp_members});
     if (this.tmp_members.length<=0)
         return;
     var exporter = Ext.create('BQ.share.MultiDialog', {
