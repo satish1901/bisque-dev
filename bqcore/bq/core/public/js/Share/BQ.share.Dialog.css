@@ -67,6 +67,16 @@
     background-position: -32px 0px;
 }
 
+.x-btn-default-toolbar-medium .bq-icon-visibility {
+    background-image: url('images/lock.png');
+    background-size: 46px 24px;
+    background-repeat:no-repeat;
+}
+
+.x-btn-default-toolbar-medium.published .bq-icon-visibility {
+    background-position: -23px 0px;
+}
+
 .bq-btn-highlight .x-btn-inner {
     font-weight: bold;
 }
