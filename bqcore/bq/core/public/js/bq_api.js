@@ -1744,10 +1744,14 @@ BQUser.prototype.on_credentials = function(cb, cred) {
 // BQAuth
 //-------------------------------------------------------------------------------
 
-function BQAuth (){
+function BQAuth (user, email, action) {
     BQObject.call(this);
     this.resource_type = "auth";
-    this.xmlfields = [ "action", "user", "email" ] ;
+    this.xmlfields = [ "action", "user", "email" ];
+
+    if (user && user !== '') this.user = user;
+    if (email && email !== '') this.email = email;
+    if (action && action !== '') this.action = action;
 };
 
 BQAuth.prototype = new BQObject();
@@ -2091,9 +2095,14 @@ BQDataset.prototype.tmp_changePermission = function(permission, success, failure
 };
 
 // method for a temporary dataset to share all member resources
-BQDataset.prototype.tmp_shareMembers = function()
-{
-    var exporter = Ext.create('BQ.ShareDialog.Offline', {resources : this.tmp_members});
+BQDataset.prototype.tmp_shareMembers = function() {
+    //var exporter = Ext.create('BQ.ShareDialog.Offline', {resources : this.tmp_members});
+    if (this.tmp_members.length<=0)
+        return;
+    var exporter = Ext.create('BQ.share.MultiDialog', {
+        resources : this.tmp_members,
+        permission: this.tmp_members[0].resource.permission,
+    });
 };
 
 
