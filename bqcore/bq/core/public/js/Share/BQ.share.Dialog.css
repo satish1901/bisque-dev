@@ -66,3 +66,7 @@
 .published .bq-icon-visibility {
     background-position: -32px 0px;
 }
+
+.bq-btn-highlight .x-btn-inner {
+    font-weight: bold;
+}

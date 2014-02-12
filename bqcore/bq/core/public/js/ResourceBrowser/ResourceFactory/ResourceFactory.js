@@ -388,10 +388,13 @@ Ext.define('Bisque.Resource',
 
 
     /* Resource operations */
-    shareResource : function()
-    {
+    shareResource : function() {
+        /* // dima: use new share dialog
         var shareDialog = Ext.create('BQ.ShareDialog', {
             resource    :   this.resource
+        });*/
+        var shareDialog = Ext.create('BQ.share.Dialog', {
+            resource: this.resource,
         });
     },
 
@@ -796,13 +799,11 @@ Ext.define('Bisque.Resource.Page',
 
     /* Resource operations */
 
-    shareResource : function()
-    {
-/*
+    shareResource : function() {
+        /* // dima: use new share dialog
         var shareDialog = Ext.create('BQ.ShareDialog', {
             resource    :   this.resource
         });*/
-
         var shareDialog = Ext.create('BQ.share.Dialog', {
             resource: this.resource,
         });
