@@ -331,7 +331,7 @@ Ext.define('BQ.share.Panel', {
                 html: this.resource ? '<h3>This resource is:</h3>' : '<h3>Set all resources to:</h3>',
             },{
                 xtype: this.resource ? 'bqresourcepermissions' : 'bqmultipermissions',
-                itemId : 'btnPerm',
+                itemId : 'btn_permission',
                 scale: 'large',
                 resource: this.resource,
                 permission: this.permission,
@@ -361,7 +361,8 @@ Ext.define('BQ.share.Panel', {
 
     onUsersStoreLoaded: function( store, records, successful, eOpts) {
         this.users_xml = this.store_users.proxy.reader.rawData;
-        this.store.load();
+        if (this.resource)
+            this.store.load();
     },
 
     onNotifyUsers: function(box) {
@@ -440,6 +441,8 @@ Ext.define('BQ.button.ResourcePermissions', {
     initComponent : function() {
         this.handler = this.toggleVisibility,
         this.callParent();
+        if (this.resource)
+            this.permission = this.resource.permission;
     },
 
     afterRender : function() {
@@ -447,10 +450,10 @@ Ext.define('BQ.button.ResourcePermissions', {
         this.setVisibility();
     },
 
-    onOk: function(resource) {
+    onSuccess: function(resource) {
         this.setLoading(false);
         this.permission = resource.permission;
-        this.resource.permission = this.permission;
+        this.resource.permission = this.permission; // update currently loaded resource
         this.setVisibility();
         this.fireEvent( 'changePermission', this.permission, this );
     },
@@ -462,11 +465,16 @@ Ext.define('BQ.button.ResourcePermissions', {
 
     toggleVisibility: function() {
         this.setLoading('');
-        var resource = BQFactory.makeShortCopy(this.resource);
-        resource.permission = this.resource.permission === 'private' ? 'published' : 'private';
+        this.updatePermission(this.resource, this.resource.permission === 'private' ? 'published' : 'private');
+    },
+
+    updatePermission: function(res, perm) {
+        var resource = BQFactory.makeShortCopy(res);
+        resource.permission = perm;
         resource.save_(undefined,
-                       callback(this, this.onOk),
-                       callback(this, this.onError));
+                       callback(this, this.onSuccess),
+                       callback(this, this.onError),
+                       'post');
     },
 
     setVisibility : function() {
