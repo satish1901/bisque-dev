@@ -104,7 +104,7 @@ Ext.define('BQ.share.MultiDialog', {
 
     onError: function(pos) {
         var resource = this.resources[pos].resource;
-        BQ.ui.warning('Error while '+ this.progress_text+' for '+resource.name);
+        BQ.ui.error('Error while '+ this.progress_text+' for '+resource.name);
         this.onSuccess(pos);
     },
 

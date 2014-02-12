@@ -223,23 +223,23 @@ Ext.define('Bisque.Resource',
         var name = Ext.create('Ext.container.Container', {
             cls : 'lblHeading1',
             html : this.resource.name,
-        })
+        });
 
         var type = Ext.create('Ext.container.Container', {
             cls : 'lblHeading2',
             html : this.resource.resource_type,
-        })
+        });
 
         var owner = BQApp.userList[this.resource.owner] || {};
 
         var value = Ext.create('Ext.container.Container', {
             cls : 'lblContent',
             html : owner.display_name,
-        })
+        });
         var ts = Ext.create('Ext.container.Container', {
             cls : 'lblContent',
             html : Ext.Date.format(new Date(this.resource.ts), "Y-m-d H:i:s"),
-        })
+        });
 
         this.add([name, type, value, ts]);
         this.setLoading(false);
@@ -735,14 +735,11 @@ Ext.define('Bisque.Resource.Page',
             iconCls     :   'icon-group',
             operation   :   this.shareResource,
             handler     :   this.testAuth1
-        },
-        {
-            itemId      :   'btnDelete',
-            text        :   'Delete',
-            iconCls     :   'icon-delete',
-            handler     :   this.deleteResource,
-        },
-        {
+        }, {
+            xtype: 'bqresourcepermissions',
+            itemId : 'btn_permission',
+            resource: resource,
+        }, /*{
             itemId      :   'btnPerm',
             operation   :   this.changePrivacy,
             handler     :   this.testAuth1,
@@ -771,21 +768,22 @@ Ext.define('Bisque.Resource.Page',
                                 scope           :   this
 
                             }
+        },*/ {
+            itemId : 'btnDelete',
+            text   : 'Delete',
+            iconCls: 'icon-delete',
+            handler: this.deleteResource,
         });
 
 
         return items;
     },
 
-    testAuth1 : function(btn, loaded, permission)
-    {
-        if (loaded!=true)
-        {
+    testAuth1 : function(btn, loaded, permission) {
+        if (loaded != true) {
             var user = BQSession.current_session.user_uri;
             this.resource.testAuth(user, Ext.bind(this.testAuth1, this, [btn, true], 0));
-        }
-        else
-        {
+        } else {
             if (permission)
                 btn.operation.call(this, btn);
             else
@@ -801,26 +799,26 @@ Ext.define('Bisque.Resource.Page',
         });
     },
 
-    deleteResource : function()
-    {
-        function success()
-        {
+    deleteResource : function() {
+        function success() {
             this.setLoading(false);
 
             Ext.MessageBox.show({
-                title   :   'Success',
-                msg     :   'Resource deleted successfully! You will be redirected to your BISQUE homepage.',
-                buttons :   Ext.MessageBox.OK,
-                icon    :   Ext.MessageBox.INFO,
-                fn      :   function(){window.location = bq.url('/')}
+                title : 'Success',
+                msg : 'Resource deleted successfully! You will be redirected to your BISQUE homepage.',
+                buttons : Ext.MessageBox.OK,
+                icon : Ext.MessageBox.INFO,
+                fn : function() {
+                    window.location = bq.url('/')
+                }
             });
         }
 
-        function deleteRes(response)
-        {
-            if (response == 'yes')
-            {
-                this.setLoading({msg:'Deleting...'});
+        function deleteRes(response) {
+            if (response == 'yes') {
+                this.setLoading({
+                    msg : 'Deleting...'
+                });
                 this.resource.delete_(Ext.bind(success, this), Ext.Function.pass(this.failure, ['Delete operation failed!']));
             }
         }
@@ -828,10 +826,8 @@ Ext.define('Bisque.Resource.Page',
         Ext.MessageBox.confirm('Confirm operation', 'Are you sure you want to delete ' + this.resource.name + '?', Ext.bind(deleteRes, this));
     },
 
-    renameResource : function(btn, name, authRecord)
-    {
-        function success(msg)
-        {
+    renameResource : function(btn, name, authRecord) {
+        function success(msg) {
             BQ.ui.notification(msg);
             var type = this.resource.resource_type || this.resource.type;
             this.toolbar.getComponent('btnRename').setText(type + ': <b>' + (this.resource.name || '') + '</b>');
@@ -845,20 +841,17 @@ Ext.define('Bisque.Resource.Page',
         }
     },
 
-    downloadResource : function(btn)
-    {
+    downloadResource : function(btn) {
         if (btn.compression == 'none')
             this.downloadOriginal();
-        else
-        {
+        else {
             var exporter = Ext.create('BQ.Export.Panel');
             exporter.downloadResource(this.resource, btn.compression);
         }
     },
 
-    downloadOriginal : function()
-    {
-        if (this.resource.src ) {
+    downloadOriginal : function() {
+        if (this.resource.src) {
             window.open(this.resource.src);
             return;
         }
@@ -866,16 +859,13 @@ Ext.define('Bisque.Resource.Page',
         exporter.downloadResource(this.resource, 'none');
     },
 
-    changePrivacy : function(btn)
-    {
-        function loaded(resource)
-        {
-            resource.permission = (this.resource.permission=='private')?'published':'private';
+    changePrivacy : function(btn) {
+        function loaded(resource) {
+            resource.permission = (this.resource.permission == 'private') ? 'published' : 'private';
             resource.append(Ext.bind(success, this), Ext.bind(this.failure, this));
         }
 
-        function success(resource)
-        {
+        function success(resource) {
             this.setLoading(false);
 
             // can also broadcast 'reload' event on the resource, once apps start listening to it.
@@ -884,26 +874,25 @@ Ext.define('Bisque.Resource.Page',
             btnPerm.setBtnText.call(this, btnPerm);
         };
 
-        this.setLoading({msg:''});
+        this.setLoading({
+            msg : ''
+        });
 
         BQFactory.request({
-            uri :   this.resource.uri + '?view=short',
-            cb  :   Ext.bind(loaded, this)
+            uri : this.resource.uri + '?view=short',
+            cb : Ext.bind(loaded, this)
         });
     },
 
-    promptName : function(btn)
-    {
-        Ext.MessageBox.prompt('Rename "' + this.resource.name+'"', 'Please, enter new name:', this.renameResource, this, false, this.resource.name);
+    promptName : function(btn) {
+        Ext.MessageBox.prompt('Rename "' + this.resource.name + '"', 'Please, enter new name:', this.renameResource, this, false, this.resource.name);
     },
 
-    success : function(resource, msg)
-    {
+    success : function(resource, msg) {
         BQ.ui.notification(msg || 'Operation successful.');
     },
 
-    failure : function(msg)
-    {
+    failure : function(msg) {
         BQ.ui.error(msg || 'Operation failed!');
     },
 

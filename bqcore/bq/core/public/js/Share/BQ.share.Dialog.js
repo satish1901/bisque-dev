@@ -44,7 +44,7 @@ Ext.define('BQ.share.Dialog', {
                 text: 'Done',
                 scale: 'large',
                 scope: this,
-                handler: this.close,
+                handler: this.onFinish,
             }],
             items  : [{
                 xtype: 'bqsharepanel',
@@ -54,8 +54,18 @@ Ext.define('BQ.share.Dialog', {
             }],
         }, config);
 
+        this.addEvents({
+            'changedShare' : true,
+        });
+
         this.callParent(arguments);
         this.show();
+    },
+
+    onFinish: function() {
+        if (this.queryById('sharepanel').isChanged())
+            this.fireEvent( 'changedShare' );
+        this.close();
     },
 });
 
@@ -188,6 +198,10 @@ Ext.define('BQ.share.Panel', {
                     writeAllFields : true,
                     writeRecordId: false,
                 },
+            },
+            listeners : {
+                'datachanged': this.onStoreChange,
+                scope: this,
             },
         });
 
@@ -335,6 +349,7 @@ Ext.define('BQ.share.Panel', {
                 scale: 'large',
                 resource: this.resource,
                 permission: this.permission,
+                prefix: '',
                 listeners : {
                     changePermission: this.onChangePermission,
                     scope: this,
@@ -414,6 +429,14 @@ Ext.define('BQ.share.Panel', {
         this.fireEvent( 'changePermission', perm, this );
     },
 
+    onStoreChange: function() {
+        this.changed = true;
+    },
+
+    isChanged: function() {
+        return this.changed === true;
+    },
+
 });
 
 //--------------------------------------------------------------------------------------
@@ -429,6 +452,7 @@ Ext.define('BQ.button.ResourcePermissions', {
     iconCls: 'bq-icon-visibility',
     minWidth: 120,
     permission: 'private',
+    prefix: 'Visibility: ',
 
     constructor: function(config) {
         this.addEvents({
@@ -439,7 +463,8 @@ Ext.define('BQ.button.ResourcePermissions', {
     },
 
     initComponent : function() {
-        this.handler = this.toggleVisibility,
+        this.handler = this.toggleVisibility;
+        this.scope = this;
         this.callParent();
         if (this.resource)
             this.permission = this.resource.permission;
@@ -480,10 +505,10 @@ Ext.define('BQ.button.ResourcePermissions', {
     setVisibility : function() {
         var me = this;
         if (me.permission === 'published') {
-            me.setText('published');
+            me.setText(this.prefix+'published');
             me.addCls('published');
         } else {
-            me.setText('private');
+            me.setText(this.prefix+'private');
             me.removeCls('published');
         }
     },
