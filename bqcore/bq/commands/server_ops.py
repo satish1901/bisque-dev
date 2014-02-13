@@ -152,10 +152,10 @@ def paster_command(command, options, cfgopt, processes, args):
             command,
             'services_enabled=%s' % cfgopt['services_enabled'],
             'services_disabled=%s' % cfgopt['services_disabled'],
+            'server=%s' % cfgopt['url'],
             'http_port=%s' % cfgopt['port'],
             'http_host=%s' % cfgopt['host'],
             'rooturl=%s' % cfgopt['root'],
-            #'proxyroot=%s' % cfgopt['proxyroot'],
             'sitecfg=%s' % cfgopt['site_cfg'],
             ])
     server_cmd.extend (args)
@@ -175,10 +175,11 @@ def uwsgi_command(command, cfgopt, processes, options, default_cfg_file = None):
         #processes.append(Popen(uwsgi_cmd,shell=True,stdout=sys.stdout))
 
         verbose('Executing: ' + ' '.join(uwsgi_cmd))
-        if  call(uwsgi_cmd) != 0:
-            print "Stop failed .. process already dead?"
-        if os.path.exists (pidfile):
-            os.remove (pidfile)
+        if not options.dryrun:
+            if  call(uwsgi_cmd) != 0:
+                print "Stop failed .. process already dead?"
+            if os.path.exists (pidfile):
+                os.remove (pidfile)
     elif command is 'start':
         final_cfg = find_site_cfg(default_cfg_file)
         #cfg_file = find_site_cfg(default_cfg_file)
@@ -189,15 +190,22 @@ def uwsgi_command(command, cfgopt, processes, options, default_cfg_file = None):
         # f.write(t.safe_substitute(cfgopt))
         # f.close()
 
+        uwsgi_opts = cfgopt['uwsgi']
         uwsgi_cmd = ['uwsgi', '--ini-paste', final_cfg,
-                     '--daemonize', cfgopt['logfile'], '--pidfile', cfgopt['pidfile']]
+                     '--daemonize', cfgopt['logfile'],
+                     '--pidfile', cfgopt['pidfile']]
+
+        #if 'socket' in uwsgi_opts:
+        #     uwsgi_opts['socket'] = uwsgi_opts['socket'].replace('unix://','').strip()
+        #[ uwsgi_cmd.extend ( ["--%s" %k, str(v)] )  for k,v in uwsgi_opts.items() ]
 
         #if cfgopt['http_serv'] == 'true':
         #    uwsgi_cmd.extend(['--http', cfgopt['url']])
         #processes.append(Popen(uwsgi_cmd,shell=True,stdout=sys.stdout))
         verbose('Executing: ' + ' '.join(uwsgi_cmd))
-        if  call(uwsgi_cmd) != 0:
-            print "Start failed"
+        if not options.dryrun:
+            if call(uwsgi_cmd) != 0:
+                print "Start failed"
     return processes
 
 
@@ -285,18 +293,17 @@ def operation(command, options, *args):
 
             print "%sing %s" % (command, key)
 
-            cfgopt['server'] = serverspec.pop('server', None)
-            cfgopt['url'] = serverspec.pop('url')
-            fullurl = urlparse (cfgopt['url'])
             cfgopt['services_enabled'] = ','.join([
                 l.strip() for l in serverspec.pop('services_enabled', '').split(',')])
             cfgopt['services_disabled'] = ','.join([
                 l.strip() for l in serverspec.pop('services_disabled', '').split(',')])
+            cfgopt['url'] = serverspec.pop('url')
+            fullurl = urlparse (cfgopt['url'])
             cfgopt['host'] = fullurl[1].split(':')[0]
             cfgopt['port'] = str(fullurl.port)
-            #cfgopt['proxyroot'] = serverspec.pop('proxyroot', '')
             cfgopt['logfile'] = os.path.join(config['log_dir'], LOG_TEMPL % cfgopt['port'])
             cfgopt['pidfile'] = os.path.join(config['pid_dir'], PID_TEMPL % cfgopt['port'])
+            cfgopt['uwsgi']  = serverspec.pop('uwsgi', None)
 
             if command in ('stop', 'restart'):
                 if backend == 'uwsgi':
