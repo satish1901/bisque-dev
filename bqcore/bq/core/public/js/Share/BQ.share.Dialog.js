@@ -200,6 +200,7 @@ Ext.define('BQ.share.Panel', {
                 },
             },
             listeners : {
+                'load': this.onStoreLoaded,
                 'datachanged': this.onStoreChange,
                 scope: this,
             },
@@ -378,6 +379,10 @@ Ext.define('BQ.share.Panel', {
         this.users_xml = this.store_users.proxy.reader.rawData;
         if (this.resource)
             this.store.load();
+    },
+
+    onStoreLoaded: function( store, records, successful, eOpts) {
+        this.changed = undefined;
     },
 
     onNotifyUsers: function(box) {

@@ -115,13 +115,15 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
                 scope : this
             }, '->', {
                 itemId : 'btnActivate',
-                icon : bq.url('/js/ResourceBrowser/Images/activate.png'),
-                tooltip : '(ACTIVATE) Press button to switch to selection mode',
+                //icon : bq.url('/js/ResourceBrowser/Images/activate.png'),
+                text: 'Edit',
+                tooltip : 'Switch to editing mode',
                 state : 'ACTIVATE',
                 hidden : this.viewMgr.cBar.btnActivate,
                 scale : 'large',
                 handler : this.btnActivate,
-                scope : this
+                scope : this,
+                cls: 'bq-btn-edit',
             }, {
                 itemId : 'btnRefresh',
                 icon : bq.url('/js/ResourceBrowser/Images/refresh.png'),
@@ -272,11 +274,13 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
         if (btn.state == 'ACTIVATE') {
             btn.setIcon(bq.url('/js/ResourceBrowser/Images/select.png'));
             btn.state = 'SELECT';
-            btn.setTooltip('(SELECT) Press button to switch to activation mode');
+            btn.setTooltip('Switch to view mode');
+            btn.addCls('active');
         } else {
             btn.setIcon(bq.url('/js/ResourceBrowser/Images/activate.png'));
             btn.state = 'ACTIVATE';
-            btn.setTooltip('(ACTIVATE) Press button to switch to selection mode');
+            btn.setTooltip('Switch to editing mode');
+            btn.removeCls('active');
         }
         this.browser.selectState = btn.state;
         this.browser.fireEvent('SelectMode_Change', btn.state);
@@ -479,4 +483,4 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
             this.toggleLayoutBtn();
         this.getComponent('btnGear').menu.getComponent('btnWpublic').setChecked(this.browser.browserParams.wpublic, true);
     }
-}); 
+});
