@@ -97,9 +97,9 @@ Ext.define('Bisque.ResourceFactoryWrapper',
  *            object, layoutKey : layout key according to which the resource
  *            object will be formatted
  */
-Ext.define('Bisque.Resource',
-{
+Ext.define('Bisque.Resource', {
     extend:'Ext.container.Container',
+    operationBarClass: 'Bisque.ResourceBrowser.OperationBar',
 
     constructor : function(config)
     {
@@ -348,18 +348,20 @@ Ext.define('Bisque.Resource',
 		this.msgBus.fireEvent('ResourceDblClick', this.resource);
     },
 
-    preMouseEnter : function()
-    {
-    	this.removeCls('LightShadow');
+    preMouseEnter : function() {
+        this.removeCls('LightShadow');
 
-    	if (this.browser.selectState == 'SELECT')
-    	{
-            if (!this.operationBar)
-            {
-                this.operationBar = Ext.create('Bisque.ResourceBrowser.OperationBar', {
-                    renderTo    :   this.getEl(),
-                    resourceCt  :   this,
-                    browser     :   this.browser
+        if (this.browser.selectState == 'SELECT') {
+            if (!this.operationBar) {
+                this.operationBar = Ext.create(this.operationBarClass, {
+                    renderTo : this.getEl(),
+                    resourceCt : this,
+                    browser : this.browser,
+                    updateItems: this.browser.updateItems,
+                    listeners : {
+                        removed: this.browser.onOperationRemove,
+                        scope: this.browser,
+                    },
                 });
 
                 this.operationBar.alignTo(this, "tr-tr");

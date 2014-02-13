@@ -114,6 +114,14 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
                 padding : '3 0 3 0',
                 scope : this
             }, '->', {
+                itemId : 'btnRefresh',
+                icon : bq.url('/js/ResourceBrowser/Images/refresh.png'),
+                tooltip : 'Refresh browser',
+                hidden : this.viewMgr.cBar.btnRefresh,
+                scale : 'large',
+                handler : this.btnRefresh,
+                scope : this
+            }, {
                 itemId : 'btnActivate',
                 //icon : bq.url('/js/ResourceBrowser/Images/activate.png'),
                 text: 'Edit',
@@ -124,14 +132,6 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
                 handler : this.btnActivate,
                 scope : this,
                 cls: 'bq-btn-edit',
-            }, {
-                itemId : 'btnRefresh',
-                icon : bq.url('/js/ResourceBrowser/Images/refresh.png'),
-                tooltip : 'Refresh browser',
-                hidden : this.viewMgr.cBar.btnRefresh,
-                scale : 'large',
-                handler : this.btnRefresh,
-                scope : this
             }, {
                 itemId : 'btnTS',
                 icon : bq.url('/js/ResourceBrowser/Images/desc.png'),

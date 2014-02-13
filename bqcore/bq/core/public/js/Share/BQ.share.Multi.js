@@ -161,7 +161,10 @@ Ext.define('BQ.share.MultiDialog', {
         // append the shares, if repeated the newly appended will overwrite the old permissions
         auth.children.push.apply(auth.children, this.records);
         var url = notify?undefined:Ext.urlAppend(auth.uri, 'notify=false');
-        auth.save_(url, Ext.bind(this.onSuccess, this, [pos]), Ext.bind(this.onError, this, [pos]));
+        auth.save_(url,
+            Ext.bind(this.onSuccess, this, [pos]),
+            Ext.bind(this.onError, this, [pos])
+        );
     },
 
     doAddShares: function(pos) {

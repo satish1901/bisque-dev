@@ -2,31 +2,41 @@ Ext.define('Bisque.ResourceBrowser.OperationBar', {
     extend : 'Ext.container.Container',
     floating : true,
 
-    constructor : function() {
-        var close = Ext.create('Ext.button.Button', {
-            icon : bq.url('/js/ResourceBrowser/Images/close.gif'),
-            tooltip : 'Delete this resource.',
-            handler : this.close,
-            scope : this
+    constructor: function(config) {
+        this.addEvents({
+            'removed' : true,
         });
+        this.callParent(arguments);
+        return this;
+    },
 
-        var down = Ext.create('Ext.button.Button', {
+    initComponent : function() {
+        this.items = this.items || [{
+            xtype: 'button',
             icon : bq.url('/js/ResourceBrowser/Images/down.png'),
             tooltip : 'Available operations for this resource.',
             handler : this.menuHandler,
             scope : this
-        });
-
-        this.items = [down, close];
-
-        this.callParent(arguments);
+        }, {
+            xtype: 'button',
+            itemId : 'btn_delete',
+            icon : bq.url('/js/ResourceBrowser/Images/close.gif'),
+            tooltip : 'Delete this resource',
+            handler : this.deleteResource,
+            scope : this,
+        }];
+        if (this.updateItems)
+            this.updateItems(this.items, this);
+        this.callParent();
     },
 
-    close : function(me, e) {
+    deleteResource : function(me, e) {
         e.stopPropagation();
         var list = Ext.Object.getSize(this.browser.resourceQueue.selectedRes);
 
         if (list > 1) {
+            this.fireEvent( 'removed', this.browser.resourceQueue.selectedRes );
+
             // Client-side temporary dataset
             var tempDS = new BQDataset(), members = [];
 
@@ -45,13 +55,27 @@ Ext.define('Bisque.ResourceBrowser.OperationBar', {
                 BQ.ui.notification(summary.success + ' resources deleted. ' + summary.failure + ' resources failed.');
                 this.browser.msgBus.fireEvent('Browser_ReloadData', {});
             }
-
         } else {
+            var selected = {};
+            selected[this.resourceCt.resource.uri] = this.resourceCt.resource;
+            this.fireEvent( 'removed', selected );
+
             me.operation = Ext.pass(this.resourceCt.resource.delete_, [Ext.bind(this.success, this), Ext.Function.pass(this.failure, ['Delete operation failed!'])], this.resourceCt.resource);
             this.resourceCt.setLoading({
                 msg : 'Deleting...'
             });
             this.resourceCt.testAuth1(me);
+        }
+    },
+
+    removeResource : function(me, e) {
+        e.stopPropagation();
+        if (Ext.Object.getSize(this.browser.resourceQueue.selectedRes) > 1) {
+            this.fireEvent( 'removed', this.browser.resourceQueue.selectedRes, true );
+        } else {
+            var selected = {};
+            selected[this.resourceCt.resource.uri] = this.resourceCt.resource;
+            this.fireEvent( 'removed', selected, true );
         }
     },
 
@@ -153,7 +177,7 @@ Ext.define('Bisque.ResourceBrowser.OperationBar', {
                         newDS.name = name;
 
                         for (var res in this.browser.resourceQueue.selectedRes)
-                        members.push(new BQValue('object', res));
+                            members.push(new BQValue('object', res));
 
                         newDS.setMembers(members);
 
@@ -181,4 +205,4 @@ Ext.define('Bisque.ResourceBrowser.OperationBar', {
     failure : function(msg) {
         BQ.ui.error(msg || 'Operation failed!');
     },
-})
+});

@@ -95,17 +95,19 @@ Ext.define('BQ.renderers.dataset', {
             flex: 3,
             dataset: this.resource?this.resource:'None',
 
-            title : this.resource.name?'Preview for "'+this.resource.name+'"':'Preview',
+            title : 'Item browser',
             tagOrder: '"@ts":desc',
             //selType: 'SINGLE',
             //wpublic: false,
             showOrganizer : true,
             viewMode: 'ViewerLayouts',
+            updateItems : this.updateOperationItems,
             listeners: {
                 'Select': function(me, resource) {
                     window.open(bq.url('/client_service/view?resource='+resource.uri));
                 },
                 'SelectMode_Change': Ext.bind(this.onmodechange, this),
+                removed: this.removeResources,
                 scope: this,
             },
         });
@@ -124,7 +126,7 @@ Ext.define('BQ.renderers.dataset', {
                 tooltip: 'Add resources into the dataset',
                 //cls: 'x-btn-default-medium',
                 handler: function() { this.browseResources('image'); },
-            }, {
+            }, /*{
                 itemId: 'menu_delete_selected',
                 text: 'Remove selected',
                 tooltip: 'Remove selected resource from the dataset, keeps the resource untouched',
@@ -133,8 +135,7 @@ Ext.define('BQ.renderers.dataset', {
                 disabled: true,
                 //cls: 'x-btn-default-medium',
                 handler: this.removeSelectedResources,
-            },
-            /*{ itemId: 'menu_delete',
+            }, { itemId: 'menu_delete',
                 text: 'Delete',
                 //icon: this.images_base_url+'upload.png',
                 handler: this.remove,
@@ -203,7 +204,7 @@ Ext.define('BQ.renderers.dataset', {
         var tb = this.toolbar;
         tb.child('#menu_add_images').setDisabled(true);
         //tb.child('#menu_query').setDisabled(true);
-        tb.child('#menu_delete_selected').setDisabled(true);
+        //tb.child('#menu_delete_selected').setDisabled(true);
         //tb.child('#menu_delete').setDisabled(true);
         //this.operations.setDisabled(true);
     },
@@ -270,7 +271,6 @@ Ext.define('BQ.renderers.dataset', {
         this.tagger.reload();
 
         //this.toolbar.child('#menu_rename').setText('Dataset: <b>'+this.resource.name+'</b>');
-        this.preview.setTitle(this.resource.name?'Preview for "'+this.resource.name+'"':'Preview');
     },
 
     changedError : function(o) {
@@ -375,6 +375,32 @@ Ext.define('BQ.renderers.dataset', {
                             callback(this, 'changedError'));
     },
 
+    removeResources : function(sel, needs_reload) {
+        var m = this.resource.getMembers();
+        var members = m.values; // has to be in two lines, otherwise some optimization happens...
+        if (!members || members.length<1 || sel.length<1) return;
+
+        this.setLoading('Removing selected resources');
+        for (var j=members.length-1; j>=0; j--) {
+            var m = members[j];
+            m.index = undefined;
+            if (m.value in sel)
+                members.splice(j, 1);
+        }
+
+        this.resource.setMembers(members);
+        if (!needs_reload) {
+            var me = this;
+            this.resource.save_(undefined,
+                function() { me.setLoading(false); },
+                callback(this, 'changedError'));
+        } else {
+            this.resource.save_(undefined,
+                callback(this, 'changedOk'),
+                callback(this, 'changedError'));
+        }
+    },
+
     // -------------------------------------------------------------------
     // Dataset ops
     // -------------------------------------------------------------------
@@ -451,6 +477,18 @@ Ext.define('BQ.renderers.dataset', {
     downloadOriginal : function() {
         window.open(this.resource.uri+'?view=deep');
     },
+
+    updateOperationItems : function(items, opbar) {
+        items.splice(1, 0, {
+            xtype: 'button',
+            itemId : 'btn_remove',
+            text: 'Remove',
+            tooltip : 'Remove this resource from dataset, keeps resources in the system',
+            handler : opbar.removeResource,
+            scope : opbar,
+        });
+    },
+
 
 /*
     askRename: function() {
