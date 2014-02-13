@@ -31,7 +31,7 @@ chmod-socket = 666
 processes = 1
 
 #number of threads per worker process
-threads = 8
+threads = 4
 
 #########
 #path to the uwsgi log file
@@ -43,9 +43,7 @@ threads = 8
 virtualenv = $virtualenv
 
 #create a master process to manage all the workers
-master = true
-
-stats = :1717
+#master = true
 
 #limits
 

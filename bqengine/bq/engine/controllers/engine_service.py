@@ -51,45 +51,33 @@ DESCRIPTION
 
 """
 import os
+import sys
 import logging
 import pkg_resources
-import traceback, sys
-import socket
-import logging
+import traceback
 import urlparse
 import Queue
-import threading, thread
-import time
-import subprocess
 import multiprocessing
 from datetime import datetime
-from copy import deepcopy
 from lxml import etree
-
-from pylons.controllers.util import abort
 import tg
+
 from tg import config, controllers, expose, redirect, override_template
+from pylons.controllers.util import abort
 
-
-from pylons.i18n import ugettext as _, lazy_ugettext as l_
-from repoze.what import predicates 
+from repoze.what import predicates
 
 from bq.core.service import ServiceController, BaseController
 from bq.exceptions import EngineError, RequestError
-
 from bq.util.configfile import ConfigFile
-from bq.util.hostutils import same_host
-from bq.util import http
-from bq.util.http.thread_pool import ThreadPool, makeRequests
 from bq.util.paths import bisque_path, config_path
 from bq.util.copylink import copy_link
 
-from runtime_adapter import RuntimeAdapter
+from .runtime_adapter import RuntimeAdapter
 
 log = logging.getLogger('bq.engine_service')
 
 MODULE_PATH = config.get('bisque.engine_service.local_modules', bisque_path('modules'))
-HEARTBEAT   = config.get('bisque.engine_service.hb');
 POOL_SIZE   = config.get('bisque.engine_service.poolsize', 4)
 
 engine_root = '/'.join ([config.get('bisque.server') , 'engine_service'])
@@ -106,13 +94,13 @@ def fun(p):
 #    #print "Exec", params
 #    command_line = params['command_line']
 #    rundir = params['rundir']
-#    
+#
 #    if os.name=='nt':
 #        exe = which(command_line[0])
 #        exe = exe or which(command_line[0] + '.exe')
 #        exe = exe or which(command_line[0] + '.bat')
 #        if exe is None:
-#            raise RunnerException ("Executable was not found: %s" % command_line[0])                
+#            raise RunnerException ("Executable was not found: %s" % command_line[0])
 #        command_line[0] = exe
 #    print 'CALLing %s in %s' % (command_line,  rundir)
 #    return subprocess.call(params['command_line'],
@@ -124,7 +112,7 @@ def fun(p):
 
 def method_unavailable (msg=None):
     abort(503)
-    
+
 def method_not_found():
     abort(404)
 
@@ -186,7 +174,7 @@ def load_module(module_path, engines = None):
         module_type = module_root.get('type')
         module_root.set('ts', datetime.fromtimestamp(ts.st_mtime).isoformat())
         engine = engines and engines.get(module_type, None)
-        if engine and not engine.check (module_root): 
+        if engine and not engine.check (module_root):
             return None
         #module_root.set('value', engine_root + '/'+module_name)
         module_root.set('value', engine_root + '/'+module_name)
@@ -205,9 +193,9 @@ def initialize_available_modules(engines):
     '''
     available = []
     unavailable = []
-    log.debug ("WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW") 
-    log.debug ('examining %s ' % MODULE_PATH) 
-    log.debug ("WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW") 
+    log.debug ("WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW")
+    log.debug ('examining %s ' % MODULE_PATH)
+    log.debug ("WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW")
     for g in os.listdir(MODULE_PATH):
         module_path = os.path.join(MODULE_PATH, g, g + '.xml')
         module_root = load_module(module_path, engines)
@@ -216,11 +204,11 @@ def initialize_available_modules(engines):
         else:
             unavailable.append ( g )
             log.debug("Skipping %s : engine_check failed" % g)
-                
+
     return available, unavailable
 
 #################################################################
-##            
+##
 class EngineServer(ServiceController):
     """Engine server : provide web access to analysis modules
     """
@@ -244,7 +232,7 @@ class EngineServer(ServiceController):
             sys.argv = [sys.argv[0].replace('paster-script.py', 'python.exe'), 'bqengine\\bq\\engine\\controllers\\execone.py']
             import execone
             sys.modules['__main__'] = execone
-            from multiprocessing.forking import set_executable 
+            from multiprocessing.forking import set_executable
             set_executable( sys.argv[0].replace('paster-script.py', 'python.exe') )
             sys.argv[1] = 'bqengine\\bq\\engine\\controllers\\execone.py'
             del sys.argv[2:]
@@ -330,26 +318,26 @@ class EngineModuleResource(BaseController):
         """Provide a general way to serve an entry point"""
 
         from pylons.controllers.util import forward
-        from paste.fileapp import FileApp    
-        
+        from paste.fileapp import FileApp
+
         if isinstance(node, str) is True:
             node = self.module_xml.xpath(node)
-        
-        text = default   
+
+        text = default
         if  len(node): # Found at least one xpath match
             node = node[0]
             type = node.get('type', None)
             if type == 'file':
                 path = self.filepath(node.get('value'))
                 if os.path.exists(path):
-                    return forward(FileApp(path).cache_control (max_age=60*60*24*7*6))                   
-                
+                    return forward(FileApp(path).cache_control (max_age=60*60*24*7*6))
+
             else:
                 text = node.get ('value', None)
                 if node.get ('value', None) is None:
                     # Using a <value><![CDATA]</value>
                     text = (node[0].text)
-        
+
         if text is None:
             abort(404)
         return text
@@ -359,8 +347,8 @@ class EngineModuleResource(BaseController):
         def _xml2d(e, d, path=''):
             for child in e:
                 name  = '%s%s'%(path, child.get('name', ''))
-                ttype = child.get('type', None) 
-                value = child.get('value', None) 
+                ttype = child.get('type', None)
+                value = child.get('value', None)
                 if value is not None:
                     if not name in d:
                         d[name] = value
@@ -371,13 +359,13 @@ class EngineModuleResource(BaseController):
                             d[name] = [d[name], value]
                     #if not ttype is None:
                     #    d['%s.type'%name] = ttype
-                        
+
                 d = _xml2d(child, d, path='%s%s/'%(path, child.get('name', '')))
             return d
 
         d = _xml2d(self.module_xml, {})
         d['module/name'] = self.name
-        d['module/uri']  = self.module_uri 
+        d['module/uri']  = self.module_uri
         if not 'title' in d: d['title'] = self.name
         return d
 
@@ -391,12 +379,12 @@ class EngineModuleResource(BaseController):
 #                <tag name="type" value="dataset" />
 #                <tag name="selector" value="image" />
 #                <tag name="selector" value="dataset" />
-#            </tag>            
-#        </tag>      
+#            </tag>
+#        </tag>
 #        <tag name="mex_url"      type="system-input" />
 #        <tag name="bisque_token" type="system-input" />
 #    </tag>
-#    
+#
 #    <tag name="outputs">
 #         <tag name="MetaData" type="tag" />
 #         <gobject name="Gobjects" />
@@ -404,20 +392,20 @@ class EngineModuleResource(BaseController):
 
 
     def define_io(self):
-        
+
         def define_tempalte(xs):
             l = []
             for i in xs:
                 r = i.tag
-                n = i.get('name', None) 
+                n = i.get('name', None)
                 v = i.get('value', None)
                 t = i.get('type', None)
                 if t in reserved_io_types: continue
-                x = { 'resource_type': r, 'name': n, 'value': v, 'type': t, }    
+                x = { 'resource_type': r, 'name': n, 'value': v, 'type': t, }
 
                 tmpl = i.xpath('tag[@name="template" and @type="template"]/tag')
                 for c in tmpl:
-                    nn = c.get('name', None) 
+                    nn = c.get('name', None)
                     vv = c.get('value', None)
                     if not nn in x:
                         x[nn] = vv
@@ -428,13 +416,13 @@ class EngineModuleResource(BaseController):
                             x[nn] = [x[nn], vv]
                 #if 'label' not in x: x['label'] = n
                 l.append(x)
-            return l        
-        
+            return l
+
         self.inputs  = define_tempalte( self.module_xml.xpath('//tag[@name="inputs"]/*') )
         self.outputs = define_tempalte( self.module_xml.xpath('//tag[@name="outputs"]/*') )
         log.debug(str(self.inputs))
         log.debug(str(self.outputs))
-        
+
 
     @expose()
     def index(self, **kw):
@@ -452,13 +440,13 @@ class EngineModuleResource(BaseController):
                          module_name = self.name,
                          module_def  = self.definition_as_dict(),
                          module_xml  = etree.tostring(self.module_xml),
-                         
+
                          inputs  = self.inputs,
                          outputs = self.outputs,
-                         
+
                          extra_args  = kw
                          )
-        return self.serve_entry_point(node)        
+        return self.serve_entry_point(node)
 
     @expose()
     def interface(self, **kw):
@@ -469,12 +457,12 @@ class EngineModuleResource(BaseController):
             override_template(self.interface, "genshi:bq.engine.templates.default_module")
             return dict (module_uri  = self.module_uri,
                          module_name = self.name,
-                         module_def  = self.definition_as_dict(),      
-                         module_xml  = etree.tostring(self.module_xml),   
-                         
+                         module_def  = self.definition_as_dict(),
+                         module_xml  = etree.tostring(self.module_xml),
+
                          inputs  = self.inputs,
-                         outputs = self.outputs,                       
-                                         
+                         outputs = self.outputs,
+
                          extra_args  = kw
                          )
         return self.serve_entry_point(node)
@@ -491,7 +479,7 @@ class EngineModuleResource(BaseController):
         return self.serve_entry_point('//tag[@name="thumbnail"]', 'No thumbnail found')
 
     @expose()
-    def description(self, **kw):        
+    def description(self, **kw):
         """Return the textual desfription of the module"""
         return self.serve_entry_point('//tag[@name="description"]', 'No description found')
 
@@ -515,12 +503,12 @@ class EngineModuleResource(BaseController):
             return cont.read()
 
         raise abort(404)
-        
-        
+
+
 #    def create(self, **kw):
 #        """Used by new for the factory"""
 #        return ""
-    
+
 #    def new(self, factory, xml, **kw):
 #        """Start an execution a new execution"""
 #        #
@@ -537,10 +525,10 @@ class EngineModuleResource(BaseController):
     def append(self, resource, xml, **kw):
         """Send new data the specified module execution"""
 
-    
+
     @expose(content_type='text/xml')
     #You cannot require a valid login on the engine .. there are no users here!
-    #@require(not_anonymous(msg='You need to log-in to run a module'))    
+    #@require(not_anonymous(msg='You need to log-in to run a module'))
     def execute(self, entrypoint = 'main'):
         log.debug("execute %s" % self.name)
         mex = read_xml_body()
@@ -552,7 +540,7 @@ class EngineModuleResource(BaseController):
             return response
         else:
             illegal_operation()
-        
+
     def start_execution(self, mextree):
         """Start the execution of the mex for this module"""
         b, mexid = mextree.get ('uri').rsplit('/',1)
@@ -571,7 +559,7 @@ class EngineModuleResource(BaseController):
                     raise EngineError ('No adaptor for type %s' % (adapter_type))
                 exec_id = adapter.execute(module, mextree, self.mpool)
                 mextree.append(etree.Element('tag', name='execution_id', value=str(exec_id)))
-                
+
                 #if not mextree.get ('asynchronous'):
                 #    mextree.set('status', "FINISHED")
 
