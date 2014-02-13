@@ -2367,7 +2367,7 @@ class ImageServer(object):
         imgcnv.check_version( imgcnv_needed_version)
         img_threads = config.get ('bisque.image_service.imgcnv.omp_num_threads', None)
         if img_threads is not None:
-            log.info ("Setting OMP_NUM_THREADS = ", img_threads)
+            log.info ("Setting OMP_NUM_THREADS = %s", img_threads)
             os.environ['OMP_NUM_THREADS'] = "%s" % img_threads
 
 

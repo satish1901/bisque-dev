@@ -851,21 +851,6 @@ def install_modules(params):
             os.chdir (cwd)
     return params
 
-#######################################################
-#
-
-def install_scripts ():
-    #scripts = [ 'bq-start-servers', 'bq-kill-servers' ]
-    mapping = { 'BQENV' : BQENV,
-                'BQDIR' : BQDIR,
-                'BQBIN' : BQBIN,
-#                '$PIDDIR' : '/var/run',
-#                '$LOGDIR' : '/var/log'
-                'BQPID' : '.',
-                'BQLOG' : '.',
-                }
-    for script  in scripts:
-        patch_file (os.path.join ('scripts', script), mapping, destination=BQBIN)
 
 #######################################################
 #
@@ -957,7 +942,12 @@ def setup_servers (params):
     status = 0
     if getanswer ('Edit servers in site.cfg ', 'N',
                   "Please edit only the server section ") != 'N':
-        status = subprocess.call ([os.environ['EDITOR'], SITE_CFG])
+        editor = os.environ.get ('EDITOR', which ('vi'))
+        if editor is not None:
+            status = subprocess.call ([editor, SITE_CFG])
+        else:
+            print "No editor found. Please set EDITOR"
+            return
 
     if status != 0:
         print "GOT status", status
@@ -1164,17 +1154,15 @@ def setup_uwsgi(params, server_params):
         install_cfg (cfg, section="*", default_cfg=UWSGI_DEFAULT)
 
         svars = { 'bisque.root' : sv['url'],
-                  'bisque.server' : sv['server'],
+                  'bisque.server' : sv['url'],
                   'bisque.services_disabled' : sv.get ('services_disabled', ''),
                   'bisque.services_enabled'  : sv.get ('services_enabled', ''),
                   }
-
-        uwsgi_vars = {'virtualenv' : BQENV,
-                      'socket' : sv['server'].replace('unix://','').strip(),
-                      'threads' : sv.get('threads', '1'),
-                      'master' : sv.get('master', 'false'),
-                      'processes' : sv.get ('processes', 1),
-                      }
+        uwsgi_vars = sv['uwsgi']
+        if 'socket' in uwsgi_vars:
+            uwsgi_vars['socket'] =  uwsgi_vars['socket'].replace('unix://','').strip()
+        uwsgi_vars ['virtualenv'] = BQENV
+        uwsgi_vars ['procname-prefix'] = "bisque_%s_" % server
 
         update_site_cfg(cfg=cfg, bisque_vars=svars)
         update_site_cfg(cfg=cfg, section='uwsgi',bisque_vars = uwsgi_vars )
