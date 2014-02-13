@@ -882,15 +882,13 @@ BQObject.prototype.save_ = function (parenturi, cb, errorcb, method) {
     var req = docobj.toXML();
     errorcb = errorcb || default_error_callback;
     if (docobj.uri) {
-        var m = method || 'put';
-        xmlrequest(docobj.uri, callback(docobj, 'response_', 'update', errorcb, cb), method, req, errorcb);
+        xmlrequest(docobj.uri, callback(docobj, 'response_', 'update', errorcb, cb), method || 'put', req, errorcb);
     } else {
         if (this.resource_type in BQFactory.objects)
             parenturi = parenturi || '/data_service/'+this.resource_type+'/';
         else
             parenturi = parenturi || '/data_service/resource/';
-        var m = method || 'post';
-        xmlrequest(parenturi, callback(docobj, 'response_', 'created', errorcb, cb), method, req, errorcb);
+        xmlrequest(parenturi, callback(docobj, 'response_', 'created', errorcb, cb), method || 'post', req, errorcb);
     }
 };
 

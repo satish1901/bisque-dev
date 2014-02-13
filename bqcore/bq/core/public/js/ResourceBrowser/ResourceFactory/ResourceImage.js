@@ -108,9 +108,13 @@ Ext.define('Bisque.Resource.Image', {
 
     },
 
-    /* Resource operations */
     downloadOriginal : function() {
-        window.open(this.resource.src);
+        if (this.resource.src) {
+            window.open(this.resource.src);
+            return;
+        }
+        var exporter = Ext.create('BQ.Export.Panel');
+        exporter.downloadResource(this.resource, 'none');
     },
 });
 
@@ -581,7 +585,7 @@ Ext.define('Bisque.Resource.Image.Page', {
                 changed : function(me, gobjects) {
                     this.gobjectTagger.tree.getView().refresh();
                 },
-                working : this.onworking, 
+                working : this.onworking,
                 done    : this.ondone,
                 error   : this.onerror,
                 scope   : this
@@ -664,11 +668,16 @@ Ext.define('Bisque.Resource.Image.Page', {
     },
 
     downloadOriginal : function() {
-        window.open(this.resource.src);
+        if (this.resource.src) {
+            window.open(this.resource.src);
+            return;
+        }
+        var exporter = Ext.create('BQ.Export.Panel');
+        exporter.downloadResource(this.resource, 'none');
     },
-    
+
     onworking : function(msg) {
-        if (this.gobjectTagger) this.gobjectTagger.setLoading(msg);        
+        if (this.gobjectTagger) this.gobjectTagger.setLoading(msg);
     },
 
     ondone : function() {
@@ -678,5 +687,5 @@ Ext.define('Bisque.Resource.Image.Page', {
     onerror : function(error) {
         if (this.gobjectTagger) this.gobjectTagger.setLoading(false);
     },
-    
+
 });
