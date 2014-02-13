@@ -1,6 +1,7 @@
 /* Abstract Dataset resource definition (inherits from Resource abstract class) */
 Ext.define('Bisque.Resource.Dataset', {
     extend : 'Bisque.Resource',
+    operationBarClass: 'Bisque.ResourceBrowser.OperationBar.dataset',
 
     initComponent : function() {
         this.addCls('dataset');
@@ -184,7 +185,7 @@ Ext.define('Bisque.Resource.Dataset.Full', {
             }
 
             margin = 'margin:0px 3px 2px 0px;';
-            imgs += '<img style="display:inline-block;height:75px;width:75px;' + margin + '" src=' + thumbnail + ' />'
+            imgs += '<img style="display:inline-block;height:75px;width:75px;' + margin + '" src=' + thumbnail + ' />';
         }
 
         imgs += '</div>';
@@ -236,13 +237,13 @@ Ext.define('Bisque.Resource.Dataset.List', {
             text : ' ' + this.resource.name + ' ',
             padding : '0 8 0 8',
             cls : 'lblModuleName',
-        })
+        });
 
         var datasetOwner = new Ext.form.Label({
             text : this.getData('owner'),
             padding : '0 0 0 4',
             cls : 'lblModuleOwner',
-        })
+        });
 
         var date = new Date();
         date.setISO(this.resource.ts);
@@ -253,7 +254,7 @@ Ext.define('Bisque.Resource.Dataset.List', {
             flex : 1,
             //padding:'0 0 0 8',
             //style:'color:#444;font-size:11px;font-family: tahoma, arial, verdana, sans-serif !important;'
-        })
+        });
 
         this.add([datasetName, datasetOwner, datasetDate]);
         this.setLoading(false);
@@ -283,3 +284,84 @@ Ext.define('Bisque.Resource.Dataset.Page', {
         this.add(renderer);
     }
 });
+
+
+//-----------------------------------------------------------------------------
+// Operation bar for dataset
+//-----------------------------------------------------------------------------
+
+Ext.define('Bisque.ResourceBrowser.OperationBar.dataset', {
+    extend : 'Bisque.ResourceBrowser.OperationBar',
+
+    initComponent : function() {
+        this.items = [{
+            xtype: 'button',
+            icon : bq.url('/js/ResourceBrowser/Images/down.png'),
+            tooltip : 'Available operations for this resource.',
+            handler : this.menuHandler,
+            scope : this
+        }, {
+            xtype: 'button',
+            itemId : 'btn_delete_full',
+            text: 'Delete',
+            //icon : bq.url('/js/ResourceBrowser/Images/close.gif'),
+            tooltip : 'Delete this dataset and its elements',
+            handler : this.deleteDataset,
+            scope : this,
+        }, {
+            xtype: 'button',
+            itemId : 'btn_delete',
+            icon : bq.url('/js/ResourceBrowser/Images/close.gif'),
+            tooltip : 'Delete this dataset, keep elements',
+            handler : this.deleteResource,
+            scope : this,
+        }];
+        this.dataset_service = Ext.create('BQ.dataset.Service', {
+            listeners: {
+                //'running': this.onDatasetRunning,
+                //'success': this.onDatasetSuccess,
+                'error': this.onDatasetError,
+                scope: this,
+            },
+        });
+        this.callParent();
+    },
+
+    onDatasetError: function() {
+        BQ.ui.error('Error while deleteing dataset');
+    },
+
+    deleteDataset : function(me, e) {
+        e.stopPropagation();
+        var list = Ext.Object.getSize(this.browser.resourceQueue.selectedRes);
+
+        if (list > 1) {
+            this.fireEvent( 'removed', this.browser.resourceQueue.selectedRes );
+            var members = [];
+
+            for (var res in this.browser.resourceQueue.selectedRes) {
+                this.browser.resourceQueue.selectedRes[res].setLoading({
+                    msg : 'Deleting...'
+                });
+                members.push(this.browser.resourceQueue.selectedRes[res]);
+            }
+
+            for (var i=0; i<members.length; i++)
+                this.dataset_service.run_delete(members[i].resource.uri);
+
+            this.browser.msgBus.fireEvent('Browser_ReloadData', {});
+        } else {
+            var selected = {};
+            selected[this.resourceCt.resource.uri] = this.resourceCt.resource;
+            this.fireEvent( 'removed', selected );
+
+            this.resourceCt.setLoading({
+                msg : 'Deleting...'
+            });
+            this.dataset_service.run_delete(this.resourceCt.resource.uri);
+            this.browser.msgBus.fireEvent('Browser_ReloadData', {});
+        }
+    },
+
+});
+

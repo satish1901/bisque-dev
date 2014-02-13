@@ -180,6 +180,10 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
         });
         this.tbar = this.commandBar;
 
+        this.addEvents({
+            'removed' : true,
+        });
+
         this.callParent([arguments]);
 
         this.loadPreferences();
@@ -526,5 +530,9 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
 
     findRecord : function(uri) {
         return this.resourceQueue.find(uri);
-    }
+    },
+
+    onOperationRemove : function(selection, needs_reload) {
+        this.fireEvent( 'removed', selection, needs_reload );
+    },
 });
