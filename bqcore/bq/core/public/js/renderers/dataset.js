@@ -351,7 +351,7 @@ Ext.define('BQ.renderers.dataset', {
     onmodechange: function(mode) {
         var ena = (mode != 'SELECT');
         //this.toolbar.child('#menu_add_images').setDisabled(ena);
-        this.toolbar.child('#menu_delete_selected').setDisabled(ena);
+        //this.toolbar.child('#menu_delete_selected').setDisabled(ena);
     },
 
     removeSelectedResources : function() {
