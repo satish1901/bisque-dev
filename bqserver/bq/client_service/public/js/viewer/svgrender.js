@@ -3,8 +3,8 @@ var mouser=null;
 function SVGRenderer (viewer,name) {
     var p = viewer.parameters || {};
     //this.default_showOverlay           = p.rotate          || 0;   // values: 0, 270, 90, 180
-    this.default_showOverlay   = false;    
-    
+    this.default_showOverlay   = false;
+
     this.base = ViewerPlugin;
     this.base (viewer, name);
     this.events  = {};
@@ -16,17 +16,17 @@ SVGRenderer.prototype.create = function (parent) {
     this.svgdoc.setAttributeNS(null, 'class', 'gobjects_surface');
     this.svgdoc.setAttributeNS(null, 'id', 'gobjects_surface');
     parent.appendChild(this.svgdoc);
-    this.svgdoc.style.position = "absolute";    
-    this.svgdoc.style.top = "0px";        
-    this.svgdoc.style.left = "0px";       
+    this.svgdoc.style.position = "absolute";
+    this.svgdoc.style.top = "0px";
+    this.svgdoc.style.left = "0px";
 
     this.overlay = document.createElementNS(svgns, "svg");
     this.overlay.setAttributeNS(null, 'class', 'gobjects_overlay');
     this.overlay.setAttributeNS(null, 'id', 'gobjects_overlay');
     parent.appendChild(this.overlay);
-    this.overlay.style.position = "absolute";    
-    this.overlay.style.top = "0px";        
-    this.overlay.style.left = "0px";       
+    this.overlay.style.position = "absolute";
+    this.overlay.style.top = "0px";
+    this.overlay.style.left = "0px";
 
 
     // KGK
@@ -46,7 +46,7 @@ SVGRenderer.prototype.enable_edit = function (enabled) {
     }
 
     this.viewer.current_view.edit_graphics = enabled?true:false;
-    var gobs =  this.viewer.gobjects();
+    var gobs =  this.viewer.gobjects_viewable();
     this.visit_render.visit_array(gobs, [this.viewer.current_view]);
     this.rendered_gobjects = gobs;
 };
@@ -99,31 +99,30 @@ SVGRenderer.prototype.newImage = function () {
     this.svggobs = document.createElementNS(svgns, "g");
     this.svgdoc.appendChild(this.svggobs);
     this.rendered_gobjects = [];
-    
+
     this.svgimg = this.svgdoc;
 
     this.visit_render = new BQProxyClassVisitor (this);
 };
 
 SVGRenderer.prototype.updateView = function (view) {
-    if (this.initialized) return; 
-    this.initialized = true; 
+    if (this.initialized) return;
+    this.initialized = true;
     this.loadPreferences(this.viewer.preferences);
     if (this.showOverlay !== 'false')
-        this.populate_overlay(this.showOverlay);      
+        this.populate_overlay(this.showOverlay);
 };
 
-SVGRenderer.prototype.removeSvg = function (gob){
-    if (gob.shape != null) {
+SVGRenderer.prototype.removeSvg = function (gob) {
+    if (gob.shape) {
         this.svggobs.removeChild(gob.shape.svgNode);
         delete gob.shape;
     }
 };
 
 SVGRenderer.prototype.appendSvg = function (gob){
-    if (gob.shape != null) {
+    if (gob.shape)
         this.svggobs.appendChild(gob.shape.svgNode);
-    }
 };
 
 
@@ -132,11 +131,11 @@ SVGRenderer.prototype.updateImage = function (){
     var viewstate = this.viewer.current_view;
     var url = this.viewer.image_url();
 
-    this.svgdoc.setAttributeNS( null, 'width', viewstate.width);  
-    this.svgdoc.setAttributeNS( null, 'height', viewstate.height);  
+    this.svgdoc.setAttributeNS( null, 'width', viewstate.width);
+    this.svgdoc.setAttributeNS( null, 'height', viewstate.height);
 
-    this.overlay.setAttributeNS( null, 'width', viewstate.width);  
-    this.overlay.setAttributeNS( null, 'height', viewstate.height);  
+    this.overlay.setAttributeNS( null, 'width', viewstate.width);
+    this.overlay.setAttributeNS( null, 'height', viewstate.height);
 
     //Show a waitcursor on long image loads.
     //this.svgimg.onload = function (){document.body.style.cursor = 'default';};
@@ -144,25 +143,25 @@ SVGRenderer.prototype.updateImage = function (){
       //document.body.style.cursor = 'wait'; // Broken On chrome
       //this.svgimg.setAttributeNS( xlinkns, 'href',  url);
     //}
-    //this.svgimg.setAttributeNS( null, 'x', 0);  
-    //this.svgimg.setAttributeNS( null, 'y', 0);  
-    //this.svgimg.setAttributeNS( null, 'width', viewstate.width);  
-    //this.svgimg.setAttributeNS( null, 'height', viewstate.height);  
+    //this.svgimg.setAttributeNS( null, 'x', 0);
+    //this.svgimg.setAttributeNS( null, 'y', 0);
+    //this.svgimg.setAttributeNS( null, 'width', viewstate.width);
+    //this.svgimg.setAttributeNS( null, 'height', viewstate.height);
 
     var selected  = [];
     // Ensure no handle are left over.
-    if (mouser) 
+    if (mouser)
         selected = mouser.unregisterShapes();
 
-    var gobs =  this.viewer.gobjects();
+    var gobs = this.viewer.gobjects_viewable();
     this.visit_render.visit_array(gobs, [this.viewer.current_view]);
     this.rendered_gobjects = gobs;
-    if (mouser) 
+    if (mouser)
         mouser.selectShapes(selected);
 };
 
 SVGRenderer.prototype.is_selected = function (gob){
-    if (gob.shape != null)
+    if (gob.shape)
         return gob.shape.selected;
     return false;
 };
@@ -171,14 +170,22 @@ SVGRenderer.prototype.set_select_handler = function (callback){
     this.select_callback = callback;
 };
 
-SVGRenderer.prototype.default_select = function (gob, view) {
+SVGRenderer.prototype.set_move_handler = function (callback){
+    this.callback_move = callback;
+};
+
+SVGRenderer.prototype.default_select = function (gob) {
     if (this.select_callback)
         this.select_callback(gob);
 };
 
+SVGRenderer.prototype.default_move = function (gob) {
+    if (this.callback_move)
+        this.callback_move(gob);
+};
 
 SVGRenderer.prototype.viewShape = function (view, gob, move, select){
-    svgNode = gob.shape.svgNode ;
+    svgNode = gob.shape.svgNode;
     var r = this;
     var g = gob;
 
@@ -186,40 +193,43 @@ SVGRenderer.prototype.viewShape = function (view, gob, move, select){
     gob.shape.init(svgNode);
     gob.shape.update_callback = move;
     gob.shape.select_callback = select;
-    gob.shape.callback_data = { view:view, gob:g }; 
+    gob.shape.callback_data = { view:view, gob:g };
     gob.shape.show(true);
-    if (view.edit_graphics == true) 
+    if (view.edit_graphics === true)
         gob.shape.realize();
     gob.shape.editable(view.edit_graphics);
 } ;
 
 SVGRenderer.prototype.hideShape = function (view, gob){
-    if (gob.shape != null ) {
+    if (gob.shape) {
         gob.shape.editable(false);
         gob.shape.update_callback = null;
         gob.shape.select_callback = null;
-        
+
         gob.shape.select(false);
-        if (view.edit_graphics == true) {
+        if (view.edit_graphics === true) {
             gob.shape.showHandles(false);
             gob.shape.unrealize();
         }
         gob.shape.show(false);
-        gob.shape = null;
+        gob.shape = undefined;
     }
 };
 
+//----------------------------------------------------------------------------
+// graphical primitives
+//----------------------------------------------------------------------------
 
 SVGRenderer.prototype.polygon = function (visitor, gob , viewstate, visibility) {
     this.polyline (visitor, gob, viewstate, visibility);
 };
-    
+
 SVGRenderer.prototype.polyline = function (visitor, gob,  viewstate, visibility) {
 
     // Construct a SVG path element based on the visible vertices of the GOB
     var points = "";
     var ctor = null;
-    if (gob.type == "polyline" ) 
+    if (gob.type == "polyline" )
         ctor = Polyline;
     if ( gob.type == "polygon" )
         ctor = Polygon;
@@ -239,14 +249,14 @@ SVGRenderer.prototype.polyline = function (visitor, gob,  viewstate, visibility)
         var p = viewstate.transformPoint (pnt.x, pnt.y);
         points += p.x + ","+p.y+" ";
     }
-    
+
 
     if (visibility!=undefined)
     	gob.visible=visibility;
-    else if (gob.visible==undefined)	
+    else if (gob.visible==undefined)
     	gob.visible=true;
 
-    // check points 
+    // check points
     if (points != null && gob.visible ) {
         var poly = null;
         if (gob.shape == null) {
@@ -255,15 +265,15 @@ SVGRenderer.prototype.polyline = function (visitor, gob,  viewstate, visibility)
             poly.setAttributeNS(null, "stroke-width", "1");
             if ( gob.type == "polygon")
                 poly.setAttributeNS(null, "fill", "red");
-            else	
+            else
                 poly.setAttributeNS(null, "fill", "none");
             poly.setAttributeNS(null, 'fill-opacity', 0.4);
             gob.shape = new ctor( poly );
-        } 
+        }
         poly = gob.shape.svgNode;
         poly.setAttributeNS(null, "points", points);
-        this.viewShape (viewstate, gob, 
-                        callback(this,'move_poly'), 
+        this.viewShape (viewstate, gob,
+                        callback(this,'move_poly'),
                         callback(this,'select_poly'));
     } else {
         this.hideShape (viewstate, gob);
@@ -284,18 +294,18 @@ SVGRenderer.prototype.move_poly = function ( state ) {
         var y=parseInt(points[i+1]);
         if (i % 2 == 0) {
             var np = view.inverseTransformPoint (x, y);
-            if (i/2 >= gob.vertices.length) 
+            if (i/2 >= gob.vertices.length)
                 gob.vertices[i/2] = new BQVertex();
             gob.vertices[i/2].x = np.x;
             gob.vertices[i/2].y = np.y;
         }
     }
+    this.default_move(gob);
 };
 
 SVGRenderer.prototype.select_poly = function ( state ) {
     var gob = state.gob;
-    var view = state.view;
-    this.default_select(gob, view);
+    this.default_select(gob);
 };
 
 
@@ -320,14 +330,14 @@ SVGRenderer.prototype.select_poly = function ( state ) {
 //             continue;
 
 //         var p = viewstate.transformPoint (pnt.x, pnt.y);
-//         if (d ==null) 
+//         if (d ==null)
 //             d = "M" + p.x + "," +p.y;
-//         else 
+//         else
 //             d += "L" + p.x + "," +p.y;
 //     }
-    
 
-//     // check points 
+
+//     // check points
 //     if (d != null ) {
 //         var poly = null;
 //         if (gob.shape == null) {
@@ -336,16 +346,16 @@ SVGRenderer.prototype.select_poly = function ( state ) {
 //             poly.setAttributeNS(null, "stroke-width", "1");
 //             if ( gob.type == "polygon")
 //                 poly.setAttributeNS(null, "fill", "red");
-//             else	
+//             else
 //                 poly.setAttributeNS(null, "fill", "none");
 //             poly.setAttributeNS(null, 'fill-opacity', 0.4);
 //             gob.shape = new Path( poly );
-//         } 
+//         }
 //         poly = gob.shape.svgNode;
 //         if (gob.type== 'polygon') d+= 'Z'; // Close Path
 //         poly.setAttributeNS(null, "d", d);
-//         this.viewShape (viewstate, gob, 
-//                         callback(this,'move_path'), 
+//         this.viewShape (viewstate, gob,
+//                         callback(this,'move_path'),
 //                         callback(this,'select_path'));
 //     } else {
 //         this.hideShape (viewstate, gob)
@@ -359,7 +369,7 @@ SVGRenderer.prototype.select_poly = function ( state ) {
 //     var gob = state.gob;
 //     var view = state.view;
 
-    
+
 //     var path=gob.shape.svgNode.getAttributeNS(null,"d");
 //     alert("PAth element needs parsing");
 
@@ -368,12 +378,13 @@ SVGRenderer.prototype.select_poly = function ( state ) {
 //         var y=parseInt(points[i+1]);
 //         if (i % 2 == 0) {
 //             var np = view.inverseTransformPoint (x, y);
-//             if (i/2 >= gob.vertices.length) 
+//             if (i/2 >= gob.vertices.length)
 //                 gob.vertices[i/2] = new BQVertex()
 //             gob.vertices[i/2].x = np.x;
 //             gob.vertices[i/2].y = np.y;
 //         }
 //     }
+//     default_move
 // };
 
 // SVGRenderer.prototype.select_path = function ( state ) {
@@ -393,12 +404,12 @@ SVGRenderer.prototype.point = function ( visitor, gob, viewstate, visibility) {
     // Update SVGElement with current view state ( scaling, etc )
 
     // viewstate
-    // scale  : double (current scaling factor) 
+    // scale  : double (current scaling factor)
     // z, t, ch: current view planes (and channels)
-    // svgdoc : the SVG document 
+    // svgdoc : the SVG document
     var offset_x  = viewstate.offset_x;
     var offset_y  = viewstate.offset_y;
-    
+
     var pnt = gob.vertices[0] ;
     var visible = true;
     if (pnt.z!=null  && viewstate.z != Math.round(pnt.z))
@@ -408,9 +419,9 @@ SVGRenderer.prototype.point = function ( visitor, gob, viewstate, visibility) {
 
     if (visibility!=undefined)
     	gob.visible=visibility;
-    else if (gob.visible==undefined)	
+    else if (gob.visible==undefined)
     	gob.visible=true;
-    
+
     if (visible && gob.visible) {
         if (gob.shape == null ) {
             var rect = document.createElementNS(svgns, "rect");
@@ -429,8 +440,8 @@ SVGRenderer.prototype.point = function ( visitor, gob, viewstate, visibility) {
         var rect = gob.shape.svgNode;
 		rect.setAttributeNS(null, "x", p.x -4);
 		rect.setAttributeNS(null, "y", p.y -4);
-        this.viewShape (viewstate, gob, 
-                        callback(this,"move_point"), 
+        this.viewShape (viewstate, gob,
+                        callback(this,"move_point"),
                         callback(this,"select_point"));
 
     } else {
@@ -449,12 +460,12 @@ SVGRenderer.prototype.move_point = function (state){
     var pnt = gob.vertices[0] ;
     pnt.x = newpnt.x;
     pnt.y = newpnt.y;
+    this.default_move(gob);
 };
 
 SVGRenderer.prototype.select_point = function (state){
     var gob = state.gob;
-    var v   = state.view;
-    this.default_select(gob, v);
+    this.default_select(gob);
 };
 
 ////////////////////////////////////////////////////////////
@@ -465,12 +476,12 @@ SVGRenderer.prototype.rectangle = function ( visitor, gob,  viewstate, visibilit
     // Update SVGElement with current view state ( scaling, etc )
 
     // viewstate
-    // scale  : double (current scaling factor) 
+    // scale  : double (current scaling factor)
     // z, t, ch: current view planes (and channels)
-    // svgdoc : the SVG document 
+    // svgdoc : the SVG document
     var offset_x  = viewstate.offset_x;
     var offset_y  = viewstate.offset_y;
-    
+
     var pnt1 = gob.vertices[0];
     var pnt2 = gob.vertices[1];
     if (!pnt1 || !pnt2) return;
@@ -482,7 +493,7 @@ SVGRenderer.prototype.rectangle = function ( visitor, gob,  viewstate, visibilit
 
     if (visibility!=undefined)
     	gob.visible=visibility;
-    else if (gob.visible==undefined)	
+    else if (gob.visible==undefined)
     	gob.visible=true;
 
     if (visible && gob.visible) {
@@ -503,8 +514,8 @@ SVGRenderer.prototype.rectangle = function ( visitor, gob,  viewstate, visibilit
         rect.setAttributeNS(null, "y", p1.y);
         rect.setAttributeNS(null, "width", Math.abs(p1.x-p2.x));
         rect.setAttributeNS(null, "height", Math.abs(p1.y-p2.y));
-        this.viewShape (viewstate, gob, 
-                        callback(this,'move_rectangle'), 
+        this.viewShape (viewstate, gob,
+                        callback(this,'move_rectangle'),
                         callback(this,'select_rectangle'));
     } else {
         this.hideShape (viewstate, gob);
@@ -529,12 +540,12 @@ SVGRenderer.prototype.move_rectangle = function (state){
     pnt = gob.vertices[1] ;
     pnt.x = newpnt.x;
     pnt.y = newpnt.y;
+    this.default_move(gob);
 };
 
 SVGRenderer.prototype.select_rectangle = function (state){
     var gob = state.gob;
-    var v   = state.view;
-    this.default_select(gob, v);
+    this.default_select(gob);
 };
 
 
@@ -551,7 +562,7 @@ SVGRenderer.prototype.circle = function ( visitor, gob,  viewstate, visibility) 
 
 	if (visibility!=undefined)
     	gob.visible=visibility;
-    else if (gob.visible==undefined)	
+    else if (gob.visible==undefined)
     	gob.visible=true;
 
     if (visible && gob.visible) {
@@ -574,8 +585,8 @@ SVGRenderer.prototype.circle = function ( visitor, gob,  viewstate, visibility) 
         circ.setAttributeNS(null, 'cx', p1.x );
         circ.setAttributeNS(null, 'cy', p1.y);
         circ.setAttributeNS(null, 'r', radius );
-        this.viewShape (viewstate, gob, 
-                        callback(this,"move_circle"), 
+        this.viewShape (viewstate, gob,
+                        callback(this,"move_circle"),
                         callback(this,"select_circle"));
     } else {
         this.hideShape (viewstate, gob);
@@ -599,12 +610,12 @@ SVGRenderer.prototype.move_circle = function (state){
     var p2 = gob.vertices[1] ;
     p2.x = rpnt.x;
     p2.y = rpnt.y;
+    this.default_move(gob);
 };
 
 SVGRenderer.prototype.select_circle = function (state){
     var gob = state.gob;
-    var v   = state.view;
-    this.default_select(gob, v);
+    this.default_select(gob);
 };
 
 
@@ -613,9 +624,9 @@ SVGRenderer.prototype.ellipse = function ( visitor, gob,  viewstate, visibility)
     var pnt1 = gob.vertices[0] ;
     var pnt2 = gob.vertices[1] ;
     var pnt3 = gob.vertices[2] ;
-    
+
     var visible = true;
-    
+
     if (pnt1.z != null  && viewstate.z != Math.round(pnt1.z))
         visible = false;
     if (pnt1.t != null  && viewstate.t != Math.round(pnt1.t))
@@ -623,9 +634,9 @@ SVGRenderer.prototype.ellipse = function ( visitor, gob,  viewstate, visibility)
 
     if (visibility!=undefined)
     	gob.visible=visibility;
-    else if (gob.visible==undefined)	
+    else if (gob.visible==undefined)
     	gob.visible=true;
-    
+
     if (visible && gob.visible) {
         if (gob.shape == null ) {
             var circ = document.createElementNS( svgns, 'ellipse');
@@ -651,8 +662,8 @@ SVGRenderer.prototype.ellipse = function ( visitor, gob,  viewstate, visibility)
         circ.setAttributeNS(null, 'rx', rx );
         circ.setAttributeNS(null, 'ry', ry );
         circ.setAttributeNS(null, 'transform', "rotate(" + ang + " " + p1.x + " " + p1.y +")");
-        this.viewShape (viewstate, gob, 
-                        callback(this,"move_ellipse"), 
+        this.viewShape (viewstate, gob,
+                        callback(this,"move_ellipse"),
                         callback(this,"select_ellipse"));
     } else {
         this.hideShape (viewstate, gob);
@@ -682,12 +693,12 @@ SVGRenderer.prototype.move_ellipse = function (state){
     var p3 = gob.vertices[2] ;
     p3.x = rpnt.x;
     p3.y = rpnt.y;
+    this.default_move(gob);
 };
 
 SVGRenderer.prototype.select_ellipse = function (state){
     var gob = state.gob;
-    var v   = state.view;
-    this.default_select(gob, v);
+    this.default_select(gob);
 };
 
 ///////////////////////////////////////
@@ -701,12 +712,12 @@ SVGRenderer.prototype.label = function ( visitor, gob, viewstate, visibility) {
     // Update SVGElement with current view state ( scaling, etc )
 
     // viewstate
-    // scale  : double (current scaling factor) 
+    // scale  : double (current scaling factor)
     // z, t, ch: current view planes (and channels)
-    // svgdoc : the SVG document 
+    // svgdoc : the SVG document
     var offset_x  = viewstate.offset_x;
     var offset_y  = viewstate.offset_y;
-    
+
     var pnt = gob.vertices[0] ;
     var visible = true;
     if (pnt.z!=null  && viewstate.z != Math.round(pnt.z))
@@ -716,24 +727,24 @@ SVGRenderer.prototype.label = function ( visitor, gob, viewstate, visibility) {
 
     if (visibility!=undefined)
     	gob.visible=visibility;
-    else if (gob.visible==undefined)	
+    else if (gob.visible==undefined)
     	gob.visible=true;
-    
+
     var label_text = gob.value || 'My label';
-    
+
     if (visible && gob.visible) {
         if (gob.shape == null ) {
             var rect = document.createElementNS(svgns, "text");
-            
+
             var innertext = document.createTextNode(label_text);
             rect.appendChild(innertext);
-            
+
             //rect.setAttributeNS(null, "width", "8");
             //rect.setAttributeNS(null, "height", "8");
             rect.setAttributeNS(null, "fill", "black");
             rect.setAttributeNS(null, 'fill-opacity', 0.7);
             rect.setAttributeNS(null, "stroke", "white");
-            rect.setAttributeNS(null, 'stroke-width', '0.5px');  
+            rect.setAttributeNS(null, 'stroke-width', '0.5px');
             rect.setAttributeNS(null, 'stroke-opacity', 0.7);
             rect.setAttributeNS(null, 'font-size', '12px');
             //rect.setAttributeNS(null, "display", "none");
@@ -745,8 +756,8 @@ SVGRenderer.prototype.label = function ( visitor, gob, viewstate, visibility) {
         var rect = gob.shape.svgNode;
 		rect.setAttributeNS(null, "x", p.x -4);
 		rect.setAttributeNS(null, "y", p.y +4);
-        this.viewShape (viewstate, gob, 
-                        callback(this,"move_label"), 
+        this.viewShape (viewstate, gob,
+                        callback(this,"move_label"),
                         callback(this,"select_label"));
 
     } else {
@@ -765,13 +776,17 @@ SVGRenderer.prototype.move_label = function (state){
     var pnt = gob.vertices[0] ;
     pnt.x = newpnt.x;
     pnt.y = newpnt.y;
+    this.default_move(gob);
 };
 
 SVGRenderer.prototype.select_label = function (state){
     var gob = state.gob;
-    var v   = state.view;
-    this.default_select(gob, v);
+    this.default_select(gob);
 };
+
+//----------------------------------------------------------------------------
+// preferences and overlays
+//----------------------------------------------------------------------------
 
 SVGRenderer.prototype.loadPreferences = function (p) {
     this.showOverlay  = 'showOverlay' in p ? p.showOverlay  : this.default_showOverlay;
@@ -785,7 +800,7 @@ SVGRenderer.prototype.populate_overlay = function (mode) {
 
     if (mode === 'dots') {
         for (var x=9; x<=95; x+=9)
-        for (var y=12; y<=95; y+=9) {    
+        for (var y=12; y<=95; y+=9) {
             var circ = document.createElementNS( svgns, 'circle');
             circ.setAttributeNS(null, 'fill-opacity', 0.0);
             circ.setAttributeNS(null, 'fill', 'black');
@@ -793,9 +808,9 @@ SVGRenderer.prototype.populate_overlay = function (mode) {
             circ.setAttributeNS(null, 'stroke-width', 2);
             circ.setAttributeNS(null, 'cx', ''+x+'%' );
             circ.setAttributeNS(null, 'cy', ''+y+'%');
-            circ.setAttributeNS(null, 'r', '1%' );  
-            gobs.appendChild(circ);  
-            
+            circ.setAttributeNS(null, 'r', '1%' );
+            gobs.appendChild(circ);
+
             var circ = document.createElementNS( svgns, 'circle');
             circ.setAttributeNS(null, 'fill-opacity', 0.0);
             circ.setAttributeNS(null, 'fill', 'black');
@@ -803,11 +818,11 @@ SVGRenderer.prototype.populate_overlay = function (mode) {
             circ.setAttributeNS(null, 'stroke-width', 1);
             circ.setAttributeNS(null, 'cx', ''+x+'%' );
             circ.setAttributeNS(null, 'cy', ''+y+'%');
-            circ.setAttributeNS(null, 'r', '1%' );  
+            circ.setAttributeNS(null, 'r', '1%' );
             gobs.appendChild(circ);
         }
     } else if (mode === 'grid') {
-        for (var y=12; y<=95; y+=9) {    
+        for (var y=12; y<=95; y+=9) {
             var circ = document.createElementNS( svgns, 'line');
             circ.setAttributeNS(null, 'fill-opacity', 0.0);
             circ.setAttributeNS(null, 'fill', 'black');
@@ -817,8 +832,8 @@ SVGRenderer.prototype.populate_overlay = function (mode) {
             circ.setAttributeNS(null, 'x2', '100%' );
             circ.setAttributeNS(null, 'y1', ''+y+'%');
             circ.setAttributeNS(null, 'y2', ''+y+'%');
-            gobs.appendChild(circ);  
-            
+            gobs.appendChild(circ);
+
             var circ = document.createElementNS( svgns, 'line');
             circ.setAttributeNS(null, 'fill-opacity', 0.0);
             circ.setAttributeNS(null, 'fill', 'black');

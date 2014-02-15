@@ -66,14 +66,14 @@ Ext.define('Bisque.ResourceFactoryWrapper',
                             return this.preferences.Images[key];
                         return '';
                     },
-                })
+                });
 
                 resource.prefetch(layoutCls);
             }
 
             var resource = Bisque.ResourceFactory.getResource(config);
             var layoutCls = Bisque.ResourceBrowser.LayoutFactory.getLayout({browser:{layoutKey: config.layoutKey}});
-            resource.setSize({width: layoutCls.layoutEl.width, height: layoutCls.layoutEl.height})
+            resource.setSize({width: layoutCls.layoutEl.width, height: layoutCls.layoutEl.height});
             resource.addCls(layoutCls.layoutCSS || '');
 
             BQ.Preferences.get(

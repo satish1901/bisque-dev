@@ -330,7 +330,7 @@ Ext.define('Bisque.Resource.Image.Card', {
             this.setData('fetched', 1);
             //Loaded
 
-            var renderedRef = this.getData('renderedRef')
+            var renderedRef = this.getData('renderedRef');
             if (renderedRef && !renderedRef.isDestroyed)
                 renderedRef.updateContainer();
         }
@@ -619,15 +619,17 @@ Ext.define('Bisque.Resource.Image.Page', {
             },
 
             listeners : {
-                'beforeload' : function(me, resource) {
+                // dima: gobs are already loaded
+                /*'beforeload' : function(me, resource) {
                     me.imgViewer.start_wait({
                         op : 'gobjects',
                         message : 'Fetching gobjects'
                     });
-                },
+                },*/
 
                 'onload' : function(me, resource) {
-                    me.imgViewer.loadGObjects(resource.gobjects, false);
+                    // dima: the following should never happen because we only load gobtagger in full page and image is pre-loaded view-deep
+                    //me.imgViewer.loadGObjects(resource.gobjects, false);
 
                     if (me.mexBrowser.mexLoaded)
                         me.readFromMex(me.mexBrowser.resourceQueue);

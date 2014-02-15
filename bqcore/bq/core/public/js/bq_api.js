@@ -723,6 +723,14 @@ BQObject.prototype.clone = function (skiptemplate) {
     return resource;
 };
 
+BQObject.prototype.apply = function (obj) {
+    var attr = ['children', 'tags', 'gobjects', 'values', 'vertices', 'resource_type', 'created', 'dirty', 'mex'];
+    attr.push.apply(attr, this.xmlfields);
+    var a = undefined;
+    for (i=0; (a=attr[i]); i++)
+        this[a] = obj[a];
+};
+
 BQObject.prototype.toDict  = function (deep, found, prefix) {
     deep = deep || false;
     found = found || {};
@@ -892,6 +900,22 @@ BQObject.prototype.save_ = function (parenturi, cb, errorcb, method) {
     }
 };
 
+BQObject.prototype.save_me = function (cb, errorcb) {
+    this.testReadonly();
+    var req = this.toXML();
+    errorcb = errorcb || default_error_callback;
+    if (this.uri) {
+        xmlrequest(this.uri, cb, 'put', req, errorcb);
+    } else {
+        var parenturi = this.parent.uri;
+        if (this.resource_type in BQFactory.objects)
+            parenturi = parenturi || '/data_service/'+this.resource_type+'/';
+        else
+            parenturi = parenturi || '/data_service/resource/';
+        xmlrequest(parenturi, cb, 'post', req, errorcb);
+    }
+};
+
 BQObject.prototype.save_ww = function (parenturi, cb, errorcb) {
     this.testReadonly();
     var obj = this;
@@ -902,6 +926,20 @@ BQObject.prototype.save_ww = function (parenturi, cb, errorcb) {
     } else {
         parenturi = parenturi || '/data_service/'+this.resource_type+'/';
         xmlrequest(parenturi, callback(obj, 'response_', 'created', errorcb, cb),'post', req, errorcb);
+    }
+};
+
+BQObject.prototype.save_reload = function(parenturi, cb, errorcb) {
+    this.testReadonly();
+    var obj = this;
+    var req = obj.toXML();
+    errorcb = errorcb || default_error_callback;
+    obj.children = obj.tags = obj.gobjects = [];
+    if (obj.uri) {
+        xmlrequest(obj.uri + "?view=deep", callback(obj, 'response_', 'update', errorcb, cb), 'put', req, errorcb);
+    } else {
+        parenturi = parenturi || '/data_service/' + this.resource_type + '/';
+        xmlrequest(parenturi + "?view=deep", callback(obj, 'response_', 'created', errorcb, cb), 'post', req, errorcb);
     }
 };
 
@@ -1258,6 +1296,18 @@ BQGObject.prototype.setParent = function (p) {
 
 BQGObject.prototype.isPrimitive = function () {
     return this.type in BQGObject.primitives;
+};
+
+BQGObject.prototype.findParentGobject = function (gob) {
+    if (!this.parent) return;
+    var node = gob || this.parent;
+    if (!node.gobjects || node.gobjects.length<1) return;
+    var g=undefined;
+    for (i=0; (g=node.gobjects[i]); i++) {
+        if (g === this) return node;
+        var r = this.findParentGobject(g);
+        if (r) return r;
+    }
 };
 
 //-----------------------------------------------------------------------------
