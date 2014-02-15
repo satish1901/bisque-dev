@@ -622,15 +622,22 @@ ImgViewer.prototype.findPlugin = function(name) {
     return this.plugins_by_name[name];
 };
 
-ImgViewer.prototype.gobjects = function() {
-    if (this.gObjects && this.gObjects.length>0) return this.gObjects;
-    return this.plugins_by_name['edit'].gobjects || [];
+ImgViewer.prototype.gobjects_editable = function() {
+    // should be image gobs
+    return this.image.gobjects;
+};
+
+ImgViewer.prototype.gobjects_viewable = function() {
+    // should be image gobs + mex gobs
+    return this.image.gobjects;
+    //if (this.gObjects && this.gObjects.length>0) return this.gObjects;
+    //return this.plugins_by_name['edit'].gobjects || [];
 };
 
 ImgViewer.prototype.loadGObjects = function(gObjects, renderWhileLoading)
 {
     this.visit_render = new BQProxyClassVisitor(this.renderer);
-    this.gObjects = [];
+    //this.gObjects = [];
     this.renderWhileLoading = renderWhileLoading;
 
     if (gObjects instanceof Array )
@@ -661,7 +668,8 @@ ImgViewer.prototype.gobjectsLoadProgress = function(gObj)
     if (this.renderWhileLoading)
     {
         this.visit_render.visitall(gObj, [this.current_view]);
-        this.gObjects.push(gObj);
+        //this.gObjects.push(gObj);
+        this.image.gobjects.push(gObj);
     }
 };
 
@@ -669,18 +677,18 @@ ImgViewer.prototype.gobjectsLoaded = function(render, gObjects)
 {
     //this.gObjects = [ gObjects ] ; //this.image.gobjects;
     if (gObjects instanceof Array)
-        Ext.Array.insert(this.gObjects, 0, gObjects);
+        Ext.Array.insert(this.image.gobjects, 0, gObjects);
     else
-        Ext.Array.insert(this.gObjects, 0, [gObjects]);
+        Ext.Array.insert(this.image.gobjects, 0, [gObjects]);
 
     this.end_wait({op: 'gobjects', message: 'Fetching gobjects'});
 
     // Update editPlugin's gobjects array
     var editPlgin = this.findPlugin('edit');
     if (editPlgin)
-        Ext.Array.insert(editPlgin.gobjects, 0, this.gObjects);
+        Ext.Array.insert(editPlgin.gobjects, 0, this.image.gobjects);
     if (render)
-        this.showGObjects(this.gObjects);
+        this.showGObjects(this.image.gobjects);
 };
 
 ImgViewer.prototype.showGObjects = function(gObjects)

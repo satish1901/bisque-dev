@@ -2,12 +2,12 @@ Ext.define('Bisque.ResourceTagger', {
     extend: 'Ext.panel.Panel',
     layout: 'fit',
     silent: true,
-            
+
     constructor: function (config) {
         config = config || {};
 
         Ext.apply(this, {
-            
+
             //padding: '0 1 0 0',
             //style: 'background-color:#FFF',
             border: false,
@@ -105,10 +105,10 @@ Ext.define('Bisque.ResourceTagger', {
             // assume it is a resource URI otherwise
             BQFactory.request({
                 uri: resource,
-                cb: Ext.bind(this.loadResourceInfo, this), 
-                errorcb: function(error) { 
-                    BQ.ui.error('Error fetching resource:<br>'+error.message_short, 4000); 
-                }, 
+                cb: Ext.bind(this.loadResourceInfo, this),
+                errorcb: function(error) {
+                    BQ.ui.error('Error fetching resource:<br>'+error.message_short, 4000);
+                },
                 uri_params: { view:'deep' },
             });
     },
@@ -196,17 +196,17 @@ Ext.define('Bisque.ResourceTagger', {
                 'cancelEdit': this.cancelEdit,
                 scope: this
             },
-            
+
             beforeEdit: function (editor) {
-                
+
                 if (this.tagger.editable) {
                     this.tagger.updateQueryTagValues(editor.record.get('name'));
-                    
+
                     if (!isEmptyObject(editor.record.raw.template) && this.tagger.resource.resource_type != 'template') {
                         if (editor.record.raw.template.Editable) {
-                            var editor = BQ.TagRenderer.Base.getRenderer({ 
-                                tplType: editor.record.get('type'), 
-                                tplInfo: editor.record.raw.template, 
+                            var editor = BQ.TagRenderer.Base.getRenderer({
+                                tplType: editor.record.get('type'),
+                                tplInfo: editor.record.raw.template,
                                 valueStore: this.tagger.store_values,
                             });
                             this.tagger.tree.columns[1].setEditor(editor);
@@ -215,9 +215,9 @@ Ext.define('Bisque.ResourceTagger', {
                             return false;
                         }
                     } else {
-                        var editor = BQ.TagRenderer.Base.getRenderer({ 
-                            tplType: '', 
-                            tplInfo: '', 
+                        var editor = BQ.TagRenderer.Base.getRenderer({
+                            tplType: '',
+                            tplInfo: '',
                             valueStore: this.tagger.store_values,
                         });
                         this.tagger.tree.columns[1].setEditor(editor);
@@ -239,7 +239,7 @@ Ext.define('Bisque.ResourceTagger', {
             iconCls: 'icon-grid',
             animate: this.animate,
             header: false,
-            deferRowRender: true, 
+            deferRowRender: true,
             enableColumnMove: false,
             allowDeselect: true,
 
@@ -265,7 +265,7 @@ Ext.define('Bisque.ResourceTagger', {
                 scope: this
             }
         });
-        
+
 
         this.store.tagTree = this.tree;
 
@@ -305,7 +305,7 @@ Ext.define('Bisque.ResourceTagger', {
             flex: 0.8,
             sortable: true,
             draggable: false,
-            
+
             field: {
                 // dima: combo box instead of the normal text edit that will be populated with existing tag names
                 xtype: 'bqcombobox',
@@ -318,7 +318,7 @@ Ext.define('Bisque.ResourceTagger', {
 
                 allowBlank: false,
                 //fieldLabel: this.colNameText || 'Name',
-                //labelAlign: 'top',    
+                //labelAlign: 'top',
 
                 validateOnChange: false,
                 blankText: 'Tag name is required!',
@@ -327,8 +327,8 @@ Ext.define('Bisque.ResourceTagger', {
                     'change': {
                         fn: function (field, newValue, oldValue, eOpts) {
                             this.updateQueryTagValues(newValue);
-                            if (this.rowEditor) 
-                                this.rowEditor.editor.onFieldChange();                           
+                            if (this.rowEditor)
+                                this.rowEditor.editor.onFieldChange();
                         },
                         buffer: 250,
                     },
@@ -571,16 +571,16 @@ Ext.define('Bisque.ResourceTagger', {
                 scope: this
             }]
         }, {
-            xtype:'tbtext', 
-            itemId: 'toolbar_progress', 
+            xtype:'tbtext',
+            itemId: 'toolbar_progress',
             cls: 'bq_tagger_progress',
             flex: 2,
-            //text: 'Saving',             
+            //text: 'Saving',
         }];
 
         return tbar;
     },
-    
+
     setProgress: function(msg) {
         var p = this.queryById('toolbar_progress');
         if (!p) return;
@@ -589,8 +589,8 @@ Ext.define('Bisque.ResourceTagger', {
             p.removeCls('bq_inprogress');
         } else {
             p.setText(msg);
-            p.addCls('bq_inprogress');            
-        }       
+            p.addCls('bq_inprogress');
+        }
     },
 
     addTags: function () {
@@ -688,7 +688,7 @@ Ext.define('Bisque.ResourceTagger', {
     saveTags: function (parent, silent) {
         if (silent === undefined)
             silent = this.silent !== undefined ? this.silent : false;
-        
+
         var resource = (typeof parent == BQObject) ? parent : this.resource;
         var me = this;
         if (this.store.applyModifications()) {
@@ -696,7 +696,7 @@ Ext.define('Bisque.ResourceTagger', {
             resource.save_(
                 undefined,
                 function() { me.ondone('Changes were saved successfully!', silent); },
-                callback(this, 'onerror') 
+                callback(this, 'onerror')
             );
         } else
             BQ.ui.notification('No records modified!');
@@ -709,7 +709,7 @@ Ext.define('Bisque.ResourceTagger', {
 
     onerror : function(error) {
         this.setProgress(false);
-        BQ.ui.error(error.message);         
+        BQ.ui.error(error.message);
     },
 
     importMenu: function (btn, e) {
@@ -932,7 +932,7 @@ Ext.define('Bisque.GObjectTagger', {
     animate: false,
     layout: 'fit',
     cls: 'bq-gob-tagger',
-    
+
     colNameText: 'GObject',
     colValueText: 'Vertices',
 
@@ -963,26 +963,31 @@ Ext.define('Bisque.GObjectTagger', {
             dock: 'top',
             height: 250,
             listeners: {
-                scope: this,                
+                scope: this,
                 'select': this.fireGobEvent,
-            }            
+            }
         }, {
             xtype: 'container',
             cls: 'bq-gob-header',
             html: '<h3>Tree of annotations</h3>',
             border: 0,
             dock: 'top',
-        }]);        
+        }]);
     },
-    
+
     loadResourceInfo: function (resource) {
         this.fireEvent('beforeload', this, resource);
 
         this.resource = resource;
-        this.resource.loadGObjects({
-            cb: callback(this, "loadResourceTags"),
-            depth: 'deep&wpublic=1'
-        });
+        // dima: the following should never happen because we only load gobtagger in full page and image is pre-loaded view-deep
+        if (!this.resource.gobjects || this.resource.gobjects.length<=0) {
+            this.resource.loadGObjects({
+                cb: callback(this, "loadResourceTags"),
+                depth: 'deep&wpublic=1'
+            });
+        } else {
+            this.loadResourceTags(this.resource.gobjects);
+        }
     },
 
     getStoreFields: function () {
@@ -1032,44 +1037,44 @@ Ext.define('Bisque.GObjectTagger', {
             //iconCls: 'icon-add',
             handler: this.fireButtonEvent,
             //disabled: this.tree.btnAdd,
-            scope: this            
+            scope: this
         }, {
             itemId: 'btnSelect',
             text: 'Select',
-            eventName: 'btnSelect',            
+            eventName: 'btnSelect',
             //hidden: this.viewMgr.state.btnAdd,
             scale: 'medium',
             //iconCls: 'icon-add',
             handler: this.fireButtonEvent,
             //disabled: this.tree.btnAdd,
-            scope: this            
-        }, {
+            scope: this
+        }, /*{
             itemId: 'btnSave',
             text: 'Save',
-            eventName: 'btnSave',             
+            eventName: 'btnSave',
             //hidden: this.viewMgr.state.btnAdd,
             scale: 'medium',
             //iconCls: 'icon-add',
             handler: this.fireButtonEvent,
             //disabled: this.tree.btnAdd,
-            scope: this            
-        }, {
+            scope: this
+        },*/ {
             itemId: 'btnDelete',
             text: 'Delete',
-            eventName: 'btnDelete',             
+            eventName: 'btnDelete',
             //hidden: this.viewMgr.state.btnAdd,
             scale: 'medium',
             //iconCls: 'icon-add',
             handler: this.fireButtonEvent,
             //disabled: this.tree.btnAdd,
-            scope: this            
+            scope: this
         }, {
             itemId: 'btnCreate',
             text: 'Create',
             scale: 'medium',
             //iconCls: 'icon-add',
             handler: this.createGobject,
-            scope: this            
+            scope: this
         }];
 
         return buttons.concat(toolbar);
@@ -1108,7 +1113,7 @@ Ext.define('Bisque.GObjectTagger', {
         for (var i = 0; i < resQo.length; i++)
             resQ[i] = resQo[i];
 
-        // Only look for gobjects in tags which have value = image_url 
+        // Only look for gobjects in tags which have value = image_url
         for (var i = 0; i < resQ.length; i++) {
             // the mex may have sub mexs
             if (resQ[i].resource.children && resQ[i].resource.children.length > 0) {
@@ -1141,11 +1146,14 @@ Ext.define('Bisque.GObjectTagger', {
         return gobjects;
     },
 
-    deleteGObject: function (index) {
-        var root = this.tree.getRootNode();
-        var g = root.getChildAt(index);
-        root.removeChild(g, true);
-        this.tree.getView().refresh();
+    deleteGObject: function (gob) {
+        var node = this.tree.getRootNode().findChildBy(
+            function(n) { if (n.raw === gob) return true; },
+            this,
+            true
+        );
+        if (node)
+            node.remove();
     },
 
     appendGObjects: function (data, mex) {
@@ -1213,25 +1221,25 @@ Ext.define('Bisque.GObjectTagger', {
     updateViewState: function (state) {
 
     },
-    
+
     fireButtonEvent: function (button) {
         this.fireEvent(button.eventName, this);
     },
-    
+
     fireGobEvent: function (type) {
         this.fireEvent('createGob', type, this);
-    },   
-    
+    },
+
     createGobject: function () {
         Ext.MessageBox.prompt('Create graphical annotation', 'Please enter a new graphical type:', this.onNewType, this);
     },
-    
+
     onNewType: function (btn, mytype) {
         if (btn !== 'ok') return;
         var p = this.queryById('panelGobTypes');
         if (p)
             p.addType(mytype);
-    },    
+    },
 
 });
 
@@ -1345,8 +1353,8 @@ Ext.define('Bisque.ResourceTagger.viewStateManager',
 
 function xpath(node, expression) {
     var xpe = new XPathEvaluator();
-    var nsResolver = xpe.createNSResolver(node.ownerDocument == null ? node.documentElement : node.ownerDocument.documentElement);    
-    var result = xpe.evaluate( expression, node, nsResolver, XPathResult.STRING_TYPE, null );     
+    var nsResolver = xpe.createNSResolver(node.ownerDocument == null ? node.documentElement : node.ownerDocument.documentElement);
+    var result = xpe.evaluate( expression, node, nsResolver, XPathResult.STRING_TYPE, null );
     return result.stringValue;
 }
 
@@ -1356,24 +1364,24 @@ function getType(v, record) {
 }
 
 Ext.define('BQ.grid.GobsPanel', {
-    alias: 'widget.gobspanel',    
+    alias: 'widget.gobspanel',
     extend: 'Ext.panel.Panel',
     requires: ['Ext.toolbar.Toolbar', 'Ext.tip.QuickTipManager', 'Ext.tip.QuickTip'],
-    layout: 'fit', 
-    
+    layout: 'fit',
+
     types_ignore: {},
 
     initComponent : function() {
-        /*       
+        /*
         Ext.define('Gobs', {
             extend : 'Ext.data.Model',
-            fields : [ 
+            fields : [
                 { name: 'Type', convert: getType },
                 //{ name: 'Name', mapping: '@name' },
-                { name: 'Custom', mapping: '@type' },                
+                { name: 'Custom', mapping: '@type' },
             ],
-                       
-            proxy : { 
+
+            proxy : {
                 limitParam : undefined,
                 pageParam: undefined,
                 startParam: undefined,
@@ -1382,24 +1390,24 @@ Ext.define('BQ.grid.GobsPanel', {
                 reader : {
                     type :  'xml',
                     root :  '/',
-                    record: '/*:not(value or vertex or template)',    
+                    record: '/*:not(value or vertex or template)',
                 }
-            },                       
-            
+            },
+
         });
         */
         this.typesstore = Ext.create('Ext.data.Store', {
-            fields : [ 
+            fields : [
                 { name: 'Type' },
-                { name: 'Custom' },                
-            ],            
-        });       
-       
+                { name: 'Custom' },
+            ],
+        });
+
         this.items = [{
             xtype: 'gridpanel',
             header: false,
             /*store: {
-                model : 'Gobs', 
+                model : 'Gobs',
                 autoLoad : true,
                 autoSync : false,
             },*/
@@ -1416,25 +1424,25 @@ Ext.define('BQ.grid.GobsPanel', {
                     if (record.data.Custom != '')
                         return 'bq-row-gob-custom';
                 },
-            },  
+            },
             listeners: {
-                scope: this,                
+                scope: this,
                 'select': this.onselected,
             }
-        }];        
-        
+        }];
+
         this.callParent();
     },
 
     afterRender : function() {
         this.callParent();
-        
-        this.setLoading('Fetching types of graphical annotations');  
+
+        this.setLoading('Fetching types of graphical annotations');
         BQ.Preferences.get({
             key : 'Viewer',
             callback : Ext.bind(this.onPreferences, this),
-        });           
-    },     
+        });
+    },
 
     onPreferences: function(pref) {
         this.preferences = Ext.apply(pref, this.parameters || {}); // local defines overwrite preferences
@@ -1442,7 +1450,7 @@ Ext.define('BQ.grid.GobsPanel', {
             var l = this.preferences.hide_gobjects_creation.split(',');
             var n=null;
             for (var i=0; n=l[i]; ++i)
-                this.types_ignore[n] = n;            
+                this.types_ignore[n] = n;
         }
 
         Ext.Ajax.request({
@@ -1454,15 +1462,15 @@ Ext.define('BQ.grid.GobsPanel', {
                     this.onTypes(response.responseXML);
             },
             scope: this,
-            disableCaching: false, 
-        });          
+            disableCaching: false,
+        });
     },
 
     onError : function() {
-        this.setLoading(false);          
+        this.setLoading(false);
         BQ.ui.error('Problem fetching available gobject types');
-    },  
-   
+    },
+
     evaluateXPath: function(node, expression) {
         var xpe = new XPathEvaluator();
         var nsResolver = xpe.createNSResolver(node.ownerDocument == null ?
@@ -1473,23 +1481,23 @@ Ext.define('BQ.grid.GobsPanel', {
         while (res = result.iterateNext())
             found.push(res);
         return found;
-    },      
-   
+    },
+
     onTypes : function(xml) {
-        this.setLoading(false);  
+        this.setLoading(false);
         this.types = [];
-        //this.types_index = {};    
+        //this.types_index = {};
 
         // add primitives
         for (var g in BQGObject.primitives) {
-            if (!(g in this.types_ignore)){            
+            if (!(g in this.types_ignore)){
                 var ix = this.types.push({
                     Type   : g,
                     Custom : '',
-                });     
-            }       
+                });
+            }
             //this.formats_index[name] = this.formats[ix-1];
-        } // for primitives            
+        } // for primitives
 
         var gobs = this.evaluateXPath(xml, '//gobject');
         var g=undefined;
@@ -1499,27 +1507,27 @@ Ext.define('BQ.grid.GobsPanel', {
                 var ix = this.types.push({
                     Type   : t,
                     Custom : t,
-                });            
+                });
             }
             //this.formats_index[name] = this.formats[ix-1];
         } // for types
-        
+
         this.typesstore.loadData(this.types);
-    },   
-    
+    },
+
     addType: function(newType) {
         var ix = this.types.push({
             Type   : newType,
             Custom : newType,
-        });            
-        //this.formats_index[name] = this.formats[ix-1];        
-        
+        });
+        //this.formats_index[name] = this.formats[ix-1];
+
         this.typesstore.loadData(this.types);
-    },    
-    
+    },
+
     onselected: function(model, record, index, eOpts) {
         this.fireEvent('select', record.data.Type);
     },
-   
+
 });
 
