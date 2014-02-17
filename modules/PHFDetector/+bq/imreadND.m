@@ -56,12 +56,27 @@ function I = imreadND(url, user, password)
              'image_num_y',        'int';             
              'image_pixel_depth',  'int';
              'image_pixel_format', 'str';
-             'pixelFormat',        'str';
            };
     info = bq.parsetags(doc, tags, template);
     purl.popQuery();    
     
+    % convert pixel type
+    pf_map = containers.Map({'unsigned integer 8', 'unsigned integer 16', 'unsigned integer 32', 'unsigned integer 64', ... 
+                          'signed integer 8',   'signed integer 16',   'signed integer 32',   'signed integer 64', ... 
+                          'floating point 32', 'floating point 64'}, ...
+                         {'uint8', 'uint16', 'uint32', 'uint64', ...
+                          'int8',  'int16',  'int32',  'int64', ...
+                          'single', 'double' });
+    pixel_type_str = sprintf('%s %d', info.image_pixel_format, info.image_pixel_depth);
+    if ~pf_map.isKey(pixel_type_str),
+        throw('Image pixel format is not supported');
+    end
+    pixel_type = pf_map(pixel_type_str);
 
+    % fix for t and z that may be reported as 0, on which reshape breaks
+    if info.image_num_t == 0, info.image_num_t = 1; end
+    if info.image_num_z == 0, info.image_num_z = 1; end
+    
     %% fetch image data stream and reshape it
     purl.pushQuery('format', 'raw');
     if exist('user', 'var') && exist('password', 'var'),
@@ -72,7 +87,7 @@ function I = imreadND(url, user, password)
     if res.status>=300 || isempty(I),
         I = []; return;
     end
-    I = typecast(I, info.pixelFormat);
+    I = typecast(I, pixel_type);
     I = squeeze(reshape(I, info.image_num_x, info.image_num_y, info.image_num_c, info.image_num_z, info.image_num_t)); 
     
     % matlab uses row-major order, opposite to column-major in Bisque
