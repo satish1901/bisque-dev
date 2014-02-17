@@ -450,9 +450,9 @@ class MetaService(object):
                 info = self.server.getFileInfo(id=image_id)
                 meta['image_num_x'] = info.get('image_num_x', meta.get('image_num_x', 0))
                 meta['image_num_y'] = info.get('image_num_y', meta.get('image_num_y', 0))
-                meta['image_num_z'] = info.get('image_num_z', meta.get('image_num_z', 0))
-                meta['image_num_t'] = info.get('image_num_t', meta.get('image_num_t', 0))
-                meta['image_num_c'] = info.get('image_num_c', meta.get('image_num_c', 0))
+                meta['image_num_z'] = info.get('image_num_z', meta.get('image_num_z', 1))
+                meta['image_num_t'] = info.get('image_num_t', meta.get('image_num_t', 1))
+                meta['image_num_c'] = info.get('image_num_c', meta.get('image_num_c', 1))
                 meta['image_pixel_depth'] = info.get('image_pixel_depth', meta.get('image_pixel_depth', 0))
                 meta['image_num_p'] = info['image_num_t']*info['image_num_z']
 
