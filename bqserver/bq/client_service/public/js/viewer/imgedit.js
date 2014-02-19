@@ -87,39 +87,32 @@ ImgEdit.prototype.updateView = function (view) {
                 itemId: 'btnNavigate',
                 text: ImgViewer.BTN_TITLE_NAVIGATE,
                 scale: 'small',
-                //iconCls: 'icon-add',
+                iconCls: 'icon-navigate',
                 handler: this.navigate,
                 scope: this,
+                tooltip: 'Pan and zoom the image',
             }, {
                 xtype: 'button',
                 itemId: 'btnSelect',
                 text: ImgViewer.BTN_TITLE_SELECT,
                 scale: 'small',
-                //iconCls: 'icon-add',
+                iconCls: 'icon-select',
                 handler: this.select,
                 scope: this,
-            }, /*{
-                xtype: 'button',
-                itemId: 'btnSave',
-                hidden: ('nosave' in v.parameters),
-                text: ImgViewer.BTN_TITLE_SAVE,
-                scale: 'small',
-                //iconCls: 'icon-add',
-                handler: this.save_edit,
-                scope: this,
-            }, */{
+                tooltip: 'Select a graphical annotation on the screen',
+            }, {
                 xtype: 'button',
                 itemId: 'btnDelete',
                 text: ImgViewer.BTN_TITLE_DELETE,
                 scale: 'small',
-                //iconCls: 'icon-add',
-                //handler: this.delete_item,
+                iconCls: 'icon-delete',
                 handler: this.remove,
                 scope: this,
+                tooltip: 'Delete a graphical annotation by selecting it on the screen',
             },{
                 xtype: 'displayfield',
                 fieldLabel: 'Annotations:',
-                //cls: 'heading',
+                cls: 'spacer',
             }, {
                 xtype: 'button',
                 itemId: 'btnPoint',
@@ -198,7 +191,6 @@ ImgEdit.prototype.editImage = function () {
         //    this.viewer.gob_annotator.on('btnSave', this.save_edit, this);
         this.viewer.gob_annotator.on('btnNavigate', this.navigate, this);
         this.viewer.gob_annotator.on('btnSelect', this.select, this);
-        //this.viewer.gob_annotator.on('btnDelete', this.delete_item, this);
         this.viewer.gob_annotator.on('btnDelete', this.remove, this);
         this.viewer.gob_annotator.on('createGob', this.onCreateGob, this);
     }
@@ -244,10 +236,6 @@ ImgEdit.prototype.startEdit = function () {
     this.viewer.viewer_controls_surface.onmousedown = callback(this, "mousedown");
 
     this.renderer.setkeyhandler(callback(this, "keyhandler"));
-
-    //v.renderer.setmouseup(callback(this, "mouseup"));
-    //this.renderer.setmousemove(callback(this, "mousemove"));
-    //v.current_view.edit_graphics = true;
     this.renderer.enable_edit (true);
 };
 
@@ -264,7 +252,6 @@ ImgEdit.prototype.endEdit = function () {
 
     this.mode = null;
     this.current_gob = null;
-    //this.viewer.current_view.edit_graphics = false;
 
     if (this.tageditor) {
         this.tageditor.destroy();
@@ -278,63 +265,11 @@ ImgEdit.prototype.dochange = function () {
         this.viewer.parameters.gobjectschanged(this.gobjects);
 };
 
-/*
-ImgEdit.prototype.save_edit = function (mode) {
-    this.endEdit();
-    var pars = this.viewer.parameters;
-    if (pars.onworking)
-        pars.onworking('Saving annotations...');
-    this.viewer.image.save_gobjects(pars.ondone, undefined, undefined, pars.onerror);
-};*/
-
 ImgEdit.prototype.keyhandler = function (e) {
 	var unicode=e.keyCode? e.keyCode : e.charCode;
     if (unicode in this.keymap)
         this.keymap[unicode] (e);
 };
-
-/*ImgEdit.prototype.delete_item1 =  function (e){
-    var r = this.renderer;
-    var found = false;
-    for (var gi = 0; gi < this.gobjects.length; gi++) {
-        var gob = this.gobjects[gi];
-        if (r.is_selected(gob)) {
-            found = true;
-            if (gob.uri != null
-                && !confirm( "This graphical annotation is registered in the Database.\n  Really Delete?"))   return;
-            r.hideShape (this.viewer.current_view, gob);
-            this.remove_gobject(gi);
-            gob.delete_();
-            //this.tageditor.destroy();
-            this.tageditor = null;
-        }
-    }
-    if (!found) confirm("You must select an object to delete");
-    this.dochange();
-};
-
-ImgEdit.prototype.delete_item = function(e) {
-
-    var gobjVisitor = Ext.create('BQGObjectVisitor');
-    gobjVisitor.visit_array(this.gobjects, this);
-
-};
-
-Ext.define('BQGObjectVisitor', {
-    extend  :   BQVisitor,
-    visit   :   function(node, me)
-    {
-        if (node instanceof BQGObject)
-            if (me.viewer.renderer.is_selected(node))
-            {
-                if (node.uri != null && !confirm( "This graphical annotation is registered in the database. \nReally delete?")) return;
-
-                me.viewer.renderer.hideShape(me.viewer.current_view, node);
-                me.remove_gobject(node);
-                node.delete_();
-            }
-    }
-});*/
 
 ImgEdit.prototype.mousedown = function (e) {
   if (!e) e = window.event;  // IE event model
@@ -360,6 +295,7 @@ ImgEdit.prototype.store_new_gobject = function (gob){
     var pars = this.viewer.parameters || {};
     if (pars.onworking)
         pars.onworking('Saving annotations...');
+
     gob.save_reload(
         this.viewer.image.uri + '/gobject',
         function(resource) {
@@ -371,6 +307,12 @@ ImgEdit.prototype.store_new_gobject = function (gob){
 };
 
 ImgEdit.prototype.remove_gobject = function (gob) {
+    // dima: a hack to stop writing into a MEX
+    if (gob.uri && gob.uri.indexOf('/mex/')>=0) {
+        BQ.ui.warning('Can\'t delete annotation from a Module EXecution document...');
+        return;
+    }
+
     // remove rendered shape first
     this.renderer.hideShape(this.viewer.current_view, gob);
 
@@ -404,6 +346,11 @@ ImgEdit.prototype.on_move = function (gob) {
     if (this.saving_timeout) clearTimeout (this.saving_timeout);
     this.saving_timeout = setTimeout( function() {
         me.saving_timeout=undefined;
+        // dima: a hack to stop writing into a MEX
+        if (gob.uri && gob.uri.indexOf('/mex/')>=0) {
+            BQ.ui.warning('Can\'t update annotation in a Module EXecution document...');
+            return;
+        }
         gob.save_me(pars.ondone, pars.onerror ); // check why save_ should not be used
     }, 1000 );
 };

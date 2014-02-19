@@ -114,3 +114,28 @@
     background-position: right center;
     background-repeat: no-repeat;
 }
+
+.bq-gob-tagger .x-grid-tree-loading .x-tree-elbow-img {
+    background-image: url('/images/progress_circles.gif') !important;
+    background-size: 12px 12px;
+    background-position: left center;
+    background-repeat: no-repeat;
+}
+
+.bq-gob-tagger .icon-navigate {
+    background-image: url('../ResourceTagger/Images/compass.png') !important;
+    background-size: 15px 15px;
+    background-position: left center;
+    background-repeat: no-repeat;
+}
+
+.bq-gob-tagger .icon-select {
+    background-image: url('../ResourceTagger/Images/select.png') !important;
+    background-size: 15px 15px;
+    background-position: left center;
+    background-repeat: no-repeat;
+}
+
+.bq-gob-tagger .x-btn-toolbar .x-btn-inner {
+    padding-left: 20px !important;
+}

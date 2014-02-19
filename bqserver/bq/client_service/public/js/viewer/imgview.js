@@ -628,38 +628,27 @@ ImgViewer.prototype.gobjects_editable = function() {
 };
 
 ImgViewer.prototype.gobjects_viewable = function() {
-    // should be image gobs + mex gobs
+    // dima: should be image gobs + mex gobs
+    // right now, objects are being saved directly upon changes and insertions
+    // so we hack and add all gobjects, inclusing MEX, into image list
     return this.image.gobjects;
-    //if (this.gObjects && this.gObjects.length>0) return this.gObjects;
-    //return this.plugins_by_name['edit'].gobjects || [];
 };
 
-ImgViewer.prototype.loadGObjects = function(gObjects, renderWhileLoading)
-{
-    this.visit_render = new BQProxyClassVisitor(this.renderer);
-    //this.gObjects = [];
-    this.renderWhileLoading = renderWhileLoading;
+ImgViewer.prototype.loadGObjects = function(gobs) {
 
-    if (gObjects instanceof Array )
-    {
-        this.image.gobjects=gObjects;
-        this.gobjectsLoaded(true, gObjects);
-    }
-    else if (gObjects instanceof BQGObject)
-    {
-        this.image.gobjects=[gObjects];
-        this.gobjectsLoaded(true, gObjects);
-    }
-    else if (typeof gObjects =='string'){
+    if (gobs instanceof Array ) {
+        this.gobjectsLoaded(gobs);
+    } else if (gobs instanceof BQGObject) {
+        this.gobjectsLoaded([gobs]);
+    } else if (typeof gobs =='string') {
         this.start_wait({op: 'gobjects', message: 'Fetching gobjects'});
-        //BQFactory.load (gObjects + '?view=deep', callback(this, 'gobjectsLoaded', true));
-        BQFactory.request ({ uri :  gObjects,
+        BQFactory.request ({ uri :  gobs,
                              uri_params: { view : 'deep'},
-                             cache:false,
-                             cb: callback(this, 'gobjectsLoaded', true)});
-    }else {
+                             cache: false,
+                             cb: callback(this, 'gobjectsLoaded')});
+    } else if (!gobs) {
         this.start_wait({op: 'gobjects', message: 'Fetching gobjects'});
-        this.image.load_gobjects(callback(this, 'gobjectsLoaded'), gObjects, callback(this, 'gobjectsLoadProgress'));
+        this.image.load_gobjects(callback(this, 'gobjectsLoaded'));
     }
 };
 
@@ -673,38 +662,27 @@ ImgViewer.prototype.gobjectsLoadProgress = function(gObj)
     }
 };
 
-ImgViewer.prototype.gobjectsLoaded = function(render, gObjects)
-{
-    //this.gObjects = [ gObjects ] ; //this.image.gobjects;
-    if (gObjects instanceof Array)
-        Ext.Array.insert(this.image.gobjects, 0, gObjects);
-    else
-        Ext.Array.insert(this.image.gobjects, 0, [gObjects]);
-
-    this.end_wait({op: 'gobjects', message: 'Fetching gobjects'});
-
-    // Update editPlugin's gobjects array
-    var editPlgin = this.findPlugin('edit');
-    if (editPlgin)
-        Ext.Array.insert(editPlgin.gobjects, 0, this.image.gobjects);
-    if (render)
-        this.showGObjects(this.image.gobjects);
+ImgViewer.prototype.gobjectsLoaded = function(gobs) {
+    this.show_additional_gobjects(gobs);
 };
 
-ImgViewer.prototype.showGObjects = function(gObjects)
-{
-    if (gObjects instanceof Array)
-        this.visit_render.visit_array(gObjects, [this.current_view, true]);
-    else
-        this.visit_render.visitall(gObjects, [this.current_view, true]);
+ImgViewer.prototype.show_additional_gobjects = function(gobs) {
+    if (!(gobs instanceof Array))
+        gobs = [gobs];
+    this.image.gobjects.push.apply(this.image.gobjects, gobs);
+    this.renderer.rerender();
 };
 
-ImgViewer.prototype.hideGObjects = function(gObjects)
-{
-    if (gObjects instanceof Array)
-        this.visit_render.visit_array(gObjects, [this.current_view, false]);
-    else
-        this.visit_render.visitall(gObjects, [this.current_view, false]);
+ImgViewer.prototype.showGObjects = function(gobs) {
+    if (!(gobs instanceof Array))
+        gobs = [gobs];
+    this.renderer.rerender(gobs, [this.current_view, true]);
+};
+
+ImgViewer.prototype.hideGObjects = function(gobs) {
+    if (!(gobs instanceof Array))
+        gobs = [gobs];
+    this.renderer.rerender(gobs, [this.current_view, false]);
 };
 
 ImgViewer.prototype.start_wait = function (o) {
@@ -752,7 +730,7 @@ ImgViewer.prototype.newPhys = function (bqimagephys) {
         var gobjects_xml = this.parameters['gobjects_xml'];
         var gobjects = BQFactory.parseBQDocument (gobjects_xml);
         this.loadGObjects(gobjects);
-    }else if ('gobjects' in this.parameters){
+    } else if ('gobjects' in this.parameters){
         var gobjects_url = this.parameters['gobjects'];
         this.loadGObjects(gobjects_url);
     }
@@ -873,6 +851,7 @@ ImgViewer.prototype.createEditMenu = function() {
             defaults: {
                 labelSeparator: '',
                 labelWidth: 200,
+                width: 100,
             },
         });
         var el = Ext.get(this.editbutton);

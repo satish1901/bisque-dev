@@ -144,8 +144,8 @@ Ext.define('BQ.Organizer.Tree', {
                 'beforeclose' : function(me) {
                     me.node.collapse()
                 },
-            }
-        }
+            },
+        };
     },
 
     getColumns : function() {
@@ -232,4 +232,4 @@ Ext.define('BQ.Organizer.URLState', {
 
         return uri;
     }
-})
+});

@@ -258,6 +258,10 @@ Ext.define('Bisque.ResourceTagger', {
             },
             listeners: {
                 'checkchange': function (node, checked) {
+                    if (!(node.raw instanceof BQObject) && !node.raw.loaded && this.onExpand) {
+                        this.onExpand(node);
+                        return;
+                    }
                     //Recursively check/uncheck all children of a parent node
                     (checked) ? this.fireEvent('select', this, node) : this.fireEvent('deselect', this, node);
                     this.checkTree(node, checked);
@@ -397,6 +401,8 @@ Ext.define('Bisque.ResourceTagger', {
                 name: 'iconCls',
                 type: 'string',
                 convert: Ext.bind(function (value, record) {
+                    if (record.raw && !record.raw[this.rootProperty])
+                        return 'icon-folder';
                     if (record.raw)
                         if (record.raw[this.rootProperty].length != 0)
                             return 'icon-folder';
@@ -849,22 +855,18 @@ Ext.define('Bisque.ResourceTagger', {
                     this.addNode(node.childNodes[i], data[i][this.rootProperty]);
     },
 
-    addNode: function (nodeInterface, children) {
-        var newNode, i;
-
+    addNode: function (parent, children) {
         if (!(children instanceof Array))
             children = [children];
 
-        for (i = 0; i < children.length; i++) {
-            //debugger;
-            newNode = Ext.ModelManager.create(children[i], this.store.model);
-            Ext.data.NodeInterface.decorate(newNode);
-            newNode.raw = children[i];
-            nodeInterface.appendChild(newNode);
-
-            nodeInterface.data.iconCls = 'icon-folder';
-            this.tree.getView().refresh();
+        for (var i = 0; i < children.length; i++) {
+            var node = Ext.ModelManager.create(children[i], this.store.model);
+            //Ext.data.NodeInterface.decorate(node); // dima: apparently should not be applied top a child but to a model
+            node.raw = children[i];
+            parent.appendChild(node);
+            parent.data.iconCls = 'icon-folder';
         }
+        //this.tree.getView().refresh(); // dima: tree is reloaded automatically
     },
 
     testAuth: function (user, loaded, permission) {
@@ -933,8 +935,8 @@ Ext.define('Bisque.GObjectTagger', {
     layout: 'fit',
     cls: 'bq-gob-tagger',
 
-    colNameText: 'GObject',
-    colValueText: 'Vertices',
+    colNameText: 'Type:Name',
+    //colValueText: 'Vertices',
 
     constructor: function (config) {
         config.rootProperty = 'gobjects';
@@ -945,6 +947,11 @@ Ext.define('Bisque.GObjectTagger', {
     initComponent : function() {
         this.callParent();
         this.imgViewer.gob_annotator = this;
+    },
+
+    loadResourceTags: function (data, template) {
+        this.callParent(arguments);
+        this.store.on('beforeexpand', this.onExpand, this );
     },
 
     onLoaded: function () {
@@ -1032,49 +1039,37 @@ Ext.define('Bisque.GObjectTagger', {
             itemId: 'btnNavigate',
             text: 'Navigate',
             eventName: 'btnNavigate',
-            //hidden: this.viewMgr.state.btnAdd,
             scale: 'medium',
-            //iconCls: 'icon-add',
+            iconCls: 'icon-navigate',
             handler: this.fireButtonEvent,
-            //disabled: this.tree.btnAdd,
-            scope: this
+            scope: this,
+            tooltip: 'Pan and zoom the image',
         }, {
             itemId: 'btnSelect',
             text: 'Select',
             eventName: 'btnSelect',
-            //hidden: this.viewMgr.state.btnAdd,
             scale: 'medium',
-            //iconCls: 'icon-add',
+            iconCls: 'icon-select',
             handler: this.fireButtonEvent,
-            //disabled: this.tree.btnAdd,
-            scope: this
-        }, /*{
-            itemId: 'btnSave',
-            text: 'Save',
-            eventName: 'btnSave',
-            //hidden: this.viewMgr.state.btnAdd,
-            scale: 'medium',
-            //iconCls: 'icon-add',
-            handler: this.fireButtonEvent,
-            //disabled: this.tree.btnAdd,
-            scope: this
-        },*/ {
+            scope: this,
+            tooltip: 'Select a graphical annotation on the screen',
+        }, {
             itemId: 'btnDelete',
             text: 'Delete',
             eventName: 'btnDelete',
-            //hidden: this.viewMgr.state.btnAdd,
             scale: 'medium',
-            //iconCls: 'icon-add',
+            iconCls: 'icon-delete',
             handler: this.fireButtonEvent,
-            //disabled: this.tree.btnAdd,
-            scope: this
+            scope: this,
+            tooltip: 'Delete a graphical annotation by selecting it on the screen',
         }, {
             itemId: 'btnCreate',
             text: 'Create',
             scale: 'medium',
-            //iconCls: 'icon-add',
+            iconCls: 'icon-add',
             handler: this.createGobject,
-            scope: this
+            scope: this,
+            tooltip: 'Create a new custom graphical annotation wrapping any primitive annotation',
         }];
 
         return buttons.concat(toolbar);
@@ -1107,33 +1102,6 @@ Ext.define('Bisque.GObjectTagger', {
         this.checkTree(rootNode, button.checked);
     },
 
-    appendFromMex: function (resQo) {
-        // dima: deep copy the resq array, otherwise messes up with analysis
-        var resQ = [];
-        for (var i = 0; i < resQo.length; i++)
-            resQ[i] = resQo[i];
-
-        // Only look for gobjects in tags which have value = image_url
-        for (var i = 0; i < resQ.length; i++) {
-            // the mex may have sub mexs
-            if (resQ[i].resource.children && resQ[i].resource.children.length > 0) {
-                for (var k = 0; k < resQ[i].resource.children.length; k++)
-                    if (resQ[i].resource instanceof BQMex) {
-                        var rr = Ext.create('Bisque.Resource.Mex', { resource: resQ[i].resource.children[k], });
-                        resQ.push(rr);
-                    }
-                continue;
-            }
-
-            var outputsTag = resQ[i].resource.find_tags('outputs');
-
-            if (outputsTag)
-                this.appendGObjects(this.findGObjects(outputsTag, this.resource.uri), resQ[i].resource);
-            else
-                resQ[i].resource.loadGObjects({ cb: Ext.bind(this.appendGObjects, this, [resQ[i].resource], true) });
-        }
-    },
-
     findGObjects: function (resource, imageURI) {
         if (resource.value && resource.value == imageURI)
             return resource.gobjects;
@@ -1156,19 +1124,32 @@ Ext.define('Bisque.GObjectTagger', {
             node.remove();
     },
 
-    appendGObjects: function (data, mex) {
-        if (data && data.length > 0) {
-            if (mex) {
-                var date = new Date();
-                date.setISO(mex.ts);
+    appendMex: function (mex) {
+        if (!mex && mex.value !== 'FINISHED') return;
 
-                this.addNode(this.tree.getRootNode(), { name: data[0].name, value: Ext.Date.format(date, "F j, Y g:i:s a"), gobjects: data });
-                this.fireEvent('onappend', this, data);
-            }
-            else {
-                this.addNode(this.tree.getRootNode(), data);
-                //this.fireEvent('onappend', this, data);
-            }
+        //var date = new Date();
+        //date.setISO(mex.ts);
+        var parent = this.tree.getRootNode();
+        parent.insertChild(0, {
+            name: mex.name,
+            value: mex.ts.replace('T', ' ').split('.', 1)[0],
+            mex_uri: mex.uri,
+            gobjects: [false],
+            checked: false,
+            expandable: true,
+            expanded: false,
+            leaf: false,
+            loaded: false,
+        });
+        parent.data.iconCls = 'icon-folder';
+        //this.tree.getView().refresh();
+        //this.fireEvent('onappend', this, data);
+    },
+
+    appendGObjects: function (data) {
+        if (data && data.length > 0) {
+            this.addNode(this.tree.getRootNode(), data);
+            //this.fireEvent('onappend', this, data);
         }
     },
 
@@ -1239,6 +1220,53 @@ Ext.define('Bisque.GObjectTagger', {
         var p = this.queryById('panelGobTypes');
         if (p)
             p.addType(mytype);
+    },
+
+    onExpand: function(node, eOpts) {
+        var me = this;
+        function callOnMexLoaded(mex) {
+            me.onMexLoaded( mex, node );
+        };
+
+        if (node.isRoot()) return;
+        if (node.raw && node.raw.loaded === false && node.raw.mex_uri) {
+            node.data.gobjects = undefined;
+            node.removeAll();
+            node.set('loading', true);
+            BQFactory.request({
+                uri : node.raw.mex_uri + '?view=deep',
+                cb : Ext.bind(callOnMexLoaded, this)
+            });
+        }
+    },
+
+    onMexLoaded: function(mex, node) {
+        node.raw.loaded = true;
+        node.raw.gobjects = [];
+        node.set('checked', true);
+        node.set('loading', false);
+
+        if (!mex.outputs && mex.outputs.length<=0) return;
+        var o=undefined;
+        for (i=0; (o=mex.outputs[i]); i++) {
+            if (o.gobjects.length>0 && o.value === this.resource.uri) {
+                //this.addNode(node, { name: 'outputs', value: '', gobjects: o.gobjects }); // dima: future, show both inputs and outputs
+                var gobs = o.gobjects;
+                var name = o.name;
+                var value = '';
+                node.raw.gobjects.push.apply(node.raw.gobjects, gobs);
+
+                // if there's only one child gobject it's probably a wrapper
+                if (o.gobjects.length===1) {
+                    gobs = o.gobjects[0].gobjects;
+                    name = o.gobjects[0].type;
+                    value = o.gobjects[0].value;
+                }
+                this.addNode(node, { name: name, value: value, gobjects: gobs });
+            }
+        }
+        if (node.raw.gobjects.length>0)
+            this.fireEvent('onappend', this, node.raw.gobjects);
     },
 
 });
