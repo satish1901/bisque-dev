@@ -1,29 +1,29 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html  xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"
-        xmlns:py="http://genshi.edgewall.org/" 
+        xmlns:py="http://genshi.edgewall.org/"
         xmlns:xi="http://www.w3.org/2001/XInclude">
 
 <head>
 
     <!-- ExtJS -->
     <!--<link rel="stylesheet" type="text/css" href="/extjs/resources/css/ext-all.css" />-->
-    <link rel="stylesheet" type="text/css" href="${bq.url('/extjs/resources/css/ext-all-gray.css')}" /> 
+    <link rel="stylesheet" type="text/css" href="${bq.url('/extjs/resources/css/ext-all-gray.css')}" />
     <!--<script type="text/javascript" src="${bq.url('/extjs/bootstrap.js')}"></script>-->
-    
+
     <!-- ExtJS -->
     <script py:if="tg.config.get('bisque.js_environment', None) == 'production'" type="text/javascript" src="${tg.url('/extjs/ext-all.js')}"></script>
     <script py:if="tg.config.get('bisque.js_environment', None) != 'production'" type="text/javascript" src="${tg.url('/extjs/ext-all-debug.js')}"></script>
-    
-    
-    
+
+
+
     <!-- Bisque styles -->
     <link rel="stylesheet" type="text/css" href="${bq.url('/css/bisquik_extjs_fix.css')}" />
     <link rel="stylesheet" type="text/css" href="${bq.url('/css/bq.css')}" />
-    <link rel="stylesheet" type="text/css" href="${bq.url('/css/bq_ui_toolbar.css')}" />   
-    
-    <script type="text/javascript" src="${bq.url('/js/bq_ui_extjs_fix.js')}"></script>  
-    
-    <!-- Bisque JsApi - this needs cleaning and updating -->  
+    <link rel="stylesheet" type="text/css" href="${bq.url('/css/bq_ui_toolbar.css')}" />
+
+    <script type="text/javascript" src="${bq.url('/js/bq_ui_extjs_fix.js')}"></script>
+
+    <!-- Bisque JsApi - this needs cleaning and updating -->
     <script type="text/javascript" src="${bq.url('/js/globals.js')}" />
     <script type="text/javascript" src="${bq.url('/js/utils.js')}" />
     <script type="text/javascript" src="${bq.url('/js/XMLHttpRequest.js')}" />
@@ -31,7 +31,7 @@
     <script type="text/javascript" src="${bq.url('/js/bq_ui_application.js')}"></script>
     <script type="text/javascript" src="${bq.url('/js/bq_ui_toolbar.js')}"></script>
 
-    
+
     <!-- ResourceBrowser -->
     <link rel="stylesheet" href="${bq.url('/js/ResourceBrowser/ResourceBrowser.css')}" type="text/css"/>
 
@@ -42,13 +42,14 @@
     <script type="text/javascript" src="${bq.url('/js/ResourceBrowser/DatasetManager.js')}"></script>
     <script type="text/javascript" src="${bq.url('/js/ResourceBrowser/CommandBar.js')}"></script>
     <script type="text/javascript" src="${bq.url('/js/ResourceBrowser/viewStateManager.js')}"></script>
-    
+
+    <script type="text/javascript" src="${bq.url('/js/ResourceBrowser/OperationBar.js')}"></script>
     <script type="text/javascript" src="${bq.url('/js/ResourceBrowser/ResourceFactory/ResourceFactory.js')}"></script>
     <script type="text/javascript" src="${bq.url('/js/ResourceBrowser/ResourceFactory/ResourceImage.js')}"></script>
     <script type="text/javascript" src="${bq.url('/js/ResourceBrowser/ResourceFactory/ResourceMex.js')}"></script>
     <script type="text/javascript" src="${bq.url('/js/ResourceBrowser/ResourceFactory/ResourceModule.js')}"></script>
     <script type="text/javascript" src="${bq.url('/js/ResourceBrowser/ResourceFactory/ResourceDataset.js')}"></script>
-    
+
     <script type="text/javascript" src="${bq.url('/js/ResourceBrowser/Misc/MessageBus.js')}"></script>
     <script type="text/javascript" src="${bq.url('/js/ResourceBrowser/Misc/Slider.js')}"></script>
     <script type="text/javascript" src="${bq.url('/js/ResourceBrowser/Misc/DataTip.js')}"></script>
@@ -56,7 +57,11 @@
     <!-- Gesture manager -->
     <script type="text/javascript" src="${bq.url('/js/senchatouch/sencha-touch-gestures.js')}"></script>
     <script type="text/javascript" src="${bq.url('/js/ResourceBrowser/Misc/GestureManager.js')}"></script>
-        
+
+    <!-- Sharing -->
+    <script type="text/javascript" src="${bq.url('/js/Share/BQ.share.Dialog.js')}"></script>
+    <script type="text/javascript" src="${bq.url('/js/Share/BQ.share.Multi.js')}"></script>
+
     <!-- DatasetBrowser -->
     <link rel="stylesheet" href="${bq.url('/js/DatasetBrowser/DatasetBrowser.css')}" type="text/css"/>
     <script type="text/javascript" src="${bq.url('/js/DatasetBrowser/DatasetBrowser.js')}"></script>
@@ -64,10 +69,10 @@
     <!-- ResourceTagger files -->
     <link rel="stylesheet" href="${bq.url('/js/ResourceTagger/Tagger.css')}" type="text/css"/>
 
-    <script type="text/javascript" src="${bq.url('/js/ResourceTagger/ComboBox.js')}"></script>  
-    <script type="text/javascript" src="${bq.url('/js/ResourceTagger/RowEditing.js')}"></script>    
+    <script type="text/javascript" src="${bq.url('/js/ResourceTagger/ComboBox.js')}"></script>
+    <script type="text/javascript" src="${bq.url('/js/ResourceTagger/RowEditing.js')}"></script>
     <script type="text/javascript" src="${bq.url('/js/ResourceTagger/Tagger.js')}"></script>
-    <script type="text/javascript" src="${bq.url('/js/ResourceTagger/TaggerOffline.js')}"></script> 
+    <script type="text/javascript" src="${bq.url('/js/ResourceTagger/TaggerOffline.js')}"></script>
     <script type="text/javascript" src="${bq.url('/js/ResourceTagger/ResourceRenderers/BaseRenderer.js')}"></script>
 
     <!-- Preferences -->
@@ -85,45 +90,45 @@
 
     <!-- Upload stuff: Import Service -->
     <link rel="stylesheet" type="text/css" href="${bq.url('/import_service/public/bq_ui_upload.css')}" />
-    <script type="text/javascript" src="${bq.url('/import_service/public/File.js')}"></script>       
-    <script type="text/javascript" src="${bq.url('/import_service/public/bq_file_upload.js')}"></script>    
-    <script type="text/javascript" src="${bq.url('/import_service/public/bq_ui_upload.js')}"></script> 
-  
+    <script type="text/javascript" src="${bq.url('/import_service/public/File.js')}"></script>
+    <script type="text/javascript" src="${bq.url('/import_service/public/bq_file_upload.js')}"></script>
+    <script type="text/javascript" src="${bq.url('/import_service/public/bq_ui_upload.js')}"></script>
+
 
     <!-- Image Viewer -->
-    
+
     <!-- Image Service -->
     <link rel="stylesheet" type="text/css" href="/image_service/public/converter.css" />
-    <script type="text/javascript" src="/image_service/public/converter.js"></script>    
-    
+    <script type="text/javascript" src="/image_service/public/converter.js"></script>
+
     <!-- PanoJS3 -->
     <meta http-equiv="imagetoolbar" content="no" />
     <link rel="stylesheet" type="text/css" href="/client_service/public/panojs3/styles/panojs.css" />
-    
-    <script type="text/javascript" src="/client_service/public/panojs3/panojs/utils.js"></script>    
+
+    <script type="text/javascript" src="/client_service/public/panojs3/panojs/utils.js"></script>
     <script type="text/javascript" src="/client_service/public/panojs3/panojs/PanoJS.js"></script>
     <script type="text/javascript" src="/client_service/public/panojs3/panojs/controls.js"></script>
     <script type="text/javascript" src="/client_service/public/panojs3/panojs/pyramid_Bisque.js"></script>
     <script type="text/javascript" src="/client_service/public/panojs3/panojs/control_thumbnail.js"></script>
     <script type="text/javascript" src="/client_service/public/panojs3/panojs/control_info.js"></script>
     <script type="text/javascript" src="/client_service/public/panojs3/panojs/control_svg.js"></script>
-    
+
     <link rel="stylesheet" type="text/css" href="/client_service/public/js/slider/slider.css" />
     <script type="text/javascript" src="/client_service/public/js/slider/inversible.js"></script>
     <script type="text/javascript" src="/client_service/public/js/slider/slider.js"></script>
     <script type="text/javascript" src="/client_service/public/js/slider/tslider.js"></script>
     <script type="text/javascript" src="/client_service/public/js/slider/zslider.js"></script>
-    
-    <link rel="stylesheet" type="text/css" href="/client_service/public/js/picker/Color.css" /> 
-    <script type="text/javascript" src="/client_service/public/js/picker/Color.js"></script>   
-    <link rel="stylesheet" type="text/css" href="/client_service/public/js/form/field/Color.css" /> 
-    <script type="text/javascript" src="/client_service/public/js/form/field/Color.js"></script>       
-    
+
+    <link rel="stylesheet" type="text/css" href="/client_service/public/js/picker/Color.css" />
+    <script type="text/javascript" src="/client_service/public/js/picker/Color.js"></script>
+    <link rel="stylesheet" type="text/css" href="/client_service/public/js/form/field/Color.css" />
+    <script type="text/javascript" src="/client_service/public/js/form/field/Color.js"></script>
+
     <link rel="stylesheet" type="text/css" href="/client_service/public/css/imgview.css" />
     <script type="text/javascript" src="/client_service/public/js/viewer/scalebar.js"></script>
-    <script type="text/javascript" src="/client_service/public/js/viewer/2D.js"></script> 
+    <script type="text/javascript" src="/client_service/public/js/viewer/2D.js"></script>
     <script type="text/javascript" src="/client_service/public/js/viewer/imgview.js"></script>
-    <script type="text/javascript" src="/client_service/public/js/viewer/imgops.js"></script> 
+    <script type="text/javascript" src="/client_service/public/js/viewer/imgops.js"></script>
     <script type="text/javascript" src="/client_service/public/js/viewer/imgslicer.js"></script>
     <script type="text/javascript" src="/client_service/public/js/viewer/imgperm.js"></script>
     <script type="text/javascript" src="/client_service/public/js/viewer/imgstats.js"></script>
@@ -132,13 +137,13 @@
     <script type="text/javascript" src="/client_service/public/js/viewer/svgrender.js"></script>
     <script type="text/javascript" src="/client_service/public/js/viewer/imgedit.js"></script>
     <script type="text/javascript" src="/client_service/public/js/viewer/imgmovie.js"></script>
-    <script type="text/javascript" src="/client_service/public/js/viewer/imageconverter.js"></script>     
+    <script type="text/javascript" src="/client_service/public/js/viewer/imageconverter.js"></script>
     <script type="text/javascript" src="/client_service/public/js/viewer/imgexternal.js"></script>
     <script type="text/javascript" src="/client_service/public/js/viewer/imgscalebar.js"></script>
     <script type="text/javascript" src="/client_service/public/js/viewer/imginfobar.js"></script>
     <script type="text/javascript" src="/client_service/public/js/viewer/progressbar.js"></script>
     <script type="text/javascript" src="/client_service/public/js/viewer/widget_extjs.js"></script>
-    
+
     <!-- Plotting stuff, use Raphael now -->
     <script src="/raphael/raphael.js" type="text/javascript" charset="utf-8"></script>
     <script src="/raphael/g.raphael-min.js" type="text/javascript" charset="utf-8"></script>
@@ -146,55 +151,55 @@
     <script src="/raphael/g.bar.js" type="text/javascript" charset="utf-8"></script>
     <script src="/raphael/g.dot-min.js" type="text/javascript" charset="utf-8"></script>
     <script src="/raphael/g.pie-min.js" type="text/javascript" charset="utf-8"></script>
-    
-    
+
+
     <script type="text/javascript" src="${tg.url('/js/Organizer/BQ.Organizer.Tree.js')}" ></script>
-   
-    
+
+
     <!-- BQAPI -->
     <script type="text/javascript" src="/js/bq_ui_progress.js" charset="utf-8"></script>
-    
+
     <!-- Statistics -->
     <link rel="stylesheet" type="text/css" href="${tg.url('/stats/public/stats.css')}" />
     <script src="/stats/public/js/stats.js" type="text/javascript" charset="utf-8"></script>
 
 
     <!-- WebApp stuff -->
-    <script type="text/javascript" src="/js/date.js"></script>   
-    
+    <script type="text/javascript" src="/js/date.js"></script>
+
     <link rel="stylesheet" type="text/css" href="/js/bq_ui_misc.css" />
     <script type="text/javascript" src="/js/bq_ui_misc.js"></script>
-    
-    <link rel="stylesheet" type="text/css" href="${bq.url('/js/modules/bq_webapp.css')}" />     
-    <script type="text/javascript" src="${bq.url('/js/modules/bq_webapp_service.js')}"></script>   
-    <script type="text/javascript" src="${bq.url('/js/modules/bq_webapp.js')}"></script>  
-    <script type="text/javascript" src="${bq.url('/js/modules/bq_module_webapp_default.js')}"></script>      
+
+    <link rel="stylesheet" type="text/css" href="${bq.url('/js/modules/bq_webapp.css')}" />
+    <script type="text/javascript" src="${bq.url('/js/modules/bq_webapp_service.js')}"></script>
+    <script type="text/javascript" src="${bq.url('/js/modules/bq_webapp.js')}"></script>
+    <script type="text/javascript" src="${bq.url('/js/modules/bq_module_webapp_default.js')}"></script>
     <!-- <script type="text/javascript" src="${bq.url('/js/modules/bq_ui_module.js')}"></script>  -->
 
-    <link rel="stylesheet" type="text/css" href="${bq.url('/js/modules/bq_ui_renderes.css')}" /> 
+    <link rel="stylesheet" type="text/css" href="${bq.url('/js/modules/bq_ui_renderes.css')}" />
     <script type="text/javascript" src="${bq.url('/js/modules/bq_grid_panel.js')}"></script>
-    <script type="text/javascript" src="${bq.url('/js/modules/bq_ui_renderes.js')}"></script> 
+    <script type="text/javascript" src="${bq.url('/js/modules/bq_ui_renderes.js')}"></script>
 
-    <!-- Additional includes from the module -->    
+    <!-- Additional includes from the module -->
     <link py:if="'interface/css' in module_def" rel="stylesheet" type="text/css" href="${module_def['interface/css']}" />
     <script py:if="'interface/javascript' in module_def" type="text/javascript" src="${module_def['interface/javascript']}"></script>
-    
+
     <title>${module_name}</title>
 
 <script type="text/javascript" >
-    var module_definition_xml = '${Markup(module_xml.replace('\'', '\\\'').replace('\n', ''))}'; 
+    var module_definition_xml = '${Markup(module_xml.replace('\'', '\\\'').replace('\n', ''))}';
 </script>
 
 
 <script type="text/javascript" >
     bq = Ext.create('BQ', {title: 'Bisque WebApp', root: "${bq.url('/')}" });
-    Ext.onReady( function() { 
+    Ext.onReady( function() {
         BQApp = Ext.create('BQ.Application', bq);
-        
+
         webapp = new WebApp();
-        Ext.util.Observable.observe(BQ.Application);        
-        BQ.Application.on( 'nouser', webapp.onnouser ); 
-        
+        Ext.util.Observable.observe(BQ.Application);
+        BQ.Application.on( 'nouser', webapp.onnouser );
+
         // load help
         var h = BQApp.main.getHelpComponent();
         h.setVisible(true);
@@ -203,7 +208,7 @@
                 loader: { url: 'help', renderer: 'html', autoLoad: true },
                 autoScroll: true,
             });
-             
+
     });
 </script>
 
@@ -219,7 +224,7 @@
 <h1 id="title"></h1>
 
 
-<p><span id="version" py:if="'module_options/version' in module_def">Version: ${module_def['module_options/version']},</span> 
+<p><span id="version" py:if="'module_options/version' in module_def">Version: ${module_def['module_options/version']},</span>
    <span id="authors" py:if="'authors' in module_def">Authors: ${module_def['authors']}</span></p>
 
 <p py:if="'description' in module_def"><em id="description">${module_def['description']}</em></p>
@@ -237,23 +242,23 @@
 </div>
 
 
-<div id="webapp_run" >    
+<div id="webapp_run" >
     <li class="heading-2">Run algorithm:</li>
     <div id="run" class="box run">
-        <p><button id="webapp_run_button" onclick="webapp.run()" >Run</button>  
+        <p><button id="webapp_run_button" onclick="webapp.run()" >Run</button>
           This may take some time, progress will be shown on the button.</p>
     </div>
 </div>
 
 
 <div id="webapp_results" py:if="outputs is not None and len(outputs)>0">
-    <li class="heading-2">Results:</li>  
-  
-    <div id="outputs" class="box results" >  
-        <span id="webapp_results_summary"><h3>No results yet, please run the module first.</h3></span>        
+    <li class="heading-2">Results:</li>
+
+    <div id="outputs" class="box results" >
+        <span id="webapp_results_summary"><h3>No results yet, please run the module first.</h3></span>
         <div id="webapp_results_dataset"></div>
-        <div id="outputs-sub" />        
-    </div>    
+        <div id="outputs-sub" />
+    </div>
 
 </div>
 </ol>

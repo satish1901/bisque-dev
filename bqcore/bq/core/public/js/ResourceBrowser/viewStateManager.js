@@ -29,7 +29,21 @@ Ext.define('Bisque.ResourceBrowser.viewStateManager', {
 
         switch(mode) {
             case 'MexBrowser':
-            case 'ViewerOnly':
+            case 'ViewerOnly': {
+                this.cBar.btnActivate = true;
+                this.cBar.btnRefresh = true;
+
+                this.cBar.searchBar = true;
+
+                this.cBar.btnLayoutThumb = true;
+                this.cBar.btnLayoutCard = true;
+                this.cBar.btnLayoutGrid = true;
+                this.cBar.btnLayoutFull = true;
+
+                this.cBar.btnGear = true;
+
+                break;
+            }
             case 'DatasetBrowser': {
                 this.cBar.searchBar = true;
 
@@ -69,4 +83,4 @@ Ext.define('Bisque.ResourceBrowser.viewStateManager', {
 
         return this;
     }
-})
+});

@@ -15,6 +15,7 @@ Ext.tip.QuickTipManager.init();
 
 Ext.define('Bisque.ResourceBrowser.Dialog', {
     extend : 'Ext.window.Window',
+    alias: 'widget.bqbrowserdialog',
 
     constructor : function(config) {
         config = config || {
@@ -273,10 +274,10 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
             if (!uri.baseURL)
                 uri.baseURL = this.browserState.baseURL;
 
-            uri.wpublic = this.browserParams.wpublic
+            uri.wpublic = this.browserParams.wpublic;
 
             function checkTS(tagOrder) {
-                if (tagOrder.indexOf('@ts') == -1) {
+                if (tagOrder && tagOrder.indexOf('@ts') == -1) {
                     var ts = this.commandBar.getComponent("btnTS").sortState;
                     tagOrder += (tagOrder) ? ',' : '';
                     tagOrder += (ts == 'ASC') ? '"@ts":asc' : '"@ts":desc';

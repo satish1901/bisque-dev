@@ -1,56 +1,56 @@
 
-.image_viewer { 
-  margin: 0px 20px 0px 10px;  
-  
+.image_viewer {
+  margin: 0px 20px 0px 10px;
+
   /* relative position is a key for using absolute in the children elements */
   position: relative;
   top: 0px;
-  left: 0px;    
+  left: 0px;
 }
 
-.image_viewer_display { 
+.image_viewer_display {
   /*max-width: 80%; */
-  
+
   /*height: 450px;*/
 
   height: 100%;
   padding-bottom: 0px;
-  
+
   /* relative position is a key for using absolute in the children elements */
   position: relative;
   top: 0px;
-  left: 0px;      
+  left: 0px;
 }
 
-.image_viewer_option { 
+.image_viewer_option {
   width:auto;
   /*overflow:auto;*/
   float:right;
-  max-width: 40%; 
+  max-width: 40%;
   min-width: 20%;
   clear:none;
   display:inline;
-  
+
   position: relative;
   top: 0px;
-  left: 0px;      
+  left: 0px;
 }
 
-.image_viewer_option .tag_viewer_display { 
-  width: auto; 
+.image_viewer_option .tag_viewer_display {
+  width: auto;
   min-width: auto;
 }
 
-.bq-gob-tagger .x-panel-body { 
+.bq-gob-tagger .x-panel-body {
     background: transparent;
 }
 
-.bq-gob-header { 
+.bq-gob-header {
     background-color: #d3e1f1;
     /*border-top: 1px solid #99bce8 !important;*/
 }
 
-.bq-gob-tagger h3 { 
+.bq-gob-tagger h3 {
     padding-left: 5px;
 }
 
@@ -81,18 +81,18 @@
 .image_viewer_slicer {
   clear:none;
   width:auto;
-  
-  height: 100%;  
-  
+
+  height: 100%;
+
   /* relative position is a key for using absolute in the children elements */
   position: relative;
   top: 0px;
-  left: 0px;    
+  left: 0px;
 }
 
 .imgview_scroller {
   overflow: auto;
-  background-color: #999999;  
+  background-color: #999999;
   /*vertical-align: middle;
   text-align: center;
   background-color: #EEEEEE;*/
@@ -101,28 +101,28 @@
   /*max-width: 90%; */
   max-height: 600px;
   clear:none;
-  
+
   /* relative position is a key for using absolute in the children elements */
   position: relative;
   top: 0px;
-  left: 0px;  
+  left: 0px;
 }
 
 
 /***********************************************************/
 
-.imgview_statsdiv { 
+.imgview_statsdiv {
   font-size:80%;
-  padding: 4px; 
-  position: absolute; 
-  z-index: 2; 
-  visibility: visible; 
-  background-color: rgb(170, 170, 170); 
-  opacity: 0.8; 
+  padding: 4px;
+  position: absolute;
+  z-index: 2;
+  visibility: visible;
+  background-color: rgb(170, 170, 170);
+  opacity: 0.8;
   left: 10px; top: 209px;
 }
 
-.imgview_statsel { 
+.imgview_statsel {
   clear:both;
 }
 
@@ -135,27 +135,27 @@
   visibility: visible;
   background-color: #222222;
   opacity:0.9;
-  filter:alpha(opacity=90);     
-  
+  filter:alpha(opacity=90);
+
   min-width: 300px;
   color: #FFFFFF;
   font-weight: bold;
   border-color: #444444;
   border-style: solid;
   border-width: 1px;
-  
-  border-radius: 5px;   
-  -moz-border-radius: 5px;      
 
-  position:absolute;  
+  border-radius: 5px;
+  -moz-border-radius: 5px;
+
+  position:absolute;
   left: 5px;
   top: 5px;
-  z-index: 30;  
+  z-index: 30;
 }
 
 .imgview_opdiv div {
   margin: 5px 10px 5px 10px;
-  padding: 0px 0px 2px 0px; 
+  padding: 0px 0px 2px 0px;
   border-bottom-style: dashed;
   border-bottom-width: 1px;
   border-bottom-color: #666666;
@@ -165,7 +165,7 @@
   margin: 15px 0px 10px 0px;
   padding: 0px 0px 0px 0px;
   border-bottom-style: none;
-  border-bottom-width: 0px; 
+  border-bottom-width: 0px;
 }
 
 .imgview_opdiv div#group h3 {
@@ -183,26 +183,26 @@
 }
 
 .imgview_opdiv select, .imgview_opdiv input {
-  border: 1px solid #666666;  
+  border: 1px solid #666666;
   clear:none;
   background-color:#333333;
   color:#FFFFFF;
-  font-weight: bold;  
-  font-size:12px; 
+  font-weight: bold;
+  font-size:12px;
 }
 
 .imgview_opdiv button {
   clear:none;
   background-color:#333333;
   color:#FFFFFF;
-  font-weight: bold;  
-  font-size:12px; 
+  font-weight: bold;
+  font-size:12px;
   margin: 2px 2px 0px 0px;
   padding: 2px 5px 2px 5px;
-  
-  border-color: #666666;    
-  border-width: 1px;    
-  border-style: solid;      
+
+  border-color: #666666;
+  border-width: 1px;
+  border-style: solid;
 }
 
 
@@ -236,7 +236,7 @@
 
 .buttonbar input[type="text"], .commandbar input[type="submit"] { background-color: #666666; }
 
-.buttonbar input[type="text"] { padding: 3px 5px 3px 5px; } 
+.buttonbar input[type="text"] { padding: 3px 5px 3px 5px; }
 
 .buttonbar input[type="submit"] {
     padding: 2px 5px 2px 5px;
@@ -248,15 +248,15 @@
     background-color:#666666;
     margin: 2px 2px 0px 0px;
     padding: 2px 5px 2px 5px;
-    font-weight: bold;   
+    font-weight: bold;
 
-    border-color: #333333;    
-    border-width: 1px;    
-    border-style: solid;        
+    border-color: #333333;
+    border-width: 1px;
+    border-style: solid;
 }
 .buttonbar button#selected {
     background-color:#FF6600;
-    color: #333333;    
+    color: #333333;
 }
 
 .buttonbar .group {
@@ -270,8 +270,8 @@
   float: left;
   /*max-width: 50%;*/
   max-height: 600px;
-  /*width: 500px; 
-  height: 300px; 
+  /*width: 500px;
+  height: 300px;
   /*background-color: #FF0000;*/
   /*padding: 10px 10px 10px 10px;*/
   /*margin: 20px 10px 10px 10px;*/
@@ -295,8 +295,8 @@
 
 .imgcnv_s, .imgcnv_s div, div .imgcnv_s {
   background: #333333;
-  margin: 5px 5px 5px 5px;  
-  padding: 5px 5px 5px 5px; 
+  margin: 5px 5px 5px 5px;
+  padding: 5px 5px 5px 5px;
   border-bottom: 0px solid;}
 
 .imgcnv_clear, .imgcnv_clear div {
@@ -327,15 +327,15 @@
   left: 6px;
   bottom: 10px;
   width: 100px;
-  height: 38px;  
+  height: 38px;
   background-color: #222222;
   color: #FFFFFF;
-  font-size: 12px;  
+  font-size: 12px;
   /*border: 1px solid #666666;  */
   padding: 8px 8px 8px 8px;
-  border-radius: 5px;   
-  -moz-border-radius: 5px;  
-  z-index: 30;    
+  border-radius: 5px;
+  -moz-border-radius: 5px;
+  z-index: 30;
 }
 
 .scalebar div#scalebar_bar {
@@ -344,7 +344,7 @@
   background-color: #FFFFFF;
   color: #FFFFFF;
   background:#FFFFFF;
-  opacity: 1; 
+  opacity: 1;
 }
 
 .scalebar div#scalebar_caption {
@@ -368,17 +368,17 @@
 *******************************************************************************/
 
 .gobjects_surface {
-  z-index: 15;    
+  z-index: 15;
   position: absolute;
   top: 0px;
-  left: 0px;    
+  left: 0px;
 }
 
 .gobjects_overlay {
-  z-index: 16;    
+  z-index: 16;
   position: absolute;
   top: 0px;
-  left: 0px;    
+  left: 0px;
 }
 
 /*******************************************************************************
@@ -386,57 +386,57 @@
 *******************************************************************************/
 
 .viewer .info {
-  position: absolute; 
-  z-index: 15; 
-  width: 100%;
-  height: 20px;
-  text-align: center; 
-  left: 0px; 
-  top: 0px; 
-  padding: 5px; 
-  bottom: none; 
-  color: #FFFFFF; 
-  text-shadow: 1px 1px 1px #000000; 
-  font-size: 11px;
-  text-overflow: ellipsis;  
-}
-
-.viewer .name {
-  position: absolute; 
-  z-index: 30; 
+  position: absolute;
+  z-index: 15;
   width: 100%;
   height: 20px;
   text-align: center;
-  left: 0px; 
-  bottom: 10px; 
-  padding: 5px; 
-  top: none;
-  color: #FFFFFF; 
-  text-shadow: 1px 1px 1px #000000; 
+  left: 0px;
+  top: 0px;
+  padding: 5px;
+  bottom: none;
+  color: #FFFFFF;
+  text-shadow: 1px 1px 1px #000000;
   font-size: 11px;
-  text-overflow: ellipsis;  
+  text-overflow: ellipsis;
+}
+
+.viewer .name {
+  position: absolute;
+  z-index: 30;
+  width: 100%;
+  height: 20px;
+  text-align: center;
+  left: 0px;
+  bottom: 10px;
+  padding: 5px;
+  top: none;
+  color: #FFFFFF;
+  text-shadow: 1px 1px 1px #000000;
+  font-size: 11px;
+  text-overflow: ellipsis;
   text-decoration: underline;
 }
 
 .viewer .viewoptions {
-    position: absolute; 
-    z-index: 30; 
+    position: absolute;
+    z-index: 30;
     width: 20px;
     height: 20px;
-    left: 80px; 
+    left: 80px;
     top: 10px;
-    bottom: none;   
+    bottom: none;
     right: none;
-  
+
     background-image: url('/images/viewer/64px_view.png');
     background-size: 20px;
-    background-color: transparent;  
+    background-color: transparent;
 }
 
 .viewer .viewoptions-phone {
     width: 96px;
     height: 96px;
-    left: 100px; 
+    left: 100px;
     top: 30px;
     background-size: 96px;
 }
@@ -444,30 +444,30 @@
 .viewer .viewoptions-touch {
     width: 36px;
     height: 36px;
-    left: 85px; 
+    left: 85px;
     top: 15px;
     background-size: 36px;
 }
 
 .viewer .editmenu {
-    position: absolute; 
-    z-index: 30; 
+    position: absolute;
+    z-index: 30;
     width: 20px;
     height: 20px;
-    right: 80px; 
+    right: 80px;
     top: 10px;
-    bottom: none;   
+    bottom: none;
     right: none;
-  
+
     background-image: url('/images/viewer/64px_gobs.png');
     background-size: 20px;
-    background-color: transparent;  
+    background-color: transparent;
 }
 
 .viewer .editmenu-phone {
     width: 96px;
     height: 96px;
-    right: 100px; 
+    right: 100px;
     top: 30px;
     background-size: 96px;
 }
@@ -475,7 +475,7 @@
 .viewer .editmenu-touch {
     width: 36px;
     height: 36px;
-    right: 85px; 
+    right: 85px;
     top: 15px;
     background-size: 36px;
 }
@@ -485,12 +485,12 @@
 *******************************************************************************/
 
 .viewer .progress {
-  position: absolute; 
-  z-index: 15; 
+  position: absolute;
+  z-index: 15;
   width: 120px;
   height: 120px;
-  right: 60px; 
-  top: 10px; 
+  right: 60px;
+  top: 10px;
 }
 
 /*******************************************************************************
@@ -503,8 +503,8 @@ table.x-form-color {
 }
 
 .bq-viewer-tip {
-    background-color: rgba(0, 0, 0, 0.5); 
-    opacity: 0.8;  
+    background-color: rgba(0, 0, 0, 0.5);
+    opacity: 0.8;
     border-color: rgba(255,255,255,0.3);
 }
 
@@ -518,11 +518,11 @@ table.x-form-color {
 *******************************************************************************/
 
 .bq-viewer-menu {
-    background-color: rgba(0, 0, 0, 0.7); 
-    opacity: 0.8;  
+    background-color: rgba(0, 0, 0, 0.7);
+    opacity: 0.8;
     border-color: rgba(255,255,255,0.2);
-    border-radius: 5px;   
-    padding: 0px 0px 5px 10px; 
+    border-radius: 5px;
+    padding: 0px 0px 5px 10px;
 }
 
 .bq-viewer-menu .x-tip-anchor {
@@ -539,7 +539,7 @@ table.x-form-color {
 
 .bq-viewer-menu .heading {
     /*width: 100%;*/
-    margin: 5px 0px 10px 0px;    
+    margin: 5px 0px 10px 0px;
 }
 
 .bq-viewer-menu .heading td {
@@ -557,7 +557,7 @@ table.x-form-color {
     background-size: 10px;
     margin: 4px 4px 0px 0px;
     background-color: transparent;
-    background-position: 0px 0px;    
+    background-position: 0px 0px;
 }
 
 /*******************************************************************************
@@ -582,5 +582,21 @@ table.x-form-color {
     background-image: url('/images/viewer/converter.png');
     background-size: 16px;
     background-color: transparent;
+    background-repeat: no-repeat;
+}
+
+/*******************************************************************************
+ toolbar
+*******************************************************************************/
+
+.bq-viewer-menu .icon-navigate {
+    background-image: url('/js/ResourceTagger/Images/compass.png') !important;
+    background-size: 15px 15px;
+    background-repeat: no-repeat;
+}
+
+.bq-viewer-menu .icon-select {
+    background-image: url('/js/ResourceTagger/Images/select.png') !important;
+    background-size: 15px 15px;
     background-repeat: no-repeat;
 }

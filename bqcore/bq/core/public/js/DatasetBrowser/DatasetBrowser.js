@@ -1,104 +1,97 @@
 Ext.define('Bisque.DatasetBrowser.Dialog', {
     extend : 'Ext.window.Window',
+    modal : true,
+    border : false,
+    width : '85%',
+    height : '85%',
+    layout: 'fit',
+    buttonAlign: 'center',
 
     constructor : function(config) {
-        var bodySz = Ext.getBody().getViewSize();
-        var height = parseInt((config.height.indexOf("%") == -1) ? config.height : (bodySz.height * parseInt(config.height) / 100));
-        var width = parseInt((config.width.indexOf("%") == -1) ? config.width : (bodySz.width * parseInt(config.width) / 100));
-
         Ext.apply(this, {
-            layout : 'fit',
             title : config.title || 'Select a dataset...',
-            modal : true,
-            border : false,
-            height : height,
-            width : width,
-            items : new Bisque.DatasetBrowser.Browser(config)
+            items : [{
+                xtype: 'bq-dataset-browser',
+                itemId: 'browser-dataset',
+            }],
+            buttons: [{
+                text: 'Select',
+                iconCls : 'icon-select',
+                scale: 'large',
+                scope: this,
+                width: 100,
+                handler: this.onDone,
+            }, {
+                text: 'Close',
+                iconCls : 'icon-cancel',
+                scale: 'large',
+                scope: this,
+                width: 100,
+                handler: this.close,
+            }],
         }, config);
 
         this.callParent([arguments]);
-        this.relayEvents(this.getComponent(0), ['DatasetDestroy']);
-
-        this.on('DatasetDestroy', this.destroy, this);
         this.show();
     },
+
+    onDone: function() {
+        var browser = this.queryById('browser-dataset');
+        if (browser.selected_dataset) {
+            this.fireEvent( 'DatasetSelect', this, browser.selected_dataset );
+            this.close();
+        }
+    },
+
 });
 
 Ext.define('Bisque.DatasetBrowser.Browser', {
-    extend : 'Bisque.ResourceBrowser.Browser',
+    extend : 'Ext.panel.Panel',
+    alias: 'widget.bq-dataset-browser',
+    layout: 'border',
 
     constructor : function(config) {
-        Ext.apply(config, {
-            viewMode : 'DatasetBrowser',
-        });
-
         Ext.apply(this, {
-            selectedDataset : null,
-            bbar : {
-                xtype : 'toolbar',
-                layout : {
-                    type : 'hbox',
-                    align : 'middle',
-                    pack : 'center'
+            items : [{
+                xtype: 'bq-resource-browser',
+                itemId: 'browser-dataset',
+                region: 'west',
+                split: true,
+                title: 'Dataset browser',
+                flex: 3,
+                'dataset' : '/data_service/dataset',
+                selType: 'SINGLE',
+                showOrganizer : false,
+                listeners : {
+                    'Select' : this.onSelect,
+                    scope : this
                 },
-                padding : 12,
-                items : [{
-                    xtype : 'buttongroup',
-                    items : [{
-                        text : 'Select',
-                        iconCls : 'icon-select',
-                        scale : 'medium',
-                        textAlign : 'left',
-                        width : 75,
-                        handler : this.btnSelect,
-                        scope : this
-                    }]
-                }, {
-                    xtype : 'buttongroup',
-                    items : [{
-                        text : 'Cancel',
-                        iconCls : 'icon-cancel',
-                        textAlign : 'left',
-                        scale : 'medium',
-                        width : 75,
-                        handler : this.btnCancel,
-                        scope : this
-                    }]
-                }]
-            }
+            }, {
+                xtype: 'bq-resource-browser',
+                itemId  : 'browser-preview',
+                region: 'center',
+                showOrganizer : false,
+                'dataset' : 'None',
+                layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Compact,
+                viewMode: 'ViewerOnly',
+                title: 'Dataset preview',
+                flex: 1,
+            }],
+        }, config);
+
+        this.callParent([arguments]);
+    },
+
+    onSelect: function(me, resource) {
+        this.selected_dataset = resource;
+        var preview = this.queryById('browser-preview');
+        preview.loadData({
+            baseURL: resource.uri + '/value',
+            offset: 0,
+            tag_order: '"@ts":desc',
+            tag_query: '',
         });
-
-        this.callParent(arguments);
-        this.commandBar.btnDatasetClick();
-        this.manageEvents();
+        this.fireEvent('Select', this, this.selected_dataset);
     },
 
-    manageEvents : function() {
-        // Listen to Dataset Change
-        this.msgBus.on({
-            'DatasetSelected' : function(dataset) {
-                this.selectedDataset = dataset;
-                if (this.ownerCt)
-                    this.ownerCt.setTitle('Viewing dataset : ' + dataset.name);
-            },
-            'DatasetUnselected' : function() {
-                this.selectedDataset = null;
-                if (this.ownerCt)
-                    this.ownerCt.setTitle('Select a dataset...');
-            },
-            scope : this
-        });
-    },
-
-    btnSelect : function() {
-        if (this.selectedDataset) {
-            this.fireEvent('DatasetSelect', this, this.selectedDataset);
-            this.fireEvent('DatasetDestroy');
-        } else
-            alert('No dataset selected!');
-    },
-
-    btnCancel : function() {
-        this.fireEvent('DatasetDestroy');
-    },
 });

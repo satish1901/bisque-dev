@@ -10,17 +10,17 @@ Bisque.ResourceTagger.LinkRenderer = function(value, metaData, record) {
 Bisque.ResourceTagger.ResourceRenderer = function(value, metaData, record) {
     var url = bq.url('/client_service/view?resource=' + value);
     var unique = 'bqresource_' + new Date().valueOf();
-    
+
     BQFactory.request({
         uri: value,
         uri_params: { view:'short' },
-        cb: function(r) { 
+        cb: function(r) {
             var text = Ext.String.format('{0}:{1} - {2}', r.resource_type, r.name, r.value);
             var el = Ext.get(unique);
             el.dom.textContent = text;
-        }, 
-    });    
-    
+        },
+    });
+
     return Ext.String.format('<a href="{0}" target="_blank" id="{1}">{2}</a>', url, unique, value);
 };
 
@@ -28,7 +28,7 @@ Bisque.ResourceTagger.EmailRenderer = function(value, metaData, record) {
     return Ext.String.format('<a href={0} target="_blank">{1}</a>', 'mailto:' + value, value);
 };
 
-Bisque.ResourceTagger.VertexRenderer = function(value, metaData, record) {
+/*Bisque.ResourceTagger.VertexRenderer = function(value, metaData, record) {
     var comboHtml = '<select>';
     var vertices = record.raw.vertices, vertex;
 
@@ -44,6 +44,17 @@ Bisque.ResourceTagger.VertexRenderer = function(value, metaData, record) {
     comboHtml += '</select>';
 
     return comboHtml;
+};*/
+
+Bisque.ResourceTagger.VertexRenderer = function(value, metaData, record) {
+    var s = '';
+    var vertices = record.raw.vertices;
+    var vertex=undefined;
+    for (var i=0; (vertex=vertices[i]); i++) {
+        var v =[vertex.x || 0, vertex.y || 0, vertex.z || 0, vertex.t || 0, vertex.c || 0];
+        s += v.join(',') + '; ';
+    }
+    return s;
 };
 
 Bisque.ResourceTagger.RenderersAvailable = {

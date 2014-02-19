@@ -126,7 +126,7 @@ SVGRenderer.prototype.appendSvg = function (gob){
 };
 
 
-SVGRenderer.prototype.updateImage = function (){
+SVGRenderer.prototype.updateImage = function () {
     //visit_array (this.rendered_gobjects , callback(this,'removeSvg'));
     var viewstate = this.viewer.current_view;
     var url = this.viewer.image_url();
@@ -158,6 +158,14 @@ SVGRenderer.prototype.updateImage = function (){
     this.rendered_gobjects = gobs;
     if (mouser)
         mouser.selectShapes(selected);
+};
+
+SVGRenderer.prototype.rerender = function (gobs, params) {
+    if (!gobs)
+        gobs = this.viewer.gobjects_viewable();
+    if (!params)
+        params = [this.viewer.current_view];
+    this.visit_render.visit_array(gobs, params);
 };
 
 SVGRenderer.prototype.is_selected = function (gob){
@@ -425,13 +433,15 @@ SVGRenderer.prototype.point = function ( visitor, gob, viewstate, visibility) {
     if (visible && gob.visible) {
         if (gob.shape == null ) {
             var rect = document.createElementNS(svgns, "rect");
-            //rect.setAttributeNS(null, "x", x -3 + offset_x);
-            //rect.setAttributeNS(null, "y", y -3 + offset_y);
             rect.setAttributeNS(null, "width", "8");
             rect.setAttributeNS(null, "height", "8");
-            rect.setAttributeNS(null, "fill", "red");
+            rect.setAttributeNS(null, "fill", 'orangered');
             rect.setAttributeNS(null, "display", "none");
-            rect.setAttributeNS(null, 'fill-opacity', 0.7);
+            rect.setAttributeNS(null, 'fill-opacity', 1.0);
+            rect.setAttributeNS(null, 'stroke', 'black');
+            rect.setAttributeNS(null, 'stroke-width', 2);
+            rect.setAttributeNS(null, 'rx', 4);
+            rect.setAttributeNS(null, 'ry', 4);
             gob.shape = new Pnt(rect);
         }
 

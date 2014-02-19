@@ -549,6 +549,10 @@ Ext.define('Bisque.Resource.Image.Page', {
                 'Select' : function(me, resource) {
                     window.open(bq.url('/module_service/' + resource.name + '/?mex=' + resource.uri));
                 },
+                'browserLoad' : function(mb, resQ) {
+                    for (var i=resQ.length-1; i>=0; i--)
+                        this.gobjectTagger.appendMex(resQ[i].resource);
+                },
                 scope : this
             },
         });
@@ -604,58 +608,25 @@ Ext.define('Bisque.Resource.Image.Page', {
             mexBrowser : mexBrowser,
             title : 'Graphical',
             viewMode : 'GObjectTagger',
-            readFromMex : function(resQ) {
-                function changeFormat(mex) {
-                    this.appendFromMex([{
-                        resource : mex
-                    }]);
-                }
-
-                for (var i = 0; i < resQ.length; i++)
-                    BQFactory.request({
-                        uri : resQ[i].resource.uri + '?view=deep',
-                        cb : Ext.bind(changeFormat, this)
-                    });
-            },
-
             listeners : {
-                // dima: gobs are already loaded
-                /*'beforeload' : function(me, resource) {
-                    me.imgViewer.start_wait({
-                        op : 'gobjects',
-                        message : 'Fetching gobjects'
-                    });
-                },*/
-
-                'onload' : function(me, resource) {
-                    // dima: the following should never happen because we only load gobtagger in full page and image is pre-loaded view-deep
-                    //me.imgViewer.loadGObjects(resource.gobjects, false);
-
-                    if (me.mexBrowser.mexLoaded)
-                        me.readFromMex(me.mexBrowser.resourceQueue);
-                    else
-                        me.mexBrowser.on('browserLoad', function(mb, resQ) {
-                            me.readFromMex(resQ);
-                        }, me);
-
-                },
-
                 'onappend' : function(me, gobjects) {
-                    me.imgViewer.gobjectsLoaded(true, gobjects);
+                    me.imgViewer.show_additional_gobjects(gobjects);
                 },
 
                 'select' : function(me, record, index) {
+                    if (!(record.raw instanceof BQObject) && !record.raw.loaded) return;
                     var gobject = (record.raw instanceof BQGObject) ? record.raw : record.raw.gobjects;
                     me.imgViewer.showGObjects(gobject);
                 },
 
                 'deselect' : function(me, record, index) {
+                    if (!(record.raw instanceof BQObject) && !record.raw.loaded) return;
                     var gobject = (record.raw instanceof BQGObject) ? record.raw : record.raw.gobjects;
                     me.imgViewer.hideGObjects(gobject);
                 }
             }
         });
-        resTab.add(this.gobjectTagger);
+        resTab.insert(1, this.gobjectTagger);
 
         resTab.add({
             xtype : 'bqmap',
