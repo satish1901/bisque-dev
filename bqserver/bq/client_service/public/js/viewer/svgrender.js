@@ -223,6 +223,11 @@ SVGRenderer.prototype.hideShape = function (gob, view) {
     }
 };
 
+SVGRenderer.prototype.select = function (gob, selection) {
+    if (gob.shape)
+        gob.shape.enhance(selection);
+};
+
 //----------------------------------------------------------------------------
 // graphical primitives
 //----------------------------------------------------------------------------

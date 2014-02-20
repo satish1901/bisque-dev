@@ -548,6 +548,15 @@ Ext.define('Bisque.Resource.Image.Page', {
                 changed : function(me, gobjects) {
                     this.gobjectTagger.tree.getView().refresh();
                 },
+                select : function(viewer, gob) {
+                    var node = this.gobjectTagger.tree.getRootNode().findChildBy(
+                        function(n) { if (n.raw === gob) return true; },
+                        this,
+                        true
+                    );
+                    //this.gobjectTagger.tree.expandNode( node, true );
+                    this.gobjectTagger.tree.getSelectionModel().select(node, false, true);
+                },
                 working : this.onworking,
                 done    : this.ondone,
                 error   : this.onerror,
@@ -562,17 +571,29 @@ Ext.define('Bisque.Resource.Image.Page', {
             viewMode : 'GObjectTagger',
             full_load_on_creation: true, // gobtagger is referred from other places that are loaded immediately
             listeners : {
-                'onappend' : function(me, gobjects) {
+                onappend: function(me, gobjects) {
                     this.viewerContainer.viewer.show_additional_gobjects(gobjects);
                 },
 
-                'select' : function(me, record, index) {
+                select : function(me, record, index, eOpts) {
+                    if (!(record.raw instanceof BQObject) && !record.raw.loaded) return;
+                    var gobject = (record.raw instanceof BQGObject) ? record.raw : record.raw.gobjects[0];
+                    this.viewerContainer.viewer.select_gobject(gobject, true);
+                },
+
+                deselect : function(me, record, index, eOpts) {
+                    if (!(record.raw instanceof BQObject) && !record.raw.loaded) return;
+                    var gobject = (record.raw instanceof BQGObject) ? record.raw : record.raw.gobjects[0];
+                    this.viewerContainer.viewer.select_gobject(gobject, false);
+                },
+
+                checked : function(me, record, index) {
                     if (!(record.raw instanceof BQObject) && !record.raw.loaded) return;
                     var gobject = (record.raw instanceof BQGObject) ? record.raw : record.raw.gobjects;
                     this.viewerContainer.viewer.showGObjects(gobject);
                 },
 
-                'deselect' : function(me, record, index) {
+                unchecked : function(me, record, index) {
                     if (!(record.raw instanceof BQObject) && !record.raw.loaded) return;
                     var gobject = (record.raw instanceof BQGObject) ? record.raw : record.raw.gobjects;
                     this.viewerContainer.viewer.hideGObjects(gobject);

@@ -563,6 +563,10 @@ ImgViewer.prototype.hideGObjects = function(gobs) {
     this.renderer.rerender(gobs, [this.current_view, false]);
 };
 
+ImgViewer.prototype.select_gobject = function(gob, selection) {
+    this.renderer.select(gob, selection);
+};
+
 ImgViewer.prototype.start_wait = function (o) {
     var p = this.plugins_by_name["progressbar"]; // dima
     if (!p) {

@@ -324,8 +324,12 @@ ImgEdit.prototype.remove_gobject = function (gob) {
 };
 
 ImgEdit.prototype.on_selected = function (gob) {
-    if (this.mode_type === 'delete')
+    if (this.mode_type === 'select') {
+        if (this.viewer.parameters.onselect)
+            this.viewer.parameters.onselect(gob);
+    } else if (this.mode_type === 'delete') {
         this.remove_gobject(gob);
+    }
 };
 
 ImgEdit.prototype.on_move = function (gob) {
@@ -348,6 +352,7 @@ ImgEdit.prototype.setmode = function (type, mode_fun) {
 
 ImgEdit.prototype.select = function (e, x, y) {
     this.setmode (null);
+    this.mode_type = 'select';
     this.current_gob = null;
     this.startEdit();
 };

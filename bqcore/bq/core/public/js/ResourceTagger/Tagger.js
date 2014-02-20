@@ -270,13 +270,19 @@ Ext.define('Bisque.ResourceTagger', {
                 }
             },
             listeners: {
-                'checkchange': function (node, checked) {
+                select: function ( tree, record, index, eOpts) {
+                    this.fireEvent('select', this, record, index, eOpts);
+                },
+                deselect: function ( tree, record, index, eOpts) {
+                    this.fireEvent('deselect', this, record, index, eOpts);
+                },
+                checkchange: function (node, checked) {
                     if (!(node.raw instanceof BQObject) && !node.raw.loaded && this.onExpand) {
                         this.onExpand(node);
                         return;
                     }
                     //Recursively check/uncheck all children of a parent node
-                    (checked) ? this.fireEvent('select', this, node) : this.fireEvent('deselect', this, node);
+                    (checked) ? this.fireEvent('checked', this, node) : this.fireEvent('unchecked', this, node);
                     this.checkTree(node, checked);
                 },
                 scope: this
