@@ -521,16 +521,64 @@ Ext.define('Bisque.Resource.Image.Page', {
         if (this.resource && this.resource.uri)
             this.root = this.resource.uri.replace(/\/data_service\/.*$/i, '');
 
-        var resourceTagger = Ext.create('Bisque.ResourceTagger', {
+        this.viewerContainer = Ext.create('BQ.viewer.Image', {
+            region : 'center',
             resource : this.resource,
-            title : 'Annotations',
+            toolbar : this.toolbar,
+            parameters : {
+                blockforsaves: false,
+                external_edit_controls: true,
+                gobjectCreated : Ext.bind(function(gob) {
+                    this.gobjectTagger.appendGObjects([gob]);
+                }, this),
+
+                gobjectDeleted : Ext.bind(function(gi) {
+                    this.gobjectTagger.deleteGObject(gi);
+                }, this),
+            },
+            listeners : {
+                loaded: function(vc) {
+                    var viewer = vc.viewer;
+                    var editor = viewer.editor;
+                    this.gobjectTagger.on('btnNavigate', editor.navigate, editor);
+                    this.gobjectTagger.on('btnSelect', editor.select, editor);
+                    this.gobjectTagger.on('btnDelete', editor.remove, editor);
+                    this.gobjectTagger.on('createGob', editor.onCreateGob, editor);
+                },
+                changed : function(me, gobjects) {
+                    this.gobjectTagger.tree.getView().refresh();
+                },
+                working : this.onworking,
+                done    : this.ondone,
+                error   : this.onerror,
+                scope   : this
+            }
         });
 
-        var embeddedTagger = Ext.create('Bisque.ResourceTagger', {
-            resource : this.resource.src + '?meta',
-            title : 'Embedded',
-            viewMode : 'ReadOnly',
-            disableAuthTest : true
+        this.gobjectTagger = new Bisque.GObjectTagger({
+            resource : this.resource,
+            mexBrowser : mexBrowser,
+            title : 'Graphical',
+            viewMode : 'GObjectTagger',
+            full_load_on_creation: true, // gobtagger is referred from other places that are loaded immediately
+            listeners : {
+                'onappend' : function(me, gobjects) {
+                    this.viewerContainer.viewer.show_additional_gobjects(gobjects);
+                },
+
+                'select' : function(me, record, index) {
+                    if (!(record.raw instanceof BQObject) && !record.raw.loaded) return;
+                    var gobject = (record.raw instanceof BQGObject) ? record.raw : record.raw.gobjects;
+                    this.viewerContainer.viewer.showGObjects(gobject);
+                },
+
+                'deselect' : function(me, record, index) {
+                    if (!(record.raw instanceof BQObject) && !record.raw.loaded) return;
+                    var gobject = (record.raw instanceof BQGObject) ? record.raw : record.raw.gobjects;
+                    this.viewerContainer.viewer.hideGObjects(gobject);
+                },
+                scope: this,
+            }
         });
 
         var mexBrowser = new Bisque.ResourceBrowser.Browser({
@@ -557,8 +605,33 @@ Ext.define('Bisque.Resource.Image.Page', {
             },
         });
 
-        var resTab = Ext.create('Ext.tab.Panel', {
+        var resourceTagger = {
+            xtype: 'bq-tagger',
+            resource : this.resource,
+            title : 'Annotations',
+        };
+
+        var embeddedTagger = {
+            xtype: 'bq-tagger',
+            resource : this.resource.src + '?meta',
+            title : 'Embedded',
+            viewMode : 'ReadOnly',
+            disableAuthTest : true
+        };
+
+        var map = {
+            xtype : 'bqmap',
+            title : 'Map',
+            zoomLevel : 16,
+            gmapType : 'map',
+            autoShow : true,
+            resource : this.resource,
+        };
+
+        var resTab = {
+            xtype: 'tabpanel',
             title : 'Metadata',
+            deferredRender: true,
             region : 'east',
             activeTab : 0,
             border : false,
@@ -567,74 +640,13 @@ Ext.define('Bisque.Resource.Image.Page', {
             split : true,
             width : 400,
             plain : true,
-            //bodyStyle: 'background-color:#F00',
-            items : [resourceTagger, embeddedTagger, mexBrowser]
-        });
-
-        var viewerContainer = Ext.create('BQ.viewer.Image', {
-            region : 'center',
-            resource : this.resource,
-            toolbar : this.toolbar,
-            parameters : {
-                blockforsaves: false,
-                gobjectCreated : Ext.bind(function(gob) {
-                    this.gobjectTagger.appendGObjects([gob]);
-                }, this),
-
-                gobjectDeleted : Ext.bind(function(gi) {
-                    this.gobjectTagger.deleteGObject(gi);
-                }, this),
-            },
-            listeners : {
-                changed : function(me, gobjects) {
-                    this.gobjectTagger.tree.getView().refresh();
-                },
-                working : this.onworking,
-                done    : this.ondone,
-                error   : this.onerror,
-                scope   : this
-            }
-        });
+            items : [resourceTagger, this.gobjectTagger, embeddedTagger, mexBrowser, map]
+        };
 
         this.add({
             xtype : 'container',
             layout : 'border',
-            items : [viewerContainer, resTab]
-        });
-
-        this.gobjectTagger = new Bisque.GObjectTagger({
-            resource : this.resource,
-            imgViewer : viewerContainer.viewer,
-            mexBrowser : mexBrowser,
-            title : 'Graphical',
-            viewMode : 'GObjectTagger',
-            listeners : {
-                'onappend' : function(me, gobjects) {
-                    me.imgViewer.show_additional_gobjects(gobjects);
-                },
-
-                'select' : function(me, record, index) {
-                    if (!(record.raw instanceof BQObject) && !record.raw.loaded) return;
-                    var gobject = (record.raw instanceof BQGObject) ? record.raw : record.raw.gobjects;
-                    me.imgViewer.showGObjects(gobject);
-                },
-
-                'deselect' : function(me, record, index) {
-                    if (!(record.raw instanceof BQObject) && !record.raw.loaded) return;
-                    var gobject = (record.raw instanceof BQGObject) ? record.raw : record.raw.gobjects;
-                    me.imgViewer.hideGObjects(gobject);
-                }
-            }
-        });
-        resTab.insert(1, this.gobjectTagger);
-
-        resTab.add({
-            xtype : 'bqmap',
-            title : 'Map',
-            zoomLevel : 16,
-            gmapType : 'map',
-            autoShow : true,
-            resource : this.resource,
+            items : [this.viewerContainer, resTab]
         });
 
         this.setLoading(false);

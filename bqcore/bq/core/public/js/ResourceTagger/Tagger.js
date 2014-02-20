@@ -1,5 +1,6 @@
 Ext.define('Bisque.ResourceTagger', {
     extend: 'Ext.panel.Panel',
+    alias: 'widget.bq-tagger',
     layout: 'fit',
     silent: true,
 
@@ -7,9 +8,6 @@ Ext.define('Bisque.ResourceTagger', {
         config = config || {};
 
         Ext.apply(this, {
-
-            //padding: '0 1 0 0',
-            //style: 'background-color:#FFF',
             border: false,
 
             rootProperty: config.rootProperty || 'tags',
@@ -25,12 +23,27 @@ Ext.define('Bisque.ResourceTagger', {
             store: {},
             dirtyRecords: []
         });
-
-        this.viewMgr = Ext.create('Bisque.ResourceTagger.viewStateManager', config.viewMode);
-        this.populateComboStore();
         this.callParent([config]);
+    },
 
-        this.setResource(config.resource);
+    initTagger : function() {
+        if (this.fully_loaded) return;
+        this.viewMgr = Ext.create('Bisque.ResourceTagger.viewStateManager', this.viewMode);
+        if (!(this.viewMode in {'ReadOnly':undefined, 'GObjectTagger':undefined}))
+            this.populateComboStore();
+        this.setResource(this.resource);
+        this.fully_loaded = true;
+    },
+
+    initComponent : function() {
+        this.callParent();
+        if (this.full_load_on_creation)
+            this.initTagger();
+    },
+
+    afterRender : function() {
+        this.callParent();
+        this.initTagger();
     },
 
     populateComboStore: function () {
@@ -931,6 +944,7 @@ Ext.define('Bisque.ResourceTagger', {
 //-----------------------------------------------------------------------
 Ext.define('Bisque.GObjectTagger', {
     extend: 'Bisque.ResourceTagger',
+    alias: 'widget.bq-tagger-gobs',
     animate: false,
     layout: 'fit',
     cls: 'bq-gob-tagger',
@@ -946,7 +960,6 @@ Ext.define('Bisque.GObjectTagger', {
 
     initComponent : function() {
         this.callParent();
-        this.imgViewer.gob_annotator = this;
     },
 
     loadResourceTags: function (data, template) {

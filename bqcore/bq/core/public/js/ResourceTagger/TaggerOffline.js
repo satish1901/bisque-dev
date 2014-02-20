@@ -1,11 +1,14 @@
 Ext.define('Bisque.ResourceTaggerOffline', {
     extend : 'Bisque.ResourceTagger',
+    alias: 'widget.bq-tagger-offline',
 
     constructor : function(config) {
         config = config || {};
 
         Ext.apply(config, {
             viewMode : 'Offline',
+            full_load_on_creation: true,
+            resource: config.resource || new BQResource(),
             tree : {
                 btnAdd : false,
                 btnDelete : false,

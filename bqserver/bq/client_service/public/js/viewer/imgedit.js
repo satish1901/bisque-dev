@@ -49,10 +49,6 @@ function ImgEdit (viewer,name){
   for (var i=0; i < primitives.length; i++)
     this.editprimitives[ primitives[i] ] = '';
 
-  // create interface
-  if (!this.viewer.gob_annotator)
-  this.edit_buttons = new Array(0);
-
   this.keymap = { 46: callback(this, 'delete_item'),  // key delete
                    8: callback(this, 'delete_item') };
 }
@@ -62,12 +58,8 @@ ImgEdit.prototype.newImage = function () {
     this.renderer = this.viewer.renderer;
     this.renderer.set_select_handler( callback(this, this.on_selected) );
     this.renderer.set_move_handler( callback(this, this.on_move) );
-    this.gobjects = this.viewer.gobjects_editable();
+    this.gobjects = this.viewer.image.gobjects;
     this.visit_render = new BQProxyClassVisitor (this.renderer);
-    if ( !('noedit' in this.viewer.parameters) )
-        this.editImage();
-    if ('alwaysedit' in this.viewer.parameters && !this.buttons_created)
-        this.editImage();
 };
 
 ImgEdit.prototype.updateImage = function () {
@@ -75,7 +67,7 @@ ImgEdit.prototype.updateImage = function () {
 };
 
 ImgEdit.prototype.updateView = function (view) {
-    if (!this.viewer.gob_annotator && !this.menu) {
+    if (!this.viewer.parameters.external_edit_controls && !this.menu) {
         var v = this.viewer;
         var surf = v.viewer_controls_surface ? v.viewer_controls_surface : this.parent;
         if (surf) {
@@ -165,40 +157,7 @@ ImgEdit.prototype.updateView = function (view) {
 
 };
 
-ImgEdit.prototype.editImage = function () {
-
-    if (!this.viewer.gob_annotator && this.bt_edit) {
-        if (this.bt_edit.innerHTML != ImgViewer.BTN_TITLE_ANNOTATE) {
-          this.cancelEdit();
-          return;
-        }
-    }
-
-    if (!(this.viewer.user_uri && (this.viewer.image.owner == this.viewer.user_uri)))
-        if (!('nosave' in this.viewer.parameters)) {
-            BQ.ui.notification('You are not the owner the image and may not save graphical annotations');
-        }
-
-    var bt = this.edit_buttons;
-    var v = this.viewer;
-
-    if (!this.viewer.gob_annotator && this.bt_edit) {
-    this.bt_edit.innerHTML = ImgViewer.BTN_TITLE_CANCEL;
-    }
-
-    if (this.viewer.gob_annotator) {
-        //if (!('nosave' in this.viewer.parameters))
-        //    this.viewer.gob_annotator.on('btnSave', this.save_edit, this);
-        this.viewer.gob_annotator.on('btnNavigate', this.navigate, this);
-        this.viewer.gob_annotator.on('btnSelect', this.select, this);
-        this.viewer.gob_annotator.on('btnDelete', this.remove, this);
-        this.viewer.gob_annotator.on('createGob', this.onCreateGob, this);
-    }
-    this.buttons_created = true;
-};
-
 ImgEdit.prototype.onCreateGob = function (type) {
-    //this.gob_type = type;
     if (type in ImgViewer.gobFunction) {
         this.mode_primitive = null;
         var f = ImgViewer.gobFunction[type];
@@ -218,10 +177,7 @@ ImgEdit.prototype.onCreateGob = function (type) {
 };
 
 ImgEdit.prototype.cancelEdit = function () {
-    this.viewer.remCommandGroup(ImgViewer.BTN_TITLE_GROUP);
     this.endEdit();
-    if (!this.viewer.gob_annotator && this.bt_edit)
-        this.bt_edit.innerHTML = ImgViewer.BTN_TITLE_ANNOTATE;
     this.viewer.need_update();
 };
 
@@ -284,22 +240,52 @@ ImgEdit.prototype.mousedown = function (e) {
   }
 };
 
-ImgEdit.prototype.store_new_gobject = function (gob){
+ImgEdit.prototype.test_save_permission = function (uri) {
+    var pars = this.viewer.parameters || {};
+    if ('nosave' in pars)
+        return false;
+
+    // dima: a hack to stop writing into a MEX
+    if (uri && uri.indexOf('/mex/')>=0) {
+        BQ.ui.warning('Can\'t save annotations into a Module EXecution document...');
+        return false;
+    }
+
+    // dima - REQUIRES CHANGES TO SUPPORT PROPER ACLs!!!!
+    /* if (this.viewer.user)
+    if (!(this.viewer.user_uri && (this.viewer.image.owner == this.viewer.user_uri))) {
+        BQ.ui.notification('You do not the permission to save graphical annotations to this document...');
+        // dima: write permissions need to be properly red here
+        //return false;
+    }*/
+
+    return true;
+};
+
+ImgEdit.prototype.store_new_gobject = function (gob) {
     if (this.viewer.parameters.gobjectCreated)
         this.viewer.parameters.gobjectCreated(gob);
 
     // save to DB
-    if ('nosave' in this.viewer.parameters)
+    if (!this.test_save_permission(this.viewer.image.uri + '/gobject'))
         return;
 
     var pars = this.viewer.parameters || {};
     if (pars.onworking)
         pars.onworking('Saving annotations...');
 
+    // create a temporary backup object holding children in order to properly hide shapes later to prevent blinking
+    var bck = new BQGObject ('Temp');
+    bck.gobjects = gob.gobjects;
+
+    var me = this;
     gob.save_reload(
         this.viewer.image.uri + '/gobject',
         function(resource) {
-            gob.apply(resource); // copy contents of DB object into local pointer
+            // show the newly returned object from the DB
+            me.visit_render.visitall(gob, [me.viewer.current_view]);
+            // remove all shapes from old children because save_reload replaces gobjects vector
+            me.visit_render.visitall(bck, [me.viewer.current_view, false]);
             pars.ondone();
         },
         pars.onerror
@@ -314,24 +300,26 @@ ImgEdit.prototype.remove_gobject = function (gob) {
     }
 
     // remove rendered shape first
-    this.renderer.hideShape(this.viewer.current_view, gob);
+    this.renderer.hideShape(gob, this.viewer.current_view);
 
     // try to find parent gobject and if it have single child, remove parent
-    var p = gob.findParentGobject();
-    if (p instanceof BQGObject && p.gobjects.length === 1)
+    //var p = gob.findParentGobject();
+    var p = gob.parent;
+    if (p && p instanceof BQGObject && p.gobjects.length === 1)
         gob = p;
 
     // remove gob
     var v = (gob.parent ? gob.parent.gobjects : undefined) || this.gobjects;
-    v.splice(gob,1);
+    var index = v.indexOf(gob);
+    v.splice(index, 1);
     if (this.viewer.parameters.gobjectDeleted)
         this.viewer.parameters.gobjectDeleted(gob);
 
     // save to DB
-    var pars = this.viewer.parameters || {};
-    if ('nosave' in pars)
+    if (!this.test_save_permission(gob.uri))
         return;
 
+    var pars = this.viewer.parameters || {};
     gob.delete_(pars.ondone, pars.onerror);
 };
 
@@ -346,11 +334,8 @@ ImgEdit.prototype.on_move = function (gob) {
     if (this.saving_timeout) clearTimeout (this.saving_timeout);
     this.saving_timeout = setTimeout( function() {
         me.saving_timeout=undefined;
-        // dima: a hack to stop writing into a MEX
-        if (gob.uri && gob.uri.indexOf('/mex/')>=0) {
-            BQ.ui.warning('Can\'t update annotation in a Module EXecution document...');
+        if (!me.test_save_permission(gob.uri))
             return;
-        }
         gob.save_me(pars.ondone, pars.onerror ); // check why save_ should not be used
     }, 1000 );
 };
@@ -386,15 +371,14 @@ ImgEdit.prototype.newPoint = function (parent, e, x, y) {
     if (parent)
         parent.addgobjects(g);
     else
-        this.gobjects.push(g);
+        this.viewer.image.addgobjects(g); //this.gobjects.push(g);
 
     var pt = v.inverseTransformPoint(x,y);
     g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, 0));
 
     this.current_gob = null;
     this.visit_render.visitall(g, [v]);
-    if (!parent)
-        this.store_new_gobject (g);
+    this.store_new_gobject (parent ? parent : g);
 };
 
 ImgEdit.prototype.newRect = function (parent, e, x, y) {
@@ -404,7 +388,7 @@ ImgEdit.prototype.newRect = function (parent, e, x, y) {
     if (parent)
         parent.addgobjects(g);
     else
-        this.gobjects.push(g);
+        this.viewer.image.addgobjects(g); //this.gobjects.push(g);
 
     var pt = v.inverseTransformPoint(x,y);
     g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, 0));
@@ -412,8 +396,7 @@ ImgEdit.prototype.newRect = function (parent, e, x, y) {
 
     this.current_gob = null;
     this.visit_render.visitall(g, [v]);
-    if (!parent)
-        this.store_new_gobject (g);
+    this.store_new_gobject (parent ? parent : g);
 };
 
 ImgEdit.prototype.newPolygon = function (parent, e, x, y) {
@@ -422,10 +405,11 @@ ImgEdit.prototype.newPolygon = function (parent, e, x, y) {
 
     if (g == null) {
         g = new BQGObject('polygon');
-        if (parent)
+        if (parent) {
             parent.addgobjects(g);
-        else
-            this.gobjects.push(g);
+            g.edit_parent = parent;
+        } else
+            this.viewer.image.addgobjects(g);
     }
 
     var pt = v.inverseTransformPoint(x,y);
@@ -433,10 +417,10 @@ ImgEdit.prototype.newPolygon = function (parent, e, x, y) {
     g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, index));
 
     // Double click ends the object otherwise add points
-    this.current_gob =  (e.detail > 1)?null:g;
+    this.current_gob = (e.detail > 1)?null:g;
     this.visit_render.visitall(g, [v]);
-    if (!parent)
-        this.store_new_gobject (g);
+    if (!this.current_gob)
+        this.store_new_gobject (g.edit_parent ? g.edit_parent : g);
 };
 
 
@@ -446,10 +430,11 @@ ImgEdit.prototype.newPolyline = function (parent, e, x, y) {
 
     if (g == null) {
         g = new BQGObject('polyline');
-        if (parent)
+        if (parent) {
             parent.addgobjects(g);
-        else
-            this.gobjects.push(g);
+            g.edit_parent = parent;
+        } else
+            this.viewer.image.addgobjects(g);
     }
     var pt = v.inverseTransformPoint(x,y);
     var index = g.vertices.length;
@@ -458,8 +443,8 @@ ImgEdit.prototype.newPolyline = function (parent, e, x, y) {
     // Double click ends the object otherwise add points
     this.current_gob = (e.detail > 1)?null:g;
     this.visit_render.visitall(g, [v]);
-    if (!parent)
-        this.store_new_gobject (g);
+    if (!this.current_gob)
+        this.store_new_gobject (g.edit_parent ? g.edit_parent : g);
 };
 
 
@@ -470,7 +455,7 @@ ImgEdit.prototype.newCircle = function (parent, e, x, y) {
     if (parent)
         parent.addgobjects(g);
     else
-        this.gobjects.push(g);
+        this.viewer.image.addgobjects(g); //this.gobjects.push(g);
 
     var pt = v.inverseTransformPoint(x,y);
     g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, 0));
@@ -478,8 +463,7 @@ ImgEdit.prototype.newCircle = function (parent, e, x, y) {
 
     this.current_gob = null;
     this.visit_render.visitall(g, [v]);
-    if (!parent)
-        this.store_new_gobject (g);
+    this.store_new_gobject (parent ? parent : g);
 };
 
 ImgEdit.prototype.newLabel = function (parent, e, x, y) {
@@ -489,7 +473,7 @@ ImgEdit.prototype.newLabel = function (parent, e, x, y) {
     if (parent)
         parent.addgobjects(g);
     else
-        this.gobjects.push(g);
+        this.viewer.image.addgobjects(g); //this.gobjects.push(g);
 
     var pt = v.inverseTransformPoint(x,y);
     g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, 0));
@@ -499,8 +483,7 @@ ImgEdit.prototype.newLabel = function (parent, e, x, y) {
 
     this.current_gob = null;
     this.visit_render.visitall(g, [v]);
-    if (!parent)
-        this.store_new_gobject (g);
+    this.store_new_gobject (parent ? parent : g);
 };
 
 ImgEdit.prototype.newComplex = function (type, internal_gob, parent, e, x, y) {
@@ -512,23 +495,10 @@ ImgEdit.prototype.newComplex = function (type, internal_gob, parent, e, x, y) {
         if (parent)
             parent.addgobjects (g);
         else
-            this.gobjects.push(g);
+            this.viewer.image.addgobjects(g); //this.gobjects.push(g);
     }
     // This is tricky.. if a primitive type then it receives this g as a parent
     // if internal_gob is complex, then callback already has type, and internal_gob
     // as its first arguments
     internal_gob (g, e, x, y);
-    this.store_new_gobject (g);
 };
-
-ImgEdit.prototype.helpBox = function () {
-
-    var msg = [ "Click an object to activate object handles",
-                "Shift-click to toggle all object handles",
-                "White handles move individual points",
-                "Black handles move entire object",
-                "Delete Key to remove object",
-        ];
-};
-
-

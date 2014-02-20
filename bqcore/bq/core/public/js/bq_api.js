@@ -723,14 +723,6 @@ BQObject.prototype.clone = function (skiptemplate) {
     return resource;
 };
 
-BQObject.prototype.apply = function (obj) {
-    var attr = ['children', 'tags', 'gobjects', 'values', 'vertices', 'resource_type', 'created', 'dirty', 'mex'];
-    attr.push.apply(attr, this.xmlfields);
-    var a = undefined;
-    for (i=0; (a=attr[i]); i++)
-        this[a] = obj[a];
-};
-
 BQObject.prototype.toDict  = function (deep, found, prefix) {
     deep = deep || false;
     found = found || {};

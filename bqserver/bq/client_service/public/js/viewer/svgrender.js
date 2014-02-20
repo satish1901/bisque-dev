@@ -46,7 +46,7 @@ SVGRenderer.prototype.enable_edit = function (enabled) {
     }
 
     this.viewer.current_view.edit_graphics = enabled?true:false;
-    var gobs =  this.viewer.gobjects_viewable();
+    var gobs =  this.viewer.image.gobjects;
     this.visit_render.visit_array(gobs, [this.viewer.current_view]);
     this.rendered_gobjects = gobs;
 };
@@ -57,7 +57,7 @@ SVGRenderer.prototype.getUserCoord = function (e ){
 };
 
 SVGRenderer.prototype.addHandler = function (ty, cb){
-    console.log ("addHandler " + ty + " func " + cb);
+    //console.log ("addHandler " + ty + " func " + cb);
     if (cb) {
         this.svgimg.addEventListener (ty, cb, false);
         this.events[ty] = cb;
@@ -113,13 +113,6 @@ SVGRenderer.prototype.updateView = function (view) {
         this.populate_overlay(this.showOverlay);
 };
 
-SVGRenderer.prototype.removeSvg = function (gob) {
-    if (gob.shape) {
-        this.svggobs.removeChild(gob.shape.svgNode);
-        delete gob.shape;
-    }
-};
-
 SVGRenderer.prototype.appendSvg = function (gob){
     if (gob.shape)
         this.svggobs.appendChild(gob.shape.svgNode);
@@ -127,7 +120,6 @@ SVGRenderer.prototype.appendSvg = function (gob){
 
 
 SVGRenderer.prototype.updateImage = function () {
-    //visit_array (this.rendered_gobjects , callback(this,'removeSvg'));
     var viewstate = this.viewer.current_view;
     var url = this.viewer.image_url();
 
@@ -153,7 +145,7 @@ SVGRenderer.prototype.updateImage = function () {
     if (mouser)
         selected = mouser.unregisterShapes();
 
-    var gobs = this.viewer.gobjects_viewable();
+    var gobs = this.viewer.image.gobjects;
     this.visit_render.visit_array(gobs, [this.viewer.current_view]);
     this.rendered_gobjects = gobs;
     if (mouser)
@@ -162,9 +154,14 @@ SVGRenderer.prototype.updateImage = function () {
 
 SVGRenderer.prototype.rerender = function (gobs, params) {
     if (!gobs)
-        gobs = this.viewer.gobjects_viewable();
+        gobs = this.viewer.image.gobjects;
     if (!params)
         params = [this.viewer.current_view];
+    this.visit_render.visit_array(gobs, params);
+};
+
+SVGRenderer.prototype.visitall = function (gobs, show) {
+    params = [this.viewer.current_view, show];
     this.visit_render.visit_array(gobs, params);
 };
 
@@ -193,7 +190,7 @@ SVGRenderer.prototype.default_move = function (gob) {
 };
 
 SVGRenderer.prototype.viewShape = function (view, gob, move, select){
-    svgNode = gob.shape.svgNode;
+    var svgNode = gob.shape.svgNode;
     var r = this;
     var g = gob;
 
@@ -208,19 +205,21 @@ SVGRenderer.prototype.viewShape = function (view, gob, move, select){
     gob.shape.editable(view.edit_graphics);
 } ;
 
-SVGRenderer.prototype.hideShape = function (view, gob){
-    if (gob.shape) {
-        gob.shape.editable(false);
-        gob.shape.update_callback = null;
-        gob.shape.select_callback = null;
+SVGRenderer.prototype.hideShape = function (gob, view) {
+    var shape = gob.shape;
+    gob.shape = undefined;
+    if (shape) {
+        shape.editable(false);
+        shape.update_callback = null;
+        shape.select_callback = null;
 
-        gob.shape.select(false);
-        if (view.edit_graphics === true) {
-            gob.shape.showHandles(false);
-            gob.shape.unrealize();
+        shape.select(false);
+        if (!view || view.edit_graphics === true) {
+            shape.showHandles(false);
+            shape.unrealize();
         }
-        gob.shape.show(false);
-        gob.shape = undefined;
+        shape.show(false);
+        delete shape;
     }
 };
 
@@ -284,7 +283,7 @@ SVGRenderer.prototype.polyline = function (visitor, gob,  viewstate, visibility)
                         callback(this,'move_poly'),
                         callback(this,'select_poly'));
     } else {
-        this.hideShape (viewstate, gob);
+        this.hideShape (gob, viewstate);
     }
 };
 
@@ -366,7 +365,7 @@ SVGRenderer.prototype.select_poly = function ( state ) {
 //                         callback(this,'move_path'),
 //                         callback(this,'select_path'));
 //     } else {
-//         this.hideShape (viewstate, gob)
+//         this.hideShape (gob, viewstate)
 //     }
 // }
 
@@ -455,7 +454,7 @@ SVGRenderer.prototype.point = function ( visitor, gob, viewstate, visibility) {
                         callback(this,"select_point"));
 
     } else {
-        this.hideShape (viewstate, gob);
+        this.hideShape (gob, viewstate);
     }
 };
 
@@ -528,7 +527,7 @@ SVGRenderer.prototype.rectangle = function ( visitor, gob,  viewstate, visibilit
                         callback(this,'move_rectangle'),
                         callback(this,'select_rectangle'));
     } else {
-        this.hideShape (viewstate, gob);
+        this.hideShape (gob, viewstate);
     }
 };
 
@@ -599,7 +598,7 @@ SVGRenderer.prototype.circle = function ( visitor, gob,  viewstate, visibility) 
                         callback(this,"move_circle"),
                         callback(this,"select_circle"));
     } else {
-        this.hideShape (viewstate, gob);
+        this.hideShape (gob, viewstate);
     }
 };
 
@@ -676,7 +675,7 @@ SVGRenderer.prototype.ellipse = function ( visitor, gob,  viewstate, visibility)
                         callback(this,"move_ellipse"),
                         callback(this,"select_ellipse"));
     } else {
-        this.hideShape (viewstate, gob);
+        this.hideShape (gob, viewstate);
     }
 };
 
@@ -771,7 +770,7 @@ SVGRenderer.prototype.label = function ( visitor, gob, viewstate, visibility) {
                         callback(this,"select_label"));
 
     } else {
-        this.hideShape (viewstate, gob);
+        this.hideShape (gob, viewstate);
     }
 };
 
