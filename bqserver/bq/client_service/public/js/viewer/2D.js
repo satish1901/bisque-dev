@@ -2,7 +2,7 @@
 *
 *   The contents of this file were written by Kevin Lindsey
 *   copyright 2006 Kevin Lindsey
-* 
+*
 *   modified for Bisquik by August Black, Kris Kvilekval
 *
 *****/
@@ -101,7 +101,7 @@ Mouser.prototype.handleIndex=function(handle){var result=-1;for(var i=0;i<this.h
 
 Mouser.prototype.shapeIndex=function(shape){var result=-1;for(var i=0;i<this.shapes.length;i++){if(this.shapes[i]===shape){result=i;break;}}return result;};
 
-Mouser.prototype.selectedShapes=function(){   
+Mouser.prototype.selectedShapes=function(){
     var selected = [];
     for(var i=0;i<this.shapes.length;i++){
         var shape=this.shapes[i];
@@ -111,21 +111,21 @@ Mouser.prototype.selectedShapes=function(){
     }
     return selected;
 }
-Mouser.prototype.selectShapes=function(selected, select){   
+Mouser.prototype.selectShapes=function(selected, select){
     var sv = select || true;
     for(var i=0;i<selected.length;i++){
         var shape=selected[i];
         shape.selected = sv;
         shape.selectHandles(sv);
         shape.showHandles(sv);
-        if (sv) 
+        if (sv)
             shape.registerHandles();
         else
             shape.unregisterHandles();
     }
 }
 
-Mouser.prototype.beginDrag=function(e){   
+Mouser.prototype.beginDrag=function(e){
   var svgRoot=_svgElement;
   this.currentNode=e.target;
   var svgPoint=this.getUserCoordinate(this.currentNode,e);
@@ -144,51 +144,51 @@ Mouser.prototype.mousemove=function(e){
   var updates=new Array();
   var updateId=new Date().getTime();
   this.lastPoint.setFromPoint(newPoint);
-  for(var i=0;i<this.handles.length;i++) { 
+  for(var i=0;i<this.handles.length;i++) {
     var handle=this.handles[i];
     var owner=handle.owner;
     handle.translate(delta);
-    if(owner!=null) { 
+    if(owner!=null) {
       if(owner.lastUpdate!=updateId) {
         owner.lastUpdate=updateId;
         updates.push(owner);
       }
-    } else { 
+    } else {
       updates.push(handle);
     }
   }
   for(var i=0;i<updates.length;i++) {
     updates[i].update();
   }
-  
+
   // dima, stop event propagation if handeled
   if (e.stopPropagation) e.stopPropagation(); // DOM Level 2
-  else e.cancelBubble = true;                 // IE   
-  
+  else e.cancelBubble = true;                 // IE
+
 };
 
 
 Mouser.prototype.getUserCoordinate=function(node,evt) {
     var svgRoot=_svgElement;
     var svgPoint = svgRoot.createSVGPoint();
-    
+
     if (Ext.isChrome) {
       svgPoint.x = evt.x;
-      svgPoint.y = evt.y;    
+      svgPoint.y = evt.y;
     } else
     if (Ext.isSafari) {
       svgPoint.x = evt.pageX;
-      svgPoint.y = evt.pageY; 
-    } else       
+      svgPoint.y = evt.pageY;
+    } else
     if (Ext.isIE) {
       svgPoint.x = evt.pageX;
-      svgPoint.y = evt.pageY; 
+      svgPoint.y = evt.pageY;
     } else {
       svgPoint.x = evt.clientX;
-      svgPoint.y = evt.clientY;             
+      svgPoint.y = evt.clientY;
     }
-      
-    
+
+
 //     if (node.convertClientXY) {
 //         clog ("using convert");
 //         return node.convertClientXY(svgPoint.x, svgPoint.y);
@@ -197,7 +197,7 @@ Mouser.prototype.getUserCoordinate=function(node,evt) {
         var matrix = this.getTransformToRootElement(evt.target);
     } else {
         //clog ("using ScreenCTM");
-        var matrix = node.getScreenCTM();   
+        var matrix = node.getScreenCTM();
     }
     //clog ("got point " + svgPoint.x + "," + svgPoint.y );
     svgPoint = svgPoint.matrixTransform(matrix.inverse());
@@ -238,7 +238,7 @@ IntersectionParams.prototype.init=function(name,params){
   this.params=params;
 };
 
-function Point2D(x,y){ 
+function Point2D(x,y){
   if(arguments.length>0){
     this.x=x;
     this.y=y;
@@ -334,7 +334,7 @@ Point2D.prototype.lerp=function(that,t){return new Point2D(this.x+(that.x-this.x
 Point2D.prototype.distanceFrom=function(that){var dx=this.x-that.x;var dy=this.y-that.y;return Math.sqrt(dx*dx+dy*dy);};
 Point2D.prototype.min=function(that){return new Point2D(Math.min(this.x,that.x),Math.min(this.y,that.y));};
 Point2D.prototype.max=function(that){return new Point2D(Math.max(this.x,that.x),Math.max(this.y,that.y));};
-Point2D.prototype.toString=function(){return this.x+","+this.y;};
+Point2D.prototype.toString=function(){return (isNaN(this.x) || isNaN(this.y)) ? '' : this.x+","+this.y;};
 Point2D.prototype.setXY=function(x,y){this.x=x;this.y=y;};
 Point2D.prototype.setFromPoint=function(that){this.x=that.x;this.y=that.y;};
 Point2D.prototype.swap=function(that){var x=this.x;var y=this.y;this.x=that.x;this.y=that.y;that.x=x;that.y=y;};
@@ -384,7 +384,7 @@ Shape.prototype.init=function(svgNode){
     this.update_callback=null;
     this.select_callback=null;
     this.lastUpdate=null;
-}
+};
 
 Shape.prototype.show=function(state){
   var display=(state)?"inline":"none";
@@ -396,7 +396,7 @@ Shape.prototype.show=function(state){
 
 Shape.prototype.enhance = function(visible){
     this.svgNode.setAttributeNS(null, "stroke-width", visible?"4":"1");
-}
+};
 
 Shape.prototype.refresh=function(){};
 
@@ -466,26 +466,24 @@ Shape.prototype.mousedown=function(e){
 
 Shape.prototype.editable = function (edit) {
     this.edit = edit;
-    if (edit) 
+    if (edit)
         this.addListeners();
     else
         this.remListeners();
-}
-
+};
 
 Shape.prototype.addListeners = function () {
     this.svgNode.addEventListener("mousedown",this,false);
     //this.svgNode.addEventListener("mousemove",this,false);
     this.svgNode.addEventListener("mouseover",this,false);
     this.svgNode.addEventListener("mouseout",this,false);
-}
+};
 Shape.prototype.remListeners = function () {
     this.svgNode.removeEventListener("mousedown",this,false);
     //this.svgNode.removeEventListener("mousemove",this,false);
     this.svgNode.removeEventListener("mouseover",this,false);
     this.svgNode.removeEventListener("mouseout",this,false);
-}
-
+};
 
 Circle.prototype=new Shape();
 
@@ -528,7 +526,7 @@ Circle.prototype.unrealize=function(){
         this.radius.unrealize();
         this.svgNode.parentNode.removeChild(this.svgNode);
   }
-}
+};
 
 Circle.prototype.translate=function(delta){
     this.center.translate(delta);
@@ -607,15 +605,15 @@ Handle.prototype.realize=function() {
     var parent;
     if(this.owner!=null&&this.owner.svgNode!=null) {
       parent=this.owner.svgNode.parentNode;
-    } else { 
+    } else {
             alert('Hanlde.realize svgelement');
       parent=_svgElement;
     }
     if (!isNaN(this.point.x))
         handle.setAttributeNS(null,"x",this.point.x-Handle.SHAPE_SIZE_HALF);
-    if (!isNaN(this.point.y))        
+    if (!isNaN(this.point.y))
         handle.setAttributeNS(null,"y",this.point.y-Handle.SHAPE_SIZE_HALF);
-    
+
     handle.setAttributeNS(null,"width",Handle.SHAPE_SIZE);
     handle.setAttributeNS(null,"height",Handle.SHAPE_SIZE);
     handle.setAttributeNS(null,"stroke","black");
@@ -633,7 +631,12 @@ Handle.prototype.unrealize=function(){
 };
 Handle.prototype.translate=function(delta){if(this.constrain==Handle.CONSTRAIN_X){this.point.x+=delta.x;}else if(this.constrain==Handle.CONSTRAIN_Y){this.point.y+=delta.y;}else{this.point.addEquals(delta);}this.refresh();};
 
-Handle.prototype.refresh=function(){this.svgNode.setAttributeNS(null,"x",this.point.x-2);this.svgNode.setAttributeNS(null,"y",this.point.y-2);};
+Handle.prototype.refresh = function() {
+    if (!isNaN(this.point.x))
+        this.svgNode.setAttributeNS(null, "x", this.point.x - 2);
+    if (!isNaN(this.point.y))
+        this.svgNode.setAttributeNS(null, "y", this.point.y - 2);
+};
 
 Handle.prototype.select=function(state){Handle.superclass.select.call(this,state);if(state){this.svgNode.setAttributeNS(null,"fill","black");this.svgNode.setAttributeNS(null,"stroke","white");}else{this.svgNode.setAttributeNS(null,"fill","white");this.svgNode.setAttributeNS(null,"stroke","black");}};
 
@@ -663,14 +666,14 @@ function Lever(x1,y1,x2,y2,owner){if(arguments.length>0){this.init(x1,y1,x2,y2,o
 Lever.prototype.init=function(x1,y1,x2,y2,owner){Lever.superclass.init.call(this,null);this.point=new Handle(x1,y1,this);this.lever=new LeverHandle(x2,y2,this);this.owner=owner;};
 
 Lever.prototype.realize=function() {
-  if(this.svgNode==null) { 
+  if(this.svgNode==null) {
     var line=document.createElementNS(svgns,"line");
     var parent;
-    if(this.owner!=null&&this.owner.svgNode!=null) { 
+    if(this.owner!=null&&this.owner.svgNode!=null) {
       parent=this.owner.svgNode.parentNode;
-    } else { 
+    } else {
             alert('Lever.realize svgelement');
-      parent=_svgElement; 
+      parent=_svgElement;
     }
     line.setAttributeNS(null,"x1",this.point.point.x);
     line.setAttributeNS(null,"y1",this.point.point.y);
@@ -719,12 +722,12 @@ Path.COMMAND=0;
 Path.NUMBER=1;
 Path.EOD=2;
 Path.PARAMS={A:["rx","ry","x-axis-rotation","large-arc-flag","sweep-flag","x","y"],a:["rx","ry","x-axis-rotation","large-arc-flag","sweep-flag","x","y"],C:["x1","y1","x2","y2","x","y"],c:["x1","y1","x2","y2","x","y"],H:["x"],h:["x"],L:["x","y"],l:["x","y"],M:["x","y"],m:["x","y"],Q:["x1","y1","x","y"],q:["x1","y1","x","y"],S:["x2","y2","x","y"],s:["x2","y2","x","y"],T:["x","y"],t:["x","y"],V:["y"],v:["y"],Z:[],z:[]};
-function Path(svgNode){ 
+function Path(svgNode){
   if(arguments.length>0) {
     this.init(svgNode);
   }
 }
-Path.prototype.init=function(svgNode) { 
+Path.prototype.init=function(svgNode) {
   if(svgNode==null||svgNode.localName!="path")
     throw new Error("Path.init: Invalid localName: "+svgNode.localName);
   Path.superclass.init.call(this,svgNode);
@@ -732,7 +735,7 @@ Path.prototype.init=function(svgNode) {
   this.parseData(svgNode.getAttributeNS(null,"d"));
 };
 Path.prototype.realize=function(){
-  for(var i=0;i<this.segments.length;i++) { 
+  for(var i=0;i<this.segments.length;i++) {
     this.segments[i].realize();
   }
 };
@@ -799,7 +802,7 @@ Path.prototype.parseData=function(d){
         index++;param_length=Path.PARAMS[token.text].length;
         mode=token.text;
       }
-    } if((index+param_length) < tokens.length) { 
+    } if((index+param_length) < tokens.length) {
       for(var i=index;i<index+param_length;i++){
         var number=tokens[i];
         if(number.typeis(Path.NUMBER))
@@ -1043,12 +1046,12 @@ function Polygon(svgNode){
 Polygon.prototype.init=function(svgNode){
   if(svgNode.localName=="polygon"){
     Polygon.superclass.init.call(this,svgNode);
-    
+
     var pointStr = svgNode.getAttributeNS(null,"points"), points=[];
-    
-    if (pointStr) 
+
+    if (pointStr)
         points = pointStr.split(/[\s,]+/);
-    
+
     this.handles=new Array();
     for(var i=0;i<points.length;i+=2){
       var x=parseFloat(points[i]);
@@ -1068,6 +1071,7 @@ Polygon.prototype.realize=function(){
         //this.svgNode.addEventListener("mousedown",this,false);}
     }
 };
+
 Polygon.prototype.unrealize=function(){
     if(this.svgNode!=null){
         for(var i=0;i<this.handles.length;i++){
@@ -1075,22 +1079,127 @@ Polygon.prototype.unrealize=function(){
         }
         this.svgNode.parentNode.removeChild(this.svgNode);
     }
-}
+};
 
+Polygon.prototype.refresh = function() {
+    var points = new Array();
+    for (var i = 0; i < this.handles.length; i++) {
+        points.push(this.handles[i].point.toString());
+    }
+    this.svgNode.setAttributeNS(null, "points", points.join(" "));
+};
 
-Polygon.prototype.refresh=function(){var points=new Array();for(var i=0;i<this.handles.length;i++){points.push(this.handles[i].point.toString());}this.svgNode.setAttributeNS(null,"points",points.join(" "));};
-Polygon.prototype.registerHandles=function(){for(var i=0;i<this.handles.length;i++)mouser.register(this.handles[i]);};
-Polygon.prototype.unregisterHandles=function(){for(var i=0;i<this.handles.length;i++)mouser.unregister(this.handles[i]);};
-Polygon.prototype.selectHandles=function(select){for(var i=0;i<this.handles.length;i++)this.handles[i].select(select);};
-Polygon.prototype.showHandles=function(state){for(var i=0;i<this.handles.length;i++)this.handles[i].show(state);};
-Polygon.prototype.pointInPolygon=function(point){var length=this.handles.length;var counter=0;var x_inter;var p1=this.handles[0].point;for(var i=1;i<=length;i++){var p2=this.handles[i%length].point;if(point.y>Math.min(p1.y,p2.y)){if(point.y<=Math.max(p1.y,p2.y)){if(point.x<=Math.max(p1.x,p2.x)){if(p1.y!=p2.y){x_inter=(point.y-p1.y)*(p2.x-p1.x)/(p2.y-p1.y)+p1.x;if(p1.x==p2.x||point.x<=x_inter){counter++;}}}}}p1=p2;}return(counter%2==1);};
-Polygon.prototype.getIntersectionParams=function(){var points=new Array();for(var i=0;i<this.handles.length;i++){points.push(this.handles[i].point);}return new IntersectionParams("Polygon",[points]);};
-Polygon.prototype.getArea=function(){var area=0;var length=this.handles.length;var neg=0;var pos=0;for(var i=0;i<length;i++){var h1=this.handles[i].point;var h2=this.handles[(i+1)%length].point;area+=(h1.x*h2.y-h2.x*h1.y);}return area/2;};
-Polygon.prototype.getCentroid=function(){var length=this.handles.length;var area6x=6*this.getArea();var x_sum=0;var y_sum=0;for(var i=0;i<length;i++){var p1=this.handles[i].point;var p2=this.handles[(i+1)%length].point;var cross=(p1.x*p2.y-p2.x*p1.y);x_sum+=(p1.x+p2.x)*cross;y_sum+=(p1.y+p2.y)*cross;}return new Point2D(x_sum/ area6x, y_sum /area6x);};
-Polygon.prototype.isClockwise=function(){return this.getArea()<0;};
-Polygon.prototype.isCounterClockwise=function(){return this.getArea()>0;};
-Polygon.prototype.isConcave=function(){var positive=0;var negative=0;var length=this.handles.length;for(var i=0;i<length;i++){var p0=this.handles[i].point;var p1=this.handles[(i+1)%length].point;var p2=this.handles[(i+2)%length].point;var v0=Vector2D.fromPoints(p0,p1);var v1=Vector2D.fromPoints(p1,p2);var cross=v0.cross(v1);if(cross<0){negative++;}else{positive++;}}return(negative!=0&&positive!=0);};
-Polygon.prototype.isConvex=function(){return!this.isConcave();};
+Polygon.prototype.registerHandles = function() {
+    for (var i = 0; i < this.handles.length; i++)
+        mouser.register(this.handles[i]);
+};
+
+Polygon.prototype.unregisterHandles = function() {
+    for (var i = 0; i < this.handles.length; i++)
+        mouser.unregister(this.handles[i]);
+};
+
+Polygon.prototype.selectHandles = function(select) {
+    for (var i = 0; i < this.handles.length; i++)
+        this.handles[i].select(select);
+};
+
+Polygon.prototype.showHandles = function(state) {
+    for (var i = 0; i < this.handles.length; i++)
+        this.handles[i].show(state);
+};
+
+Polygon.prototype.pointInPolygon = function(point) {
+    var length = this.handles.length;
+    var counter = 0;
+    var x_inter;
+    var p1 = this.handles[0].point;
+    for (var i = 1; i <= length; i++) {
+        var p2 = this.handles[i % length].point;
+        if (point.y > Math.min(p1.y, p2.y)) {
+            if (point.y <= Math.max(p1.y, p2.y)) {
+                if (point.x <= Math.max(p1.x, p2.x)) {
+                    if (p1.y != p2.y) {
+                        x_inter = (point.y - p1.y) * (p2.x - p1.x) / (p2.y - p1.y) + p1.x;
+                        if (p1.x == p2.x || point.x <= x_inter) {
+                            counter++;
+                        }
+                    }
+                }
+            }
+        }
+        p1 = p2;
+    }
+    return (counter % 2 == 1);
+};
+
+Polygon.prototype.getIntersectionParams = function() {
+    var points = new Array();
+    for (var i = 0; i < this.handles.length; i++) {
+        points.push(this.handles[i].point);
+    }
+    return new IntersectionParams("Polygon", [points]);
+};
+
+Polygon.prototype.getArea = function() {
+    var area = 0;
+    var length = this.handles.length;
+    var neg = 0;
+    var pos = 0;
+    for (var i = 0; i < length; i++) {
+        var h1 = this.handles[i].point;
+        var h2 = this.handles[(i + 1) % length].point;
+        area += (h1.x * h2.y - h2.x * h1.y);
+    }
+    return area / 2;
+};
+
+Polygon.prototype.getCentroid = function() {
+    var length = this.handles.length;
+    var area6x = 6 * this.getArea();
+    var x_sum = 0;
+    var y_sum = 0;
+    for (var i = 0; i < length; i++) {
+        var p1 = this.handles[i].point;
+        var p2 = this.handles[(i + 1) % length].point;
+        var cross = (p1.x * p2.y - p2.x * p1.y);
+        x_sum += (p1.x + p2.x) * cross;
+        y_sum += (p1.y + p2.y) * cross;
+    }
+    return new Point2D(x_sum / area6x, y_sum / area6x);
+};
+
+Polygon.prototype.isClockwise = function() {
+    return this.getArea() < 0;
+};
+
+Polygon.prototype.isCounterClockwise = function() {
+    return this.getArea() > 0;
+};
+
+Polygon.prototype.isConcave = function() {
+    var positive = 0;
+    var negative = 0;
+    var length = this.handles.length;
+    for (var i = 0; i < length; i++) {
+        var p0 = this.handles[i].point;
+        var p1 = this.handles[(i + 1) % length].point;
+        var p2 = this.handles[(i + 2) % length].point;
+        var v0 = Vector2D.fromPoints(p0, p1);
+        var v1 = Vector2D.fromPoints(p1, p2);
+        var cross = v0.cross(v1);
+        if (cross < 0) {
+            negative++;
+        } else {
+            positive++;
+        }
+    }
+    return (negative != 0 && positive != 0);
+};
+
+Polygon.prototype.isConvex = function() {
+    return !this.isConcave();
+};
 
 Polyline.prototype=new Polygon();
 Polyline.prototype.constructor=Polyline;
@@ -1106,8 +1215,8 @@ Polyline.prototype.init=function(svgNode){
     Polygon.superclass.init.call(this,svgNode);
 
     var pointStr = svgNode.getAttributeNS(null,"points"), points=[];
-    
-    if (pointStr) 
+
+    if (pointStr)
         points = pointStr.split(/[\s,]+/);
 
     this.handles=new Array();
@@ -1145,8 +1254,15 @@ Pnt.prototype.init=function(svgNode){
     }
 };
 
-Pnt.prototype.enhance =function(mode){
-    this.svgNode.setAttributeNS(null, 'fill-opacity', mode?1.0:0.7);
+Pnt.prototype.enhance = function(mode) {
+    if (mode) {
+        this.svgNode.setAttributeNS(null, 'stroke', 'yellow');
+        this.svgNode.setAttributeNS(null, "fill", 'black');
+    } else {
+        //this.svgNode.setAttributeNS(null, 'fill-opacity', mode?1.0:0.7);
+        this.svgNode.setAttributeNS(null, 'stroke', 'black');
+        this.svgNode.setAttributeNS(null, "fill", 'orangered');
+    }
 };
 
 Pnt.prototype.unrealize=function(){

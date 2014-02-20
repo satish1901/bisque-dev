@@ -21,6 +21,8 @@
       editprimitives - only load edit for given primitives, 'editprimitives':'point,polyline'
                        can be one of: 'Point,Rectangle,Polyline,Polygon,Circle'
 
+    external_edit_controls - when set to true will stop the viewer creating any editor buttons
+
     gobjectschanged - callback to call when graphical objects have changed
 
     onworking - callback to call when graphical objects have changed
@@ -324,9 +326,7 @@ function ImgViewer (parentid, image_or_uri, parameters) {
         callback : Ext.bind(this.onPreferences, this),
     });
 
-    //this.target.appendChild (this.menudiv);
     this.target.appendChild (this.imagediv);
-
     this.toolbar = this.parameters.toolbar;
 
     var plugin_list = "default,slicer,tiles,ops,download,movie,external,converter,scalebar,progressbar,infobar,edit,renderer";
@@ -343,7 +343,6 @@ function ImgViewer (parentid, image_or_uri, parameters) {
             "movie"       : ImgMovie,
             "external"    : ImgExternal,
             "converter"   : ImageConverter,
-            "permissions" : ImgPermissions,
             "statistics"  : ImgStatistics,
             "scalebar"    : ImgScaleBar,
             "progressbar" : ProgressBar,
@@ -363,10 +362,7 @@ function ImgViewer (parentid, image_or_uri, parameters) {
            this.plugins_by_name[name] = this.addPlugin (new ctor(this, name));
     }
 
-    if (!BQSession.current_session)
-        BQFactory.request( {uri: '/auth_service/session', cb: callback(this, 'onsession'), errorcb: callback(this, 'onsession'), });
-    else
-        this.onsession(BQSession.current_session);
+    this.init();
 };
 
 ImgViewer.prototype = new ViewerPlugin();
@@ -386,20 +382,9 @@ ImgViewer.prototype.getAttributes = function () {
     return attributes;
 };
 
-ImgViewer.prototype.onsession = function (session) {
-    this.user_uri = session && session.user_uri?session.user_uri:null;
-    if (this.user_uri) {
-        var viewer = this;
-        BQFactory.load (this.user_uri, function (user) {
-            viewer.user = user;
-            user.get_credentials();
-        });
-    }
-    this.init();
-};
-
 ImgViewer.prototype.init = function () {
-    this.renderer = this.plugins_by_name["renderer"];
+    this.renderer = this.plugins_by_name['renderer'];
+    this.editor = this.plugins_by_name['edit'];
     this.createPlugins(this.imagediv);
     if (this.image_or_uri instanceof BQImage)
         this.newImage(this.image_or_uri);
@@ -410,10 +395,8 @@ ImgViewer.prototype.init = function () {
 };
 
 ImgViewer.prototype.cleanup = function() {
-    //this.target.removeChild (this.menudiv);
-    //this.target.removeChild (this.optiondiv);
     this.target.removeChild (this.imagediv);
-    mouser=null;
+    //mouser=null;
 };
 
 ImgViewer.prototype.addPlugin = function  (plugin) {
@@ -431,55 +414,6 @@ ImgViewer.prototype.createPlugins = function (parent) {
     }
 };
 
-/*
-function XButtonGroup(name, menu){
-    this.name = name;
-    this.menu = menu;
-    this.buttons = {};
-
-    //this.br = document.createElementNS (xhtmlns, "br");
-    //this.menu.appendChild(this.br);
-
-    this.head = document.createElementNS (xhtmlns, "span");
-    this.head.className = "group";
-    this.head.innerHTML = name + ': ';
-    this.menu.appendChild (this.head);
-};
-
-XButtonGroup.prototype.selected = function (text, cb){
-    for (var bt in this.buttons) {
-        this.buttons[bt].setAttribute('id', '');
-    }
-    this.buttons[text].setAttribute('id','selected');
-    if (cb) cb();
-};
-
-// DIMA: deprecated addCommand etc...
-
-ImgViewer.prototype.addCommandGroup = function (group, text, cb) {
-    var bg = this.groups[group];
-    if (bg == null) {
-        bg = this.groups[group] = new XButtonGroup(group, this.menudiv);
-    }
-    var newbt = this.addCommand (text, callback (bg, 'selected', text, cb));
-    bg.buttons[text] = newbt;
-    return newbt;
-};
-
-ImgViewer.prototype.remCommandGroup = function (group) {
-    var menu = this.menudiv;
-    var bg = this.groups[group];
-    if (bg != null) {
-        for (var bt in bg.buttons) {
-            this.remCommand(bg.buttons[bt]);
-        }
-        if (bg.br) menu.removeChild(bg.br);
-        if (bg.head) menu.removeChild(bg.head);
-        this.groups[group] = null;
-    }
-};
-*/
-
 ImgViewer.prototype.addMenu = function (m) {
     if (!this.toolbar) return;
     var toolbar = this.toolbar;
@@ -487,47 +421,6 @@ ImgViewer.prototype.addMenu = function (m) {
     toolbar.insert(n, m);
     toolbar.doLayout();
 };
-
-/*
-ImgViewer.prototype.addCommand =function (text, callback, helptext){
-    var menu = this.menudiv;
-    var button = document.createElementNS (xhtmlns, "button");
-    button.innerHTML = text;
-    button.setAttribute('id', text);
-    button.onclick = callback;
-    button.className = "imgview_button";
-//     if (helptext != null) {
-//         button.tooltip = document.createElementNS (xhtmlns, "div");
-//         button.tooptip.innerHTML = helptext;
-//         button.onmouseover = function (e) {
-//             button.tooltip.style.visibility="visible";
-//         }
-//         button.onmouseout = function (e) {
-//             button.tooltip.style.visibility="hidden";
-//         }
-//     }
-    menu.appendChild (button);
-    return button;
-};
-
-ImgViewer.prototype.remCommand =function (button){
-    var menu= this.menudiv;
-    var bt = menu.firstChild ;
-    while (bt) {
-        if (bt == button){
-            menu.removeChild(bt);
-            return;
-        }
-        bt = bt.nextSibling;
-    }
-};
-
-ImgViewer.prototype.active_submenu = function  (menu) {
-    if (this.submenu != null && this.submenu != menu)
-        this.submenu.style.display="none";
-    this.submenu = menu;
-};
-*/
 
 ImgViewer.prototype.view = function  () {
     return this.current_view;
@@ -555,9 +448,6 @@ ImgViewer.prototype.need_update = function () {
 
 ImgViewer.prototype.load = function (uri){
     BQFactory.load (uri, callback(this, 'newImage'));
-    //var bqimage = new BQImage ();
-    //bqimage.load (this.imageuri, callback (this, 'newImage') );
-    //makeRequest( this.imageuri, loadViewer, this,  "get");
 };
 
 
@@ -620,18 +510,6 @@ ImgViewer.prototype.updateImage = function () {
 
 ImgViewer.prototype.findPlugin = function(name) {
     return this.plugins_by_name[name];
-};
-
-ImgViewer.prototype.gobjects_editable = function() {
-    // should be image gobs
-    return this.image.gobjects;
-};
-
-ImgViewer.prototype.gobjects_viewable = function() {
-    // dima: should be image gobs + mex gobs
-    // right now, objects are being saved directly upon changes and insertions
-    // so we hack and add all gobjects, inclusing MEX, into image list
-    return this.image.gobjects;
 };
 
 ImgViewer.prototype.loadGObjects = function(gobs) {
