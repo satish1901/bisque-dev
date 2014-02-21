@@ -66,7 +66,13 @@ ImgEdit.prototype.updateImage = function () {
 
 };
 
-ImgEdit.prototype.createButton = function(surf, basecls, cls, cb, sel, ctrls) {
+ImgEdit.prototype.createButtonsDeselect = function() {
+    var c=undefined;
+    for (var i=0; (c=this.button_controls[i]); i++)
+        c.setSelected(false);
+},
+
+ImgEdit.prototype.createButton = function(surf, basecls, cls, cb, sel, ctrls, tooltip) {
     var btn = document.createElement('span');
 
     // temp fix to work similar to panojs3, will be updated to media queries
@@ -97,12 +103,20 @@ ImgEdit.prototype.createButton = function(surf, basecls, cls, cb, sel, ctrls) {
         return btn;
 
     var el = Ext.get(btn);
-    el.on('click', function(e, btn) {
+    el.on('mousedown', function(e, btn) {
+        e.preventDefault();
+        e.stopPropagation();
         var c=undefined;
         for (var i=0; (c=ctrls[i]); i++)
             c.setSelected(false);
         btn.setSelected(true);
         btn.operation();
+    });
+
+    if (tooltip)
+    var tip = Ext.create('Ext.tip.ToolTip', {
+        target: el,
+        html: tooltip,
     });
 
     return btn;
@@ -194,9 +208,12 @@ ImgEdit.prototype.createEditMenu = function(surf) {
 ImgEdit.prototype.createEditControls = function(surf) {
     if (!this.button_controls) {
         this.button_controls = [];
-        this.button_controls[0] = this.createButton(surf, 'editcontrol', 'btn-navigate', callback(this, this.navigate), true, this.button_controls);
-        this.button_controls[1] = this.createButton(surf, 'editcontrol', 'btn-select', callback(this, this.select), false, this.button_controls );
-        this.button_controls[2] = this.createButton(surf, 'editcontrol', 'btn-delete', callback(this, this.remove), false, this.button_controls );
+        this.button_controls[0] = this.createButton(surf, 'editcontrol', 'btn-navigate',
+            callback(this, this.navigate), true, this.button_controls, 'Pan and zoom the image');
+        this.button_controls[1] = this.createButton(surf, 'editcontrol', 'btn-select',
+            callback(this, this.select), false, this.button_controls, 'Select a graphical annotation on the screen' );
+        this.button_controls[2] = this.createButton(surf, 'editcontrol', 'btn-delete',
+            callback(this, this.remove), false, this.button_controls, 'Delete a graphical annotation by selecting it on the screen' );
     }
 };
 
@@ -211,6 +228,7 @@ ImgEdit.prototype.updateView = function (view) {
 };
 
 ImgEdit.prototype.onCreateGob = function (type) {
+    this.createButtonsDeselect();
     if (type in ImgViewer.gobFunction) {
         this.mode_primitive = null;
         var f = ImgViewer.gobFunction[type];
@@ -413,6 +431,8 @@ ImgEdit.prototype.select = function (e, x, y) {
     this.mode_type = 'select';
     this.current_gob = null;
     this.startEdit();
+    if (this.viewer.parameters.oneditcontrols)
+        this.viewer.parameters.oneditcontrols();
 };
 
 ImgEdit.prototype.remove = function (e, x, y) {
@@ -420,11 +440,15 @@ ImgEdit.prototype.remove = function (e, x, y) {
     this.mode_type = 'delete';
     this.current_gob = null;
     this.startEdit();
+    if (this.viewer.parameters.oneditcontrols)
+        this.viewer.parameters.oneditcontrols();
 };
 
 ImgEdit.prototype.navigate = function (e, x, y) {
     this.setmode (null);
     this.endEdit();
+    if (this.viewer.parameters.oneditcontrols)
+        this.viewer.parameters.oneditcontrols();
 };
 
 ImgEdit.prototype.newPoint = function (parent, e, x, y) {

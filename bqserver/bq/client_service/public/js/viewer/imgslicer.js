@@ -226,12 +226,28 @@ ImgSlicer.prototype.updatePosition = function () {
 };
 
 ImgSlicer.prototype.sliceT = function (val) {
+    if (this.t === val) return;
     this.t = val;
     this.viewer.need_update();
 };
 
 ImgSlicer.prototype.sliceZ = function (val) {
+    if (this.z === val) return;
     this.z = val;
+    this.viewer.need_update();
+};
+
+ImgSlicer.prototype.setPosition = function (z, t) {
+    if (z) {
+        this.z = z;
+        if (this.zslider)
+            this.zslider.setValue(z);
+    }
+    if (t) {
+        this.t = t;
+        if (this.tslider)
+            this.tslider.setValue(t);
+    }
     this.viewer.need_update();
 };
 
@@ -253,6 +269,22 @@ ImgSlicer.prototype.preCacheNeighboringImages = function () {
     }
 };
 
+ImgSlicer.prototype.ensureVisible = function (gob) {
+    if (!gob.vertices || gob.vertices.length<1) return;
+    var z = gob.vertices[0].z;
+    var t = gob.vertices[0].t;
+    /*var v=undefined;
+    if (gob.vertices.length>1 && gob.resource_type in {polyline: undefined, polygon: undefined}) {
+        for (var i=1; (v=gob.vertices[i]); i++) {
+            z += v.z;
+            t += v.t;
+        }
+        z /= gob.vertices.length;
+        t /= gob.vertices.length;
+    }*/
+
+    this.setPosition (z, t);
+};
 
 //-------------------------------------------------------------------------
 // Menu GUI for projections

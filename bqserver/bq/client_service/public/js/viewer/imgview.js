@@ -384,8 +384,9 @@ ImgViewer.prototype.getAttributes = function () {
 
 ImgViewer.prototype.init = function () {
     this.renderer = this.plugins_by_name['renderer'];
-    this.editor = this.plugins_by_name['edit'];
-    this.tiles = this.plugins_by_name['tiles'];
+    this.editor   = this.plugins_by_name['edit'];
+    this.tiles    = this.plugins_by_name['tiles'];
+    this.slicer   = this.plugins_by_name['slicer'];
     this.createPlugins(this.imagediv);
     if (this.image_or_uri instanceof BQImage)
         this.newImage(this.image_or_uri);
@@ -566,8 +567,12 @@ ImgViewer.prototype.hideGObjects = function(gobs) {
 
 ImgViewer.prototype.highlight_gobject = function(gob, selection) {
     // reposition the image to expose the object
-    if (selection)
+    if (selection) {
+        // 3D position
+        this.slicer.ensureVisible(gob);
+        // 2D position
         this.tiles.ensureVisible(gob);
+    }
 
     // highlight the selected object
     this.renderer.highlight(gob, selection);
@@ -721,52 +726,6 @@ ImgViewer.prototype.onMenuClick = function () {
     else
         this.menu_view.show();
 };
-
-/*ImgViewer.prototype.createEditMenu = function() {
-    if (!this.editbutton) {
-        this.editbutton = document.createElement('span');
-
-        // temp fix to work similar to panojs3, will be updated to media queries
-        if (isClientTouch())
-            this.editbutton.className = 'editmenu editmenu-touch';
-        else if (isClientPhone())
-            this.editbutton.className = 'editmenu editmenu-phone';
-        else
-            this.editbutton.className = 'editmenu';
-    }
-
-    if (!this.menu_edit) {
-        this.menu_edit = Ext.create('Ext.tip.ToolTip', {
-            target: this.editbutton,
-            anchor: 'top',
-            anchorToTarget: true,
-            cls: 'bq-viewer-menu',
-            maxWidth: 460,
-            anchorOffset: -10,
-            autoHide: false,
-            shadow: false,
-            closable: true,
-            layout: {
-                type: 'vbox',
-                //align: 'stretch',
-            },
-            defaults: {
-                labelSeparator: '',
-                labelWidth: 200,
-                width: 100,
-            },
-        });
-        var el = Ext.get(this.editbutton);
-        var m = this.menu_edit;
-        el.on('click', function(){
-            if (m.isVisible())
-                m.hide();
-            else
-                m.show();
-        });
-    }
-    return this.menu_edit;
-};*/
 
 ////////////////////////////////////////////////
 // Simple  renderer for testing
