@@ -1627,21 +1627,20 @@ class PixelCounterService(object):
         return 'pixelcount: returns a count of pixels in a thresholded image, ex: pixelcount=128'
 
     def dryrun(self, image_id, data_token, arg):
-        arg = arg.lower()
+        arg = misc.safeint(arg.lower(), 256)-1
         ifile = self.server.getInFileName(data_token, image_id)
         ofile = self.server.getOutFileName(ifile, image_id, '.pixelcount_%s.xml'%arg)
         return data_token.setXmlFile(fname=ofile)
 
     def action(self, image_id, data_token, arg):
 
-        arg = arg.lower()
+        arg = misc.safeint(arg.lower(), 256)-1
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.pixelcount_%s.xml'%arg )
         log.debug('Pixelcount: %s to %s with [%s]'%(ifile, ofile, arg))
 
         if not os.path.exists(ofile):
-            #imgcnv.convert(ifile, ofile, extra=['-pixelcounts', arg])
-            self.server.imageconvert(image_id, ifile, ofile, extra=['-pixelcounts', arg])
+            self.server.imageconvert(image_id, ifile, ofile, extra=['-pixelcounts', str(arg)])
 
         return data_token.setXmlFile(fname=ofile)
 

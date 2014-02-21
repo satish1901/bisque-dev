@@ -223,9 +223,12 @@ SVGRenderer.prototype.hideShape = function (gob, view) {
     }
 };
 
-SVGRenderer.prototype.select = function (gob, selection) {
-    if (gob.shape)
-        gob.shape.enhance(selection);
+SVGRenderer.prototype.highlight = function (gob, selection) {
+    // visitall to enhance on the node and its children
+    visit_all(gob, function(g, args) {
+        if (g.shape)
+            g.shape.enhance(args[0]);
+    }, selection );
 };
 
 //----------------------------------------------------------------------------

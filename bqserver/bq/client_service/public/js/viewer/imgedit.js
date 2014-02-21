@@ -66,95 +66,148 @@ ImgEdit.prototype.updateImage = function () {
 
 };
 
-ImgEdit.prototype.updateView = function (view) {
-    if (!this.viewer.parameters.external_edit_controls && !this.menu) {
-        var v = this.viewer;
-        var surf = v.viewer_controls_surface ? v.viewer_controls_surface : this.parent;
-        if (surf) {
-            this.menu = v.createEditMenu();
-            surf.appendChild(v.editbutton);
+ImgEdit.prototype.createButton = function(surf, basecls, cls, cb, sel, ctrls) {
+    var btn = document.createElement('span');
 
-            this.menu.add({
-                xtype: 'button',
-                itemId: 'btnNavigate',
-                text: ImgViewer.BTN_TITLE_NAVIGATE,
-                scale: 'small',
-                iconCls: 'icon-navigate',
-                handler: this.navigate,
-                scope: this,
-                tooltip: 'Pan and zoom the image',
-            }, {
-                xtype: 'button',
-                itemId: 'btnSelect',
-                text: ImgViewer.BTN_TITLE_SELECT,
-                scale: 'small',
-                iconCls: 'icon-select',
-                handler: this.select,
-                scope: this,
-                tooltip: 'Select a graphical annotation on the screen',
-            }, {
-                xtype: 'button',
-                itemId: 'btnDelete',
-                text: ImgViewer.BTN_TITLE_DELETE,
-                scale: 'small',
-                iconCls: 'icon-delete',
-                handler: this.remove,
-                scope: this,
-                tooltip: 'Delete a graphical annotation by selecting it on the screen',
-            },{
-                xtype: 'displayfield',
-                fieldLabel: 'Annotations:',
-                cls: 'spacer',
-            }, {
-                xtype: 'button',
-                itemId: 'btnPoint',
-                hidden: !('point' in this.editprimitives),
-                text: ImgViewer.BTN_TITLE_POINT,
-                scale: 'small',
-                //iconCls: 'icon-add',
-                handler: function() { this.setmode('point', callback(this,'newPoint', null)); },
-                scope: this,
-            }, {
-                xtype: 'button',
-                itemId: 'btnRectangle',
-                hidden: !('rectangle' in this.editprimitives),
-                text: ImgViewer.BTN_TITLE_RECT,
-                scale: 'small',
-                //iconCls: 'icon-add',
-                handler: function() { this.setmode('rectangle', callback(this,'newRect', null)); },
-                scope: this,
-            }, {
-                xtype: 'button',
-                itemId: 'btnPolyline',
-                hidden: !('polyline' in this.editprimitives),
-                text: ImgViewer.BTN_TITLE_POLYLINE,
-                scale: 'small',
-                //iconCls: 'icon-add',
-                handler: function() { this.setmode('polyline', callback(this,'newPolyline', null)); },
-                scope: this,
-            }, {
-                xtype: 'button',
-                itemId: 'btnPolygon',
-                hidden: !('polygon' in this.editprimitives),
-                text: ImgViewer.BTN_TITLE_POLYGON,
-                scale: 'small',
-                //iconCls: 'icon-add',
-                handler: function() { this.setmode('polygon', callback(this,'newPolygon', null)); },
-                scope: this,
-            }, {
-                xtype: 'button',
-                itemId: 'btnCircle',
-                hidden: !('circle' in this.editprimitives),
-                text: ImgViewer.BTN_TITLE_CIRCLE,
-                scale: 'small',
-                //iconCls: 'icon-add',
-                handler: function() { this.setmode('circle', callback(this,'newCircle', null)); },
-                scope: this,
-            });
+    // temp fix to work similar to panojs3, will be updated to media queries
+    var clsa = [basecls];
+    if (isClientTouch())
+        clsa.push('touch');
+    else if (isClientPhone())
+        clsa.push('phone');
+    clsa.push(cls);
+    cls = clsa.join(' ');
 
-        }
+    btn.className = cls;
+    surf.appendChild(btn);
+
+    btn.selected = false;
+    btn.base_cls = cls;
+    btn.operation = cb;
+    btn.setSelected = function(selected) {
+        this.selected = selected;
+        if (this.selected)
+            this.className = this.base_cls + ' selected';
+        else
+            this.className = this.base_cls;
     };
+    btn.setSelected(sel);
 
+    if (!cb)
+        return btn;
+
+    var el = Ext.get(btn);
+    el.on('click', function(e, btn) {
+        var c=undefined;
+        for (var i=0; (c=ctrls[i]); i++)
+            c.setSelected(false);
+        btn.setSelected(true);
+        btn.operation();
+    });
+
+    return btn;
+};
+
+ImgEdit.prototype.createEditMenu = function(surf) {
+    if (!this.editbutton)
+        this.editbutton = this.createButton(surf, 'editmenu', '');
+
+    if (this.menu) return;
+    this.menu = Ext.create('Ext.tip.ToolTip', {
+        target: this.editbutton,
+        anchor: 'top',
+        anchorToTarget: true,
+        cls: 'bq-viewer-menu',
+        maxWidth: 460,
+        anchorOffset: -10,
+        autoHide: false,
+        shadow: false,
+        closable: true,
+        layout: {
+            type: 'vbox',
+            //align: 'stretch',
+        },
+        defaults: {
+            labelSeparator: '',
+            labelWidth: 200,
+            width: 100,
+        },
+        items: [{
+            xtype: 'button',
+            itemId: 'btnPoint',
+            hidden: !('point' in this.editprimitives),
+            text: ImgViewer.BTN_TITLE_POINT,
+            scale: 'small',
+            //iconCls: 'icon-add',
+            handler: function() { this.setmode('point', callback(this,'newPoint', null)); },
+            scope: this,
+        }, {
+            xtype: 'button',
+            itemId: 'btnRectangle',
+            hidden: !('rectangle' in this.editprimitives),
+            text: ImgViewer.BTN_TITLE_RECT,
+            scale: 'small',
+            //iconCls: 'icon-add',
+            handler: function() { this.setmode('rectangle', callback(this,'newRect', null)); },
+            scope: this,
+        }, {
+            xtype: 'button',
+            itemId: 'btnPolyline',
+            hidden: !('polyline' in this.editprimitives),
+            text: ImgViewer.BTN_TITLE_POLYLINE,
+            scale: 'small',
+            //iconCls: 'icon-add',
+            handler: function() { this.setmode('polyline', callback(this,'newPolyline', null)); },
+            scope: this,
+        }, {
+            xtype: 'button',
+            itemId: 'btnPolygon',
+            hidden: !('polygon' in this.editprimitives),
+            text: ImgViewer.BTN_TITLE_POLYGON,
+            scale: 'small',
+            //iconCls: 'icon-add',
+            handler: function() { this.setmode('polygon', callback(this,'newPolygon', null)); },
+            scope: this,
+        }, {
+            xtype: 'button',
+            itemId: 'btnCircle',
+            hidden: !('circle' in this.editprimitives),
+            text: ImgViewer.BTN_TITLE_CIRCLE,
+            scale: 'small',
+            //iconCls: 'icon-add',
+            handler: function() { this.setmode('circle', callback(this,'newCircle', null)); },
+            scope: this,
+        }],
+    });
+
+    var el = Ext.get(this.editbutton);
+    var m = this.menu;
+    el.on('click', function(){
+        if (m.isVisible())
+            m.hide();
+        else
+            m.show();
+    });
+
+};
+
+ImgEdit.prototype.createEditControls = function(surf) {
+    if (!this.button_controls) {
+        this.button_controls = [];
+        this.button_controls[0] = this.createButton(surf, 'editcontrol', 'btn-navigate', callback(this, this.navigate), true, this.button_controls);
+        this.button_controls[1] = this.createButton(surf, 'editcontrol', 'btn-select', callback(this, this.select), false, this.button_controls );
+        this.button_controls[2] = this.createButton(surf, 'editcontrol', 'btn-delete', callback(this, this.remove), false, this.button_controls );
+    }
+};
+
+ImgEdit.prototype.updateView = function (view) {
+    var v = this.viewer;
+    var surf = v.viewer_controls_surface ? v.viewer_controls_surface : this.parent;
+    if (surf) {
+        if (!v.parameters.hide_create_gobs_menu)
+            this.createEditMenu(surf);
+        this.createEditControls(surf);
+    }
 };
 
 ImgEdit.prototype.onCreateGob = function (type) {
@@ -278,9 +331,13 @@ ImgEdit.prototype.store_new_gobject = function (gob) {
     var bck = new BQGObject ('Temp');
     bck.gobjects = gob.gobjects;
 
+    var uri = this.viewer.image.uri + '/gobject';
+    if (gob.parent && (gob.parent instanceof BQGObject) && gob.parent.uri)
+        uri = gob.parent.uri;
+
     var me = this;
     gob.save_reload(
-        this.viewer.image.uri + '/gobject',
+        uri,
         function(resource) {
             // show the newly returned object from the DB
             me.visit_render.visitall(gob, [me.viewer.current_view]);
@@ -301,6 +358,7 @@ ImgEdit.prototype.remove_gobject = function (gob) {
 
     // remove rendered shape first
     this.renderer.hideShape(gob, this.viewer.current_view);
+    this.visit_render.visitall(gob, [this.viewer.current_view, false]); // make sure to hide all the children if any
 
     // try to find parent gobject and if it have single child, remove parent
     //var p = gob.findParentGobject();
@@ -371,29 +429,31 @@ ImgEdit.prototype.navigate = function (e, x, y) {
 
 ImgEdit.prototype.newPoint = function (parent, e, x, y) {
     var v = this.viewer.current_view;
-    var g = new BQGObject("point");
+    var g = new BQGObject('point');
+    parent = parent || this.global_parent;
 
     if (parent)
         parent.addgobjects(g);
     else
-        this.viewer.image.addgobjects(g); //this.gobjects.push(g);
+        this.viewer.image.addgobjects(g);
 
     var pt = v.inverseTransformPoint(x,y);
     g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, 0));
 
     this.current_gob = null;
     this.visit_render.visitall(g, [v]);
-    this.store_new_gobject (parent ? parent : g);
+    this.store_new_gobject ((parent && !parent.uri) ? parent : g);
 };
 
 ImgEdit.prototype.newRect = function (parent, e, x, y) {
     var v = this.viewer.current_view;
     var g = new BQGObject('rectangle');
+    parent = parent || this.global_parent;
 
     if (parent)
         parent.addgobjects(g);
     else
-        this.viewer.image.addgobjects(g); //this.gobjects.push(g);
+        this.viewer.image.addgobjects(g);
 
     var pt = v.inverseTransformPoint(x,y);
     g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, 0));
@@ -401,12 +461,13 @@ ImgEdit.prototype.newRect = function (parent, e, x, y) {
 
     this.current_gob = null;
     this.visit_render.visitall(g, [v]);
-    this.store_new_gobject (parent ? parent : g);
+    this.store_new_gobject ((parent && !parent.uri) ? parent : g);
 };
 
 ImgEdit.prototype.newPolygon = function (parent, e, x, y) {
     var v = this.viewer.current_view;
     var g = this.current_gob;
+    parent = parent || this.global_parent;
 
     if (g == null) {
         g = new BQGObject('polygon');
@@ -425,13 +486,14 @@ ImgEdit.prototype.newPolygon = function (parent, e, x, y) {
     this.current_gob = (e.detail > 1)?null:g;
     this.visit_render.visitall(g, [v]);
     if (!this.current_gob)
-        this.store_new_gobject (g.edit_parent ? g.edit_parent : g);
+        this.store_new_gobject ((g.edit_parent && !g.edit_parent.uri) ? g.edit_parent : g);
 };
 
 
 ImgEdit.prototype.newPolyline = function (parent, e, x, y) {
     var v = this.viewer.current_view;
     var g = this.current_gob;
+    parent = parent || this.global_parent;
 
     if (g == null) {
         g = new BQGObject('polyline');
@@ -449,13 +511,13 @@ ImgEdit.prototype.newPolyline = function (parent, e, x, y) {
     this.current_gob = (e.detail > 1)?null:g;
     this.visit_render.visitall(g, [v]);
     if (!this.current_gob)
-        this.store_new_gobject (g.edit_parent ? g.edit_parent : g);
+        this.store_new_gobject ((g.edit_parent && !g.edit_parent.uri) ? g.edit_parent : g);
 };
-
 
 ImgEdit.prototype.newCircle = function (parent, e, x, y) {
     var v = this.viewer.current_view;
     var g = new BQGObject('circle');
+    parent = parent || this.global_parent;
 
     if (parent)
         parent.addgobjects(g);
@@ -468,12 +530,13 @@ ImgEdit.prototype.newCircle = function (parent, e, x, y) {
 
     this.current_gob = null;
     this.visit_render.visitall(g, [v]);
-    this.store_new_gobject (parent ? parent : g);
+    this.store_new_gobject ((parent && !parent.uri) ? parent : g);
 };
 
 ImgEdit.prototype.newLabel = function (parent, e, x, y) {
     var v = this.viewer.current_view;
     var g = new BQGObject('label');
+    parent = parent || this.global_parent;
 
     if (parent)
         parent.addgobjects(g);
@@ -488,10 +551,11 @@ ImgEdit.prototype.newLabel = function (parent, e, x, y) {
 
     this.current_gob = null;
     this.visit_render.visitall(g, [v]);
-    this.store_new_gobject (parent ? parent : g);
+    this.store_new_gobject ((parent && !parent.uri) ? parent : g);
 };
 
 ImgEdit.prototype.newComplex = function (type, internal_gob, parent, e, x, y) {
+    parent = parent || this.global_parent;
     var v = this.viewer.current_view;
     // Check if we are constructing a polygon or other multi-point object
     // and if so then skip the creation
