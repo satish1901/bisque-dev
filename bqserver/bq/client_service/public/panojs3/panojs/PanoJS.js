@@ -843,45 +843,71 @@ PanoJS.prototype.resize = function() {
 };
 
 PanoJS.prototype.toggleMaximize = function() {
-  if (!this.maximized) this.maximized = false;
-  this.maximized = !this.maximized;
+    if (!this.maximized) this.maximized = false;
+    this.maximized = !this.maximized;
+    var vd = this.viewer;
+    if (this.maximized) {
+        if (vd.requestFullscreen) {
+            vd.requestFullscreen();
+        } else if (vd.msRequestFullscreen) {
+            vd.msRequestFullscreen();
+        } else if (vd.mozRequestFullScreen) {
+            vd.mozRequestFullScreen();
+        } else if (vd.webkitRequestFullscreen) {
+            vd.webkitRequestFullscreen();
+        } else {
+            this.viewer_style = {
+                'width' : vd.style.width,
+                'height' : vd.style.height,
+                'position' : vd.style.position,
+                'zIndex' : vd.style.zIndex,
+                'left' : vd.style.left,
+                'top' : vd.style.top
+            };
+            this.document_style = {
+                'padding' : document.body.style.padding,
+                'overflow' : document.body.style.overflow
+            };
 
-  var vd = this.viewer;
-  if (this.maximized) {
-      this.viewer_style = { 'width': vd.style.width, 'height': vd.style.height,
-          'position': vd.style.position, 'zIndex': vd.style.zIndex,
-          'left': vd.style.left, 'top': vd.style.top };
-      this.document_style = { 'padding': document.body.style.padding, 'overflow': document.body.style.overflow };
-
-      vd.style.position = 'fixed';
-      //vd.style.position = 'absolute';
-      vd.style.zIndex   = '14999';
-      //vd.style.left     = window.scrollX + 'px';
-      //vd.style.top      = window.scrollY + 'px';
-      vd.style.left     = '0px';
-      vd.style.top      = '0px';
-      vd.style.width    = '100%';
-      vd.style.height   = '100%';
-      document.body.style.overflow = 'hidden';
-      document.body.style.padding = '0';
-      if (isMobileSafari()) {
-        vd.style.left = window.scrollX + 'px';
-        vd.style.top  = window.scrollY + 'px';
-        vd.style.width    = window.innerWidth + 'px';
-        vd.style.height   = window.innerHeight + 'px';
-      }
-  } else {
-      document.body.style.padding = this.document_style.padding;
-      document.body.style.overflow = this.document_style.overflow;
-      vd.style.width    = this.viewer_style.width;
-      vd.style.height   = this.viewer_style.height;
-      vd.style.position = this.viewer_style.position;
-      vd.style.zIndex   = this.viewer_style.zIndex;
-      vd.style.left     = this.viewer_style.left;
-      vd.style.top      = this.viewer_style.top;
-  }
-
-  this.resize();
+            vd.style.position = 'fixed';
+            //vd.style.position = 'absolute';
+            vd.style.zIndex = '14999';
+            //vd.style.left     = window.scrollX + 'px';
+            //vd.style.top      = window.scrollY + 'px';
+            vd.style.left = '0px';
+            vd.style.top = '0px';
+            vd.style.width = '100%';
+            vd.style.height = '100%';
+            document.body.style.overflow = 'hidden';
+            document.body.style.padding = '0';
+            if (isMobileSafari()) {
+                vd.style.left = window.scrollX + 'px';
+                vd.style.top = window.scrollY + 'px';
+                vd.style.width = window.innerWidth + 'px';
+                vd.style.height = window.innerHeight + 'px';
+            }
+        } // if not fullscreen supported
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+        } else if (document.mozCancelFullScreen) {
+            document.mozCancelFullScreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        } else {
+            document.body.style.padding = this.document_style.padding;
+            document.body.style.overflow = this.document_style.overflow;
+            vd.style.width = this.viewer_style.width;
+            vd.style.height = this.viewer_style.height;
+            vd.style.position = this.viewer_style.position;
+            vd.style.zIndex = this.viewer_style.zIndex;
+            vd.style.left = this.viewer_style.left;
+            vd.style.top = this.viewer_style.top;
+        }
+    }
+    this.resize();
 };
 
 /**
