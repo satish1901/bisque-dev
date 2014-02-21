@@ -1253,6 +1253,11 @@ Ext.define('Bisque.GObjectTagger', {
             p.addType(mytype);
     },
 
+    deselectGobCreation: function () {
+        var p = this.queryById('panelGobTypes');
+        if (p) p.deselect();
+    },
+
     onExpand: function(node, eOpts) {
         var me = this;
         function callOnMexLoaded(mex) {
@@ -1496,6 +1501,7 @@ Ext.define('BQ.grid.GobsPanel', {
 
         this.items = [{
             xtype: 'gridpanel',
+            itemId: 'gob_types_panel',
             header: false,
             /*store: {
                 model : 'Gobs',
@@ -1620,6 +1626,10 @@ Ext.define('BQ.grid.GobsPanel', {
         this.fireEvent('select', record.data.Type);
     },
 
+    deselect: function() {
+        var p = this.queryById('gob_types_panel');
+        if (p) p.getSelectionModel().deselectAll();
+    },
 });
 
 //-----------------------------------------------------------------------

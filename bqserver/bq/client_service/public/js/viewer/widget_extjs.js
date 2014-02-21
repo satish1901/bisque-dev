@@ -95,6 +95,7 @@ Ext.define('BQ.viewer.Image', {
         this.parameters.ondone    = callback(this, 'ondone');
         this.parameters.onerror   = callback(this, 'onerror');
         this.parameters.onselect  = callback(this, 'onselect');
+        this.parameters.oneditcontrols = callback(this, this.oneditcontrols);
 
         var id = Ext.getVersion('core').isGreaterThan('4.2.0') ? this.getId()+'-innerCt' : this.getId();
         this.viewer = new ImgViewer(id, this.resource, this.parameters);
@@ -141,6 +142,10 @@ Ext.define('BQ.viewer.Image', {
 
     onselect : function(gob) {
         this.fireEvent( 'select', this, gob );
+    },
+
+    oneditcontrols : function() {
+        this.fireEvent( 'edit_controls_activated', this );
     },
 
 });
