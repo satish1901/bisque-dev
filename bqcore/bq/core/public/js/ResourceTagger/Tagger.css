@@ -13,7 +13,15 @@
 }
 
 .icon-tag {
-    background-image: url('../ResourceTagger/Images/tag.png') !important;
+    background-image: url('../ResourceTagger/Images/text.png') !important;
+    background-size: 15px 15px;
+    background-repeat: no-repeat;
+}
+
+.icon-gobject {
+    background-image: url('../ResourceTagger/Images/pencil.png') !important;
+    background-size: 15px 15px;
+    background-repeat: no-repeat;
 }
 
 .icon-tab-add {
@@ -28,7 +36,9 @@
 }
 
 .icon-folder {
-    background-image: url('../ResourceTagger/Images/folder.gif') !important;
+    background-image: url('../ResourceTagger/Images/folder.png') !important;
+    background-size: 15px 15px;
+    background-repeat: no-repeat;
 }
 
 .icon-file {

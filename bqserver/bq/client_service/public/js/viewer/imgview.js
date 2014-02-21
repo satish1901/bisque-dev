@@ -385,6 +385,7 @@ ImgViewer.prototype.getAttributes = function () {
 ImgViewer.prototype.init = function () {
     this.renderer = this.plugins_by_name['renderer'];
     this.editor = this.plugins_by_name['edit'];
+    this.tiles = this.plugins_by_name['tiles'];
     this.createPlugins(this.imagediv);
     if (this.image_or_uri instanceof BQImage)
         this.newImage(this.image_or_uri);
@@ -563,12 +564,31 @@ ImgViewer.prototype.hideGObjects = function(gobs) {
     this.renderer.rerender(gobs, [this.current_view, false]);
 };
 
-ImgViewer.prototype.select_gobject = function(gob, selection) {
-    this.renderer.select(gob, selection);
+ImgViewer.prototype.highlight_gobject = function(gob, selection) {
+    // reposition the image to expose the object
+    if (selection)
+        this.tiles.ensureVisible(gob);
+
+    // highlight the selected object
+    this.renderer.highlight(gob, selection);
+};
+
+ImgViewer.prototype.delete_gobjects = function(gobs) {
+    var g=undefined;
+    for (var i=0; (g=gobs[i]); i++)
+        this.editor.remove_gobject(g);
+};
+
+ImgViewer.prototype.set_parent_gobject = function(gob) {
+    this.editor.global_parent = gob;
+    // dima: if gob is a leaf node, move over to root (or its parent???)
+    if (gob && (gob.resource_type in BQGObject.primitives || gob.type in BQGObject.primitives)) {
+        this.editor.global_parent = undefined;
+    }
 };
 
 ImgViewer.prototype.start_wait = function (o) {
-    var p = this.plugins_by_name["progressbar"]; // dima
+    var p = this.plugins_by_name["progressbar"];
     if (!p) {
       document.body.style.cursor= "wait";
     } else {
@@ -577,7 +597,7 @@ ImgViewer.prototype.start_wait = function (o) {
 };
 
 ImgViewer.prototype.end_wait = function (o) {
-    var p = this.plugins_by_name["progressbar"]; // dima
+    var p = this.plugins_by_name["progressbar"];
     if (!p) {
       document.body.style.cursor= "default";
     } else {
@@ -702,7 +722,7 @@ ImgViewer.prototype.onMenuClick = function () {
         this.menu_view.show();
 };
 
-ImgViewer.prototype.createEditMenu = function() {
+/*ImgViewer.prototype.createEditMenu = function() {
     if (!this.editbutton) {
         this.editbutton = document.createElement('span');
 
@@ -746,7 +766,7 @@ ImgViewer.prototype.createEditMenu = function() {
         });
     }
     return this.menu_edit;
-};
+};*/
 
 ////////////////////////////////////////////////
 // Simple  renderer for testing

@@ -253,6 +253,7 @@ Ext.define('Bisque.ResourceTagger', {
             animate: this.animate,
             header: false,
             deferRowRender: true,
+            draggable: false,
             enableColumnMove: false,
             allowDeselect: true,
 
@@ -420,11 +421,19 @@ Ext.define('Bisque.ResourceTagger', {
                 name: 'iconCls',
                 type: 'string',
                 convert: Ext.bind(function (value, record) {
-                    if (record.raw && !record.raw[this.rootProperty])
+                    var o = record.raw;
+                    if (!o)
                         return 'icon-folder';
-                    if (record.raw)
-                        if (record.raw[this.rootProperty].length != 0)
+
+                    if (o instanceof BQGObject) {
+                        if (o.resource_type in BQGObject.primitives || o.type in BQGObject.primitives)
+                            return 'icon-gobject';
+                        else
                             return 'icon-folder';
+                    } else if (o instanceof BQObject) {
+                        if (o.tags.length > 0)
+                            return 'icon-folder';
+                    }
                     return 'icon-tag';
                 }, this)
 
@@ -877,15 +886,16 @@ Ext.define('Bisque.ResourceTagger', {
     addNode: function (parent, children) {
         if (!(children instanceof Array))
             children = [children];
-
+        var newnode = undefined;
         for (var i = 0; i < children.length; i++) {
             var node = Ext.ModelManager.create(children[i], this.store.model);
             //Ext.data.NodeInterface.decorate(node); // dima: apparently should not be applied top a child but to a model
             node.raw = children[i];
-            parent.appendChild(node);
+            newnode = parent.appendChild(node);
             parent.data.iconCls = 'icon-folder';
         }
         //this.tree.getView().refresh(); // dima: tree is reloaded automatically
+        return newnode;
     },
 
     testAuth: function (user, loaded, permission) {
@@ -983,7 +993,7 @@ Ext.define('Bisque.GObjectTagger', {
         },*/ {
             xtype: 'gobspanel',
             itemId: 'panelGobTypes',
-            title: 'Add annotations',
+            title: 'Graphical annotations',
             collapsible: true,
             border: 0,
             dock: 'top',
@@ -998,6 +1008,52 @@ Ext.define('Bisque.GObjectTagger', {
             html: '<h3>Tree of annotations</h3>',
             border: 0,
             dock: 'top',
+        },{
+            xtype: 'toolbar',
+            cls: 'bq-gob-toolbar',
+            border: 0,
+            dock: 'top',
+            items: [{
+                xtype: 'splitbutton',
+                arrowAlign: 'right',
+                text: 'Visibility',
+                scale: 'medium',
+                iconCls: 'icon-check',
+                handler: this.toggleCheckTree,
+                checked: true,
+                scope: this,
+                menu: {
+                    items: [{
+                        check: true,
+                        text: 'Check all',
+                        handler: this.toggleCheck,
+                        scope: this,
+                    }, {
+                        check: false,
+                        text: 'Uncheck all',
+                        handler: this.toggleCheck,
+                        scope: this,
+                    }]
+                }
+            }, {
+                // xtype: 'button', // default for Toolbars
+                itemId: 'btnCreateFolder',
+                text: 'Add folder',
+                scale: 'medium',
+                iconCls: 'icon-add',
+                handler: this.createGroupGob,
+                scope: this,
+                tooltip: 'Add a new group graphical object into the tree',
+            },{
+                // xtype: 'button', // default for Toolbars
+                itemId: 'btnDeleteSelected',
+                text: 'Delete selected',
+                scale: 'medium',
+                iconCls: 'icon-delete',
+                handler: this.deleteSelectedGobs,
+                scope: this,
+                tooltip: 'Delete selected annotations in the tree',
+            }],
         }]);
     },
 
@@ -1030,63 +1086,11 @@ Ext.define('Bisque.GObjectTagger', {
         var toolbar = this.callParent(arguments);
 
         var buttons = [{
-            //xtype: 'buttongroup',
-            //items: [{
-                xtype: 'splitbutton',
-                arrowAlign: 'right',
-                text: 'Visibility',
-                scale: 'medium',
-                iconCls: 'icon-check',
-                handler: this.toggleCheckTree,
-                checked: true,
-                scope: this,
-                menu: {
-                    items: [{
-                        check: true,
-                        text: 'Check all',
-                        handler: this.toggleCheck,
-                        scope: this,
-                    }, {
-                        check: false,
-                        text: 'Uncheck all',
-                        handler: this.toggleCheck,
-                        scope: this,
-                    }]
-                }
-            //}]
-        }, {
-            itemId: 'btnNavigate',
-            text: 'Navigate',
-            eventName: 'btnNavigate',
-            scale: 'medium',
-            iconCls: 'icon-navigate',
-            handler: this.fireButtonEvent,
-            scope: this,
-            tooltip: 'Pan and zoom the image',
-        }, {
-            itemId: 'btnSelect',
-            text: 'Select',
-            eventName: 'btnSelect',
-            scale: 'medium',
-            iconCls: 'icon-select',
-            handler: this.fireButtonEvent,
-            scope: this,
-            tooltip: 'Select a graphical annotation on the screen',
-        }, {
-            itemId: 'btnDelete',
-            text: 'Delete',
-            eventName: 'btnDelete',
-            scale: 'medium',
-            iconCls: 'icon-delete',
-            handler: this.fireButtonEvent,
-            scope: this,
-            tooltip: 'Delete a graphical annotation by selecting it on the screen',
-        }, {
             itemId: 'btnCreate',
-            text: 'Create',
+            text: 'Create custom',
             scale: 'medium',
             iconCls: 'icon-add',
-            handler: this.createGobject,
+            handler: this.createComplexGobject,
             scope: this,
             tooltip: 'Create a new custom graphical annotation wrapping any primitive annotation',
         }];
@@ -1104,7 +1108,7 @@ Ext.define('Bisque.GObjectTagger', {
             button.setIconCls('icon-uncheck');
 
         for (var i = 0; i < rootNode.childNodes.length; i++) {
-            eventName = (!rootNode.childNodes[i].get('checked')) ? 'Select' : 'Deselect';
+            eventName = (!rootNode.childNodes[i].get('checked')) ? 'checked' : 'unchecked';
             this.fireEvent(eventName, this, rootNode.childNodes[i]);
         }
 
@@ -1113,7 +1117,7 @@ Ext.define('Bisque.GObjectTagger', {
 
     toggleCheck: function (button) {
         button.checked = button.check;
-        var rootNode = this.tree.getRootNode(), eventName = (button.checked) ? 'Select' : 'Deselect';
+        var rootNode = this.tree.getRootNode(), eventName = (button.checked) ? 'checked' : 'unchecked';
 
         for (var i = 0; i < rootNode.childNodes.length; i++)
             this.fireEvent(eventName, this, rootNode.childNodes[i]);
@@ -1133,12 +1137,16 @@ Ext.define('Bisque.GObjectTagger', {
         return gobjects;
     },
 
-    deleteGObject: function (gob) {
-        var node = this.tree.getRootNode().findChildBy(
+    findNodeByGob: function (gob) {
+        return this.tree.getRootNode().findChildBy(
             function(n) { if (n.raw === gob) return true; },
             this,
             true
         );
+    },
+
+    deleteGObject: function (gob) {
+        var node = this.findNodeByGob(gob);
         if (node)
             node.remove();
     },
@@ -1165,11 +1173,15 @@ Ext.define('Bisque.GObjectTagger', {
         //this.fireEvent('onappend', this, data);
     },
 
-    appendGObjects: function (data) {
-        if (data && data.length > 0) {
-            this.addNode(this.tree.getRootNode(), data);
-            //this.fireEvent('onappend', this, data);
-        }
+    appendGObject: function (gob) {
+        parent = gob.parent;
+        var parent_node = this.findNodeByGob(parent);
+        if (!parent_node)
+            parent_node = this.tree.getRootNode();
+
+        var node = Ext.ModelManager.create(gob, this.store.model);
+        node.raw = gob;
+        return parent_node.appendChild(node);
     },
 
     exportToXml: function () {
@@ -1230,7 +1242,7 @@ Ext.define('Bisque.GObjectTagger', {
         this.fireEvent('createGob', type, this);
     },
 
-    createGobject: function () {
+    createComplexGobject: function () {
         Ext.MessageBox.prompt('Create graphical annotation', 'Please enter a new graphical type:', this.onNewType, this);
     },
 
@@ -1286,6 +1298,38 @@ Ext.define('Bisque.GObjectTagger', {
         }
         if (node.raw.gobjects.length>0)
             this.fireEvent('onappend', this, node.raw.gobjects);
+    },
+
+    createGroupGob: function() {
+        Ext.MessageBox.prompt('Create a group of graphical annotations', 'Please enter a group name:', this.onNewGroupGob, this);
+    },
+
+    onNewGroupGob: function (btn, name) {
+        if (btn !== 'ok') return;
+        var sel = this.tree.getSelectionModel().getSelection();
+        var parent = (sel.length<1) ? this.tree.getRootNode() : sel[0];
+        var g_parent = (sel.length<1) ? undefined : parent.raw;
+
+        var g = new BQGObject (name);
+        g.name = name;
+        if (g_parent)
+            g_parent.addgobjects(g);
+
+        var node = this.addNode(parent, [g]);
+        this.tree.expandNode( parent );
+        this.tree.getSelectionModel().select(node, false, true);
+        this.fireEvent('create_gobject', g);
+    },
+
+    deleteSelectedGobs: function() {
+        var sel = this.tree.getSelectionModel().getSelection();
+        if (sel.length<1) return;
+        var gobs = [];
+        var r=undefined;
+        for (var i=0; (r=sel[i]); i++) {
+            gobs.push(r.raw);
+        }
+        this.fireEvent('delete_gobjects', gobs);
     },
 
 });
@@ -1577,4 +1621,10 @@ Ext.define('BQ.grid.GobsPanel', {
     },
 
 });
+
+//-----------------------------------------------------------------------
+// Form MessageBox
+//-----------------------------------------------------------------------
+
+
 

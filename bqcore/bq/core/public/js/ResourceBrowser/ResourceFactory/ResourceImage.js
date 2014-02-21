@@ -526,10 +526,10 @@ Ext.define('Bisque.Resource.Image.Page', {
             resource : this.resource,
             toolbar : this.toolbar,
             parameters : {
+                hide_create_gobs_menu: true,
                 blockforsaves: false,
-                external_edit_controls: true,
                 gobjectCreated : Ext.bind(function(gob) {
-                    this.gobjectTagger.appendGObjects([gob]);
+                    this.gobjectTagger.appendGObject(gob);
                 }, this),
 
                 gobjectDeleted : Ext.bind(function(gi) {
@@ -537,24 +537,25 @@ Ext.define('Bisque.Resource.Image.Page', {
                 }, this),
             },
             listeners : {
-                loaded: function(vc) {
+                /*loaded: function(vc) {
                     var viewer = vc.viewer;
                     var editor = viewer.editor;
                     this.gobjectTagger.on('btnNavigate', editor.navigate, editor);
                     this.gobjectTagger.on('btnSelect', editor.select, editor);
                     this.gobjectTagger.on('btnDelete', editor.remove, editor);
                     this.gobjectTagger.on('createGob', editor.onCreateGob, editor);
-                },
+                },*/
                 changed : function(me, gobjects) {
                     this.gobjectTagger.tree.getView().refresh();
                 },
                 select : function(viewer, gob) {
-                    var node = this.gobjectTagger.tree.getRootNode().findChildBy(
-                        function(n) { if (n.raw === gob) return true; },
-                        this,
-                        true
-                    );
-                    //this.gobjectTagger.tree.expandNode( node, true );
+                    var node = this.gobjectTagger.findNodeByGob(gob);
+                    // dima: here expand to expose the selected node
+                    var parent = node;
+                    for (var i=0; i<node.getDepth()-1; i++)
+                        parent = parent.parentNode;
+                    this.gobjectTagger.tree.expandNode( parent, true );
+
                     this.gobjectTagger.tree.getSelectionModel().select(node, false, true);
                 },
                 working : this.onworking,
@@ -578,13 +579,15 @@ Ext.define('Bisque.Resource.Image.Page', {
                 select : function(me, record, index, eOpts) {
                     if (!(record.raw instanceof BQObject) && !record.raw.loaded) return;
                     var gobject = (record.raw instanceof BQGObject) ? record.raw : record.raw.gobjects[0];
-                    this.viewerContainer.viewer.select_gobject(gobject, true);
+                    this.viewerContainer.viewer.highlight_gobject(gobject, true);
+                    this.viewerContainer.viewer.set_parent_gobject(gobject);
                 },
 
                 deselect : function(me, record, index, eOpts) {
                     if (!(record.raw instanceof BQObject) && !record.raw.loaded) return;
                     var gobject = (record.raw instanceof BQGObject) ? record.raw : record.raw.gobjects[0];
-                    this.viewerContainer.viewer.select_gobject(gobject, false);
+                    this.viewerContainer.viewer.highlight_gobject(gobject, false);
+                    this.viewerContainer.viewer.set_parent_gobject(undefined);
                 },
 
                 checked : function(me, record, index) {
@@ -597,6 +600,21 @@ Ext.define('Bisque.Resource.Image.Page', {
                     if (!(record.raw instanceof BQObject) && !record.raw.loaded) return;
                     var gobject = (record.raw instanceof BQGObject) ? record.raw : record.raw.gobjects;
                     this.viewerContainer.viewer.hideGObjects(gobject);
+                },
+
+                delete_gobjects : function(gobs) {
+                    this.viewerContainer.viewer.delete_gobjects(gobs);
+                },
+
+                create_gobject : function(gob) {
+                    var uri = '';
+                    if (!gob.parent) {
+                        this.viewerContainer.viewer.image.addgobjects(gob);
+                        uri = gob.parent.uri + '/gobject';
+                    } else {
+                        uri = gob.parent.uri;
+                    }
+                    gob.save_reload( uri, this.ondone, this.onerror );
                 },
                 scope: this,
             }
@@ -692,6 +710,7 @@ Ext.define('Bisque.Resource.Image.Page', {
 
     onerror : function(error) {
         if (this.gobjectTagger) this.gobjectTagger.setLoading(false);
+        BQ.ui.error(error.message);
     },
 
 });
