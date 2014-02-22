@@ -720,7 +720,9 @@ ImgViewer.prototype.createViewMenu = function() {
     return this.menu_view;
 };
 
-ImgViewer.prototype.onMenuClick = function () {
+ImgViewer.prototype.onMenuClick = function (e, btn) {
+    e.preventDefault();
+    e.stopPropagation();
     if (this.menu_view.isVisible())
         this.menu_view.hide();
     else

@@ -1,6 +1,6 @@
 Ext.define('Bisque.PreferenceTagger', {
     extend : 'Bisque.ResourceTagger',
-
+    full_load_on_creation: true,
     //autoSave : true,
 
     constructor : function(config) {
@@ -30,7 +30,7 @@ Ext.define('Bisque.PreferenceTagger', {
     saveTags : function(tag, silent, child) {
         if (silent === undefined)
             silent = this.silent !== undefined ? this.silent : false;
-        
+
         if (tag)
             if (this.store.applyModifications()) {
                 if (this.prefType == 'user') {
@@ -45,7 +45,7 @@ Ext.define('Bisque.PreferenceTagger', {
                     this.resource.save_(
                         undefined,
                         function() { me.ondone('Changes were saved successfully!', silent); },
-                        callback(this, 'onerror')                         
+                        callback(this, 'onerror')
                     );
                 }
             } else
@@ -54,7 +54,7 @@ Ext.define('Bisque.PreferenceTagger', {
 
     savePrefs : function(changedTag, parents, silent) {
         if (silent === undefined)
-            silent = this.silent !== undefined ? this.silent : false;        
+            silent = this.silent !== undefined ? this.silent : false;
         var root = BQ.Preferences.user.object;
 
         // Recursively find if the saved tag exist in user preferences or not

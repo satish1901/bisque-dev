@@ -37,7 +37,7 @@ Ext.define('BQ.Preferences', {
                 this.system.tag = tag;
                 this.system.dictionary = tag.toNestedDict(true);
             } else {
-                console.log('SYSTEM preferences tag not found!\n');
+                BQ.ui.error('System level preferences not found!');
                 this.system.exists = false;
             }
         }
@@ -57,20 +57,21 @@ Ext.define('BQ.Preferences', {
                 cb : Ext.bind(this.loadUser, this, ['LOADED'], true)
             });
         } else if (status == 'LOADED') {
-            if (resource != null) {
+            if (resource) {
                 this.user.object = resource;
                 var tag = resource.find_tags('Preferences', false);
 
-                if (tag != null) {
+                if (tag) {
                     this.user.tag = tag;
                     this.user.dictionary = tag.toNestedDict(true);
                 } else {
-                    console.log('USER preferences tag not found!\n');
+                    //BQ.ui.warning('User level preferences not found!');
+                    console.log('User level preferences not found!');
                     this.user.exists = true;
                     this.user.tag = resource;
                 }
             } else {
-                console.log('USER - no user found!\n');
+                BQ.ui.error('No User found!');
                 this.user.exists = false;
             }
         }

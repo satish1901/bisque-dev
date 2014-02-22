@@ -1,5 +1,6 @@
 Ext.define('Bisque.TemplateTagger', {
     extend : 'Bisque.ResourceTagger',
+    full_load_on_creation: true,
 
     constructor : function(config) {
         config = config || {};
@@ -99,14 +100,14 @@ Ext.define('Bisque.TemplateTagger', {
                 listeners: {
                     'change': {
                         fn: function (field, newValue, oldValue, eOpts) {
-                            if (this.rowEditor) 
-                                this.rowEditor.editor.onFieldChange();                           
+                            if (this.rowEditor)
+                                this.rowEditor.editor.onFieldChange();
                         },
                         buffer: 250,
                     },
 
                     scope: this,
-                },                
+                },
             }
         }, {
             text : 'Type',
@@ -124,4 +125,4 @@ Ext.define('Bisque.TemplateTagger', {
             },
         }];
     },
-}); 
+});
