@@ -2,8 +2,8 @@
   Image converter UI - builds Bisque Image Service requests
   Author: Dima Fedorov <dima@dimin.net>
   Copyright 2012, Center for Bio-Image Informatics, UCSB
-  
-   
+
+
 *******************************************************************************/
 
 //----------------------------------------------------------------------------------
@@ -12,7 +12,7 @@
 
 Ext.define('BQ.panel.ToolCheck', {
     extend: 'Ext.panel.Tool',
-    alias: 'widget.toolcheck',    
+    alias: 'widget.toolcheck',
 
     cls: 'checkbox',
     //checked: false,
@@ -20,8 +20,8 @@ Ext.define('BQ.panel.ToolCheck', {
     tooltip : 'Enable/disable service',
     stopEvent: true,
 
-    initComponent : function() { 
-        this.checked = this.checked || false; 
+    initComponent : function() {
+        this.checked = this.checked || false;
         this.type = this.checked ? 'pin' : 'unpin';
         this.callParent();
     },
@@ -32,13 +32,13 @@ Ext.define('BQ.panel.ToolCheck', {
             this.setType('pin');
         else
             this.setType('unpin');
-        this.callParent(arguments);  
+        this.callParent(arguments);
     },
 
     isChecked: function() {
         return this.checked;
     },
-        
+
 });
 
 
@@ -50,16 +50,16 @@ Ext.define('BQ.is.Service', {
     extend: 'Ext.panel.Panel',
     cls: 'service',
     defaults: { border: 0,  },
-            
+
     constructor: function(config) {
         this.addEvents({
             'changed' : true,
         });
         this.callParent(arguments);
         return this;
-    },   
+    },
 
-    initComponent : function() { 
+    initComponent : function() {
         this.enabled = this.enabled || false;
         this.tools = [{
             xtype   : 'toolcheck',
@@ -67,7 +67,7 @@ Ext.define('BQ.is.Service', {
             checked : this.enabled,
             scope   : this,
             handler : this.onCheckbox,
-        }];       
+        }];
         this.items = [Ext.apply({
             xtype : 'container',
             itemId: 'surface',
@@ -77,7 +77,7 @@ Ext.define('BQ.is.Service', {
         }, this.surface_config || {})];
         this.callParent();
     },
-    
+
     createCombo: function (items, config) {
         var options = Ext.create('Ext.data.Store', {
             fields: ['value', 'text'],
@@ -95,34 +95,34 @@ Ext.define('BQ.is.Service', {
             listeners: {
                 scope: this,
                 'select': this.emitChange,
-            },               
-        }; 
-        return Ext.apply(combo, config);   
+            },
+        };
+        return Ext.apply(combo, config);
     },
-    
+
     onCheckbox: function(event, el, owner, tool) {
         this.queryById('surface').setDisabled(!tool.isChecked());
         this.fireEvent('changed');
     },
-    
+
     emitChange: function() {
         this.fireEvent('changed');
-    },    
+    },
 
     isEnabeled: function() {
         return this.queryById('enabeled-checkbox').isChecked();
-    }, 
-    
+    },
+
     // override in subclass, should return a string with URL attribute for this service
     getOperation: function() {
         return undefined;
     },
-  
+
     // override in subclass, should return an updated dimensions object
     updateDims: function(dims) {
         return dims;
     },
-  
+
 });
 
 //----------------------------------------------------------------------------------
@@ -133,17 +133,17 @@ Ext.define('BQ.is.Service.Slice', {
     extend: 'BQ.is.Service',
     title: 'Slice',
     alias: 'widget.bqis-service-slice',
-    
-    initComponent : function() {  
+
+    initComponent : function() {
         this.surface_config = {
             layout: {
                 type: 'table',
                 columns: 2,
-            },            
+            },
             items: [{
-                    xtype:'tbtext', 
+                    xtype:'tbtext',
                     colspan: 2,
-                    text: '<p>Extracts specific planes from the input 4D image<p>',            
+                    text: '<p>Extracts specific planes from the input 4D image<p>',
                 }, {
                     xtype: 'numberfield',
                     itemId: 'sel_z1',
@@ -155,7 +155,7 @@ Ext.define('BQ.is.Service.Slice', {
                     step: 1,
                     listeners: {
                         scope: this,
-                        change: this.validate,                
+                        change: this.validate,
                     },
                 }, {
                     xtype: 'numberfield',
@@ -168,7 +168,7 @@ Ext.define('BQ.is.Service.Slice', {
                     step: 1,
                     listeners: {
                         scope: this,
-                        change: this.validate,                
+                        change: this.validate,
                     },
                 }, {
                     xtype: 'numberfield',
@@ -181,7 +181,7 @@ Ext.define('BQ.is.Service.Slice', {
                     step: 1,
                     listeners: {
                         scope: this,
-                        change: this.validate,                
+                        change: this.validate,
                     },
                 }, {
                     xtype: 'numberfield',
@@ -194,14 +194,14 @@ Ext.define('BQ.is.Service.Slice', {
                     step: 1,
                     listeners: {
                         scope: this,
-                        change: this.validate,                
+                        change: this.validate,
                     },
                 },
                 this.createCombo ([
                         {'value':'', 'text':'None'},
                         {'value':'projectmax', 'text':'Maximum intensity projection'},
                         {'value':'projectmin', 'text':'Minimum intensity projection'},
-                    ], {            
+                    ], {
                         itemId: 'combo-projection',
                         fieldLabel: 'Intensity projection',
                         colspan: 2,
@@ -213,10 +213,10 @@ Ext.define('BQ.is.Service.Slice', {
                             'select': this.validate,
                         }
                     }),
-            ],            
+            ],
         };
         this.callParent();
-    },      
+    },
 
     validate: function(e) {
         var z1 = this.queryById('sel_z1').getValue();
@@ -224,14 +224,14 @@ Ext.define('BQ.is.Service.Slice', {
         var t1 = this.queryById('sel_t1').getValue();
         var t2 = this.queryById('sel_t2').getValue();
         var prj = this.queryById('combo-projection').getValue();
-                
+
         if (z2===0 && t2===0 && prj!=='') {
             if (e) BQ.ui.tip(e.getId(), 'Output image is 2D and projection is impossible', {anchor:'left',});
-            this.queryById('combo-projection').setValue(''); 
+            this.queryById('combo-projection').setValue('');
         }
-                     
+
         return true;
-    },  
+    },
 
     updateDims: function(dims) {
         if (!this.validate) return dims;
@@ -239,8 +239,8 @@ Ext.define('BQ.is.Service.Slice', {
         var z2 = this.queryById('sel_z2').getValue();
         var t1 = this.queryById('sel_t1').getValue();
         var t2 = this.queryById('sel_t2').getValue();
-        var prj = this.queryById('combo-projection').getValue();   
-        
+        var prj = this.queryById('combo-projection').getValue();
+
         dims.z = 1;
         dims.t = 1;
         if (z2>0)
@@ -253,7 +253,7 @@ Ext.define('BQ.is.Service.Slice', {
         }
         return dims;
     },
-    
+
     getOperation: function() {
         if (!this.validate) return undefined;
         var z1 = this.queryById('sel_z1').getValue();
@@ -261,11 +261,11 @@ Ext.define('BQ.is.Service.Slice', {
         var t1 = this.queryById('sel_t1').getValue();
         var t2 = this.queryById('sel_t2').getValue();
         var prj = this.queryById('combo-projection').getValue();
-        
+
         var command = 'slice=,,'+z1;
         if (z2>0) command += '-'+z2;
-        command += ','+t1;        
-        if (t2>0) command += '-'+t2;        
+        command += ','+t1;
+        if (t2>0) command += '-'+t2;
         command += prj ? '&'+prj:'';
         return command;
     },
@@ -279,48 +279,48 @@ Ext.define('BQ.is.Service.Depth', {
     extend: 'BQ.is.Service',
     title: 'Depth',
     alias: 'widget.bqis-service-depth',
-          
-    initComponent : function() { 
+
+    initComponent : function() {
         var format = 'u';
         if (this.phys.pixel_format && this.phys.pixel_format in this.phys.pixel_formats)
             format = this.phys.pixel_formats[this.phys.pixel_format];
-        var default_format = this.phys.pixel_depth +','+format;         
+        var default_format = this.phys.pixel_depth +','+format;
         this.surface_config = {
             items: [{
-                    xtype:'tbtext', 
-                    text: '<p>Converts pixel depth of the image<p>',            
+                    xtype:'tbtext',
+                    text: '<p>Converts pixel depth of the image<p>',
                 },
                 this.createCombo ([
                         {'value':'8,u', 'text':'8bit unsigned integer'},
                         {'value':'16,u', 'text':'16bit unsigned integer'},
                         {'value':'32,u', 'text':'32bit unsigned integer'},
-                        {'value':'64,u', 'text':'64bit unsigned integer'},                        
+                        {'value':'64,u', 'text':'64bit unsigned integer'},
                         {'value':'8,s', 'text':'8bit signed integer'},
                         {'value':'16,s', 'text':'16bit signed integer'},
                         {'value':'32,s', 'text':'32bit signed integer'},
-                        {'value':'64,s', 'text':'64bit signed integer'},     
+                        {'value':'64,s', 'text':'64bit signed integer'},
                         {'value':'32,f', 'text':'32bit floating point'},
-                        {'value':'64,f', 'text':'64bit floating point'}, 
-                    ], {            
+                        {'value':'64,f', 'text':'64bit floating point'},
+                    ], {
                         itemId: 'combo-format',
                         fieldLabel: 'Format',
                         value: default_format,
-                }),            
-    
+                }),
+
                 this.createCombo ([
                         {'value':'f', 'text':'Full range'},
                         {'value':'d', 'text':'Data range'},
                         {'value':'t', 'text':'Data + tolerance'},
                         {'value':'e', 'text':'Equalized'},
-                    ], {            
+                    ], {
                         itemId: 'combo-method',
                         fieldLabel: 'Method',
                         value: 'd',
-                 }),  
-            ],            
+                 }),
+            ],
         };
         this.callParent();
-    },            
+    },
 
     updateDims: function(dims) {
         var f = this.queryById('combo-format').getValue();
@@ -333,7 +333,7 @@ Ext.define('BQ.is.Service.Depth', {
         var f = this.queryById('combo-format').getValue();
         var m = this.queryById('combo-method').getValue();
         return 'depth='+f.replace(',', ','+m+',');
-    },      
+    },
 });
 
 //----------------------------------------------------------------------------------
@@ -344,17 +344,17 @@ Ext.define('BQ.is.Service.Roi', {
     extend: 'BQ.is.Service',
     title: 'ROI',
     alias: 'widget.bqis-service-roi',
-    
-    initComponent : function() {  
-        this.surface_config = {  
+
+    initComponent : function() {
+        this.surface_config = {
             layout: {
                 type: 'table',
                 columns: 2,
-            },       
+            },
             items: [{
-                xtype:'tbtext', 
+                xtype:'tbtext',
                 colspan: 2,
-                text: '<p>Extracts Region Of Interest from any plane<p>',            
+                text: '<p>Extracts Region Of Interest from any plane<p>',
             }, {
                 xtype: 'numberfield',
                 itemId: 'top_left_x',
@@ -366,7 +366,7 @@ Ext.define('BQ.is.Service.Roi', {
                 step: 1,
                 listeners: {
                     scope: this,
-                    change: this.emitChange,                
+                    change: this.emitChange,
                 },
             }, {
                 xtype: 'numberfield',
@@ -379,7 +379,7 @@ Ext.define('BQ.is.Service.Roi', {
                 step: 1,
                 listeners: {
                     scope: this,
-                    change: this.emitChange,                
+                    change: this.emitChange,
                 },
             }, {
                 xtype: 'numberfield',
@@ -392,7 +392,7 @@ Ext.define('BQ.is.Service.Roi', {
                 step: 1,
                 listeners: {
                     scope: this,
-                    change: this.emitChange,                
+                    change: this.emitChange,
                 },
             }, {
                 xtype: 'numberfield',
@@ -405,20 +405,20 @@ Ext.define('BQ.is.Service.Roi', {
                 step: 1,
                 listeners: {
                     scope: this,
-                    change: this.emitChange,                
+                    change: this.emitChange,
                 },
-            }],            
+            }],
         };
         this.callParent();
-    },   
-    
+    },
+
     getOperation: function() {
         var x1 = this.queryById('top_left_x').getValue();
         var y1 = this.queryById('top_left_y').getValue();
         var x2 = this.queryById('bottom_right_x').getValue();
-        var y2 = this.queryById('bottom_right_y').getValue();        
+        var y2 = this.queryById('bottom_right_y').getValue();
         return 'roi='+x1+','+y1+','+x2+','+y2;
-    },      
+    },
 });
 
 //----------------------------------------------------------------------------------
@@ -429,22 +429,22 @@ Ext.define('BQ.is.Service.Negative', {
     extend: 'BQ.is.Service',
     title: 'Negative',
     alias: 'widget.bqis-service-negative',
-    
-    initComponent : function() {  
+
+    initComponent : function() {
         this.enabled = this.view.negative==='negative' ? true : false;
-        this.surface_config = {           
+        this.surface_config = {
             items: [{
-                xtype:'tbtext', 
-                text: '<p>Inverts intesity of the input image<p>',            
-            }],            
+                xtype:'tbtext',
+                text: '<p>Inverts intesity of the input image<p>',
+            }],
         };
         this.callParent();
-    },  
+    },
 
     getOperation: function() {
         return 'negative';
-    },    
-    
+    },
+
 });
 
 //----------------------------------------------------------------------------------
@@ -455,22 +455,22 @@ Ext.define('BQ.is.Service.Deinterlace', {
     extend: 'BQ.is.Service',
     title: 'Deinterlace',
     alias: 'widget.bqis-service-deinterlace',
-    
-    initComponent : function() {  
+
+    initComponent : function() {
         this.enabled = this.view.deinterlace==='deinterlace' ? true : false;
-        this.surface_config = {           
+        this.surface_config = {
             items: [{
-                xtype:'tbtext', 
-                text: '<p>Deinterlaces the input image<p>',            
-            }],            
+                xtype:'tbtext',
+                text: '<p>Deinterlaces the input image<p>',
+            }],
         };
         this.callParent();
-    },  
+    },
 
     getOperation: function() {
         return 'deinterlace';
-    },    
-    
+    },
+
 });
 
 
@@ -482,52 +482,52 @@ Ext.define('BQ.is.Service.Rotate', {
     extend: 'BQ.is.Service',
     title: 'Rotate',
     alias: 'widget.bqis-service-rotate',
-    
-    initComponent : function() {  
-        this.surface_config = {        
+
+    initComponent : function() {
+        this.surface_config = {
             items: [{
-                    xtype:'tbtext', 
-                    text: '<p>Rotates the image<p>',            
+                    xtype:'tbtext',
+                    text: '<p>Rotates the image<p>',
                 },
                 this.createCombo ([
                         {'value':'0', 'text':'0'},
                         {'value':'90', 'text':'90 deg'},
                         {'value':'180', 'text':'180 deg'},
                         {'value':'270', 'text':'270 deg'},
-                    ], {            
+                    ], {
                         itemId: 'combo-rotate',
                         fieldLabel: 'Rotation angle',
                         value: '0',
-                 }),           
-            ],            
+                 }),
+            ],
         };
         this.callParent();
-    },       
-    
+    },
+
     getOperation: function() {
         return 'rotate='+this.queryById('combo-rotate').getValue();
-    },      
+    },
 });
 
 //----------------------------------------------------------------------------------
 // BQ.is.Service.Resize
 //----------------------------------------------------------------------------------
-       
+
 Ext.define('BQ.is.Service.Resize', {
     extend: 'BQ.is.Service',
     title: 'Resize',
     alias: 'widget.bqis-service-resize',
-    
-    initComponent : function() {  
+
+    initComponent : function() {
         this.surface_config = {
             layout: {
                 type: 'table',
                 columns: 2,
-            },            
+            },
             items: [{
-                    xtype:'tbtext', 
+                    xtype:'tbtext',
                     colspan: 2,
-                    text: '<p>Resizes each image plane<p>',            
+                    text: '<p>Resizes each image plane<p>',
                 }, {
                     xtype: 'numberfield',
                     itemId: 'selector_w',
@@ -539,7 +539,7 @@ Ext.define('BQ.is.Service.Resize', {
                     step: 1,
                     listeners: {
                         scope: this,
-                        change: this.validate,                
+                        change: this.validate,
                     },
                 }, {
                     xtype: 'numberfield',
@@ -552,30 +552,30 @@ Ext.define('BQ.is.Service.Resize', {
                     step: 1,
                     listeners: {
                         scope: this,
-                        change: this.validate,                
+                        change: this.validate,
                     },
                 },
                 this.createCombo ([
                         {'value':'', 'text':'As defined'},
                         {'value':'MX', 'text':'Maximum bounding box'},
                         {'value':'AR', 'text':'Preserve aspect ratio'},
-                    ], {            
+                    ], {
                         itemId: 'combo-sizing',
                         fieldLabel: 'Sizing',
                         value: '',
-                        colspan: 2,   
-                 }), 
+                        colspan: 2,
+                 }),
                 this.createCombo ([
                         {'value':'NN', 'text':'Nearest neighbor'},
                         {'value':'BL', 'text':'Bilinear'},
                         {'value':'BC', 'text':'Bicubic'},
-                    ], {            
+                    ], {
                         itemId: 'combo-method',
                         fieldLabel: 'Method',
                         value: 'BC',
-                        colspan: 2, 
-                 }),                        
-            ],            
+                        colspan: 2,
+                 }),
+            ],
         };
         this.callParent();
     },
@@ -584,17 +584,17 @@ Ext.define('BQ.is.Service.Resize', {
         var w = this.queryById('selector_w').getValue();
         var h = this.queryById('selector_h').getValue();
         if (w===0 && h===0) {
-            if (e) BQ.ui.tip(e.getId(), 'Both values can\'t be 0!', {anchor:'left',}); 
+            if (e) BQ.ui.tip(e.getId(), 'Both values can\'t be 0!', {anchor:'left',});
             return false;
         }
         if (w===0 || h===0) {
-            if (e) BQ.ui.tip(e.getId(), 'If value is 0 it will be automatically computed using aspect ratio', {anchor:'left',}); 
+            if (e) BQ.ui.tip(e.getId(), 'If value is 0 it will be automatically computed using aspect ratio', {anchor:'left',});
             this.queryById('combo-sizing').setValue('AR');
         }
-                     
+
         return true;
-    },  
-    
+    },
+
     getOperation: function() {
         if (!this.validate) return undefined;
         var w = this.queryById('selector_w').getValue();
@@ -602,8 +602,8 @@ Ext.define('BQ.is.Service.Resize', {
         var s = this.queryById('combo-sizing').getValue();
         var m = this.queryById('combo-method').getValue();
         return 'resize='+w+','+h+','+m+ (s ? ','+s:'');
-    },    
-    
+    },
+
 });
 
 //----------------------------------------------------------------------------------
@@ -614,13 +614,13 @@ Ext.define('BQ.is.Service.Fuse', {
     extend: 'BQ.is.Service',
     title: 'Fuse channels',
     alias: 'widget.bqis-service-fuse',
-    
-    initComponent : function() {  
+
+    initComponent : function() {
         var items = [{
-                xtype:'tbtext', 
-                text: '<p>Produces an RGB image fusing channels for each plane<p>',            
+                xtype:'tbtext',
+                text: '<p>Produces an RGB image fusing channels for each plane<p>',
         }];
-        
+
         for (var ch=0; ch<parseInt(this.phys.ch); ++ch) {
             items.push({
                 xtype: 'colorfield',
@@ -633,25 +633,25 @@ Ext.define('BQ.is.Service.Fuse', {
                 listeners: {
                     scope: this,
                     change: this.emitChange,
-                },            
+                },
             });
-        }                
-        
-        this.surface_config = { 
+        }
+
+        this.surface_config = {
             layout: {
                 type: 'vbox',
                 align: 'stretch',
-            },               
+            },
             items: items,
         };
         this.callParent();
-    },      
-    
+    },
+
     updateDims: function(dims) {
         dims.c = 3;
         return dims;
-    },    
-    
+    },
+
     getOperation: function() {
         var fusion='';
         for (var c=0; c<parseInt(this.phys.ch); ++c) {
@@ -659,11 +659,11 @@ Ext.define('BQ.is.Service.Fuse', {
             var cc = Ext.draw.Color.fromString('#'+val);
             fusion += cc.getRed() + ',';
             fusion += cc.getGreen() + ',';
-            fusion += cc.getBlue() + ';';            
+            fusion += cc.getBlue() + ';';
         }
         return 'fuse='+fusion;
-    },    
-    
+    },
+
 });
 
 //----------------------------------------------------------------------------------
@@ -673,11 +673,11 @@ Ext.define('BQ.is.Service.Fuse', {
 Ext.namespace('BQ.is');
 BQ.is.services = [
     'BQ.is.Service.Slice',
-    'BQ.is.Service.Depth', 
-    'BQ.is.Service.Fuse', 
+    'BQ.is.Service.Depth',
+    'BQ.is.Service.Fuse',
     'BQ.is.Service.Roi',
     'BQ.is.Service.Resize',
-    'BQ.is.Service.Rotate', 
+    'BQ.is.Service.Rotate',
     'BQ.is.Service.Negative',
     'BQ.is.Service.Deinterlace',
 ];
@@ -696,10 +696,10 @@ Ext.define('BQ.is.Converter', {
         type: 'vbox',
         align : 'stretch',
         pack  : 'start',
-    },    
+    },
     //defaults: { border: 0, },
     cls: 'iconverter',
- 
+
     initComponent : function() {
 
         this.dims = {
@@ -710,7 +710,7 @@ Ext.define('BQ.is.Converter', {
             c: parseInt(this.phys.ch),
             d: parseInt(this.phys.pixel_depth),
         };
-       
+
         this.formatsstore = Ext.create('Ext.data.Store', {
             fields: ['name', 'fullname'],
             //data : items
@@ -723,11 +723,11 @@ Ext.define('BQ.is.Converter', {
                 image : this.image,
                 phys  : this.phys,
                 slice : this.slice,
-                view  : this.view,                
+                view  : this.view,
                 listeners: {
                     scope: this,
                     changed: this.onchange,
-                },                   
+                },
             }));
         }
 
@@ -739,7 +739,7 @@ Ext.define('BQ.is.Converter', {
                 titleCollapse: true,
             },
             items: this.services,
-            flex: 1, 
+            flex: 1,
         },{
             xtype: 'container',
             cls: 'converterbuttons',
@@ -747,7 +747,7 @@ Ext.define('BQ.is.Converter', {
                 type: 'vbox',
                 align : 'stretch',
                 pack  : 'start',
-            }, 
+            },
             items: [{
                 xtype: 'combobox',
                 itemId: 'format_combo',
@@ -762,28 +762,28 @@ Ext.define('BQ.is.Converter', {
                 listeners:{
                     scope: this,
                     //'select': cb,
-                },            
+                },
             }, {
-                itemId: 'download_btn', 
-                xtype:'button', 
-                text: 'Convert', 
+                itemId: 'download_btn',
+                xtype:'button',
+                text: 'Convert',
                 scale: 'large',
                 cls: 'convert',
                 //iconCls: 'converter',
                 tooltip: 'Convert and download',
-                scope: this, 
+                scope: this,
                 handler: this.convert,
-            }],            
+            }],
         }];
-        
+
         this.callParent();
     },
-    
+
     // private
     afterRender : function() {
         this.callParent();
-        
-        this.setLoading('Fetching format info');  
+
+        this.setLoading('Fetching format info');
         Ext.Ajax.request({
             url: '/image_service/formats',
             callback: function(opts, succsess, response) {
@@ -793,14 +793,14 @@ Ext.define('BQ.is.Converter', {
                     this.onFormats(response.responseXML);
             },
             scope: this,
-        });  
-    },     
+        });
+    },
 
     onError : function() {
-        this.setLoading(false);          
+        this.setLoading(false);
         BQ.ui.error('Problem fetching image formats information');
-    },  
-   
+    },
+
     evaluateXPath: function(node, expression) {
         var xpe = new XPathEvaluator();
         var nsResolver = xpe.createNSResolver(node.ownerDocument == null ?
@@ -811,50 +811,46 @@ Ext.define('BQ.is.Converter', {
         while (res = result.iterateNext())
             found.push(res);
         return found;
-    },   
-   
+    },
+
     onFormats : function(xml) {
-        this.setLoading(false);  
+        this.setLoading(false);
         this.formats = [];
-        this.formats_index = {};        
-        var codecs = this.evaluateXPath(xml, '//format[@name != "bioformats"]/codec');
+        this.formats_index = {};
+        //var codecs = this.evaluateXPath(xml, '//format[@name != "bioformats"]/codec');
+        var codecs = this.evaluateXPath(xml, '//format/codec');
         var c=undefined;
         for (var i=0; c=codecs[i]; ++i) {
             var name = this.evaluateXPath(c, '@name')[0].value;
             //if (name==='bioformats') continue;
-            var options = {};
-            var tags = this.evaluateXPath(c, 'tag');
-            for (var j=0; t=tags[j]; ++j) {
-                var n = t.getAttribute('name');
-                var v = t.getAttribute('value');
-                if (n === 'support')
-                    options[v] = true;
-                else
-                    options[n] = v;
-            }
-            
-            if (options.writing)
+            var fullname   = this.evaluateXPath(c, 'tag[@name="fullname"]/@value')[0].value;
+            var support    = this.evaluateXPath(c, 'tag[@name="support"]/@value')[0].value;
+            var extensions = this.evaluateXPath(c, 'tag[@name="extensions"]/@value')[0].value;
+            var maxsamples = this.evaluateXPath(c, 'tag[@name="samples_per_pixel_minmax"]/@value')[0].value;
+            var maxbits    = this.evaluateXPath(c, 'tag[@name="bits_per_sample_minmax"]/@value')[0].value;
+
+            if (support.indexOf('writing')>=0)
             var ix = this.formats.push({
                 name      : name,
-                fullname  : options.fullname,
-                multipage : 'writing multiple pages' in options,
-                extensions: options.extensions.split('|'),
-                maxsamples: parseInt(options['max-samples-per-pixel']),
-                maxbits   : parseInt(options['max-bits-per-sample']),
+                fullname  : fullname,
+                multipage : support.indexOf('multipage')>=0,
+                extensions: extensions.split(','),
+                maxsamples: parseInt(maxsamples.split(',')[1]),
+                maxbits   : parseInt(maxbits.split(',')[1]),
             });
             this.formats_index[name] = this.formats[ix-1];
         } // for codecs
-        
+
         this.onchange(true);
-    },   
-   
+    },
+
     onchange: function(initial) {
         var dims = Ext.clone(this.dims);
         var s=undefined;
         for (var i=0; s=this.services[i]; ++i)
             if (s.isEnabeled())
                 dims = s.updateDims(dims);
-  
+
         if (this.dims_current &&
             this.dims_current.w === dims.w &&
             this.dims_current.h === dims.h &&
@@ -863,7 +859,7 @@ Ext.define('BQ.is.Converter', {
             this.dims_current.c === dims.c &&
             this.dims_current.d === dims.d
         ) return;
-        
+
         this.dims_current = Ext.clone(dims);
         var format_name = this.queryById('format_combo').getValue() || 'OME-TIFF';
 
@@ -873,38 +869,38 @@ Ext.define('BQ.is.Converter', {
         for (var i=0; f=this.formats[i]; ++i) {
             if (dims.z*dims.t>1 && !f.multipage) continue;
             if (f.maxsamples>0 && dims.c>f.maxsamples) continue;
-            if (f.maxbits>0 && dims.d>f.maxbits) continue;                        
-            var ix = fformats.push(f); 
+            if (f.maxbits>0 && dims.d>f.maxbits) continue;
+            var ix = fformats.push(f);
             index[f.name] = ix-1;
         }
-        
+
         if (fformats.length !== this.formats.length && initial) {
-            BQ.ui.tip(this.queryById('format_combo').getId(), 
-                'Available formats list is reduced to support current image, change conversion to see more...', 
+            BQ.ui.tip(this.queryById('format_combo').getId(),
+                'Available formats list is reduced to support current image, change conversion to see more...',
                 {anchor:'left',}
-            );             
+            );
         }
-        
+
         if (fformats.length === this.formats.length && !initial) return;
         if (!(format_name in index)) {
             if (!initial)
-                BQ.ui.tip(this.queryById('format_combo').getId(), 
-                    'Selected format can\'t save current image geometry, changed to OME-TIFF', 
+                BQ.ui.tip(this.queryById('format_combo').getId(),
+                    'Selected format can\'t save current image geometry, changed to OME-TIFF',
                     {anchor:'left',}
-                ); 
+                );
             format_name = 'OME-TIFF';
         }
-        
+
         this.formatsstore.loadData(fformats);
-        this.queryById('format_combo').setValue(format_name);        
+        this.queryById('format_combo').setValue(format_name);
     },
-   
+
     convert: function() {
         var cmd=[];
         var s=undefined;
         for (var i=0; s=this.services[i]; ++i) {
             var op = s.getOperation();
-            if (s.isEnabeled() && op) 
+            if (s.isEnabeled() && op)
                 cmd.push(op);
         }
         cmd.push('format='+this.queryById('format_combo').getValue()+',stream');
@@ -912,8 +908,7 @@ Ext.define('BQ.is.Converter', {
         var url = '/image_service/images/'+this.image.resource_uniq+'?'+command;
         window.open(url);
     },
-    
-       
+
+
 });
 
-  
