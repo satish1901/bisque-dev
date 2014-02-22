@@ -96,6 +96,8 @@ class ConverterBioformats(ConverterBase):
             cls.installed_formats = OrderedDict()
 
             formats_xml = misc.run_command( [cls.BFORMATS, '-xml'] )
+            if formats_xml is None:
+                return
             formats = etree.fromstring( formats_xml )
 
             codecs = formats.xpath('//format')
