@@ -1278,6 +1278,16 @@ Ext.define('Bisque.GObjectTagger', {
     },
 
     onMexLoaded: function(mex, node) {
+        // load sub-mexs
+        if (mex.children.length>0) {
+            var m=undefined;
+            for (var i=0; (m=mex.children[i]); i++) {
+                this.onMexLoaded(m, node);
+            }
+            return;
+        }
+
+        // load single mex
         node.raw.loaded = true;
         node.raw.gobjects = [];
         node.set('checked', true);
@@ -1285,7 +1295,7 @@ Ext.define('Bisque.GObjectTagger', {
 
         if (!mex.outputs && mex.outputs.length<=0) return;
         var o=undefined;
-        for (i=0; (o=mex.outputs[i]); i++) {
+        for (var i=0; (o=mex.outputs[i]); i++) {
             if (o.gobjects.length>0 && o.value === this.resource.uri) {
                 //this.addNode(node, { name: 'outputs', value: '', gobjects: o.gobjects }); // dima: future, show both inputs and outputs
                 var gobs = o.gobjects;
