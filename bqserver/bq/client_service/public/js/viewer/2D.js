@@ -110,7 +110,7 @@ Mouser.prototype.selectedShapes=function(){
         }
     }
     return selected;
-}
+};
 Mouser.prototype.selectShapes=function(selected, select){
     var sv = select || true;
     for(var i=0;i<selected.length;i++){
@@ -123,7 +123,7 @@ Mouser.prototype.selectShapes=function(selected, select){
         else
             shape.unregisterHandles();
     }
-}
+};
 
 Mouser.prototype.beginDrag=function(e){
   var svgRoot=_svgElement;
@@ -393,9 +393,8 @@ Shape.prototype.show=function(state){
       this.svgNode.setAttributeNS(null,"display",display);
 };
 
-
 Shape.prototype.enhance = function(visible){
-    this.svgNode.setAttributeNS(null, "stroke-width", visible?"4":"1");
+    this.svgNode.setAttributeNS(null, "stroke-width", visible?'4':'1');
 };
 
 Shape.prototype.refresh=function(){};
@@ -511,6 +510,10 @@ Circle.prototype.init=function(svgNode){
     }
 };
 
+Circle.prototype.enhance = function(visible){
+    this.svgNode.setAttributeNS(null, "stroke-width", visible?'4':'1');
+};
+
 Circle.prototype.realize=function(){
     if (this.svgNode) {
         this.center.realize();
@@ -598,7 +601,7 @@ Handle.prototype.init=function(x,y,owner){
   this.point=new Point2D(x,y);
   this.owner=owner;
   this.constrain=Handle.NO_CONSTRAINTS;
-}
+};
 Handle.prototype.realize=function() {
   if(this.svgNode==null) {
     var handle=document.createElementNS(svgns,"rect");
@@ -875,7 +878,7 @@ Path.prototype.parseData=function(d){
       throw new Error("Path data ended before all parameters were found");
     }
   }
-}
+};
 
 Path.prototype.tokenize=function(d){var tokens=new Array();while(d!=""){if(d.match(/^([ \t\r\n,]+)/)){d=d.substr(RegExp.$1.length);}else if(d.match(/^([aAcChHlLmMqQsStTvVzZ])/)){tokens[tokens.length]=new Token(Path.COMMAND,RegExp.$1);d=d.substr(RegExp.$1.length);}else if(d.match(/^(([-+]?[0-9]+(\.[0-9]*)?|[-+]?\.[0-9]+)([eE][-+]?[0-9]+)?)/)){tokens[tokens.length]=new Token(Path.NUMBER,parseFloat(RegExp.$1));d=d.substr(RegExp.$1.length);}else{throw new Error("Unrecognized segment command: "+d);}}tokens[tokens.length]=new Token(Path.EOD,null);return tokens;}
 

@@ -96,6 +96,29 @@ SVGRenderer.prototype.newImage = function () {
     removeAllChildren (this.svgdoc);
     //this.svgimg = document.createElementNS(svgns, "image");
     //this.svgdoc.appendChild(this.svgimg);
+
+    // marker definition for vertices in polygons and polylines
+    var defs = document.createElementNS(svgns, 'defs');
+    var marker = document.createElementNS(svgns, 'marker');
+    marker.setAttributeNS(null, 'id', 'VertexMarker');
+    marker.setAttributeNS(null, 'markerWidth', '10');
+    marker.setAttributeNS(null, 'markerHeight', '10');
+    marker.setAttributeNS(null, "fill", 'red');
+    marker.setAttributeNS(null, 'fill-opacity', '1.0');
+    marker.setAttributeNS(null, 'stroke', 'white');
+    marker.setAttributeNS(null, 'stroke-width', '1');
+    marker.setAttributeNS(null, 'markerUnits', 'userSpaceOnUse');
+    marker.setAttributeNS(null, 'refX', '3');
+    marker.setAttributeNS(null, 'refY', '3');
+    var circle = document.createElementNS(svgns, 'circle');
+    circle.setAttributeNS(null, 'cx', '3');
+    circle.setAttributeNS(null, 'cy', '3');
+    circle.setAttributeNS(null, 'r', '3');
+    marker.appendChild(circle);
+    defs.appendChild(marker);
+    this.svgdoc.appendChild(defs);
+
+    // define global g object for all svg elements
     this.svggobs = document.createElementNS(svgns, "g");
     this.svgdoc.appendChild(this.svggobs);
     this.rendered_gobjects = [];
@@ -283,6 +306,9 @@ SVGRenderer.prototype.polyline = function (visitor, gob,  viewstate, visibility)
             else
                 poly.setAttributeNS(null, "fill", "none");
             poly.setAttributeNS(null, 'fill-opacity', 0.4);
+            poly.setAttributeNS(null, 'marker-start', 'url(#VertexMarker)');
+            poly.setAttributeNS(null, 'marker-mid', 'url(#VertexMarker)');
+            poly.setAttributeNS(null, 'marker-end', 'url(#VertexMarker)');
             gob.shape = new ctor( poly );
         }
         poly = gob.shape.svgNode;
