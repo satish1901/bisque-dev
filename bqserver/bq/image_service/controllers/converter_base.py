@@ -72,7 +72,8 @@ class ConverterBase(object):
     def init(cls):
         cls.version = cls.get_version()
         cls.installed = cls.get_installed()
-        cls.get_formats()
+        if cls.installed is not False:
+            cls.get_formats()
 
     #######################################
     # Version and Installed
