@@ -228,7 +228,6 @@ ImgEdit.prototype.updateView = function (view) {
 };
 
 ImgEdit.prototype.onCreateGob = function (type) {
-    this.createButtonsDeselect();
     if (type in ImgViewer.gobFunction) {
         this.mode_primitive = null;
         var f = ImgViewer.gobFunction[type];
@@ -258,9 +257,14 @@ ImgEdit.prototype.startEdit = function () {
     this.renderer.svgdoc.style.zIndex = this.zindex_high;
     this.viewer.viewer_controls_surface.style.zIndex = this.zindex_low;
 
-    this.renderer.setmousedown(callback(this, "mousedown"));
-    this.surface_original_onmousedown = this.viewer.viewer_controls_surface.onmousedown;
-    this.viewer.viewer_controls_surface.onmousedown = callback(this, "mousedown");
+    //this.renderer.setmousedown(callback(this, this.mousedown));
+    //this.surface_original_onmousedown = this.viewer.viewer_controls_surface.onmousedown;
+    //this.viewer.viewer_controls_surface.onmousedown = callback(this, this.mousedown);
+
+    this.renderer.setclick(callback(this, this.mousedown));
+    this.surface_original_onclick = this.viewer.viewer_controls_surface.onclick;
+    this.viewer.viewer_controls_surface.onclick = callback(this, this.mousedown);
+
 
     this.renderer.setkeyhandler(callback(this, "keyhandler"));
     this.renderer.enable_edit (true);
@@ -269,10 +273,16 @@ ImgEdit.prototype.startEdit = function () {
 ImgEdit.prototype.endEdit = function () {
     this.renderer.svgdoc.style.zIndex = this.zindex_low;
     this.viewer.viewer_controls_surface.style.zIndex = this.zindex_high;
-    if (this.surface_original_onmousedown)
-      this.viewer.viewer_controls_surface.onmousedown = this.surface_original_onmousedown;
 
-    this.renderer.setmousedown(null);
+    //if (this.surface_original_onmousedown)
+    //    this.viewer.viewer_controls_surface.onmousedown = this.surface_original_onmousedown;
+    //this.renderer.setmousedown(null);
+
+    if (this.surface_original_onclick)
+        this.viewer.viewer_controls_surface.onclick = this.surface_original_onclick;
+    this.renderer.setclick(null);
+
+
     //this.renderer.setmousemove(null);
     this.renderer.setkeyhandler(null);
     this.renderer.enable_edit (false);
@@ -299,16 +309,18 @@ ImgEdit.prototype.keyhandler = function (e) {
 };
 
 ImgEdit.prototype.mousedown = function (e) {
-  if (!e) e = window.event;  // IE event model
-  if (e == null) return;
-  if (this.mode) {
-      var svgPoint = this.renderer.getUserCoord(e);
-      this.mode (e, svgPoint.x, svgPoint.y);
+    if (!e) e = window.event;  // IE event model
+    if (e == null) return;
+    if (e.target !== this.renderer.svgdoc) return;
 
-      // this will disable all propagation while in edit selected
-      if (e.stopPropagation) e.stopPropagation(); // DOM Level 2
-      else e.cancelBubble = true;                 // IE
-  }
+    if (this.mode) {
+        var svgPoint = this.renderer.getUserCoord(e);
+        this.mode (e, svgPoint.x, svgPoint.y);
+
+        // this will disable all propagation while in edit selected
+        if (e.stopPropagation) e.stopPropagation(); // DOM Level 2
+        else e.cancelBubble = true;                 // IE
+    }
 };
 
 ImgEdit.prototype.test_save_permission = function (uri) {
@@ -424,6 +436,8 @@ ImgEdit.prototype.setmode = function (type, mode_fun) {
     if (mode_fun) this.startEdit();
     this.mode = mode_fun;
     this.mode_type = type;
+    if (type)
+        this.createButtonsDeselect();
 };
 
 ImgEdit.prototype.select = function (e, x, y) {

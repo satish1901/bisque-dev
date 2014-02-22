@@ -843,18 +843,25 @@ PanoJS.prototype.resize = function() {
 };
 
 PanoJS.prototype.toggleMaximize = function() {
-    if (!this.maximized) this.maximized = false;
-    this.maximized = !this.maximized;
     var vd = this.viewer;
+    if (!this.maximized)
+        this.maximized = false;
+
+    if (vd.requestFullscreen || vd.webkitRequestFullscreen || vd.msRequestFullscreen || vd.mozRequestFullScreen) {
+        var fse = (document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
+        this.maximized = fse ? true : false;
+    }
+
+    this.maximized = !this.maximized;
     if (this.maximized) {
         if (vd.requestFullscreen) {
             vd.requestFullscreen();
+        } else if (vd.webkitRequestFullscreen) {
+            vd.webkitRequestFullscreen();
         } else if (vd.msRequestFullscreen) {
             vd.msRequestFullscreen();
         } else if (vd.mozRequestFullScreen) {
             vd.mozRequestFullScreen();
-        } else if (vd.webkitRequestFullscreen) {
-            vd.webkitRequestFullscreen();
         } else {
             this.viewer_style = {
                 'width' : vd.style.width,
@@ -890,12 +897,12 @@ PanoJS.prototype.toggleMaximize = function() {
     } else {
         if (document.exitFullscreen) {
             document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
         } else if (document.msExitFullscreen) {
             document.msExitFullscreen();
         } else if (document.mozCancelFullScreen) {
             document.mozCancelFullScreen();
-        } else if (document.webkitExitFullscreen) {
-            document.webkitExitFullscreen();
         } else {
             document.body.style.padding = this.document_style.padding;
             document.body.style.overflow = this.document_style.overflow;
@@ -1119,7 +1126,7 @@ PanoJS.prototype.keyboardHandler = function(e) {
       return false;
   }
 
-}
+};
 
 //----------------------------------------------------------------------
 // touch events
@@ -1138,7 +1145,7 @@ PanoJS.prototype.touchStartHandler = function(e) {
       this.touch_start = {'x': touch.clientX,'y': touch.clientY};
   }
   return false;
-}
+};
 
 PanoJS.prototype.touchMoveHandler = function(e) {
   e = e ? e : window.event;
@@ -1155,7 +1162,7 @@ PanoJS.prototype.touchMoveHandler = function(e) {
       this.touch_start = {'x': touch.clientX,'y': touch.clientY};
   }
   return false;
-}
+};
 
 
 //----------------------------------------------------------------------
@@ -1169,7 +1176,7 @@ PanoJS.prototype.gestureStartHandler = function(e) {
   this.gesture_current_scale = 1.0;
   this.gesture_image_scale = this.currentScale();
   return false;
-}
+};
 
 PanoJS.prototype.gestureChangeHandler = function(e) {
   e = e ? e : window.event;
@@ -1192,7 +1199,7 @@ PanoJS.prototype.gestureChangeHandler = function(e) {
   }
 
   return false;
-}
+};
 
 PanoJS.prototype.gestureEndHandler = function(e) {
   e = e ? e : window.event;
@@ -1205,7 +1212,7 @@ PanoJS.prototype.gestureEndHandler = function(e) {
   //else
   //if (e.scale<1) this.zoom(-1);
   return false;
-}
+};
 
 
 //-------------------------------------------------------
@@ -1213,19 +1220,27 @@ PanoJS.prototype.gestureEndHandler = function(e) {
 //-------------------------------------------------------
 
 PanoJS.prototype.zoomInHandler = function(e) {
-  this.zoom(1);
+    e = e ? e : window.event;
+    if (e) this.blockPropagation(e);
+    this.zoom(1);
 };
 
 PanoJS.prototype.zoomOutHandler = function(e) {
-  this.zoom(-1);
+    e = e ? e : window.event;
+    if (e) this.blockPropagation(e);
+    this.zoom(-1);
 };
 
 PanoJS.prototype.zoom11Handler = function(e) {
-  this.zoom(this.maxZoomLevel-this.zoomLevel);
+    e = e ? e : window.event;
+    if (e) this.blockPropagation(e);
+    this.zoom(this.maxZoomLevel-this.zoomLevel);
 };
 
 PanoJS.prototype.maximizeHandler = function(e) {
-  this.toggleMaximize();
+    e = e ? e : window.event;
+    if (e) this.blockPropagation(e);
+    this.toggleMaximize();
 };
 
 

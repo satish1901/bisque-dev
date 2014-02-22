@@ -1,11 +1,11 @@
 /*******************************************************************************
-  Controls - creates buttons for zooming and, full screen 
-  
+  Controls - creates buttons for zooming and, full screen
+
   GSV 3.0 : PanoJS3
-  @author Dmitry Fedorov  <fedorov@ece.ucsb.edu>   
-  
+  @author Dmitry Fedorov  <fedorov@ece.ucsb.edu>
+
   Copyright (c) 2010 Dmitry Fedorov, Center for Bio-Image Informatics
-  
+
   using: isClientTouch() and isClientPhone() from utils.js
 
 *******************************************************************************/
@@ -67,7 +67,7 @@ if (isClientPhone()) {
 
 
 function PanoControls(viewer) {
-    this.viewer = viewer;  
+    this.viewer = viewer;
     this.initControls();
     this.createDOMElements();
 }
@@ -79,41 +79,41 @@ PanoControls.prototype.initControls = function() {
   PanoJS.CONTROL_ZOOMOUT.image  = PanoJS.STATIC_BASE_URL+PanoJS.CONTROL_ZOOMOUT.image;
   PanoJS.CONTROL_MAXIMIZE.image = PanoJS.STATIC_BASE_URL+PanoJS.CONTROL_MAXIMIZE.image;
   PanoJS.CONTROL_UPDATED_URLS   = true;
-}
+};
 
 PanoControls.prototype.createDOMElements = function() {
     this.dom_element = this.viewer.viewerDomElement();
-      
+
     this.createButton (PanoJS.CONTROL_ZOOMIN);
     this.createButton (PanoJS.CONTROL_ZOOM11);
     this.createButton (PanoJS.CONTROL_ZOOMOUT);
-    this.createButton (PanoJS.CONTROL_MAXIMIZE);  
-}
+    this.createButton (PanoJS.CONTROL_MAXIMIZE);
+};
 
 PanoControls.prototype.createButton = function(control) {
-      
+
     var className = control.className;
     var src = control.image;
     var title = control.title;
     var style = control.style;
-    
+
     var btn = document.createElement('span');
     btn.className = className;
-    this.dom_element.appendChild(btn); 
+    this.dom_element.appendChild(btn);
 
     if (style) {
       btn.setAttribute("style", style);
-      btn.style.cssText = style;   
+      btn.style.cssText = style;
     }
-    
+
     var img = document.createElement('img');
     img.src = src;
     if (title) img.title = title;
     if (btn.style.width) img.style.width = btn.style.width;
-    btn.appendChild(img);    
-    
-    btn.onclick = callback(this.viewer, this.viewer[btn.className + 'Handler']); 
-                
+    btn.appendChild(img);
+
+    btn.onclick = callback(this.viewer, this.viewer[btn.className + 'Handler']);
+
     return btn;
-}
+};
 

@@ -126,7 +126,14 @@ Ext.define('BQ.slider.Slider', {
             enableToggle: true,
             margin: cssmargin,
             tooltip: this.tooltip_play,
-            listeners: { scope: me, click: function(btn, e, opt) { this.togglePlay(); } }
+            listeners: {
+                scope: me,
+                click: function(btn, e, opt) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.togglePlay();
+                },
+            },
         });
 
         me.button_next = Ext.widget('button', {
@@ -137,7 +144,14 @@ Ext.define('BQ.slider.Slider', {
             overCls: isvertical?'x-next-vertical-selected':'x-next-selected',
             tooltip: this.tooltip_next,
             margin: cssmargin,
-            listeners: { scope: me, click: function(btn, e, opt) { this.goNext(); } }
+            listeners: {
+                scope: me,
+                click: function(btn, e, opt) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.goNext();
+                },
+            },
         });
 
         me.button_prev = Ext.widget('button', {
@@ -148,7 +162,14 @@ Ext.define('BQ.slider.Slider', {
             overCls: isvertical?'x-prev-vertical-selected':'x-prev-selected',
             margin: cssmargin,
             tooltip: this.tooltip_prev,
-            listeners: { scope: me, click: function(btn, e, opt) { this.goPrev(); } }
+            listeners: {
+                scope: me,
+                click: function(btn, e, opt) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.goPrev();
+                },
+            },
         });
 
         me.slider = Ext.create('BQ.slider.Inversible', {
@@ -164,13 +185,15 @@ Ext.define('BQ.slider.Slider', {
             inversed: isvertical,
             hideLabel: true,
             tipText: function(thumb) { return me.tipText(thumb); },
-            listeners: { scope: me, change: function(slider, newValue, thumb, options) {
-              //this.fireEvent('change', newValue);
-              //this.queueFireChangeEvent(newValue);
-              this.queueFireChangeEvent(this.slider.getValue()); // dima, here fix in inversible change event
-            } },
+            listeners: {
+                scope: me,
+                change: function(slider, newValue, thumb, options) {
+                    //this.fireEvent('change', newValue);
+                    //this.queueFireChangeEvent(newValue);
+                    this.queueFireChangeEvent(this.slider.getValue()); // dima, here fix in inversible change event
+                },
+            },
         });
-
 
         me.items.push(me.button_play);
         me.items.push(me.button_prev);
