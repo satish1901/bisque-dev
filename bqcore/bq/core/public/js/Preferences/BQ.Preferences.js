@@ -71,7 +71,8 @@ Ext.define('BQ.Preferences', {
                     this.user.tag = resource;
                 }
             } else {
-                BQ.ui.error('No User found!');
+                console.log('No User found!');
+                //BQ.ui.error('No User found!');
                 this.user.exists = false;
             }
         }
