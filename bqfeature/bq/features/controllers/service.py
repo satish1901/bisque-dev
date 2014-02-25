@@ -101,7 +101,7 @@ class Feature_Archieve(dict):
                         item.library = module
                         self[item.name] = item
             except StandardError, err:  # need to pick a narrower error band but not quite sure right now
-                log.exception('Failed Imported Feature: %s\n' % module)  # failed to import feature 
+                log.exception('Failed Imported Feature: %s\n' % module)  # failed to import feature
 
     def __missing__(self, feature_type):
         log.debug('feature type:' + feature_type + ' not found')
@@ -127,8 +127,9 @@ class Rows(object):
             otherwise return false
         """
         try:
+            log.info('Calculate Feature')
             output = self.feature.calculate(resource)  # finds the feature
-            log.info('Calculated Feature')
+
             # log.debug('output: %s'% str(self.feature.localfile(output[0][0])))
             if self.feature.localfile(output[0][0]) in self.feature_queue:  # checking the first few element on the hash
                 self.feature_queue[self.feature.localfile(output[0][0])].put(output)  # place the output in the queue
@@ -148,6 +149,8 @@ class Rows(object):
                 
             log.exception('Calculation Error: URI:%s  %s Feature failed to be calculated' % (resource_string, self.feature.name))
             return False
+
+
 
 class IDRows(Rows):
     """
@@ -206,6 +209,7 @@ class UncachedRows(Rows):
                 
             log.exception('Calculation Error: %s  %s feature failed to be calculated' % (resource_string, self.feature.name))
             return False
+
 
 class Tables(object):
     """
@@ -601,7 +605,6 @@ class Request(object):
                         
                     else:
                         log.info("Resource: %s was not found in the feature table"%self.ElementList.element_dict[uri_hash])
-                        log.info("Calculating feature on resource")
                         
                     element_list_in_table.append(contains_uri_hash) #create a binary list confirming if an element is in the table
                 
@@ -634,7 +637,6 @@ class Request(object):
                         log.info("Returning Resource: %s from the uri table"%self.ElementList.element_dict[uri_hash])
                     else:
                         log.info("Resource: %s was not found in the uri table"%self.ElementList.element_dict[uri_hash])
-                        log.info("Calculating hash on resource")
                     element_list_in_table.append(contains_uri_hash)
     
                 # store hashes
@@ -1180,7 +1182,7 @@ class FeatureDoc():
                           'feature_length':str(feature_module.length),
                           'required_resources': ','.join(feature_module.resource),
                           'cache': str(feature_module.cache),
-                          'table_length':str(len(Table))
+                          #'table_length':str(len(Table)) this request takes a very long time in the current state
                          }
         if len(feature_module.parameter) > 0:
             xml_attributes['parameters'] = ','.join(feature_module.parameter)
@@ -1281,7 +1283,7 @@ class featuresController(ServiceController):
             log.debug('Malformed Request: Not a valid features request')
             abort(400, 'Malformed Request: Not a valid features request')
             
-    @expose()       
+    @expose()
     def formats(self, *args):
         """
             entry point for format documetation

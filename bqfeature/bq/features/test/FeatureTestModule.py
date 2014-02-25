@@ -70,8 +70,7 @@ class FeatureList(object):
 
 def test(format = None):
     """
-        wrapper function to decide what content type output to be 
-        applied
+        wrapper function to filter out content type outputs requested
     """
     
     def wrap(func):      
@@ -115,11 +114,42 @@ class FeatureTests(object):
             self.TestStatus.not_equal('Failure!: Header Attribute: status ==> required: %s != test: %s'%(self.header['status'],'200'))
 
             
-#    @test('xml')
-#    def test_feature_vector_xml(self, resource_name):
-#        h5file = tables.open_file('feature/'+resource_name+'.h5','r')
-#        root = h5file.root
-#        vl_array = getattr(root, name)
+    @test('xml')
+    def test_content_xml(self):
+        try:
+            xml_test = etree.XML(self.content)
+        except: #did not return xml
+            self.TestStatus.not_equal('Did not return xml')
+            return
+            
+        value = xml_test.xpath('//feature[@type]')
+        if value[0].attrib['type'] == self.name:
+            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
+        else:
+            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
+
+    @test('xml')
+    def test_feature_vectors_xml(self):
+        try:
+            xml_test = etree.XML(self.content)
+        except: #did not return xml
+            self.TestStatus.not_equal('Did not return xml')
+            return
+        
+        value = xml_test.xpath('//feature/value')
+        feature_array = np.array(value[0].text.split()).astype('float')
+        h5file = tables.open_file('features/'+self.feature_service_test_base.resource_list[0]['filename']+'.h5','r')
+        root = h5file.root
+        vl_array = getattr(root, self.name)[0]
+        if np.array_equal(vl_array,feature_array):
+            self.TestStatus.equal('Success!: XML Attribute: feature/value ==> required: %s == test: %s'%(vl_array,feature_array))
+        else:
+            self.TestStatus.not_equal('Failure!: XML Attribute: feature/value ==> required: %s != test: %s'%(vl_array,feature_array))
+
+
+#    @test('csv')
+#    def test_csv(self):
+#        
     
     def run_tests(self, format):
     
@@ -138,11 +168,9 @@ class FeatureTests(object):
         log.info('Request Method: %s'%'GET')
         
         headers = self.feature_service_test_base.session.c.prepare_headers({'Content-Type':'text/xml', 'Accept':'text/xml'})
-        
         start = time.time()
         self.header, self.content = self.feature_service_test_base.session.c.http.request(command, headers = headers)
         end = time.time()
-        
         if self.feature_service_test_base.time_trial:
             log.info('=========== Time Results ===========')
             log.info('Elapsed Time: %s sec'%(end-start))
@@ -168,32 +196,7 @@ class HTD(FeatureTests):
     
     def __init__(self, feature_service_test_base):
         super(HTD, self).__init__(feature_service_test_base)
-    
-    @test('xml')
-    def test_content_xml(self):
-        
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature[@type]')
-        if value[0].attrib['type'] == self.name:
-            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
-    
-    @test('xml')
-    def test_feature_vectors_xml(self):
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature/value')
-        feature_array = np.array(value[0].text.split()).astype('float')
-        h5file = tables.open_file('features/'+self.feature_service_test_base.resource_list[0]['filename']+'.h5','r')
-        root = h5file.root
-        vl_array = getattr(root, self.name)[0]
-        if np.array_equal(vl_array,feature_array):
-            self.TestStatus.equal('Success!: XML Attribute: feature/value ==> required: %s == test: %s'%(vl_array,feature_array))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: feature/value ==> required: %s != test: %s'%(vl_array,feature_array))
-        
-#        self.content_required['resource'] = {'type': self.name}
-#        self.header_required['content-length'] = '661'               
+               
 
 class EHD(FeatureTests):
     name = 'EHD'
@@ -202,29 +205,6 @@ class EHD(FeatureTests):
     def __init__(self, feature_service_test_base):
         super(EHD, self).__init__(feature_service_test_base)  
 
-    @test('xml')
-    def test_content_xml(self):
-        
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature[@type]')
-        if value[0].attrib['type'] == self.name:
-            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
-    
-    @test('xml')
-    def test_feature_vectors_xml(self):
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature/value')
-        feature_array = np.array(value[0].text.split()).astype('float')
-        h5file = tables.open_file('features/'+self.feature_service_test_base.resource_list[0]['filename']+'.h5','r')
-        root = h5file.root
-        vl_array = getattr(root, self.name)[0]
-        if np.array_equal(vl_array,feature_array):
-            self.TestStatus.equal('Success!: XML Attribute: feature/value ==> required: %s == test: %s'%(vl_array,feature_array))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: feature/value ==> required: %s != test: %s'%(vl_array,feature_array))
-            
 
 class mHTD(FeatureTests):
     name = 'mHTD'
@@ -234,18 +214,10 @@ class mHTD(FeatureTests):
     def __init__(self, feature_service_test_base):
         super(mHTD, self).__init__(feature_service_test_base)  
     
-    @test('xml')
-    def test_content_xml(self):
-        
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature[@type]')
-        if value[0].attrib['type'] == self.name:
-            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
     
-#    @test('xml')
-#    def test_feature_vectors_xml(self):
+    @test('xml')
+    def test_feature_vectors_xml(self): #need to think more on how the results should be generated
+        pass
 #        xml_test = etree.XML(self.content)
 #        value = xml_test.xpath('//feature/value')
 #        feature_array = np.array(value[0].text.split()).astype('float')
@@ -264,28 +236,6 @@ class CLD(FeatureTests):
     def __init__(self, feature_service_test_base):
         super(CLD, self).__init__(feature_service_test_base)  
         
-    @test('xml')
-    def test_content_xml(self):
-        
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature[@type]')
-        if value[0].attrib['type'] == self.name:
-            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
-    
-    @test('xml')
-    def test_feature_vectors_xml(self):
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature/value')
-        feature_array = np.array(value[0].text.split()).astype('float')
-        h5file = tables.open_file('features/'+self.feature_service_test_base.resource_list[0]['filename']+'.h5','r')
-        root = h5file.root
-        vl_array = getattr(root, self.name)[0]
-        if np.array_equal(vl_array,feature_array):
-            self.TestStatus.equal('Success!: XML Attribute: feature/value ==> required: %s == test: %s'%(vl_array,feature_array))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: feature/value ==> required: %s != test: %s'%(vl_array,feature_array))
 
 
 class CSD(FeatureTests):
@@ -295,28 +245,7 @@ class CSD(FeatureTests):
     def __init__(self, feature_service_test_base):
         super(CSD, self).__init__(feature_service_test_base)  
         
-    @test('xml')
-    def test_content_xml(self):
-        
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature[@type]')
-        if value[0].attrib['type'] == self.name:
-            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
-    
-    @test('xml')
-    def test_feature_vectors_xml(self):
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature/value')
-        feature_array = np.array(value[0].text.split()).astype('float')
-        h5file = tables.open_file('features/'+self.feature_service_test_base.resource_list[0]['filename']+'.h5','r')
-        root = h5file.root
-        vl_array = getattr(root, self.name)[0]
-        if np.array_equal(vl_array,feature_array):
-            self.TestStatus.equal('Success!: XML Attribute: feature/value ==> required: %s == test: %s'%(vl_array,feature_array))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: feature/value ==> required: %s != test: %s'%(vl_array,feature_array))
+
 
 
 class SCD(FeatureTests):
@@ -325,29 +254,7 @@ class SCD(FeatureTests):
 
     def __init__(self, feature_service_test_base):
         super(SCD, self).__init__(feature_service_test_base)  
-        
-    @test('xml')
-    def test_content_xml(self):
-        
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature[@type]')
-        if value[0].attrib['type'] == self.name:
-            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
-    
-    @test('xml')
-    def test_feature_vectors_xml(self):
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature/value')
-        feature_array = np.array(value[0].text.split()).astype('float')
-        h5file = tables.open_file('features/'+self.feature_service_test_base.resource_list[0]['filename']+'.h5','r')
-        root = h5file.root
-        vl_array = getattr(root, self.name)[0]
-        if np.array_equal(vl_array,feature_array):
-            self.TestStatus.equal('Success!: XML Attribute: feature/value ==> required: %s == test: %s'%(vl_array,feature_array))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: feature/value ==> required: %s != test: %s'%(vl_array,feature_array))    
+            
 
 
 class DCD(FeatureTests):
@@ -356,29 +263,7 @@ class DCD(FeatureTests):
 
     def __init__(self, feature_service_test_base):
         super(DCD, self).__init__(feature_service_test_base)  
-        
-    @test('xml')
-    def test_content_xml(self):
-        
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature[@type]')
-        if value[0].attrib['type'] == self.name:
-            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
-    
-    @test('xml')
-    def test_feature_vectors_xml(self):
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature/value')
-        feature_array = np.array(value[0].text.split()).astype('float')
-        h5file = tables.open_file('features/'+self.feature_service_test_base.resource_list[0]['filename']+'.h5','r')
-        root = h5file.root
-        vl_array = getattr(root, self.name)[0]
-        if np.array_equal(vl_array,feature_array):
-            self.TestStatus.equal('Success!: XML Attribute: feature/value ==> required: %s == test: %s'%(vl_array,feature_array))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: feature/value ==> required: %s != test: %s'%(vl_array,feature_array))  
+
 
 
 class HTD2(FeatureTests):
@@ -388,28 +273,6 @@ class HTD2(FeatureTests):
     def __init__(self, feature_service_test_base):
         super(HTD2, self).__init__(feature_service_test_base)  
         
-    @test('xml')
-    def test_content_xml(self):
-        
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature[@type]')
-        if value[0].attrib['type'] == self.name:
-            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
-    
-    @test('xml')
-    def test_feature_vectors_xml(self):
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature/value')
-        feature_array = np.array(value[0].text.split()).astype('float')
-        h5file = tables.open_file('features/'+self.feature_service_test_base.resource_list[0]['filename']+'.h5','r')
-        root = h5file.root
-        vl_array = getattr(root, self.name)[0]
-        if np.array_equal(vl_array,feature_array):
-            self.TestStatus.equal('Success!: XML Attribute: feature/value ==> required: %s == test: %s'%(vl_array,feature_array))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: feature/value ==> required: %s != test: %s'%(vl_array,feature_array))
 
                 
 class EHD2(FeatureTests):
@@ -419,61 +282,16 @@ class EHD2(FeatureTests):
     def __init__(self, feature_service_test_base):
         super(EHD2, self).__init__(feature_service_test_base)  
         
-    @test('xml')
-    def test_content_xml(self):
-        
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature[@type]')
-        if value[0].attrib['type'] == self.name:
-            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
-    
-    @test('xml')
-    def test_feature_vectors_xml(self):
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature/value')
-        feature_array = np.array(value[0].text.split()).astype('float')
-        h5file = tables.open_file('features/'+self.feature_service_test_base.resource_list[0]['filename']+'.h5','r')
-        root = h5file.root
-        vl_array = getattr(root, self.name)[0]
-        if np.array_equal(vl_array,feature_array):
-            self.TestStatus.equal('Success!: XML Attribute: feature/value ==> required: %s == test: %s'%(vl_array,feature_array))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: feature/value ==> required: %s != test: %s'%(vl_array,feature_array))
     
     
-class RSD(FeatureTests):
-    name = 'RSD'
+class pRSD(FeatureTests):
+    name = 'pRSD'
     family_name = 'MPEG7Flex'
     input_type = ['image','polygon']    
 
     def __init__(self, feature_service_test_base):
         super(RSD, self).__init__(feature_service_test_base)  
         
-    @test('xml')
-    def test_content_xml(self):
-        
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature[@type]')
-        if value[0].attrib['type'] == self.name:
-            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
-    
-    @test('xml')
-    def test_feature_vectors_xml(self):
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature/value')
-        feature_array = np.array(value[0].text.split()).astype('float')
-        h5file = tables.open_file('features/'+self.feature_service_test_base.resource_list[0]['filename']+'.h5','r')
-        root = h5file.root
-        vl_array = getattr(root, self.name)[0]
-        if np.array_equal(vl_array,feature_array):
-            self.TestStatus.equal('Success!: XML Attribute: feature/value ==> required: %s == test: %s'%(vl_array,feature_array))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: feature/value ==> required: %s != test: %s'%(vl_array,feature_array))
-
             
 class Chebishev_Statistics(FeatureTests):
     name = 'Chebishev_Statistics'
@@ -481,29 +299,6 @@ class Chebishev_Statistics(FeatureTests):
 
     def __init__(self, feature_service_test_base):
         super(Chebishev_Statistics, self).__init__(feature_service_test_base)  
-        
-    @test('xml')
-    def test_content_xml(self):
-        
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature[@type]')
-        if value[0].attrib['type'] == self.name:
-            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
-    
-    @test('xml')
-    def test_feature_vectors_xml(self):
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature/value')
-        feature_array = np.array(value[0].text.split()).astype('float')
-        h5file = tables.open_file('features/'+self.feature_service_test_base.resource_list[0]['filename']+'.h5','r')
-        root = h5file.root
-        vl_array = getattr(root, self.name)[0]
-        if np.array_equal(vl_array,feature_array):
-            self.TestStatus.equal('Success!: XML Attribute: feature/value ==> required: %s == test: %s'%(vl_array,feature_array))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: feature/value ==> required: %s != test: %s'%(vl_array,feature_array))
 
 
 class Chebyshev_Fourier_Transform(FeatureTests):
@@ -511,30 +306,7 @@ class Chebyshev_Fourier_Transform(FeatureTests):
     family_name = 'WNDCharm'
     
     def __init__(self, feature_service_test_base):
-        super(Chebyshev_Fourier_Transform, self).__init__(feature_service_test_base)  
-        
-    @test('xml')
-    def test_content_xml(self):
-        
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature[@type]')
-        if value[0].attrib['type'] == self.name:
-            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
-    
-    @test('xml')
-    def test_feature_vectors_xml(self):
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature/value')
-        feature_array = np.array(value[0].text.split()).astype('float')
-        h5file = tables.open_file('features/'+self.feature_service_test_base.resource_list[0]['filename']+'.h5','r')
-        root = h5file.root
-        vl_array = getattr(root, self.name)[0]
-        if np.array_equal(vl_array,feature_array):
-            self.TestStatus.equal('Success!: XML Attribute: feature/value ==> required: %s == test: %s'%(vl_array,feature_array))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: feature/value ==> required: %s != test: %s'%(vl_array,feature_array))   
+        super(Chebyshev_Fourier_Transform, self).__init__(feature_service_test_base)   
 
 
 class Color_Histogram(FeatureTests):
@@ -543,29 +315,6 @@ class Color_Histogram(FeatureTests):
     
     def __init__(self, feature_service_test_base):
         super(Color_Histogram, self).__init__(feature_service_test_base)  
-
-    @test('xml')
-    def test_content_xml(self):
-        
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature[@type]')
-        if value[0].attrib['type'] == self.name:
-            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
-    
-    @test('xml')
-    def test_feature_vectors_xml(self):
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature/value')
-        feature_array = np.array(value[0].text.split()).astype('float')
-        h5file = tables.open_file('features/'+self.feature_service_test_base.resource_list[0]['filename']+'.h5','r')
-        root = h5file.root
-        vl_array = getattr(root, self.name)[0]
-        if np.array_equal(vl_array,feature_array):
-            self.TestStatus.equal('Success!: XML Attribute: feature/value ==> required: %s == test: %s'%(vl_array,feature_array))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: feature/value ==> required: %s != test: %s'%(vl_array,feature_array))
             
             
 class Comb_Moments(FeatureTests):
@@ -574,29 +323,6 @@ class Comb_Moments(FeatureTests):
     
     def __init__(self, feature_service_test_base):
         super(Comb_Moments, self).__init__(feature_service_test_base)  
-
-    @test('xml')
-    def test_content_xml(self):
-        
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature[@type]')
-        if value[0].attrib['type'] == self.name:
-            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
-    
-    @test('xml')
-    def test_feature_vectors_xml(self):
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature/value')
-        feature_array = np.array(value[0].text.split()).astype('float')
-        h5file = tables.open_file('features/'+self.feature_service_test_base.resource_list[0]['filename']+'.h5','r')
-        root = h5file.root
-        vl_array = getattr(root, self.name)[0]
-        if np.array_equal(vl_array,feature_array):
-            self.TestStatus.equal('Success!: XML Attribute: feature/value ==> required: %s == test: %s'%(vl_array,feature_array))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: feature/value ==> required: %s != test: %s'%(vl_array,feature_array))
    
             
 class Edge_Features(FeatureTests):
@@ -606,29 +332,6 @@ class Edge_Features(FeatureTests):
     def __init__(self, feature_service_test_base):
         super(Edge_Features, self).__init__(feature_service_test_base)  
 
-    @test('xml')
-    def test_content_xml(self):
-        
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature[@type]')
-        if value[0].attrib['type'] == self.name:
-            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
-    
-    @test('xml')
-    def test_feature_vectors_xml(self):
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature/value')
-        feature_array = np.array(value[0].text.split()).astype('float')
-        h5file = tables.open_file('features/'+self.feature_service_test_base.resource_list[0]['filename']+'.h5','r')
-        root = h5file.root
-        vl_array = getattr(root, self.name)[0]
-        if np.array_equal(vl_array,feature_array):
-            self.TestStatus.equal('Success!: XML Attribute: feature/value ==> required: %s == test: %s'%(vl_array,feature_array))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: feature/value ==> required: %s != test: %s'%(vl_array,feature_array))   
-
             
 class Fractal_Features(FeatureTests):
     name = 'Fractal_Features'
@@ -637,29 +340,7 @@ class Fractal_Features(FeatureTests):
     def __init__(self, feature_service_test_base):
         super(Fractal_Features, self).__init__(feature_service_test_base)  
 
-    @test('xml')
-    def test_content_xml(self):
-        
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature[@type]')
-        if value[0].attrib['type'] == self.name:
-            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
-    
-    @test('xml')
-    def test_feature_vectors_xml(self):
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature/value')
-        feature_array = np.array(value[0].text.split()).astype('float')
-        h5file = tables.open_file('features/'+self.feature_service_test_base.resource_list[0]['filename']+'.h5','r')
-        root = h5file.root
-        vl_array = getattr(root, self.name)[0]
-        if np.array_equal(vl_array,feature_array):
-            self.TestStatus.equal('Success!: XML Attribute: feature/value ==> required: %s == test: %s'%(vl_array,feature_array))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: feature/value ==> required: %s != test: %s'%(vl_array,feature_array))     
-    
+
 
 class Gini_Coefficient(FeatureTests):
     name = 'Gini_Coefficient'
@@ -667,29 +348,6 @@ class Gini_Coefficient(FeatureTests):
     
     def __init__(self, feature_service_test_base):
         super(Gini_Coefficient, self).__init__(feature_service_test_base)  
-
-    @test('xml')
-    def test_content_xml(self):
-        
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature[@type]')
-        if value[0].attrib['type'] == self.name:
-            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
-    
-    @test('xml')
-    def test_feature_vectors_xml(self):
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature/value')
-        feature_array = np.array(value[0].text.split()).astype('float')
-        h5file = tables.open_file('features/'+self.feature_service_test_base.resource_list[0]['filename']+'.h5','r')
-        root = h5file.root
-        vl_array = getattr(root, self.name)[0]
-        if np.array_equal(vl_array,feature_array):
-            self.TestStatus.equal('Success!: XML Attribute: feature/value ==> required: %s == test: %s'%(vl_array,feature_array))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: feature/value ==> required: %s != test: %s'%(vl_array,feature_array))
     
 
 class Gabor_Textures(FeatureTests):
@@ -697,30 +355,7 @@ class Gabor_Textures(FeatureTests):
     family_name = 'WNDCharm' 
     
     def __init__(self, feature_service_test_base):
-        super(Gabor_Textures, self).__init__(feature_service_test_base)  
-
-    @test('xml')
-    def test_content_xml(self):
-        
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature[@type]')
-        if value[0].attrib['type'] == self.name:
-            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
-    
-    @test('xml')
-    def test_feature_vectors_xml(self):
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature/value')
-        feature_array = np.array(value[0].text.split()).astype('float')
-        h5file = tables.open_file('features/'+self.feature_service_test_base.resource_list[0]['filename']+'.h5','r')
-        root = h5file.root
-        vl_array = getattr(root, self.name)[0]
-        if np.array_equal(vl_array,feature_array):
-            self.TestStatus.equal('Success!: XML Attribute: feature/value ==> required: %s == test: %s'%(vl_array,feature_array))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: feature/value ==> required: %s != test: %s'%(vl_array,feature_array))       
+        super(Gabor_Textures, self).__init__(feature_service_test_base)        
     
 
 class Haralick_Textures(FeatureTests):
@@ -728,30 +363,7 @@ class Haralick_Textures(FeatureTests):
     family_name = 'WNDCharm'
 
     def __init__(self, feature_service_test_base):
-        super(Haralick_Textures, self).__init__(feature_service_test_base)  
-
-    @test('xml')
-    def test_content_xml(self):
-        
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature[@type]')
-        if value[0].attrib['type'] == self.name:
-            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
-    
-    @test('xml')
-    def test_feature_vectors_xml(self):
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature/value')
-        feature_array = np.array(value[0].text.split()).astype('float')
-        h5file = tables.open_file('features/'+self.feature_service_test_base.resource_list[0]['filename']+'.h5','r')
-        root = h5file.root
-        vl_array = getattr(root, self.name)[0]
-        if np.array_equal(vl_array,feature_array):
-            self.TestStatus.equal('Success!: XML Attribute: feature/value ==> required: %s == test: %s'%(vl_array,feature_array))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: feature/value ==> required: %s != test: %s'%(vl_array,feature_array))    
+        super(Haralick_Textures, self).__init__(feature_service_test_base)     
                 
 
 class Multiscale_Historgram(FeatureTests):
@@ -760,29 +372,7 @@ class Multiscale_Historgram(FeatureTests):
 
     def __init__(self, feature_service_test_base):
         super(Multiscale_Historgram, self).__init__(feature_service_test_base)  
-
-    @test('xml')
-    def test_content_xml(self):
-        
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature[@type]')
-        if value[0].attrib['type'] == self.name:
-            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
-    
-    @test('xml')
-    def test_feature_vectors_xml(self):
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature/value')
-        feature_array = np.array(value[0].text.split()).astype('float')
-        h5file = tables.open_file('features/'+self.feature_service_test_base.resource_list[0]['filename']+'.h5','r')
-        root = h5file.root
-        vl_array = getattr(root, self.name)[0]
-        if np.array_equal(vl_array,feature_array):
-            self.TestStatus.equal('Success!: XML Attribute: feature/value ==> required: %s == test: %s'%(vl_array,feature_array))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: feature/value ==> required: %s != test: %s'%(vl_array,feature_array))    
+   
 
     
 class Object_Feature(FeatureTests):
@@ -790,30 +380,7 @@ class Object_Feature(FeatureTests):
     family_name = 'WNDCharm'
 
     def __init__(self, feature_service_test_base):
-        super(Object_Feature, self).__init__(feature_service_test_base)  
-
-    @test('xml')
-    def test_content_xml(self):
-        
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature[@type]')
-        if value[0].attrib['type'] == self.name:
-            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
-    
-    @test('xml')
-    def test_feature_vectors_xml(self):
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature/value')
-        feature_array = np.array(value[0].text.split()).astype('float')
-        h5file = tables.open_file('features/'+self.feature_service_test_base.resource_list[0]['filename']+'.h5','r')
-        root = h5file.root
-        vl_array = getattr(root, self.name)[0]
-        if np.array_equal(vl_array,feature_array):
-            self.TestStatus.equal('Success!: XML Attribute: feature/value ==> required: %s == test: %s'%(vl_array,feature_array))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: feature/value ==> required: %s != test: %s'%(vl_array,feature_array))    
+        super(Object_Feature, self).__init__(feature_service_test_base)     
 
        
 class Inverse_Object_Features(FeatureTests):
@@ -822,29 +389,6 @@ class Inverse_Object_Features(FeatureTests):
     
     def __init__(self, feature_service_test_base):
         super(Inverse_Object_Features, self).__init__(feature_service_test_base)  
-
-    @test('xml')
-    def test_content_xml(self):
-        
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature[@type]')
-        if value[0].attrib['type'] == self.name:
-            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
-    
-    @test('xml')
-    def test_feature_vectors_xml(self):
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature/value')
-        feature_array = np.array(value[0].text.split()).astype('float')
-        h5file = tables.open_file('features/'+self.feature_service_test_base.resource_list[0]['filename']+'.h5','r')
-        root = h5file.root
-        vl_array = getattr(root, self.name)[0]
-        if np.array_equal(vl_array,feature_array):
-            self.TestStatus.equal('Success!: XML Attribute: feature/value ==> required: %s == test: %s'%(vl_array,feature_array))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: feature/value ==> required: %s != test: %s'%(vl_array,feature_array))
             
     
 class Pixel_Intensity_Statistics(FeatureTests):
@@ -854,28 +398,6 @@ class Pixel_Intensity_Statistics(FeatureTests):
     def __init__(self, feature_service_test_base):
         super(Pixel_Intensity_Statistics, self).__init__(feature_service_test_base)  
 
-    @test('xml')
-    def test_content_xml(self):
-        
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature[@type]')
-        if value[0].attrib['type'] == self.name:
-            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
-    
-    @test('xml')
-    def test_feature_vectors_xml(self):
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature/value')
-        feature_array = np.array(value[0].text.split()).astype('float')
-        h5file = tables.open_file('features/'+self.feature_service_test_base.resource_list[0]['filename']+'.h5','r')
-        root = h5file.root
-        vl_array = getattr(root, self.name)[0]
-        if np.array_equal(vl_array,feature_array):
-            self.TestStatus.equal('Success!: XML Attribute: feature/value ==> required: %s == test: %s'%(vl_array,feature_array))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: feature/value ==> required: %s != test: %s'%(vl_array,feature_array)) 
      
 
 class Radon_Coefficients(FeatureTests):
@@ -885,59 +407,13 @@ class Radon_Coefficients(FeatureTests):
     def __init__(self, feature_service_test_base):
         super(Radon_Coefficients, self).__init__(feature_service_test_base)  
 
-    @test('xml')
-    def test_content_xml(self):
-        
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature[@type]')
-        if value[0].attrib['type'] == self.name:
-            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
-    
-    @test('xml')
-    def test_feature_vectors_xml(self):
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature/value')
-        feature_array = np.array(value[0].text.split()).astype('float')
-        h5file = tables.open_file('features/'+self.feature_service_test_base.resource_list[0]['filename']+'.h5','r')
-        root = h5file.root
-        vl_array = getattr(root, self.name)[0]
-        if np.array_equal(vl_array,feature_array):
-            self.TestStatus.equal('Success!: XML Attribute: feature/value ==> required: %s == test: %s'%(vl_array,feature_array))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: feature/value ==> required: %s != test: %s'%(vl_array,feature_array))     
-    
 
 class Tamura_Textures(FeatureTests):
     name = 'Tamura_Textures'
     family_name = 'WNDCharm'
     
     def __init__(self, feature_service_test_base):
-        super(Tamura_Textures, self).__init__(feature_service_test_base)  
-
-    @test('xml')
-    def test_content_xml(self):
-        
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature[@type]')
-        if value[0].attrib['type'] == self.name:
-            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
-    
-    @test('xml')
-    def test_feature_vectors_xml(self):
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature/value')
-        feature_array = np.array(value[0].text.split()).astype('float')
-        h5file = tables.open_file('features/'+self.feature_service_test_base.resource_list[0]['filename']+'.h5','r')
-        root = h5file.root
-        vl_array = getattr(root, self.name)[0]
-        if np.array_equal(vl_array,feature_array):
-            self.TestStatus.equal('Success!: XML Attribute: feature/value ==> required: %s == test: %s'%(vl_array,feature_array))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: feature/value ==> required: %s != test: %s'%(vl_array,feature_array))     
+        super(Tamura_Textures, self).__init__(feature_service_test_base)    
         
 
 class Zernike_Coefficients(FeatureTests):
@@ -946,29 +422,6 @@ class Zernike_Coefficients(FeatureTests):
     
     def __init__(self, feature_service_test_base):
         super(Zernike_Coefficients, self).__init__(feature_service_test_base)  
-
-    @test('xml')
-    def test_content_xml(self):
-        
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature[@type]')
-        if value[0].attrib['type'] == self.name:
-            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
-    
-    @test('xml')
-    def test_feature_vectors_xml(self):
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature/value')
-        feature_array = np.array(value[0].text.split()).astype('float')
-        h5file = tables.open_file('features/'+self.feature_service_test_base.resource_list[0]['filename']+'.h5','r')
-        root = h5file.root
-        vl_array = getattr(root, self.name)[0]
-        if np.array_equal(vl_array,feature_array):
-            self.TestStatus.equal('Success!: XML Attribute: feature/value ==> required: %s == test: %s'%(vl_array,feature_array))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: feature/value ==> required: %s != test: %s'%(vl_array,feature_array)) 
             
 
 class BRISK(FeatureTests):
@@ -977,19 +430,10 @@ class BRISK(FeatureTests):
     
     def __init__(self, feature_service_test_base):
         super(BRISK, self).__init__(feature_service_test_base)  
-
-    @test('xml')
-    def test_content_xml(self):
-        
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature[@type]')
-        if value[0].attrib['type'] == self.name:
-            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
     
-#    @test('xml')
-#    def test_feature_vectors_xml(self):
+    @test('xml')
+    def test_feature_vectors_xml(self):
+        pass
 #        xml_test = etree.XML(self.content)
 #        value = xml_test.xpath('//feature/value')
 #        h5file = tables.open_file('features/'+self.feature_service_test_base.resource_list[0]['filename']+'.h5','r')
@@ -1012,18 +456,10 @@ class ORB(FeatureTests):
     def __init__(self, feature_service_test_base):
         super(ORB, self).__init__(feature_service_test_base)  
 
-    @test('xml')
-    def test_content_xml(self):
-        
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature[@type]')
-        if value[0].attrib['type'] == self.name:
-            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
     
-#    @test('xml')
-#    def test_feature_vectors_xml(self):
+    @test('xml')
+    def test_feature_vectors_xml(self):
+        pass
 #        xml_test = etree.XML(self.content)
 #        value = xml_test.xpath('//feature/value')
 #        feature_array = np.array(value[0].text.split()).astype('float')
@@ -1042,18 +478,10 @@ class SIFT(FeatureTests):
     def __init__(self, feature_service_test_base):
         super(SIFT, self).__init__(feature_service_test_base)  
 
-    @test('xml')
-    def test_content_xml(self):
-        
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature[@type]')
-        if value[0].attrib['type'] == self.name:
-            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
     
-#    @test('xml')
-#    def test_feature_vectors_xml(self):
+    @test('xml')
+    def test_feature_vectors_xml(self):
+        pass
 #        xml_test = etree.XML(self.content)
 #        value = xml_test.xpath('//feature/value')
 #        feature_array = np.array(value[0].text.split()).astype('float')
@@ -1072,17 +500,10 @@ class SURF(FeatureTests):
     
     def __init__(self, feature_service_test_base):
         super(SURF, self).__init__(feature_service_test_base)  
-
-    @test('xml')
-    def test_content_xml(self):
-        
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature[@type]')
-        if value[0].attrib['type'] == self.name:
-            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
     
+    @test('xml')
+    def test_feature_vectors_xml(self):
+        pass
 #    @test('xml')
 #    def test_feature_vectors_xml(self):
 #        xml_test = etree.XML(self.content)
@@ -1103,29 +524,6 @@ class LBP(FeatureTests):
     
     def __init__(self, feature_service_test_base):
         super(LBP, self).__init__(feature_service_test_base)  
-
-    @test('xml')
-    def test_content_xml(self):
-        
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature[@type]')
-        if value[0].attrib['type'] == self.name:
-            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
-    
-    @test('xml')
-    def test_feature_vectors_xml(self):
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature/value')
-        feature_array = np.array(value[0].text.split()).astype('float')
-        h5file = tables.open_file('features/'+self.feature_service_test_base.resource_list[0]['filename']+'.h5','r')
-        root = h5file.root
-        vl_array = getattr(root, self.name)[0]
-        if np.array_equal(vl_array,feature_array):
-            self.TestStatus.equal('Success!: XML Attribute: feature/value ==> required: %s == test: %s'%(vl_array,feature_array))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: feature/value ==> required: %s != test: %s'%(vl_array,feature_array))
             
             
 class PFTAS(FeatureTests):
@@ -1133,30 +531,7 @@ class PFTAS(FeatureTests):
     family_name = 'Mahotas'
     
     def __init__(self, feature_service_test_base):
-        super(PFTAS, self).__init__(feature_service_test_base)  
-
-    @test('xml')
-    def test_content_xml(self):
-        
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature[@type]')
-        if value[0].attrib['type'] == self.name:
-            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
-    
-    @test('xml')
-    def test_feature_vectors_xml(self):
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature/value')
-        feature_array = np.array(value[0].text.split()).astype('float')
-        h5file = tables.open_file('features/'+self.feature_service_test_base.resource_list[0]['filename']+'.h5','r')
-        root = h5file.root
-        vl_array = getattr(root, self.name)[0]
-        if np.array_equal(vl_array,feature_array):
-            self.TestStatus.equal('Success!: XML Attribute: feature/value ==> required: %s == test: %s'%(vl_array,feature_array))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: feature/value ==> required: %s != test: %s'%(vl_array,feature_array))    
+        super(PFTAS, self).__init__(feature_service_test_base)     
     
     
 class TAS(FeatureTests):
@@ -1165,29 +540,6 @@ class TAS(FeatureTests):
     
     def __init__(self, feature_service_test_base):
         super(TAS, self).__init__(feature_service_test_base)  
-
-    @test('xml')
-    def test_content_xml(self):
-        
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature[@type]')
-        if value[0].attrib['type'] == self.name:
-            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
-    
-    @test('xml')
-    def test_feature_vectors_xml(self):
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature/value')
-        feature_array = np.array(value[0].text.split()).astype('float')
-        h5file = tables.open_file('features/'+self.feature_service_test_base.resource_list[0]['filename']+'.h5','r')
-        root = h5file.root
-        vl_array = getattr(root, self.name)[0]
-        if np.array_equal(vl_array,feature_array):
-            self.TestStatus.equal('Success!: XML Attribute: feature/value ==> required: %s == test: %s'%(vl_array,feature_array))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: feature/value ==> required: %s != test: %s'%(vl_array,feature_array)) 
                  
 
 class ZM(FeatureTests):
@@ -1196,29 +548,6 @@ class ZM(FeatureTests):
     
     def __init__(self, feature_service_test_base):
         super(ZM, self).__init__(feature_service_test_base)  
-
-    @test('xml')
-    def test_content_xml(self):
-        
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature[@type]')
-        if value[0].attrib['type'] == self.name:
-            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
-    
-    @test('xml')
-    def test_feature_vectors_xml(self):
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature/value')
-        feature_array = np.array(value[0].text.split()).astype('float')
-        h5file = tables.open_file('features/'+self.feature_service_test_base.resource_list[0]['filename']+'.h5','r')
-        root = h5file.root
-        vl_array = getattr(root, self.name)[0]
-        if np.array_equal(vl_array,feature_array):
-            self.TestStatus.equal('Success!: XML Attribute: feature/value ==> required: %s == test: %s'%(vl_array,feature_array))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: feature/value ==> required: %s != test: %s'%(vl_array,feature_array)) 
          
                      
 class FFTSD(FeatureTests):
@@ -1227,28 +556,5 @@ class FFTSD(FeatureTests):
     input_type = ['polygon']
 
     def __init__(self, feature_service_test_base):
-        super(FFTSD, self).__init__(feature_service_test_base)  
-
-    @test('xml')
-    def test_content_xml(self):
-        
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature[@type]')
-        if value[0].attrib['type'] == self.name:
-            self.TestStatus.equal('Success!: XML Attribute: type ==> required: %s == test: %s'%(value[0],self.name))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: type ==> required: %s != test: %s'%(value[0],self.name))
-    
-    @test('xml')
-    def test_feature_vectors_xml(self):
-        xml_test = etree.XML(self.content)
-        value = xml_test.xpath('//feature/value')
-        feature_array = np.array(value[0].text.split()).astype('float')
-        h5file = tables.open_file('features/'+self.feature_service_test_base.resource_list[0]['filename']+'.h5','r')
-        root = h5file.root
-        vl_array = getattr(root, self.name)[0]
-        if np.array_equal(vl_array,feature_array):
-            self.TestStatus.equal('Success!: XML Attribute: feature/value ==> required: %s == test: %s'%(vl_array,feature_array))
-        else:
-            self.TestStatus.not_equal('Failure!: XML Attribute: feature/value ==> required: %s != test: %s'%(vl_array,feature_array))    
+        super(FFTSD, self).__init__(feature_service_test_base)   
    

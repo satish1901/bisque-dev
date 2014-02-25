@@ -29,20 +29,16 @@ class FFTSD(Feature.Feature):
         """ Append descriptors to SURF h5 table """
         #initalizing
         polygon_uri = resource['polygon']
-        xml=Feature.XMLImport(polygon_uri+'?view=deep')
-        tree=xml.returnxml()
-        if tree.tag=='polygon':
+        xml=Feature.xml_import(polygon_uri+'?view=deep')
+        if xml.tag==self.resource[0]:
             vertices = tree.xpath('vertex')
             contour = []
             for vertex in vertices:
                 contour.append([int(float(vertex.attrib['x'])),int(float(vertex.attrib['y']))])
         else:
 
-            log.debug('polygon not found: must be a polygon gobject')
-            raise ValueError('polygon not found: must be a polygon gobject') #an excpetion instead of abort so work flow is not interupted
-
-            #abort(404, 'polygon not found: must be a polygon gobject')
-            #raise ValueError('polygon not found: must be a polygon gobject')
+            log.debug('Polygon not found: Must be a polygon gobject')
+            raise ValueError('Polygon not found: Must be a polygon gobject') #an excpetion instead of abort so work flow is not interupted
         
         descriptor = fftsd(contour,self.length)
                 

@@ -162,7 +162,7 @@ def send (req):
                             body = req.body)
 
     response = Response()
-    response.code = headers.pop ('status')
+    response.status = headers.pop ('status')
     response.headers = headers
     response.body    = content
     return response

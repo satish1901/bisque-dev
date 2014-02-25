@@ -8,11 +8,15 @@ from monkeypatch import *
 
 tables_v = [int(s) for s in tables.__version__.split('.')]
 
-if tables_v < [2, 3, 0] or tables_v > [2, 4, 1]:
+if tables_v < [2, 3, 0]:
     warnings.warn("""\
-We need to patch pytables 2.3.X up to 2.4.0, other versions are untested,
-please, make sure your version of pytbales needs patching"""
+We need to patch pytables 2.3.X up to 3.0.0, versions 3.1.0 or 
+greater does not require this patch, make sure your version of pytables
+needs patching"""
                   , PerformanceWarning)
+elif tables_v > [3, 0, 0]:
+    #does not require this patch
+    pass
 else:
     @monkeypatch_method(Leaf)
     def _calc_nrowsinbuf(self):
