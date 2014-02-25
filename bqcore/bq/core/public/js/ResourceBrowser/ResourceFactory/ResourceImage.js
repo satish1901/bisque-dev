@@ -608,6 +608,11 @@ Ext.define('Bisque.Resource.Image.Page', {
                     this.viewerContainer.viewer.delete_gobjects(gobs);
                 },
 
+                color_gobjects : function(gobs, color) {
+                    for (var i=0; i<gobs.length; i++)
+                        this.viewerContainer.viewer.color_gobject(gobs[i], color);
+                },
+
                 create_gobject : function(gob) {
                     var uri = '';
                     if (!gob.parent) {

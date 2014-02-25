@@ -586,6 +586,10 @@ ImgViewer.prototype.highlight_gobject = function(gob, selection) {
     this.renderer.highlight(gob, selection);
 };
 
+ImgViewer.prototype.color_gobject = function(gob, color) {
+    this.renderer.setcolor(gob, color);
+};
+
 ImgViewer.prototype.delete_gobjects = function(gobs) {
     var g=undefined;
     for (var i=0; (g=gobs[i]); i++)

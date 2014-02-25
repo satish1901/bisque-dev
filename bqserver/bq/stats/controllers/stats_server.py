@@ -305,6 +305,15 @@ class statsController(ServiceController):
         response.headers['Content-Disposition'] = disposition
         return '%s\n%s'%( ', '.join(mytitles).encode('utf8'), stream)
 
+    def get_request (self, url, setmode):
+        request = data_service.get_resource(url, view='deep')
+        # if the resource is a dataset, fetch contents of documents linked in it
+        if request.tag == 'dataset' and not setmode: 
+            members_uri = request.get('uri')
+            if members_uri is not None:
+                request = data_service.get_resource('%s/value'%members_uri, view='deep')
+        return request
+
     #-------------------------------------------------------------   
     # this function will raise exceptions of operators or summarizers cannot take requested inputs
     #-------------------------------------------------------------    
@@ -324,13 +333,13 @@ class statsController(ServiceController):
             log.debug('Request stopped: requested reduction operator was not found')    
             abort(400, 'requested reduction operator was not found')
 
-        url     = kw['url']
+        url     = getNumberedArgs(kw, 'url') #kw['url']
         xpath   = getNumberedArgs(kw, 'xpath')
         xmap    = getNumberedArgs(kw, 'xmap')
         xreduce = getNumberedArgs(kw, 'xreduce')
         titles  = getNumberedArgs(kw, 'title')
         if len(titles)<=0: titles = [None]
-        maxsize = max([ len(xpath), len(xmap), len(xreduce) ])
+        maxsize = max([ len(url), len(xpath), len(xmap), len(xreduce) ])
         xpath   = guaranteeSize(xpath, maxsize)        
         xmap    = guaranteeSize(xmap, maxsize)
         xreduce = guaranteeSize(xreduce, maxsize)
@@ -340,21 +349,19 @@ class statsController(ServiceController):
 
         # -----------------------------------------------------
         # QUERY
-        # -----------------------------------------------------        
+        # -----------------------------------------------------
         #etree = data_service.load(url+'?view=deep')
         #data_service.get_resource(url, view='deep', tag_query="AAA")
         # TODO: Vey inefficient now, need to request queries to the DB!!!!!!!!!!!!!!
         #request = etree.parse('F:\dima\develop\python\dataset.xml')
-        request = data_service.get_resource(url, view='deep')
-
-        # if the resource is a dataset, fetch contents of documents linked in it
-        if request.tag == 'dataset' and not setmode: 
-            members_uri = request.get('uri')
-            if members_uri is not None:
-                request = data_service.get_resource('%s/value'%members_uri, view='deep')
+        if len(url)==1:
+            request = self.get_request (url[0], setmode)
         
         stream = []        
         for i in range(len(xpath)):
+            
+            if len(url)>1:
+                request = self.get_request (url[i], setmode)
             
             # -----------------------------------------------------
             # XPath
