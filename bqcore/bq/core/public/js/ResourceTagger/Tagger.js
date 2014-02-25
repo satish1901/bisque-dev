@@ -990,13 +990,7 @@ Ext.define('Bisque.GObjectTagger', {
     },
 
     onLoaded: function () {
-        this.tree.addDocked([/*{
-            xtype: 'container',
-            cls: 'bq-gob-header',
-            html: '<h3>Add annotations</h3>',
-            border: 0,
-            dock: 'top',
-        },*/ {
+        this.tree.addDocked([{
             xtype: 'gobspanel',
             itemId: 'panelGobTypes',
             title: 'Graphical annotations',
@@ -1042,7 +1036,6 @@ Ext.define('Bisque.GObjectTagger', {
                     }]
                 }
             }, {
-                // xtype: 'button', // default for Toolbars
                 itemId: 'btnCreateFolder',
                 text: 'Add',
                 scale: 'medium',
@@ -1051,7 +1044,6 @@ Ext.define('Bisque.GObjectTagger', {
                 scope: this,
                 tooltip: 'Add a new group graphical object into the tree',
             },{
-                // xtype: 'button', // default for Toolbars
                 itemId: 'btnDeleteSelected',
                 text: 'Delete',
                 scale: 'medium',
@@ -1060,7 +1052,6 @@ Ext.define('Bisque.GObjectTagger', {
                 scope: this,
                 tooltip: 'Delete selected annotations in the tree',
             },{
-                // xtype: 'button', // default for Toolbars
                 itemId: 'btnColorSelected',
                 text: 'Color',
                 scale: 'medium',
@@ -1069,12 +1060,10 @@ Ext.define('Bisque.GObjectTagger', {
                 scope: this,
                 tooltip: 'Select color for selected annotations in the tree',
             },{
-                // xtype: 'button', // default for Toolbars
                 itemId: 'btnStatsSelected',
                 text: 'Stats',
                 scale: 'medium',
                 iconCls: 'icon-stats',
-                //handler: this.onStats,
                 scope: this,
                 tooltip: 'Compute statistics for selected annotations in the tree',
                 menu: [{
@@ -1136,30 +1125,31 @@ Ext.define('Bisque.GObjectTagger', {
     },
 
     toggleCheckTree: function (button) {
-        var rootNode = this.tree.getRootNode(), eventName;
         button.checked = !button.checked;
-
+        button.check = button.checked;
         if (button.checked)
             button.setIconCls('icon-check');
         else
             button.setIconCls('icon-uncheck');
-
-        for (var i = 0; i < rootNode.childNodes.length; i++) {
-            eventName = (!rootNode.childNodes[i].get('checked')) ? 'checked' : 'unchecked';
-            this.fireEvent(eventName, this, rootNode.childNodes[i]);
-        }
-
-        this.toggleTree(rootNode);
+        this.toggleCheck(button);
     },
 
     toggleCheck: function (button) {
         button.checked = button.check;
-        var rootNode = this.tree.getRootNode(), eventName = (button.checked) ? 'checked' : 'unchecked';
+        var sel = this.tree.getSelectionModel().getSelection();
+        if (sel.length<1)
+            sel = this.tree.getRootNode().childNodes;
+        var r=undefined;
+        for (var i=0; (r=sel[i]); i++) {
+            r.set('checked', button.checked);
+            this.fireEvent((button.checked) ? 'checked' : 'unchecked', this, r);
+        }
 
+        /*button.checked = button.check;
+        var rootNode = this.tree.getRootNode(), eventName = (button.checked) ? 'checked' : 'unchecked';
         for (var i = 0; i < rootNode.childNodes.length; i++)
             this.fireEvent(eventName, this, rootNode.childNodes[i]);
-
-        this.checkTree(rootNode, button.checked);
+        this.checkTree(rootNode, button.checked);*/
     },
 
     findGObjects: function (resource, imageURI) {
