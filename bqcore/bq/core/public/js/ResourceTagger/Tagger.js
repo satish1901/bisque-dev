@@ -1470,7 +1470,9 @@ Ext.define('Bisque.GObjectTagger', {
         var r=undefined;
         for (var i=0; (r=sel[i]); i++) {
             url.push(r.raw.uri);
-            titles.push( r.raw.type +':'+ r.raw.name );
+            var name = r.raw.type || r.raw.resource_type;
+            name += r.raw.name ? ':'+ r.raw.name : '';
+            titles.push(name);
         }
 
         // define xpath to search for all possible gobject types
