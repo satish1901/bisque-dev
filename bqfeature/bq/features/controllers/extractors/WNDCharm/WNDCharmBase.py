@@ -50,18 +50,16 @@ class WNDCharm(Feature.Feature): #base WNDCharm feature class
         image_uri += '&'.join(args)
         
         log.debug('WNDCharm uri: %s'% image_uri)
-        Im = Feature.ImageImport(image_uri,'tiff') #importing image from image service
-        image_path = Im.returnpath()
-        im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_UNCHANGED) #CV_LOAD_IMAGE_UNCHANGED CV_LOAD_IMAGE_ANYDEPTH
-        # extract the feature keypoints and descriptor
-        if im==None:
-            raise ValueError('Format was not supported')
-            #abort(415, 'Format was not supported')
-
-        im = np.asarray(im)        
-        extractWNDCharmFeature = feature_info[0]
-        descriptor = extractWNDCharmFeature(im)
-        del Im 
+        with Feature.ImageImport(image_uri) as imgimp:
+            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_UNCHANGED) #CV_LOAD_IMAGE_UNCHANGED CV_LOAD_IMAGE_ANYDEPTH
+            # extract the feature keypoints and descriptor
+            if im==None:
+                raise ValueError('Format was not supported')
+                #abort(415, 'Format was not supported')
+    
+            im = np.asarray(im)        
+            extractWNDCharmFeature = feature_info[0]
+            descriptor = extractWNDCharmFeature(im)
  
             
         #initalizing rows for the table

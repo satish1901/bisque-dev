@@ -27,15 +27,13 @@ class SCD(Feature.Feature):
     def calculate(self, **resource):
         """ Append descriptors to h5 table """
         image_uri = resource['image']
-        Im = Feature.ImageImport(image_uri) #importing image from image service
-        image_path = Im.returnpath()
-        im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
-        del Im
-        if im==None:
-            raise ValueError('Format was not supported')
-        im=np.asarray(im)
         
-        descriptors = extractSCD(im, descSize=256) #calculating descriptor
+        with Feature.ImageImport(image_uri) as imgimp: #looking for the file internally and externally
+            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
+            if im is None:
+                raise ValueError('Format was not supported')
+            im=np.asarray(im)
+            descriptors = extractSCD(im, descSize=256) #calculating descriptor
         
         return [descriptors]
 
@@ -53,15 +51,14 @@ class HTD2(Feature.Feature):
         #initalizing
         
         image_uri = resource['image']
-        Im = Feature.ImageImport(image_uri) #importing image from image service
-        image_path = Im.returnpath()
-        im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
-        del Im
-        if im==None:
-            raise ValueError('Format was not supported')
-        im=np.asarray(im)
         
-        descriptors = extractHTD(im) #calculating descriptor
+        with Feature.ImageImport(image_uri) as imgimp: #looking for the file internally and externally
+            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
+            if im==None:
+                raise ValueError('Format was not supported')
+            im=np.asarray(im)
+            
+            descriptors = extractHTD(im) #calculating descriptor
         
         return [descriptors]
 
@@ -86,15 +83,14 @@ class EHD2(Feature.Feature):
         #initalizing
         
         image_uri = resource['image']
-        Im = Feature.ImageImport(image_uri) #importing image from image service
-        image_path = Im.returnpath()
-        im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
-        del Im
-        if im==None:
-            raise ValueError('Format was not supported')
-        im=np.asarray(im)
         
-        descriptors = extractEHD(im) #calculating descriptor
+        with Feature.ImageImport(image_uri) as imgimp:
+            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
+            if im==None:
+                raise ValueError('Format was not supported')
+            im=np.asarray(im)
+            
+            descriptors = extractEHD(im) #calculating descriptor
         
         return [descriptors]
  
@@ -115,27 +111,27 @@ class DCD(Feature.Feature):
         """ Append descriptors to SURF h5 table """
         
         image_uri = resource['image']
-        Im = Feature.ImageImport(image_uri) #importing image from image service
-        image_path = Im.returnpath()
-        im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
-        del Im
-        if im==None:
-            raise ValueError('Format was not supported')
-        im=np.asarray(im)
         
-        #calculating descriptor
-        DCD = extractDCD(im)
-        #log.debug('descriptors: %s'%descriptors)
-        #log.debug('length of descriptors: %s'%len(descriptors[0]))
-        
-        #DCD has a potentional to be any length
-        #the arbitrary decided length to store in the tables is 100
-        if len(DCD)>self.length:
-            log.debug('Warning: greater than 100 dimensions')
-            DCD=DCD[:self.length]
-
-        descriptors = np.zeros((self.length))
-        descriptors[:len(DCD)]=DCD
+        with Feature.ImageImport(image_uri) as imgimp:
+            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
+            del Im
+            if im==None:
+                raise ValueError('Format was not supported')
+            im=np.asarray(im)
+            
+            #calculating descriptor
+            DCD = extractDCD(im)
+            #log.debug('descriptors: %s'%descriptors)
+            #log.debug('length of descriptors: %s'%len(descriptors[0]))
+            
+            #DCD has a potentional to be any length
+            #the arbitrary decided length to store in the tables is 100
+            if len(DCD)>self.length:
+                log.debug('Warning: greater than 100 dimensions')
+                DCD=DCD[:self.length]
+    
+            descriptors = np.zeros((self.length))
+            descriptors[:len(DCD)]=DCD
         
         #initalizing rows for the table
         return [descriptors]
@@ -171,46 +167,44 @@ class mDCD(DCD):
         """ Append descriptors to SURF h5 table """
         
         image_uri = resource['image']
-        Im = Feature.ImageImport(image_uri) #importing image from image service
-        image_path = Im.returnpath()
-        im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
-        del Im
-        if im==None:
-            raise ValueError('Format was not supported')
-        im=np.asarray(im)
-        
         mask_uri = resource['mask']
-        Im = Feature.ImageImport(mask_uri) #importing image from image service
-        mask_path = Im.returnpath()
-        mask = cv2.imread(mask_path, 2)
-        del Im
-        if mask==None:
-            raise ValueError('Format was not supported')
         
-        im=np.asarray(im)
-        mask = np.asarray(mask)
-        
-        descritptor_list = []
-        label_list = []
-        #calculating descriptor
-        for label in np.unique(mask):
-            lmask = np.array((mask==label)*255,dtype='uint8')
-            DCD = extractDCD(im, mask = lmask)
+        with Feature.ImageImport(image_uri) as imgimp:
+            with Feature.ImageImport(mask_uri) as maskimp:
             
-            label_list.append(label)
-            #log.debug('descriptors: %s'%descriptors)
-            #log.debug('length of descriptors: %s'%len(descriptors[0]))
+                im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
+                if im==None:
+                    raise ValueError('Format was not supported')
+                
+                mask = cv2.imread(str(maskimp), 2)
+                if mask==None:
+                    raise ValueError('Format was not supported')
+                
+                im=np.asarray(im)
+                mask = np.asarray(mask)
+                
+                descritptor_list = []
+                label_list = []
+                #calculating descriptor
+                for label in np.unique(mask):
+                    lmask = np.array((mask==label)*255,dtype='uint8')
+                    DCD = extractDCD(im, mask = lmask)
+                    
+                    label_list.append(label)
+                    #log.debug('descriptors: %s'%descriptors)
+                    #log.debug('length of descriptors: %s'%len(descriptors[0]))
+                    
+                    #DCD has a potentional to be any length
+                    #the arbitrary decided length to store in the tables is 100
+                    if len(DCD)>self.length:
+                        log.debug('Warning: greater than 100 dimensions')
+                        DCD=DCD[:self.length]
             
-            #DCD has a potentional to be any length
-            #the arbitrary decided length to store in the tables is 100
-            if len(DCD)>self.length:
-                log.debug('Warning: greater than 100 dimensions')
-                DCD=DCD[:self.length]
-    
-            descriptors = np.zeros((self.length))
-            
-            descriptors[:len(DCD)]=DCD
-            descritptor_list.append(descriptors)
+                    descriptors = np.zeros((self.length))
+                    
+                    descriptors[:len(DCD)]=DCD
+                    descritptor_list.append(descriptors)
+                
         #initalizing rows for the table
         return descritptor_list, label_list
     
@@ -251,15 +245,13 @@ class CSD(Feature.Feature):
         #initalizing
         
         image_uri = resource['image']
-        Im = Feature.ImageImport(image_uri) #importing image from image service
-        image_path = Im.returnpath()
-        im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
-        del Im
-        if im==None:
-            raise ValueError('Format was not supported')
-        im=np.asarray(im)
         
-        descriptors = extractCSD(im, descSize=64) #calculating descriptor
+        with Feature.ImageImport(image_uri) as imgimp:
+            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
+            if im==None:
+                raise ValueError('Format was not supported')
+            im=np.asarray(im)
+            descriptors = extractCSD(im, descSize=64) #calculating descriptor
         
         return [descriptors]
         
@@ -294,34 +286,32 @@ class mCSD(CSD):
         """ Append descriptors to SURF h5 table """
         
         image_uri = resource['image']
-        Im = Feature.ImageImport(image_uri) #importing image from image service
-        image_path = Im.returnpath()
-        im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
-        del Im
-        if im==None:
-            raise ValueError('Format was not supported')
-        im=np.asarray(im)
-        
         mask_uri = resource['mask']
-        Im = Feature.ImageImport(mask_uri) #importing image from image service
-        mask_path = Im.returnpath()
-        mask = cv2.imread(mask_path, 2)
-        del Im
-        if mask==None:
-            raise ValueError('Format was not supported')
         
-        im=np.asarray(im)
-        mask = np.asarray(mask)
-        
-        descritptor_list = []
-        label_list = []
-        #calculating descriptor
-        for label in np.unique(mask):
-            lmask = np.array((mask==label)*255,dtype='uint8')
-            descriptors = extractCSD(im, mask=lmask, descSize=64)
-            descritptor_list.append(descriptors)
-            label_list.append(label)
-         #calculating descriptor
+        with Feature.ImageImport(image_uri) as imgimp:
+            with Feature.ImageImport(mask_uri) as maskimp:
+                im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
+                if im==None:
+                    raise ValueError('Format was not supported')
+                im=np.asarray(im)
+                
+            
+                mask = cv2.imread(str(maskimp), 2)
+                if mask==None:
+                    raise ValueError('Format was not supported')
+                
+                im=np.asarray(im)
+                mask = np.asarray(mask)
+                
+                descritptor_list = []
+                label_list = []
+                
+                #calculating descriptor
+                for label in np.unique(mask):
+                    lmask = np.array((mask==label)*255,dtype='uint8')
+                    descriptors = extractCSD(im, mask=lmask, descSize=64)
+                    descritptor_list.append(descriptors)
+                    label_list.append(label)
         
         return descritptor_list, label_list
 
@@ -361,15 +351,14 @@ class CLD(Feature.Feature):
         """ Append descriptors to h5 table """
         
         image_uri = resource['image']
-        Im = Feature.ImageImport(image_uri) #importing image from image service
-        image_path = Im.returnpath()
-        im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
-        del Im
-        if im==None:
-            raise ValueError('Format was not supported')
-        im=np.asarray(im)
-        
-        descriptors = extractCLD(im, numYCoef=64, numCCoef = 28)
+        with Feature.ImageImport(image_uri) as imgimp:
+            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
+            if im==None:
+                raise ValueError('Format was not supported')
+            im=np.asarray(im)
+            
+            descriptors = extractCLD(im, numYCoef=64, numCCoef = 28)
+            
         return [descriptors]
 
 class mCLD(CLD):
@@ -404,34 +393,34 @@ class mCLD(CLD):
         """ Append descriptors to SURF h5 table """
         
         image_uri = resource['image']
-        Im = Feature.ImageImport(image_uri) #importing image from image service
-        image_path = Im.returnpath()
-        im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
-        del Im
-        if im==None:
-            raise ValueError('Format was not supported')
-        im=np.asarray(im)
-        
         mask_uri = resource['mask']
-        Im = Feature.ImageImport(mask_uri) #importing image from image service
-        mask_path = Im.returnpath()
-        mask = cv2.imread(mask_path, 2)
-        del Im
-        if mask==None:
-            raise ValueError('Format was not supported')
         
-        im=np.asarray(im)
-        mask = np.asarray(mask)
-        
-        descritptor_list = []
-        label_list = []
-        #calculating descriptor
-        for label in np.unique(mask):
-            lmask = np.array((mask==label)*255,dtype='uint8')
-            descriptors = extractCLD(im,mask=lmask,numYCoef=64, numCCoef = 28)
-            descritptor_list.append(descriptors)
-            label_list.append(label)
-         #calculating descriptor
+        with Feature.ImageImport(image_uri) as imgimp:
+            with Feature.ImageImport(mask_uri) as maskimp:
+                
+                im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
+                if im==None:
+                    raise ValueError('Format was not supported')
+                im=np.asarray(im)
+                
+                
+                Im = Feature.ImageImport(mask_uri) #importing image from image service
+                mask = cv2.imread(str(maskimp), 2)
+                if mask==None:
+                    raise ValueError('Format was not supported')
+                
+                im=np.asarray(im)
+                mask = np.asarray(mask)
+                
+                descritptor_list = []
+                label_list = []
+                #calculating descriptor
+                for label in np.unique(mask):
+                    lmask = np.array((mask==label)*255,dtype='uint8')
+                    descriptors = extractCLD(im,mask=lmask,numYCoef=64, numCCoef = 28)
+                    descritptor_list.append(descriptors)
+                    label_list.append(label)
+
         
         return descritptor_list, label_list
 
@@ -453,13 +442,15 @@ class mCLD(CLD):
             
         return  
 
-class RSD(Feature.Feature):
+
+
+class pRSD(Feature.Feature):
     """
-        Initalizes table and calculates the SURF descriptor to be
+        Initalizes table and calculates the pRSD descriptor to be
         placed into the HDF5 table.
     """
     
-    name = 'RSD'
+    name = 'pRSD'
     description = """Region Shape Descritpor"""
     length = 35
     resource = ['image','polygon']
@@ -468,11 +459,10 @@ class RSD(Feature.Feature):
             
     @Feature.wrapper
     def calculate(self, **resource):
-        """ Append descriptors to SURF h5 table """
         #initalizing
         
         polygon_uri = resource['polygon']
-        xml = Feature.XMLImport(polygon_uri+'?view=deep')
+        xml = Feature.xml_import(polygon_uri+'?view=deep')
         tree = xml.returnxml()
         if tree.tag=='polygon':
             vertices = tree.xpath('vertex')
@@ -481,44 +471,25 @@ class RSD(Feature.Feature):
                 contour.append((int(float(vertex.attrib['x'])),int(float(vertex.attrib['y']))))
         else:
             raise ValueError(404, 'polygon not found: must be a polygon gobject')
-
-        
-#        gobject = self.uri.replace('/',' ').replace('?',' ').split()
-#        image_id=[]
-#        for i,split in enumerate(gobject):
-#            if split == 'image':
-#                image_id.append(gobject[i+1])
-#        
-#        if len(image_id)>1:
-#            abort(500,'too many ids')
-#        elif len(image_id)<1:
-#            about(500,'no ids')
-#        else:
-#            root = 'http://128.111.185.26:8080'
-#            xml = Feature.XMLImport(root+'/data_service/image/'+image_id[0])
-#            tree = xml.returnxml()
-#            self.image_uri = root+'/image_service/image/'+tree.attrib['resource_uniq']
         
         
         self.image_uri = resource['image']
-        Im = Feature.ImageImport(self.image_uri) #importing image from image service
-        image_path = Im.returnpath()
-        im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
-        
-        col,row,channel = im.shape
-        #creating mask
-        import Image
-        import ImageDraw
-        #parameters
-        log.debug('contour: %s'%contour)
-        img = Image.new('L', (row, col), 0)
-        ImageDraw.Draw(img).polygon(contour, outline=1, fill=1)
-        mask = np.array(img)*255
-
-        
-        #initalizing rows for the table
-        descriptors = extractRSD(im, mask)
-        del Im
+        with Feature.ImageImport(image_uri) as imgimp:
+            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
+            
+            col,row,channel = im.shape
+            #creating mask
+            import Image #requires pil
+            import ImageDraw
+            #parameters
+            log.debug('contour: %s'%contour)
+            img = Image.new('L', (row, col), 0)
+            ImageDraw.Draw(img).polygon(contour, outline=1, fill=1)
+            mask = np.array(img)*255
+    
+            
+            #initalizing rows for the table
+            descriptors = extractRSD(im, mask)
         
         return [descriptors]
     
@@ -538,7 +509,7 @@ class RSD(Feature.Feature):
             
         return
     
-class mRSD(RSD):
+class mRSD(pRSD):
     """
         Initalizes table and calculates the SURF descriptor to be
         placed into the HDF5 table.
@@ -569,34 +540,35 @@ class mRSD(RSD):
         #initalizing
         
         image_uri = resource['image']
-        Im = Feature.ImageImport(image_uri) #importing image from image service
-        image_path = Im.returnpath()
-        im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_COLOR)
-        del Im
-        if im==None:
-            raise ValueError('Format was not supported')
-        im=np.asarray(im)
-        
         mask_uri = resource['mask']
-        Im = Feature.ImageImport(mask_uri) #importing image from image service
-        mask_path = Im.returnpath()
-        mask = cv2.imread(mask_path, 2)
-        del Im
-        if mask==None:
-            raise ValueError('Format was not supported')
-        
-        im=np.asarray(im)
-        mask = np.asarray(mask)
-        
-        descritptor_list = []
-        label_list = []
-        #calculating descriptor
-        for label in np.unique(mask):
-            lmask = np.array((mask==label)*255,dtype='uint8')
-            descriptors = extractRSD(im,mask=lmask)
-            descritptor_list.append(descriptors)
-            label_list.append(label)
-        #initalizing rows for the table
+                
+        with Feature.ImageImport(image_uri) as imgimp:
+            with Feature.ImageImport(mask_uri) as maskimp:
+                
+
+                im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
+                del Im
+                if im==None:
+                    raise ValueError('Format was not supported')
+                im=np.asarray(im)
+                
+                mask = cv2.imread(str(maskimp), 2)
+                del Im
+                if mask==None:
+                    raise ValueError('Format was not supported')
+                
+                im=np.asarray(im)
+                mask = np.asarray(mask)
+                
+                descritptor_list = []
+                label_list = []
+                #calculating descriptor
+                for label in np.unique(mask):
+                    lmask = np.array((mask==label)*255,dtype='uint8')
+                    descriptors = extractRSD(im,mask=lmask)
+                    descritptor_list.append(descriptors)
+                    label_list.append(label)
+                #initalizing rows for the table
         
         return descritptor_list, label_list
     

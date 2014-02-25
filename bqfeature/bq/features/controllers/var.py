@@ -11,5 +11,5 @@ FEATURES_STORAGE_FILE_DIR = data_path('features')
 
 FEATURES_TABLES_FILE_DIR = os.path.join(FEATURES_STORAGE_FILE_DIR ,'feature_tables')
 FEATURES_TABLES_WORK_DIR = os.path.join(FEATURES_STORAGE_FILE_DIR ,'workdir')
-FEATURES_TEMP_IMAGE_DIR = os.path.join(FEATURES_STORAGE_FILE_DIR,'feature_temp_images')
+FEATURES_TEMP_IMAGE_DIR = os.path.join(FEATURES_STORAGE_FILE_DIR,'temp_images')
 FEATURES_TEMP_FILE_DIR = os.path.join(FEATURES_STORAGE_FILE_DIR,'temp_files')

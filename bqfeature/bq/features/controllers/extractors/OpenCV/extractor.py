@@ -45,39 +45,37 @@ class BRISK(Feature.Feature):
         """ Append descriptors to BRISK h5 table """
         
         image_uri = resource['image']
-        Im = Feature.ImageImport(image_uri) #importing image from image service
-        image_path = Im.returnpath()
-        im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
-        del Im     
+        with Feature.ImageImport(image_uri) as imgimp:
+            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)  
 
-        if im==None:
-            raise ValueError('Format was not supported')
-        im=np.asarray(im)
-        
-        fs = cv2.BRISK().detect(im)                             # keypoints
-        
-        log.debug('fs: %s' %len(fs))
-        
-        # extract the feature keypoints and descriptor
-        descriptor_extractor = cv2.DescriptorExtractor_create("BRISK")
-        (kpts, descriptors) = descriptor_extractor.compute(im,fs)
-
-        if descriptors == None: #taking Nonetype into account
-            descriptors=[]
-        
-        x=[]
-        y=[]
-        response=[]
-        size=[]
-        angle=[]
-        octave=[]
-        for k in kpts:
-            x.append(k.pt[0])
-            y.append(k.pt[1])
-            response.append(k.response)
-            size.append(k.size)
-            angle.append(k.angle)
-            octave.append(k.octave)
+            if im==None:
+                raise ValueError('Format was not supported')
+            im=np.asarray(im)
+            
+            fs = cv2.BRISK().detect(im)                             # keypoints
+            
+            log.debug('fs: %s' %len(fs))
+            
+            # extract the feature keypoints and descriptor
+            descriptor_extractor = cv2.DescriptorExtractor_create("BRISK")
+            (kpts, descriptors) = descriptor_extractor.compute(im,fs)
+    
+            if descriptors == None: #taking Nonetype into account
+                descriptors=[]
+            
+            x=[]
+            y=[]
+            response=[]
+            size=[]
+            angle=[]
+            octave=[]
+            for k in kpts:
+                x.append(k.pt[0])
+                y.append(k.pt[1])
+                response.append(k.response)
+                size.append(k.size)
+                angle.append(k.angle)
+                octave.append(k.octave)
         
         return descriptors,x,y,response,size,angle,octave
     
@@ -137,43 +135,42 @@ class BRISKc(Feature.Feature):
     def calculate(self, uri):
         """ Append descriptors to SIFT h5 table """
         
-        Im = Feature.ImageImport(uri) #importing image from image service
-        image_path = Im.returnpath()
-        im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
-        del Im     
-        if im==None:
-            raise ValueError('Format was not supported')
-        im=np.asarray(im)
+        with Feature.ImageImport(image_uri) as imgimp:
+            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
         
-        imagesize=im.shape
-        if imagesize[0]>imagesize[1]:
-            scale=imagesize[1]/5
-        else:
-            scale=imagesize[0]/5
+            if im==None:
+                raise ValueError('Format was not supported')
+            im=np.asarray(im)
             
-        fs = cv2.KeyPoint(imagesize[0]/2,imagesize[1]/2,scale)       # keypoints
-        
-        
-        # extract the feature keypoints and descriptor
-        descriptor_extractor = cv2.DescriptorExtractor_create("BRISK")
-        (kpts, descriptors) = descriptor_extractor.compute(im,[fs])
-
-        if descriptors == None: #taking Nonetype into account
-            descriptors=[]
-        
-        x=[]
-        y=[]
-        response=[]
-        size=[]
-        angle=[]
-        octave=[]
-        for k in kpts:
-            x.append(k.pt[0])
-            y.append(k.pt[1])
-            response.append(k.response)
-            size.append(k.size)
-            angle.append(k.angle)
-            octave.append(k.octave)
+            imagesize=im.shape
+            if imagesize[0]>imagesize[1]:
+                scale=imagesize[1]/5
+            else:
+                scale=imagesize[0]/5
+                
+            fs = cv2.KeyPoint(imagesize[0]/2,imagesize[1]/2,scale)       # keypoints
+            
+            
+            # extract the feature keypoints and descriptor
+            descriptor_extractor = cv2.DescriptorExtractor_create("BRISK")
+            (kpts, descriptors) = descriptor_extractor.compute(im,[fs])
+    
+            if descriptors == None: #taking Nonetype into account
+                descriptors=[]
+            
+            x=[]
+            y=[]
+            response=[]
+            size=[]
+            angle=[]
+            octave=[]
+            for k in kpts:
+                x.append(k.pt[0])
+                y.append(k.pt[1])
+                response.append(k.response)
+                size.append(k.size)
+                angle.append(k.angle)
+                octave.append(k.octave)
         
         return descriptors,x,y,response,size,angle,octave
 
@@ -239,36 +236,35 @@ class ORB(Feature.Feature):
         """ Append descriptors to ORB h5 table """
         
         image_uri = resource['image']
-        Im = Feature.ImageImport(image_uri) #importing image from image service
-        image_path = Im.returnpath()
-        im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
-        del Im      
-        if im==None:
-            raise ValueError('Format was not supported')
-        im=np.asarray(im)
-        
-        fs = cv2.ORB().detect (im)                             # keypoints
-        
-        # extract the feature keypoints and descriptor
-        descriptor_extractor = cv2.DescriptorExtractor_create("ORB")
-        (kpts, descriptors) = descriptor_extractor.compute(im,fs)
-        
-        if descriptors == None: #taking Nonetype into account
-            descriptors=[]
+        with Feature.ImageImport(image_uri) as imgimp:
+            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
+     
+            if im==None:
+                raise ValueError('Format was not supported')
+            im=np.asarray(im)
             
-        x=[]
-        y=[]
-        response=[]
-        size=[]
-        angle=[]
-        octave=[]
-        for k in kpts:
-            x.append(k.pt[0])
-            y.append(k.pt[1])
-            response.append(k.response)
-            size.append(k.size)
-            angle.append(k.angle)
-            octave.append(k.octave)
+            fs = cv2.ORB().detect (im)                             # keypoints
+            
+            # extract the feature keypoints and descriptor
+            descriptor_extractor = cv2.DescriptorExtractor_create("ORB")
+            (kpts, descriptors) = descriptor_extractor.compute(im,fs)
+            
+            if descriptors == None: #taking Nonetype into account
+                descriptors=[]
+                
+            x=[]
+            y=[]
+            response=[]
+            size=[]
+            angle=[]
+            octave=[]
+            for k in kpts:
+                x.append(k.pt[0])
+                y.append(k.pt[1])
+                response.append(k.response)
+                size.append(k.size)
+                angle.append(k.angle)
+                octave.append(k.octave)
         
         return descriptors,x,y,response,size,angle,octave
 
@@ -335,42 +331,40 @@ class ORBc(Feature.Feature):
     def calculate(self, **resource):
         """ Append descriptors to ORB h5 table """
         image_uri = resource['image']
-        Im = Feature.ImageImport(image_uri) #importing image from image service
-        image_path = Im.returnpath()
-        im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
-        del Im      
-        if im==None:
-            raise ValueError('Format was not supported')
-        im=np.asarray(im)
-        
-        imagesize=im.shape
-        if imagesize[0]>imagesize[1]:
-            scale=imagesize[1]
-        else:
-            scale=imagesize[0]
+        with Feature.ImageImport(image_uri) as imgimp:
+            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)    
+            if im==None:
+                raise ValueError('Format was not supported')
+            im=np.asarray(im)
             
-        fs = cv2.KeyPoint(imagesize[0]/2,imagesize[1]/2,scale)       # keypoints
-        
-        # extract the feature keypoints and descriptor
-        descriptor_extractor = cv2.DescriptorExtractor_create("ORB")
-        (kpts, descriptors) = descriptor_extractor.compute(im,[fs])
-        
-        if descriptors == None: #taking Nonetype into account
-            descriptors=[]
+            imagesize=im.shape
+            if imagesize[0]>imagesize[1]:
+                scale=imagesize[1]
+            else:
+                scale=imagesize[0]
+                
+            fs = cv2.KeyPoint(imagesize[0]/2,imagesize[1]/2,scale)       # keypoints
             
-        x=[]
-        y=[]
-        response=[]
-        size=[]
-        angle=[]
-        octave=[]
-        for k in kpts:
-            x.append(k.pt[0])
-            y.append(k.pt[1])
-            response.append(k.response)
-            size.append(k.size)
-            angle.append(k.angle)
-            octave.append(k.octave)
+            # extract the feature keypoints and descriptor
+            descriptor_extractor = cv2.DescriptorExtractor_create("ORB")
+            (kpts, descriptors) = descriptor_extractor.compute(im,[fs])
+            
+            if descriptors == None: #taking Nonetype into account
+                descriptors=[]
+                
+            x=[]
+            y=[]
+            response=[]
+            size=[]
+            angle=[]
+            octave=[]
+            for k in kpts:
+                x.append(k.pt[0])
+                y.append(k.pt[1])
+                response.append(k.response)
+                size.append(k.size)
+                angle.append(k.angle)
+                octave.append(k.octave)
         
         return descriptors,x,y,response,size,angle,octave
 
@@ -431,38 +425,37 @@ class SIFT(Feature.Feature):
         """ Append descriptors to SIFT h5 table """
         
         image_uri = resource['image']
-        Im = Feature.ImageImport(image_uri) #importing image from image service
-        image_path = Im.returnpath()
-        im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
-        del Im     
-        if im==None:
-            raise ValueError('Format was not supported')
-        im=np.asarray(im)
-        
-        fs = cv2.SIFT().detect(im)                             # keypoints
-        
-        #log.debug('fs: %s' %len(fs))
-        
-        # extract the feature keypoints and descriptor
-        descriptor_extractor = cv2.DescriptorExtractor_create("SIFT")
-        (kpts, descriptors) = descriptor_extractor.compute(im,fs)
-
-        if descriptors == None: #taking Nonetype into account
-            descriptors=[]
+        with Feature.ImageImport(image_uri) as imgimp:
+            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
+       
+            if im==None:
+                raise ValueError('Format was not supported')
+            im=np.asarray(im)
             
-        x=[]
-        y=[]
-        response=[]
-        size=[]
-        angle=[]
-        octave=[]
-        for k in kpts:
-            x.append(k.pt[0])
-            y.append(k.pt[1])
-            response.append(k.response)
-            size.append(k.size)
-            angle.append(k.angle)
-            octave.append(k.octave)
+            fs = cv2.SIFT().detect(im)                             # keypoints
+            
+            #log.debug('fs: %s' %len(fs))
+            
+            # extract the feature keypoints and descriptor
+            descriptor_extractor = cv2.DescriptorExtractor_create("SIFT")
+            (kpts, descriptors) = descriptor_extractor.compute(im,fs)
+    
+            if descriptors == None: #taking Nonetype into account
+                descriptors=[]
+                
+            x=[]
+            y=[]
+            response=[]
+            size=[]
+            angle=[]
+            octave=[]
+            for k in kpts:
+                x.append(k.pt[0])
+                y.append(k.pt[1])
+                response.append(k.response)
+                size.append(k.size)
+                angle.append(k.angle)
+                octave.append(k.octave)
         
         return descriptors,x,y,response,size,angle,octave
 
@@ -504,42 +497,41 @@ class SIFTc(SIFT):
         """ Append descriptors to SIFT h5 table """
         
         image_uri = resource['image']
-        Im = Feature.ImageImport(image_uri) #importing image from image service
-        image_path = Im.returnpath()
-        im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
-        del Im     
-        if im==None:
-            raise ValueError('Format was not supported')
-        im=np.asarray(im)
-        
-        imagesize=im.shape
-        if imagesize[0]>imagesize[1]:
-            scale=imagesize[1]/3
-        else:
-            scale=imagesize[0]/3
-        fs = cv2.KeyPoint(imagesize[0]/2,imagesize[1]/2,scale)   # keypoints
-        
-        
-        # extract the feature keypoints and descriptor
-        descriptor_extractor = cv2.DescriptorExtractor_create("SIFT")
-        (kpts, descriptors) = descriptor_extractor.compute(im,[fs])
-        
-        if descriptors == None: #taking Nonetype into account
-            descriptors=[]
+        with Feature.ImageImport(image_uri) as imgimp:
+            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
+   
+            if im==None:
+                raise ValueError('Format was not supported')
+            im=np.asarray(im)
             
-        x=[]
-        y=[]
-        response=[]
-        size=[]
-        angle=[]
-        octave=[]
-        for k in kpts:
-            x.append(k.pt[0])
-            y.append(k.pt[1])
-            response.append(k.response)
-            size.append(k.size)
-            angle.append(k.angle)
-            octave.append(k.octave)
+            imagesize=im.shape
+            if imagesize[0]>imagesize[1]:
+                scale=imagesize[1]/3
+            else:
+                scale=imagesize[0]/3
+            fs = cv2.KeyPoint(imagesize[0]/2,imagesize[1]/2,scale)   # keypoints
+            
+            
+            # extract the feature keypoints and descriptor
+            descriptor_extractor = cv2.DescriptorExtractor_create("SIFT")
+            (kpts, descriptors) = descriptor_extractor.compute(im,[fs])
+            
+            if descriptors == None: #taking Nonetype into account
+                descriptors=[]
+                
+            x=[]
+            y=[]
+            response=[]
+            size=[]
+            angle=[]
+            octave=[]
+            for k in kpts:
+                x.append(k.pt[0])
+                y.append(k.pt[1])
+                response.append(k.response)
+                size.append(k.size)
+                angle.append(k.angle)
+                octave.append(k.octave)
         
         return descriptors,x,y,response,size,angle,octave
     
@@ -631,32 +623,31 @@ class SURF(Feature.Feature):
         nOctaveLayers = 4
 
         image_uri = resource['image']
-        Im = Feature.ImageImport(image_uri) #importing image from image service
-        image_path = Im.returnpath()
-        im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
-        del Im
-        if im==None:
-            raise ValueError('Format was not supported')
-        im=np.asarray(im)
-        
-        (kpts,descriptors)=cv.ExtractSURF(cv.fromarray(im), None, cv.CreateMemStorage(), (extended, HessianThresh, nOctaves, nOctaveLayers)) #calculating descriptor
-        
-        if descriptors == None: #taking Nonetype into account
-            descriptors=[]
+        with Feature.ImageImport(image_uri) as imgimp:
+            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
+
+            if im==None:
+                raise ValueError('Format was not supported')
+            im=np.asarray(im)
             
-        x=[]
-        y=[]
-        laplacian=[]
-        size=[]
-        direction=[]
-        hessian=[]
-        for k in kpts:
-            x.append(k[0][0])
-            y.append(k[0][1])
-            laplacian.append(k[1])
-            size.append(k[2])
-            direction.append(k[3])
-            hessian.append(k[4])
+            (kpts,descriptors)=cv.ExtractSURF(cv.fromarray(im), None, cv.CreateMemStorage(), (extended, HessianThresh, nOctaves, nOctaveLayers)) #calculating descriptor
+            
+            if descriptors == None: #taking Nonetype into account
+                descriptors=[]
+                
+            x=[]
+            y=[]
+            laplacian=[]
+            size=[]
+            direction=[]
+            hessian=[]
+            for k in kpts:
+                x.append(k[0][0])
+                y.append(k[0][1])
+                laplacian.append(k[1])
+                size.append(k[2])
+                direction.append(k[3])
+                hessian.append(k[4])
         
         return descriptors,x,y,laplacian,size,direction,hessian
 
@@ -702,40 +693,39 @@ class SURFc(SURF):
         nOctaves = 3
         nOctaveLayers = 4
 
-        Im = Feature.ImageImport(uri) #importing image from image service
-        image_path = Im.returnpath()
-        im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
-        del Im
-        if im==None:
-            raise ValueError('Format was not supported')
-        im=np.asarray(im)
-        
-        imagesize=im.shape
-        if imagesize[0]>imagesize[1]:
-            scale=imagesize[1]
-        else:
-            scale=imagesize[0]
-        
-        fs = cv2.KeyPoint(imagesize[0]/2,imagesize[1]/2,scale)       # keypoints
-        descriptor_extractor = cv2.DescriptorExtractor_create("SURF")
-        (kpts, descriptors) = descriptor_extractor.compute(im,[fs])
-        
-        if descriptors == None: #taking Nonetype into account
-            descriptors=[]
+        with Feature.ImageImport(image_uri) as imgimp:
+            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
+
+            if im==None:
+                raise ValueError('Format was not supported')
+            im=np.asarray(im)
             
-        x=[]
-        y=[]
-        response=[]
-        size=[]
-        angle=[]
-        octave=[]
-        for k in kpts:
-            x.append(k.pt[0])
-            y.append(k.pt[1])
-            response.append(k.response)
-            size.append(k.size)
-            angle.append(k.angle)
-            octave.append(k.octave)
+            imagesize=im.shape
+            if imagesize[0]>imagesize[1]:
+                scale=imagesize[1]
+            else:
+                scale=imagesize[0]
+            
+            fs = cv2.KeyPoint(imagesize[0]/2,imagesize[1]/2,scale)       # keypoints
+            descriptor_extractor = cv2.DescriptorExtractor_create("SURF")
+            (kpts, descriptors) = descriptor_extractor.compute(im,[fs])
+            
+            if descriptors == None: #taking Nonetype into account
+                descriptors=[]
+                
+            x=[]
+            y=[]
+            response=[]
+            size=[]
+            angle=[]
+            octave=[]
+            for k in kpts:
+                x.append(k.pt[0])
+                y.append(k.pt[1])
+                response.append(k.response)
+                size.append(k.size)
+                angle.append(k.angle)
+                octave.append(k.octave)
         
         return descriptors,x,y,response,size,angle,octave
 
@@ -772,43 +762,42 @@ class FREAKc(Feature.Feature):
     def calculate(self, uri):
         """ Append descriptors to SIFT h5 table """
         
-        Im = Feature.ImageImport(uri) #importing image from image service
-        image_path = Im.returnpath()
-        im=cv2.imread(image_path, cv2.CV_LOAD_IMAGE_GRAYSCALE)
-        del Im     
-        if im==None:
-            raise ValueError('Format was not supported')
-        im=np.asarray(im)
+        with Feature.ImageImport(image_uri) as imgimp:
+            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
         
-        imagesize=im.shape
-        if imagesize[0]>imagesize[1]:
-            scale=imagesize[1]/10
-        else:
-            scale=imagesize[0]/10
+            if im==None:
+                raise ValueError('Format was not supported')
+            im=np.asarray(im)
             
-        fs = cv2.KeyPoint(imagesize[0]/2,imagesize[1]/2,scale)       # keypoints
-        
-        
-        # extract the feature keypoints and descriptor
-        descriptor_extractor = cv2.DescriptorExtractor_create("FREAK")
-        (kpts, descriptors) = descriptor_extractor.compute(im,[fs])
-        
-        if descriptors == None: #taking Nonetype into account
-            descriptors=[]
+            imagesize=im.shape
+            if imagesize[0]>imagesize[1]:
+                scale=imagesize[1]/10
+            else:
+                scale=imagesize[0]/10
+                
+            fs = cv2.KeyPoint(imagesize[0]/2,imagesize[1]/2,scale)       # keypoints
             
-        x=[]
-        y=[]
-        response=[]
-        size=[]
-        angle=[]
-        octave=[]
-        for k in kpts:
-            x.append(k.pt[0])
-            y.append(k.pt[1])
-            response.append(k.response)
-            size.append(k.size)
-            angle.append(k.angle)
-            octave.append(k.octave)
+            
+            # extract the feature keypoints and descriptor
+            descriptor_extractor = cv2.DescriptorExtractor_create("FREAK")
+            (kpts, descriptors) = descriptor_extractor.compute(im,[fs])
+            
+            if descriptors == None: #taking Nonetype into account
+                descriptors=[]
+                
+            x=[]
+            y=[]
+            response=[]
+            size=[]
+            angle=[]
+            octave=[]
+            for k in kpts:
+                x.append(k.pt[0])
+                y.append(k.pt[1])
+                response.append(k.response)
+                size.append(k.size)
+                angle.append(k.angle)
+                octave.append(k.octave)
         
         return descriptors,x,y,response,size,angle,octave
     

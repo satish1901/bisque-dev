@@ -35,8 +35,8 @@ def type_check( resources, feature_name, feature_archieve):
     """
         Checks resource type of the input to make sure
         the correct resources have been used, if it can 
-        find an alternative feature it will output the name
-        of the new suggested feature
+        find an alternative feature with those inputs
+        it will output the name of the new suggested feature
     """
     resource = {}
     feature = feature_archieve[feature_name]
@@ -232,28 +232,37 @@ class Feature(object):
 ###############################################################
 # Image Import
 ###############################################################
-class ImageImport():
-    """ imports an image from image service and saves it in the feature temp image dir """
-    def __init__(self, uri,file_type='tiff'):
+class ImageImport:
+    """ 
+        request an image from the bisque system or from a 3rd party 
+        system
+    """
+    
+    def __enter__(self):
+        return self
+    
+    def __init__(self, uri):
+        self.uri = uri
+        self.tmp_flag = 0 #set a flag to if a temp file was made
         from bq.config.middleware import bisque_app
-        
+
         if 'image_service' in uri:
             #finds image resource though local image service
             self.uri=uri
-            self.path = image_service.local_file(uri)
-            log.debug("path: %s"% self.path)
-            if self.path is None:
-                #log.exception ("While retrieving URL %s" % uri)
-                #abort(404)
-                log.debug('Not found in image_service: %s'%uri)
-            else:
-                return
+            try:
+                self.path = image_service.local_file(uri)
+                log.debug("path: %s"% self.path)
+                if not self.path:
+                    log.debug('Not found in image_service internally: %s'%uri)
+                else:
+                    return 
+            except Exception: #Resulting from a 403 in image service, needs to be handled better
+                log.debug('Not found in image_service internally: %s'%uri)
 
         with tempfile.NamedTemporaryFile(dir=FEATURES_TEMP_IMAGE_DIR, prefix='image', delete=False) as f:
+            self.tmp_flag = 1 #tmp file is create, set flag
             self.path = f.name
             try:
-                # Try to route internally
-
                 req = Request.blank(uri)
                 req.headers['Authorization'] = "Mex %s" % identity.mex_authorization_token()
                 req.headers['Accept'] = 'text/xml'
@@ -262,12 +271,12 @@ class ImageImport():
                 log.debug("end routing internally: status %s" % response.status_int)
                 if response.status_int == 200:
                     f.write(response.body)
-                    return
+                    return 
                 if response.status_int in set([401,403]):
-                    raise ValueError('polygon not found: must be a polygon gobject') 
+                    log.debug("User is not authorized to read resource internally: %s",uri)
+                    #raise ValueError('User is not authorized to read resource internally: %s') 
                 
                 # Try to route externally
-
                 req = Request.blank(uri)
                 req.headers['Authorization'] = "Mex %s" % identity.mex_authorization_token()
                 req.headers['Accept'] = 'text/xml'
@@ -276,41 +285,32 @@ class ImageImport():
                 log.debug("end routing externally: status %s" % response.status_int)
                 if response.status_int == 200:
                     f.write(response.body)
-                    return
+                    return 
+                else:
+                    log.debug("User is not authorized to read resource externally: %s",uri)
             except:
                 log.exception ("While retrieving URL %s" % uri)
-        try:
-            os.remove (self.path)
-        except OSError:
-            pass
-        abort (response.status_int)
 
         
-    def returnpath(self):
+    def __str__(self):
+        return self.path
+        
+    def path(self):
         return self.path
     
-#    def __close__(self):
-#        #check if the temp dir was used to remove file
-#        if 'image_service' not in self.uri:
-#            try:
-#                os.remove(self.path)
-#            except OSError:
-#                pass
-                
-    def __del__(self):
-        #check if the temp dir was used to remove file
-        if 'image_service' not in self.uri:
+    def __exit__(self,type,value,traceback):
+        if self.tmp_flag:
             try:
                 os.remove(self.path)
             except OSError:
-                pass
+                pass        
             
       
 ############################################################### 
 # Mex Validation
 ############################################################### 
 
-#needs to be replaced with a HEAD instead of using a POST
+#needs to be replaced with a HEAD instead of using a GET
 def mex_validation(**resource):
     """
     Checks the mex of the resource to see if the user has access to all the resources 
@@ -331,8 +331,7 @@ def mex_validation(**resource):
             if resp.status_int == 200:
                 continue
             elif resp.status_int in set([401,403]):
-                log.debug("User is not authorized to read resource: %s",resource[r])
-                return False
+                log.debug("User is not authorized to read resource internally: %s",resource[r])
             
             # Try to route externally
             req = Request.blank(resource[r])
@@ -356,73 +355,78 @@ def mex_validation(**resource):
 # Temp Import
 ############################################################### 
 
-class TempImport():
-    """Deals with file produced by feature extractors"""
-    status = 'Closed'
-    def __init__(self, filetype):
-        s = "".join([random.choice(string.ascii_lowercase + string.digits) for x in xrange(10)])
-        file = 'temp'+ str(s)+'.'+filetype
-        self.path = os.path.join( FEATURES_TEMP_IMAGE_DIR, file)
-        
-    def open(self):
-        self.f = open(self.path)
-        self.status = 'Open'
-        return self.f
-    
-    def close(self):
-        if self.status == 'Open':
-            self.f.close()
-            del self.f
-            status = 'Closed'
-    
-    def returnpath(self):
-        return self.path
-    
-    def returnstatus(self): 
-        self.status 
-    
-    def __del__(self):
-        """ When the ImageImport object is deleted the image path is removed for the temp dir """
-        try:
-            os.remove(self.path)
-        except OSError:
-            pass
-
-############################################################### 
-# XML Import
-############################################################### 
-
-class XMLImport():
-    """ Import XML from another service and returns the tree """
-    def __init__(self, uri):
-        from lxml import etree
-        import urllib, urllib2, cookielib
-        self.uri = uri
-        from bq.config.middleware import bisque_app
-        self.tree = etree.Element('Empty')
-        try:
-            # Try to route internally
-            
-            req = Request.blank(uri)
-            req.headers['Authorization'] = "Mex %s" % identity.mex_authorization_token()
-            req.headers['Accept'] = 'text/xml'
-            log.debug("begin routing internally %s" % uri)
-            response = req.get_response(bisque_app)
-            log.debug("end routing internally: status %s" % response.status_int)
-            if response.status_int == 200:
-                self.tree = etree.fromstring(response.body)
-                return
-        except:
-            log.exception ("While retrieving URL %s" % uri)
-        
-    def returnxml(self):       
-        return self.tree
-    
-    def __del__(self):
-        pass
-
-#    def __close__(self):
+#None of the features use this 
+#
+#class TmpFiles():
+#    """
+#        Stores temporary files produced by features extractors
+#    """
+#    def __enter__(self):
 #        pass
+#
+#    def __exit__(self,type,value,traceback):
+#        try:
+#            os.remove(self.path)
+#        except OSError:
+#            pass
+#
+#    def __init__(self, ''):
+#        s = "".join([random.choice(string.ascii_lowercase + string.digits) for x in xrange(10)])
+#        file = 'temp'+ str(s)+'.'+filetype
+#        self.path = os.path.join( FEATURES_TEMP_IMAGE_DIR, file)
+#        
+#    def open(self):
+#        self.f = open(self.path)
+#        self.status = 'Open'
+#        return self.f
+#    
+#    def close(self):
+#        if self.status == 'Open':
+#            self.f.close()
+#            del self.f
+#            status = 'Closed'
+#    
+#    def returnpath(self):
+#        return self.path
+#    
+#    def returnstatus(self): 
+#        self.status 
+#    
+#    def __del__(self):
+#        """ When the ImageImport object is deleted the image path is removed for the temp dir """
+#        try:
+#            os.remove(self.path)
+#        except OSError:
+#            pass
+
+###############################################################
+# XML Import
+###############################################################
+
+def xml_import(uri):
+    """ Import XML from another service and returns the tree """
+    from lxml import etree
+    import urllib, urllib2, cookielib
+    self.uri = uri
+    from bq.config.middleware import bisque_app
+    try: 
+        # Try to route internally
+        req = Request.blank(uri)
+        req.headers['Authorization'] = "Mex %s" % identity.mex_authorization_token()
+        req.headers['Accept'] = 'text/xml'
+        log.debug("begin routing internally %s" % uri)
+        response = req.get_response(bisque_app)
+        log.debug("end routing internally: status %s" % response.status_int)
+        if response.status_int == 200:
+            try:
+                return etree.fromstring(response.body) 
+            except: #find specific error
+                log.exception ("Was not proper XML format: URL %s" % uri)
+                return
+
+    except:
+        log.exception ("While retrieving URL %s" % uri)
+        return
 
 
 
