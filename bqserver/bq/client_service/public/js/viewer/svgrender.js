@@ -75,11 +75,15 @@ SVGRenderer.prototype.setmouseup = function (cb, doadd ){
 };
 
 SVGRenderer.prototype.setmousemove = function (cb, doadd ){
-    this.addHandler ("mousemovice",cb );
+    this.addHandler ("mousemove",cb );
 };
 
 SVGRenderer.prototype.setclick = function (cb, doadd ){
     this.addHandler ("click", cb);
+};
+
+SVGRenderer.prototype.setdblclick = function (cb, doadd ){
+    this.addHandler ("dblclick", cb);
 };
 
 SVGRenderer.prototype.setkeyhandler = function (cb, doadd ){
@@ -262,26 +266,30 @@ SVGRenderer.prototype.polygon = function (visitor, gob , viewstate, visibility) 
     this.polyline (visitor, gob, viewstate, visibility);
 };
 
+SVGRenderer.prototype.line = function (visitor, gob , viewstate, visibility) {
+    this.polyline (visitor, gob, viewstate, visibility);
+};
+
 SVGRenderer.prototype.polyline = function (visitor, gob,  viewstate, visibility) {
 
     // Construct a SVG path element based on the visible vertices of the GOB
     var points = "";
-    var ctor = null;
-    if (gob.type == "polyline" )
-        ctor = Polyline;
+    var ctor = Polyline;
+    //if (gob.type == "polyline" )
+    //    ctor = Polyline;
     if ( gob.type == "polygon" )
         ctor = Polygon;
 
     for (var i=0; i < gob.vertices.length; i++) {
         var pnt = gob.vertices[i];
-        if (pnt == null) {
+        if (!pnt || isNaN(pnt.x) || isNaN(pnt.y) ) {
             console.log("Null vertex in gob "+gob.type+":"+gob.name);
             console.log("vertex  "+i+" of "+gob.vertices.length);
             continue;
         }
-        if (pnt.z!=null  && Math.round(pnt.z) != viewstate.z )
+        if (pnt.z && Math.round(pnt.z) != viewstate.z )
             continue;
-        if (pnt.t!=null  && Math.round(pnt.t) != viewstate.t)
+        if (pnt.t && Math.round(pnt.t) != viewstate.t)
             continue;
 
         var p = viewstate.transformPoint (pnt.x, pnt.y);
@@ -295,10 +303,10 @@ SVGRenderer.prototype.polyline = function (visitor, gob,  viewstate, visibility)
     	gob.visible=true;
 
     // check points
-    if (points != null && gob.visible ) {
+    if (points && gob.visible ) {
         var poly = null;
-        if (gob.shape == null) {
-            poly = document.createElementNS(svgns, gob.type);
+        if (!gob.shape) {
+            poly = document.createElementNS(svgns, gob.type==='line'?'polyline':gob.type);
             poly.setAttributeNS(null, "stroke", "red");
             poly.setAttributeNS(null, "stroke-width", "1");
             if ( gob.type == "polygon")
@@ -320,8 +328,6 @@ SVGRenderer.prototype.polyline = function (visitor, gob,  viewstate, visibility)
         this.hideShape (gob, viewstate);
     }
 };
-
-
 
 SVGRenderer.prototype.move_poly = function ( state ) {
     // Extract the vertices of the gobject
@@ -591,6 +597,60 @@ SVGRenderer.prototype.select_rectangle = function (state){
     this.default_select(gob);
 };
 
+////////////////////////////////////////////////////////////
+SVGRenderer.prototype.square = function ( visitor, gob,  viewstate, visibility) {
+
+    // Visibility of this gob (create/destroy gob.shape)
+    // Create or destroy SVGElement for 2D.js
+    // Update SVGElement with current view state ( scaling, etc )
+
+    // viewstate
+    // scale  : double (current scaling factor)
+    // z, t, ch: current view planes (and channels)
+    // svgdoc : the SVG document
+    var offset_x  = viewstate.offset_x;
+    var offset_y  = viewstate.offset_y;
+
+    var pnt1 = gob.vertices[0];
+    var pnt2 = gob.vertices[1];
+    if (!pnt1 || !pnt2) return;
+    var visible = true;
+    if (pnt1.z !=null  && viewstate.z != Math.round(pnt1.z))
+        visible = false;
+    if (pnt1.t !=null  && viewstate.t != Math.round(pnt1.t))
+        visible = false;
+
+    if (visibility!=undefined)
+        gob.visible=visibility;
+    else if (gob.visible==undefined)
+        gob.visible=true;
+
+    if (visible && gob.visible) {
+        if (gob.shape == null ) {
+            var rect = document.createElementNS(svgns, "rect");
+            rect.setAttributeNS(null, "fill", "red");
+            rect.setAttributeNS(null, 'stroke', "red");
+            rect.setAttributeNS(null, 'stroke-width', 1);
+            rect.setAttributeNS(null, "display", "none");
+            rect.setAttributeNS(null, 'fill-opacity', 0.4);
+            gob.shape = new Square(rect);
+        }
+        // scale to size
+        var p1 = viewstate.transformPoint (pnt1.x, pnt1.y);
+        var p2 = viewstate.transformPoint (pnt2.x, pnt2.y);
+        var rect = gob.shape.svgNode;
+        rect.setAttributeNS(null, "x", p1.x);
+        rect.setAttributeNS(null, "y", p1.y);
+        rect.setAttributeNS(null, "width", Math.abs(p1.x-p2.x));
+        rect.setAttributeNS(null, "height", Math.abs(p1.y-p2.y));
+        this.viewShape (viewstate, gob,
+                        callback(this,'move_rectangle'),
+                        callback(this,'select_rectangle'));
+    } else {
+        this.hideShape (gob, viewstate);
+    }
+};
+
 
 ////////////////////////////////////////////////////////////
 SVGRenderer.prototype.circle = function ( visitor, gob,  viewstate, visibility) {
@@ -664,9 +724,9 @@ SVGRenderer.prototype.select_circle = function (state){
 
 ////////////////////////////////////////////////////////////
 SVGRenderer.prototype.ellipse = function ( visitor, gob,  viewstate, visibility) {
-    var pnt1 = gob.vertices[0] ;
-    var pnt2 = gob.vertices[1] ;
-    var pnt3 = gob.vertices[2] ;
+    var pnt1 = gob.vertices[0];
+    var pnt2 = gob.vertices[1];
+    var pnt3 = gob.vertices[2];
 
     var visible = true;
 
@@ -696,8 +756,7 @@ SVGRenderer.prototype.ellipse = function ( visitor, gob,  viewstate, visibility)
         var p3 = viewstate.transformPoint (pnt3.x, pnt3.y);
         var rx =  Math.sqrt( (p1.x - p2.x)*(p1.x - p2.x) + (p1.y - p2.y)*(p1.y - p2.y));
         var ry =  Math.sqrt( (p1.x - p3.x)*(p1.x - p3.x) + (p1.y - p3.y)*(p1.y - p3.y));
-        var ang = -Math.atan2(p1.y-p2.y, p1.x-p2.x) * 180.0/Math.PI;
-
+        var ang = Math.atan2(p1.y-p2.y, p1.x-p2.x) * 180.0/Math.PI;
         var circ = gob.shape.svgNode;
 
         circ.setAttributeNS(null, 'cx', p1.x );
@@ -716,26 +775,25 @@ SVGRenderer.prototype.ellipse = function ( visitor, gob,  viewstate, visibility)
 SVGRenderer.prototype.move_ellipse = function (state){
     var gob = state.gob;
     var v   = state.view;
-    //gob.shape.refresh();
-    var x = parseInt(gob.shape.svgNode.getAttributeNS(null,"cx"));
-    var y = parseInt(gob.shape.svgNode.getAttributeNS(null,"cy"));
-    var rx = parseInt(gob.shape.svgNode.getAttributeNS(null,"rx"));
-    var rx = parseInt(gob.shape.svgNode.getAttributeNS(null,"ry"));
 
-    var cpnt = v.inverseTransformPoint (x, y);
-    var p1 = gob.vertices[0] ;
+    var p = gob.shape.center.point;
+    var cpnt = v.inverseTransformPoint (p.x, p.y);
+    var p1 = gob.vertices[0];
     p1.x = cpnt.x;
     p1.y = cpnt.y;
 
-    var rpnt = v.inverseTransformPoint (x+rx, y);
-    var p2 = gob.vertices[1] ;
+    var p = gob.shape.radiusX.point;
+    var rpnt = v.inverseTransformPoint (p.x, p.y);
+    var p2 = gob.vertices[1];
     p2.x = rpnt.x;
     p2.y = rpnt.y;
 
-    var rpnt = v.inverseTransformPoint (x+ry, y);
-    var p3 = gob.vertices[2] ;
+    var p = gob.shape.radiusY.point;
+    var rpnt = v.inverseTransformPoint (p.x, p.y);
+    var p3 = gob.vertices[2];
     p3.x = rpnt.x;
     p3.y = rpnt.y;
+
     this.default_move(gob);
 };
 
@@ -784,12 +842,12 @@ SVGRenderer.prototype.label = function ( visitor, gob, viewstate, visibility) {
 
             //rect.setAttributeNS(null, "width", "8");
             //rect.setAttributeNS(null, "height", "8");
-            rect.setAttributeNS(null, "fill", "black");
-            rect.setAttributeNS(null, 'fill-opacity', 0.7);
-            rect.setAttributeNS(null, "stroke", "white");
+            rect.setAttributeNS(null, "fill", "white");
+            rect.setAttributeNS(null, 'fill-opacity', 0.9);
+            rect.setAttributeNS(null, "stroke", "black");
             rect.setAttributeNS(null, 'stroke-width', '0.5px');
-            rect.setAttributeNS(null, 'stroke-opacity', 0.7);
-            rect.setAttributeNS(null, 'font-size', '12px');
+            rect.setAttributeNS(null, 'stroke-opacity', 0.9);
+            rect.setAttributeNS(null, 'font-size', '14px');
             //rect.setAttributeNS(null, "display", "none");
             gob.shape = new Label(rect);
         }

@@ -168,6 +168,8 @@ PanoJS.KEY_RIGHT = 39;
 PanoJS.KEY_LEFT  = 37;
 PanoJS.KEY_MINUS = {109:0, 189:0};
 PanoJS.KEY_PLUS  = {107:0, 187:0};
+PanoJS.KEY_PGUP  = 33;
+PanoJS.KEY_PGDOWN= 34;
 
 // performance tuning variables
 PanoJS.MOVE_THROTTLE = 3;
@@ -736,7 +738,7 @@ PanoJS.prototype.blank = function() {
 // Method specifically for handling a mouse move event.  A direct
 // movement of the viewer can be achieved by calling positionTiles() directly.
 PanoJS.prototype.moveViewer = function(coords) {
-  if (coords.x === this.x && coords.y === this.y) return;
+  if (coords.x == this.x && coords.y == this.y) return;
   this.positionTiles({ 'x' : (coords.x - this.mark.x), 'y' : (coords.y - this.mark.y) });
   this.notifyViewerMoved(coords);
 };
@@ -1091,36 +1093,35 @@ PanoJS.prototype.mouseScrollHandler = function(e) {
 //----------------------------------------------------------------------
 
 PanoJS.prototype.keyboardHandler = function(e) {
-  if (!PanoJS.USE_KEYBOARD) return;
   e = e ? e : window.event;
   var key = e.keyCode ? e.keyCode : e.which;
 
-  if (key in PanoJS.KEY_MINUS) {
+  if (key in PanoJS.KEY_MINUS || key === PanoJS.KEY_PGDOWN) {
       this.blockPropagation(e);
       this.zoom(-1);
       return false;
   } else
-  if (key in PanoJS.KEY_PLUS) {
+  if (key in PanoJS.KEY_PLUS || key === PanoJS.KEY_PGUP) {
       this.blockPropagation(e);
       this.zoom(1);
       return false;
   } else
-  if (key == PanoJS.KEY_UP) {
+  if (key === PanoJS.KEY_UP) {
       this.blockPropagation(e);
       this.moveViewerBy({'x': 0,'y': -PanoJS.KEY_MOVE_THROTTLE});
       return false;
   } else
-  if (key == PanoJS.KEY_RIGHT) {
+  if (key === PanoJS.KEY_RIGHT) {
       this.blockPropagation(e);
       this.moveViewerBy({'x': PanoJS.KEY_MOVE_THROTTLE,'y': 0});
       return false;
   } else
-  if (key == PanoJS.KEY_DOWN) {
+  if (key === PanoJS.KEY_DOWN) {
       this.blockPropagation(e);
       this.moveViewerBy({'x': 0,'y': PanoJS.KEY_MOVE_THROTTLE});
       return false;
   } else
-  if (key == PanoJS.KEY_LEFT) {
+  if (key === PanoJS.KEY_LEFT) {
       this.blockPropagation(e);
        this.moveViewerBy({'x': -PanoJS.KEY_MOVE_THROTTLE,'y': 0});
       return false;

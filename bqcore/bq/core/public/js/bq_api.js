@@ -42,10 +42,12 @@ BQFactory.objects =  {
                        gobject  : BQGObject,
                        point    : BQGObject,
                        rectangle: BQGObject,
+                       square   : BQGObject,
                        ellipse  : BQGObject,
+                       circle   : BQGObject,
                        polygon  : BQGObject,
                        polyline : BQGObject,
-                       circle   : BQGObject,
+                       line     : BQGObject,
                        label    : BQGObject,
                        module   : BQModule,
                        mex      : BQMex,
@@ -66,10 +68,12 @@ BQFactory.ctormap =  {
                        gobject  : BQGObject,
                        point    : BQGObject,
                        rectangle: BQGObject,
+                       square   : BQGObject,
                        ellipse  : BQGObject,
+                       circle   : BQGObject,
                        polygon  : BQGObject,
                        polyline : BQGObject,
-                       circle   : BQGObject,
+                       line     : BQGObject,
                        label    : BQGObject,
                        module   : BQModule,
                        mex      : BQMex,
@@ -353,6 +357,46 @@ BQVertex.prototype.initializeXml = function (node) {
     this.t     = attribFloat(node, "t");
     this.ch    = attribInt(node, "ch");
     this.index = attribInt(node, "index");
+};
+
+BQVertex.prototype.clone = function () {
+    return new BQVertex(this.x, this.y, this.z, this.t, this.ch, this.index);
+};
+
+BQVertex.prototype.add = function (p) {
+    var v = this.clone();
+    if (p.x) v.x += p.x;
+    if (p.y) v.y += p.y;
+    if (p.z) v.z += p.z;
+    if (p.t) v.t += p.t;
+    return v;
+};
+
+BQVertex.prototype.sub = function (p) {
+    var v = this.clone();
+    if (p.x) v.x -= p.x;
+    if (p.y) v.y -= p.y;
+    if (p.z) v.z -= p.z;
+    if (p.t) v.t -= p.t;
+    return v;
+};
+
+BQVertex.prototype.mul = function (p) {
+    var v = this.clone();
+    if (p.x) v.x *= p.x;
+    if (p.y) v.y *= p.y;
+    if (p.z) v.z *= p.z;
+    if (p.t) v.t *= p.t;
+    return v;
+};
+
+BQVertex.prototype.div = function (p) {
+    var v = this.clone();
+    if (p.x) v.x /= p.x;
+    if (p.y) v.y /= p.y;
+    if (p.z) v.z /= p.z;
+    if (p.t) v.t /= p.t;
+    return v;
 };
 
 
@@ -1255,6 +1299,7 @@ BQGObject.primitives = {
     circle   : 'circle',
     ellipse  : 'ellipse',
     label    : 'label',
+    line     : 'line',
     point    : 'point',
     polygon  : 'polygon',
     polyline : 'polyline',
@@ -1290,16 +1335,91 @@ BQGObject.prototype.isPrimitive = function () {
     return this.type in BQGObject.primitives;
 };
 
-BQGObject.prototype.findParentGobject = function (gob) {
-    if (!this.parent) return;
-    var node = gob || this.parent;
-    if (!node.gobjects || node.gobjects.length<1) return;
-    var g=undefined;
-    for (i=0; (g=node.gobjects[i]); i++) {
-        if (g === this) return node;
-        var r = this.findParentGobject(g);
-        if (r) return r;
+BQGObject.prototype.perimeter = function (res) {
+    var type = this.resource_type === 'gobject' ? this.type : this.resource_type;
+    if (!res || !res.x) res = {x:1.0, y:1.0};
+
+    if (type === 'point') {
+        return 0;
+    } else if (type === 'label') {
+        return 0;
+    } else if (type === 'circle') {
+        p1 = this.vertices[0].mul(res);
+        p2 = this.vertices[1].mul(res);
+        return 2.0 * Math.PI * Math.max(Math.abs(p1.x-p2.x), Math.abs(p1.y-p2.y));
+    } else if (type === 'ellipse') {
+        p1 = this.vertices[0].mul(res);
+        p2 = this.vertices[1].mul(res);
+        p3 = this.vertices[2].mul(res);
+        var a = Math.max(Math.abs(p1.x-p2.x), Math.abs(p1.y-p2.y));
+        var b = Math.max(Math.abs(p1.x-p3.x), Math.abs(p1.y-p3.y));
+        return Math.PI * ( 3.0*(a+b) - Math.sqrt( 10.0*a*b + 3.0*(a*a + b*b)) );
+    } else if (type === 'polygon') {
+        vx = Ext.Array.clone(this.vertices);
+        vx.push(vx[0]);
+        var d=0;
+        for (var i=0; i<vx.length-1; i++) {
+            p1 = vx[i].mul(res);
+            p2 = vx[i+1].mul(res);
+            d += Math.sqrt( Math.pow(p2.x-p1.x,2.0) + Math.pow(p2.y-p1.y,2.0) );
+        }
+        return d;
+    } else if (type === 'line' || type === 'polyline') {
+        vx = this.vertices;
+        var d=0;
+        for (var i=0; i<vx.length-1; i++) {
+            p1 = vx[i].mul(res);
+            p2 = vx[i+1].mul(res);
+            d += Math.sqrt( Math.pow(p2.x-p1.x,2.0) + Math.pow(p2.y-p1.y,2.0) );
+        }
+        return d;
+    } else if (type === 'rectangle' || type === 'square') {
+        p1 = this.vertices[0].mul(res);
+        p2 = this.vertices[1].mul(res);
+        return Math.abs(p1.x-p2.x)*2.0 + Math.abs(p1.y-p2.y)*2.0;
     }
+    return 0;
+};
+
+BQGObject.prototype.area = function (res) {
+    var type = this.resource_type === 'gobject' ? this.type : this.resource_type;
+    if (!res || !res.x) res = {x:1.0, y:1.0};
+
+    if (type === 'point') {
+        return 0;
+    } else if (type === 'label') {
+        return 0;
+    } else if (type === 'circle') {
+        p1 = this.vertices[0].mul(res);
+        p2 = this.vertices[1].mul(res);
+        return Math.PI * Math.pow( Math.max(Math.abs(p1.x-p2.x), Math.abs(p1.y-p2.y)), 2.0);
+    } else if (type === 'ellipse') {
+        p1 = this.vertices[0].mul(res);
+        p2 = this.vertices[1].mul(res);
+        p3 = this.vertices[2].mul(res);
+        var a = Math.max(Math.abs(p1.x-p2.x), Math.abs(p1.y-p2.y));
+        var b = Math.max(Math.abs(p1.x-p3.x), Math.abs(p1.y-p3.y));
+        return Math.PI * a * b;
+    } else if (type === 'line') {
+        return 0;
+    } else if (type === 'polygon') {
+        vx = Ext.Array.clone(this.vertices);
+        vx.push(vx[0]);
+        var d=0;
+        for (var i=0; i<vx.length-1; i++) {
+            p1 = vx[i].mul(res);
+            p2 = vx[i+1].mul(res);
+            d += p1.x*p2.y - p1.y*p2.x;
+        }
+        return 0.5 * Math.abs(d);
+    } else if (type === 'polyline') {
+        return 0;
+    } else if (type === 'rectangle' || type === 'square') {
+        p1 = this.vertices[0].mul(res);
+        p2 = this.vertices[1].mul(res);
+        return Math.abs(p1.x-p2.x) * Math.abs(p1.y-p2.y);
+    }
+    return 0;
 };
 
 //-----------------------------------------------------------------------------

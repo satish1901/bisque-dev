@@ -68,13 +68,16 @@ Bisque.ResourceTagger.RenderersAvailable = {
     'email' : Bisque.ResourceTagger.EmailRenderer,
 
     // Gobject renderers
-    'point' : Bisque.ResourceTagger.VertexRenderer,
-    'polyline' : Bisque.ResourceTagger.VertexRenderer,
-    'polygon' : Bisque.ResourceTagger.VertexRenderer,
+    'point'     : Bisque.ResourceTagger.VertexRenderer,
+    'polyline'  : Bisque.ResourceTagger.VertexRenderer,
+    'polygon'   : Bisque.ResourceTagger.VertexRenderer,
     'rectangle' : Bisque.ResourceTagger.VertexRenderer,
-    'square' : Bisque.ResourceTagger.VertexRenderer,
-    'circle' : Bisque.ResourceTagger.VertexRenderer,
-    'ellipse' : Bisque.ResourceTagger.VertexRenderer
+    'square'    : Bisque.ResourceTagger.VertexRenderer,
+    'circle'    : Bisque.ResourceTagger.VertexRenderer,
+    'ellipse'   : Bisque.ResourceTagger.VertexRenderer,
+    'label'     : Bisque.ResourceTagger.VertexRenderer,
+    'line'      : Bisque.ResourceTagger.VertexRenderer,
+    'square'    : Bisque.ResourceTagger.VertexRenderer,
 };
 
 Bisque.ResourceTagger.BaseRenderer = function(value, metaData, record) {

@@ -10,14 +10,6 @@
 
 *******************************************************************************/
 
-ImgViewer.INFO_CONTROL_STYLE = "padding: 5px; text-shadow: 1px 1px 1px #000000; font-size: 12px;";
-
-if (isClientTouch())
-  ImgViewer.INFO_CONTROL_STYLE = "padding: 10px; text-shadow: 2px 2px 2px #000000; font-size: 18px;";
-
-if (isClientPhone())
-  ImgViewer.INFO_CONTROL_STYLE   = "padding: 10px; text-shadow: 6px 6px 6px #000000; font-size: 40px;";
-
 function ImgInfoBar (viewer,name){
     this.base = ViewerPlugin;
     this.base (viewer, name);
@@ -28,6 +20,11 @@ ImgInfoBar.prototype.create = function (parent) {
     this.parentdiv = parent;
     this.infobar = null;
     this.namebar = null;
+    this.mobile_cls = '';
+    if (isClientTouch())
+        this.mobile_cls = 'tablet';
+    if (isClientPhone())
+        this.mobile_cls = 'phone';
     return parent;
 };
 
@@ -36,15 +33,11 @@ ImgInfoBar.prototype.newImage = function () {
 };
 
 ImgInfoBar.prototype.updateImage = function () {
-
     // create info bar
     if (!this.infobar) {
       var surf = this.viewer.viewer_controls_surface ? this.viewer.viewer_controls_surface : this.parentdiv;
-
       this.infobar = document.createElement('span');
-      this.infobar.className = 'info';
-      this.infobar.setAttribute("style", ImgViewer.INFO_CONTROL_STYLE );
-      this.infobar.style.cssText = ImgViewer.INFO_CONTROL_STYLE;
+      this.infobar.className = 'info '+this.mobile_cls;
       surf.appendChild(this.infobar);
     }
 
@@ -52,14 +45,20 @@ ImgInfoBar.prototype.updateImage = function () {
     if (!this.namebar) {
       var surf = this.parentdiv;
       if (this.viewer.viewer_controls_surface) surf = this.viewer.viewer_controls_surface;
-
       this.namebar = document.createElement('a');
-      this.namebar.className = 'name';
-      this.namebar.setAttribute("style", ImgViewer.INFO_CONTROL_STYLE );
-      this.namebar.style.cssText = ImgViewer.INFO_CONTROL_STYLE;
+      this.namebar.className = 'info name '+this.mobile_cls;
       surf.appendChild(this.namebar);
     }
 
+    // create position bar
+    if (!this.posbar) {
+      var surf = this.parentdiv;
+      if (this.viewer.viewer_controls_surface) surf = this.viewer.viewer_controls_surface;
+      this.posbar = document.createElement('a');
+      this.posbar.className = 'info position '+this.mobile_cls;
+      //this.posbar.innerText = '[AAAxAAAA]';
+      surf.appendChild(this.posbar);
+    }
 
     // update inforamtion string
     var view = this.viewer.current_view;

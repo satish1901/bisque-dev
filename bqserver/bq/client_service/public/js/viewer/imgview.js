@@ -405,6 +405,12 @@ ImgViewer.prototype.addPlugin = function  (plugin) {
     this.plugins.push (plugin);
     return plugin;
 };
+
+ImgViewer.prototype.onkeyboard = function(e) {
+    if (!this.tiles) return;
+    this.tiles.tiled_viewer.keyboardHandler(e);
+};
+
 ////////////////////////////////////////
 // Ask each plugin to create the needed structures including divs.
 //
@@ -561,7 +567,6 @@ ImgViewer.prototype.showGObjects = function(gobs) {
 
 ImgViewer.prototype.hideGObjects = function(gobs) {
     if (!(gobs instanceof Array))
-        gobs = [gobs];
     this.renderer.rerender(gobs, [this.current_view, false]);
 };
 
@@ -573,6 +578,7 @@ ImgViewer.prototype.highlight_gobject = function(gob, selection) {
         // 2D position
         this.tiles.ensureVisible(gob);
     }
+    this.doUpdateImage();
 
     // highlight the selected object
     this.renderer.highlight(gob, selection);
