@@ -1333,7 +1333,8 @@ Ext.define('Bisque.GObjectTagger', {
 
         var node = this.addNode(parent, [g]);
         this.tree.expandNode( parent );
-        this.tree.getSelectionModel().select(node, false, true);
+        this.tree.getSelectionModel().select(node);
+        //this.viewerContainer.viewer.set_parent_gobject(gobject);
         this.fireEvent('create_gobject', g);
     },
 

@@ -567,6 +567,7 @@ ImgViewer.prototype.showGObjects = function(gobs) {
 
 ImgViewer.prototype.hideGObjects = function(gobs) {
     if (!(gobs instanceof Array))
+        gobs = [gobs];
     this.renderer.rerender(gobs, [this.current_view, false]);
 };
 

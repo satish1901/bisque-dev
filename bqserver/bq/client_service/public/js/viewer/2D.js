@@ -2226,9 +2226,11 @@ Label.prototype.init = function(svgNode) {
     }
 };
 
-Label.prototype.enhance = function(mode) {
-    //this.svgNode.setAttributeNS(null, 'fill-opacity', mode?1.0:0.7);
-    this.svgNode.setAttributeNS(null, "stroke-width", visible ? '4' : '1');
+Label.prototype.enhance = function(visible) {
+    //this.svgNode.setAttributeNS(null, 'fill-opacity', visible?1.0:0.7);
+    this.svgNode.setAttributeNS(null, "stroke-width", visible ? '2' : '1');
+    this.svgNode.setAttributeNS(null, "stroke-opacity", visible ? 0.5 : 0.9);
+    this.svgNode.setAttributeNS(null, "stroke", visible ? 'orangered' : 'black');
 };
 
 Label.prototype.unrealize = function() {

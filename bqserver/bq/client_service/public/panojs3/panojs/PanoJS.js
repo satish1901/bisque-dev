@@ -157,11 +157,19 @@ PanoJS.PRE_CACHE_AMOUNT = 3; // 1 - only visible, 2 - more, 3 - even more
 PanoJS.USE_WHEEL_FOR_ZOOM = (navigator.userAgent.indexOf("Mac OS X")>0 ? false: true);
 // the deltas on Firefox and Chrome are 40 times smaller than on Safari or IE
 PanoJS.WHEEL_SCALE = (navigator.userAgent.toLowerCase().indexOf('chrome')>-1 ? 1 : 40);
+if (navigator.userAgent.indexOf("Mac OS X")>0) {
+    try {
+        var v = navigator.userAgent.match(/Mac OS X (\S+).*\)/)[1].split('_');
+        //var v = parseInt(navigator.userAgent.match(/Version\/(\S+).*?Safari\//)[1].split('.')[0]);
+        if (parseInt(v[0])>=10 && parseInt(v[0])>=8)
+            PanoJS.WHEEL_SCALE = 10;
+    } catch (e) {}
+}
 
 // dima: keys used by keyboard handlers
 // right now event is attached to 'document', can't make sure which element is current, skip for now
 PanoJS.USE_KEYBOARD = false;
-PanoJS.KEY_MOVE_THROTTLE = 15;
+PanoJS.KEY_MOVE_THROTTLE = 30;
 PanoJS.KEY_UP    = 38;
 PanoJS.KEY_DOWN  = 40;
 PanoJS.KEY_RIGHT = 39;
@@ -1106,22 +1114,22 @@ PanoJS.prototype.keyboardHandler = function(e) {
       this.zoom(1);
       return false;
   } else
-  if (key === PanoJS.KEY_UP) {
+  if (key === PanoJS.KEY_DOWN) {
       this.blockPropagation(e);
       this.moveViewerBy({'x': 0,'y': -PanoJS.KEY_MOVE_THROTTLE});
       return false;
   } else
-  if (key === PanoJS.KEY_RIGHT) {
+  if (key === PanoJS.KEY_LEFT) {
       this.blockPropagation(e);
       this.moveViewerBy({'x': PanoJS.KEY_MOVE_THROTTLE,'y': 0});
       return false;
   } else
-  if (key === PanoJS.KEY_DOWN) {
+  if (key === PanoJS.KEY_UP) {
       this.blockPropagation(e);
       this.moveViewerBy({'x': 0,'y': PanoJS.KEY_MOVE_THROTTLE});
       return false;
   } else
-  if (key === PanoJS.KEY_LEFT) {
+  if (key === PanoJS.KEY_RIGHT) {
       this.blockPropagation(e);
        this.moveViewerBy({'x': -PanoJS.KEY_MOVE_THROTTLE,'y': 0});
       return false;
