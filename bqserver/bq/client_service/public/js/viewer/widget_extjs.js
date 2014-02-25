@@ -65,6 +65,7 @@ Ext.define('BQ.viewer.Image', {
         this.addListener( 'resize', function(me, width, height) {
             if (me.viewer) me.viewer.resize();
         });
+
         this.callParent();
     },
 
@@ -77,6 +78,16 @@ Ext.define('BQ.viewer.Image', {
     afterRender : function() {
         this.callParent();
         this.loadViewer(this.resource);
+
+        this.keyNav = Ext.create('Ext.util.KeyNav', document.body, {
+            left:     this.onkeyboard,
+            right:    this.onkeyboard,
+            up:       this.onkeyboard,
+            down:     this.onkeyboard,
+            pageUp:   this.onkeyboard,
+            pageDown: this.onkeyboard,
+            scope : this
+        });
     },
 
     loadViewer: function(resource) {
@@ -136,8 +147,10 @@ Ext.define('BQ.viewer.Image', {
 
     onerror : function(error) {
         if (this.parameters.blockforsaves) this.setLoading(false);
-        BQ.ui.error(error.message);
-        this.fireEvent( 'error', this, error );
+        if (this.hasListeners.error)
+            this.fireEvent( 'error', error );
+        else
+            BQ.ui.error(error.message_short);
     },
 
     onselect : function(gob) {
@@ -146,6 +159,10 @@ Ext.define('BQ.viewer.Image', {
 
     oneditcontrols : function() {
         this.fireEvent( 'edit_controls_activated', this );
+    },
+
+    onkeyboard: function(e) {
+        this.viewer.onkeyboard(e);
     },
 
 });

@@ -8,16 +8,16 @@ ImgScaleBar.prototype.create = function (parent) {
     this.parentdiv = parent;
     this.scalebar = null;
     return parent;
-}
+};
 
 ImgScaleBar.prototype.newImage = function () {
 
-}
+};
 
 ImgScaleBar.prototype.updateImage = function () {
-    var view = this.viewer.current_view;  
+    var view = this.viewer.current_view;
     var dim = view.imagedim;
-    var imgphys = this.viewer.imagephys;  
+    var imgphys = this.viewer.imagephys;
 
     if (imgphys==null || imgphys.pixel_size[0]==undefined || imgphys.pixel_size[0]==0.0000) {
       if (this.scalebar != null) {
@@ -25,21 +25,21 @@ ImgScaleBar.prototype.updateImage = function () {
         delete this.scalebar;
       }
       this.scalebar = null;
-      return;        
+      return;
     }
-    
+
     var surf = this.parentdiv;
     if (this.viewer.viewer_controls_surface) surf = this.viewer.viewer_controls_surface;
-    
+
     if (this.scalebar == null)
-      this.scalebar = new ScaleBar ( surf, imgphys.pixel_size[0] ); 
-    this.scalebar.setValue( imgphys.pixel_size[0]/view.scale );     
-}
+      this.scalebar = new ScaleBar ( surf, imgphys.pixel_size[0] );
+    this.scalebar.setValue( imgphys.pixel_size[0]/view.scale );
+};
 
 ImgScaleBar.prototype.updatePosition = function () {
     if (this.scalebar == null) return;
-    var view = this.viewer.current_view;  
+    var view = this.viewer.current_view;
 
-    var imgphys = this.viewer.imagephys;  
-    this.scalebar.setValue( imgphys.pixel_size[0]/view.scale );   
-}
+    var imgphys = this.viewer.imagephys;
+    this.scalebar.setValue( imgphys.pixel_size[0]/view.scale );
+};

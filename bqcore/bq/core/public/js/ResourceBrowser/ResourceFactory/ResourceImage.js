@@ -539,9 +539,6 @@ Ext.define('Bisque.Resource.Image.Page', {
             listeners : {
                 loaded: function(vc) {
                     var editor = vc.viewer.editor;
-                    //this.gobjectTagger.on('btnNavigate', editor.navigate, editor);
-                    //this.gobjectTagger.on('btnSelect', editor.select, editor);
-                    //this.gobjectTagger.on('btnDelete', editor.remove, editor);
                     this.gobjectTagger.on('createGob', editor.onCreateGob, editor);
                 },
                 changed : function(me, gobjects) {
@@ -549,13 +546,16 @@ Ext.define('Bisque.Resource.Image.Page', {
                 },
                 select : function(viewer, gob) {
                     var node = this.gobjectTagger.findNodeByGob(gob);
+                    if (!node) {
+                        console.log('No node found!');
+                        return;
+                    }
                     // dima: here expand to expose the selected node
                     var parent = node;
                     for (var i=0; i<node.getDepth()-1; i++)
                         parent = parent.parentNode;
                     this.gobjectTagger.tree.expandNode( parent, true );
-
-                    this.gobjectTagger.tree.getSelectionModel().select(node, false, true);
+                    this.gobjectTagger.tree.getSelectionModel().select(node);
                 },
                 edit_controls_activated : function(viewer) {
                     this.gobjectTagger.deselectGobCreation();
@@ -712,7 +712,7 @@ Ext.define('Bisque.Resource.Image.Page', {
 
     onerror : function(error) {
         if (this.gobjectTagger) this.gobjectTagger.setLoading(false);
-        BQ.ui.error(error.message);
+        BQ.ui.error(error.message_short);
     },
 
 });

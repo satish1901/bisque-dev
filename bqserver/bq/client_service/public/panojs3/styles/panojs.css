@@ -7,8 +7,8 @@
   top: 0;
   left: 0;
   background-color: #434343;
-  overflow: hidden;     
- 
+  overflow: hidden;
+
   /* NOTE: the size and width should be set dynamically when initialized */
   width: 0;
   height: 0;
@@ -16,7 +16,7 @@
 
 .viewer img {
   margin: 0px;
-  float: none;  
+  float: none;
 }
 
 .viewer .well, .viewer .surface {
@@ -40,7 +40,7 @@
 }
 
 .viewer .well {
-  overflow: hidden;
+  overflow: visible; /*hidden*/
   z-index: 10;
 }
 
@@ -70,15 +70,15 @@
   vertical-align: middle;
   font-weight: bold;
 
-  overflow: hidden; 
+  overflow: hidden;
   z-index: 30;
 
   border: 4px solid #000000;
-  border-radius: 5px;   
-  -moz-border-radius: 5px;    
-  
+  border-radius: 5px;
+  -moz-border-radius: 5px;
+
   opacity:0.8;
-  filter:alpha(opacity=80);   
+  filter:alpha(opacity=80);
 }
 
 .viewer .thumbnail img {
@@ -92,7 +92,7 @@
 .viewer .thumbnail_scale {
   position: absolute;
   bottom: -2px;
-  left: 5px;  
+  left: 5px;
   margin: 0;
   padding: 0px;
   z-index: 45;
@@ -102,7 +102,7 @@
 .viewer .thumbnail_roi {
   position: absolute;
   top: 0px;
-  left: 0px;  
+  left: 0px;
   width: 50px;
   height: 50px;
   margin: 0;
@@ -114,7 +114,7 @@
 .viewer .thumbnail_roi_preview {
   position: absolute;
   top: 0px;
-  left: 0px;  
+  left: 0px;
   width: 50px;
   height: 50px;
   margin: 0;
@@ -126,10 +126,10 @@
 .viewer .thumbnail_surface {
   position: absolute;
   top: 0px;
-  left: 0px;  
+  left: 0px;
   z-index: 50;
   width: 100%;
-  height: 100%;  
+  height: 100%;
 }
 
 /*******************************************************************************
@@ -137,31 +137,31 @@
 *******************************************************************************/
 /*
 .viewer .info {
-  position: absolute; 
-  z-index: 25; 
+  position: absolute;
+  z-index: 25;
   width: 100%;
-  text-align: center; 
-  left: 0px; 
-  padding: 5px; 
-  bottom: 0px; 
-  color: #FFFFFF; 
-  text-shadow: 1px 1px 1px #000000; 
+  text-align: center;
+  left: 0px;
+  padding: 5px;
+  bottom: 0px;
+  color: #FFFFFF;
+  text-shadow: 1px 1px 1px #000000;
   font-size: 12px;
-  text-overflow: ellipsis;  
+  text-overflow: ellipsis;
 }
 */
 .viewer .osd {
-  position: absolute; 
-  z-index: 15; 
+  position: absolute;
+  z-index: 15;
   width: 100%;
-  height: 100%;  
+  height: 100%;
   text-align: center;
-  top: 0px;   
-  left: 0px; 
+  top: 0px;
+  left: 0px;
   padding-top: 25px;
-  color: #FFFFFF; 
-  text-shadow: 1px 1px 1px #000000; 
-  font-size: 12px;
-  text-overflow: ellipsis;  
+  color: #FFFFFF;
+  text-shadow: 1px 1px 1px #000000;
+  font-size: 50px;
+  text-overflow: ellipsis;
 }
 
