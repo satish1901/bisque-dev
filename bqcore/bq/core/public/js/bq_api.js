@@ -1332,7 +1332,7 @@ BQGObject.prototype.setParent = function (p) {
 };
 
 BQGObject.prototype.isPrimitive = function () {
-    return this.type in BQGObject.primitives;
+    return (this.resource_type in BQGObject.primitives || this.type in BQGObject.primitives);
 };
 
 BQGObject.prototype.perimeter = function (res) {
