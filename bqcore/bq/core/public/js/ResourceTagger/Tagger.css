@@ -41,6 +41,30 @@
     background-repeat: no-repeat;
 }
 
+.icon-add-folder {
+    background-image: url('../ResourceTagger/Images/add_folder.png') !important;
+    background-size: 15px 15px;
+    background-repeat: no-repeat;
+}
+
+.icon-trash {
+    background-image: url('../ResourceTagger/Images/trash.png') !important;
+    background-size: 15px 15px;
+    background-repeat: no-repeat;
+}
+
+.icon-color-picker {
+    background-image: url('../ResourceTagger/Images/color_picker.png') !important;
+    background-size: 20px 20px;
+    background-repeat: no-repeat;
+}
+
+.icon-stats {
+    background-image: url('../ResourceTagger/Images/stats.png') !important;
+    background-size: 15px 15px;
+    background-repeat: no-repeat;
+}
+
 .icon-file {
     background-image: url('../ResourceTagger/Images/file.png') !important;
 }

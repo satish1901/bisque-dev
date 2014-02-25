@@ -258,6 +258,15 @@ SVGRenderer.prototype.highlight = function (gob, selection) {
     }, selection );
 };
 
+SVGRenderer.prototype.setcolor = function (gob, color) {
+    // visitall to enhance on the node and its children
+    visit_all(gob, function(g, args) {
+        if (g.shape)
+            g.shape.color_override = args[0];
+    }, color );
+    this.rerender([gob]);
+};
+
 //----------------------------------------------------------------------------
 // graphical primitives
 //----------------------------------------------------------------------------
@@ -307,20 +316,27 @@ SVGRenderer.prototype.polyline = function (visitor, gob,  viewstate, visibility)
         var poly = null;
         if (!gob.shape) {
             poly = document.createElementNS(svgns, gob.type==='line'?'polyline':gob.type);
-            poly.setAttributeNS(null, "stroke", "red");
             poly.setAttributeNS(null, "stroke-width", "1");
-            if ( gob.type == "polygon")
-                poly.setAttributeNS(null, "fill", "red");
-            else
-                poly.setAttributeNS(null, "fill", "none");
             poly.setAttributeNS(null, 'fill-opacity', 0.4);
             poly.setAttributeNS(null, 'marker-start', 'url(#VertexMarker)');
             poly.setAttributeNS(null, 'marker-mid', 'url(#VertexMarker)');
             poly.setAttributeNS(null, 'marker-end', 'url(#VertexMarker)');
             gob.shape = new ctor( poly );
         }
+
         poly = gob.shape.svgNode;
         poly.setAttributeNS(null, "points", points);
+        if (gob.shape.color_override) {
+            poly.setAttributeNS(null, "stroke", '#'+gob.shape.color_override);
+            if (gob.type === "polygon")
+                poly.setAttributeNS(null, "fill", '#'+gob.shape.color_override);
+        } else {
+            poly.setAttributeNS(null, "stroke", "red");
+            if (gob.type === "polygon")
+                poly.setAttributeNS(null, "fill", "red");
+            else
+                poly.setAttributeNS(null, "fill", "none");
+        }
         this.viewShape (viewstate, gob,
                         callback(this,'move_poly'),
                         callback(this,'select_poly'));
@@ -474,7 +490,6 @@ SVGRenderer.prototype.point = function ( visitor, gob, viewstate, visibility) {
             var rect = document.createElementNS(svgns, "rect");
             rect.setAttributeNS(null, "width", "8");
             rect.setAttributeNS(null, "height", "8");
-            rect.setAttributeNS(null, "fill", 'orangered');
             rect.setAttributeNS(null, "display", "none");
             rect.setAttributeNS(null, 'fill-opacity', 1.0);
             rect.setAttributeNS(null, 'stroke', 'black');
@@ -487,6 +502,10 @@ SVGRenderer.prototype.point = function ( visitor, gob, viewstate, visibility) {
 		// scale to size
         var p = viewstate.transformPoint (pnt.x, pnt.y);
         var rect = gob.shape.svgNode;
+        if (gob.shape.color_override)
+            rect.setAttributeNS(null, "fill", '#'+gob.shape.color_override);
+        else
+            rect.setAttributeNS(null, "fill", 'orangered');
 		rect.setAttributeNS(null, "x", p.x -4);
 		rect.setAttributeNS(null, "y", p.y -4);
         this.viewShape (viewstate, gob,
@@ -548,8 +567,6 @@ SVGRenderer.prototype.rectangle = function ( visitor, gob,  viewstate, visibilit
     if (visible && gob.visible) {
         if (gob.shape == null ) {
             var rect = document.createElementNS(svgns, "rect");
-            rect.setAttributeNS(null, "fill", "red");
-            rect.setAttributeNS(null, 'stroke', "red");
             rect.setAttributeNS(null, 'stroke-width', 1);
             rect.setAttributeNS(null,"display", "none");
             rect.setAttributeNS(null, 'fill-opacity', 0.4);
@@ -563,6 +580,13 @@ SVGRenderer.prototype.rectangle = function ( visitor, gob,  viewstate, visibilit
         rect.setAttributeNS(null, "y", p1.y);
         rect.setAttributeNS(null, "width", Math.abs(p1.x-p2.x));
         rect.setAttributeNS(null, "height", Math.abs(p1.y-p2.y));
+        if (gob.shape.color_override) {
+            rect.setAttributeNS(null, "stroke", '#'+gob.shape.color_override);
+            rect.setAttributeNS(null, "fill", '#'+gob.shape.color_override);
+        } else {
+            rect.setAttributeNS(null, "fill", "red");
+            rect.setAttributeNS(null, 'stroke', "red");
+        }
         this.viewShape (viewstate, gob,
                         callback(this,'move_rectangle'),
                         callback(this,'select_rectangle'));
@@ -628,8 +652,6 @@ SVGRenderer.prototype.square = function ( visitor, gob,  viewstate, visibility) 
     if (visible && gob.visible) {
         if (gob.shape == null ) {
             var rect = document.createElementNS(svgns, "rect");
-            rect.setAttributeNS(null, "fill", "red");
-            rect.setAttributeNS(null, 'stroke', "red");
             rect.setAttributeNS(null, 'stroke-width', 1);
             rect.setAttributeNS(null, "display", "none");
             rect.setAttributeNS(null, 'fill-opacity', 0.4);
@@ -643,6 +665,13 @@ SVGRenderer.prototype.square = function ( visitor, gob,  viewstate, visibility) 
         rect.setAttributeNS(null, "y", p1.y);
         rect.setAttributeNS(null, "width", Math.abs(p1.x-p2.x));
         rect.setAttributeNS(null, "height", Math.abs(p1.y-p2.y));
+        if (gob.shape.color_override) {
+            rect.setAttributeNS(null, "stroke", '#'+gob.shape.color_override);
+            rect.setAttributeNS(null, "fill", '#'+gob.shape.color_override);
+        } else {
+            rect.setAttributeNS(null, "fill", "red");
+            rect.setAttributeNS(null, 'stroke', "red");
+        }
         this.viewShape (viewstate, gob,
                         callback(this,'move_rectangle'),
                         callback(this,'select_rectangle'));
@@ -672,8 +701,6 @@ SVGRenderer.prototype.circle = function ( visitor, gob,  viewstate, visibility) 
         if (gob.shape == null ) {
             var circ = document.createElementNS( svgns, 'circle');
             circ.setAttributeNS(null, 'fill-opacity', 0.4);
-            circ.setAttributeNS(null, 'fill', "red");
-            circ.setAttributeNS(null, 'stroke', "red");
             circ.setAttributeNS(null, 'stroke-width', 1);
             circ.setAttributeNS(null,"display", "none");
             gob.shape = new Circle(circ);
@@ -684,10 +711,16 @@ SVGRenderer.prototype.circle = function ( visitor, gob,  viewstate, visibility) 
         var radius =  Math.sqrt( (p1.x - p2.x)*(p1.x - p2.x) + (p1.y - p2.y)*(p1.y - p2.y));
 
         var circ = gob.shape.svgNode;
-
         circ.setAttributeNS(null, 'cx', p1.x );
         circ.setAttributeNS(null, 'cy', p1.y);
         circ.setAttributeNS(null, 'r', radius );
+        if (gob.shape.color_override) {
+            circ.setAttributeNS(null, "stroke", '#'+gob.shape.color_override);
+            circ.setAttributeNS(null, "fill", '#'+gob.shape.color_override);
+        } else {
+            circ.setAttributeNS(null, 'fill', "red");
+            circ.setAttributeNS(null, 'stroke', "red");
+        }
         this.viewShape (viewstate, gob,
                         callback(this,"move_circle"),
                         callback(this,"select_circle"));
@@ -744,8 +777,6 @@ SVGRenderer.prototype.ellipse = function ( visitor, gob,  viewstate, visibility)
         if (gob.shape == null ) {
             var circ = document.createElementNS( svgns, 'ellipse');
             circ.setAttributeNS(null, 'fill-opacity', 0.4);
-            circ.setAttributeNS(null, 'fill', "red");
-            circ.setAttributeNS(null, 'stroke', "red");
             circ.setAttributeNS(null, 'stroke-width', 1);
             circ.setAttributeNS(null,"display", "none");
             gob.shape = new Ellipse(circ);
@@ -764,6 +795,13 @@ SVGRenderer.prototype.ellipse = function ( visitor, gob,  viewstate, visibility)
         circ.setAttributeNS(null, 'rx', rx );
         circ.setAttributeNS(null, 'ry', ry );
         circ.setAttributeNS(null, 'transform', "rotate(" + ang + " " + p1.x + " " + p1.y +")");
+        if (gob.shape.color_override) {
+            circ.setAttributeNS(null, "stroke", '#'+gob.shape.color_override);
+            circ.setAttributeNS(null, "fill", '#'+gob.shape.color_override);
+        } else {
+            circ.setAttributeNS(null, 'fill', "red");
+            circ.setAttributeNS(null, 'stroke', "red");
+        }
         this.viewShape (viewstate, gob,
                         callback(this,"move_ellipse"),
                         callback(this,"select_ellipse"));
@@ -842,7 +880,6 @@ SVGRenderer.prototype.label = function ( visitor, gob, viewstate, visibility) {
 
             //rect.setAttributeNS(null, "width", "8");
             //rect.setAttributeNS(null, "height", "8");
-            rect.setAttributeNS(null, "fill", "white");
             rect.setAttributeNS(null, 'fill-opacity', 0.9);
             rect.setAttributeNS(null, "stroke", "black");
             rect.setAttributeNS(null, 'stroke-width', '0.5px');
@@ -857,6 +894,10 @@ SVGRenderer.prototype.label = function ( visitor, gob, viewstate, visibility) {
         var rect = gob.shape.svgNode;
 		rect.setAttributeNS(null, "x", p.x -4);
 		rect.setAttributeNS(null, "y", p.y +4);
+        if (gob.shape.color_override)
+            rect.setAttributeNS(null, "fill", '#'+gob.shape.color_override);
+        else
+            rect.setAttributeNS(null, "fill", "white");
         this.viewShape (viewstate, gob,
                         callback(this,"move_label"),
                         callback(this,"select_label"));

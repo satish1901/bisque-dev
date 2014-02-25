@@ -63,9 +63,9 @@ from urllib import quote
 log = logging.getLogger('bisquik.API')
 
 __all__ = [ 'BQFactory', 'BQNode', 'BQResource', 'BQValue', 'BQTag', 'BQVertex', 'BQGObject', 'gobject_primitives',
-            'BQPoint', 'BQLabel', 'BQPolyline', 'BQPolygon', 'BQCircle', 'BQEllipse', 'BQRectangle', 'BQSquare' ] 
+            'BQPoint', 'BQLabel', 'BQPolyline', 'BQPolygon', 'BQCircle', 'BQEllipse', 'BQRectangle', 'BQSquare', 'BQLine' ] 
 
-gobject_primitives = set(['point', 'label', 'polyline', 'polygon', 'circle', 'ellipse', 'rectangle', 'square'])
+gobject_primitives = set(['point', 'label', 'polyline', 'polygon', 'circle', 'ellipse', 'rectangle', 'square', 'line'])
 
 
 ################################################################################
@@ -128,9 +128,9 @@ class BQValue (BQNode):
     xmlfields = ['value']       
     def __init__(self, element=None, value=None):
         if value is None:
-          self.values = []          
+            self.values = []          
         else:
-          self.values = [value]
+            self.values = [value]
         if not element is None: self.fromEtree(element)
           
     def __call__(self):
@@ -268,6 +268,10 @@ class BQPolyline (BQGObject):
             d += math.sqrt( math.pow(x2-x1,2.0) + math.pow(y2-y1,2.0) )        
         return d
 
+class BQLine (BQPolyline):
+    '''line gobject resource''' 
+    xmltag = "line"   
+    pass
 
 # only does 2D version right now, polygon area is flawed if the edges are intersecting
 # implement better algorithm based on triangles

@@ -286,6 +286,11 @@ Ext.define('Bisque.ResourceTagger', {
                     (checked) ? this.fireEvent('checked', this, node) : this.fireEvent('unchecked', this, node);
                     this.checkTree(node, checked);
                 },
+                itemcontextmenu: function( me, record, item, index, e, eOpts ) {
+                    e.stopEvent();
+                    if (this.onmenucontext) this.onmenucontext(me, record, item, index, e, eOpts);
+                        //this.menu_context.showAt(e.getXY());
+                },
                 scope: this
             }
         });
@@ -1039,21 +1044,52 @@ Ext.define('Bisque.GObjectTagger', {
             }, {
                 // xtype: 'button', // default for Toolbars
                 itemId: 'btnCreateFolder',
-                text: 'Add folder',
+                text: 'Add',
                 scale: 'medium',
-                iconCls: 'icon-add',
+                iconCls: 'icon-add-folder',
                 handler: this.createGroupGob,
                 scope: this,
                 tooltip: 'Add a new group graphical object into the tree',
             },{
                 // xtype: 'button', // default for Toolbars
                 itemId: 'btnDeleteSelected',
-                text: 'Delete selected',
+                text: 'Delete',
                 scale: 'medium',
-                iconCls: 'icon-delete',
+                iconCls: 'icon-trash',
                 handler: this.deleteSelectedGobs,
                 scope: this,
                 tooltip: 'Delete selected annotations in the tree',
+            },{
+                // xtype: 'button', // default for Toolbars
+                itemId: 'btnColorSelected',
+                text: 'Color',
+                scale: 'medium',
+                iconCls: 'icon-color-picker ',
+                handler: this.onColorSelectedGobs,
+                scope: this,
+                tooltip: 'Select color for selected annotations in the tree',
+            },{
+                // xtype: 'button', // default for Toolbars
+                itemId: 'btnStatsSelected',
+                text: 'Stats',
+                scale: 'medium',
+                iconCls: 'icon-stats',
+                //handler: this.onStats,
+                scope: this,
+                tooltip: 'Compute statistics for selected annotations in the tree',
+                menu: [{
+                    text: 'Counts',
+                    handler: function(){ this.onStats('counts'); },
+                    scope: this,
+                },{
+                    text: 'Perimeter',
+                    handler: function(){ this.onStats('perimeter'); },
+                    scope: this,
+                },{
+                    text: 'Area',
+                    handler: function(){ this.onStats('area'); },
+                    scope: this,
+                }],
             }],
         }]);
     },
@@ -1340,13 +1376,132 @@ Ext.define('Bisque.GObjectTagger', {
 
     deleteSelectedGobs: function() {
         var sel = this.tree.getSelectionModel().getSelection();
-        if (sel.length<1) return;
+        if (sel.length<1) {
+            BQ.ui.notification('You first need to select some annotations in the tree...');
+            return;
+        }
         var gobs = [];
         var r=undefined;
         for (var i=0; (r=sel[i]); i++) {
             gobs.push(r.raw);
         }
         this.fireEvent('delete_gobjects', gobs);
+    },
+
+    onmenucontext: function( me, record, item, index, e, eOpts ) {
+        this.selectColor(item);
+    },
+
+    selectColor: function(el) {
+        //this.menu_context.showAt(e.getXY());
+        var w = 540;
+        var h = 85;
+        Ext.create('Ext.tip.ToolTip', {
+            target: el,
+            anchor: 'left',
+            cls: 'bq-viewer-tip',
+            width :  w,
+            minWidth: w,
+            //maxWidth: w,
+            //height:  h,
+            minHeight: h,
+
+            layout: 'fit',
+            autoHide: false,
+            shadow: false,
+            items: [{
+                xtype: 'bqcolorpicker',
+                //width :  500,
+                //height:  100,
+                listeners: {
+                    select: function(picker, selColor) {
+                        this.onColorSelected(picker, selColor);
+                    },
+                    scope: this,
+                },
+                colors : [ '000000', // trasparent
+                           'FF0000', '00FF00', '0000FF', // RGB
+                           'FFFFFF', // GRAY
+                           '00FFFF', // CYAN
+                           'FF00FF', // MAGENTA
+                           'FFFF00', // YELLOW
+                           'FF6600'  // custom orange
+                ],
+                titles : [ 'Default', // trasparent
+                           'Red', 'Green', 'Blue', // RGB
+                           'Gray', //GRAY
+                           'Cyan', 'Magenta', 'Yellow', // YMC
+                           'Custom' // custom orange
+                ],
+            }],
+        }).show();
+    },
+
+    onColorSelected: function(picker, color) {
+        var gobs = [];
+        var sel = this.tree.getSelectionModel().getSelection();
+        if (sel.length<1) return;
+        var view = this.tree.getView();
+        var r=undefined;
+        for (var i=0; (r=sel[i]); i++) {
+            gobs.push(r.raw);
+            var node = view.getNode(r);
+            node.style.setProperty( 'color', '#'+color);
+        }
+        if (color==='000000')
+            color = undefined;
+        this.fireEvent('color_gobjects', gobs, color);
+        if (picker) picker.ownerCt.destroy();
+    },
+
+    onColorSelectedGobs: function() {
+        var sel = this.tree.getSelectionModel().getSelection();
+        if (sel.length<1) {
+            BQ.ui.notification('You first need to select some annotations in the tree...');
+            return;
+        }
+        var item = this.tree.getView().getNode(sel[0]);
+        this.selectColor(item);
+    },
+
+    onStats: function(type) {
+        var sel = this.tree.getSelectionModel().getSelection();
+        if (sel.length<1) {
+            BQ.ui.notification('You first need to select some annotations in the tree...');
+            return;
+        }
+        var types = {
+            counts    : 'gobject-number',
+            perimeter : 'gobject-length',
+            area      : 'gobject-area',
+        }
+        var url    = [];
+        var titles = [];
+        var r=undefined;
+        for (var i=0; (r=sel[i]); i++) {
+            url.push(r.raw.uri);
+            titles.push( r.raw.type +':'+ r.raw.name );
+        }
+
+        // define xpath to search for all possible gobject types
+        var selectors = ['//gobject'];
+        for (var p in BQGObject.primitives)
+            selectors.push('//'+p);
+        var xpath = selectors.join(' | ');
+
+        var xmap    = types[type] || 'gobject-number';
+        var xreduce = type==='counts'? 'count' : 'vector';
+        var title   = 'Stats: '+type;
+
+        this.plotter = Ext.create('BQ.stats.Dialog', {
+            url     : url,
+            xpath   : xpath,
+            xmap    : xmap,
+            xreduce : xreduce,
+            title   : title,
+            //root    : this.root,
+            opts    : { titles: titles, },
+        });
     },
 
 });
