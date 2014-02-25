@@ -595,8 +595,11 @@ ImgViewer.prototype.delete_gobjects = function(gobs) {
 ImgViewer.prototype.set_parent_gobject = function(gob) {
     this.editor.global_parent = gob;
     // dima: if gob is a leaf node, move over to root (or its parent???)
-    if (gob && (gob.resource_type in BQGObject.primitives || gob.type in BQGObject.primitives)) {
-        this.editor.global_parent = undefined;
+    if (gob && gob.isPrimitive()) {
+        if (gob.parent instanceof BQGObject)
+            this.editor.global_parent = gob.parent;
+        else
+            this.editor.global_parent = undefined;
     }
 };
 

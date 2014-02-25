@@ -688,7 +688,7 @@ Ext.define('Bisque.ResourceTagger', {
         me.record.data.qtip = this.getTooltip('', me.record);
         me.record.commit();
 
-        me.record.parentNode.data.iconCls = 'icon-folder';
+        //me.record.parentNode.data.iconCls = 'icon-folder';
         me.view.refresh();
 
         this.editing = false;
@@ -893,7 +893,7 @@ Ext.define('Bisque.ResourceTagger', {
             //Ext.data.NodeInterface.decorate(node); // dima: apparently should not be applied top a child but to a model
             node.raw = children[i];
             newnode = parent.appendChild(node);
-            parent.data.iconCls = 'icon-folder';
+            //parent.data.iconCls = 'icon-folder';
         }
         //this.tree.getView().refresh(); // dima: tree is reloaded automatically
         return newnode;
@@ -1169,7 +1169,7 @@ Ext.define('Bisque.GObjectTagger', {
             leaf: false,
             loaded: false,
         });
-        parent.data.iconCls = 'icon-folder';
+        //parent.data.iconCls = 'icon-folder';
         //this.tree.getView().refresh();
         //this.fireEvent('onappend', this, data);
     },
@@ -1334,7 +1334,7 @@ Ext.define('Bisque.GObjectTagger', {
         var node = this.addNode(parent, [g]);
         this.tree.expandNode( parent );
         this.tree.getSelectionModel().select(node);
-        //this.viewerContainer.viewer.set_parent_gobject(gobject);
+        //this.viewerContainer.viewer.set_parent_gobject(gobject); // selection activates this
         this.fireEvent('create_gobject', g);
     },
 
