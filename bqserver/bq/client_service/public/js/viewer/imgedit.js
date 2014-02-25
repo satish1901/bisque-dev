@@ -676,7 +676,7 @@ ImgEdit.prototype.new_ellipse = function (parent, e, x, y) {
     var ptY = v.inverseTransformPoint(x,y+30);
     g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, 0));
     g.vertices.push (new BQVertex (ptX.x, ptX.y, v.z, v.t, null, 1));
-    g.vertices.push (new BQVertex (ptY.x, ptY.y, v.z, v.t, null, 1));
+    g.vertices.push (new BQVertex (ptY.x, ptY.y, v.z, v.t, null, 2));
 
     this.current_gob = null;
     this.visit_render.visitall(g, [v]);
@@ -688,26 +688,20 @@ ImgEdit.prototype.new_label = function (parent, e, x, y) {
     var g = new BQGObject('label');
     parent = parent || this.global_parent;
 
-    if (parent)
-        parent.addgobjects(g);
-    else
-        this.viewer.image.addgobjects(g); //this.gobjects.push(g);
-
     var pt = v.inverseTransformPoint(x,y);
     g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, 0));
 
-    g.value = 'text';
-
     this.current_gob = null;
-    this.visit_render.visitall(g, [v]);
-    this.store_new_gobject ((parent && !parent.uri) ? parent : g);
-
     var me = this;
-    Ext.Msg.prompt('Label', 'Please enter your text:', function(btn, text){
+    Ext.Msg.prompt('Label', 'Please enter your text:', function(btn, text) {
         if (btn == 'ok'){
-            me.renderer.hideShape(g, v);
+            if (parent)
+                parent.addgobjects(g);
+            else
+                me.viewer.image.addgobjects(g);
             g.value = text;
             me.visit_render.visitall(g, [v]);
+            me.store_new_gobject ((parent && !parent.uri) ? parent : g);
         }
     });
 };
