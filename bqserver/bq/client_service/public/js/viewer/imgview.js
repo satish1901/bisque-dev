@@ -577,6 +577,7 @@ ImgViewer.prototype.highlight_gobject = function(gob, selection) {
         this.slicer.ensureVisible(gob);
         // 2D position
         this.tiles.ensureVisible(gob);
+        this.editor.display_gob_info(gob);
     }
     this.doUpdateImage();
 
