@@ -27,6 +27,7 @@ function callback(obj, method) {
     var thisextra = Array.prototype.slice.call(arguments, 2);
 
     return function() {
+        if (!thismeth) return;
         var args = Array.prototype.slice.call(arguments);
         return thismeth.apply(thisobj, thisextra.concat(args));
     };
