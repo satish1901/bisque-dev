@@ -73,6 +73,7 @@ class BisqueIdentity(object):
             return None
 
         from bq.data_service.model.tag_model import BQUser
+        log.debug ("fetch BQUser  by name")
         bquser =  DBSession.query (BQUser).filter_by(resource_name = user_name).first()
         request.identity['bisque.bquser'] = bquser
         #log.debug ("bq user = %s" % user)
@@ -111,8 +112,12 @@ def get_admin_id():
     user_admin = get_admin()
     return user_admin and user_admin.id
 
-def is_admin ():
+def is_admin (bquser=None):
     'return whether current user has admin priveledges'
+    if bquser:
+        groups  = bquser.get_groups()
+        return any ( (g.group_name == 'admin' or g.group_name == 'admins') for g in groups )
+
     return in_group('admins').is_met(request.environ) or in_group('admin').is_met(request.environ)
 
 
@@ -149,11 +154,22 @@ def add_credentials(headers):
 
 
 def set_admin_mode (v=True):
+    """add or remove admin permissions. """
     if v:
-        user_admin = get_admin()
-        current.set_current_user (user_admin)
+        #user_admin = get_admin()
+        #current.set_current_user (user_admin)
+        credentials = request.environ.setdefault('repoze.what.credentials', {})
+        credset = set (credentials.get ('groups') or [])
+        prevset = credset.copy()
+        credset.add ('admins')
+        credentials['groups'] = tuple (credset)
+        return prevset
     else:
-        current.set_current_user (None)
+        credentials = request.environ.setdefault('repoze.what.credentials', {})
+        credset = set (credentials.get ('groups') or [])
+        if 'admins' in credset:
+            credset.remove ('admins')
+        credentials['groups'] = tuple (credset)
 
 
 def mex_authorization_token():
