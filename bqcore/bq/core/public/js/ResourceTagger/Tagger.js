@@ -282,9 +282,8 @@ Ext.define('Bisque.ResourceTagger', {
                         this.onExpand(node);
                         return;
                     }
-                    //Recursively check/uncheck all children of a parent node
-                    (checked) ? this.fireEvent('checked', this, node) : this.fireEvent('unchecked', this, node);
-                    this.checkTree(node, checked);
+
+                    this.fireEvent(checked ? 'checked' : 'unchecked', this, node);
                 },
                 itemcontextmenu: function( me, record, item, index, e, eOpts ) {
                     e.stopEvent();
@@ -299,21 +298,6 @@ Ext.define('Bisque.ResourceTagger', {
         this.store.tagTree = this.tree;
 
         return this.tree;
-    },
-
-    //Recursively check/uncheck all children of a parent node
-    checkTree: function (node, checked) {
-        node.set('checked', checked);
-
-        for (var i = 0; i < node.childNodes.length; i++)
-            this.checkTree(node.childNodes[i], checked);
-    },
-
-    toggleTree: function (node) {
-        node.set('checked', !node.get('checked'));
-
-        for (var i = 0; i < node.childNodes.length; i++)
-            this.toggleTree(node.childNodes[i]);
     },
 
     getSelModel: function () {
@@ -1142,14 +1126,7 @@ Ext.define('Bisque.GObjectTagger', {
         var r=undefined;
         for (var i=0; (r=sel[i]); i++) {
             r.set('checked', button.checked);
-            this.fireEvent((button.checked) ? 'checked' : 'unchecked', this, r);
         }
-
-        /*button.checked = button.check;
-        var rootNode = this.tree.getRootNode(), eventName = (button.checked) ? 'checked' : 'unchecked';
-        for (var i = 0; i < rootNode.childNodes.length; i++)
-            this.fireEvent(eventName, this, rootNode.childNodes[i]);
-        this.checkTree(rootNode, button.checked);*/
     },
 
     findGObjects: function (resource, imageURI) {
@@ -1180,9 +1157,6 @@ Ext.define('Bisque.GObjectTagger', {
 
     appendMex: function (mex) {
         if (!mex && mex.value !== 'FINISHED') return;
-
-        //var date = new Date();
-        //date.setISO(mex.ts);
         var parent = this.tree.getRootNode();
         parent.insertChild(0, {
             name: mex.name,
@@ -1195,9 +1169,6 @@ Ext.define('Bisque.GObjectTagger', {
             leaf: false,
             loaded: false,
         });
-        //parent.data.iconCls = 'icon-folder';
-        //this.tree.getView().refresh();
-        //this.fireEvent('onappend', this, data);
     },
 
     appendGObject: function (gob) {
@@ -1315,7 +1286,13 @@ Ext.define('Bisque.GObjectTagger', {
 
         // load single mex
         node.raw.loaded = true;
+        node.raw.uri = mex.uri;
         node.raw.gobjects = [];
+        node.raw.parent = undefined;
+        node.raw.children = [];
+        node.raw.tags = [];
+        node.raw.getkids = BQObject.prototype.getkids;
+
         node.set('checked', true);
         node.set('loading', false);
 
@@ -1327,6 +1304,7 @@ Ext.define('Bisque.GObjectTagger', {
                 var gobs = o.gobjects;
                 var name = o.name;
                 var value = '';
+                var uri   = o.uri;
                 node.raw.gobjects.push.apply(node.raw.gobjects, gobs);
 
                 // if there's only one child gobject it's probably a wrapper
@@ -1334,8 +1312,23 @@ Ext.define('Bisque.GObjectTagger', {
                     gobs = o.gobjects[0].gobjects;
                     name = o.gobjects[0].type;
                     value = o.gobjects[0].value;
+                    uri   = o.gobjects[0].uri;
                 }
-                this.addNode(node, { name: name, value: value, gobjects: gobs });
+                // append an imitation of a gobject
+                var g = {
+                    name: name,
+                    value: value,
+                    gobjects: gobs,
+                    uri: uri,
+                    //parent: mex,
+                    parent: undefined,
+                    children: [],
+                    tags: [],
+                    getkids: BQObject.prototype.getkids,
+                    loaded: true,
+                };
+                node.raw.gobjects.push(g);
+                this.addNode(node, g);
             }
         }
         if (node.raw.gobjects.length>0)
@@ -1434,6 +1427,10 @@ Ext.define('Bisque.GObjectTagger', {
         var view = this.tree.getView();
         var r=undefined;
         for (var i=0; (r=sel[i]); i++) {
+            if (!r.raw.getkids) {
+                BQ.ui.notification('Annotations are not yet loaded in the tree. Expand to load first...');
+                continue;
+            }
             gobs.push(r.raw);
             var node = view.getNode(r);
             node.style.setProperty( 'color', '#'+color);
@@ -1485,7 +1482,8 @@ Ext.define('Bisque.GObjectTagger', {
         var xreduce = type==='counts'? 'count' : 'vector';
         var title   = 'Stats: '+type;
 
-        this.plotter = Ext.create('BQ.stats.Dialog', {
+        var spreadsheet = Ext.create('BQ.stats.Dialog', {
+        //var spreadsheet = Ext.create('BQ.spreadsheet.Dialog', {
             url     : url,
             xpath   : xpath,
             xmap    : xmap,

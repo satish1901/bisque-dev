@@ -1964,13 +1964,13 @@ Ext.define('BQ.renderers.Image', {
         if (!definition || !resource) return;
 
         this.gobjects = resource.gobjects;
-        var parameters = { simpleview: '', gobjects: this.gobjects, };
+        /*var parameters = { simpleview: '', gobjects: this.gobjects, };
         this.viewer = Ext.create('BQ.viewer.Image', {
             resource: resource.resource_type=='image'?resource:resource.value, // reference or resource
             flex: 1,
             parameters: parameters,
             //listeners: { 'changed': this.onchanged, scope: this, },
-        });
+        });*/
 
         // create tools menus
         var tool_items = [];
@@ -1985,12 +1985,28 @@ Ext.define('BQ.renderers.Image', {
         this.items = [];
         this.items.push( {xtype: 'label', html:(template.label?template.label:resource.name), } );
         if (tool_items.length>0) this.items.push( {xtype: 'toolbar', items: tool_items, defaults: { scale: 'medium' }, } );
-        this.items.push(this.viewer);
+        //this.items.push(this.viewer);
 
         // find image host root to use to form stats requests
         this.root = this.resource.uri.replace(/\/data_service\/.*$/i, '');
 
         this.callParent();
+    },
+
+    afterRender : function() {
+        this.callParent();
+        var resource = this.resource;
+        this.viewer = Ext.create('BQ.viewer.Image', {
+            resource: resource.resource_type==='image' ? resource : resource.value, // reference or resource
+            flex: 1,
+            height: '100%',
+            parameters: {
+                simpleview: '',
+                gobjects: this.gobjects,
+            },
+            //listeners: { 'changed': this.onchanged, scope: this, },
+        });
+        this.add(this.viewer);
     },
 
     createMenuPreviewMovie : function(menu) {
