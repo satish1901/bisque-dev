@@ -95,7 +95,7 @@ def parse_uri(uri):
     return (groups[1], groups[3], groups[4], groups[6], groups[8])
 
 def urlnorm(uri):
-    
+
     (scheme, authority, path, params, query, fragment) = urlparse(uri)
     #(scheme, authority, path, query, fragment) = parse_uri(uri)
     #if not scheme or not authority:
@@ -162,10 +162,10 @@ class BaseCache(object):
         return None
     def etag (self, url, user):
         return None
-    
+
 class ResponseCache(object):
-    known_headers = [ 'Content-Length', 'Content-Type' ] 
-    
+    known_headers = [ 'Content-Length', 'Content-Type' ]
+
     def __init__(self, cachepath):
         "create the local cache"
         self.cachepath  = cachepath
@@ -175,7 +175,7 @@ class ResponseCache(object):
     def _cache_name (self, url, user):
         scheme, authority, request_uri, defrag_uri = urlnorm(url)
         return safename ( defrag_uri, user )
-     
+
     def save(self, url, headers, value,user):
         cachename = os.path.join(self.cachepath, self._cache_name(url, user))
         headers = dict ([ (k,v) for k,v in headers.items() if k in self.known_headers])
@@ -184,23 +184,23 @@ class ResponseCache(object):
             f.write (str (headers))
             f.write ('\n\n')
             f.write (value)
-             
+
     def fetch(self, url,user):
-        #log.debug ('cache fetch %s' % url) 
+        #log.debug ('cache fetch %s' % url)
         cachename = os.path.join(self.cachepath, self._cache_name(url, user))
         if os.path.exists (cachename):
             with open(cachename) as f:
                 headers, cached = f.read().split ('\n\n', 1)
-                log.info ('cache fetch serviced %s' % url) 
+                log.info ('cache fetch serviced %s' % url)
                 headers = eval (headers)
                 return headers, cached
         return None, None
-    
+
     def invalidate(self, url, user, files = None, exact=False):
         if not files:
             files = os.listdir(self.cachepath)
         # Skip parameters in invalidate
-        if '?' in url: 
+        if '?' in url:
             url = url.split('?',1)[0]
         cachename = self._cache_name(url, user)
         log.info ('cache invalidate ( %s' % cachename )
@@ -208,8 +208,8 @@ class ResponseCache(object):
             # current cache names file-system safe versions of urls
             # /data_service/images/1?view=deep
             #   =>  ,data_service/images,1#view=deep
-            # ',' can be troublesome at ends so we remove them 
-            #     ,data_service/images,1#view=deep == ,data_service/images,1,#view=deep 
+            # ',' can be troublesome at ends so we remove them
+            #     ,data_service/images,1#view=deep == ,data_service/images,1,#view=deep
             cachename = cachename.split('#',1)[0].split(',',1)[1].strip(',')
             for mn, cf in [ (fn.split('#',1)[0].split(',',1)[1].strip(','), fn) for fn in files ] :
                 #log.debug('exact %s <> %s' % (cachename, mn))
@@ -222,7 +222,7 @@ class ResponseCache(object):
                         pass
                     files.remove (cf)
                     log.debug ('cache exact remove %s' % cf)
-            return 
+            return
         for cf in files[:]:
             #log.debug ("checking %s" % cf)
             if cachename.startswith('*')\
@@ -241,15 +241,15 @@ class ResponseCache(object):
         if os.path.exists(cachename):
             return datetime.fromtimestamp(os.stat(cachename).st_mtime)
         return None
-        
+
     def etag (self, url, user):
         mtime =  self.modified(url, user)
         if mtime:
             cachename = os.path.join(self.cachepath, self._cache_name(url, user))
             return hashlib.md5 (str(mtime) + cachename).hexdigest()
         return None
-        
-        
+
+
 
 class HierarchicalCache(ResponseCache):
     """Specialized Cache that auto-invalidates parent elements of URL
@@ -280,9 +280,9 @@ class HierarchicalCache(ResponseCache):
                                                                special]),
                                          '*',files)
         object_found = False
-        #  Delete all cached for the URL 
-        #  Delete exact matches if URL url is 
-        #  
+        #  Delete all cached for the URL
+        #  Delete exact matches if URL url is
+        #
         path = '/'.join(splitpath[:4])
         request_uri = query and "?".join([path, query]) or path
         super(HierarchicalCache, self).invalidate (
@@ -296,7 +296,7 @@ class HierarchicalCache(ResponseCache):
         super(HierarchicalCache, self).invalidate (
             ''.join([scheme, "://" , authority , request_uri]),
             '*', files,exact=True )
-        
+
 
         # while splitpath:
         #     path = '/'.join(splitpath)
@@ -311,12 +311,12 @@ class HierarchicalCache(ResponseCache):
         #     # Has the effect of stopping on the next highest container.
         #     #if pid and pid[0] in string.ascii_letters:
         #     #    break
-        #     # The above was had error when modifing tags or gobjects 
+        #     # The above was had error when modifing tags or gobjects
         #     # and then fetching a view deep on a top level object i.e
         #     # POST /data_service/images/2/gobjects/
         #     # then GET /data_service/images/2?view=deep
         #     # we are seeing a container
-            
+
         #     # if numeric then break
         #     if pid and pid[0] not in string.ascii_letters:
         #         break
@@ -328,7 +328,7 @@ class HierarchicalCache(ResponseCache):
 
 
 def parse_http_date(timestamp_string):
-    
+
     if timestamp_string is None: return None
     timestamp_string = timestamp_string.split(';')[0]    # http://stackoverflow.com/questions/12626699/if-modified-since-http-header-passed-by-ie9-includes-length
     test = timestamp_string[3]
@@ -373,7 +373,7 @@ class Resource(ServiceController):
                            <tag name="param" />
                            ...
                   DELETE : delete collection of tags
-                  
+
       ../Resource/#ID : Element ::
                 GET   : get value     -> get (resource)
                 POST  : add element to resource -> append(resource, doc)
@@ -384,7 +384,7 @@ class Resource(ServiceController):
                       or update the image element permission attribute
                        <request >
                          <image uri="/ds/images/1" perm="0" />
-                       
+
                 PUT   : modify value  -> modify (resource, doc)
                 DELETE: delete resource -> delete(resource)
 
@@ -409,7 +409,7 @@ class Resource(ServiceController):
         if cache and self.cache == True:
             log.debug ("using CACHE")
             self.server_cache = self.hier_cache
-            
+
 #             self.modify = error_handler(error_function)(self.modify)
 #             self.new = error_handler(error_function)(self.new)
 #             self.append = error_handler(error_function)(self.append)
@@ -446,13 +446,13 @@ class Resource(ServiceController):
         if etag:
             tg.response.headers['ETag'] = etag
             return
-       
+
         last_modified = self.get_last_modified_date(resource)
         #logger.debug('response: ' + str(last_modified))
         if last_modified is None:
             last_modified = datetime(*gmtime()[:6])
 
-            tg.response.headers['Last-Modified'] = ( 
+            tg.response.headers['Last-Modified'] = (
                 datetime.strftime(last_modified, "%a, %d %b %Y %H:%M:%S GMT"))
 
     def invalidate(self, url):
@@ -467,7 +467,7 @@ class Resource(ServiceController):
         if not hasattr(request, 'bisque'):
             bisque = Bunch()
             request.bisque = bisque
-        bisque = request.bisque 
+        bisque = request.bisque
         user_id  = identity.get_user_id()
         http_method = request.method.lower()
         log.info ('Request "%s" with %s?%s'%(http_method,str(request.path),str(kw)))
@@ -528,7 +528,7 @@ class Resource(ServiceController):
                     abort(401)
                 abort(404)
 
-        #if we have a path, check if the first token matches this 
+        #if we have a path, check if the first token matches this
         #classes children.
         if path:
             token = path.pop(0)
@@ -536,7 +536,6 @@ class Resource(ServiceController):
             child = self.get_child_resource(token)
             if child is not None:
                 bisque.parent = resource
-                log.debug ("parent = %s" % resource)
                 #call down into the child resource.
                 return child._default(*path, **kw)
 
@@ -551,7 +550,7 @@ class Resource(ServiceController):
         self.check_cache_header(resource)
 
         method = getattr(self, method_name)
-        #pylons.response.headers['Content-Type'] = 'text/xml' 
+        #pylons.response.headers['Content-Type'] = 'text/xml'
         log.debug ("Dispatch for %s", method_name)
         try:
             if http_method in ('post', 'put'):
@@ -584,13 +583,13 @@ class Resource(ServiceController):
                                             value, user=user_id)
             else: # http_method == HEAD
                 value = method(resource, **kw)
-                    
+
             #set the last modified date header for the response
             self.add_cache_header(resource)
             return value
-          
+
         except identity.BQIdentityException:
-            response.status_int = 401    
+            response.status_int = 401
             return "<response>FAIL</response>"
 
 
@@ -626,14 +625,14 @@ class Resource(ServiceController):
 
     def create(self, **kw):
         """
-        returns a class or function which will be passed into the self.new 
-        method. 
+        returns a class or function which will be passed into the self.new
+        method.
         """
         raise abort(501)
 
     def new(self, resource_factory, xml, **kw):
         """
-        uses resources factory to create a resource, commit it to the 
+        uses resources factory to create a resource, commit it to the
         database.
         """
         raise abort(501)
@@ -652,7 +651,7 @@ class Resource(ServiceController):
         raise abort(501)
     def append(self, resource, xml, **kw):
         """
-        Append value to resource 
+        Append value to resource
         """
         raise abort(501)
     def delete(self, resource,  **kw):
@@ -667,4 +666,4 @@ class Resource(ServiceController):
         """
         abort(501)
 
-    
+
