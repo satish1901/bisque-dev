@@ -591,6 +591,7 @@ table.x-form-color {
     border-color: rgba(255,255,255,0.2);
     border-radius: 5px;
     padding: 0px 0px 5px 10px;
+    z-index: 2147483647 !important;
 }
 
 .bq-viewer-menu .x-tip-anchor {

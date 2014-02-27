@@ -516,7 +516,11 @@ PanoJS.prototype.assignTileImage = function(tile) {
     if ( tileImg.done || !tileImg.delayed_loading &&
          (useBlankImage || !PanoJS.USE_LOADER_IMAGE || tileImg.complete || (tileImg.image && tileImg.image.complete))  ) {
       tileImg.onload = null;
-      if (tileImg.image) tileImg.image.onload = null;
+      tileImg.onerror = null;
+      if (tileImg.image) {
+          tileImg.image.onload = null;
+          tileImg.image.onerror = null;
+      }
 
       if (tileImg.parentNode == null) {
         tile.element = this.well.appendChild(tileImg);
@@ -552,7 +556,34 @@ PanoJS.prototype.assignTileImage = function(tile) {
         }
 
         tileImg.onload = function() {};
+        tileImg.onerror = undefined;
         return false;
+      };
+
+      tileImg.onerror = function() {
+        // make sure our destination is still present
+        if (loadingImg.parentNode && loadingImg.targetSrc == tileImgId) {
+          tileImg.style.top = loadingImg.style.top;
+          tileImg.style.left = loadingImg.style.left;
+          if (tileImg.naturalWidth && tileImg.naturalHeight && tileImg.naturalWidth>0 && tileImg.naturalHeight>0) {
+            tileImg.style.width = tileImg.naturalWidth*scale + 'px';
+            tileImg.style.height = tileImg.naturalHeight*scale + 'px';
+          } else
+          if (isIE() && tileImg.offsetWidth>0 && tileImg.offsetHeight>0) { // damn IE does not have naturalWidth ...
+            tileImg.style.width = tileImg.offsetWidth*scale + 'px';
+            tileImg.style.height = tileImg.offsetHeight*scale + 'px';
+          }
+          well.replaceChild(tileImg, loadingImg);
+          tile.element = tileImg;
+        } else {
+          // delete a tile if the destination is not present anymore
+          if (loadingImg.parentNode) {
+            well.removeChild(loadingImg);
+            tile.element = null;
+          }
+        }
+        tileImg.onload = function() {};
+        tileImg.onerror = undefined;
       };
 
       // dima, fetch image after onload method is set-up

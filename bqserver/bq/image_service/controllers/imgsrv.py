@@ -97,6 +97,17 @@ def getFileDateTimeString(filename):
     return "%.4d-%.2d-%.2d %.2d:%.2d:%.2d" % ( d[0], d[1], d[2], d[3], d[4], d[5] )
 
 
+def safeunicode(s):
+    if isinstance(s, unicode):
+        return s
+    if isinstance(s, str) is not True:
+        return unicode(s)
+    try:
+        s.encode('ascii')
+    except UnicodeEncodeError:
+        s = s.encode('utf8')
+    return unicode(s, 'latin1')
+
 ################################################################################
 # ConverterDict
 ################################################################################
@@ -460,8 +471,8 @@ class MetaService(object):
             image = etree.Element ('resource', uri='%s/%s?meta'%(self.server.url, image_id))
             tags_map = {}
             for k, v in meta.iteritems():
-                k = unicode(str(k), 'latin1')
-                v = unicode(str(v), 'latin1')
+                k = safeunicode(k)
+                v = safeunicode(v)
                 tl = k.split('/')
                 parent = image
                 for i in range(0,len(tl)):

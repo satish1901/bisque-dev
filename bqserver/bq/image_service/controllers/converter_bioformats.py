@@ -153,8 +153,12 @@ class ConverterBioformats(ConverterBase):
 
         # extract the OME-XML part
         try:
-            omexml = misc.between('<?xml version="1.0" encoding="UTF-8" standalone="no"?>', '</OME>', o)
-            omexml = '%s</OME>'%omexml
+            omexml = misc.between('<OME', '</OME>', o)
+            omexml = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n<OME%s</OME>'%omexml
+            
+            with open('G:\\nd2.ome.xml', 'w') as f:
+                f.write(omexml)
+            
         except UnboundLocalError:
             return {}
 
@@ -167,13 +171,24 @@ class ConverterBioformats(ConverterBase):
 
         ########################################
         # Parse Meta XML
+        # bioformats defines UTF-8 encoding, but it may be something else, try to recover
         ########################################
-        mee = etree.fromstring(omexml)
+        try:
+            mee = etree.fromstring(omexml)
+        except etree.XMLSyntaxError:
+            try:
+                mee = etree.fromstring(omexml, parser=etree.XMLParser(encoding='iso-8859-1'))
+            except (etree.XMLSyntaxError, LookupError):                
+                try:
+                    mee = etree.fromstring(omexml, parser=etree.XMLParser(encoding='cp1252'))
+                except (etree.XMLSyntaxError, LookupError):                
+                    mee = etree.fromstring(omexml, parser=etree.XMLParser(recover=True))
+        
         imagenodepath = 'ome:Image[@ID="Image:%s"]'%(series)
         namespaces = {
-            'ome': misc.between('OME xmlns="', '"', o),
-            'sa': misc.between('StructuredAnnotations xmlns="', '"', o),
-            'om': misc.between('OriginalMetadata xmlns="', '"', o),
+            'ome': misc.between('OME xmlns="', '"', omexml),
+            'sa': misc.between('StructuredAnnotations xmlns="', '"', omexml),
+            #'om': misc.between('OriginalMetadata xmlns="', '"', o), # dima: v4.x.x
         }
 
         rd['date_time'] = misc.xpathtextnode(mee, '%s/ome:AcquisitionDate'%imagenodepath, namespaces=namespaces).replace('T', ' ')
@@ -218,13 +233,15 @@ class ConverterBioformats(ConverterBase):
         # channel names
         channels = mee.xpath('ome:Image[@ID="Image:0"]/ome:Pixels/ome:Channel', namespaces=namespaces)
         for c,i in zip(channels, range(len(channels))):
-            rd['channel_%s_name'%c] = c.get('Name', 'ch_%s'%i)
+            rd['channel_%s_name'%i] = c.get('Name', 'ch_%s'%i)
 
         # custom - any other tags in proprietary files should go further prefixed by the custom parent
         custom = mee.xpath('sa:StructuredAnnotations/sa:XMLAnnotation', namespaces=namespaces)
         for a in custom:
-            k = misc.xpathtextnode(a, 'sa:Value/om:OriginalMetadata/om:Key', namespaces=namespaces)
-            v = misc.xpathtextnode(a, 'sa:Value/om:OriginalMetadata/om:Value', namespaces=namespaces)
+            #k = misc.xpathtextnode(a, 'sa:Value/om:OriginalMetadata/om:Key', namespaces=namespaces)  # dima: v4.x.x
+            #v = misc.xpathtextnode(a, 'sa:Value/om:OriginalMetadata/om:Value', namespaces=namespaces) # dima: v4.x.x
+            k = misc.xpathtextnode(a, 'Value/OriginalMetadata/Key', namespaces=namespaces)  # dima: v5.0.0
+            v = misc.xpathtextnode(a, 'Value/OriginalMetadata/Value', namespaces=namespaces) # dima: v5.0.0
             rd['custom/%s'%k] = v
 
         return rd
@@ -391,7 +408,7 @@ class ConverterBioformats(ConverterBase):
         ometiff = kw['intermediate']
 
         if z1>z2 and z2==0 and t1>t2 and t2==0 and x1==0 and x2==0 and y1==0 and y2==0:
-            return cls.convertToOmeTiff(ifnm, ometiff, series=series, extra=['-z', str(z1-1), '-timepoint', str(t1-1)])
+            return cls.convertToOmeTiff(ifnm, ofnm=ofnm, series=series, extra=['-z', str(z1-1), '-timepoint', str(t1-1)])
         else:
             # create an intermediate OME-TIFF
             if not os.path.exists(ometiff):

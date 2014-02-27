@@ -6,23 +6,31 @@
 /*
   Mask
 */
-.x-mask { 
-    opacity: .5; 
-    background: #000000; 
+.x-mask {
+    opacity: .5;
+    background: #000000;
+}
+
+.x-css-shadow {
+    box-shadow: none !important;
 }
 
 .x-mask-msg {
     background-color: transparent;
-    border: 0px;    
-    
+    border: 0px;
+
     background-image: url('/images/progress_circles.gif');
     background-size: 40px 40px;
     background-position: center 15px;
     background-repeat: no-repeat;
-    cursor: wait;    
-    
+    cursor: wait;
+
     min-width: 40px;
-    min-height: 40px;    
+    min-height: 40px;
+}
+
+.x-mask-msg .x-mask-msg-text {
+    color: #cccccc;
 }
 
 .x-mask-msg div {
@@ -33,7 +41,7 @@
 
     opacity: 1;
     cursor: wait;
-    border: 0px;    
+    border: 0px;
 }
 
 /*
@@ -49,17 +57,17 @@
 
 h1 {
   font-size: 2em;
-  margin: 0.67em 0px;  
+  margin: 0.67em 0px;
 }
 
 h2 {
   font-size: 1.6em;
-  margin: 0.5em 0px;  
+  margin: 0.5em 0px;
 }
 
 h3 {
   font-size: 1.2em;
-  margin: 0.5em 0px;  
+  margin: 0.5em 0px;
 }
 
 

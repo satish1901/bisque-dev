@@ -60,6 +60,8 @@ def safetypeparse(v):
     return v
 
 def safeencode(s):
+    if isinstance(s, unicode) is not True:
+        return str(s)
     try:
         s.encode('ascii')
     except UnicodeEncodeError:

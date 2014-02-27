@@ -1,14 +1,14 @@
 function ImageConverter (viewer, name) {
     this.base = ViewerPlugin;
     this.base (viewer, name);
-    
-   this.viewer.addMenu([{ 
-        itemId: 'menu_viewer_converter', 
-        xtype:'button', 
-        text: 'Convert', 
+
+    this.viewer.addMenu([{
+        itemId: 'menu_viewer_converter',
+        xtype:'button',
+        text: 'Convert',
         iconCls: 'converter',
         tooltip: 'Convert and download the current image',
-        scope: this, 
+        scope: this,
         handler: this.convert,
     }, '-' ]);
 }
@@ -16,13 +16,13 @@ ImageConverter.prototype = new ViewerPlugin();
 
 ImageConverter.prototype.create = function (parent) {
     return parent;
-}
+};
 
 ImageConverter.prototype.newImage = function () {
-}
+};
 
 ImageConverter.prototype.updateImage = function () {
-}
+};
 
 ImageConverter.prototype.convert = function () {
     var image = this.viewer.image;
@@ -41,8 +41,8 @@ ImageConverter.prototype.convert = function () {
             image  : this.viewer.image,
             phys   : this.viewer.imagephys,
             slice  : this.viewer.findPlugin('slicer').getParams(),
-            view   : this.viewer.findPlugin('ops').getParams(),            
+            view   : this.viewer.findPlugin('ops').getParams(),
         }],
-    }).show();     
-}
+    }).show();
+};
 
