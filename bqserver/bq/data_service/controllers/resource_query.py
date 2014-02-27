@@ -76,7 +76,7 @@ from bq.data_service.model import Tag, GObject
 from bq.data_service.model import Value, values
 from bq.data_service.model import dbtype_from_tag
 
-from bq.core.identity import get_user_id, get_admin_id, get_admin, is_admin
+from bq.core.identity import get_user_id, is_admin, get_user
 from bq.core.model import User
 from bq.util.mkdir import _mkdir
 from bq.util.paths import data_path
@@ -513,8 +513,8 @@ def tags_special(dbtype, query, params):
         ### Return all tha available tag names for the given superquery
         sq1 = query.with_labels().subquery()
         # Fetch all name on all 'top' level tags from the query
-        sq2 = DBSession.query(GObject).filter(GObject.document_id == sq1.c.taggable_document_id)
-        sq3 = sq2.distinct(GObject.resource_user_type).order_by(Tag.resource_user_type)
+        sq2 = DBSession.query(GObject.resource_user_type).filter(GObject.document_id == sq1.c.taggable_document_id)
+        sq3 = sq2.distinct().order_by(Tag.resource_user_type)
         vsall = sq3.all()
         # for sqlite (no distinct on)
         try:
@@ -537,9 +537,9 @@ def tags_special(dbtype, query, params):
         #sq2 = DBSession.query(GObject).filter(
         #    and_(GObject.resource_user_type == tv,
         #         GObject.document_id == sq1.c.taggable_document_id)).with_labels().subquery()
-        sq2 = DBSession.query(GObject).filter(
+        sq2 = DBSession.query(GObject.resource_name).filter(
             and_(GObject.resource_user_type == tv,
-                 GObject.document_id == sq1.c.taggable_document_id)).distinct(GObject.resource_name).order_by(GObject.resource_name)
+                 GObject.document_id == sq1.c.taggable_document_id)).distinct().order_by(GObject.resource_name)
         # for sqllite (no distinct on)
         try:
             vsall = unique(sq2.all(), lambda x: x.resource_name)
@@ -557,14 +557,16 @@ def tags_special(dbtype, query, params):
         ### Return all tha available tag names for the given superquery
         sq1 = query.with_labels().subquery()
         # Fetch all name on all 'top' level tags from the query
-        sq2 = DBSession.query(Tag).filter(Tag.document_id == sq1.c.taggable_document_id)
-        sq3 = sq2.distinct(Tag.resource_name).order_by(Tag.resource_name)
+        sq2 = DBSession.query(Tag.resource_name).filter(Tag.document_id == sq1.c.taggable_document_id)
+        #sq3 = sq2.distinct(Tag.resource_name).order_by(Tag.resource_name)
+        sq3 = sq2.distinct().order_by(Tag.resource_name)
         vsall = sq3.all()
         # for sqlite (no distinct on)
         try:
             vsall = unique(vsall, lambda x: x.resource_name)
             #log.debug ("tag_names query = %s" % sq1)
-            q = [ fobject (resource_type='tag' , name=tg.resource_name, type=tg.resource_user_type ) for tg in vsall]
+            #q = [ fobject (resource_type='tag' , name=tg.resource_name, type=tg.resource_user_type ) for tg in vsall]
+            q = [ fobject (resource_type='tag' , name=tg.resource_name  ) for tg in vsall]
         except (IndexError, StopIteration):
             return []
         return q
@@ -580,9 +582,9 @@ def tags_special(dbtype, query, params):
         #sq2 = DBSession.query(Tag).filter(
         #    and_(Tag.resource_name == tv,
         #         Tag.document_id == sq1.c.taggable_document_id)).with_labels().subquery()
-        sq2 = DBSession.query(Tag).filter(
+        sq2 = DBSession.query(Tag.resource_value).filter(
             and_(Tag.resource_name == tv,
-                 Tag.document_id == sq1.c.taggable_document_id)).distinct(Tag.resource_value).order_by(Tag.resource_value)
+                 Tag.document_id == sq1.c.taggable_document_id)).distinct().order_by(Tag.resource_value)
         # for sqllite (no distinct on)
         try:
             vsall = unique(sq2.all(), lambda x: x.resource_value)
@@ -791,23 +793,24 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
     """View or edit authoization records associated the resource"""
 
     q = DBSession.query (TaggableAcl).filter_by (taggable_id = resource.id)
-    if not user_id:
-        user_id = get_user_id()
-
+    current_user = get_user()
     # If simply trying to read permissions then, we can answer right away.
     if action==RESOURCE_READ:
         #if user_id == get_admin_id():
-        if is_admin():
+
+        if is_admin() and resource.owner_id != current_user.id:
             q = list (q.all())
-            q.append(fobject('auth', user = get_admin(), action = "edit", resource_value=''))
+            q.append(fobject('auth', current_user = "/data_service/%s" % current_user.uri, email= current_user.value, action = "edit", resource_value=''))
         return q
 
     # setup for an edit of auth records
     #
     if action==RESOURCE_EDIT:
-        owner  = DBSession.query(BQUser).get(user_id)
+        #owner  = DBSession.query(BQUser).get(resource.owner_id)
+        owner = current_user
         owner_name = owner.name
         owner_email = owner.value
+
         # Remove the previous ACL elements and replace with the provided xml
 
         log.debug ("RESOURCE EDIT %d %s" % (resource.id, resource.acl))
@@ -839,16 +842,24 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
             }
 
         for auth in newauth:
-            email = auth.get ('email', None)
+            email  = auth.get ('email', None)
             action = auth.get ('action', RESOURCE_READ)
-            log.debug ("AUTH : %s %s " % (email, action))
-            # Hack for admin (simply skip users with out an email i.e. admin)
-            if email is None:
-                continue
+            user_url   = auth.get ('user', None)
+            log.debug ("AUTH : %s %s %s" , user_url, email, action)
 
-            if email is not None and action is not None:
+            # Get a user
+            if (user_url or email)  and action is not None:
                 invite = None
-                user = DBSession.query(BQUser).filter_by(resource_value=unicode(email)).first()
+
+                user = None
+                if user_url:
+                    user = DBSession.query(BQUser).get (int (user_url.rsplit('/', 1)[1]))
+                if not user and email:
+                    user = DBSession.query(BQUser).filter_by(resource_value=unicode(email)).first()
+
+                if user  and is_admin(user):
+                    # admins should never be added to acl for now.. no reason.
+                    continue
 
                 if  user is None:
                     log.debug ('AUTH: no user %s sending invite' % email)

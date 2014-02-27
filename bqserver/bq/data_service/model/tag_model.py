@@ -642,6 +642,9 @@ class BQUser(Taggable):
         return self.id
     user_id = property(user_id)
 
+    def get_groups(self):
+        return DBSession.query(User).filter_by(user_name = self.resource_name).first().groups
+
     #def __str__(self):
     #    return "<user:%d %s %s>" % (self.id, self.resource_name, self.resource_value)
 
