@@ -87,10 +87,29 @@ function isIE () {
     return false;
 }
 
+function isAndroid () {
+	if (navigator.userAgent.toLowerCase().indexOf("android")>=0) return true;
+	return false;
+}
+
 function isMobileSafari () {
   if (navigator.userAgent.toLowerCase().indexOf("mobile")>=0 &&
       navigator.userAgent.toLowerCase().indexOf("safari")>=0
       ) return true;
 }
+
+function positionAbsolute(x, y) {
+    this.style.left = x + 'px';
+    this.style.top = y + 'px';
+}
+
+function positionWebKitTranslate(x, y) {
+    this.style.webkitTransform = 'translate(' + x + 'px, ' + y + 'px) translateZ(0)';
+}
+
+if ('webkitTransform' in document.documentElement.style)
+    Element.prototype.positionAbsolutely = positionWebKitTranslate;
+else
+    Element.prototype.positionAbsolutely = positionAbsolute;
 
 // ]]>

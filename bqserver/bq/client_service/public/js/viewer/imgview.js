@@ -528,10 +528,13 @@ ImgViewer.prototype.loadGObjects = function(gobs) {
         this.gobjectsLoaded([gobs]);
     } else if (typeof gobs =='string') {
         this.start_wait({op: 'gobjects', message: 'Fetching gobjects'});
-        BQFactory.request ({ uri :  gobs,
-                             uri_params: { view : 'deep'},
-                             cache: false,
-                             cb: callback(this, 'gobjectsLoaded')});
+        BQFactory.request ({
+            uri :  gobs,
+            uri_params: { view : 'deep'},
+            cache: false,
+            cb: callback(this, 'gobjectsLoaded'),
+            errorcb: this.parameters.onerror ? this.parameters.onerror : undefined,
+        });
     } else if (!gobs) {
         this.start_wait({op: 'gobjects', message: 'Fetching gobjects'});
         this.image.load_gobjects(callback(this, 'gobjectsLoaded'));
@@ -627,7 +630,7 @@ ImgViewer.prototype.end_wait = function (o) {
 
 
 ImgViewer.prototype.newPhys = function (bqimagephys) {
-
+    if (this.parameters.onloaded) this.parameters.onloaded();
     this.imagephys = bqimagephys;
 
     this.imagedim = new ImageDim (bqimagephys.x, bqimagephys.y, bqimagephys.z, bqimagephys.t, bqimagephys.ch);

@@ -58,14 +58,9 @@ Ext.define('BQ.viewer.Image', {
     },
 
     initComponent : function() {
-        if (this.resource && typeof this.resource === 'string') {
-            this.setLoading('Loading image resource');
-            BQFactory.request( {uri: this.resource, uri_params: {view:'short'}, cb: callback(this, 'loadViewer') });
-        }
         this.addListener( 'resize', function(me, width, height) {
             if (me.viewer) me.viewer.resize();
         });
-
         this.callParent();
     },
 
@@ -77,7 +72,16 @@ Ext.define('BQ.viewer.Image', {
 
     afterRender : function() {
         this.callParent();
-        this.loadViewer(this.resource);
+        this.setLoading('Loading image resource');
+        if (this.resource && typeof this.resource === 'string')
+            BQFactory.request({
+                uri: this.resource,
+                uri_params: {view: 'short'},
+                cb: callback(this, this.loadViewer),
+                errorcb: callback(this, this.onerror),
+            });
+        else
+            this.loadViewer(this.resource);
 
         this.keyNav = Ext.create('Ext.util.KeyNav', document.body, {
             left:     this.onkeyboard,
@@ -91,7 +95,7 @@ Ext.define('BQ.viewer.Image', {
     },
 
     loadViewer: function(resource) {
-        this.setLoading(false);
+        //this.setLoading(false);
         if (!resource) return;
         if (this.loaded) return;
         this.loaded = true;
@@ -106,6 +110,7 @@ Ext.define('BQ.viewer.Image', {
         this.parameters.ondone    = callback(this, 'ondone');
         this.parameters.onerror   = callback(this, 'onerror');
         this.parameters.onselect  = callback(this, 'onselect');
+        this.parameters.onloaded  = callback(this, this.onloaded);
         this.parameters.oneditcontrols = callback(this, this.oneditcontrols);
 
         var id = Ext.getVersion('core').isGreaterThan('4.2.0') ? this.getId()+'-innerCt' : this.getId();
@@ -118,6 +123,10 @@ Ext.define('BQ.viewer.Image', {
             var element = this.toolbar;
             setTimeout(function(){ element.updateLayout(); }, 1000);
         }
+    },
+
+    onloaded : function() {
+        this.setLoading(false);
     },
 
     onchanged : function(gobs) {
@@ -141,12 +150,14 @@ Ext.define('BQ.viewer.Image', {
     },
 
     ondone : function() {
-        if (this.parameters.blockforsaves) this.setLoading(false);
+        //if (this.parameters.blockforsaves)
+        this.setLoading(false);
         this.fireEvent( 'done', this );
     },
 
     onerror : function(error) {
-        if (this.parameters.blockforsaves) this.setLoading(false);
+        //if (this.parameters.blockforsaves)
+        this.setLoading(false);
         if (this.hasListeners.error)
             this.fireEvent( 'error', error );
         else

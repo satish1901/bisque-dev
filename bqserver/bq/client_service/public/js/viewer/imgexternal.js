@@ -41,7 +41,35 @@ function ImgExternal (viewer,name){
             }]
         },
     }]);
-}
+
+    this.viewer.addMenu([{
+        itemId: 'menu_viewer_operations',
+        xtype:'button',
+        text: 'Operations',
+        //iconCls: 'external',
+        scope: this,
+        //tooltip: 'Export current image to external applications',
+        menu: {
+            defaults: {
+                scope: this,
+            },
+            items: [{
+                xtype  : 'menuitem',
+                itemId : 'menu_viewer_pixel_counting',
+                text   : 'Pixel counter',
+                disabled: true,
+                handler: this.pixelCounter,
+            },{
+                xtype  : 'menuitem',
+                itemId : 'menu_viewer_calibrate_resolution',
+                text   : 'Calibrate image resolution',
+                disabled: true,
+                handler: this.calibrateResolution,
+            }]
+        },
+    }]);
+};
+
 ImgExternal.prototype = new ViewerPlugin();
 
 ImgExternal.prototype.create = function (parent) {
@@ -110,4 +138,11 @@ ImgExternal.prototype.exportCurrentView = function () {
     window.location = url;
 };
 
+ImgExternal.prototype.calibrateResolution = function () {
+
+};
+
+ImgExternal.prototype.pixelCounter = function () {
+
+};
 
