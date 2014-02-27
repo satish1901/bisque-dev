@@ -115,7 +115,6 @@ Ext.define('BQ.viewer.Image', {
 
         var id = Ext.getVersion('core').isGreaterThan('4.2.0') ? this.getId()+'-innerCt' : this.getId();
         this.viewer = new ImgViewer(id, this.resource, this.parameters);
-        this.fireEvent( 'loaded', this );
         this.viewer.resize();
 
         // dima: ultra ugly fix laying out toolbar on delay - NEEDS PROPER FIX!!!!
@@ -123,6 +122,7 @@ Ext.define('BQ.viewer.Image', {
             var element = this.toolbar;
             setTimeout(function(){ element.updateLayout(); }, 1000);
         }
+        this.fireEvent( 'loaded', this );
     },
 
     onloaded : function() {

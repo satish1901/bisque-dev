@@ -295,6 +295,10 @@ ol li {
   width: 100%;
 }
 
+.webapp .results .image_viewer_display {
+  height: 440px;
+}
+
 .webapp .plotter {
   margin-top: 15px;
   position: relative;
