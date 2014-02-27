@@ -955,6 +955,8 @@ Ext.define('Bisque.GObjectTagger', {
     layout: 'fit',
     cls: 'bq-gob-tagger',
 
+    requires: ['Ext.Date'],
+
     colNameText: 'Type:Name',
     //colValueText: 'Vertices',
 
@@ -1158,9 +1160,10 @@ Ext.define('Bisque.GObjectTagger', {
     appendMex: function (mex) {
         if (!mex && mex.value !== 'FINISHED') return;
         var parent = this.tree.getRootNode();
+        var dt = Ext.Date.parse(mex.ts, BQ.Date.patterns.BisqueTimestamp);
         parent.insertChild(0, {
             name: mex.name,
-            value: mex.ts.replace('T', ' ').split('.', 1)[0],
+            value: Ext.Date.format(dt, BQ.Date.patterns.ISO8601Long),
             mex_uri: mex.uri,
             gobjects: [false],
             checked: false,

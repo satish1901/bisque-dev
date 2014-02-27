@@ -83,7 +83,7 @@ Ext.define('Bisque.Resource.Mex.Compact', {
         var name = Ext.create('Ext.container.Container', {
             cls : 'lblHeading1',
             html : Ext.String.ellipsis(this.resource.name || 'undefined', 24),
-        })
+        });
 
         var date = new Date();
         date.setISO(this.resource.ts);
@@ -91,12 +91,12 @@ Ext.define('Bisque.Resource.Mex.Compact', {
         var type = Ext.create('Ext.container.Container', {
             cls : 'lblHeading2',
             html : Ext.Date.format(date, "m-d-Y g:i:s a"),
-        })
+        });
 
         var value = Ext.create('Ext.container.Container', {
             cls : 'lblContent',
             html : this.resource.value,
-        })
+        });
 
         this.add([name, type, value]);
         this.setLoading(false);
@@ -182,7 +182,7 @@ Ext.define('Bisque.Resource.Mex.Full', {
         if (renderedRef && !renderedRef.isDestroyed)
             renderedRef.updateContainer();
     },
-})
+});
 
 Ext.define('Bisque.Resource.Mex.List', {
     extend : 'Bisque.Resource.Mex',
@@ -214,7 +214,7 @@ Ext.define('Bisque.Resource.Mex.List', {
                         if (!this.tagsLoaded)
                             me.setLoading({
                                 msg : ''
-                            })
+                            });
                     },
                     scope : this
                 }
@@ -292,7 +292,7 @@ Ext.define('Bisque.Resource.Mex.List', {
         this.setData('fetched', 1);
         //Loaded
 
-        var renderedRef = this.getData('renderedRef')
+        var renderedRef = this.getData('renderedRef');
         if (renderedRef)
             renderedRef.updateContainer();
     },
@@ -302,24 +302,21 @@ Ext.define('Bisque.Resource.Mex.List', {
             text : ' ' + Ext.String.ellipsis(this.resource.name, 22) + ' ',
             padding : '0 8 0 8',
             cls : 'lblModuleName',
-        })
+        });
 
         var mexStatus = new Ext.form.Label({
             text : this.resource.status,
             padding : '0 0 0 4',
             cls : this.resource.status == 'FINISHED' ? 'lblModuleOwnerFin' : (this.resource.status == 'FAILED' ? 'lblModuleOwnerFail' : 'lblModuleOwner')
-        })
+        });
 
-        var date = new Date();
-        date.setISO(this.resource.ts);
-
+        var date = Ext.Date.parse(this.resource.ts, BQ.Date.patterns.BisqueTimestamp);
         var mexDate = new Ext.form.Label({
-            text : Ext.Date.format(date, "F j, Y g:i:s a"),
-            padding : '0 0 0 8',
-            //style:'color:#444;font-size:11px;font-family: tahoma, arial, verdana, sans-serif !important;'
+            text : Ext.Date.format(date, BQ.Date.patterns.ISO8601Long),
+            padding : '0 8 0 8',
             cls : 'lblModuleDate',
             flex : 1,
-        })
+        });
 
         this.add([mexName, mexStatus, mexDate]);
         this.setLoading(false);
