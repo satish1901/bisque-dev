@@ -1,44 +1,18 @@
 /*******************************************************************************
-  ExtJS wrapper for the Bisque image viewer
+  ExtJS wrapper for the html5 video player
   Author: Dima Fedorov <dima@dimin.net>
 
   Configurations:
-      resource   - url string or bqimage
-      user       - url string
-      parameters - viewer configuration object describied later
+      resource   - url string or bqimage (required)
+      phys       - image phys BQImagePhys (preferred)
+      preferences - BQPpreferences object (preferred)
 
   Events:
       loaded     - event fired when the viewer is loaded
-      changed    - event fired when the gobjects in the viewer have changed
       working
       done
       error
 
-  Parameters:
-    simpleviewer   - sets a minimal set of plug-ins and also read-only view for gobjects
-    onlyedit       - only sets plug-in needed for editing of gobjects
-
-    nogobects      - disable loading gobjects by default
-    gobjects       - load gobjects from the givel URL, 'gobjects':'http://gobejcts_url' or a BQGobject or a vector of BQGObject
-
-    noedit         - read-only view for gobjects
-      alwaysedit     - instantiates editor right away and disables hiding it
-      nosave         - disables saving gobjects
-      editprimitives - only load edit for given primitives, 'editprimitives':'point,polyline'
-                       can be one of: 'Point,Rectangle,Polyline,Polygon,Circle'
-
-    blockforsaves  - set to true to show saving of gobjects, def: true
-
-
-  Example:
-    var myviewer = Ext.create('BQ.viewer.Image', {
-        resource: 'http://image_url',
-        user: 'user_name',
-        parameters: {
-            'gobjects': 'http://gobejcts_url',
-            'noedit': '',
-        },
-    });
 *******************************************************************************/
 
 Ext.define('BQ.viewer.Movie', {
@@ -47,7 +21,7 @@ Ext.define('BQ.viewer.Movie', {
     border: 0,
     cls: 'bq-viewer-movie',
 
-    update_delay_ms: 50,  // Update the viewer asynchronously
+    update_delay_ms: 250,  // Update the viewer asynchronously
 
     constructor: function(config) {
         this.addEvents({
@@ -89,6 +63,11 @@ Ext.define('BQ.viewer.Movie', {
             pageDown: this.onkeyboard,
             scope : this
         });*/
+    },
+
+    onDestroy: function() {
+        if (this.menu && this.menu.isVisible())
+            this.menu.hide();
     },
 
     onImage: function(resource) {
@@ -137,13 +116,17 @@ Ext.define('BQ.viewer.Movie', {
 
         this.viewer.setAttribute('poster', this.constructPreviewUrl());
 
-        var source = document.createElementNS (xhtmlns, 'source');
-        source.setAttribute('src', this.constructMovieUrl('h264'));
-        source.setAttribute('type', 'video/mp4');
-        source.setAttribute('src', this.constructMovieUrl('webm'));
-        source.setAttribute('type', 'video/webm;codecs="vp8, vorbis"');
+        // dima: image service is serving bad h264 right now
+        //this.sourceH264 = document.createElementNS (xhtmlns, 'source');
+        //this.sourceH264.setAttribute('src', this.constructMovieUrl('h264'));
+        //this.sourceH264.setAttribute('type', 'video/mp4');
+        //this.viewer.appendChild(this.sourceH264);
 
-        this.viewer.appendChild(source);
+        this.sourceWEBM = document.createElementNS (xhtmlns, 'source');
+        this.sourceWEBM.setAttribute('src', this.constructMovieUrl('webm'));
+        this.sourceWEBM.setAttribute('type', 'video/webm;codecs="vp8, vorbis"');
+        this.viewer.appendChild(this.sourceWEBM);
+
         this.parent.appendChild(this.viewer);
 
         this.fireEvent( 'loaded', this );
@@ -171,8 +154,35 @@ Ext.define('BQ.viewer.Movie', {
         });
     },
 
+    export: function (format) {
+        window.open( this.constructMovieUrl(format) );
+    },
+
+    doUpdate: function () {
+        this.update_needed = undefined;
+        // dima: image service is serving bad h264 right now
+        this.viewer.src = this.constructMovieUrl('webm');
+
+        //this.sourceH264.setAttribute('src', this.constructMovieUrl('h264'));
+        //this.sourceWEBM.setAttribute('src', this.constructMovieUrl('webm'));
+    },
+
+    needs_update: function () {
+        this.requires_update = undefined;
+        if (this.update_needed)
+            clearTimeout(this.update_needed);
+        this.update_needed = setTimeout(callback(this, this.doUpdate), this.update_delay_ms);
+    },
+
     onloaded : function() {
         this.setLoading(false);
+    },
+
+    onworking : function(message) {
+        if (this.hasListeners.working)
+            this.fireEvent( 'working', message );
+        else
+            this.setLoading(message);
     },
 
     ondone : function() {
@@ -188,34 +198,19 @@ Ext.define('BQ.viewer.Movie', {
             BQ.ui.error(error.message_short);
     },
 
-    doUpdate: function () {
-        this.update_needed = undefined;
-        this.viewer.src = this.constructMovieUrl('webm');
-        //var source = document.createElementNS (xhtmlns, 'source');
-        //source.setAttribute('src', this.constructMovieUrl('h264'));
-        //source.setAttribute('type', 'video/mp4');
-        //source.setAttribute('src', this.constructMovieUrl('webm'));
-        //source.setAttribute('type', 'video/webm;codecs="vp8, vorbis"');
-    },
-
-    needs_update: function () {
-        this.requires_update = undefined;
-        if (this.update_needed)
-            clearTimeout(this.update_needed);
-        this.update_needed = setTimeout(callback(this, this.doUpdate), this.update_delay_ms);
-    },
-
     //----------------------------------------------------------------------
     // view menu
     //----------------------------------------------------------------------
 
-    createCombo : function (label, items, def, scope, cb) {
+    createCombo : function (label, items, def, scope, cb, id) {
         var options = Ext.create('Ext.data.Store', {
             fields: ['value', 'text'],
             data : items
         });
         var combo = this.menu.add({
             xtype: 'combobox',
+            itemId: id ? id : undefined,
+            width: 380,
             fieldLabel: label,
             store: options,
             queryMode: 'local',
@@ -337,6 +332,11 @@ PlayerPlugin.prototype.init = function () {
 PlayerPlugin.prototype.addCommand = function (command, pars) {
 };
 
+PlayerPlugin.prototype.changed = function () {
+  if (!this.update_check || (this.update_check && this.update_check.checked) )
+    this.player.needs_update();
+};
+
 //--------------------------------------------------------------------------------------
 // Plug-ins - slice
 //--------------------------------------------------------------------------------------
@@ -350,11 +350,71 @@ function PlayerSlice (player) {
 PlayerSlice.prototype = new PlayerPlugin();
 
 PlayerSlice.prototype.init = function () {
+    if (this.menu) return;
+    var z = parseInt(this.player.dims.z);
+    var t = parseInt(this.player.dims.t);
+    if (z<=1 || t<=1) return;
+    this.menu = this.player.menu;
+
+    this.menu.add({
+        xtype: 'displayfield',
+        fieldLabel: 'Projection',
+        cls: 'heading',
+    });
+
+    var def_depth = Math.ceil(z/2);
+    var depth = [{'value': 0, 'text':'All'}];
+    for (var i=1; i<=z; i++)
+        depth.push({'value': i, 'text':i});
+    this.combo_depth = this.player.createCombo( 'Depth', depth, def_depth, this, this.onDepth, 'combo_depth');
+
+    var time = [{'value': 0, 'text':'All'}];
+    for (var i=1; i<=t; i++)
+        time.push({'value': i, 'text':i});
+    this.combo_time = this.player.createCombo( 'Time', time, 0, this, this.onTime, 'combo_time');
 };
 
+PlayerSlice.prototype.onTime = function () {
+    var nz = parseInt(this.player.dims.z);
+    var nt = parseInt(this.player.dims.t);
+    var t = this.combo_time.getValue();
+    var z = this.combo_depth.getValue();
+    if (t>0) {
+        if (z!==0)
+            this.combo_depth.setValue(0);
+        this.changed();
+    } else {
+        if (z===0)
+            this.combo_depth.setValue(Math.ceil(nz/2));
+        this.changed();
+    }
+},
+
+PlayerSlice.prototype.onDepth = function () {
+    var nz = parseInt(this.player.dims.z);
+    var nt = parseInt(this.player.dims.t);
+    var t = this.combo_time.getValue();
+    var z = this.combo_depth.getValue();
+    if (z>0) {
+        if (t!==0)
+            this.combo_time.setValue(0);
+        this.changed();
+    } else {
+        if (t===0)
+            this.combo_time.setValue(Math.ceil(nt/2));
+        this.changed();
+    }
+},
+
 PlayerSlice.prototype.addCommand = function (command, pars) {
-    if (pars.t || pars.z)
+    if (pars.t && pars.z) {
         command.push('slice=,,'+pars.z+','+pars.t);
+        return;
+    }
+    if (!this.menu) return;
+    var z = this.combo_depth.getValue();
+    var t = this.combo_time.getValue();
+    command.push('slice=,,'+(z>0?z:'')+','+(t>0?t:''));
 };
 
 //--------------------------------------------------------------------------------------
@@ -365,17 +425,45 @@ function PlayerSize (player) {
     this.base = PlayerPlugin;
     this.base (player);
 
-    // do stuff
+    this.resolutions = {
+        'SD':    {w: 720, h: 480, },
+        'HD720': {w: 1280, h: 720, },
+        'HD':    {w: 1920, h: 1080, },
+        '4K':    {w: 3840, h: 2160, },
+    };
 };
 PlayerSize.prototype = new PlayerPlugin();
 
 PlayerSize.prototype.init = function () {
-    this.width = 1920;
-    this.height = 1080;
+    var p = this.player.preferences || {};
+    this.def = {
+        videoResolution  : p.videoResolution  || 'HD', // values: 'SD', 'HD720', 'HD', '4K'
+    };
+    if (!this.menu)
+        this.createMenu();
 };
 
 PlayerSize.prototype.addCommand = function (command, pars) {
-    command.push('resize='+this.width+','+this.height+',BC,MX');
+    var r = this.resolutions[this.combo_resolution.getValue()];
+    command.push('resize='+r.w+','+r.h+',BC,MX');
+};
+
+PlayerSize.prototype.createMenu = function () {
+    if (this.menu) return;
+    this.menu = this.player.menu;
+
+    this.menu.add({
+        xtype: 'displayfield',
+        fieldLabel: 'Video',
+        cls: 'heading',
+    });
+    this.combo_resolution = this.player.createCombo( 'Video Resolution', [
+        {"value":"SD",    "text":"SD (720x480)"},
+        {"value":"HD720", "text":"HD 720p (1280x720)"},
+        {"value":"HD",    "text":"HD 1080p (1920x1080)"},
+        {"value":"4K",    "text":"4K (3840x2160)"}
+    ], this.def.videoResolution, this, this.changed, 'combo_resolution');
+
 };
 
 //--------------------------------------------------------------------------------------
@@ -408,13 +496,6 @@ PlayerDisplay.prototype.addCommand = function (command, pars) {
 
     command.push ('depth=8,' + this.combo_enhancement.getValue());
 
-    /*
-    var r = this.menu_elements['Red'].value;
-    var g = this.menu_elements['Green'].value;
-    var b = this.menu_elements['Blue'].value;
-    view.addParams  ('remap='+r+','+g+','+b);
-    */
-
     var fusion='';
     for (var i=0; i<this.channel_colors.length; i++) {
         fusion += this.channel_colors[i].getRed() + ',';
@@ -424,26 +505,13 @@ PlayerDisplay.prototype.addCommand = function (command, pars) {
     fusion += ':'+this.combo_fusion.getValue();
     command.push('fuse='+fusion);
 
-/*
-        cb = this.menu_elements['Rotate'];
-        if (cb.value != 0)
-            view.addParams  ('rotate=' + cb.value);
-        cb.disabled=true; // no rotation for now
-        view.rotateTo( parseInt(cb.value) );
-*/
+    var ang = this.combo_rotation.getValue();
+    if (ang && ang!==''&& ang!==0)
+        command.push ('rotate=' + ang);
 
     if (this.combo_negative.getValue()) {
         command.push(this.combo_negative.getValue());
     }
-};
-
-PlayerDisplay.prototype.doUpdate = function () {
-    this.player.needs_update();
-};
-
-PlayerDisplay.prototype.changed = function () {
-  if (!this.update_check || (this.update_check && this.update_check.checked) )
-    this.player.needs_update();
 };
 
 PlayerDisplay.prototype.createMenu = function () {
@@ -475,6 +543,14 @@ PlayerDisplay.prototype.createMenu = function () {
         {"value":"", "text":"No"},
         {"value":"negative", "text":"Negative"},
     ], this.def.negative, this, this.changed);
+
+    this.combo_rotation = this.player.createCombo( 'Rotation', [
+        {"value":0, "text":"No"},
+        {"value":90, "text":"Right 90deg"},
+        {"value":-90, "text":"Left 90deg"},
+        {"value":180, "text":"180deg"},
+    ], this.def.rotate, this, this.changed);
+
 };
 
 PlayerDisplay.prototype.createChannelMap = function() {
@@ -489,7 +565,7 @@ PlayerDisplay.prototype.createChannelMap = function() {
 
     this.channel_colors = phys.channel_colors;
     for (var ch=0; ch<channel_count; ch++) {
-        cc = {
+        this.menu.add({
             xtype: 'colorfield',
             fieldLabel: ''+phys.channel_names[ch],
             name: 'channel_color_'+ch,
@@ -502,8 +578,7 @@ PlayerDisplay.prototype.createChannelMap = function() {
                     this.changed();
                 },
             },
-        };
-        this.menu.add(cc);
+        });
     }
 };
 
@@ -515,19 +590,46 @@ PlayerDisplay.prototype.createChannelMap = function() {
 function PlayerFormat (player) {
     this.base = PlayerPlugin;
     this.base (player);
-
-    this.fps = 6;
 };
 PlayerFormat.prototype = new PlayerPlugin();
 
 PlayerFormat.prototype.init = function () {
+    if (this.menu) return;
+    this.menu = this.player.menu;
+
+    var z = parseInt(this.player.dims.z);
+    var t = parseInt(this.player.dims.t);
+    var pages = t * z;
+
+    var fps = 30;
+    if (pages < 700) fps = 15;
+    if (pages < 450) fps = 12;
+    if (pages < 225) fps = 6;
+    //if (pages < 100) fps = 3;
+    //if (pages < 50) fps = 1;
+
+    var index = this.menu.items.findIndex( 'itemId', 'combo_resolution' );
+    this.menu.insert(index+1, {
+        xtype: 'numberfield',
+        itemId: 'frames_per_second',
+        fieldLabel: 'Frames per second',
+        name: 'frames_per_second',
+        value: fps,
+        maxValue: 60,
+        minValue: 1,
+        listeners: {
+            scope: this,
+            change: this.changed,
+        },
+    });
 };
 
 PlayerFormat.prototype.addCommand = function (command, pars) {
+    var fps = this.menu.queryById('frames_per_second').getValue();
     var format = pars.format || 'h264';
     if (format==='jpeg')
         command.push('format=jpeg');
     else
-        command.push('format='+format+',fps,'+this.fps);
+        command.push('format='+format+',fps,'+fps);
 };
 
