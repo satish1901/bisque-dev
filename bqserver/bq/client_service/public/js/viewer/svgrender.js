@@ -492,7 +492,7 @@ SVGRenderer.prototype.point = function ( visitor, gob, viewstate, visibility) {
             rect.setAttributeNS(null, "display", "none");
             rect.setAttributeNS(null, 'fill-opacity', 1.0);
             rect.setAttributeNS(null, 'stroke', 'black');
-            rect.setAttributeNS(null, 'stroke-width', 2);
+            rect.setAttributeNS(null, 'stroke-width', 1);
             rect.setAttributeNS(null, 'rx', 4);
             rect.setAttributeNS(null, 'ry', 4);
             gob.shape = new Pnt(rect);
