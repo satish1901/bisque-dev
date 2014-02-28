@@ -1,0 +1,35 @@
+.bq-viewer-movie video {
+    width: 100%;
+    height: 100%;
+    background: #000000;
+}
+
+.bq-viewer-movie .viewoptions {
+    position: absolute;
+    /*z-index: 30;*/
+    width: 25px;
+    height: 25px;
+    left: 20px;
+    top: 20px;
+
+    background-image: url('/images/viewer/64px_view.png');
+    background-size: 25px;
+    background-color: transparent;
+    background-repeat: no-repeat;
+}
+
+.bq-viewer-movie .viewoptions {
+    position: absolute;
+    z-index: 2147483647 !important;
+    width: 25px;
+    height: 25px;
+    left: 20px;
+    top: 20px;
+
+    background-image: url('/images/viewer/64px_view.png');
+    background-size: 25px;
+    background-color: transparent;
+    background-repeat: no-repeat;
+}
+
+
