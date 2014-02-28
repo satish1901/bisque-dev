@@ -523,6 +523,7 @@ Ext.define('Bisque.Resource.Image.Page', {
 
         this.viewerContainer = Ext.create('BQ.viewer.Image', {
             region : 'center',
+            itemId: 'main_view_2d',
             resource : this.resource,
             toolbar : this.toolbar,
             parameters : {
@@ -691,9 +692,45 @@ Ext.define('Bisque.Resource.Image.Page', {
 
         this.add({
             xtype : 'container',
+            itemId: 'main_container',
             layout : 'border',
             items : [this.viewerContainer, resTab]
         });
+
+        this.toolbar.insert(5, [{
+            itemId: 'button_view',
+            xtype:'button',
+            text: 'View: 2D',
+            iconCls: 'view2d',
+            tooltip: 'Change the view for the current image',
+            scope: this,
+            menu: {
+                defaults: {
+                    scope: this,
+                },
+                items: [{
+                    xtype  : 'menuitem',
+                    text   : '2D',
+                    iconCls: 'view2d',
+                    handler: this.show2D,
+                    tooltip: 'View current image in 2D tiled viewer',
+                },{
+                    xtype  : 'menuitem',
+                    text   : '3D',
+                    disabled: true,
+                    iconCls: 'view3d',
+                    tooltip: 'View current image in 3D volume renderer',
+                    handler: this.show3D,
+                }, {
+                    xtype  : 'menuitem',
+                    text   : 'movie',
+                    iconCls: 'movie',
+                    tooltip: 'View current image as a movie',
+                    handler: this.showMovie,
+                }]
+            },
+        }, '-']);
+        this.toolbar.doLayout();
 
         this.setLoading(false);
     },
@@ -718,6 +755,51 @@ Ext.define('Bisque.Resource.Image.Page', {
     onerror : function(error) {
         if (this.gobjectTagger) this.gobjectTagger.setLoading(false);
         BQ.ui.error(error.message_short);
+    },
+
+    show2D : function() {
+        var btn = this.queryById('button_view');
+        btn.setText('View: 2D');
+        btn.setIconCls('view2d');
+
+        var image2d = this.queryById('main_view_2d');
+        if (image2d && image2d.isVisible()) return;
+
+        var movie = this.queryById('main_view_movie');
+        if (movie) movie.setVisible(false);
+        var image3d = this.queryById('main_view_3d');
+        if (image3d) image2d.destroy();
+
+        image2d.setVisible(true);
+    },
+
+    show3D : function() {
+
+    },
+
+    showMovie : function() {
+        var btn = this.queryById('button_view');
+        btn.setText('View: Movie');
+        btn.setIconCls('movie');
+
+        var movie = this.queryById('main_view_movie');
+        if (movie && movie.isVisible()) return;
+
+        var image2d = this.queryById('main_view_2d');
+        if (image2d) image2d.setVisible(false);
+        var image3d = this.queryById('main_view_3d');
+        if (image3d) image2d.destroy();
+
+        var cnt = this.queryById('main_container');
+        cnt.add({
+            region : 'center',
+            xtype: 'bq_movie_viewer',
+            itemId: 'main_view_movie',
+            resource: this.resource,
+            toolbar: this.toolbar,
+            phys: this.viewerContainer.viewer.imagephys,
+            preferences: this.viewerContainer.viewer.preferences,
+        });
     },
 
 });

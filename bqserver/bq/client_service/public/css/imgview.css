@@ -594,6 +594,10 @@ table.x-form-color {
     z-index: 2147483647 !important;
 }
 
+.x-boundlist-floating {
+    z-index: 2147483647 !important;
+}
+
 .bq-viewer-menu .x-tip-anchor {
     border-bottom-color: rgba(255,255,255,0.2);
 }
@@ -635,6 +639,20 @@ table.x-form-color {
 
 .movie {
     background-image: url('/images/viewer/movie.png');
+    background-size: 16px;
+    background-color: transparent;
+    background-repeat: no-repeat;
+}
+
+.view2d {
+    background-image: url('/images/viewer/2d.png');
+    background-size: 16px;
+    background-color: transparent;
+    background-repeat: no-repeat;
+}
+
+.view3d {
+    background-image: url('/images/viewer/3d.png');
     background-size: 16px;
     background-color: transparent;
     background-repeat: no-repeat;

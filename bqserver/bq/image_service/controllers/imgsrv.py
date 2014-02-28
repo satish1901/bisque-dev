@@ -103,10 +103,13 @@ def safeunicode(s):
     if isinstance(s, str) is not True:
         return unicode(s)
     try:
-        s.encode('ascii')
-    except UnicodeEncodeError:
-        s = s.encode('utf8')
-    return unicode(s, 'latin1')
+        return unicode(s, 'latin1')
+    except (UnicodeEncodeError,UnicodeDecodeError):
+        try:
+            return unicode(s, 'utf8')
+        except (UnicodeEncodeError,UnicodeDecodeError):
+            pass
+    return unicode(s, 'utf8', errors='ignore')
 
 ################################################################################
 # ConverterDict
