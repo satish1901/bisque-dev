@@ -1010,14 +1010,16 @@ Ext.define('Bisque.GObjectTagger', {
                 scope: this,
                 menu: {
                     items: [{
-                        check: true,
-                        text: 'Check all',
-                        handler: this.toggleCheck,
+                        text: 'Toggle each',
+                        handler: function() {this.toggleCheck(); },
                         scope: this,
                     }, {
-                        check: false,
+                        text: 'Check all',
+                        handler: function() {this.toggleCheck('checked'); },
+                        scope: this,
+                    }, {
                         text: 'Uncheck all',
-                        handler: this.toggleCheck,
+                        handler: function() {this.toggleCheck('unchecked'); },
                         scope: this,
                     }]
                 }
@@ -1113,21 +1115,21 @@ Ext.define('Bisque.GObjectTagger', {
     toggleCheckTree: function (button) {
         button.checked = !button.checked;
         button.check = button.checked;
-        if (button.checked)
-            button.setIconCls('icon-check');
-        else
-            button.setIconCls('icon-uncheck');
-        this.toggleCheck(button);
+        button.setIconCls(button.checked ? 'icon-check' : 'icon-uncheck');
+        this.toggleCheck(button.checked ? 'checked' : 'unchecked');
     },
 
-    toggleCheck: function (button) {
-        button.checked = button.check;
+    toggleCheck: function (mode) {
         var sel = this.tree.getSelectionModel().getSelection();
-        if (sel.length<1)
+        if (sel.length<=1)
             sel = this.tree.getRootNode().childNodes;
         var r=undefined;
         for (var i=0; (r=sel[i]); i++) {
-            r.set('checked', button.checked);
+            if (mode === undefined)
+                r.set('checked', !r.get('checked'));
+            else
+                r.set('checked', mode === 'checked');
+            this.fireEvent(r.get('checked') ? 'checked' : 'unchecked', this, r);
         }
     },
 
