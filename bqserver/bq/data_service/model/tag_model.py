@@ -813,6 +813,11 @@ mapper( Taggable, taggable,
                           enable_typechecks = False,
                           backref = backref('parent', enable_typechecks=False, remote_side = [ taggable.c.id]),
                           primaryjoin = (taggable.c.id == taggable.c.resource_parent_id)),
+
+    'childrenq' : relation(Taggable, lazy='dynamic',
+                          enable_typechecks = False,
+                          primaryjoin = (taggable.c.id == taggable.c.resource_parent_id)),
+
     'values' : relation(Value,  lazy=True, cascade="all, delete-orphan", passive_deletes=True,
                         order_by=[values.c.indx],
                         primaryjoin =(taggable.c.id == values.c.resource_parent_id),

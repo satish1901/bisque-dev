@@ -110,6 +110,7 @@ class BisqueAppConfig(AppConfig):
         app = DirectCascade([static_app, app])
         return app
 
+
 base_config = BisqueAppConfig()
 
 
@@ -134,7 +135,7 @@ base_config.renderers.append('json')
 base_config.default_renderer = 'genshi'
 base_config.renderers.append('genshi')
 base_config.render_functions.etree = render_etree
-
+base_config.disable_request_extensions=True
 
 # if you want raw speed and have installed chameleon.genshi
 # you should try to use this renderer instead.

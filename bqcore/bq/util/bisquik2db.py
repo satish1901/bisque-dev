@@ -117,7 +117,30 @@ system_types = [
     'template',
     'mex',
     'auth',
+    'store',
+    'dir',
+    'link',
     ]
+
+
+def valid_element(tag):
+    """Determine whether the tag is a valid XML Element
+
+    XML elements must follow these naming rules:
+
+    Names can contain letters, numbers, and other characters
+    Names cannot start with a number or punctuation character
+    Names cannot start with the letters xml (or XML, or Xml, etc)
+    Names cannot contain spaces
+    Any name can be used, no words are reserved.
+    """
+    try:
+        tag = etree.Element(tag).tag
+        return tag
+    except ValueError:
+        return None
+
+
 
 class XMLNode(list):
     '''Surrogate XML node for non-database items'''
@@ -270,6 +293,9 @@ def make_time(dbo, fn, baseuri):
     return (fn, ts and ts.isoformat())
 
 clean_fields = [ 'name', 'value', 'type', 'x', 'y', 'index', 'z', 't', 'ch', 'resource_uniq', 'resource_type' ]
+
+child_fields = [ 'name', 'value', 'type', 'index' ]
+
 mapping_fields = {
 #    'table_name':'type',
     'engine_id' : 'engine',
@@ -283,6 +309,7 @@ mapping_fields = {
     'perm'  : 'permission',
     'parent_id':None,
     'children': None,
+    'childrenq': None,
     'docnodes': None,
     'docvalues':None,
     'docvertices': None,
@@ -502,8 +529,6 @@ def resource2tree(dbo, parent=None, view=[], baseuri=None, nodes= {}, doc_id = N
 
 def db2tree(dbo, parent=None, view=[], baseuri=None, progressive=False, **kw):
     "Convert a Database Object into ElementTree representation"
-    log.debug ("db2tree dbo=%s, parent=%s, view=%s, baseuri=%s" %
-               (dbo, parent, view, baseuri))
     if isinstance(view, basestring):
         # pylint:disable=E1103
         view = [ x.strip() for x in view.split(',') ]
@@ -519,7 +544,7 @@ def db2tree(dbo, parent=None, view=[], baseuri=None, progressive=False, **kw):
         log.debug ("progressive response: max %f", max_response_time)
         starttime = time.clock()
         endtime   = starttime + max_response_time;
-    complete,r = db2tree_int(dbo, parent, view, baseuri, endtime)
+    complete,r = db2tree_int(dbo, parent, view, baseuri, endtime, **kw)
 
 
     if not complete:
@@ -527,12 +552,11 @@ def db2tree(dbo, parent=None, view=[], baseuri=None, progressive=False, **kw):
         etree.SubElement(parent, 'resource',
                          type="bisque+extension",
                          uri = "%s/%s?offset=%d"%(baseuri, dbo.xml_tag,offset))
-
     log.debug ("converted %d" % len (r))
     return r
 
 
-def db2tree_int(dbo, parent = None, view=None, baseuri=None, endtime=None):
+def db2tree_int(dbo, parent = None, view=None, baseuri=None, endtime=None, **kw):
     '''Convert a database object to a tree/doc'''
     nodes =  {}
     doc_id = None
@@ -543,17 +567,17 @@ def db2tree_int(dbo, parent = None, view=None, baseuri=None, endtime=None):
             if endtime and  time.clock() >= endtime:
                 fetched = len (r)
                 return False, r
-            n, nodes, doc_id = db2node(x, parent, view, baseuri, nodes, doc_id)
+            n, nodes, doc_id = db2node(x, parent, view, baseuri, nodes, doc_id, **kw)
             r.append(n)
         #log.debug ("returning array %s" % r)
         return True, r
         #return [ db2tree_int(x, parent, view, baseuri) for x in dbo ]
-    n, nodes, doc_id = db2node(dbo, parent, view, baseuri, nodes, doc_id)
+    n, nodes, doc_id = db2node(dbo, parent, view, baseuri, nodes, doc_id, **kw)
     return True, n
 
 
 
-def db2node(dbo, parent, view, baseuri, nodes, doc_id):
+def db2node(dbo, parent, view, baseuri, nodes, doc_id, **kw):
     log.debug ("dbo=%s view=%s" % ( dbo, view))
     if dbo is None:
         log.error ("None pass to as DB object parent = %s", parent)
@@ -565,7 +589,13 @@ def db2node(dbo, parent, view, baseuri, nodes, doc_id):
     node = xmlnode(dbo, parent, baseuri, view)
     if "full" in view :
         #v = filter (lambda x: x != 'full', view)
-        tl = [ xmlnode(x, node, view=view, baseuri=baseuri) for x in dbo.children ]
+        log.debug ('FULL %s', kw)
+        q = dbo.childrenq
+        if kw.has_key('offset'):
+            q = q.offset (int(kw.pop('offset')))
+        if kw.has_key('limit'):
+            q = q.limit (int(kw.pop('limit')))
+        tl = [ xmlnode(x, node, view=view, baseuri=baseuri) for x in q ]
         #gl = [ db2tree_int(x, node, view=v, baseuri=baseuri) for x in dbo.gobjects ]
 #    elif "deep" in view:
 #         tl = [ db2tree_int(x, node, view, baseuri) for x in dbo.children ]

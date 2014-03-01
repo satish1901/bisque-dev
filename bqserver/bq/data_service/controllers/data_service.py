@@ -193,8 +193,15 @@ class DataServerController(ServiceController):
             log.debug ('attributes= %s ' , kw )
             resource = etree.Element (resource, **kw)
             log.debug ('created %s ' , resource)
+
         if parent is None:
             resource.set('resource_uniq', self.resource_uniq())
+        else:
+            if isinstance (parent, etree._Element):
+                parent = parent.get ('uri')
+            if isinstance(parent, basestring):
+                parent = load_uri(parent)
+
         node = bisquik2db(doc = resource, parent = parent)
         log.debug ("new_resource %s" , node)
         r =  db2tree (node, baseuri=self.url, view=view)
@@ -295,18 +302,22 @@ class DataServerController(ServiceController):
     def query(self, resource_tag = None,  parent=None, **kw):
         '''Query the local database with expr'''
         resource_type = dbtype_from_tag(resource_tag)
-        uri = "%s%s/%s" % (self.url, parent and parent.uri or '', resource_tag or '')
+        parent_uri = getattr(parent, 'uri', None)
+        if isinstance (parent, etree._Element):
+            parent = parent.get ('uri')
+        if isinstance(parent, basestring):
+            parent_uri = parent
+            parent = load_uri(parent)
 
-        #log.debug ("query parent=%s tag=%s %s", parent, resource_tag, str(kw))
+        log.info ('query: %s %s %s', resource_tag, parent_uri, kw)
+
+        uri = "%s/%s" % (parent_uri or self.url, resource_tag or '')
+
         response = self.cache_check (uri, **kw)
         if response:
             xml =  etree.XML (response)
             return xml
 
-        if isinstance (parent, etree._Element):
-            parent = parent.get ('uri')
-        if isinstance(parent, basestring):
-            parent = load_uri(parent)
         params = kw.copy()
         view = params.pop('view', None)
         if view == 'count':
@@ -318,7 +329,7 @@ class DataServerController(ServiceController):
             full_url = "%s?%s" % (uri, "&".join ("%s=%s" % (k, v) for k,v in kw.items()))
             response  = etree.Element ('resource', uri=full_url)
             db2tree (nodelist, parent=response,
-                     view=view, baseuri = self.url)
+                     view=view, baseuri = self.url, **params)
 
         self.cache_save (uri, response=etree.tostring(response), **kw)
         #log.debug ("DS: " + etree.tostring(response))

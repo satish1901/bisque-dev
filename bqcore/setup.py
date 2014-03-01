@@ -117,6 +117,7 @@ setup(
       sql     = bq.commands.admin:sql
       preferences= bq.commands.admin:preferences
       database  = bq.commands.admin:database
+      stores    = bq.commands.admin:stores
 
       [paste.paster_create_template]
       bisque_core = bq.commands.bisque_template:CoreServiceTemplate

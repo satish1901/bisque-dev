@@ -40,15 +40,16 @@
 """
 SYNOPSIS
 ========
-blob_service 
-  
+blob_service
+
 
 DESCRIPTION
 ===========
-Micro webservice to store and retrieve blobs(untyped binary storage) on a variety 
+Micro webservice to store and retrieve blobs(untyped binary storage) on a variety
 of storage platforms: local, irods, s3
 """
 import os
+import sys
 import logging
 import hashlib
 import urlparse
@@ -58,48 +59,41 @@ from lxml import etree
 from datetime import datetime
 from datetime import timedelta
 
+#import smokesignal
 
 import tg
 from tg import expose, flash, config, require, abort
-from tg.controllers import RestController
+from tg.controllers import RestController, TGController
 #from paste.fileapp import FileApp
 from bq.util.fileapp import BQFileApp
 from pylons.controllers.util import forward
-from repoze.what import predicates 
+from repoze.what import predicates
 
+from bq.core.identity import set_admin_mode
 from bq.core.service import ServiceMixin
 from bq.core.service import ServiceController
 from bq.core import  identity
 from bq.exceptions import IllegalOperation, DuplicateFile, ServiceError
 from bq.util.timer import Timer
 from bq.util.sizeoffmt import sizeof_fmt
+from bq.util.compat import OrderedDict
+
 
 from bq import data_service
 from bq.data_service.model import Taggable, DBSession
 
+SIG_NEWBLOB  = "new_blob"
 
 
 import blob_storage
 
 log = logging.getLogger('bq.blobs')
 
-try:
-    # python 2.6 import
-    from ordereddict import OrderedDict
-except ImportError:
-    try:
-        # python 2.7 import
-        from collections import OrderedDict
-    except ImportError:
-        log.error("can't import OrderedDict")
-
 
 ###########################################################################
 # Hashing Utils
 ###########################################################################
 
-import sys
-import hashlib
 
 def file_hash_SHA1( filename ):
     '''Takes a file path and returns a SHA-1 hash of its bits'''
@@ -123,14 +117,14 @@ def file_hash_MD5( filename ):
         m.update(readString)
         readBytes = len(readString)
     f.close()
-    return m.hexdigest()	  
-   
+    return m.hexdigest()
+
 #########################################################
 # Utility functions
 ########################################################
 
 def guess_type(filename):
-    from bq import image_service 
+    from bq import image_service
     filename = filename.strip()
     if image_service.is_image_type (filename):
         return 'image'
@@ -138,18 +132,19 @@ def guess_type(filename):
 
 def load_stores():
     stores = OrderedDict()
-    store_list = [ x.strip() for x in config.get('bisque.blob_service.stores','').split(',') ] 
-    log.debug ('requested stores = %s' % store_list)
+    store_list = [ x.strip() for x in config.get('bisque.blob_service.stores','').split(',') ]
+    log.debug ('requested stores = %s' , store_list)
     for store in store_list:
-        params = dict ( (x[0].replace('bisque.stores.%s.' % store, ''), x[1]) 
+        # pull out store related params from config
+        params = dict ( (x[0].replace('bisque.stores.%s.' % store, ''), x[1])
                         for x in  config.items() if x[0].startswith('bisque.stores.%s.' % store))
         if 'path' not in params:
-            log.error ('cannot configure %s with out path parameter' % store)
+            log.error ('cannot configure %s without the path parameter' , store)
             continue
         log.debug("params = %s" % params)
         driver = blob_storage.make_storage_driver(params.pop('path'), **params)
-        if driver is None: 
-            log.error ("failed to configure %s.  Please check log for errors " % store)
+        if driver is None:
+            log.error ("failed to configure %s.  Please check log for errors " , str(store))
             continue
         stores[store] = driver
     return stores
@@ -162,7 +157,7 @@ def transfer_msg(flocal, transfer_t):
         return "transferred %s in 0 sec!" % fsize
     return "{name} transferred {size} in {time} ({speed}/sec)".format(
         name=name, size=sizeof_fmt(fsize),
-        time=timedelta(seconds=transfer_t), 
+        time=timedelta(seconds=transfer_t),
         speed = sizeof_fmt(fsize/transfer_t))
 
 class StorageManager(object):
@@ -170,7 +165,7 @@ class StorageManager(object):
 
     def __init__(self):
         self.stores = load_stores()
-        log.info ('configured stores %s' % ','.join( str(x) for x in self.stores.keys()))
+        log.info ('configured stores %s' ,  ','.join( str(x) for x in self.stores.keys()))
 
     def valid_blob(self, blob_id):
         "Determin if uripath is supported by configured blob_storage (without fetching)"
@@ -189,7 +184,7 @@ class StorageManager(object):
         if log.isEnabledFor(logging.INFO) and path:
             log.info (transfer_msg (path, t.interval))
         if path is None:
-            log.warn ("failed to fetch blob %s" % blob_id)
+            log.warn ("failed to fetch blob %s" , blob_id)
         return path
 
     def save_blob(self, fileobj, filename, user_name, uniq):
@@ -198,9 +193,10 @@ class StorageManager(object):
             try:
                 # blob storage part
                 if store.readonly:
-                    log.debug("skipping %s: is readonly" % store_id)
+                    log.debug("skipping %s: is readonly" , store_id)
                     continue
-                return  store.write(fileobj, filename_safe, user_name = user_name, uniq=uniq)
+                storeuri =  store.write(fileobj, filename_safe, user_name = user_name, uniq=uniq)
+                return storeuri
             except DuplicateFile, e:
                 raise e
             except Exception, e:
@@ -208,7 +204,160 @@ class StorageManager(object):
         return (None,None)
 
     def __str__(self):
-        return "stores%s" % self.stores.keys()
+        return "stores%s" % [ "(%s, %s)" % (k,v) for k,v in self.stores.items() ]
+
+
+
+###########################################################################
+# PathServer
+###########################################################################
+
+
+class StoreServer(TGController):
+    """ Manipulate store paths
+    """
+
+
+    def __init__(self):
+        super(StoreServer, self).__init__()
+        self.stores = load_stores()
+
+
+    def load_path (self, store_name, path, **kw ):
+        """load a store resource from store
+        """
+        view = kw.pop('view', 'full')
+
+        q = data_service.query('store', name=store_name, view='full')
+        if len(q) != 1:
+            log.error ('Multiple named stores')
+            return None
+        q = q[0]
+        log.debug ('ZOOM %s', q.get ('uri'))
+        while path:
+            el= path.pop(0)
+            q = data_service.query(parent=q, name=el, view='full')
+            if len(q) != 1:
+                log.error ('multiple names (%s) in store level %s', el, q.get('uri'))
+                return None
+            q = q[0]
+        if kw:
+            # might be limitin result
+            q = data_service.get_resource(q, view='full', **kw)
+
+        return q
+
+
+
+    @expose(content_type='text/xml')
+    def _default(self, *path, **kw):
+        set_admin_mode()
+        log.debug ("STORE: Got %s and %s" ,  path, kw)
+        path = list(path)
+        store_name = path.pop(0)
+        q =  self.load_path(store_name=store_name, path = path, **kw)
+        if q is None:
+            abort (404, "bad store path")
+        return etree.tostring(q)
+
+
+    def find_matching_store(self, path):
+        """Find a store based on the path *best* prefix
+
+        :param path: a url path
+        :type  path: str
+        :return: A tuple (Store, relative path)
+        """
+        best = None
+        stores = self.stores
+        for name,store  in stores.items():
+            new_path = store.valid (path)
+            if new_path:
+                best = name
+                break
+        if not best :
+            return None,None
+        store = data_service.query('store', name=best,view='full')
+        if len(store) != 1:
+            log.error ('multiple store found %s', best)
+        store = store[0]
+
+        partial = new_path[len(stores[best].top):]
+        log.debug ("Matched %s %s ", best, partial)
+        return store, partial.split ('/')
+
+
+    #@smokesignal.on(SIG_NEWBLOB)
+    def insert_path(self, path, resource_uniq=None, **kw):
+        """ insert a store path into the store resource
+
+        :param path: a string path for the store
+        """
+        log.info("Insert %s into store", path)
+        store, path = self.find_matching_store (path)
+        parent = store
+        while path:
+            el = path.pop(0)
+            if not el:
+                continue
+            q  = data_service.query(parent=parent, name=el, view='full')
+            if len(q) != 1:
+                #log.error ('multiple names (%s) in store level %s', el, q.get('uri'))
+                path.insert(0, el)
+                break
+            parent = q[0]
+        # any left over path needs to be created
+        log.debug ("at %s rest %s", parent.get ('uri'), path)
+        elements = []
+        root = None
+        while len(path)>1:
+            nm = path.pop(0)
+            if root is None:
+                resource = root = etree.Element ('dir', name = nm)
+            else:
+                resource = etree.SubElement (resource, 'dir', name=nm)
+        # The last element might be dir or a link
+        if len(path)==1:
+            nm = path.pop(0)
+            if root is None:
+                resource = root = etree.Element ('link' if resource_uniq else 'dir', name = nm)
+            else:
+                resource = etree.SubElement (resource, 'link' if resource_uniq else 'dir', name=nm)
+
+            if resource_uniq:
+                resource.set ('value', resource_uniq)
+
+            # create the new resource
+            log.debug ("New resource %s at %s" , etree.tostring(root), parent.get ('uri'))
+            q = data_service.new_resource(resource=root, parent=parent)
+        return q
+
+
+    def delete_path (self, path, **kw):
+        """ Delete an store element
+
+        :param path: A string (url) of the path
+        :type  path: str
+        """
+
+
+    @expose(content_type='text/xml')
+    def append(self, path=None, **kw):
+        if path is None:
+            path = tg.request.body
+
+        self.insert_path (path)
+
+
+
+    @expose(content_type='text/xml')
+    def index(self):
+        stores = etree.Element ('resource', resource_type='stores')
+        for k,v in self.stores.items():
+            etree.SubElement(stores, 'store', name=k, value=v.top)
+        return etree.tostring(stores)
+
+
 
 
 
@@ -219,13 +368,15 @@ class StorageManager(object):
 class BlobServer(RestController, ServiceMixin):
     '''Manage a set of blob files'''
     service_type = "blob_service"
-    
+
+    store_srv = StoreServer ()
+
     def __init__(self, url ):
         ServiceMixin.__init__(self, url)
         self.stores = StorageManager()
 
 #################################
-# service  functions 
+# service  functions
 ################################
     def check_access(self, ident, action):
         from bq.data_service.controllers.resource_query import resource_permission
@@ -238,10 +389,22 @@ class BlobServer(RestController, ServiceMixin):
                 abort(401)
         return resource
 
+    #@expose()
+    #def store(self, *path, **kw):
+    #    log.debug ("STORE: Got %s and %s" ,  path, kw)
+
+
+
+
+
+    @expose()
+    def get_all(self):
+        return "Method Not supported"
+
     @expose()
     def get_one(self, ident,  **kw):
         "Fetch a blob based on uniq ID"
-        log.info("get_one(%s) %s" % (ident, kw))
+        log.info("get_one(%s) %s" , ident, kw)
         from bq.data_service.controllers.resource_query import RESOURCE_READ, RESOURCE_EDIT
         #ident = args[0]
         self.check_access(ident, RESOURCE_READ)
@@ -258,7 +421,7 @@ class BlobServer(RestController, ServiceMixin):
                 disposition = 'attachment; filename="%s"; filename*="%s"'%(filename.encode('utf8'), filename.encode('utf8'))
 
             return forward(BQFileApp(localpath,
-                                   content_disposition=disposition,        
+                                   content_disposition=disposition,
                                    ).cache_control (max_age=60*60*24*7*6)) # 6 weeks
         except IllegalOperation:
             abort(404)
@@ -267,24 +430,24 @@ class BlobServer(RestController, ServiceMixin):
     @require(predicates.not_anonymous())
     def post(self, **transfers):
         "Create a blob based on unique ID"
-        log.info("post() called %s" % kwargs)
+        log.info("post() called %s" , kwargs)
         #log.info("post() body %s" % tg.request.body_file.read())
 
         def find_upload_resource(transfers, pname):
-            log.debug ("transfers %s " % (transfers))
-            
+            log.debug ("transfers %s " , transfers)
+
             resource = transfers.pop(pname+'_resource', None) #or transfers.pop(pname+'_tags', None)
-            log.debug ("found %s _resource/_tags %s " % (pname, resource))
+            log.debug ("found %s _resource/_tags %s " , pname, resource)
             if resource is not None:
                 try:
                     if hasattr(resource, 'file'):
                         log.warn("XML Resource has file tag")
                         resource = f.file.read()
                     if isinstance(resource, basestring):
-                        log.debug ("reading XML %s" % resource)
+                        log.debug ("reading XML %s" , resource)
                         resource = etree.fromstring(resource)
                 except:
-                    log.exception("Couldn't read resource parameter %s" % resource)
+                    log.exception("Couldn't read resource parameter %s" , resource)
                     resource = None
             return resource
 
@@ -296,29 +459,61 @@ class BlobServer(RestController, ServiceMixin):
 
         return resource
 
-    
-    @expose()
-    @require(predicates.not_anonymous())
-    def delete(self, *args, **kwargs):
-        ' Delete the resource  '
-        ident = args[0]
-        log.info("delete() called %s" % args)
-        from bq.data_service.controllers.resource_query import resource_delete
-        resource = self.getBlobInfo(ident)
-        resource_delete(resource)
 
     @expose()
     @require(predicates.not_anonymous())
-    def move(self, src, dst, *args,  **kwargs):
-        ' Move a resource identified by path  '
-        log.info("move() called %s" % args)
+    def delete(self, ident, **kwargs):
+        ' Delete the resource  '
+        log.info("delete() called %s" , ident)
+        from bq.data_service.controllers.resource_query import resource_delete
         from bq.data_service.controllers.resource_query import resource_permission
         from bq.data_service.controllers.resource_query import RESOURCE_READ, RESOURCE_EDIT
-        query = DBSession.query(Taggable).filter_by (resource_value=src,resource_parent=None)
+        query = DBSession.query(Taggable).filter_by (resource_uniq=ident,resource_parent=None)
         resource = resource_permission(query, RESOURCE_EDIT).first()
         if resource:
-            resource.resource_value = dst
-        return resource
+            resource_delete(resource)
+        return ""
+
+
+    @expose()
+    @require(predicates.not_anonymous())
+    def list_path(self, src, *args,  **kwargs):
+        ' Move a resource identified by path  '
+        log.info("move() called %s" ,  src)
+        resource = data_service.query(None, resource_value = src)
+        return etree.tostring(resource)
+
+    @expose()
+    @require(predicates.not_anonymous())
+    def insert_path(self, path, *args,  **kwargs):
+        ' Move a resource identified by path  '
+        log.info("insert_path() called %s %s" , path, args)
+        resource = etree.Element('file', value = path)
+        resource = self.store_blob(resource)
+        return etree.tostring(resource)
+
+    @expose()
+    @require(predicates.not_anonymous())
+    def move_path(self, src, dst, *args,  **kwargs):
+        ' Move a resource identified by path  '
+        log.info("move() called %s" , args)
+        resource = data_service.query(None, resource_value = src)
+        if resource:
+            resource.set('resource_value',  dst)
+        resource = data_service.update(resource)
+        return etree.tostring(resource)
+
+    @expose()
+    @require(predicates.not_anonymous())
+    def delete_path(self, path,  **kwargs):
+        ' Delete a resource identified by path  '
+        log.info("delete() called %s" , path)
+        resource = data_service.query(None, resource_value = path)
+        for child in resource:
+            data_service.del_resource(child)
+        return ""
+
+
 
 
 ########################################
@@ -331,17 +526,17 @@ class BlobServer(RestController, ServiceMixin):
         perm     = resource.get('permission', 'private')
         filename = resource.get('name')
         resource.set('resource_type', resource.get('resource_type') or guess_type(filename))
-        # KGK  
+        # KGK
         # These are redundant (filename is the attribute name name upload is the ts
         resource.insert(0, etree.Element('tag', name="filename", value=filename, permission=perm))
-        resource.insert(1, etree.Element('tag', 
-                                         name="upload_datetime", 
-                                         value=datetime.now().isoformat(' '), 
+        resource.insert(1, etree.Element('tag',
+                                         name="upload_datetime",
+                                         value=datetime.now().isoformat(' '),
                                          type='datetime',
                                          permission=perm),
                         )
 
-        log.info ("NEW RESOURCE <= %s" % (etree.tostring(resource)))
+        log.info ("NEW RESOURCE <= %s" , etree.tostring(resource))
         return data_service.new_resource(resource = resource)
 
 
@@ -354,8 +549,12 @@ class BlobServer(RestController, ServiceMixin):
                 if fhash is None:
                     resource.set('resource_uniq', data_service.resource_uniq() )
                 if fileobj is not None:
-                    return self.store_fileobj(resource, fileobj)
-                return self.store_reference(resource, resource.get('value') )
+                    resource =  self.store_fileobj(resource, fileobj)
+                else:
+                    resource =  self.store_reference(resource, resource.get('value') )
+                #smokesignal.emit(SIG_NEWBLOB, self.store, path=resource.get('value'), resource_uniq=resource.get ('resource_uniq'))
+                self.store_srv.insert_path( path=resource.get('value'), resource_uniq=resource.get ('resource_uniq'))
+                return resource
             except DuplicateFile, e:
                 log.warn("Duplicate file. reseting uniq")
                 resource.set('resource_uniq', data_service.resource_uniq())
@@ -366,12 +565,12 @@ class BlobServer(RestController, ServiceMixin):
         user_name = identity.current.user_name
         # dima: make sure local file name will be ascii, should be fixed later
         # dima: unix without LANG or LC_CTYPE will through error due to ascii while using sys.getfilesystemencoding()
-        #filename_safe = filename.encode(sys.getfilesystemencoding()) 
+        #filename_safe = filename.encode(sys.getfilesystemencoding())
         #filename_safe = filename.encode('ascii', 'xmlcharrefreplace')
-        #filename_safe = filename.encode('ascii', 'replace')        
+        #filename_safe = filename.encode('ascii', 'replace')
         filename = resource.get('name') or  getattr(fileobj, 'name') or ''
         uniq     = resource.get('resource_uniq')
-        
+
         with Timer() as t:
             blob_id, flocal = self.stores.save_blob(fileobj, filename, user_name = user_name, uniq=uniq)
 
@@ -380,6 +579,7 @@ class BlobServer(RestController, ServiceMixin):
 
         resource.set('name', filename)
         resource.set('value', blob_id)
+
         #resource.set('resource_uniq', uniq)
         return self.create_resource(resource)
 
@@ -394,12 +594,14 @@ class BlobServer(RestController, ServiceMixin):
         filename  = resource.get ('name') or urlref.rsplit('/',1)[1]
         if not self.stores.valid_blob(urlref):
             # We have a URLref that is not part of the sanctioned stores:
-            # We will move it 
+            # We will move it
+            log.debug("Can't put %s into stores : %s", urlref, self.stores)
             localpath = self._make_url_local(urlref)
             if localpath:
                 with open(localpath) as f:
                     return self.store_fileobj(resource, f)
             else:
+                log.error("Can't put %s into stores : %s", urlref, self.stores)
                 raise IllegalOperation("%s could not be moved to a valid store" % urlref)
         resource.set ('name' ,filename)
         resource.set ('value', urlref)
@@ -413,21 +615,21 @@ class BlobServer(RestController, ServiceMixin):
         if resource is not None and resource.resource_value:
             blob_id  = resource.resource_value
             path = self.stores.fetch_blob(blob_id)
-            log.debug('using %s full=%s localpath=%s' % (uniq_ident, blob_id, path))
+            log.debug('using %s full=%s localpath=%s' , uniq_ident, blob_id, path)
             return path
         raise IllegalOperation("bad resource value %s" % uniq_ident)
 
-    def getBlobInfo(self, ident): 
+    def getBlobInfo(self, ident):
         resource = DBSession.query(Taggable).filter_by (resource_uniq = ident).first()
         return resource
 
-    def getBlobFileName(self, ident): 
+    def getBlobFileName(self, ident):
         fobj = self.getBlobInfo(ident)
         fname = str(id)
         if fobj != None and fobj.resource_name != None:
-            fname =  fobj.resource_name 
-        log.debug('Blobsrv - original name %s->%s ' % (ident, fname ))
-        return fname   
+            fname =  fobj.resource_name
+        log.debug('Blobsrv - original name %s->%s ' , ident, fname)
+        return fname
 
     def blobsExist(self, fhashes):
         'search for files by content hash'
@@ -443,19 +645,19 @@ class BlobServer(RestController, ServiceMixin):
         log.warn("blobsExist not implemented")
         return blobsfound
 
-    def originalFileName(self, ident): 
+    def originalFileName(self, ident):
         log.debug ('originalFileName: deprecated %s', ident)
-        return self.getBlobFileName(ident) 
-        
+        return self.getBlobFileName(ident)
+
     def fileExists(self, id):
-        if id==None: return False      
+        if id==None: return False
         try:
-            fileName = self.localpath(id)    
+            fileName = self.localpath(id)
             return fileName and os.path.exists(fileName)
         except IllegalOperation,e:
             return False
         except Exception, e:
-            log.exception('cannot load resource_uniq %s' % id)
+            log.exception('cannot load resource_uniq %s' , id)
             return False
 
 
@@ -481,21 +683,21 @@ class BlobServer(RestController, ServiceMixin):
                 with open(localpath) as f:
                     blob_id, flocal = dst_store.write(f, filename, user_name = user_name)
             except:
-                log.error("move failed for resource_uniq %s" % resource.resource_uniq)
+                log.error("move failed for resource_uniq %s" , resource.resource_uniq)
                 continue
-            old_blob_id = resource.resource_value 
+            old_blob_id = resource.resource_value
             resource.resource_value = blob_id
 
     def geturi(self, id):
         return self.url + '/' + str(id)
-            
+
 
 
 
 def initialize(uri):
     """ Initialize the top level server for this microapp"""
     # Add you checks and database initialize
-    log.debug ("initialize " + uri)
+    log.debug ("initialize %s" , uri)
     service =  BlobServer(uri)
     #directory.register_service ('image_service', service)
 

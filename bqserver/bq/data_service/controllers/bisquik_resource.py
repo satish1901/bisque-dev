@@ -49,14 +49,14 @@ SYNOPSIS
 DESCRIPTION
 ===========
    RESTful access to DoughDB resources
-   
+
 """
 import pdb
 import logging
 import sqlalchemy
 import urllib
 
-import  pylons 
+import  pylons
 from pylons.controllers.util import abort
 from paste.deploy.converters import asbool
 from sqlalchemy import desc
@@ -71,7 +71,7 @@ from repoze.what.predicates import not_anonymous
 from furl import furl
 
 from bq.core import identity
-from bq.core.model import metadata, DBSession 
+from bq.core.model import metadata, DBSession
 from bq.data_service.model  import Taggable, Image, dbtype_from_tag, dbtype_from_name, all_resources
 from bq.util.bisquik2db import bisquik2db, db2tree
 from bq.util.hash import make_uniq_code, is_uniq_code
@@ -80,7 +80,7 @@ from bq.util.hash import make_uniq_code, is_uniq_code
 from .resource import Resource
 from .resource_query import resource_query, resource_load, resource_count, resource_auth, resource_permission, resource_delete
 from .resource_query import RESOURCE_READ, RESOURCE_EDIT
-from .formats import find_formatter 
+from .formats import find_formatter
 
 log = logging.getLogger("bq.data_service.bisquik_resource")
 
@@ -142,7 +142,7 @@ class ResourceAuth(Resource):
 
     def create(self, **kw):
         return int
-    
+
     def dir(self, **kw):
         'Read the list of authorization records associated with the parent resource'
         #baseuri = request.url
@@ -164,7 +164,7 @@ class ResourceAuth(Resource):
         return self.new (None, xml, **kw)
     def modify(self, factory, xml, **kw):
         return self.new (factory, xml, **kw)
-    
+
     def new(self, factory,  xml, notify=True, **kw):
         'Create/Modify resource auth records'
         format = None
@@ -174,7 +174,7 @@ class ResourceAuth(Resource):
         resource = check_access( request.bisque.parent, RESOURCE_EDIT)
         log.debug ("AUTH %s with %s" % (resource, xml))
         #DBSession.autoflush = False
-        resource = resource_auth (resource, parent = None, action=RESOURCE_EDIT, newauth=etree.XML(xml), 
+        resource = resource_auth (resource, parent = None, action=RESOURCE_EDIT, newauth=etree.XML(xml),
                                   notify=asbool(notify))
         response = etree.Element('resource', uri=baseuri)
         tree = db2tree (resource,  parent = response, baseuri=baseuri)
@@ -183,7 +183,7 @@ class ResourceAuth(Resource):
         return formatter(response)
 
 RESOURCE_HANDLERS = {
-    'auth'   : ResourceAuth , 
+    'auth'   : ResourceAuth ,
     'pixels' : PixelHandler ,
 }
 
@@ -199,7 +199,7 @@ class BisquikResource(Resource):
     @classmethod
     def get_child_resource(cls, token):
         child_cls = RESOURCE_HANDLERS.get (token)
-        if child_cls: 
+        if child_cls:
             return child_cls (cls.baseurl)
         child = cls.children.get (token, None)
         if not child:
@@ -213,7 +213,7 @@ class BisquikResource(Resource):
         self.resource_name = table
         if table:
             self.resource_type = dbtype_from_tag(table)
-    
+
     def error(self, tg_errors=None):
         return tg_errors
 
@@ -224,7 +224,7 @@ class BisquikResource(Resource):
         if item and isinstance(item, Query):
             item = item.first()
         return item
-        
+
     def load(self, token, **kw):
         log.debug ("Load %s" % token)
         try:
@@ -260,7 +260,7 @@ class BisquikResource(Resource):
             #log.debug ("PERMISSION: loaded object %s %s" % ((query.xmltag, query.__class__), query.id))
             query = resource_load ((query.xmltag, query.__class__), query.id)
             query = resource_permission (query, action=action)
-            
+
         resource = self.force_dbload(query)
         if resource is None:
             log.info ("Permission check failure %s = %s" % (query, resource))
@@ -269,26 +269,26 @@ class BisquikResource(Resource):
             else:
                 abort(401)
         #log.debug ("PERMISSION: user %s : %s" % (user_id, resource))
-            
+
         return resource
 
-    def resource_output (self, resource, response=None, view=None, 
+    def resource_output (self, resource, response=None, view=None,
                          format=None, progressive=False, **kw):
         #if response is None:
         if isinstance(resource , list):
             response = etree.Element('response')
-            db2tree (resource, view = view, parent = response, 
+            db2tree (resource, view = view, parent = response,
                      baseuri=self.baseurl)
         else:
-            response = db2tree (resource, view = view, parent = response, 
-                                baseuri=self.baseurl)
+            response = db2tree (resource, view = view, parent = response,
+                                baseuri=self.baseurl, **kw)
         formatter, content_type  = find_formatter (format)
         tg.response.headers['Content-Type'] = content_type
         return formatter(response)
-        
+
 
     def dir(self, **kw):
-        """GET /ds/images : fetch group of object 
+        """GET /ds/images : fetch group of object
 
         Create a listing of the resource.  Several options are allowed
         view={short,full,deep},[clean],[canonical],
@@ -302,9 +302,9 @@ class BisquikResource(Resource):
         format = kw.pop('format', None)
         offset = int(kw.get ('offset', 0))
         progressive = kw.pop('progressive', False)
-        #limit = kw.pop('limit', None) 
+        #limit = kw.pop('limit', None)
         log.info ('DIR  %s' % (request.url))
-        #  Do not use loading 
+        #  Do not use loading
         parent = getattr(request.bisque,'parent', None)
         user_id = identity.get_user_id()
 
@@ -344,7 +344,7 @@ class BisquikResource(Resource):
 
         formatter, content_type  = find_formatter (format)
         tg.response.headers['Content-Type'] = content_type
-        
+
         text_response =  formatter(response)
         #ex = etree.XML (text_response)
         #log.debug ("text_response %d" % len(ex) )
@@ -359,10 +359,10 @@ class BisquikResource(Resource):
         view=kw.pop('view', None)
         format = kw.pop('format', None)
         log.info ("NEW: %s %s " %(request.url, xml) )
-        
+
         # Create a DB object from the document.
         #if  not identity.not_anonymous():
-        #    pylons.response.status_int = 401    
+        #    pylons.response.status_int = 401
         #    return '<response status="FAIL">Permission denied</response>'
 
         parent = self.load_parent()
@@ -386,8 +386,8 @@ class BisquikResource(Resource):
         if parent:
             log.info('REPLACE %s in %s' % (self.resource_name , parent))
             log.debug ("replace: %s => %s" %(xml, resource))
-            # Here we clear the specific type (tag,gobject) etc. and 
-            
+            # Here we clear the specific type (tag,gobject) etc. and
+
             parent.clear([ self.resource_name ])
             resource = bisquik2db(doc=xml, parent=parent)
             if resource is not None:
@@ -406,8 +406,8 @@ class BisquikResource(Resource):
         parent = self.load_parent()
         parent.clear([self.resource_name])
         return "<response/>"
-        
-        
+
+
     @expose()
     def get(self, resource, **kw):
         """GET /ds/images/1 : fetch the resource
@@ -417,9 +417,9 @@ class BisquikResource(Resource):
         format = kw.pop('format', None)
         resource = self.check_access(resource)
         log.info ("GET ==>%s" % resource)
-        
-        return self.resource_output(resource, view=view, format=format)
-            
+
+        return self.resource_output(resource, view=view, format=format, **kw)
+
 
     @expose(content_type='text/xml') #, format='xml')
     def modify(self, resource, xml, **kw):
@@ -472,7 +472,7 @@ class BisquikResource(Resource):
         log.info ("HEAD ==>%s" % resource)
         return ""
 
-        
-            
 
-            
+
+
+

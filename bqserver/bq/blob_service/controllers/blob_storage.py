@@ -165,8 +165,9 @@ class LocalStorage(BlobStorage):
 
 
     def valid(self, ident):
-        return ((ident.startswith(self.top)  or not ident.startswith('file://'))
-                and os.path.exists(self.localpath(ident)))
+        return ((ident.startswith(self.top)  and ident)
+                or  (urlparse.urlparse(ident).scheme == '' and os.path.join(self.top, ident)))
+               #and os.path.exists(self.localpath(ident)))
 
     def write(self, fp, filename, user_name='', uniq=None):
         'store blobs given local path'
@@ -197,6 +198,9 @@ class LocalStorage(BlobStorage):
         log.debug("deleting %s" %  fullpath)
         os.remove (fullpath)
 
+    def __str__(self):
+        return "localstore[%s, %s]" % (self.top, self.format_path)
+
 ###############################################
 # Irods
 class iRodsStorage(BlobStorage):
@@ -224,7 +228,7 @@ class iRodsStorage(BlobStorage):
         log.info("created irods store %s (%s)" % (self.format_path, self.top))
 
     def valid(self, irods_ident):
-        return irods_ident and irods_ident.startswith(self.top)
+        return  irods_ident.startswith(self.top) and irods_ident
 
     def write(self, fp, filename, user_name=None, uniq=None):
         blob_ident = formatPath(self.format_path, user_name, filename, uniq)
@@ -296,7 +300,7 @@ class S3Storage(BlobStorage):
 
 
     def valid(self, s3_ident):
-        return s3_ident and s3_ident.startswith(self.top)
+        return  s3_ident.startswith(self.top) and s3_ident
 
     def write(self, fp, filename, user_name=None, uniq=None):
         'write a file to s3'
@@ -345,7 +349,7 @@ class HttpStorage(BlobStorage):
         log.info("created irods store %s (%s)" % (self.format_path, self.top))
 
     def valid(self, http_ident):
-        return http_ident and http_ident.startswith(self.top)
+        return  http_ident.startswith(self.top) and http_ident
 
     def write(self, fp, filename, user_name=None):
         raise IllegalOperation('HTTP(S) write is not implemented')
