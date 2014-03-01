@@ -36,6 +36,11 @@ ImgOperations.prototype.updateView = function (view) {
         this.params.enhancement = this.combo_enhancement.getValue();
         view.addParams  ('depth=8,' + this.combo_enhancement.getValue());
 
+        var b = this.menu.queryById('slider_brightness').getValue();
+        var c = this.menu.queryById('slider_contrast').getValue();
+        if (b!==0 || c!==0)
+            view.addParams  ('brightnesscontrast='+b+','+c);
+
         /*
         var r = this.menu_elements['Red'].value;
         var g = this.menu_elements['Green'].value;
@@ -85,27 +90,50 @@ ImgOperations.prototype.createMenu = function () {
 
     this.loadPreferences(this.viewer.preferences);
 
-
-
     var dim = this.viewer.imagedim;
 
     this.createChannelMap( );
 
-
-    var enhancement = this.default_enhancement;
-    var view_title = 'View';
-    if (this.viewer.imagephys) {
-        //view_title = 'View ['+this.viewer.imagephys.pixel_depth+'bit p/ channel]';
-        if (this.viewer.imagephys.pixel_depth == 8)
-            enhancement = this.default_enhancement_8bit;
-    }
-
+    var phys = this.viewer.imagephys;
+    var enhancement = phys && phys.pixel_depth===8 ? this.default_enhancement_8bit : this.default_enhancement;
 
     this.menu.add({
         xtype: 'displayfield',
-        fieldLabel: view_title,
+        fieldLabel: 'View',
         cls: 'heading',
     });
+
+    this.menu.add({
+        xtype: 'slider',
+        itemId: 'slider_brightness',
+        fieldLabel: 'Brightness',
+        width: 400,
+        value: 0,
+        increment: 1,
+        minValue: -100,
+        maxValue: 100,
+        listeners: {
+            scope: this,
+            change: this.changed,
+        },
+    });
+
+    this.menu.add({
+        xtype: 'slider',
+        itemId: 'slider_contrast',
+        fieldLabel: 'Contrast',
+        width: 400,
+        value: 0,
+        increment: 1,
+        minValue: -100,
+        maxValue: 100,
+        zeroBasedSnapping: true,
+        listeners: {
+            scope: this,
+            change: this.changed,
+        },
+    });
+
     this.combo_fusion = this.viewer.createCombo( 'Fusion', [
         {"value":"a", "text":"Average"},
         {"value":"m", "text":"Maximum"},
@@ -136,7 +164,7 @@ ImgOperations.prototype.createChannelMap = function ( ) {
 
     this.channel_colors = imgphys.channel_colors;
     for (var ch=0; ch<channel_count; ch++) {
-        cc = {
+        this.menu.add({
             xtype: 'colorfield',
             fieldLabel: ''+imgphys.channel_names[ch],
             name: 'channel_color_'+ch,
@@ -149,8 +177,7 @@ ImgOperations.prototype.createChannelMap = function ( ) {
                     this.changed();
                 },
             },
-        };
-        this.menu.add(cc);
+        });
     }
 };
 

@@ -800,6 +800,39 @@ Ext.define('Bisque.Resource.Image.Page', {
             phys: this.viewerContainer.viewer.imagephys,
             preferences: this.viewerContainer.viewer.preferences,
         });
+        var movie = cnt.queryById('main_view_movie');
+        var download = this.toolbar.queryById('btnDownload');
+        var qt = download.menu.queryById('download_movie_qt');
+        if (!qt) {
+            download.menu.add([{
+                xtype: 'menuseparator',
+            }, {
+                itemId: 'download_movie_h264',
+                text: 'Movie as MPEG4 H264',
+                handler: function() { movie.export('h264'); },
+            }, {
+                itemId: 'download_movie_qt',
+                text: 'Movie as Apple QuickTime (MOV)',
+                handler: function() { movie.export('quicktime'); },
+            }, {
+                itemId: 'download_movie_webm',
+                text: 'Google WebM',
+                handler: function() { movie.export('webm'); },
+            }, {
+                itemId: 'download_movie_avi',
+                text: 'Microsoft AVI (MPEG4)',
+                handler: function() { movie.export('avi'); },
+            }, {
+                itemId: 'download_movie_wmv',
+                text: 'Windows Media Video',
+                handler: function() { movie.export('wmv'); },
+            }, {
+                itemId: 'download_movie_flv',
+                text: 'Adobe Flash Video',
+                handler: function() { movie.export('flv'); },
+            }]);
+
+        }
     },
 
 });

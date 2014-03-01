@@ -496,6 +496,11 @@ PlayerDisplay.prototype.addCommand = function (command, pars) {
 
     command.push ('depth=8,' + this.combo_enhancement.getValue());
 
+    var b = this.menu.queryById('slider_brightness').getValue();
+    var c = this.menu.queryById('slider_contrast').getValue();
+    if (b!==0 || c!==0)
+        command.push('brightnesscontrast='+b+','+c);
+
     var fusion='';
     for (var i=0; i<this.channel_colors.length; i++) {
         fusion += this.channel_colors[i].getRed() + ',';
@@ -527,6 +532,38 @@ PlayerDisplay.prototype.createMenu = function () {
         fieldLabel: 'View',
         cls: 'heading',
     });
+
+    this.menu.add({
+        xtype: 'slider',
+        itemId: 'slider_brightness',
+        fieldLabel: 'Brightness',
+        width: 400,
+        value: 0,
+        increment: 1,
+        minValue: -100,
+        maxValue: 100,
+        listeners: {
+            scope: this,
+            change: this.changed,
+        },
+    });
+
+    this.menu.add({
+        xtype: 'slider',
+        itemId: 'slider_contrast',
+        fieldLabel: 'Contrast',
+        width: 400,
+        value: 0,
+        increment: 1,
+        minValue: -100,
+        maxValue: 100,
+        zeroBasedSnapping: true,
+        listeners: {
+            scope: this,
+            change: this.changed,
+        },
+    });
+
     this.combo_fusion = this.player.createCombo( 'Fusion', [
         {"value":"a", "text":"Average"},
         {"value":"m", "text":"Maximum"},
