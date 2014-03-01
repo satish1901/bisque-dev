@@ -296,7 +296,7 @@ DefaultImgPlugin.prototype.blink = function (){
 
 function ImgViewer (parentid, image_or_uri, parameters) {
 
-    this.update_delay_ms = 50;  // Update the viewer asynchronously
+    this.update_delay_ms = 250;  // Update the viewer asynchronously
 
     this.target = getObj(parentid);
     this.imageuri = null;   // Toplevel Image URI
@@ -329,7 +329,7 @@ function ImgViewer (parentid, image_or_uri, parameters) {
     this.target.appendChild (this.imagediv);
     this.toolbar = this.parameters.toolbar;
 
-    var plugin_list = "default,slicer,tiles,ops,download,external,converter,scalebar,progressbar,infobar,edit,renderer";
+    var plugin_list = "default,slicer,tiles,ops,download,external,scalebar,progressbar,infobar,edit,renderer";
     if ('onlyedit' in this.parameters)
         plugin_list = "default,slicer,tiles,ops,scalebar,progressbar,infobar,edit,renderer";
     if ('simpleview' in this.parameters) {

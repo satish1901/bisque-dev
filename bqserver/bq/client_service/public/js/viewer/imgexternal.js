@@ -46,7 +46,7 @@ function ImgExternal (viewer,name){
         itemId: 'menu_viewer_operations',
         xtype:'button',
         text: 'Operations',
-        //iconCls: 'external',
+        iconCls: 'converter',
         scope: this,
         //tooltip: 'Export current image to external applications',
         menu: {
@@ -54,6 +54,13 @@ function ImgExternal (viewer,name){
                 scope: this,
             },
             items: [{
+                itemId: 'menu_viewer_converter',
+                text: 'Convert',
+                iconCls: 'converter',
+                tooltip: 'Convert and download the current image',
+                scope: this,
+                handler: this.convert,
+            }, {
                 xtype  : 'menuitem',
                 itemId : 'menu_viewer_pixel_counting',
                 text   : 'Pixel counter',
@@ -136,6 +143,28 @@ ImgExternal.prototype.exportCurrentView = function () {
     args = args.join('&');
     var url = '/image_service/images/'+this.viewer.image.resource_uniq+'?'+args;
     window.location = url;
+};
+
+ImgExternal.prototype.convert = function () {
+    var image = this.viewer.image;
+    var phys = this.viewer.imagephys;
+    var title = 'Image converter [W:'+phys.x+', H:'+phys.y+', Z:'+phys.z+', T:'+phys.t+' Ch:'+phys.ch+'/'+phys.pixel_depth+'bits'+'] ' + image.name;
+    Ext.create('Ext.window.Window', {
+        modal: true,
+        width: BQApp?BQApp.getCenterComponent().getWidth()/1.6:document.width/1.6,
+        height: BQApp?BQApp.getCenterComponent().getHeight()/1.1:document.height/1.1,
+        layout: 'fit',
+        border: false,
+        maxWidth: 600,
+        title: title,
+        items: [{
+            xtype  : 'bqimageconverter',
+            image  : this.viewer.image,
+            phys   : this.viewer.imagephys,
+            slice  : this.viewer.findPlugin('slicer').getParams(),
+            view   : this.viewer.findPlugin('ops').getParams(),
+        }],
+    }).show();
 };
 
 ImgExternal.prototype.calibrateResolution = function () {
