@@ -339,7 +339,7 @@ class preferences (object):
 
 
 class sql(object):
-    desc = 'Run a sql command '
+    desc = 'Run a sql command (disabled)'
     def __init__(self, version):
         parser = optparse.OptionParser(
                     usage="%prog sql <sql>",
@@ -366,3 +366,121 @@ class sql(object):
         print engine
 
 
+class group(object):
+    'do a group command'
+    def __init__(self, version):
+        parser = optparse.OptionParser(
+                    usage="%prog sql <sql>",
+                    version="%prog " + version)
+        parser.add_option('-c','--config', default="config/site.cfg")
+        options, args = parser.parse_args()
+
+        self.args = args
+        self.options = options
+
+    def run(self):
+        ''
+
+        from tg import config
+        import bq
+        from sqlalchemy import create_engine
+        from sqlalchemy.sql import text
+        from ConfigParser import ConfigParser
+
+        load_config(self.options.config)
+
+        engine = config['pylons.app_globals'].sa_engine
+
+        print engine
+
+
+
+class stores(object):
+    desc = 'Generate stores resoure'
+
+    def __init__(self, version):
+        parser = optparse.OptionParser(
+                    usage="%prog sql <sql>",
+                    version="%prog " + version)
+        parser.add_option('-c','--config', default="config/site.cfg")
+        options, args = parser.parse_args()
+
+        self.args = args
+        self.options = options
+
+    def run(self):
+        ''
+        #engine = config['pylons.app_globals'].sa_engine
+        #print engine
+        load_config(self.options.config)
+
+        from bq.blob_service.controllers.blobsrv import load_stores
+        from bq.data_service.model.tag_model import Taggable, DBSession
+        from bq.util.dotnested import parse_nested
+        from sqlalchemy import or_
+        import pprint
+
+
+        stores = load_stores()
+        toplevel = DBSession.query(Taggable).filter(
+            Taggable.resource_parent_id == None,
+            or_(Taggable.resource_type == 'image',
+                Taggable.resource_type == 'file',))
+
+        def match_store (path):
+            best = None
+            best_top = 0
+            for k,store in stores.items():
+                if store.valid (path) and len(store.top) > best_top:
+                    best = store
+                    best_top = len(store.top)
+                    best.name = k
+            return best
+
+        stores_resource = {}
+        for r in toplevel:
+            if  r.value is None:
+                print "BADVAL", r.name, r.value
+                continue
+            store = match_store (r.value)
+            if store is None:
+                print "NOSTORE", r.name, r.value
+                continue
+            if r.value.startswith (store.top):
+                path = r.value[len(store.top):]
+            else:
+                path = r.value
+
+            el = stores_resource.setdefault (store.name, {})
+            el[path] = r
+            print path
+
+
+        nested = {}
+        for k,p in stores_resource.items():
+            nested[k] = parse_nested(p, sep = '/')
+        print "NESTED"
+        print pprint.pprint(nested)
+
+
+        #import pickle
+        #with open('stores.pck', 'w') as f:
+        #    pickle.dump(nested, f)
+
+        from lxml import etree
+
+        def visit_level(root, d):
+            count = 0
+            for k,v in d.items():
+                if isinstance (v, dict):
+                    subroot = etree.SubElement (root, 'dir', name = k)
+                    visit_level(subroot, v)
+                else:
+                    xv = etree.SubElement (root, 'link', name=(v.resource_name or 'filename%s' %count), value = str(v.resource_uniq))
+                    count += 1
+
+        for store, paths in nested.items():
+            root = etree.Element('resource', resource_type='store', name=store, value = stores[store].top)
+            visit_level (root, paths)
+            with open('tree_%s.xml' % store, 'w') as w:
+                w.write(etree.tostring(root, pretty_print=True))

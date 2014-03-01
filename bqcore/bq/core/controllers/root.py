@@ -178,6 +178,7 @@ class RootController(BaseController):
         """
         #log.info ('[%s] %s %s %s' % (request.identity.get('repoze.who.userid'), request.method, request.url, request.headers))
         log.info ('[%s] %s %s' % (request.identity.get('repoze.who.userid'), request.method, request.url ))
+        log.info ('PATH %s', request.path)
         if service_type in oldnames:
             log.warn ('found oldname( %s ) in request' % (service_type))
             service_type = oldnames[service_type]

@@ -125,7 +125,7 @@ class ConverterDict(OrderedDict):
 
     def __str__(self):
         return ', '.join(['%s (%s)'%(n, c.version['full']) for n,c in self.iteritems()])
-     
+
     def defaultExtension(self, formatName):
         formatName = formatName.lower()
         for c in self.itervalues():
@@ -138,11 +138,11 @@ class ConverterDict(OrderedDict):
             for f in c.formats().itervalues():
                 exts.extend(f.ext)
         return exts
-     
+
     def canWriteMultipage(self, formatName):
         formats = []
         for c in self.itervalues():
-            for n,f in c.formats().iteritems():            
+            for n,f in c.formats().iteritems():
                 if f.multipage is True:
                     formats.append[n]
         return formatName.lower() in formats
@@ -157,7 +157,7 @@ class ConverterDict(OrderedDict):
                 elif writable is True and f.writing is not True:
                     ok = False
                 elif multipage is True and f.multipage is not True:
-                    ok = False                    
+                    ok = False
                 if ok is True:
                     fs.append(n)
         return fs
@@ -378,11 +378,11 @@ class FormatsService(object):
     def action(self, image_id, data_token, arg):
         xml = etree.Element ('resource', uri='/images_service/formats')
         for nc,c in self.server.converters.iteritems():
-            format = etree.SubElement (xml, 'format', name=nc, version=c.version['full'])            
+            format = etree.SubElement (xml, 'format', name=nc, version=c.version['full'])
             for f in c.formats().itervalues():
                 codec = etree.SubElement(format, 'codec', name=f.name )
                 etree.SubElement(codec, 'tag', name='fullname', value=f.fullname )
-                etree.SubElement(codec, 'tag', name='extensions', value=','.join(f.ext) )   
+                etree.SubElement(codec, 'tag', name='extensions', value=','.join(f.ext) )
                 etree.SubElement(codec, 'tag', name='support', value=f.supportToString() )
                 etree.SubElement(codec, 'tag', name='samples_per_pixel_minmax', value='%s,%s'%f.samples_per_pixel_min_max )
                 etree.SubElement(codec, 'tag', name='bits_per_sample_minmax',   value='%s,%s'%f.bits_per_sample_min_max )
@@ -404,7 +404,7 @@ class InfoService(object):
 
         info = self.server.getImageInfo(ident=image_id)
         info['filename'] = self.server.originalFileName(image_id)
-        
+
         image = etree.Element ('resource', uri='%s/%s'%(self.server.url,  image_id))
         for k, v in info.iteritems():
             tag = etree.SubElement(image, 'tag', name='%s'%k, value='%s'%v )
@@ -544,7 +544,7 @@ class LocalPathService(object):
         if os.path.exists(ifile):
             res = etree.Element ('resource', type='file', src='file:%s'%(ifile))
         else:
-            res = etree.Element ('resource')            
+            res = etree.Element ('resource')
 
         return data_token.setXml( etree.tostring(res) )
 
@@ -571,7 +571,7 @@ class SliceService(object):
     def dryrun(self, image_id, data_token, arg):
         # parse arguments
         vs = [ [misc.safeint(i, 0) for i in vs.split('-', 1)] for vs in arg.split(',')]
-        for v in vs: 
+        for v in vs:
             if len(v)<2: v.append(0)
         for v in range(len(vs)-4):
             vs.append([0,0])
@@ -615,7 +615,7 @@ class SliceService(object):
 
         # parse arguments
         vs = [ [misc.safeint(i, 0) for i in vs.split('-', 1)] for vs in arg.split(',')]
-        for v in vs: 
+        for v in vs:
             if len(v)<2: v.append(0)
         for v in range(len(vs)-4):
             vs.append([0,0])
@@ -664,7 +664,7 @@ class SliceService(object):
                     break
             if r is None:
                 log.error('Slice: could not generate slice for [%s]', ifname)
-                abort(415, 'Could not generate slice' )            
+                abort(415, 'Could not generate slice' )
 
         try:
             new_w=x2-x1
@@ -715,7 +715,7 @@ class FormatService(object):
 
         name_extra = '' if len(args)<=0 else '.%s'%'.'.join(args)
         ext = self.server.converters.defaultExtension(fmt)
-        
+
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.%s%s.%s'%(name_extra, fmt, ext) )
         if stream:
@@ -1926,40 +1926,40 @@ class RotateService(object):
 ################################################################################
 # Specific Image Services
 ################################################################################
-# 
+#
 # class BioFormatsService(object):
 #     '''Provides BioFormats conversion to OME-TIFF
 #        ex: bioformats'''
-# 
+#
 #     def __init__(self, server):
 #         self.server = server
-# 
+#
 #     def __str__(self):
 #         return 'bioformats: returns an image in OME-TIFF format'
-# 
+#
 #     def dryrun(self, image_id, data_token, arg):
 #         ifile = self.server.getInFileName(data_token, image_id)
 #         ofile = self.server.getOutFileName(ifile, image_id, '.ome.tif')
 #         return data_token.setImage(fname=ofile, format=default_format)
-# 
+#
 #     def resultFilename(self, image_id, data_token):
 #         ifile = self.server.getInFileName( data_token, image_id )
 #         ofile = self.server.getOutFileName( ifile, image_id, '.ome.tif' )
 #         return ofile
-# 
+#
 #     def action(self, image_id, data_token, arg):
-# 
+#
 #         if not bioformats.installed(): return data_token
 #         ifile = self.server.getInFileName( data_token, image_id )
 #         ofile = self.server.getOutFileName( ifile, image_id, '.ome.tif' )
-# 
+#
 #         bfinfo = None
 #         if not os.path.exists(ofile):
 #             log.debug('BioFormats: %s to %s'%(ifile, ofile))
 #             try:
 #                 original = self.server.originalFileName(image_id)
 #                 bioformats.convert( ifile, ofile, original )
-# 
+#
 #                 if os.path.exists(ofile) and imgcnv.supported(ofile):
 #                     orig_info = bioformats.info(ifile, original)
 #                     bfinfo = imgcnv.info(ofile)
@@ -1967,13 +1967,13 @@ class RotateService(object):
 #                         if 'format' in orig_info: bfinfo['format'] = orig_info['format']
 #                     bfinfo['converted_file'] = ofile
 #                     self.server.setImageInfo( id=image_id, info=bfinfo )
-# 
+#
 #             except:
 #                 log.error('Error running BioFormats: %s'%sys.exc_info()[0])
-# 
+#
 #         if not os.path.exists(ofile) or not imgcnv.supported(ofile):
 #             return data_token
-# 
+#
 #         if bfinfo is None:
 #             bfinfo = self.server.getImageInfo(ident=image_id)
 #         data_token.dims = bfinfo
@@ -2273,7 +2273,7 @@ class ImageServer(object):
         self.workdir = work_dir
         self.url = "/image_service"
 
-        self.services = { 
+        self.services = {
             'services'     : ServicesService(self),
             'formats'      : FormatsService(self),
             'info'         : InfoService(self),
@@ -2315,33 +2315,33 @@ class ImageServer(object):
         }
 
         self.converters = ConverterDict([
-            ('imgcnv',     ConverterImgcnv()), 
+            ('imgcnv',     ConverterImgcnv()),
             ('imaris',     ConverterImaris()),
             ('bioformats', ConverterBioformats())
-        ]) 
-        
+        ])
+
         # image convert is special, we can't proceed without it
         if not self.converters['imgcnv'].get_installed():
-            raise Exception('imgcnv is required but not installed')                            
+            raise Exception('imgcnv is required but not installed')
         if not self.converters['imgcnv'].ensure_version(needed_versions['imgcnv']):
-            raise Exception('imgcnv needs update! Has: %s Needs: %s'%(self.converters['imgcnv'].version['full'], needed_versions['imgcnv']))            
-        
+            raise Exception('imgcnv needs update! Has: %s Needs: %s'%(self.converters['imgcnv'].version['full'], needed_versions['imgcnv']))
+
         # test all the supported command line decoders and remove missing
         missing = []
         for n,c in self.converters.iteritems():
             if not c.get_installed():
                 log.debug('%s is not installed, skipping support...', n)
-                missing.append(n)                  
+                missing.append(n)
             elif not c.ensure_version(needed_versions[n]):
                 log.warning('%s needs update! Has: %s Needs: %s', n, c.version['full'], needed_versions[n])
-                missing.append(n)                
+                missing.append(n)
         for m in missing:
             self.converters.pop(m)
-            
-        log.debug('Available converters: %s', self.converters)
+
+        log.debug('Available converters: %s', str(self.converters))
         self.writable_formats = self.converters.formats(readable=False, writable=True, multipage=False)
-       
-       
+
+
         img_threads = config.get ('bisque.image_service.imgcnv.omp_num_threads', None)
         if img_threads is not None:
             log.info ("Setting OMP_NUM_THREADS = %s", img_threads)
@@ -2430,7 +2430,7 @@ class ImageServer(object):
         else:
             if not os.path.exists(filename):
                 return {}
-            
+
             # If file info is not cached, get it and cache!
             for c in self.converters.itervalues():
                 info = c.info(filename)
@@ -2440,7 +2440,7 @@ class ImageServer(object):
 #             # try imgcnv
 #             if imgcnv.supported(filename):
 #                 info = imgcnv.info(filename)
-# 
+#
 #             # if not decoded try bioformats
 #             if 'image_num_x' not in info and ident is not None:
 #                 original = self.originalFileName(ident)
@@ -2486,7 +2486,7 @@ class ImageServer(object):
             return r
         # if the conversion failed, convert input to OME-TIFF using other converts
         for n,c in self.converters.iteritems():
-            if n=='imgcnv': 
+            if n=='imgcnv':
                 continue
             ometiff = self.getOutFileName( ifnm, image_id, '.ome.tif' )
             if not os.path.exists(ometiff):
@@ -2495,7 +2495,7 @@ class ImageServer(object):
                 r = ometiff
             if r is not None and os.path.exists(ometiff):
                 return self.converters['imgcnv'].convert( ometiff, ofnm, fmt=fmt, extra=extra)
-    
+
     def setImageInfo(self, id=None, data_token=None, info=None, filename=None):
         if info is None: return
         if not 'image_num_t' in info: info['image_num_t'] = 1
@@ -2602,7 +2602,7 @@ class ImageServer(object):
                         break
                 localpath = os.path.join(os.path.realpath(self.workdir), data_token.data)
                 #localpath = os.path.realpath(data_token.data)
-                log.debug('Dryrun result: [%s] [%s]', localpath, data_token)
+                log.debug('Dryrun result: [%s] [%s]', localpath, str(data_token))
                 if os.path.exists(localpath) and data_token.isFile():
                     log.debug('Returning pre-cached result: %s', data_token.data)
                     with Locks(data_token.data) as l:
@@ -2647,7 +2647,7 @@ class ImageServer(object):
             if (action.lower() == 'filename'):
                 data_token.outFileName = args
                 break
-        
+
         log.debug ('FINISHED query: %s', query)
         return data_token
 

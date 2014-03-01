@@ -12,7 +12,9 @@ from bq.util.paths import config_path
 from bq.util.bisquik2db import bisquik2db
 
 import transaction
+import logging
 
+log = logging.getLogger('bq.boostrap')
 
 def bootstrap(command, conf, vars):
     """Place any commands to setup bq here"""
@@ -27,6 +29,7 @@ def bootstrap(command, conf, vars):
     registry.register(request, Request.blank('/bootstrap'))
     request.identity = {}
 
+    log.info('BEGIN boostrap')
     try:
         initial_mex = ModuleExecution()
         initial_mex.mex = initial_mex
@@ -100,6 +103,7 @@ def bootstrap(command, conf, vars):
             transaction.commit()
 
 
+
     except IntegrityError:
         print 'Warning, there was a problem adding your system object, it may have already been added:'
         #import traceback
@@ -107,6 +111,7 @@ def bootstrap(command, conf, vars):
         transaction.abort()
         print 'Continuing with bootstrapping...'
 
+    log.info('END boostrap')
 
 
     # <websetup.bootstrap.after.auth>
