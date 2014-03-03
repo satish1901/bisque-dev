@@ -526,6 +526,7 @@ Ext.define('Bisque.Resource.Image.Page', {
             itemId: 'main_view_2d',
             resource : this.resource,
             toolbar : this.toolbar,
+            main : this,
             parameters : {
                 hide_create_gobs_menu: true,
                 blockforsaves: false,
@@ -677,6 +678,7 @@ Ext.define('Bisque.Resource.Image.Page', {
 
         var resTab = {
             xtype: 'tabpanel',
+            itemId: 'tabs',
             title : 'Metadata',
             deferredRender: true,
             region : 'east',
