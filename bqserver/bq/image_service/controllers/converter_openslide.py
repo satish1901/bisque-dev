@@ -33,6 +33,12 @@ from .converter_base import ConverterBase, Format
 from .converter_imgcnv import ConverterImgcnv
 from .locks import Locks
 
+try:
+    import openslide
+    from openslide import deepzoom
+except (ImportError, WindowsError):
+    pass
+
 import logging
 log = logging.getLogger('bq.image_service.converter_openslide')
 
@@ -112,7 +118,6 @@ class ConverterOpenSlide(ConverterBase):
         if not self.installed:
             return False
         log.debug('Supported for: %s', ifnm )
-        import openslide
         s = openslide.OpenSlide.detect_format(ifnm)
         return (s is not None)
 
@@ -127,7 +132,6 @@ class ConverterOpenSlide(ConverterBase):
         log.debug('Info for: %s', ifnm )
         if not os.path.exists(ifnm):
             return {}
-        import openslide
         try:
             slide = openslide.OpenSlide(ifnm)
         except (openslide.OpenSlideUnsupportedFormatError, openslide.OpenSlideError):
@@ -162,7 +166,6 @@ class ConverterOpenSlide(ConverterBase):
             return {}
         log.debug('Meta for: %s', ifnm )
         with Locks (ifnm):
-            import openslide
             try:
                 slide = openslide.OpenSlide(ifnm)
             except (openslide.OpenSlideUnsupportedFormatError, openslide.OpenSlideError):
@@ -216,7 +219,6 @@ class ConverterOpenSlide(ConverterBase):
         '''converts input filename into output thumbnail'''
         log.debug('Thumbnail: %s %s %s for [%s]', width, height, series, ifnm)
         with Locks (ifnm, ofnm):
-            import openslide
             try:
                 slide = openslide.OpenSlide(ifnm)
             except (openslide.OpenSlideUnsupportedFormatError, openslide.OpenSlideError):
@@ -240,16 +242,10 @@ class ConverterOpenSlide(ConverterBase):
         y  = misc.safeint(y, 0)
         sz = misc.safeint(sz, 0)
         with Locks (ifnm, ofnm):
-            import openslide
-            from openslide import deepzoom
             try:
                 slide = openslide.OpenSlide(ifnm)
             except (openslide.OpenSlideUnsupportedFormatError, openslide.OpenSlideError):
                 return None
-            # dima: only levels stored within the image will produce valid output, recompose higher levels
-            #img = slide.read_region((x*sz,y*sz), level, (sz, sz))
-            #from PIL import Image
-            #img = img.resize((sz,sz), Image.ANTIALIAS)
             dz = deepzoom.DeepZoomGenerator(slide, tile_size=sz, overlap=0)
             img = dz.get_tile(dz.level_count-level-1, (x,y))
             img.save(ofnm, 'TIFF', compression='LZW')
