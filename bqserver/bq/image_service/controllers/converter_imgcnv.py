@@ -292,6 +292,37 @@ class ConverterImgcnv(ConverterBase):
 
         return cls.run(ifnm, ofnm, command )
 
+    #######################################
+    # Special methods
+    #######################################
+
+    def writeHistogram(self, channels, ofnm):
+        '''writes Histogram in libbioimage format'''
+        log.debug('Writing histogram into: %s', ofnm )
+        
+        import struct
+        with open(ofnm, 'wb') as f:
+            f.write(struct.pack('<cccc', 'B', 'I', 'M', '1')) # header
+            f.write(struct.pack('<cccc', 'I', 'H', 'S', '1')) # spec
+            f.write(struct.pack('<L', channels)) # number of histograms
+            # write histograms
+            for c in range(channels):
+                f.write(struct.pack('<cccc', 'B', 'I', 'M', '1')) # header
+                f.write(struct.pack('<cccc', 'H', 'S', 'T', '1')) # spec
+                
+                # write bim::HistogramInternal 
+                f.write(struct.pack('<H', 8)) # uint16 data_bpp; // bits per pixel
+                f.write(struct.pack('<H', 1)) # uint16 data_fmt; // signed, unsigned, float
+                f.write(struct.pack('<d', 0.0)) # double shift;
+                f.write(struct.pack('<d', 1.0)) # double scale;
+                f.write(struct.pack('<d', 0.0)) # double value_min;
+                f.write(struct.pack('<d', 255.0)) # double value_max;
+                
+                # write data
+                f.write(struct.pack('<L', 256)) # histogram size, here 256
+                for i in range(256):
+                    f.write(struct.pack('<Q', 100)) # histogram data, here each color has freq of 100
+
 
 ConverterImgcnv.init()
 

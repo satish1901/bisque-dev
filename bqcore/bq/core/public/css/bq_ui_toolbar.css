@@ -44,7 +44,7 @@
 /*******************************************************************/
 
 .loginmenu {
-    padding: 5px 10px 5px 10px;   
+    padding: 5px 10px 5px 10px;
 }
 
 .loginmenu .x-panel-body-default {
@@ -74,6 +74,22 @@
 
 .toolbar-menu .icon-user {
     background-image: url('/images/toolbar/user.png');
+}
+
+/******************************************************************
+ Images
+******************************************************************/
+
+.toolbar-menu .image-about-bisque {
+    width: 200px;
+    height: 56px;
+    margin: 10px 10px 10px 10px;
+}
+
+.toolbar-main .image-logo-bisque {
+    width: 90px;
+    height: 25px;
+    margin: 0px 10px 0px 5px;
 }
 
 /******************************************************************

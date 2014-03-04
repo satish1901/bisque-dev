@@ -1466,7 +1466,7 @@ Ext.define('Bisque.GObjectTagger', {
             counts    : 'gobject-number',
             perimeter : 'gobject-length',
             area      : 'gobject-area',
-        }
+        };
         var url    = [];
         var titles = [];
         var r=undefined;
