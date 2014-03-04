@@ -42,7 +42,7 @@ from . import misc
 from .converter_imgcnv import ConverterImgcnv
 from .converter_imaris import ConverterImaris
 from .converter_bioformats import ConverterBioformats
-
+from .converter_openslide import ConverterOpenSlide
 
 log = logging.getLogger('bq.image_service.server')
 
@@ -50,7 +50,8 @@ default_format = 'bigtiff'
 
 needed_versions = { 'imgcnv'     : '1.65.0',
                     'imaris'     : '7.6.5',
-                    'bioformats' : '4.3.0'
+                    'openslide'  : '0.5.1', # python wrapper version
+                    'bioformats' : '4.3.0',
                   }
 
 K = 1024
@@ -401,7 +402,6 @@ class InfoService(object):
         return data_token.setXml('')
 
     def action(self, image_id, data_token, arg):
-
         info = self.server.getImageInfo(ident=image_id)
         info['filename'] = self.server.originalFileName(image_id)
         
@@ -455,7 +455,7 @@ class MetaService(object):
             if os.path.exists(ifile):
                 for c in self.server.converters.itervalues():
                     meta = c.meta(ifile)
-                    if len(meta)>0:
+                    if meta is not None and len(meta)>0:
                         break
 
             # overwrite certain fields
@@ -1408,13 +1408,13 @@ class TileService(object):
     def action(self, image_id, data_token, arg):
         '''arg = l,tnx,tny,tsz'''
 
-        l=0; tnx=0; tny=0; tsz=512;
+        level=0; tnx=0; tny=0; tsz=512;
         vs = arg.split(',', 4)
-        if len(vs)>0 and vs[0].isdigit():   l = int(vs[0])
+        if len(vs)>0 and vs[0].isdigit(): level = int(vs[0])
         if len(vs)>1 and vs[1].isdigit(): tnx = int(vs[1])
         if len(vs)>2 and vs[2].isdigit(): tny = int(vs[2])
         if len(vs)>3 and vs[3].isdigit(): tsz = int(vs[3])
-        log.debug( 'Tile: l:%d, tnx:%d, tny:%d, tsz:%d' % (l, tnx, tny, tsz) )
+        log.debug( 'Tile: l:%d, tnx:%d, tny:%d, tsz:%d' % (level, tnx, tny, tsz) )
 
         # if input image is smaller than the requested tile size
         try:
@@ -1430,13 +1430,25 @@ class TileService(object):
         ifname   = self.server.getInFileName( data_token, image_id )
         base_name = self.server.getOutFileName(ifname, image_id, '' )
         base_name = self.server.getOutFileName(os.path.join('%s.tiles'%(base_name), '%s'%tsz), image_id, '' )
-        ofname    = '%s_%.3d_%.3d_%.3d.tif' % (base_name, l, tnx, tny)
+        ofname    = '%s_%.3d_%.3d_%.3d.tif' % (base_name, level, tnx, tny)
         hist_name = '%s_histogram'%(base_name)
         hstl_name = hist_name
 
+        # tile the openslide supported file, special case here
+        processed = False
+        if data_token.dims is not None and data_token.dims.get('converter', '')=='openslide':
+            processed = True
+            with Locks(ifname, hstl_name) as l:
+                # need to generate a histogram file uniformely distributed from 0..255
+                if not os.path.exists(hstl_name):
+                    channels=3
+                    self.server.converters['imgcnv'].writeHistogram(channels, hstl_name)
+            if not os.path.exists(ofname):
+                self.server.converters['openslide'].tile(ifname, ofname, level, tnx, tny, tsz)
+            
         # tile the image
         tiles_name = '%s.tif' % (base_name)
-        if not os.path.exists(hist_name):
+        if not processed and not os.path.exists(hist_name):
             with Locks(ifname, hstl_name) as l:
                 if l.locked:
                     params = ['-tile', str(tsz), '-ohst', hist_name]
@@ -2315,9 +2327,10 @@ class ImageServer(object):
         }
 
         self.converters = ConverterDict([
+            ('openslide',  ConverterOpenSlide()),
             ('imgcnv',     ConverterImgcnv()), 
             ('imaris',     ConverterImaris()),
-            ('bioformats', ConverterBioformats())
+            ('bioformats', ConverterBioformats()),
         ]) 
         
         # image convert is special, we can't proceed without it
@@ -2430,31 +2443,13 @@ class ImageServer(object):
         else:
             if not os.path.exists(filename):
                 return {}
-            
+                        
             # If file info is not cached, get it and cache!
-            for c in self.converters.itervalues():
+            for n,c in self.converters.iteritems():
                 info = c.info(filename)
-                if len(info)>0:
+                if info is not None and len(info)>0:
+                    info['converter'] = n
                     break
-
-#             # try imgcnv
-#             if imgcnv.supported(filename):
-#                 info = imgcnv.info(filename)
-# 
-#             # if not decoded try bioformats
-#             if 'image_num_x' not in info and ident is not None:
-#                 original = self.originalFileName(ident)
-#                 if data_token is None: data_token = ProcessToken()
-#                 data_token.setImage(filename, format=default_format)
-#                 testfile = self.services['bioformats'].resultFilename(ident, data_token)
-#                 if os.path.exists(testfile):
-#                     info = self.getImageInfo(filename=testfile)
-#                     data_token.setImage(testfile, format='tiff')
-#                     data_token.dims = info
-#                 elif bioformats.supported(filename, original):
-#                     data_token = self.services['bioformats'].action (ident, data_token, '')
-#                     if not data_token.dims is None:
-#                         info = data_token.dims
 
             if not 'filesize' in info:
                 fsb = os.path.getsize(filename)
@@ -2504,18 +2499,6 @@ class ImageServer(object):
         if not 'image_num_p' in info: info['image_num_p'] = info['image_num_t'] * info['image_num_z']
         if 'image_num_x' in info:
             self.setFileInfo( id=id, filename=filename, **info )
-
-    #def fileIsTIFF(self, filename=None, data_token=None):
-    #    info = None
-    #    if not data_token is None and not data_token.dims is None:
-    #        info = data_token.dims
-    #    else:
-    #        info = self.getImageInfo(filename=filename)
-    #
-    #    if info is None: return False
-    #    if not 'format' in info: return False
-    #    if info['format'].lower() == default_format: return True
-    #    return False
 
     def initialWorkPath(self, image_id):
         image = data_service.get_resource(image_id)

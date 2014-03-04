@@ -1,0 +1,13 @@
+Windows:
+#pip install pil
+install pre-packaged PIL with JPEG support
+pip install openslide-python
+copy libopenslide dlls to bqenv\Scripts\
+
+Linux:
+apt-get install python-openslide
+yum install openslide-python
+
+MacOSX:
+port install openslide
+brew install openslide
