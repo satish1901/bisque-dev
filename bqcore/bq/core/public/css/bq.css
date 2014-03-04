@@ -4,7 +4,7 @@ body {
 	font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 1.0em;
 	border:0.0em;
 	margin:0.0em;*/
-    font-size: 14px;	
+    font-size: 14px;
     /*background-color: white !important;*/
     background-color: #DFE9F5 !important;
 }
@@ -19,26 +19,30 @@ a:hover {
 a.black { color: #000000; font-weight:normal; }
 
 .content {
-  margin: 20px;
-  font-size: 14px;      
+  padding: 20px;
+  font-size: 14px;
+}
+
+.page {
+  /*background-color: #ffffff;*/
 }
 
 h1 {
-  font-family: Georgia, serif;    
-  font-weight: normal;  
-  font-size: 40px;    
+  font-family: Georgia, serif;
+  font-weight: normal;
+  font-size: 40px;
 }
 
 h2 {
-  font-family: Georgia, serif;    
-  font-weight: normal;  
-  font-size: 28px;    
+  font-family: Georgia, serif;
+  font-weight: normal;
+  font-size: 28px;
 }
 
 h3 {
-  font-family: Georgia, serif;  
-  font-weight: normal;  
-  font-size: 22px;  
+  font-family: Georgia, serif;
+  font-weight: normal;
+  font-size: 22px;
 }
 
 
