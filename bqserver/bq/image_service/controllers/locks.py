@@ -28,15 +28,15 @@ MAX_SLEEP  = 8
 
 class Locks (object):
     log = logging.getLogger('bq.image_service.locks')
-    
+
     def debug(self, msg):
         """Log detailed info about the locking of threads and files"""
         if self.log.isEnabledFor(logging.DEBUG):
             self.log.debug ("LOCKING: %s (%s,%s): %s" %
                             (threading.currentThread().getName(),
                              self.ifnm, self.ofnm, msg))
-        
-    
+
+
     def __init__(self, ifnm, ofnm=None):
         self.wf = self.rf = None
         self.ifnm = ifnm
@@ -45,7 +45,7 @@ class Locks (object):
         self.thread_r = self.thread_w = False
 
     def acquire (self, ifnm=None, ofnm=None):
-        
+
         self.debug ("acquire0 thread-r")
         if ifnm:
             rw.acquire_read(ifnm)
@@ -93,7 +93,7 @@ class Locks (object):
                 self.release()
                 return
 
-            
+
         self.locked = True
 
 
@@ -101,7 +101,14 @@ class Locks (object):
         if self.wf:
             self.debug ("RELEASE WF")
             self.wf.unlock()
+            stats = os.fstat (self.wf.fileno())
             self.wf.close()
+            if stats.st_size == 0:
+                self.debug ('release: unlink 0 length file %s' % stats)
+                try:
+                    os.unlink (self.wf.name)
+                except OSError:
+                    pass
             self.wf = None
 
         if self.ofnm and self.thread_w:
@@ -119,7 +126,7 @@ class Locks (object):
             self.debug ("release thread-r")
             rw.release_read(self.ifnm)
             self.thread_r = False
-                    
+
         self.locked = False
 
     def __enter__(self):
