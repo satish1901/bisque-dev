@@ -130,32 +130,34 @@ class ConverterOpenSlide(ConverterBase):
         if not self.installed:
             return {}
         log.debug('Info for: %s', ifnm )
-        if not os.path.exists(ifnm):
-            return {}
-        try:
-            slide = openslide.OpenSlide(ifnm)
-        except (openslide.OpenSlideUnsupportedFormatError, openslide.OpenSlideError):
-            return {}
-        info = {
-            'format': slide.properties[openslide.PROPERTY_NAME_VENDOR],
-            'image_num_series': 0,
-            'image_num_x': slide.dimensions[0],
-            'image_num_y': slide.dimensions[1],
-            'image_num_z': 1,
-            'image_num_t': 1,
-            'image_num_c': 3,
-            'image_num_l': slide.level_count,
-            'image_pixel_format': 'unsigned integer', 
-            'image_pixel_depth': 8,
-            'pixel_resolution_x': slide.properties[openslide.PROPERTY_NAME_MPP_X],
-            'pixel_resolution_y': slide.properties[openslide.PROPERTY_NAME_MPP_Y],
-            'pixel_resolution_z': 0,
-            'pixel_resolution_unit_x': 'microns', 
-            'pixel_resolution_unit_y': 'microns', 
-            'pixel_resolution_unit_z': 'microns'
-        }
-        slide.close()
-        return info
+        with Locks(ifnm):        
+            if not os.path.exists(ifnm):
+                return {}
+            try:
+                slide = openslide.OpenSlide(ifnm)
+            except (openslide.OpenSlideUnsupportedFormatError, openslide.OpenSlideError):
+                return {}
+            info = {
+                'format': slide.properties[openslide.PROPERTY_NAME_VENDOR],
+                'image_num_series': 0,
+                'image_num_x': slide.dimensions[0],
+                'image_num_y': slide.dimensions[1],
+                'image_num_z': 1,
+                'image_num_t': 1,
+                'image_num_c': 3,
+                'image_num_l': slide.level_count,
+                'image_pixel_format': 'unsigned integer', 
+                'image_pixel_depth': 8,
+                'pixel_resolution_x': slide.properties[openslide.PROPERTY_NAME_MPP_X],
+                'pixel_resolution_y': slide.properties[openslide.PROPERTY_NAME_MPP_Y],
+                'pixel_resolution_z': 0,
+                'pixel_resolution_unit_x': 'microns', 
+                'pixel_resolution_unit_y': 'microns', 
+                'pixel_resolution_unit_z': 'microns'
+            }
+            slide.close()
+            return info
+        return {}
 
     #######################################
     # Meta - returns a dict with all the metadata fields
@@ -226,7 +228,8 @@ class ConverterOpenSlide(ConverterBase):
             img = slide.get_thumbnail((width, height))
             img.save(ofnm, 'JPEG')
             slide.close()
-        return ofnm
+            return ofnm
+        return None
 
     @classmethod
     def slice(cls, ifnm, ofnm, z, t, roi=None, series=0, **kw):
@@ -250,6 +253,7 @@ class ConverterOpenSlide(ConverterBase):
             img = dz.get_tile(dz.level_count-level-1, (x,y))
             img.save(ofnm, 'TIFF', compression='LZW')
             slide.close()
-        return ofnm        
+            return ofnm
+        return None
 
 ConverterOpenSlide.init()
