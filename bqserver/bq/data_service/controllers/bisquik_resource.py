@@ -443,12 +443,14 @@ class BisquikResource(Resource):
         '''POST /ds/images/1/  : append the document to the resource
         Append value of the resource based on the args
         '''
+
+        view=kw.pop('view', None)
         log.info ('APPEND %s %s' % (request.url, xml))
         resource = self.check_access(resource, RESOURCE_EDIT)
         #parent = self.load_parent()
         resource = bisquik2db (doc=xml, parent=resource) #, resource = resource)
         log.info ('APPEND/update: ==> %s ' % (resource))
-        return self.resource_output (resource)
+        return self.resource_output (resource, view=view)
 
     @expose(content_type="text/xml")
     #@identity.require(identity.not_anonymous())

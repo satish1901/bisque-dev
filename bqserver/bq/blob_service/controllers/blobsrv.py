@@ -295,6 +295,9 @@ class StoreServer(TGController):
         """
         log.info("Insert %s into store", path)
         store, path = self.find_matching_store (path)
+        if store is None:
+            return
+
         parent = store
         while path:
             el = path.pop(0)
