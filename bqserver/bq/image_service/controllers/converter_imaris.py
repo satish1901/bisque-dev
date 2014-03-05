@@ -298,14 +298,13 @@ class ConverterImaris(ConverterBase):
     def convertToOmeTiff(cls, ifnm, ofnm, series=0, extra=[]):
         '''converts input filename into output in OME-TIFF format'''
         log.debug('convertToOmeTiff: [%s] -> [%s] for series %s with [%s]', ifnm, ofnm, series, extra)
-        # bug: produces multi-file output, will be fixed later in imarisconvert
         return cls.run(ifnm, ofnm, ['-i', ifnm, '-o', ofnm, '-of', 'OmeTiff', '-ii', '%s'%series] )
 
     @classmethod
     def thumbnail(cls, ifnm, ofnm, width, height, series=0, **kw):
         '''converts input filename into output thumbnail'''
         log.debug('Thumbnail: %s %s %s for [%s]', width, height, series, ifnm)
-        command = ['-i', ifnm, '-t', ofnm, '-of', 'jpeg', '-ii', '%s'%series]
+        command = ['-i', ifnm, '-t', ofnm, '-tf', 'jpeg', '-ii', '%s'%series]
         command.extend (['-tl', '%s,%s'%(width, height)])
         return cls.run(ifnm, ofnm, command)
 
@@ -318,11 +317,11 @@ class ConverterImaris(ConverterBase):
         x1,x2,y1,y2 = roi
         #info = kw['info']
         #fmt = kw.get('format', 'bigtiff')
-        fmt = 'OmeTiff'
+        fmt = 'tiff' #fmt = 'OmeTiff'
         ometiff = kw['intermediate']
 
         if z1>z2 and z2==0 and t1>t2 and t2==0 and x1==0 and x2==0 and y1==0 and y2==0:
-            return cls.run(ifnm, ofnm, ['-i', ifnm, '-t', ofnm, '-of', fmt, '-ii', str(series), '-tm', 'Slice', '-tz', str(z1-1), '-th', str(t1-1), '-tl', '100000,100000'] )
+            return cls.run(ifnm, ofnm, ['-i', ifnm, '-t', ofnm, '-tf', fmt, '-ii', str(series), '-tm', 'Slice', '-tz', str(z1-1), '-th', str(t1-1)])#, '-tl', '100000,100000'] )
         else:
             # create an intermediate OME-TIFF
             if not os.path.exists(ometiff):
