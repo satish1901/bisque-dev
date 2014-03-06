@@ -4,7 +4,7 @@ import pkg_resources
 from lxml import etree
 from pylons.i18n import ugettext as _, lazy_ugettext as l_
 from tg import expose, flash, require
-from repoze.what import predicates 
+from repoze.what import predicates
 from bq.core.service import ServiceController
 from bq.dataset_service import model
 
@@ -27,8 +27,8 @@ class DatasetOp(object):
     def action(self, member, **kw):
         'Null Op'
         return None
-        
-    
+
+
 class IdemOp(DatasetOp):
     'An idempotent operation'
     def action(self, member, **kw):
@@ -40,7 +40,7 @@ class ModuleOp(DatasetOp):
     'Run a module on each member'
     def action(self, member, module, **kw):
         log.debug ('module action %s' % member)
-        member = member.text 
+        member = member.text
         mex = module_service.execute (module_uri = module,
                                 image_url = member,
                                 **kw)
@@ -49,7 +49,7 @@ class ModuleOp(DatasetOp):
 class PermissionOp(DatasetOp):
     'change permission on member'
     def action(self, member, permission):
-        member = member.text 
+        member = member.text
         log.debug('permission action %s' % member)
         resource = data_service.get_resource(member, view='short')
         log.debug('GOT %s' % etree.tostring (resource))
@@ -67,7 +67,7 @@ class DeleteOp(DatasetOp):
 class TagEditOp (DatasetOp):
     'Add/Remove/Modify Tags on each member'
     def action(self, member, action, tagdoc, **kw):
-        """Modify the tags of the member 
+        """Modify the tags of the member
         @param member: the memeber of the dataset
         @param action: a string :append, delete, edit_value, edit_name, change_name
         @poarag tagdoc
@@ -123,14 +123,14 @@ class ShareOp (DatasetOp):
 
 
 #---------------------------------------------------------------------------------------
-# controller 
+# controller
 #---------------------------------------------------------------------------------------
 
 class DatasetServer(ServiceController):
     """Server side actions on datasets
     """
     service_type = "dataset_service"
-    
+
     operations = {
         'idem' : IdemOp,
         'module' : ModuleOp,
@@ -139,7 +139,7 @@ class DatasetServer(ServiceController):
         'tagedit' : TagEditOp,
         'share' : ShareOp,
         }
-    
+
     def __init__(self, server_url):
         super(DatasetServer, self).__init__(server_url)
 
@@ -162,11 +162,11 @@ class DatasetServer(ServiceController):
 
         #mex = module_service.begin_internal_mex ("dataset_iterate")
 
-        log.debug ("%s on  members %s" % (op,  members))
+        log.debug ("%s on  members %s" , str( op ),  [ x.text for x in members ] )
         results = etree.Element('resource', uri=self.baseuri + 'iterate')
         for val in members:
             result =  op(member = val, **kw)
-            log.debug ("acting on %s -> %s" % (val, result ))
+            log.debug ("%s on %s -> %s" , operation, val.text, result )
             if result is not None:
                 results.append (result)
 
@@ -175,7 +175,7 @@ class DatasetServer(ServiceController):
         return etree.tostring(results)
 
     #############################################
-    # visible 
+    # visible
     @expose('bq.dataset_service.templates.datasets')
     @require(predicates.not_anonymous())
     def index(self, **kw):
@@ -215,12 +215,12 @@ class DatasetServer(ServiceController):
     @expose(content_type="text/xml")
     @require(predicates.not_anonymous())
     def delete(self, duri, **kw):
-        # remove all member 
+        # remove all member
         dataset = data_service.get_resource(duri, view='full')
         members = dataset.xpath('./value')
         data_service.del_resource(dataset)
         return self.iterate (operation='delete', dataset=dataset, members=members, **kw)
-        
+
     @expose(content_type="text/xml")
     @require(predicates.not_anonymous())
     def permission(self, duri, **kw):
