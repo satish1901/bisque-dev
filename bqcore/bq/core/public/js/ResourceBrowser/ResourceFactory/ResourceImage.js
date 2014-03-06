@@ -529,6 +529,7 @@ Ext.define('Bisque.Resource.Image.Page', {
             main : this,
             parameters : {
                 hide_create_gobs_menu: true,
+                hide_file_name_osd: true,
                 blockforsaves: false,
                 gobjectCreated : Ext.bind(function(gob) {
                     this.gobjectTagger.appendGObject(gob);

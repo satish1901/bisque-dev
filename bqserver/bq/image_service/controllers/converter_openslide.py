@@ -3,7 +3,7 @@
 # Center for BioImage Informatics, University California, Santa Barbara
 #
 # This converter will not support the full API for now since it would be really inefficient
-# trying to create ome-tiff out of pyramidal tiled images, instead it will only provide
+# trying to create ome-tiff out of pyramidal tiled images, instead it will only provide 
 # tile and thumbnail access, this will work perfectly for the UI and module access
 # if tiles are used, better integration will be looked at later if need arises
 #
@@ -19,7 +19,6 @@ __revision__  = "$Rev$"
 __date__      = "$Date$"
 __copyright__ = "Center for BioImage Informatics, University California, Santa Barbara"
 
-import os
 import os.path
 from lxml import etree
 import re
@@ -74,7 +73,7 @@ class ConverterOpenSlide(ConverterBase):
             import openslide
         except (ImportError, WindowsError):
             return None
-
+        
         v = {}
         v['full'] = openslide.__version__
 
@@ -131,7 +130,7 @@ class ConverterOpenSlide(ConverterBase):
         if not self.installed:
             return {}
         log.debug('Info for: %s', ifnm )
-        with Locks(ifnm):
+        with Locks(ifnm):        
             if not os.path.exists(ifnm):
                 return {}
             try:
@@ -147,13 +146,13 @@ class ConverterOpenSlide(ConverterBase):
                 'image_num_t': 1,
                 'image_num_c': 3,
                 'image_num_l': slide.level_count,
-                'image_pixel_format': 'unsigned integer',
+                'image_pixel_format': 'unsigned integer', 
                 'image_pixel_depth': 8,
                 'pixel_resolution_x': slide.properties[openslide.PROPERTY_NAME_MPP_X],
                 'pixel_resolution_y': slide.properties[openslide.PROPERTY_NAME_MPP_Y],
                 'pixel_resolution_z': 0,
-                'pixel_resolution_unit_x': 'microns',
-                'pixel_resolution_unit_y': 'microns',
+                'pixel_resolution_unit_x': 'microns', 
+                'pixel_resolution_unit_y': 'microns', 
                 'pixel_resolution_unit_z': 'microns'
             }
             slide.close()
@@ -187,8 +186,8 @@ class ConverterOpenSlide(ConverterBase):
                 'pixel_resolution_x': slide.properties[openslide.PROPERTY_NAME_MPP_X],
                 'pixel_resolution_y': slide.properties[openslide.PROPERTY_NAME_MPP_Y],
                 'pixel_resolution_z': 0,
-                'pixel_resolution_unit_x': 'microns',
-                'pixel_resolution_unit_y': 'microns',
+                'pixel_resolution_unit_x': 'microns', 
+                'pixel_resolution_unit_y': 'microns', 
                 'pixel_resolution_unit_z': 'microns',
                 'magnification': slide.properties[openslide.PROPERTY_NAME_OBJECTIVE_POWER],
                 'channel_0_name': 'red',

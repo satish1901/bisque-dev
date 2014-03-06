@@ -367,8 +367,8 @@ ImgEdit.prototype.test_save_permission = function (uri) {
 
 ImgEdit.prototype.store_new_gobject = function (gob) {
     this.display_gob_info(gob);
-    if (this.viewer.parameters.gobjectCreated)
-        this.viewer.parameters.gobjectCreated(gob);
+    //if (this.viewer.parameters.gobjectCreated)
+    //    this.viewer.parameters.gobjectCreated(gob);
 
     // save to DB
     if (!this.test_save_permission(this.viewer.image.uri + '/gobject'))
@@ -390,10 +390,14 @@ ImgEdit.prototype.store_new_gobject = function (gob) {
     gob.save_reload(
         uri,
         function(resource) {
-            // show the newly returned object from the DB
+            // show the newly returned object from the DB, here gob and resource point to the same things
             me.visit_render.visitall(gob, [me.viewer.current_view]);
             // remove all shapes from old children because save_reload replaces gobjects vector
             me.visit_render.visitall(bck, [me.viewer.current_view, false]);
+
+            if (me.viewer.parameters.gobjectCreated)
+                me.viewer.parameters.gobjectCreated(gob);
+
             pars.ondone();
         },
         pars.onerror

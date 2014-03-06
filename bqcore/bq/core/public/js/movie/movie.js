@@ -526,7 +526,7 @@ PlayerDisplay.prototype.createMenu = function () {
 
     this.createChannelMap( );
 
-    var enhancement = this.player.phys && this.player.phys.pixel_depth===8 ? this.def.enhancement_8bit : this.def.enhancement;
+    var enhancement = this.player.phys && parseInt(this.player.phys.pixel_depth)===8 ? this.def.enhancement_8bit : this.def.enhancement;
     this.menu.add({
         xtype: 'displayfield',
         fieldLabel: 'View',

@@ -583,7 +583,8 @@ Ext.define('BQ.upload.Item', {
             if (this.resource.uri) {
                 // image inserted correctly
                 this.state = BQ.upload.Item.STATES.DONE;
-                var s = 'Uploaded <a href="'+view_resource+encodeURIComponent(this.resource.uri)+'">'+this.file.name+'</a>'+timing;
+                //var s = 'Uploaded <a href="'+view_resource+encodeURIComponent(this.resource.uri)+'">'+this.file.name+'</a>'+timing;
+                var s = 'Uploaded <a href="'+view_resource+this.resource.uri+'">'+this.file.name+'</a>'+timing;
                 this.fileName.setText(s);
 
                 var s = '<h4>'+ render_resource(this.resource) +'</h4>';

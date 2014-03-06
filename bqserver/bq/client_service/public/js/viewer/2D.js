@@ -2049,14 +2049,16 @@ Pnt.prototype.init = function(svgNode) {
     }
 };
 
-Pnt.prototype.enhance = function(mode) {
-    if (mode) {
-        this.svgNode.setAttributeNS(null, 'stroke', 'yellow');
-        this.svgNode.setAttributeNS(null, "fill", 'black');
+Pnt.prototype.enhance = function(visible) {
+    if (visible) {
+        this.svgNode.setAttributeNS(null, 'stroke', 'black');
+        this.svgNode.setAttributeNS(null, "fill", 'yellow');
+        this.svgNode.setAttributeNS(null, "stroke-width", '3');
     } else {
         //this.svgNode.setAttributeNS(null, 'fill-opacity', mode?1.0:0.7);
         this.svgNode.setAttributeNS(null, 'stroke', 'black');
         this.svgNode.setAttributeNS(null, "fill", 'orangered');
+        this.svgNode.setAttributeNS(null, "stroke-width", '1');
     }
 };
 
