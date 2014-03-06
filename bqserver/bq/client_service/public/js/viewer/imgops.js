@@ -95,7 +95,7 @@ ImgOperations.prototype.createMenu = function () {
     this.createChannelMap( );
 
     var phys = this.viewer.imagephys;
-    var enhancement = phys && phys.pixel_depth===8 ? this.default_enhancement_8bit : this.default_enhancement;
+    var enhancement = phys && parseInt(phys.pixel_depth)===8 ? this.default_enhancement_8bit : this.default_enhancement;
 
     this.menu.add({
         xtype: 'displayfield',

@@ -33,18 +33,24 @@ ImgInfoBar.prototype.newImage = function () {
 };
 
 ImgInfoBar.prototype.updateImage = function () {
+    // update inforamtion string
+    var viewer = this.viewer;
+    var view = viewer.current_view;
+    var dim = view.imagedim;
+    var imgphys = viewer.imagephys;
+
     // create info bar
     if (!this.infobar) {
-      var surf = this.viewer.viewer_controls_surface ? this.viewer.viewer_controls_surface : this.parentdiv;
+      var surf = viewer.viewer_controls_surface ? viewer.viewer_controls_surface : this.parentdiv;
       this.infobar = document.createElement('span');
       this.infobar.className = 'info '+this.mobile_cls;
       surf.appendChild(this.infobar);
     }
 
     // create name bar
-    if (!this.namebar) {
+    if (!this.namebar && !(viewer.parameters && viewer.parameters.hide_file_name_osd) ) {
       var surf = this.parentdiv;
-      if (this.viewer.viewer_controls_surface) surf = this.viewer.viewer_controls_surface;
+      if (viewer.viewer_controls_surface) surf = viewer.viewer_controls_surface;
       this.namebar = document.createElement('a');
       this.namebar.className = 'info name '+this.mobile_cls;
       surf.appendChild(this.namebar);
@@ -53,17 +59,12 @@ ImgInfoBar.prototype.updateImage = function () {
     // create position bar
     if (!this.posbar) {
       var surf = this.parentdiv;
-      if (this.viewer.viewer_controls_surface) surf = this.viewer.viewer_controls_surface;
+      if (viewer.viewer_controls_surface) surf = viewer.viewer_controls_surface;
       this.posbar = document.createElement('a');
       this.posbar.className = 'info position '+this.mobile_cls;
       //this.posbar.innerText = '[AAAxAAAA]';
       surf.appendChild(this.posbar);
     }
-
-    // update inforamtion string
-    var view = this.viewer.current_view;
-    var dim = view.imagedim;
-    var imgphys = this.viewer.imagephys;
 
     if (this.infobar) {
       var s = 'Image: '+dim.x+'x'+dim.y;
@@ -76,8 +77,8 @@ ImgInfoBar.prototype.updateImage = function () {
     }
 
     if (this.namebar) {
-      this.namebar.innerHTML = this.viewer.image.name;
-      this.namebar.href = '/client_service/view?resource='+this.viewer.image.uri;
+      this.namebar.innerHTML = viewer.image.name;
+      this.namebar.href = '/client_service/view?resource='+viewer.image.uri;
     }
 };
 

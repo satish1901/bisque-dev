@@ -1373,6 +1373,7 @@ Ext.define('Bisque.GObjectTagger', {
         for (var i=0; (r=sel[i]); i++) {
             gobs.push(r.raw);
         }
+        this.tree.getSelectionModel().deselectAll();
         this.fireEvent('delete_gobjects', gobs);
     },
 
