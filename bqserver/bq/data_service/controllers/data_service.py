@@ -292,9 +292,13 @@ class DataServerController(ServiceController):
         elif isinstance (resource, etree._Element):
             uri = resource.get ('uri')
         resource = load_uri (uri)
-        auth = resource_auth(resource, parent=None, action=action, newauth=auth, notify=notify)
+        log.debug ("auth_resourch on %s", str(resource))
         response = etree.Element ('resource')
-        db2tree(auth, parent=response, view=None, baseuri=self.url)
+        if resource is not None:
+            auth = resource_auth(resource, parent=None, action=action, newauth=auth, notify=notify)
+            db2tree(auth, parent=response, view=None, baseuri=self.url)
+        else:
+            log.warn ('AUTH: could not load resource %s', uri)
         return response
 
 

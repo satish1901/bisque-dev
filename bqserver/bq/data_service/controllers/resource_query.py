@@ -256,15 +256,25 @@ def p_term_tagvaltype(p):
                 valexpr = func.lower(tag.c.resource_value)
                 valexpr = op(valexpr ,  v)
 
-        tagfilter = and_(tagfilter, valexpr)
+        if tagfilter is not None:
+            tagfilter = and_(tagfilter, valexpr)
+        else:
+            tagfilter = valexpr
 
     if type_:
         ty = type_.lower()
         tyexpr = (func.lower(tag.c.resource_user_type) == ty)
-        tagfilter = and_(tagfilter, tyexpr)
+        if tagfilter is not None:
+            tagfilter = and_(tagfilter, tyexpr)
+        else:
+            tagfilter = tyexpr
 
-    p[0] = exists([tag.c.id]).where(
-        and_(tagfilter, tag.c.document_id == taggable.c.id))
+    if tagfilter is not None:
+        tagfilter = and_(tagfilter, tag.c.document_id == taggable.c.id)
+    else:
+        tagfilter = (tag.c.document_id == taggable.c.id)
+
+    p[0] = exists([tag.c.id]).where(tagfilter)
 
     log.debug ("SQL %s" % p[0])
 
@@ -791,6 +801,7 @@ def resource_permission(resource, action = RESOURCE_READ, user_id=None, with_pub
 
 def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth=None,notify=True):
     """View or edit authoization records associated the resource"""
+    log.debug ("resource_auth %s %s", str(resource), str(newauth))
 
     q = DBSession.query (TaggableAcl).filter_by (taggable_id = resource.id)
     current_user = get_user()

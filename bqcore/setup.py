@@ -32,7 +32,7 @@ setup(
         "Genshi",
         "zope.sqlalchemy >= 0.4",
         "repoze.tm2 >= 1.0a5",
-        "SQLAlchemy>=0.7.6, <0.7.9",
+        "SQLAlchemy",
         "sqlalchemy-migrate",
         "Alembic",
         "repoze.what-quickstart",

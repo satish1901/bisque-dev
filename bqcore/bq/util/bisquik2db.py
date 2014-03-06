@@ -704,8 +704,10 @@ def load_uri (uri):
             resource = DBSession.query(Taggable).filter_by(resource_uniq = ida).first()
         else:
             name, dbcls = dbtype_from_tag(name)
-            log.debug("loading uri name/type (%s/%s)(%s) " %(name,  str(dbcls), ida))
-            resource = DBSession.query(dbcls).get (int (ida))
+            log.debug("loading %s -> name/type (%s/%s)(%s) " %(uri, name,  str(dbcls), ida))
+            #resource = DBSession.query(dbcls).get (int (ida))
+            resource = DBSession.query(dbcls).filter (dbcls.id == int(ida)).first()
+    log.debug ("loaded %s", str(resource))
     return resource
 
 
