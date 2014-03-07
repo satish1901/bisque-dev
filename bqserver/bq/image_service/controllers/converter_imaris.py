@@ -315,14 +315,20 @@ class ConverterImaris(ConverterBase):
         z1,z2 = z
         t1,t2 = t
         x1,x2,y1,y2 = roi
-        #info = kw['info']
-        #fmt = kw.get('format', 'bigtiff')
-        fmt = 'tiff' #fmt = 'OmeTiff'
         ometiff = kw['intermediate']
 
         if z1>z2 and z2==0 and t1>t2 and t2==0 and x1==0 and x2==0 and y1==0 and y2==0:
             # converting one slice z or t, does not support ome-tiff, tiff or jpeg produces an RGBA image
-            return cls.run(ifnm, ofnm, ['-i', ifnm, '-t', ofnm, '-tf', fmt, '-ii', str(series), '-tm', 'Slice', '-tz', str(z1-1), '-th', str(t1-1)])#, '-tl', '100000,100000'] )
+            #return cls.run(ifnm, ofnm, ['-i', ifnm, '-t', ofnm, '-tf', fmt, '-ii', str(series), '-tm', 'Slice', '-tz', str(z1-1), '-th', str(t1-1)])
+            r = cls.run(ifnm, ofnm, ['-i', ifnm, '-t', ofnm, '-tf', 'ometiff', '-ii', str(series), '-tz', str(z1-1), '-th', str(t1-1)])
+            if r is None:
+                return None
+            # imaris convert appends .tif extension to the file
+            if not os.path.exists(ofnm) and os.path.exists(ofnm+'.tif'):
+                os.rename(ofnm+'.tif', ofnm)
+            elif not os.path.exists(ofnm) and os.path.exists(ofnm+'.ome.tif'):
+                os.rename(ofnm+'.ome.tif', ofnm)
+            return ofnm
         else:
             # create an intermediate OME-TIFF
             if not os.path.exists(ometiff):
