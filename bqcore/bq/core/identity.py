@@ -153,9 +153,16 @@ def add_credentials(headers):
     pass
 
 
-def set_admin_mode (v=True):
-    """add or remove admin permissions. """
-    if v:
+def set_admin_mode (groups=None):
+    """add or remove admin permissions.
+
+    on add return previous group permission.
+    to restome previous setting, call with groups
+
+    :param groups: None to set, False to remove, a set of groups to restore
+    :return a set of previous groups
+    """
+    if groups is None:
         #user_admin = get_admin()
         #current.set_current_user (user_admin)
         credentials = request.environ.setdefault('repoze.what.credentials', {})
@@ -164,12 +171,16 @@ def set_admin_mode (v=True):
         credset.add ('admins')
         credentials['groups'] = tuple (credset)
         return prevset
-    else:
+    elif groups is False:
         credentials = request.environ.setdefault('repoze.what.credentials', {})
         credset = set (credentials.get ('groups') or [])
         if 'admins' in credset:
             credset.remove ('admins')
         credentials['groups'] = tuple (credset)
+    else:
+        credentials = request.environ.setdefault('repoze.what.credentials', {})
+        credentials['groups'] = tuple (groups)
+
 
 
 def mex_authorization_token():

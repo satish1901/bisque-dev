@@ -396,7 +396,7 @@ class group(object):
 
 
 class stores(object):
-    desc = 'Generate stores resoure'
+    desc = 'Generate stores resource by visiting image/file resouces'
 
     def __init__(self, version):
         parser = optparse.OptionParser(
@@ -414,14 +414,30 @@ class stores(object):
         #print engine
         load_config(self.options.config)
 
+
+        store_name = None
+        if len(self.args) > 0:
+            store_name = self.args[0]
+
+        nested = self.create_trees(store_name)
+        self.create_store(nested)
+
+
+    def create_trees(self, name=None):
+        """Create a nested dictionary representing all the element
+        found in the store
+
+        { 'local' : { 'D1'  : { 'name' : Resource } }}
+
+        """
         from bq.blob_service.controllers.blobsrv import load_stores
         from bq.data_service.model.tag_model import Taggable, DBSession
         from bq.util.dotnested import parse_nested
         from sqlalchemy import or_
-        import pprint
-
 
         stores = load_stores()
+        self.stores = stores
+
         toplevel = DBSession.query(Taggable).filter(
             Taggable.resource_parent_id == None,
             or_(Taggable.resource_type == 'image',
@@ -440,47 +456,56 @@ class stores(object):
         stores_resource = {}
         for r in toplevel:
             if  r.value is None:
-                print "BADVAL", r.name, r.value
+                print "BADVAL", r.resource_type, r.resource_uniq,  r.name, r.value
                 continue
             store = match_store (r.value)
+            # If only dealing with  store 'name' then skip others
             if store is None:
-                print "NOSTORE", r.name, r.value
+                print "NOSTORE", r.resource_type, r.resource_uniq,  r.name, r.value
                 continue
+
+            if name is not None and name != store.name:
+                continue
+
             if r.value.startswith (store.top):
                 path = r.value[len(store.top):]
             else:
                 path = r.value
 
+            # For each store, make a path string for each loaded resource
             el = stores_resource.setdefault (store.name, {})
             el[path] = r
-            print path
+            #print path
 
-
+        # We parse the paths into a set of nested dicts .
         nested = {}
         for k,p in stores_resource.items():
             nested[k] = parse_nested(p, sep = '/')
-        print "NESTED"
-        print pprint.pprint(nested)
+        return  nested
 
 
-        #import pickle
-        #with open('stores.pck', 'w') as f:
-        #    pickle.dump(nested, f)
+    def create_store (self, nested):
+        """ Use the dictionary to save/create a store resource"""
 
         from lxml import etree
-
         def visit_level(root, d):
             count = 0
             for k,v in d.items():
                 if isinstance (v, dict):
-                    subroot = etree.SubElement (root, 'dir', name = k)
+                    subroot = etree.SubElement (root, 'dir', name = k, permission='published')
                     visit_level(subroot, v)
                 else:
                     xv = etree.SubElement (root, 'link', name=(v.resource_name or 'filename%s' %count), value = str(v.resource_uniq))
                     count += 1
 
         for store, paths in nested.items():
-            root = etree.Element('resource', resource_type='store', name=store, value = stores[store].top)
+            root = etree.Element('resource', resource_type='store', name=store, value = self.stores[store].top, permission='published')
             visit_level (root, paths)
-            with open('tree_%s.xml' % store, 'w') as w:
-                w.write(etree.tostring(root, pretty_print=True))
+            self.save_store(store, root)
+
+    def save_store (self, store, root):
+        "Save the store to location"
+        from lxml import etree
+
+        with open('tree_%s.xml' % store, 'w') as w:
+            w.write(etree.tostring(root, pretty_print=True))

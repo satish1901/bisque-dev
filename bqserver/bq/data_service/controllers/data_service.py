@@ -80,7 +80,7 @@ from .resource_query import resource_query, resource_count, resource_load, resou
 from .resource_query import RESOURCE_READ, RESOURCE_EDIT
 from .resource import HierarchicalCache
 from .formats import find_formatter
-from .doc_resource import XMLDocumentResource
+#from .doc_resource import XMLDocumentResource
 cachedir = config.get ('bisque.data_service.server_cache', data_path('server_cache'))
 
 
@@ -89,7 +89,7 @@ log = logging.getLogger("bq.data_service")
 class DataServerController(ServiceController):
     service_type = "data_service"
 
-    doc = XMLDocumentResource ()
+    #doc = XMLDocumentResource ()
 
     def __init__(self, url = None):
         super(DataServerController, self).__init__(url)

@@ -228,7 +228,7 @@ class StoreServer(TGController):
         """
         view = kw.pop('view', 'full')
 
-        q = data_service.query('store', name=store_name, view='full')
+        q = data_service.query('store', name=store_name, view='full', wpublic='1')
         if len(q) != 1:
             log.error ('Multiple named stores')
             return None
@@ -236,14 +236,14 @@ class StoreServer(TGController):
         log.debug ('ZOOM %s', q.get ('uri'))
         while path:
             el= path.pop(0)
-            q = data_service.query(parent=q, name=el, view='full')
+            q = data_service.query(parent=q, name=el, view='full', wpublic='1')
             if len(q) != 1:
                 log.error ('multiple names (%s) in store level %s', el, q.get('uri'))
                 return None
             q = q[0]
         if kw:
             # might be limitin result
-            q = data_service.get_resource(q, view='full', **kw)
+            q = data_service.get_resource(q, view='full', wpublic=1, **kw)
 
         return q
 
@@ -316,16 +316,19 @@ class StoreServer(TGController):
         while len(path)>1:
             nm = path.pop(0)
             if root is None:
-                resource = root = etree.Element ('dir', name = nm)
+                resource = root = etree.Element ('dir', name = nm, permission='published')
             else:
                 resource = etree.SubElement (resource, 'dir', name=nm)
         # The last element might be dir or a link
         if len(path)==1:
             nm = path.pop(0)
             if root is None:
-                resource = root = etree.Element ('link' if resource_uniq else 'dir', name = nm)
+                resource = root = etree.Element ('link' if resource_uniq else 'dir',
+                                                 name = nm,
+                                                 permission='published')
             else:
-                resource = etree.SubElement (resource, 'link' if resource_uniq else 'dir', name=nm)
+                resource = etree.SubElement (resource, 'link' if resource_uniq else 'dir',
+                                             name=nm, permission='published')
 
             if resource_uniq:
                 resource.set ('value', resource_uniq)
@@ -337,19 +340,22 @@ class StoreServer(TGController):
 
 
     def delete_path (self, path, **kw):
-        """ Delete an store element
+        """ Delete an store element and all below it
 
         :param path: A string (url) of the path
         :type  path: str
         """
 
 
+
+
+
     @expose(content_type='text/xml')
-    def append(self, path=None, **kw):
+    def append(self, path=None,  resource_uniq=None,  **kw):
         if path is None:
             path = tg.request.body
 
-        self.insert_path (path)
+        self.insert_path (path, resource_uniq)
 
 
 
@@ -372,7 +378,7 @@ class BlobServer(RestController, ServiceMixin):
     '''Manage a set of blob files'''
     service_type = "blob_service"
 
-    store_srv = StoreServer ()
+    store = StoreServer ()
 
     def __init__(self, url ):
         ServiceMixin.__init__(self, url)
@@ -556,7 +562,7 @@ class BlobServer(RestController, ServiceMixin):
                 else:
                     resource =  self.store_reference(resource, resource.get('value') )
                 #smokesignal.emit(SIG_NEWBLOB, self.store, path=resource.get('value'), resource_uniq=resource.get ('resource_uniq'))
-                self.store_srv.insert_path( path=resource.get('value'), resource_uniq=resource.get ('resource_uniq'))
+                self.store.insert_path( path=resource.get('value'), resource_uniq=resource.get ('resource_uniq'))
                 return resource
             except DuplicateFile, e:
                 log.warn("Duplicate file. reseting uniq")
