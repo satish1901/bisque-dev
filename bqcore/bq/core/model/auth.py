@@ -29,7 +29,7 @@ from sqlalchemy import event
 
 from bq.core.model import DeclarativeBase, metadata, DBSession
 
-__all__ = ['User', 'Group', 'Permission']
+__all__ = ['User', 'Group', 'Permission', 'HashPassword', 'FreeTextPassword']
 
 
 #{ Association tables
@@ -56,35 +56,45 @@ user_group_table = Table('user_group', metadata,
         onupdate="CASCADE", ondelete="CASCADE"), primary_key=True)
 )
 
-def hashed_password(password):
-    if isinstance(password, unicode):
-        password_8bit = password.encode('UTF-8')
-    else:
-        password_8bit = password
+class HashPassword():
+    @staticmethod
+    def create_password(password):
+        if isinstance(password, unicode):
+            password_8bit = password.encode('UTF-8')
+        else:
+            password_8bit = password
 
-    salt = sha1()
-    salt.update(os.urandom(60))
-    hash = sha1()
-    hash.update(password_8bit + salt.hexdigest())
-    hashed_password = salt.hexdigest() + hash.hexdigest()
+        salt = sha1()
+        salt.update(os.urandom(60))
+        hash = sha1()
+        hash.update(password_8bit + salt.hexdigest())
+        hashed_password = salt.hexdigest() + hash.hexdigest()
+        return hashed_password
 
-    # Make sure the hashed password is an UTF-8 object at the end of the
-    # process because SQLAlchemy _wants_ a unicode object for Unicode
-    # columns
-    if not isinstance(hashed_password, unicode):
-        hashed_password = hashed_password.decode('UTF-8')
+    @staticmethod
+    def check_password(passval, password):
+        hash = sha1()
+        if isinstance(password, unicode):
+            password = password.encode('utf-8')
+        hash.update(password + str(passval[:40]))
+        return passval[40:] == hash.hexdigest()
 
-    return hashed_password
-def freetext_password(password):
-    return password
+class FreeTextPassword ():
+    @staticmethod
+    def create_password(password):
+        return password
+    @staticmethod
+    def check_password(passval, password):
+        return passval == password
+
 
 password_map = {
-    'hashed' : hashed_password,
-    'freetext' : freetext_password,
+    'hashed' : HashPassword,
+    'freetext' : FreeTextPassword,
     }
 
 password_type = config.get ('bisque.password', 'freetext')
-password_fun  = password_map[password_type]
+password_cls  = password_map.get(password_type, FreeTextPassword)
 
 
 #{ The auth* model itself
@@ -181,16 +191,12 @@ class User(DeclarativeBase):
 
     def _set_password(self, password):
         """Hash ``password`` on the fly and store its hashed version."""
-        # Make sure password is a str because we cannot hash unicode objects
-        #if isinstance(password, unicode):
-        #    password = password.encode('utf-8')
-        #salt = sha1()
-        #salt.update(os.urandom(60))
-        #hash = sha1()
-        #hash.update(password + salt.hexdigest())
-        #password = salt.hexdigest() + hash.hexdigest()
-        # Make sure the hashed password is a unicode object at the end of the
-        # process because SQLAlchemy _wants_ unicode objects for Unicode cols
+
+        password = password_cls.create_password (password)
+        # Make sure the hashed password is an UTF-8 object at the end of the
+        # process because SQLAlchemy _wants_ a unicode object for Unicode
+        # columns
+
         if not isinstance(password, unicode):
             password = password.decode('utf-8')
         self._password = password
@@ -216,12 +222,11 @@ class User(DeclarativeBase):
         :rtype: bool
 
         """
-        #hash = sha1()
         if isinstance(password, unicode):
             password = password.encode('utf-8')
-        #hash.update(password + str(self.password[:40]))
-        #return self.password[40:] == hash.hexdigest()
-        return self.password == password
+
+        return password_cls.check_password(self.password, password)
+
 
 
 def create_user(mapper, connection, target, ):

@@ -119,8 +119,9 @@ BQFactory.make = function(ty, uri, name, value) {
 };
 
 BQFactory.makeShortCopy = function(resource) {
-    var ctor = BQFactory.ctormap[resource.resource_type];
-    var o = new ctor();
+    //var ctor = BQFactory.ctormap[resource.resource_type];
+    //var o = new ctor();
+    var o = BQFactory.make (resource.resource_type);
     var a = undefined;
     for (var i=0; (a=resource.xmlfields[i]); i++)
         o[a] = resource[a];
