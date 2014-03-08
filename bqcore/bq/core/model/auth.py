@@ -93,8 +93,6 @@ password_map = {
     'freetext' : FreeTextPassword,
     }
 
-password_type = config.get ('bisque.password', 'freetext')
-password_cls  = password_map.get(password_type, FreeTextPassword)
 
 
 #{ The auth* model itself
@@ -192,6 +190,9 @@ class User(DeclarativeBase):
     def _set_password(self, password):
         """Hash ``password`` on the fly and store its hashed version."""
 
+        password_type = config.get ('bisque.login.password', 'freetext')
+        password_cls  = password_map.get(password_type, FreeTextPassword)
+
         password = password_cls.create_password (password)
         # Make sure the hashed password is an UTF-8 object at the end of the
         # process because SQLAlchemy _wants_ a unicode object for Unicode
@@ -222,6 +223,10 @@ class User(DeclarativeBase):
         :rtype: bool
 
         """
+
+        password_type = config.get ('bisque.login.password', 'freetext')
+        password_cls  = password_map.get(password_type, FreeTextPassword)
+
         if isinstance(password, unicode):
             password = password.encode('utf-8')
 
