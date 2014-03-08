@@ -509,3 +509,59 @@ class stores(object):
 
         with open('tree_%s.xml' % store, 'w') as w:
             w.write(etree.tostring(root, pretty_print=True))
+
+
+
+class password(object):
+    desc = 'Password utilities'
+
+    def __init__(self, version):
+        parser = optparse.OptionParser(
+                    usage="%prog sql <sql>",
+                    version="%prog " + version)
+        parser.add_option('-c','--config', default="config/site.cfg")
+        parser.add_option('-f','--force', action="store_true", default=False)
+        options, args = parser.parse_args()
+
+        if len(args) > 0:
+            self.command = args.pop(0)
+
+        self.args = args
+        self.options = options
+        if self.command not in ('convert', 'set', 'list'):
+            parser.print_help()
+            return
+
+    def run(self):
+        import transaction
+        load_config(self.options.config)
+
+        from tg import config
+        print config.get ('bisque.login.password', 'freetext')
+
+
+        if self.command == 'set':
+            user_name, password = self.args
+            self.set_password (user_name, password)
+        elif self.command == 'list':
+            from bq.core.model.auth import User, DBSession
+            for user in DBSession.query(User):
+                print user.user_name, user.password
+        elif self.command == 'convert':
+            from bq.core.model.auth import User, DBSession
+            for user in DBSession.query(User):
+                if len(user.password)==80 and not self.options.force:
+                    print "Skipping user %s already  converted" % user.user_name
+                    continue
+                self.set_password (user.user_name, user.password)
+        transaction.commit()
+
+    def set_password(self, user_name, password):
+            from bq.core.model.auth import User, DBSession
+            user = DBSession.query(User).filter_by(user_name = user_name).first()
+            if user:
+                print "setting %s" % user.user_name
+                user.password = password
+            else:
+                print "cannot find user %s" % user_name
+
