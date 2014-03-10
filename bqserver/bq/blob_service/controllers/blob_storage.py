@@ -51,6 +51,7 @@ import logging
 import urlparse
 import string
 import shutil
+import datetime
 
 from tg import config
 from paste.deploy.converters import asbool
@@ -94,12 +95,16 @@ def formatPath (format_path, user, filename, uniq, **params):
     if uniq is None:
         uniq = make_short_uuid(filename)
 
+    filebase,fileext = os.path.splitext(os.path.basename(filename))
     dirhash = uniq[2]=='-' and uniq[3] or uniq[0]
     return string.Template(format_path).substitute(
         user=user,
+        date=datetime.datetime.now().strftime('%Y-%m-%d'),
         dirhash=dirhash,
         filehash=uniq,
-        filename=os.path.basename(filename), **params)
+        filename=os.path.basename(filename),
+        filebase=filebase,
+        fileext=fileext, **params)
 
 ###############################################
 #  BlobStorage

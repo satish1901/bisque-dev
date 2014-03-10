@@ -36,7 +36,7 @@ from .locks import Locks
 try:
     import openslide
     from openslide import deepzoom
-except (ImportError, OSError):
+except (ImportError, OSError, WindowsError):
     pass
 
 import logging
@@ -71,7 +71,7 @@ class ConverterOpenSlide(ConverterBase):
         '''returns the version of openslide python'''
         try:
             import openslide
-        except (ImportError, OSError):
+        except (ImportError, OSError, WindowsError):
             return None
 
         v = {}
