@@ -280,6 +280,7 @@ class StoreServer(TGController):
         store = data_service.query('store', name=best,view='full')
         if len(store) != 1:
             log.error ('multiple store found %s', best)
+            return None, None
         store = store[0]
 
         partial = new_path[len(stores[best].top):]

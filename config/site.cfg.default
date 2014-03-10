@@ -101,10 +101,10 @@ bisque.paths.root  =
 # bisque.blob_service.stores = irods1,s3,local
 bisque.blob_service.stores=local
 #bisque.blob_service.tmp_upload_dir = installationdir/data/tmp_upload_dir
-bisque.stores.local.path = file:$datadir/imagedir/$user/$dirhash/$filehash-$filename
+bisque.stores.local.path = file:$datadir/imagedir/$user/$date/$filebase.$filehash$fileext
 #bisque.stores.local.top= file:$datadir/imagedir
 # Example irods store
-#bisque.stores.irods1.path=irods://data.iplantcollaborative.org/iplant/home/$user/bisque_data/uploads/$dirhash/$filehash-$filename,
+#bisque.stores.irods1.path=irods://data.iplantcollaborative.org/iplant/home/$user/bisque_data/uploads/$date/$filebase.$filehash$fileext
 #bisque.stores.irods1.user=bisque
 #bisque.stores.irods1.password=<guess>
 #bisque.stores.irods1.readonly = true
