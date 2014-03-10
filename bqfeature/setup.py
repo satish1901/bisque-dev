@@ -17,10 +17,10 @@ setup(
                       "bqcore",
                       "numpy",
                       "mahotas",  # Feature
-                      "tables==3.0.0",  # Feature
-                      "numexpr==1.4.2", # Feature
+                      "tables",  # Feature
+                      "numexpr", # Feature
                       "cython",  # Feature
-                      #"opencv",  # Feature      
+                      #"opencv",  # Feature
                       # "importlib", # Feature, not needed for python 2.7
                       ],
     setup_requires=["PasteScript>=1.6.3"],
@@ -40,6 +40,6 @@ setup(
 
     entry_points="""
     [bisque.services]
-    features = bq.features.controllers.service
+      features = bq.features.controllers.service
     """,
 )
