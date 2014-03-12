@@ -873,26 +873,21 @@ SVGRenderer.prototype.label = function ( visitor, gob, viewstate, visibility) {
     if (visible && gob.visible) {
         if (gob.shape == null ) {
             var rect = document.createElementNS(svgns, "text");
-
             var innertext = document.createTextNode(label_text);
             rect.appendChild(innertext);
-
-            //rect.setAttributeNS(null, "width", "8");
-            //rect.setAttributeNS(null, "height", "8");
             rect.setAttributeNS(null, 'fill-opacity', 0.9);
             rect.setAttributeNS(null, "stroke", "black");
             rect.setAttributeNS(null, 'stroke-width', '0.5px');
             rect.setAttributeNS(null, 'stroke-opacity', 0.9);
             rect.setAttributeNS(null, 'font-size', '14px');
-            //rect.setAttributeNS(null, "display", "none");
             gob.shape = new Label(rect);
         }
 
 		// scale to size
         var p = viewstate.transformPoint (pnt.x, pnt.y);
         var rect = gob.shape.svgNode;
-		rect.setAttributeNS(null, "x", p.x -4);
-		rect.setAttributeNS(null, "y", p.y +4);
+		rect.setAttributeNS(null, "x", p.x);
+		rect.setAttributeNS(null, "y", p.y);
         if (gob.color_override)
             rect.setAttributeNS(null, "fill", '#'+gob.color_override);
         else
