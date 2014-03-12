@@ -2220,19 +2220,16 @@ Label.prototype.init = function(svgNode) {
         Label.superclass.init.call(this, svgNode);
         var x = parseFloat(svgNode.getAttributeNS(null, "x"));
         var y = parseFloat(svgNode.getAttributeNS(null, "y"));
-        var width = parseFloat(svgNode.getAttributeNS(null, "width"));
-        var height = parseFloat(svgNode.getAttributeNS(null, "height"));
-        this.p = new Handle(x + (width / 2.0), y + (height / 2.0), this);
+        if (!isNaN(x) && !isNaN(y))
+            this.p = new Handle(x, y, this);
     } else {
         throw new Error("Label.init: Invalid SVG Node: " + svgNode.localName);
     }
 };
 
 Label.prototype.enhance = function(visible) {
-    //this.svgNode.setAttributeNS(null, 'fill-opacity', visible?1.0:0.7);
-    this.svgNode.setAttributeNS(null, "stroke-width", visible ? '2' : '1');
-    this.svgNode.setAttributeNS(null, "stroke-opacity", visible ? 0.5 : 0.9);
     this.svgNode.setAttributeNS(null, "stroke", visible ? 'orangered' : 'black');
+    this.svgNode.setAttributeNS(null, "stroke-opacity", visible ? 0.9 : 0.5);
 };
 
 Label.prototype.unrealize = function() {
@@ -2251,8 +2248,8 @@ Label.prototype.realize = function() {
 Label.prototype.refresh = function() {
     var x = this.p.point.x;
     var y = this.p.point.y;
-    this.svgNode.setAttributeNS(null, "x", x - 3);
-    this.svgNode.setAttributeNS(null, "y", y - 3);
+    this.svgNode.setAttributeNS(null, "x", x);
+    this.svgNode.setAttributeNS(null, "y", y);
 };
 Label.prototype.registerHandles = function() {
     mouser.register(this.p);

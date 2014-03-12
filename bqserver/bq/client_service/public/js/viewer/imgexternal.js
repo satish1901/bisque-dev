@@ -7,6 +7,7 @@ function ImgExternal (viewer,name){
         xtype:'button',
         text: 'Export',
         iconCls: 'external',
+        needsAuth: false,
         scope: this,
         tooltip: 'Export current image to external applications',
         menu: {
@@ -47,6 +48,7 @@ function ImgExternal (viewer,name){
         xtype:'button',
         text: 'Operations',
         iconCls: 'converter',
+        needsAuth: false,
         scope: this,
         //tooltip: 'Export current image to external applications',
         menu: {
@@ -92,7 +94,6 @@ ImgExternal.prototype.newImage = function () {
 };
 
 ImgExternal.prototype.updateImage = function () {
-    
 };
 
 ImgExternal.prototype.launchBioView = function () {

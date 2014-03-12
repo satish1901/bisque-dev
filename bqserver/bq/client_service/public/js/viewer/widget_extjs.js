@@ -10,6 +10,7 @@
   Events:
       loaded     - event fired when the viewer is loaded
       changed    - event fired when the gobjects in the viewer have changed
+      loadedPhys - event fired when image physics is loaded
       working
       done
       error
@@ -111,6 +112,7 @@ Ext.define('BQ.viewer.Image', {
         this.parameters.onerror   = callback(this, 'onerror');
         this.parameters.onselect  = callback(this, 'onselect');
         this.parameters.onloaded  = callback(this, this.onloaded);
+        this.parameters.onphys    = callback(this, this.onphys);
         this.parameters.oneditcontrols = callback(this, this.oneditcontrols);
 
         var id = Ext.getVersion('core').isGreaterThan('4.2.0') ? this.getId()+'-innerCt' : this.getId();
@@ -127,6 +129,10 @@ Ext.define('BQ.viewer.Image', {
 
     onloaded : function() {
         this.setLoading(false);
+    },
+
+    onphys : function() {
+        this.fireEvent( 'loadedPhys', this, this.viewer.imagephys, this.viewer.imagedim );
     },
 
     onchanged : function(gobs) {
