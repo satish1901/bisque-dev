@@ -339,7 +339,6 @@ function ImgViewer (parentid, image_or_uri, parameters) {
 
     if (ImgViewer.pluginmap == null)
         ImgViewer.pluginmap = {
-            
             "default"     : DefaultImgPlugin,
             "movie"       : ImgMovie,
             "external"    : ImgExternal,
@@ -354,7 +353,6 @@ function ImgViewer (parentid, image_or_uri, parameters) {
             "ops"         : ImgOperations, // Ops should be after tiler
             "pixelcounter": ImgPixelCounter,
             "renderer"    : SVGRenderer,   // RENDERER MUST BE LAST
-            
         };
 
     var plugin_names = plugin_list.split(',');
@@ -634,13 +632,14 @@ ImgViewer.prototype.end_wait = function (o) {
 
 ImgViewer.prototype.newPhys = function (bqimagephys) {
     if (this.parameters.onloaded) this.parameters.onloaded();
-    this.imagephys = bqimagephys;
 
+    this.imagephys = bqimagephys;
     this.imagedim = new ImageDim (bqimagephys.x, bqimagephys.y, bqimagephys.z, bqimagephys.t, bqimagephys.ch);
 
     this.current_view = new Viewstate(imgview_min_width, imgview_min_width, 0, 0, 1.0);
     this.current_view.imagesrc = this.imagesrc;
     this.current_view.imagedim = this.imagedim.clone();
+    if (this.parameters.onphys) this.parameters.onphys();
 
     for (var i = 0; i < this.plugins.length; i++) {
         plugin = this.plugins[i];
