@@ -173,18 +173,18 @@ Ext.define('BQ.share.Panel', {
             autoLoad : false,
             autoSync : this.resource ? true : false,
             proxy : {
+                type: 'ajax',
+                url : this.url,
                 actionMethods: {
                     create : 'PUT',
                     read   : 'GET',
                     update : 'POST',
-                    destroy: 'POST'
+                    destroy: 'PUT'
                 },
                 limitParam : undefined,
                 pageParam: undefined,
                 startParam: undefined,
                 noCache: false,
-                type: 'ajax',
-                url : this.url,
                 reader : {
                     type :  'xml',
                     root :  'resource',
@@ -229,11 +229,11 @@ Ext.define('BQ.share.Panel', {
                 renderer: function(value, meta, record, row, col, store, view) {
                     if (me.users_xml)
                         return xpath(me.users_xml, '//user[@uri="'+value+'"]/@name');
-
+                    // can't read directly from the store used for combobox due to filtering applied by it
                     //me.store_users.clearFilter(true);
-                    var r = me.store_users.findRecord( 'uri', value );
-                    if (r && r.data)
-                        return r.data.username;
+                    //var r = me.store_users.findRecord( 'uri', value );
+                    //if (r && r.data)
+                    //    return r.data.username;
                     return '';
                 },
             }, {
@@ -244,11 +244,11 @@ Ext.define('BQ.share.Panel', {
                 renderer: function(value) {
                     if (me.users_xml)
                         return xpath(me.users_xml, '//user[@uri="'+value+'"]/tag[@name="display_name"]/@value');
-
+                    // can't read directly from the store used for combobox due to filtering applied by it
                     //me.store_users.clearFilter(true);
-                    var r = me.store_users.findRecord( 'uri', value );
-                    if (r && r.data)
-                        return r.data.name;
+                    //var r = me.store_users.findRecord( 'uri', value );
+                    //if (r && r.data)
+                    //    return r.data.name;
                     return '';
                 },
             }, {
@@ -260,11 +260,11 @@ Ext.define('BQ.share.Panel', {
                     if (value!=='') return value;
                     if (me.users_xml)
                         return xpath(me.users_xml, '//user[@uri="'+record.data.user+'"]/@value');
-
+                    // can't read directly from the store used for combobox due to filtering applied by it
                     //me.store_users.clearFilter(true);
-                    var r = me.store_users.findRecord( 'uri', record.data.user );
-                    if (r && r.data)
-                        return r.data.email;
+                    //var r = me.store_users.findRecord( 'uri', record.data.user );
+                    //if (r && r.data)
+                    //    return r.data.email;
                     return '';
                 },
             }, {
@@ -407,6 +407,12 @@ Ext.define('BQ.share.Panel', {
         r = this.store_users.findRecord( 'email', email );
         if (r && r.data)
             user = r.data.uri;
+
+        var self_user = BQSession.current_session && BQSession.current_session.user ? BQSession.current_session.user.uri : '';
+        if (user === self_user) {
+            BQ.ui.notification('You are trying to share with yourself, skipping...');
+            return;
+        }
 
         // Create a model instance
         var recs = this.store.add({
@@ -560,6 +566,7 @@ Ext.define('BQ.auth.writer.Xml', {
                 xml.push('<', root, '>');
         }
 
+        if (request.action !== "destroy") // destroy will only be fired when the list is empty
         for (; i < len; ++i) {
             item = data[i];
             xml.push('<', record);
@@ -603,7 +610,11 @@ Ext.define('BQ.share.Store', {
     },
 
     getRemovedRecords: function() {
-        return [];
+        // we have to set the removed list to fire the request with an empty document if everything is removed
+        if (this.data.items.length>0)
+            return [];
+        return this.removed;
     },
 
 });
+
