@@ -1688,15 +1688,15 @@ BQImagePhys.prototype.onloadIS = function (image) {
 
   //-------------------------------------------------------
   // image physical sizes
-  this.pixel_size_is[0] = hash['pixel_resolution_x'];
-  this.pixel_size_is[1] = hash['pixel_resolution_y'];
-  this.pixel_size_is[2] = hash['pixel_resolution_z'];
-  this.pixel_size_is[3] = hash['pixel_resolution_t'];
-  this.x  = hash['image_num_x'];
-  this.y  = hash['image_num_y'];
-  this.z  = hash['image_num_z'];
-  this.t  = hash['image_num_t'];
-  this.ch  = hash['image_num_c'];
+  this.pixel_size_is[0] = parseFloat(hash['pixel_resolution_x']);
+  this.pixel_size_is[1] = parseFloat(hash['pixel_resolution_y']);
+  this.pixel_size_is[2] = parseFloat(hash['pixel_resolution_z']);
+  this.pixel_size_is[3] = parseFloat(hash['pixel_resolution_t']);
+  this.x  = parseInt(hash['image_num_x']);
+  this.y  = parseInt(hash['image_num_y']);
+  this.z  = parseInt(hash['image_num_z']);
+  this.t  = parseInt(hash['image_num_t']);
+  this.ch  = parseInt(hash['image_num_c']);
 
   this.init();
 
