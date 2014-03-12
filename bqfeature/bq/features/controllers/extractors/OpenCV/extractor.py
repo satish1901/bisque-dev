@@ -685,14 +685,15 @@ class SURFc(SURF):
     
     
     @Feature.wrapper        
-    def calculate(self, uri):
+    def calculate(self, **resource):
         """ Append descriptors to SURF h5 table """
         #initalizing
         extended = 0
         HessianThresh = 400
         nOctaves = 3
         nOctaveLayers = 4
-
+        image_uri = resource['image']
+        
         with Feature.ImageImport(image_uri) as imgimp:
             im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
 
@@ -761,6 +762,8 @@ class FREAKc(Feature.Feature):
     @Feature.wrapper        
     def calculate(self, uri):
         """ Append descriptors to SIFT h5 table """
+        
+        image_uri = resource['image']
         
         with Feature.ImageImport(image_uri) as imgimp:
             im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)

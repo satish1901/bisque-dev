@@ -520,6 +520,8 @@ Ext.define('Bisque.Resource.Image.Page', {
         this.root = '';
         if (this.resource && this.resource.uri)
             this.root = this.resource.uri.replace(/\/data_service\/.*$/i, '');
+            
+        
 
         this.viewerContainer = Ext.create('BQ.viewer.Image', {
             region : 'center',
@@ -531,6 +533,7 @@ Ext.define('Bisque.Resource.Image.Page', {
                 hide_create_gobs_menu: true,
                 hide_file_name_osd: true,
                 blockforsaves: false,
+                main: this,
                 gobjectCreated : Ext.bind(function(gob) {
                     this.gobjectTagger.appendGObject(gob);
                 }, this),
@@ -734,7 +737,7 @@ Ext.define('Bisque.Resource.Image.Page', {
             },
         }, '-']);
         this.toolbar.doLayout();
-
+        
         this.setLoading(false);
     },
 
