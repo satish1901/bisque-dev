@@ -520,8 +520,6 @@ Ext.define('Bisque.Resource.Image.Page', {
         this.root = '';
         if (this.resource && this.resource.uri)
             this.root = this.resource.uri.replace(/\/data_service\/.*$/i, '');
-            
-        
 
         this.viewerContainer = Ext.create('BQ.viewer.Image', {
             region : 'center',
@@ -566,10 +564,11 @@ Ext.define('Bisque.Resource.Image.Page', {
                 edit_controls_activated : function(viewer) {
                     this.gobjectTagger.deselectGobCreation();
                 },
+                loadedPhys: this.onImagePhys,
                 working : this.onworking,
                 done    : this.ondone,
                 error   : this.onerror,
-                scope   : this
+                scope   : this,
             }
         });
 
@@ -708,6 +707,7 @@ Ext.define('Bisque.Resource.Image.Page', {
             xtype:'button',
             text: 'View: 2D',
             iconCls: 'view2d',
+            needsAuth: false,
             tooltip: 'Change the view for the current image',
             scope: this,
             menu: {
@@ -716,12 +716,14 @@ Ext.define('Bisque.Resource.Image.Page', {
                 },
                 items: [{
                     xtype  : 'menuitem',
+                    itemId : 'menu_view_2d',
                     text   : '2D',
                     iconCls: 'view2d',
                     handler: this.show2D,
                     tooltip: 'View current image in 2D tiled viewer',
                 },{
                     xtype  : 'menuitem',
+                    itemId : 'menu_view_3d',
                     text   : '3D',
                     disabled: true,
                     iconCls: 'view3d',
@@ -729,7 +731,9 @@ Ext.define('Bisque.Resource.Image.Page', {
                     handler: this.show3D,
                 }, {
                     xtype  : 'menuitem',
+                    itemId : 'menu_view_movie',
                     text   : 'movie',
+                    disabled: true,
                     iconCls: 'movie',
                     tooltip: 'View current image as a movie',
                     handler: this.showMovie,
@@ -737,7 +741,7 @@ Ext.define('Bisque.Resource.Image.Page', {
             },
         }, '-']);
         this.toolbar.doLayout();
-        
+
         this.setLoading(false);
     },
 
@@ -761,6 +765,13 @@ Ext.define('Bisque.Resource.Image.Page', {
     onerror : function(error) {
         if (this.gobjectTagger) this.gobjectTagger.setLoading(false);
         BQ.ui.error(error.message_short);
+    },
+
+    onImagePhys : function(viewer, phys, dims) {
+        if (dims.t>1 || dims.z>1)
+            this.toolbar.queryById('menu_view_movie').setDisabled( false );
+        //if (dims.z>1)
+        //    this.toolbar.queryById('menu_view_3d').setDisabled( false );
     },
 
     show2D : function() {
