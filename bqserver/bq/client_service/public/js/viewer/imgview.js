@@ -329,7 +329,7 @@ function ImgViewer (parentid, image_or_uri, parameters) {
     this.target.appendChild (this.imagediv);
     this.toolbar = this.parameters.toolbar;
 
-    var plugin_list = "default,slicer,tiles,ops,download,external,scalebar,progressbar,infobar,edit,renderer";
+    var plugin_list = "default,slicer,tiles,ops,pixelcounter,download,external,scalebar,progressbar,infobar,edit,renderer";
     if ('onlyedit' in this.parameters)
         plugin_list = "default,slicer,tiles,ops,scalebar,progressbar,infobar,edit,renderer";
     if ('simpleview' in this.parameters) {
@@ -339,6 +339,7 @@ function ImgViewer (parentid, image_or_uri, parameters) {
 
     if (ImgViewer.pluginmap == null)
         ImgViewer.pluginmap = {
+            
             "default"     : DefaultImgPlugin,
             "movie"       : ImgMovie,
             "external"    : ImgExternal,
@@ -351,7 +352,9 @@ function ImgViewer (parentid, image_or_uri, parameters) {
             "edit"        : ImgEdit,
             "tiles"       : TilesRenderer, // TILES RENDERER MUST BE BEFORE SVGRenderer
             "ops"         : ImgOperations, // Ops should be after tiler
+            "pixelcounter": ImgPixelCounter,
             "renderer"    : SVGRenderer,   // RENDERER MUST BE LAST
+            
         };
 
     var plugin_names = plugin_list.split(',');
@@ -606,7 +609,7 @@ ImgViewer.prototype.set_parent_gobject = function(gob) {
         if (gob.parent instanceof BQGObject)
             this.editor.global_parent = gob.parent;
         else
-            this.editor.global_parent = undefined;
+        this.editor.global_parent = undefined;
     }
 };
 

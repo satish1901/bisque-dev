@@ -64,7 +64,7 @@ function ImgExternal (viewer,name){
                 xtype  : 'menuitem',
                 itemId : 'menu_viewer_pixel_counting',
                 text   : 'Pixel counter',
-                disabled: true,
+                //disabled: true,
                 handler: this.pixelCounter,
             },{
                 xtype  : 'menuitem',
@@ -92,6 +92,7 @@ ImgExternal.prototype.newImage = function () {
 };
 
 ImgExternal.prototype.updateImage = function () {
+    
 };
 
 ImgExternal.prototype.launchBioView = function () {
@@ -168,10 +169,39 @@ ImgExternal.prototype.convert = function () {
 };
 
 ImgExternal.prototype.calibrateResolution = function () {
-
+    
 };
 
 ImgExternal.prototype.pixelCounter = function () {
-
+    if (!this.pixelCounterPlugin) { //check if the pixel coutner panel exists
+        var pixelCounterPlugin = this.viewer.plugins_by_name['pixelcounter'];
+        this.viewer.parameters.main.queryById('tabs').setVisible(false); //hidding the panel
+        this.viewer.toolbar.queryById('menu_viewer_operations').queryById('menu_viewer_pixel_counting').setDisabled(true)
+        me = this;
+        //disable pixel counter menu
+        var pixelCounterPanel = Ext.create('BQ.Panel.PixelCounter',{
+            width: this.viewer.parameters.main.queryById('tabs').width,
+            viewer: this.viewer,
+            autoDestroy: false,
+            listeners:{
+                close: function() {
+                    pixelCounterPlugin.destroyCanvas(); //destroys canvas when closed
+                    pixelCounterPlugin.changed(); //removes threshold from image 
+                    this.viewer.parameters.main.queryById('tabs').setVisible(true)
+                    this.viewer.toolbar.queryById('menu_viewer_operations').queryById('menu_viewer_pixel_counting').setDisabled(false) //enable pixel counter menu
+                    }, //brings back the metadata panel
+                scope: this,
+            },
+        });
+        //pixelCounterPanel.removeAll(false);
+        //this.viewer.parameters.main.queryById('main_container').removeAll(false);
+        this.viewer.parameters.main.queryById('main_container').add(pixelCounterPanel); //create panel
+        //pixelCounterPlugin.pixelCounterPanel = pixelCounterPanel; //attaching new pixel counter panel to the plugin
+        
+    //pixelCounterPlugin.
+    //this.
+    //switches disable to true 
+    } //when broken down the item has to be removed from ImgExternal
+    
 };
 
