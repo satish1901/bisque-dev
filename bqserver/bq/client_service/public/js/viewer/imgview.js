@@ -329,7 +329,7 @@ function ImgViewer (parentid, image_or_uri, parameters) {
     this.target.appendChild (this.imagediv);
     this.toolbar = this.parameters.toolbar;
 
-    var plugin_list = "default,slicer,tiles,ops,pixelcounter,download,external,scalebar,progressbar,infobar,edit,renderer";
+    var plugin_list = "default,slicer,tiles,ops,download,external,pixelcounter,scalebar,progressbar,infobar,edit,renderer";
     if ('onlyedit' in this.parameters)
         plugin_list = "default,slicer,tiles,ops,scalebar,progressbar,infobar,edit,renderer";
     if ('simpleview' in this.parameters) {
