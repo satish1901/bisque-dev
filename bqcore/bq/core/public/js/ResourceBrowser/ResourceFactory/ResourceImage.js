@@ -702,6 +702,19 @@ Ext.define('Bisque.Resource.Image.Page', {
             items : [this.viewerContainer, resTab]
         });
 
+        var download = this.toolbar.queryById('btnDownload');
+        if (download) {
+            download.menu.insert(1, [{
+                itemId: 'download_as_ometiff',
+                text: 'as OME-TIFF',
+                handler: this.download_ometiff,
+            },{
+                itemId: 'download_as_omebigtiff',
+                text: 'as OME-BigTIFF',
+                handler: this.download_omebigtiff,
+            }]);
+        };
+
         this.toolbar.insert(5, [{
             itemId: 'button_view',
             xtype:'button',
@@ -752,6 +765,18 @@ Ext.define('Bisque.Resource.Image.Page', {
         }
         var exporter = Ext.create('BQ.Export.Panel');
         exporter.downloadResource(this.resource, 'none');
+    },
+
+    download_ometiff : function() {
+        if (!this.resource.resource_uniq) return;
+        var url = '/image_service/image/' + this.resource.resource_uniq + '?format=ome-tiff';
+        window.open(url);
+    },
+
+    download_omebigtiff : function() {
+        if (!this.resource.resource_uniq) return;
+        var url = '/image_service/image/' + this.resource.resource_uniq + '?format=ome-bigtiff';
+        window.open(url);
     },
 
     onworking : function(msg) {
