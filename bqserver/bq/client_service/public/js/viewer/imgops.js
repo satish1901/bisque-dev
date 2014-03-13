@@ -36,16 +36,11 @@ ImgOperations.prototype.updateView = function (view) {
         this.params.enhancement = this.combo_enhancement.getValue();
         view.addParams  ('depth=8,' + this.combo_enhancement.getValue());
 
+        /*
         var b = this.menu.queryById('slider_brightness').getValue();
         var c = this.menu.queryById('slider_contrast').getValue();
         if (b!==0 || c!==0)
             view.addParams  ('brightnesscontrast='+b+','+c);
-
-        /*
-        var r = this.menu_elements['Red'].value;
-        var g = this.menu_elements['Green'].value;
-        var b = this.menu_elements['Blue'].value;
-        view.addParams  ('remap='+r+','+g+','+b);
         */
 
         var fusion='';
@@ -103,7 +98,7 @@ ImgOperations.prototype.createMenu = function () {
         cls: 'heading',
     });
 
-    this.menu.add({
+    /*this.menu.add({
         xtype: 'slider',
         itemId: 'slider_brightness',
         fieldLabel: 'Brightness',
@@ -132,7 +127,7 @@ ImgOperations.prototype.createMenu = function () {
             scope: this,
             change: this.changed,
         },
-    });
+    });*/
 
     this.combo_fusion = this.viewer.createCombo( 'Fusion', [
         {"value":"a", "text":"Average"},

@@ -131,6 +131,12 @@ ImgExternal.prototype.exportTagsToGoogle = function () {
 };
 
 ImgExternal.prototype.exportCurrentView = function () {
+    var dims = this.viewer.imagedim;
+    if (dims.x>15000 && dims.y>15000) {
+        BQ.ui.notification('Current image is too large to export the current view');
+        return;
+    }
+
     var args = this.viewer.updateView().src_args;
     var tile_index=undefined;
     for (var i=0; i<args.length; i++) {
