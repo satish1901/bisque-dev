@@ -255,14 +255,14 @@ ImgSlicer.prototype.preCacheNeighboringImages = function () {
     this.cache_timeout = null;
     if (this.dim.z>1)
     for (var i=0; i<this.buffer_len; i++) {
-        z = this.z-Math.floor(this.buffer_len/2) + i;
+        var z = this.z-Math.floor(this.buffer_len/2) + i;
         if (z<0) continue;
         if (z>=this.dim.z) continue;
         this.image_buffer_z[i].src = this.image_urls[z][this.t];
     }
     if (this.dim.t>1)
     for (var i=0; i<this.buffer_len; i++) {
-        t = this.t-Math.floor(this.buffer_len/2) + i;
+        var t = this.t-Math.floor(this.buffer_len/2) + i;
         if (t<0) continue;
         if (t>=this.dim.t) continue;
         this.image_buffer_t[i].src = this.image_urls[this.z][t];
