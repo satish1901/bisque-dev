@@ -412,13 +412,15 @@
 }
 
 .viewer .name {
-    height: 20px;
-    left: 0px;
-    padding-right: 160px;
+    left: auto;
+    width: auto;
+    height: auto;
+    right: 160px;
     bottom: 10px;
     top: initial;
     text-decoration: underline;
-    text-align: right;
+    z-index: 30;
+    padding: 0px;
 }
 
 .viewer .position {
