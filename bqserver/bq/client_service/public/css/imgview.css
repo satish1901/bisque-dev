@@ -689,3 +689,28 @@ table.x-form-color {
     background-size: 15px 15px;
     background-repeat: no-repeat;
 }
+
+
+/*******************************************************************************
+ pixel counter
+*******************************************************************************/
+
+.threshold table{
+    margin-left: 30px;
+}
+
+.threshold th{
+    padding-right: 15px;
+}
+
+.threshold td{
+    text-align: right;
+    padding-right: 15px;
+}
+
+.threshold h2{
+    margin-left: 15px;
+}
+
+
+
