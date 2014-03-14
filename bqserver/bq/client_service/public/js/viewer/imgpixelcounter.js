@@ -30,8 +30,8 @@ ImgPixelCounter.prototype.create = function (parent) {
 };
 
 ImgPixelCounter.prototype.pixelCounter = function () {
-    if (!this.pixelCounterPlugin) { //check if the pixel coutner panel exists
-        var pixelCounterPlugin = this.viewer.plugins_by_name['pixelcounter'];
+    if (!this.pixelCounterPanel) { //check if the pixel coutner panel exists
+        //var pixelCounterPlugin = this.viewer.plugins_by_name['pixelcounter'];
          //hidding the panel
         var viewerTagPanel = this.viewer.parameters.main.queryById('tabs');
         viewerTagPanel.setVisible(false);
@@ -46,9 +46,10 @@ ImgPixelCounter.prototype.pixelCounter = function () {
             autoDestroy: false,
             listeners:{
                 close: function() {
-                    pixelCounterPlugin.destroyCanvas(); //destroys canvas when closed
-                    pixelCounterPlugin.changed(); //removes threshold from image
-                    viewerTagPanelsetVisible(true);
+                    this.destroyCanvas(); //destroys canvas when closed
+                    delete this.pixelCounterPanel; //remove the panel from ImgPixelCounter
+                    this.changed(); //removes threshold from image
+                    viewerTagPanel.setVisible(true);
                     pixelcounterButton.setDisabled(false); //enable pixel counter menu
                     }, //brings back the metadata panel
                 scope: this,
@@ -152,6 +153,13 @@ ImgPixelCounter.prototype.returnFromCanvas = function() {
 
 
 ImgPixelCounter.prototype.tilesInTheView = function() {
+
+    return {'inViewImages':inViewImages,'tile_tops':tile_tops,'tile_bottoms':tile_bottoms,'tile_lefts':tile_lefts,'tile_rights':tile_rights};
+}
+
+//looks through all the images in the well returns true if all the images where loaded properly
+ImgPixelCounter.prototype.constructCanvasFromWell = function() {    
+    
     var control_surface_size = this.viewer.viewer_controls_surface.getBoundingClientRect();
     var tiled_viewer = this.viewer.plugins_by_name['tiles'].tiled_viewer; //finding tiled viewer in the plugin list
 
@@ -194,62 +202,12 @@ ImgPixelCounter.prototype.tilesInTheView = function() {
             }
         }
     }
-    return {'inViewImages':inViewImages,'tile_tops':tile_tops,'tile_bottoms':tile_bottoms,'tile_lefts':tile_lefts,'tile_rights':tile_rights};
-}
 
-//looks through all the images in the well returns true if all the images where loaded properly
-ImgPixelCounter.prototype.constructCanvasFromWell = function() {
-    /*
-    var control_surface_size = this.viewer.viewer_controls_surface.getBoundingClientRect();
-    var tiled_viewer = this.viewer.plugins_by_name['tiles'].tiled_viewer; //finding tiled viewer in the plugin list
-
-    //iterorate through all the tiles to find the tiles in the viewer
-    var inViewImages = [];
-    var tile_tops = [];
-    var tile_bottoms = [];
-    var tile_rights = [];
-    var tile_lefts = [];
-
-    for (var i = 0; i<tiled_viewer.well.childElementCount; i++) {
-        var tile_size = tiled_viewer.well.children[i].getBoundingClientRect();
-        if (
-            //if edge
-            ((tile_size.right <= control_surface_size.right && tile_size.right >= control_surface_size.left)||
-            (tile_size.left >= control_surface_size.left && tile_size.left <= control_surface_size.right)) &&
-            ((tile_size.bottom <= control_surface_size.bottom && tile_size.bottom >= control_surface_size.top) ||
-            (tile_size.top >= control_surface_size.top && tile_size.top <= control_surface_size.bottom)) ||
-            //if line
-            (tile_size.right <= control_surface_size.right && tile_size.right >= control_surface_size.left &&
-             tile_size.top <= control_surface_size.top && tile_size.bottom >= control_surface_size.bottom) ||
-            (tile_size.bottom <= control_surface_size.bottom && tile_size.bottom >= control_surface_size.top &&
-             tile_size.left <= control_surface_size.left && tile_size.right >= control_surface_size.right) ||
-            (tile_size.left >= control_surface_size.left && tile_size.left <= control_surface_size.right &&
-             tile_size.top <= control_surface_size.top && tile_size.bottom >= control_surface_size.bottom) ||
-            (tile_size.top >= control_surface_size.top && tile_size.top <= control_surface_size.bottom &&
-             tile_size.left <= control_surface_size.left && tile_size.right >= control_surface_size.right) ||
-            //if inside
-            (tile_size.right >= control_surface_size.right && tile_size.left <= control_surface_size.left &&
-             tile_size.bottom >= control_surface_size.bottom && tile_size.top <= control_surface_size.top)
-
-            ) {
-
-            if (tiled_viewer.well.children[i].className=='tile') {
-                inViewImages.push(tiled_viewer.well.children[i]); //add to the list
-                tile_tops.push(tile_size.top);
-                tile_bottoms.push(tile_size.bottom);
-                tile_lefts.push(tile_size.left);
-                tile_rights.push(tile_size.right);
-            }
-        }
-    }*/
-    var control_surface_size = this.viewer.viewer_controls_surface.getBoundingClientRect();
-    var tilesinview = this.tilesInTheView();
-    var inViewImages = tilesinview.inViewImages;
     //sizing the canvas
-    this.image_view_top = tilesinview.tile_tops.min(); //finding the top most tile
-    this.image_view_left = tilesinview.tile_lefts.min();
-    this.image_view_right = tilesinview.tile_rights.max();
-    this.image_view_bottom = tilesinview.tile_bottoms.max();
+    this.image_view_top = tile_tops.min(); //finding the top most tile
+    this.image_view_left = tile_lefts.min();
+    this.image_view_right = tile_rights.max();
+    this.image_view_bottom = tile_bottoms.max();
 
     //canvas will be the size of the control surface
     this.canvas_image.width  = control_surface_size.width;
@@ -292,7 +250,7 @@ ImgPixelCounter.prototype.destroyCanvas = function() {
         pixelCounterCanvasImage.remove();
         delete this.canvas_image;
     }
-
+    
 };
 
 //sets all values in the mask to 0
@@ -365,7 +323,7 @@ ImgPixelCounter.prototype.getParams = function () {
 //or if selection mode is on the redraw canvas and push it to the front
 ImgPixelCounter.prototype.updateView = function (view) {
     if (this.pixelCounterPanel && this.pixelCounterPanel.thresholdMode)
-        view.addParams('threshold='+this.thresholdValue+',both');
+        view.addParams('threshold='+this.pixelCounterPanel.thresholdValue+',both');
 };
 
 
@@ -544,6 +502,7 @@ Ext.define('BQ.Panel.PixelCounter', {
     //closable: true,
     thresholdMode: true,
     selectMode : false,
+    thresholdValue: 128,
 
     initComponent : function() {
 
@@ -598,10 +557,10 @@ Ext.define('BQ.Panel.PixelCounter', {
         };        
         
 
-        this.thresholdSlider = Ext.create('Ext.slider.Single',{
+        var thresholdSlider = Ext.create('Ext.slider.Single',{
             width: '85%',
             fieldLabel: 'Threshold Value',
-            value: 128,
+            value: this.thresholdValue,
             increment: 1,
             //margin: "0 0 5 10",  // (top, right, bottom, left)
             minValue: 0, //needs to adjust with the image
@@ -610,27 +569,23 @@ Ext.define('BQ.Panel.PixelCounter', {
             listeners: {
                 scope: this,
                 afterrender: function() { //populate panel
-                    me.pixelCounter.thresholdValue = me.thresholdSlider.value;
-                    me.lookupThreshold();
+                    this.lookupThreshold();
                 },      
                 change : function(self,event,thumb){
                     //set a delay to refresh the values on the panel
-                    if (this.thresholdSlider.event_timeout) clearTimeout (this.thresholdSlider.event_timeout);
-                    me=this;
-                    this.thresholdSlider.event_timeout = setTimeout(function(){
+                    if (thresholdSlider.event_timeout) clearTimeout (thresholdSlider.event_timeout);
+                    var me=this;
+                    thresholdSlider.event_timeout = setTimeout(function(){
                         //this.me.threshold_value.setValue(thumb.value.toString());
-                        me.pixelCounter.thresholdValue = thumb.value.toString(); //set pixel counter value
+                        me.thresholdValue = thumb.value.toString(); //set pixel counter value
                         me.selectMode = false; //reset flag
                         me.pixelCounter.changed();
-                    },  me.thresholdSlider.hysteresis );                      
+                    },  thresholdSlider.hysteresis );                      
                 }
             }
         });
 
         this.mainToolbar = Ext.create('Ext.toolbar.Toolbar', {
-            //width : 400,
-            //width: '100%',
-            //layout: 'fit',
             border: false,
             items: [
                 selectModeToggle,
@@ -657,7 +612,7 @@ Ext.define('BQ.Panel.PixelCounter', {
                 cls: 'threshold',
                 },
                 thresholdCheckBox,
-                this.thresholdSlider
+                thresholdSlider
              ],
         });
 
@@ -674,13 +629,12 @@ Ext.define('BQ.Panel.PixelCounter', {
             cls: 'threshold',
         });
 
-
         this.items.push(this.mainToolbar);
         this.items.push(this.thesholdPanel);
         this.items.push(this.selectPanel);
         this.items.push(this.thresholdPanel);
 
-        this.lookupImageMeta(); //find values for the panels
+        this.lookupImageMeta(); //find metadata for the panels
         this.pixelCounter.changed(); //initialize threshold
         return this.callParent(arguments);
     },
@@ -727,6 +681,8 @@ Ext.define('BQ.Panel.PixelCounter', {
     lookupThreshold : function() {
 
         //parsing the request
+        if(this.viewer.imagedim.x>10000&&this.viewer.imagedim.y>10000)
+            this.thresholdPanel.update('<h2>Image is too large</h2>');
         var param = {};
         var args = this.viewer.current_view.src_args;
         var request = [];
@@ -735,7 +691,7 @@ Ext.define('BQ.Panel.PixelCounter', {
             if (a.indexOf('threshold=')<0 && a.indexOf('tile=')<0)
                 request.push(a);
         }
-        request.push('pixelcounter='+this.pixelCounter.thresholdValue);
+        request.push('pixelcounter='+this.thresholdValue);
 
         var image_uri = this.viewer.imagesrc +'?'+request.join('&');
 
@@ -763,29 +719,6 @@ Ext.define('BQ.Panel.PixelCounter', {
         });
 
     },
-    /*
-    lookupThesholds : function(uri_list){
-        
-        for (var uri in uri_list) {
-
-            Ext.Ajax.request({
-                url: image_uri,
-                scope: this,
-                disableCaching: false,
-                timeout: 120000,
-                callback: function(opts, succsess, response) {
-                    if (response.status>=400)
-                        BQ.ui.error(response.responseText);
-                        //Ext.Msg.alert(response.responseText);
-                    else
-                        me.response = response;
-                        me.updataGlobalPanel(response);
-                },
-            });
-            
-        }
-        
-    }*/
 
     //stolen from bigmapPanel
     evaluateXPath: function(aNode, aExpr) {
@@ -799,7 +732,7 @@ Ext.define('BQ.Panel.PixelCounter', {
           found.push(res);
         return found;
     },
-
+    
     //parses xml of the document, creates and html page and write it to panel
     updataGlobalPanel : function(xmlDoc) {
         if (!xmlDoc.responseXML) { //require xml
@@ -841,9 +774,20 @@ Ext.define('BQ.Panel.PixelCounter', {
             for (var c = 0; c<channels.length; c++) { //updates panel values
                 var above = self.evaluateXPath(channels[c],'tag[@name="above"]/@value')[0].value;
                 var below = self.evaluateXPath(channels[c],'tag[@name="below"]/@value')[0].value;
+                
+                var channel_name = ''
+                if(c==0) { 
+                    channel_name = 'red';
+                }
+                if(c==1) {
+                    channel_name = 'green';
+                }
+                if(c==2) {
+                    channel_name = 'blue';
+                } 
 
-                var globalRowAbove = '<td>'+(c+1).toString()+'</td><td>above</td><td >'+above.toString()+'</td>';
-                var globalRowBelow = '<td>'+(c+1).toString()+'</td><td>below</td><td >'+below.toString()+'</td>';
+                var globalRowAbove = '<td>'+channel_name+'</td><td>above</td><td >'+above.toString()+'</td>';
+                var globalRowBelow = '<td>'+channel_name+'</td><td>below</td><td >'+below.toString()+'</td>';
                 //if found resolution points add to panel
                 if (this.pixel_resolution_x && this.pixel_resolution_y && this.pixel_resolution_unit_x && this.pixel_resolution_unit_y) {
 
