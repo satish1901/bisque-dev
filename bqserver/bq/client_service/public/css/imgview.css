@@ -701,6 +701,15 @@ table.x-form-color {
 
 .threshold th{
     padding-right: 15px;
+    padding-top: 25px;
+}
+
+.threshold p{
+    text-indent: 30px;
+    padding-right: 15px;
+    padding-left: 15px;
+    padding-top: 15px;
+    /*padding: 15px;*/
 }
 
 .threshold td{
@@ -710,6 +719,11 @@ table.x-form-color {
 
 .threshold h2{
     margin-left: 15px;
+}
+
+.thresholdelements td{
+    /*text-indent: 15px;*/   
+    padding-left: 15px;
 }
 
 

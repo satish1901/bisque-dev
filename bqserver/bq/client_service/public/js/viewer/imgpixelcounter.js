@@ -30,10 +30,13 @@ ImgPixelCounter.prototype.create = function (parent) {
 };
 
 ImgPixelCounter.prototype.pixelCounter = function () {
-    if (!this.pixelCounterPlugin) { //check if the pixel coutner panel exists
-        var pixelCounterPlugin = this.viewer.plugins_by_name['pixelcounter'];
-        this.viewer.parameters.main.queryById('tabs').setVisible(false); //hidding the panel
-        this.viewer.toolbar.queryById('menu_viewer_operations').queryById('menu_viewer_pixel_counting').setDisabled(true);
+    if (!this.pixelCounterPanel) { //check if the pixel coutner panel exists
+        //var pixelCounterPlugin = this.viewer.plugins_by_name['pixelcounter'];
+         //hidding the panel
+        var viewerTagPanel = this.viewer.parameters.main.queryById('tabs');
+        viewerTagPanel.setVisible(false);
+        var pixelcounterButton = this.viewer.toolbar.queryById('menu_viewer_pixel_counting')
+        pixelcounterButton.setDisabled(true);
         me = this;
         //disable pixel counter menu
         this.pixelCounterPanel = Ext.create('BQ.Panel.PixelCounter',{
@@ -43,10 +46,11 @@ ImgPixelCounter.prototype.pixelCounter = function () {
             autoDestroy: false,
             listeners:{
                 close: function() {
-                    pixelCounterPlugin.destroyCanvas(); //destroys canvas when closed
-                    pixelCounterPlugin.changed(); //removes threshold from image
-                    this.viewer.parameters.main.queryById('tabs').setVisible(true);
-                    this.viewer.toolbar.queryById('menu_viewer_operations').queryById('menu_viewer_pixel_counting').setDisabled(false); //enable pixel counter menu
+                    this.destroyCanvas(); //destroys canvas when closed
+                    delete this.pixelCounterPanel; //remove the panel from ImgPixelCounter
+                    this.changed(); //removes threshold from image
+                    viewerTagPanel.setVisible(true);
+                    pixelcounterButton.setDisabled(false); //enable pixel counter menu
                     }, //brings back the metadata panel
                 scope: this,
             },
@@ -56,8 +60,7 @@ ImgPixelCounter.prototype.pixelCounter = function () {
         this.viewer.parameters.main.queryById('main_container').add(this.pixelCounterPanel); //create panel
         //pixelCounterPlugin.pixelCounterPanel = pixelCounterPanel; //attaching new pixel counter panel to the plugin
 
-    //pixelCounterPlugin.
-    //this.
+    //pixelCounterPlugin
     //switches disable to true
     } //when broken down the item has to be removed from ImgExternal
 
@@ -114,9 +117,6 @@ ImgPixelCounter.prototype.updateCanvas = function() {
         this.initCanvas();
     }
 
-    //must wait till all tiles are loaded
-
-
     // load image from data url
     this.canvas_mask.style.visibility='hidden';
     this.viewer.parameters.main.viewerContainer.setLoading(true);
@@ -151,8 +151,15 @@ ImgPixelCounter.prototype.returnFromCanvas = function() {
     }
 };
 
+
+ImgPixelCounter.prototype.tilesInTheView = function() {
+
+    return {'inViewImages':inViewImages,'tile_tops':tile_tops,'tile_bottoms':tile_bottoms,'tile_lefts':tile_lefts,'tile_rights':tile_rights};
+}
+
 //looks through all the images in the well returns true if all the images where loaded properly
-ImgPixelCounter.prototype.constructCanvasFromWell = function() {
+ImgPixelCounter.prototype.constructCanvasFromWell = function() {    
+    
     var control_surface_size = this.viewer.viewer_controls_surface.getBoundingClientRect();
     var tiled_viewer = this.viewer.plugins_by_name['tiles'].tiled_viewer; //finding tiled viewer in the plugin list
 
@@ -195,8 +202,8 @@ ImgPixelCounter.prototype.constructCanvasFromWell = function() {
             }
         }
     }
-    //sizing the canvas
 
+    //sizing the canvas
     this.image_view_top = tile_tops.min(); //finding the top most tile
     this.image_view_left = tile_lefts.min();
     this.image_view_right = tile_rights.max();
@@ -243,7 +250,7 @@ ImgPixelCounter.prototype.destroyCanvas = function() {
         pixelCounterCanvasImage.remove();
         delete this.canvas_image;
     }
-
+    
 };
 
 //sets all values in the mask to 0
@@ -274,7 +281,6 @@ ImgPixelCounter.prototype.updateImage = function () {
     //check if pixel counter panel is there
     if (this.pixelCounterPanel) {
         if (this.pixelCounterPanel.thresholdMode) {
-            this.params = {};
 
             //view.addParams('threshold='+this.thresholdValue+',both');
             if (this.pixelCounterPanel.selectMode) {
@@ -287,17 +293,16 @@ ImgPixelCounter.prototype.updateImage = function () {
 
             } else {
                 if (this.canvas_mask) {
-                    this.pixelCounterPanel.lookupThreshold();
                     this.canvas_mask.style.visibility='hidden';
                     this.canvas_image.style.visibility='hidden';
                     if(this.pixelCounterPanel.regionCount){
                         delete this.pixelCounterPanel.regionCount;
                     }
                 }
+                this.pixelCounterPanel.lookupThreshold();
             }
         } else {
             this.pixelCounterPanel.lookupThreshold();
-            this.params = {};
             if (this.canvas_mask) {
                 this.canvas_mask.style.visibility='hidden';
                 this.canvas_image.style.visibility='hidden';
@@ -318,7 +323,7 @@ ImgPixelCounter.prototype.getParams = function () {
 //or if selection mode is on the redraw canvas and push it to the front
 ImgPixelCounter.prototype.updateView = function (view) {
     if (this.pixelCounterPanel && this.pixelCounterPanel.thresholdMode)
-        view.addParams('threshold='+this.thresholdValue+',both');
+        view.addParams('threshold='+this.pixelCounterPanel.thresholdValue+',both');
 };
 
 
@@ -339,8 +344,8 @@ ImgPixelCounter.prototype.onClick = function(e) {
         var me = this;
         setTimeout(function(){ //set time out to allow for the loading screen to be shown
            me.connectedComponents(xClick,yClick);
-            me.viewer.parameters.main.viewerContainer.setLoading(false);
-            me.canvas_mask.style.visibility='visible';
+           me.viewer.parameters.main.viewerContainer.setLoading(false);
+           me.canvas_mask.style.visibility='visible';
         },5);
     }
 };
@@ -474,7 +479,6 @@ ImgPixelCounter.prototype.changed = function () {
 };
 
 
-
 ImgPixelCounter.prototype.loadPreferences = function (p) {
     this.default_threshold      = 'threshold'      in p ? p.threshold      : this.default_threshold;
 };
@@ -498,28 +502,46 @@ Ext.define('BQ.Panel.PixelCounter', {
     //closable: true,
     thresholdMode: true,
     selectMode : false,
+    thresholdValue: 128,
 
     initComponent : function() {
 
         this.items = [];
         var me=this;
 
-        //this.pixelCounter = this.viewer.plugins_by_name['pixelcounter'];
-
-        this.selectModeToggle = Ext.create('Ext.Button',{
-            xtype: 'button',
+        var selectModeToggle = {
+            xtype:'button',
             itemId : 'select_region_toggle_button',
-            width: 100,
-            height: 25,
-            enableToggle: true,
-            text: 'Regional counts',
             scale: 'large',
+            text: 'Regional counts',
+            enableToggle: true,
             //pressedCls: 'px-PressedStyle',
             //disabled: true,
-        });
+            listeners: {
+                scope: this,
+                click : function() {
+                   this.selectMode = !this.selectMode;
+                   if(this.selectMode) this.queryById('threshold_checkbox').setValue(true);
+                   this.pixelCounter.changed();
+                },
+            }            
+        };
 
 
-
+        var closePanel = {
+            xtype: 'button',
+            text: 'Close',
+            scale: 'large',
+            width: 60,
+            itemId : 'pixelcounter_close_button',
+            listeners: {
+                scope: this,
+                click: function() {
+                    this.close(); //closes panel
+                }
+            },
+        };
+        
         var thresholdCheckBox = {
             itemId : 'threshold_checkbox',
             xtype: 'checkbox',
@@ -527,156 +549,113 @@ Ext.define('BQ.Panel.PixelCounter', {
             checked   : true,
             listeners: {
                 scope: this,
-                change: function(e,newValue,oldValue) {
+                change: function(self,newValue,oldValue) {
                     this.thresholdMode = !this.thresholdMode;
                     this.pixelCounter.changed();
                 }
             },
-        };
+        };        
+        
 
-
-        this.closePanel = Ext.create('Ext.Button',{
-            xtype: 'button',
-            width: 60,
-            height: 25,
-            text: 'Close',
-            itemId : 'pixelcounter_close_button',
-            listeners: {
-                click: function() {
-                    me.close(); //closes panel
-                }
-            },
-        });
-
-
-        this.thresholdSlider = Ext.create('Ext.slider.Single',{
-            //width: 240,
+        var thresholdSlider = Ext.create('Ext.slider.Single',{
             width: '85%',
             fieldLabel: 'Threshold Value',
-            value: 128,
+            value: this.thresholdValue,
             increment: 1,
-            margin: "0 0 5 10",  // (top, right, bottom, left)
+            //margin: "0 0 5 10",  // (top, right, bottom, left)
             minValue: 0, //needs to adjust with the image
             maxValue: 256,    //needs to adjust with the image
             hysteresis: 100,  // delay before firing change event to the listener
-        });
-
-
-        this.selectModeToggle.on({
-            click : function() {
-
-               if (me.selectMode == true) {
-                    //turns off select mode
-                    me.selectMode = false; //reset flag
-                    me.pixelCounter.changed();
-                    //me.selectModeToggle.setText('Regional counts');
-
-                } else {
-                    //turns on select mode
-                    me.selectMode = true; //reset flag
-                    me.pixelCounter.changed(); //change will be set by the checkbox also
-                    this.updataRegionPanel();
-                    me.queryById('threshold_checkbox').setValue(true);
-                    //me.selectModeToggle.doLayout();
-                    //me.selectModeToggle.setStyle('background-color:green;');
-                    //me.selectModeToggle.setText('Global counts');
-
-
-                }
-            },
-            scope: this,
-        });
-
-        this.thresholdSlider.on({
-            afterrender: function() { //populate panel
-                                me.pixelCounter.thresholdValue = me.thresholdSlider.value;
-                                me.lookupThreshold();
-                            },
-            change : function(self,event,thumb){
-                //set a delay to refresh the values on the panel
-                if (me.thresholdSlider.event_timeout) clearTimeout (me.thresholdSlider.event_timeout);
-                //var me = this;
-
-                me.thresholdSlider.event_timeout = setTimeout(function(){
-                    //this.me.threshold_value.setValue(thumb.value.toString());
-                    me.pixelCounter.thresholdValue = thumb.value.toString(); //set pixel counter value
-                    me.lookupThreshold();
-                    me.selectMode = false; //reset flag
-                    me.pixelCounter.changed();
-                    //me.selectModeToggle.setText('Regional counts');
-                    //me.updataRegionPanel()
-                },  me.thresholdSlider.hysteresis );
-            },
-            scope: this,
-        });
-
-
-        this.on({
-            beforecollapse: function(p,direction,animate){
-
-                if(me.selectMode){ //disables select mode
-                    me.selectMode = false; //reset flag
-                    me.pixelCounter.changed();
-                    //me.selectModeToggle.setText('Regional counts');
-                }
-            },
-            resize: function(){
-                if(me.selectMode){ //disables select mode
-                    me.selectMode = false; //reset flag
-                    me.pixelCounter.changed();
-                    //me.selectModeToggle.setText('Regional counts');
+            listeners: {
+                scope: this,
+                afterrender: function() { //populate panel
+                    this.lookupThreshold();
+                },      
+                change : function(self,event,thumb){
+                    //set a delay to refresh the values on the panel
+                    if (thresholdSlider.event_timeout) clearTimeout (thresholdSlider.event_timeout);
+                    var me=this;
+                    thresholdSlider.event_timeout = setTimeout(function(){
+                        //this.me.threshold_value.setValue(thumb.value.toString());
+                        me.thresholdValue = thumb.value.toString(); //set pixel counter value
+                        me.selectMode = false; //reset flag
+                        me.pixelCounter.changed();
+                    },  thresholdSlider.hysteresis );                      
                 }
             }
         });
 
         this.mainToolbar = Ext.create('Ext.toolbar.Toolbar', {
-            //width : 400,
-            width: '100%',
-            //layout: 'fit',
             border: false,
             items: [
-                this.thresholdModeToggle,
-                this.selectModeToggle,
+                selectModeToggle,
                 {
-                        height: 25,
-                        xtype: 'button',
-                        text: 'Export',
-                        disabled: true,
-                        hidden: true,
+                    height: 25,
+                    xtype: 'button',
+                    text: 'Export',
+                    disabled: true,
+                    hidden: true,
                 },
                 '->',
-                this.closePanel,
+                closePanel,
             ]
         });
 
         this.thesholdPanel = Ext.create('Ext.container.Container',{
-            id : 'px_threshold_panel',
-            items: [thresholdCheckBox,this.thresholdSlider],
+            itemId : 'px_threshold_panel',
+            borders: false,
+            frame: false,
+            cls: 'thresholdelements',
+            items: [{
+                xtype: 'box',
+                html: '<h2>Global Counts</h2><p>In this mode, move the slider to set a threshold value. The counts of pixel values above and below the threshold value are displayed below from the rgb image in the viewer.</p>',
+                cls: 'threshold',
+                },
+                thresholdCheckBox,
+                thresholdSlider
+             ],
         });
 
         this.selectPanel = Ext.create('Ext.container.Container',{
             layout: 'fit',
-            html: '<h2>Regional counts</h2><p>In this mode, click on any part of the image to segment out a region. The pixel count for the select region will be displayed below.</p>',
-            margin: "10 0 0 10",  // (top, right, bottom, left)
-            id : 'px_selectinfo_panel',
+            html : '<h2>Regional Counts</h2><p>In this mode, click on any part of the image to segment out a region. The pixel count for the select region will be displayed below.</p>',
+            itemId : 'px_selectinfo_panel',
+            cls: 'threshold',
         });
 
         this.thresholdPanel = Ext.create('Ext.container.Container', {
             layout: 'fit',
             html: '',
             cls: 'threshold',
-            //margin: "30 0 0 10",  // (top, right, bottom, left)
         });
-
 
         this.items.push(this.mainToolbar);
         this.items.push(this.thesholdPanel);
         this.items.push(this.selectPanel);
         this.items.push(this.thresholdPanel);
 
-        this.lookupImageMeta(); //find values for the panels
+        this.lookupImageMeta(); //find metadata for the panels
         this.pixelCounter.changed(); //initialize threshold
         return this.callParent(arguments);
+    },
+
+    listeners : {
+        scope: this,
+        beforecollapse: function(p,direction,animate){
+
+            if(this.selectMode){ //disables select mode
+                this.selectMode = false; //reset flag
+                this.pixelCounter.changed();
+                //me.selectModeToggle.setText('Regional counts');
+            }
+        },
+        resize: function(){
+            if(this.selectMode){ //disables select mode
+                this.selectMode = false; //reset flag
+                this.pixelCounter.changed();
+                //me.selectModeToggle.setText('Regional counts');
+            }
+        }  
     },
 
     //query image service
@@ -702,6 +681,8 @@ Ext.define('BQ.Panel.PixelCounter', {
     lookupThreshold : function() {
 
         //parsing the request
+        if(this.viewer.imagedim.x>10000&&this.viewer.imagedim.y>10000)
+            this.thresholdPanel.update('<h2>Image is too large</h2>');
         var param = {};
         var args = this.viewer.current_view.src_args;
         var request = [];
@@ -710,11 +691,14 @@ Ext.define('BQ.Panel.PixelCounter', {
             if (a.indexOf('threshold=')<0 && a.indexOf('tile=')<0)
                 request.push(a);
         }
-        request.push('pixelcounter='+this.pixelCounter.thresholdValue);
+        request.push('pixelcounter='+this.thresholdValue);
 
         var image_uri = this.viewer.imagesrc +'?'+request.join('&');
 
-        if (this.request_uri === image_uri) return;
+        if (this.request_uri === image_uri) {
+            this.updataGlobalPanel(me.response);
+            return
+        }
         this.request_uri = image_uri;
 
         //param['pixelcounter'] = this.threshold_value.value;
@@ -729,6 +713,7 @@ Ext.define('BQ.Panel.PixelCounter', {
                     BQ.ui.error(response.responseText);
                     //Ext.Msg.alert(response.responseText);
                 else
+                    me.response = response;
                     me.updataGlobalPanel(response);
             },
         });
@@ -747,7 +732,8 @@ Ext.define('BQ.Panel.PixelCounter', {
           found.push(res);
         return found;
     },
-
+    
+    //parses xml of the document, creates and html page and write it to panel
     updataGlobalPanel : function(xmlDoc) {
         if (!xmlDoc.responseXML) { //require xml
             //error
@@ -757,8 +743,7 @@ Ext.define('BQ.Panel.PixelCounter', {
         }
         this.queryById('px_selectinfo_panel').setVisible(false);
         this.queryById('px_threshold_panel').setVisible(true);
-        //this.selectPanel.setHidden(true);
-        //this.thesholdPanel.setHidden(false);
+
         var pixel_resolution_x = this.evaluateXPath(xmlDoc.responseXML, 'resource/tag[@name="pixel_resolution_x"]/@value');
         var pixel_resolution_y = this.evaluateXPath(xmlDoc.responseXML, 'resource/tag[@name="pixel_resolution_y"]/@value');
         var pixel_resolution_unit_x = this.evaluateXPath(xmlDoc.responseXML, 'resource/tag[@name="pixel_resolution_unit_x"]/@value');
@@ -773,7 +758,6 @@ Ext.define('BQ.Panel.PixelCounter', {
         }
 
         var channels = this.evaluateXPath(xmlDoc.responseXML, 'resource/pixelcounts[@name="channel"]');
-        var globalPanel = "<h2>Global Count</h2>";
         var globalTitle = '<tr><th>channel</th><th >threshold</th><th>pixels</th>';
 
         if (this.pixel_resolution_x && this.pixel_resolution_y && this.pixel_resolution_unit_x && this.pixel_resolution_unit_y) {
@@ -790,9 +774,20 @@ Ext.define('BQ.Panel.PixelCounter', {
             for (var c = 0; c<channels.length; c++) { //updates panel values
                 var above = self.evaluateXPath(channels[c],'tag[@name="above"]/@value')[0].value;
                 var below = self.evaluateXPath(channels[c],'tag[@name="below"]/@value')[0].value;
+                
+                var channel_name = ''
+                if(c==0) { 
+                    channel_name = 'red';
+                }
+                if(c==1) {
+                    channel_name = 'green';
+                }
+                if(c==2) {
+                    channel_name = 'blue';
+                } 
 
-                var globalRowAbove = '<td>'+(c+1).toString()+'</td><td>above</td><td >'+above.toString()+'</td>';
-                var globalRowBelow = '<td>'+(c+1).toString()+'</td><td>below</td><td >'+below.toString()+'</td>';
+                var globalRowAbove = '<td>'+channel_name+'</td><td>above</td><td >'+above.toString()+'</td>';
+                var globalRowBelow = '<td>'+channel_name+'</td><td>below</td><td >'+below.toString()+'</td>';
                 //if found resolution points add to panel
                 if (this.pixel_resolution_x && this.pixel_resolution_y && this.pixel_resolution_unit_x && this.pixel_resolution_unit_y) {
 
@@ -810,7 +805,7 @@ Ext.define('BQ.Panel.PixelCounter', {
             //error didnt not find image service pixel counter
             //BQ.ui.error('Didnt not find image service pixel counter information from image service');
         }
-        var html = globalPanel+'<table>'+globalTitle+globalRows+"</table>";
+        var html = '<table>'+globalTitle+globalRows+"</table>";
 
         this.thresholdPanel.update(html);
     },
