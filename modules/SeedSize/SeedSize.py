@@ -152,7 +152,7 @@ class SeedSize(object):
                               { 'name': 'minor', 'value': col[1]} ],
                     'ellipse' : {
                         'vertex' : [ { 'x': col[3], 'y':col[4], 'index':0 },
-                                     { 'x': col[8], 'y':col[9], 'index':1 },
+                                     { 'x': float(col[3]) - abs(float(col[8]) - float(col[3])), 'y':col[9], 'index':1 },
                                      { 'x': col[6], 'y':col[7], 'index':2 }]
                         }
                     })
