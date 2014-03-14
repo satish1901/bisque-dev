@@ -1798,6 +1798,10 @@ BQImagePhys.prototype.onloadDS = function ( ) {
     this.onload();
 };
 
+BQImagePhys.prototype.isPixelResolutionValid = function () {
+    return this.pixel_size[0]>0 && this.pixel_size[1]>0;
+},
+
 BQImagePhys.prototype.getPixelInfo = function (i) {
     var r = [undefined, undefined];
     if (this.pixel_size[i]!=undefined && !isNaN(this.pixel_size[i]) && this.pixel_size[i]!=0.0000) {

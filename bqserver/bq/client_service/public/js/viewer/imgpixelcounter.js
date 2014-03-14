@@ -35,7 +35,7 @@ ImgPixelCounter.prototype.pixelCounter = function () {
          //hidding the panel
         var viewerTagPanel = this.viewer.parameters.main.queryById('tabs');
         viewerTagPanel.setVisible(false);
-        var pixelcounterButton = this.viewer.toolbar.queryById('menu_viewer_pixel_counting')
+        var pixelcounterButton = this.viewer.toolbar.queryById('menu_viewer_pixel_counting');
         pixelcounterButton.setDisabled(true);
         me = this;
         //disable pixel counter menu
@@ -43,6 +43,7 @@ ImgPixelCounter.prototype.pixelCounter = function () {
             //width: this.viewer.parameters.main.queryById('tabs').width,
             pixelCounter: this,
             viewer: this.viewer,
+            phys: this.viewer.imagephys,
             autoDestroy: false,
             listeners:{
                 close: function() {
@@ -155,11 +156,11 @@ ImgPixelCounter.prototype.returnFromCanvas = function() {
 ImgPixelCounter.prototype.tilesInTheView = function() {
 
     return {'inViewImages':inViewImages,'tile_tops':tile_tops,'tile_bottoms':tile_bottoms,'tile_lefts':tile_lefts,'tile_rights':tile_rights};
-}
+};
 
 //looks through all the images in the well returns true if all the images where loaded properly
-ImgPixelCounter.prototype.constructCanvasFromWell = function() {    
-    
+ImgPixelCounter.prototype.constructCanvasFromWell = function() {
+
     var control_surface_size = this.viewer.viewer_controls_surface.getBoundingClientRect();
     var tiled_viewer = this.viewer.plugins_by_name['tiles'].tiled_viewer; //finding tiled viewer in the plugin list
 
@@ -250,7 +251,7 @@ ImgPixelCounter.prototype.destroyCanvas = function() {
         pixelCounterCanvasImage.remove();
         delete this.canvas_image;
     }
-    
+
 };
 
 //sets all values in the mask to 0
@@ -335,8 +336,8 @@ ImgPixelCounter.prototype.onClick = function(e) {
     //this.loading_canvas.style.visibility='visible';
     //this.viewer.start_wait({op: 'gobjects', message: 'Fetching gobjects'})
 
-    xClick = e.pageX-parseInt(this.canvas_mask.style.left)-this.viewer.plugins_by_name['tiles'].tiled_viewer.left;
-    yClick = e.pageY-parseInt(this.canvas_mask.style.top)-this.viewer.plugins_by_name['tiles'].tiled_viewer.top;
+    var xClick = e.pageX-parseInt(this.canvas_mask.style.left)-this.viewer.plugins_by_name['tiles'].tiled_viewer.left; //clicks mapped to canvas
+    var yClick = e.pageY-parseInt(this.canvas_mask.style.top)-this.viewer.plugins_by_name['tiles'].tiled_viewer.top; //clicks mapped to canvas
 
     if(!(!(this.image_view_top<e.pageY&&this.image_view_bottom>e.pageY)||!(this.image_view_left<e.pageX&&this.image_view_right>e.pageX))){ //check if the click is on the image
         this.canvas_mask.style.visibility='hidden';
@@ -397,7 +398,10 @@ ImgPixelCounter.prototype.connectedComponents = function(x,y) {
     }
 
     this.ctx_imgmask.putImageData(this.maskData,0,0);
-    this.pixelCounterPanel.regionCount = {'count':count,'xclick':x,'yclick':y};
+    // remap
+    var tiled_viewer = this.viewer.plugins_by_name['tiles'].tiled_viewer; //finding tiled viewer in the plugin list
+    var p = tiled_viewer.toImageFromViewer({x: x - tiled_viewer.x, y: y - tiled_viewer.y});
+    this.pixelCounterPanel.regionCount = {count:count, x:p.x, y:p.y};
     this.pixelCounterPanel.updataRegionPanel();
 };
 
@@ -503,6 +507,7 @@ Ext.define('BQ.Panel.PixelCounter', {
     thresholdMode: true,
     selectMode : false,
     thresholdValue: 128,
+    channel_names: { 0: 'red', 1: 'green', 2: 'blue' },
 
     initComponent : function() {
 
@@ -514,6 +519,7 @@ Ext.define('BQ.Panel.PixelCounter', {
             itemId : 'select_region_toggle_button',
             scale: 'large',
             text: 'Regional counts',
+            iconCls: 'icon-pipette',
             enableToggle: true,
             //pressedCls: 'px-PressedStyle',
             //disabled: true,
@@ -524,7 +530,7 @@ Ext.define('BQ.Panel.PixelCounter', {
                    if(this.selectMode) this.queryById('threshold_checkbox').setValue(true);
                    this.pixelCounter.changed();
                 },
-            }            
+            }
         };
 
 
@@ -532,7 +538,8 @@ Ext.define('BQ.Panel.PixelCounter', {
             xtype: 'button',
             text: 'Close',
             scale: 'large',
-            width: 60,
+            //width: 60,
+            iconCls: 'icon-close',
             itemId : 'pixelcounter_close_button',
             listeners: {
                 scope: this,
@@ -541,7 +548,7 @@ Ext.define('BQ.Panel.PixelCounter', {
                 }
             },
         };
-        
+
         var thresholdCheckBox = {
             itemId : 'threshold_checkbox',
             xtype: 'checkbox',
@@ -554,8 +561,8 @@ Ext.define('BQ.Panel.PixelCounter', {
                     this.pixelCounter.changed();
                 }
             },
-        };        
-        
+        };
+
 
         var thresholdSlider = Ext.create('Ext.slider.Single',{
             width: '85%',
@@ -570,7 +577,7 @@ Ext.define('BQ.Panel.PixelCounter', {
                 scope: this,
                 afterrender: function() { //populate panel
                     this.lookupThreshold();
-                },      
+                },
                 change : function(self,event,thumb){
                     //set a delay to refresh the values on the panel
                     if (thresholdSlider.event_timeout) clearTimeout (thresholdSlider.event_timeout);
@@ -580,7 +587,7 @@ Ext.define('BQ.Panel.PixelCounter', {
                         me.thresholdValue = thumb.value.toString(); //set pixel counter value
                         me.selectMode = false; //reset flag
                         me.pixelCounter.changed();
-                    },  thresholdSlider.hysteresis );                      
+                    },  thresholdSlider.hysteresis );
                 }
             }
         });
@@ -608,7 +615,7 @@ Ext.define('BQ.Panel.PixelCounter', {
             cls: 'thresholdelements',
             items: [{
                 xtype: 'box',
-                html: '<h2>Global Counts</h2><p>In this mode, move the slider to set a threshold value. The counts of pixel values above and below the threshold value are displayed below from the rgb image in the viewer.</p>',
+                html: '<h2>Global Counts</h2><p>Move the slider to set a threshold value. The pixel counts above and below the threshold will be computed from the fused RGB image in the viewer per channel.</p>',
                 cls: 'threshold',
                 },
                 thresholdCheckBox,
@@ -618,7 +625,7 @@ Ext.define('BQ.Panel.PixelCounter', {
 
         this.selectPanel = Ext.create('Ext.container.Container',{
             layout: 'fit',
-            html : '<h2>Regional Counts</h2><p>In this mode, click on any part of the image to segment out a region. The pixel count for the select region will be displayed below.</p>',
+            html : '<h2>Regional Counts</h2><p>Click on any part of the image to segment out a region. The pixel count will be displayed below.</p>',
             itemId : 'px_selectinfo_panel',
             cls: 'threshold',
         });
@@ -634,7 +641,6 @@ Ext.define('BQ.Panel.PixelCounter', {
         this.items.push(this.selectPanel);
         this.items.push(this.thresholdPanel);
 
-        this.lookupImageMeta(); //find metadata for the panels
         this.pixelCounter.changed(); //initialize threshold
         return this.callParent(arguments);
     },
@@ -655,27 +661,7 @@ Ext.define('BQ.Panel.PixelCounter', {
                 this.pixelCounter.changed();
                 //me.selectModeToggle.setText('Regional counts');
             }
-        }  
-    },
-
-    //query image service
-    lookupImageMeta : function(image_uri) {
-
-        var image_uri = this.viewer.imagesrc;
-        Ext.Ajax.request({
-            url: image_uri+'?meta',
-            scope: this,
-            disableCaching: false,
-            timeout: 120000,
-            callback: function(opts, succsess, response) {
-                if (response.status>=400)
-                    BQ.ui.error(response.responseText);
-                    //Ext.Msg.alert(response.responseText);
-                else
-                    this.updataGlobalPanel(response); //
-            },
-        });
-
+        }
     },
 
     lookupThreshold : function() {
@@ -696,13 +682,13 @@ Ext.define('BQ.Panel.PixelCounter', {
         var image_uri = this.viewer.imagesrc +'?'+request.join('&');
 
         if (this.request_uri === image_uri) {
-            this.updataGlobalPanel(me.response);
-            return
+            this.updataGlobalPanel(this.response_doc);
+            return;
         }
         this.request_uri = image_uri;
 
         //param['pixelcounter'] = this.threshold_value.value;
-        me=this;
+        //me=this;
         Ext.Ajax.request({
             url: image_uri,
             scope: this,
@@ -711,10 +697,10 @@ Ext.define('BQ.Panel.PixelCounter', {
             callback: function(opts, succsess, response) {
                 if (response.status>=400)
                     BQ.ui.error(response.responseText);
-                    //Ext.Msg.alert(response.responseText);
-                else
-                    me.response = response;
-                    me.updataGlobalPanel(response);
+                else if (response.responseXML) {
+                    this.response_doc = response.responseXML;
+                    this.updataGlobalPanel(response.responseXML);
+                }
             },
         });
 
@@ -732,41 +718,17 @@ Ext.define('BQ.Panel.PixelCounter', {
           found.push(res);
         return found;
     },
-    
+
     //parses xml of the document, creates and html page and write it to panel
     updataGlobalPanel : function(xmlDoc) {
-        if (!xmlDoc.responseXML) { //require xml
-            //error
-            //alert('Request timeout');
-            BQ.ui.error('XML Document not found');
-            return;
-        }
         this.queryById('px_selectinfo_panel').setVisible(false);
         this.queryById('px_threshold_panel').setVisible(true);
 
-        var pixel_resolution_x = this.evaluateXPath(xmlDoc.responseXML, 'resource/tag[@name="pixel_resolution_x"]/@value');
-        var pixel_resolution_y = this.evaluateXPath(xmlDoc.responseXML, 'resource/tag[@name="pixel_resolution_y"]/@value');
-        var pixel_resolution_unit_x = this.evaluateXPath(xmlDoc.responseXML, 'resource/tag[@name="pixel_resolution_unit_x"]/@value');
-        var pixel_resolution_unit_y = this.evaluateXPath(xmlDoc.responseXML, 'resource/tag[@name="pixel_resolution_unit_y"]/@value');
-
-        if (pixel_resolution_x[0] && pixel_resolution_y[0] && pixel_resolution_unit_x[0] && pixel_resolution_unit_y[0]) {
-            //updates the resolution measurements
-            this.pixel_resolution_x = pixel_resolution_x[0].value;
-            this.pixel_resolution_y = pixel_resolution_y[0].value;
-            this.pixel_resolution_unit_x = pixel_resolution_unit_x[0].value;
-            this.pixel_resolution_unit_y = pixel_resolution_unit_y[0].value;
-        }
-
-        var channels = this.evaluateXPath(xmlDoc.responseXML, 'resource/pixelcounts[@name="channel"]');
+        var channels = this.evaluateXPath(xmlDoc, 'resource/pixelcounts[@name="channel"]');
         var globalTitle = '<tr><th>channel</th><th >threshold</th><th>pixels</th>';
 
-        if (this.pixel_resolution_x && this.pixel_resolution_y && this.pixel_resolution_unit_x && this.pixel_resolution_unit_y) {
-            if (this.pixel_resolution_unit_x==this.pixel_resolution_unit_y) {
-                var units = this.pixel_resolution_unit_x+'<sup>2</sup>';
-            } else {
-                var units = this.pixel_resolution_unit_x+' x '+this.pixel_resolution_unit_y;
-            }
-            globalTitle = globalTitle + '<th>'+units+'</th>';
+        if (this.phys.isPixelResolutionValid()) {
+            globalTitle += '<th>'+this.phys.pixel_units[0]+'<sup>2</sup>'+'</th>';
         }
         globalTitle = globalTitle + '</tr>';
         var globalRows = '';
@@ -774,31 +736,18 @@ Ext.define('BQ.Panel.PixelCounter', {
             for (var c = 0; c<channels.length; c++) { //updates panel values
                 var above = self.evaluateXPath(channels[c],'tag[@name="above"]/@value')[0].value;
                 var below = self.evaluateXPath(channels[c],'tag[@name="below"]/@value')[0].value;
-                
-                var channel_name = ''
-                if(c==0) { 
-                    channel_name = 'red';
-                }
-                if(c==1) {
-                    channel_name = 'green';
-                }
-                if(c==2) {
-                    channel_name = 'blue';
-                } 
 
+                var channel_name = this.channel_names[c];
                 var globalRowAbove = '<td>'+channel_name+'</td><td>above</td><td >'+above.toString()+'</td>';
                 var globalRowBelow = '<td>'+channel_name+'</td><td>below</td><td >'+below.toString()+'</td>';
                 //if found resolution points add to panel
-                if (this.pixel_resolution_x && this.pixel_resolution_y && this.pixel_resolution_unit_x && this.pixel_resolution_unit_y) {
-
-                    var area_above = (parseFloat(above)*parseFloat(this.pixel_resolution_x)*parseFloat(this.pixel_resolution_y)).toFixed(2);
-                    var area_below = (parseFloat(below)*parseFloat(this.pixel_resolution_x)*parseFloat(this.pixel_resolution_y)).toFixed(2);
-
-
-                    globalRowAbove = globalRowAbove + '<td>'+area_above.toString()+'</td>';
-                    globalRowBelow = globalRowBelow + '<td>'+area_below.toString()+'</td>';
+                if (this.phys.isPixelResolutionValid()) {
+                    var area_above = (parseFloat(above)*parseFloat(this.phys.pixel_size[0])*parseFloat(this.phys.pixel_size[1])).toFixed(2);
+                    var area_below = (parseFloat(below)*parseFloat(this.phys.pixel_size[0])*parseFloat(this.phys.pixel_size[1])).toFixed(2);
+                    globalRowAbove += '<td>'+area_above.toString()+'</td>';
+                    globalRowBelow += '<td>'+area_below.toString()+'</td>';
                 }
-            globalRows = globalRows+'<tr>'+globalRowAbove+'</tr><tr>'+globalRowBelow+'</tr>';
+                globalRows += '<tr>'+globalRowAbove+'</tr><tr>'+globalRowBelow+'</tr>';
             }
         }
         else {
@@ -817,32 +766,21 @@ Ext.define('BQ.Panel.PixelCounter', {
         var html = '';
         if (this.regionCount) { //canvas else set panel to zero
 
-            var regionTitle = '<tr><th>pixels</th>';
+            var regionTitle = '<tr><th>centroid</th><th>pixels</th>';
             var scale = this.viewer.view().scale;
 
-            if (this.pixel_resolution_x && this.pixel_resolution_y && this.pixel_resolution_unit_x && this.pixel_resolution_unit_y) {
-                    if (this.pixel_resolution_unit_x==this.pixel_resolution_unit_y) {
-                        var units = this.pixel_resolution_unit_x+'<sup>2</sup>';
-                    } else {
-                        var units = this.pixel_resolution_unit_x+' x '+this.pixel_resolution_unit_y;
-                    }
-                    regionTitle = regionTitle + '<th>'+units+'</th>';
-                }
+            if (this.phys.isPixelResolutionValid()) {
+                regionTitle += '<th>'+this.phys.pixel_units[0]+'<sup>2</sup>'+'</th>';
+            }
 
             regionTitle = regionTitle + '</tr>';
-
-            var regionRows = '<tr>';
+            var regionRows = '<tr><td>'+this.regionCount.x + ','+ this.regionCount.y+'</td>';
             var count = this.regionCount.count;//this.viewer.view().scale //find scale
             var scaled_count = (count/(scale*scale)).toFixed(0);
             var regionRows = regionRows + '<td >'+scaled_count.toString()+'</td>';
-            if (this.pixel_resolution_x && this.pixel_resolution_y && this.pixel_resolution_unit_x && this.pixel_resolution_unit_y) {
-                var area = (parseFloat(scaled_count)*parseFloat(this.pixel_resolution_x)*parseFloat(this.pixel_resolution_y)).toFixed(2);
-                if (this.pixel_resolution_unit_x==this.pixel_resolution_unit_y) {
-                    var units = this.pixel_resolution_unit_x+'<sup>2</sup>';
-                } else {
-                    var units = this.pixel_resolution_unit_x+' x '+this.pixel_resolution_unit_y;
-                }
-                var regionRows = regionRows+'<td>'+area.toString()+'</td>';
+            if (this.phys.isPixelResolutionValid()) {
+                var area = (parseFloat(scaled_count)*parseFloat(this.phys.pixel_size[0])*parseFloat(this.phys.pixel_size[1])).toFixed(2);
+                regionRows += '<td>'+area+'</td>';
             }
             regionRows = regionRows+'</tr>';
             var html = '<table>'+regionTitle+regionRows+"</table>";
