@@ -76,7 +76,7 @@ from bq import data_service
 from . import blob_storage
 
 
-log = logging.getLogger('bq.store_resource')
+log = logging.getLogger('bq.blobs.store_resource')
 
 def load_stores():
     stores = OrderedDict()
