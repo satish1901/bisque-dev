@@ -400,11 +400,13 @@ class stores(object):
 
     def __init__(self, version):
         parser = optparse.OptionParser(
-                    usage="%prog sql <sql>",
+                    usage="%prog stores  [list|create [name]] ",
                     version="%prog " + version)
         parser.add_option('-c','--config', default="config/site.cfg")
         options, args = parser.parse_args()
-
+        if len(args) < 1 or args[0] not in ('list', 'create'):
+            parser.error()
+        self.command  = args.pop(0)
         self.args = args
         self.options = options
 
@@ -413,11 +415,14 @@ class stores(object):
         #engine = config['pylons.app_globals'].sa_engine
         #print engine
         load_config(self.options.config)
+        from bq.blob_service.controllers.blobsrv import load_stores
 
+        self.stores = load_stores()
 
+        if self.command == 'list':
+            print self.stores.keys()
+            return
         store_name = None
-        if len(self.args) > 0:
-            store_name = self.args[0]
 
         nested = self.create_trees(store_name)
         self.create_store(nested)
@@ -430,14 +435,11 @@ class stores(object):
         { 'local' : { 'D1'  : { 'name' : Resource } }}
 
         """
-        from bq.blob_service.controllers.blobsrv import load_stores
         from bq.data_service.model.tag_model import Taggable, DBSession
         from bq.util.dotnested import parse_nested
         from sqlalchemy import or_
 
-        stores = load_stores()
-        self.stores = stores
-
+        stores = self.stores
         toplevel = DBSession.query(Taggable).filter(
             Taggable.resource_parent_id == None,
             or_(Taggable.resource_type == 'image',

@@ -374,24 +374,53 @@ def prepare_tag_expr (query, tag_query=None):
     return query
 
 
-def prepare_type (resource_type, query = None):
-    name, dbtype = resource_type
-    ## Setup universal query type
-    query_expr = None
-    if not query:
-        log.debug ("query type %s %s" % (name, dbtype))
-        query = DBSession.query(dbtype)
 
-    if dbtype == Taggable and name is not None:
-        log.debug ("query resource_type %s" % name)
-        #query_expr = (Taggable.tb_id == UniqueName(name).id)
-        query_expr = (Taggable.resource_type == name)
-    elif not issubclass(dbtype, Taggable) and hasattr(dbtype, 'id'):
-        query_expr = (dbtype.id == Taggable.id)
+
+
+def prepare_type (resource_type):
+    """Prepare a query based on the resource_type
+
+    @param resource_type: A tuple or string of resource_type names (seperate by '|')
+    @return: a name,dbtype, query tuple
+    """
+    if resource_type is None:
+        resource_type = (None, Taggable)
+    if isinstance (resource_type, tuple):
+        types = [ resource_type ]
+        name, dbtype = resource_type
+    elif isinstance(resource_type, basestring):
+        types = [ dbtype_from_tag(x.strip()) for x in resource_type.split('|') ]
+        name, dbtype = ('resource', Taggable)
+
+    query = DBSession.query(dbtype)
+    query_expr = None
+    for resource_type in types:
+        ## Setup universal query type
+        log.debug ("query type %s %s" % (name, dbtype))
+        nm, dbty = resource_type
+        query_type = None
+        # Special clause for non-system resource and list of resources
+        # the name 'nm' is the local type and we will filter those
+        if dbtype == Taggable and nm is not None:
+            log.debug ("query resource_type %s" % nm)
+            #query_expr = (Taggable.tb_id == UniqueName(name).id)
+            query_type =  (Taggable.resource_type == nm)
+        # Check if value or vertix ?
+        elif not issubclass(dbty, Taggable) and hasattr(dbtype, 'id'):
+            query_type = (dbty.id == Taggable.id)
+        if query_type is not None:
+            if query_expr is None :
+                query_expr = query_type
+            else:
+                query_expr = or_(query_expr, query_type)
 
     if query_expr is not None:
-        query = query.filter(query_expr)
-    return query
+        log.debug ("adding filter %s " , str(query_expr))
+        query = query.filter (query_expr)
+    return (name, dbtype, query)
+
+
+
 
 
 def prepare_parent(resource_type, query, parent_query=None):
@@ -662,6 +691,8 @@ def tags_special(dbtype, query, params):
 
     return None
 
+
+
 ATTR_EXPR = re.compile('([><=]*)([^><=]+)')
 def resource_query(resource_type,
                    tag_query=None,
@@ -683,12 +714,11 @@ def resource_query(resource_type,
     @param user_id:
     @param **kw: All other keyword args are used as attribute value to be matched
     '''
+    name, dbtype, query = prepare_type(resource_type)
+    log.debug ("type (%s,%s) query =  %s", name, dbtype, str(query))
 
-    name, dbtype = resource_type
-    query = prepare_type(resource_type)
     log.debug ("query %s: %s order %s parent %s attributes %s" % (name, tag_query, tag_order, parent, str(kw)))
-
-    query = prepare_parent(resource_type, query, parent)
+    query = prepare_parent( (name, dbtype), query, parent)
 
     # This converts an request for values to the actual
     # objects represented by those values;  :o
@@ -782,13 +812,12 @@ def resource_load(resource_type = ('resource', Taggable),
                   with_public=True,
                   action=RESOURCE_READ,
                   **kw):
-    name, dbtype = resource_type
+    name, dbtype, query = prepare_type (resource_type)
 #    resource = prepare_permissions (resource, user_id, with_public = with_public, action=action)
     if uniq is not None:
-        resource = DBSession.query(dbtype).filter_by (resource_uniq = uniq)
+        resource = query.filter_by (resource_uniq = uniq)
     else:
-        resource = prepare_type (resource_type)
-        resource = resource.filter_by (id = id)
+        resource = query.filter_by (id = id)
 
     return resource
 
@@ -1006,30 +1035,25 @@ def resource_types(user_id=None, wpublic=False):
     return vsall
 
 
-def prepare_query_expr (query, resource_type, user_id, wpublic, parent, tag_query, **kw):
-    name, dbtype = resource_type
-
-    query = prepare_type (resource_type, query)
-
-    ## Check permission
-    welcome = kw.pop ('welcome', None)
-    if not welcome:
-        query = prepare_permissions(query, user_id, wpublic)
-
-    ## Parent check
-    ## TODO Consider renaming values and vertex 'id' field
-    ## to parent_id to better represent what they are and simplify
-    ## the parent check below
-    if parent:
-        if hasattr(dbtype.c, 'resource_parent_id'):
-            query = query.filter(dbtype.resource_parent_id == parent.id)
-        elif hasattr(dbtype.c, 'id'):
-            query = query.filter(dbtype.id == parent.id)
-
-
-    ## Subtag expressions
-    if tag_query:
-        query = prepare_tag_expr(query, tag_query)
-    return query
+# def prepare_query_expr (query, resource_type, user_id, wpublic, parent, tag_query, **kw):
+#     name, dbtype = resource_type
+#     query = prepare_type (resource_type, query)
+#     ## Check permission
+#     welcome = kw.pop ('welcome', None)
+#     if not welcome:
+#         query = prepare_permissions(query, user_id, wpublic)
+#     ## Parent check
+#     ## TODO Consider renaming values and vertex 'id' field
+#     ## to parent_id to better represent what they are and simplify
+#     ## the parent check below
+#     if parent:
+#         if hasattr(dbtype.c, 'resource_parent_id'):
+#             query = query.filter(dbtype.resource_parent_id == parent.id)
+#         elif hasattr(dbtype.c, 'id'):
+#             query = query.filter(dbtype.id == parent.id)
+#     ## Subtag expressions
+#     if tag_query:
+#         query = prepare_tag_expr(query, tag_query)
+#     return query
 
 
