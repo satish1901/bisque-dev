@@ -139,9 +139,23 @@ def move_file (fp, newpath):
         with open(newpath, 'wb') as trg:
             shutil.copyfileobj(fp, trg)
 
+if os.name == 'nt':
+    def data_url_path (*names):
+        path = data_path(*names)
+        if len(path)>1 and path[1]==':': #file:// url requires / for drive lettered path like c: -> file:///c:/path
+            path = '/%s'%path
+        return path
 
+    def url2localpath(url):
+        path = urlparse.urlparse(url).path
+        if path[2] == ':' and path[0] == '/':
+            path = path[1:]
+        return path
+else:
+    data_url_path = data_path
 
-
+    def url2localpath(url):
+        return urlparse.urlparse(url).path
 
 ###############################################
 # Local
@@ -149,7 +163,7 @@ class LocalStorage(BlobStorage):
     "blobs locally on file system"
     scheme = 'file'
 
-    def __init__(self, path, top = data_path('imagedir'), readonly=False):
+    def __init__(self, path, top = data_url_path('imagedir'), readonly=False):
         """Create a local storage driver:
 
         :param path: format_path for how to store files
@@ -157,11 +171,11 @@ class LocalStorage(BlobStorage):
         :param readonly: set repo readonly
         """
         self.top = top
-        self.top = string.Template(self.top).safe_substitute(datadir=data_path())
+        self.top = string.Template(self.top).safe_substitute(datadir=data_url_path())
         self.readonly = asbool(readonly)
-        self.format_path = string.Template(path).safe_substitute (datadir=data_path())
+        self.format_path = string.Template(path).safe_substitute (datadir=data_url_path())
         if self.format_path.startswith('file:') and not self.top.startswith('file:'):
-            self.top = 'file:' + self.top
+            self.top = 'file://' + self.top
         if not self.format_path.startswith(self.top):
             raise ConfigurationError('local storage %s does not begin with blob_service.local.dir %s'
                                      % (self.format_path, self.top))
@@ -171,13 +185,13 @@ class LocalStorage(BlobStorage):
 
     def valid(self, ident):
         return ((ident.startswith(self.top)  and ident)
-                or  (urlparse.urlparse(ident).scheme == '' and os.path.join(self.top, ident)))
-               #and os.path.exists(self.localpath(ident)))
+                or  (urlparse.urlparse(ident).scheme == '' and os.path.join(self.top, ident).replace('\\', '/')))
+                #and os.path.exists(self.localpath(ident)))
 
     def write(self, fp, filename, user_name='', uniq=None):
         'store blobs given local path'
         filepath = formatPath(self.format_path, user_name, filename, uniq)
-        localpath = urlparse.urlparse(filepath).path
+        localpath = url2localpath(filepath)
         log.debug('local.write: %s -> %s' % (filename, localpath))
         _mkdir (os.path.dirname(localpath))
         if os.path.exists (localpath):
@@ -189,9 +203,11 @@ class LocalStorage(BlobStorage):
         return ident, localpath
 
     def localpath(self, path):
+        path = path.replace('\\', '/')
         if not path.startswith('file://'):
             path = os.path.join(self.top, path)
-        return urlparse.urlparse(path).path
+            path = path.replace('\\', '/')
+        return url2localpath(path)
 
     def walk(self):
         'walk store returning all elements'
