@@ -84,8 +84,8 @@ from bq.data_service.model import Taggable, DBSession
 
 SIG_NEWBLOB  = "new_blob"
 
-
-import blob_storage
+from . import blob_storage
+from . import store_resource
 
 log = logging.getLogger('bq.blobs')
 
@@ -130,24 +130,6 @@ def guess_type(filename):
         return 'image'
     return 'file'
 
-def load_stores():
-    stores = OrderedDict()
-    store_list = [ x.strip() for x in config.get('bisque.blob_service.stores','').split(',') ]
-    log.debug ('requested stores = %s' , store_list)
-    for store in store_list:
-        # pull out store related params from config
-        params = dict ( (x[0].replace('bisque.stores.%s.' % store, ''), x[1])
-                        for x in  config.items() if x[0].startswith('bisque.stores.%s.' % store))
-        if 'path' not in params:
-            log.error ('cannot configure %s without the path parameter' , store)
-            continue
-        log.debug("params = %s" % params)
-        driver = blob_storage.make_storage_driver(params.pop('path'), **params)
-        if driver is None:
-            log.error ("failed to configure %s.  Please check log for errors " , str(store))
-            continue
-        stores[store] = driver
-    return stores
 
 def transfer_msg(flocal, transfer_t):
     'return a human string for transfer time and size'
@@ -164,7 +146,7 @@ class StorageManager(object):
     'Manage multiple stores'
 
     def __init__(self):
-        self.stores = load_stores()
+        self.stores = store_resource.load_stores()
         log.info ('configured stores %s' ,  ','.join( str(x) for x in self.stores.keys()))
 
     def valid_blob(self, blob_id):
@@ -208,168 +190,6 @@ class StorageManager(object):
 
 
 
-###########################################################################
-# PathServer
-###########################################################################
-
-
-class StoreServer(TGController):
-    """ Manipulate store paths
-    """
-
-
-    def __init__(self):
-        super(StoreServer, self).__init__()
-        self.stores = load_stores()
-
-
-    def load_path (self, store_name, path, **kw ):
-        """load a store resource from store
-        """
-        view = kw.pop('view', 'full')
-
-        q = data_service.query('store', name=store_name, view='full', wpublic='1')
-        if len(q) != 1:
-            log.error ('Multiple named stores')
-            return None
-        q = q[0]
-        log.debug ('ZOOM %s', q.get ('uri'))
-        while path:
-            el= path.pop(0)
-            q = data_service.query(parent=q, name=el, view='full', wpublic='1')
-            if len(q) != 1:
-                log.error ('multiple names (%s) in store level %s', el, q.get('uri'))
-                return None
-            q = q[0]
-        if kw:
-            # might be limitin result
-            q = data_service.get_resource(q, view='full', wpublic=1, **kw)
-
-        return q
-
-
-
-    @expose(content_type='text/xml')
-    def _default(self, *path, **kw):
-        set_admin_mode()
-        log.debug ("STORE: Got %s and %s" ,  path, kw)
-        path = list(path)
-        store_name = path.pop(0)
-        q =  self.load_path(store_name=store_name, path = path, **kw)
-        if q is None:
-            abort (404, "bad store path")
-        return etree.tostring(q)
-
-
-    def find_matching_store(self, path):
-        """Find a store based on the path *best* prefix
-
-        :param path: a url path
-        :type  path: str
-        :return: A tuple (Store, relative path)
-        """
-        best = None
-        stores = self.stores
-        for name,store  in stores.items():
-            new_path = store.valid (path)
-            if new_path:
-                best = name
-                break
-        if not best :
-            return None,None
-        store = data_service.query('store', name=best,view='full')
-        if len(store) != 1:
-            log.error ('multiple store found %s', best)
-            return None, None
-        store = store[0]
-
-        partial = new_path[len(stores[best].top):]
-        log.debug ("Matched %s %s ", best, partial)
-        return store, partial.split ('/')
-
-
-    #@smokesignal.on(SIG_NEWBLOB)
-    def insert_path(self, path, resource_uniq=None, **kw):
-        """ insert a store path into the store resource
-
-        :param path: a string path for the store
-        """
-        log.info("Insert %s into store", path)
-        store, path = self.find_matching_store (path)
-        if store is None:
-            return
-
-        parent = store
-        while path:
-            el = path.pop(0)
-            if not el:
-                continue
-            q  = data_service.query(parent=parent, name=el, view='full')
-            if len(q) != 1:
-                #log.error ('multiple names (%s) in store level %s', el, q.get('uri'))
-                path.insert(0, el)
-                break
-            parent = q[0]
-        # any left over path needs to be created
-        log.debug ("at %s rest %s", parent.get ('uri'), path)
-        elements = []
-        root = None
-        while len(path)>1:
-            nm = path.pop(0)
-            if root is None:
-                resource = root = etree.Element ('dir', name = nm, permission='published')
-            else:
-                resource = etree.SubElement (resource, 'dir', name=nm)
-        # The last element might be dir or a link
-        if len(path)==1:
-            nm = path.pop(0)
-            if root is None:
-                resource = root = etree.Element ('link' if resource_uniq else 'dir',
-                                                 name = nm,
-                                                 permission='published')
-            else:
-                resource = etree.SubElement (resource, 'link' if resource_uniq else 'dir',
-                                             name=nm, permission='published')
-
-            if resource_uniq:
-                resource.set ('value', resource_uniq)
-
-            # create the new resource
-            log.debug ("New resource %s at %s" , etree.tostring(root), parent.get ('uri'))
-            q = data_service.new_resource(resource=root, parent=parent)
-        return q
-
-
-    def delete_path (self, path, **kw):
-        """ Delete an store element and all below it
-
-        :param path: A string (url) of the path
-        :type  path: str
-        """
-
-
-
-
-
-    @expose(content_type='text/xml')
-    def append(self, path=None,  resource_uniq=None,  **kw):
-        if path is None:
-            path = tg.request.body
-
-        self.insert_path (path, resource_uniq)
-
-
-
-    @expose(content_type='text/xml')
-    def index(self):
-        stores = etree.Element ('resource', resource_type='stores')
-        for k,v in self.stores.items():
-            etree.SubElement(stores, 'store', name=k, value=v.top)
-        return etree.tostring(stores)
-
-
-
-
 
 ###########################################################################
 # BlobServer
@@ -379,7 +199,7 @@ class BlobServer(RestController, ServiceMixin):
     '''Manage a set of blob files'''
     service_type = "blob_service"
 
-    store = StoreServer ()
+    store = store_resource.StoreServer ()
 
     def __init__(self, url ):
         ServiceMixin.__init__(self, url)
