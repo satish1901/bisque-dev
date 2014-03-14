@@ -722,9 +722,20 @@ table.x-form-color {
 }
 
 .thresholdelements td{
-    /*text-indent: 15px;*/   
+    /*text-indent: 15px;*/
     padding-left: 15px;
 }
 
+.icon-pipette {
+    background-image: url('/images/viewer/pipette.png');
+    background-size: 24px 24px;
+    background-repeat: no-repeat;
+}
+
+.icon-close {
+    background-image: url('/images/viewer/32px_close.png');
+    background-size: 24px 24px;
+    background-repeat: no-repeat;
+}
 
 
