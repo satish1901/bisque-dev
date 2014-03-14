@@ -539,9 +539,10 @@ PlayerDisplay.prototype.createMenu = function () {
         fieldLabel: 'Brightness',
         width: 400,
         value: 0,
-        increment: 1,
         minValue: -100,
         maxValue: 100,
+        increment: 10,
+        zeroBasedSnapping: true,
         listeners: {
             scope: this,
             change: this.changed,
@@ -554,9 +555,9 @@ PlayerDisplay.prototype.createMenu = function () {
         fieldLabel: 'Contrast',
         width: 400,
         value: 0,
-        increment: 1,
         minValue: -100,
         maxValue: 100,
+        increment: 10,
         zeroBasedSnapping: true,
         listeners: {
             scope: this,
