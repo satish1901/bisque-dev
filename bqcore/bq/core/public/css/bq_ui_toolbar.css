@@ -15,13 +15,16 @@
 }
 
 .toolbar-main h3 {
-  font-size: 190%;
+  font-size: 22px;
   font-weight: normal;
-  font-family: "Times New Roman", Times, serif;
+  /*font-stretch: condensed;
+  font-family: 'Varela Round', sans-serif;*/
+  /*font-family: tahoma,arial,verdana,sans-serif;*/
+  font-family: 'Abel', tahoma, arial, verdana, sans-serif;
 }
 
 .toolbar-main a {
-  color: #000000;
+  color: #666666;
 }
 
 .toolbar-main a:hover {
@@ -38,7 +41,8 @@
 }
 
 .toolbar-main .x-btn-default-toolbar-large .x-btn-inner {
-    font-size: 12px;
+    font-size: 18px;
+    font-family: 'Abel', tahoma, arial, verdana, sans-serif;
 }
 
 /*******************************************************************/
@@ -87,7 +91,7 @@
 }
 
 .toolbar-main .image-logo-bisque {
-    width: 90px;
+    /*width: 90px;*/
     height: 25px;
     margin: 0px 10px 0px 5px;
 }
