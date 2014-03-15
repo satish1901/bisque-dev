@@ -492,11 +492,11 @@ Ext.define('Bisque.Resource.Image.Grid', {
         var fields = this.callParent();
 
         fields[0] = '<div class="gridCellIcon" >' + this.GetImageThumbnailRel({
-            width : 280,
-            height : 280
+            width : this.layoutMgr ? this.layoutMgr.layoutEl.stdImageWidth : 280,
+            height : this.layoutMgr ? this.layoutMgr.layoutEl.stdImageHeight : 280,
         }, {
-            width : 280,
-            height : 280
+            width : this.layoutMgr ? this.layoutMgr.layoutEl.stdImageWidth : 280,
+            height : this.layoutMgr ? this.layoutMgr.layoutEl.stdImageHeight : 280,
         }, {
             width : 40,
             height : 40,

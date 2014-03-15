@@ -305,7 +305,9 @@ class ConverterImaris(ConverterBase):
         '''converts input filename into output thumbnail'''
         log.debug('Thumbnail: %s %s %s for [%s]', width, height, series, ifnm)
         command = ['-i', ifnm, '-t', ofnm, '-tf', 'jpeg', '-ii', '%s'%series]
-        command.extend (['-tl', '%s,%s'%(width, height)])
+        #command.extend (['-tl', '%s,%s'%(width, height)]) # does not seem to work
+        command.extend (['-ts', '%s,%s'%(width, height)])
+        command.extend (['-tb', '#FFFFFF']) # dima: thumbnails are all padded, ask for white right now, before the fix is final
         return cls.run(ifnm, ofnm, command)
 
     @classmethod

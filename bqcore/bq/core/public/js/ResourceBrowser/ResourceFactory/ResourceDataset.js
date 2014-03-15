@@ -30,7 +30,8 @@ Ext.define('Bisque.Resource.Dataset.Compact', {
         this.addCls('compact');
     },
 
-    prefetch : function() {
+    prefetch : function(layoutMgr) {
+        this.callParent(arguments);
         if (!this.getData('fetched')) {
             this.setData('fetched', -1);
             // -1 = Loading
@@ -47,13 +48,17 @@ Ext.define('Bisque.Resource.Dataset.Compact', {
     },
 
     loadResource : function(resource) {
-        var imgs = '<div style = "margin-left:4px; margin-top:-1px; width:152px;height:152px">'
+        var imgs = '<div style = "margin-left:4px; margin-top:-1px; width:152px;height:152px">';
         var thumbnail, margin;
 
         for (var i = 0; i < resource.children.length && i < 4; i++) {
             switch (resource.children[i].resource_type) {
                 case 'image': {
-                    thumbnail = resource.children[i].src + '?slice=,,1,1&thumbnail=280,280';
+                    //thumbnail = resource.children[i].src + '?slice=,,1,1&thumbnail=280,280';
+                    thumbnail = resource.children[i].src + this.getImageParams({
+                        width : this.layoutMgr.layoutEl.stdImageWidth, //280,
+                        height : this.layoutMgr.layoutEl.stdImageHeight, //280,
+                    });
                     break;
                 }
                 case 'dataset': {
@@ -61,11 +66,11 @@ Ext.define('Bisque.Resource.Dataset.Compact', {
                     break;
                 }
                 default :
-                    thumbnail = bq.url('../export_service/public/images/file-large.png')
+                    thumbnail = bq.url('../export_service/public/images/file-large.png');
             }
 
             margin = (i == 1 ? 'margin:0px 0px 0px 2px;' : (i == 2 ? 'margin:2px 2px 0px 0px;' : ''));
-            imgs += '<img style="display:inline-block;height:75px;width:75px;' + margin + '" src=' + thumbnail + ' />'
+            imgs += '<img style="display:inline-block;height:75px;width:75px;' + margin + '" src=' + thumbnail + ' />';
         }
 
         imgs += '</div>';
@@ -74,7 +79,7 @@ Ext.define('Bisque.Resource.Dataset.Compact', {
         // 1 = Loaded
         this.setData('previewDiv', imgs);
 
-        var renderedRef = this.getData('renderedRef')
+        var renderedRef = this.getData('renderedRef');
         if (renderedRef)
             renderedRef.updateContainer();
     },
@@ -100,15 +105,15 @@ Ext.define('Bisque.Resource.Dataset.Card', {
     },
 
     loadResource : function(resource) {
-        var imgs = '<div style = "margin:0px 0px 0px 12px;width:258px;height:310px">'
+        var imgs = '<div style = "margin:0px 0px 0px 12px;width:258px;height:310px">';
         var thumbnail, margin;
 
         for (var i = 0; i < resource.children.length && i < 12; i++) {
             switch (resource.children[i].resource_type) {
                 case 'image': {
                     thumbnail = resource.children[i].src + this.getImageParams({
-                        width : 280,
-                        height : 280
+                        width : this.layoutMgr.layoutEl.stdImageWidth, //280,
+                        height : this.layoutMgr.layoutEl.stdImageHeight, //280,
                     });
                     break;
                 }
@@ -117,11 +122,11 @@ Ext.define('Bisque.Resource.Dataset.Card', {
                     break;
                 }
                 default :
-                    thumbnail = bq.url('../export_service/public/images/file-large.png')
+                    thumbnail = bq.url('../export_service/public/images/file-large.png');
             }
 
             margin = 'margin:0px 3px 2px 0px;';
-            imgs += '<img style="display:inline-block;height:75px;width:75px;' + margin + '" src=' + thumbnail + ' />'
+            imgs += '<img style="display:inline-block;height:75px;width:75px;' + margin + '" src=' + thumbnail + ' />';
         }
 
         imgs += '</div>';
@@ -130,7 +135,7 @@ Ext.define('Bisque.Resource.Dataset.Card', {
         // 1 = Loaded
         this.setData('previewDiv', imgs);
 
-        var renderedRef = this.getData('renderedRef')
+        var renderedRef = this.getData('renderedRef');
         if (renderedRef)
             renderedRef.updateContainer();
     },
@@ -164,15 +169,15 @@ Ext.define('Bisque.Resource.Dataset.Full', {
     },
 
     loadResource : function(resource) {
-        var imgs = '<div style = "margin:0px 0px 0px 12px;width:99%;">'
+        var imgs = '<div style = "margin:0px 0px 0px 12px;width:99%;">';
         var thumbnail, margin;
 
         for (var i = 0; i < resource.children.length; i++) {
             switch (resource.children[i].resource_type) {
                 case 'image': {
                     thumbnail = resource.children[i].src + this.getImageParams({
-                        width : 280,
-                        height : 280
+                        width : this.layoutMgr.layoutEl.stdImageWidth, //280,
+                        height : this.layoutMgr.layoutEl.stdImageHeight, //280,
                     });
                     break;
                 }
@@ -181,7 +186,7 @@ Ext.define('Bisque.Resource.Dataset.Full', {
                     break;
                 }
                 default :
-                    thumbnail = bq.url('../export_service/public/images/file-large.png')
+                    thumbnail = bq.url('../export_service/public/images/file-large.png');
             }
 
             margin = 'margin:0px 3px 2px 0px;';
@@ -194,7 +199,7 @@ Ext.define('Bisque.Resource.Dataset.Full', {
         // 1 = Loaded
         this.setData('previewDiv', imgs);
 
-        var renderedRef = this.getData('renderedRef')
+        var renderedRef = this.getData('renderedRef');
         if (renderedRef)
             renderedRef.updateContainer();
     },
