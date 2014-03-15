@@ -399,14 +399,14 @@ Ext.define('BQ.Application.Toolbar', {
         var browse_vis = (this.toolbar_opts && this.toolbar_opts.browse===false) ? false : true;
         this.items = [{
                 xtype:'tbtext',
-                text: '<img src="'+this.images_base_url+'bisque_logo_100.png" class="image-logo-bisque" />',
-            }, {
+                text: '<a href="/"><img src="'+this.images_base_url+'bisque_logo_100.png" class="image-logo-bisque" /></a>',
+            }, /*{
                 xtype:'tbtext',
                 itemId: 'menu_title',
                 text: '<h3><a href="/">'+this.title+'</a></h3>',
-            }, {
+            },*/ {
                 xtype: 'tbspacer',
-                width: 40,
+                width: 20,
             }, {
                 xtype : 'button',
                 itemId: 'button_create',
