@@ -255,7 +255,7 @@ class ConverterImgcnv(ConverterBase):
         t1,t2 = t
         x1,x2,y1,y2 = roi
         info = kw['info']
-        fmt = kw.get('format', 'bigtiff')
+        fmt = kw.get('fmt', 'bigtiff')
 
         command = ['-i', ifnm, '-o', ofnm, '-t', fmt]
 
