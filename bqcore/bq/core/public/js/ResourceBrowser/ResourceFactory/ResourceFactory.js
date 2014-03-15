@@ -127,8 +127,8 @@ Ext.define('Bisque.Resource', {
             this.setLoading({msg:''});
     },
 
-    GetImageThumbnailRel : function(params, actualSize, displaySize)
-    {
+    GetImageThumbnailRel : function(params, actualSize, displaySize) {
+        var topmargin = Math.max((0.5*displaySize.height/params.height) * (params.height-actualSize.height), 0);
         return  Ext.String.format('<img class="imageCenterHoz" style="\
                     max-width   :   {0}px;  \
                     max-height  :   {1}px;  \
@@ -137,7 +137,7 @@ Ext.define('Bisque.Resource', {
                     id          =   "{4}"   />',
                     displaySize.width,
                     displaySize.height,
-                    (0.5*displaySize.height/params.height) * (params.height-actualSize.height),
+                    topmargin,
                     this.getThumbnailSrc(params),
                     this.resource.uri);
     },
@@ -147,15 +147,12 @@ Ext.define('Bisque.Resource', {
         return this.resource.src + this.getImageParams(params);
     },
 
-    getImageParams : function(config)
-    {
+    getImageParams : function(config) {
         var prefs = this.getImagePrefs('ImageParameters') || '?slice=,,{sliceZ},{sliceT}&thumbnail={width},{height}';
-
-        prefs = prefs.replace('{sliceZ}', Math.max(config.sliceZ || 1, 1));
-        prefs = prefs.replace('{sliceT}', Math.max(config.sliceT || 1, 1));
-        prefs = prefs.replace('{width}', config.width || 150);
-        prefs = prefs.replace('{height}', config.height || 150);
-
+        prefs = prefs.replace('{sliceZ}', config.sliceZ ? Math.max(config.sliceZ || 1, 1) : '');
+        prefs = prefs.replace('{sliceT}', config.sliceT ? Math.max(config.sliceT || 1, 1) : '');
+        prefs = prefs.replace('{width}',  config.width || 280);
+        prefs = prefs.replace('{height}', config.height || 280);
         return prefs;
     },
 

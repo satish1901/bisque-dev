@@ -26,7 +26,7 @@ Ext.define('Bisque.ResourceBrowser.LayoutFactory', {
             }
         }
     }
-})
+});
 
 // Available layout enumerations
 Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS = {
@@ -449,8 +449,10 @@ Ext.define('Bisque.ResourceBrowser.Layout.Grid', {
         this.add(this.getResourceGrid());
 
         var resource, list = [];
-        for (var i = 0; i < resourceQueue.length; i++)
-            list.push(resourceQueue[i].getFields())
+        for (var i = 0; i < resourceQueue.length; i++) {
+            resourceQueue[i].layoutMgr = this;
+            list.push(resourceQueue[i].getFields());
+        }
         this.resourceStore.loadData(list);
 
         var selModel = this.resourceGrid.getSelectionModel();
@@ -474,6 +476,7 @@ Ext.define('Bisque.ResourceBrowser.Layout.Grid', {
         var elHeight, currentHeight = 0;
 
         for (var i = 0; i < tempQ.length; i++) {
+            tempQ[i].layoutMgr = this;
             elHeight = tempQ[i].getFields()[6].height;
             if (currentHeight + elHeight > ctHeight)
                 break;
