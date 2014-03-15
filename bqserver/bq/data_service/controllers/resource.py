@@ -53,7 +53,6 @@ DESCRIPTION
 
 """
 from __future__ import with_statement
-import string
 import os
 import re
 #import md5
@@ -64,18 +63,17 @@ from urlparse import urlparse
 from datetime import datetime
 from time import gmtime, strptime
 
-import pylons
 from pylons.controllers.util import abort
 
 import tg
-from tg import  expose, request, session
+from tg import  expose
 from tg.util import Bunch
 from tg.configuration import  config
 #from tg.controllers import CUSTOM_CONTENT_TYPE
 
 from bq.core import identity
 from bq.core.service import ServiceController
-from bq.exceptions import RequestError
+#from bq.exceptions import RequestError
 from bq.util.paths import data_path
 
 log = logging.getLogger("bq.data_service.resource")
@@ -187,13 +185,18 @@ class ResponseCache(object):
 
     def fetch(self, url,user):
         #log.debug ('cache fetch %s' % url)
-        cachename = os.path.join(self.cachepath, self._cache_name(url, user))
-        if os.path.exists (cachename):
-            with open(cachename) as f:
-                headers, cached = f.read().split ('\n\n', 1)
-                log.info ('cache fetch serviced %s' % url)
-                headers = eval (headers)
-                return headers, cached
+        try:
+            cachename = os.path.join(self.cachepath, self._cache_name(url, user))
+            if os.path.exists (cachename):
+                with open(cachename) as f:
+                    headers, cached = f.read().split ('\n\n', 1)
+                    log.info ('cache fetch serviced %s' % url)
+                    headers = eval (headers)
+                    return headers, cached
+        except ValueError,e:
+            pass
+        except IOError, e:
+            pass
         return None, None
 
     def invalidate(self, url, user, files = None, exact=False):
@@ -246,7 +249,9 @@ class ResponseCache(object):
         mtime =  self.modified(url, user)
         if mtime:
             cachename = os.path.join(self.cachepath, self._cache_name(url, user))
+            # pylint: disable=E1103
             return hashlib.md5 (str(mtime) + cachename).hexdigest()
+            # pylint: enable=E1103
         return None
 
 
@@ -536,6 +541,7 @@ class Resource(ServiceController):
             child = self.get_child_resource(token)
             if child is not None:
                 bisque.parent = resource
+                log.debug ("parent = %s" % resource)
                 #call down into the child resource.
                 return child._default(*path, **kw)
 
