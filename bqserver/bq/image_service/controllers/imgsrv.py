@@ -168,6 +168,31 @@ class ConverterDict(OrderedDict):
 # ProcessToken
 ################################################################################
 
+mime_types = {
+    'html'      : 'text/html',
+    'xml'       : 'text/xml',
+    'file'      : 'application/octet-stream',
+    'flash'     : 'application/x-shockwave-flash',
+    'flv'       : 'video/x-flv',
+    'avi'       : 'video/avi',
+    'quicktime' : 'video/quicktime',
+    'wmv'       : 'video/x-ms-wmv',
+    'matroska'  : 'video/x-matroska',
+    'webm'      : 'video/webm',
+    'h264'      : 'video/mp4',
+    'mpeg4'     : 'video/mp4',
+    'ogg'       : 'video/ogg',
+}
+
+cache_info = {
+    'no'    : 'no-cache',
+    'day'   : 'max-age=86400',
+    'days2' : 'max-age=172800',
+    'week'  : 'max-age=604800',
+    'month' : 'max-age=2629743',
+    'year'  : 'max-age=31557600',
+}
+
 class ProcessToken(object):
     'Keep data with correct content type and cache info'
 
@@ -175,7 +200,7 @@ class ProcessToken(object):
         return '{data: %s, contentType: %s, is_file: %s}'%(self.data, self.contentType, self.is_file)
 
     def __init__(self):
-        self.data        = False
+        self.data        = None
         self.contentType = ''
         self.cacheInfo   = ''
         self.outFileName = ''
@@ -187,66 +212,63 @@ class ProcessToken(object):
     def setData (self, data_buf, content_type):
         self.data = data_buf
         self.contentType = content_type
-        self.cacheInfo = 'max-age=302400' # one week
+        self.cacheInfo = cache_info['month']
         return self
 
     def setHtml (self, text):
         self.data = text
-        self.contentType = 'text/html'
-        self.cacheInfo = 'no-cache'
+        self.contentType = mime_types['html']
+        self.cacheInfo = cache_info['no']
         self.is_file = False
         return self
 
     def setXml (self, xml_str):
         self.data = xml_str
-        self.contentType = 'text/xml'
-        self.cacheInfo = 'max-age=302400' # one week
-        #self.cacheInfo = 'no-cache'
+        self.contentType = mime_types['xml']
+        self.cacheInfo = cache_info['week']
         self.is_file = False
         return self
 
     def setXmlFile (self, fname):
         self.data = fname
         self.contentType = 'text/xml'
-        self.cacheInfo = 'max-age=302400' # one week
+        self.cacheInfo = cache_info['week']
         self.is_file = True
         return self
 
-    def setImage (self, fname, format):
+    def setImage (self, fname, fmt, **kw):
         self.data = fname
         self.is_file = True
         if self.dims is not None:
-            self.dims['format'] = format
-        self.contentType = 'image/' + format.lower()
-        #self.cacheInfo = 'max-age=43200' # one day
-        #self.cacheInfo = 'max-age=86400' # two days
-        self.cacheInfo = 'max-age=302400' # one week
-        #self.cacheInfo = 'no-cache'
-        if self.contentType.lower() == 'image/flash':
-            self.contentType = 'application/x-shockwave-flash'
-        if self.contentType.lower() == 'image/flv':
-            self.contentType = 'video/x-flv'
-        if self.contentType.lower() == 'image/avi':
-            self.contentType = 'video/avi'
-        if self.contentType.lower() == 'image/quicktime':
-            self.contentType = 'video/quicktime'
-        if self.contentType.lower() == 'image/wmv':
-            self.contentType = 'video/x-ms-wmv'
-        if self.contentType.lower().startswith('image/mpeg'):
-            self.contentType = 'video/mp4'
-        if self.contentType.lower() == 'image/matroska':
-            self.contentType = 'video/x-matroska'
+            self.dims['format'] = fmt
+        fmt = fmt.lower()
+                    
+        # mime types
+        if fmt in mime_types:
+            self.contentType = mime_types[fmt]
+        else:
+            self.contentType = 'image/' + fmt
+            if fmt.startswith('mpeg'):
+                self.contentType = 'video/mpeg'
+            
+        # histogram
+        if 'hist' in kw:
+            self.histogram = kw['hist']
+        
+        # cache
+        self.cacheInfo = cache_info['month']
+        
         return self
 
     def setFile (self, fname):
         self.data = fname
         self.is_file = True
-        self.contentType = 'application/octet-stream'
-        self.cacheInfo = 'max-age=302400' # one week
+        self.contentType = mime_types['file']
+        self.cacheInfo = cache_info['year']
         return self
 
     def setNone (self):
-        self.data = False
+        self.data = None
         self.is_file = False
         self.contentType = ''
         return self
@@ -254,73 +276,57 @@ class ProcessToken(object):
     def setHtmlErrorUnauthorized (self):
         self.data = 'Permission denied...'
         self.is_file = False
-        self.contentType = 'text/html'
-        self.cacheInfo = 'no-cache'
+        self.contentType = mime_types['html']
+        self.cacheInfo = cache_info['no']
         self.httpResponseCode = 401
         return self
 
     def setHtmlErrorNotFound (self):
         self.data = 'File not found...'
         self.is_file = False
-        self.contentType = 'text/html'
-        self.cacheInfo = 'no-cache'
+        self.contentType = mime_types['html']
+        self.cacheInfo = cache_info['no']
         self.httpResponseCode = 404
         return self
 
     def setHtmlErrorNotSupported (self):
         self.data = 'File is not in supported image format...'
         self.is_file = False
-        self.contentType = 'text/html'
-        self.cacheInfo = 'no-cache'
+        self.contentType = mime_types['html']
+        self.cacheInfo = cache_info['no']
         self.httpResponseCode = 415
         return self
 
     def isValid (self):
-        if self.data:
-            return True
-        else:
-            return False
+        return self.data is not None
 
     def isImage (self):
         if self.contentType.startswith('image/'):
             return True
         elif self.contentType.startswith('video/'):
             return True
-        elif self.contentType.lower() == 'application/x-shockwave-flash':
+        elif self.contentType.lower() == mime_types['flash']:
             return True
         else:
             return False
 
     def isFile (self):
         return self.is_file
-        #if self.contentType.startswith('image/') or self.contentType.startswith('application/') or self.contentType.startswith('video/'):
-        #    return True
-        #else:
-        #    return False
 
     def isText (self):
         return self.contentType.startswith('text/')
 
     def isHtml (self):
-        if self.contentType == 'text/html':
-            return True
-        else:
-            return False
+        return self.contentType == mime_types['html']
 
     def isXml (self):
-        if self.contentType == 'text/xml':
-            return True
-        else:
-            return False
+        return self.contentType == mime_types['xml']
 
     def isHttpError (self):
         return (not self.httpResponseCode == 200)
 
     def hasFileName (self):
-        if len(self.outFileName) > 0:
-            return True
-        else:
-            return False
+        return len(self.outFileName) > 0
 
     def testFile (self):
         if self.isFile() and not os.path.exists(self.data):
@@ -329,10 +335,7 @@ class ProcessToken(object):
     def getDim (self, key, def_val):
         if self.dims is None:
             return def_val
-        if key in self.dims:
-            return self.dims[key]
-        else:
-            return def_val
+        return self.dims.get(key, def_val)
 
 
 ################################################################################
@@ -602,7 +605,7 @@ class SliceService(object):
 
         ifname = self.server.getInFileName( data_token, image_id )
         ofname = self.server.getOutFileName( ifname, image_id, '.%d-%d,%d-%d,%d-%d,%d-%d' % (x1,x2,y1,y2,z1,z2,t1,t2) )
-        return data_token.setImage(ofname, format=default_format)
+        return data_token.setImage(ofname, fmt=default_format)
 
     def action(self, image_id, data_token, arg):
         '''arg = x1-x2,y1-y2,z|z1-z2,t|t1-t2'''
@@ -653,7 +656,7 @@ class SliceService(object):
         if not os.path.exists(ofname):
             intermediate = self.server.getOutFileName( ifname, image_id, '.ome.tif' )
             for c in self.server.converters.itervalues():
-                r = c.slice(ifname, ofname, z=(z1,z2), t=(t1,t2), roi=(x1,x2,y1,y2), series=0, info=data_token.dims, format=default_format, intermediate=intermediate)
+                r = c.slice(ifname, ofname, z=(z1,z2), t=(t1,t2), roi=(x1,x2,y1,y2), series=0, info=data_token.dims, fmt=default_format, intermediate=intermediate)
                 if r is not None:
                     break
             if r is None:
@@ -670,7 +673,7 @@ class SliceService(object):
         finally:
             pass
 
-        return data_token.setImage(ofname, format=default_format)
+        return data_token.setImage(ofname, fmt=default_format)
 
 class FormatService(object):
     '''Provides an image in the requested format
@@ -718,7 +721,7 @@ class FormatService(object):
             data_token.setFile(fname=ofile)
             data_token.outFileName = filename
         else:
-            data_token.setImage(fname=ofile, format=fmt)
+            data_token.setImage(fname=ofile, fmt=fmt)
         return data_token
 
     def action(self, image_id, data_token, arg):
@@ -750,7 +753,7 @@ class FormatService(object):
             extra = []
             if len(args) > 0:
                 extra.extend( ['-options', (' ').join(args)])
-            elif fmt == 'jpg' or fmt == 'jpeg':
+            elif fmt in ['jpg', 'jpeg']:
                 extra.extend(['-options', 'quality 95 progressive yes'])
 
             c = self.server.writable_formats[fmt]
@@ -765,7 +768,7 @@ class FormatService(object):
             data_token.setFile(fname=ofile)
             data_token.outFileName = filename
         else:
-            data_token.setImage(fname=ofile, format=fmt)
+            data_token.setImage(fname=ofile, fmt=fmt)
 
         if (ofile != ifile) and (fmt != 'raw'):
             try:
@@ -815,7 +818,7 @@ class ResizeService(object):
 
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.size_%d,%d,%s,%s' % (size[0], size[1], method, textAddition) )
-        return data_token.setImage(ofile, format=default_format)
+        return data_token.setImage(ofile, fmt=default_format)
 
     def action(self, image_id, data_token, arg):
         log.debug('Resize: %s'%arg)
@@ -868,7 +871,7 @@ class ResizeService(object):
         finally:
             pass
 
-        return data_token.setImage(ofile, format=default_format)
+        return data_token.setImage(ofile, fmt=default_format)
 
 class Resize3DService(object):
     '''Provide images in requested dimensions
@@ -908,7 +911,7 @@ class Resize3DService(object):
 
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.size3d_%d,%d,%d,%s,%s' % (size[0], size[1], size[2], method,textAddition) )
-        return data_token.setImage(ofile, format=default_format)
+        return data_token.setImage(ofile, fmt=default_format)
 
     def action(self, image_id, data_token, arg):
         log.debug('Resize3D: %s'%arg )
@@ -976,7 +979,7 @@ class Resize3DService(object):
         finally:
             pass
 
-        return data_token.setImage(ofile, format=default_format)
+        return data_token.setImage(ofile, fmt=default_format)
 
 class Rearrange3DService(object):
     '''Rearranges dimensions of an image
@@ -995,7 +998,7 @@ class Rearrange3DService(object):
         arg = arg.lower()
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.rearrange3d_%s'%arg )
-        return data_token.setImage(ofile, format=default_format)
+        return data_token.setImage(ofile, fmt=default_format)
 
     def action(self, image_id, data_token, arg):
         log.debug('Rearrange3D: %s'%arg )
@@ -1027,7 +1030,7 @@ class Rearrange3DService(object):
         finally:
             pass
 
-        return data_token.setImage(ofile, format=default_format)
+        return data_token.setImage(ofile, fmt=default_format)
 
 class ThumbnailService(object):
     '''Create and provide thumbnails for images:
@@ -1063,7 +1066,7 @@ class ThumbnailService(object):
 
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.thumb_%s,%s,%s.jpg'%(size[0],size[1],method) )
-        return data_token.setImage(ofile, format='jpeg')
+        return data_token.setImage(ofile, fmt='jpeg')
 
     def action(self, image_id, data_token, arg):
 
@@ -1109,7 +1112,7 @@ class ThumbnailService(object):
         finally:
             pass
 
-        return data_token.setImage(ofile, format='jpeg')
+        return data_token.setImage(ofile, fmt='jpeg')
 
 class RoiService(object):
     '''Provides ROI for requested images
@@ -1135,7 +1138,7 @@ class RoiService(object):
         if len(vs)>3 and vs[3].isdigit(): y2 = int(vs[3])
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.roi_%d,%d,%d,%d'%(x1,y1,x2,y2) )
-        return data_token.setImage(ofile, format=default_format)
+        return data_token.setImage(ofile, fmt=default_format)
 
     def action(self, image_id, data_token, arg):
         vs = arg.split(',', 4)
@@ -1163,7 +1166,7 @@ class RoiService(object):
         finally:
             pass
 
-        return data_token.setImage(ofile, format=default_format)
+        return data_token.setImage(ofile, fmt=default_format)
 
 class RemapService(object):
     """Provide an image with the requested channel mapping
@@ -1183,7 +1186,7 @@ class RemapService(object):
         arg = arg.lower()
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.map_%s'%arg )
-        return data_token.setImage(fname=ofile, format=default_format)
+        return data_token.setImage(fname=ofile, fmt=default_format)
 
     def action(self, image_id, data_token, arg):
 
@@ -1209,7 +1212,7 @@ class RemapService(object):
         finally:
             pass
 
-        return data_token.setImage(fname=ofile, format=default_format)
+        return data_token.setImage(fname=ofile, fmt=default_format)
 
 class FuseService(object):
     """Provide an RGB image with the requested channel fusion
@@ -1233,7 +1236,7 @@ class FuseService(object):
         ofile = self.server.getOutFileName( ifile, image_id, '.fuse_%s'%(argenc) )
         if method != 'a':
             ofile = '%s_%s'%(ofile, method)
-        return data_token.setImage(fname=ofile, format=default_format)
+        return data_token.setImage(fname=ofile, fmt=default_format)
 
     def action(self, image_id, data_token, arg):
         method = 'a'
@@ -1259,7 +1262,6 @@ class FuseService(object):
             arg.extend(['-ihst', data_token.histogram])
 
         if not os.path.exists(ofile):
-            #imgcnv.convert(ifile, ofile, fmt=default_format, extra=arg)
             self.server.imageconvert(image_id, ifile, ofile, fmt=default_format, extra=arg)
 
         try:
@@ -1268,7 +1270,7 @@ class FuseService(object):
         finally:
             pass
 
-        data_token.setImage(fname=ofile, format=default_format)
+        data_token.setImage(fname=ofile, fmt=default_format)
         data_token.histogram = None # fusion ideally should not be changing image histogram
         return data_token
 
@@ -1300,7 +1302,7 @@ class DepthService(object):
         arg = arg.lower()
         ifile = self.server.getInFileName(data_token, image_id)
         ofile = self.server.getOutFileName(ifile, image_id, '.depth_%s'%arg)
-        return data_token.setImage(fname=ofile, format=default_format)
+        return data_token.setImage(fname=ofile, fmt=default_format)
 
     def action(self, image_id, data_token, arg):
         ms = 'f|d|t|e|c|n'.split('|')
@@ -1326,16 +1328,13 @@ class DepthService(object):
 
         ifile = self.server.getInFileName(data_token, image_id)
         ofile = self.server.getOutFileName(ifile, image_id, '.depth_%s'%arg)
+        ohist = self.server.getOutFileName(ifile, image_id, '.histogram_depth_%s'%arg)
         log.debug('Depth: %s to %s with [%s]'%(ifile, ofile, arg))
-
-        if data_token.histogram is not None:
-            ohist = self.server.getOutFileName(ifile, image_id, '.histogram_depth_' + arg)
 
         if not os.path.exists(ofile):
             extra=['-multi', '-depth', arg]
             if data_token.histogram is not None:
                 extra.extend([ '-ihst', data_token.histogram, '-ohst', ohist])
-            #imgcnv.convert(ifile, ofile, fmt=default_format, extra=extra)
             self.server.imageconvert(image_id, ifile, ofile, fmt=default_format, extra=extra)
 
         try:
@@ -1345,11 +1344,7 @@ class DepthService(object):
         finally:
             pass
 
-        data_token.setImage(fname=ofile, format=default_format)
-        if data_token.histogram is not None:
-            data_token.histogram = ohist
-        return data_token
-
+        return data_token.setImage(fname=ofile, fmt=default_format, hist = ohist if data_token.histogram is not None else None)
 
 
 ################################################################################
@@ -1397,7 +1392,7 @@ class TileService(object):
         base_name = self.server.getOutFileName(os.path.join('%s.tiles'%(base_name), '%s'%tsz), image_id, '' )
         ofname    = '%s_%.3d_%.3d_%.3d.tif' % (base_name, l, tnx, tny)
         #log.debug('Tiles dryrun: from %s to %s' % (ifname, ofname) )
-        return data_token.setImage(ofname, format=default_format)
+        return data_token.setImage(ofname, fmt=default_format)
 
     def action(self, image_id, data_token, arg):
         '''arg = l,tnx,tny,tsz'''
@@ -1462,7 +1457,7 @@ class TileService(object):
                 data_token.dims['image_num_p'] = 1
                 data_token.dims['image_num_z'] = 1
                 data_token.dims['image_num_t'] = 1
-                data_token.setImage(ofname, format=default_format)
+                data_token.setImage(ofname, fmt=default_format)
                 data_token.histogram = hist_name
             finally:
                 pass
@@ -1490,7 +1485,7 @@ class ProjectMaxService(object):
     def dryrun(self, image_id, data_token, arg):
         ifile = self.server.getInFileName(data_token, image_id)
         ofile = self.server.getOutFileName(ifile, image_id, '.projectmax')
-        return data_token.setImage(fname=ofile, format=default_format)
+        return data_token.setImage(fname=ofile, fmt=default_format)
 
     def action(self, image_id, data_token, arg):
 
@@ -1504,7 +1499,7 @@ class ProjectMaxService(object):
         data_token.dims['image_num_p']  = 1
         data_token.dims['image_num_z']  = 1
         data_token.dims['image_num_t']  = 1
-        return data_token.setImage(fname=ofile, format=default_format)
+        return data_token.setImage(fname=ofile, fmt=default_format)
 
 class ProjectMinService(object):
     '''Provide an image combined of all input planes by MIN
@@ -1519,7 +1514,7 @@ class ProjectMinService(object):
     def dryrun(self, image_id, data_token, arg):
         ifile = self.server.getInFileName(data_token, image_id)
         ofile = self.server.getOutFileName(ifile, image_id, '.projectmin')
-        return data_token.setImage(fname=ofile, format=default_format)
+        return data_token.setImage(fname=ofile, fmt=default_format)
 
     def action(self, image_id, data_token, arg):
 
@@ -1533,7 +1528,7 @@ class ProjectMinService(object):
         data_token.dims['image_num_p']  = 1
         data_token.dims['image_num_z']  = 1
         data_token.dims['image_num_t']  = 1
-        return data_token.setImage(fname=ofile, format=default_format)
+        return data_token.setImage(fname=ofile, fmt=default_format)
 
 class NegativeService(object):
     '''Provide an image negative
@@ -1548,7 +1543,7 @@ class NegativeService(object):
     def dryrun(self, image_id, data_token, arg):
         ifile = self.server.getInFileName(data_token, image_id)
         ofile = self.server.getOutFileName(ifile, image_id, '.negative')
-        return data_token.setImage(fname=ofile, format=default_format)
+        return data_token.setImage(fname=ofile, fmt=default_format)
 
     def action(self, image_id, data_token, arg):
 
@@ -1559,7 +1554,7 @@ class NegativeService(object):
         if not os.path.exists(ofile):
             self.server.imageconvert(image_id, ifile, ofile, fmt=default_format, extra=['-negative', '-multi'])
 
-        return data_token.setImage(fname=ofile, format=default_format)
+        return data_token.setImage(fname=ofile, fmt=default_format)
 
 class DeinterlaceService(object):
     '''Provides a deinterlaced image
@@ -1574,7 +1569,7 @@ class DeinterlaceService(object):
     def dryrun(self, image_id, data_token, arg):
         ifile = self.server.getInFileName(data_token, image_id)
         ofile = self.server.getOutFileName(ifile, image_id, '.deinterlace')
-        return data_token.setImage(fname=ofile, format=default_format)
+        return data_token.setImage(fname=ofile, fmt=default_format)
 
     def action(self, image_id, data_token, arg):
 
@@ -1585,7 +1580,7 @@ class DeinterlaceService(object):
         if not os.path.exists(ofile):
             self.server.imageconvert(image_id, ifile, ofile, fmt=default_format, extra=['-deinterlace', 'avg', '-multi'])
 
-        return data_token.setImage(fname=ofile, format=default_format)
+        return data_token.setImage(fname=ofile, fmt=default_format)
 
 class ThresholdService(object):
     '''Threshold an image
@@ -1609,7 +1604,7 @@ class ThresholdService(object):
         arg = '%s,%s'%(args[0], method)
         ifile = self.server.getInFileName(data_token, image_id)
         ofile = self.server.getOutFileName(ifile, image_id, '.threshold_%s'%arg)
-        return data_token.setImage(fname=ofile, format=default_format)
+        return data_token.setImage(fname=ofile, fmt=default_format)
 
     def action(self, image_id, data_token, arg):
         arg = arg.lower()
@@ -1627,7 +1622,7 @@ class ThresholdService(object):
         if not os.path.exists(ofile):
             self.server.imageconvert(image_id, ifile, ofile, fmt=default_format, extra=['-threshold', arg])
 
-        return data_token.setImage(fname=ofile, format=default_format)
+        return data_token.setImage(fname=ofile, fmt=default_format)
 
 class PixelCounterService(object):
     '''Return pixel counts of a thresholded image
@@ -1680,7 +1675,6 @@ class HistogramService(object):
         log.debug('Histogram: %s to %s'%(ifile, ofile))
 
         if not os.path.exists(ofile):
-            #imgcnv.convert(ifile, None, extra=['-ohstxml', ofile])
             self.server.imageconvert(image_id, ifile, None, extra=['-ohstxml', ofile])
 
         return data_token.setXmlFile(fname=ofile)
@@ -1700,20 +1694,23 @@ class LevelsService(object):
         arg = arg.lower()
         ifile = self.server.getInFileName(data_token, image_id)
         ofile = self.server.getOutFileName(ifile, image_id, '.levels_%s'%arg)
-        return data_token.setImage(fname=ofile, format=default_format)
+        return data_token.setImage(fname=ofile, fmt=default_format)
 
     def action(self, image_id, data_token, arg):
 
         arg = arg.lower()
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.levels_%s'%arg )
+        ohist = self.server.getOutFileName(ifile, image_id, '.histogram_levels_%s'%arg)
         log.debug('Levels: %s to %s with [%s]'%(ifile, ofile, arg))
 
         if not os.path.exists(ofile):
-            #imgcnv.convert(ifile, ofile, fmt=default_format, extra=['-levels', arg])
-            self.server.imageconvert(image_id, ifile, ofile, fmt=default_format, extra=['-levels', arg])
+            extra=['-levels', arg]
+            if data_token.histogram is not None:
+                extra.extend([ '-ihst', data_token.histogram, '-ohst', ohist])
+            self.server.imageconvert(image_id, ifile, ofile, fmt=default_format, extra=extra)
 
-        return data_token.setImage(fname=ofile, format=default_format)
+        return data_token.setImage(fname=ofile, fmt=default_format, hist = ohist if data_token.histogram is not None else None)
 
 class BrightnessContrastService(object):
     '''Adjust brightnesscontrast in an image
@@ -1730,19 +1727,23 @@ class BrightnessContrastService(object):
         arg = arg.lower()
         ifile = self.server.getInFileName(data_token, image_id)
         ofile = self.server.getOutFileName(ifile, image_id, '.brightnesscontrast_%s'%arg)
-        return data_token.setImage(fname=ofile, format=default_format)
+        return data_token.setImage(fname=ofile, fmt=default_format)
 
     def action(self, image_id, data_token, arg):
 
         arg = arg.lower()
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.brightnesscontrast_%s'%arg )
+        ohist = self.server.getOutFileName(ifile, image_id, '.histogram_brightnesscontrast_%s'%arg)
         log.debug('Brightnesscontrast: %s to %s with [%s]'%(ifile, ofile, arg))
 
         if not os.path.exists(ofile):
-            self.server.imageconvert(image_id, ifile, ofile, fmt=default_format, extra=['-brightnesscontrast', arg])
+            extra=['-brightnesscontrast', arg]
+            if data_token.histogram is not None:
+                extra.extend([ '-ihst', data_token.histogram, '-ohst', ohist])            
+            self.server.imageconvert(image_id, ifile, ofile, fmt=default_format, extra=extra)
 
-        return data_token.setImage(fname=ofile, format=default_format)
+        return data_token.setImage(fname=ofile, fmt=default_format, hist = ohist if data_token.histogram is not None else None)
 
 class TextureAtlasService(object):
     '''Returns a 2D texture atlas image for a given 3D input
@@ -1759,7 +1760,7 @@ class TextureAtlasService(object):
         ofile = self.server.getOutFileName(ifile, image_id, '.textureatlas')
         data_token.dims['image_num_z'] = 1
         data_token.dims['image_num_t'] = 1
-        return data_token.setImage(fname=ofile, format=default_format)
+        return data_token.setImage(fname=ofile, fmt=default_format)
 
     def action(self, image_id, data_token, arg):
         ifile = self.server.getInFileName(data_token, image_id)
@@ -1779,7 +1780,7 @@ class TextureAtlasService(object):
         finally:
             pass
 
-        return data_token.setImage(fname=ofile, format=default_format)
+        return data_token.setImage(fname=ofile, fmt=default_format)
 
 class TransformService(object):
     """Provide an image transform
@@ -1798,7 +1799,7 @@ class TransformService(object):
         arg = arg.lower()
         ifile = self.server.getInFileName(data_token, image_id)
         ofile = self.server.getOutFileName(ifile, image_id, '.transform_%s'%arg)
-        return data_token.setImage(fname=ofile, format=default_format)
+        return data_token.setImage(fname=ofile, fmt=default_format)
 
     def action(self, image_id, data_token, arg):
 
@@ -1831,7 +1832,7 @@ class TransformService(object):
             #imgcnv.convert(ifile, ofile, fmt=default_format, extra=extra)
             self.server.imageconvert(image_id, ifile, ofile, fmt=default_format, extra=extra)
 
-        return data_token.setImage(fname=ofile, format=default_format)
+        return data_token.setImage(fname=ofile, fmt=default_format)
 
 class SampleFramesService(object):
     '''Returns an Image composed of Nth frames form input
@@ -1848,7 +1849,7 @@ class SampleFramesService(object):
         arg = arg.lower()
         ifile = self.server.getInFileName(data_token, image_id)
         ofile = self.server.getOutFileName(ifile, image_id, '.framessampled_%s'%arg)
-        return data_token.setImage(fname=ofile, format=default_format)
+        return data_token.setImage(fname=ofile, fmt=default_format)
 
     def action(self, image_id, data_token, arg):
         if not arg:
@@ -1870,7 +1871,7 @@ class SampleFramesService(object):
         finally:
             pass
 
-        return data_token.setImage(fname=ofile, format=default_format)
+        return data_token.setImage(fname=ofile, fmt=default_format)
 
 class FramesService(object):
     '''Returns an image composed of user defined frames form input
@@ -1887,7 +1888,7 @@ class FramesService(object):
         arg = arg.lower()
         ifile = self.server.getInFileName(data_token, image_id)
         ofile = self.server.getOutFileName(ifile, image_id, '.frames_%s'%arg)
-        return data_token.setImage(fname=ofile, format=default_format)
+        return data_token.setImage(fname=ofile, fmt=default_format)
 
     def action(self, image_id, data_token, arg):
 
@@ -1910,7 +1911,7 @@ class FramesService(object):
         finally:
             pass
 
-        return data_token.setImage(fname=ofile, format=default_format)
+        return data_token.setImage(fname=ofile, fmt=default_format)
 
 class RotateService(object):
     '''Provides rotated versions for requested images:
@@ -1930,7 +1931,7 @@ class RotateService(object):
             ang='-90'
         ifile = self.server.getInFileName(data_token, image_id)
         ofile = self.server.getOutFileName(ifile, image_id, '.rotated_%s'%ang)
-        return data_token.setImage(fname=ofile, format=default_format)
+        return data_token.setImage(fname=ofile, fmt=default_format)
 
     def action(self, image_id, data_token, arg):
         ang = arg.lower()
@@ -1957,7 +1958,7 @@ class RotateService(object):
         finally:
             pass
 
-        return data_token.setImage(ofile, format=default_format)
+        return data_token.setImage(ofile, fmt=default_format)
 
 ################################################################################
 # Specific Image Services
@@ -1976,7 +1977,7 @@ class RotateService(object):
 #     def dryrun(self, image_id, data_token, arg):
 #         ifile = self.server.getInFileName(data_token, image_id)
 #         ofile = self.server.getOutFileName(ifile, image_id, '.ome.tif')
-#         return data_token.setImage(fname=ofile, format=default_format)
+#         return data_token.setImage(fname=ofile, fmt=default_format)
 #
 #     def resultFilename(self, image_id, data_token):
 #         ifile = self.server.getInFileName( data_token, image_id )
@@ -2013,7 +2014,7 @@ class RotateService(object):
 #         if bfinfo is None:
 #             bfinfo = self.server.getImageInfo(ident=image_id)
 #         data_token.dims = bfinfo
-#         return data_token.setImage(ofile, format='ome-bigtiff')
+#         return data_token.setImage(ofile, fmt='ome-bigtiff')
 
 #class UriService(object):
 #    '''Fetches an image from remote URI and passes it from further processing, Note that the URI must be encoded!
@@ -2050,7 +2051,7 @@ class RotateService(object):
 #
 #        data_token.setFile( ofile )
 #        data_token.outFileName = url_filename
-#        #data_token.setImage(fname=ofile, format=default_format)
+#        #data_token.setImage(fname=ofile, fmt=default_format)
 #
 #        if not imgcnv.supported(ofile):
 #            #data_token.setHtml('URI service: Downloaded file is not in supported image format...')
@@ -2118,7 +2119,7 @@ class RotateService(object):
 ##            im = PILImage.blend(im, im_mask, 0.5 )
 ##            im.save(ofname, "TIFF")
 ##
-##        data_token.setImage(fname=ofname, format=default_format)
+##        data_token.setImage(fname=ofname, fmt=default_format)
 #        return data_token
 #
 #################################################################################
@@ -2250,7 +2251,7 @@ class RotateService(object):
 #        log.debug('Slice service: to ' +  ofname )
 #        imgcnv.convert(ifname, ofname, fmt=default_format, extra=['-page', '1'] )
 #
-#        data_token.setImage(ofname, format=default_format)
+#        data_token.setImage(ofname, fmt=default_format)
 #        return data_token
 #
 #
@@ -2287,7 +2288,7 @@ class RotateService(object):
 #                ifiles.append(ifname)
 #        imgcnv.convert_list(ifiles, ofname, fmt=default_format, extra=['-multi'] )
 #
-#        data_token.setImage(ofname, format=default_format)
+#        data_token.setImage(ofname, fmt=default_format)
 #        return data_token
 
 
@@ -2495,7 +2496,7 @@ class ImageServer(object):
 
         if return_token is True:
             if 'converted_file' in info:
-                data_token.setImage(info['converted_file'], format=default_format)
+                data_token.setImage(info['converted_file'], fmt=default_format)
             data_token.dims = info
             return data_token
         return info
