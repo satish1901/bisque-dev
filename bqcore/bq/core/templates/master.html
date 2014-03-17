@@ -28,11 +28,13 @@
     '/js/ResourceTagger/Tagger.css',
     '/js/DatasetBrowser/DatasetBrowser.css',
     '/js/Share/BQ.share.Dialog.css',
+    '/js/tree/files.css',
     {'file' : '/export_service/public/css/BQ.Export.css', 'path' : h.file_root() + 'bqserver/bq'},
     '/css/bisquik_extjs_fix.css',
     # combined will not work for now due to relative urls in .css files
     #fs_root=h.file_public(),
-    #combined='/css/b.css'
+    #combined='/css/b.css',
+    version=bq.release.__VERSION_HASH__
     )}
 
     <!-- ExtJS -->
@@ -43,7 +45,8 @@
        if tg.config.get('bisque.js_environment', None) == 'production':
           link_kw = dict (fs_root = h.file_public(),
                           combined= '/js/b.js',
-                          minify= 'minify')
+                          minify= 'minify',
+                          version=bq.release.__VERSION_HASH__)
       else:
           link_kw = {}
     ?>
