@@ -514,7 +514,7 @@ Ext.define('BQ.Application.Toolbar', {
         //--------------------------------------------------------------------------------------
         // final touches
         //--------------------------------------------------------------------------------------
-        this.addListener( 'resize', this.onResized, this);
+        //this.addListener( 'resize', this.onResized, this);
         this.callParent();
 
         // update user menu based on application events
@@ -566,16 +566,14 @@ Ext.define('BQ.Application.Toolbar', {
     },
 
     onResized: function() {
-        //tools_big_screen: [ 'button_upload', 'button_download' ],
-        var w = this.getWidth();
-        //var w = document.width;
+        /*var w = this.getWidth();
         if (w<1024) {
             for (var i=0; id=this.tools_big_screen[i]; ++i)
                this.queryById(id).setVisible(false);
         } else {
             for (var i=0; id=this.tools_big_screen[i]; ++i)
                this.queryById(id).setVisible(true);
-        }
+        }*/
     },
 
     userPrefs : function() {
