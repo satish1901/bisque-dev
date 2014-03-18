@@ -29,7 +29,7 @@ log = logging.getLogger('bq.image_service.converter')
 ################################################################################
 
 class Format(object):
-    
+
     def __init__(self, name='', fullname='', ext=[], reading=False, writing=False, multipage=False, metadata=False, samples=(0,0), bits=(0,0)):
         self.name      = name
         self.fullname  = fullname
@@ -43,13 +43,13 @@ class Format(object):
 
     def supportToString(self):
         s = []
-        if self.reading   is True: 
+        if self.reading   is True:
             s.append('reading')
-        if self.writing   is True: 
+        if self.writing   is True:
             s.append('writing')
-        if self.multipage is True: 
+        if self.multipage is True:
             s.append('multipage')
-        if self.metadata  is True: 
+        if self.metadata  is True:
             s.append('metadata')
         return ','.join(s)
 
@@ -197,12 +197,13 @@ class ConverterBase(object):
 #             if not os.path.exists(ofnm):
 #                 log.error ('Run: output does not exist after command [%s]', ofnm)
 #                 return None
-            # safeguard for incorrectly converted files, sometimes only the tiff header can be written
-            if os.path.exists(ofnm) and os.path.getsize(ofnm) < 16:
-                log.error ('Run: output file is smaller than 16 bytes, probably an error, removing [%s]', ofnm)
-                os.remove(ofnm)
-                return None
-            return ofnm
+        # safeguard for incorrectly converted files, sometimes only the tiff header can be written
+        # empty lock files are automatically removed before by lock code
+        if os.path.exists(ofnm) and os.path.getsize(ofnm) < 16:
+            log.error ('Run: output file is smaller than 16 bytes, probably an error, removing [%s]', ofnm)
+            os.remove(ofnm)
+            return None
+        return ofnm
 
     @classmethod
     def convert(cls, ifnm, ofnm, fmt=None, series=0, extra=[]):
