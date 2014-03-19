@@ -167,6 +167,11 @@ Ext.define('BQ.tree.files.Panel', {
         this.callParent();
     },
 
+    setActive : function() {
+        var url = this.url_selected === this.url ? this.url + 'store' : this.url_selected;
+        this.fireEvent('selected', url, this);
+    },
+
     onSelect : function(me, record, index, eOpts) {
         var node = record;
         var path = [];

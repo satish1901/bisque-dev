@@ -34,6 +34,8 @@
 .organizer {
     margin: 4px 0px 4px 4px;
     padding: 0px;
+    border-color: transparent;
+    background-color: transparent;
 }
 
 .organizer-filter {

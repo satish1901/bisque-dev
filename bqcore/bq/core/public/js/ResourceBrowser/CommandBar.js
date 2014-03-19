@@ -348,6 +348,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
         this.westPanel.setWidth(420).show().expand();
         //this.westPanel.queryById('organizer').removeAll(false); //this.westPanel.removeAll(false);
         this.organizerCt = ( reload ? undefined : this.organizerCt) || new Bisque.ResourceBrowser.Organizer({
+            border: 1,
             itemId: 'organizer',
             parentCt : this.westPanel,
             dataset : this.browser.browserState['baseURL'],
@@ -366,7 +367,6 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
         //this.westPanel.queryById('organizer').removeAll(false);
         this.organizerCt = ( reload ? undefined : this.organizerCt) || Ext.create('BQ.Organizer.Tree', {
             itemId: 'organizer',
-            //width : 420,
             listeners : {
                 scope : this,
                 'QUERY_CHANGED' : function(uri) {
@@ -393,7 +393,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
                 scope : this,
                 selected : function(url) {
                     this.msgBus.fireEvent('Browser_ReloadData', {
-                        baseURL : url+'/value',
+                        baseURL : url.slice(-1)!=='/' ? url+'/value' : url+'value',
                         offset : 0,
                         tag_query : '',
                         tag_order : '',

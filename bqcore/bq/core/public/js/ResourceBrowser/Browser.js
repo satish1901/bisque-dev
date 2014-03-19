@@ -131,7 +131,7 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
         this.westPanel = Ext.create('Ext.tab.Panel', { //Ext.create('Ext.panel.Panel', {
             region : 'west',
             plain : true,
-            //border: 0,
+            border: 0,
             activeTab : 0,
             split : true,
             layout : 'fit',
@@ -142,8 +142,12 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
             collapsible : true,
             hideCollapseTool : true,
             listeners : {
-                'beforecollapse' : function(me) {
+                beforecollapse : function(me) {
                     me.setTitle(me.getComponent(0).title);
+                },
+                tabchange : function(tabPanel, newCard, oldCard, eOpts) {
+                    if (newCard.setActive)
+                        newCard.setActive();
                 },
             }
         });
