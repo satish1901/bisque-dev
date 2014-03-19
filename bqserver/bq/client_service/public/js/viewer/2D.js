@@ -2229,7 +2229,7 @@ Label.prototype.init = function(svgNode) {
 
 Label.prototype.enhance = function(visible) {
     this.svgNode.setAttributeNS(null, "stroke", visible ? 'orangered' : 'black');
-    this.svgNode.setAttributeNS(null, "stroke-opacity", visible ? 0.9 : 0.5);
+    this.svgNode.setAttributeNS(null, "stroke-opacity", visible ? 1.0 : 0.0);
 };
 
 Label.prototype.unrealize = function() {

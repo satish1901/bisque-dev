@@ -878,8 +878,9 @@ SVGRenderer.prototype.label = function ( visitor, gob, viewstate, visibility) {
             rect.setAttributeNS(null, 'fill-opacity', 0.9);
             rect.setAttributeNS(null, "stroke", "black");
             rect.setAttributeNS(null, 'stroke-width', '0.5px');
-            rect.setAttributeNS(null, 'stroke-opacity', 0.9);
-            rect.setAttributeNS(null, 'font-size', '14px');
+            rect.setAttributeNS(null, 'stroke-opacity', 0.0);
+            rect.setAttributeNS(null, 'font-size', '18px');
+            rect.setAttributeNS(null, 'style', 'text-shadow: 1px 1px 4px #000000;');
             gob.shape = new Label(rect);
         }
 
