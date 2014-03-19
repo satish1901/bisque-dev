@@ -161,7 +161,7 @@ class StoreGenerator(object):
                     subroot = etree.SubElement (root, 'dir', name = k)
                     visit_level(subroot, v)
                 else:
-                    xv = etree.SubElement (root, 'link', name=(v.resource_name or 'filename%s' %count), value = str(v.resource_uniq))
+                    etree.SubElement (root, 'link', name=(v.resource_name or 'filename%s' %count), value = str(v.resource_uniq))
                     count += 1
 
         stores = []
@@ -219,7 +219,7 @@ class StoreServer(TGController):
 
         :param path: a url path
         :type  path: str
-        :return: A tuple (Store, relative path)
+        :return: A tuple (Store resource, relative path)
         """
         best = None
         stores = self.stores
@@ -240,8 +240,7 @@ class StoreServer(TGController):
                 return store, partial.split ('/')
         return None,None
 
-    def find_path(self, path, resource_uniq, **kw):
-        root = None
+    def find_path(self, path, **kw):
         log.info("find %s ", path)
         store, path = self.find_matching_store (path)
         if store is None:
@@ -275,7 +274,7 @@ class StoreServer(TGController):
                 # No store matched so no Path either.
                 return None
             # we will create a new store (for user) for this path
-            resource = root = etree.Element ('store', name = path.pop(0) )
+            resource = root = etree.Element ('store', name = path.pop(0))
 
         parent = store
         while parent and path:
@@ -290,7 +289,6 @@ class StoreServer(TGController):
             parent = q[0]
         # any left over path needs to be created
         log.debug ("at %s rest %s", parent and parent.get ('uri'), path)
-        elements = []
         while len(path)>1:
             nm = path.pop(0)
             if root is None:
@@ -319,18 +317,42 @@ class StoreServer(TGController):
         :param path: A string (url) of the path
         :type  path: str
         """
+
+        value = None
+        if len(path) and path[-1] == 'value':
+            value = path.pop()
+        if len(path)==0:
+            return
+
         q = self.find_path (path)
+        if q.tag != 'link':
+            return
         data_service.del_resource(q)
+        if value is not None:
+            data_service.del_resource(q.get ('value'))
 
 
     @expose(content_type='text/xml')
     def _default(self, *path, **kw):
-        #set_admin_mode()
+        """ Dispatch based on request method GET, ...
+        """
+        method = tg.request.method
+        if  method == 'GET':
+            return self.get(list(path), **kw)
+        elif method in ( 'POST', 'PUT'):
+            return self.post(list(path), **kw)
+        elif method == 'DELETE':
+            return self.delete(list(path), **kw)
+        abort(400)
+
+
+    def get(self, path, **kw):
+        """ GET from a path /store_name/d1/d2/
+        """
         log.debug ("STORE: Got %s and %s" ,  path, kw)
         origview = kw.pop('view', 'short')
         value = None
-        path = list(path)
-        store_name = path.pop(0)
+        # Some crazy hanlding when de-referencing
         if len(path) and path[-1] == 'value':
             value = path.pop()
             view = 'query'
@@ -338,12 +360,15 @@ class StoreServer(TGController):
             kw = {}
         else:
             view = 'full'
-
-
+        # woops just want a list of stores.. index does that
+        if len(path)==0:
+            return self.index()
+        store_name = path.pop(0)
 
         q =  self.load_path(store_name=store_name, path = path, view=view, **kw)
         if q is None:
             abort (404, "bad store path %s" % path)
+        # crazy value handling (emulate limit and offset)
         if value is not None:
             limit = origkw.pop('limit', None)
             offset = int(origkw.pop('offset', 0))
@@ -360,6 +385,13 @@ class StoreServer(TGController):
             q = resp
 
         return etree.tostring(q)
+
+
+    def post(self, path, **kw):
+        return self.get (path, **kw)
+    def delete(self, path, **kw):
+        return self.delete_path(path, **kw)
+
 
     @expose(content_type='text/xml')
     #@require(identity.not_anonymous())
