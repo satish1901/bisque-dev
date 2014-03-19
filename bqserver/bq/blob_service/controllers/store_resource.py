@@ -331,20 +331,26 @@ class StoreServer(TGController):
         value = None
         path = list(path)
         store_name = path.pop(0)
-        if path[-1] == 'value':
+        if len(path) and path[-1] == 'value':
             value = path.pop()
             view = 'query'
+            origkw = kw
+            kw = {}
         else:
-            view = origview
+            view = 'full'
+
+
 
         q =  self.load_path(store_name=store_name, path = path, view=view, **kw)
         if q is None:
             abort (404, "bad store path %s" % path)
         if value is not None:
+            limit = origkw.pop('limit', None)
+            offset = origkw.pop('offset', 0)
             resp = etree.Element('resource')
-            for el in q:
+            for el in q[offset: limit and (int(limit) + int(offset))]:
                 if el.tag == 'link':
-                    r = data_service.get_resource (el.get ('value'), view=origview, **kw)
+                    r = data_service.get_resource (el.get ('value'), view=origview, **origkw)
                     if r is not None:
                         resp.append(r)
                     else:
