@@ -128,8 +128,11 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
         var imgSpinner = new Image();
         imgSpinner.src = bq.url('/js/ResourceBrowser/Images/loading.gif');
 
-        this.westPanel = new Ext.panel.Panel({
+        this.westPanel = Ext.create('Ext.tab.Panel', { //Ext.create('Ext.panel.Panel', {
             region : 'west',
+            plain : true,
+            //border: 0,
+            activeTab : 0,
             split : true,
             layout : 'fit',
             cls : 'organizer',

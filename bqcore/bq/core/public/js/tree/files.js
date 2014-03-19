@@ -76,6 +76,7 @@ Ext.define('BQ.tree.files.Panel', {
     //leadingBufferZone: 20,  // Keep records buffered in memory ahead of scroll
 
     animate: false,
+    animCollapse: false,
     deferRowRender: true,
     displayField: 'name',
     folderSort: false,
@@ -84,6 +85,7 @@ Ext.define('BQ.tree.files.Panel', {
         stripeRows : true,
         enableTextSelection: false,
     },
+    multiSelect: false,
     lines : false,
     columnLines : true,
     rowLines : true,
@@ -101,20 +103,21 @@ Ext.define('BQ.tree.files.Panel', {
         ptype: 'bufferedrenderer'
     }],*/
 
+    constructor : function(config) {
+        this.addEvents({
+            'selected' : true,
+        });
+        this.callParent(arguments);
+    },
+
     initComponent : function() {
         this.url = this.url || '/blob_service/';
-        this.path = this.url;
+        this.url_selected = this.url;
 
         // Get store
         this.store = Ext.create('Ext.data.TreeStore', {
             defaultRootId: 'store',
             //lazyFill: true,
-            /*listeners : {
-                scope: this,
-                //load : this.onLoad,
-                //beforeexpand : this.onExpand,
-                //collapse : this.onCollapse,
-            },*/
             proxy : {
                 type : 'bq-files',
                 url : this.url,
@@ -150,15 +153,41 @@ Ext.define('BQ.tree.files.Panel', {
             }],
         });
 
-        /*this.columns = [{
-            width : 10,
-        }, {
-            xtype : 'treecolumn',
-            dataIndex : 'name',
-            flex : 1,
-        }];*/
+        this.on('select', this.onSelect, this);
+        this.on('afteritemexpand', this.onAfterItemExpand, this);
+        this.on('afteritemcollapse', this.onAfterItemExpand, this);
+
+        this.dockedItems = [{
+            xtype: 'tbtext',
+            itemId: 'path_bar',
+            text: '/',
+            dock: 'top',
+        }];
 
         this.callParent();
+    },
+
+    onSelect : function(me, record, index, eOpts) {
+        var node = record;
+        var path = [];
+        while (node) {
+            if (node.data && node.data.type !== 'link')
+                path.push(node.data.name || node.data.id);
+            node = node.parentNode;
+        }
+        path.reverse();
+        var url = this.url+path.join('/');
+        path.shift();
+        this.queryById('path_bar').setText( '/'+path.join('/') );
+
+        if (this.url_selected !== url) {
+            this.url_selected = url;
+            this.fireEvent('selected', url, this);
+        }
+    },
+
+    onAfterItemExpand : function( node, index, item, eOpts ) {
+        this.getSelectionModel().select(node);
     },
 
 });
