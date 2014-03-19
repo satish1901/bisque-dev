@@ -211,7 +211,7 @@ class StoreServer(TGController):
             q = q[0]
         if kw:
             # might be limitin result
-            q = data_service.get_resource(q, view='full', **kw)
+            q = data_service.get_resource(q, view=view, **kw)
         return q
 
     def find_matching_store(self, path):
@@ -239,6 +239,26 @@ class StoreServer(TGController):
                 log.debug ("Matched %s %s ", name, partial)
                 return store, partial.split ('/')
         return None,None
+
+    def find_path(self, path, resource_uniq, **kw):
+        root = None
+        log.info("find %s ", path)
+        store, path = self.find_matching_store (path)
+        if store is None:
+            return None
+        parent = store
+        while parent and path:
+            el = path.pop(0)
+            if not el:
+                continue
+            q  = data_service.query(parent=parent, name=el, view='full')
+            if len(q) != 1:
+                return None
+            if path:
+                parent = q[0]
+        # If here the q is your uncle
+        return q
+
 
     #@smokesignal.on(SIG_NEWBLOB)
     def insert_path(self, path, resource_uniq=None, **kw):
@@ -299,17 +319,34 @@ class StoreServer(TGController):
         :param path: A string (url) of the path
         :type  path: str
         """
+        q = self.find_path (path)
+        data_service.del_resource(q)
 
 
     @expose(content_type='text/xml')
     def _default(self, *path, **kw):
         #set_admin_mode()
         log.debug ("STORE: Got %s and %s" ,  path, kw)
+        origview = kw.pop('view', 'full')
+        value = None
         path = list(path)
         store_name = path.pop(0)
-        q =  self.load_path(store_name=store_name, path = path, **kw)
+        if path[-1] == 'value':
+            value = path.pop()
+            view = 'query'
+        else:
+            view = origview
+
+        q =  self.load_path(store_name=store_name, path = path, view=view, **kw)
         if q is None:
             abort (404, "bad store path %s" % path)
+        if value is not None:
+            resp = etree.Element('resource')
+            for el in q:
+                r = data_service.get_resource (el.get ('value'), view=origview, **kw)
+                resp.append(r)
+            q = resp
+
         return etree.tostring(q)
 
     @expose(content_type='text/xml')
