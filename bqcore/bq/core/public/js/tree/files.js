@@ -66,6 +66,13 @@ Ext.define('BQ.data.proxy.Files', {
 
 });
 
+Ext.namespace('BQ.tree.files');
+BQ.tree.files.icons = {
+   store: 'icon-store',
+   //dir: 'icon-file',
+   link: 'icon-file',
+};
+
 Ext.define('BQ.tree.files.Panel', {
     extend: 'Ext.tree.Panel',
     alias: 'widget.bq-tree-files-panel',
@@ -98,7 +105,6 @@ Ext.define('BQ.tree.files.Panel', {
     allowDeselect: false,
     sortableColumns: false,
 
-
     /*plugins: [{
         ptype: 'bufferedrenderer'
     }],*/
@@ -114,9 +120,17 @@ Ext.define('BQ.tree.files.Panel', {
         this.url = this.url || '/blob_service/';
         this.url_selected = this.url;
 
-        // Get store
+        this.dockedItems = [{
+            xtype: 'tbtext',
+            itemId: 'path_bar',
+            text: '/',
+            dock: 'top',
+        }];
+
         this.store = Ext.create('Ext.data.TreeStore', {
             defaultRootId: 'store',
+            //autoLoad: false,
+            //autoSync: false,
             //lazyFill: true,
             proxy : {
                 type : 'bq-files',
@@ -147,8 +161,8 @@ Ext.define('BQ.tree.files.Panel', {
                 name : 'iconCls',
                 type : 'string',
                 convert : function(value, record) {
-                    if (record.data.type === 'link')
-                        return 'icon-file';
+                    if (record.data && record.data.type && record.data.type in BQ.tree.files.icons)
+                        return BQ.tree.files.icons[record.data.type];
                 }
             }],
         });
@@ -157,15 +171,14 @@ Ext.define('BQ.tree.files.Panel', {
         this.on('afteritemexpand', this.onAfterItemExpand, this);
         this.on('afteritemcollapse', this.onAfterItemExpand, this);
 
-        this.dockedItems = [{
-            xtype: 'tbtext',
-            itemId: 'path_bar',
-            text: '/',
-            dock: 'top',
-        }];
-
         this.callParent();
     },
+
+    /*afterRender : function() {
+        this.store.load();
+        this.store.autoLoad = true;
+        this.callParent();
+    },*/
 
     setActive : function() {
         var url = this.url_selected === this.url ? this.url + 'store' : this.url_selected;
