@@ -174,7 +174,7 @@ Ext.define('Bisque.ResourceBrowser.Organizer', {
             baseURL : url?url:undefined,
             offset : 0,
             tag_query : this.GetTagQuery(),
-            tag_order : this.GetTagOrder()
+            tag_order : this.GetTagOrder(),
         };
         this.msgBus.fireEvent('Browser_ReloadData', uri);
         this.msgBus.fireEvent('SearchBar_Query', this.GetTagQuery());

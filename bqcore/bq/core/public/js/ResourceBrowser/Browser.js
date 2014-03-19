@@ -141,6 +141,7 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
             hidden : true,
             collapsible : true,
             hideCollapseTool : true,
+            deferredRender: true,
             listeners : {
                 beforecollapse : function(me) {
                     me.setTitle(me.getComponent(0).title);
