@@ -346,9 +346,9 @@ class StoreServer(TGController):
             abort (404, "bad store path %s" % path)
         if value is not None:
             limit = origkw.pop('limit', None)
-            offset = origkw.pop('offset', 0)
+            offset = int(origkw.pop('offset', 0))
             resp = etree.Element('resource')
-            for el in q[offset: limit and (int(limit) + int(offset))]:
+            for el in q[offset: limit and (int(limit) + offset)]:
                 if el.tag == 'link':
                     r = data_service.get_resource (el.get ('value'), view=origview, **origkw)
                     if r is not None:
