@@ -261,7 +261,7 @@ class StoreServer(TGController):
 
 
     #@smokesignal.on(SIG_NEWBLOB)
-    def insert_path(self, path, resource_uniq=None, **kw):
+    def insert_path(self, path, resource_uniq=None, resource_name=None, **kw):
         """ insert a store path into the store resource
 
         :param path: a string path for the store
@@ -299,7 +299,7 @@ class StoreServer(TGController):
                 resource = etree.SubElement (resource, 'dir', name=nm)
         # The last element might be dir or a link
         if len(path)==1:
-            nm = path.pop(0)
+            nm = resource_name or path.pop(0)
             if root is None:
                 resource = root = etree.Element ('link' if resource_uniq else 'dir', name = nm)
             else:
@@ -327,7 +327,7 @@ class StoreServer(TGController):
     def _default(self, *path, **kw):
         #set_admin_mode()
         log.debug ("STORE: Got %s and %s" ,  path, kw)
-        origview = kw.pop('view', 'full')
+        origview = kw.pop('view', 'short')
         value = None
         path = list(path)
         store_name = path.pop(0)
@@ -343,8 +343,14 @@ class StoreServer(TGController):
         if value is not None:
             resp = etree.Element('resource')
             for el in q:
-                r = data_service.get_resource (el.get ('value'), view=origview, **kw)
-                resp.append(r)
+                if el.tag == 'link':
+                    r = data_service.get_resource (el.get ('value'), view=origview, **kw)
+                    if r is not None:
+                        resp.append(r)
+                    else:
+                        log.warn ('element %s was not fetched', etree.tostring(el))
+                else:
+                    resp.append(el)
             q = resp
 
         return etree.tostring(q)

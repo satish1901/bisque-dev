@@ -383,7 +383,9 @@ class BlobServer(RestController, ServiceMixin):
                 else:
                     resource =  self.store_reference(resource, resource.get('value') )
                 #smokesignal.emit(SIG_NEWBLOB, self.store, path=resource.get('value'), resource_uniq=resource.get ('resource_uniq'))
-                self.store.insert_path( path=resource.get('value'), resource_uniq=resource.get ('resource_uniq'))
+                self.store.insert_path( path=resource.get('value'),
+                                        resource_name = resource.get('name'),
+                                        resource_uniq = resource.get ('resource_uniq'))
                 return resource
             except DuplicateFile, e:
                 log.warn("Duplicate file. reseting uniq")

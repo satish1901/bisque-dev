@@ -231,6 +231,8 @@ class DataServerController(ServiceController):
                     resource = self.query(resource_tag=rest[-1], parent=resource,**kw)
                     #self.cache_save (uri, response=etree.tostring(resource), **kw)
                     return resource
+        if resource is None:
+            return resource
         xtree = db2tree(resource, baseuri = self.url, **kw)
         uri = uri or xtree.get('uri')
         self.cache_save (uri, response=etree.tostring(xtree), **kw)
