@@ -13,6 +13,7 @@ __revision__  = "$Rev$"
 __date__      = "$Date$"
 __copyright__ = "Center for BioImage Informatics, University California, Santa Barbara"
 
+import os
 import os.path
 from lxml import etree
 import re
@@ -29,6 +30,10 @@ from .locks import Locks
 
 import logging
 log = logging.getLogger('bq.image_service.converter_imaris')
+
+BLOCK_START='<ImplParameters><![CDATA['
+BLOCK_END  = ']]>' + os.linesep + '</ImplParameters>'
+
 
 ################################################################################
 # Misc
@@ -106,12 +111,12 @@ class ConverterImaris(ConverterBase):
         if fs is None:
             return ''
 
-        ins = [f.strip(' ') for f in misc.between('Input File Formats are:\r\n\r\n', 'Output File Formats are:', fs).split('\r\n') if f != '']
+        ins = [f.strip(' ') for f in misc.between('Input File Formats are:%s' % (os.linesep*2) , 'Output File Formats are:', fs).split(os.linesep) if f != '']
         # version 8.0.0
         if 'Exit Codes:' in fs:
-            ous = [f.strip(' ') for f in misc.between('Output File Formats are:\r\n\r\n', 'Exit Codes:', fs).split('\r\n') if f != '']
+            ous = [f.strip(' ') for f in misc.between('Output File Formats are:%s' % (os.linesep*2), 'Exit Codes:', fs).split(os.linesep) if f != '']
         else: # version 7.X
-            ous = [f.strip(' ') for f in misc.between('Output File Formats are:\r\n\r\n', 'Examples:', fs).split('\r\n') if f != '']
+            ous = [f.strip(' ') for f in misc.between('Output File Formats are:%s' % (os.linesep*2), 'Examples:', fs).split(os.linesep) if f != '']
         ins = [parse_format(f) for f in ins]
         ous = [parse_format(f) for f in ous]
 
@@ -157,7 +162,7 @@ class ConverterImaris(ConverterBase):
         # by removing the <ImplParameters> tag
         # params is formatted in INI format
         try:
-            params = misc.between('<ImplParameters><![CDATA[', ']]>\r\n</ImplParameters>', meta)
+            params = misc.between(BLOCK_START, BLOCK_END, meta)
             # Meta is an XML
             meta = meta.replace(params, '', 1)
         except UnboundLocalError:
@@ -167,7 +172,12 @@ class ConverterImaris(ConverterBase):
         # Parse Meta XML
         ########################################
         rd = {}
-        mee = etree.fromstring(meta)
+        try:
+            mee = etree.fromstring(meta)
+        except etree.XMLSyntaxError:
+            log.error ("Unparsable %s", meta)
+            return {}
+
 
         if '<FileInfo2>' in meta: # v7
             rd['image_num_series'] = misc.safeint(misc.xpathtextnode(mee, '/FileInfo2/NumberOfImages'), 1)
