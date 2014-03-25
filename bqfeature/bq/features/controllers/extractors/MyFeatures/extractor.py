@@ -6,16 +6,17 @@ import cv
 import tables
 import logging
 from pylons.controllers.util import abort
-from bq.features.controllers import Feature #import base class
 from fftsd_extract import FFTSD as fftsd
 from lxml import etree
 import urllib, urllib2, cookielib
 from bq.image_service.controllers.locks import Locks
 import random
+from bq.features.controllers.Feature import BaseFeature, calc_wrapper, ImageImport #import base class
+from bq.features.controllers import Feature
 
 log = logging.getLogger("bq.features")
 
-class FFTSD(Feature.Feature):
+class FFTSD(BaseFeature):
     
     #parameters
     file = 'features_fftsd.h5'
@@ -24,7 +25,7 @@ class FFTSD(Feature.Feature):
     description = """Fast Fourier Transform Shape Descriptor"""
     length = 500
 
-    @Feature.wrapper        
+    @calc_wrapper       
     def calculate(self, **resource):
         """ Append descriptors to SURF h5 table """
         #initalizing
@@ -60,7 +61,7 @@ class FFTSD(Feature.Feature):
             
         return
     
-class DTFE(Feature.Feature):
+class DTFE(BaseFeature):
     """
         Dummy Test Feature Extractor
         This extractor is completely useless to calculate any 
@@ -76,7 +77,7 @@ class DTFE(Feature.Feature):
     
     #cache = False
     
-    @Feature.wrapper
+    @calc_wrapper
     def calculate(self, **resource):
         """ Calculates features for DTFE"""
         #initalizing
@@ -86,7 +87,30 @@ class DTFE(Feature.Feature):
         #initalizing rows for the table
         return [descriptor]
         
-        
+class DTFEuncached(BaseFeature):
+    """
+        Dummy Test Feature Extractor
+        This extractor is completely useless to calculate any 
+        useful feature. 
+        Purpose: to test the reliability of the feature service
+    """
+    #parameters
+    file = 'features_dtfe'
+    name = 'DTFEuncached'
+    description = """Dummy Test Feature Extractor (test feature) Calculates random numbers for features"""
+    length = 64
+    feature_format = 'int32'
+    cache = False
+    
+    @calc_wrapper
+    def calculate(self, **resource):
+        """ Calculates features for DTFE"""
+        #initalizing
+        image_uri = resource['image']
+        descriptor = [random.randint(0, 255) for x in range(64)]
+                
+        #initalizing rows for the table
+        return [descriptor]  
         
         
         

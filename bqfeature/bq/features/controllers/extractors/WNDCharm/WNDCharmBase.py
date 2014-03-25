@@ -4,9 +4,13 @@ from pylons.controllers.util import abort
 import cv2
 import numpy as np
 import logging
+from bq.features.controllers.Feature import BaseFeature, calc_wrapper, ImageImport #import base class
+
+
 log = logging.getLogger("bq.features")
 
-class WNDCharm(Feature.Feature): #base WNDCharm feature class
+
+class WNDCharm(BaseFeature): #base WNDCharm feature class
     """
         Initalizes table and calculates the ORB descriptor to be
         placed into the HDF5 table.
@@ -17,7 +21,7 @@ class WNDCharm(Feature.Feature): #base WNDCharm feature class
     description = """This is the WNDCharm Base Class. Is not a feature in the feature server."""
     length = 0
     
-    @Feature.wrapper
+    @calc_wrapper
     def calculate(self, **resource):
         """ Append descriptors to h5 table """
         image_uri = resource['image']
