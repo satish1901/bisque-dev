@@ -7,11 +7,13 @@ import logging
 import numpy as np
 from bq.features.controllers import Feature #import base class
 from pylons.controllers.util import abort
-log = logging.getLogger("bq.features")
 from bq.image_service.controllers.locks import Locks
+from bq.features.controllers.Feature import BaseFeature, calc_wrapper, ImageImport #import base class
 import tables
 
-class BRISK(Feature.Feature):
+log = logging.getLogger("bq.features")
+
+class BRISK(BaseFeature):
     """
         Initalizes table and calculates the ORB descriptor to be
         placed into the HDF5 table.
@@ -40,12 +42,12 @@ class BRISK(Feature.Feature):
             
         self.Columns = Columns    
         
-    @Feature.wrapper        
+    @calc_wrapper        
     def calculate(self, **resource):
         """ Append descriptors to BRISK h5 table """
         
         image_uri = resource['image']
-        with Feature.ImageImport(image_uri) as imgimp:
+        with ImageImport(image_uri) as imgimp:
             im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)  
 
             if im==None:
@@ -102,7 +104,7 @@ class BRISK(Feature.Feature):
         return
 
 
-class BRISKc(Feature.Feature):
+class BRISKc(BaseFeature):
     """
         Initalizes table and calculates the ORB descriptor to be
         placed into the HDF5 table.
@@ -131,11 +133,11 @@ class BRISKc(Feature.Feature):
             
         self.Columns = Columns
         
-    @Feature.wrapper        
+    @calc_wrapper       
     def calculate(self, uri):
         """ Append descriptors to SIFT h5 table """
         
-        with Feature.ImageImport(image_uri) as imgimp:
+        with ImageImport(image_uri) as imgimp:
             im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
         
             if im==None:
@@ -197,7 +199,7 @@ class BRISKc(Feature.Feature):
         return
  
           
-class ORB(Feature.Feature):
+class ORB(BaseFeature):
     """
         Initalizes table and calculates the ORB descriptor to be
         placed into the HDF5 table.
@@ -231,12 +233,12 @@ class ORB(Feature.Feature):
             
         self.Columns = Columns
 
-    @Feature.wrapper
+    @calc_wrapper
     def calculate(self, **resource):
         """ Append descriptors to ORB h5 table """
         
         image_uri = resource['image']
-        with Feature.ImageImport(image_uri) as imgimp:
+        with ImageImport(image_uri) as imgimp:
             im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
      
             if im==None:
@@ -291,7 +293,7 @@ class ORB(Feature.Feature):
         return
  
  
-class ORBc(Feature.Feature):
+class ORBc(BaseFeature):
     """
         Initalizes table and calculates the ORB descriptor to be
         placed into the HDF5 table.
@@ -327,11 +329,11 @@ class ORBc(Feature.Feature):
             
         self.Columns = Columns
 
-    @Feature.wrapper        
+    @calc_wrapper      
     def calculate(self, **resource):
         """ Append descriptors to ORB h5 table """
         image_uri = resource['image']
-        with Feature.ImageImport(image_uri) as imgimp:
+        with ImageImport(image_uri) as imgimp:
             im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)    
             if im==None:
                 raise ValueError('Format was not supported')
@@ -390,7 +392,7 @@ class ORBc(Feature.Feature):
             
         return
 
-class SIFT(Feature.Feature):
+class SIFT(BaseFeature):
     """
         Initalizes table and calculates the ORB descriptor to be
         placed into the HDF5 table.
@@ -420,12 +422,12 @@ class SIFT(Feature.Feature):
             
         self.Columns = Columns
     
-    @Feature.wrapper
+    @calc_wrapper
     def calculate(self, **resource):
         """ Append descriptors to SIFT h5 table """
         
         image_uri = resource['image']
-        with Feature.ImageImport(image_uri) as imgimp:
+        with ImageImport(image_uri) as imgimp:
             im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
        
             if im==None:
@@ -492,12 +494,12 @@ class SIFTc(SIFT):
     name = 'SIFTc'
     description = """Scale-invariant feature transform also know as SIFT """
     
-    @Feature.wrapper        
+    @calc_wrapper       
     def calculate(self, **resource):
         """ Append descriptors to SIFT h5 table """
         
         image_uri = resource['image']
-        with Feature.ImageImport(image_uri) as imgimp:
+        with ImageImport(image_uri) as imgimp:
             im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
    
             if im==None:
@@ -584,7 +586,7 @@ class SIFTc(SIFT):
 #                self.setRow(uri, idnumber, descriptors[i], parameter)
 
                 
-class SURF(Feature.Feature):
+class SURF(BaseFeature):
     """
         Initalizes table and calculates the SURF descriptor to be
         placed into the HDF5 table.
@@ -613,7 +615,7 @@ class SURF(Feature.Feature):
             
         self.Columns = Columns
         
-    @Feature.wrapper        
+    @calc_wrapper        
     def calculate(self, **resource):
         """ Append descriptors to SURF h5 table """
         #initalizing
@@ -623,7 +625,7 @@ class SURF(Feature.Feature):
         nOctaveLayers = 4
 
         image_uri = resource['image']
-        with Feature.ImageImport(image_uri) as imgimp:
+        with ImageImport(image_uri) as imgimp:
             im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
 
             if im==None:
@@ -684,7 +686,7 @@ class SURFc(SURF):
     description = """Speeded Up Robust Features also know as SURF"""
     
     
-    @Feature.wrapper        
+    @calc_wrapper       
     def calculate(self, **resource):
         """ Append descriptors to SURF h5 table """
         #initalizing
@@ -694,7 +696,7 @@ class SURFc(SURF):
         nOctaveLayers = 4
         image_uri = resource['image']
         
-        with Feature.ImageImport(image_uri) as imgimp:
+        with ImageImport(image_uri) as imgimp:
             im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
 
             if im==None:
@@ -730,7 +732,7 @@ class SURFc(SURF):
         
         return descriptors,x,y,response,size,angle,octave
 
-class FREAKc(Feature.Feature):
+class FREAKc(BaseFeature):
     """
         Initalizes table and calculates the ORB descriptor to be
         placed into the HDF5 table.
@@ -759,13 +761,13 @@ class FREAKc(Feature.Feature):
             
         self.Columns = Columns
         
-    @Feature.wrapper        
+    @calc_wrapper        
     def calculate(self, uri):
         """ Append descriptors to SIFT h5 table """
         
         image_uri = resource['image']
         
-        with Feature.ImageImport(image_uri) as imgimp:
+        with ImageImport(image_uri) as imgimp:
             im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
         
             if im==None:

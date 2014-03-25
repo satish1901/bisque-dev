@@ -23,15 +23,15 @@ from bq import image_service
 from bq.image_service.controllers.locks import Locks
 from bq.core import identity
 from bq.util import http
-
+#from bq.features.controllers.service import FeatureServiceError
 from .var import FEATURES_STORAGE_FILE_DIR,FEATURES_TABLES_FILE_DIR,FEATURES_TEMP_IMAGE_DIR
-
+#from bq.features.controllers.service import FeatureServiceError
 log = logging.getLogger("bq.features")
 
 
 
 
-def type_check( resources, feature_name, feature_archieve):
+def input_resource_check( resources, feature_name, feature_archieve):
     """
         Checks resource type of the input to make sure
         the correct resources have been used, if it can
@@ -51,20 +51,23 @@ def type_check( resources, feature_name, feature_archieve):
                 break
         else:
             log.debug('Argument Error: No resource type(s) that matched the feature')
-            abort(400,'Argument Error: No resource type(s) that matched the feature')
+            raise FeatureServiceError(400, 'Argument Error: No resource type(s) that match the feature')
+            #abort(400,'Argument Error: No resource type(s) that matched the feature')
 
     for resource_name in resources.keys():
 
         if resource_name not in feature.resource:
 
             log.debug('Argument Error: %s type was not found'%resource_name)
-            abort(400,'Argument Error: %s type was not found'%resource_name)
+            raise FeatureServiceError(400, 'Argument Error: %s type was not found'%resource_name)
+            #abort(400,'Argument Error: %s type was not found'%resource_name)
 
         elif type(resources[resource_name]) == list: #to take care of when elements have more then uri attached. not allowed in the features
               #server for now
 
             log.debug('Argument Error: %s type was found to have more then one URI'%resource_name)
-            abort(400,'Argument Error: %s type was found to have more then one URI'%resource_name)
+            #abort(400,'Argument Error: %s type was found to have more then one URI'%resource_name)
+            raise FeatureServiceError(400,'Argument Error: %s type was found to have more then one URI'%resource_name)
         else:
 
             resource[resource_name] = urllib2.unquote(resources[resource_name]) #decode url
@@ -74,7 +77,7 @@ def type_check( resources, feature_name, feature_archieve):
 
 #wrapper for the calculator function so the output
 #is in the correct format to be easily placed in the tables
-def wrapper(func):
+def calc_wrapper(func):
     def calc(self,kw):
         id = self.returnhash(**kw)
 
@@ -102,7 +105,7 @@ def wrapper(func):
 ###############################################################
 # Feature Object
 ###############################################################
-class Feature(object):
+class BaseFeature(object):
     """
         Initalizes Feature table and calculates descriptor to be
         placed into the HDF5 table
@@ -210,8 +213,9 @@ class Feature(object):
         featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
 
         class Columns(tables.IsDescription):
-            image  = tables.StringCol(2000,pos=1)
-            feature   = tables.Col.from_atom(featureAtom, pos=2)
+            image         = tables.StringCol(2000,pos=1)
+            feature_type  = tables.StringCol(20, pos=2)
+            feature       = tables.Col.from_atom(featureAtom, pos=3)
 
         with Locks(None, filename):
             with tables.openFile(filename,'a', title=self.name) as h5file:
@@ -220,7 +224,7 @@ class Feature(object):
 
         return
 
-    @wrapper
+    @calc_wrapper
     def calculate(self, **resource):
         """
             place holder for feature calculations

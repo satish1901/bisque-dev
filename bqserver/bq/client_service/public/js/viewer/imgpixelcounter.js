@@ -256,19 +256,38 @@ ImgPixelCounter.prototype.destroyCanvas = function() {
 
 //sets all values in the mask to 0
 ImgPixelCounter.prototype.resetmask = function() {
+    //
+/*
+    this.ctx_imgmask.fillStyle = '#000000'; //blank image
+    this.ctx_imgmask.globalAlpha = 0;
+    this.ctx_imgmask.fillRect(0,0,this.canvas_mask.width,this.canvas_mask.height); //fill on the entire image
+    //this.ctx_imgmask.createImageData(this.canvas_mask.height,this.canvas_mask.width);
+    this.maskData = this.ctx_imgmask.getImageData(0, 0, this.canvas_mask.width, this.canvas_mask.height);
+    this.masksrc = this.maskData.data;
+    this.ctx_imgmask.putImageData(this.maskData,0,0);
+ */   
         for (var i = 0; i<(this.canvas_mask.width*this.canvas_mask.height*4); i++) {
             this.masksrc[i]   = 0;
         }
+    
 };
 
 //sets the background to the same color as the tile viewer
 ImgPixelCounter.prototype.resetimage = function() {
+/*    this.ctx_img.fillStyle = '#434343'; //background color
+    this.ctx_img.fillRect(0,0,this.canvas_image.width,this.canvas_image.height); //fill on the entire image
+    //this.ctx_img.createImageData(this.canvas_mask.height,this.canvas_mask.width);
+    this.imageData = this.ctx_img.getImageData(0, 0, this.canvas_image.width, this.canvas_image.height);
+    this.imagesrc = this.imageData.data;
+*/    
+    
         for (var i = 0; i<(this.canvas_image.width*this.canvas_image.height*4); i+=4) {
             this.imagesrc[i]     = 67; //r
             this.imagesrc[i+1]   = 67; //g
             this.imagesrc[i+2]   = 67; //b
             this.imagesrc[i+3]   = 255;//a
         }
+        
 };
 
 
