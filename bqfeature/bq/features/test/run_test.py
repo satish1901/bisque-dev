@@ -1,22 +1,13 @@
-#!/usr/bin/python 
-
-""" Feature service testing framework
-"""
-
-__module__    = "run_tests"
-__author__    = "Dmitry Fedorov & Chris Wheat"
-__version__   = "1.0"
-__revision__  = "$Rev$"
-__date__      = "$Date$"
-__copyright__ = "Center for BioImage Informatics, University California, Santa Barbara"
-
-
-import sys
-if sys.version_info  < ( 2, 7 ):
-    import unittest2 as unittest
-else:
-    import unittest
-
+#from bq.api.bqclass import fromXml # bisque
+#from bq.api.comm import BQSession, BQCommError # bisque
+#from bq.api.util import save_blob # bisque
+from bqapi.bqclass import fromXml # local
+from bqapi.comm import BQSession, BQCommError # local
+from bqapi.util import save_blob # local
+import urllib
+import zipfile
+from FeatureTest import FeatureBase
+from RequestTest import RequestBase
 from lxml import etree
 import getpass
 import argparse
@@ -27,32 +18,28 @@ import os
 from subprocess import Popen, call, PIPE
 import ntpath
 import logging as log
-
-#from bq.api.bqclass import fromXml # bisque
-#from bq.api.comm import BQSession, BQCommError # bisque
-#from bq.api.util import save_blob # bisque
-from bqapi.bqclass import fromXml # local
-from bqapi.comm import BQSession, BQCommError # local
-from bqapi.util import save_blob # local
-import urllib
-import zipfile
-
-import time 
+from unittest import TestCase
+import time
 import pdb
+from TestGlobals import check_for_file, fetch_file, delete_resource, cleanup_dir
+from TestGlobals import LOCAL_FEATURES_STORE,TEST_TYPE
+from nose.plugins.attrib import attr  
 #clearing logs
-with open('test.log', 'w'):
-    pass
-
-log.basicConfig(filename='test.log',level=log.DEBUG)
+#with open('test.log', 'w'): pass
 
 
-FEATURES = 'features'
+#log.basicConfig(filename='test.log',level=log.DEBUG)
+
+
+import TestGlobals
+
 
 #url_file_store       = 'http://hammer.ece.ucsb.edu/~bisque/test_data/images/'
 url_file_store       = 'http://biodev.ece.ucsb.edu/binaries/download/'
 local_store_images   = 'images'
 local_features_store = 'features'
 local_store_tests    = 'tests'
+TEMP                 = 'Temp'
 
 service_data         = 'data_service'
 service_image        = 'image_service'
@@ -77,391 +64,308 @@ mask_4               = 'mask_8043.jpg'
 
 
 
-###############################################################
-# response check
-###############################################################
-        
-class TestStatus():
-    """
-        Constructs full error message for unittest
-    """
-    def __init__(self):
-        self.error_messages = []
-        
-    def not_equal(self,log_message):
-        log.info(log_message)
-        self.error_messages.append(log_message)
-        
-    def equal(self,log_message):
-        log.info(log_message)
-        
-    def return_error(self):
-        error_messages = ''
-        if len(self.error_messages)>1:
-            for em in self.error_messages:
-                error_messages =  '%s; Check log for the full list'%str(em)
-                raise ResponseCheckError(error_messages)
-            
-        elif len(self.error_messages)==1:
-            for em in self.error_messages:
-                error_messages =  '%s'%str(em)            
-                raise ResponseCheckError(error_messages)                
-
-        else:
-            #no errors listed
-            return
-
-
-class ResponseCheckError(Exception):
-    """
-    """
-    def __init__(self, value):
-        self.value = value
-    def __str__(self): 
-        return repr(self.value)
-    
-class UploadError(Exception):  
-    """
-        Return when upload error occurs
-    """
-    def __init__(self, filename):
-        self.filename = filename
-    def __str__(self): 
-        return repr('file: %s failed to be uploaded'%self.filename)
-    
-class DownloadError(Exception):  
-    """
-        Return when upload error occurs
-    """
-    def __init__(self, filename):
-        self.filename = filename
-    def __str__(self): 
-        return repr('file: %s failed to be downloaded'%self.filename)
-
-##################################################################
-# FeatureServiceTestBase
-##################################################################
-class FeatureServiceTestBase(unittest.TestCase):
-    """
-        Test feature service operations
-    """
-    
-#test_type_bool = True
-    time_trial = False
-
-#test initalization
-    @classmethod
-    def ensure_bisque_file(self, filename, achieve=False, local_dir='.'):
-        """
-            Checks for test files stored locally
-            If not found fetches the files from a store
-        """
-        path = self.fetch_file(filename,local_dir)
-        if achieve:
-            return self.upload_achieve_file(path)
-        else:
-            return self.upload_new_file(path)
-
-
-    @classmethod
-    def check_for_file(self, filename, zip_filename,local_dir='.'):
-        """
-            Checks for test files stored locally
-            If not found fetches the files from a store
-        """
-        path = os.path.join(local_dir, filename)        
-        
-        if not os.path.exists(path):
-            self.fetch_zip(zip_filename, local_dir)
-            if not os.path.exists(path):
-                raise DownloadError(filename)
-    
-    @classmethod
-    def fetch_zip(self, filename, local_dir='.'):
-        """
-            Fetches and unpacks a zip file into the same dir
-        """
-        url = posixpath.join(url_file_store, filename)
-        path = os.path.join(local_dir, filename)
-        if not os.path.exists(local_dir):
-            os.makedirs(local_dir)
-            
-        if not os.path.exists(path):
-            urllib.urlretrieve(url, path)
-        
-        Zip = zipfile.ZipFile(path)
-        Zip.extractall(local_dir)
-        return
-    
-    @classmethod
-    def fetch_file(self, filename, local_dir='.'):
-        """
-            fetches files from a store as keeps them locally
-        """
-        url = posixpath.join(url_file_store, filename)
-        path = os.path.join(local_dir, filename)
-        if not os.path.exists(path):
-            urllib.urlretrieve(url, path)
-        return path
-
-    @classmethod
-    def upload_new_file(self, path):
-        """
-            uploads files to bisque server
-        """
-        r = save_blob(self.session,  path)
-        print 'Uploaded id: %s url: %s'%(r.get('resource_uniq'), r.get('uri'))
-        return r
-
-    @classmethod    
-    def upload_achive_file(self, path):
-        """
-            upload bisque archive files
-        """
-        filename = ntpath.basename(path)
-        resource = etree.Element('resource', image = filename)
-        tag = etree.SubElement(resource,'tag', name = 'ingest')
-        etree.SubElement(tag,'tag', name = 'type', value = 'zip-bisque')
-        r = save_blob(self.session,  path, resource = resource)
-        print 'Uploaded id: %s url: %s'%(r.get('resource_uniq'), r.get('uri'))
-        return r
-
-    @classmethod
-    def return_archive_info(self, bisque_archive, mask):
-        
-        
-        path = os.path.join(local_store_images,bisque_archive)
-        self.check_for_file(bisque_archive, image_archive_zip,local_dir=local_store_images)
-                
-        bisque_archive_data_xml_top    = self.upload_achive_file(path)
-        
-        bisque_archive_image_uri       = self.root+'/image_service/image/'+bisque_archive_data_xml_top.attrib['resource_uniq']
- 
-
-        path = os.path.join(local_store_images, mask)
-        self.check_for_file(mask, image_archive_zip,local_dir=local_store_images)
-        
-        mask_xml_top                   = self.upload_new_file(path)
-        
-        bisque_archive_xml         = self.session.fetchxml(bisque_archive_data_xml_top.attrib['uri']+'?view=deep')
-        polygon_xml                = bisque_archive_xml.xpath('//polygon')
-        bisque_archive_polygon     = polygon_xml[0].attrib['uri']                
-
-        return ({
-                 'filename'      : bisque_archive,
-                 'mask_filename' : mask,
-                 'image'         : self.root+'/image_service/image/'+bisque_archive_data_xml_top.attrib['resource_uniq'],
-                 'image_xml'     : bisque_archive_data_xml_top,
-                 'mask'          : self.root+'/image_service/image/'+mask_xml_top.attrib['resource_uniq'],
-                 'mask_xml'      : mask_xml_top,
-                 'polygon'       : bisque_archive_polygon   
-                 })
-
-#test breakdown
-    @classmethod
-    def delete_resource(self, r):
-        """
-            remove uploaded resource from bisque server
-        """
-        url = r.get('uri')
-        print 'Deleting id: %s url: %s'%(r.get('resource_uniq'), url)
-        self.session.postxml(url, etree.Element ('resource') , method='DELETE')
-
-
-
-    @classmethod
-    def cleanup_tests_dir(self):
-        """
-            Removes files downloaded into the local store
-        """
-        print 'Cleaning-up %s'%local_store_tests
-        for root, dirs, files in os.walk(local_store_tests, topdown=False):
-            for name in files:
-                os.remove(os.path.join(root, name))
-
-
-
-#Tests
-    @classmethod
-    def validate_request(self, commands, content_type, headers_required, content_required):
-        """
-            makes a request to the bisque server and checks the returned content
-        """
-        headers = self.session.c.prepare_headers({'Content-Type':'text/xml', 'Accept':'text/xml'})
-        
-        start = time.time()
-        header, content = self.session.c.http.request(commands, headers = headers)
-        end = time.time()
-        
-        if self.time_trial:
-            log.info('=========== Time Results ===========')
-            log.info('Elapsed Time: %s sec'%(end-start))
-        
-        log.info('=========== Test Results ===========')
-        RC = ResponseCheck()
-        RC.check_header( headers_required, header) #check to see if the resulting response code is valid
-        RC.check_response(content_type, content_required, content)
-        RC.return_check() #returns the error message for unittest
-
-
-
-
-
-##################################################################
-# Request initalization 
-##################################################################
-
-class RequestTest(FeatureServiceTestBase):
-    """
-        Request Class
-        The class all the test will be applied to
-    """
-    pass
-
-
-def initialize_request_test():
-    """
-        
-    """
-    from RequestTestModule import request_test_generator, RequestList
-    resquest_set = RequestList().get_List(['all'])
-    for r in resquest_set:
-        test_name = 'test_%s' % (r.name)
-        log.debug('Initalizing request test: %s'%test_name)
-        test = request_test_generator(r.name,r,['xml'])
-        setattr( RequestTest, test_name, test) #normal run
-#        pdb.set_trace()        
-
-
-##################################################################
-# Feature initalization
-##################################################################
-
-class FeatureTest(FeatureServiceTestBase):
-    """
-        Feature Test Class
-        The class all the test will be applied to
-    """
-    pass
-
-def initialize_feature_test(feature_groups,formats):
-    """
-    """
-    from FeatureTestModule import feature_test_generator,FeatureList
-    feature_set = FeatureList().get_List(feature_groups)
-    for f in feature_set:
-        test_name = 'test_%s' % (f.name)
-        log.debug('Initalizing feature test: %s'%test_name)
-        test = feature_test_generator(f.name , f, formats)
-        setattr( FeatureTest, test_name, test) #normal run
-        #setattr(FeatureTestCached, test_name, test) #cached run
-        
-        
-##################################################################
-# module setup and teardown
-##################################################################
-
-def setUpTest():
-    """
-        Initalizes all the Tests
-    """
-    config = ConfigParser.ConfigParser()
-    config.read('config.cfg')
-    
-    #login
-    FeatureServiceTestBase.root = config.get('Host', 'root') or 'localhost:8080'
-    FeatureServiceTestBase.user = config.get('Host', 'user') or 'test'
-    FeatureServiceTestBase.pswd = config.get('Host', 'password') or 'test'
-  
-    #test options
-    test_type = config.get('TestOptions', 'test_type') or 'all'
-    FeatureServiceTestBase.test_type = test_type.replace(' ','').split(',')
-    
-
-    if 'features' in FeatureServiceTestBase.test_type or 'all' in FeatureServiceTestBase.test_type:
-        #importing pre-calculated features on images
-        
-        
-        FeatureServiceTestBase.check_for_file(bisque_archive_1+'.h5', feature_archive_zip,local_dir=local_features_store)
-        FeatureServiceTestBase.fetch_file(bisque_archive_1+'.h5',local_dir=local_features_store)
-        FeatureServiceTestBase.check_for_file(bisque_archive_2+'.h5', feature_archive_zip,local_dir=local_features_store)
-        FeatureServiceTestBase.fetch_file(bisque_archive_2+'.h5',local_dir=local_features_store)
-        FeatureServiceTestBase.check_for_file(bisque_archive_3+'.h5', feature_archive_zip,local_dir=local_features_store)
-        FeatureServiceTestBase.fetch_file(bisque_archive_3+'.h5',local_dir=local_features_store)
-        FeatureServiceTestBase.check_for_file(bisque_archive_4+'.h5', feature_archive_zip,local_dir=local_features_store)
-        FeatureServiceTestBase.fetch_file(bisque_archive_4+'.h5',local_dir=local_features_store)        
-
-        
-        #test feature options
-        test_features = config.get('TestOptions', 'test_features') or 'all'
-        FeatureServiceTestBase.test_features = test_features.replace(' ','').split(',')     
-        
-        format_types = config.get('TestOptions', 'format_types') or 'all'
-        FeatureServiceTestBase.test_features_formats = format_types.replace(' ','').split(',')          
-        
-        time_trial = config.get('TestOptions','time_trail') or 'False'
-#        pdb.set_trace()
-        if time_trial == 'True':
-            FeatureServiceTestBase.time_trial = True
-        elif time_trial == 'False':
-            FeatureServiceTestBase.time_trial = False
-        else:
-            FeatureServiceTestBase.time_trial = False #defaults false if input is incorrect
-    
-        # download and upload test images and get their IDs
-        # setup what test to be added to the test module
-        initialize_feature_test(FeatureServiceTestBase.test_features, FeatureServiceTestBase.test_features_formats)
-        
-    if 'commands' in FeatureServiceTestBase.test_type or 'all' in FeatureServiceTestBase.test_type:
-        initialize_request_test()
-#        pdb.set_trace()
-
-        
-#    InitalizeRequestTest()
 
 
 def setUpModule():
     """
         Initalizes the bisque to run tests
     """
-
-    FeatureServiceTestBase.session = BQSession().init_local( FeatureServiceTestBase.user, FeatureServiceTestBase.pswd, bisque_root=FeatureServiceTestBase.root, create_mex = True)
-    FeatureServiceTestBase.resource_list = []
-    FeatureServiceTestBase.resource_list.append( FeatureServiceTestBase.return_archive_info( bisque_archive_1, mask_1) )
-    FeatureServiceTestBase.resource_list.append( FeatureServiceTestBase.return_archive_info( bisque_archive_2, mask_2) )
-    FeatureServiceTestBase.resource_list.append( FeatureServiceTestBase.return_archive_info( bisque_archive_3, mask_3) )
-    FeatureServiceTestBase.resource_list.append( FeatureServiceTestBase.return_archive_info( bisque_archive_4, mask_4) )   
-
+    pass
 
 
 
 def tearDownModule():
     
-    bisque_archive_1_uri = FeatureServiceTestBase.delete_resource(FeatureServiceTestBase.resource_list[0]['image_xml'])
-    mask_1_uri           = FeatureServiceTestBase.delete_resource(FeatureServiceTestBase.resource_list[0]['mask_xml'])
-    bisque_archive_2_uri = FeatureServiceTestBase.delete_resource(FeatureServiceTestBase.resource_list[1]['image_xml'])
-    mask_2_uri           = FeatureServiceTestBase.delete_resource(FeatureServiceTestBase.resource_list[1]['mask_xml'])
-    bisque_archive_3_uri = FeatureServiceTestBase.delete_resource(FeatureServiceTestBase.resource_list[2]['image_xml'])
-    mask_3_uri           = FeatureServiceTestBase.delete_resource(FeatureServiceTestBase.resource_list[2]['mask_xml'])
-    bisque_archive_4_uri = FeatureServiceTestBase.delete_resource(FeatureServiceTestBase.resource_list[3]['image_xml'])
-    mask_4_uri           = FeatureServiceTestBase.delete_resource(FeatureServiceTestBase.resource_list[3]['mask_xml'])
+    bisque_archive_1_uri = delete_resource(TestGlobals.RESOURCE_LIST[0]['image_xml'])
+    mask_1_uri           = delete_resource(TestGlobals.RESOURCE_LIST[0]['mask_xml'])
+    bisque_archive_2_uri = delete_resource(TestGlobals.RESOURCE_LIST[1]['image_xml'])
+    mask_2_uri           = delete_resource(TestGlobals.RESOURCE_LIST[1]['mask_xml'])
+    bisque_archive_3_uri = delete_resource(TestGlobals.RESOURCE_LIST[2]['image_xml'])
+    mask_3_uri           = delete_resource(TestGlobals.RESOURCE_LIST[2]['mask_xml'])
+    bisque_archive_4_uri = delete_resource(TestGlobals.RESOURCE_LIST[3]['image_xml'])
+    mask_4_uri           = delete_resource(TestGlobals.RESOURCE_LIST[3]['mask_xml'])
     
-    FeatureServiceTestBase.cleanup_tests_dir()
-    FeatureServiceTestBase.session.finish_mex()
+    cleanup_dir()
+    TestGlobals.SESSION.finish_mex()
 
 
 
-
-if __name__=='__main__':
-#    
-    setUpTest()
-    unittest.main(verbosity=2)
-
-
-
-
-
-
-
+#######################################
+###         documentation
+#######################################
+class TestFeatureMain(RequestBase):
+    name = 'feature_main'
+    request = TestGlobals.ROOT+'/features'
+    response_code = '200'
     
+class TestFeatureList(RequestBase):
+
+    def __init__(self):
+        self.name = 'feature_list' 
+        self.request = TestGlobals.ROOT+'/features/list'
+        self.response_code = '200'    
+    
+class TestFormats(RequestBase):
+
+    def __init__(self):    
+        self.name = 'formats' 
+        self.request = TestGlobals.ROOT+'/features/formats'
+        self.response_code = '200'
+               
+#######################################
+###      Feature Functionality
+#######################################
+class TestFeature(RequestBase):
+    """
+        Testing on a Test Features
+    """
+    def __init__(self): 
+        self.name = 'feature' 
+        self.request = TestGlobals.ROOT+'/features/DTFE'
+        self.response_code = '200'
+
+
+
+############################################
+###     Malformed Requests
+############################################
+class TestMultibleSameElementTypes(RequestBase):
+    
+    name = 'multible_same_element_types' 
+    request = TestGlobals.ROOT+'/features/DTFE/none?'+TestGlobals.RESOURCE_LIST[0]['image']+'&'+TestGlobals.RESOURCE_LIST[0]['image']
+    response_code = '400'
+
+
+class TestNonlistedFeature(RequestBase):
+    
+    name = 'nonlisted_feature' 
+    request = TestGlobals.ROOT+'/features/asdf/none?'+TestGlobals.RESOURCE_LIST[0]['image']
+    response_code = '404'
            
+        
+class TestNonlistedFormat(RequestBase):
+    
+    name = 'nonlisted_format' 
+    request = TestGlobals.ROOT+'/features/DTFE/safd?image='+TestGlobals.RESOURCE_LIST[0]['image'] 
+    response_code = '404'    
+
+        
+class TestIncorrectResourceInputType(RequestBase):
+    
+    name = 'incorrect_resource_input_type'
+    request = TestGlobals.ROOT+'/features/DTFE/none?stuff='+TestGlobals.RESOURCE_LIST[0]['image']
+    response_code = '400'
+
+class TestResourceTypeNotFound(RequestBase):
+
+    name = 'resource_type_not_found'
+    request = TestGlobals.ROOT+'/features/DTFE/xml?image='+TestGlobals.ROOT+'/image_service/image/notaresource"'  
+    response_code = '200'
+    
+
+
+##################################
+###     VRL Features
+##################################
+class TestHTD(FeatureBase):
+    name = 'HTD'
+    family_name = 'VRL'
+    length = 48
+    
+#class TestEHD(FeatureBase):
+#    name = 'EHD'
+#    family_name = 'VRL'
+#    length = 80
+    
+    
+#class TestmHTD(FeatureBase):
+#    name = 'mHTD'
+#    family_name = 'VRL'
+#    input_resource = ['image','mask']
+    
+    
+    
+###################################
+#### MPEG7Flex Features
+###################################
+class TestCLD(FeatureBase):
+    name = 'CLD'
+    family_name = 'MPEG7Flex'
+    length = 120
+    
+class TestCSD(FeatureBase):
+    name = 'CSD'
+    family_name = 'MPEG7Flex'
+    length = 64
+    
+class TestSCD(FeatureBase):
+    name = 'SCD'
+    family_name = 'MPEG7Flex'
+    length = 256
+    
+class TestDCD(FeatureBase):
+    name = 'DCD'
+    family_name = 'MPEG7Flex'
+    length = 100
+    
+class TestHTD2(FeatureBase):
+    name = 'HTD2'
+    family_name = 'MPEG7Flex'
+    length = 62
+    
+class TestEHD2(FeatureBase):
+    name = 'EHD2'
+    family_name = 'MPEG7Flex'
+    length = 80
+    
+#class TestpRSD(FeatureBase):
+#    name = 'pRSD'
+#    family_name = 'MPEG7Flex'
+#    input_type = ['image','polygon']
+    
+
+
+###################################
+#### WNDCharm Features
+###################################
+#class TestChebishev_Statistics(FeatureBase):
+#    name = 'Chebishev_Statistics'
+#    family_name = 'WNDCharm'
+#    length = 32
+    
+class TestChebyshev_Fourier_Transform(FeatureBase):
+    name = 'Chebyshev_Fourier_Transform'
+    family_name = 'WNDCharm'
+    length = 32
+    
+class TestColor_Histogram(FeatureBase):
+    name = 'Color_Histogram'
+    family_name = 'WNDCharm'
+    length = 20
+
+#class TestComb_Moments(FeatureBase):
+#    name = 'Comb_Moments'
+#    family_name = 'WNDCharm'
+#    length = 48
+    
+#only fails on hdf
+class TestEdge_Features(FeatureBase):
+    name = 'Edge_Features'
+    family_name = 'WNDCharm'
+    length = 28
+    
+class TestFractal_Features(FeatureBase):
+    name = 'Fractal_Features'
+    family_name = 'WNDCharm'
+    length = 20
+    
+class TestGini_Coefficient(FeatureBase):
+    name = 'Gini_Coefficient'
+    family_name = 'WNDCharm'
+    length = 1
+    
+#class TestGabor_Textures(FeatureBase):
+#    name = 'Gabor_Textures'
+#    family_name = 'WNDCharm'
+#    length = 7
+
+#only fails on hdf
+class TestHaralick_Textures(FeatureBase):
+    name = 'Haralick_Textures'
+    family_name = 'WNDCharm'
+    length = 28
+    
+#class TestMultiscale_Historgram(FeatureBase):
+#    name = 'Multiscale_Historgram'
+#    family_name = 'WNDCharm'
+#    length 24
+
+#only fails on hdf
+class TestObject_Feature(FeatureBase):
+    name = 'Object_Feature'
+    family_name = 'WNDCharm'
+    length = 34
+
+#only fails on hdf
+class TestInverse_Object_Features(FeatureBase):
+    name = 'Inverse_Object_Features'
+    family_name = 'WNDCharm'
+    length = 34
+
+#error
+#class TestPixel_Intensity_Statistics(FeatureBase):
+#    name = 'Pixel_Intensity_Statistics'
+#    family_name = 'WNDCharm'
+#    length = 34
+    
+#class TestRadon_Coefficients(FeatureBase):
+#    name = 'Radon_Coefficients'
+#    family_name = 'WNDCharm'
+#    length = 12
+    
+class TestTamura_Textures(FeatureBase):
+    name = 'Tamura_Textures'
+    family_name = 'WNDCharm'
+    length = 6
+    
+class TestZernike_Coefficients(FeatureBase):
+    name = 'Zernike_Coefficients'
+    family_name = 'WNDCharm'
+    length = 72
+
+
+
+#############################################
+#### OpenCV Features
+#############################################
+##class TestBRISK(FeatureBase):
+##    name = 'BRISK'
+##    family_name = 'OpenCV'
+##    
+##class TestORB(FeatureBase):
+##    name = 'ORB'
+##    family_name = 'OpenCV'
+##    
+##class TestSIFT(FeatureBase):
+##    name = 'SIFT'
+##    family_name = 'OpenCV'
+##    
+##class TestSURF(FeatureBase):
+##    name = 'SURF'
+##    family_name = 'OpenCV'
+#
+#
+#
+#############################################
+#### Mahotas Features
+#############################################
+class TestLBP(FeatureBase):
+    name = 'LBP'
+    family_name = 'Mahotas'
+    length = 8
+    
+class TestPFTAS(FeatureBase):
+    name = 'PFTAS'
+    family_name = 'Mahotas'
+    length = 162
+    
+class TestTAS(FeatureBase):
+    name = 'TAS'
+    family_name = 'Mahotas'
+    length = 162
+    
+class TestZM(FeatureBase):
+    name = 'ZM'
+    family_name = 'Mahotas'
+    length = 25
+
+#not included in the tables
+#class TestHAR(FeatureBase):
+#    name = 'HAR'
+#    family_name = 'Mahotas'
+#    length = 52
+    
+#class FFTSD(FeatureBase):
+#    name = 'FFTSD'
+#    family_name = 'MyFeatures'
+#    length = 500
