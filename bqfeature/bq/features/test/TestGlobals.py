@@ -3,10 +3,13 @@ import ConfigParser
 import os
 import ntpath
 from lxml import etree
+import urllib
+import zipfile
 from bq.api.bqclass import fromXml # local
 from bq.api.comm import BQSession, BQCommError
 from bq.api.util import save_blob # local
 import posixpath
+import sys
 
 #from Test_Setup import return_archive_info
 
@@ -59,12 +62,6 @@ FEATURES_LIST = FEATURES_LIST.replace(' ','').split(',')
 
 TEST_METHOD = config.get('TestOptions', 'test_features') or 'all'
 TEST_METHOD = TEST_METHOD.replace(' ','').split(',')
-
-#set up attributes
-import sys
-
-sys.argv.append('-a %s'%'header')
-#asd
 
 
 
@@ -153,13 +150,13 @@ def return_archive_info( bisque_archive, mask):
             
     bisque_archive_data_xml_top    = upload_achive_file(path)
     
-    bisque_archive_image_uri       = ROOT+'/image_service/image/'+bisque_archive_data_xml_top.attrib['resource_uniq']
+#    bisque_archive_image_uri       = ROOT+'/image_service/image/'+bisque_archive_data_xml_top.attrib['resource_uniq']
 
 
     path = os.path.join(LOCAL_STORE_IMAGES, mask)
     check_for_file(mask, IMAGE_ARCHIVE_ZIP,local_dir=LOCAL_STORE_IMAGES)
     
-    mask_xml_top                   = upload_new_file(path)
+    mask_xml_top               = upload_new_file(path)
     
     bisque_archive_xml         = SESSION.fetchxml(bisque_archive_data_xml_top.attrib['uri']+'?view=deep')
     polygon_xml                = bisque_archive_xml.xpath('//polygon')

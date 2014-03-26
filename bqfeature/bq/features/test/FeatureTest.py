@@ -218,7 +218,10 @@ class FeatureBase(object):
     @attr('hdf')
     @attr('GET')
     def test_GET_hdfresponse(self):
-    
+        import os 
+        if not os.path.isdir(TestGlobals.TEMP):
+            os.mkdir(TestGlobals.TEMP)
+                
         response_code = 200
         response_type = 'hdf'
         method = 'GET'
@@ -252,7 +255,7 @@ class FeatureBase(object):
     @attr('xml')
     @attr('POST')
     def test_POST_xmlresponse(self):
-        
+
         response_code = 200
         response_type = 'xml'
         method = 'POST'
@@ -316,7 +319,9 @@ class FeatureBase(object):
     @attr('hdf')
     @attr('POST')
     def test_POST_hdfresponse(self):
-    
+        import os 
+        if not os.path.isdir(TestGlobals.TEMP):
+            os.mkdir(TestGlobals.TEMP)
         response_code = 200
         response_type = 'hdf'
         method = 'POST'
