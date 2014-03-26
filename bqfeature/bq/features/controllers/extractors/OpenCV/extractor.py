@@ -5,15 +5,15 @@ import cv2
 import cv
 import logging
 import numpy as np
-from bq.features.controllers import Feature #import base class
 from pylons.controllers.util import abort
 from bq.image_service.controllers.locks import Locks
-from bq.features.controllers.Feature import BaseFeature, calc_wrapper, ImageImport #import base class
+from bq.features.controllers.Feature import calc_wrapper, ImageImport #import base class
+from bq.features.controllers import Feature
 import tables
 
 log = logging.getLogger("bq.features")
 
-class BRISK(BaseFeature):
+class BRISK(Feature.BaseFeature):
     """
         Initalizes table and calculates the ORB descriptor to be
         placed into the HDF5 table.
@@ -104,7 +104,7 @@ class BRISK(BaseFeature):
         return
 
 
-class BRISKc(BaseFeature):
+class BRISKc(Feature.BaseFeature):
     """
         Initalizes table and calculates the ORB descriptor to be
         placed into the HDF5 table.
@@ -199,7 +199,7 @@ class BRISKc(BaseFeature):
         return
  
           
-class ORB(BaseFeature):
+class ORB(Feature.BaseFeature):
     """
         Initalizes table and calculates the ORB descriptor to be
         placed into the HDF5 table.
@@ -293,7 +293,7 @@ class ORB(BaseFeature):
         return
  
  
-class ORBc(BaseFeature):
+class ORBc(Feature.BaseFeature):
     """
         Initalizes table and calculates the ORB descriptor to be
         placed into the HDF5 table.
@@ -392,7 +392,7 @@ class ORBc(BaseFeature):
             
         return
 
-class SIFT(BaseFeature):
+class SIFT(Feature.BaseFeature):
     """
         Initalizes table and calculates the ORB descriptor to be
         placed into the HDF5 table.
@@ -586,7 +586,7 @@ class SIFTc(SIFT):
 #                self.setRow(uri, idnumber, descriptors[i], parameter)
 
                 
-class SURF(BaseFeature):
+class SURF(Feature.BaseFeature):
     """
         Initalizes table and calculates the SURF descriptor to be
         placed into the HDF5 table.
@@ -732,7 +732,7 @@ class SURFc(SURF):
         
         return descriptors,x,y,response,size,angle,octave
 
-class FREAKc(BaseFeature):
+class FREAKc(Feature.BaseFeature):
     """
         Initalizes table and calculates the ORB descriptor to be
         placed into the HDF5 table.

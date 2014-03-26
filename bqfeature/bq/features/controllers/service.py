@@ -50,6 +50,7 @@ from bq.util.mkdir import _mkdir
 import traceback
 from ID import ID
 import Feature
+from bq.features.controllers.Feature import BaseFeature
 # query is commented out
 # querylibraries
 # import Query_Library.ANN.ann as ann
@@ -108,9 +109,9 @@ class Feature_Archive(dict):
             try:
                 extractor = importlib.import_module('bq.features.controllers.extractors.' + module + '.extractor')  # the module needs to have a file named
                 for n, item in inspect.getmembers(extractor):  # extractor.py to import correctly
-                    if inspect.isclass(item) and issubclass(item, Feature.BaseFeature):
+                    if inspect.isclass(item) and issubclass(item, BaseFeature):
                         log.debug('Imported Feature: %s' % item.name)
-                        item.library = module
+                        item.library = module #for the list of features
                         self[item.name] = item
             except StandardError, err:  # need to pick a narrower error band but not quite sure right now
                 log.exception('Failed Imported Feature: %s\n' % module)  # failed to import feature
@@ -416,19 +417,21 @@ class UncachedTable(Tables):
         """
             store row elements to an output table
         """
-        for name in rowgenorator.feature_queue.keys():
-            queue = rowgenorator.feature_queue[name]
+        queue = rowgenorator.feature_queue['feature']
 
-            if not os.path.exists(filename):
-                self.feature.outputTable(filename)  # creates the table
+        if not os.path.exists(filename):
+            log.info('Writing hdf file into workdir: %s'%filename)
+            self.feature.outputTable(filename)  # creates the table
+        else:
+            FeatureServiceError(500,'File already exists in workdir: %s'%filename)
 
-            # appends elements to the table
-            with Locks(None, filename):
-                with tables.openFile(filename, 'a', title=self.feature.name) as h5file:
-                    table = h5file.root.values
-                    while not queue.empty():
-                        table.append(queue.get())
-                    table.flush()
+        # appends elements to the table
+        with Locks(None, filename):
+            with tables.openFile(filename, 'a', title=self.feature.name) as h5file:
+                table = h5file.root.values
+                while not queue.empty():
+                    table.append(queue.get())
+                table.flush()
         return
 
     def isin(self, hash):
@@ -719,21 +722,25 @@ def opertions(resource_list):
             hash_table.store(hash_row)
 
         else: #creating table for uncached features
+            log.info('Calculating on uncached feature')
 
-            if len(resource_list)<1: #if list is empty no table is created
+            if len(resource_list)>0: #if list is empty no table is created
                 uncached_feature_table = UncachedTable(resource_list.feature())
 
 
                 # store features in an unindexed table in the workdir
                 uncached_feature_rows = UncachedRows(resource_list.feature())
 
-                for i, uri_hash in enumerate(uri_hash_list):
+                for i, uri_hash in enumerate(resource_list):
                     # pushes to the table list unless feature failed to be calculated
                     # then the element is removed from the element list
                     resource_uris_dict = resource_list.get(uri_hash)[1]
-
-                    if not uncached_feature_rows.push(resource_uris_dict):
-                        resource_list.remove(resource_uris_dict)
+                    try:
+                        uncached_feature_rows.push(**resource_uris_dict)
+                    except FeatureExtractionError as feature_extractor_error: #if error occured the element is moved for the resource list to the error list
+                        resource_list.remove(resource_uris_dict,feature_extractor_error)
+                
+                workdir_filename = resource_list.workdir_filename() #just in case some features failed
                 uncached_feature_table.store(uncached_feature_rows, workdir_filename)
     else:
         log.info('Getting request from the workdir at: %s'% workdir_filename)

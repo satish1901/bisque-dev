@@ -80,6 +80,7 @@ def input_resource_check( resources, feature_name, feature_archieve):
 def calc_wrapper(func):
     def calc(self,kw):
         id = self.returnhash(**kw)
+        uri = kw['image'] #hack and needs to be fixed soon
 
         results = func(self,**kw) #runs calculation
         column_count = len(self.Columns.columns)-1 #finds length of columns to determin how to parse
@@ -93,6 +94,7 @@ def calc_wrapper(func):
                 row = tuple([id])
             else:
                 row = tuple([uri])
+                row +=tuple([self.name])
 
             #allows for varying column length
             for j in range(column_count): #iterating through columns returned
@@ -217,7 +219,7 @@ class BaseFeature(object):
             feature_type  = tables.StringCol(20, pos=2)
             feature       = tables.Col.from_atom(featureAtom, pos=3)
 
-        with Locks(None, filename):
+        with Locks(None, filename): 
             with tables.openFile(filename,'a', title=self.name) as h5file:
                 outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
                 outtable.flush()
