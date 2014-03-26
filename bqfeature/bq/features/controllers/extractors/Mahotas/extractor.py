@@ -5,11 +5,11 @@ import cv2
 import cv
 import numpy as np
 from mahotas.features import haralick,lbp,pftas,tas,zernike_moments
-from bq.features.controllers import Feature #import base class
 from pylons.controllers.util import abort
-from bq.features.controllers.Feature import BaseFeature, calc_wrapper, ImageImport #import base class
+from bq.features.controllers.Feature import calc_wrapper, ImageImport #import base class
+from bq.features.controllers import Feature
 
-class HAR(BaseFeature):
+class HAR(Feature.BaseFeature):
     """
         Initalizes table and calculates the SURF descriptor to be
         placed into the HDF5 table.
@@ -39,7 +39,7 @@ class HAR(BaseFeature):
         return [descritptors]
             
 
-class LBP(BaseFeature):
+class LBP(Feature.BaseFeature):
     """
         Initalizes table and calculates the SURF descriptor to be
         placed into the HDF5 table.
@@ -115,7 +115,7 @@ class LBP(BaseFeature):
 #        return [descriptor]
         
         
-class PFTAS(BaseFeature):
+class PFTAS(Feature.BaseFeature):
     """
         Initalizes table and calculates the SURF descriptor to be
         placed into the HDF5 table.
@@ -144,7 +144,7 @@ class PFTAS(BaseFeature):
         #initalizing rows for the table
         return [descriptor]
             
-class TAS(BaseFeature):
+class TAS(Feature.BaseFeature):
     """
         Initalizes table and calculates the SURF descriptor to be
         placed into the HDF5 table.
@@ -173,7 +173,7 @@ class TAS(BaseFeature):
         #initalizing rows for the table
         return [descriptor]
             
-class ZM(BaseFeature):
+class ZM(Feature.BaseFeature):
     """
         Initalizes table and calculates the SURF descriptor to be
         placed into the HDF5 table.

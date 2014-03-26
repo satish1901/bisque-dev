@@ -4,15 +4,17 @@ import cv2
 import cv
 import numpy as np
 from pyMPEG7FlexLib import extractCSD,extractSCD,extractCLD,extractDCD,extractHTD,extractEHD,extractRSD
-import bq.features.controllers.Feature as Feature #import base class
 from pylons.controllers.util import abort
 import logging
 import tables
-from bq.features.controllers.Feature import BaseFeature, calc_wrapper, ImageImport #import base class
+from bq.features.controllers.Feature import calc_wrapper, ImageImport #import base class
 from bq.image_service.controllers.locks import Locks
+from bq.features.controllers import Feature
+
+
 log = logging.getLogger("bq.features")
 
-class SCD(BaseFeature):
+class SCD(Feature.BaseFeature):
     """
         Initalizes table and calculates the SURF descriptor to be
         placed into the HDF5 table.
@@ -38,7 +40,7 @@ class SCD(BaseFeature):
         
         return [descriptors]
 
-class HTD2(BaseFeature):
+class HTD2(Feature.BaseFeature):
     """
     """
     #initalize parameters
@@ -64,7 +66,7 @@ class HTD2(BaseFeature):
         return [descriptors]
 
 
-class EHD2(BaseFeature):
+class EHD2(Feature.BaseFeature):
     """
         Initalizes table and calculates the Edge Histogram descriptor to be
         placed into the HDF5 table
@@ -96,7 +98,7 @@ class EHD2(BaseFeature):
         return [descriptors]
  
     
-class DCD(BaseFeature):
+class DCD(Feature.BaseFeature):
     """
     """
     
@@ -227,7 +229,7 @@ class mDCD(DCD):
             
         return   
 
-class CSD(BaseFeature):
+class CSD(Feature.BaseFeature):
     """
         Initalizes table and calculates the SURF descriptor to be
         placed into the HDF5 table.
@@ -335,7 +337,7 @@ class mCSD(CSD):
             
         return  
 
-class CLD(BaseFeature):
+class CLD(Feature.BaseFeature):
     """
         Initalizes table and calculates the SURF descriptor to be
         placed into the HDF5 table.
@@ -471,7 +473,7 @@ class mCLD(CLD):
     
     
         
-class pRSD(BaseFeature):
+class pRSD(Feature.BaseFeature):
     """
         Initalizes table and calculates the pRSD descriptor to be
         placed into the HDF5 table.

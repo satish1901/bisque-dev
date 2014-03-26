@@ -94,23 +94,22 @@ def tearDownModule():
 ###         documentation
 #######################################
 class TestFeatureMain(RequestBase):
+
     name = 'feature_main'
     request = TestGlobals.ROOT+'/features'
     response_code = '200'
     
 class TestFeatureList(RequestBase):
 
-    def __init__(self):
-        self.name = 'feature_list' 
-        self.request = TestGlobals.ROOT+'/features/list'
-        self.response_code = '200'    
+    name = 'feature_list' 
+    request = TestGlobals.ROOT+'/features/list'
+    response_code = '200'    
     
 class TestFormats(RequestBase):
-
-    def __init__(self):    
-        self.name = 'formats' 
-        self.request = TestGlobals.ROOT+'/features/formats'
-        self.response_code = '200'
+  
+    name = 'formats' 
+    request = TestGlobals.ROOT+'/features/formats'
+    response_code = '200'
                
 #######################################
 ###      Feature Functionality
@@ -119,12 +118,17 @@ class TestFeature(RequestBase):
     """
         Testing on a Test Features
     """
-    def __init__(self): 
-        self.name = 'feature' 
-        self.request = TestGlobals.ROOT+'/features/DTFE'
-        self.response_code = '200'
+    name = 'feature' 
+    request = TestGlobals.ROOT+'/features/TestFeature'
+    response_code = '200'
 
-
+class TestFeatureCached(RequestBase):
+    """
+        Testing on a Cached Test Features
+    """
+    name = 'feature_cached' 
+    request = TestGlobals.ROOT+'/features/TestFeature'
+    response_code = '200'
 
 ############################################
 ###     Malformed Requests
@@ -132,7 +136,7 @@ class TestFeature(RequestBase):
 class TestMultibleSameElementTypes(RequestBase):
     
     name = 'multible_same_element_types' 
-    request = TestGlobals.ROOT+'/features/DTFE/none?'+TestGlobals.RESOURCE_LIST[0]['image']+'&'+TestGlobals.RESOURCE_LIST[0]['image']
+    request = TestGlobals.ROOT+'/features/TestFeature/none?'+TestGlobals.RESOURCE_LIST[0]['image']+'&'+TestGlobals.RESOURCE_LIST[0]['image']
     response_code = '400'
 
 
@@ -146,23 +150,36 @@ class TestNonlistedFeature(RequestBase):
 class TestNonlistedFormat(RequestBase):
     
     name = 'nonlisted_format' 
-    request = TestGlobals.ROOT+'/features/DTFE/safd?image='+TestGlobals.RESOURCE_LIST[0]['image'] 
-    response_code = '404'    
+    request = TestGlobals.ROOT+'/features/TestFeature/sadf?image='+TestGlobals.RESOURCE_LIST[0]['image'] 
+    response_code = '404'
 
         
 class TestIncorrectResourceInputType(RequestBase):
     
     name = 'incorrect_resource_input_type'
-    request = TestGlobals.ROOT+'/features/DTFE/none?stuff='+TestGlobals.RESOURCE_LIST[0]['image']
+    request = TestGlobals.ROOT+'/features/TestFeature/none?stuff='+TestGlobals.RESOURCE_LIST[0]['image']
     response_code = '400'
+
 
 class TestResourceTypeNotFound(RequestBase):
 
     name = 'resource_type_not_found'
-    request = TestGlobals.ROOT+'/features/DTFE/xml?image='+TestGlobals.ROOT+'/image_service/image/notaresource"'  
+    request = TestGlobals.ROOT+'/features/TestFeature/xml?image='+TestGlobals.ROOT+'/image_service/image/notaresource"'  
     response_code = '200'
     
 
+class TestDocumentationIncorrectFeature(RequestBase):
+    
+    name = 'documentation_of_incorrect_feature'
+    request = TestGlobals.ROOT+'/features/asdf'  
+    response_code = '404'
+    
+
+class TestDocumentationIncorrectFormat(RequestBase):
+    
+    name = 'documentation_of_incorrect_format'
+    request = TestGlobals.ROOT+'/features/format/asdf'  
+    response_code = '404'
 
 ##################################
 ###     VRL Features

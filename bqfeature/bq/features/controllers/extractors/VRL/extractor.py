@@ -5,7 +5,8 @@
 import cv2
 import cv
 import tables
-from bq.features.controllers.Feature import BaseFeature, calc_wrapper, ImageImport #import base class
+from bq.features.controllers.Feature import calc_wrapper, ImageImport #import base class
+from bq.features.controllers import Feature
 from pyVRLLib import extractEHD, extractHTD
 from pylons.controllers.util import abort
 import logging
@@ -15,7 +16,7 @@ from bq.image_service.controllers.locks import Locks
 
 log = logging.getLogger("bq.features")
 
-class EHD(BaseFeature):
+class EHD(Feature.BaseFeature):
     """
         Initalizes table and calculates the Edge Histogram descriptor to be
         placed into the HDF5 table
@@ -46,7 +47,7 @@ class EHD(BaseFeature):
         #initalizing rows for the table
         return [descriptors]
 
-class HTD(BaseFeature):
+class HTD(Feature.BaseFeature):
     """
         Initalizes table and calculates the HTD descriptor to be
         placed into the HDF5 table
@@ -81,7 +82,7 @@ class HTD(BaseFeature):
         return [descriptor] #calculating descriptor and return
     
     
-class mHTD(BaseFeature):
+class mHTD(Feature.BaseFeature):
     """
         Initalizes table and calculates the HTD descriptor to be
         placed into the HDF5 table

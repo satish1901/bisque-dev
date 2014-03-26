@@ -11,12 +11,12 @@ from lxml import etree
 import urllib, urllib2, cookielib
 from bq.image_service.controllers.locks import Locks
 import random
-from bq.features.controllers.Feature import BaseFeature, calc_wrapper, ImageImport #import base class
+from bq.features.controllers.Feature import calc_wrapper, ImageImport #import base class
 from bq.features.controllers import Feature
 
 log = logging.getLogger("bq.features")
 
-class FFTSD(BaseFeature):
+class FFTSD(Feature.BaseFeature):
     
     #parameters
     file = 'features_fftsd.h5'
@@ -36,8 +36,8 @@ class FFTSD(BaseFeature):
             contour = []
             for vertex in vertices:
                 contour.append([int(float(vertex.attrib['x'])),int(float(vertex.attrib['y']))])
+                
         else:
-
             log.debug('Polygon not found: Must be a polygon gobject')
             raise ValueError('Polygon not found: Must be a polygon gobject') #an excpetion instead of abort so work flow is not interupted
         
@@ -61,56 +61,5 @@ class FFTSD(BaseFeature):
             
         return
     
-class DTFE(BaseFeature):
-    """
-        Dummy Test Feature Extractor
-        This extractor is completely useless to calculate any 
-        useful feature. 
-        Purpose: to test the reliability of the feature service
-    """
-    #parameters
-    file = 'features_dtfe'
-    name = 'DTFE'
-    description = """Dummy Test Feature Extractor (test feature) Calculates random numbers for features"""
-    length = 64
-    feature_format = 'int32'
-    
-    #cache = False
-    
-    @calc_wrapper
-    def calculate(self, **resource):
-        """ Calculates features for DTFE"""
-        #initalizing
-        image_uri = resource['image']
-        descriptor = [random.randint(0, 255) for x in range(64)]
-                
-        #initalizing rows for the table
-        return [descriptor]
-        
-class DTFEuncached(BaseFeature):
-    """
-        Dummy Test Feature Extractor
-        This extractor is completely useless to calculate any 
-        useful feature. 
-        Purpose: to test the reliability of the feature service
-    """
-    #parameters
-    file = 'features_dtfe'
-    name = 'DTFEuncached'
-    description = """Dummy Test Feature Extractor (test feature) Calculates random numbers for features"""
-    length = 64
-    feature_format = 'int32'
-    cache = False
-    
-    @calc_wrapper
-    def calculate(self, **resource):
-        """ Calculates features for DTFE"""
-        #initalizing
-        image_uri = resource['image']
-        descriptor = [random.randint(0, 255) for x in range(64)]
-                
-        #initalizing rows for the table
-        return [descriptor]  
-        
         
         
