@@ -1,10 +1,9 @@
 #global variables for the test script
 import ConfigParser
-from bqapi.comm import BQSession, BQCommError # local
 import os
 import ntpath
 from lxml import etree
-from bqapi.bqclass import fromXml # local
+from bq.api.bqclass import fromXml # local
 from bq.api.comm import BQSession, BQCommError
 from bq.api.util import save_blob # local
 import posixpath

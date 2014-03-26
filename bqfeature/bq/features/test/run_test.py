@@ -1,9 +1,6 @@
 #from bq.api.bqclass import fromXml # bisque
 #from bq.api.comm import BQSession, BQCommError # bisque
 #from bq.api.util import save_blob # bisque
-from bqapi.bqclass import fromXml # local
-from bqapi.comm import BQSession, BQCommError # local
-from bqapi.util import save_blob # local
 import urllib
 import zipfile
 from FeatureTest import FeatureBase
@@ -15,6 +12,7 @@ import time
 import posixpath
 import ConfigParser
 import os
+import glob
 from subprocess import Popen, call, PIPE
 import ntpath
 import logging as log
@@ -87,6 +85,12 @@ def tearDownModule():
     
     cleanup_dir()
     TestGlobals.SESSION.finish_mex()
+    
+    #remove all files form temp dir
+
+    tempfilelist = glob.glob(os.path.join('Temp','*'))
+    for f in tempfilelist:
+        os.remove(f)
 
 
 
