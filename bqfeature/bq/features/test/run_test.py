@@ -67,6 +67,7 @@ mask_4               = 'mask_8043.jpg'
 def setUpModule():
     """
         Initalizes the bisque to run tests
+        (moved to the TestGlobals module so that everything is initalized before nose startes)
     """
     pass
 
@@ -390,3 +391,10 @@ class TestZM(FeatureBase):
 #    name = 'FFTSD'
 #    family_name = 'MyFeatures'
 #    length = 500
+
+
+if __name__ == '__main__':
+    import nose
+    nose.runmodule(argv=[__file__])
+    
+    
