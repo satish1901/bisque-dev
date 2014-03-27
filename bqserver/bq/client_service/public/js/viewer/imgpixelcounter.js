@@ -309,15 +309,14 @@ ImgPixelCounter.prototype.updateImage = function () {
                 this.updateCanvas(); //if canvas isnt initalized, will initalize canvas
                 this.canvas_mask.style.visibility='visible'; //
                 this.canvas_image.style.visibility='visible';
-                this.pixelCounterPanel.updataRegionPanel();
+                this.pixelCounterPanel.updateRegionPanel();
 
             } else {
                 if (this.canvas_mask) {
                     this.canvas_mask.style.visibility='hidden';
                     this.canvas_image.style.visibility='hidden';
-                    if(this.pixelCounterPanel.regionCount){
-                        delete this.pixelCounterPanel.regionCount;
-                    }
+                    this.pixelCounterPanel.regionCount = []; //reset region count table
+
                 }
                 this.pixelCounterPanel.lookupThreshold();
             }
@@ -326,9 +325,7 @@ ImgPixelCounter.prototype.updateImage = function () {
             if (this.canvas_mask) {
                 this.canvas_mask.style.visibility='hidden';
                 this.canvas_image.style.visibility='hidden';
-                if(this.pixelCounterPanel.regionCount){
-                    delete this.pixelCounterPanel.regionCount;
-                }
+                this.pixelCounterPanel.regionCount = []; //reset region count table
             }
         }
     }
@@ -354,19 +351,23 @@ ImgPixelCounter.prototype.onClick = function(e) {
     //set loading when clicked
     //this.loading_canvas.style.visibility='visible';
     //this.viewer.start_wait({op: 'gobjects', message: 'Fetching gobjects'})
-
+    
+    //this.masksrc = this.maskData.data;
+    
     var xClick = e.pageX-parseInt(this.canvas_mask.style.left)-this.viewer.plugins_by_name['tiles'].tiled_viewer.left; //clicks mapped to canvas
     var yClick = e.pageY-parseInt(this.canvas_mask.style.top)-this.viewer.plugins_by_name['tiles'].tiled_viewer.top; //clicks mapped to canvas
 
     if(!(!(this.image_view_top<e.pageY&&this.image_view_bottom>e.pageY)||!(this.image_view_left<e.pageX&&this.image_view_right>e.pageX))){ //check if the click is on the image
-        this.canvas_mask.style.visibility='hidden';
-        this.viewer.parameters.main.viewerContainer.setLoading(true);
-        var me = this;
-        setTimeout(function(){ //set time out to allow for the loading screen to be shown
-           me.connectedComponents(xClick,yClick);
-           me.viewer.parameters.main.viewerContainer.setLoading(false);
-           me.canvas_mask.style.visibility='visible';
-        },5);
+        if (this.masksrc[4*(yClick*this.canvas_mask.width+xClick)+3]!=255) { //check to see if region has already been selected
+            this.canvas_mask.style.visibility='hidden';
+            this.viewer.parameters.main.viewerContainer.setLoading(true);
+            var me = this;
+            setTimeout(function(){ //set time out to allow for the loading screen to be shown
+               me.connectedComponents(xClick,yClick);
+               me.viewer.parameters.main.viewerContainer.setLoading(false);
+               me.canvas_mask.style.visibility='visible';
+            },5);
+        }
     }
 };
 
@@ -387,7 +388,7 @@ ImgPixelCounter.prototype.index2xy = function(index) {
 
 ImgPixelCounter.prototype.connectedComponents = function(x,y) {
 
-    this.resetmask();
+    //this.resetmask();
     this.masksrc = this.maskData.data;
 
 
@@ -412,7 +413,6 @@ ImgPixelCounter.prototype.connectedComponents = function(x,y) {
     var count = 0;
     while (edge_points_queue.length>0) {
         this.checkNeighbors(edge_points_queue,label_list);
-        //this.ctx_imgmask.putImageData(this.maskData,0,0);
         count+=1;
     }
 
@@ -420,14 +420,22 @@ ImgPixelCounter.prototype.connectedComponents = function(x,y) {
     // remap
     var tiled_viewer = this.viewer.plugins_by_name['tiles'].tiled_viewer; //finding tiled viewer in the plugin list
     var p = tiled_viewer.toImageFromViewer({x: x - tiled_viewer.x, y: y - tiled_viewer.y});
-    this.pixelCounterPanel.regionCount = {count:count, x:p.x, y:p.y};
-    this.pixelCounterPanel.updataRegionPanel();
+    this.pixelCounterPanel.regionCount.push({count:count, x:p.x, y:p.y, xclick:x,yclick:y});
+    //this.ctx_imgmask.font = "Bold Text, 20px, sans-serif";
+    //this.ctx_imgmask.strokeText((this.pixelCounterPanel.regionCount.length-1).toString(), x, y);
+    this.pixelCounterPanel.updateRegionPanel();
 };
 
 
+//ImgPixelCounter.prototype.complimentaryColor function(r,g,b) {
+//    return {cr:cr,cg:cg,cb:cb}
+//};
+
 ImgPixelCounter.prototype.checkNeighbors = function(edge_points_queue,label_list) {
 
+
     var edge_index = parseInt(edge_points_queue.shift());
+    
     //set color of the mask
     this.masksrc[edge_index]   = 0;
     this.masksrc[edge_index+1] = 255; //set green
@@ -490,6 +498,109 @@ ImgPixelCounter.prototype.checkNeighbors = function(edge_points_queue,label_list
 };
 
 
+//removing the connected component marked region
+ImgPixelCounter.prototype.undoConnectedComponents = function(x,y) {
+
+    //this.resetmask();
+    this.maskData = this.ctx_imgmask.getImageData(0, 0, this.canvas_mask.width, this.canvas_mask.height);
+    this.masksrc = this.maskData.data;
+
+    var edge_points_queue = new Array();
+
+    var seed = 4*(y*this.canvas_image.width+x); //enforce channel zero
+
+    edge_points_queue.push(seed);
+    var label_list = [
+        (this.imagesrc[seed]>=128),
+        (this.imagesrc[seed+1]>=128),
+        (this.imagesrc[seed+2]>=128)
+    ];
+    var label = this.imagesrc[seed];
+    if (
+        typeof label_list[0] === "undefined"||
+        typeof label_list[1] === "undefined"||
+        typeof label_list[2] === "undefined"
+        ){
+        return
+    }
+    //var count = 0;
+    while (edge_points_queue.length>0) {
+        this.undoCheckNeighbors(edge_points_queue,label_list);
+        //this.ctx_imgmask.putImageData(this.maskData,0,0);
+        //count+=1;
+    }
+
+    this.ctx_imgmask.putImageData(this.maskData,0,0);
+    this.pixelCounterPanel.updateRegionPanel();
+};
+
+ImgPixelCounter.prototype.undoCheckNeighbors = function(edge_points_queue,label_list) {
+
+    var transparency = 0 //making mask transparent
+    var edge_index = parseInt(edge_points_queue.shift());
+    
+    //set color of the mask
+    this.masksrc[edge_index]   = 0;
+    this.masksrc[edge_index+1] = 0; //set to black
+    this.masksrc[edge_index+2] = 255;
+    //this.masksrc[edge_index+3] = 255; //set transparency
+
+    edge_value = this.index2xy(edge_index);
+
+    //check neighbors
+    x = edge_value.x;
+    y = edge_value.y;
+    var control_surface_size =  this.viewer.viewer_controls_surface.getBoundingClientRect();
+    if (x+1 < this.canvas_image.width && x+1 < this.image_view_right-control_surface_size.left) { //check if out of the image
+        var new_edge_index = edge_index+4; //check on pixel infont
+        if ((this.imagesrc[new_edge_index]>=128) == label_list[0] &&
+            (this.imagesrc[new_edge_index+1]>=128) == label_list[1] &&
+            (this.imagesrc[new_edge_index+2]>=128) == label_list[2] &&
+            this.masksrc[new_edge_index+3] != transparency) {
+            //( this.masksrc[new_edge_index] != 0 || this.masksrc[new_edge_index+1] != 0 || this.masksrc[new_edge_index+2] != 255)) { //has been put in the queue at sometime
+            edge_points_queue.push(new_edge_index);
+            this.masksrc[new_edge_index+3] = transparency; //set transparency
+        }
+    }
+
+    if (0 <= x-1 && x-1 >= this.image_view_left-control_surface_size.left) { //check if out of the image
+        var new_edge_index = edge_index-4; //check on pixel behind
+        if ((this.imagesrc[new_edge_index]>=128) == label_list[0] &&
+            (this.imagesrc[new_edge_index+1]>=128) == label_list[1] &&
+            (this.imagesrc[new_edge_index+2]>=128) == label_list[2] &&
+            this.masksrc[new_edge_index+3] != transparency) {
+            //( this.masksrc[new_edge_index] != 0 || this.masksrc[new_edge_index+1] != 0 || this.masksrc[new_edge_index+2] != 255)){
+            edge_points_queue.push(new_edge_index);
+            this.masksrc[new_edge_index+3] = transparency; //set transparency
+        }
+    }
+
+    if (y+1 < this.canvas_image.height && y+1 < this.image_view_bottom-control_surface_size.top) { //check if out of the image
+        var new_edge_index = edge_index+this.canvas_image.width*4; //check on pixel above
+        if ((this.imagesrc[new_edge_index]>=128) == label_list[0] &&
+            (this.imagesrc[new_edge_index+1]>=128) == label_list[1] &&
+            (this.imagesrc[new_edge_index+2]>=128) == label_list[2] &&
+            this.masksrc[new_edge_index+3] != transparency) {
+            //( this.masksrc[new_edge_index] != 0 || this.masksrc[new_edge_index+1] != 0 || this.masksrc[new_edge_index+2] != 255)){
+            edge_points_queue.push(new_edge_index);
+            this.masksrc[new_edge_index+3] = transparency; //set transparency
+        }
+    }
+
+    if (0 <= y-1 && y-1 >= this.image_view_top-control_surface_size.top) { //check if out of the image
+        var new_edge_index = edge_index-this.canvas_image.width*4; //check on pixel below
+        if ((this.imagesrc[new_edge_index]>=128) == label_list[0] &&
+            (this.imagesrc[new_edge_index+1]>=128) == label_list[1] &&
+            (this.imagesrc[new_edge_index+2]>=128) == label_list[2] &&
+            this.masksrc[new_edge_index+3] != transparency) {
+            //( this.masksrc[new_edge_index] != 0 || this.masksrc[new_edge_index+1] != 0 || this.masksrc[new_edge_index+2] != 255))  {
+            edge_points_queue.push(new_edge_index);
+            this.masksrc[new_edge_index+3] = transparency; //set transparency
+        }
+    }
+};
+
+
 
 ImgPixelCounter.prototype.onError = function(error) {
     //BQApp.setLoading(false);
@@ -523,14 +634,17 @@ Ext.define('BQ.Panel.PixelCounter', {
     width : 400,
     plain : true,
     //closable: true,
+    autoScroll: true,
     thresholdMode: true,
     selectMode : false,
     thresholdValue: 128,
     channel_names: { 0: 'red', 1: 'green', 2: 'blue' },
-
+    regionCount: [],
+   
     initComponent : function() {
 
         this.items = [];
+        this.tbar = [];
         var me=this;
 
         var selectModeToggle = {
@@ -615,19 +729,72 @@ Ext.define('BQ.Panel.PixelCounter', {
             border: false,
             items: [
                 selectModeToggle,
-                {
-                    height: 25,
+                { //Undo Button
+                    itemId : 'px_undo_button',
                     xtype: 'button',
-                    text: 'Export',
+                    text: 'Undo',
+                    scale: 'large',
+                    disabled: true,     
+                    listeners : {
+                        scope: this,
+                        click: function() { //undo runs the connected components in reverse from the last regionCount x,y
+                            //clears table and displayed segmentation
+                            if(this.regionCount.length) {
+                                var regionCount = this.regionCount.pop(); //reset region counter table
+                                this.pixelCounter.canvas_mask.style.visibility='hidden';
+                                this.viewer.parameters.main.viewerContainer.setLoading(true);
+                                var me = this;
+                                setTimeout(function(){ //set time out to allow for the loading screen to be shown
+                                   me.pixelCounter.undoConnectedComponents(regionCount.xclick,regionCount.yclick);
+                                   me.viewer.parameters.main.viewerContainer.setLoading(false);
+                                   me.pixelCounter.canvas_mask.style.visibility='visible';
+                                },5);
+                            }
+                            //this.pixelCounter.changed();
+                        }
+                    }          
+                },
+                { //Resets Button
+                    itemId : 'px_reset_button',
+                    xtype: 'button',
+                    text: 'Reset',
+                    scale: 'large',
                     disabled: true,
-                    hidden: true,
+                    //hidden: true,
+                    listeners : {
+                        scope: this,
+                        click: function() {
+                            //clears table and displayed segmentation
+                            this.pixelCounter.resetmask();
+                            if(this.regionCount) this.regionCount = []; //reset region counter table
+                            this.pixelCounter.changed();
+                        }
+                    }
+                },
+                { //Export Button
+                    itemId : 'px_export_button',
+                    xtype: 'button',
+                    text: 'Export CSV',
+                    scale: 'large',
+                    disabled: true,
+                    //hidden: true,
+                    listeners : {
+                        scope: this,
+                        click: function() { //undo runs the connected components in reverse from the last regionCount x,y
+                            //clears table and displayed segmentation
+                            if(this.regionCount.length>0) {
+                                this.exportCSV();
+                                //export csv
+                            }
+                        },
+                    },
                 },
                 '->',
                 closePanel,
             ]
         });
 
-        this.thesholdPanel = Ext.create('Ext.container.Container',{
+        this.thresholdPanel = Ext.create('Ext.container.Container',{
             itemId : 'px_threshold_panel',
             borders: false,
             frame: false,
@@ -649,16 +816,19 @@ Ext.define('BQ.Panel.PixelCounter', {
             cls: 'threshold',
         });
 
-        this.thresholdPanel = Ext.create('Ext.container.Container', {
-            layout: 'fit',
+        this.thresholdInfoPanel = Ext.create('Ext.container.Container', {
+            //layout: 'fit',
             html: '',
             cls: 'threshold',
+            //ayout: 'anchor',
         });
+        
 
-        this.items.push(this.mainToolbar);
-        this.items.push(this.thesholdPanel);
-        this.items.push(this.selectPanel);
+        this.tbar.push(this.mainToolbar)
+        //this.items.push(this.mainToolbar);
         this.items.push(this.thresholdPanel);
+        this.items.push(this.selectPanel);
+        this.items.push(this.thresholdInfoPanel);
 
         this.pixelCounter.changed(); //initialize threshold
         return this.callParent(arguments);
@@ -686,8 +856,10 @@ Ext.define('BQ.Panel.PixelCounter', {
     lookupThreshold : function() {
 
         //parsing the request
-        if(this.viewer.imagedim.x>10000&&this.viewer.imagedim.y>10000)
+        if(this.viewer.imagedim.x>10000&&this.viewer.imagedim.y>10000) {
             this.thresholdPanel.update('<h2>Image is too large</h2>');
+            return;
+        }
         var param = {};
         var args = this.viewer.current_view.src_args;
         var request = [];
@@ -742,6 +914,10 @@ Ext.define('BQ.Panel.PixelCounter', {
     updataGlobalPanel : function(xmlDoc) {
         this.queryById('px_selectinfo_panel').setVisible(false);
         this.queryById('px_threshold_panel').setVisible(true);
+        
+        this.queryById('px_undo_button').setDisabled(true);
+        this.queryById('px_reset_button').setDisabled(true);
+        this.queryById('px_export_button').setDisabled(true);
 
         var channels = this.evaluateXPath(xmlDoc, 'resource/pixelcounts[@name="channel"]');
         var globalTitle = '<tr><th>channel</th><th >threshold</th><th>pixels</th>';
@@ -775,41 +951,85 @@ Ext.define('BQ.Panel.PixelCounter', {
         }
         var html = '<table>'+globalTitle+globalRows+"</table>";
 
-        this.thresholdPanel.update(html);
+        this.thresholdInfoPanel.update(html);
     },
 
-    updataRegionPanel : function(){
+    updateRegionPanel : function(){
         this.queryById('px_selectinfo_panel').setVisible(true);
         this.queryById('px_threshold_panel').setVisible(false);
 
-        var html = '';
-        if (this.regionCount) { //canvas else set panel to zero
+        
+        
+        //set usability of the buttons
+        if (this.regionCount.length>0){
+            this.queryById('px_undo_button').setDisabled(false);
+            this.queryById('px_reset_button').setDisabled(false);
+            this.queryById('px_export_button').setDisabled(false);
+        } else {
+            this.queryById('px_undo_button').setDisabled(true);
+            this.queryById('px_reset_button').setDisabled(true); 
+            this.queryById('px_export_button').setDisabled(true);           
+        }
+        
 
-            var regionTitle = '<tr><th>centroid</th><th>pixels</th>';
+        var html = '';
+        if (this.regionCount.length>0) { //canvas else set panel to zero
+            var regionTitle = '<tr><th>index</th><th>centroid</th><th>pixels</th>';
             var scale = this.viewer.view().scale;
 
             if (this.phys.isPixelResolutionValid()) {
                 regionTitle += '<th>'+this.phys.pixel_units[0]+'<sup>2</sup>'+'</th>';
             }
-
             regionTitle = regionTitle + '</tr>';
-            var regionRows = '<tr><td>'+this.regionCount.x + ','+ this.regionCount.y+'</td>';
-            var count = this.regionCount.count;//this.viewer.view().scale //find scale
-            var scaled_count = (count/(scale*scale)).toFixed(0);
-            var regionRows = regionRows + '<td >'+scaled_count.toString()+'</td>';
-            if (this.phys.isPixelResolutionValid()) {
-                var area = (parseFloat(scaled_count)*parseFloat(this.phys.pixel_size[0])*parseFloat(this.phys.pixel_size[1])).toFixed(2);
-                regionRows += '<td>'+area+'</td>';
+            var regionRows = '';
+            for (var r = 0; r<this.regionCount.length; r++) {
+                regionRows += '<tr><td>'+r.toString()+'</td>';
+                regionRows += '<td>'+this.regionCount[r].x + ','+ this.regionCount[r].y+'</td>';
+                var count = this.regionCount[r].count;//this.viewer.view().scale //find scale
+                var scaled_count = (count/(scale*scale)).toFixed(0);
+                regionRows += '<td >'+scaled_count.toString()+'</td>';
+                if (this.phys.isPixelResolutionValid()) {
+                    
+                    var area = (parseFloat(scaled_count)*parseFloat(this.phys.pixel_size[0])*parseFloat(this.phys.pixel_size[1])).toFixed(2);
+                    regionRows += '<td>'+area+'</td>';
+                }
             }
-            regionRows = regionRows+'</tr>';
-            var html = '<table>'+regionTitle+regionRows+"</table>";
-            //this.thresholdPanel.update(html)
+            
+            regionRows += '</tr>';
+            var html = '<table>'+regionTitle+regionRows+'</table>'+'<br><br>';
+            //this.thresholdInfoPanel.update(html)
         } else {
             //error no region evaluated
         }
-        this.thresholdPanel.update(html);
+        this.thresholdInfoPanel.update(html);
     },
-
-
+    
+    exportCSV : function() {
+        if (this.regionCount.length>0) {
+            var scale = this.viewer.view().scale;
+            var CsvDocument = '';
+            CsvDocument +=  'index,centroid,pixels'//title
+            if (this.phys.isPixelResolutionValid()) {
+                CsvDocument += ','+this.phys.pixel_units[0]+'^2';
+            }
+            CsvDocument += '\n';
+            for (var r = 0; r<this.regionCount.length; r++) {
+                var count = this.regionCount[r].count;//this.viewer.view().scale //find scale
+                var scaled_count = (count/(scale*scale)).toFixed(0);
+                
+                //row
+                CsvDocument += r.toString() + ',"' + this.regionCount[r].x + ',' + this.regionCount[r].y + '",' + scaled_count.toString()
+                if (this.phys.isPixelResolutionValid()) {
+                    
+                    var area = (parseFloat(scaled_count)*parseFloat(this.phys.pixel_size[0])*parseFloat(this.phys.pixel_size[1])).toFixed(2);
+                    CsvDocument += ','+area;
+                }
+                CsvDocument += '\n';
+            }   
+           
+            window.open('data:text/csv;charset=utf-8,' + escape(CsvDocument)); //download
+            
+        }
+    },
 });
 
