@@ -256,16 +256,7 @@ ImgPixelCounter.prototype.destroyCanvas = function() {
 
 //sets all values in the mask to 0
 ImgPixelCounter.prototype.resetmask = function() {
-    //
-/*
-    this.ctx_imgmask.fillStyle = '#000000'; //blank image
-    this.ctx_imgmask.globalAlpha = 0;
-    this.ctx_imgmask.fillRect(0,0,this.canvas_mask.width,this.canvas_mask.height); //fill on the entire image
-    //this.ctx_imgmask.createImageData(this.canvas_mask.height,this.canvas_mask.width);
-    this.maskData = this.ctx_imgmask.getImageData(0, 0, this.canvas_mask.width, this.canvas_mask.height);
-    this.masksrc = this.maskData.data;
-    this.ctx_imgmask.putImageData(this.maskData,0,0);
- */   
+     
         for (var i = 0; i<(this.canvas_mask.width*this.canvas_mask.height*4); i++) {
             this.masksrc[i]   = 0;
         }
@@ -274,12 +265,6 @@ ImgPixelCounter.prototype.resetmask = function() {
 
 //sets the background to the same color as the tile viewer
 ImgPixelCounter.prototype.resetimage = function() {
-/*    this.ctx_img.fillStyle = '#434343'; //background color
-    this.ctx_img.fillRect(0,0,this.canvas_image.width,this.canvas_image.height); //fill on the entire image
-    //this.ctx_img.createImageData(this.canvas_mask.height,this.canvas_mask.width);
-    this.imageData = this.ctx_img.getImageData(0, 0, this.canvas_image.width, this.canvas_image.height);
-    this.imagesrc = this.imageData.data;
-*/    
     
         for (var i = 0; i<(this.canvas_image.width*this.canvas_image.height*4); i+=4) {
             this.imagesrc[i]     = 67; //r
@@ -420,7 +405,22 @@ ImgPixelCounter.prototype.connectedComponents = function(x,y) {
     // remap
     var tiled_viewer = this.viewer.plugins_by_name['tiles'].tiled_viewer; //finding tiled viewer in the plugin list
     var p = tiled_viewer.toImageFromViewer({x: x - tiled_viewer.x, y: y - tiled_viewer.y});
-    this.pixelCounterPanel.regionCount.push({count:count, x:p.x, y:p.y, xclick:x,yclick:y});
+    
+    //scaling the counts
+    var scale = this.viewer.view().scale;
+    var scaled_count = (count/(scale*scale)).toFixed(0);
+    var phys = this.viewer.imagephys;
+    if (phys.isPixelResolutionValid()) {
+        var area = (parseFloat(scaled_count)*parseFloat(phys.pixel_size[0])*parseFloat(phys.pixel_size[1])).toFixed(2);
+        this.pixelCounterPanel.regionCount.push({index:this.pixelCounterPanel.regionCount.length, pixels:scaled_count, x:p.x, y:p.y, xclick:x,yclick:y, area:area});
+    } else {
+        this.pixelCounterPanel.regionCount.push({index:this.pixelCounterPanel.regionCount.length, pixels:scaled_count, x:p.x, y:p.y, xclick:x,yclick:y});        
+    }
+    
+
+
+
+    
     //this.ctx_imgmask.font = "Bold Text, 20px, sans-serif";
     //this.ctx_imgmask.strokeText((this.pixelCounterPanel.regionCount.length-1).toString(), x, y);
     this.pixelCounterPanel.updateRegionPanel();
@@ -624,16 +624,18 @@ Ext.define('BQ.Panel.PixelCounter', {
     itemId: 'pixelcounter-panel',
     title : 'Pixel Counter',
     region : 'east',
-
+    //autoHeight: true,
+    //layout:'vbox',
+    //autoWeigth: true,
+    //layout: 'fit',
+    layout: { type: 'vbox', pack: 'start', align: 'stretch' },
     viewer: null,//requiered viewer initialized object
     activeTab : 0,
-    border : false,
+    //border : false,
     bodyBorder : 0,
-    //collapsible : true,
     split : true,
     width : 400,
     plain : true,
-    //closable: true,
     autoScroll: true,
     thresholdMode: true,
     selectMode : false,
@@ -644,7 +646,6 @@ Ext.define('BQ.Panel.PixelCounter', {
     initComponent : function() {
 
         this.items = [];
-        this.tbar = [];
         var me=this;
 
         var selectModeToggle = {
@@ -665,7 +666,6 @@ Ext.define('BQ.Panel.PixelCounter', {
                 },
             }
         };
-
 
         var closePanel = {
             xtype: 'button',
@@ -725,75 +725,6 @@ Ext.define('BQ.Panel.PixelCounter', {
             }
         });
 
-        this.mainToolbar = Ext.create('Ext.toolbar.Toolbar', {
-            border: false,
-            items: [
-                selectModeToggle,
-                { //Undo Button
-                    itemId : 'px_undo_button',
-                    xtype: 'button',
-                    text: 'Undo',
-                    scale: 'large',
-                    disabled: true,     
-                    listeners : {
-                        scope: this,
-                        click: function() { //undo runs the connected components in reverse from the last regionCount x,y
-                            //clears table and displayed segmentation
-                            if(this.regionCount.length) {
-                                var regionCount = this.regionCount.pop(); //reset region counter table
-                                this.pixelCounter.canvas_mask.style.visibility='hidden';
-                                this.viewer.parameters.main.viewerContainer.setLoading(true);
-                                var me = this;
-                                setTimeout(function(){ //set time out to allow for the loading screen to be shown
-                                   me.pixelCounter.undoConnectedComponents(regionCount.xclick,regionCount.yclick);
-                                   me.viewer.parameters.main.viewerContainer.setLoading(false);
-                                   me.pixelCounter.canvas_mask.style.visibility='visible';
-                                },5);
-                            }
-                            //this.pixelCounter.changed();
-                        }
-                    }          
-                },
-                { //Resets Button
-                    itemId : 'px_reset_button',
-                    xtype: 'button',
-                    text: 'Reset',
-                    scale: 'large',
-                    disabled: true,
-                    //hidden: true,
-                    listeners : {
-                        scope: this,
-                        click: function() {
-                            //clears table and displayed segmentation
-                            this.pixelCounter.resetmask();
-                            if(this.regionCount) this.regionCount = []; //reset region counter table
-                            this.pixelCounter.changed();
-                        }
-                    }
-                },
-                { //Export Button
-                    itemId : 'px_export_button',
-                    xtype: 'button',
-                    text: 'Export CSV',
-                    scale: 'large',
-                    disabled: true,
-                    //hidden: true,
-                    listeners : {
-                        scope: this,
-                        click: function() { //undo runs the connected components in reverse from the last regionCount x,y
-                            //clears table and displayed segmentation
-                            if(this.regionCount.length>0) {
-                                this.exportCSV();
-                                //export csv
-                            }
-                        },
-                    },
-                },
-                '->',
-                closePanel,
-            ]
-        });
-
         this.thresholdPanel = Ext.create('Ext.container.Container',{
             itemId : 'px_threshold_panel',
             borders: false,
@@ -823,43 +754,207 @@ Ext.define('BQ.Panel.PixelCounter', {
             //ayout: 'anchor',
         });
         
+        
+        //GRID
+        var fieldList = [];
+        var columns = [];
+        
+        fieldList.push('index');
+        columns.push({
+            header: 'index',
+            //text:'index',
+            dataIndex: 'index',
+            //flex: 1,
+        });
+        
+        fieldList.push('x');
+        columns.push({
+            header: 'x',
+            //text:'x',
+            dataIndex: 'x',
+            //flex: 1,
+        });
+        
+        fieldList.push('y');
+        columns.push({
+            header: 'y',
+            //text:'y',
+            dataIndex: 'y',
+            //flex: 1,
+        });
+        
+        fieldList.push('pixels');
+        columns.push({
+            header: 'pixels',
+            //text:'pixels',
+            dataIndex: 'pixels',
+            //flex: 1,
+        });
+        
+        if (this.phys.isPixelResolutionValid()) {
+            //fieldList.push(this.phys.pixel_units[0]+'<sup>2</sup>');
+            fieldList.push('area');
+            columns.push({
+                header: this.phys.pixel_units[0]+'<sup>2</sup>',
+                //text: this.phys.pixel_units[0]+'<sup>2</sup>',
+                dataIndex: 'area',
+                //flex: 1,
+            });
+        }
+        
+        
+        this.regionCountStore = Ext.create('Ext.data.Store', {
+            storeId: 'regionCountStore',
+            fields: fieldList,
+            proxy: {
+                type: 'memory',
+                reader: {
+                    root: 'items'
+                }
+            }
+        });
+        
+        this.regionCountGrid = Ext.create('Ext.grid.Panel', {
+            //title: 'regionCountGrid',
+            itemId : 'px_regioncount_grid',
+            store: this.regionCountStore,
+            multiSelect: true,
+            columns: {
+                items: columns,
+                defaults: {flex: 1},
+            },
+            flex: 2,
+            hidden: true,
+            border : false,            
+            renderTo: Ext.getBody(),
+            tbar: [{ //Undo Button
+                itemId : 'px_undo_button',
+                xtype: 'button',
+                text: 'Undo',
+                scale: 'large',
+                disabled: true,   
+                listeners : {
+                    scope: this,
+                    click: function() { //undo runs the connected components in reverse from the last regionCount x,y
+                        //clears table and displayed segmentation
+                        if(this.regionCount.length) {
+                            var regionCount = this.regionCount.pop(); //reset region counter table
+                            this.pixelCounter.canvas_mask.style.visibility='hidden';
+                            this.viewer.parameters.main.viewerContainer.setLoading(true);
+                            var me = this;
+                            setTimeout(function(){ //set time out to allow for the loading screen to be shown
+                               me.pixelCounter.undoConnectedComponents(regionCount.xclick,regionCount.yclick);
+                               me.viewer.parameters.main.viewerContainer.setLoading(false);
+                               me.pixelCounter.canvas_mask.style.visibility='visible';
+                            },5);
+                        }
+                    }
+                }          
+            },
+            { //Resets Button
+                itemId : 'px_reset_button',
+                xtype: 'button',
+                text: 'Reset',
+                scale: 'large',
+                disabled: true,
+                //hidden: true,
+                listeners : {
+                    scope: this,
+                    click: function() {
+                        //clears table and displayed segmentation
+                        this.pixelCounter.resetmask();
+                        if(this.regionCount) this.regionCount = []; //reset region counter table
+                        this.pixelCounter.changed();
+                    }
+                }
+            },
+            {
+                itemId : 'px_delete_button',
+                xtype: 'button',
+                text: 'Delete',
+                scale: 'large',
+                disabled: true,    
+                listeners : {
+                    scope: this,
+                    click: function() {
+                        //clears table and displayed segmentation
+                        this.queryById('px_regioncount_grid').getSelectionModel().getSelection()[0];
+                        var selectedRecord = grid.getSelectionModel().getSelection()[0];
+                        var row = grid.store.indexOf(selectedRecord);
+                        var record = this.regionCountGrid.getSelectionModel().getSelected();
+                    }
+                }                            
+            },
+            '->',            
+            { //Export Button
+                itemId : 'px_export_button',
+                xtype: 'button',
+                text: 'Export CSV',
+                scale: 'large',
+                disabled: true,
+                //hidden: true,
+                listeners : {
+                    scope: this,
+                    click: function() { //undo runs the connected components in reverse from the last regionCount x,y
+                        //clears table and displayed segmentation
+                        if(this.regionCount.length>0) {
+                            this.exportCSV();
+                        }
+                    },
+                },
+            },]
+        });
 
-        this.tbar.push(this.mainToolbar)
+        this.tbar= [
+            selectModeToggle,
+            '->',            
+            closePanel,
+        ];
         //this.items.push(this.mainToolbar);
         this.items.push(this.thresholdPanel);
         this.items.push(this.selectPanel);
         this.items.push(this.thresholdInfoPanel);
-
+        this.items.push(this.regionCountGrid);
+        
+        
+        //beforeresize
+        this.on({
+            scope: this,
+            resize: function(){
+                if(this.selectMode){ //disables select mode
+                    this.selectMode = false; //reset flag
+                    this.queryById('select_region_toggle_button').toggle(false);
+                    this.pixelCounter.changed();
+                }
+            }
+        });
+        
         this.pixelCounter.changed(); //initialize threshold
+        
+        
         return this.callParent(arguments);
     },
-
+    
+/*
     listeners : {
         scope: this,
-        beforecollapse: function(p,direction,animate){
-
+        beforeresize: function(){
             if(this.selectMode){ //disables select mode
                 this.selectMode = false; //reset flag
                 this.pixelCounter.changed();
-                //me.selectModeToggle.setText('Regional counts');
-            }
-        },
-        resize: function(){
-            if(this.selectMode){ //disables select mode
-                this.selectMode = false; //reset flag
-                this.pixelCounter.changed();
-                //me.selectModeToggle.setText('Regional counts');
             }
         }
     },
-
+*/
     lookupThreshold : function() {
-
         //parsing the request
+        
+        //set limit on the global counts if image is too large
         if(this.viewer.imagedim.x>10000&&this.viewer.imagedim.y>10000) {
             this.thresholdPanel.update('<h2>Image is too large</h2>');
             return;
         }
+        
         var param = {};
         var args = this.viewer.current_view.src_args;
         var request = [];
@@ -877,9 +972,7 @@ Ext.define('BQ.Panel.PixelCounter', {
             return;
         }
         this.request_uri = image_uri;
-
-        //param['pixelcounter'] = this.threshold_value.value;
-        //me=this;
+        
         Ext.Ajax.request({
             url: image_uri,
             scope: this,
@@ -915,9 +1008,11 @@ Ext.define('BQ.Panel.PixelCounter', {
         this.queryById('px_selectinfo_panel').setVisible(false);
         this.queryById('px_threshold_panel').setVisible(true);
         
-        this.queryById('px_undo_button').setDisabled(true);
-        this.queryById('px_reset_button').setDisabled(true);
-        this.queryById('px_export_button').setDisabled(true);
+        this.queryById('px_regioncount_grid').setVisible(false);
+        
+        //this.queryById('px_undo_button').setDisabled(true);
+        //this.queryById('px_reset_button').setDisabled(true);
+        //this.queryById('px_export_button').setDisabled(true);
 
         var channels = this.evaluateXPath(xmlDoc, 'resource/pixelcounts[@name="channel"]');
         var globalTitle = '<tr><th>channel</th><th >threshold</th><th>pixels</th>';
@@ -957,51 +1052,26 @@ Ext.define('BQ.Panel.PixelCounter', {
     updateRegionPanel : function(){
         this.queryById('px_selectinfo_panel').setVisible(true);
         this.queryById('px_threshold_panel').setVisible(false);
-
         
+        var regionCountGrid = this.queryById('px_regioncount_grid').setVisible(true);
+        
+        var html = '';
+        this.thresholdInfoPanel.update(html);
+        regionCountGrid.store.loadData(this.regionCount);
+        regionCountGrid.getView().refresh();
         
         //set usability of the buttons
         if (this.regionCount.length>0){
             this.queryById('px_undo_button').setDisabled(false);
             this.queryById('px_reset_button').setDisabled(false);
             this.queryById('px_export_button').setDisabled(false);
+            //this.queryById('px_delete_button').setDisabled(false);
         } else {
             this.queryById('px_undo_button').setDisabled(true);
             this.queryById('px_reset_button').setDisabled(true); 
-            this.queryById('px_export_button').setDisabled(true);           
+            this.queryById('px_export_button').setDisabled(true); 
+            //this.queryById('px_delete_button').setDisabled(true);         
         }
-        
-
-        var html = '';
-        if (this.regionCount.length>0) { //canvas else set panel to zero
-            var regionTitle = '<tr><th>index</th><th>centroid</th><th>pixels</th>';
-            var scale = this.viewer.view().scale;
-
-            if (this.phys.isPixelResolutionValid()) {
-                regionTitle += '<th>'+this.phys.pixel_units[0]+'<sup>2</sup>'+'</th>';
-            }
-            regionTitle = regionTitle + '</tr>';
-            var regionRows = '';
-            for (var r = 0; r<this.regionCount.length; r++) {
-                regionRows += '<tr><td>'+r.toString()+'</td>';
-                regionRows += '<td>'+this.regionCount[r].x + ','+ this.regionCount[r].y+'</td>';
-                var count = this.regionCount[r].count;//this.viewer.view().scale //find scale
-                var scaled_count = (count/(scale*scale)).toFixed(0);
-                regionRows += '<td >'+scaled_count.toString()+'</td>';
-                if (this.phys.isPixelResolutionValid()) {
-                    
-                    var area = (parseFloat(scaled_count)*parseFloat(this.phys.pixel_size[0])*parseFloat(this.phys.pixel_size[1])).toFixed(2);
-                    regionRows += '<td>'+area+'</td>';
-                }
-            }
-            
-            regionRows += '</tr>';
-            var html = '<table>'+regionTitle+regionRows+'</table>'+'<br><br>';
-            //this.thresholdInfoPanel.update(html)
-        } else {
-            //error no region evaluated
-        }
-        this.thresholdInfoPanel.update(html);
     },
     
     exportCSV : function() {
@@ -1014,15 +1084,10 @@ Ext.define('BQ.Panel.PixelCounter', {
             }
             CsvDocument += '\n';
             for (var r = 0; r<this.regionCount.length; r++) {
-                var count = this.regionCount[r].count;//this.viewer.view().scale //find scale
-                var scaled_count = (count/(scale*scale)).toFixed(0);
-                
                 //row
-                CsvDocument += r.toString() + ',"' + this.regionCount[r].x + ',' + this.regionCount[r].y + '",' + scaled_count.toString()
+                CsvDocument += r.toString() + ',"' + this.regionCount[r].x + ',' + this.regionCount[r].y + '",' + this.regionCount[r].pixels;
                 if (this.phys.isPixelResolutionValid()) {
-                    
-                    var area = (parseFloat(scaled_count)*parseFloat(this.phys.pixel_size[0])*parseFloat(this.phys.pixel_size[1])).toFixed(2);
-                    CsvDocument += ','+area;
+                    CsvDocument += ','+this.regionCount[r].area;;
                 }
                 CsvDocument += '\n';
             }   
