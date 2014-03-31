@@ -24,7 +24,6 @@ function ImgPixelCounter(viewer,name) {
 ImgPixelCounter.prototype = new ViewerPlugin();
 
 ImgPixelCounter.prototype.create = function (parent) {
-
     this.parent = parent;
     return parent;
 };
@@ -47,7 +46,8 @@ ImgPixelCounter.prototype.pixelCounter = function () {
             autoDestroy: false,
             listeners:{
                 close: function() {
-                    this.destroyCanvas(); //destroys canvas when closed
+                    this.resetPixelRegionCounter();
+                    this.destroyPixelCounterDisplay(); //destroys display when closed
                     delete this.pixelCounterPanel; //remove the panel from ImgPixelCounter
                     this.changed(); //removes threshold from image
                     viewerTagPanel.setVisible(true);
@@ -56,10 +56,7 @@ ImgPixelCounter.prototype.pixelCounter = function () {
                 scope: this,
             },
         });
-        //pixelCounterPanel.removeAll(false);
-        //this.viewer.parameters.main.queryById('main_container').removeAll(false);
         this.viewer.parameters.main.queryById('main_container').add(this.pixelCounterPanel); //create panel
-        //pixelCounterPlugin.pixelCounterPanel = pixelCounterPanel; //attaching new pixel counter panel to the plugin
 
     //pixelCounterPlugin
     //switches disable to true
@@ -70,6 +67,7 @@ ImgPixelCounter.prototype.pixelCounter = function () {
 
 //initalized 2 layers of canvas
 //initalized on the creation of the pixel counter panel
+//iinitlizs the pixel counter overlay
 ImgPixelCounter.prototype.initCanvas = function() {
     var control_surface_size = this.viewer.viewer_controls_surface.getBoundingClientRect();
     if (!this.canvas_mask) {
@@ -101,11 +99,25 @@ ImgPixelCounter.prototype.initCanvas = function() {
         this.canvas_image.style.position = "absolute";
         this.canvas_image.style.visibility='hidden';
         this.ctx_img = this.canvas_image.getContext("2d");
-        //this.image = new Image();
-        //this.image.addEventListener('load',this.updateCanvas.bind(this),false) //resets canvas onload
         this.parent.appendChild(this.canvas_image);
     }
 
+    //marking of the ids
+    //needs to be above everything
+    if (!this.svgdoc) {
+        this.svgdoc = document.createElementNS('http://www.w3.org/2000/svg', "svg");
+        this.svgdoc.setAttributeNS(null, 'class', 'pixel_counter_svg_id_label_surface');
+        this.svgdoc.setAttributeNS(null, 'id', 'pixel_counter_svg_id_label_surface');
+        this.svgdoc.height = control_surface_size.height;
+        this.svgdoc.width = control_surface_size.width;
+        this.svgdoc.style.position = "absolute";
+        this.svgdoc.style.top = "0px";
+        this.svgdoc.style.left = "0px";
+        this.svgdoc.style.visibility='hidden';
+        this.svgdoc.style.zIndex = 310;
+        this.svgdoc.addEventListener("click",this.onClick.bind(this),false);
+        this.parent.appendChild(this.svgdoc);
+    }
 };
 
 
@@ -125,7 +137,7 @@ ImgPixelCounter.prototype.updateCanvas = function() {
     var me = this;
 
     function waitTillFinished() {
-        finished = me.constructCanvasFromWell();
+        var finished = me.constructCanvasFromWell();
         if (finished) {
             me.viewer.parameters.main.viewerContainer.setLoading(false);
             me.canvas_mask.style.visibility='visible';
@@ -136,8 +148,6 @@ ImgPixelCounter.prototype.updateCanvas = function() {
         }
     }
     waitTillFinished();
-
-
 };
 
 ImgPixelCounter.prototype.returnFromCanvas = function() {
@@ -152,11 +162,6 @@ ImgPixelCounter.prototype.returnFromCanvas = function() {
     }
 };
 
-
-ImgPixelCounter.prototype.tilesInTheView = function() {
-
-    return {'inViewImages':inViewImages,'tile_tops':tile_tops,'tile_bottoms':tile_bottoms,'tile_lefts':tile_lefts,'tile_rights':tile_rights};
-};
 
 //looks through all the images in the well returns true if all the images where loaded properly
 ImgPixelCounter.prototype.constructCanvasFromWell = function() {
@@ -210,12 +215,6 @@ ImgPixelCounter.prototype.constructCanvasFromWell = function() {
     this.image_view_right = tile_rights.max();
     this.image_view_bottom = tile_bottoms.max();
 
-    //canvas will be the size of the control surface
-    this.canvas_image.width  = control_surface_size.width;
-    this.canvas_image.height = control_surface_size.height;
-    this.canvas_mask.width  = control_surface_size.width;
-    this.canvas_mask.height = control_surface_size.height;
-
     //draw width offsets on to the canvas
     this.ctx_img.createImageData(this.canvas_mask.height,this.canvas_mask.width);
     this.imageData = this.ctx_img.getImageData(0, 0, this.canvas_image.width, this.canvas_image.height);
@@ -240,9 +239,11 @@ ImgPixelCounter.prototype.constructCanvasFromWell = function() {
 };
 
 //destroy canvas panel when pixel counter panen is destroy
-ImgPixelCounter.prototype.destroyCanvas = function() {
+ImgPixelCounter.prototype.destroyPixelCounterDisplay = function() {
     var pixelCounterCanvasMask = document.getElementById('pixel_counter_canvas_mask');
     var pixelCounterCanvasImage = document.getElementById('pixel_counter_canvas_image');
+    var pixelCounterSGVOverlay = document.getElementById('pixel_counter_svg_id_label_surface');
+    
     if (pixelCounterCanvasMask) {
         pixelCounterCanvasMask.remove();
         delete this.canvas_mask;
@@ -251,29 +252,12 @@ ImgPixelCounter.prototype.destroyCanvas = function() {
         pixelCounterCanvasImage.remove();
         delete this.canvas_image;
     }
-
+    if (pixelCounterSGVOverlay){
+        pixelCounterSGVOverlay.remove();
+        delete this.svgdoc;
+    }
 };
 
-//sets all values in the mask to 0
-ImgPixelCounter.prototype.resetmask = function() {
-     
-        for (var i = 0; i<(this.canvas_mask.width*this.canvas_mask.height*4); i++) {
-            this.masksrc[i]   = 0;
-        }
-    
-};
-
-//sets the background to the same color as the tile viewer
-ImgPixelCounter.prototype.resetimage = function() {
-    
-        for (var i = 0; i<(this.canvas_image.width*this.canvas_image.height*4); i+=4) {
-            this.imagesrc[i]     = 67; //r
-            this.imagesrc[i+1]   = 67; //g
-            this.imagesrc[i+2]   = 67; //b
-            this.imagesrc[i+3]   = 255;//a
-        }
-        
-};
 
 
 ImgPixelCounter.prototype.newImage = function () {
@@ -287,20 +271,19 @@ ImgPixelCounter.prototype.updateImage = function () {
     if (this.pixelCounterPanel) {
         if (this.pixelCounterPanel.thresholdMode) {
 
-            //view.addParams('threshold='+this.thresholdValue+',both');
             if (this.pixelCounterPanel.selectMode) {
-                //should disable the scroll in selection mode
-                this.initCanvas(); //checks to see if canvas exists
                 this.updateCanvas(); //if canvas isnt initalized, will initalize canvas
-                this.canvas_mask.style.visibility='visible'; //
-                this.canvas_image.style.visibility='visible';
+                this.canvas_mask.style.visibility = 'visible'; //
+                this.canvas_image.style.visibility = 'visible';
+                this.svgdoc.style.visibility = 'visible';
                 this.pixelCounterPanel.updateRegionPanel();
 
             } else {
                 if (this.canvas_mask) {
-                    this.canvas_mask.style.visibility='hidden';
-                    this.canvas_image.style.visibility='hidden';
-                    this.pixelCounterPanel.regionCount = []; //reset region count table
+                    this.canvas_mask.style.visibility = 'hidden';
+                    this.canvas_image.style.visibility = 'hidden';
+                    this.svgdoc.style.visibility = 'hidden';
+                    this.resetPixelRegionCounter();
 
                 }
                 this.pixelCounterPanel.lookupThreshold();
@@ -308,9 +291,10 @@ ImgPixelCounter.prototype.updateImage = function () {
         } else {
             this.pixelCounterPanel.lookupThreshold();
             if (this.canvas_mask) {
-                this.canvas_mask.style.visibility='hidden';
-                this.canvas_image.style.visibility='hidden';
-                this.pixelCounterPanel.regionCount = []; //reset region count table
+                this.canvas_mask.style.visibility = 'hidden';
+                this.canvas_image.style.visibility = 'hidden';
+                this.svgdoc.style.visibility = 'hidden';
+                this.resetPixelRegionCounter();
             }
         }
     }
@@ -334,23 +318,20 @@ ImgPixelCounter.prototype.onClick = function(e) {
 
     //find the offsets to canvas
     //set loading when clicked
-    //this.loading_canvas.style.visibility='visible';
-    //this.viewer.start_wait({op: 'gobjects', message: 'Fetching gobjects'})
-    
-    //this.masksrc = this.maskData.data;
     
     var xClick = e.pageX-parseInt(this.canvas_mask.style.left)-this.viewer.plugins_by_name['tiles'].tiled_viewer.left; //clicks mapped to canvas
     var yClick = e.pageY-parseInt(this.canvas_mask.style.top)-this.viewer.plugins_by_name['tiles'].tiled_viewer.top; //clicks mapped to canvas
 
     if(!(!(this.image_view_top<e.pageY&&this.image_view_bottom>e.pageY)||!(this.image_view_left<e.pageX&&this.image_view_right>e.pageX))){ //check if the click is on the image
         if (this.masksrc[4*(yClick*this.canvas_mask.width+xClick)+3]!=255) { //check to see if region has already been selected
-            this.canvas_mask.style.visibility='hidden';
+            this.canvas_mask.style.visibility = 'hidden';
             this.viewer.parameters.main.viewerContainer.setLoading(true);
             var me = this;
             setTimeout(function(){ //set time out to allow for the loading screen to be shown
                me.connectedComponents(xClick,yClick);
                me.viewer.parameters.main.viewerContainer.setLoading(false);
-               me.canvas_mask.style.visibility='visible';
+               me.canvas_mask.style.visibility = 'visible';
+               
             },5);
         }
     }
@@ -371,7 +352,31 @@ ImgPixelCounter.prototype.index2xy = function(index) {
 
 };
 
+ImgPixelCounter.prototype.setText2SVG = function(text,id,x,y) {
+    var textelement = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    textelement.setAttribute("id", id);
+    textelement.setAttribute("x", x);
+    textelement.setAttribute("y", y);
+    textelement.setAttribute('style', "font-family: Arial;     \
+                                         font-size  : 34;      \
+                                         fill       : blue; \
+                                        ");
+                            textelement.textContent = text;
+    this.svgdoc.appendChild(textelement);
+    //textelement.addEventListener("click", svgclick, false);
+    //textelement.addEventListener("keypress", onkeypress, false);
+};
+
+ImgPixelCounter.prototype.removeTextFromSVG = function(id){
+    var svgTextElement = this.svgdoc.getElementById(id);
+    
+    if(svgTextElement) this.svgdoc.removeChild(svgTextElement);
+};
+
 ImgPixelCounter.prototype.connectedComponents = function(x,y) {
+
+    var maskColor = {r:255,g:0,b:255}; //magenta
+    var transparency = 255;
 
     //this.resetmask();
     this.masksrc = this.maskData.data;
@@ -382,22 +387,22 @@ ImgPixelCounter.prototype.connectedComponents = function(x,y) {
     var seed = 4*(y*this.canvas_image.width+x); //enforce channel zero
 
     edge_points_queue.push(seed);
-    var label_list = [
-        (this.imagesrc[seed]>=128),
-        (this.imagesrc[seed+1]>=128),
-        (this.imagesrc[seed+2]>=128)
-    ];
+    var label_list = {
+        r:(this.imagesrc[seed]>=128),
+        g:(this.imagesrc[seed+1]>=128),
+        b:(this.imagesrc[seed+2]>=128)
+    };
     var label = this.imagesrc[seed];
     if (
-        typeof label_list[0] === "undefined"||
-        typeof label_list[1] === "undefined"||
-        typeof label_list[2] === "undefined"
+        typeof label_list.r === "undefined"||
+        typeof label_list.g === "undefined"||
+        typeof label_list.b === "undefined"
         ){
         return
     }
     var count = 0;
     while (edge_points_queue.length>0) {
-        this.checkNeighbors(edge_points_queue,label_list);
+        this.checkNeighbors(edge_points_queue,label_list,transparency, maskColor);
         count+=1;
     }
 
@@ -410,96 +415,26 @@ ImgPixelCounter.prototype.connectedComponents = function(x,y) {
     var scale = this.viewer.view().scale;
     var scaled_count = (count/(scale*scale)).toFixed(0);
     var phys = this.viewer.imagephys;
+    
     if (phys.isPixelResolutionValid()) {
         var area = (parseFloat(scaled_count)*parseFloat(phys.pixel_size[0])*parseFloat(phys.pixel_size[1])).toFixed(2);
-        this.pixelCounterPanel.regionCount.push({index:this.pixelCounterPanel.regionCount.length, pixels:scaled_count, x:p.x, y:p.y, xclick:x,yclick:y, area:area});
+        this.pixelCounterPanel.regionCount.push({index:this.pixelCounterPanel.idCount, pixels:scaled_count, x:p.x, y:p.y, xclick:x,yclick:y,svgid:'svg_text_element_'+(this.pixelCounterPanel.idCount), area:area});
     } else {
-        this.pixelCounterPanel.regionCount.push({index:this.pixelCounterPanel.regionCount.length, pixels:scaled_count, x:p.x, y:p.y, xclick:x,yclick:y});        
+        this.pixelCounterPanel.regionCount.push({index:this.pixelCounterPanel.idCount, pixels:scaled_count, x:p.x, y:p.y, xclick:x,yclick:y,svgid:'svg_text_element_'+(this.pixelCounterPanel.idCount)});        
     }
     
-
-
-
-    
-    //this.ctx_imgmask.font = "Bold Text, 20px, sans-serif";
-    //this.ctx_imgmask.strokeText((this.pixelCounterPanel.regionCount.length-1).toString(), x, y);
+    //update svg element    
+    this.setText2SVG('Id: '+(this.pixelCounterPanel.idCount).toString(),'svg_text_element_'+(this.pixelCounterPanel.idCount),x,y)
+    this.pixelCounterPanel.idCount+=1; //setting for the next region
     this.pixelCounterPanel.updateRegionPanel();
 };
 
 
-//ImgPixelCounter.prototype.complimentaryColor function(r,g,b) {
-//    return {cr:cr,cg:cg,cb:cb}
-//};
-
-ImgPixelCounter.prototype.checkNeighbors = function(edge_points_queue,label_list) {
-
-
-    var edge_index = parseInt(edge_points_queue.shift());
-    
-    //set color of the mask
-    this.masksrc[edge_index]   = 0;
-    this.masksrc[edge_index+1] = 255; //set green
-    this.masksrc[edge_index+2] = 0;
-    //this.masksrc[edge_index+3] = 255; //set transparency
-
-    edge_value = this.index2xy(edge_index);
-
-    //check neighbors
-    x = edge_value.x;
-    y = edge_value.y;
-    var control_surface_size =  this.viewer.viewer_controls_surface.getBoundingClientRect();
-    if (x+1 < this.canvas_image.width && x+1 < this.image_view_right-control_surface_size.left) { //check if out of the image
-        var new_edge_index = edge_index+4; //check on pixel infont
-        var check = this.masksrc[new_edge_index+3]; //check transparency to see if it
-        if ((this.imagesrc[new_edge_index]>=128) == label_list[0] &&
-            (this.imagesrc[new_edge_index+1]>=128) == label_list[1] &&
-            (this.imagesrc[new_edge_index+2]>=128) == label_list[2] &&
-            check != 255 ) { //has been put in the queue at sometime
-            edge_points_queue.push(new_edge_index);
-            this.masksrc[new_edge_index+3] = 255; //set transparency
-        }
-    }
-
-    if (0 <= x-1 && x-1 >= this.image_view_left-control_surface_size.left) { //check if out of the image
-        var new_edge_index = edge_index-4; //check on pixel behind
-        var check = this.masksrc[new_edge_index+3];
-        if ((this.imagesrc[new_edge_index]>=128) == label_list[0] &&
-            (this.imagesrc[new_edge_index+1]>=128) == label_list[1] &&
-            (this.imagesrc[new_edge_index+2]>=128) == label_list[2] &&
-            check != 255 ) {
-            edge_points_queue.push(new_edge_index);
-            this.masksrc[new_edge_index+3] = 255; //set transparency
-        }
-    }
-
-    if (y+1 < this.canvas_image.height && y+1 < this.image_view_bottom-control_surface_size.top) { //check if out of the image
-        var new_edge_index = edge_index+this.canvas_image.width*4; //check on pixel above
-        var check = this.masksrc[new_edge_index+3];
-        if ((this.imagesrc[new_edge_index]>=128) == label_list[0] &&
-            (this.imagesrc[new_edge_index+1]>=128) == label_list[1] &&
-            (this.imagesrc[new_edge_index+2]>=128) == label_list[2] &&
-            check != 255 ) {
-            edge_points_queue.push(new_edge_index);
-            this.masksrc[new_edge_index+3] = 255; //set transparency
-        }
-    }
-
-    if (0 <= y-1 && y-1 >= this.image_view_top-control_surface_size.top) { //check if out of the image
-        var new_edge_index = edge_index-this.canvas_image.width*4; //check on pixel below
-        var check = this.masksrc[new_edge_index+3];
-        if ((this.imagesrc[new_edge_index]>=128) == label_list[0] &&
-            (this.imagesrc[new_edge_index+1]>=128) == label_list[1] &&
-            (this.imagesrc[new_edge_index+2]>=128) == label_list[2] &&
-            check != 255)  {
-            edge_points_queue.push(new_edge_index);
-            this.masksrc[new_edge_index+3] = 255; //set transparency
-        }
-    }
-};
-
-
 //removing the connected component marked region
-ImgPixelCounter.prototype.undoConnectedComponents = function(x,y) {
+ImgPixelCounter.prototype.undoConnectedComponents = function(x,y,id) {
+
+    var transparency = 0; //making mask transparent
+    var maskColor = {r:0,g:0,b:255,a:0}; //set to black
 
     //this.resetmask();
     this.maskData = this.ctx_imgmask.getImageData(0, 0, this.canvas_mask.width, this.canvas_mask.height);
@@ -510,39 +445,42 @@ ImgPixelCounter.prototype.undoConnectedComponents = function(x,y) {
     var seed = 4*(y*this.canvas_image.width+x); //enforce channel zero
 
     edge_points_queue.push(seed);
-    var label_list = [
-        (this.imagesrc[seed]>=128),
-        (this.imagesrc[seed+1]>=128),
-        (this.imagesrc[seed+2]>=128)
-    ];
+    var label_list = {
+        r:(this.imagesrc[seed]>=128),
+        g:(this.imagesrc[seed+1]>=128),
+        b:(this.imagesrc[seed+2]>=128)
+    };
     var label = this.imagesrc[seed];
     if (
-        typeof label_list[0] === "undefined"||
-        typeof label_list[1] === "undefined"||
-        typeof label_list[2] === "undefined"
+        typeof label_list.r === "undefined"||
+        typeof label_list.g === "undefined"||
+        typeof label_list.b === "undefined"
         ){
         return
     }
     //var count = 0;
     while (edge_points_queue.length>0) {
-        this.undoCheckNeighbors(edge_points_queue,label_list);
+        this.checkNeighbors(edge_points_queue,label_list,transparency,maskColor);
         //this.ctx_imgmask.putImageData(this.maskData,0,0);
         //count+=1;
     }
-
+    this.removeTextFromSVG(id);
     this.ctx_imgmask.putImageData(this.maskData,0,0);
     this.pixelCounterPanel.updateRegionPanel();
 };
 
-ImgPixelCounter.prototype.undoCheckNeighbors = function(edge_points_queue,label_list) {
 
-    var transparency = 0 //making mask transparent
+ImgPixelCounter.prototype.checkNeighbors = function(edge_points_queue,label_list, transparency, maskColor) {
+    //Find the connected component
+    //uses the transparency as a marker for past check pixels
+    
+    //var maskColor = {r:255,g:0,b:255}; //magenta
     var edge_index = parseInt(edge_points_queue.shift());
     
     //set color of the mask
-    this.masksrc[edge_index]   = 0;
-    this.masksrc[edge_index+1] = 0; //set to black
-    this.masksrc[edge_index+2] = 255;
+    this.masksrc[edge_index]   = maskColor.r;
+    this.masksrc[edge_index+1] = maskColor.g;
+    this.masksrc[edge_index+2] = maskColor.b;
     //this.masksrc[edge_index+3] = 255; //set transparency
 
     edge_value = this.index2xy(edge_index);
@@ -553,23 +491,21 @@ ImgPixelCounter.prototype.undoCheckNeighbors = function(edge_points_queue,label_
     var control_surface_size =  this.viewer.viewer_controls_surface.getBoundingClientRect();
     if (x+1 < this.canvas_image.width && x+1 < this.image_view_right-control_surface_size.left) { //check if out of the image
         var new_edge_index = edge_index+4; //check on pixel infont
-        if ((this.imagesrc[new_edge_index]>=128) == label_list[0] &&
-            (this.imagesrc[new_edge_index+1]>=128) == label_list[1] &&
-            (this.imagesrc[new_edge_index+2]>=128) == label_list[2] &&
-            this.masksrc[new_edge_index+3] != transparency) {
-            //( this.masksrc[new_edge_index] != 0 || this.masksrc[new_edge_index+1] != 0 || this.masksrc[new_edge_index+2] != 255)) { //has been put in the queue at sometime
-            edge_points_queue.push(new_edge_index);
+        if ((this.imagesrc[new_edge_index]>=128) == label_list.r &&
+            (this.imagesrc[new_edge_index+1]>=128) == label_list.g &&
+            (this.imagesrc[new_edge_index+2]>=128) == label_list.b &&
+            this.masksrc[new_edge_index+3] != transparency ) { //has been put in the queue at sometime
+            edge_points_queue.push(new_edge_index); //check transparency to see if it
             this.masksrc[new_edge_index+3] = transparency; //set transparency
         }
     }
 
     if (0 <= x-1 && x-1 >= this.image_view_left-control_surface_size.left) { //check if out of the image
         var new_edge_index = edge_index-4; //check on pixel behind
-        if ((this.imagesrc[new_edge_index]>=128) == label_list[0] &&
-            (this.imagesrc[new_edge_index+1]>=128) == label_list[1] &&
-            (this.imagesrc[new_edge_index+2]>=128) == label_list[2] &&
-            this.masksrc[new_edge_index+3] != transparency) {
-            //( this.masksrc[new_edge_index] != 0 || this.masksrc[new_edge_index+1] != 0 || this.masksrc[new_edge_index+2] != 255)){
+        if ((this.imagesrc[new_edge_index]>=128) == label_list.r &&
+            (this.imagesrc[new_edge_index+1]>=128) == label_list.g &&
+            (this.imagesrc[new_edge_index+2]>=128) == label_list.b &&
+            this.masksrc[new_edge_index+3] != transparency ) {
             edge_points_queue.push(new_edge_index);
             this.masksrc[new_edge_index+3] = transparency; //set transparency
         }
@@ -577,11 +513,10 @@ ImgPixelCounter.prototype.undoCheckNeighbors = function(edge_points_queue,label_
 
     if (y+1 < this.canvas_image.height && y+1 < this.image_view_bottom-control_surface_size.top) { //check if out of the image
         var new_edge_index = edge_index+this.canvas_image.width*4; //check on pixel above
-        if ((this.imagesrc[new_edge_index]>=128) == label_list[0] &&
-            (this.imagesrc[new_edge_index+1]>=128) == label_list[1] &&
-            (this.imagesrc[new_edge_index+2]>=128) == label_list[2] &&
-            this.masksrc[new_edge_index+3] != transparency) {
-            //( this.masksrc[new_edge_index] != 0 || this.masksrc[new_edge_index+1] != 0 || this.masksrc[new_edge_index+2] != 255)){
+        if ((this.imagesrc[new_edge_index]>=128) == label_list.r &&
+            (this.imagesrc[new_edge_index+1]>=128) == label_list.g &&
+            (this.imagesrc[new_edge_index+2]>=128) == label_list.b &&
+            this.masksrc[new_edge_index+3] != transparency  ) {
             edge_points_queue.push(new_edge_index);
             this.masksrc[new_edge_index+3] = transparency; //set transparency
         }
@@ -589,17 +524,53 @@ ImgPixelCounter.prototype.undoCheckNeighbors = function(edge_points_queue,label_
 
     if (0 <= y-1 && y-1 >= this.image_view_top-control_surface_size.top) { //check if out of the image
         var new_edge_index = edge_index-this.canvas_image.width*4; //check on pixel below
-        if ((this.imagesrc[new_edge_index]>=128) == label_list[0] &&
-            (this.imagesrc[new_edge_index+1]>=128) == label_list[1] &&
-            (this.imagesrc[new_edge_index+2]>=128) == label_list[2] &&
-            this.masksrc[new_edge_index+3] != transparency) {
-            //( this.masksrc[new_edge_index] != 0 || this.masksrc[new_edge_index+1] != 0 || this.masksrc[new_edge_index+2] != 255))  {
+        if ((this.imagesrc[new_edge_index]>=128) == label_list.r &&
+            (this.imagesrc[new_edge_index+1]>=128) == label_list.g &&
+            (this.imagesrc[new_edge_index+2]>=128) == label_list.b &&
+            this.masksrc[new_edge_index+3] != transparency )  {
             edge_points_queue.push(new_edge_index);
             this.masksrc[new_edge_index+3] = transparency; //set transparency
         }
     }
 };
 
+//resets all the elements to the base level
+ImgPixelCounter.prototype.resetPixelRegionCounter = function() {
+    this.resetsvg();
+    this.resetmask();
+    if(this.pixelCounterPanel.regionCount) this.pixelCounterPanel.regionCount = []; //reset region counter table
+    this.pixelCounterPanel.idCount = 0; //resets the ids
+};
+
+//sets the background to the same color as the tile viewer
+ImgPixelCounter.prototype.resetimage = function() {
+    
+    //background of the image viewer
+    var imgViewerBackground = {r:67, g:67, b:67, a:255};
+    
+    for (var i = 0; i<(this.canvas_image.width*this.canvas_image.height*4); i+=4) {
+        this.imagesrc[i]     = imgViewerBackground.r; //r
+        this.imagesrc[i+1]   = imgViewerBackground.g; //g
+        this.imagesrc[i+2]   = imgViewerBackground.b; //b
+        this.imagesrc[i+3]   = imgViewerBackground.a;//a
+    }
+};
+
+//removes all child elements
+ImgPixelCounter.prototype.resetsvg = function() {
+    if(this.svgdoc) {
+        while(this.svgdoc.firstChild) {this.svgdoc.removeChild(this.svgdoc.firstChild);}
+    }
+};
+
+//sets all values in the mask to 0
+ImgPixelCounter.prototype.resetmask = function() {
+    if (this.masksrc) {
+        this.masksrc = this.maskData.data;
+        for(var i = 0; i<(this.canvas_mask.width*this.canvas_mask.height*4); i++) {this.masksrc[i] = 0;}
+        this.ctx_imgmask.putImageData(this.maskData,0,0);
+    }
+};
 
 
 ImgPixelCounter.prototype.onError = function(error) {
@@ -607,6 +578,7 @@ ImgPixelCounter.prototype.onError = function(error) {
     BQ.ui.error('Error fetching resource: <br>' + error.message);
     //this.initPixelCounter();
 };
+
 
 ImgPixelCounter.prototype.changed = function () {
     this.viewer.need_update();
@@ -642,60 +614,12 @@ Ext.define('BQ.Panel.PixelCounter', {
     thresholdValue: 128,
     channel_names: { 0: 'red', 1: 'green', 2: 'blue' },
     regionCount: [],
+    idCount: 0, //keeps track of the ids for each region
    
     initComponent : function() {
 
-        this.items = [];
-        var me=this;
-
-        var selectModeToggle = {
-            xtype:'button',
-            itemId : 'select_region_toggle_button',
-            scale: 'large',
-            text: 'Regional counts',
-            iconCls: 'icon-pipette',
-            enableToggle: true,
-            //pressedCls: 'px-PressedStyle',
-            //disabled: true,
-            listeners: {
-                scope: this,
-                click : function() {
-                   this.selectMode = !this.selectMode;
-                   if(this.selectMode) this.queryById('threshold_checkbox').setValue(true);
-                   this.pixelCounter.changed();
-                },
-            }
-        };
-
-        var closePanel = {
-            xtype: 'button',
-            text: 'Close',
-            scale: 'large',
-            //width: 60,
-            iconCls: 'icon-close',
-            itemId : 'pixelcounter_close_button',
-            listeners: {
-                scope: this,
-                click: function() {
-                    this.close(); //closes panel
-                }
-            },
-        };
-
-        var thresholdCheckBox = {
-            itemId : 'threshold_checkbox',
-            xtype: 'checkbox',
-            fieldLabel: 'View Threshold',
-            checked   : true,
-            listeners: {
-                scope: this,
-                change: function(self,newValue,oldValue) {
-                    this.thresholdMode = !this.thresholdMode;
-                    this.pixelCounter.changed();
-                }
-            },
-        };
-
+        this.items = []; //reset panel items
+        this.regionCount = []; //reset regionCount
 
         var thresholdSlider = Ext.create('Ext.slider.Single',{
             width: '85%',
@@ -731,11 +655,22 @@ Ext.define('BQ.Panel.PixelCounter', {
             frame: false,
             cls: 'thresholdelements',
             items: [{
-                xtype: 'box',
-                html: '<h2>Global Counts</h2><p>Move the slider to set a threshold value. The pixel counts above and below the threshold will be computed from the fused RGB image in the viewer per channel.</p>',
-                cls: 'threshold',
+                    xtype: 'box',
+                    html: '<h2>Global Counts</h2><p>Move the slider to set a threshold value. The pixel counts above and below the threshold will be computed from the fused RGB image in the viewer per channel.</p>',
+                    cls: 'threshold',
+                },{ //threshold checkbox
+                    itemId : 'threshold_checkbox',
+                    xtype: 'checkbox',
+                    fieldLabel: 'View Threshold',
+                    checked   : true,
+                    listeners: {
+                        scope: this,
+                        change: function(self,newValue,oldValue) {
+                            this.thresholdMode = !this.thresholdMode;
+                            this.pixelCounter.changed();
+                        }
+                    },
                 },
-                thresholdCheckBox,
                 thresholdSlider
              ],
         });
@@ -756,49 +691,26 @@ Ext.define('BQ.Panel.PixelCounter', {
         
         
         //GRID
-        var fieldList = [];
-        var columns = [];
-        
-        fieldList.push('index');
-        columns.push({
-            header: 'index',
-            //text:'index',
+        var fieldList = ['index','x','y','pixels'];
+        var columns = [{
+            header: 'id',
             dataIndex: 'index',
-            //flex: 1,
-        });
-        
-        fieldList.push('x');
-        columns.push({
+        },{
             header: 'x',
-            //text:'x',
             dataIndex: 'x',
-            //flex: 1,
-        });
-        
-        fieldList.push('y');
-        columns.push({
+        },{
             header: 'y',
-            //text:'y',
             dataIndex: 'y',
-            //flex: 1,
-        });
-        
-        fieldList.push('pixels');
-        columns.push({
+        },{
             header: 'pixels',
-            //text:'pixels',
             dataIndex: 'pixels',
-            //flex: 1,
-        });
+        }];
         
         if (this.phys.isPixelResolutionValid()) {
-            //fieldList.push(this.phys.pixel_units[0]+'<sup>2</sup>');
             fieldList.push('area');
             columns.push({
                 header: this.phys.pixel_units[0]+'<sup>2</sup>',
-                //text: this.phys.pixel_units[0]+'<sup>2</sup>',
                 dataIndex: 'area',
-                //flex: 1,
             });
         }
         
@@ -806,6 +718,7 @@ Ext.define('BQ.Panel.PixelCounter', {
         this.regionCountStore = Ext.create('Ext.data.Store', {
             storeId: 'regionCountStore',
             fields: fieldList,
+            allowDeslect: true,
             proxy: {
                 type: 'memory',
                 reader: {
@@ -819,37 +732,60 @@ Ext.define('BQ.Panel.PixelCounter', {
             itemId : 'px_regioncount_grid',
             store: this.regionCountStore,
             multiSelect: true,
+            
             columns: {
                 items: columns,
                 defaults: {flex: 1},
             },
+            
             flex: 2,
             hidden: true,
-            border : false,            
+            border : false,
             renderTo: Ext.getBody(),
-            tbar: [{ //Undo Button
-                itemId : 'px_undo_button',
+            tbar: [{ //Delete button
+                itemId : 'px_delete_button',
                 xtype: 'button',
-                text: 'Undo',
+                text: 'Delete',
                 scale: 'large',
-                disabled: true,   
+                disabled: true,    
                 listeners : {
                     scope: this,
-                    click: function() { //undo runs the connected components in reverse from the last regionCount x,y
-                        //clears table and displayed segmentation
-                        if(this.regionCount.length) {
-                            var regionCount = this.regionCount.pop(); //reset region counter table
-                            this.pixelCounter.canvas_mask.style.visibility='hidden';
-                            this.viewer.parameters.main.viewerContainer.setLoading(true);
-                            var me = this;
-                            setTimeout(function(){ //set time out to allow for the loading screen to be shown
-                               me.pixelCounter.undoConnectedComponents(regionCount.xclick,regionCount.yclick);
-                               me.viewer.parameters.main.viewerContainer.setLoading(false);
-                               me.pixelCounter.canvas_mask.style.visibility='visible';
-                            },5);
+                    click: function() {
+                        //deletes selected elements
+                        var grid = this.queryById('px_regioncount_grid');
+                        var selectedRecord = grid.getSelectionModel().getSelection()
+                        var deleteRows = [];
+                        for (var i = 0; i<selectedRecord.length; i++){
+                            deleteRows.push(grid.store.indexOf(selectedRecord[i]));
                         }
+                        var regionCountDeletes = [];
+                        var regionCount = [];
+                        for (var i = 0; i<this.regionCount.length;i++) {
+                            if (deleteRows.indexOf(i) >= 0) {
+                                regionCountDeletes.push(this.regionCount[i])
+                            }
+                            else {
+                                regionCount.push(this.regionCount[i])
+                            }
+                        }
+                        
+                        //delete all the rows at once
+                        this.pixelCounter.canvas_mask.style.visibility = 'hidden';
+                        this.viewer.parameters.main.viewerContainer.setLoading(true);
+                        var me = this;
+                        var regionCountElement = this.regionCount[i];
+                        setTimeout(function(){ //set time out to allow for the loading screen to be shown
+                           for (var i=0; i<regionCountDeletes.length; i++) { 
+                               me.pixelCounter.undoConnectedComponents(regionCountDeletes[i].xclick,regionCountDeletes[i].yclick,regionCountDeletes[i].svgid);
+                           }    
+                           me.viewer.parameters.main.viewerContainer.setLoading(false);
+                           me.pixelCounter.canvas_mask.style.visibility = 'visible';
+                        },5);
+                        this.regionCount = regionCount;
+                        this.updateRegionPanel();
+
                     }
-                }          
+                },        
             },
             { //Resets Button
                 itemId : 'px_reset_button',
@@ -862,28 +798,10 @@ Ext.define('BQ.Panel.PixelCounter', {
                     scope: this,
                     click: function() {
                         //clears table and displayed segmentation
-                        this.pixelCounter.resetmask();
-                        if(this.regionCount) this.regionCount = []; //reset region counter table
+                        this.pixelCounter.resetPixelRegionCounter();
                         this.pixelCounter.changed();
                     }
                 }
-            },
-            {
-                itemId : 'px_delete_button',
-                xtype: 'button',
-                text: 'Delete',
-                scale: 'large',
-                disabled: true,    
-                listeners : {
-                    scope: this,
-                    click: function() {
-                        //clears table and displayed segmentation
-                        this.queryById('px_regioncount_grid').getSelectionModel().getSelection()[0];
-                        var selectedRecord = grid.getSelectionModel().getSelection()[0];
-                        var row = grid.store.indexOf(selectedRecord);
-                        var record = this.regionCountGrid.getSelectionModel().getSelected();
-                    }
-                }                            
             },
             '->',            
             { //Export Button
@@ -892,25 +810,49 @@ Ext.define('BQ.Panel.PixelCounter', {
                 text: 'Export CSV',
                 scale: 'large',
                 disabled: true,
-                //hidden: true,
                 listeners : {
                     scope: this,
-                    click: function() { //undo runs the connected components in reverse from the last regionCount x,y
-                        //clears table and displayed segmentation
+                    click: function() {
                         if(this.regionCount.length>0) {
                             this.exportCSV();
                         }
                     },
                 },
-            },]
+            }],  
         });
 
-        this.tbar= [
-            selectModeToggle,
-            '->',            
-            closePanel,
+        this.tbar= [{//toggle button
+                xtype:'button',
+                itemId : 'select_region_toggle_button',
+                scale: 'large',
+                text: 'Regional counts',
+                iconCls: 'icon-pipette',
+                enableToggle: true,
+                //pressedCls: 'px-PressedStyle',
+                listeners: {
+                    scope: this,
+                    click : function() {
+                       this.selectMode = !this.selectMode;
+                       if(this.selectMode) this.queryById('threshold_checkbox').setValue(true);
+                       if(!this.selectMode) this.pixelCounter.resetPixelRegionCounter()
+                       this.pixelCounter.changed();
+                    },
+                }
+            },'->',{//close button
+                xtype: 'button',
+                text: 'Close',
+                scale: 'large',
+                iconCls: 'icon-close',
+                itemId : 'pixelcounter_close_button',
+                listeners: {
+                    scope: this,
+                    click: function() {
+                        this.close(); //closes panel
+                    }
+                },
+            },
         ];
-        //this.items.push(this.mainToolbar);
+
         this.items.push(this.thresholdPanel);
         this.items.push(this.selectPanel);
         this.items.push(this.thresholdInfoPanel);
@@ -935,17 +877,6 @@ Ext.define('BQ.Panel.PixelCounter', {
         return this.callParent(arguments);
     },
     
-/*
-    listeners : {
-        scope: this,
-        beforeresize: function(){
-            if(this.selectMode){ //disables select mode
-                this.selectMode = false; //reset flag
-                this.pixelCounter.changed();
-            }
-        }
-    },
-*/
     lookupThreshold : function() {
         //parsing the request
         
@@ -1007,12 +938,8 @@ Ext.define('BQ.Panel.PixelCounter', {
     updataGlobalPanel : function(xmlDoc) {
         this.queryById('px_selectinfo_panel').setVisible(false);
         this.queryById('px_threshold_panel').setVisible(true);
-        
         this.queryById('px_regioncount_grid').setVisible(false);
         
-        //this.queryById('px_undo_button').setDisabled(true);
-        //this.queryById('px_reset_button').setDisabled(true);
-        //this.queryById('px_export_button').setDisabled(true);
 
         var channels = this.evaluateXPath(xmlDoc, 'resource/pixelcounts[@name="channel"]');
         var globalTitle = '<tr><th>channel</th><th >threshold</th><th>pixels</th>';
@@ -1062,15 +989,13 @@ Ext.define('BQ.Panel.PixelCounter', {
         
         //set usability of the buttons
         if (this.regionCount.length>0){
-            this.queryById('px_undo_button').setDisabled(false);
             this.queryById('px_reset_button').setDisabled(false);
             this.queryById('px_export_button').setDisabled(false);
-            //this.queryById('px_delete_button').setDisabled(false);
+            this.queryById('px_delete_button').setDisabled(false);
         } else {
-            this.queryById('px_undo_button').setDisabled(true);
             this.queryById('px_reset_button').setDisabled(true); 
             this.queryById('px_export_button').setDisabled(true); 
-            //this.queryById('px_delete_button').setDisabled(true);         
+            this.queryById('px_delete_button').setDisabled(true);         
         }
     },
     
@@ -1085,7 +1010,7 @@ Ext.define('BQ.Panel.PixelCounter', {
             CsvDocument += '\n';
             for (var r = 0; r<this.regionCount.length; r++) {
                 //row
-                CsvDocument += r.toString() + ',"' + this.regionCount[r].x + ',' + this.regionCount[r].y + '",' + this.regionCount[r].pixels;
+                CsvDocument += this.regionCount[r].index + ',"' + this.regionCount[r].x + ',' + this.regionCount[r].y + '",' + this.regionCount[r].pixels;
                 if (this.phys.isPixelResolutionValid()) {
                     CsvDocument += ','+this.regionCount[r].area;;
                 }
