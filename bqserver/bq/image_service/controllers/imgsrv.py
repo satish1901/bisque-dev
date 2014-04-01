@@ -1155,15 +1155,21 @@ class RoiService(object):
             abort(400, 'ROI: region is not provided')
 
         ifile = self.server.getInFileName( data_token, image_id )
-        ofile = self.server.getOutFileName( ifile, image_id, '.roi_%d,%d,%d,%d'%(x1-1,y1-1,x2-1,y2-1) )
-        otemp = self.server.getOutFileName( ifile, image_id, '' )        
+        otemp = self.server.getOutFileName( ifile, image_id, '' )
+        ofile = '%s.roi_%d,%d,%d,%d'%(otemp,x1-1,y1-1,x2-1,y2-1)
         log.debug('ROI: %s to %s'%(ifile, ofile))
+        
+        # remove pre-computed ROIs
+        rois = [(_x1,_y1,_x2,_y2) for _x1,_y1,_x2,_y2 in rois if not os.path.exists('%s.roi_%d,%d,%d,%d'%(otemp,_x1-1,_y1-1,_x2-1,_y2-1))]
 
-        if not os.path.exists(ofile):
-            s = ';'.join(['%s,%s,%s,%s'%(x1-1,y1-1,x2-1,y2-1) for x1,y1,x2,y2 in rois])
-            params = ['-multi', '-roi', s]
-            params += ['-template', '%s.roi_{x1},{y1},{x2},{y2}'%otemp]
-            self.server.imageconvert(image_id, ifile, ofile, fmt=default_format, extra=params)
+        if not os.path.exists(ofile) or len(rois)>0:
+            lfile = self.server.getOutFileName( ifile, image_id, '.rois' )
+            # global ROI lock on this input since we can't lock on all individual outputs
+            with Locks(ifile, lfile):
+                s = ';'.join(['%s,%s,%s,%s'%(x1-1,y1-1,x2-1,y2-1) for x1,y1,x2,y2 in rois])
+                params = ['-multi', '-roi', s]
+                params += ['-template', '%s.roi_{x1},{y1},{x2},{y2}'%otemp]
+                self.server.imageconvert(image_id, ifile, ofile, fmt=default_format, extra=params)
         try:
             info = self.server.getImageInfo(filename=ofile)
             if 'image_num_x' in info: data_token.dims['image_num_x'] = info['image_num_x']
