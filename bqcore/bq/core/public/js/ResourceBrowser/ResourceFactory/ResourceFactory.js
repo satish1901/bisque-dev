@@ -128,7 +128,8 @@ Ext.define('Bisque.Resource', {
     },
 
     GetImageThumbnailRel : function(params, actualSize, displaySize) {
-        var topmargin = Math.max((0.5*displaySize.height/params.height) * (params.height-actualSize.height), 0);
+        var ratio = Math.max(actualSize.width/displaySize.width, actualSize.height/displaySize.height);
+        var topmargin = ratio<1 ? Math.abs(actualSize.height-displaySize.height)*0.5 : Math.abs(actualSize.height/ratio-displaySize.height)*0.5;
         return  Ext.String.format('<img class="imageCenterHoz" style="\
                     max-width   :   {0}px;  \
                     max-height  :   {1}px;  \
@@ -196,7 +197,7 @@ Ext.define('Bisque.Resource', {
             }]
         });
 
-        return propsGrid
+        return propsGrid;
     },
 
     getData : function(tag)
@@ -204,7 +205,7 @@ Ext.define('Bisque.Resource', {
         if (this.resQ)
             return this.resQ.getMyData(this.resource.uri, tag);
     },
-    setData : function(tag, value) {this.resQ.storeMyData(this.resource.uri, tag, value)},
+    setData : function(tag, value) {this.resQ.storeMyData(this.resource.uri, tag, value);},
     // Resource functions
     prefetch : function(layoutMgr)	//Code to prefetch resource data
     {
