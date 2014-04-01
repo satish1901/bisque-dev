@@ -14,6 +14,7 @@ setup(
     author_email='',
     #url='',
     install_requires=[
+                      "importlib", 
                       "bqcore",
                       "numpy",
                       "mahotas",  # Feature
