@@ -1121,43 +1121,48 @@ class RoiService(object):
        x2,y2 - bottom right
        all values are in ranges [1..N]
        0 or empty - means first/last element
+       supports multiple ROIs in which case those will be only cached
        ex: roi=10,10,100,100'''
 
     def __init__(self, server):
         self.server = server
 
     def __str__(self):
-        return 'roi: returns an image in specified ROI, arg = x1,y1,x2,y2, all values are in ranges [1..N]'
+        return 'roi: returns an image in specified ROI, arg = x1,y1,x2,y2[;x1,y1,x2,y2], all values are in ranges [1..N]'
 
     def dryrun(self, image_id, data_token, arg):
-        vs = arg.split(',', 4)
-        x1=0; x2=0; y1=0; y2=0
-        if len(vs)>0 and vs[0].isdigit(): x1 = int(vs[0])
-        if len(vs)>1 and vs[1].isdigit(): y1 = int(vs[1])
-        if len(vs)>2 and vs[2].isdigit(): x2 = int(vs[2])
-        if len(vs)>3 and vs[3].isdigit(): y2 = int(vs[3])
+        vs = arg.split(';')[0].split(',', 4)
+        x1 = int(vs[0]) if len(vs)>0 and vs[0].isdigit() else 0
+        y1 = int(vs[1]) if len(vs)>1 and vs[1].isdigit() else 0
+        x2 = int(vs[2]) if len(vs)>2 and vs[2].isdigit() else 0        
+        y2 = int(vs[3]) if len(vs)>3 and vs[3].isdigit() else 0                
         ifile = self.server.getInFileName( data_token, image_id )
-        ofile = self.server.getOutFileName( ifile, image_id, '.roi_%d,%d,%d,%d'%(x1,y1,x2,y2) )
+        ofile = self.server.getOutFileName( ifile, image_id, '.roi_%d,%d,%d,%d'%(x1-1,y1-1,x2-1,y2-1) )
         return data_token.setImage(ofile, fmt=default_format)
 
     def action(self, image_id, data_token, arg):
-        vs = arg.split(',', 4)
-        x1=0; x2=0; y1=0; y2=0
-        if len(vs)>0 and vs[0].isdigit(): x1 = int(vs[0])
-        if len(vs)>1 and vs[1].isdigit(): y1 = int(vs[1])
-        if len(vs)>2 and vs[2].isdigit(): x2 = int(vs[2])
-        if len(vs)>3 and vs[3].isdigit(): y2 = int(vs[3])
+        rois = []
+        for a in arg.split(';'):
+            vs = a.split(',', 4)
+            x1 = int(vs[0]) if len(vs)>0 and vs[0].isdigit() else 0
+            y1 = int(vs[1]) if len(vs)>1 and vs[1].isdigit() else 0
+            x2 = int(vs[2]) if len(vs)>2 and vs[2].isdigit() else 0        
+            y2 = int(vs[3]) if len(vs)>3 and vs[3].isdigit() else 0
+            rois.append((x1,y1,x2,y2))
+        x1,y1,x2,y2 = rois[0]
 
         if x1<=0 and x2<=0 and y1<=0 and y2<=0:
             abort(400, 'ROI: region is not provided')
 
         ifile = self.server.getInFileName( data_token, image_id )
-        ofile = self.server.getOutFileName( ifile, image_id, '.roi_%d,%d,%d,%d'%(x1,y1,x2,y2) )
+        ofile = self.server.getOutFileName( ifile, image_id, '.roi_%d,%d,%d,%d'%(x1-1,y1-1,x2-1,y2-1) )
+        otemp = self.server.getOutFileName( ifile, image_id, '' )        
         log.debug('ROI: %s to %s'%(ifile, ofile))
 
         if not os.path.exists(ofile):
-            params = ['-multi', '-roi', '%d,%d,%d,%d' % (x1-1,y1-1,x2-1,y2-1)]
-            #imgcnv.convert( ifile, ofile, fmt=default_format, extra=params)
+            s = ';'.join(['%s,%s,%s,%s'%(x1-1,y1-1,x2-1,y2-1) for x1,y1,x2,y2 in rois])
+            params = ['-multi', '-roi', s]
+            params += ['-template', '%s.roi_{x1},{y1},{x2},{y2}'%otemp]
             self.server.imageconvert(image_id, ifile, ofile, fmt=default_format, extra=params)
         try:
             info = self.server.getImageInfo(filename=ofile)
