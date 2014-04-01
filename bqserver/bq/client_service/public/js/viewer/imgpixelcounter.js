@@ -44,6 +44,7 @@ ImgPixelCounter.prototype.pixelCounter = function () {
             viewer: this.viewer,
             phys: this.viewer.imagephys,
             autoDestroy: false,
+            /*
             listeners:{
                 close: function() {
                     this.resetPixelRegionCounter();
@@ -54,8 +55,17 @@ ImgPixelCounter.prototype.pixelCounter = function () {
                     pixelcounterButton.setDisabled(false); //enable pixel counter menu
                     }, //brings back the metadata panel
                 scope: this,
-            },
+            },*/
         });
+        this.pixelCounterPanel.on('close',function() {
+            this.resetPixelRegionCounter();
+            this.destroyPixelCounterDisplay(); //destroys display when closed
+            delete this.pixelCounterPanel; //remove the panel from ImgPixelCounter
+            this.changed(); //removes threshold from image
+            viewerTagPanel.setVisible(true);
+            pixelcounterButton.setDisabled(false); //enable pixel counter menu
+            //brings back the metadata panel            
+        },this)
         this.viewer.parameters.main.queryById('main_container').add(this.pixelCounterPanel); //create panel
 
     //pixelCounterPlugin
@@ -108,8 +118,8 @@ ImgPixelCounter.prototype.initCanvas = function() {
         this.svgdoc = document.createElementNS('http://www.w3.org/2000/svg', "svg");
         this.svgdoc.setAttributeNS(null, 'class', 'pixel_counter_svg_id_label_surface');
         this.svgdoc.setAttributeNS(null, 'id', 'pixel_counter_svg_id_label_surface');
-        this.svgdoc.height = control_surface_size.height;
-        this.svgdoc.width = control_surface_size.width;
+        this.svgdoc.setAttribute('height', control_surface_size.height);
+        this.svgdoc.setAttribute('width', control_surface_size.width);
         this.svgdoc.style.position = "absolute";
         this.svgdoc.style.top = "0px";
         this.svgdoc.style.left = "0px";
@@ -357,11 +367,8 @@ ImgPixelCounter.prototype.setText2SVG = function(text,id,x,y) {
     textelement.setAttribute("id", id);
     textelement.setAttribute("x", x);
     textelement.setAttribute("y", y);
-    textelement.setAttribute('style', "font-family: Arial;     \
-                                         font-size  : 34;      \
-                                         fill       : blue; \
-                                        ");
-                            textelement.textContent = text;
+    textelement.setAttribute('style', "font-family:Arial;font-size: 14; fill:blue; text-shadow: #FFFFFF 1px 1px 1px ;");//rgba(0,0,0,0.1) #FFFFFF
+    textelement.textContent = text;
     this.svgdoc.appendChild(textelement);
     //textelement.addEventListener("click", svgclick, false);
     //textelement.addEventListener("keypress", onkeypress, false);
@@ -424,7 +431,7 @@ ImgPixelCounter.prototype.connectedComponents = function(x,y) {
     }
     
     //update svg element    
-    this.setText2SVG('Id: '+(this.pixelCounterPanel.idCount).toString(),'svg_text_element_'+(this.pixelCounterPanel.idCount),x,y)
+    this.setText2SVG((this.pixelCounterPanel.idCount).toString(),'svg_text_element_'+(this.pixelCounterPanel.idCount),x,y)
     this.pixelCounterPanel.idCount+=1; //setting for the next region
     this.pixelCounterPanel.updateRegionPanel();
 };
@@ -474,7 +481,6 @@ ImgPixelCounter.prototype.checkNeighbors = function(edge_points_queue,label_list
     //Find the connected component
     //uses the transparency as a marker for past check pixels
     
-    //var maskColor = {r:255,g:0,b:255}; //magenta
     var edge_index = parseInt(edge_points_queue.shift());
     
     //set color of the mask
@@ -596,10 +602,6 @@ Ext.define('BQ.Panel.PixelCounter', {
     itemId: 'pixelcounter-panel',
     title : 'Pixel Counter',
     region : 'east',
-    //autoHeight: true,
-    //layout:'vbox',
-    //autoWeigth: true,
-    //layout: 'fit',
     layout: { type: 'vbox', pack: 'start', align: 'stretch' },
     viewer: null,//requiered viewer initialized object
     activeTab : 0,
@@ -626,7 +628,6 @@ Ext.define('BQ.Panel.PixelCounter', {
             fieldLabel: 'Threshold Value',
             value: this.thresholdValue,
             increment: 1,
-            //margin: "0 0 5 10",  // (top, right, bottom, left)
             minValue: 0, //needs to adjust with the image
             maxValue: 256,    //needs to adjust with the image
             hysteresis: 100,  // delay before firing change event to the listener
@@ -724,7 +725,11 @@ Ext.define('BQ.Panel.PixelCounter', {
                 reader: {
                     root: 'items'
                 }
-            }
+            },
+            sorters: [{
+                property: 'index',
+                direction: 'desc'
+            }]
         });
         
         this.regionCountGrid = Ext.create('Ext.grid.Panel', {
@@ -756,12 +761,12 @@ Ext.define('BQ.Panel.PixelCounter', {
                         var selectedRecord = grid.getSelectionModel().getSelection()
                         var deleteRows = [];
                         for (var i = 0; i<selectedRecord.length; i++){
-                            deleteRows.push(grid.store.indexOf(selectedRecord[i]));
+                            deleteRows.push(selectedRecord[i].data.index);
                         }
                         var regionCountDeletes = [];
                         var regionCount = [];
                         for (var i = 0; i<this.regionCount.length;i++) {
-                            if (deleteRows.indexOf(i) >= 0) {
+                            if (deleteRows.indexOf(this.regionCount[i].index) >= 0) {
                                 regionCountDeletes.push(this.regionCount[i])
                             }
                             else {
@@ -858,23 +863,22 @@ Ext.define('BQ.Panel.PixelCounter', {
         this.items.push(this.thresholdInfoPanel);
         this.items.push(this.regionCountGrid);
         
-        
         //beforeresize
-        this.on({
-            scope: this,
-            resize: function(){
-                if(this.selectMode){ //disables select mode
-                    this.selectMode = false; //reset flag
-                    this.queryById('select_region_toggle_button').toggle(false);
-                    this.pixelCounter.changed();
-                }
-            }
-        });
-        
+
         this.pixelCounter.changed(); //initialize threshold
         
         
         return this.callParent(arguments);
+    },
+    
+    listeners: {
+        resize: function(){ //returns to global count mode
+            if(this.selectMode){ //disables select mode
+                this.selectMode = false; //reset flag
+                this.queryById('select_region_toggle_button').toggle(false);
+                this.pixelCounter.changed();
+            }
+        }
     },
     
     lookupThreshold : function() {
@@ -1000,24 +1004,25 @@ Ext.define('BQ.Panel.PixelCounter', {
     },
     
     exportCSV : function() {
+        //writes the region count info to csv
         if (this.regionCount.length>0) {
             var scale = this.viewer.view().scale;
             var CsvDocument = '';
-            CsvDocument +=  'index,centroid,pixels'//title
+            CsvDocument +=  'index,x,y,pixels'//title
             if (this.phys.isPixelResolutionValid()) {
                 CsvDocument += ','+this.phys.pixel_units[0]+'^2';
             }
-            CsvDocument += '\n';
+            CsvDocument += '\r\n';
             for (var r = 0; r<this.regionCount.length; r++) {
                 //row
-                CsvDocument += this.regionCount[r].index + ',"' + this.regionCount[r].x + ',' + this.regionCount[r].y + '",' + this.regionCount[r].pixels;
+                CsvDocument += this.regionCount[r].index + ',' + this.regionCount[r].x + ',' + this.regionCount[r].y + ',' + this.regionCount[r].pixels;
                 if (this.phys.isPixelResolutionValid()) {
                     CsvDocument += ','+this.regionCount[r].area;;
                 }
-                CsvDocument += '\n';
+                CsvDocument += '\r\n';
             }   
            
-            window.open('data:text/csv;charset=utf-8,' + escape(CsvDocument)); //download
+            window.open('data:text/csv;charset=utf-8,' + encodeURIComponent(CsvDocument), 'areas.csv'); //download
             
         }
     },
