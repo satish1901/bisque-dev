@@ -44,18 +44,6 @@ ImgPixelCounter.prototype.pixelCounter = function () {
             viewer: this.viewer,
             phys: this.viewer.imagephys,
             autoDestroy: false,
-            /*
-            listeners:{
-                close: function() {
-                    this.resetPixelRegionCounter();
-                    this.destroyPixelCounterDisplay(); //destroys display when closed
-                    delete this.pixelCounterPanel; //remove the panel from ImgPixelCounter
-                    this.changed(); //removes threshold from image
-                    viewerTagPanel.setVisible(true);
-                    pixelcounterButton.setDisabled(false); //enable pixel counter menu
-                    }, //brings back the metadata panel
-                scope: this,
-            },*/
         });
         this.pixelCounterPanel.on('close',function() {
             this.resetPixelRegionCounter();
@@ -130,6 +118,55 @@ ImgPixelCounter.prototype.initCanvas = function() {
     }
 };
 
+/*
+ImgPixelCounter.prototype.updataGlobalPixelCounterCanvas = function() {
+    var control_surface_size = this.viewer.viewer_controls_surface.getBoundingClientRect();
+    if (!this.canvas_image) {
+        this.canvas_image = document.createElement('canvas');
+        this.canvas_image.setAttributeNS(null, 'class', 'pixel_counter_canvas_image');
+        this.canvas_image.setAttributeNS(null, 'id', 'pixel_counter_canvas_image');
+        this.canvas_image.height = control_surface_size.height;
+        this.canvas_image.width = control_surface_size.width;
+        this.canvas_image.style.zIndex = 300;
+        this.canvas_image.style.top = "0px";
+        this.canvas_image.style.left = "0px";
+        this.canvas_image.style.position = "absolute";
+        this.canvas_image.style.visibility='hidden';
+        this.ctx_img = this.canvas_image.getContext("2d");
+        this.parent.appendChild(this.canvas_image);
+    }
+    var me = this;
+    function waitTillFinished() {
+        var finished = me.constructCanvasFromWell();
+        if (finished) {
+            
+            me.imageData = me.ctx_img.getImageData(0, 0, me.canvas_image.width, me.canvas_image.height);
+            me.imagesrc = me.imageData.data;
+            
+            //background of the image viewer
+            var globalThresholdCount = {r:{a:0,b:0},g:{a:0,b:0},b:{a:0,b:0}};
+            
+            for (var i = 0; i<(me.canvas_image.width*me.canvas_image.height*4); i+=4) {
+                if (me.pixelCounterPanel.thresholdValue>me.imagesrc[i]) globalThresholdCount['r']['a']+=1;
+                else globalThresholdCount['r']['b']+=1;
+                if (me.pixelCounterPanel.thresholdValue>me.imagesrc[i+1]) globalThresholdCount['b']['a']+=1;
+                else globalThresholdCount['b']['b']+=1;
+                if (me.pixelCounterPanel.thresholdValue>me.imagesrc[i+2]) globalThresholdCount['g']['a']+=1;
+                else globalThresholdCount['g']['b']+=1;
+            } 
+        
+            me.pixelCounterPanel.updataGlobalPanel(globalThresholdCount);
+        }
+        else {
+            setTimeout(function(){waitTillFinished();}, 50);
+        }
+    }
+    waitTillFinished();
+    
+
+    
+}
+*/
 
 //updates when rescaling the images
 //pulls in the tiled images from the tile render
@@ -159,6 +196,7 @@ ImgPixelCounter.prototype.updateCanvas = function() {
     }
     waitTillFinished();
 };
+
 
 ImgPixelCounter.prototype.returnFromCanvas = function() {
     if (this.ctx_img) {
@@ -226,7 +264,7 @@ ImgPixelCounter.prototype.constructCanvasFromWell = function() {
     this.image_view_bottom = tile_bottoms.max();
 
     //draw width offsets on to the canvas
-    this.ctx_img.createImageData(this.canvas_mask.height,this.canvas_mask.width);
+    this.ctx_img.createImageData(this.canvas_image.height,this.canvas_image.width);
     this.imageData = this.ctx_img.getImageData(0, 0, this.canvas_image.width, this.canvas_image.height);
     this.imagesrc = this.imageData.data;
 
@@ -248,6 +286,7 @@ ImgPixelCounter.prototype.constructCanvasFromWell = function() {
     return true
 };
 
+
 //destroy canvas panel when pixel counter panen is destroy
 ImgPixelCounter.prototype.destroyPixelCounterDisplay = function() {
     var pixelCounterCanvasMask = document.getElementById('pixel_counter_canvas_mask');
@@ -267,7 +306,6 @@ ImgPixelCounter.prototype.destroyPixelCounterDisplay = function() {
         delete this.svgdoc;
     }
 };
-
 
 
 ImgPixelCounter.prototype.newImage = function () {
@@ -540,6 +578,7 @@ ImgPixelCounter.prototype.checkNeighbors = function(edge_points_queue,label_list
     }
 };
 
+
 //resets all the elements to the base level
 ImgPixelCounter.prototype.resetPixelRegionCounter = function() {
     this.resetsvg();
@@ -547,6 +586,7 @@ ImgPixelCounter.prototype.resetPixelRegionCounter = function() {
     if(this.pixelCounterPanel.regionCount) this.pixelCounterPanel.regionCount = []; //reset region counter table
     this.pixelCounterPanel.idCount = 0; //resets the ids
 };
+
 
 //sets the background to the same color as the tile viewer
 ImgPixelCounter.prototype.resetimage = function() {
@@ -562,12 +602,14 @@ ImgPixelCounter.prototype.resetimage = function() {
     }
 };
 
+
 //removes all child elements
 ImgPixelCounter.prototype.resetsvg = function() {
     if(this.svgdoc) {
         while(this.svgdoc.firstChild) {this.svgdoc.removeChild(this.svgdoc.firstChild);}
     }
 };
+
 
 //sets all values in the mask to 0
 ImgPixelCounter.prototype.resetmask = function() {
@@ -706,17 +748,30 @@ Ext.define('BQ.Panel.PixelCounter', {
             header: 'pixels',
             dataIndex: 'pixels',
         }];
-        
+        var fields = [
+            {name: 'index', type: 'float'},
+            {name: 'x', type: 'float'},
+            {name: 'y', type: 'float'},
+            {name: 'pixels', type: 'float'}
+        ]
         if (this.phys.isPixelResolutionValid()) {
             fieldList.push('area');
             columns.push({
                 header: this.phys.pixel_units[0]+'<sup>2</sup>',
                 dataIndex: 'area',
             });
+            fields.push({name: 'area', type: 'float'});
         }
         
         
+
+        Ext.define('bq.pixelcount.RegionCounts', {
+            extend: 'Ext.data.Model',
+            fields: fields,
+        });        
+        
         this.regionCountStore = Ext.create('Ext.data.Store', {
+            model: 'bq.pixelcount.RegionCounts',
             storeId: 'regionCountStore',
             fields: fieldList,
             allowDeslect: true,
@@ -751,6 +806,7 @@ Ext.define('BQ.Panel.PixelCounter', {
                 itemId : 'px_delete_button',
                 xtype: 'button',
                 text: 'Delete',
+                iconCls: 'icon-delete', 
                 scale: 'large',
                 disabled: true,    
                 listeners : {
@@ -794,6 +850,7 @@ Ext.define('BQ.Panel.PixelCounter', {
             },
             { //Resets Button
                 itemId : 'px_reset_button',
+                iconCls: 'converter', 
                 xtype: 'button',
                 text: 'Reset',
                 scale: 'large',
@@ -813,6 +870,7 @@ Ext.define('BQ.Panel.PixelCounter', {
                 itemId : 'px_export_button',
                 xtype: 'button',
                 text: 'Export CSV',
+                iconCls: 'external',
                 scale: 'large',
                 disabled: true,
                 listeners : {
@@ -937,7 +995,44 @@ Ext.define('BQ.Panel.PixelCounter', {
           found.push(res);
         return found;
     },
+/*
 
+    updataGlobalPanel : function(globalThresholdCount) {
+        this.queryById('px_selectinfo_panel').setVisible(false);
+        this.queryById('px_threshold_panel').setVisible(true);
+        this.queryById('px_regioncount_grid').setVisible(false);
+        
+        var globalTitle = '<tr><th>channel</th><th >threshold</th><th>pixels</th>';
+
+        if (this.phys.isPixelResolutionValid()) {
+            globalTitle += '<th>'+this.phys.pixel_units[0]+'<sup>2</sup>'+'</th>';
+        }
+        globalTitle = globalTitle + '</tr>';
+        var globalRows = '';
+        var channels = ['r','g','b'];
+        for (var c = 0; c<3; c++) { //updates panel values
+            
+            var scale = this.viewer.view().scale;              
+            var above = globalThresholdCount[channels[c]].a/(scale*scale);
+            var below = globalThresholdCount[channels[c]].b/(scale*scale);
+
+            var channel_name = this.channel_names[c];
+            var globalRowAbove = '<td>'+channel_name+'</td><td>above</td><td >'+above.toString()+'</td>';
+            var globalRowBelow = '<td>'+channel_name+'</td><td>below</td><td >'+below.toString()+'</td>';
+            //if found resolution points add to panel
+            if (this.phys.isPixelResolutionValid()) {
+                var area_above = (parseFloat(above)*parseFloat(this.phys.pixel_size[0])*parseFloat(this.phys.pixel_size[1])).toFixed(2);
+                var area_below = (parseFloat(below)*parseFloat(this.phys.pixel_size[0])*parseFloat(this.phys.pixel_size[1])).toFixed(2);
+                globalRowAbove += '<td>'+area_above.toString()+'</td>';
+                globalRowBelow += '<td>'+area_below.toString()+'</td>';
+            }
+            globalRows += '<tr>'+globalRowAbove+'</tr><tr>'+globalRowBelow+'</tr>';
+        }
+        var html = '<table>'+globalTitle+globalRows+"</table>";
+
+        this.thresholdInfoPanel.update(html);
+    },
+*/
     //parses xml of the document, creates and html page and write it to panel
     updataGlobalPanel : function(xmlDoc) {
         this.queryById('px_selectinfo_panel').setVisible(false);
