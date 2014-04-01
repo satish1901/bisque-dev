@@ -1,9 +1,9 @@
 /*******************************************************************************
 
-  BQ.picker.Color - Color picker provides a simple color palette for choosing 
+  BQ.picker.Color - Color picker provides a simple color palette for choosing
     colors. The picker can be rendered to any container. The
     available default to a standard 40-color palette; this can be customized with the {@link #colors} config.
- 
+
     Typically you will need to implement a handler function to be notified when the user chooses a color from the picker;
     you can register the handler using the {@link #event-select} event, or by implementing the {@link #handler} method.
 
@@ -14,10 +14,10 @@
   FreeBSD License
 
   Version: 1
-  
-  History: 
+
+  History:
     2012-11-07 16:18:49 - first version
-    
+
 @example
 Ext.create('BQ.picker.Color', {
     value: '993300',  // initial selected color
@@ -28,7 +28,7 @@ Ext.create('BQ.picker.Color', {
         }
     }
 });
-    
+
 *******************************************************************************/
 
 Ext.define('BQ.picker.Color', {
@@ -114,7 +114,7 @@ Ext.define('BQ.picker.Color', {
      */
 
     colorRe: /(?:^|\s)color-(.{6})(?:\s|$)/,
-    
+
     /*
     renderTpl: [
         '<tpl for="colors">',
@@ -158,11 +158,11 @@ Ext.define('BQ.picker.Color', {
     // private
     initRenderData : function(){
         var me = this;
-        
+
         objects = [];
         for (var i=0; i<me.colors.length; i++)
-            objects[i] = { color: me.colors[i], title: me.titles[i] };            
-        
+            objects[i] = { color: me.colors[i], title: me.titles[i] };
+
         return Ext.apply(me.callParent(), {
             itemCls: me.itemCls,
             colors: me.colors,
@@ -220,7 +220,8 @@ Ext.define('BQ.picker.Color', {
             value = me.value,
             el;
 
-        if (target.innerText.toLowerCase() === 'custom') {
+        var color_name = target ? target.innerText || target.text || target.textContent : '';
+        if (color_name.toLowerCase() === 'custom') {
             Ext.create('Ext.tip.ToolTip', {
                 target: target,
                 anchor: 'top',
@@ -230,7 +231,7 @@ Ext.define('BQ.picker.Color', {
                 //maxWidth: w,
                 //height:  h,
                 //minHeight: h,
-                
+
                 layout: 'fit',
                 autoHide: false,
                 shadow: false,
@@ -246,7 +247,7 @@ Ext.define('BQ.picker.Color', {
                         scope: this,
                     },
                 }],
-            }).show();            
+            }).show();
             return;
         }
 
