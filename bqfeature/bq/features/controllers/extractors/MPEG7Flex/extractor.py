@@ -538,6 +538,7 @@ class pRSD(Feature.BaseFeature):
                 outtable.flush()
         return
     
+    
 class mRSD(pRSD):
     """
         Initalizes table and calculates the SURF descriptor to be

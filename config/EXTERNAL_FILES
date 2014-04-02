@@ -23,11 +23,11 @@
 
 [Windows-64bit-*]
 683E4322844C4A5C40571D92150A7F98211AF08F-imgcnv-Windows-64bit.zip=imgcnv.zip
-6B6B4CFD84B96E78173CD991EE529A652FB913CE-feature_extractors-Windows-64bit.zip=feature_extractors.zip
+743FB2442628209894B382BCA2D7ABAEF37116D6-feature_extractors-Windows-64bit.zip=feature_extractors.zip
 
 [Linux-64bit-*-debian-*]
 511B5E84692B123A89576086201B793C93096A74-libmbgl-linux-64-large.a
-3DC0C3E6F3E87EEFD4E3799832EF63C81D32B1A2-feature_extractors-Linux-64bit.zip=feature_extractors.zip
+ABF76CBCF86DA35725A6599310187E457E919594-feature_extractors-Linux-64bit.zip=feature_extractors.zip
 
 [Darwin-64bit-*]
 
