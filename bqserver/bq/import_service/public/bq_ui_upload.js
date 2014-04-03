@@ -1413,6 +1413,7 @@ Ext.define('BQ.upload.Panel', {
     onFormats : function() {
         var w = Ext.create('Ext.window.Window', {
             title : 'Help',
+            modal : true,
             layout : 'fit',
             width : BQApp ? BQApp.getCenterComponent().getWidth() / 1.8 : document.width / 1.8,
             height : BQApp ? BQApp.getCenterComponent().getHeight() / 1.1 : document.height / 1.1,
@@ -1452,7 +1453,9 @@ Ext.define('BQ.upload.Panel', {
         this.setLoading(false);
         var back = Ext.get('formats_background');
         if (back) {
-            var keys = Object.keys(this.formats_names).sort();
+            var keys = Object.keys(this.formats_names).sort(function() {
+                return Math.random() - 0.5;
+            });
             var s='';
             var n = undefined;
             for (var i=0; (n=keys[i]); ++i) {
