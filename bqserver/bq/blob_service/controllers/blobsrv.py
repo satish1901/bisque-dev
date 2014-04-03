@@ -169,7 +169,7 @@ class StorageManager(object):
             log.warn ("failed to fetch blob %s" , blob_id)
         return path
 
-    def save_blob(self, fileobj, filename, user_name, uniq):
+    def save_blob(self, fileobj, filename, user_name, uniq, relpath=None):
         filename_safe = filename.encode('ascii', 'xmlcharrefreplace')
         for store_id, store in self.stores.items():
             try:
@@ -177,7 +177,7 @@ class StorageManager(object):
                 if store.readonly:
                     log.debug("skipping %s: is readonly" , store_id)
                     continue
-                storeuri =  store.write(fileobj, filename_safe, user_name = user_name, uniq=uniq)
+                storeuri =  store.write(fileobj, filename_safe, user_name = user_name, uniq=uniq, relpath=relpath)
                 return storeuri
             except DuplicateFile, e:
                 raise e
@@ -372,7 +372,7 @@ class BlobServer(RestController, ServiceMixin):
 
     def store_blob(self, resource, fileobj = None):
         'Store a resource in the DB must be a valid resource'
-
+        log.debug('store_blob: %s', etree.tostring(resource))
         for x in range(3):
             try:
                 fhash = resource.get ('resource_uniq')
@@ -402,9 +402,10 @@ class BlobServer(RestController, ServiceMixin):
         #filename_safe = filename.encode('ascii', 'replace')
         filename = resource.get('name') or  getattr(fileobj, 'name') or ''
         uniq     = resource.get('resource_uniq')
+        relpath  = resource.get('value', None)
 
         with Timer() as t:
-            blob_id, flocal = self.stores.save_blob(fileobj, filename, user_name = user_name, uniq=uniq)
+            blob_id, flocal = self.stores.save_blob(fileobj, filename, user_name = user_name, uniq=uniq, relpath=relpath)
 
         if log.isEnabledFor(logging.INFO):
             log.info (transfer_msg (flocal, t.interval))

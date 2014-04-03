@@ -41,7 +41,7 @@ function getMetadata(v, record) {
 function getExtensions(v, record) {
     var expression = "tag[@name='extensions']/@value";
     var r = xpath(record.raw, expression);
-    return r //.replace(/\|/gi, ', ');
+    return r; //.replace(/\|/gi, ', ');
 }
 
 function getSource(v, record) {
@@ -52,13 +52,14 @@ function getSource(v, record) {
 
 Ext.define('BQ.model.Formats', {
     extend : 'Ext.data.Model',
-    fields : [ {name: 'Name', mapping: '@name' },
-               {name: 'Reading', convert: getReading },
-               {name: 'Writing', convert: getWriting },
-               {name: 'Metadata', convert: getMetadata },
-               {name: 'Extensions', convert: getExtensions },
-               {name: 'Source', convert: getSource },],
-
+    fields : [
+        { name: 'Name', mapping: '@name' },
+        { name: 'Reading', convert: getReading },
+        { name: 'Writing', convert: getWriting },
+        { name: 'Metadata', convert: getMetadata },
+        { name: 'Extensions', convert: getExtensions },
+        { name: 'Source', convert: getSource }
+    ],
     proxy : {
         limitParam : undefined,
         pageParam: undefined,
@@ -77,6 +78,7 @@ Ext.define('BQ.model.Formats', {
 
 Ext.define('BQ.is.Formats', {
     extend: 'Ext.panel.Panel',
+    alias: 'widget.bq-formats',
     requires: ['Ext.toolbar.Toolbar', 'Ext.tip.QuickTipManager', 'Ext.tip.QuickTip'],
     layout: 'fit',
 
@@ -119,4 +121,58 @@ Ext.define('BQ.is.Formats', {
 
 });
 
+//--------------------------------------------------------------------------------------
+// Function to fetch formats list
+//--------------------------------------------------------------------------------------
 
+BQ.is.FORMAT_CONFIDENCE = {
+    'imgcnv'     : 1.0,
+    'imaris'     : 0.9,
+    'openslide'  : 0.8,
+    'bioformats' : 0.5,
+};
+
+function fetchFormatsList( cb_success, cb_error ) {
+    Ext.Ajax.request({
+        url: '/image_service/formats',
+        callback: function(opts, succsess, response) {
+            if (response.status>=400)
+                if (cb_error)
+                    cb_error(response);
+                else
+                    BQ.ui.error(response.responseText);
+            else
+                parseFormatsList(response.responseXML, cb_success);
+        },
+        scope: this,
+        disableCaching: false,
+        listeners: {
+            scope: this,
+            //beforerequest   : function() { this.setLoading('Loading images...'); },
+            //requestcomplete : function() { this.setLoading(false); },
+            requestexception: cb_error,
+        },
+    });
+}
+
+function parseFormatsList( xml, cb_success ) {
+    var formats = {};
+    var fmts = evaluateXPath(xml, 'resource/format');
+    var f = undefined;
+    for (var i=0; (f=fmts[i]); ++i) {
+        var fmt = f.getAttribute('name');
+        var cdcs = evaluateXPath(f, 'codec');
+        var c = undefined;
+        for (var j=0; (c=cdcs[j]); ++j) {
+            var name = c.getAttribute('name');
+            var codec = { name: name, format: fmt, confidence: BQ.is.FORMAT_CONFIDENCE[fmt], };
+            var tags = evaluateXPath(c, 'tag');
+            var t = undefined;
+            for (var k=0; (t=tags[k]); ++k) {
+                codec[t.getAttribute('name')] = t.getAttribute('value');
+            }
+            formats[fmt+':'+name] = codec;
+        }
+    }
+    if (cb_success) cb_success(formats);
+}

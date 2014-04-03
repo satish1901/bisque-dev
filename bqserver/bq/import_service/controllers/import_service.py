@@ -927,7 +927,9 @@ class import_serviceController(ServiceController):
             if hasattr(f, 'file'):
                 # Uploaded File from multipart-form
                 transfers.pop(pname)
-                resource = find_upload_resource(transfers, pname) or etree.Element('resource', name=sanitize_filename (getattr(f, 'filename', '')))
+                resource = find_upload_resource(transfers, pname)
+                if resource is None:
+                    resource = etree.Element('resource', name=sanitize_filename (getattr(f, 'filename', '')))
                 files.append(UploadedResource(fileobj=f.file, resource=resource))
                 log.debug ("TRASNFERED %s %s" % (f.filename, etree.tostring(resource)))
             if pname.endswith('.uploaded'):
@@ -938,7 +940,9 @@ class import_serviceController(ServiceController):
                 except etree.XMLSyntaxError:
                     log.exception ("while parsing %s" %f)
                     abort(400)
-                payload_resource = find_upload_resource(transfers, pname.replace ('.uploaded', '')) or etree.Element('resource')
+                payload_resource = find_upload_resource(transfers, pname.replace ('.uploaded', ''))
+                if payload_resource is None:
+                    payload_resource = etree.Element('resource')
                 if payload_resource:
                     resource = merge_resources (resource, payload_resource)
                 upload_resource  = UploadedResource(resource=resource)
