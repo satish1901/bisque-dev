@@ -699,7 +699,7 @@ def resource_query(resource_type,
                    tag_order=None,
                    parent=None,
                    user_id=None,
-                   wpublic = True,
+                   wpublic = False,
                    action = RESOURCE_READ,
                    **kw):
     '''Perform a query for the specified type, using the credentials user_id.

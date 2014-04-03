@@ -95,14 +95,17 @@ def formatPath (format_path, user, filename, uniq, **params):
     if uniq is None:
         uniq = make_short_uuid(filename)
 
-    filebase,fileext = os.path.splitext(os.path.basename(filename))
+    filename = params.get('relpath', None) or os.path.basename(filename)
+    log.debug('formatPath: %s', filename)
+
+    filebase,fileext = os.path.splitext(filename)
     dirhash = uniq[2]=='-' and uniq[3] or uniq[0]
     return string.Template(format_path).substitute(
         user=user,
         date=datetime.datetime.now().strftime('%Y-%m-%d'),
         dirhash=dirhash,
         filehash=uniq,
-        filename=os.path.basename(filename),
+        filename=filename,
         filebase=filebase,
         fileext=fileext, **params)
 
@@ -122,7 +125,7 @@ class BlobStorage(object):
         'determine whether this store can access the identified file'
     def localpath(self, ident):
         'return the local path of  the identified file'
-    def write(self, fp, name, user_name='', uniq=None):
+    def write(self, fp, name, user_name='', uniq=None, relpath=None):
         'write the file to a local blob returning a short ident and the localpath'
     def walk(self):
         'walk entries on this store .. see os.walk'
@@ -188,9 +191,9 @@ class LocalStorage(BlobStorage):
                 or  (urlparse.urlparse(ident).scheme == '' and os.path.join(self.top, ident).replace('\\', '/')))
                 #and os.path.exists(self.localpath(ident)))
 
-    def write(self, fp, filename, user_name='', uniq=None):
+    def write(self, fp, filename, user_name='', uniq=None, relpath=None):
         'store blobs given local path'
-        filepath = formatPath(self.format_path, user_name, filename, uniq)
+        filepath = formatPath(self.format_path, user_name, filename, uniq, relpath=relpath)
         localpath = url2localpath(filepath)
         log.debug('local.write: %s -> %s' % (filename, localpath))
         _mkdir (os.path.dirname(localpath))
@@ -251,7 +254,7 @@ class iRodsStorage(BlobStorage):
     def valid(self, irods_ident):
         return  irods_ident.startswith(self.top) and irods_ident
 
-    def write(self, fp, filename, user_name=None, uniq=None):
+    def write(self, fp, filename, user_name=None, uniq=None, relpath=None):
         blob_ident = formatPath(self.format_path, user_name, filename, uniq)
         log.debug('irods.write: %s -> %s' % (filename, blob_ident))
         flocal = irods_handler.irods_push_file(fp, blob_ident, user=self.user, password=self.password)
@@ -323,7 +326,7 @@ class S3Storage(BlobStorage):
     def valid(self, s3_ident):
         return  s3_ident.startswith(self.top) and s3_ident
 
-    def write(self, fp, filename, user_name=None, uniq=None):
+    def write(self, fp, filename, user_name=None, uniq=None, relpath=None):
         'write a file to s3'
         blob_ident = formatPath(self.format_path, user_name, filename, uniq)
         log.debug('s3.write: %s -> %s' % (filename, blob_ident))
@@ -372,7 +375,7 @@ class HttpStorage(BlobStorage):
     def valid(self, http_ident):
         return  http_ident.startswith(self.top) and http_ident
 
-    def write(self, fp, filename, user_name=None):
+    def write(self, fp, filename, user_name=None, relpath=None):
         raise IllegalOperation('HTTP(S) write is not implemented')
 
     def localpath(self, irods_ident):
