@@ -42,17 +42,22 @@ Ext.define('BQ.viewer.Movie', {
 
     afterRender : function() {
         this.callParent();
+        if (!this.resource) {
+            BQ.ui.error('No image defined...');
+            return;
+        }
+
         this.setLoading('Loading...');
-        if (this.resource && typeof this.resource === 'string') {
+        if (typeof this.resource === 'string') {
             BQFactory.request({
                 uri: this.resource,
                 uri_params: {view: 'short'},
                 cb: callback(this, this.onImage),
                 errorcb: callback(this, this.onerror),
             });
-        }
-        else
+        } else if (this.resource instanceof BQImage) {
             this.onImage(this.resource);
+        }
 
         /*this.keyNav = Ext.create('Ext.util.KeyNav', document.body, {
             left:     this.onkeyboard,

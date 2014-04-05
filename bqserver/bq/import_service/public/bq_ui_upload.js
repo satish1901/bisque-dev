@@ -473,7 +473,9 @@ Ext.define('BQ.upload.Item', {
     },
 
     hasFile : function(f) {
-        return (this.file.name || this.file.fileName) === (f.name || f.fileName);
+        var fn1 = this.file.relativePath || this.file.webkitRelativePath || this.file.name || this.file.fileName;
+        var fn2 = f.relativePath || f.webkitRelativePath || f.name || f.fileName;
+        return fn1 === fn2;
     },
 
     getFile : function() {
@@ -626,9 +628,15 @@ Ext.define('BQ.upload.Item', {
         //resource.type = 'file';
         //resource.uri  = this.file.name;
         resource.name = this.file.name;
-        var path = this.file.relativePath || this.file.webkitRelativePath;
-        if (path && path !== '')
+        var path = this.file.relativePath || this.file.webkitRelativePath || this.file.name || this.file.fileName;
+        if (this.path) {
+            path = this.path.getPath() + '/' + path;
+            path = path.replace('//', '/');
+        }
+        if (path && path !== '') {
+            resource.name = path;
             resource.value = path;
+        }
 
         // add access permission annotation
         if (this.permission) {
@@ -696,34 +704,6 @@ BQ.upload.Item.PERMISSIONS_STRINGS = {
     0: 'private',
     1: 'published',
 };
-
-//--------------------------------------------------------------------------------------
-// Misc
-//--------------------------------------------------------------------------------------
-
-function errorHandler(e) {
-    alert('error');
-    console.log(e);
-}
-
-function traverseDirTree(item, path, files) {
-    files = files || [];
-    path = path || '';
-    if (item.isFile) {
-        item.file(function(f) {
-            f.relativePath = path + f.name;
-            files.push(f);
-        });
-    } else if (item.isDirectory) {
-        var dr = item.createReader();
-        dr.readEntries(function(entries) {
-            var e = undefined;
-            for (var i=0; (e=entries[i]); ++i)
-                traverseDirTree(e, path + item.name + '/', files);
-        }, errorHandler);
-    }
-}
-
 
 //--------------------------------------------------------------------------------------
 // BQ.upload.Panel
@@ -889,7 +869,8 @@ Ext.define('BQ.upload.Panel', {
 
         this.uploadPanel = Ext.create('Ext.container.Container', {
             border: 0,
-            region:'center',
+            //region:'center',
+            flex: 10,
             autoScroll: true,
             cls: 'upload',
             html: '<div id="formats_background" class="background"></div><div class="background dropzone">Drop files here</div>',
@@ -998,13 +979,36 @@ Ext.define('BQ.upload.Panel', {
         //--------------------------------------------------------------------------------------
         // items
         //--------------------------------------------------------------------------------------
+        var path = this.getPreferredPath();
         this.items = [{
             xtype: 'panel',
             border: 0,
             layout: 'border',
             defaults: { split: true, },
-            items: [
-                this.uploadPanel,
+            items: [{
+                xtype: 'container',
+                border: 0,
+                region:'center',
+                layout: {
+                    type: 'vbox',
+                    align: 'stretch',
+                    pack: 'start',
+                },
+                items: [{
+                    xtype:'bq-picker-path',
+                    itemId: 'upload_path',
+                    height: 35,
+                    prefix: 'Upload to: ',
+                    path: path,
+                    listeners: {
+                        scope: this,
+                        browse: this.browsePath,
+                        changed: this.onPathChanged,
+                    },
+                },
+                this.uploadPanel ],
+            },
+                //this.uploadPanel,
                 this.taggerPanel,
             ],
         }];
@@ -1046,11 +1050,6 @@ Ext.define('BQ.upload.Panel', {
             el.on( 'dragover', this.onDragOver, this );
             el.on( 'dragleave', this.onDragLeave, this );
             el.on( 'drop', this.onDrop, this );
-
-            /*this.fmts_back = document.createElementNS (xhtmlns, 'div');
-            this.fmts_back.setAttribute('id', 'formats_background');
-            this.fmts_back.setAttribute('class', 'background');
-            el.dom.appendChild(this.fmts_back);*/
         }
 
         // this is used for capturing window closing and promting the user if upload is in progress
@@ -1107,6 +1106,7 @@ Ext.define('BQ.upload.Panel', {
             formats_extensions: this.formats_extensions,
             formconf: this.formconf,
             tagger: this.taggerPanel,
+            path: this.queryById('upload_path'),
             listeners: {
                     fileuploaded: this.onFileUploaded,
                     filecanceled: this.onFileCanceled,
@@ -1136,6 +1136,53 @@ Ext.define('BQ.upload.Panel', {
         this.progress_timeout = setTimeout( Ext.Function.bind( this.doProgress, this ), this.hysteresis );
     },
 
+    // updating UI on very insert is expensive, create a list first and then update the UI
+    // the problem dropping files is unknow number due to directory reading
+    addDirectoryPrivate: function (item, path, dropped) {
+        var me = this;
+        path = path || '';
+        if (item.isFile) {
+            item.file(function(f) {
+                f.relativePath = path + f.name;
+                dropped.counts--;
+                if (me.ignoreFile(f)) // skip ignored files
+                    return;
+                var fp = me.addFile(f, true);
+                if (fp) dropped.files.push(fp);
+                if (dropped.counts<1) {
+                    me.uploadPanel.add(dropped.files);
+                    me._dropped_dirs--;
+                    if (me._dropped_dirs<1) {
+                        me.progress.setVisible(false);
+                        me.setLoading(false);
+                    }
+                }
+            });
+        } else if (item.isDirectory) {
+            dropped.counts--;
+            var dr = item.createReader();
+            dr.readEntries(function(entries) {
+                var e = undefined;
+                dropped.counts += entries.length;
+                for (var i=0; (e=entries[i]); ++i) {
+                    me.addDirectoryPrivate(e, path + item.name + '/', dropped);
+                }
+            });
+        }
+    },
+
+    addDirectory: function (item, path) {
+        this._dropped_dirs = this._dropped_dirs || 0;
+        this._dropped_dirs++;
+        var dropped = {
+            counts: 1,
+            files: [],
+        };
+        var me = this;
+        setTimeout( function() { me.addDirectoryPrivate(item, path, dropped); }, 1);
+    },
+
+    // updating UI on very insert is expensive, create a list first and then update the UI
     addFilesPrivate : function(pos) {
         var total = this._files.length;
         if (pos>=total) {
@@ -1145,6 +1192,7 @@ Ext.define('BQ.upload.Panel', {
             //var time_finished = new Date();
             //this.progress.updateProgress(100, 'Inserted in '+time_finished.diff(this._time_started).toString() );
             this.progress.setVisible(false);
+            this.setLoading(false);
             this.btn_upload.setDisabled(false);
             this.btn_cancel.setDisabled(false);
             this._files = undefined;
@@ -1168,29 +1216,35 @@ Ext.define('BQ.upload.Panel', {
         setTimeout( function() { me.addFilesPrivate(pos+1); }, 1);
     },
 
+    ignoreFile : function(f) {
+        if (f.name in BQ.upload.FS_FILES_IGNORE) // skip ignored files
+            return true;
+        if (f.name.indexOf('._')===0) // MacOSX files starting at '._'
+            return true;
+        return false;
+    },
+
     addFiles : function(files, items) {
         this.progress.setVisible(true);
+        if (items)
+            this.setLoading('Adding dropped files...');
         this._files = [];
         var f = undefined;
         for (var i=0; (f=files[i]); ++i) {
-            if (f.name in BQ.upload.FS_FILES_IGNORE) // skip ignored files
-                continue;
-            if (f.name.indexOf('._')===0) // MacOSX files starting at '._'
+            if (this.ignoreFile(f)) // skip ignored files
                 continue;
             if (items && items[i].webkitGetAsEntry) {
                 var item = items[i].webkitGetAsEntry();
                 if (item && item.isDirectory) {
-                    var fs = [];
-                    traverseDirTree(item, '', fs);
-                    this._files.push.apply(this._files, fs);
+                    this.addDirectory(item, '');
                     continue;
                 }
             }
-            //webkitRelativePath:
             this._files.push(f);
         }
 
-        //this._files = files;
+        if (this._files.length<1)
+            return;
         this._fps = [];
         this.uploadPanel.addCls('waiting');
         this._time_started = new Date();
@@ -1452,7 +1506,7 @@ Ext.define('BQ.upload.Panel', {
         }
         this.setLoading(false);
         var back = Ext.get('formats_background');
-        if (back) {
+        if (back && back.dom) {
             var keys = Object.keys(this.formats_names).sort(function() {
                 return Math.random() - 0.5;
             });
@@ -1466,7 +1520,74 @@ Ext.define('BQ.upload.Panel', {
         }
     },
 
+    getPreferredPath : function() {
+        return '/' + Ext.Date.format(new Date(), 'Y-m-d');
+    },
+
+    pathUserToBlob : function(path) {
+        var user = BQApp.user.user_name;
+        var p = '/blob_service/store/local/'+user+'/'+path;
+        return p.replace('//', '/');
+    },
+
+    pathBlobToUser : function(path) {
+        path = path.replace('/blob_service/store', '');
+        var p = path.split('/');
+        if (p.length>2 && p[1] === 'local') {
+            p.splice(1,2);
+            path = p.join('/');
+            path = path==='' ? '/' : path;
+        } else if (p.length>1 && p[1] === 'local') {
+            path = path.replace('/local', '/');
+        }
+        return path;
+    },
+
+    browsePath : function() {
+        var w = (BQApp?BQApp.getCenterComponent().getWidth():document.width)*0.3;
+        var h = (BQApp?BQApp.getCenterComponent().getHeight():document.height)*0.8;
+        var up = this.queryById('upload_path');
+        var el = up.getPrefixButton().el;
+        Ext.create('Ext.tip.ToolTip', {
+            cls: 'bq-tooltip',
+            target: el,
+            anchor: 'top',
+            floating: true,
+            width :  w,
+            maxWidth: w,
+            minWidth: 300,
+            height:  h,
+            maxHeight: h,
+            minHeight: 300,
+            layout: 'fit',
+            autoHide: false,
+            shadow: true,
+            border: false,
+            defaults: {
+                border : false,
+            },
+            items: [{
+                xtype: 'bq-tree-files-panel',
+                border: false,
+                path: this.pathUserToBlob(up.getPath()),
+                listeners: {
+                    scope: this,
+                    selected: function(url) {
+                        this.onPathChanged(this.pathBlobToUser(url));
+                        //this.queryById('upload_path').setPath(path);
+                    },
+                },
+            }],
+        }).show();
+    },
+
+    onPathChanged : function(path) {
+        this.queryById('upload_path').setPath(path);
+
+    },
+
 });
+
 
 //--------------------------------------------------------------------------------------
 // BQ.upload.Dialog

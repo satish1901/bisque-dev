@@ -139,6 +139,19 @@
     cursor: wait;
 }
 
+.bq-tooltip {
+    background-color: #dfe9f6;
+}
+
+.bq-tooltip .x-tip-body {
+    padding: 0px;
+}
+
+.bq-tooltip>.x-tip-body>.x-panel {
+    border: 0px;
+    padding: 2px;
+}
+
 /*************************************************************************
   upload button
 *************************************************************************/
