@@ -1016,6 +1016,10 @@ Ext.define('BQ.upload.Panel', {
         this.callParent();
 
         // only add the button if selecting dirs is supported
+        if (!Ext.isChrome) {
+            BQ.ui.warning('Unfortunately, your browser does not allow directory upload, please use Google Chrome if that is needed.');
+        }
+
         if (isInputDirSupported()) {
             var tb = this.queryById('toolbar_select');
             tb.insert(2, {
