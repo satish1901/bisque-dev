@@ -78,6 +78,9 @@ Ext.define('BQ.tree.files.Panel', {
     alias: 'widget.bq-tree-files-panel',
     requires: ['Ext.button.Button', 'Ext.tree.*', 'Ext.data.*'],
 
+    path: undefined, // initial path
+
+
     //pageSize: 100,          // number of records to fetch on every request
     //trailingBufferZone: 20, // Keep records buffered in memory behind scroll
     //leadingBufferZone: 20,  // Keep records buffered in memory ahead of scroll
@@ -104,6 +107,10 @@ Ext.define('BQ.tree.files.Panel', {
     disableSelection: false,
     allowDeselect: false,
     sortableColumns: false,
+    defaults: {
+        border : false,
+    },
+
 
     /*plugins: [{
         ptype: 'bufferedrenderer'
@@ -121,10 +128,43 @@ Ext.define('BQ.tree.files.Panel', {
         this.url_selected = this.url;
 
         this.dockedItems = [{
-            xtype: 'tbtext',
-            itemId: 'path_bar',
-            text: '/',
+            xtype: 'toolbar',
+            itemId: 'tool_bar',
             dock: 'top',
+            defaults: {
+                scale: 'medium',
+            },
+            items: [{
+                itemId: 'btnCreateFolder',
+                text: 'Create',
+                //scale: 'medium',
+                iconCls: 'icon-add-folder',
+                handler: this.createFolder,
+                scope: this,
+                tooltip: 'Create a new folder',
+            },{
+                itemId: 'btnDeleteSelected',
+                text: 'Delete',
+                //scale: 'medium',
+                iconCls: 'icon-trash',
+                handler: this.deleteSelected,
+                scope: this,
+                tooltip: 'Delete selected',
+            }],
+        }, {
+            xtype:'bq-picker-path',
+            itemId: 'path_bar',
+            dock: 'top',
+            height: 35,
+            //prefix: 'Upload to: ',
+            path: '/',
+            listeners: {
+                scope: this,
+                //browse: this.browsePath,
+                changed: function(el, path) {
+                    this.setPath(path);
+                },
+            },
         }];
 
         this.store = Ext.create('Ext.data.TreeStore', {
@@ -165,6 +205,15 @@ Ext.define('BQ.tree.files.Panel', {
                         return BQ.tree.files.icons[record.data.type];
                 }
             }],
+            listeners: {
+                scope: this,
+                load: function () {
+                    if (this.initialized) return;
+                    this.initialized = true;
+                    if (this.path)
+                        this.setPath(this.path);
+                },
+            },
         });
 
         this.on('select', this.onSelect, this);
@@ -196,7 +245,7 @@ Ext.define('BQ.tree.files.Panel', {
         path.reverse();
         var url = this.url+path.join('/');
         path.shift();
-        this.queryById('path_bar').setText( '/'+path.join('/') );
+        this.queryById('path_bar').setPath( '/'+path.join('/') );
 
         if (this.url_selected !== url) {
             this.url_selected = url;
@@ -206,6 +255,105 @@ Ext.define('BQ.tree.files.Panel', {
 
     onAfterItemExpand : function( node, index, item, eOpts ) {
         this.getSelectionModel().select(node);
+    },
+
+    onPath: function(node, p) {
+        if (!node) return;
+        p.shift();
+
+        if (p.length<=0) {
+            this.getSelectionModel().select(node);
+            return;
+        }
+
+        var name = p[0];
+        node = node.findChildBy(
+            function(n) {
+                if (n.data.name === name) return true;
+            },
+            this,
+            true
+        );
+        if (node)
+            node.expand(false, function(nodes) {
+                this.onPath(nodes[0].parentNode, p);
+            }, this);
+    },
+
+    setPath: function(path) {
+        path = path.replace('/blob_service/store', '');
+        var p = path === '/' ? [''] : path.split('/');
+        this.onPath(this.getRootNode(), p);
+    },
+
+    onError: function(r) {
+        BQ.ui.error('Error: '+r.statusText );
+    },
+
+    createFolder: function() {
+        var me = this;
+        var url = this.url_selected;
+        Ext.Msg.prompt('Create folder', 'Please enter new folder\' name:', function(btn, text) {
+            if (btn !== 'ok') return;
+            var path = url + text;
+            path = path.replace('//', '/');
+            me.setLoading('Creating...');
+            Ext.Ajax.request({
+                method: 'POST',
+                url: path,
+                callback: function(opts, succsess, response) {
+                    if (response.status>=400)
+                        me.onError(response);
+                    else
+                        me.onCreated(response.responseXML, text);
+                },
+                scope: me,
+                disableCaching: false,
+            });
+        });
+    },
+
+    onCreated: function(xml, new_name) {
+        this.setLoading(false);
+        //if (this.url_selected !== url) {
+        // dima: create node and navigate there
+        var sel = this.getSelectionModel().getSelection();
+        var parent = this.getRootNode();
+        if (sel.length>0)
+            parent = sel[0];
+        var node =
+        this.getSelectionModel().select(node);
+    },
+
+    deleteSelected: function() {
+        var me = this;
+        var url = this.url_selected;
+        Ext.Msg.confirm('Deletion', 'Are you sure to delete?', function(btn) {
+            if (btn !== 'yes') return;
+            me.setLoading('Deleting...');
+            Ext.Ajax.request({
+                method: 'DELETE',
+                url: url,
+                callback: function(opts, succsess, response) {
+                    if (response.status>=400)
+                        me.onError(response);
+                    else
+                        me.onDeleted(response.responseXML);
+                },
+                scope: me,
+                disableCaching: false,
+            });
+        });
+    },
+
+    onDeleted: function(xml) {
+        this.setLoading(false);
+        var sel = this.getSelectionModel().getSelection();
+        if (sel.length<1) return;
+        var node = sel[0];
+        var parent = node.parentNode;
+        node.remove();
+        this.getSelectionModel().select(parent);
     },
 
 });
