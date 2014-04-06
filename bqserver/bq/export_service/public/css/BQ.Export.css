@@ -1,4 +1,32 @@
-/* Icons */ 
+.tools {
+    /*background-color: white;*/
+    padding: 10px 10px 10px 15px;
+}
+
+.tools .x-btn-default-large {
+    border-color: #CCCCCC;
+    padding: 6px;
+}
+
+.tools .x-btn-inner {
+    font-size: 14px;
+}
+
+.footer {
+    padding: 10px 10px 10px 15px;
+}
+
+.footer .x-btn-default-large {
+    border-color: #CCCCCC;
+    padding: 6px;
+}
+
+.footer .x-btn-inner {
+    font-size: 14px;
+}
+
+/* Icons */
+
 .icon-select-images {
     background-image: url('../images/select-images.png') !important;
 }
