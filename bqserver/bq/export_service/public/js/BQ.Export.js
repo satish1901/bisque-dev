@@ -14,115 +14,90 @@ Ext.define('BQ.Export.Panel', {
         this.dockedItems = [{
             xtype : 'toolbar',
             dock : 'top',
+            defaults: {
+                scale: 'large'
+            },
+            allowBlank: false,
+            cls: 'tools',
+            border: 0,
+            layout: {
+                overflowHandler: 'Menu'
+            },
             items : [{
                 xtype : 'tbtext',
-                padding : 10,
                 html : '<h2>' + this.heading + ':</h2>'
             }, {
-                xtype : 'buttongroup',
-                margin : 5,
-                items : {
-                    xtype : 'splitbutton',
-                    arrowAlign : 'right',
-                    text : 'Add Images',
-                    scale : 'large',
-                    width : 140,
-                    padding : 3,
-                    iconCls : 'add',
-                    iconAlign : 'left',
-                    iconCls : 'icon-select-images',
-                    resourceType : 'image',
-                    handler : this.selectImage,
-                    scope : this,
-                    menu : {
-                        items : [{
-                            resourceType : 'file',
-                            text : 'Add Files',
-                            handler : this.selectImage,
-                            scope : this,
-                        }]
-                    }
-                }
+                xtype : 'splitbutton',
+                cls: 'x-btn-default-large',
+                arrowAlign : 'right',
+                text : 'Add Images',
+                iconCls : 'icon-select-images',
+                resourceType : 'image',
+                handler : this.selectImage,
+                scope : this,
+                menu : {
+                    items : [{
+                        resourceType : 'file',
+                        text : 'Add Files',
+                        handler : this.selectImage,
+                        scope : this,
+                    }]
+                },
             }, {
-                xtype : 'buttongroup',
-                margin : 5,
-                items : {
-                    text : 'Add Dataset',
-                    scale : 'large',
-                    padding : 3,
-                    width : 140,
-                    iconCls : 'add',
-                    iconAlign : 'left',
-                    iconCls : 'icon-select-dataset',
-                    handler : this.selectDataset,
-                    scope : this
-                }
+                text : 'Add Dataset',
+                cls: 'x-btn-default-large',
+                iconCls : 'icon-select-dataset',
+                handler : this.selectDataset,
+                scope : this,
             }]
         }, {
             xtype : 'toolbar',
             dock : 'bottom',
+            cls: 'footer',
+            border: 0,
+            defaults: {
+                scale: 'large',
+                cls: 'x-btn-default-large',
+            },
             items : [{
-                xtype : 'tbspacer',
-                width : 10,
-                padding : 10
-            }, {
-                xtype : 'buttongroup',
-                margin : 5,
-                items : {
-                    xtype : 'splitbutton',
-                    text : 'Download',
-                    scale : 'large',
-                    padding : 3,
-                    width : 160,
-                    iconCls : 'add',
-                    iconAlign : 'left',
-                    iconCls : 'icon-download',
-                    arrowAlign : 'right',
-                    menuAlign : 'bl-tl?',
-                    compressionType : 'tar',
+                xtype : 'splitbutton',
+                text : 'Download',
+                iconCls : 'icon-download',
+                arrowAlign : 'right',
+                menuAlign : 'bl-tl?',
+                compressionType : 'tar',
 
-                    handler : this.download,
-                    scope : this,
+                handler : this.download,
+                scope : this,
 
-                    menu : {
-                        defaults : {
-                            xtype : 'menucheckitem',
-                            group : 'downloadGroup',
-                            groupCls : Ext.baseCSSClass + 'menu-group-icon',
-                            checked : false,
-                            scope : this,
-                            handler : this.download,
-                        },
-                        items : [{
-                            compressionType : 'tar',
-                            text : 'as TARball',
-                            checked : true,
-                        }, {
-                            compressionType : 'gzip',
-                            text : 'as GZip archive',
-                        }, {
-                            compressionType : 'bz2',
-                            text : 'as BZip2 archive',
-                        }, {
-                            compressionType : 'zip',
-                            text : 'as (PK)Zip archive',
-                        }]
-                    }
+                menu : {
+                    defaults : {
+                        xtype : 'menucheckitem',
+                        group : 'downloadGroup',
+                        groupCls : Ext.baseCSSClass + 'menu-group-icon',
+                        checked : false,
+                        scope : this,
+                        handler : this.download,
+                    },
+                    items : [{
+                        compressionType : 'tar',
+                        text : 'as TARball',
+                        checked : true,
+                    }, {
+                        compressionType : 'gzip',
+                        text : 'as GZip archive',
+                    }, {
+                        compressionType : 'bz2',
+                        text : 'as BZip2 archive',
+                    }, {
+                        compressionType : 'zip',
+                        text : 'as (PK)Zip archive',
+                    }],
                 }
             }, {
-                xtype : 'buttongroup',
-                margin : 5,
-                items : {
-                    text : 'Export to Google Docs',
-                    disabled : true,
-                    scale : 'large',
-                    padding : 3,
-                    width : 160,
-                    textAlign : 'left',
-                    iconCls : 'add',
-                    iconAlign : 'left',
-                    iconCls : 'icon-gdocs'
-                }
+                text : 'Export to Google Docs',
+                disabled : true,
+                iconCls : 'icon-gdocs',
             }]
         }];
 
