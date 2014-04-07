@@ -915,7 +915,7 @@ Ext.define('BQ.upload.Panel', {
                     change: this.chooseFiles,
                     scope: this,
                 },
-            }, /*{
+            }, {
                 xtype: 'filemultifield',
                 itemId: 'selector_directory',
                 buttonOnly: true,
@@ -934,7 +934,7 @@ Ext.define('BQ.upload.Panel', {
                     change: this.chooseFiles,
                     scope: this,
                 },
-            },*/ {
+            }, {
                 xtype:'splitbutton',
                 text: 'Toggle permissions',
                 cls: 'x-btn-default-large',
@@ -1018,35 +1018,6 @@ Ext.define('BQ.upload.Panel', {
         }];
 
         this.callParent();
-
-        // only add the button if selecting dirs is supported
-        if (!Ext.isChrome) {
-            BQ.ui.warning('Unfortunately, your browser does not allow directory upload, please use Google Chrome if that is needed.');
-        }
-
-        if (isInputDirSupported()) {
-            var tb = this.queryById('toolbar_select');
-            tb.insert(2, {
-                xtype: 'filemultifield',
-                itemId: 'selector_directory',
-                buttonOnly: true,
-                multiple: true,
-                directory: true,
-                scope: this,
-                handler: this.chooseFiles,
-                buttonConfig: {
-                    scale: 'large',
-                    iconCls: 'browse',
-                    text: 'Choose directory',
-                    tooltip: 'Select a local directory to upload',
-                    cls: 'x-btn-default-large',
-                },
-                listeners: {
-                    change: this.chooseFiles,
-                    scope: this,
-                },
-            });
-        }
     },
 
     afterRender : function() {
@@ -1073,7 +1044,6 @@ Ext.define('BQ.upload.Panel', {
 
     chooseFiles : function(field, value, opts) {
         var files = field.fileInputEl.dom.files;
-        //var items =
         this.addFiles(files);
     },
 
@@ -1233,6 +1203,7 @@ Ext.define('BQ.upload.Panel', {
     },
 
     addFiles : function(files, items) {
+        var notified = false;
         this.progress.setVisible(true);
         if (items)
             this.setLoading('Adding dropped files...');
@@ -1248,11 +1219,20 @@ Ext.define('BQ.upload.Panel', {
                     continue;
                 }
             }
+            if (f.size === 0 && f.type === '') {
+                if (!notified) {
+                    BQ.ui.warning('Unfortunately, your browser does not allow directory upload, please use Google Chrome.');
+                    notified = true;
+                }
+                continue;
+            }
             this._files.push(f);
         }
 
-        if (this._files.length<1)
+        if (this._files.length<1) {
+            this.progress.setVisible(false);
             return;
+        }
         this._fps = [];
         this.uploadPanel.addCls('waiting');
         this._time_started = new Date();

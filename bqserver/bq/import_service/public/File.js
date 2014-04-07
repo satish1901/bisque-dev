@@ -51,6 +51,19 @@ Ext.define('BQ.upload.File', {
             e.dom.style.height = this.getHeight()+'px';
         }
     },
-
 });
 
+Ext.override(Ext.form.field.FileButton, {
+    afterRender: function(){
+        var me = this;
+        me.callParent(arguments);
+        me.fileInputEl.on('click', function(e) {
+            if (this.ownerCt.directory === true && !isInputDirSupported()) {
+                BQ.ui.warning('Unfortunately, your browser does not allow directory upload, please use Google Chrome.');
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        }, me);
+    },
+
+});
