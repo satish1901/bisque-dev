@@ -253,6 +253,19 @@ Ext.define('BQ.tree.files.Panel', {
         }
     },
 
+    getSelected : function() {
+        return this.url_selected;
+    },
+
+    getSelectedAsResource : function() {
+        var sel = this.getSelectionModel().getSelection();
+        if (sel.length<1) return;
+        var node = sel[0];
+        if (!node) return;
+        var r = BQFactory.parseBQDocument(node.raw);
+        return r;
+    },
+
     onAfterItemExpand : function( node, index, item, eOpts ) {
         this.getSelectionModel().select(node);
     },

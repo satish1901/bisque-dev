@@ -106,14 +106,6 @@ Ext.define('BQ.Application.Toolbar', {
                  'menu_user_signout_sep', 'menu_resource_template', 'menu_resource_create', 'button_create' ],
     tools_admin: ['menu_user_admin_separator', 'menu_user_admin', 'menu_user_admin_prefs', ],
 
-    types_required: {'dataset':null, 'template':null},
-
-    types_ignore: { 'mex':null, 'user':null, 'image':null, 'module':null,
-                    'service':null, 'system':null, 'file':null, },
-
-    resource_preferred : {'image':null, 'dataset':null, 'template':null, 'mex':null, 'file':null, },
-    resource_system: { 'user':null, 'module':null, 'service':null, 'system':null, },
-
     initComponent : function() {
         this.images_base_url = this.images_base_url || bq.url('/images/toolbar/');
         this.title = bq.title || this.title;
@@ -641,13 +633,6 @@ Ext.define('BQ.Application.Toolbar', {
     },
 
     addBrowseResourceTypes : function(types) {
-        //types['image']   = '/data_service/image';
-        //types['dataset'] = '/data_service/dataset';
-        //types['mex']     = '/data_service/mex';
-
-        //resource_preferred : {'image':null, 'dataset':null, 'template':null, 'mex':null, 'file':null, },
-        //resource_system: { 'user':null, 'module':null, 'service':null, 'system':null, },
-
         var menu = {
             xtype: 'menu',
             cls: 'toolbar-menu',
@@ -680,10 +665,10 @@ Ext.define('BQ.Application.Toolbar', {
     },
 
     addCreateResourceTypes : function(types) {
-        var mytypes =  Ext.Object.merge(types, this.types_required);
+        var mytypes =  Ext.Object.merge(types, BQ.resources.preferred);
         /*
         for (var name in mytypes) {
-            if (!(name in this.types_ignore))
+            if (!(name in BQ.resources.ignore))
             this.queryById('menu_create').add({
                 text    : 'Create '+name,
                 itemId  : 'menu_create_'+name,
@@ -786,18 +771,18 @@ Ext.define('BQ.Application.Toolbar', {
    */
 
     createResource : function(types, def) {
-        var mykeys =  Ext.Object.merge(types, this.types_required);
+        var mykeys =  Ext.Object.merge(types, BQ.resources.preferred);
         if (def) mykeys[def] = null;
         var mydata = [];
         for (var k in mykeys)
-            if (!(k in this.types_ignore))
+            if (!(k in BQ.resources.ignore))
                 mydata.push([k]);
 
         store_types = Ext.create('Ext.data.ArrayStore', {
             fields: [ {name: 'name',}, ],
             data: mydata,
         });
-        var ignore = this.types_ignore;
+        var ignore = BQ.resources.ignore;
         var formpanel = Ext.create('Ext.form.Panel', {
             //url:'save-form.php',
             frame:true,

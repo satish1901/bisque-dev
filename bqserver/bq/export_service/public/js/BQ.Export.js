@@ -1,6 +1,8 @@
 Ext.define('BQ.Export.Panel', {
     extend : 'Ext.panel.Panel',
 
+    date_pattern: BQ.Date.patterns.ISO8601Long,
+
     constructor : function() {
         Ext.apply(this, {
             heading : 'Download Images',
@@ -11,6 +13,9 @@ Ext.define('BQ.Export.Panel', {
     },
 
     initComponent : function() {
+        this.types_ignore = Ext.clone(BQ.resources.system);
+        this.types_ignore.dataset = null; // we'll have a special picker for dataset
+        this.types_ignore.image = null; // we'll have a special picker for dataset
         this.dockedItems = [{
             xtype : 'toolbar',
             dock : 'top',
@@ -29,27 +34,28 @@ Ext.define('BQ.Export.Panel', {
             }, {
                 xtype : 'splitbutton',
                 cls: 'x-btn-default-large',
-                arrowAlign : 'right',
-                text : 'Add Images',
+                text : 'Add images',
                 iconCls : 'icon-select-images',
                 resourceType : 'image',
                 handler : this.selectImage,
                 scope : this,
-                menu : {
-                    items : [{
-                        resourceType : 'file',
-                        text : 'Add Files',
-                        handler : this.selectImage,
-                        scope : this,
-                    }]
+                menu : { // dima: requires adding all other resource types
+                    plain: true,
+                    itemId: 'menu_resources',
                 },
             }, {
-                text : 'Add Dataset',
+                text : 'Add dataset',
                 cls: 'x-btn-default-large',
                 iconCls : 'icon-select-dataset',
                 handler : this.selectDataset,
                 scope : this,
-            }]
+            }, /*{
+                text : 'Add Folder',
+                cls: 'x-btn-default-large',
+                iconCls : 'icon-select-dataset',
+                //handler : this.selectFolder,
+                scope : this,
+            }*/]
         }, {
             xtype : 'toolbar',
             dock : 'bottom',
@@ -82,10 +88,10 @@ Ext.define('BQ.Export.Panel', {
                     items : [{
                         compressionType : 'tar',
                         text : 'as TARball',
-                        checked : true,
                     }, {
                         compressionType : 'gzip',
                         text : 'as GZip archive',
+                        checked : true,
                     }, {
                         compressionType : 'bz2',
                         text : 'as BZip2 archive',
@@ -94,15 +100,52 @@ Ext.define('BQ.Export.Panel', {
                         text : 'as (PK)Zip archive',
                     }],
                 }
-            }, {
+            }/*, {
                 text : 'Export to Google Docs',
                 disabled : true,
                 iconCls : 'icon-gdocs',
-            }]
+            }*/]
         }];
 
         this.callParent(arguments);
         this.add(this.getResourceGrid());
+        this.fetchResourceTypes();
+    },
+
+    fetchResourceTypes : function() {
+        BQFactory.request ({
+            uri : '/data_service/',
+            cb : callback(this, this.onResourceTypes),
+            errorcb : function(error) {
+                BQ.ui.error('Error fetching resource types:<br>'+error.message, 4000);
+            },
+            cache : false,
+        });
+    },
+
+    onResourceTypes : function(resource) {
+        var types = {};
+        BQApp.resourceTypes = [];
+        var r=null;
+        for (var i=0; (r=resource.children[i]); i++) {
+            BQApp.resourceTypes.push({name:r.name, uri:r.uri});
+            types[r.name] = '/data_service/' + r.name;
+        }
+
+        var items = [];
+        var keys = Object.keys(types).sort();
+        var name = null;
+        for (var i=0; name=keys[i]; ++i) {
+            if (name in this.types_ignore) continue;
+            items.push({
+                resourceType : name,
+                text: name,
+                scope: this,
+                handler : this.selectImage,
+            });
+        }
+
+        this.queryById('menu_resources').add(items);
     },
 
     downloadResource : function(resource, compression) {
@@ -142,7 +185,6 @@ Ext.define('BQ.Export.Panel', {
             return list;
         }
 
-
         Ext.create('Ext.form.Panel', {
             url : '/export/initStream',
             defaultType : 'hiddenfield',
@@ -166,12 +208,12 @@ Ext.define('BQ.Export.Panel', {
 
     selectImage : function(me) {
         var rbDialog = Ext.create('Bisque.ResourceBrowser.Dialog', {
-            'height' : '85%',
-            'width' : '85%',
+            width : '85%',
+            height : '85%',
             dataset : '/data_service/' + me.resourceType,
             wpublic : 'true',
             listeners : {
-                'Select' : this.addToStore,
+                Select : this.addToStore,
                 scope : this
             }
         });
@@ -183,7 +225,7 @@ Ext.define('BQ.Export.Panel', {
             'width' : '85%',
             wpublic : 'true',
             listeners : {
-                'DatasetSelect' : this.addToStore,
+                DatasetSelect : this.addToStore,
                 scope : this
             }
         });
@@ -196,30 +238,35 @@ Ext.define('BQ.Export.Panel', {
             return;
         }
 
-        var record = [], thumbnail, viewPriority;
-
-        if (resource.resource_type == 'image') {
+        var thumbnail = '';
+        var viewPriority = 2;
+        if (resource.resource_type === 'image') {
             thumbnail = resource.src;
             viewPriority = 1;
-        } else if (resource.resource_type == 'dataset') {
-            thumbnail = bq.url('../export_service/public/images/folder.png');
+        } else if (resource.resource_type === 'dataset') {
             viewPriority = 0;
-        } else if (resource.resource_type == 'file') {
-            thumbnail = bq.url('../export_service/public/images/file.png');
-            viewPriority = 2;
         }
 
-        record.push(thumbnail, resource.name || '', resource.resource_type, resource.ts, resource.permission || '', resource.uri, viewPriority);
+        var record = [
+            thumbnail,
+            resource.name || '',
+            resource.resource_type,
+            resource.ts,
+            resource.permission || '',
+            resource.uri,
+            viewPriority
+        ];
         this.resourceStore.loadData([record], true);
     },
 
     getResourceGrid : function() {
+        var me = this;
         this.resourceGrid = Ext.create('Ext.grid.Panel', {
             store : this.getResourceStore(),
             border : 0,
             listeners : {
                 scope : this,
-                'itemdblclick' : function(view, record, item, index) {
+                itemdblclick : function(view, record, item, index) {
                     // delegate resource viewing to ResourceView Dispatcher
                     var newTab = window.open('', "_blank");
                     newTab.location = bq.url('/client_service/view?resource=' + record.get('uri'));
@@ -228,13 +275,17 @@ Ext.define('BQ.Export.Panel', {
 
             columns : {
                 items : [{
-                    width : 120,
+                    width : 80,
                     dataIndex : 'icon',
                     menuDisabled : true,
                     sortable : false,
                     align : 'center',
-                    renderer : function(value) {
-                        return '<div style="height:40px"><img style="height:40px;width:40px;" src=' + value + '?slice=,,0,0&thumbnail=280,280&format=jpeg /></div>';
+                    renderer : function(value, cell, record) {
+                        if (record.data.type === 'image') {
+                            return '<div class="thumbnail '+record.data.type+'" style="background-image: url(\''+value+'?thumbnail=280,280\');"/>';
+                        } else {
+                            return '<div class="thumbnail '+record.data.type+'" />';
+                        }
                     }
                 }, {
                     text : 'Name',
@@ -248,7 +299,10 @@ Ext.define('BQ.Export.Panel', {
                     maxWidth : 200,
                     align : 'center',
                     sortable : true,
-                    dataIndex : 'type'
+                    dataIndex : 'type',
+                    renderer : function(value, cell, record) {
+                        return Ext.String.capitalize(value);
+                    }
                 }, {
                     text : 'Date created',
                     flex : 0.5,
@@ -256,6 +310,11 @@ Ext.define('BQ.Export.Panel', {
                     align : 'center',
                     sortable : true,
                     dataIndex : 'ts',
+                    renderer : function(value, cell, record) {
+                        var date = Ext.Date.parse(value, BQ.Date.patterns.BisqueTimestamp);
+                        var pattern = (me ? me.date_pattern : undefined) || BQ.Date.patterns.ISO8601Long;
+                        return Ext.Date.format(date, pattern);
+                    }
                 }, {
                     text : 'Published',
                     flex : 0.4,
@@ -263,6 +322,9 @@ Ext.define('BQ.Export.Panel', {
                     align : 'center',
                     sortable : true,
                     dataIndex : 'public',
+                    renderer : function(value, cell, record) {
+                        return (value === 'published') ? '<b>Yes</b>' : 'No';
+                    }
                 }, {
                     xtype : 'actioncolumn',
                     maxWidth : 80,
@@ -291,29 +353,12 @@ Ext.define('BQ.Export.Panel', {
 
     getResourceStore : function() {
         this.resourceStore = Ext.create('Ext.data.ArrayStore', {
-            fields : ['icon', 'name', {
-                name : 'type',
-                convert : function(value) {
-                    return Ext.String.capitalize(value);
-                }
-            }, {
-                name : 'ts',
-                convert : function(value) {
-                    return Ext.Date.format(new Date(value), "F j, Y g:i:s a");
-                }
-            }, {
-                name : 'public',
-                convert : function(value) {
-                    return (value == 'published') ? 'Yes' : 'No';
-                }
-            }, 'uri', 'viewPriority'],
+            fields : ['icon', 'name', 'type', 'ts', 'public', 'uri', 'viewPriority'],
             sorters : [{
                 property : 'viewPriority',
                 direction : 'ASC'
-
             }]
         });
-
         return this.resourceStore;
     }
 });
