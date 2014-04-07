@@ -1509,7 +1509,8 @@ Ext.define('BQ.upload.Panel', {
     },
 
     getPreferredPath : function() {
-        return '/' + Ext.Date.format(new Date(), 'Y-m-d');
+        //return '/' + Ext.Date.format(new Date(), 'Y-m-d');
+        return Ext.Date.format(new Date(), 'Y-m-d');
     },
 
     pathUserToBlob : function(path) {
@@ -1528,6 +1529,8 @@ Ext.define('BQ.upload.Panel', {
         } else if (p.length>1 && p[1] === 'local') {
             path = path.replace('/local', '/');
         }
+        if (path[0] === '/')
+            path = path.slice(1);
         return path;
     },
 
