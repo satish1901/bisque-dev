@@ -38,7 +38,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
                     specialkey : {
                         fn : function(field, e) {
                             if (e.getKey() == e.ENTER)
-                                this.btnSearch()
+                                this.btnSearch();
                         },
 
                         scope : this

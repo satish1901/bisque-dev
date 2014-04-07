@@ -25,6 +25,28 @@
     font-size: 14px;
 }
 
+.thumbnail {
+    margin: 0px 10px 0px 10px;
+    width: 40px;
+    height: 40px;
+    background-image: url('../images/file.png');
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-position: center;
+}
+
+.thumbnail.dataset {
+    background-image: url('../images/folder.png');
+}
+
+.thumbnail.dir {
+    background-image: url('../images/folder.png');
+}
+
+.thumbnail.image {
+    background-image: initial;
+}
+
 /* Icons */
 
 .icon-select-images {
@@ -36,7 +58,7 @@
 }
 
 .icon-download {
-    background-image: url('../images/download.png') !important;
+    background-image: url('/images/toolbar/download.png') !important;
 }
 
 .icon-gdocs {

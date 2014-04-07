@@ -48,6 +48,44 @@ BQ.Date.patterns = {
 };
 
 //--------------------------------------------------------------------------------------
+// BQ.resources
+//--------------------------------------------------------------------------------------
+
+Ext.namespace('BQ.resources');
+
+BQ.resources.system = {
+    user: null,
+    module: null,
+    service: null,
+    system: null,
+    store: null,
+};
+
+BQ.resources.required = {
+    dataset: null,
+    template: null,
+};
+
+BQ.resources.ignore = {
+    mex: null,
+    user: null,
+    image: null,
+    module: null,
+    service: null,
+    system: null,
+    file: null,
+};
+
+BQ.resources.preferred = {
+    image: null,
+    dataset: null,
+    template: null,
+    mex: null,
+    file: null,
+};
+
+
+//--------------------------------------------------------------------------------------
 // BQ.Application
 //--------------------------------------------------------------------------------------
 

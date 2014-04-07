@@ -885,7 +885,9 @@ Ext.define('BQ.upload.Panel', {
             xtype: 'toolbar',
             itemId: 'toolbar_select',
             dock: 'top',
-            defaults: { scale: 'large'  },
+            defaults: {
+                scale: 'large',
+            },
             allowBlank: false,
             cls: 'tools',
             border: 0,
@@ -969,10 +971,12 @@ Ext.define('BQ.upload.Panel', {
         },{
             xtype: 'toolbar',
             dock: 'bottom',
-            //ui: 'footer',
             cls: 'footer',
             border: 0,
-            defaults: { scale: 'large', cls: 'x-btn-default-large', },
+            defaults: {
+                scale: 'large',
+                cls: 'x-btn-default-large',
+            },
             items: [ this.btn_dataset, this.btn_upload, this.btn_cancel, this.btn_reupload, this.progress, ]
         }];
 
