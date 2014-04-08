@@ -108,7 +108,7 @@ from repoze.what import predicates
 import bq
 from bq.core import permission, identity
 from bq.util.paths import data_path
-from bq import image_service
+#from bq import image_service
 from bq import data_service
 from bq import blob_service
 

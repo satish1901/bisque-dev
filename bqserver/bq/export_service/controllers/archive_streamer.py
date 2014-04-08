@@ -26,10 +26,11 @@ class ArchiveStreamer():
         self.archiver = ArchiverFactory().getClass(compressionType)
 
 
-    def init(self, archiveName='Bisque', fileList=[], datasetList=[], urlList=[]):
+    def init(self, archiveName='Bisque', fileList=[], datasetList=[], urlList=[], dirList=[]):
         self.fileList = fileList
         self.datasetList = datasetList
         self.urlList = urlList
+        self.dirList = dirList
 
         filename = archiveName + self.archiver.getFileExtension()
         try:
@@ -42,7 +43,7 @@ class ArchiveStreamer():
     def stream(self):
         log.debug("ArchiveStreamer: Begin stream %s" % request.url)
 
-        flist = self.fileInfoList(self.fileList, self.datasetList, self.urlList)
+        flist = self.fileInfoList(self.fileList, self.datasetList, self.urlList, self.dirList)
         flist = self.writeSummary(flist, self.archiver)
 
         for finfo in flist:
@@ -80,7 +81,7 @@ class ArchiveStreamer():
 
 
     # Returns a list of fileInfo objects based on files' URIs
-    def fileInfoList(self, fileList, datasetList, urlList):
+    def fileInfoList(self, fileList, datasetList, urlList, dirList):
 
         def fileInfo(dataset, uri, index=0):
             xml     =   data_service.get_resource(uri, view='deep,clean')
@@ -102,7 +103,7 @@ class ArchiveStreamer():
 
             return  dict(XML        =   xml,
                          type       =   xml.tag,
-                         name       =   name ,
+                         name       =   name,
                          uniq       =   xml.get('resource_uniq'),
                          path       =   path,
                          dataset    =   dataset,
@@ -190,6 +191,42 @@ class ArchiveStreamer():
                         fileHash[finfo.get('name')] = fileHash.get(finfo.get('name')) + 1
                         namef, ext = os.path.splitext(finfo.get('name'))
                         finfo['name'] = namef + '_' + str(fileHash.get(finfo.get('name'))-1) + ext
+                    else:
+                        fileHash[finfo.get('name')] = 1
+
+                    flist.append(finfo)
+                    if finfo.get('type') == 'image':
+                        flist.append(xmlInfo(finfo))
+
+        if len(dirList)>0:
+            for uri in dirList:
+                fileHash = {}
+
+                # read dir from blob storage, dima: need to access blob storage
+                folder = data_service.get_resource(uri, view='deep')
+                members = folder.xpath('//link')
+
+                for index, member in enumerate(members):
+                    # dima: need to compute proper URI
+                    uniq = member.get('value', None)
+                    uri = '/data_service/%s'%uniq # compute URI from uniq, dima: does not work today: 403 forbidden
+                    
+                    # compute path for each link by traversing up the tree
+                    folder = [] # relative path to the resource from currently selected dir with no trailing slash
+                    parent = member
+                    while parent is not None:
+                        parent = parent.xpath('..')
+                        parent = parent[0] if len(parent)>0 else None
+                        if parent is not None:
+                            folder.append(parent.get('name', None))
+                    
+                    finfo = fileInfo('/'.join(folder), uri, index)
+                    if fileHash.get(finfo.get('name'))!=None:
+                        fileHash[finfo.get('name')] = fileHash.get(finfo.get('name')) + 1
+                        namef, ext = os.path.splitext(finfo.get('name'))
+                        # dima: Only disambiguate if there are repeating files
+                        #finfo['name'] = namef + '_' + str(fileHash.get(finfo.get('name'))-1) + ext
+                        
                     else:
                         fileHash[finfo.get('name')] = 1
 
