@@ -155,7 +155,7 @@ Ext.define('BQ.Export.Panel', {
         for (var i = 0, type, record = []; i < resource.length; i++) {
             type = resource[i].resource_type;
 
-            if (type != 'dataset' || compression == 'none')
+            if (type != 'dataset' || compression === 'none')
                 type = 'file';
 
             record.push(['', '', type, resource[i].ts, '', resource[i].uri, 0]);
@@ -169,7 +169,7 @@ Ext.define('BQ.Export.Panel', {
 
     download : function(btn) {
         if (!this.resourceStore.count()) {
-            BQ.ui.message('Download failed', 'Nothing to download! Please add files or datasets first...');
+            BQ.ui.notification('Nothing to download! Please add files or datasets first...');
             return;
         }
 
@@ -192,13 +192,16 @@ Ext.define('BQ.Export.Panel', {
             standardSubmit : true,
             items : [{
                 name : 'compressionType',
-                value : btn.compressionType
+                value : btn.compressionType,
             }, {
                 name : 'files',
-                value : findAllbyType.call(this, 'image').concat(findAllbyType.call(this, 'file'))
+                value : findAllbyType.call(this, 'image').concat(findAllbyType.call(this, 'file')),
             }, {
                 name : 'datasets',
-                value : findAllbyType.call(this, 'dataset')
+                value : findAllbyType.call(this, 'dataset'),
+            }, {
+                name : 'dirs',
+                value : findAllbyType.call(this, 'dir'),
             }]
         }).submit();
     },
