@@ -1133,6 +1133,8 @@ Ext.define('BQ.upload.Panel', {
                     if (me._dropped_dirs<1) {
                         me.progress.setVisible(false);
                         me.setLoading(false);
+                        me.btn_upload.setDisabled(false);
+                        me.btn_cancel.setDisabled(false);
                     }
                 }
             });
