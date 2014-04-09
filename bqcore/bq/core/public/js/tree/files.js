@@ -1,3 +1,39 @@
+/*******************************************************************************
+
+  BQ.tree.files.Panel  - blob service directory tree store panel
+
+  This is used to navigate in the directory view and create/delete directories
+  and files
+
+  Author: Dima Fedorov
+  Version: 1
+
+  History:
+    2014-09-04 13:57:30 - first creation
+
+*******************************************************************************/
+
+
+//--------------------------------------------------------------------------------------
+// misc
+//--------------------------------------------------------------------------------------
+
+function getNodePath(node) {
+    var path = [];
+    while (node) {
+        if (node.data && node.data.type !== 'link')
+            path.push(node.data.name || node.data.id);
+        node = node.parentNode;
+    }
+    path.reverse();
+    var url = path.join('/');
+    return url;
+}
+
+//--------------------------------------------------------------------------------------
+// BQ.data.reader.Files
+// XML reader that reads path records from the data store
+//--------------------------------------------------------------------------------------
 
 Ext.define('BQ.data.reader.Files', {
     extend: 'Ext.data.reader.Xml',
@@ -35,16 +71,51 @@ Ext.define('BQ.data.reader.Files', {
 
 });
 
+//--------------------------------------------------------------------------------------
+// BQ.data.writer.Files
+// XML writer that writes path records to the data store
+//--------------------------------------------------------------------------------------
+
+Ext.define('BQ.data.writer.Files', {
+    extend: 'Ext.data.writer.Xml',
+    alias: 'writer.bq-files',
+
+    writeRecords: function(request, data) {
+        var me = request.proxy.ownerPanel;
+        var url = me.getSelected();
+        if (request.action === 'create') {
+            var record = request.records[0];
+            //var path = getNodePath(record);
+            url += '/' + record.data.name;
+        }
+        request.url = url;
+        request.xmlData = '';
+        return request;
+    },
+});
+
+//--------------------------------------------------------------------------------------
+// BQ.data.proxy.Files
 // Proxy to perform true REST fetches from blob service
+//--------------------------------------------------------------------------------------
+
 Ext.define('BQ.data.proxy.Files', {
     extend: 'Ext.data.proxy.Rest',
     alias : 'proxy.bq-files',
 
+    batchActions: false,
     noCache : false,
     appendId: false,
     limitParam : 'limit',
     pageParam: undefined,
     startParam: 'offset',
+
+    actionMethods: {
+        create : 'POST', // 'PUT'
+        read   : 'GET',
+        update : 'POST',
+        destroy: 'DELETE'
+    },
 
     buildUrl: function(request) {
         // extjs attempts adding ?node=NAME to all requests
@@ -170,11 +241,12 @@ Ext.define('BQ.tree.files.Panel', {
         this.store = Ext.create('Ext.data.TreeStore', {
             defaultRootId: 'store',
             //autoLoad: false,
-            //autoSync: false,
+            autoSync: true,
             //lazyFill: true,
             proxy : {
                 type : 'bq-files',
                 url : this.url,
+                ownerPanel: this,
                 //noCache : false,
                 //appendId: false,
                 //limitParam : 'limit',
@@ -184,6 +256,9 @@ Ext.define('BQ.tree.files.Panel', {
                 reader : {
                     type : 'bq-files',
                     root : 'resource',
+                },
+                writer : {
+                    type : 'bq-files',
                 },
             },
             fields : [{
@@ -308,34 +383,21 @@ Ext.define('BQ.tree.files.Panel', {
         var url = this.url_selected;
         Ext.Msg.prompt('Create folder', 'Please enter new folder\' name:', function(btn, text) {
             if (btn !== 'ok') return;
-            var path = url + text;
-            path = path.replace('//', '/');
-            me.setLoading('Creating...');
-            Ext.Ajax.request({
-                method: 'POST',
-                url: path,
-                callback: function(opts, succsess, response) {
-                    if (response.status>=400)
-                        me.onError(response);
-                    else
-                        me.onCreated(response.responseXML, text);
-                },
-                scope: me,
-                disableCaching: false,
-            });
-        });
-    },
 
-    onCreated: function(xml, new_name) {
-        this.setLoading(false);
-        //if (this.url_selected !== url) {
-        // dima: create node and navigate there
-        var sel = this.getSelectionModel().getSelection();
-        var parent = this.getRootNode();
-        if (sel.length>0)
-            parent = sel[0];
-        var node =
-        this.getSelectionModel().select(node);
+            var selection = me.getSelectionModel().getSelection();
+            var parent = undefined;
+            if (selection.length>0)
+                parent = selection[0];
+            else
+                parent = me.getRootNode();
+
+            var node = parent.appendChild({
+                name : text,
+                //value : '',
+                type : 'dir',
+            });
+            me.getSelectionModel().select(node);
+        });
     },
 
     deleteSelected: function() {
@@ -343,30 +405,15 @@ Ext.define('BQ.tree.files.Panel', {
         var url = this.url_selected;
         Ext.Msg.confirm('Deletion', 'Are you sure to delete?', function(btn) {
             if (btn !== 'yes') return;
-            me.setLoading('Deleting...');
-            Ext.Ajax.request({
-                method: 'DELETE',
-                url: url,
-                callback: function(opts, succsess, response) {
-                    if (response.status>=400)
-                        me.onError(response);
-                    else
-                        me.onDeleted(response.responseXML);
-                },
-                scope: me,
-                disableCaching: false,
-            });
-        });
-    },
 
-    onDeleted: function(xml) {
-        this.setLoading(false);
-        var sel = this.getSelectionModel().getSelection();
-        if (sel.length<1) return;
-        var node = sel[0];
-        var parent = node.parentNode;
-        node.remove();
-        this.getSelectionModel().select(parent);
+            var selection = me.getSelectionModel().getSelection();
+            if (selection) {
+                var node = selection[0];
+                var parent = node.parentNode;
+                node.remove();
+                me.getSelectionModel().select(parent);
+            }
+        });
     },
 
 });
