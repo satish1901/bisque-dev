@@ -465,4 +465,106 @@
     color: #009900;
 }
 
+/*****************************************************************
+  Resource renderers
+  .ImageCompact
+*****************************************************************/
+
+.folder {
+    position: relative;
+    background-image: url('Images/folder.svg');
+    background-position: -40px -40px;
+    background-size: 300px;
+    background-repeat: no-repeat;
+    background-color: transparent;
+
+    -moz-box-shadow: none;
+    -webkit-box-shadow: none;
+    box-shadow: none;
+    padding: 10px;
+    border: 0px !important;
+}
+
+.folder.ImageCard, .folder.ImageFull {
+    background-size: 450px;
+    padding: 30px;
+}
+
+.gridDirIcon {
+    width: 42px;
+    height: 28px;
+    background-image: url('Images/folder.svg');
+    background-size: 48px;
+    background-repeat: no-repeat;
+    background-position: -0px -5px;
+    margin-left: 10px;
+}
+
+.folder .lblHeading1 {
+    margin-top: 30px;
+    background: transparent;
+    font-weight: 400;
+    font-size: 16px;
+    text-shadow: none;
+}
+
+.folder.ImageCard .lblHeading1, .folder.ImageFull .lblHeading1  {
+    margin-top: 60px;
+}
+
+.folder .lblHeading2 {
+    visibility: hidden;
+    height: 0px;
+}
+
+
+
+.store {
+    position: relative;
+    background-image: url('Images/store_512.png');
+    background-position: 0px 0px;
+    background-size: 160px;
+    background-repeat: no-repeat;
+    background-color: transparent;
+
+    -moz-box-shadow: none;
+    -webkit-box-shadow: none;
+    box-shadow: none;
+    padding: 10px;
+    border: 0px !important;
+}
+
+.store.ImageCard, .store.ImageFull {
+    background-size: 270px;
+    padding: 30px;
+}
+
+.gridStoreIcon {
+    width: 42px;
+    height: 28px;
+    background-image: url('Images/store.png');
+    background-size: 28px;
+    background-repeat: no-repeat;
+    background-position: 0px 0px;
+    margin-left: 10px;
+}
+
+.store .lblHeading1 {
+    margin-top: 68px;
+    background: transparent;
+    font-weight: 400;
+    font-size: 20px;
+    text-shadow: none;
+    text-align: center;
+    color: #000066;
+}
+
+.store.ImageCard .lblHeading1, .store.ImageFull .lblHeading1  {
+    margin-top: 110px;
+}
+
+.store .lblHeading2, .store .lblContent {
+    visibility: hidden;
+    height: 0px;
+}
 

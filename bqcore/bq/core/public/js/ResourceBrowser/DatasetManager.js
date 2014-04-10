@@ -45,14 +45,14 @@ Ext.define('Bisque.ResourceBrowser.DatasetManager', {
         if (!loaded)
             BQFactory.load('/data_service/dataset?view=short&tag_order=@ts:desc', callback(this, 'loadDatasets', true));
         else {
-            var list = [], date = new Date(), i;
+            var list = [], i;
 
             for ( i = 0; i < datasetList.children.length; i++) {
-                date.setISO(datasetList.children[i].ts);
-                list.push([datasetList.children[i], datasetList.children[i].name, Ext.Date.format(date, "m-d-Y")]);
+                var date = Ext.Date.parse(datasetList.children[i].ts, BQ.Date.patterns.BisqueTimestamp);
+                list.push([datasetList.children[i], datasetList.children[i].name, Ext.Date.format(date, BQ.Date.patterns.ISO8601Long)]);
             }
 
             this.store.loadData(list);
         }
     },
-}); 
+});
