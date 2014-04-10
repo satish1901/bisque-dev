@@ -153,8 +153,9 @@ class mHTD(Feature.BaseFeature):
         class Columns(tables.IsDescription):
             image   = tables.StringCol(2000,pos=1)
             mask    = tables.StringCol(2000,pos=2)
-            feature = tables.Col.from_atom(featureAtom, pos=3)
-            label   = tables.Int32Col(pos=4)
+            feature_type  = tables.StringCol(20, pos=3)
+            feature = tables.Col.from_atom(featureAtom, pos=4)
+            label   = tables.Int32Col(pos=5)
             
         with Locks(None, filename):
             with tables.openFile(filename,'a', title=self.name) as h5file: 

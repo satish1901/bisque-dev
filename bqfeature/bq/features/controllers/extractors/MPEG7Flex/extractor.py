@@ -46,7 +46,7 @@ class HTD2(Feature.BaseFeature):
     #initalize parameters
     name = 'HTD2'
     description = """Homogenious Texture Descritpor"""
-    length = 62 
+    length = 64
     type = ['texture']
         
     @calc_wrapper
@@ -219,8 +219,9 @@ class mDCD(DCD):
         class Columns(tables.IsDescription):
             image   = tables.StringCol(2000,pos=1)
             mask    = tables.StringCol(2000,pos=2)
-            feature = tables.Col.from_atom(featureAtom, pos=3)
-            label   = tables.Int32Col(pos=4)
+            feature_type  = tables.StringCol(20, pos=3)
+            feature = tables.Col.from_atom(featureAtom, pos=4)
+            label   = tables.Int32Col(pos=5)
             
         with Locks(None, filename):
             with tables.openFile(filename,'a', title=self.name) as h5file: 
@@ -298,7 +299,6 @@ class mCSD(CSD):
                     raise ValueError('Format was not supported')
                 im=np.asarray(im)
                 
-            
                 mask = cv2.imread(str(maskimp), 2)
                 if mask==None:
                     raise ValueError('Format was not supported')
@@ -325,10 +325,11 @@ class mCSD(CSD):
         """
         featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
         class Columns(tables.IsDescription):
-            image   = tables.StringCol(2000,pos=1)
-            mask    = tables.StringCol(2000,pos=2)
-            feature = tables.Col.from_atom(featureAtom, pos=3)
-            label   = tables.Int32Col(pos=4)
+            image         = tables.StringCol(2000,pos=1)
+            mask          = tables.StringCol(2000,pos=2)
+            feature_type  = tables.StringCol(20, pos=3)
+            feature       = tables.Col.from_atom(featureAtom, pos=4)
+            label         = tables.Int32Col(pos=5)
             
         with Locks(None, filename):
             with tables.openFile(filename,'a', title=self.name) as h5file: 
@@ -433,10 +434,11 @@ class mCLD(CLD):
         """
         featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
         class Columns(tables.IsDescription):
-            image   = tables.StringCol(2000,pos=1)
-            mask    = tables.StringCol(2000,pos=2)
-            feature = tables.Col.from_atom(featureAtom, pos=3)
-            label   = tables.Int32Col(pos=4)
+            image         = tables.StringCol(2000,pos=1)
+            mask          = tables.StringCol(2000,pos=2)
+            feature_type  = tables.StringCol(20, pos=3)
+            feature       = tables.Col.from_atom(featureAtom, pos=4)
+            label         = tables.Int32Col(pos=5)
             
         with Locks(None, filename):
             with tables.openFile(filename,'a', title=self.name) as h5file: 
@@ -447,29 +449,30 @@ class mCLD(CLD):
 
 
 
-#class RSD(BaseFeature):
-#    """
-#    """
-#    name = 'RSD'
-#    description = """Region Shape Descritpor"""
-#    length = 35
-#    resource = ['image']
-#    type = ['shape','texture']
-#    #child_feature = ['RSD']
-#    
-#    def calculate(self, **resource):
-#        image_uri = resource['image']
-#        
-#        with ImageImport(image_uri) as imgimp:
-#
-#            if im==None:
-#                raise ValueError('Format was not supported')
-#            im=np.asarray(im)
-#            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
-#            descriptors = extractRSD(im)
-#            
-#        
-#        return [descriptors]
+class RSD(Feature.BaseFeature):
+    """
+    """
+    name = 'RSD'
+    description = """Region Shape Descritpor"""
+    length = 35
+    type = ['shape','texture']
+    #child_feature = ['RSD']
+ 
+    @calc_wrapper    
+    def calculate(self, **resource):
+        image_uri = resource['image']
+        
+        with ImageImport(image_uri) as imgimp:
+
+            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
+            if im==None:
+                raise ValueError('Format was not supported')
+            im=np.asarray(im)
+                
+            descriptors = extractRSD(im)
+            
+        
+        return [descriptors]
     
     
         
@@ -538,8 +541,7 @@ class pRSD(Feature.BaseFeature):
                 outtable.flush()
         return
     
-    
-class mRSD(pRSD):
+class mRSD(RSD):
     """
         Initalizes table and calculates the SURF descriptor to be
         placed into the HDF5 table.
@@ -574,16 +576,13 @@ class mRSD(pRSD):
                 
         with ImageImport(image_uri) as imgimp:
             with ImageImport(mask_uri) as maskimp:
-                
 
                 im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
-                del Im
                 if im==None:
                     raise ValueError('Format was not supported')
                 im=np.asarray(im)
                 
                 mask = cv2.imread(str(maskimp), 2)
-                del Im
                 if mask==None:
                     raise ValueError('Format was not supported')
                 
@@ -610,8 +609,9 @@ class mRSD(pRSD):
         class Columns(tables.IsDescription):
             image   = tables.StringCol(2000,pos=1)
             mask    = tables.StringCol(2000,pos=2)
-            feature = tables.Col.from_atom(featureAtom, pos=3)
-            label   = tables.Int32Col(pos=4)
+            feature_type  = tables.StringCol(20, pos=3)
+            feature = tables.Col.from_atom(featureAtom, pos=4)
+            label   = tables.Int32Col(pos=5)
             
         with Locks(None, filename):
             with tables.openFile(filename,'a', title=self.name) as h5file: 

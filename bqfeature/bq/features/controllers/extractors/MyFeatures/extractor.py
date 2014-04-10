@@ -30,9 +30,9 @@ class FFTSD(Feature.BaseFeature):
         """ Append descriptors to SURF h5 table """
         #initalizing
         polygon_uri = resource['polygon']
-        xml=Feature.xml_import(polygon_uri+'?view=deep')
-        if xml.tag==self.resource[0]:
-            vertices = tree.xpath('vertex')
+        poly_xml=Feature.xml_import(polygon_uri+'?view=deep')
+        if poly_xml.tag==self.resource[0]:
+            vertices = poly_xml.xpath('vertex')
             contour = []
             for vertex in vertices:
                 contour.append([int(float(vertex.attrib['x'])),int(float(vertex.attrib['y']))])
