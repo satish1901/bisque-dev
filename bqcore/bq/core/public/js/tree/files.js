@@ -326,6 +326,7 @@ Ext.define('BQ.tree.files.Panel', {
             this.url_selected = url;
             this.fireEvent('selected', url, this);
         }
+        record.expand();
     },
 
     getSelected : function() {

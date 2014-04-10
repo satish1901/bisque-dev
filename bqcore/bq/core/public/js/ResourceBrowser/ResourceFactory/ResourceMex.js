@@ -85,12 +85,10 @@ Ext.define('Bisque.Resource.Mex.Compact', {
             html : Ext.String.ellipsis(this.resource.name || 'undefined', 24),
         });
 
-        var date = new Date();
-        date.setISO(this.resource.ts);
-
+        var date = Ext.Date.parse(this.resource.ts, BQ.Date.patterns.BisqueTimestamp);
         var type = Ext.create('Ext.container.Container', {
             cls : 'lblHeading2',
-            html : Ext.Date.format(date, "m-d-Y g:i:s a"),
+            html : Ext.Date.format(date, BQ.Date.patterns.ISO8601Long),
         });
 
         var value = Ext.create('Ext.container.Container', {

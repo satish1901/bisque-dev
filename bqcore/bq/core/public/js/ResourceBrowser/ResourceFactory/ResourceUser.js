@@ -12,4 +12,4 @@ Ext.define('Bisque.Resource.User.Grid', {
 
         return fields;
     }
-})
+});
