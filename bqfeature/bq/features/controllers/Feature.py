@@ -28,59 +28,11 @@ from .var import FEATURES_STORAGE_FILE_DIR,FEATURES_TABLES_FILE_DIR,FEATURES_TEM
 #from bq.features.controllers.service import FeatureServiceError
 log = logging.getLogger("bq.features")
 
-
-
-
-def input_resource_check( resources, feature_name, feature_archieve):
-    """
-        Checks resource type of the input to make sure
-        the correct resources have been used, if it can
-        find an alternative feature with those inputs
-        it will output the name of the new suggested feature
-    """
-    resource = {}
-    feature = feature_archieve[feature_name]
-    if sorted(resources.keys()) == sorted(feature.resource):
-        feature_name = feature.name
-    else:
-        for cf in feature.child_feature:
-            if sorted(resources.keys()) == sorted(feature_archieve[cf].resource):
-                log.debug('Reassigning from %s to %s'%(feature_name,cf))
-                feature_name = cf
-                feature = feature_archieve[feature_name]
-                break
-        else:
-            log.debug('Argument Error: No resource type(s) that matched the feature')
-            raise FeatureServiceError(400, 'Argument Error: No resource type(s) that match the feature')
-            #abort(400,'Argument Error: No resource type(s) that matched the feature')
-
-    for resource_name in resources.keys():
-
-        if resource_name not in feature.resource:
-
-            log.debug('Argument Error: %s type was not found'%resource_name)
-            raise FeatureServiceError(400, 'Argument Error: %s type was not found'%resource_name)
-            #abort(400,'Argument Error: %s type was not found'%resource_name)
-
-        elif type(resources[resource_name]) == list: #to take care of when elements have more then uri attached. not allowed in the features
-              #server for now
-
-            log.debug('Argument Error: %s type was found to have more then one URI'%resource_name)
-            #abort(400,'Argument Error: %s type was found to have more then one URI'%resource_name)
-            raise FeatureServiceError(400,'Argument Error: %s type was found to have more then one URI'%resource_name)
-        else:
-
-            resource[resource_name] = urllib2.unquote(resources[resource_name]) #decode url
-
-    return resource ,feature_name
-
-
 #wrapper for the calculator function so the output
 #is in the correct format to be easily placed in the tables
 def calc_wrapper(func):
     def calc(self,kw):
         id = self.returnhash(**kw)
-        uri = kw['image'] #hack and needs to be fixed soon
 
         results = func(self,**kw) #runs calculation
         column_count = len(self.Columns.columns)-1 #finds length of columns to determin how to parse
@@ -93,8 +45,9 @@ def calc_wrapper(func):
             if self.cache: #check for cache to see how to build the table
                 row = tuple([id])
             else:
-                row = tuple([uri])
-                row +=tuple([self.name])
+                for input in self.resource: 
+                    row +=  tuple([kw[input]])
+                row += tuple([self.name])
 
             #allows for varying column length
             for j in range(column_count): #iterating through columns returned
@@ -121,6 +74,8 @@ class BaseFeature(object):
     description = """Feature vector is the generic feature object. If this description is
     appearing in the description for this feature no description has been provided for this
     feature"""
+
+    version = '0.0.0'
 
     #parent class tag
     child_feature = []
@@ -152,7 +107,13 @@ class BaseFeature(object):
 
     #list of feature catagories. ex. color,texture...
     type = []
-
+    
+    #Confidence stands for the amount of a features correctness based on the unittest comparison.
+    #good - feature compares exactly with the linux and windows binaries
+    #fair - feature is within %5 mismatch of either linux and windows binaries
+    #poor - feature is greater than %5 mismatch of either linux and windows binaries
+    #untested - feature has not been tested in the unittest comparison
+    confidence = 'untested'
 
     def __init__ (self):
         self.path = os.path.join( FEATURES_TABLES_FILE_DIR, self.name)
@@ -413,7 +374,7 @@ def xml_import(uri):
     """ Import XML from another service and returns the tree """
     from lxml import etree
     import urllib, urllib2, cookielib
-    self.uri = uri
+    uri = uri
     from bq.config.middleware import bisque_app
     try: 
         # Try to route internally

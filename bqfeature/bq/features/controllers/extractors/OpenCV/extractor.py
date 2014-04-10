@@ -88,13 +88,14 @@ class BRISK(Feature.BaseFeature):
         featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
         class Columns(tables.IsDescription):
             image  = tables.StringCol(2000,pos=1)
-            feature   = tables.Col.from_atom(featureAtom, pos=2)
-            x         = tables.Float32Col(pos=3)
-            y         = tables.Float32Col(pos=4)
-            response  = tables.Float32Col(pos=5)
-            size      = tables.Float32Col(pos=6)
-            angle     = tables.Float32Col(pos=7)
-            octave    = tables.Float32Col(pos=8)
+            feature_type  = tables.StringCol(20, pos=2)
+            feature   = tables.Col.from_atom(featureAtom, pos=3)
+            x         = tables.Float32Col(pos=4)
+            y         = tables.Float32Col(pos=5)
+            response  = tables.Float32Col(pos=6)
+            size      = tables.Float32Col(pos=7)
+            angle     = tables.Float32Col(pos=8)
+            octave    = tables.Float32Col(pos=9)
             
         with Locks(None, filename):
             with tables.openFile(filename,'a', title=self.name) as h5file: 
@@ -183,13 +184,14 @@ class BRISKc(Feature.BaseFeature):
         featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
         class Columns(tables.IsDescription):
             image  = tables.StringCol(2000,pos=1)
-            feature   = tables.Col.from_atom(featureAtom, pos=2)
-            x         = tables.Float32Col(pos=3)
-            y         = tables.Float32Col(pos=4)
-            response  = tables.Float32Col(pos=5)
-            size      = tables.Float32Col(pos=6)
-            angle     = tables.Float32Col(pos=7)
-            octave    = tables.Float32Col(pos=8)
+            feature_type  = tables.StringCol(20, pos=2)
+            feature   = tables.Col.from_atom(featureAtom, pos=3)
+            x         = tables.Float32Col(pos=4)
+            y         = tables.Float32Col(pos=5)
+            response  = tables.Float32Col(pos=6)
+            size      = tables.Float32Col(pos=7)
+            angle     = tables.Float32Col(pos=8)
+            octave    = tables.Float32Col(pos=9)
             
         with Locks(None, filename):
             with tables.openFile(filename,'a', title=self.name) as h5file: 
@@ -277,13 +279,14 @@ class ORB(Feature.BaseFeature):
         featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
         class Columns(tables.IsDescription):
             image  = tables.StringCol(2000,pos=1)
-            feature   = tables.Col.from_atom(featureAtom, pos=2)
-            x         = tables.Float32Col(pos=3)
-            y         = tables.Float32Col(pos=4)
-            response  = tables.Float32Col(pos=5)
-            size      = tables.Float32Col(pos=6)
-            angle     = tables.Float32Col(pos=7)
-            octave    = tables.Float32Col(pos=8)
+            feature_type  = tables.StringCol(20, pos=2)
+            feature   = tables.Col.from_atom(featureAtom, pos=3)
+            x         = tables.Float32Col(pos=4)
+            y         = tables.Float32Col(pos=5)
+            response  = tables.Float32Col(pos=6)
+            size      = tables.Float32Col(pos=7)
+            angle     = tables.Float32Col(pos=8)
+            octave    = tables.Float32Col(pos=9)
             
         with Locks(None, filename):
             with tables.openFile(filename,'a', title=self.name) as h5file: 
@@ -377,13 +380,14 @@ class ORBc(Feature.BaseFeature):
         featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
         class Columns(tables.IsDescription):
             image  = tables.StringCol(2000,pos=1)
-            feature   = tables.Col.from_atom(featureAtom, pos=2)
-            x         = tables.Float32Col(pos=3)
-            y         = tables.Float32Col(pos=4)
-            response  = tables.Float32Col(pos=5)
-            size      = tables.Float32Col(pos=6)
-            angle     = tables.Float32Col(pos=7)
-            octave    = tables.Float32Col(pos=8)
+            feature_type  = tables.StringCol(20, pos=2)
+            feature   = tables.Col.from_atom(featureAtom, pos=3)
+            x         = tables.Float32Col(pos=4)
+            y         = tables.Float32Col(pos=5)
+            response  = tables.Float32Col(pos=6)
+            size      = tables.Float32Col(pos=7)
+            angle     = tables.Float32Col(pos=8)
+            octave    = tables.Float32Col(pos=9)
             
         with Locks(None, filename):
             with tables.openFile(filename,'a', title=self.name) as h5file: 
@@ -468,13 +472,14 @@ class SIFT(Feature.BaseFeature):
         featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
         class Columns(tables.IsDescription):
             image  = tables.StringCol(2000,pos=1)
-            feature   = tables.Col.from_atom(featureAtom, pos=2)
-            x         = tables.Float32Col(pos=3)
-            y         = tables.Float32Col(pos=4)
-            response  = tables.Float32Col(pos=5)
-            size      = tables.Float32Col(pos=6)
-            angle     = tables.Float32Col(pos=7)
-            octave    = tables.Float32Col(pos=8)
+            feature_type  = tables.StringCol(20, pos=2)
+            feature   = tables.Col.from_atom(featureAtom, pos=3)
+            x         = tables.Float32Col(pos=4)
+            y         = tables.Float32Col(pos=5)
+            response  = tables.Float32Col(pos=6)
+            size      = tables.Float32Col(pos=7)
+            angle     = tables.Float32Col(pos=8)
+            octave    = tables.Float32Col(pos=9)
             
         with Locks(None, filename):
             with tables.openFile(filename,'a', title=self.name) as h5file: 
@@ -660,13 +665,14 @@ class SURF(Feature.BaseFeature):
         featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
         class Columns(tables.IsDescription):
             image  = tables.StringCol(2000,pos=1)
-            feature   = tables.Col.from_atom(featureAtom, pos=2)
-            x         = tables.Float32Col(pos=3)
-            y         = tables.Float32Col(pos=4)
-            laplacian = tables.Float32Col(pos=5)
-            size      = tables.Float32Col(pos=6)
-            direction = tables.Float32Col(pos=7)
-            hessian   = tables.Float32Col(pos=8)
+            feature_type  = tables.StringCol(20, pos=2)            
+            feature   = tables.Col.from_atom(featureAtom, pos=3)
+            x         = tables.Float32Col(pos=4)
+            y         = tables.Float32Col(pos=5)
+            laplacian = tables.Float32Col(pos=6)
+            size      = tables.Float32Col(pos=7)
+            direction = tables.Float32Col(pos=8)
+            hessian   = tables.Float32Col(pos=9)
             
         with Locks(None, filename):
             with tables.openFile(filename,'a', title=self.name) as h5file: 
