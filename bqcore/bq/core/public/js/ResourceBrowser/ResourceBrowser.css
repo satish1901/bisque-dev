@@ -470,58 +470,9 @@
   .ImageCompact
 *****************************************************************/
 
-.folder {
+
+.resicon {
     position: relative;
-    background-image: url('Images/folder.svg');
-    background-position: -40px -40px;
-    background-size: 300px;
-    background-repeat: no-repeat;
-    background-color: transparent;
-
-    -moz-box-shadow: none;
-    -webkit-box-shadow: none;
-    box-shadow: none;
-    padding: 10px;
-    border: 0px !important;
-}
-
-.folder.ImageCard, .folder.ImageFull {
-    background-size: 450px;
-    padding: 30px;
-}
-
-.gridDirIcon {
-    width: 42px;
-    height: 28px;
-    background-image: url('Images/folder.svg');
-    background-size: 48px;
-    background-repeat: no-repeat;
-    background-position: -0px -5px;
-    margin-left: 10px;
-}
-
-.folder .lblHeading1 {
-    margin-top: 30px;
-    background: transparent;
-    font-weight: 400;
-    font-size: 16px;
-    text-shadow: none;
-}
-
-.folder.ImageCard .lblHeading1, .folder.ImageFull .lblHeading1  {
-    margin-top: 60px;
-}
-
-.folder .lblHeading2 {
-    visibility: hidden;
-    height: 0px;
-}
-
-
-
-.store {
-    position: relative;
-    background-image: url('Images/store_512.png');
     background-position: 0px 0px;
     background-size: 160px;
     background-repeat: no-repeat;
@@ -534,37 +485,134 @@
     border: 0px !important;
 }
 
-.store.ImageCard, .store.ImageFull {
+.resicon.ImageCard, .resicon.ImageFull {
     background-size: 270px;
     padding: 30px;
 }
 
-.gridStoreIcon {
+.resicon.gridIcon {
     width: 42px;
-    height: 28px;
-    background-image: url('Images/store.png');
+    height: 40px;
     background-size: 28px;
     background-repeat: no-repeat;
     background-position: 0px 0px;
-    margin-left: 10px;
+    margin-left: 0px;
 }
 
-.store .lblHeading1 {
-    margin-top: 68px;
+.resicon .format {
+    font-size: 16px;
+    text-overflow: ellipsis;
+}
+
+.resicon .lblHeading1 {
+    margin-top: 40px;
     background: transparent;
     font-weight: 400;
-    font-size: 20px;
+    font-size: 14px;
     text-shadow: none;
+    max-height: 40px;
+    overflow: hidden;
+}
+
+.resicon .lblHeading1>span>div {
+    display: inline;
+    text-overflow: ellipsis;
+    height: 1em;
+}
+
+.resicon.ImageCard .lblHeading1, .resicon.ImageFull .lblHeading1  {
+    margin-top: 60px;
+}
+
+.resicon .lblHeading2 {
+    visibility: hidden;
+    height: 0px;
+}
+
+/* store */
+
+.resicon.store {
+    background-image: url('Images/store_512.png');
+}
+
+.resicon.store.ImageCard, .resicon.store.ImageFull {
+}
+
+.resicon.gridIcon.store {
+    background-image: url('Images/store.png');
+    background-size: 40px;
+}
+
+.resicon.store .lblHeading1 {
+    margin-top: 68px;
+    font-size: 20px;
     text-align: center;
     color: #000066;
 }
 
-.store.ImageCard .lblHeading1, .store.ImageFull .lblHeading1  {
+.resicon.store.ImageCard .lblHeading1, .resicon.store.ImageFull .lblHeading1  {
     margin-top: 110px;
 }
 
-.store .lblHeading2, .store .lblContent {
-    visibility: hidden;
-    height: 0px;
+/* folder */
+
+.resicon.folder {
+    background-image: url('Images/folder.svg');
+    background-position: 0px 10px;
+    background-size: 185px;
+}
+
+.resicon.folder.ImageCard, .resicon.folder.ImageFull {
+    background-size: 300px;
+}
+
+.resicon.gridIcon.folder {
+    background-image: url('Images/folder.svg');
+    background-size: 45px;
+    background-position: 0px 0px;
+}
+
+/* file */
+
+.file {
+    background-image: url('Images/file.svg');
+    background-position: 10px 40px;
+    background-size: 230px;
+    background-repeat: no-repeat;
+}
+
+.file .x-panel {
+    opacity: 0.8;
+}
+
+.resicon.file {
+    background-image: url('Images/file.svg');
+    background-position: 0px 0px;
+    background-size: 160px;
+    /*padding: 15px 20px 10px 20px;*/
+}
+
+.resicon.file.ImageCard, .resicon.file.ImageFull {
+    /*background-size: 270px;*/
+}
+
+.resicon.gridIcon.file {
+    background-image: url('Images/file.svg');
+    background-size: 35px;
+    background-position: 2px 3px;
+}
+
+.resicon.file .lblHeading1 {
+    margin-top: 20px;
+    background: transparent;
+    font-weight: 400;
+    font-size: 14px;
+    text-shadow: none;
+    max-height: 50px;
+    overflow: hidden;
+}
+
+.resicon.file.ImageCard .lblHeading1, .resicon.file.ImageFull .lblHeading1  {
+    margin-top: 60px;
 }
 

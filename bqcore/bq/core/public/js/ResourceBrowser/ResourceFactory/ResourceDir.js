@@ -5,7 +5,7 @@ Ext.define('Bisque.Resource.Dir.Compact', {
     extend : 'Bisque.Resource.Compact',
     //cls: 'folder', //dima: unfortunately overwritten somewhere later
     initComponent : function() {
-        this.addCls('folder');
+        this.addCls(['resicon','folder']);
         this.callParent();
     },
 });
@@ -22,13 +22,13 @@ Ext.define('Bisque.Resource.Dir.Grid', {
     extend : 'Bisque.Resource.Grid',
     //cls: 'folder', //dima: unfortunately overwritten somewhere later
     initComponent : function() {
-        this.addCls('folder');
+        this.addCls(['resicon','folder']);
         this.callParent();
     },
 
     getFields : function(cb) {
         var fields = this.callParent();
-        fields[0] = '<div class="gridDirIcon" />';
+        fields[0] = '<div class="resicon gridIcon folder" />';
         return fields;
     },
 });
@@ -39,7 +39,7 @@ Ext.define('Bisque.Resource.Store.Compact', {
     extend : 'Bisque.Resource.Compact',
     //cls: 'folder', //dima: unfortunately overwritten somewhere later
     initComponent : function() {
-        this.addCls('store');
+        this.addCls(['resicon', 'store']);
         this.callParent();
     },
 });
@@ -56,13 +56,13 @@ Ext.define('Bisque.Resource.Store.Grid', {
     extend : 'Bisque.Resource.Grid',
     //cls: 'folder', //dima: unfortunately overwritten somewhere later
     initComponent : function() {
-        this.addCls('store');
+        this.addCls(['resicon','store']);
         this.callParent();
     },
 
     getFields : function(cb) {
         var fields = this.callParent();
-        fields[0] = '<div class="gridStoreIcon" />';
+        fields[0] = '<div class="resicon gridIcon store" />';
         return fields;
     },
 });
