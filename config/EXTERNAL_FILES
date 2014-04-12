@@ -12,8 +12,9 @@
 06B0FFFCAFA78EBE6843BDAADB14939554A85B66-ext-4.2.1-gpl.zip=extjs.zip
 
 # Bioformats 4.4.7
-8EA77666DD889CE5AEBFB4230B946BA5B5E28AD8-bioformats-pack.zip
-
+#8EA77666DD889CE5AEBFB4230B946BA5B5E28AD8-bioformats-pack.zip
+# Bioformats 5.0.1
+526BE61EB787CA7AAACA6AC239225D0CD310E661-bftools.5.0.1.zip=bioformats-pack.zip
 
 # PLATFORM dependent files
 # These sections titles use shell like 'glob'ing to match
@@ -22,7 +23,8 @@
 #   platform.platform().replace('-', '-%s-'%platform.architecture()[0], 1)
 
 [Windows-64bit-*]
-683E4322844C4A5C40571D92150A7F98211AF08F-imgcnv-Windows-64bit.zip=imgcnv.zip
+EBF3EFAC596C1F1E03DA47F941B3A9250D61A502-imgcnv-Windows-64bit.zip=imgcnv.zip
+463B3F04091CA0F78F671E7E7E0CCE7A16BFB30E-openslide-bisque-Windows-64bit.1.0.1.zip=openslide-bisque.zip
 743FB2442628209894B382BCA2D7ABAEF37116D6-feature_extractors-Windows-64bit.zip=feature_extractors.zip
 
 [Linux-64bit-*-debian-*]

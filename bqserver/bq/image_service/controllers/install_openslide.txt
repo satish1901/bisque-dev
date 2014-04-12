@@ -1,7 +1,11 @@
 Windows:
 #pip install pil
-install pre-packaged PIL with JPEG support
+#pip install pillow
+#install pre-packaged PIL with JPEG support
+install pre-packaged PILLOW with JPEG support
 pip install openslide-python
+or
+pip install --upgrade openslide-python
 copy libopenslide dlls to bqenv\Scripts\
 
 Linux:
