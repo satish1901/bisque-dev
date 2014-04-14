@@ -69,13 +69,13 @@ function I = imreadND(url, user, password)
                           'single', 'double' });
     pixel_type_str = sprintf('%s %d', info.image_pixel_format, info.image_pixel_depth);
     if ~pf_map.isKey(pixel_type_str),
-        throw('Image pixel format is not supported');
+        throw(MException('Image pixel format is not supported'));
     end
     pixel_type = pf_map(pixel_type_str);
 
     % fix for t and z that may be reported as 0, on which reshape breaks
-    if info.image_num_t == 0, info.image_num_t = 1; end
-    if info.image_num_z == 0, info.image_num_z = 1; end
+    if info.image_num_t < 1, info.image_num_t = 1; end
+    if info.image_num_z < 1, info.image_num_z = 1; end
     
     %% fetch image data stream and reshape it
     purl.pushQuery('format', 'raw');
