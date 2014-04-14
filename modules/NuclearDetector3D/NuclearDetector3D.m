@@ -120,6 +120,8 @@ function NuclearDetector3D(mex_url, access_token, image_url, varargin)
         end
         
         %% Store results
+        totalStart = tic;
+        fprintf('Storing results\n');
         session.update('90% - storing results');    
         outputs = session.mex.addTag('outputs');
         
@@ -140,6 +142,7 @@ function NuclearDetector3D(mex_url, access_token, image_url, varargin)
         
         %g.save('output.xml');             
         session.finish();
+        fprintf('Storing time: %.4f seconds\n', toc(totalStart));
     catch err
         ErrorMsg = [err.message, 10, 'Stack:', 10];
         for i=1:size(err.stack,1)
