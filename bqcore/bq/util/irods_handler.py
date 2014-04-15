@@ -40,12 +40,15 @@ class IrodsConnection(object):
         irods_url = urlparse.urlparse(url)
         assert irods_url.scheme == 'irods'
         env = parse_net.match(irods_url.netloc).groupdict()
-        log.debug ("irods_handler url %s -> env %s" % (url, env))
 
         self.user  = user or env['user'] or irods_env.getRodsUserName()
         self.host  = host or env['host'] or irods_env.getRodsHost()
         self.port  = port or env['port'] or irods_env.getRodsPort() or 1247
         self.password = password or env['password']
+
+        log.debug ("irods_connection url %s -> env %s ->%s" , url, env,
+                   {'user':self.user, 'pass': self.password})
+
 
         path = ''
         zone = ''

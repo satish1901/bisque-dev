@@ -67,7 +67,6 @@ from bq.core import  identity
 from bq.core.identity import set_admin_mode
 #from bq.core.service import ServiceMixin
 #from bq.core.service import ServiceController
-from bq.core import  identity
 from bq.exceptions import IllegalOperation, DuplicateFile, ServiceError
 from bq.util.timer import Timer
 from bq.util.compat import OrderedDict
@@ -255,7 +254,7 @@ class StoreServer(TGController):
                     log.error ('multiple  store found %s  - %s', best, new_path)
                     break
                 log.debug ("Matched %s %s ", name, partial)
-                return store, partial.split ('/')
+                return store, partial.replace('//','/').split ('/')
         return None,None
 
     def find_path_by_blob(self, path, **kw):
@@ -286,8 +285,8 @@ class StoreServer(TGController):
 
         :param path: a blob path for the store
         """
-        log.info("InsertBlob %s into store", path)
         store, path = self.find_store_by_blob (path)
+        log.info("Insert_blob_path store %s path %s ", store, path)
         if store is None:
             # No matching store has been created, but one may have matched.
             if path is None:
@@ -302,7 +301,7 @@ class StoreServer(TGController):
     def delete_blob_path(self, path):
         """ Delete an element given the blob path
         """
-        q = find_path_by_blob(path)
+        q = self.find_path_by_blob(path)
         if q:
             data_service.del_resource(q)
 

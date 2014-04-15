@@ -171,10 +171,10 @@ class BlobStorage(object):
     path     = "unassigned format_path"  # Storage path using scheme
     readonly = False      # store is readonly or r/w
     top      = ""         # top path useful to identify URLs as part of a store
+    format_path = "<undefined>"
 
     def __str__(self):
         return "<%s>" % (self.format_path)
-
     def valid(self, ident):
         'determine whether this store can access the identified file'
     def localpath(self, ident):
@@ -224,8 +224,8 @@ class LocalStorage(BlobStorage):
 
     def write(self, fp, filename, user_name=None, uniq=None):
         'store blobs given local path'
-        if '$' in self.top:
-            top_path  = url2localpath(formatPath(self.top, user_name, filename, uniq))
+        if '$' in self.top_path:
+            top_path  = url2localpath(formatPath(self.top_path, user_name, filename, uniq))
         else:
             top_path  = self.top_path
         filepath = formatPath(self.format_path, user_name, filename, uniq)
@@ -234,10 +234,10 @@ class LocalStorage(BlobStorage):
         _mkdir (os.path.dirname(localpath))
         for x in xrange(4):
             if not os.path.exists (localpath):
-                log.debug('local.write: %s -> %s' % (filename, localpath))
+                log.debug('local.write: %s -> %s' , filename, localpath)
                 #patch for no copy file uploads - check for regular file or file like object
                 move_file (fp, localpath)
-                ident = localpath[len(self.top_path):]
+                ident = localpath[len(top_path):]
                 if ident[0] == '/':
                     ident = ident[1:]
                 #ident = "file://%s" % localpath
@@ -263,7 +263,7 @@ class LocalStorage(BlobStorage):
 
     def delete(self, ident):
         fullpath = os.path.join(self.top[5:], ident) # remove file
-        log.debug("deleting %s" %  fullpath)
+        log.debug("deleting %s" ,  fullpath)
         os.remove (fullpath)
 
     def __str__(self):
@@ -291,17 +291,17 @@ class iRodsStorage(BlobStorage):
 
         if self.password:
             self.password = self.password.strip('"\'')
-        log.debug('irods.user: %s irods.password: %s' % (self.user, self.password))
+        log.debug('irods.user: %s irods.password: %s' , self.user, self.password)
         # Get the constant portion of the path
         self.top = path.split('$')[0]
-        log.info("created irods store %s (%s)" % (self.format_path, self.top))
+        log.info("created irods store %s (%s)" , self.format_path, self.top)
 
     def valid(self, irods_ident):
         return  irods_ident.startswith(self.top) and irods_ident
 
     def write(self, fp, filename, user_name=None, uniq=None):
         blob_ident = formatPath(self.format_path, user_name, filename, uniq)
-        log.debug('irods.write: %s -> %s' % (filename, blob_ident))
+        log.debug('irods.write: %s -> %s' , filename, blob_ident)
         flocal = irods_handler.irods_push_file(fp, blob_ident, user=self.user, password=self.password)
         return blob_ident, flocal
 
@@ -313,12 +313,11 @@ class iRodsStorage(BlobStorage):
             log.exception ("Error fetching %s ", irods_ident)
         return None
 
-
-    def delete(self, ident):
+    def delete(self, irods_ident):
         try:
-            irods_handler.irods_delete(file, irods_ident, user=self.user, password=self.password)
+            irods_handler.irods_delete_file(irods_ident, user=self.user, password=self.password)
         except irods_handler.IrodsError, e:
-            log.exception ("Error deleteing %s ", ident)
+            log.exception ("Error deleteing %s ", irods_ident)
         return None
 
 
@@ -366,7 +365,7 @@ class S3Storage(BlobStorage):
             except:
                 raise ServiceError('error while creating bucket in s3 blob storage')
 
-        log.info("created S3 store %s (%s)" % (self.format_path, self.top))
+        log.info("created S3 store %s (%s)" , self.format_path, self.top)
 
     def valid(self, s3_ident):
         return s3_ident.startswith(self.top) and s3_ident
@@ -374,7 +373,7 @@ class S3Storage(BlobStorage):
     def write(self, fp, filename, user_name=None, uniq=None):
         'write a file to s3'
         blob_ident = formatPath(self.format_path, user_name, filename, uniq)
-        log.debug('s3.write: %s -> %s' % (filename, blob_ident))
+        log.debug('s3.write: %s -> %s' , filename, blob_ident)
         s3_key = blob_ident.replace("s3://","")
         flocal = s3_handler.s3_push_file(fp, self.bucket , s3_key)
         return blob_ident, flocal
@@ -385,7 +384,7 @@ class S3Storage(BlobStorage):
         path = s3_handler.s3_fetch_file(self.bucket, s3_key)
         return  path
 
-    def delete(self, ident):
+    def delete(self, s3_ident):
         s3_key = s3_ident.replace("s3://","")
         s3_handler.s3_delete_file(self.bucket, s3_key)
 
@@ -413,18 +412,18 @@ class HttpStorage(BlobStorage):
 
         if self.password:
             self.password = self.password.strip('"\'')
-        log.debug('http.user: %s http.password: %s' % (self.user, self.password))
+        log.debug('http.user: %s http.password: %s' , self.user, self.password)
         # Get the constant portion of the path
         self.top = path.split('$')[0]
-        log.info("created irods store %s (%s)" % (self.format_path, self.top))
+        log.info("created irods store %s (%s)" , self.format_path, self.top)
 
     def valid(self, http_ident):
         return  http_ident.startswith(self.top) and http_ident
 
-    def write(self, fp, filename, user_name=None):
+    def write(self, fp, filename, user_name=None, uniq=None):
         raise IllegalOperation('HTTP(S) write is not implemented')
 
-    def localpath(self, irods_ident):
+    def localpath(self, http_ident):
         raise IllegalOperation('HTTP(S) localpath is not implemented')
 
 class HttpsStorage (HttpStorage):
@@ -455,8 +454,8 @@ def make_storage_driver(path, **kw):
     scheme = urlparse.urlparse(path).scheme.lower()
     if scheme in supported_storage_schemes:
         store = storage_drivers.get(scheme)
-        log.debug ("creating %s with %s " % (scheme, path))
+        log.debug ("creating %s with %s " , scheme, path)
         return store(path=path, **kw)
-    log.error ('request storage scheme %s unavailable' % scheme)
+    log.error ('request storage scheme %s unavailable' , scheme)
     return None
 
