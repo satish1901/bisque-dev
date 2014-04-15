@@ -354,11 +354,11 @@ Ext.define('BQ.upload.Item', {
     }, // hysteresis in ms
 
     constructor: function(config) {
-        this.addEvents({
+        /*this.addEvents({
             'fileuploaded' : true,
             'filecanceled' : true,
             'fileerror'    : true,
-        });
+        });*/
         this.callParent(arguments);
         return this;
     },
@@ -629,8 +629,9 @@ Ext.define('BQ.upload.Item', {
         //resource.uri  = this.file.name;
         resource.name = this.file.name;
         var path = this.file.relativePath || this.file.webkitRelativePath || this.file.name || this.file.fileName;
-        if (this.path) {
-            path = this.path.getPath() + '/' + path;
+        var prefix = this.path.getPath();
+        if (this.path && prefix && prefix.length>0) {
+            path = prefix + '/' + path;
             path = path.replace('//', '/');
         }
         if (path && path !== '') {
@@ -754,7 +755,7 @@ Ext.define('BQ.upload.Panel', {
     defaults: BQ.upload.DEFAULTS,
 
     constructor: function(config) {
-        this.addEvents({
+        /*this.addEvents({
             'fileuploaded'   : true,
             'filesuploaded'  : true,
             'datasetcreated' : true,
@@ -762,7 +763,7 @@ Ext.define('BQ.upload.Panel', {
             'filescanceled'  : true,
             'fileadded'      : true,
             'fileerror'      : true,
-        });
+        });*/
         this.callParent(arguments);
         return this;
     },
@@ -983,7 +984,6 @@ Ext.define('BQ.upload.Panel', {
         //--------------------------------------------------------------------------------------
         // items
         //--------------------------------------------------------------------------------------
-        var path = this.getPreferredPath();
         this.items = [{
             xtype: 'panel',
             border: 0,
@@ -1003,7 +1003,7 @@ Ext.define('BQ.upload.Panel', {
                     itemId: 'upload_path',
                     height: 35,
                     prefix: 'Upload to: ',
-                    path: path,
+                    path: this.getPreferredPath(),
                     listeners: {
                         scope: this,
                         browse: this.browsePath,
@@ -1018,6 +1018,10 @@ Ext.define('BQ.upload.Panel', {
         }];
 
         this.callParent();
+        BQ.Preferences.get({
+            key : 'Uploader',
+            callback : Ext.bind(this.onPreferences, this),
+        });
     },
 
     afterRender : function() {
@@ -1510,29 +1514,71 @@ Ext.define('BQ.upload.Panel', {
         }
     },
 
-    getPreferredPath : function() {
-        //return '/' + Ext.Date.format(new Date(), 'Y-m-d');
-        return Ext.Date.format(new Date(), 'Y-m-d');
+    getPreferredPath : function(template) {
+        var t = template || '{date_iso}';
+        var datenow = new Date();
+        var vars = {
+            user: BQApp.user && BQApp.user.user_name ? BQApp.user.user_name : '', // dima: not inited, requires later update
+            date_iso: Ext.Date.format(datenow, 'Y-m-d'),
+            datetime_iso: Ext.Date.format(datenow, 'Y-m-d H:i:s'),
+            d: Ext.Date.format(datenow, 'd'),
+            D: Ext.Date.format(datenow, 'D'),
+            j: Ext.Date.format(datenow, 'j'),
+            l: Ext.Date.format(datenow, 'l'),
+            N: Ext.Date.format(datenow, 'N'),
+            S: Ext.Date.format(datenow, 'S'),
+            w: Ext.Date.format(datenow, 'w'),
+            z: Ext.Date.format(datenow, 'z'),
+            W: Ext.Date.format(datenow, 'W'),
+            F: Ext.Date.format(datenow, 'F'),
+            m: Ext.Date.format(datenow, 'm'),
+            M: Ext.Date.format(datenow, 'M'),
+            n: Ext.Date.format(datenow, 'n'),
+            t: Ext.Date.format(datenow, 't'),
+            L: Ext.Date.format(datenow, 'L'),
+            o: Ext.Date.format(datenow, 'o'),
+            Y: Ext.Date.format(datenow, 'Y'),
+            y: Ext.Date.format(datenow, 'y'),
+            a: Ext.Date.format(datenow, 'a'),
+            A: Ext.Date.format(datenow, 'A'),
+            g: Ext.Date.format(datenow, 'g'),
+            G: Ext.Date.format(datenow, 'G'),
+            h: Ext.Date.format(datenow, 'h'),
+            H: Ext.Date.format(datenow, 'H'),
+            i: Ext.Date.format(datenow, 'i'),
+            s: Ext.Date.format(datenow, 's'),
+            u: Ext.Date.format(datenow, 'u'),
+            O: Ext.Date.format(datenow, 'O'),
+            P: Ext.Date.format(datenow, 'P'),
+            T: Ext.Date.format(datenow, 'T'),
+            Z: Ext.Date.format(datenow, 'Z'),
+            c: Ext.Date.format(datenow, 'c'),
+            U: Ext.Date.format(datenow, 'U'),
+            MS: Ext.Date.format(datenow, 'MS'),
+            time: Ext.Date.format(datenow, 'time'),
+            timestamp: Ext.Date.format(datenow, 'timestamp'),
+        };
+        for (var v in vars)
+            t = t.replace( '{'+v+'}', vars[v] );
+
+        //return Ext.Date.format(new Date(), 'Y-m-d');
+        return t;
     },
 
     pathUserToBlob : function(path) {
-        var user = BQApp.user.user_name;
-        var p = '/blob_service/store/local/'+user+'/'+path;
-        return p.replace('//', '/');
+        var p = path;
+        if (p[0] !== '/')
+            p = '/local/'+p;
+        //var user = BQApp.user.user_name;
+        //var p = '/blob_service/store/local/'+user+'/'+path;
+        p = '/blob_service/store'+p;
+        p = p.replace('//', '/');
+        return p;
     },
 
     pathBlobToUser : function(path) {
+        //var user = BQApp.user.user_name;
         path = path.replace('/blob_service/store', '');
-        var p = path.split('/');
-        if (p.length>2 && p[1] === 'local') {
-            p.splice(1,2);
-            path = p.join('/');
-            path = path==='' ? '/' : path;
-        } else if (p.length>1 && p[1] === 'local') {
-            path = path.replace('/local', '/');
-        }
-        if (path[0] === '/')
-            path = path.slice(1);
         return path;
     },
 
@@ -1566,7 +1612,7 @@ Ext.define('BQ.upload.Panel', {
                 listeners: {
                     scope: this,
                     selected: function(url) {
-                        this.onPathChanged(this.pathBlobToUser(url));
+                        this.onPathChanged(this, this.pathBlobToUser(url));
                         //this.queryById('upload_path').setPath(path);
                     },
                 },
@@ -1574,9 +1620,13 @@ Ext.define('BQ.upload.Panel', {
         }).show();
     },
 
-    onPathChanged : function(path) {
+    onPathChanged : function(cnt, path) {
         this.queryById('upload_path').setPath(path);
+    },
 
+    onPreferences: function(pref) {
+        this.preferences = pref;
+        this.queryById('upload_path').setPath(this.getPreferredPath(this.preferences.initial_path));
     },
 
 });

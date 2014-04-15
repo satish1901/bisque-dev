@@ -8,6 +8,10 @@
 
   License: FreeBSD
 
+  Events:
+      browse
+      changed
+
   Version: 1
 
   History:
@@ -30,10 +34,10 @@ Ext.define('BQ.picker.Path', {
     },
 
     constructor : function(config) {
-        this.addEvents({
+        /*this.addEvents({
             'browse' : true,
             'changed' : true,
-        });
+        });*/
         this.callParent(arguments);
     },
 
