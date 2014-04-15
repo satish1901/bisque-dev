@@ -380,9 +380,9 @@ Ext.define('BQ.tree.files.Panel', {
     },
 
     createFolder: function() {
-        var me = this;
-        var url = this.url_selected;
-        Ext.Msg.prompt('Create folder', 'Please enter new folder\' name:', function(btn, text) {
+        //Ext.Msg.prompt('Create folder', 'Please enter new folder\' name:', function(btn, text) {
+        BQ.MessageBox.prompt('Create folder', 'Please enter new folder\' name:', function(btn, text) {
+            var me = this;
             if (btn !== 'ok') return;
 
             var selection = me.getSelectionModel().getSelection();
@@ -398,6 +398,13 @@ Ext.define('BQ.tree.files.Panel', {
                 type : 'dir',
             });
             me.getSelectionModel().select(node);
+        }, this, undefined, undefined, function(v) {
+            //| ; , ! @ # $ ( ) / \ " ' ` ~ { } [ ] = + & ^ <space> <tab>
+            var regex = /[\s\n\f\r\t\v\0\*\?\|;,!@#$\(\)\\\/\"\'\`\~\{\}\[\]=+&\^]/gi;
+            if (regex.test(v))
+                return 'Invalid characters are present';
+            else
+                return true;
         });
     },
 

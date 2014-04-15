@@ -625,7 +625,7 @@ Ext.define('BQ.Application.Toolbar', {
             var uri = t.uri;
             this.queryById('menu_create').insert(3, {
                 text    : 'Create a new <b>'+name+'</b>',
-                itemId  : 'menu_create_'+name,
+                itemId  : 'menu_create_'+name.replace(' ', '_'),
                 handler: Ext.Function.pass(this.createNewTemplate, [name, uri], this),
                 scope   : this,
             });
