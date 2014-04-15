@@ -137,6 +137,12 @@ Ext.define('BQ.data.proxy.Files', {
 
 });
 
+//--------------------------------------------------------------------------------------
+// BQ.tree.files.Panel
+// events:
+//    selected -
+//--------------------------------------------------------------------------------------
+
 Ext.namespace('BQ.tree.files');
 BQ.tree.files.icons = {
    store: 'icon-store',
@@ -400,7 +406,7 @@ Ext.define('BQ.tree.files.Panel', {
             me.getSelectionModel().select(node);
         }, this, undefined, undefined, function(v) {
             //| ; , ! @ # $ ( ) / \ " ' ` ~ { } [ ] = + & ^ <space> <tab>
-            var regex = /[\s\n\f\r\t\v\0\*\?\|;,!@#$\(\)\\\/\"\'\`\~\{\}\[\]=+&\^]/gi;
+            var regex = /[\n\f\r\t\v\0\*\?\|;,!@#$\(\)\\\/\"\'\`\~\{\}\[\]=+&\^]|^\s+/gi;
             if (regex.test(v))
                 return 'Invalid characters are present';
             else
