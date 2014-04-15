@@ -666,8 +666,8 @@ class SliceService(object):
         try:
             new_w=x2-x1
             new_h=y2-y1
-            data_token.dims['image_num_z']  = z2 - z1 + 1
-            data_token.dims['image_num_t']  = t2 - t1 + 1
+            data_token.dims['image_num_z']  = max(1, z2 - z1 + 1)
+            data_token.dims['image_num_t']  = max(1, t2 - t1 + 1)
             if new_w>0: data_token.dims['image_num_x'] = new_w+1
             if new_h>0: data_token.dims['image_num_y'] = new_h+1
         finally:
