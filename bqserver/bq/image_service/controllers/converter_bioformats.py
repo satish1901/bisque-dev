@@ -408,6 +408,7 @@ class ConverterBioformats(ConverterBase):
         ometiff = kw['intermediate']
 
         if z1>z2 and z2==0 and t1>t2 and t2==0 and x1==0 and x2==0 and y1==0 and y2==0:
+            # create an intermediate OME-TIFF, BUG IN BF - this only creates 1 channel output
             return cls.convertToOmeTiff(ifnm, ofnm=ofnm, series=series, extra=['-z', str(z1-1), '-timepoint', str(t1-1)])
         else:
             # create an intermediate OME-TIFF
