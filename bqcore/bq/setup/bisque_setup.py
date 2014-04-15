@@ -985,10 +985,8 @@ def install_engine_defaults(params):
             params[k] = ENGINE_VARS[k]
         print "  %s=%s" % (k,params[k])
 
-    if getanswer("Change a site variable", 'Y')!='Y':
-        return params
-
-    params = modify_site_cfg(ENGINE_QUESTIONS, params,  append=False)
+    if getanswer("Change a site variable", 'Y')=='Y':
+        params = modify_site_cfg(SITE_QUESTIONS, params)
 
     if getanswer("Update servers", 'Y' if new_install else 'N', 'Modify [server] section of site.cfg') == 'Y':
         server_params = { 'e1.proxyroot' : params['bisque.root'], 'e1.url' : params['bisque.engine'], }

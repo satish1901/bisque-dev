@@ -69,14 +69,13 @@ from bq.util.fileapp import BQFileApp
 from pylons.controllers.util import forward
 from repoze.what import predicates
 
+from bq.core import  identity
 from bq.core.identity import set_admin_mode
 from bq.core.service import ServiceMixin
 from bq.core.service import ServiceController
-from bq.core import  identity
 from bq.exceptions import IllegalOperation, DuplicateFile, ServiceError
 from bq.util.timer import Timer
 from bq.util.sizeoffmt import sizeof_fmt
-from bq.util.compat import OrderedDict
 
 
 from bq import data_service
@@ -133,6 +132,8 @@ def guess_type(filename):
 
 def transfer_msg(flocal, transfer_t):
     'return a human string for transfer time and size'
+    if not os.path.exists(flocal):
+        return "NO FILE to measure %s" % flocal
     fsize = os.path.getsize (flocal)
     name  = os.path.basename(flocal)
     if transfer_t == 0:
@@ -142,43 +143,79 @@ def transfer_msg(flocal, transfer_t):
         time=timedelta(seconds=transfer_t),
         speed = sizeof_fmt(fsize/transfer_t))
 
-class StorageManager(object):
+
+class TransferTimer(Timer):
+    def __init__(self, path=''):
+        super(TransferTimer, self).__init__()
+        self.path = path
+    def __exit__(self, *args):
+        Timer.__exit__(self, *args)
+        if log.isEnabledFor(logging.INFO):
+            log.info (transfer_msg (self.path, self.interval))
+
+
+
+######################################################
+# Store manageer
+
+
+class DriverManager(object):
     'Manage multiple stores'
 
     def __init__(self):
-        self.stores = store_resource.load_stores()
-        log.info ('configured stores %s' ,  ','.join( str(x) for x in self.stores.keys()))
+        self.drivers = blob_storage.load_storage_drivers()
+        log.info ('configured stores %s' ,  ','.join( str(x) for x in self.drivers.keys()))
 
     def valid_blob(self, blob_id):
         "Determin if uripath is supported by configured blob_storage (without fetching)"
-        for store in self.stores.values():
-            if store.valid(blob_id):
+        for driver in self.drivers.values():
+            if driver.valid(blob_id):
                 return True
         return False
 
     def fetch_blob(self, blob_id):
+        """Find a driver matching the prefix of blob_id
+        """
         path = None
-        with Timer() as t:
-            for store in self.stores.values():
-                if store.valid(blob_id):
-                    path =  store.localpath(blob_id)
-                    break
-        if log.isEnabledFor(logging.INFO) and path:
-            log.info (transfer_msg (path, t.interval))
+        for driver in self.drivers.values():
+            if driver.valid(blob_id):
+                with TransferTimer() as t:
+                    path = t.path =  driver.localpath(blob_id)
+                break
         if path is None:
             log.warn ("failed to fetch blob %s" , blob_id)
         return path
 
-    def save_blob(self, fileobj, filename, user_name, uniq, relpath=None):
+    def save_blob(self, fileobj, filename, user_name, uniq):
         filename_safe = filename.encode('ascii', 'xmlcharrefreplace')
-        for store_id, store in self.stores.items():
+        if filename[0]=='/':
+            return self.save_2store(fileobj, filename, user_name, uniq)
+        else:
+            return self.save_relative(fileobj, filename, user_name, uniq)
+
+    def save_2store (self, fileobj, filename, user_name, uniq):
+        empty, store_name, path = filename.split('/', 2)
+        driver = self.drivers[store_name]
+        try:
+            if driver.readonly:
+                raise IllegalOperation("Write to readonly store")
+            driveruri, localpath =  driver.write(fileobj, path, user_name = user_name, uniq=uniq)
+        except DuplicateFile, e:
+            raise e
+        except Exception, e:
+            log.exception('storing blob failed')
+        return (None,None)
+
+
+    def save_relative(self, fileobj, filename, user_name, uniq):
+        for driver_id, driver in self.drivers.items():
             try:
                 # blob storage part
-                if store.readonly:
-                    log.debug("skipping %s: is readonly" , store_id)
+                if driver.readonly:
+                    log.debug("skipping %s: is readonly" , driver_id)
                     continue
-                storeuri =  store.write(fileobj, filename_safe, user_name = user_name, uniq=uniq, relpath=relpath)
-                return storeuri
+                driveruri, localpath =  driver.write(fileobj, filename, user_name = user_name, uniq=uniq)
+                return driveruri, localpath
             except DuplicateFile, e:
                 raise e
             except Exception, e:
@@ -186,7 +223,7 @@ class StorageManager(object):
         return (None,None)
 
     def __str__(self):
-        return "stores%s" % [ "(%s, %s)" % (k,v) for k,v in self.stores.items() ]
+        return "drivers%s" % [ "(%s, %s)" % (k,v) for k,v in self.drivers.items() ]
 
 
 
@@ -199,11 +236,13 @@ class BlobServer(RestController, ServiceMixin):
     '''Manage a set of blob files'''
     service_type = "blob_service"
 
-    store = store_resource.StoreServer ()
+    # do this on init
+    #store = store_resource.StoreServer ()
 
     def __init__(self, url ):
         ServiceMixin.__init__(self, url)
-        self.stores = StorageManager()
+        self.drive_man = DriverManager()
+        self.__class__.store = store_resource.StoreServer(self.drive_man.drivers)
 
 #################################
 # service  functions
@@ -379,21 +418,24 @@ class BlobServer(RestController, ServiceMixin):
                 if fhash is None:
                     resource.set('resource_uniq', data_service.resource_uniq() )
                 if fileobj is not None:
-                    resource =  self.store_fileobj(resource, fileobj)
+                    resource =  self._store_fileobj(resource, fileobj)
                 else:
-                    resource =  self.store_reference(resource, resource.get('value') )
+                    resource =  self._store_reference(resource, resource.get('value') )
                 #smokesignal.emit(SIG_NEWBLOB, self.store, path=resource.get('value'), resource_uniq=resource.get ('resource_uniq'))
-                self.store.insert_path( path=resource.get('value'),
-                                        resource_name = resource.get('name'),
-                                        resource_uniq = resource.get ('resource_uniq'))
+
+                self.store.insert_blob_path( path=resource.get('value'),
+                                             resource_name = resource.get('name'),
+                                             resource_uniq = resource.get ('resource_uniq'))
                 return resource
             except DuplicateFile, e:
-                log.warn("Duplicate file. reseting uniq")
-                resource.set('resource_uniq', data_service.resource_uniq())
+                log.warn("Duplicate file. renaming")
+                #resource.set('resource_uniq', data_service.resource_uniq())
+                resource.set('name', '%s-%s' % (resource.get('name'), resource.get('resource_uniq')[3:7+x]))
         raise ServiceError("Unable to store blob")
 
-    def store_fileobj(self, resource, fileobj ):
-        'Create a blob from a file'
+    def _store_fileobj(self, resource, fileobj ):
+        'Create a blob from a file .. used by store_blob'
+        filename  = resource.get ('name') or urlref.rsplit('/',1)[1]
         user_name = identity.current.user_name
         # dima: make sure local file name will be ascii, should be fixed later
         # dima: unix without LANG or LC_CTYPE will through error due to ascii while using sys.getfilesystemencoding()
@@ -402,17 +444,14 @@ class BlobServer(RestController, ServiceMixin):
         #filename_safe = filename.encode('ascii', 'replace')
         filename = resource.get('name') or  getattr(fileobj, 'name') or ''
         uniq     = resource.get('resource_uniq')
-        relpath  = resource.get('value', None)
 
-        with Timer() as t:
-            blob_id, flocal = self.stores.save_blob(fileobj, filename, user_name = user_name, uniq=uniq, relpath=relpath)
+        with TransferTimer() as t:
+            blob_id, t.path = self.drive_man.save_blob(fileobj, filename, user_name = user_name, uniq=uniq)
 
-        if log.isEnabledFor(logging.INFO):
-            log.info (transfer_msg (flocal, t.interval))
 
-        resource.set('name', filename)
+        log.debug ("_store_fileobj %s %s", blob_id, t.path)
+        resource.set('name', os.path.basename(filename))
         resource.set('value', blob_id)
-
         #resource.set('resource_uniq', uniq)
         return self.create_resource(resource)
 
@@ -422,21 +461,26 @@ class BlobServer(RestController, ServiceMixin):
             return urlref [5:]
         return None
 
-    def store_reference(self, resource, urlref = None ):
-        'create a blob from a blob_id'
-        filename  = resource.get ('name') or urlref.rsplit('/',1)[1]
-        if not self.stores.valid_blob(urlref):
+    def _store_reference(self, resource, urlref ):
+        """create a reference to a blob based on its URL
+
+        @param resource: resource an etree resource
+        @param urlref:   An URL to configured store or a local file url (which may be moved to a valid store
+        @return      : The created resource
+        """
+        if not self.drive_man.valid_blob(urlref):
             # We have a URLref that is not part of the sanctioned stores:
             # We will move it
-            log.debug("Can't put %s into stores : %s", urlref, self.stores)
+            log.debug("Can't match %s in stores : %s", urlref, self.drive_man)
             localpath = self._make_url_local(urlref)
             if localpath:
                 with open(localpath) as f:
-                    return self.store_fileobj(resource, f)
+                    return self._store_fileobj(resource, f)
             else:
-                log.error("Can't put %s into stores : %s", urlref, self.stores)
+                log.error("Can't put %s into stores : %s", urlref, self.drive_man)
                 raise IllegalOperation("%s could not be moved to a valid store" % urlref)
-        resource.set ('name' ,filename)
+        filename  = resource.get ('name') or urlref.rsplit('/',1)[1]
+        resource.set ('name' ,os.path.basename(filename))
         resource.set ('value', urlref)
 
         return self.create_resource(resource)
@@ -447,7 +491,7 @@ class BlobServer(RestController, ServiceMixin):
         path = None
         if resource is not None and resource.resource_value:
             blob_id  = resource.resource_value
-            path = self.stores.fetch_blob(blob_id)
+            path = self.drive_man.fetch_blob(blob_id)
             log.debug('using %s full=%s localpath=%s' , uniq_ident, blob_id, path)
             return path
         raise IllegalOperation("bad resource value %s" % uniq_ident)
@@ -497,11 +541,11 @@ class BlobServer(RestController, ServiceMixin):
     def move_resource_store(self, srcstore, dststore):
         """Find all resource on srcstore and move to dststore
 
-        :param srcstore: Source store  ID
-        :param dststore: Destination store ID
+        @param srcstore: Source store  ID
+        @param dststore: Destination store ID
         """
-        src_store = self.stores.get(srcstore)
-        dst_store = self.stores.get(dststore)
+        src_store = self.drive_man.get(srcstore)
+        dst_store = self.drive_man.get(dststore)
         if src_store is None or dst_store is None:
             raise IllegalOperation("cannot access store %s, %s" % (srcstore, dststore))
         if src_store == dst_store:

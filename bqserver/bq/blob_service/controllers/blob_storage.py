@@ -62,6 +62,7 @@ from bq.util.paths import data_path
 from bq.util.mkdir import _mkdir
 from bq.util.hash import make_short_uuid
 from bq.util.http import get_file
+from bq.util.compat import OrderedDict
 
 
 log = logging.getLogger('bq.blobs.storage')
@@ -88,26 +89,79 @@ except ImportError:
 
 
 
-def formatPath (format_path, user, filename, uniq, **params):
+def formatPath(format_path, user, filename, uniq, **params):
     """Create a unique path using a format and hash of filename
     i.e. {user}/{dirhash}/{filehash}-{filename}
     """
-    if uniq is None:
-        uniq = make_short_uuid(filename)
+    #if uniq is None:
+    #    uniq = make_short_uuid(filename)
 
-    filename = params.get('relpath', None) or os.path.basename(filename)
+    #filename = params.get('relpath', None) or os.path.basename(filename)
     log.debug('formatPath: %s', filename)
 
     filebase,fileext = os.path.splitext(filename)
     dirhash = uniq[2]=='-' and uniq[3] or uniq[0]
     return string.Template(format_path).substitute(
-        user=user,
+        user=user or '',
         date=datetime.datetime.now().strftime('%Y-%m-%d'),
         dirhash=dirhash,
         filehash=uniq,
         filename=filename,
         filebase=filebase,
         fileext=fileext, **params)
+
+#################################################
+#  Define helper functions for NT vs Unix/Mac
+#
+if os.name == 'nt':
+    def move_file (fp, newpath):
+        with open(newpath, 'wb') as trg:
+            shutil.copyfileobj(fp, trg)
+
+    def data_url_path (*names):
+        path = data_path(*names)
+        if len(path)>1 and path[1]==':': #file:// url requires / for drive lettered path like c: -> file:///c:/path
+            path = '/%s'%path
+        return path
+
+    def url2localpath(url):
+        path = urlparse.urlparse(url).path
+        if path[2] == ':' and path[0] == '/':
+            path = path[1:]
+        return path
+else:
+    def move_file (fp, newpath):
+        oldpath = os.path.abspath(fp.name)
+        shutil.move (oldpath, newpath)
+
+    data_url_path = data_path
+
+    def url2localpath(url):
+        return urlparse.urlparse(url).path
+
+
+
+##############################################
+#  Load store parameters
+def load_storage_drivers():
+    stores = OrderedDict()
+    store_list = [ x.strip() for x in config.get('bisque.blob_service.stores','').split(',') ]
+    log.debug ('requested stores = %s' , store_list)
+    for store in store_list:
+        # pull out store related params from config
+        params = dict ( (x[0].replace('bisque.stores.%s.' % store, ''), x[1])
+                        for x in  config.items() if x[0].startswith('bisque.stores.%s.' % store))
+        if 'path' not in params:
+            log.error ('cannot configure %s without the path parameter' , store)
+            continue
+        log.debug("params = %s" % params)
+        driver = make_storage_driver(params.pop('path'), **params)
+        if driver is None:
+            log.error ("failed to configure %s.  Please check log for errors " , str(store))
+            continue
+        stores[store] = driver
+    return stores
+
 
 ###############################################
 #  BlobStorage
@@ -125,7 +179,7 @@ class BlobStorage(object):
         'determine whether this store can access the identified file'
     def localpath(self, ident):
         'return the local path of  the identified file'
-    def write(self, fp, name, user_name='', uniq=None, relpath=None):
+    def write(self, fp, name, user_name=None, uniq=None):
         'write the file to a local blob returning a short ident and the localpath'
     def walk(self):
         'walk entries on this store .. see os.walk'
@@ -133,77 +187,67 @@ class BlobStorage(object):
         'delete an entry on the store'
 
 
-def move_file (fp, newpath):
-    if os.name != 'nt' and hasattr(fp, 'name') and os.path.isfile(fp.name):
-        oldpath = os.path.abspath(fp.name)
-        fp.close()# Windows requires this.
-        shutil.move (oldpath, newpath)
-    else:
-        with open(newpath, 'wb') as trg:
-            shutil.copyfileobj(fp, trg)
-
-if os.name == 'nt':
-    def data_url_path (*names):
-        path = data_path(*names)
-        if len(path)>1 and path[1]==':': #file:// url requires / for drive lettered path like c: -> file:///c:/path
-            path = '/%s'%path
-        return path
-
-    def url2localpath(url):
-        path = urlparse.urlparse(url).path
-        if path[2] == ':' and path[0] == '/':
-            path = path[1:]
-        return path
-else:
-    data_url_path = data_path
-
-    def url2localpath(url):
-        return urlparse.urlparse(url).path
-
 ###############################################
 # Local
 class LocalStorage(BlobStorage):
     "blobs locally on file system"
     scheme = 'file'
 
-    def __init__(self, path, top = data_url_path('imagedir'), readonly=False):
+    def __init__(self, path, top = data_url_path('imagedir'), readonly=False, **kw):
         """Create a local storage driver:
 
         :param path: format_path for how to store files
         :param  top: allow old style (relatave path file paths)
         :param readonly: set repo readonly
         """
+        datadir = data_url_path()
+        for key, value in kw.items():
+            setattr(self, key, string.Template(value).safe_substitute(datadir=datadir))
         self.top = top
-        self.top = string.Template(self.top).safe_substitute(datadir=data_url_path())
+        self.top = string.Template(self.top).safe_substitute(datadir=datadir)
+        self.top_path = url2localpath(self.top)
+        self.options = kw
+
         self.readonly = asbool(readonly)
-        self.format_path = string.Template(path).safe_substitute (datadir=data_url_path())
-        if self.format_path.startswith('file:') and not self.top.startswith('file:'):
+        self.format_path = string.Template(path).safe_substitute (datadir=datadir)
+        if self.format_path.startswith('file://') and not self.top.startswith('file://'):
             self.top = 'file://' + self.top
         if not self.format_path.startswith(self.top):
-            raise ConfigurationError('local storage %s does not begin with blob_service.local.dir %s'
+            raise ConfigurationError('Check site.cfg:local storage %s does not begin with  %s'
                                      % (self.format_path, self.top))
-
-        log.info("created localstore %s (%s)" % (self.format_path, self.top))
-
+        log.info("created localstore %s (%s) options %s" , self.format_path, self.top, self.options)
 
     def valid(self, ident):
         return ((ident.startswith(self.top)  and ident)
                 or  (urlparse.urlparse(ident).scheme == '' and os.path.join(self.top, ident).replace('\\', '/')))
                 #and os.path.exists(self.localpath(ident)))
 
-    def write(self, fp, filename, user_name='', uniq=None, relpath=None):
+    def write(self, fp, filename, user_name=None, uniq=None):
         'store blobs given local path'
-        filepath = formatPath(self.format_path, user_name, filename, uniq, relpath=relpath)
-        localpath = url2localpath(filepath)
-        log.debug('local.write: %s -> %s' % (filename, localpath))
+        if '$' in self.top:
+            top_path  = url2localpath(formatPath(self.top, user_name, filename, uniq))
+        else:
+            top_path  = self.top_path
+        filepath = formatPath(self.format_path, user_name, filename, uniq)
+        origpath = localpath = url2localpath(filepath)
+        fpath,ext = os.path.splitext(origpath)
         _mkdir (os.path.dirname(localpath))
-        if os.path.exists (localpath):
-            raise DuplicateFile(localpath)
+        for x in xrange(4):
+            if not os.path.exists (localpath):
+                log.debug('local.write: %s -> %s' % (filename, localpath))
+                #patch for no copy file uploads - check for regular file or file like object
+                move_file (fp, localpath)
+                ident = localpath[len(self.top_path):]
+                if ident[0] == '/':
+                    ident = ident[1:]
+                #ident = "file://%s" % localpath
 
-        #patch for no copy file uploads - check for regular file or file like object
-        move_file (fp, localpath)
-        ident = filepath[len(self.top) + 1:]
-        return ident, localpath
+                log.debug('local.blob_id: %s -> %s',  ident, localpath)
+                return ident, localpath
+            localpath = "%s-%s%s" % (fpath , uniq[3:7+x] , ext)
+            log.debug ("local.write: File exists .. trying %s", localpath)
+
+        raise DuplicateFile(localpath)
 
     def localpath(self, path):
         path = path.replace('\\', '/')
@@ -231,7 +275,7 @@ class iRodsStorage(BlobStorage):
     """iRods storage driver """
     scheme = 'irods'
 
-    def __init__(self, path, user=None, password=None, readonly=False):
+    def __init__(self, path, readonly=False, **kw):
         """Create a iRods storage driver:
 
         :param path: irods:// url format_path for where to store files
@@ -240,9 +284,10 @@ class iRodsStorage(BlobStorage):
         :param readonly: set repo readonly
         """
         self.format_path = path
-        self.user = user # config.get('bisque.blob_service.irods.user')
-        self.password = password # config.get('bisque.blob_service.irods.password')
+        self.user = kw.pop('credentials.user',None) or kw.pop('user',None)
+        self.password = kw.pop('credentials.password', None) or kw.pop('password', None)
         self.readonly = asbool(readonly)
+        self.options = kw
 
         if self.password:
             self.password = self.password.strip('"\'')
@@ -254,7 +299,7 @@ class iRodsStorage(BlobStorage):
     def valid(self, irods_ident):
         return  irods_ident.startswith(self.top) and irods_ident
 
-    def write(self, fp, filename, user_name=None, uniq=None, relpath=None):
+    def write(self, fp, filename, user_name=None, uniq=None):
         blob_ident = formatPath(self.format_path, user_name, filename, uniq)
         log.debug('irods.write: %s -> %s' % (filename, blob_ident))
         flocal = irods_handler.irods_push_file(fp, blob_ident, user=self.user, password=self.password)
@@ -286,7 +331,7 @@ class S3Storage(BlobStorage):
 
     def __init__(self, path,
                  access_key=None, secret_key=None, bucket_id=None, location=Location.USWest,
-                 readonly = False):
+                 readonly = False, **kw):
         """Create a iRods storage driver:
 
         :param path: s3:// url format_path for where to store files
@@ -304,6 +349,7 @@ class S3Storage(BlobStorage):
         self.bucket = None
         self.readonly = asbool(readonly)
         self.top = path.split('$')[0]
+        self.options = kw
 
         if self.access_key is None or self.secret_key is None or self.bucket_id is None:
             raise ConfigurationError('bisque.blob_service.s3 incomplete config')
@@ -322,11 +368,10 @@ class S3Storage(BlobStorage):
 
         log.info("created S3 store %s (%s)" % (self.format_path, self.top))
 
-
     def valid(self, s3_ident):
-        return  s3_ident.startswith(self.top) and s3_ident
+        return s3_ident.startswith(self.top) and s3_ident
 
-    def write(self, fp, filename, user_name=None, uniq=None, relpath=None):
+    def write(self, fp, filename, user_name=None, uniq=None):
         'write a file to s3'
         blob_ident = formatPath(self.format_path, user_name, filename, uniq)
         log.debug('s3.write: %s -> %s' % (filename, blob_ident))
@@ -352,7 +397,7 @@ class HttpStorage(BlobStorage):
     """HTTP storage driver  """
     scheme = 'http'
 
-    def __init__(self, path, user=None, password=None, readonly=True):
+    def __init__(self, path, user=None, password=None, readonly=True, **kw):
         """Create a HTTP storage driver:
 
         :param path: http:// url format_path for where to read/store files
@@ -364,6 +409,7 @@ class HttpStorage(BlobStorage):
         self.user = user # config.get('bisque.blob_service.irods.user')
         self.password = password # config.get('bisque.blob_service.irods.password')
         self.readonly = asbool(readonly)
+        self.options = kw
 
         if self.password:
             self.password = self.password.strip('"\'')
@@ -375,7 +421,7 @@ class HttpStorage(BlobStorage):
     def valid(self, http_ident):
         return  http_ident.startswith(self.top) and http_ident
 
-    def write(self, fp, filename, user_name=None, relpath=None):
+    def write(self, fp, filename, user_name=None):
         raise IllegalOperation('HTTP(S) write is not implemented')
 
     def localpath(self, irods_ident):

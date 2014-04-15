@@ -210,7 +210,7 @@ class ArchiveStreamer():
                     # dima: need to compute proper URI
                     uniq = member.get('value', None)
                     uri = '/data_service/%s'%uniq # compute URI from uniq, dima: does not work today: 403 forbidden
-                    
+
                     # compute path for each link by traversing up the tree
                     folder = [] # relative path to the resource from currently selected dir with no trailing slash
                     parent = member
@@ -219,14 +219,14 @@ class ArchiveStreamer():
                         parent = parent[0] if len(parent)>0 else None
                         if parent is not None:
                             folder.append(parent.get('name', None))
-                    
+                    folder.reverse()
                     finfo = fileInfo('/'.join(folder), uri, index)
                     if fileHash.get(finfo.get('name'))!=None:
                         fileHash[finfo.get('name')] = fileHash.get(finfo.get('name')) + 1
                         namef, ext = os.path.splitext(finfo.get('name'))
                         # dima: Only disambiguate if there are repeating files
                         #finfo['name'] = namef + '_' + str(fileHash.get(finfo.get('name'))-1) + ext
-                        
+
                     else:
                         fileHash[finfo.get('name')] = 1
 
