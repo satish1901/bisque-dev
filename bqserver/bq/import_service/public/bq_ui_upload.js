@@ -635,7 +635,7 @@ Ext.define('BQ.upload.Item', {
         }
         if (path && path !== '') {
             resource.name = path;
-            resource.value = path;
+            //resource.value = path;
         }
 
         // add access permission annotation

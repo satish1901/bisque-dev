@@ -132,7 +132,7 @@ class DataServerController(ServiceController):
     # program access
     # Uses etree nodes as internal format
     def cache_check(self, url, user_id=None, **kw):
-        args = [ "%s=%s" % (k, v) for k,v in kw.items()]
+        args = [ "%s=%s" % (k, v) for k,v in sorted(kw.items())]
         full_url = "%s?%s" % (url, "&".join (args))
         if user_id is None and identity.not_anonymous():
             user_id = identity.get_user_id()
@@ -141,7 +141,7 @@ class DataServerController(ServiceController):
         return response
 
     def cache_save(self, url, user_id=None, response=None, **kw):
-        args = [ "%s=%s" % (k, v) for k,v in kw.items()]
+        args = [ "%s=%s" % (k, v) for k,v in sorted(kw.items())]
         full_url = "%s?%s" % (url, "&".join (args))
         log.debug ("CACHE SAVE url %s" , full_url)
         if user_id is None and identity.not_anonymous():
@@ -155,6 +155,37 @@ class DataServerController(ServiceController):
     def resource_uniq(self, **kw):
         'generate a unique code to be used for a resource'
         return make_uniq_code()
+
+    def force_dbload(self, item):
+        if item and isinstance(item, Query):
+            item = item.first()
+        return item
+
+    def check_access(self, query, action=RESOURCE_READ):
+        'check permission for the action for resource'
+        if action == RESOURCE_EDIT and self.resource_name in PROTECTED:
+            log.debug ("PROTECTED RESOURCE")
+            return None
+        if action == RESOURCE_EDIT and not identity.not_anonymous():
+            log.debug ("EDIT denied because annonymous")
+            return None
+
+        if query is None:
+            return None
+        if  isinstance(query, Query):
+            query = resource_permission(query, action=action)
+            #log.debug ("PERMISSION:query %s" % query)
+        else:
+            #   Previously loaded resource .. recreate query but with
+            #   permission check
+            #log.debug ("PERMISSION: loaded object %s %s" % ((query.xmltag, query.__class__), query.id))
+            query = resource_load ((query.xmltag, query.__class__), query.id)
+            query = resource_permission (query, action=action)
+
+        resource = self.force_dbload(query)
+        if resource is None:
+            log.info ("Permission check failure %s = %s" % (query, resource))
+            return None
 
     def new_image(self, resource = None, **kw):
         ''' place the data file in a local '''

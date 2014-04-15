@@ -183,17 +183,20 @@ def merge_resources (*resources):
 
 class UploadedResource(object):
     """ Object encapsulating upload resource+file """
-    filename = None
-    fileobj  = None
-    path     = None
+    filename = None      # The  filename  to be stored with the resource
+    fileobj  = None      # The fileobj (if coming from an upload form)
+    path     = None      # A path to the file, if already local
 
     def __init__(self, resource, fileobj=None ):
         self.resource = resource
         self.fileobj = fileobj
 
+        # Set the path and filename of the UploadFile
+        # A local path will be available in 'value'
         path = resource.get('value')
         if path and path.startswith('file://'):
             self.path = path.replace('file://', '')
+        # If the uploader has given it a name, then use it, or figure a name out
         if resource.get ('name'):
             self.filename = sanitize_filename(resource.get('name'))
         elif fileobj :
@@ -216,6 +219,10 @@ class UploadedResource(object):
 
     def __repr__(self):
         return 'UploadFile([%s] [%s] [%s] [%s])'%(self.path, self.filename, self.resource, self.fileobj)
+
+    #def __str__(self):
+    #    return 'UploadFile([%s] [%s])'%(self.filename, etree.tostring(self.resource))
+
 
 
 
@@ -923,7 +930,9 @@ class import_serviceController(ServiceController):
 
         log.debug("INITIAL TRANSFER %s"  % transfers)
         for pname, f in dict(transfers).items():
+            # We skip specially named fields (we will pull them out when processing the actual file)
             if pname.endswith ('_resource') or pname.endswith('_tags'): continue
+            # This is a form field with an attached file (<input type='file'>)
             if hasattr(f, 'file'):
                 # Uploaded File from multipart-form
                 transfers.pop(pname)
@@ -936,14 +945,19 @@ class import_serviceController(ServiceController):
                 # Entry point for NGINX upload and insert
                 transfers.pop(pname)
                 try:
+                    # parse the nginx record
                     resource = etree.fromstring (f)
                 except etree.XMLSyntaxError:
                     log.exception ("while parsing %s" %f)
                     abort(400)
+                # Read the record original record (not the nginx one)
                 payload_resource = find_upload_resource(transfers, pname.replace ('.uploaded', ''))
                 if payload_resource is None:
                     payload_resource = etree.Element('resource')
-                if payload_resource:
+                if payload_resource is not None:
+                    log.debug ("Merging resources %s with %s" ,
+                               etree.tostring(resource),
+                               etree.tostring(payload_resource))
                     resource = merge_resources (resource, payload_resource)
                 upload_resource  = UploadedResource(resource=resource)
                 files.append(upload_resource)
