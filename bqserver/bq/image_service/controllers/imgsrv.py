@@ -49,9 +49,9 @@ log = logging.getLogger('bq.image_service.server')
 default_format = 'bigtiff'
 
 needed_versions = { 'imgcnv'     : '1.65.0',
-                    'imaris'     : '7.6.5',
+                    'imaris'     : '8.0.0',
                     'openslide'  : '0.5.1', # python wrapper version
-                    'bioformats' : '4.3.0',
+                    'bioformats' : '5.0.1',
                   }
 
 K = 1024
