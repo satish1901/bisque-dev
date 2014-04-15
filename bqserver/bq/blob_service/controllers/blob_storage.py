@@ -283,6 +283,9 @@ class iRodsStorage(BlobStorage):
         :param  password: the irods password
         :param readonly: set repo readonly
         """
+        datadir = data_url_path()
+        for key, value in kw.items():
+            setattr(self, key, string.Template(value).safe_substitute(datadir=datadir))
         self.format_path = path
         self.user = kw.pop('credentials.user',None) or kw.pop('user',None)
         self.password = kw.pop('credentials.password', None) or kw.pop('password', None)
