@@ -388,11 +388,17 @@ class ConverterBioformats(ConverterBase):
         '''converts input filename into output thumbnail'''
         log.debug('Thumbnail: %s %s %s for [%s]', width, height, series, ifnm)
 
-        ometiff = kw['intermediate'].replace('.ome.tif', '.t0.z0.ome.tif')
-
+        # dima: when slices will be supported correctly - uncomment
         # create an intermediate OME-TIFF, BUG IN BF - this only creates 1 channel output
+        #ometiff = kw['intermediate'].replace('.ome.tif', '.t0.z0.ome.tif')
+        #if not os.path.exists(ometiff):
+        #    cls.convertToOmeTiff(ifnm, ometiff, series=series, extra=['-z', '0', '-timepoint', '0'])
+
+        # dima: when slices will be supported correctly - remove
+        # create an intermediate OME-TIFF, BUG IN BF - this only creates 1 channel output
+        ometiff = kw['intermediate']
         if not os.path.exists(ometiff):
-            cls.convertToOmeTiff(ifnm, ometiff, series=series, extra=['-z', '0', '-timepoint', '0'])
+            cls.convertToOmeTiff(ifnm, ometiff, series=series)
 
         # extract thumbnail
         return ConverterImgcnv.thumbnail(ometiff, ofnm=ofnm, width=width, height=height, series=series, **kw)
@@ -407,15 +413,16 @@ class ConverterBioformats(ConverterBase):
         #info = kw['info']
         ometiff = kw['intermediate']
 
-        if z1>z2 and z2==0 and t1>t2 and t2==0 and x1==0 and x2==0 and y1==0 and y2==0:
-            # create an intermediate OME-TIFF, BUG IN BF - this only creates 1 channel output
-            return cls.convertToOmeTiff(ifnm, ofnm=ofnm, series=series, extra=['-z', str(z1-1), '-timepoint', str(t1-1)])
-        else:
-            # create an intermediate OME-TIFF
-            if not os.path.exists(ometiff):
-                cls.convertToOmeTiff(ifnm, ometiff, series=series)
-            # extract slices
-            return ConverterImgcnv.slice(ometiff, ofnm=ofnm, z=z, t=t, roi=roi, series=series, **kw)
+        # should enable slice whenevr slices would be supported
+        #if z1>z2 and z2==0 and t1>t2 and t2==0 and x1==0 and x2==0 and y1==0 and y2==0:
+        #    # create an intermediate OME-TIFF, BUG IN BF - this only creates 1 channel output
+        #    return cls.convertToOmeTiff(ifnm, ofnm=ofnm, series=series, extra=['-z', str(z1-1), '-timepoint', str(t1-1)])
+
+        # create an intermediate OME-TIFF
+        if not os.path.exists(ometiff):
+            cls.convertToOmeTiff(ifnm, ometiff, series=series)
+        # extract slices
+        return ConverterImgcnv.slice(ometiff, ofnm=ofnm, z=z, t=t, roi=roi, series=series, **kw)
 
 
 ConverterBioformats.init()
