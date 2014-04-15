@@ -63,10 +63,10 @@ DESCRIPTION
    for inclusion/exclustion the compute grid.   Each engine has a
    number of installed modules which it communicates the module server
    in a registration document.
-   
 
 
-   module-> engine_list 
+
+   module-> engine_list
 
 
 """
@@ -88,7 +88,7 @@ from paste.util.multidict import MultiDict
 from pylons.controllers.util import abort
 from tg import controllers, expose, config, override_template
 from tg import require
-from repoze.what import predicates 
+from repoze.what import predicates
 from repoze.what.predicates import not_anonymous
 #from tgext.asyncjob import asyncjob_perform, asyncjob_timed_query
 
@@ -107,7 +107,7 @@ log = logging.getLogger('bq.module_server')
 from bq.core.service import ServiceController
 from bq.module_service import model
 
-from bq.core.model import DBSession 
+from bq.core.model import DBSession
 
 from bq.data_service.controllers.resource import Resource
 from bq.data_service.controllers.bisquik_resource import BisquikResource
@@ -139,13 +139,14 @@ class MexDelegate (Resource):
 
     @expose(content_type='text/xml')
     def dir(self, **kw):
-        data_service.query 
+        data_service.query
         parent = self.parent
         log.info ('DIR %s ' % parent)
         return ""
-    
-    
+
+
     @expose()
+    @require(not_anonymous())
     def new(self, factory, xml, **kw):
         mex = etree.XML (xml)
         if mex.tag == "request":
@@ -156,7 +157,7 @@ class MexDelegate (Resource):
         tg.response.headers['Content-Type'] = 'text/xml'
         return response
 
-                        
+
     def create_mex(self, mex):
         if mex.get('value') is None:
             mex.set ('value', "PENDING")
@@ -176,6 +177,7 @@ class MexDelegate (Resource):
         return mex
 
     @expose()
+    @require(not_anonymous())
     def modify(self, resource, xml, view=None, **kw):
         """
         Modify the mex in place.  Use to update status
@@ -197,11 +199,11 @@ class MexDelegate (Resource):
         mex = data_service.get_resource(resource, view=view)
         #log.debug ("dataservice fetch -> %s" % etree.tostring(mex))
         self.remap_uri (mex)
-
         tg.response.headers['Content-Type'] = 'text/xml'
         return etree.tostring (mex)
-        
+
     @expose()
+    @require(not_anonymous())
     def append(self, resource, xml, view=None, **kw):
         """
         Append a value to the mex
@@ -214,7 +216,7 @@ class MexDelegate (Resource):
         self.remap_uri (mex)
         tg.response.headers['Content-Type'] = 'text/xml'
         return etree.tostring (mex)
-        
+
 
     @expose(content_type="text/xml")
     def delete(self, resource,  **kw):
@@ -225,7 +227,7 @@ class MexDelegate (Resource):
 
 
 def read_xml_body():
-    clen = int(tg.request.headers.get('Content-Length', 0)) 
+    clen = int(tg.request.headers.get('Content-Length', 0))
     content = tg.request.headers.get('Content-Type')
     if clen and content.startswith('text/xml') or content.startswith('application/xml'):
         return etree.XML(tg.request.body_file.read(clen))
@@ -239,8 +241,8 @@ def create_mex(module, name, mex = None, **kw):
     formal_inputs = inputs and inputs[0]
     if mex is None:
         real_params = dict(kw)
-        mex = etree.Element('mex', 
-                            name = module.get('name'), 
+        mex = etree.Element('mex',
+                            name = module.get('name'),
                             value = 'PENDING', type = module_url)
         inputs = etree.SubElement(mex, 'tag', name='inputs')
         #mex_inputs = etree.SubElement(mex, 'tag', name='inputs')
@@ -262,7 +264,7 @@ def create_mex(module, name, mex = None, **kw):
 
     log.debug('mex original %s' % etree.tostring(mex))
     # Check that we might have an iterable resource in mex/tag[name='inputs']
-    # 
+    #
     # <moudule> <tag name="execute_options">
     #   <tag name="iterable" value="resource_url" type="dataset">
     #        <tag name="xpath" value="./value/@text'/>
@@ -285,7 +287,7 @@ def create_mex(module, name, mex = None, **kw):
 
     # Find an iterable tags (that match name and type) in the mex inputs, add them mex_tags
     mex_inputs = mex.xpath('./tag[@name="inputs"]')[0]
-    mex_tags = {}   # iterable_input name :  [ mex_xml_node1, mex_xml2 ] 
+    mex_tags = {}   # iterable_input name :  [ mex_xml_node1, mex_xml2 ]
     for iter_tag, iter_d in iters.items():
         for iter_type in iter_d.keys():
             log.debug ("checking name=%s type=%s" % (iter_tag, iter_type))
@@ -295,7 +297,7 @@ def create_mex(module, name, mex = None, **kw):
                 mex_tags[iter_tag] = resource_tag[0]
     log.debug ('iterable tags found in mex %s' % mex_tags)
 
-    # for each iterable found in the mex inputs, check the resource type 
+    # for each iterable found in the mex inputs, check the resource type
     for iter_tag, iterable in mex_tags.items():
         resource_value = iterable.get('value')
         resource_type = iterable.get('type')
@@ -318,7 +320,7 @@ def create_mex(module, name, mex = None, **kw):
             mex.append(submex)
     log.info('mex rewritten-> %s' % etree.tostring(mex))
     return mex
-        
+
 
 def check_mex(mex):
     if mex.tag == "request":
@@ -368,7 +370,7 @@ def POST_mex (service_uri, mex, username):
     "POST A MEX in a subthread"
     mex_url =  mex.get ('uri')
     mex_uniq = mex.get('resource_uniq')
-    
+
     log.debug ("MEX Dispatch : waiting for mex")
     mexq = wait_for_query (DBSession.query(ModuleExecution).filter_by (resource_uniq =  mex_uniq)).first()
     if mexq is None:
@@ -380,10 +382,10 @@ def POST_mex (service_uri, mex, username):
     log.info("DISPATCH: POST %s  with %s for %s" % (service_uri,  mex_token, mex_url ))
 
     body = etree.tostring(mex)
-    try: 
-        resp, content = http.xmlrequest(service_uri +"/execute", "POST", 
+    try:
+        resp, content = http.xmlrequest(service_uri +"/execute", "POST",
                                         body = body,
-                                        headers = {'Mex': mex_uniq, 
+                                        headers = {'Mex': mex_uniq,
                                                    'Authorization' : "Mex %s" % mex_token})
     except socket.error:
         resp = {'status':'503', }
@@ -432,19 +434,19 @@ def POST_over (request, result):
     if request.exception:
         log.error ('An exception occured in %s' % request)
 
-        
+
 #from repoze.what.predicates import Any, is_user, has_permission
 class ServiceDelegate(controllers.WSGIAppController):
     """Create a proxy for the particular service addressable by the module name
     """
-    
+
     def __init__(self, name, service_url, module, mexurl):
-        self.name = name 
+        self.name = name
         self.module = module
         self.mexurl = mexurl
         if not service_url[-1] =='/':
             service_url = service_url + '/'
-            
+
         self.service_url = service_url
         proxy = make_proxy(config, service_url)
         super(ServiceDelegate, self).__init__(proxy)
@@ -478,7 +480,7 @@ class ServiceDelegate(controllers.WSGIAppController):
         mex = data_service.new_resource (mex, view='deep')
         self.remap_uri(mex)
         log.debug ("SCHEDULING_MEX %s %s" % (self.module.get ('uri'), mex.get ('uri')))
-        req = WorkRequest (async_dbaction, [ POST_mex, [ self.service_url, mex, get_username() ]], 
+        req = WorkRequest (async_dbaction, [ POST_mex, [ self.service_url, mex, get_username() ]],
                            callback = POST_over, exc_callback = POST_over)
         req = tg.app_globals.pool.putRequest(req)
         #req = tg.app_globals.pool.putRequest(WorkRequest (POST_mex, [self.module, mex, get_username() ]))
@@ -516,7 +518,7 @@ class ModuleServer(ServiceController):
     """Module server provides services for finding and executing modules
     """
     service_type = "module_service"
-    
+
     def __init__(self, server_url = None):
         super(ModuleServer, self).__init__(uri = server_url)
 
@@ -531,7 +533,7 @@ class ModuleServer(ServiceController):
 
     def load_services_OLD(self):
         "(re)Load all registered service points "
-        
+
         services = data_service.query('service')
         service_list = {}
         for service in services:
@@ -543,14 +545,14 @@ class ModuleServer(ServiceController):
             service_list[name] = service
             #setattr(self.__class__, name , )
             log.info ("SERVICE PROXY %s -> %s " % (name, engine))
-            
+
         return service_list
         #self.runner.start()
 
 
     def load_services(self, name = None):
         "(re)Load all registered service points "
-        
+
         if name:
             modules = data_service.query('module', name=name, view='deep')
         else:
@@ -572,7 +574,7 @@ class ModuleServer(ServiceController):
     def _lookup(self, service, *rest):
         log.info('service lookup for %s' % service)
         proxy = self.service_list.get(service)
-        if proxy is None: 
+        if proxy is None:
             self.service_list = self.load_services()
             proxy = self.service_list.get(service)
         return proxy, rest
@@ -612,7 +614,7 @@ class ModuleServer(ServiceController):
     def register(self,**kw):
         "Show module registration page for module writers"
         return dict()
-        
+
 
     @expose(content_type='text/xml')
     @require(not_anonymous())
@@ -661,7 +663,7 @@ class ModuleServer(ServiceController):
     def services(self):
         x = d2xml (self.servicelist())
         return etree.tostring(x)
-        
+
 
     def begin_internal_mex(self, name='session', value='active', mex_type = "session"):
         mex = etree.Element('mex', name=name, value=value, hidden='true', type=mex_type)
@@ -677,7 +679,7 @@ class ModuleServer(ServiceController):
         mex = data_service.new_resource (mex, view='deep')
         #return mex.get ('uri').rsplit('/', 1)[1]
         return mex
-        
+
     def end_internal_mex(self, mexuri):
         mex = etree.Element('mex', value="FINISHED", uri=mexuri)
         #etree.SubElement(mex, 'tag',
@@ -687,7 +689,7 @@ class ModuleServer(ServiceController):
 
         mex = data_service.update (mex)
         return mex
-        
+
 
 #######################################
 # ENGINE
@@ -707,7 +709,7 @@ class EngineResource (Resource):
     def dir(self, **kw):
         """Show all endpoint for modules
         """
-        
+
         response = etree.Element ('resource', url=self.url)
         services = data_service.query('service')
         for service in services:
@@ -724,8 +726,8 @@ class EngineResource (Resource):
 
     def create(self, **kw):
         """
-        returns a class or function which will be passed into the self.new 
-        method. 
+        returns a class or function which will be passed into the self.new
+        method.
         """
         return ""
 
@@ -738,18 +740,18 @@ class EngineResource (Resource):
         value= module_def.get ('value')
         version = module_def.xpath('./tag[@name="module_options"]/tag[@name="version"]')
         version = len(version) and version[0].get('value')
-        
+
         found = False
         modules = data_service.query ('module', name=name, view="deep")
-        
+
         #  RULES for updating a module
-        #  
+        #
         found_versions = []
         for m in modules:
             m_version = m.xpath('./tag[@name="module_options"]/tag[@name="version"]')
             m_version = len(m_version) and m_version[0].get('value')
             #m_version = m.xpath('//tag[@name="version"]')[0].get('value')
-            
+
             log.info('module %s ts(version) : new=%s(%s) current=%s(%s)' % (name, ts, version, m.get('ts'), m_version))
             if m_version in found_versions:
                 log.error("module %s has multiple definitions with same version %s" % (name, m_version))
@@ -768,10 +770,10 @@ class EngineResource (Resource):
                 else:
                     log.debug ("Module on system is newer: remote %s < system %s " % (ts, m.get('ts')))
             else:
-                # We are examining a different version of the module. 
+                # We are examining a different version of the module.
                 # Should it be disabled?
-                pass 
-                    
+                pass
+
 
         if not found:
             log.info ("CREATING NEW MODULE: %s " % name)
@@ -816,21 +818,21 @@ class EngineResource (Resource):
 
             # log.debug ('loading services for %s ' % module.get('name'))
             # service = data_service.query('service', name=module.get('name'), view="deep")
-            # service = (len(service) and service[0]) 
+            # service = (len(service) and service[0])
             # if  service == 0:
-            #     service_def = etree.Element('service', 
+            #     service_def = etree.Element('service',
             #                                 permission = 'published',
             #                                 name = module.get('name'),
             #                                 type = module.get('uri'),
             #                                 value = engine_url)
             #     service = data_service.new_resource(service_def)
             #     log.info("service create %s" % etree.tostring(service))
-            # else: 
+            # else:
             #     service.set('type', module.get('uri'))
             #     service.set('value', engine_url)
             #     service = data_service.update(service)
             #     log.info("service update %s" % etree.tostring(service))
-                
+
         return etree.tostring (module)
 
     def modify(self, resource, xml, **kw):
@@ -838,7 +840,7 @@ class EngineResource (Resource):
         Modify the mex in place.  Use to update status
         """
         raise abort(501)
-        
+
 
     def get(self, resource, **kw):
         """
@@ -852,7 +854,7 @@ class EngineResource (Resource):
         """
 
     def delete(self, resource,  **kw):
-        """ Delete the engine resource 
+        """ Delete the engine resource
         """
         log.debug ('DELETE %s: %s' % (resource, kw))
 

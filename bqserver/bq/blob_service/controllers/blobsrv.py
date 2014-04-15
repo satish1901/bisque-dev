@@ -49,7 +49,6 @@ Micro webservice to store and retrieve blobs(untyped binary storage) on a variet
 of storage platforms: local, irods, s3
 """
 import os
-import sys
 import logging
 import hashlib
 import urlparse
@@ -62,15 +61,15 @@ from datetime import timedelta
 #import smokesignal
 
 import tg
-from tg import expose, flash, config, require, abort
-from tg.controllers import RestController, TGController
+from tg import expose, config, require, abort
+from tg.controllers import RestController
 #from paste.fileapp import FileApp
 from bq.util.fileapp import BQFileApp
 from pylons.controllers.util import forward
 from repoze.what import predicates
 
 from bq.core import  identity
-from bq.core.identity import set_admin_mode
+#from bq.core.identity import set_admin_mode
 from bq.core.service import ServiceMixin
 from bq.core.service import ServiceController
 from bq.exceptions import IllegalOperation, DuplicateFile, ServiceError
@@ -89,34 +88,6 @@ from . import store_resource
 log = logging.getLogger('bq.blobs')
 
 
-###########################################################################
-# Hashing Utils
-###########################################################################
-
-
-def file_hash_SHA1( filename ):
-    '''Takes a file path and returns a SHA-1 hash of its bits'''
-    f = file(filename, 'rb')
-    m = hashlib.sha1()
-    readBytes = 1024 # use 1024 byte buffer
-    while (readBytes):
-        readString = f.read(readBytes)
-        m.update(readString)
-        readBytes = len(readString)
-    f.close()
-    return m.hexdigest()
-
-def file_hash_MD5( filename ):
-    '''Takes a file path and returns a MD5 hash of its bits'''
-    f = file(filename, 'rb')
-    m = hashlib.md5()
-    readBytes = 1024 # use 1024 byte buffer
-    while (readBytes):
-        readString = f.read(readBytes)
-        m.update(readString)
-        readBytes = len(readString)
-    f.close()
-    return m.hexdigest()
 
 #########################################################
 # Utility functions
@@ -188,10 +159,10 @@ class DriverManager(object):
 
     def save_blob(self, fileobj, filename, user_name, uniq):
         filename_safe = filename.encode('ascii', 'xmlcharrefreplace')
-        if filename[0]=='/':
-            return self.save_2store(fileobj, filename, user_name, uniq)
+        if filename_safe[0]=='/':
+            return self.save_2store(fileobj, filename_safe, user_name, uniq)
         else:
-            return self.save_relative(fileobj, filename, user_name, uniq)
+            return self.save_relative(fileobj, filename_safe, user_name, uniq)
 
     def save_2store (self, fileobj, filename, user_name, uniq):
         empty, store_name, path = filename.split('/', 2)
@@ -200,6 +171,7 @@ class DriverManager(object):
             if driver.readonly:
                 raise IllegalOperation("Write to readonly store")
             driveruri, localpath =  driver.write(fileobj, path, user_name = user_name, uniq=uniq)
+            return driveruri, localpath
         except DuplicateFile, e:
             raise e
         except Exception, e:
@@ -279,7 +251,7 @@ class BlobServer(RestController, ServiceMixin):
         self.check_access(ident, RESOURCE_READ)
         try:
             localpath = os.path.normpath(self.localpath(ident))
-            filename = self.getBlobFileName(ident)
+            filename = self.originalFilename(ident)
             if 'localpath' in kw:
                 tg.response.headers['Content-Type']  = 'text/xml'
                 resource = etree.Element ('resource', name=filename, value = localpath)
@@ -308,23 +280,23 @@ class BlobServer(RestController, ServiceMixin):
             resource = transfers.pop(pname+'_resource', None) #or transfers.pop(pname+'_tags', None)
             log.debug ("found %s _resource/_tags %s " , pname, resource)
             if resource is not None:
-                try:
-                    if hasattr(resource, 'file'):
-                        log.warn("XML Resource has file tag")
-                        resource = f.file.read()
-                    if isinstance(resource, basestring):
-                        log.debug ("reading XML %s" , resource)
+                if hasattr(resource, 'file'):
+                    log.warn("XML Resource has file tag")
+                    resource = resource.file.read()
+                if isinstance(resource, basestring):
+                    log.debug ("reading XML %s" , resource)
+                    try:
                         resource = etree.fromstring(resource)
-                except:
-                    log.exception("Couldn't read resource parameter %s" , resource)
-                    resource = None
+                    except etree.XMLSyntaxError:
+                        log.exception ("while parsing %s" %resource)
+                        resource = None
             return resource
 
         for k,f in dict(transfers).items():
             if k.endswith ('_resource') or k.endswith('_tags'): continue
             if hasattr(f, 'file'):
-                resource = find_uploaded_resource(transfers, k)
-                resource = self.store_blob(resource = resource, file_obj = f.file)
+                resource = find_upload_resource(transfers, k)
+                resource = self.store_blob(resource = resource, fileobj = f.file)
 
         return resource
 
@@ -435,7 +407,6 @@ class BlobServer(RestController, ServiceMixin):
 
     def _store_fileobj(self, resource, fileobj ):
         'Create a blob from a file .. used by store_blob'
-        filename  = resource.get ('name') or urlref.rsplit('/',1)[1]
         user_name = identity.current.user_name
         # dima: make sure local file name will be ascii, should be fixed later
         # dima: unix without LANG or LC_CTYPE will through error due to ascii while using sys.getfilesystemencoding()
@@ -496,47 +467,13 @@ class BlobServer(RestController, ServiceMixin):
             return path
         raise IllegalOperation("bad resource value %s" % uniq_ident)
 
-    def getBlobInfo(self, ident):
-        resource = DBSession.query(Taggable).filter_by (resource_uniq = ident).first()
-        return resource
-
-    def getBlobFileName(self, ident):
-        fobj = self.getBlobInfo(ident)
-        fname = str(id)
-        if fobj != None and fobj.resource_name != None:
-            fname =  fobj.resource_name
-        log.debug('Blobsrv - original name %s->%s ' , ident, fname)
-        return fname
-
-    def blobsExist(self, fhashes):
-        'search for files by content hash'
-        blobsfound = []
-        #for fhash in fhashes:
-        #   if blobdb.find_image_id(fhash) != None:
-        #       blobsfound.append(fhash)
-
-        for fhash in fhashes:
-            resource = DBSession.query(Taggable).filter_by (resource_uniq = fhash).first()
-            if resource:
-                blobsfound.append(fhash)
-        log.warn("blobsExist not implemented")
-        return blobsfound
-
     def originalFileName(self, ident):
         log.debug ('originalFileName: deprecated %s', ident)
-        return self.getBlobFileName(ident)
-
-    def fileExists(self, id):
-        if id==None: return False
-        try:
-            fileName = self.localpath(id)
-            return fileName and os.path.exists(fileName)
-        except IllegalOperation,e:
-            return False
-        except Exception, e:
-            log.exception('cannot load resource_uniq %s' , id)
-            return False
-
+        resource = DBSession.query(Taggable).filter_by (resource_uniq = ident).first()
+        if resource and resource.resource_name != None:
+            fname =  resource.resource_name
+        log.debug('Blobsrv - original name %s->%s ' , ident, fname)
+        return fname
 
     def move_resource_store(self, srcstore, dststore):
         """Find all resource on srcstore and move to dststore
@@ -567,8 +504,6 @@ class BlobServer(RestController, ServiceMixin):
 
     def geturi(self, id):
         return self.url + '/' + str(id)
-
-
 
 
 def initialize(uri):

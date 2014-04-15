@@ -915,7 +915,7 @@ class import_serviceController(ServiceController):
                 try:
                     if hasattr(resource, 'file'):
                         log.warn("XML Resource has file tag")
-                        resource = f.file.read()
+                        resource = resource.file.read()
                     if isinstance(resource, basestring):
                         log.debug ("reading XML %s" % resource)
                         try:

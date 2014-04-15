@@ -90,13 +90,9 @@ import urlparse
 import os
 
 
-#############################################################
-#@cmdopts([('engine', 'e', 'install only the engine')])
-@task
-@consume_args
-def setup(options):
-    'install local version and setup local packages'
-
+def process_options(options):
+    if hasattr(options, 'installing'):
+        return
     installing = None
     if len(options.args) :
         installing = options.args[0]
@@ -115,37 +111,62 @@ all will install everything including the feature service""")
                      server = server_subdirs,
                      features = feature_subdirs) [ installing]
     print "installing all components from  %s" % subdirs
+    options.subdirs = subdirs
+    options.installing = installing
 
 
-    if installing != "engine":
+
+
+def install_prereqs (options):
+    if options.installing != "engine":
+	pass
         # Hack as numpy fails to install when in setup.py dependencies
-        sh('easy_install numpy==1.6.0')
-        sh('easy_install numpy==1.6.0')
+        #3sh('easy_install numpy==1.6.0')
+        #sh('easy_install numpy==1.6.0')
         # End Hack
-        sh('easy_install http://biodev.ece.ucsb.edu/binaries/download/tw.output/tw.output-0.5.0dev-20110906.tar.gz')
-        sh('easy_install http://biodev.ece.ucsb.edu/binaries/depot/tgext.registration2/tgext.registration2-0.5.2.tar.gz')
-    sh('easy_install http://biodev.ece.ucsb.edu/binaries/depot/httplib2/httplib2-0.7.1.tar.gz')
-    sh('easy_install http://biodev.ece.ucsb.edu/binaries/depot/Paste/Paste-1.7.5.1bisque2.tar.gz')
-    sh('easy_install http://biodev.ece.ucsb.edu/binaries/depot/bq053/Minimatic-1.0.1.zip')
+        sh('pip install http://biodev.ece.ucsb.edu/binaries/download/tw.output/tw.output-0.5.0dev-20110906.tar.gz')
+        sh('pip install http://biodev.ece.ucsb.edu/binaries/depot/tgext.registration2/tgext.registration2-0.5.2.tar.gz')
+    elif 0==1:
+        sh('pip install http://biodev.ece.ucsb.edu/binaries/depot/httplib2/httplib2-0.7.1.tar.gz')
+        sh('pip install http://biodev.ece.ucsb.edu/binaries/depot/Paste/Paste-1.7.5.1bisque2.tar.gz')
+        #sh('pip install http://biodev.ece.ucsb.edu/binaries/depot/bq053/Minimatic-1.0.1.zip')
+        sh('pip install https://bitbucket.org/bisque/minimatic/get/master.zip')
 
+
+def install_postreqs (options):
+    sh('pip install https://bitbucket.org/bisque/tg2/downloads/TurboGears2-2.1.5.tar.gz')
+    sh('pip install http://biodev.ece.ucsb.edu/binaries/depot/Paste/Paste-1.7.5.1bisque2.tar.gz')
+    sh('pip install pastescript==1.7.3')
+
+
+
+#############################################################
+#@cmdopts([('engine', 'e', 'install only the engine')])
+@task
+@consume_args
+def setup(options):
+    'install local version and setup local packages'
+    process_option(options)
+
+    install_prereqs(options)
+    setup_developer(options)
+    install_postreqs(options)
+
+    print  'now run bq-admin setup %s' % ( 'engine' if installing =='engine' else '' )
+
+
+@task
+@consume_args
+def setup_developer(options):
+    process_options(options)
     top = os.getcwd()
-
-    for d in subdirs:
+    for d in options.subdirs:
         app_dir = path('.') / d
         if os.path.exists(app_dir):
-            os.chdir(app_dir)
-            sh('python setup.py develop')
-            os.chdir(top)
-    #sh('easy_install http://biodev.ece.ucsb.edu/binaries/depot/TurboGears2/TurboGears2-2.1.5.tar.gz')
-    #sh('easy_install https://bitbucket.org/bisque/webob/downloads/WebOb-1.0.8.tar.gz')
-    sh('easy_install https://bitbucket.org/bisque/tg2/downloads/TurboGears2-2.1.5.tar.gz')
-    sh('easy_install http://biodev.ece.ucsb.edu/binaries/depot/Paste/Paste-1.7.5.1bisque2.tar.gz')
-    sh('easy_install pastescript==1.7.3')
-
-    #if getanswer('Run bq-admin setup' , 'Y',
-    #             "Run the setup (appropiate for this install") == 'Y':
-    #    sh ('bq-admin setup %s' % ( 'engine' if engine_install else '' ))
-    print  'now run bq-admin setup %s' % ( 'engine' if installing =='engine' else '' )
+	    sh('pip install -e %s' % app_dir)
+            #os.chdir(app_dir)
+            #sh('python setup.py develop')
+            #os.chdir(top)
 
 @task
 @needs('generate_setup', 'minilib', 'setuptools.command.sdist')
@@ -213,8 +234,14 @@ def pylint_modules(options):
     args = 'modules/*/*.py'
     if options.args:
         args = " ".join(options.args)
-    if os.name != 'nt':        
+    if os.name != 'nt':
         sh('PYTHONPATH=bqcore/bq:bqserver/bq:bqengine/bq:bqfeature/bq pylint %s --rcfile=bqcore/pylint.rc' % args)
     else:
         sh('set PYTHONPATH=bqcore\\bq;bqserver\\bq;bqengine\\bq;bqfeature\\bq & pylint %s --rcfile=bqcore\\pylint.rc' % args)
 
+
+@task
+@consume_args
+def pyfind(options):
+    args = 'bqcore/bq bqserver/bq bqengine/bq bqfeature/bq'
+    sh ("find %s -name '*.py' | xargs fgrep %s" % (args, " ".join(options.args)))
