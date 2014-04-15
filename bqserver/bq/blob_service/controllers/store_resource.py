@@ -285,8 +285,8 @@ class StoreServer(TGController):
 
         :param path: a blob path for the store
         """
+        log.info("Insert_blob_path %s",  path)
         store, path = self.find_store_by_blob (path)
-        log.info("Insert_blob_path store %s path %s ", store, path)
         if store is None:
             # No matching store has been created, but one may have matched.
             if path is None:
@@ -296,6 +296,7 @@ class StoreServer(TGController):
             #resource = root = etree.Element ('store', name = path.pop(0))
             store = path.pop(0)
 
+        log.info("Insert_blob_path create %s path %s ", store, path)
         return self._create_full_path(store, path, resource_uniq, resource_name, **kw)
 
     def delete_blob_path(self, path):
