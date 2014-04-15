@@ -12,8 +12,9 @@
 06B0FFFCAFA78EBE6843BDAADB14939554A85B66-ext-4.2.1-gpl.zip=extjs.zip
 
 # Bioformats 4.4.7
-8EA77666DD889CE5AEBFB4230B946BA5B5E28AD8-bioformats-pack.zip
-
+#8EA77666DD889CE5AEBFB4230B946BA5B5E28AD8-bioformats-pack.zip
+# Bioformats 5.0.1
+526BE61EB787CA7AAACA6AC239225D0CD310E661-bftools.5.0.1.zip=bioformats-pack.zip
 
 # PLATFORM dependent files
 # These sections titles use shell like 'glob'ing to match
