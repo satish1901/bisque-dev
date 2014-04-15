@@ -13,6 +13,7 @@ __revision__  = "$Rev$"
 __date__      = "$Date$"
 __copyright__ = "Center for BioImage Informatics, University California, Santa Barbara"
 
+import os
 import os.path
 from lxml import etree
 import re
@@ -29,6 +30,10 @@ from .locks import Locks
 
 import logging
 log = logging.getLogger('bq.image_service.converter_imaris')
+
+BLOCK_START='<ImplParameters><![CDATA['
+BLOCK_END  = ']]>' + os.linesep + '</ImplParameters>'
+
 
 ################################################################################
 # Misc
@@ -106,12 +111,12 @@ class ConverterImaris(ConverterBase):
         if fs is None:
             return ''
 
-        ins = [f.strip(' ') for f in misc.between('Input File Formats are:\r\n\r\n', 'Output File Formats are:', fs).split('\r\n') if f != '']
+        ins = [f.strip(' ') for f in misc.between('Input File Formats are:%s' % (os.linesep*2) , 'Output File Formats are:', fs).split(os.linesep) if f != '']
         # version 8.0.0
         if 'Exit Codes:' in fs:
-            ous = [f.strip(' ') for f in misc.between('Output File Formats are:\r\n\r\n', 'Exit Codes:', fs).split('\r\n') if f != '']
+            ous = [f.strip(' ') for f in misc.between('Output File Formats are:%s' % (os.linesep*2), 'Exit Codes:', fs).split(os.linesep) if f != '']
         else: # version 7.X
-            ous = [f.strip(' ') for f in misc.between('Output File Formats are:\r\n\r\n', 'Examples:', fs).split('\r\n') if f != '']
+            ous = [f.strip(' ') for f in misc.between('Output File Formats are:%s' % (os.linesep*2), 'Examples:', fs).split(os.linesep) if f != '']
         ins = [parse_format(f) for f in ins]
         ous = [parse_format(f) for f in ous]
 
@@ -143,22 +148,21 @@ class ConverterImaris(ConverterBase):
             return {}
         log.debug('Meta for: %s', ifnm )
         with Locks (ifnm):
-            t = tempfile.mkstemp(suffix='.xml')
-            metafile = t[1]
-            misc.run_command( [self.CONVERTERCOMMAND, '-i', ifnm, '-m', metafile] )
-            with open(metafile, 'r') as f:
-                meta = f.read()
+            t = tempfile.mkstemp(suffix='.log')
+            logfile = t[1]
+            meta = misc.run_command( [self.CONVERTERCOMMAND, '-i', ifnm, '-m', '-l', logfile] )
+            #with open(metafile, 'r') as f:
+            #    meta = f.read()
             #os.remove(metafile) # felix suggested error
+        if meta is None:
+            return {}
 
 
         # fix a bug in Imaris Convert exporting XML with invalid chars
         # by removing the <ImplParameters> tag
         # params is formatted in INI format
         try:
-            if '<ImplParameters><![CDATA[' in meta: # v8
-                params = misc.between('<ImplParameters><![CDATA[', ']]>\n</ImplParameters>', meta)
-            else: # v7
-                params = misc.between('<ImplParameters>', '</ImplParameters>', meta)
+            params = misc.between(BLOCK_START, BLOCK_END, meta)
             # Meta is an XML
             meta = meta.replace(params, '', 1)
         except UnboundLocalError:
@@ -168,7 +172,12 @@ class ConverterImaris(ConverterBase):
         # Parse Meta XML
         ########################################
         rd = {}
-        mee = etree.fromstring(meta)
+        try:
+            mee = etree.fromstring(meta)
+        except etree.XMLSyntaxError:
+            log.error ("Unparsable %s", meta)
+            return {}
+
 
         if '<FileInfo2>' in meta: # v7
             rd['image_num_series'] = misc.safeint(misc.xpathtextnode(mee, '/FileInfo2/NumberOfImages'), 1)
@@ -178,7 +187,8 @@ class ConverterImaris(ConverterBase):
             imagenodepath = '/MetaData/Image[@mIndex="%s"]'%series
 
         rd['date_time'] = misc.xpathtextnode(mee, '%s/ImplTimeInfo'%imagenodepath).split(';', 1)[0]
-        rd['format']    = misc.xpathtextnode(mee, '%s/BaseDescription'%imagenodepath).split(':', 1)[1].strip(' ')
+        #rd['format']    = misc.xpathtextnode(mee, '%s/BaseDescription'%imagenodepath).split(':', 1)[1].strip(' ')
+        rd['format']    = misc.xpathtextnode(mee, '%s/BaseDescription'%imagenodepath) #.split(':', 1)[1].strip(' ')
 
         # dims
         dims = misc.xpathtextnode(mee, '%s/BaseDimension'%imagenodepath).split(' ')
@@ -227,6 +237,7 @@ class ConverterImaris(ConverterBase):
         ########################################
         # Parse params INI
         ########################################
+        #params = misc.xpathtextnode(mee, '%s/ImplParameters'%imagenodepath)
 
         sp = StringIO.StringIO(params)
         config = ConfigParser.ConfigParser()
@@ -305,9 +316,9 @@ class ConverterImaris(ConverterBase):
         '''converts input filename into output thumbnail'''
         log.debug('Thumbnail: %s %s %s for [%s]', width, height, series, ifnm)
         command = ['-i', ifnm, '-t', ofnm, '-tf', 'jpeg', '-ii', '%s'%series]
-        #command.extend (['-tl', '%s,%s'%(width, height)]) # does not seem to work
-        command.extend (['-ts', '%s,%s'%(width, height)])
-        command.extend (['-tb', '#FFFFFF']) # dima: thumbnails are all padded, ask for white right now, before the fix is final
+        command.extend (['-tl', '%s'%min(width, height)])
+        #command.extend (['-ts', '%s,%s'%(width, height)])
+        #command.extend (['-tb', '#FFFFFF']) # dima: thumbnails are all padded, ask for white right now, before the fix is final
         return cls.run(ifnm, ofnm, command)
 
     @classmethod
@@ -321,8 +332,7 @@ class ConverterImaris(ConverterBase):
 
         if z1>z2 and z2==0 and t1>t2 and t2==0 and x1==0 and x2==0 and y1==0 and y2==0:
             # converting one slice z or t, does not support ome-tiff, tiff or jpeg produces an RGBA image
-            #return cls.run(ifnm, ofnm, ['-i', ifnm, '-t', ofnm, '-tf', fmt, '-ii', str(series), '-tm', 'Slice', '-tz', str(z1-1), '-th', str(t1-1)])
-            r = cls.run(ifnm, ofnm, ['-i', ifnm, '-t', ofnm, '-tf', 'ometiff', '-ii', str(series), '-tz', str(z1-1), '-th', str(t1-1)])
+            r = cls.run(ifnm, ofnm, ['-i', ifnm, '-o', ofnm, '-of', 'OmeTiff', '-ii', str(series), '-ic', '0,0,0,0,%s,%s,0,0,%s,%s'%(z1-1,z1,t1-1,t1)])
             if r is None:
                 return None
             # imaris convert appends .tif extension to the file
