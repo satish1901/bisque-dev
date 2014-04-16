@@ -226,7 +226,12 @@ class ConverterOpenSlide(ConverterBase):
             except (openslide.OpenSlideUnsupportedFormatError, openslide.OpenSlideError):
                 return None
             img = slide.get_thumbnail((width, height))
-            img.save(ofnm, 'JPEG')
+            try:
+                img.save(ofnm, 'JPEG')
+            except IOError:
+                tmp = '%s.tif'%ofnm
+                img.save(tmp, 'TIFF')
+                ConverterImgcnv.thumbnail(tmp, ofnm=ofnm, width=width, height=height)
             slide.close()
             return ofnm
         return None
