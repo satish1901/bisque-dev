@@ -194,7 +194,11 @@ class ConverterImgcnv(ConverterBase):
 
         # change the image_pixel_format output, convert numbers to a fully descriptive string
         if isinstance(rd['image_pixel_format'], (long, int)):
-            pf_map = {1: 'unsigned integer', 2: 'signed integer', 3: 'floating point'}
+            pf_map = {
+                1: 'unsigned integer', 
+                2: 'signed integer', 
+                3: 'floating point'
+            }
             rd['image_pixel_format'] = pf_map[rd['image_pixel_format']]
 
         rd.setdefault('image_num_z', 1)

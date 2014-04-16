@@ -59,7 +59,7 @@ class InfoComparator(object):
 
 class InfoEquality(InfoComparator):
     def compare(self, iv, tv):
-        return (iv==tv)
+        return (iv.lower()==tv.lower())
     def fail(self, k, iv, tv):
         print_failed('%s failed comparison %s = %s'%(k, iv, tv))
         pass

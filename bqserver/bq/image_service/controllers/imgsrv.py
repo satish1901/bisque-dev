@@ -756,8 +756,23 @@ class FormatService(object):
             elif fmt in ['jpg', 'jpeg']:
                 extra.extend(['-options', 'quality 95 progressive yes'])
 
+            # first try first converter that supports this output format
             c = self.server.writable_formats[fmt]
             r = c.convert(ifile, ofile, fmt, series=0, extra=extra)
+            
+            # try using other converters directly
+            if r is None:
+                for n,c in self.server.converters.iteritems():
+                    if n=='imgcnv':
+                        continue
+                    r = c.convert(ifile, ofile, fmt, series=0, extra=extra)
+                    if r is not None and os.path.exists(ofile):
+                        break
+                
+            # using ome-tiff as intermediate
+            if r is None:
+                self.server.imageconvert(image_id, ifile, ofile, fmt=fmt, extra=['-multi'])
+                
             if r is None:
                 log.error('Format: %s could not convert with [%s] format [%s] -> [%s]', c.CONVERTERCOMMAND, fmt, ifile, ofile)
                 abort(415, 'Could not convert into %s format'%fmt )

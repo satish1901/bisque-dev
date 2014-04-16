@@ -58,6 +58,13 @@ class ConverterImaris(ConverterBase):
     installed_formats = None
     CONVERTERCOMMAND = 'ImarisConvert' if os.name != 'nt' else 'ImarisConvert.exe'
 
+    format_map = {
+        'ome-bigtiff' : 'OmeTiff',
+        'ome-tiff' : 'OmeTiff',
+        'bigtiff' : 'OmeTiff',
+        'tiff' : 'OmeTiff',        
+    }  
+
 #     #######################################
 #     # Init
 #     #######################################
@@ -203,16 +210,16 @@ class ConverterImaris(ConverterBase):
 
         # pixel format
         pixeltypes = {
-            'uint8':  ('unsigned', 8),
-            'uint16': ('unsigned', 16),
-            'uint32': ('unsigned', 32),
-            'uint64': ('unsigned', 64),
-            'int8':   ('signed', 8),
-            'int16':  ('signed', 16),
-            'int32':  ('signed', 32),
-            'int64':  ('signed', 64),
-            'float':  ('float', 32),
-            'double': ('float', 64),
+            'uint8':  ('unsigned integer', 8),
+            'uint16': ('unsigned integer', 16),
+            'uint32': ('unsigned integer', 32),
+            'uint64': ('unsigned integer', 64),
+            'int8':   ('signed integer', 8),
+            'int16':  ('signed integer', 16),
+            'int32':  ('signed integer', 32),
+            'int64':  ('signed integer', 64),
+            'float':  ('floating point', 32),
+            'double': ('floating point', 64),
         }
         try:
             t = pixeltypes[misc.xpathtextnode(mee, '%s/ImplDataType'%imagenodepath).lower()]
@@ -295,6 +302,8 @@ class ConverterImaris(ConverterBase):
     def convert(cls, ifnm, ofnm, fmt=None, series=0, extra=[]):
         '''converts a file and returns output filename'''
         log.debug('convert: [%s] -> [%s] into %s for series %s with [%s]', ifnm, ofnm, fmt, series, extra)
+        if fmt in cls.format_map:
+            fmt = cls.format_map[fmt]
         command = ['-i', ifnm]
         if ofnm is not None:
             command.extend (['-o', ofnm])

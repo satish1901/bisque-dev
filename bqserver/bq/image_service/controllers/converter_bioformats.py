@@ -37,6 +37,25 @@ class ConverterBioformats(ConverterBase):
     CONVERTERCOMMAND = 'bfconvert'  if os.name != 'nt' else 'bfconvert.bat'
     BFINFO           = 'showinf'    if os.name != 'nt' else 'showinf.bat'
     BFORMATS         = 'formatlist' if os.name != 'nt' else 'formatlist.bat'
+    
+    format_map = {
+        'ome-bigtiff' : {
+            'name': 'ome-tiff',
+            'extra': ['-bigtiff', '-compression', 'LZW']
+        },
+        'bigtiff' : {
+            'name': 'tiff',
+            'extra': ['-bigtiff', '-compression', 'LZW']
+        },
+        'ome-tiff' : {
+            'name': 'ome-tiff',
+            'extra': ['-compression', 'LZW']
+        },
+        'tiff' : {
+            'name': 'tiff',
+            'extra': ['-compression', 'LZW']
+        }
+    }    
 
 #     #######################################
 #     # Init
@@ -198,16 +217,16 @@ class ConverterBioformats(ConverterBase):
 
         # pixel format
         pixeltypes = {
-            'uint8':  ('unsigned', 8),
-            'uint16': ('unsigned', 16),
-            'uint32': ('unsigned', 32),
-            'uint64': ('unsigned', 64),
-            'int8':   ('signed', 8),
-            'int16':  ('signed', 16),
-            'int32':  ('signed', 32),
-            'int64':  ('signed', 64),
-            'float':  ('float', 32),
-            'double': ('float', 64),
+            'uint8':  ('unsigned integer', 8),
+            'uint16': ('unsigned integer', 16),
+            'uint32': ('unsigned integer', 32),
+            'uint64': ('unsigned integer', 64),
+            'int8':   ('signed integer', 8),
+            'int16':  ('signed integer', 16),
+            'int32':  ('signed integer', 32),
+            'int64':  ('signed integer', 64),
+            'float':  ('floating point', 32),
+            'double': ('floating point', 64),
         }
         try:
             t = pixeltypes[pixels.get('Type', 0).lower()]
@@ -352,13 +371,29 @@ class ConverterBioformats(ConverterBase):
     def convert(cls, ifnm, ofnm, fmt=None, series=0, extra=[]):
         '''converts a file and returns output filename'''
         log.debug('convert: [%s] -> [%s] into %s for series %s with [%s]', ifnm, ofnm, fmt, series, extra)
+        command = [ifnm, ofnm, '-no-upgrade', '-overwrite']        
+        tmp = None
         if fmt is not None:
-            ofnm = '%s.%s'%(ofnm, cls.installed_formats[fmt].ext[0])
-        command = [ifnm, ofnm, '-no-upgrade', '-overwrite']
+            fmt2 = fmt
+            if fmt in cls.format_map:
+                fmt2 = cls.format_map[fmt]['name']
+            ext = cls.installed_formats[fmt2].ext[0]
+            if ofnm.endswith(ext) is False:
+                tmp = '%s.%s'%(ofnm, ext)
+                command = [ifnm, tmp, '-no-upgrade', '-overwrite']
         if series>=0:
             command.extend(['-series', '%s'%series])
+        
         #command.extend(extra)
-        return cls.run(ifnm, ofnm, command )
+        if fmt in cls.format_map:
+            command.extend(cls.format_map[fmt]['extra'])
+
+        if tmp is None:
+            return cls.run(ifnm, ofnm, command )
+        else:
+            r = cls.run(ifnm, tmp, command )
+            os.rename(tmp, ofnm)
+            return r
 
     # '.ome.tiff' or '.ome.tif'.
     #sh bfconvert -bigtiff -compression LZW  ../53676.svs ../output.ome.tiff
