@@ -95,7 +95,7 @@ class ImageServiceTests(ImageServiceTestBase):
         meta_required = { 'format': 'JPEG', 
             'image_num_x': '115', 
             'image_num_y': '128', 
-            'image_num_c': '1', 
+            'image_num_c': '3', 
             'image_num_z': '1',
             'image_num_t': '1',
             'image_pixel_depth': '8',
@@ -103,7 +103,7 @@ class ImageServiceTests(ImageServiceTestBase):
         self.validate_image_variant(resource, filename, commands, meta_required) 
         
     def test_meta_imaris_hela (self):
-        resource = self.resource_imaris_hela        
+        resource = self.resource_imaris_hela
         filename = 'imaris_hela.meta.xml'
         commands = [('meta', None)]
         meta_required = [
@@ -130,7 +130,7 @@ class ImageServiceTests(ImageServiceTestBase):
         filename = 'imaris_hela.slice.tif'
         commands = [('slice', ',,1,1')]
         meta_required = { 
-            'format': 'bigtiff', 
+            'format': 'OME-BigTIFF',
             'image_num_x': '136', 
             'image_num_y': '151', 
             'image_num_c': '2', 
@@ -164,14 +164,16 @@ class ImageServiceTests(ImageServiceTestBase):
         resource = self.resource_imaris_r18        
         filename = 'imaris_r18.thumbnail.jpg'
         commands = [('thumbnail', None)]
-        meta_required = { 'format': 'JPEG', 
+        meta_required = { 
+            'format': 'JPEG', 
             'image_num_x': '128', 
             'image_num_y': '128', 
-            'image_num_c': '1', 
+            'image_num_c': '3', 
             'image_num_z': '1',
             'image_num_t': '1',
             'image_pixel_depth': '8',
-            'image_pixel_format': 'unsigned integer' }           
+            'image_pixel_format': 'unsigned integer' 
+        }
         self.validate_image_variant(resource, filename, commands, meta_required) 
         
     def test_meta_imaris_r18 (self):
@@ -180,7 +182,7 @@ class ImageServiceTests(ImageServiceTestBase):
         commands = [('meta', None)]
         meta_required = [
             { 'xpath': '//tag[@name="image_num_x"]', 'attr': 'value', 'val': '256' },
-            { 'xpath': '//tag[@name="image_num_y"]', 'attr': 'value', 'val': '156' },
+            { 'xpath': '//tag[@name="image_num_y"]', 'attr': 'value', 'val': '256' },
             { 'xpath': '//tag[@name="image_num_c"]', 'attr': 'value', 'val': '1' },
             { 'xpath': '//tag[@name="image_num_z"]', 'attr': 'value', 'val': '6' },
             { 'xpath': '//tag[@name="image_num_t"]', 'attr': 'value', 'val': '30' },
@@ -202,7 +204,7 @@ class ImageServiceTests(ImageServiceTestBase):
         filename = 'imaris_r18.slice.tif'
         commands = [('slice', ',,1,1')]
         meta_required = { 
-            'format': 'bigtiff', 
+            'format': 'OME-BigTIFF', 
             'image_num_x': '256', 
             'image_num_y': '256', 
             'image_num_c': '1', 
@@ -239,7 +241,7 @@ class ImageServiceTests(ImageServiceTestBase):
         meta_required = { 'format': 'JPEG', 
             'image_num_x': '128', 
             'image_num_y': '128', 
-            'image_num_c': '1', 
+            'image_num_c': '3', 
             'image_num_z': '1',
             'image_num_t': '1',
             'image_pixel_depth': '8',
@@ -274,7 +276,7 @@ class ImageServiceTests(ImageServiceTestBase):
         filename = 'zeiss_czi_rat.slice.tif'
         commands = [('slice', ',,1,1')]
         meta_required = { 
-            'format': 'bigtiff', 
+            'format': 'OME-BigTIFF', 
             'image_num_x': '400', 
             'image_num_y': '400', 
             'image_num_c': '2', 
@@ -311,7 +313,7 @@ class ImageServiceTests(ImageServiceTestBase):
         meta_required = { 'format': 'JPEG', 
             'image_num_x': '128', 
             'image_num_y': '128', 
-            'image_num_c': '1', 
+            'image_num_c': '3', 
             'image_num_z': '1',
             'image_num_t': '1',
             'image_pixel_depth': '8',
@@ -346,7 +348,7 @@ class ImageServiceTests(ImageServiceTestBase):
         filename = 'zeiss_czi_mouse.slice.tif'
         commands = [('slice', ',,1,1')]
         meta_required = { 
-            'format': 'bigtiff', 
+            'format': 'OME-BigTIFF', 
             'image_num_x': '512', 
             'image_num_y': '512', 
             'image_num_c': '3', 
@@ -383,7 +385,7 @@ class ImageServiceTests(ImageServiceTestBase):
         meta_required = { 'format': 'JPEG', 
             'image_num_x': '128', 
             'image_num_y': '96', 
-            'image_num_c': '1', 
+            'image_num_c': '3', 
             'image_num_z': '1',
             'image_num_t': '1',
             'image_pixel_depth': '8',
@@ -418,7 +420,7 @@ class ImageServiceTests(ImageServiceTestBase):
         filename = 'nikon_nd2.slice.tif'
         commands = [('slice', ',,1,1')]
         meta_required = { 
-            'format': 'bigtiff', 
+            'format': 'OME-BigTIFF', 
             'image_num_x': '1920', 
             'image_num_y': '1440', 
             'image_num_c': '2', 
@@ -455,7 +457,7 @@ class ImageServiceTests(ImageServiceTestBase):
         meta_required = { 'format': 'JPEG', 
             'image_num_x': '128', 
             'image_num_y': '96', 
-            'image_num_c': '1', 
+            'image_num_c': '3', 
             'image_num_z': '1',
             'image_num_t': '1',
             'image_pixel_depth': '8',
@@ -490,7 +492,7 @@ class ImageServiceTests(ImageServiceTestBase):
         filename = 'nikon_nd2_deconv.slice.tif'
         commands = [('slice', ',,1,1')]
         meta_required = { 
-            'format': 'bigtiff', 
+            'format': 'OME-BigTIFF', 
             'image_num_x': '1920', 
             'image_num_y': '1440', 
             'image_num_c': '2', 
@@ -527,7 +529,7 @@ class ImageServiceTests(ImageServiceTestBase):
         meta_required = { 'format': 'JPEG', 
             'image_num_x': '128', 
             'image_num_y': '128', 
-            'image_num_c': '1', 
+            'image_num_c': '3', 
             'image_num_z': '1',
             'image_num_t': '1',
             'image_pixel_depth': '8',
@@ -557,12 +559,13 @@ class ImageServiceTests(ImageServiceTestBase):
         ]
         self.validate_xml(resource, filename, commands, meta_required) 
         
-    def test_slice_leica_lif (self):
+    # combined test becuase this file has 1 T and 1 Z and so the slice will shortcut and will not be readable by imgcnv
+    def test_slice_format_leica_lif (self):
         resource = self.resource_leica_lif        
         filename = 'leica_lif.slice.tif'
-        commands = [('slice', ',,1,1')]
+        commands = [('slice', ',,1,1'), ('format', 'ome-tiff')]
         meta_required = { 
-            'format': 'bigtiff', 
+            'format': 'OME-BigTIFF', 
             'image_num_x': '512', 
             'image_num_y': '512', 
             'image_num_c': '1', 
@@ -601,7 +604,7 @@ class ImageServiceTests(ImageServiceTestBase):
 #         meta_required = { 'format': 'JPEG', 
 #             'image_num_x': '128', 
 #             'image_num_y': '128', 
-#             'image_num_c': '1', 
+#             'image_num_c': '3', 
 #             'image_num_z': '1',
 #             'image_num_t': '1',
 #             'image_pixel_depth': '8',
@@ -673,7 +676,7 @@ class ImageServiceTests(ImageServiceTestBase):
         meta_required = { 'format': 'JPEG', 
             'image_num_x': '128', 
             'image_num_y': '128', 
-            'image_num_c': '1', 
+            'image_num_c': '3', 
             'image_num_z': '1',
             'image_num_t': '1',
             'image_pixel_depth': '8',
@@ -737,7 +740,7 @@ class ImageServiceTests(ImageServiceTestBase):
         meta_required = { 'format': 'JPEG', 
             'image_num_x': '128', 
             'image_num_y': '128', 
-            'image_num_c': '1', 
+            'image_num_c': '3', 
             'image_num_z': '1',
             'image_num_t': '1',
             'image_pixel_depth': '8',
@@ -767,18 +770,21 @@ class ImageServiceTests(ImageServiceTestBase):
         ]
         self.validate_xml(resource, filename, commands, meta_required)     
 
-    def test_slice_dicom_2d(self):
+    # combined test becuase this file has 1 T and 1 Z and so the slice will shortcut and will not be readable by imgcnv
+    def test_slice_format_dicom_2d(self):
         resource = self.resource_dicom_2d
         filename = 'dicom_2d.slice.tif'
-        commands = [('slice', ',,1,1')]
-        meta_required = { 'format': 'bigtiff', 
+        commands = [('slice', ',,1,1'), ('format', 'ome-tiff')]
+        meta_required = { 
+            'format': 'OME-TIFF', 
             'image_num_x': '256', 
             'image_num_y': '256', 
             'image_num_c': '1', 
             'image_num_z': '1',
             'image_num_t': '1',
             'image_pixel_depth': '16',
-            'image_pixel_format': 'signed integer' }
+            'image_pixel_format': 'signed integer' 
+        }
         self.validate_image_variant(resource, filename, commands, meta_required) 
         
     def test_format_dicom_2d(self):

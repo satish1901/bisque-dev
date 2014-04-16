@@ -16,6 +16,7 @@ __copyright__ = "Center for BioImage Informatics, University California, Santa B
 import sys
 import logging
 import os.path
+import shutil
 import re
 import StringIO
 from urllib import quote
@@ -544,6 +545,34 @@ class LocalPathService(object):
             res = etree.Element ('resource')
 
         return data_token.setXml( etree.tostring(res) )
+
+class CacheCleanService(object):
+    '''Cleans local cache for a given image'''
+
+    def __init__(self, server):
+        self.server = server
+
+    def __str__(self):
+        return 'cleancache: cleans local cache for a given image'
+
+    def dryrun(self, image_id, data_token, arg):
+        return data_token.setXml('')
+
+    def action(self, image_id, data_token, arg):
+        ifname = self.server.getInFileName( data_token, image_id )
+        ofname = self.server.getOutFileName( ifname, image_id, '' )
+        log.debug('Cleaning local cache: %s', ofname)
+        path = os.path.dirname(ofname)
+        fname = os.path.basename(ofname)
+        for root, dirs, files in os.walk(path, topdown=False):
+            for name in files:
+                if name.startswith(fname):
+                    os.remove(os.path.join(root, name))
+            for name in dirs:
+                if name.startswith(fname):
+                    #os.removedirs(os.path.join(root, name))
+                    shutil.rmtree(os.path.join(root, name))
+        return data_token.setHtml( 'Clean' )
 
 
 ################################################################################
@@ -2376,6 +2405,7 @@ class ImageServer(object):
             #'setslice'     : SetSliceService(self),
             #'close'        : CloseImageService(self),
             #'bioformats'   : BioFormatsService(self)
+            'cleancache'   : CacheCleanService(self),
         }
 
         self.converters = ConverterDict([
