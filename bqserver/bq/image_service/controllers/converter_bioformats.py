@@ -60,7 +60,7 @@ class ConverterBioformats(ConverterBase):
     @classmethod
     def get_version (cls):
         '''returns the version of bioformats'''
-        o = misc.run_command( [cls.BFINFO, '-version'] )
+        o = misc.run_command( [cls.BFINFO, '-version', '-no-upgrade'] )
         if o is None:
             return None
 
@@ -147,7 +147,7 @@ class ConverterBioformats(ConverterBase):
             return {}
         log.debug('Meta for: %s', ifnm )
         with Locks(ifnm):
-            o = misc.run_command( [self.BFINFO, '-nopix', '-omexml', ifnm] )
+            o = misc.run_command( [self.BFINFO, '-nopix', '-omexml', '-novalid', '-no-upgrade', ifnm] )
         if o is None:
             return {}
 
@@ -155,10 +155,6 @@ class ConverterBioformats(ConverterBase):
         try:
             omexml = misc.between('<OME', '</OME>', o)
             omexml = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n<OME%s</OME>'%omexml
-            
-            with open('G:\\nd2.ome.xml', 'w') as f:
-                f.write(omexml)
-            
         except UnboundLocalError:
             return {}
 
@@ -289,9 +285,7 @@ class ConverterBioformats(ConverterBase):
         if not os.path.exists(ifnm):
             return {}
         log.debug('Info for: %s', ifnm )
-        command = [self.BFINFO, '-nopix', '-nometa', ifnm]
-#         if original is not None:
-#             command = [self.BFINFO, '-nopix', '-nometa', '-map', ifnm, original ]
+        command = [self.BFINFO, '-nopix', '-nometa', '-no-upgrade', ifnm]
 
         with Locks(ifnm):
             o = misc.run_command( command )
@@ -360,7 +354,7 @@ class ConverterBioformats(ConverterBase):
         log.debug('convert: [%s] -> [%s] into %s for series %s with [%s]', ifnm, ofnm, fmt, series, extra)
         if fmt is not None:
             ofnm = '%s.%s'%(ofnm, cls.installed_formats[fmt].ext[0])
-        command = [ifnm, ofnm]
+        command = [ifnm, ofnm, '-no-upgrade', '-overwrite']
         if series>=0:
             command.extend(['-series', '%s'%series])
         #command.extend(extra)
@@ -374,7 +368,7 @@ class ConverterBioformats(ConverterBase):
         '''converts input filename into output in OME-TIFF format'''
         log.debug('convertToOmeTiff: [%s] -> [%s] for series %s with [%s]', ifnm, ofnm, series, extra)
 
-        command = [ifnm, ofnm]
+        command = [ifnm, ofnm, '-no-upgrade', '-overwrite']
         #if original is not None:
         #    command = ['-map', ifnm, original, ofnm]
         command.extend(['-bigtiff', '-compression', 'LZW'])
