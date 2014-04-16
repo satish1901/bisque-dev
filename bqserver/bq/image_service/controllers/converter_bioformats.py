@@ -243,7 +243,7 @@ class ConverterBioformats(ConverterBase):
         rd['pixel_resolution_unit_x'] = 'microns'
         rd['pixel_resolution_unit_y'] = 'microns'
         rd['pixel_resolution_unit_z'] = 'microns'
-        rd['pixel_resolution_unit_z'] = 'seconds'
+        rd['pixel_resolution_unit_t'] = 'seconds'
 
         # channel names
         channels = mee.xpath('ome:Image[@ID="Image:0"]/ome:Pixels/ome:Channel', namespaces=namespaces)
