@@ -121,16 +121,15 @@ Ext.define('BQ.viewer.Movie', {
 
         this.viewer.setAttribute('poster', this.constructPreviewUrl());
 
-        // dima: image service is serving bad h264 right now
-        //this.sourceH264 = document.createElementNS (xhtmlns, 'source');
-        //this.sourceH264.setAttribute('src', this.constructMovieUrl('h264'));
-        //this.sourceH264.setAttribute('type', 'video/mp4');
-        //this.viewer.appendChild(this.sourceH264);
-
         this.sourceWEBM = document.createElementNS (xhtmlns, 'source');
         this.sourceWEBM.setAttribute('src', this.constructMovieUrl('webm'));
         this.sourceWEBM.setAttribute('type', 'video/webm;codecs="vp8, vorbis"');
         this.viewer.appendChild(this.sourceWEBM);
+
+        this.sourceH264 = document.createElementNS (xhtmlns, 'source');
+        this.sourceH264.setAttribute('src', this.constructMovieUrl('h264'));
+        this.sourceH264.setAttribute('type', 'video/mp4');
+        this.viewer.appendChild(this.sourceH264);
 
         this.parent.appendChild(this.viewer);
 
@@ -165,11 +164,11 @@ Ext.define('BQ.viewer.Movie', {
 
     doUpdate: function () {
         this.update_needed = undefined;
-        // dima: image service is serving bad h264 right now
-        this.viewer.src = this.constructMovieUrl('webm');
+        if (Ext.isChrome() || Ext.isGecko())
+            this.viewer.src = this.constructMovieUrl('webm');
+        else
+            this.viewer.src = this.constructMovieUrl('h264');
 
-        //this.sourceH264.setAttribute('src', this.constructMovieUrl('h264'));
-        //this.sourceWEBM.setAttribute('src', this.constructMovieUrl('webm'));
     },
 
     needs_update: function () {
@@ -645,11 +644,8 @@ PlayerFormat.prototype.init = function () {
     var pages = t * z;
 
     var fps = 30;
-    if (pages < 700) fps = 15;
-    if (pages < 450) fps = 12;
-    if (pages < 225) fps = 6;
-    //if (pages < 100) fps = 3;
-    //if (pages < 50) fps = 1;
+    if (pages < 20) fps = 15;
+    if (pages < 10) fps = 6;
 
     var index = this.menu.items.findIndex( 'itemId', 'combo_resolution' );
     this.menu.insert(index+1, {
@@ -673,6 +669,9 @@ PlayerFormat.prototype.addCommand = function (command, pars) {
     if (format==='jpeg')
         command.push('format=jpeg');
     else
-        command.push('format='+format+',fps,'+fps);
+        if (fps != 30)
+            command.push('format='+format+',fps,'+fps);
+        else
+            command.push('format='+format);
 };
 
