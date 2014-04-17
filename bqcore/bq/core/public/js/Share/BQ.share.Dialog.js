@@ -308,17 +308,42 @@ Ext.define('BQ.share.Panel', {
             items: [{
                 xtype: 'combobox',
                 itemId: 'user_combo',
-                flex: 2,
+                cls: 'bq-user-picker',
+                flex: 3,
+                heigth: 30,
                 //fieldLabel: 'Add new shares by user name or any e-mail',
                 store: this.store_users,
                 queryMode: 'local',
                 displayField: 'full',
                 valueField: 'email',
                 anyMatch: true,
+                autoSelect: false,
+                hideTrigger: true,
+                minChars: 2,
+                listConfig: {
+
+                },
+                listeners : {
+                    scope: this,
+                    change: function(field) {
+                        var v = field.getValue();
+                        var p = field.getPicker();
+                        var h = p && p.isVisible() ? p.getHeight() : 0;
+                        if (!v || v.length<2 || h<5)
+                            field.collapse();
+                    },
+                    select: this.onAddShare,
+                    specialkey: function(field, e) {
+                        if (e.getKey() === e.ENTER && !field.isExpanded) {
+                            this.onAddShare();
+                        }
+                    },
+                },
             }, {
                 xtype: 'button',
                 text: 'Add share',
                 iconCls: 'icon-add',
+                scale: 'medium',
                 scope: this,
                 handler: this.onAddShare,
             }, {
@@ -396,6 +421,10 @@ Ext.define('BQ.share.Panel', {
     onAddShare: function() {
         var email = this.queryById('user_combo').getValue();
         if (!email) return;
+        if (!(/\S+@\S+\.\S+/.test(email))) {
+            BQ.ui.notification('The e-mail seems malformed...');
+            return;
+        }
 
         var r = this.store.findRecord( 'email', email );
         if (r && r.data) {
