@@ -1,4 +1,4 @@
---index-url==http://biodev.ece.ucsb.edu:4004/bisque/dev
+--index-url==http://biodev.ece.ucsb.edu:4004/bisque/dev/+simple
 Babel==1.3
 Beaker==1.6.4
 Cython==0.20.1
