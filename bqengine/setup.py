@@ -2,7 +2,7 @@
 from setuptools import setup, find_packages
 
 #from bq.release import __VERSION__
-__VERSION__="0.5.4"
+__VERSION__="0.5.5"
 
 setup(
     name='bqengine',
@@ -12,18 +12,19 @@ setup(
     author_email='',
     #url='',
     install_requires=["bqcore",
+                      "bqdev",
                       "httplib2",
                       'bbfreeze',
                       ],
     setup_requires=["PasteScript>=1.6.3"],
     paster_plugins=['PasteScript', 'Pylons' ],
-    packages= find_packages(),
+    packages= ['bq'],
     namespace_packages = ['bq'],
     zip_safe = False,
     #include_package_data=True,
     test_suite='nose.collector',
     tests_require=['WebTest', 'BeautifulSoup'],
-    package_data={'': ['*.html',]},
+    #package_data={'': ['*.html',]},
     message_extractors = {'bq': [
             ('**.py', 'python', None),
             ('templates/**.mako', 'mako', None),
