@@ -425,12 +425,16 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
         this.msgBus.mon(this.msgBus, {
             'ResourceDblClick' : function(resource) {
                 // check if its dir or local
-                if (resource.resource_type === 'dir') {
+                if (resource.resource_type === 'dir' || resource.resource_type === 'store') {
                     //this.fireEvent('directory', this, resource);
                     if (!this.commandBar) return;
                     if (!this.commandBar.westPanel) return;
                     var ft = this.commandBar.westPanel.queryById('files');
-                    var path = ft.getSelected() +'/'+ resource.name;
+                    var path = ft.getSelected();
+                    if (resource.resource_type === 'store')
+                        path += '/store';
+                    path += '/'+ resource.name;
+                    path = path.replace('//', '/');
                     ft.setPath(path);
                     return;
                 }
@@ -440,12 +444,16 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
 
             'ResourceSingleClick' : function(resource) {
                 // check if its dir or local
-                if (resource.resource_type === 'dir') {
+                if (resource.resource_type === 'dir' || resource.resource_type === 'store') {
                     //this.fireEvent('directory', this, resource);
                     if (!this.commandBar) return;
                     if (!this.commandBar.westPanel) return;
                     var ft = this.commandBar.westPanel.queryById('files');
-                    var path = ft.getSelected() +'/'+ resource.name;
+                    var path = ft.getSelected();
+                    if (resource.resource_type === 'store')
+                        path += '/store';
+                    path += '/'+ resource.name;
+                    path = path.replace('//', '/');
                     ft.setPath(path);
                     return;
                 }

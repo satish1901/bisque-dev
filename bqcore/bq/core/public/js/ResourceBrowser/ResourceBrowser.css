@@ -533,6 +533,8 @@
 
 .resicon.store {
     background-image: url('Images/store_512.png');
+    background-position: 15px 0px;
+    background-size: 130px;
 }
 
 .resicon.store.ImageCard, .resicon.store.ImageFull {
@@ -544,10 +546,10 @@
 }
 
 .resicon.store .lblHeading1 {
-    margin-top: 68px;
-    font-size: 20px;
+    margin-top: 115px;
+    font-size: 16px;
     text-align: center;
-    color: #000066;
+    color: #666666;
 }
 
 .resicon.store.ImageCard .lblHeading1, .resicon.store.ImageFull .lblHeading1  {
