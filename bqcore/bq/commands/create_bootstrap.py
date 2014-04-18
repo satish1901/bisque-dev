@@ -23,7 +23,7 @@ def after_install(options, home_dir):
     else:
        bindir = 'bin'
 
-    subprocess.call([os.path.join(home_dir, bindir, 'pip', 'install'), 'paver'])
+    subprocess.call([os.path.join(home_dir, bindir, 'pip'), 'install', 'paver'])
     #subprocess.call([os.path.join(home_dir, bindir, 'easy_install'),
     #                 '-i', options.tg, 'tg.devtools'])
 
@@ -36,7 +36,7 @@ def bisque_install(options, home_dir, bindir):
        r = 1
 
     if r !=  0:
-         subprocess.call([os.path.join(home_dir, bindir, 'pip', 'install'), 'mercurial'])
+         subprocess.call([os.path.join(home_dir, bindir, 'pip'), 'install', 'mercurial'])
          mercurial = os.path.join(home_dir, bindir, 'hg')
     else:
          mercurial = 'hg'
@@ -55,13 +55,15 @@ def bisque_install(options, home_dir, bindir):
     print "**Dowload and layout completed**"
     print "********************************"
     print
+    print
+    subprocess.call([os.path.join(home_dir, bindir, 'pip'), 'install', 'r', 'requirements.txt'])
+
     print "*********************************"
     print "* Execute the following commands*"
     if sys.platform == 'win32':
         print "bqenv\\\\Scripts\\\\activate.bat"
     else:
         print "source bqenv/bin/activate"
-    print "pip install -r  requirements.txt"
     print "paver setup    [engine]"
     print "bq-admin setup [engine]"
 
