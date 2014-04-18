@@ -858,8 +858,21 @@ def install_bioformats(params):
     if getanswer ("Install bioformats", "Y",
                   "Bioformats can be used as a backup to read many image file types") == "Y":
 
-        #bio_files = [ 'bio-formats.jar', 'loci-common.jar', 'mdbtools-java.jar', 'ome-io.jar',
-        #              'poi-loci.jar', 'jai_imageio.jar', 'loci_tools.jar', 'metakit.jar', 'ome-xml.jar' ]
+        old_bf_files = [ 
+            'bfconvert', 'bfconvert.bat', 'bfview', 'bfview.bat', 'bio-formats.jar', 
+            'domainlist', 'domainlist.bat', 'editor', 'editor.bat', 'formatlist', 
+            'formatlist.bat', 'ijview', 'ijview.bat', 'jai_imageio.jar', 'list.txt', 
+            'loci_plugins.jar', 'loci_tools.jar', 'loci-common.jar', 'loci-testing-framework.jar', 
+            'log4j.properties', 'lwf-stubs.jar', 'mdbtools-java.jar', 'metakit.jar', 'notes', 
+            'notes.bat', 'ome_plugins.jar', 'ome_tools.jar', 'ome-editor.jar', 'ome-io.jar', 
+            'omeul', 'omeul.bat', 'ome-xml.jar', 'poi-loci.jar', 'scifio.jar', 'showinf', 
+            'showinf.bat', 'tiffcomment', 'tiffcomment.bat', 'xmlindent', 'xmlindent.bat', 'xmlvalid', 'xmlvalid.bat'
+        ]
+
+        # first remove old files
+        for f in old_bf_files:
+            os.remove(os.path.join(BQBIN ,f))
+        
 
         #for bf in bio_files:
         #    copy_link (os.path.join(BQDEPOT, bf), BQBIN)
@@ -1306,6 +1319,31 @@ def install_imgcnv ():
 
         filename_dest = os.path.join(os.environ['VIRTUAL_ENV'], binv)
         filename_check = os.path.join(filename_dest, 'imgcnv%s'%exev)
+        uncompress_dependencies (filename_zip, filename_dest, filename_check)
+
+def install_openslide ():
+    """Install dependencies that aren't handled by setup.py"""
+
+    filename_zip = os.path.join(BQDEPOT, 'openslide-bisque.zip')
+
+    if not os.path.exists(filename_zip):
+        print "No pre-compiled version of openslide exists for your system"
+        print "Please visit biodev.ece.ucsb.edu/projects/imgcnv"
+        print "or visit our mailing list https://groups.google.com/forum/#!forum/bisque-bioimage"
+        print "for help"
+        return
+
+    if getanswer ("Install OpenSlide converter", "Y",
+                  "OpenSlide will allow image server to read full slide pixel data") == "Y":
+
+        binv = 'bin'
+        exev = ''
+        if sys.platform == 'win32':
+            binv = 'Scripts'
+            exev = '.exe'
+
+        filename_dest = os.path.join(os.environ['VIRTUAL_ENV'], binv)
+        filename_check = ''
         uncompress_dependencies (filename_zip, filename_dest, filename_check)
 
 def install_features ():

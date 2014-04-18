@@ -23,7 +23,7 @@
 #   platform.platform().replace('-', '-%s-'%platform.architecture()[0], 1)
 
 [Windows-64bit-*]
-EBF3EFAC596C1F1E03DA47F941B3A9250D61A502-imgcnv-Windows-64bit.zip=imgcnv.zip
+429AD18CDD6A84F5B8165926C04948C5B41E6978-imgcnv_win64_1-66.zip=imgcnv.zip
 463B3F04091CA0F78F671E7E7E0CCE7A16BFB30E-openslide-bisque-Windows-64bit.1.0.1.zip=openslide-bisque.zip
 743FB2442628209894B382BCA2D7ABAEF37116D6-feature_extractors-Windows-64bit.zip=feature_extractors.zip
 
