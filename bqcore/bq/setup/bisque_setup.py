@@ -1530,9 +1530,13 @@ usage = " usage: bq-admin setup [%s] " % ' '.join(install_options)
 
 
 def bisque_installer(options, args):
-    cwd = to_posix_path(os.getcwd())
-    if not os.path.exists ('bqcore'):
-        print "ERROR: This script must be bisque installation directory"
+    #cwd = to_posix_path(os.getcwd())
+    #if not os.path.exists ('bqcore'):
+    #    print "ERROR: This script must be bisque installation directory"
+    #    sys.exit()
+
+    if not os.path.exists('config'):
+        print "Cannot find config.. please run bq-admin setup from bisque install"
         sys.exit()
 
     print """This is the main installer for Bisque
