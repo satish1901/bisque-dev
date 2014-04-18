@@ -35,49 +35,49 @@
 }
 
 .slider .play {
-  background-image: url('/client_service/public/js/slider/images/32px_play.png');
+  background-image: url('/js/slider/images/32px_play.png');
 }
 
 .slider .play-vertical {
-  background-image: url('/client_service/public/js/slider/images/32px_play_vertical.png');
+  background-image: url('/js/slider/images/32px_play_vertical.png');
 }
 
 .slider .x-play-selected, .slider .x-btn-play-selected {
-  background-image: url('/client_service/public/js/slider/images/32px_play_selected.png');
+  background-image: url('/js/slider/images/32px_play_selected.png');
 }
 
 .slider .x-play-vertical-selected, .slider .x-btn-play-vertical-selected {
-  background-image: url('/client_service/public/js/slider/images/32px_play_vertical_selected.png');
+  background-image: url('/js/slider/images/32px_play_vertical_selected.png');
 }
 
 .slider .next {
-  background-image: url('/client_service/public/js/slider/images/32px_next.png');
+  background-image: url('/js/slider/images/32px_next.png');
 }
 
 .slider .next-vertical {
-  background-image: url('/client_service/public/js/slider/images/32px_next_vertical.png');
+  background-image: url('/js/slider/images/32px_next_vertical.png');
 }
 
 .slider .x-next-selected, .slider .x-btn-next-selected {
-  background-image: url('/client_service/public/js/slider/images/32px_next_selected.png');
+  background-image: url('/js/slider/images/32px_next_selected.png');
 }
 
 .slider .x-next-vertical-selected, .slider .x-btn-next-vertical-selected {
-  background-image: url('/client_service/public/js/slider/images/32px_next_vertical_selected.png');
+  background-image: url('/js/slider/images/32px_next_vertical_selected.png');
 }
 
 .slider .prev {
-  background-image: url('/client_service/public/js/slider/images/32px_prev.png');
+  background-image: url('/js/slider/images/32px_prev.png');
 }
 
 .slider .prev-vertical {
-  background-image: url('/client_service/public/js/slider/images/32px_prev_vertical.png');
+  background-image: url('/js/slider/images/32px_prev_vertical.png');
 }
 
 .slider .x-prev-selected, .slider .x-btn-prev-selected {
-  background-image: url('/client_service/public/js/slider/images/32px_prev_selected.png');
+  background-image: url('/js/slider/images/32px_prev_selected.png');
 }
 
 .slider .x-prev-vertical-selected, .slider .x-btn-prev-vertical-selected {
-  background-image: url('/client_service/public/js/slider/images/32px_prev_vertical_selected.png');
+  background-image: url('/js/slider/images/32px_prev_vertical_selected.png');
 }
