@@ -32,16 +32,16 @@
     '/js/Share/BQ.share.Dialog.css',
     '/js/picker/Path.css',
     '/js/tree/files.css',
-    '/image_service/public/converter.css',
+    { 'file' : '/image_service/public/converter.css', 'path' : h.file_root() + 'bqserver/bq' },
     '/panojs3/styles/panojs.css',
     '/js/slider/slider.css',
     '/js/picker/Color.css',
     '/js/form/field/Color.css',
     '/css/imgview.css',
     '/js/movie/movie.css',
-    '/dataset_service/public/dataset_panel.css',
+    { 'file': '/dataset_service/public/dataset_panel.css', 'path' : h.file_root() + 'bqserver/bq' },
     '/js/renderers/dataset.css',
-    '/js/volume/bioWeb3D.css',
+#    '/js/volume/bioWeb3D.css',
     {'file' : '/export_service/public/css/BQ.Export.css', 'path' : h.file_root() + 'bqserver/bq'},
     '/css/bisquik_extjs_fix.css',
     # combined will not work for now due to relative urls in .css files
@@ -163,7 +163,7 @@
     '/panojs3/panojs/control_svg.js',
 
     # -- Image viewer --
-    '/image_service/public/converter.js',
+    { 'file' : '/image_service/public/converter.js', 'path': h.file_root() + 'bqserver/bq/'},
 
     '/js/slider/inversible.js',
     '/js/slider/slider.js',
@@ -196,16 +196,16 @@
     '/js/movie/movie.js',
 
     #-- Stats --
-    '/stats/public/js/stats.js',
+    { 'file' : '/stats/public/js/stats.js', 'path': h.file_root() + 'bqserver/bq/'},
     '/js/bq_ui_progress.js',
 
     #-- GMaps API --
     '/js/map/map.js',
 
     #-- Resource dispatch --
-    '/dataset_service/public/dataset_service.js',
-    '/dataset_service/public/dataset_operations.js',
-    '/dataset_service/public/dataset_panel.js',
+    { 'file': '/dataset_service/public/dataset_service.js','path': h.file_root() + 'bqserver/bq/'},
+    { 'file': '/dataset_service/public/dataset_operations.js','path': h.file_root() + 'bqserver/bq/'},
+    { 'file': '/dataset_service/public/dataset_panel.js','path': h.file_root() + 'bqserver/bq/'},
     '/js/renderers/dataset.js',
     '/js/resourceview.js',
 
