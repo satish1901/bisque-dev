@@ -25,6 +25,7 @@ from bq.api.comm import BQSession
 
 from bq.image_service.tests.tests_base import ImageServiceTestBase
 
+# imarisconvert supported files
 image_imaris_hela      = 'HeLaCell.ims'
 image_imaris_r18       = 'R18Demo.ims'
 image_zeiss_czi_rat    = '40x_RatBrain-AT-2ch-Z-wf.czi'
@@ -33,8 +34,14 @@ image_nikon_nd2        = 'JR3449 01009.nd2'
 image_nikon_nd2_deconv = 'JR3449 01012_crop_crop - Deconvolved.nd2'
 image_leica_lif        = 'APDnew.lif'
 image_slidebook        = 'cx-11.sld'
+
+# bioformats supported files
 image_dicom_3d         = 'MR-MONO2-8-16x-heart'
 image_dicom_2d         = 'ADNI_002_S_0295_MR_3-plane_localizer__br_raw_20060418193538653_1_S13402_I13712.dcm'
+
+# openslide supported files - only proveds thumnail and tile interfaces
+image_svs              = 'CMU-1-Small-Region.svs'
+
 
 
 ##################################################################
@@ -67,6 +74,7 @@ class ImageServiceTests(ImageServiceTestBase):
         #self.resource_slidebook  = self.ensure_bisque_file(image_slidebook) # dima: this slidebook file contains multiple series and will have to be tested as such
         self.resource_dicom_3d   = self.ensure_bisque_file(image_dicom_3d)
         self.resource_dicom_2d   = self.ensure_bisque_file(image_dicom_2d)
+        self.resource_svs        = self.ensure_bisque_file(image_svs)
 
     @classmethod
     def tearDownClass(self):
@@ -80,6 +88,7 @@ class ImageServiceTests(ImageServiceTestBase):
         #self.delete_resource(self.resource_slidebook) # dima: this slidebook file contains multiple series and will have to be tested as such
         self.delete_resource(self.resource_dicom_3d)
         self.delete_resource(self.resource_dicom_2d)
+        self.delete_resource(self.resource_svs)        
         self.cleanup_tests_dir()
         pass
 
@@ -800,6 +809,61 @@ class ImageServiceTests(ImageServiceTestBase):
             'image_num_t': '1',
             'image_pixel_depth': '16',
             'image_pixel_format': 'signed integer' 
+        }
+        self.validate_image_variant(resource, filename, commands, meta_required) 
+
+
+    # ---------------------------------------------------
+    # openslide based SVS, has limited interface: thumnail and tiles
+    # ---------------------------------------------------
+    def test_thumbnail_svs (self):
+        resource = self.resource_svs
+        filename = 'svs.thumbnail.jpg'
+        commands = [('thumbnail', None)]
+        meta_required = { 
+            'format': 'JPEG', 
+            'image_num_x': '95', 
+            'image_num_y': '128', 
+            'image_num_c': '3', 
+            'image_num_z': '1',
+            'image_num_t': '1',
+            'image_pixel_depth': '8',
+            'image_pixel_format': 'unsigned integer' }           
+        self.validate_image_variant(resource, filename, commands, meta_required) 
+        
+    def test_meta_svs (self):
+        resource = self.resource_svs
+        filename = 'svs.meta.xml'
+        commands = [('meta', None)]
+        meta_required = [
+            { 'xpath': '//tag[@name="image_num_x"]', 'attr': 'value', 'val': '2220' },
+            { 'xpath': '//tag[@name="image_num_y"]', 'attr': 'value', 'val': '2967' },
+            { 'xpath': '//tag[@name="image_num_c"]', 'attr': 'value', 'val': '3' },
+            { 'xpath': '//tag[@name="image_num_z"]', 'attr': 'value', 'val': '1' },
+            { 'xpath': '//tag[@name="image_num_t"]', 'attr': 'value', 'val': '1' },
+            { 'xpath': '//tag[@name="image_pixel_depth"]', 'attr': 'value', 'val': '8' },
+            { 'xpath': '//tag[@name="image_pixel_format"]', 'attr': 'value', 'val': 'unsigned integer' },
+            #{ 'xpath': '//tag[@name="format"]', 'attr': 'value', 'val': 'aperio' },
+            { 'xpath': '//tag[@name="pixel_resolution_x"]', 'attr': 'value', 'val': '0.499' },
+            { 'xpath': '//tag[@name="pixel_resolution_y"]', 'attr': 'value', 'val': '0.499' },
+            { 'xpath': '//tag[@name="pixel_resolution_unit_x"]', 'attr': 'value', 'val': 'microns' },
+            { 'xpath': '//tag[@name="pixel_resolution_unit_y"]', 'attr': 'value', 'val': 'microns' },
+        ]
+        self.validate_xml(resource, filename, commands, meta_required) 
+        
+    def test_tile_svs (self):
+        resource = self.resource_svs        
+        filename = 'svs.tile.tif'
+        commands = [('tile', '0,0,0,512')]
+        meta_required = { 
+            'format': 'TIFF', 
+            'image_num_x': '512', 
+            'image_num_y': '512', 
+            'image_num_c': '3', 
+            'image_num_z': '1',
+            'image_num_t': '1',
+            'image_pixel_depth': '8',
+            'image_pixel_format': 'unsigned integer' 
         }
         self.validate_image_variant(resource, filename, commands, meta_required) 
 
