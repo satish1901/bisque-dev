@@ -124,9 +124,9 @@ def install_postreqs (options):
 def setup(options):
     'install local version and setup local packages'
     process_options(options)
-    install_prereqs(options)
+    #install_prereqs(options)
     setup_developer(options)
-    install_postreqs(options)
+    #install_postreqs(options)
 
     print  'now run bq-admin setup %s' % ( 'engine' if options.installing =='engine' else '' )
 
