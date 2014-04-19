@@ -858,21 +858,23 @@ def install_bioformats(params):
     if getanswer ("Install bioformats", "Y",
                   "Bioformats can be used as a backup to read many image file types") == "Y":
 
-        old_bf_files = [ 
-            'bfconvert', 'bfconvert.bat', 'bfview', 'bfview.bat', 'bio-formats.jar', 
-            'domainlist', 'domainlist.bat', 'editor', 'editor.bat', 'formatlist', 
-            'formatlist.bat', 'ijview', 'ijview.bat', 'jai_imageio.jar', 'list.txt', 
-            'loci_plugins.jar', 'loci_tools.jar', 'loci-common.jar', 'loci-testing-framework.jar', 
-            'log4j.properties', 'lwf-stubs.jar', 'mdbtools-java.jar', 'metakit.jar', 'notes', 
-            'notes.bat', 'ome_plugins.jar', 'ome_tools.jar', 'ome-editor.jar', 'ome-io.jar', 
-            'omeul', 'omeul.bat', 'ome-xml.jar', 'poi-loci.jar', 'scifio.jar', 'showinf', 
+        old_bf_files = [
+            'bfconvert', 'bfconvert.bat', 'bfview', 'bfview.bat', 'bio-formats.jar',
+            'domainlist', 'domainlist.bat', 'editor', 'editor.bat', 'formatlist',
+            'formatlist.bat', 'ijview', 'ijview.bat', 'jai_imageio.jar', 'list.txt',
+            'loci_plugins.jar', 'loci_tools.jar', 'loci-common.jar', 'loci-testing-framework.jar',
+            'log4j.properties', 'lwf-stubs.jar', 'mdbtools-java.jar', 'metakit.jar', 'notes',
+            'notes.bat', 'ome_plugins.jar', 'ome_tools.jar', 'ome-editor.jar', 'ome-io.jar',
+            'omeul', 'omeul.bat', 'ome-xml.jar', 'poi-loci.jar', 'scifio.jar', 'showinf',
             'showinf.bat', 'tiffcomment', 'tiffcomment.bat', 'xmlindent', 'xmlindent.bat', 'xmlvalid', 'xmlvalid.bat'
         ]
 
         # first remove old files
         for f in old_bf_files:
-            os.remove(os.path.join(BQBIN ,f))
-        
+            p = os.path.join(BQBIN ,f)
+            if os.path.exists(p):
+                os.remove(p)
+
 
         #for bf in bio_files:
         #    copy_link (os.path.join(BQDEPOT, bf), BQBIN)
@@ -1619,7 +1621,7 @@ def bisque_installer(options, args):
     if 'imarisconvert' in installer:
         install_imarisconvert()
     if 'openslide' in installer:
-        install_openslide()        
+        install_openslide()
     if 'bioformats' in installer:
         install_bioformats(params)
     if 'features' in installer:
