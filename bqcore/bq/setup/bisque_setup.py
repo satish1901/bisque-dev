@@ -1328,13 +1328,34 @@ def install_openslide ():
 
     if not os.path.exists(filename_zip):
         print "No pre-compiled version of openslide exists for your system"
-        print "Please visit biodev.ece.ucsb.edu/projects/imgcnv"
-        print "or visit our mailing list https://groups.google.com/forum/#!forum/bisque-bioimage"
-        print "for help"
+        print "Please visit our mailing list https://groups.google.com/forum/#!forum/bisque-bioimage for help"
         return
 
     if getanswer ("Install OpenSlide converter", "Y",
                   "OpenSlide will allow image server to read full slide pixel data") == "Y":
+
+        binv = 'bin'
+        exev = ''
+        if sys.platform == 'win32':
+            binv = 'Scripts'
+            exev = '.exe'
+
+        filename_dest = os.path.join(os.environ['VIRTUAL_ENV'], binv)
+        filename_check = ''
+        uncompress_dependencies (filename_zip, filename_dest, filename_check)
+
+def install_imarisconvert ():
+    """Install dependencies that aren't handled by setup.py"""
+
+    filename_zip = os.path.join(BQDEPOT, 'ImarisConvert.zip')
+
+    if not os.path.exists(filename_zip):
+        print "No pre-compiled version of ImarisConvert exists for your system"
+        print "Please visit our mailing list https://groups.google.com/forum/#!forum/bisque-bioimage for help"
+        return
+
+    if getanswer ("Install ImarisConvert", "Y",
+                  "ImarisConvert will allow image server to read many image formats") == "Y":
 
         binv = 'bin'
         exev = ''
@@ -1506,6 +1527,8 @@ install_options= [
            'modules',
            'runtime',
            'imgcnv',
+           'imarisconvert',
+           'openslide',
            'bioformats',
            'features',
            'features_source',
@@ -1593,6 +1616,10 @@ def bisque_installer(options, args):
         install_dependencies()
     if 'imgcnv' in installer:
         install_imgcnv()
+    if 'imarisconvert' in installer:
+        install_imarisconvert()
+    if 'openslide' in installer:
+        install_openslide()        
     if 'bioformats' in installer:
         install_bioformats(params)
     if 'features' in installer:
