@@ -1,8 +1,7 @@
 # -*- mode: python -*-
 """ FFTSD library
 """
-import cv2
-import cv
+
 import tables
 import logging
 from pylons.controllers.util import abort
@@ -24,7 +23,8 @@ class FFTSD(Feature.BaseFeature):
     resource = ['polygon']
     description = """Fast Fourier Transform Shape Descriptor"""
     length = 500
-
+    confidence = 'good'
+    
     @calc_wrapper       
     def calculate(self, **resource):
         """ Append descriptors to SURF h5 table """
@@ -58,6 +58,17 @@ class FFTSD(Feature.BaseFeature):
         with Locks(None, filename):
             with tables.openFile(filename,'a', title=self.name) as h5file: 
                 outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
+
+        class Columns(tables.IsDescription):
+            polygon = tables.StringCol(2000,pos=1)
+            feature_type  = tables.StringCol(20, pos=2)
+            error_code    = tables.Int32Col(pos=3)
+            error_message = tables.StringCol(200,pos=4)
+
+        with Locks(None, filename): 
+            with tables.openFile(filename,'a', title=self.name) as h5file:
+                outtable = h5file.createTable('/', 'errors', Columns, expectedrows=1000000000)
+                outtable.flush()
             
         return
     

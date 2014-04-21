@@ -314,7 +314,7 @@ def extractHTD(im, enrg_dev=True):
     im = tmp.astype(np.uint8)
     
     if enrg_dev:
-        descSize = 64
+        descSize = 62
     else:
         descSize = 32
     

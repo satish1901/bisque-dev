@@ -1,5 +1,4 @@
-import cv2
-import numpy as np
+
 
 
 
@@ -25,7 +24,8 @@ def FFTSD(contour,sample):
 
 #test code
 if __name__=='__main__':  
-    
+    import cv2
+    import numpy as np
     import matplotlib.pyplot as plt
     im=cv2.imread('test.jpg',cv2.CV_LOAD_IMAGE_GRAYSCALE)
     ret,thresh = cv2.threshold(im,200,255,0)
