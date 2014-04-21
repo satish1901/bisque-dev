@@ -101,8 +101,8 @@ class Locks (object):
         if self.wf:
             self.debug ("RELEASE WF")
             self.wf.unlock()
-            stats = os.fstat (self.wf.fileno())
             self.wf.close()
+            stats = os.stat (self.wf.name)
             if stats.st_size == 0:
                 self.debug ('release: unlink 0 length file %s' % stats)
                 try:
