@@ -59,12 +59,13 @@ class ID():
                     table.cols.idnumber.removeIndex()
                     table.cols.idnumber.createIndex()                    
                 
-                table.flush()
+
                 
                 vlarray = h5file.create_vlarray(h5file.root, 'URI',
                                                 tables.StringAtom(itemsize=2000),
                                                 filters=tables.Filters(1))
                 vlarray.flavor = 'python'
+                table.flush()
                 
         return
 

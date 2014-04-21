@@ -1,8 +1,7 @@
 # -*- mode: python -*-
 """ Initalizes the WNDCharm library from the PyWNDCharmFeatureList
 """
-import cv2
-import cv
+
 import logging
 log = logging.getLogger("bq.features")
 
@@ -19,7 +18,8 @@ for features_name in feature_list.keys():
                   file = 'features_'+features_name+'.h5',
                   name = features_name,
                   description = """This is the WNDCharm Library. Input a feature from the WND-Charm library""",
-                  length = feature_list[features_name][3] #feature length
+                  length = feature_list[features_name][3], #feature length
+                  confidence = feature_list[features_name][6]
                   )
              )
     setattr(sys.modules[__name__], features_name,WNDCharmFeature)

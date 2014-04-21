@@ -1,11 +1,8 @@
 # -*- mode: python -*-
 """ EHD library
 """
-
-import cv2
-import cv
 import tables
-from bq.features.controllers.Feature import calc_wrapper, ImageImport #import base class
+from bq.features.controllers.Feature import calc_wrapper, ImageImport, rgb2gray #import base class
 from bq.features.controllers import Feature
 from pyVRLLib import extractEHD, extractHTD
 from pylons.controllers.util import abort
@@ -13,6 +10,7 @@ import logging
 import uuid
 import numpy as np
 from bq.image_service.controllers.locks import Locks
+from PIL import Image
 
 log = logging.getLogger("bq.features")
 
@@ -28,19 +26,19 @@ class EHD(Feature.BaseFeature):
     name = 'EHD'
     resource = ['image']
     description = """Edge histogram descriptor also known as EHD"""
-    length = 80 
+    length = 80
+    confidence = 'good'
     
-    @calc_wrapper    
+    @calc_wrapper
     def calculate(self, **resource):
         #initalizing
         image_uri = resource['image']
         
         with ImageImport(image_uri) as imgimp:
-            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)  
-    
-            if im==None:
-                raise ValueError('Format was not supported')
-    
+            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
+            im = np.array(Image.open(str(imgimp)))
+            if len(im.shape)==3:           
+                im = rgb2gray(im)
             im = np.asarray(im)        
             descriptors=extractEHD(im)
         
@@ -63,18 +61,20 @@ class HTD(Feature.BaseFeature):
     the 24 different gabor filters the mean and standard deviation of all the pixels are 
     calculated and the descriptor is returned"""
     length = 48 
-    
+    confidence = 'good'
+        
     @calc_wrapper
     def calculate(self, **resource):
         
         #importing images from bisque
         image_uri = resource['image']
         with ImageImport(image_uri) as imgimp:
-            log.debug('Image Location: %s'%imgimp.path)
-            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
-            if im == None:
-                raise ValueError('Format was not supported') #though an excpetion instead of abort so work flow is not interupted
-                #abort(415, 'Format was not supported')
+            #log.debug('Image Location: %s'%imgimp.path)
+            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
+            im = np.array(Image.open(str(imgimp)))
+            
+            if len(im.shape)==3:           
+                im = rgb2gray(im)
                 
             im = np.asarray(im)
             descriptor,label = extractHTD(im)
@@ -128,15 +128,15 @@ class mHTD(Feature.BaseFeature):
         with ImageImport(image_uri) as imgimp:
             with Feature.ImageImport(mask_uri) as maskimp:
 
-                im = cv2.imread(str(imgimp), 2)
-                mask = cv2.imread(str(maskimp), 2)
+                #im = cv2.imread(str(imgimp), 2)
+                im = np.array(Image.open(str(imgimp)))
+                im = rgb2gray(im)
+                #mask = cv2.imread(str(maskimp), 2)
+                mask = np.array(Image.open(str(maskimp)))
 
-                if im==None:
-                    raise ValueError('Format was not supported') #though an excpetion instead of abort so work flow is not interupted
-                        
-                if mask==None:
-                    raise ValueError('Format was not supported') #though an excpetion instead of abort so work flow is not interupted
-                    
+                if len(mask.shape)==3:
+                    mask = rgb2gray(mask)
+                       
                 im=np.asarray(im)
                 mask = np.asarray(mask)                    
                 descriptors,labels = extractHTD(im, mask=mask) #calculating descriptor
@@ -160,6 +160,18 @@ class mHTD(Feature.BaseFeature):
         with Locks(None, filename):
             with tables.openFile(filename,'a', title=self.name) as h5file: 
                 outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
+                outtable.flush()
+
+        class Columns(tables.IsDescription):
+            image         = tables.StringCol(2000,pos=1)
+            mask          = tables.StringCol(2000,pos=2)
+            feature_type  = tables.StringCol(20, pos=3)
+            error_code    = tables.Int32Col(pos=4)
+            error_message = tables.StringCol(200,pos=5)
+
+        with Locks(None, filename): 
+            with tables.openFile(filename,'a', title=self.name) as h5file:
+                outtable = h5file.createTable('/', 'errors', Columns, expectedrows=1000000000)
                 outtable.flush()
             
         return    

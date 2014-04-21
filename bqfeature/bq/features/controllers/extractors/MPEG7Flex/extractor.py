@@ -1,16 +1,14 @@
 #features included
 # SCD,HTD2,EHD2,DCD,CSD,CLD,RSD
-import cv2
-import cv
 import numpy as np
 from pyMPEG7FlexLib import extractCSD,extractSCD,extractCLD,extractDCD,extractHTD,extractEHD,extractRSD
 from pylons.controllers.util import abort
 import logging
 import tables
-from bq.features.controllers.Feature import calc_wrapper, ImageImport #import base class
+from bq.features.controllers.Feature import calc_wrapper, ImageImport, rgb2gray #import base class
 from bq.image_service.controllers.locks import Locks
 from bq.features.controllers import Feature
-
+from PIL import Image
 
 log = logging.getLogger("bq.features")
 
@@ -25,16 +23,16 @@ class SCD(Feature.BaseFeature):
     description = """Scalable Color Descriptor"""
     length = 256 
     type = ['color']
-        
+    confidence = 'good'
+            
     @calc_wrapper
     def calculate(self, **resource):
         """ Append descriptors to h5 table """
         image_uri = resource['image']
         
         with ImageImport(image_uri) as imgimp: #looking for the file internally and externally
-            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
-            if im is None:
-                raise ValueError('Format was not supported')
+            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
+            im = np.array(Image.open(str(imgimp)))
             im=np.asarray(im)
             descriptors = extractSCD(im, descSize=256) #calculating descriptor
         
@@ -45,10 +43,11 @@ class HTD2(Feature.BaseFeature):
     """
     #initalize parameters
     name = 'HTD2'
-    description = """Homogenious Texture Descritpor"""
-    length = 64
+    description = """Homogenious Texture Descritpor (Image\'s width and height must be greater than 128)"""
+    length = 62
     type = ['texture']
-        
+    confidence = 'good'
+            
     @calc_wrapper
     def calculate(self, **resource):
         #initalizing
@@ -56,11 +55,14 @@ class HTD2(Feature.BaseFeature):
         image_uri = resource['image']
         
         with ImageImport(image_uri) as imgimp: #looking for the file internally and externally
-            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
-            if im==None:
-                raise ValueError('Format was not supported')
-            im=np.asarray(im)
-            
+            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
+            im = np.array(Image.open(str(imgimp)))
+            if len(im.shape)==3:
+                im = rgb2gray(im)
+            im = np.asarray(im)
+            width, height = im.shape
+            if width<128 and height<128:
+                raise TypeError('Image\'s width and height must be greater than 128')
             descriptors = extractHTD(im) #calculating descriptor
         
         return [descriptors]
@@ -77,9 +79,9 @@ class EHD2(Feature.BaseFeature):
     #initalize parameters
     name = 'EHD2'
     description = """Edge histogram descriptor also known as EHD"""
-    length = 80 
+    length = 80
     type = ['texture']
-    
+    confidence = 'good'    
         
     @calc_wrapper
     def calculate(self, **resource):
@@ -88,7 +90,8 @@ class EHD2(Feature.BaseFeature):
         image_uri = resource['image']
         
         with ImageImport(image_uri) as imgimp:
-            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
+            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
+            im = np.array(Image.open(str(imgimp)))
             if im==None:
                 raise ValueError('Format was not supported')
             im=np.asarray(im)
@@ -100,15 +103,16 @@ class EHD2(Feature.BaseFeature):
     
 class DCD(Feature.BaseFeature):
     """
-    """
     
+    """
     #parameters
     name = 'DCD'
     description = """Dominant Color Descriptor can be of any length. The arbitrary length decided to be stored in the
     tables is 100"""
     length = 100 
     type = ['color']
-        
+    confidence = 'good' 
+            
     @calc_wrapper
     def calculate(self, **resource):
         """ Append descriptors to SURF h5 table """
@@ -116,8 +120,8 @@ class DCD(Feature.BaseFeature):
         image_uri = resource['image']
         
         with ImageImport(image_uri) as imgimp:
-            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
-
+            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
+            im = np.array(Image.open(str(imgimp)))
             if im==None:
                 raise ValueError('Format was not supported')
             im=np.asarray(im)
@@ -152,7 +156,7 @@ class mDCD(DCD):
     parameter = ['label']
     resource = ['image','mask']
     type = ['color']
- 
+    confidence = 'good'  
  
     def columns(self):
         """
@@ -175,13 +179,16 @@ class mDCD(DCD):
         with ImageImport(image_uri) as imgimp:
             with Feature.ImageImport(mask_uri) as maskimp:
             
-                im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
-                if im==None:
-                    raise ValueError('Format was not supported')
+                #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
+                im = np.array(Image.open(str(imgimp)))
+
                 
-                mask = cv2.imread(str(maskimp), 2)
-                if mask==None:
-                    raise ValueError('Format was not supported')
+                #mask = cv2.imread(str(maskimp), 2)
+                mask = np.array(Image.open(str(maskimp)))
+
+                #must atleast be grayscale
+                if len(mask.shape)==3:
+                    mask = rgb2gray(mask)    
                 
                 im=np.asarray(im)
                 mask = np.asarray(mask)
@@ -227,7 +234,19 @@ class mDCD(DCD):
             with tables.openFile(filename,'a', title=self.name) as h5file: 
                 outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
                 outtable.flush()
-            
+                
+        class Columns(tables.IsDescription):
+            image         = tables.StringCol(2000,pos=1)
+            mask          = tables.StringCol(2000,pos=2)
+            feature_type  = tables.StringCol(20, pos=3)
+            error_code    = tables.Int32Col(pos=4)
+            error_message = tables.StringCol(200,pos=5)
+
+        with Locks(None, filename): 
+            with tables.openFile(filename,'a', title=self.name) as h5file:
+                outtable = h5file.createTable('/', 'errors', Columns, expectedrows=1000000000)
+                outtable.flush()         
+                   
         return   
 
 class CSD(Feature.BaseFeature):
@@ -242,6 +261,7 @@ class CSD(Feature.BaseFeature):
     length = 64 
     type = ['color']
     child_feature = ['mCSD']
+    confidence = 'good' 
         
     @calc_wrapper
     def calculate(self, **resource):
@@ -251,7 +271,8 @@ class CSD(Feature.BaseFeature):
         image_uri = resource['image']
         
         with ImageImport(image_uri) as imgimp:
-            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
+            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
+            im = np.array(Image.open(str(imgimp)))
             if im==None:
                 raise ValueError('Format was not supported')
             im=np.asarray(im)
@@ -273,6 +294,7 @@ class mCSD(CSD):
     parameter = ['label']
     resource = ['image','mask']
     type = ['color']
+    confidence = 'good' 
      
     def columns(self):
         """
@@ -294,14 +316,18 @@ class mCSD(CSD):
         
         with ImageImport(image_uri) as imgimp:
             with ImageImport(mask_uri) as maskimp:
-                im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
-                if im==None:
-                    raise ValueError('Format was not supported')
+                #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
+                im = np.array(Image.open(str(imgimp)))
+                
                 im=np.asarray(im)
                 
-                mask = cv2.imread(str(maskimp), 2)
-                if mask==None:
-                    raise ValueError('Format was not supported')
+                #mask = cv2.imread(str(maskimp), 2)
+                mask = np.array(Image.open(str(maskimp)))
+
+                #must atleast be grayscale
+                if len(mask.shape)==3:
+                    mask = rgb2gray(mask)    
+                
                 
                 im=np.asarray(im)
                 mask = np.asarray(mask)
@@ -335,7 +361,19 @@ class mCSD(CSD):
             with tables.openFile(filename,'a', title=self.name) as h5file: 
                 outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
                 outtable.flush()
-            
+
+        class Columns(tables.IsDescription):
+            image         = tables.StringCol(2000,pos=1)
+            mask          = tables.StringCol(2000,pos=2)
+            feature_type  = tables.StringCol(20, pos=2)
+            error_code    = tables.Int32Col(pos=3)
+            error_message = tables.StringCol(200,pos=4)
+
+        with Locks(None, filename): 
+            with tables.openFile(filename,'a', title=self.name) as h5file:
+                outtable = h5file.createTable('/', 'errors', Columns, expectedrows=1000000000)
+                outtable.flush()
+
         return  
 
 class CLD(Feature.BaseFeature):
@@ -349,6 +387,7 @@ class CLD(Feature.BaseFeature):
     description = """Color Layout Descriptor"""
     length = 120
     child_feature = ['mCLD']
+    confidence = 'good' 
         
     @calc_wrapper
     def calculate(self, **resource):
@@ -356,7 +395,9 @@ class CLD(Feature.BaseFeature):
         
         image_uri = resource['image']
         with ImageImport(image_uri) as imgimp:
-            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
+            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
+            im = np.array(Image.open(str(imgimp)))
+            
             if im==None:
                 raise ValueError('Format was not supported')
             im=np.asarray(im)
@@ -379,7 +420,7 @@ class mCLD(CLD):
     parameter = ['label']
     resource = ['image','mask']
     type = ['color']
-
+    confidence = 'good' 
     
     def columns(self):
         """
@@ -402,16 +443,19 @@ class mCLD(CLD):
         with ImageImport(image_uri) as imgimp:
             with ImageImport(mask_uri) as maskimp:
                 
-                im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
-                if im==None:
-                    raise ValueError('Format was not supported')
+                #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
+                im = np.array(Image.open(str(imgimp)))
+                
                 im=np.asarray(im)
                 
                 
                 Im = Feature.ImageImport(mask_uri) #importing image from image service
-                mask = cv2.imread(str(maskimp), 2)
-                if mask==None:
-                    raise ValueError('Format was not supported')
+                #mask = cv2.imread(str(maskimp), 2)
+                mask = np.array(Image.open(str(maskimp)))
+                
+                #must atleast be grayscale
+                if len(mask.shape)==3:
+                    mask = rgb2gray(mask)    
                 
                 im=np.asarray(im)
                 mask = np.asarray(mask)
@@ -444,6 +488,18 @@ class mCLD(CLD):
             with tables.openFile(filename,'a', title=self.name) as h5file: 
                 outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
                 outtable.flush()
+
+        class Columns(tables.IsDescription):
+            image         = tables.StringCol(2000,pos=1)
+            mask          = tables.StringCol(2000,pos=2)
+            feature_type  = tables.StringCol(20, pos=3)
+            error_code    = tables.Int32Col(pos=4)
+            error_message = tables.StringCol(200,pos=5)
+
+        with Locks(None, filename): 
+            with tables.openFile(filename,'a', title=self.name) as h5file:
+                outtable = h5file.createTable('/', 'errors', Columns, expectedrows=1000000000)
+                outtable.flush()
             
         return  
 
@@ -457,6 +513,7 @@ class RSD(Feature.BaseFeature):
     length = 35
     type = ['shape','texture']
     #child_feature = ['RSD']
+    confidence = 'good' 
  
     @calc_wrapper    
     def calculate(self, **resource):
@@ -464,7 +521,9 @@ class RSD(Feature.BaseFeature):
         
         with ImageImport(image_uri) as imgimp:
 
-            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
+            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
+            im = np.array(Image.open(str(imgimp)))
+            
             if im==None:
                 raise ValueError('Format was not supported')
             im=np.asarray(im)
@@ -488,6 +547,7 @@ class pRSD(Feature.BaseFeature):
     resource = ['image','polygon']
     type = ['shape','texture']
     child_feature = ['mRSD']
+    confidence = 'good' 
             
     @calc_wrapper
     def calculate(self, **resource):
@@ -507,7 +567,8 @@ class pRSD(Feature.BaseFeature):
         
         self.image_uri = resource['image']
         with ImageImport(image_uri) as imgimp:
-            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
+            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
+            im = np.array(Image.open(str(imgimp)))
             
             col,row,channel = im.shape
             #creating mask
@@ -539,6 +600,19 @@ class pRSD(Feature.BaseFeature):
             with tables.openFile(filename,'a', title=self.name) as h5file: 
                 outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
                 outtable.flush()
+
+        class Columns(tables.IsDescription):
+            image         = tables.StringCol(2000,pos=1)
+            polygon       = tables.StringCol(2000,pos=2)
+            feature_type  = tables.StringCol(20, pos=3)
+            error_code    = tables.Int32Col(pos=4)
+            error_message = tables.StringCol(200,pos=5)
+
+        with Locks(None, filename): 
+            with tables.openFile(filename,'a', title=self.name) as h5file:
+                outtable = h5file.createTable('/', 'errors', Columns, expectedrows=1000000000)
+                outtable.flush()
+
         return
     
 class mRSD(RSD):
@@ -554,6 +628,7 @@ class mRSD(RSD):
     parameter = ['label']
     resource = ['image','mask']
     type = ['shape','texture']
+    confidence = 'good' 
 
     def columns(self):
         """
@@ -576,21 +651,27 @@ class mRSD(RSD):
                 
         with ImageImport(image_uri) as imgimp:
             with ImageImport(mask_uri) as maskimp:
-
-                im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
+                
+                
+                #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
+                im = np.array(Image.open(str(imgimp)))
                 if im==None:
                     raise ValueError('Format was not supported')
                 im=np.asarray(im)
                 
-                mask = cv2.imread(str(maskimp), 2)
-                if mask==None:
-                    raise ValueError('Format was not supported')
+                #mask = cv2.imread(str(maskimp), 2)
+                mask = np.array(Image.open(str(maskimp)))
                 
-                im=np.asarray(im)
+                #must atleast be grayscale
+                if len(mask.shape)==3:
+                    mask = rgb2gray(mask)                
+                
+                im = np.asarray(im)
                 mask = np.asarray(mask)
                 
                 descritptor_list = []
                 label_list = []
+                
                 #calculating descriptor
                 for label in np.unique(mask):
                     lmask = np.array((mask==label)*255,dtype='uint8')
@@ -616,6 +697,18 @@ class mRSD(RSD):
         with Locks(None, filename):
             with tables.openFile(filename,'a', title=self.name) as h5file: 
                 outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
+                outtable.flush()
+
+        class Columns(tables.IsDescription):
+            image         = tables.StringCol(2000,pos=1)
+            mask          = tables.StringCol(2000,pos=2)
+            feature_type  = tables.StringCol(20, pos=3)
+            error_code    = tables.Int32Col(pos=4)
+            error_message = tables.StringCol(200,pos=5)
+
+        with Locks(None, filename): 
+            with tables.openFile(filename,'a', title=self.name) as h5file:
+                outtable = h5file.createTable('/', 'errors', Columns, expectedrows=1000000000)
                 outtable.flush()
             
         return  

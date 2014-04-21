@@ -1,36 +1,38 @@
 # -*- mode: python -*-
 """ HAR library
 """
-import cv2
-import cv
+
 import numpy as np
 from mahotas.features import haralick,lbp,pftas,tas,zernike_moments
 from pylons.controllers.util import abort
-from bq.features.controllers.Feature import calc_wrapper, ImageImport #import base class
+from bq.features.controllers.Feature import calc_wrapper, ImageImport, rgb2gray,gray2rgb #import base class
 from bq.features.controllers import Feature
+from PIL import Image
+
 
 class HAR(Feature.BaseFeature):
     """
-        Initalizes table and calculates the SURF descriptor to be
+        Initalizes table and calculates the HAR descriptor to be
         placed into the HDF5 table.
     """
     #parameters
-    file = 'features_har.h5'
     name = 'HAR'
     description = """Haralick Texure Features"""
     length = 13*4
-    
+    confidence = 'good'     
         
     @calc_wrapper
     def calculate(self, **resource):
         #initalizing 
         image_uri = resource['image']
         with Feature.ImageImport(image_uri) as imgimp:
-            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
-            im=np.asarray(im)
+            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
+            im = np.array(Image.open(str(imgimp)))
+            if len(im.shape)==3:
+                im = rgb2gray(im)            
             
-        if im==None:
-            abort(415, 'Format was not supported')
+            im=np.asarray(im)
+            im = im.astype(np.uint8)  
         
         #calculate descriptor 
         descritptors = np.hstack(haralick(im))
@@ -38,6 +40,34 @@ class HAR(Feature.BaseFeature):
         #initalizing rows for the table
         return [descritptors]
             
+class HARColored(Feature.BaseFeature):
+    """
+        Initalizes table and calculates the colored HAR descriptor to be
+        placed into the HDF5 table.    
+    """
+    #parameters
+    name = 'HARColored'
+    description = """Haralick Texure Features with colored image input"""
+    length = 169  
+        
+    @calc_wrapper
+    def calculate(self, **resource):
+        #initalizing 
+        image_uri = resource['image']
+        with Feature.ImageImport(image_uri) as imgimp:
+            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
+            im = np.array(Image.open(str(imgimp)))
+            if len(im.shape)==2:
+                im = gray2rgb(im)   
+            im = im.astype(np.uint8)         
+            im=np.asarray(im)
+            
+        
+        #calculate descriptor 
+        descritptors = np.hstack(haralick(im))
+
+        #initalizing rows for the table
+        return [descritptors]    
 
 class LBP(Feature.BaseFeature):
     """
@@ -49,6 +79,7 @@ class LBP(Feature.BaseFeature):
     name = 'LBP'
     description = """Linear Binary Patterns: radius = 5 and points = 5"""
     length = 8
+    confidence = 'good' 
         
     @calc_wrapper
     def calculate(self, **resource):
@@ -56,10 +87,12 @@ class LBP(Feature.BaseFeature):
         image_uri = resource['image']
         
         with ImageImport(image_uri) as imgimp:
-            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
+            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
+            im = np.array(Image.open(str(imgimp)))
+            if len(im.shape)==3:
+                im = rgb2gray(im)
+            
             im=np.asarray(im)
-            if im==None:
-                abort(415, 'Format was not supported')
             
              #calculating descriptor
             radius = 5
@@ -125,6 +158,7 @@ class PFTAS(Feature.BaseFeature):
     name = 'PFTAS'
     description = """parameter free Threshold Adjacency Statistics"""
     length = 162 
+    confidence = 'good' 
     
     @calc_wrapper
     def calculate(self, **resource):
@@ -133,10 +167,10 @@ class PFTAS(Feature.BaseFeature):
         image_uri = resource['image']
         
         with ImageImport(image_uri) as imgimp:
-            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
-    
-            if im==None:
-                raise ValueError('Format was not supported')
+            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
+            im = np.array(Image.open(str(imgimp)))
+            #if im==None:
+            #    raise ValueError('Format was not supported')
             im=np.asarray(im)
             
             descriptor = pftas(im)
@@ -154,6 +188,7 @@ class TAS(Feature.BaseFeature):
     name = 'TAS'
     description = """Threshold Adjacency Statistics"""
     length = 162 
+    confidence = 'good' 
     
     @calc_wrapper
     def calculate(self, **resource):
@@ -162,10 +197,8 @@ class TAS(Feature.BaseFeature):
         image_uri = resource['image']
         
         with ImageImport(image_uri) as imgimp:
-            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
-    
-            if im==None:
-                raise ValueError('Format was not supported')
+            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
+            im = np.array(Image.open(str(imgimp)))
             im=np.asarray(im) 
                    
             descriptor = tas(im)
@@ -183,6 +216,7 @@ class ZM(Feature.BaseFeature):
     name = 'ZM'
     description = """Zernike Moment"""
     length = 25
+    confidence = 'good' 
         
     @calc_wrapper
     def calculate(self, **resource):
@@ -191,10 +225,10 @@ class ZM(Feature.BaseFeature):
         image_uri = resource['image']
         
         with ImageImport(image_uri) as imgimp:
-            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
-    
-            if im==None:
-                raise ValueError('Format was not supported')
+            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
+            im = np.array(Image.open(str(imgimp)))
+            if len(im.shape)==3:
+                im = rgb2gray(im)
             im=np.asarray(im)        
             radius=8
             degree=8

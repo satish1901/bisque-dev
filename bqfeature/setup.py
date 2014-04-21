@@ -17,15 +17,15 @@ setup(
     author_email='',
     #url='',
     install_requires=[
-                      "importlib",
+                      "importlib", #not needed for python 2.7
                       "bqcore",
                       "numpy",
-                      "mahotas",  # Feature
-                      "tables",  # Feature
-                      "numexpr", # Feature
-                      "cython",  # Feature
-                      #"opencv",  # Feature
-                      # "importlib", # Feature, not needed for python 2.7
+                      "pillow",
+                      "mahotas",  
+                      "tables",  
+                      "numexpr",
+                      "cython",  
+                      #"opencv", 
                       ],
     setup_requires=["PasteScript>=1.6.3"],
     paster_plugins=['PasteScript', 'Pylons' ],
