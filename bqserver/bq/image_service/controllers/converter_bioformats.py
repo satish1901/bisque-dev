@@ -37,7 +37,7 @@ class ConverterBioformats(ConverterBase):
     CONVERTERCOMMAND = 'bfconvert'  if os.name != 'nt' else 'bfconvert.bat'
     BFINFO           = 'showinf'    if os.name != 'nt' else 'showinf.bat'
     BFORMATS         = 'formatlist' if os.name != 'nt' else 'formatlist.bat'
-    
+
     format_map = {
         'ome-bigtiff' : {
             'name': 'ome-tiff',
@@ -55,7 +55,7 @@ class ConverterBioformats(ConverterBase):
             'name': 'tiff',
             'extra': ['-compression', 'LZW']
         }
-    }    
+    }
 
 #     #######################################
 #     # Init
@@ -193,12 +193,12 @@ class ConverterBioformats(ConverterBase):
         except etree.XMLSyntaxError:
             try:
                 mee = etree.fromstring(omexml, parser=etree.XMLParser(encoding='iso-8859-1'))
-            except (etree.XMLSyntaxError, LookupError):                
+            except (etree.XMLSyntaxError, LookupError):
                 try:
                     mee = etree.fromstring(omexml, parser=etree.XMLParser(encoding='cp1252'))
-                except (etree.XMLSyntaxError, LookupError):                
+                except (etree.XMLSyntaxError, LookupError):
                     mee = etree.fromstring(omexml, parser=etree.XMLParser(recover=True))
-        
+
         imagenodepath = 'ome:Image[@ID="Image:%s"]'%(series)
         namespaces = {
             'ome': misc.between('OME xmlns="', '"', omexml),
@@ -371,7 +371,7 @@ class ConverterBioformats(ConverterBase):
     def convert(cls, ifnm, ofnm, fmt=None, series=0, extra=[]):
         '''converts a file and returns output filename'''
         log.debug('convert: [%s] -> [%s] into %s for series %s with [%s]', ifnm, ofnm, fmt, series, extra)
-        command = [ifnm, ofnm, '-no-upgrade', '-overwrite']        
+        command = [ifnm, ofnm, '-no-upgrade', '-overwrite']
         tmp = None
         if fmt is not None:
             fmt2 = fmt
@@ -383,7 +383,7 @@ class ConverterBioformats(ConverterBase):
                 command = [ifnm, tmp, '-no-upgrade', '-overwrite']
         if series>=0:
             command.extend(['-series', '%s'%series])
-        
+
         #command.extend(extra)
         if fmt in cls.format_map:
             command.extend(cls.format_map[fmt]['extra'])
@@ -427,8 +427,9 @@ class ConverterBioformats(ConverterBase):
         # create an intermediate OME-TIFF, BUG IN BF - this only creates 1 channel output
         ometiff = kw['intermediate']
         if not os.path.exists(ometiff):
-            cls.convertToOmeTiff(ifnm, ometiff, series=series)
-
+            r = cls.convertToOmeTiff(ifnm, ometiff, series=series)
+            if r is None:
+                return None
         # extract thumbnail
         return ConverterImgcnv.thumbnail(ometiff, ofnm=ofnm, width=width, height=height, series=series, **kw)
 
@@ -449,7 +450,9 @@ class ConverterBioformats(ConverterBase):
 
         # create an intermediate OME-TIFF
         if not os.path.exists(ometiff):
-            cls.convertToOmeTiff(ifnm, ometiff, series=series)
+            r = cls.convertToOmeTiff(ifnm, ometiff, series=series)
+            if r is None:
+                return None
         # extract slices
         return ConverterImgcnv.slice(ometiff, ofnm=ofnm, z=z, t=t, roi=roi, series=series, **kw)
 
