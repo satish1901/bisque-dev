@@ -108,14 +108,12 @@ from repoze.what import predicates
 import bq
 from bq.core import permission, identity
 from bq.util.paths import data_path
-from bq import image_service
+#from bq import image_service
 from bq import data_service
 from bq import blob_service
 
-#import bq.image_service.controllers.imgcnv as imgcnv
-#import bq.image_service.controllers.bioformats as bioformats
-from bq.image_service.controllers.converter_imgcnv import ConverterImgcnv as imgcnv
-from bq.image_service.controllers.converter_bioformats import ConverterBioformats as bioformats
+from bq.image_service.controllers.converter_imgcnv import ConverterImgcnv
+from bq.image_service.controllers.converter_bioformats import ConverterBioformats
 
 from bq.util.mkdir import _mkdir
 
@@ -143,15 +141,6 @@ if hasattr(cgi, 'file_upload_handler'):
 
     #map callables to paths here
     cgi.file_upload_handler['/import/transfer'] = import_transfer_handler
-
-# #---------------------------------------------------------------------------------------
-# # inits
-# #---------------------------------------------------------------------------------------
-#
-# imgcnv_needed_version = '1.43'
-# bioformats_needed_version = '4.3.0'
-
-
 
 
 #---------------------------------------------------------------------------------------
@@ -183,17 +172,20 @@ def merge_resources (*resources):
 
 class UploadedResource(object):
     """ Object encapsulating upload resource+file """
-    filename = None
-    fileobj  = None
-    path     = None
+    filename = None      # The  filename  to be stored with the resource
+    fileobj  = None      # The fileobj (if coming from an upload form)
+    path     = None      # A path to the file, if already local
 
     def __init__(self, resource, fileobj=None ):
         self.resource = resource
         self.fileobj = fileobj
 
+        # Set the path and filename of the UploadFile
+        # A local path will be available in 'value'
         path = resource.get('value')
         if path and path.startswith('file://'):
             self.path = path.replace('file://', '')
+        # If the uploader has given it a name, then use it, or figure a name out
         if resource.get ('name'):
             self.filename = sanitize_filename(resource.get('name'))
         elif fileobj :
@@ -216,6 +208,10 @@ class UploadedResource(object):
 
     def __repr__(self):
         return 'UploadFile([%s] [%s] [%s] [%s])'%(self.path, self.filename, self.resource, self.fileobj)
+
+    #def __str__(self):
+    #    return 'UploadFile([%s] [%s])'%(self.filename, etree.tostring(self.resource))
+
 
 
 
@@ -243,7 +239,9 @@ class import_serviceController(ServiceController):
         self.filters['zip-volocity']    = self.filter_zip_volocity
         self.filters['image/slidebook'] = self.filter_series_bioformats
         self.filters['image/volocity']  = self.filter_series_bioformats
-
+        
+        self.bioformats = ConverterBioformats()
+        self.imgcnv = ConverterImgcnv()
 
     @expose('bq.import_service.templates.upload')
     @require(predicates.not_anonymous())
@@ -257,15 +255,12 @@ class import_serviceController(ServiceController):
 
 
     def check_imgcnv (self):
-        if not imgcnv.installed:
+        if not ConverterImgcnv.get_installed():
             raise Exception('imgcnv not installed')
-        #imgcnv.check_version( imgcnv_needed_version )
 
     def check_bioformats (self):
-        if not bioformats.installed:
+        if not ConverterBioformats.get_installed():
             raise Exception('bioformats not installed')
-        #if not bioformats.ensure_version( bioformats_needed_version ):
-        #    raise Exception('Bioformats needs update! Has: '+bioformats.version()['full']+' Needs: '+ bioformats_needed_version)
 
 #------------------------------------------------------------------------------
 # zip/tar.gz support functions
@@ -451,7 +446,7 @@ class import_serviceController(ServiceController):
         for f in members:
             extra.extend(['-i', f])
         log.debug('assemble5DImage ========================== extra: \n%s'% extra )
-        imgcnv.convert(ifnm, combined_filepath, fmt='ome-bigtiff', series=0, extra=extra)
+        self.imgcnv.convert(ifnm, combined_filepath, fmt='ome-bigtiff', series=0, extra=extra)
 
         return combined_filepath
 
@@ -475,15 +470,15 @@ class import_serviceController(ServiceController):
         members = []
 
         # extract all the series from the file
-        info = bioformats.info(filepath)
+        info = self.bioformats.info(filepath)
         if len(info)>0:
             if 'image_num_series' in info:
                 n = info['image_num_series']
                 for i in range(n):
                     fn = 'series_%.5d.ome.tif'%i
                     outfile = '%s/%s'%(unpack_dir, fn)
-                    bioformats.convertToOmeTiff(ifnm=filepath, ofnm=outfile, series=i)
-                    if os.path.exists(outfile) and imgcnv.supported(outfile):
+                    self.bioformats.convertToOmeTiff(ifnm=filepath, ofnm=outfile, series=i)
+                    if os.path.exists(outfile) and self.imgcnv.supported(outfile):
                         members.append(fn)
 
         return unpack_dir, members
@@ -508,8 +503,8 @@ class import_serviceController(ServiceController):
                 fn = '%s.ome.tif'%m
                 fn_in  = os.path.join(unpack_dir, m)
                 fn_out = os.path.join(unpack_dir, fn)
-                bioformats.convertToOmeTiff(ifnm=fn_in, ofnm=fn_out)
-                if os.path.exists(fn_out) and imgcnv.supported(fn_out):
+                self.bioformats.convertToOmeTiff(ifnm=fn_in, ofnm=fn_out)
+                if os.path.exists(fn_out) and self.imgcnv.supported(fn_out):
                     mvd2.append(fn)
 
         log.debug('Converted: \n%s'% mvd2 )
@@ -908,7 +903,7 @@ class import_serviceController(ServiceController):
                 try:
                     if hasattr(resource, 'file'):
                         log.warn("XML Resource has file tag")
-                        resource = f.file.read()
+                        resource = resource.file.read()
                     if isinstance(resource, basestring):
                         log.debug ("reading XML %s" % resource)
                         try:
@@ -923,23 +918,34 @@ class import_serviceController(ServiceController):
 
         log.debug("INITIAL TRANSFER %s"  % transfers)
         for pname, f in dict(transfers).items():
+            # We skip specially named fields (we will pull them out when processing the actual file)
             if pname.endswith ('_resource') or pname.endswith('_tags'): continue
+            # This is a form field with an attached file (<input type='file'>)
             if hasattr(f, 'file'):
                 # Uploaded File from multipart-form
                 transfers.pop(pname)
-                resource = find_upload_resource(transfers, pname) or etree.Element('resource', name=sanitize_filename (getattr(f, 'filename', '')))
+                resource = find_upload_resource(transfers, pname)
+                if resource is None:
+                    resource = etree.Element('resource', name=sanitize_filename (getattr(f, 'filename', '')))
                 files.append(UploadedResource(fileobj=f.file, resource=resource))
                 log.debug ("TRASNFERED %s %s" % (f.filename, etree.tostring(resource)))
             if pname.endswith('.uploaded'):
                 # Entry point for NGINX upload and insert
                 transfers.pop(pname)
                 try:
+                    # parse the nginx record
                     resource = etree.fromstring (f)
                 except etree.XMLSyntaxError:
                     log.exception ("while parsing %s" %f)
                     abort(400)
-                payload_resource = find_upload_resource(transfers, pname.replace ('.uploaded', '')) or etree.Element('resource')
-                if payload_resource:
+                # Read the record original record (not the nginx one)
+                payload_resource = find_upload_resource(transfers, pname.replace ('.uploaded', ''))
+                if payload_resource is None:
+                    payload_resource = etree.Element('resource')
+                if payload_resource is not None:
+                    log.debug ("Merging resources %s with %s" ,
+                               etree.tostring(resource),
+                               etree.tostring(payload_resource))
                     resource = merge_resources (resource, payload_resource)
                 upload_resource  = UploadedResource(resource=resource)
                 files.append(upload_resource)

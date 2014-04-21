@@ -16,9 +16,11 @@
 
     <!-- Bisque styles -->
     <!--<link href="http://fonts.googleapis.com/css?family=Abel|Varela+Round" rel="stylesheet" type="text/css" />-->
-    <link href="http://fonts.googleapis.com/css?family=Abel" rel="stylesheet" type="text/css" />
+    <link href="//fonts.googleapis.com/css?family=Abel|Varela+Round" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" type="text/css" href="${tg.url('/extjs/resources/css/ext-all.css')}" />
     <!--<link rel="stylesheet" type="text/css" href="${tg.url('/extjs/resources/css/ext-all-neptune.css')}"/>-->
+    <!--<link rel="stylesheet" type="text/css" href="${tg.url('/extjs/packages/ext-theme-crisp/build/resources/ext-theme-crisp-all.css')}"/>-->
+
 
     ${h.stylesheet_link (
     '/css/bq.css',
@@ -28,22 +30,54 @@
     '/js/ResourceTagger/Tagger.css',
     '/js/DatasetBrowser/DatasetBrowser.css',
     '/js/Share/BQ.share.Dialog.css',
+    '/js/picker/Path.css',
+    '/js/tree/files.css',
+    { 'file' : '/image_service/public/converter.css', 'path' : h.file_root() + 'bqserver/bq' },
+    '/panojs3/styles/panojs.css',
+    '/js/slider/slider.css',
+    '/js/picker/Color.css',
+    '/js/form/field/Color.css',
+    '/css/imgview.css',
+    '/js/movie/movie.css',
+    { 'file': '/dataset_service/public/dataset_panel.css', 'path' : h.file_root() + 'bqserver/bq' },
+    '/js/renderers/dataset.css',
+#    '/js/volume/bioWeb3D.css',
     {'file' : '/export_service/public/css/BQ.Export.css', 'path' : h.file_root() + 'bqserver/bq'},
     '/css/bisquik_extjs_fix.css',
     # combined will not work for now due to relative urls in .css files
     #fs_root=h.file_public(),
-    #combined='/css/b.css'
+    #combined='/css/b.css',
+    version=bq.release.__VERSION_HASH__
     )}
 
-    <!-- ExtJS -->
+    <!-- ExtJS 4 -->
     <script py:if="tg.config.get('bisque.js_environment', None) == 'production'" type="text/javascript" src="${tg.url('/extjs/ext-all.js')}"></script>
     <script py:if="tg.config.get('bisque.js_environment', None) != 'production'" type="text/javascript" src="${tg.url('/extjs/ext-all-debug.js')}"></script>
+
+    <!-- ExtJS 5 -->
+    <!--
+    <script>
+        var Ext = Ext || {};
+        Ext.manifest = {
+            compatibility: {
+                ext: '4.2'
+            },
+        };
+    </script>
+    <script py:if="tg.config.get('bisque.js_environment', None) == 'production'" type="text/javascript" src="${tg.url('/extjs/build/ext-all.js')}"></script>
+    <script py:if="tg.config.get('bisque.js_environment', None) != 'production'" type="text/javascript" src="${tg.url('/extjs/build/ext-all-debug.js')}"></script>
+    -->
+
+    <!-- GMaps API -->
+    <!--<script type="text/javascript" src="//maps.googleapis.com/maps/api/js?sensor=false"></script>-->
+
 
     <?python
        if tg.config.get('bisque.js_environment', None) == 'production':
           link_kw = dict (fs_root = h.file_public(),
                           combined= '/js/b.js',
-                          minify= 'minify')
+                          minify= 'minify',
+                          version=bq.release.__VERSION_HASH__)
       else:
           link_kw = {}
     ?>
@@ -76,6 +110,7 @@
     '/js/ResourceBrowser/ResourceFactory/ResourceFile.js',
     '/js/ResourceBrowser/ResourceFactory/ResourceUser.js',
     '/js/ResourceBrowser/ResourceFactory/ResourceTemplate.js',
+    '/js/ResourceBrowser/ResourceFactory/ResourceDir.js',
     '/js/ResourceBrowser/Misc/MessageBus.js',
     '/js/ResourceBrowser/Misc/Slider.js',
     '/js/ResourceBrowser/Misc/DataTip.js',
@@ -115,6 +150,64 @@
 
     # -- Tree Organizer --
     '/js/Organizer/BQ.Organizer.Tree.js',
+    '/js/picker/Path.js',
+    '/js/tree/files.js',
+
+    # -- PanoJS3 --
+    '/panojs3/panojs/utils.js',
+    '/panojs3/panojs/PanoJS.js',
+    '/panojs3/panojs/controls.js',
+    '/panojs3/panojs/pyramid_Bisque.js',
+    '/panojs3/panojs/control_thumbnail.js',
+    '/panojs3/panojs/control_info.js',
+    '/panojs3/panojs/control_svg.js',
+
+    # -- Image viewer --
+    { 'file' : '/image_service/public/converter.js', 'path': h.file_root() + 'bqserver/bq/'},
+
+    '/js/slider/inversible.js',
+    '/js/slider/slider.js',
+    '/js/slider/tslider.js',
+    '/js/slider/zslider.js',
+
+    '/js/picker/Color.js',
+    '/js/form/field/Color.js',
+
+    '/js/viewer/scalebar.js',
+    '/js/viewer/2D.js',
+    '/js/viewer/imgview.js',
+    '/js/viewer/imgops.js',
+    '/js/viewer/imgslicer.js',
+    '/js/viewer/imgstats.js',
+    '/js/viewer/listner_zoom.js',
+    '/js/viewer/tilerender.js',
+    '/js/viewer/svgrender.js',
+    '/js/viewer/imgedit.js',
+    '/js/viewer/imgmovie.js',
+    '/js/viewer/imageconverter.js',
+    '/js/viewer/imgexternal.js',
+    '/js/viewer/imgscalebar.js',
+    '/js/viewer/imginfobar.js',
+    '/js/viewer/progressbar.js',
+    '/js/viewer/widget_extjs.js',
+    '/js/viewer/imgpixelcounter.js',
+
+    #-- Movie player --
+    '/js/movie/movie.js',
+
+    #-- Stats --
+    { 'file' : '/stats/public/js/stats.js', 'path': h.file_root() + 'bqserver/bq/'},
+    '/js/bq_ui_progress.js',
+
+    #-- GMaps API --
+    '/js/map/map.js',
+
+    #-- Resource dispatch --
+    { 'file': '/dataset_service/public/dataset_service.js','path': h.file_root() + 'bqserver/bq/'},
+    { 'file': '/dataset_service/public/dataset_operations.js','path': h.file_root() + 'bqserver/bq/'},
+    { 'file': '/dataset_service/public/dataset_panel.js','path': h.file_root() + 'bqserver/bq/'},
+    '/js/renderers/dataset.js',
+    '/js/resourceview.js',
 
     {'file': '/dataset_service/public/dataset_service.js', 'path': h.file_root() + 'bqserver/bq/'},
 

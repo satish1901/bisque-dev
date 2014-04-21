@@ -797,6 +797,10 @@ Ext.define('Bisque.Resource.Image.Page', {
             this.toolbar.queryById('menu_view_movie').setDisabled( false );
         //if (dims.z>1)
         //    this.toolbar.queryById('menu_view_3d').setDisabled( false );
+        if (dims.w>10000 || dims.h>10000) {
+            this.toolbar.queryById('menu_view_movie').setDisabled( false );
+            this.toolbar.queryById('menu_view_3d').setDisabled( false );
+        }
     },
 
     show2D : function() {

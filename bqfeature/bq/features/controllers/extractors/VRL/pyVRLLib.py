@@ -9,46 +9,53 @@ path=os.path.dirname(__file__) #find current dir of the file
 path = os.path.join(path,'..','..','..','..','src','extractors','VRL','lib')
 _VRLLib_warp= np.ctypeslib.load_library('_VRLLib', path)
 
-#EHD
-_VRLLib_warp.extractEHD.argtypes = [np.ctypeslib.ndpointer(dtype = np.int),\
-                                     ct.c_int, ct.c_int,\
-                                    np.ctypeslib.ndpointer(dtype = np.double)]
-_VRLLib_warp.extractEHD.restype  = ct.c_void_p
-
-#HTD
-_VRLLib_warp.extractHTD.argtypes = [np.ctypeslib.ndpointer(dtype = np.int),\
-                                    np.ctypeslib.ndpointer(dtype = np.int),\
-                                    np.ctypeslib.ndpointer(dtype = np.int),\
-                                    ct.c_int, ct.c_int, ct.c_int,\
-                                    np.ctypeslib.ndpointer(dtype = np.double)]
-_VRLLib_warp.extractHTD.restype  = ct.c_void_p
-
-
 def extractEHD(im):
     """
-    Takes a numpy grayscale image matr ix and outputs an
-    Edge Histogram Descriptor
+    Edge Histogram Descriptor - 
+    
+    @im   - a mxn numpy unit matrix (grayscale image matrix)
+        
+    @result - the resulting edge histogram descriptor with given length
     """
-    try:
-        tmp = np.asarray(im)
-        rows, cols = tmp.shape
-        im = tmp.astype(np.int)
-        result = np.empty([80], dtype=np.double)
-
-        _VRLLib_warp.extractEHD(im, rows, cols, result)
-        return result
-    except ValueError:
-        warnings.warn("Requires a grayscale numpy image", UserWarning)
-        return
+    #EHD
+    _VRLLib_warp.extractEHD.argtypes = [np.ctypeslib.ndpointer(dtype = np.intc), \
+                                        ct.c_int, ct.c_int,\
+                                        np.ctypeslib.ndpointer(dtype = np.double)]
+    _VRLLib_warp.extractEHD.restype  = ct.c_void_p
+    
+     #check if the image is in the correct format
+    tmp = np.asarray(im)
+    if not len(tmp.shape)==2:
+        raise TypeError("Requires a grayscale image")   
+    
+    rows, cols = tmp.shape
+    im = tmp.astype(np.intc)
+    result = np.empty([80], dtype=np.double)
+    _VRLLib_warp.extractEHD(im, rows, cols, result)
+    return result
 
 
 def extractHTD(im, mask = None):
     """
-    Takes a numpy grayscale image matrix and outputs an
-    Edge Histogram Descriptor
+    Homogenious Texture Descriptor - 
+    
+    @im   - a mxn numpy unit matrix (grayscale image matrix)
+        
+    @result - the resulting homogenious texture descriptor with given length
     """
+    
+    #HTD
+    _VRLLib_warp.extractHTD.argtypes = [np.ctypeslib.ndpointer(dtype = np.intc),\
+                                        np.ctypeslib.ndpointer(dtype = np.intc),\
+                                        np.ctypeslib.ndpointer(dtype = np.intc),\
+                                        ct.c_int, ct.c_int, ct.c_int,\
+                                        np.ctypeslib.ndpointer(dtype = np.double)]
+    _VRLLib_warp.extractHTD.restype  = ct.c_void_p    
+    
+    #check if the image is in the correct format
     tmp = np.asarray(im)
-
+    if not len(tmp.shape)==2:
+        raise TypeError("Requires a grayscale image")
 
     try:
         rows, cols = tmp.shape
@@ -61,15 +68,15 @@ def extractHTD(im, mask = None):
         mask= np.zeros([rows,cols])
 
     if tmp.shape!=mask.shape:
-        raise "TypeError: The column and row vectors must be equal between"        
+        raise TypeError("The column and row vectors must be equal between")
 
 
     mask_labels = np.unique(mask)
     label_count = len(mask_labels)
 
-    im = tmp.astype(np.int)
-    mask = mask.astype(np.int)
-    mask_labels = mask_labels.astype(np.int)
+    im = tmp.astype(np.intc)
+    mask = mask.astype(np.intc)
+    mask_labels = mask_labels.astype(np.intc)
     result = np.empty([48*label_count], dtype=np.double)
     _VRLLib_warp.extractHTD(im, mask, mask_labels, label_count, rows, cols, result)
     result = np.reshape(result,(label_count,48))
@@ -85,7 +92,9 @@ if __name__=='__main__':
     mask = np.array(mask)
     
     start=time.time()
-    feature, label=extractHTD(im)#,mask=mask)
+    feature = extractEHD(im)
+    #feature, label=extractHTD(im,mask=mask)
     end=time.time()
     print 'time elapsed: %s'%str(end-start)
     print feature
+

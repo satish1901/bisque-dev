@@ -16,6 +16,7 @@ __copyright__ = "Center for BioImage Informatics, University California, Santa B
 import sys
 import logging
 import os.path
+import shutil
 import re
 import StringIO
 from urllib import quote
@@ -48,7 +49,7 @@ log = logging.getLogger('bq.image_service.server')
 
 default_format = 'bigtiff'
 
-needed_versions = { 'imgcnv'     : '1.65.0',
+needed_versions = { 'imgcnv'     : '1.66.0',
                     'imaris'     : '8.0.0',
                     'openslide'  : '0.5.1', # python wrapper version
                     'bioformats' : '5.0.1',
@@ -545,6 +546,34 @@ class LocalPathService(object):
 
         return data_token.setXml( etree.tostring(res) )
 
+class CacheCleanService(object):
+    '''Cleans local cache for a given image'''
+
+    def __init__(self, server):
+        self.server = server
+
+    def __str__(self):
+        return 'cleancache: cleans local cache for a given image'
+
+    def dryrun(self, image_id, data_token, arg):
+        return data_token.setXml('')
+
+    def action(self, image_id, data_token, arg):
+        ifname = self.server.getInFileName( data_token, image_id )
+        ofname = self.server.getOutFileName( ifname, image_id, '' )
+        log.debug('Cleaning local cache: %s', ofname)
+        path = os.path.dirname(ofname)
+        fname = os.path.basename(ofname)
+        for root, dirs, files in os.walk(path, topdown=False):
+            for name in files:
+                if name.startswith(fname):
+                    os.remove(os.path.join(root, name))
+            for name in dirs:
+                if name.startswith(fname):
+                    #os.removedirs(os.path.join(root, name))
+                    shutil.rmtree(os.path.join(root, name))
+        return data_token.setHtml( 'Clean' )
+
 
 ################################################################################
 # Main Image Services
@@ -756,8 +785,23 @@ class FormatService(object):
             elif fmt in ['jpg', 'jpeg']:
                 extra.extend(['-options', 'quality 95 progressive yes'])
 
+            # first try first converter that supports this output format
             c = self.server.writable_formats[fmt]
             r = c.convert(ifile, ofile, fmt, series=0, extra=extra)
+            
+            # try using other converters directly
+            if r is None:
+                for n,c in self.server.converters.iteritems():
+                    if n=='imgcnv':
+                        continue
+                    r = c.convert(ifile, ofile, fmt, series=0, extra=extra)
+                    if r is not None and os.path.exists(ofile):
+                        break
+                
+            # using ome-tiff as intermediate
+            if r is None:
+                self.server.imageconvert(image_id, ifile, ofile, fmt=fmt, extra=['-multi'])
+                
             if r is None:
                 log.error('Format: %s could not convert with [%s] format [%s] -> [%s]', c.CONVERTERCOMMAND, fmt, ifile, ofile)
                 abort(415, 'Could not convert into %s format'%fmt )
@@ -2361,6 +2405,7 @@ class ImageServer(object):
             #'setslice'     : SetSliceService(self),
             #'close'        : CloseImageService(self),
             #'bioformats'   : BioFormatsService(self)
+            'cleancache'   : CacheCleanService(self),
         }
 
         self.converters = ConverterDict([

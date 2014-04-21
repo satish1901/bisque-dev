@@ -15,7 +15,7 @@ except ImportError:
     from setuptools import setup, find_packages
 
 #from bq.release import __VERSION__
-__VERSION__="0.5.4"
+__VERSION__="0.5.5"
 
 setup(
     name='bqcore',
@@ -72,7 +72,8 @@ setup(
         ],
     setup_requires=["PasteScript >= 1.7"],
     paster_plugins=['PasteScript', 'Pylons', 'TurboGears2'],
-    packages=find_packages(exclude=['ez_setup']),
+    packages=['bq'],
+    namespace_packages = ['bq'],
     include_package_data=True,
     test_suite='nose.collector',
     tests_require=['WebTest',
@@ -81,9 +82,9 @@ setup(
                    'wsgiref',
                    'repoze.who-testutil',
                    ],
-    package_data={'bq': ['core/i18n/*/LC_MESSAGES/*.mo',
-                                 'core/templates/*/*',
-                                 'core/public/*/*']},
+    #package_data={'bq': ['core/i18n/*/LC_MESSAGES/*.mo',
+    #                             'core/templates/*/*',
+    #                             'core/public/*/*']},
 
     message_extractors={'bq': [
             ('**.py', 'python', None),

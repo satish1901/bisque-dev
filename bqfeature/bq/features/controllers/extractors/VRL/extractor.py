@@ -5,7 +5,8 @@
 import cv2
 import cv
 import tables
-from bq.features.controllers import Feature #import base class
+from bq.features.controllers.Feature import calc_wrapper, ImageImport #import base class
+from bq.features.controllers import Feature
 from pyVRLLib import extractEHD, extractHTD
 from pylons.controllers.util import abort
 import logging
@@ -15,7 +16,7 @@ from bq.image_service.controllers.locks import Locks
 
 log = logging.getLogger("bq.features")
 
-class EHD(Feature.Feature):
+class EHD(Feature.BaseFeature):
     """
         Initalizes table and calculates the Edge Histogram descriptor to be
         placed into the HDF5 table
@@ -29,12 +30,12 @@ class EHD(Feature.Feature):
     description = """Edge histogram descriptor also known as EHD"""
     length = 80 
     
-    @Feature.wrapper    
+    @calc_wrapper    
     def calculate(self, **resource):
         #initalizing
         image_uri = resource['image']
         
-        with Feature.ImageImport(image_uri) as imgimp:
+        with ImageImport(image_uri) as imgimp:
             im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)  
     
             if im==None:
@@ -46,7 +47,7 @@ class EHD(Feature.Feature):
         #initalizing rows for the table
         return [descriptors]
 
-class HTD(Feature.Feature):
+class HTD(Feature.BaseFeature):
     """
         Initalizes table and calculates the HTD descriptor to be
         placed into the HDF5 table
@@ -63,12 +64,12 @@ class HTD(Feature.Feature):
     calculated and the descriptor is returned"""
     length = 48 
     
-    @Feature.wrapper
+    @calc_wrapper
     def calculate(self, **resource):
         
         #importing images from bisque
         image_uri = resource['image']
-        with Feature.ImageImport(image_uri) as imgimp:
+        with ImageImport(image_uri) as imgimp:
             log.debug('Image Location: %s'%imgimp.path)
             im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
             if im == None:
@@ -81,7 +82,7 @@ class HTD(Feature.Feature):
         return [descriptor] #calculating descriptor and return
     
     
-class mHTD(Feature.Feature):
+class mHTD(Feature.BaseFeature):
     """
         Initalizes table and calculates the HTD descriptor to be
         placed into the HDF5 table
@@ -118,13 +119,13 @@ class mHTD(Feature.Feature):
         self.Columns = Columns
 
     
-    @Feature.wrapper   
+    @calc_wrapper  
     def calculate(self, **resource):
         image_uri = resource['image']
         mask_uri = resource['mask']
         
         
-        with Feature.ImageImport(image_uri) as imgimp:
+        with ImageImport(image_uri) as imgimp:
             with Feature.ImageImport(mask_uri) as maskimp:
 
                 im = cv2.imread(str(imgimp), 2)
@@ -152,8 +153,9 @@ class mHTD(Feature.Feature):
         class Columns(tables.IsDescription):
             image   = tables.StringCol(2000,pos=1)
             mask    = tables.StringCol(2000,pos=2)
-            feature = tables.Col.from_atom(featureAtom, pos=3)
-            label   = tables.Int32Col(pos=4)
+            feature_type  = tables.StringCol(20, pos=3)
+            feature = tables.Col.from_atom(featureAtom, pos=4)
+            label   = tables.Int32Col(pos=5)
             
         with Locks(None, filename):
             with tables.openFile(filename,'a', title=self.name) as h5file: 

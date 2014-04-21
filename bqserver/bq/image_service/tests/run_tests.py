@@ -554,6 +554,21 @@ class ImageServiceTests(ImageServiceTestBase):
             'image_pixel_format': 'unsigned integer' }           
         self.validate_image_variant(resource, filename, commands, meta_required)
 
+    def test_textureatlas_3d_2c_uint16(self):
+        resource = self.resource_3d_uint16
+        filename = 'im_3d_uint16.textureatlas.jpg'
+        commands = [('textureatlas', None)]
+        meta_required = { 
+            'format': 'bigtiff', 
+            'image_num_x': '2048', 
+            'image_num_y': '2048', 
+            'image_num_c': '2', 
+            'image_num_z': '1',
+            'image_num_t': '1',
+            'image_pixel_depth': '16',
+            'image_pixel_format': 'unsigned integer' }           
+        self.validate_image_variant(resource, filename, commands, meta_required)
+
     #################################
     # XML outputs
     #################################
@@ -606,10 +621,10 @@ class ImageServiceTests(ImageServiceTestBase):
         filename = 'im_3d_uint16.pixelcounter.xml'
         commands = [('pixelcounter', '128')]
         meta_required = [
-            { 'xpath': '//pixelcounts[@value="0"]/tag[@name="above"]', 'attr': 'value', 'val': '206168' },
-            { 'xpath': '//pixelcounts[@value="0"]/tag[@name="below"]', 'attr': 'value', 'val': '55976' },
-            { 'xpath': '//pixelcounts[@value="1"]/tag[@name="above"]', 'attr': 'value', 'val': '125912' },
-            { 'xpath': '//pixelcounts[@value="1"]/tag[@name="below"]', 'attr': 'value', 'val': '136232' },                
+            { 'xpath': '//pixelcounts[@value="0"]/tag[@name="above"]', 'attr': 'value', 'val': '207271' },
+            { 'xpath': '//pixelcounts[@value="0"]/tag[@name="below"]', 'attr': 'value', 'val': '54873' },
+            { 'xpath': '//pixelcounts[@value="1"]/tag[@name="above"]', 'attr': 'value', 'val': '126271' },
+            { 'xpath': '//pixelcounts[@value="1"]/tag[@name="below"]', 'attr': 'value', 'val': '135873' },                
         ]
         self.validate_xml(resource, filename, commands, meta_required)          
 

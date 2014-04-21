@@ -215,6 +215,7 @@ class export_serviceController(ServiceController):
         files    = []
         datasets = []
         urls     = []
+        dirs     = []
 
         if (tg.request.method.upper()=='POST' and tg.request.body):
             try:
@@ -222,12 +223,14 @@ class export_serviceController(ServiceController):
             except etree.ParseError:
                 data = []
             for resource in data:
-                type = resource.get('type', 'URL').upper()
-                if (type == 'FILE'):
+                type = resource.get('type', 'url').lower()
+                if (type == 'file'):
                     files.append(resource.text)
-                elif (type == 'DATASET'):
+                elif (type == 'dataset'):
                     datasets.append(resource.text)
-                elif (type == 'URL'):
+                elif (type == 'dir'):
+                    dirs.append(resource.text)
+                elif (type == 'url'):
                     urls.append(resource.text)
                 else:
                     urls.append(resource.text)
@@ -244,11 +247,12 @@ class export_serviceController(ServiceController):
         files       =   files + extractData(kw, 'files')
         datasets    =   datasets + extractData(kw, 'datasets')
         urls        =   urls + extractData(kw, 'urls')
+        dirs        =   dirs + extractData(kw, 'dirs')
 
         filename = kw.pop('filename', None) or 'bisque-'+time.strftime("%Y%m%d.%H%M%S")
 
         archiveStreamer = ArchiveStreamer(compressionType)
-        archiveStreamer.init(archiveName=filename, fileList=files, datasetList=datasets, urlList=urls)
+        archiveStreamer.init(archiveName=filename, fileList=files, datasetList=datasets, urlList=urls, dirList=dirs)
         return archiveStreamer.stream()
 
 

@@ -39,8 +39,8 @@ def setup_schema(command, conf, vars):
     # version table, "stamping" it with the most recent rev:
     from alembic.config import Config
     from alembic import command
-    #alembic_cfg = Config(config_path ("alembic.ini"))
-    alembic_cfg = Config(config['global_conf']['__file__'])
+    alembic_cfg = Config(config_path ("alembic.ini"))
+    #alembic_cfg = Config(config['global_conf']['__file__'])
     command.stamp(alembic_cfg, "head")
     transaction.commit()
 

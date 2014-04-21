@@ -57,6 +57,7 @@ BQFactory.objects =  {
                        dataset  : BQDataset,
                        resource : BQResource,
                        template : BQTemplate,
+                       dir      : BQDir,
 };
 
 BQFactory.ctormap =  {
@@ -83,6 +84,7 @@ BQFactory.ctormap =  {
                        dataset  : BQDataset,
                        resource : BQResource,
                        template : BQTemplate,
+                       dir      : BQDir,
 };
 
 BQFactory.ignored = {
@@ -266,11 +268,16 @@ BQFactory.on_xmlresponse = function(params, xmldoc) {
         return cb(bq);
 };
 
-BQFactory.parseBQDocument = function (xmltxt) {
-    var parser  = new DOMParser ();
-    xmldoc = parser.parseFromString(xmltxt, "text/xml");
-    var n = xmldoc.firstChild;
-    if (!n) return null;
+BQFactory.parseBQDocument = function (xmldoc) {
+    if ((typeof xmldoc)==='string') {
+        var parser  = new DOMParser ();
+        xmldoc = parser.parseFromString(xmldoc, "text/xml");
+    }
+    n = xmldoc;
+    if (!(n.nodeName in BQFactory.objects)) {
+        var n = xmldoc.firstChild;
+        if (!n) return null;
+    }
     if (n.nodeName == 'response')
         n = n.firstChild;
     if (!n) return null;
@@ -2410,5 +2417,20 @@ BQQuery.prototype.parseResponse = function(o, data) {
     }
     o.callback(o);
 };
+
+//-----------------------------------------------------------------------------
+// BQFile
+//-----------------------------------------------------------------------------
+
+function BQDir (uri){
+    BQObject.call(this, uri);
+    this.resource_type = 'dir';
+};
+BQDir.prototype = new BQObject();
+
+/*BQDir.prototype.initializeXml = function (node) {
+    BQObject.prototype.initializeXml.call(this, node);
+};*/
+
 
 

@@ -59,7 +59,7 @@ class InfoComparator(object):
 
 class InfoEquality(InfoComparator):
     def compare(self, iv, tv):
-        return (iv==tv)
+        return (iv.lower()==tv.lower())
     def fail(self, k, iv, tv):
         print_failed('%s failed comparison %s = %s'%(k, iv, tv))
         pass
@@ -72,6 +72,8 @@ class InfoNumericLessEqual(InfoComparator):
         pass
 
 def compare_info(meta_req, meta_test, cc=InfoEquality() ):
+    if meta_req is None: return False
+    if meta_test is None: return False
     for tk in meta_req:
         if tk not in meta_test:
             return False
@@ -213,7 +215,7 @@ class ImageServiceTestBase(unittest.TestCase):
             self.fail()
         
         meta_test = metadata_read(path)
-        #print meta_test
+        self.assertTrue(meta_test is not None, msg='Retrieved image can not be red') 
         self.assertTrue(compare_info(meta_required, meta_test), msg='Retrieved metadata differs from test template')  
 
     def validate_xml(self, resource, filename, commands, xml_parts_required):

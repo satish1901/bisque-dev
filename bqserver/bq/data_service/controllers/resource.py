@@ -187,6 +187,7 @@ class ResponseCache(object):
         #log.debug ('cache fetch %s' % url)
         try:
             cachename = os.path.join(self.cachepath, self._cache_name(url, user))
+            log.debug ('cache check %s', cachename)
             if os.path.exists (cachename):
                 with open(cachename) as f:
                     headers, cached = f.read().split ('\n\n', 1)

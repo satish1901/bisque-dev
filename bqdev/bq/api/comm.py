@@ -183,6 +183,10 @@ class BQSession(object):
             mex.status = 'RUNNING'
             self.mex = self.save(mex, url=self.service_url('module_service', 'mex'))
 
+            if self.mex :
+                mextoken = self.mex.resource_uniq
+                self.c.authenticate_mex("%s:%s" % (user, mextoken), bisque_root)
+ 
         return self
 
     def init_mex(self, mex_url, auth_token, bisque_root= None):

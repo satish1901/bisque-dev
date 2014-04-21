@@ -1,8 +1,8 @@
 #  This file contains a list of external binary files to be fetched
-# during system setup.  Each file external file must be in the form 
+# during system setup.  Each file external file must be in the form
 # of sha1_filename.ext where sha1 is UPPERCASE SHA1 hex hash of the file contents.
-# 
-# Accessing http://biodev.ece.ucsb.edu/binaries/upload will allow you to place 
+#
+# Accessing http://biodev.ece.ucsb.edu/binaries/upload will allow you to place
 # a file on the binary server and create the correct name.
 # There is also a script bqdev-upload-binary for uploading local files.
 #
@@ -18,17 +18,21 @@
 
 # PLATFORM dependent files
 # These sections titles use shell like 'glob'ing to match
-# To add a new platform, start up python and do a 
+# To add a new platform, start up python and do a
 #   import platform
 #   platform.platform().replace('-', '-%s-'%platform.architecture()[0], 1)
 
 [Windows-64bit-*]
-683E4322844C4A5C40571D92150A7F98211AF08F-imgcnv-Windows-64bit.zip=imgcnv.zip
-6B6B4CFD84B96E78173CD991EE529A652FB913CE-feature_extractors-Windows-64bit.zip=feature_extractors.zip
+8CFDC47F44A556C638BB0DC16F8AF0C43AF76853-imgcnv_win64_1-66.zip=imgcnv.zip
+354B7ADE7BE78CAC92255C990674B00BBA73263E-ImarisConvert_win64_8.0.0.b1.zip=ImarisConvert.zip
+463B3F04091CA0F78F671E7E7E0CCE7A16BFB30E-openslide-bisque-Windows-64bit.1.0.1.zip=openslide-bisque.zip
+743FB2442628209894B382BCA2D7ABAEF37116D6-feature_extractors-Windows-64bit.zip=feature_extractors.zip
 
-[Linux-64bit-*-debian-*]
+[Linux-64bit-*]
 511B5E84692B123A89576086201B793C93096A74-libmbgl-linux-64-large.a
-3DC0C3E6F3E87EEFD4E3799832EF63C81D32B1A2-feature_extractors-Linux-64bit.zip=feature_extractors.zip
+3CB2BD9D9491D7AB5492A5B0F469C077B1466B4E-feature_extractors-Linux-64bit.zip=feature_extractors.zip
+73CCA1FB257CDF951481FC7AD4BFF7DF36E2012A-imarisconvert_glibc2.11.zip=ImarisConvert.zip
+
 
 [Darwin-64bit-*]
 
