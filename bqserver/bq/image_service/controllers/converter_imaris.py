@@ -62,8 +62,8 @@ class ConverterImaris(ConverterBase):
         'ome-bigtiff' : 'OmeTiff',
         'ome-tiff' : 'OmeTiff',
         'bigtiff' : 'OmeTiff',
-        'tiff' : 'OmeTiff',        
-    }  
+        'tiff' : 'OmeTiff',
+    }
 
 #     #######################################
 #     # Init
@@ -353,7 +353,9 @@ class ConverterImaris(ConverterBase):
         else:
             # create an intermediate OME-TIFF
             if not os.path.exists(ometiff):
-                cls.convertToOmeTiff(ifnm, ometiff, series=series)
+                r = cls.convertToOmeTiff(ifnm, ometiff, series=series)
+                if r is None:
+                    return None
             # extract slices
             return ConverterImgcnv.slice(ometiff, ofnm=ofnm, z=z, t=t, roi=roi, series=series, **kw)
 
