@@ -10,16 +10,17 @@ import tempfile
 import tables
 import re
 import os
+import pdb
 import csv
 from nose.plugins.attrib import attr       
 from FeatureTestAsserts import isEqualXMLElement,isCSVEqual,isHDFEqual
+
+
 def set_docstring(value):
     def dec(obj):
         obj.__doc__ = value
         return obj
     return dec
-
- 
 
 
 class FeatureBase(object):
@@ -27,9 +28,10 @@ class FeatureBase(object):
     name = ''
     family_name = ''
     input_resource = ['image']
+    parameters = []
+    
     #seen as an indiviual test module
     #XML
-
 
     def constuct_xml_response(self,uri,resource_list):
         """
@@ -44,19 +46,30 @@ class FeatureBase(object):
         """
         resource = etree.Element('resource', uri=str(uri))
         for r in resource_list:
-            inputs = {}
-            for i in self.input_resource:
-                inputs[i] = r[i]
-            feature = etree.SubElement(resource, 'feature', inputs, type = self.name)
-            value=etree.SubElement(feature,'value')
-
-            with tables.open_file('features/'+r['filename']+'.h5','r') as h5file:
-                root = h5file.root
-                vl_array = getattr(root, self.name)[0]
             
-            value.text = " ".join('%g' % item for item in vl_array)
-    
+            with tables.open_file(os.path.join('features',r['filename']+'.h5'),'r') as h5file:
+                group = getattr(h5file.root, self.name)
+                feature_array_list = getattr(group, 'feature')
+                
+                for idx,feature_array in enumerate(feature_array_list):
+                    inputs = {}
+                    
+                    for i in self.input_resource:
+                        inputs[i] = r[i]
+                    feature = etree.SubElement(resource, 'feature', inputs, type = self.name)
+                    
+                    if self.parameters:
+                        parameters = {}
+                        
+                        for p in self.parameters:
+                            parameters[p] = str(getattr(group, p)[idx][0])
+                        etree.SubElement(feature, 'parameters', parameters)
+                        
+                    value=etree.SubElement(feature,'value')
+                    value.text = " ".join('%g' % item for item in feature_array)
+
         return resource
+    
     
     def construct_csv_response(self,resource_list):
         """
@@ -73,20 +86,28 @@ class FeatureBase(object):
         import StringIO
         f = StringIO.StringIO()
         writer = csv.writer(f)
-        titles = ['index', 'feature type'] + self.input_resource + ['descriptor'] #+ parameter_names
+        titles = ['index', 'feature type'] + self.input_resource + ['descriptor'] + self.parameters + ['response code','error message']  #+ parameter_names
         writer.writerow(titles)
-        for idx,r in enumerate(resource_list):
-            inputs = [] #list of input resource uris
-            for i in self.input_resource:
-                inputs.append(r[i])
-                
-            with tables.open_file('features/'+r['filename']+'.h5','r') as h5file:
-                root = h5file.root
-                vl_array = getattr(root, self.name)[0]
-            
-            vl_array = ",".join('%g' % item for item in vl_array)                
-            line = [idx, self.name] + inputs + [vl_array] #+ parameter 
-            writer.writerow(line)
+        line_idx = 0
+        for r in resource_list:
+            with tables.open_file(os.path.join('features',r['filename']+'.h5'),'r') as h5file:
+                group = getattr(h5file.root, self.name)
+                feature_array_list = getattr(group, 'feature')
+                for idx,feature_array in enumerate(feature_array_list):
+                    inputs = [] #list of input resource uris
+                    for i in self.input_resource:
+                        inputs.append(r[i])
+                    
+                    feature_array = ",".join('%g' % item for item in feature_array)
+                    
+                    parameter_array = []
+                    for p in self.parameters:
+                        parameter_array.append(getattr(group, p)[idx][0])
+                    
+                    line = [line_idx, self.name] + inputs + [feature_array] + parameter_array + ['200','none'] 
+                    line_idx+=1
+
+                    writer.writerow(line)
         return f.getvalue()
 
 
@@ -97,6 +118,7 @@ class FeatureBase(object):
             feature       = tables.Float32Col(shape=(self.length), pos=2)
         return Columns    
     
+    
     def construct_hdf_response(self,resource_list):
         """
             contructs the ideal hdf response
@@ -106,25 +128,27 @@ class FeatureBase(object):
             
             output
             @resource(str) - the path to the ideal hdf table
-            
         """
         f = tempfile.NamedTemporaryFile(dir='Temp', prefix='feature_', delete=False) 
         with tables.open_file(f.name,'a') as h5file_ideal:
             table = h5file_ideal.createTable('/', 'values', self.def_hdf_column(), expectedrows=100)
             
             for r in resource_list:
-                row = tuple([r['image']])
-                row += tuple([self.name])
-                with tables.open_file('features/'+r['filename']+'.h5','r') as h5file_feature:
-                    root = h5file_feature.root
-                    vl_array=getattr(root, self.name)[0]
-                    row += tuple([vl_array])
-                    row = [tuple(row)]
-                    
-                    table.append(row)
-                                 
+                with tables.open_file(os.path.join('features',r['filename']+'.h5'),'r') as h5file_feature:
+                    group = getattr(h5file_feature.root, self.name)
+                    feature_array_list = getattr(group, 'feature')
+                    for idx,feature_array in enumerate(feature_array_list):
+                        row = ()
+                        for i in self.input_resource:
+                            row += tuple([r[i]])
+                        row += tuple([self.name])
+                        row += tuple([feature_array])
+                        for p in self.parameters:
+                            row += tuple(getattr(group, p)[idx])
+                        table.append([row])
             table.flush()
         return f.name
+
 
     def make_GET_request(self,response_type):
         

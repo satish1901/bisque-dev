@@ -1,11 +1,10 @@
 from PyWNDCharmFeatureList import feature_list
 from bq.features.controllers import Feature #import base class
 from pylons.controllers.util import abort
-import cv2
 import numpy as np
 import logging
-from bq.features.controllers.Feature import BaseFeature, calc_wrapper, ImageImport #import base class
-
+from bq.features.controllers.Feature import BaseFeature, calc_wrapper, ImageImport, rgb2gray #import base class
+from PIL import Image
 
 log = logging.getLogger("bq.features")
 
@@ -19,7 +18,6 @@ class WNDCharm(BaseFeature): #base WNDCharm feature class
     #parameters
     name = 'WNDCharmBase'
     description = """This is the WNDCharm Base Class. Is not a feature in the feature server."""
-    length = 0
     
     @calc_wrapper
     def calculate(self, **resource):
@@ -54,13 +52,11 @@ class WNDCharm(BaseFeature): #base WNDCharm feature class
         image_uri += '&'.join(args)
         
         log.debug('WNDCharm uri: %s'% image_uri)
-        with Feature.ImageImport(image_uri) as imgimp:
-            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_UNCHANGED) #CV_LOAD_IMAGE_UNCHANGED CV_LOAD_IMAGE_ANYDEPTH
+        with ImageImport(image_uri) as imgimp:
+            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_UNCHANGED) #CV_LOAD_IMAGE_UNCHANGED CV_LOAD_IMAGE_ANYDEPTH
+            im = np.array(Image.open(str(imgimp)))
+            
             # extract the feature keypoints and descriptor
-            if im==None:
-                raise ValueError('Format was not supported')
-                #abort(415, 'Format was not supported')
-    
             im = np.asarray(im)        
             extractWNDCharmFeature = feature_info[0]
             descriptor = extractWNDCharmFeature(im)

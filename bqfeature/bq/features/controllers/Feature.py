@@ -184,6 +184,17 @@ class BaseFeature(object):
             with tables.openFile(filename,'a', title=self.name) as h5file:
                 outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
                 outtable.flush()
+                
+        class Columns(tables.IsDescription):
+            image         = tables.StringCol(2000,pos=1)
+            feature_type  = tables.StringCol(20, pos=2)
+            error_code    = tables.Int32Col(pos=3)
+            error_message = tables.StringCol(200,pos=4)
+
+        with Locks(None, filename): 
+            with tables.openFile(filename,'a', title=self.name) as h5file:
+                outtable = h5file.createTable('/', 'errors', Columns, expectedrows=1000000000)
+                outtable.flush()
 
         return
 
@@ -396,6 +407,26 @@ def xml_import(uri):
         return
 
 
+###############################################################
+# Features Misc.
+###############################################################
+
+def rgb2gray(im):
+    """
+        @im - numpy matrix of mxnx3
+        @return - 0.299 Ch1 + 0.587 Ch2 + 0.114 Ch3 (mxn numpy matrix)
+    """
+    im = np.asarray(im)
+    assert len(im.shape) == 3, TypeError('Must be a mxnx3 matrix')
+    assert im.shape[2] == 3, TypeError('Must be a mxnx3 matrix')
+    return np.dot(im[...,:3], [0.299, 0.587, 0.144])
 
 
-
+def gray2rgb(im):
+    """
+        @im - numpy matrix of mxn
+        @return - [ch1,ch1,ch1] (mxnx3 numpy matrix)
+    """
+    im = np.asarray(im)
+    assert len(im.shape) == 2, TypeError('Must be a mxn matrix')
+    return np.concatenate([im[..., np.newaxis] for i in range(3)], axis=2)

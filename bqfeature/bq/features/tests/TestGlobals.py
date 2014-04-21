@@ -160,7 +160,7 @@ def return_archive_info( bisque_archive, mask):
     
     bisque_archive_xml         = SESSION.fetchxml(bisque_archive_data_xml_top.attrib['uri']+'?view=deep')
     polygon_xml                = bisque_archive_xml.xpath('//polygon')
-    bisque_archive_polygon     = polygon_xml[0].attrib['uri']                
+    bisque_archive_polygon     = polygon_xml[0].attrib['uri']
 
     return ({
              'filename'      : bisque_archive,
@@ -189,20 +189,13 @@ def cleanup_dir():
     print 'Cleaning-up %s'%LOCAL_STORE_TESTS
     for root, dirs, files in os.walk(LOCAL_STORE_TESTS, topdown=False):
         for name in files:
-            os.remove(os.path.join(root, name))
+            try:
+                os.remove(os.path.join(root, name))
+            except:
+                pass
             
             
-if 'features' in TEST_TYPE or 'all' in TEST_TYPE:
-    
-    #importing pre-calculated features on images
-    check_for_file(BISQUE_ARCHIVE_1+'.h5', FEATURE_ARCHIVE_ZIP,local_dir=LOCAL_FEATURES_STORE)
-    fetch_file(BISQUE_ARCHIVE_1+'.h5',local_dir=LOCAL_FEATURES_STORE)
-    check_for_file(BISQUE_ARCHIVE_2+'.h5', FEATURE_ARCHIVE_ZIP,local_dir=LOCAL_FEATURES_STORE)
-    fetch_file(BISQUE_ARCHIVE_2+'.h5',local_dir=LOCAL_FEATURES_STORE)
-    check_for_file(BISQUE_ARCHIVE_3+'.h5', FEATURE_ARCHIVE_ZIP,local_dir=LOCAL_FEATURES_STORE)
-    fetch_file(BISQUE_ARCHIVE_3+'.h5',local_dir=LOCAL_FEATURES_STORE)
-    check_for_file(BISQUE_ARCHIVE_4+'.h5', FEATURE_ARCHIVE_ZIP,local_dir=LOCAL_FEATURES_STORE)
-    fetch_file(BISQUE_ARCHIVE_4+'.h5',local_dir=LOCAL_FEATURES_STORE) 
+
             
 #importing resources
 RESOURCE_LIST = []

@@ -1,8 +1,6 @@
 # -*- mode: python -*-
 """ Test library
 """
-import cv2
-import cv
 import tables
 import logging
 from pylons.controllers.util import abort

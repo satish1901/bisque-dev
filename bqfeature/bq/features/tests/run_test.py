@@ -18,6 +18,7 @@ import ntpath
 import logging as log
 from unittest import TestCase
 import time
+import tables
 import pdb
 from TestGlobals import check_for_file, fetch_file, delete_resource, cleanup_dir
 from TestGlobals import LOCAL_FEATURES_STORE,TEST_TYPE
@@ -69,7 +70,17 @@ def setUpModule():
         Initalizes the bisque to run tests
         (moved to the TestGlobals module so that everything is initalized before nose startes)
     """
-    pass
+    if 'features' in TEST_TYPE or 'all' in TEST_TYPE:
+        
+        #importing pre-calculated features on images
+        TestGlobals.check_for_file(TestGlobals.BISQUE_ARCHIVE_1+'.h5', TestGlobals.FEATURE_ARCHIVE_ZIP,local_dir=TestGlobals.LOCAL_FEATURES_STORE)
+        TestGlobals.fetch_file(TestGlobals.BISQUE_ARCHIVE_1+'.h5',local_dir=TestGlobals.LOCAL_FEATURES_STORE)
+        TestGlobals.check_for_file(TestGlobals.BISQUE_ARCHIVE_2+'.h5', TestGlobals.FEATURE_ARCHIVE_ZIP,local_dir=TestGlobals.LOCAL_FEATURES_STORE)
+        TestGlobals.fetch_file(TestGlobals.BISQUE_ARCHIVE_2+'.h5',local_dir=TestGlobals.LOCAL_FEATURES_STORE)
+        TestGlobals.check_for_file(TestGlobals.BISQUE_ARCHIVE_3+'.h5', TestGlobals.FEATURE_ARCHIVE_ZIP,local_dir=TestGlobals.LOCAL_FEATURES_STORE)
+        TestGlobals.fetch_file(TestGlobals.BISQUE_ARCHIVE_3+'.h5',local_dir=TestGlobals.LOCAL_FEATURES_STORE)
+        TestGlobals.check_for_file(TestGlobals.BISQUE_ARCHIVE_4+'.h5', TestGlobals.FEATURE_ARCHIVE_ZIP,local_dir=TestGlobals.LOCAL_FEATURES_STORE)
+        TestGlobals.fetch_file(TestGlobals.BISQUE_ARCHIVE_4+'.h5',local_dir=TestGlobals.LOCAL_FEATURES_STORE) 
 
 
 
@@ -91,11 +102,13 @@ def tearDownModule():
 
     tempfilelist = glob.glob(os.path.join('Temp','*'))
     for f in tempfilelist:
-        os.remove(f)
+        try:
+            os.remove(f)
+        except:
+            pass
 
 
-
-#######################################
+########################################
 ###         documentation
 #######################################
 class TestFeatureMain(RequestBase):
@@ -186,6 +199,12 @@ class TestDocumentationIncorrectFormat(RequestBase):
     request = TestGlobals.ROOT+'/features/format/asdf'  
     response_code = '404'
 
+class TestPostWithoutABody(RequestBase):
+    name = 'post_without_a_body'
+    request = TestGlobals.ROOT+'/features/TestFeature/xml'
+    response_code = '400'
+    method = 'POST'
+
 ##################################
 ###     VRL Features
 ##################################
@@ -194,17 +213,28 @@ class TestHTD(FeatureBase):
     family_name = 'VRL'
     length = 48
     
-#class TestEHD(FeatureBase):
-#    name = 'EHD'
-#    family_name = 'VRL'
-#    length = 80
+
+class TestEHD(FeatureBase):
+    name = 'EHD'
+    family_name = 'VRL'
+    length = 80
     
     
-#class TestmHTD(FeatureBase):
-#    name = 'mHTD'
-#    family_name = 'VRL'
-#    input_resource = ['image','mask']
+class TestmHTD(FeatureBase):
+    name = 'mHTD'
+    family_name = 'VRL'
+    length = 48
+    input_resource = ['image','mask']
+    parameters = ['label']
     
+    def def_hdf_column(self):
+        class Columns(tables.IsDescription):
+            image         = tables.StringCol(2000,pos=0)
+            mask         = tables.StringCol(2000,pos=1)
+            feature_type  = tables.StringCol(20, pos=2)
+            feature       = tables.Float32Col(shape=(self.length), pos=3)
+            label         = tables.Float32Col(pos=4)
+        return Columns    
     
     
 ###################################
@@ -239,21 +269,87 @@ class TestEHD2(FeatureBase):
     name = 'EHD2'
     family_name = 'MPEG7Flex'
     length = 80
-    
-#class TestpRSD(FeatureBase):
-#    name = 'pRSD'
-#    family_name = 'MPEG7Flex'
-#    input_type = ['image','polygon']
-    
 
 
+class TestRSD(FeatureBase):
+    name = 'RSD'
+    family_name = 'MPEG7Flex'
+    length = 35
+
+class TestmCLD(FeatureBase):
+    name = 'mCLD'
+    family_name = 'MPEG7Flex'
+    length = 120
+    input_resource = ['image','mask']
+    parameters = ['label']
+
+    def def_hdf_column(self):
+        class Columns(tables.IsDescription):
+            image         = tables.StringCol(2000,pos=0)
+            mask         = tables.StringCol(2000,pos=1)
+            feature_type  = tables.StringCol(20, pos=2)
+            feature       = tables.Float32Col(shape=(self.length), pos=3)
+            label         = tables.Float32Col(pos=4)
+        return Columns
+    
+class TestmCSD(FeatureBase):
+    name = 'mCSD'
+    family_name = 'MPEG7Flex'
+    length = 64
+    input_resource = ['image','mask']
+    parameters = ['label']
+
+    def def_hdf_column(self):
+        class Columns(tables.IsDescription):
+            image         = tables.StringCol(2000,pos=0)
+            mask         = tables.StringCol(2000,pos=1)
+            feature_type  = tables.StringCol(20, pos=2)
+            feature       = tables.Float32Col(shape=(self.length), pos=3)
+            label         = tables.Float32Col(pos=4)
+        return Columns
+  
+    
+class TestmDCD(FeatureBase):
+    name = 'mDCD'
+    family_name = 'MPEG7Flex'
+    length = 100
+    input_resource = ['image','mask']     
+    parameters = ['label']
+    
+    def def_hdf_column(self):
+        class Columns(tables.IsDescription):
+            image         = tables.StringCol(2000,pos=0)
+            mask         = tables.StringCol(2000,pos=1)
+            feature_type  = tables.StringCol(20, pos=2)
+            feature       = tables.Float32Col(shape=(self.length), pos=3)
+            label         = tables.Float32Col(pos=4)
+        return Columns
+    
+
+class TestmRSD(FeatureBase):
+    name = 'mRSD'
+    family_name = 'MPEG7Flex'
+    length = 35
+    input_resource = ['image','mask']
+    parameters = ['label']
+    
+    def def_hdf_column(self):
+        class Columns(tables.IsDescription):
+            image         = tables.StringCol(2000,pos=0)
+            mask         = tables.StringCol(2000,pos=1)
+            feature_type  = tables.StringCol(20, pos=2)
+            feature       = tables.Float32Col(shape=(self.length), pos=3)
+            label         = tables.Float32Col(pos=4)
+        return Columns
+    
+    
 ###################################
 #### WNDCharm Features
 ###################################
-#class TestChebishev_Statistics(FeatureBase):
-#    name = 'Chebishev_Statistics'
-#    family_name = 'WNDCharm'
-#    length = 32
+class TestChebishev_Statistics(FeatureBase):
+    name = 'Chebishev_Statistics'
+    family_name = 'WNDCharm'
+    length = 32
     
 class TestChebyshev_Fourier_Transform(FeatureBase):
     name = 'Chebyshev_Fourier_Transform'
@@ -265,10 +361,10 @@ class TestColor_Histogram(FeatureBase):
     family_name = 'WNDCharm'
     length = 20
 
-#class TestComb_Moments(FeatureBase):
-#    name = 'Comb_Moments'
-#    family_name = 'WNDCharm'
-#    length = 48
+class TestComb_Moments(FeatureBase):
+    name = 'Comb_Moments'
+    family_name = 'WNDCharm'
+    length = 48
     
 #only fails on hdf
 class TestEdge_Features(FeatureBase):
@@ -286,44 +382,40 @@ class TestGini_Coefficient(FeatureBase):
     family_name = 'WNDCharm'
     length = 1
     
-#class TestGabor_Textures(FeatureBase):
-#    name = 'Gabor_Textures'
-#    family_name = 'WNDCharm'
-#    length = 7
+class TestGabor_Textures(FeatureBase):
+    name = 'Gabor_Textures'
+    family_name = 'WNDCharm'
+    length = 7
 
-#only fails on hdf
 class TestHaralick_Textures(FeatureBase):
     name = 'Haralick_Textures'
     family_name = 'WNDCharm'
     length = 28
     
-#class TestMultiscale_Historgram(FeatureBase):
-#    name = 'Multiscale_Historgram'
-#    family_name = 'WNDCharm'
-#    length 24
+class TestMultiscale_Historgram(FeatureBase):
+    name = 'Multiscale_Historgram'
+    family_name = 'WNDCharm'
+    length = 24
 
-#only fails on hdf
 class TestObject_Feature(FeatureBase):
     name = 'Object_Feature'
     family_name = 'WNDCharm'
     length = 34
 
-#only fails on hdf
 class TestInverse_Object_Features(FeatureBase):
     name = 'Inverse_Object_Features'
     family_name = 'WNDCharm'
     length = 34
 
-#error
-#class TestPixel_Intensity_Statistics(FeatureBase):
-#    name = 'Pixel_Intensity_Statistics'
-#    family_name = 'WNDCharm'
-#    length = 34
+class TestPixel_Intensity_Statistics(FeatureBase):
+    name = 'Pixel_Intensity_Statistics'
+    family_name = 'WNDCharm'
+    length = 5
     
-#class TestRadon_Coefficients(FeatureBase):
-#    name = 'Radon_Coefficients'
-#    family_name = 'WNDCharm'
-#    length = 12
+class TestRadon_Coefficients(FeatureBase):
+    name = 'Radon_Coefficients'
+    family_name = 'WNDCharm'
+    length = 12
     
 class TestTamura_Textures(FeatureBase):
     name = 'Tamura_Textures'
@@ -337,27 +429,88 @@ class TestZernike_Coefficients(FeatureBase):
 
 
 
-#############################################
-#### OpenCV Features
-#############################################
-##class TestBRISK(FeatureBase):
-##    name = 'BRISK'
-##    family_name = 'OpenCV'
-##    
-##class TestORB(FeatureBase):
-##    name = 'ORB'
-##    family_name = 'OpenCV'
-##    
-##class TestSIFT(FeatureBase):
-##    name = 'SIFT'
-##    family_name = 'OpenCV'
-##    
-##class TestSURF(FeatureBase):
-##    name = 'SURF'
-##    family_name = 'OpenCV'
-#
-#
-#
+############################################
+### OpenCV Features
+############################################
+class TestBRISK(FeatureBase):
+    name = 'BRISK'
+    family_name = 'OpenCV'
+    length = 64
+    parameters = ['x','y','response','size','angle','octave']
+    
+    def def_hdf_column(self):
+        class Columns(tables.IsDescription):
+            image         = tables.StringCol(2000,pos=0)
+            feature_type  = tables.StringCol(20, pos=1)
+            feature       = tables.Float32Col(shape=(self.length), pos=2)
+            x         = tables.Float32Col(pos=4)
+            y         = tables.Float32Col(pos=5)
+            response  = tables.Float32Col(pos=6)
+            size      = tables.Float32Col(pos=7)
+            angle     = tables.Float32Col(pos=8)
+            octave    = tables.Float32Col(pos=9)            
+        return Columns     
+
+    
+class TestORB(FeatureBase):
+    name = 'ORB'
+    family_name = 'OpenCV'
+    length = 32
+    parameters = ['x','y','response','size','angle','octave']
+    
+    def def_hdf_column(self):
+        class Columns(tables.IsDescription):
+            image         = tables.StringCol(2000,pos=0)
+            feature_type  = tables.StringCol(20, pos=1)
+            feature       = tables.Float32Col(shape=(self.length), pos=2)
+            x         = tables.Float32Col(pos=4)
+            y         = tables.Float32Col(pos=5)
+            response  = tables.Float32Col(pos=6)
+            size      = tables.Float32Col(pos=7)
+            angle     = tables.Float32Col(pos=8)
+            octave    = tables.Float32Col(pos=9)
+        return Columns     
+
+    
+class TestSIFT(FeatureBase):
+    name = 'SIFT'
+    family_name = 'OpenCV'
+    length = 128
+    parameters = ['x','y','response','size','angle','octave']  
+
+    def def_hdf_column(self):
+        class Columns(tables.IsDescription):
+            image         = tables.StringCol(2000,pos=0)
+            feature_type  = tables.StringCol(20, pos=1)
+            feature       = tables.Float32Col(shape=(self.length), pos=2)
+            x         = tables.Float32Col(pos=3)
+            y         = tables.Float32Col(pos=4)
+            response  = tables.Float32Col(pos=5)
+            size      = tables.Float32Col(pos=6)
+            angle     = tables.Float32Col(pos=7)
+            octave    = tables.Float32Col(pos=8)
+        return Columns 
+
+    
+class TestSURF(FeatureBase):
+    name = 'SURF'
+    family_name = 'OpenCV'
+    length = 64
+    parameters = ['x','y','laplacian','size','direction','hessian'] 
+
+    def def_hdf_column(self):
+        class Columns(tables.IsDescription):
+            image         = tables.StringCol(2000,pos=0)
+            feature_type  = tables.StringCol(20, pos=1)
+            feature       = tables.Float32Col(shape=(self.length), pos=2)
+            x         = tables.Float32Col(pos=4)
+            y         = tables.Float32Col(pos=5)
+            laplacian = tables.Float32Col(pos=6)
+            size      = tables.Float32Col(pos=7)
+            direction = tables.Float32Col(pos=8)
+            hessian   = tables.Float32Col(pos=9)
+        return Columns 
+
 #############################################
 #### Mahotas Features
 #############################################
@@ -366,31 +519,36 @@ class TestLBP(FeatureBase):
     family_name = 'Mahotas'
     length = 8
     
+    
 class TestPFTAS(FeatureBase):
     name = 'PFTAS'
     family_name = 'Mahotas'
     length = 162
+    
     
 class TestTAS(FeatureBase):
     name = 'TAS'
     family_name = 'Mahotas'
     length = 162
     
+    
 class TestZM(FeatureBase):
     name = 'ZM'
     family_name = 'Mahotas'
     length = 25
 
-#not included in the tables
-#class TestHAR(FeatureBase):
-#    name = 'HAR'
-#    family_name = 'Mahotas'
-#    length = 52
+
+class TestHAR(FeatureBase):
+    name = 'HAR'
+    family_name = 'Mahotas'
+    length = 52
+    
     
 #class FFTSD(FeatureBase):
 #    name = 'FFTSD'
 #    family_name = 'MyFeatures'
 #    length = 500
+#    input_resource = ['polygon']    
 
 
 if __name__ == '__main__':
