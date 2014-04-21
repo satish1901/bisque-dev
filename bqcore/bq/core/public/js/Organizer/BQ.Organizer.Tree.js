@@ -142,7 +142,7 @@ Ext.define('BQ.Organizer.Tree', {
             title : ellipsis(name, 8, ".."),
             listeners : {
                 'beforeclose' : function(me) {
-                    me.node.collapse()
+                    me.node.collapse();
                 },
             },
         };

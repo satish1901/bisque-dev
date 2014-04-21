@@ -38,7 +38,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
                     specialkey : {
                         fn : function(field, e) {
                             if (e.getKey() == e.ENTER)
-                                this.btnSearch()
+                                this.btnSearch();
                         },
 
                         scope : this
@@ -294,7 +294,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
             if (ind != -1)
                 return tagOrder.slice(0, ind);
 
-            ind = tagOrder.lastIndexOf('"@ts":asc')
+            ind = tagOrder.lastIndexOf('"@ts":asc');
             if (ind != -1)
                 return tagOrder.slice(0, ind);
 
@@ -345,9 +345,11 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
     },
 
     btnOrganizerClickOriginal : function(reload) {
-        this.westPanel.removeAll(false);
-
+        this.westPanel.setWidth(420).show().expand();
+        //this.westPanel.queryById('organizer').removeAll(false); //this.westPanel.removeAll(false);
         this.organizerCt = ( reload ? undefined : this.organizerCt) || new Bisque.ResourceBrowser.Organizer({
+            border: 1,
+            itemId: 'organizer',
             parentCt : this.westPanel,
             dataset : this.browser.browserState['baseURL'],
             wpublic : this.browser.browserParams.wpublic,
@@ -355,45 +357,20 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
             msgBus : this.msgBus
         });
 
-        this.westPanel.setWidth(this.organizerCt.width).show().expand();
+        //this.westPanel.setWidth(this.organizerCt.width).show().expand();
         this.westPanel.add(this.organizerCt);
         this.westPanel.doComponentLayout(null, null, true);
     },
 
-    btnOrganizerClickSomeOldCode : function(reload) {
-        this.westPanel.removeAll(false);
-
-        this.organizerCt = ( reload ? undefined : this.organizerCt) || Ext.create('BQ.TagBrowser', {
-            width : 500,
-            listeners : {
-                scope : this,
-                'QUERY_CHANGED' : function(uri) {
-                    this.msgBus.fireEvent('Browser_ReloadData', uri)
-                }
-            },
-
-            // state variables
-            config : {
-                tagList : ['habitat', 'Plant Structure', 'Genus', 'species'],
-                resourceType : 'image',
-                resourceServer : 'data_service',
-                includePublic : this.browser.browserParams.wpublic,
-            }
-        });
-
-        this.westPanel.setWidth(this.organizerCt.width).show().expand();
-        this.westPanel.add(this.organizerCt);
-    },
-
     btnOrganizerClickTree : function(reload) {
-        this.westPanel.removeAll(false);
-
+        this.westPanel.setWidth(420).show().expand();
+        //this.westPanel.queryById('organizer').removeAll(false);
         this.organizerCt = ( reload ? undefined : this.organizerCt) || Ext.create('BQ.Organizer.Tree', {
-            width : 420,
+            itemId: 'organizer',
             listeners : {
                 scope : this,
                 'QUERY_CHANGED' : function(uri) {
-                    this.msgBus.fireEvent('Browser_ReloadData', uri)
+                    this.msgBus.fireEvent('Browser_ReloadData', uri);
                 }
             },
             // state variables
@@ -402,15 +379,36 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
             resourceServer : this.browser.browserState['baseURL'], //.split('/')[1],
             includePublic : this.browser.browserParams.wpublic,
         });
-
-        this.westPanel.setWidth(this.organizerCt.width).show().expand();
         this.westPanel.add(this.organizerCt);
+    },
+
+    btnOrganizerClickFiles : function(reload) {
+        this.westPanel.setWidth(420).show().expand();
+        //this.westPanel.queryById('files').removeAll(false);
+        this.westPanel.add({
+            xtype: 'bq-tree-files-panel',
+            itemId: 'files',
+            title: 'Files',
+            listeners : {
+                scope : this,
+                selected : function(url) {
+                    this.msgBus.fireEvent('Browser_ReloadData', {
+                        baseURL : url.slice(-1)!=='/' ? url+'/value' : url+'value',
+                        offset : 0,
+                        tag_query : '',
+                        tag_order : '',
+                        wpublic : false,
+                    });
+                }
+            },
+        });
     },
 
     btnOrganizerClick : function(reload) {
         // dima: choose type of organizer here
         //this.btnOrganizerClickTree(reload);
         this.btnOrganizerClickOriginal(reload);
+        this.btnOrganizerClickFiles(reload);
     },
 
     btnLayoutClick : function(item) {

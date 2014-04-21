@@ -122,3 +122,48 @@ BQ.ui.types = {
     'error':        { delay: 50000, title: 'Error',   cls: 'error' },
 };
 
+
+Ext.define('BQ.window.MessageBox', {
+    extend: 'Ext.window.MessageBox',
+    alias: 'widget.bq-messagebox',
+
+    reconfigure: function(cfg) {
+        this.callParent(arguments);
+        if (cfg.validator) {
+            this.textField.validator = cfg.validator;
+            this.textField.on('validitychange', function(parent, isValid) {
+                if (this.msgButtons && this.msgButtons.length>0)
+                    this.msgButtons[0].setDisabled(!isValid);
+            }, this );
+        } else {
+            this.textField.validator = undefined;
+        }
+    },
+
+    prompt : function(cfg, msg, fn, scope, multiline, value, validator){
+        if (Ext.isString(cfg)) {
+            cfg = {
+                prompt: true,
+                title: cfg,
+                minWidth: this.minPromptWidth,
+                msg: msg,
+                buttons: this.OKCANCEL,
+                callback: fn,
+                scope: scope,
+                multiline: multiline,
+                value: value,
+                validator: validator,
+            };
+        }
+        return this.show(cfg);
+    },
+}, function() {
+    /**
+     * @class BQ.MessageBox
+     * @extends BQ.window.MessageBox
+     * @singleton
+     * Singleton instance of {@link BQ.window.MessageBox}.
+     */
+    BQ.MessageBox = new this();
+});
+

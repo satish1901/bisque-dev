@@ -37,43 +37,21 @@ Ext.define('Bisque.ResourceBrowser.Dialog', {
             height : height,
             width : width,
             items : new Bisque.ResourceBrowser.Browser(config),
-        }, config);
-
-        this.dockedItems = [{
-            xtype : 'toolbar',
-            dock : 'bottom',
-            layout : {
-                type : 'hbox',
-                align : 'middle',
-                pack : 'center'
-            },
-            padding : 10,
-
-            items : [{
-                xtype : 'buttongroup',
-                margin : 5,
-                items : [{
-                    text : 'Select',
-                    iconCls : 'icon-select',
-                    scale : 'medium',
-                    width : 90,
-                    handler : this.btnSelect,
-                    scope : this
-                }]
+            buttonAlign: 'center',
+            buttons: [{
+                text : 'Select',
+                iconCls : 'icon-select',
+                handler : this.btnSelect,
+                scale: 'large',
+                scope: this,
             }, {
-                xtype : 'buttongroup',
-                margin : 5,
-                items : [{
-                    text : 'Cancel',
-                    iconCls : 'icon-cancel',
-                    textAlign : 'left',
-                    scale : 'medium',
-                    width : 90,
-                    handler : this.destroy,
-                    scope : this
-                }]
-            }]
-        }];
+                text : 'Cancel',
+                iconCls : 'icon-cancel',
+                handler : this.destroy,
+                scale: 'large',
+                scope: this,
+            }],
+        }, config);
 
         this.callParent([arguments]);
 
@@ -91,17 +69,23 @@ Ext.define('Bisque.ResourceBrowser.Dialog', {
     btnSelect : function() {
         var selectedRes = this.browser.resourceQueue.selectedRes;
         var selection = Ext.Object.getValues(selectedRes);
+        var dir = this.browser.getSelectedFolder();
 
-        if (selection.length)
-            if (selection.length == 1)
+        if (selection.length) {
+            if (selection.length === 1)
                 this.browser.fireEvent('Select', this, selection[0].resource);
             else {
                 for (var i = 0, selectRes = []; i < selection.length; i++)
                     selectRes.push(selection[i].resource);
                 this.browser.fireEvent('Select', this, selectRes);
             }
-        else
-            BQ.ui.message('Selection empty!', 'Please select an image or press cancel to abort.');
+            return;
+        } else if (selection.length===0 && dir) {
+            this.browser.fireEvent('Select', this, dir);
+            return;
+        }
+
+        BQ.ui.notification('Selection is empty. Please select an image or press cancel to abort.');
     },
 });
 
@@ -128,8 +112,11 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
         var imgSpinner = new Image();
         imgSpinner.src = bq.url('/js/ResourceBrowser/Images/loading.gif');
 
-        this.westPanel = new Ext.panel.Panel({
+        this.westPanel = Ext.create('Ext.tab.Panel', { //Ext.create('Ext.panel.Panel', {
             region : 'west',
+            plain : true,
+            border: 0,
+            activeTab : 0,
             split : true,
             layout : 'fit',
             cls : 'organizer',
@@ -138,9 +125,14 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
             hidden : true,
             collapsible : true,
             hideCollapseTool : true,
+            deferredRender: true,
             listeners : {
-                'beforecollapse' : function(me) {
+                beforecollapse : function(me) {
                     me.setTitle(me.getComponent(0).title);
+                },
+                tabchange : function(tabPanel, newCard, oldCard, eOpts) {
+                    if (newCard.setActive)
+                        newCard.setActive();
                 },
             }
         });
@@ -432,11 +424,39 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
 
         this.msgBus.mon(this.msgBus, {
             'ResourceDblClick' : function(resource) {
+                // check if its dir or local
+                if (resource.resource_type === 'dir' || resource.resource_type === 'store') {
+                    //this.fireEvent('directory', this, resource);
+                    if (!this.commandBar) return;
+                    if (!this.commandBar.westPanel) return;
+                    var ft = this.commandBar.westPanel.queryById('files');
+                    var path = ft.getSelected();
+                    if (resource.resource_type === 'store')
+                        path += '/store';
+                    path += '/'+ resource.name;
+                    path = path.replace('//', '/');
+                    ft.setPath(path);
+                    return;
+                }
                 if (this.browserParams.selType == 'MULTI' && this.selectState == 'ACTIVATE')
                     this.fireEvent('Select', this, resource);
             },
 
             'ResourceSingleClick' : function(resource) {
+                // check if its dir or local
+                if (resource.resource_type === 'dir' || resource.resource_type === 'store') {
+                    //this.fireEvent('directory', this, resource);
+                    if (!this.commandBar) return;
+                    if (!this.commandBar.westPanel) return;
+                    var ft = this.commandBar.westPanel.queryById('files');
+                    var path = ft.getSelected();
+                    if (resource.resource_type === 'store')
+                        path += '/store';
+                    path += '/'+ resource.name;
+                    path = path.replace('//', '/');
+                    ft.setPath(path);
+                    return;
+                }
                 if (this.browserParams.selType == 'SINGLE' && this.selectState == 'ACTIVATE')
                     this.fireEvent('Select', this, resource);
             },
@@ -535,5 +555,14 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
 
     onOperationRemove : function(selection, needs_reload) {
         this.fireEvent( 'removed', selection, needs_reload );
+    },
+
+    getSelectedFolder : function() {
+        if (!this.commandBar) return undefined;
+        if (!this.commandBar.westPanel) return undefined;
+        var ft = this.commandBar.westPanel.queryById('files');
+        if (!ft) return undefined;
+        var path = ft.getSelectedAsResource();
+        return path;
     },
 });

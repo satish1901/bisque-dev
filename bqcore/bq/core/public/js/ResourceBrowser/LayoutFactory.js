@@ -552,13 +552,8 @@ Ext.define('Bisque.ResourceBrowser.Layout.Grid', {
             fields : ['icon', 'name', 'value', 'type', {
                 name : 'ts',
                 convert : function(value) {
-                    var created = new Date(), today = new Date();
-                    created.setISO(value);
-
-                    var days = Math.round((today - created) / (1000 * 60 * 60 * 24));
-                    var pattern = (days) ? "n/j/Y" : "g:i A";
-
-                    return Ext.Date.format(created, pattern);
+                    var date = Ext.Date.parse(value, BQ.Date.patterns.BisqueTimestamp);
+                    return Ext.Date.format(date, BQ.Date.patterns.ISO8601Long);
                 }
             }, 'raw']
         });

@@ -9,6 +9,8 @@ __all__ = [
 
 __PACKAGE_NAME__ = "Bisque"
 __VERSION__ = "0.5.4"
+__VERSION_STRING__ =  ".5.4"
+__VERSION_HASH__ = "20140101"
 __DB_VERSION__ = 6
 __AUTHOR__ = "Center for Bioimage Informatics (CBI)"
 __EMAIL__ = "bisque-help@bioimage.ucsb.edu"

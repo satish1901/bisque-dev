@@ -99,7 +99,7 @@ var view_resource = '/client_service/view?resource=';
 //--------------------------------------------------------------------------------------
 // trivial resource renderers - receive a resource and return a string
 //--------------------------------------------------------------------------------------
-
+/*
 function renderer_resource(r) {
     return 'Created a resource of type <b>'+r.resource_type+'</b>';
 }
@@ -117,7 +117,7 @@ function renderer_image(r) {
 
 function renderer_dataset(r) {
     var m = r.getMembers();
-    return 'Created a <b>dataset</b> with '+ m.values.length +' images';
+    return 'Created a <b>dataset</b> with '+ m.values.length +' members';
 }
 
 var resource_renderers = { 'image': renderer_image, 'dataset': renderer_dataset };
@@ -128,7 +128,7 @@ function render_resource(r) {
         f = resource_renderers[r.resource_type];
     return f(r);
 }
-
+*/
 //--------------------------------------------------------------------------------------
 // BQ.upload.Annotator
 // a base component for acquiring required annotations about a file being uploaded
@@ -332,34 +332,33 @@ var formatFileSize = function (sz) {
     if (typeof sz !== 'number')
         return '';
     if (sz >= 1000000000)
-        return (sz / 1000000000).toFixed(2) + ' GB';
+        return '<b>'+((sz / 1000000000).toFixed(2)) + '</b>GB';
     if (sz >= 1000000)
-        return (sz / 1000000).toFixed(2) + ' MB';
-    return (sz / 1000).toFixed(2) + ' KB';
+        return '<b>'+((sz / 1000000).toFixed(2)) + '</b>MB';
+    return '<b>'+((sz / 1000).toFixed(2)) + '</b>KB';
 };
 
 Ext.define('BQ.upload.Item', {
-    //extend: 'Ext.panel.Panel',
     extend: 'Ext.container.Container', // container is much faster to be insterted
     alias: 'widget.uploaditem',
     requires: ['Ext.toolbar.Toolbar', 'Ext.tip.QuickTipManager', 'Ext.tip.QuickTip'],
 
-    border: 0,
-    height: 90,
+    height: 70,
     closable: true,
     cls: 'uploaditem',
-    bodyStyle: 'padding: 10px',
-    //autoScroll: true,
     layout: 'anchor',
-    //bodyStyle: 'margin: 15px',
-    defaults: { border: 0, height_normal: 90, hysteresis: 100, }, // hysteresis in ms
+    defaults: {
+        border: 0,
+        height_normal: 90,
+        hysteresis: 100,
+    }, // hysteresis in ms
 
     constructor: function(config) {
-        this.addEvents({
+        /*this.addEvents({
             'fileuploaded' : true,
             'filecanceled' : true,
             'fileerror'    : true,
-        });
+        });*/
         this.callParent(arguments);
         return this;
     },
@@ -373,42 +372,51 @@ Ext.define('BQ.upload.Item', {
             animate: true,
         });
 
+        var fn = this.file.relativePath || this.file.webkitRelativePath || this.file.name || this.file.fileName;
         this.fileName = Ext.create('Ext.toolbar.TextItem', {
-            text: (this.file.name || this.file.fileName),
+            text: fn,
             cls: 'title',
             indent: true,
         });
 
-        var s = '<h4><em>Size: </em>' + formatFileSize(this.file.size || this.file.fileSize);
-        s += this.file.type == ''? '': ' <em>Type: </em>'+this.file.type;
-        s += '</h4>';
+        var s = 'Size: ' + formatFileSize(this.file.size || this.file.fileSize);
+        var ext = fn.split('.').pop().toLowerCase();
+        if (this.formats_extensions && ext in this.formats_extensions) {
+            var cls = this.formats_extensions[ext].confidence > 0.5 ? 'good' : 'uncertain';
+            s += ' (<span class="'+cls+'">'+this.formats_extensions[ext].fullname+'</span>)';
+        } else {
+            s += ' (file)';
+        }
+
         this.fileSize = Ext.create('Ext.toolbar.TextItem', {
+            cls: 'info',
             text: s,
             indent: true,
         });
 
-        this.closeButton = Ext.create('Ext.button.Button', {
+        this.items = [{
+            xtype: 'button',
+            itemId: 'button_close',
             iconCls: 'close',
             cls: 'flatbutton button-close',
             scale: 'small',
             tooltip: 'Cancel uploading this file',
-            handler: Ext.Function.bind( this.destroy, this ),
-        });
-
-        this.permissionButton = Ext.create('Ext.button.Button', {
+            scope: this,
+            handler: this.destroy,
+        }, {
+            xtype: 'button',
+            itemId: 'button_permission',
             cls: 'flatbutton button-permission',
             text: BQ.upload.Item.PERMISSIONS_STRINGS[BQ.upload.Item.PERMISSIONS.PRIVATE],
             scale: 'small',
             tooltip: 'Change file access permission',
-            handler: Ext.Function.bind( this.togglePermission, this ),
-        });
-
-        this.items = [
-            this.closeButton,
-            this.permissionButton,
+            scope: this,
+            handler: this.togglePermission,
+        },
             this.fileName,
             this.fileSize,
-            this.progress ];
+            this.progress
+        ];
 
         // try to update the mime type from what browser gives
         // all browsers on different systems give all kinds of things
@@ -440,7 +448,11 @@ Ext.define('BQ.upload.Item', {
 
     updateUi : function() {
         if (!this.progress) return;
-        this.progress.updateText( BQ.upload.Item.STATE_STRINGS[this.state] );
+        if (this.state === BQ.upload.Item.STATES.ERROR && this.error)
+            this.progress.updateText( BQ.upload.Item.STATE_STRINGS[this.state] +': '+this.error);
+        else
+            this.progress.updateText( BQ.upload.Item.STATE_STRINGS[this.state] );
+
         if (this.state<BQ.upload.Item.STATES.DONE) {
             this.progress.removeCls( 'error' );
             this.progress.removeCls( 'done' );
@@ -461,7 +473,9 @@ Ext.define('BQ.upload.Item', {
     },
 
     hasFile : function(f) {
-        return (this.file.name || this.file.fileName) === (f.name || f.fileName);
+        var fn1 = this.file.relativePath || this.file.webkitRelativePath || this.file.name || this.file.fileName;
+        var fn2 = f.relativePath || f.webkitRelativePath || f.name || f.fileName;
+        return fn1 === fn2;
     },
 
     getFile : function() {
@@ -489,13 +503,14 @@ Ext.define('BQ.upload.Item', {
     },
 
     setPermission : function(new_perm) {
+        var btn = this.queryById('button_permission');
         if (this.state >= BQ.upload.Item.STATES.UPLOADING) return;
         this.permission = new_perm;
         if (this.permission)
-            this.permissionButton.addCls('published');
+            btn.addCls('published');
         else
-            this.permissionButton.removeCls('published');
-        this.permissionButton.setText(BQ.upload.Item.PERMISSIONS_STRINGS[this.permission]);
+            btn.removeCls('published');
+        btn.setText(BQ.upload.Item.PERMISSIONS_STRINGS[this.permission]);
     },
 
     isReadyToUpload : function() {
@@ -505,6 +520,7 @@ Ext.define('BQ.upload.Item', {
     upload : function() {
         if (!this.isReadyToUpload()) return;
         //this.time_started = new Date();
+        this.error = undefined;
         this.state = BQ.upload.Item.STATES.UPLOADING;
         this.constructAnnotation();
         this.fup = new BQFileUpload(this.file, {
@@ -573,9 +589,6 @@ Ext.define('BQ.upload.Item', {
         var timing = ' in '+ this.time_finished.diff(this.time_started).toString() +
                      ' at '+ speed;
 
-        this.fileName.setText( 'Uploaded <b>'+this.file.name+'</b>'+timing );
-        this.fileSize.setText( '<h4>Unfortunately some error happened during upload...</h4>' );
-
         // parse response
         if (e && e.target && e.target.responseXML) {
             this.resource = BQFactory.createFromXml(e.target.responseXML.firstChild.firstChild);
@@ -583,20 +596,17 @@ Ext.define('BQ.upload.Item', {
             if (this.resource.uri) {
                 // image inserted correctly
                 this.state = BQ.upload.Item.STATES.DONE;
-                //var s = 'Uploaded <a href="'+view_resource+encodeURIComponent(this.resource.uri)+'">'+this.file.name+'</a>'+timing;
-                var s = 'Uploaded <a href="'+view_resource+this.resource.uri+'">'+this.file.name+'</a>'+timing;
+                var s = 'Uploaded <a href="'+view_resource+this.resource.uri+'">'+this.file.name+'</a>'+' as <b>'+this.resource.resource_type+'</b> '+timing;
                 this.fileName.setText(s);
-
-                var s = '<h4>'+ render_resource(this.resource) +'</h4>';
-                this.fileSize.setText(s);
-            } else {
-                // some error happened
+            } else { // error returned in an XML doc
                 var d = this.resource.toDict();
-                var error = Encoder.htmlEncode(d.error);
-                this.fileSize.setText( '<h4>Unfortunately this error happened while processing: <b>'+error+'</b></h4>' );
+                this.error = Encoder.htmlEncode(d.error);
+                this.fileName.setText('Error while uploading <b>'+this.file.name+'</b>'+' at '+timing);
             }
-        } // if response came
-
+        } else if (e && e.target) { // some error happened with no XML output
+            this.error = e.target.status+' - '+e.target.statusText;
+            this.fileName.setText('Error while uploading <b>'+this.file.name+'</b>'+' at '+timing);
+        }
         this.updateUi();
         this.fireEvent( 'fileuploaded', this);
     },
@@ -618,6 +628,16 @@ Ext.define('BQ.upload.Item', {
         //resource.type = 'file';
         //resource.uri  = this.file.name;
         resource.name = this.file.name;
+        var path = this.file.relativePath || this.file.webkitRelativePath || this.file.name || this.file.fileName;
+        var prefix = this.path.getPath();
+        if (this.path && prefix && prefix.length>0) {
+            path = prefix + '/' + path;
+            path = path.replace('//', '/');
+        }
+        if (path && path !== '') {
+            resource.name = path;
+            //resource.value = path;
+        }
 
         // add access permission annotation
         if (this.permission) {
@@ -686,7 +706,6 @@ BQ.upload.Item.PERMISSIONS_STRINGS = {
     1: 'published',
 };
 
-
 //--------------------------------------------------------------------------------------
 // BQ.upload.Panel
 // upload manages items and all other UI aspects like drag and drop
@@ -698,6 +717,21 @@ BQ.upload.DATASET_CONFIGS = {
     'NORMAL'   : 0,
     'REQUIRE'  : 1,
     'PROHIBIT' : 2,
+};
+
+BQ.upload.FS_FILES_IGNORE = {
+    '.'         : '.',
+    '..'        : '..',
+    'Thumbs.db' : 'Thumbs.db',
+    '.DS_Store' : '.DS_Store',
+    '.Trashes'  : '.Trashes',
+};
+
+// Bioformats says it supports many non-image formats
+BQ.upload.IGNORE_FMT_EXT = {
+    'zip': true, 'xml': true, 'txt': true, 'amiramesh': true, 'cfg': true, 'csv': true, 'dat': true,
+    'grey': true, 'htm': true, 'html': true, 'hx': true, 'inf': true, 'labels': true, 'log': true,
+    'lut': true, 'mdb': true, 'pst': true, 'pty': true, 'rec': true, 'tim': true, 'xlog': true, 'zpo': true,
 };
 
 BQ.upload.DEFAULTS = {
@@ -721,7 +755,7 @@ Ext.define('BQ.upload.Panel', {
     defaults: BQ.upload.DEFAULTS,
 
     constructor: function(config) {
-        this.addEvents({
+        /*this.addEvents({
             'fileuploaded'   : true,
             'filesuploaded'  : true,
             'datasetcreated' : true,
@@ -729,7 +763,7 @@ Ext.define('BQ.upload.Panel', {
             'filescanceled'  : true,
             'fileadded'      : true,
             'fileerror'      : true,
-        });
+        });*/
         this.callParent(arguments);
         return this;
     },
@@ -742,20 +776,8 @@ Ext.define('BQ.upload.Panel', {
     initComponent : function() {
 
         this.processConfig();
-
-        // header toolbar's elements
-
-        this.fileChooser = Ext.create('BQ.upload.File', {
-            buttonOnly: true,
-            multiple: true,
-            handler: this.chooseFiles,
-            buttonConfig: { scale: 'large', iconCls: 'browse', text: 'Choose files',
-                            tooltip: 'Select several local files to upload', cls: 'x-btn-default-large', },
-            listeners: {
-                    change: this.chooseFiles,
-                    scope: this,
-            }
-        });
+        this.setLoading('Fetching supported formats...');
+        fetchFormatsList( callback(this, this.onFormatsList), undefined );
 
         // footer's toolbar elements
 
@@ -776,7 +798,8 @@ Ext.define('BQ.upload.Panel', {
             scale: 'large',
             cls: 'x-btn-default-large',
             tooltip: 'Start the upload of all queued files',
-            handler: Ext.Function.bind( this.upload, this ),
+            scope: this,
+            handler: this.upload,
         });
 
         this.btn_cancel = Ext.create('Ext.button.Button', {
@@ -786,7 +809,8 @@ Ext.define('BQ.upload.Panel', {
             scale: 'large',
             cls: 'x-btn-default-large',
             tooltip: 'Cancel all queued and uploading files',
-            handler: Ext.Function.bind( this.cancel, this ),
+            scope: this,
+            handler: this.cancel,
         });
 
         var dataset_btn_visible = true;
@@ -833,47 +857,24 @@ Ext.define('BQ.upload.Panel', {
         });
 
         // main elements
-
-        this.formatsPanel = Ext.create('BQ.is.Formats', {
-            border: 0,
-            title: 'Supported image formats',
-            bodyStyle: 'padding: 0px',
-        });
-
-        this.helpPanel = {
-            xtype: 'bq-panel-web',
-            border: 0,
-            title: 'Help',
-            bodyStyle: 'padding: 10px',
-            url: '/import_service/public/help.html',
-        };
-
-        this.taggerPanel = Ext.create('Bisque.ResourceTaggerOffline', { });
-        this.taggerPrent = Ext.create('Ext.panel.Panel', {
-            border: 0,
+        this.taggerPanel = Ext.create('Bisque.ResourceTaggerOffline', {
             title: 'Textual annotations',
-            layout: 'fit',
-            items: [this.taggerPanel],
-        });
-
-        this.tabPanel = Ext.create('Ext.panel.Panel', {
             border: 0,
             region:'east',
             collapsible: true,
             width: 350,
             cls: 'tabs',
-            layout: 'accordion',
             deferredRender: true,
-            items: [ this.formatsPanel, this.helpPanel, this.taggerPrent ],
+
         });
 
         this.uploadPanel = Ext.create('Ext.container.Container', {
             border: 0,
-            region:'center',
+            //region:'center',
+            flex: 10,
             autoScroll: true,
             cls: 'upload',
-            //bodyStyle: 'padding:10px',
-            //defaults: { bodyStyle: 'margin: 15px' },
+            html: '<div id="formats_background" class="background"></div><div class="background dropzone">Drop files here</div>',
         });
 
 
@@ -883,65 +884,100 @@ Ext.define('BQ.upload.Panel', {
 
         this.dockedItems = [{
             xtype: 'toolbar',
+            itemId: 'toolbar_select',
             dock: 'top',
-            defaults: { scale: 'large'  },
+            defaults: {
+                scale: 'large',
+            },
             allowBlank: false,
             cls: 'tools',
             border: 0,
             layout: {
                 overflowHandler: 'Menu'
             },
-            items: [{ xtype:'tbtext', html: '<h1>'+this.heading+':</h1>', },
-                     this.fileChooser,
-                     {
-                         xtype:'splitbutton',
-                         text: 'Toggle permissions',
-                         cls: 'x-btn-default-large',
-                         tooltip: 'Toggle access right to all images, only works before the upload have started',
-                         //iconCls: 'add16',
-                         scope: this,
-                         handler: function() { this.setPermissionsToggle(); },
-                         menu: [{
-                                   text: 'Set all published',
-                                   scope: this,
-                                   handler: function() { this.setPermissions(BQ.upload.Item.PERMISSIONS.PUBLISHED); },
-                                }, {
-                                   text: 'Set all private',
-                                   scope: this,
-                                   handler: function() { this.setPermissions(BQ.upload.Item.PERMISSIONS.PRIVATE); },
-                                },]
-                     }, {
-                        xtype: 'tbfill',
-                     }, {
-                         text: 'Annotate',
-                         iconCls: 'annotate',
-                         cls: 'x-btn-default-large',
-                         tooltip: 'Show annotation tagger',
-                         handler: function() { this.taggerPrent.expand(); },
-                         scope: this,
-                     },{
-                         text: 'Formats',
-                         iconCls: 'formats',
-                         cls: 'x-btn-default-large',
-                         tooltip: 'Show supported formats',
-                         handler: function() { this.formatsPanel.expand(); },
-                         scope: this,
-                     },{
-                         text: 'Help',
-                         iconCls: 'help',
-                         cls: 'x-btn-default-large',
-                         tooltip: 'Show help page about file uploading',
-                         handler: function() { this.helpPanel.expand(); },
-                         scope: this,
-                     },
-                   ]
+            items: [{
+                xtype:'tbtext',
+                html: '<h1>'+this.heading+':</h1>',
+            }, {
+                xtype: 'filemultifield',
+                itemId: 'selector_files',
+                buttonOnly: true,
+                multiple: true,
+                handler: this.chooseFiles,
+                scope: this,
+                buttonConfig: {
+                    scale: 'large',
+                    iconCls: 'browse',
+                    text: 'Choose files',
+                    tooltip: 'Select several local files to upload',
+                    cls: 'x-btn-default-large',
+                },
+                listeners: {
+                    change: this.chooseFiles,
+                    scope: this,
+                },
+            }, {
+                xtype: 'filemultifield',
+                itemId: 'selector_directory',
+                buttonOnly: true,
+                multiple: true,
+                directory: true,
+                scope: this,
+                handler: this.chooseFiles,
+                buttonConfig: {
+                    scale: 'large',
+                    iconCls: 'browse',
+                    text: 'Choose directory',
+                    tooltip: 'Select a local directory to upload',
+                    cls: 'x-btn-default-large',
+                },
+                listeners: {
+                    change: this.chooseFiles,
+                    scope: this,
+                },
+            }, {
+                xtype:'splitbutton',
+                text: 'Toggle permissions',
+                cls: 'x-btn-default-large',
+                tooltip: 'Toggle access right to all images, only works before the upload have started',
+                //iconCls: 'add16',
+                scope: this,
+                handler: this.setPermissionsToggle,
+                menu: [{
+                    text: 'Set all published',
+                    scope: this,
+                    handler: function() { this.setPermissions(BQ.upload.Item.PERMISSIONS.PUBLISHED); },
+                }, {
+                    text: 'Set all private',
+                    scope: this,
+                    handler: function() { this.setPermissions(BQ.upload.Item.PERMISSIONS.PRIVATE); },
+                }],
+            }, {
+                xtype: 'tbfill',
+            }, {
+                text: 'Formats',
+                iconCls: 'formats',
+                cls: 'x-btn-default-large',
+                tooltip: 'Show supported formats',
+                handler: this.onFormats,
+                scope: this,
+            }, {
+                text: 'Help',
+                iconCls: 'help',
+                cls: 'x-btn-default-large',
+                tooltip: 'Show help page about file uploading',
+                handler: this.onHelp,
+                scope: this,
+            }],
         },{
             xtype: 'toolbar',
             dock: 'bottom',
-            //ui: 'footer',
             cls: 'footer',
             border: 0,
-            defaults: { scale: 'large', cls: 'x-btn-default-large', },
+            defaults: {
+                scale: 'large',
+                cls: 'x-btn-default-large',
+            },
             items: [ this.btn_dataset, this.btn_upload, this.btn_cancel, this.btn_reupload, this.progress, ]
         }];
 
@@ -953,13 +989,39 @@ Ext.define('BQ.upload.Panel', {
             border: 0,
             layout: 'border',
             defaults: { split: true, },
-            items: [
-                this.uploadPanel,
-                this.tabPanel,
+            items: [{
+                xtype: 'container',
+                border: 0,
+                region:'center',
+                layout: {
+                    type: 'vbox',
+                    align: 'stretch',
+                    pack: 'start',
+                },
+                items: [{
+                    xtype:'bq-picker-path',
+                    itemId: 'upload_path',
+                    height: 35,
+                    prefix: 'Upload to: ',
+                    path: this.getPreferredPath(),
+                    listeners: {
+                        scope: this,
+                        browse: this.browsePath,
+                        changed: this.onPathChanged,
+                    },
+                },
+                this.uploadPanel ],
+            },
+                //this.uploadPanel,
+                this.taggerPanel,
             ],
         }];
 
         this.callParent();
+        BQ.Preferences.get({
+            key : 'Uploader',
+            callback : Ext.bind(this.onPreferences, this),
+        });
     },
 
     afterRender : function() {
@@ -1023,8 +1085,10 @@ Ext.define('BQ.upload.Panel', {
 
         var fp = Ext.create('BQ.upload.Item', {
             file: f,
+            formats_extensions: this.formats_extensions,
             formconf: this.formconf,
             tagger: this.taggerPanel,
+            path: this.queryById('upload_path'),
             listeners: {
                     fileuploaded: this.onFileUploaded,
                     filecanceled: this.onFileCanceled,
@@ -1054,6 +1118,55 @@ Ext.define('BQ.upload.Panel', {
         this.progress_timeout = setTimeout( Ext.Function.bind( this.doProgress, this ), this.hysteresis );
     },
 
+    // updating UI on very insert is expensive, create a list first and then update the UI
+    // the problem dropping files is unknow number due to directory reading
+    addDirectoryPrivate: function (item, path, dropped) {
+        var me = this;
+        path = path || '';
+        if (item.isFile) {
+            item.file(function(f) {
+                f.relativePath = path + f.name;
+                dropped.counts--;
+                if (me.ignoreFile(f)) // skip ignored files
+                    return;
+                var fp = me.addFile(f, true);
+                if (fp) dropped.files.push(fp);
+                if (dropped.counts<1) {
+                    me.uploadPanel.add(dropped.files);
+                    me._dropped_dirs--;
+                    if (me._dropped_dirs<1) {
+                        me.progress.setVisible(false);
+                        me.setLoading(false);
+                        me.btn_upload.setDisabled(false);
+                        me.btn_cancel.setDisabled(false);
+                    }
+                }
+            });
+        } else if (item.isDirectory) {
+            dropped.counts--;
+            var dr = item.createReader();
+            dr.readEntries(function(entries) {
+                var e = undefined;
+                dropped.counts += entries.length;
+                for (var i=0; (e=entries[i]); ++i) {
+                    me.addDirectoryPrivate(e, path + item.name + '/', dropped);
+                }
+            });
+        }
+    },
+
+    addDirectory: function (item, path) {
+        this._dropped_dirs = this._dropped_dirs || 0;
+        this._dropped_dirs++;
+        var dropped = {
+            counts: 1,
+            files: [],
+        };
+        var me = this;
+        setTimeout( function() { me.addDirectoryPrivate(item, path, dropped); }, 1);
+    },
+
+    // updating UI on very insert is expensive, create a list first and then update the UI
     addFilesPrivate : function(pos) {
         var total = this._files.length;
         if (pos>=total) {
@@ -1063,6 +1176,7 @@ Ext.define('BQ.upload.Panel', {
             //var time_finished = new Date();
             //this.progress.updateProgress(100, 'Inserted in '+time_finished.diff(this._time_started).toString() );
             this.progress.setVisible(false);
+            this.setLoading(false);
             this.btn_upload.setDisabled(false);
             this.btn_cancel.setDisabled(false);
             this._files = undefined;
@@ -1077,7 +1191,8 @@ Ext.define('BQ.upload.Panel', {
         if (pos+1<total) {
             this.updateProgress( pos/total, 'Inserting files: '+(pos+1)+' of '+total );
         } else {
-            clearTimeout (this.progress_timeout); this.progress_timeout = null;
+            clearTimeout (this.progress_timeout);
+            this.progress_timeout = null;
             this.progress.updateProgress( 1, 'Rendering inserted files, wait a bit...' );
         }
 
@@ -1085,9 +1200,45 @@ Ext.define('BQ.upload.Panel', {
         setTimeout( function() { me.addFilesPrivate(pos+1); }, 1);
     },
 
-    addFiles : function(files) {
+    ignoreFile : function(f) {
+        if (f.name in BQ.upload.FS_FILES_IGNORE) // skip ignored files
+            return true;
+        if (f.name.indexOf('._')===0) // MacOSX files starting at '._'
+            return true;
+        return false;
+    },
+
+    addFiles : function(files, items) {
+        var notified = false;
         this.progress.setVisible(true);
-        this._files = files;
+        if (items)
+            this.setLoading('Adding dropped files...');
+        this._files = [];
+        var f = undefined;
+        for (var i=0; (f=files[i]); ++i) {
+            if (this.ignoreFile(f)) // skip ignored files
+                continue;
+            if (items && items[i].webkitGetAsEntry) {
+                var item = items[i].webkitGetAsEntry();
+                if (item && item.isDirectory) {
+                    this.addDirectory(item, '');
+                    continue;
+                }
+            }
+            if (f.size === 0 && f.type === '') {
+                if (!notified) {
+                    BQ.ui.warning('Unfortunately, your browser does not allow directory upload, please use Google Chrome.');
+                    notified = true;
+                }
+                continue;
+            }
+            this._files.push(f);
+        }
+
+        if (this._files.length<1) {
+            this.progress.setVisible(false);
+            return;
+        }
         this._fps = [];
         this.uploadPanel.addCls('waiting');
         this._time_started = new Date();
@@ -1158,7 +1309,8 @@ Ext.define('BQ.upload.Panel', {
         this.uploadPanel.removeCls( 'dragging' );
         if (!e || !e.browserEvent || !e.browserEvent.dataTransfer || !e.browserEvent.dataTransfer.files) return;
         var files = e.browserEvent.dataTransfer.files;
-        this.addFiles(files);
+        var items = e.browserEvent.dataTransfer.items;
+        this.addFiles(files, items);
     },
 
     testDone : function(nomessage) {
@@ -1279,7 +1431,206 @@ Ext.define('BQ.upload.Panel', {
         return 'Upload in progress, by closing the page you will cancel all uploads!';
     },
 
+    onHelp : function() {
+        var w = Ext.create('Ext.window.Window', {
+            title : 'Help',
+            bodyStyle : 'padding: 10px',
+            modal : true,
+            autoScroll : true,
+            width : BQApp ? BQApp.getCenterComponent().getWidth() / 1.8 : document.width / 1.8,
+            height : BQApp ? BQApp.getCenterComponent().getHeight() / 1.1 : document.height / 1.1,
+            maxWidth : 1000,
+            buttonAlign : 'center',
+            loader : {
+                url : '/import_service/public/help.html',
+                renderer : 'html',
+                autoLoad : true,
+                ajaxOptions : {
+                    disableCaching : false,
+                }
+            },
+            buttons : [{
+                text : 'Ok',
+                handler : function(cmp, e) {
+                    w.close();
+                }
+            }],
+        }).show();
+    },
+
+    onFormats : function() {
+        var w = Ext.create('Ext.window.Window', {
+            title : 'Help',
+            modal : true,
+            layout : 'fit',
+            width : BQApp ? BQApp.getCenterComponent().getWidth() / 1.8 : document.width / 1.8,
+            height : BQApp ? BQApp.getCenterComponent().getHeight() / 1.1 : document.height / 1.1,
+            maxWidth : 1000,
+            border: 0,
+            buttonAlign : 'center',
+            buttons : [{
+                text : 'Ok',
+                handler : function(cmp, e) {
+                    w.close();
+                }
+            }],
+            items: [{
+                xtype: 'bq-formats',
+            }],
+        }).show();
+    },
+
+    onFormatsList : function(fmts) {
+        this.formats = fmts;
+        this.formats_extensions = {};
+        this.formats_names = {};
+        for (var n in fmts) {
+            var f = fmts[n];
+            if (!(f.fullname in this.formats_names) || this.formats_names[f.fullname]<f.confidence) {
+                this.formats_names[f.fullname] = f.confidence;
+
+            }
+
+            var exts = f.extensions.split(',');
+            var ext = undefined;
+            for (var i=0; (ext=exts[i]); ++i) {
+                if ( !(ext in BQ.upload.IGNORE_FMT_EXT) && (!(ext in this.formats_extensions) || this.formats_extensions[ext].confidence < f.confidence) )
+                    this.formats_extensions[ext] = f;
+            }
+        }
+        this.setLoading(false);
+        var back = Ext.get('formats_background');
+        if (back && back.dom) {
+            var keys = Object.keys(this.formats_names).sort(function() {
+                return Math.random() - 0.5;
+            });
+            var s='';
+            var n = undefined;
+            for (var i=0; (n=keys[i]); ++i) {
+                var cls = this.formats_names[n] > 0.5 ? 'good' : 'uncertain';
+                s += '<span class="'+cls+'" style="">'+n+'</span> ';
+            }
+            back.dom.innerHTML = s;
+        }
+    },
+
+    getPreferredPath : function(template) {
+        var t = template || '{date_iso}';
+        var datenow = new Date();
+        var vars = {
+            user: BQApp.user && BQApp.user.user_name ? BQApp.user.user_name : '', // dima: not inited, requires later update
+            date_iso: Ext.Date.format(datenow, 'Y-m-d'),
+            datetime_iso: Ext.Date.format(datenow, 'Y-m-d H:i:s'),
+            d: Ext.Date.format(datenow, 'd'),
+            D: Ext.Date.format(datenow, 'D'),
+            j: Ext.Date.format(datenow, 'j'),
+            l: Ext.Date.format(datenow, 'l'),
+            N: Ext.Date.format(datenow, 'N'),
+            S: Ext.Date.format(datenow, 'S'),
+            w: Ext.Date.format(datenow, 'w'),
+            z: Ext.Date.format(datenow, 'z'),
+            W: Ext.Date.format(datenow, 'W'),
+            F: Ext.Date.format(datenow, 'F'),
+            m: Ext.Date.format(datenow, 'm'),
+            M: Ext.Date.format(datenow, 'M'),
+            n: Ext.Date.format(datenow, 'n'),
+            t: Ext.Date.format(datenow, 't'),
+            L: Ext.Date.format(datenow, 'L'),
+            o: Ext.Date.format(datenow, 'o'),
+            Y: Ext.Date.format(datenow, 'Y'),
+            y: Ext.Date.format(datenow, 'y'),
+            a: Ext.Date.format(datenow, 'a'),
+            A: Ext.Date.format(datenow, 'A'),
+            g: Ext.Date.format(datenow, 'g'),
+            G: Ext.Date.format(datenow, 'G'),
+            h: Ext.Date.format(datenow, 'h'),
+            H: Ext.Date.format(datenow, 'H'),
+            i: Ext.Date.format(datenow, 'i'),
+            s: Ext.Date.format(datenow, 's'),
+            u: Ext.Date.format(datenow, 'u'),
+            O: Ext.Date.format(datenow, 'O'),
+            P: Ext.Date.format(datenow, 'P'),
+            T: Ext.Date.format(datenow, 'T'),
+            Z: Ext.Date.format(datenow, 'Z'),
+            c: Ext.Date.format(datenow, 'c'),
+            U: Ext.Date.format(datenow, 'U'),
+            MS: Ext.Date.format(datenow, 'MS'),
+            time: Ext.Date.format(datenow, 'time'),
+            timestamp: Ext.Date.format(datenow, 'timestamp'),
+        };
+        for (var v in vars)
+            t = t.replace( '{'+v+'}', vars[v] );
+
+        //return Ext.Date.format(new Date(), 'Y-m-d');
+        return t;
+    },
+
+    pathUserToBlob : function(path) {
+        var p = path;
+        if (p[0] !== '/')
+            p = '/local/'+p;
+        //var user = BQApp.user.user_name;
+        //var p = '/blob_service/store/local/'+user+'/'+path;
+        p = '/blob_service/store'+p;
+        p = p.replace('//', '/');
+        return p;
+    },
+
+    pathBlobToUser : function(path) {
+        //var user = BQApp.user.user_name;
+        path = path.replace('/blob_service/store', '');
+        return path;
+    },
+
+    browsePath : function() {
+        var w = (BQApp?BQApp.getCenterComponent().getWidth():document.width)*0.3;
+        var h = (BQApp?BQApp.getCenterComponent().getHeight():document.height)*0.8;
+        var up = this.queryById('upload_path');
+        var el = up.getPrefixButton().el;
+        Ext.create('Ext.tip.ToolTip', {
+            cls: 'bq-tooltip',
+            target: el,
+            anchor: 'top',
+            floating: true,
+            width :  w,
+            maxWidth: w,
+            minWidth: 300,
+            height:  h,
+            maxHeight: h,
+            minHeight: 300,
+            layout: 'fit',
+            autoHide: false,
+            shadow: true,
+            border: false,
+            defaults: {
+                border : false,
+            },
+            items: [{
+                xtype: 'bq-tree-files-panel',
+                border: false,
+                path: this.pathUserToBlob(up.getPath()),
+                listeners: {
+                    scope: this,
+                    selected: function(url) {
+                        this.onPathChanged(this, this.pathBlobToUser(url));
+                        //this.queryById('upload_path').setPath(path);
+                    },
+                },
+            }],
+        }).show();
+    },
+
+    onPathChanged : function(cnt, path) {
+        this.queryById('upload_path').setPath(path);
+    },
+
+    onPreferences: function(pref) {
+        this.preferences = pref;
+        this.queryById('upload_path').setPath(this.getPreferredPath(this.preferences.initial_path));
+    },
+
 });
+
 
 //--------------------------------------------------------------------------------------
 // BQ.upload.Dialog

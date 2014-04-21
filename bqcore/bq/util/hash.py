@@ -31,3 +31,32 @@ def is_uniq_code(uniq, version = None):
 
 
 
+###########################################################################
+# Hashing Utils
+###########################################################################
+
+
+def file_hash_SHA1( filename ):
+    '''Takes a file path and returns a SHA-1 hash of its bits'''
+    f = file(filename, 'rb')
+    m = hashlib.sha1()
+    readBytes = 1024 # use 1024 byte buffer
+    while readBytes:
+        readString = f.read(readBytes)
+        m.update(readString)
+        readBytes = len(readString)
+    f.close()
+    return m.hexdigest()
+
+def file_hash_MD5( filename ):
+    '''Takes a file path and returns a MD5 hash of its bits'''
+    f = file(filename, 'rb')
+    m = hashlib.md5()
+    readBytes = 1024 # use 1024 byte buffer
+    while readBytes:
+        readString = f.read(readBytes)
+        m.update(readString)
+        readBytes = len(readString)
+    f.close()
+    return m.hexdigest()
+

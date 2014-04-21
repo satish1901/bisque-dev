@@ -6,14 +6,18 @@ except ImportError:
     use_setuptools()
     from setuptools import setup, find_packages
 
+#from bq.release import __VERSION__
+__VERSION__="0.5.5"
+
 setup(
     name='bqfeature',
-    version='1.0',
+    version=__VERSION__,
     description='',
     author='',
     author_email='',
     #url='',
     install_requires=[
+                      "importlib",
                       "bqcore",
                       "numpy",
                       "mahotas",  # Feature

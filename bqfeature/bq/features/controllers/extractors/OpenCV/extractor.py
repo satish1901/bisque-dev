@@ -5,13 +5,15 @@ import cv2
 import cv
 import logging
 import numpy as np
-from bq.features.controllers import Feature #import base class
 from pylons.controllers.util import abort
-log = logging.getLogger("bq.features")
 from bq.image_service.controllers.locks import Locks
+from bq.features.controllers.Feature import calc_wrapper, ImageImport #import base class
+from bq.features.controllers import Feature
 import tables
 
-class BRISK(Feature.Feature):
+log = logging.getLogger("bq.features")
+
+class BRISK(Feature.BaseFeature):
     """
         Initalizes table and calculates the ORB descriptor to be
         placed into the HDF5 table.
@@ -40,12 +42,12 @@ class BRISK(Feature.Feature):
             
         self.Columns = Columns    
         
-    @Feature.wrapper        
+    @calc_wrapper        
     def calculate(self, **resource):
         """ Append descriptors to BRISK h5 table """
         
         image_uri = resource['image']
-        with Feature.ImageImport(image_uri) as imgimp:
+        with ImageImport(image_uri) as imgimp:
             im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)  
 
             if im==None:
@@ -86,13 +88,14 @@ class BRISK(Feature.Feature):
         featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
         class Columns(tables.IsDescription):
             image  = tables.StringCol(2000,pos=1)
-            feature   = tables.Col.from_atom(featureAtom, pos=2)
-            x         = tables.Float32Col(pos=3)
-            y         = tables.Float32Col(pos=4)
-            response  = tables.Float32Col(pos=5)
-            size      = tables.Float32Col(pos=6)
-            angle     = tables.Float32Col(pos=7)
-            octave    = tables.Float32Col(pos=8)
+            feature_type  = tables.StringCol(20, pos=2)
+            feature   = tables.Col.from_atom(featureAtom, pos=3)
+            x         = tables.Float32Col(pos=4)
+            y         = tables.Float32Col(pos=5)
+            response  = tables.Float32Col(pos=6)
+            size      = tables.Float32Col(pos=7)
+            angle     = tables.Float32Col(pos=8)
+            octave    = tables.Float32Col(pos=9)
             
         with Locks(None, filename):
             with tables.openFile(filename,'a', title=self.name) as h5file: 
@@ -102,7 +105,7 @@ class BRISK(Feature.Feature):
         return
 
 
-class BRISKc(Feature.Feature):
+class BRISKc(Feature.BaseFeature):
     """
         Initalizes table and calculates the ORB descriptor to be
         placed into the HDF5 table.
@@ -131,11 +134,11 @@ class BRISKc(Feature.Feature):
             
         self.Columns = Columns
         
-    @Feature.wrapper        
+    @calc_wrapper       
     def calculate(self, uri):
         """ Append descriptors to SIFT h5 table """
         
-        with Feature.ImageImport(image_uri) as imgimp:
+        with ImageImport(image_uri) as imgimp:
             im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
         
             if im==None:
@@ -181,13 +184,14 @@ class BRISKc(Feature.Feature):
         featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
         class Columns(tables.IsDescription):
             image  = tables.StringCol(2000,pos=1)
-            feature   = tables.Col.from_atom(featureAtom, pos=2)
-            x         = tables.Float32Col(pos=3)
-            y         = tables.Float32Col(pos=4)
-            response  = tables.Float32Col(pos=5)
-            size      = tables.Float32Col(pos=6)
-            angle     = tables.Float32Col(pos=7)
-            octave    = tables.Float32Col(pos=8)
+            feature_type  = tables.StringCol(20, pos=2)
+            feature   = tables.Col.from_atom(featureAtom, pos=3)
+            x         = tables.Float32Col(pos=4)
+            y         = tables.Float32Col(pos=5)
+            response  = tables.Float32Col(pos=6)
+            size      = tables.Float32Col(pos=7)
+            angle     = tables.Float32Col(pos=8)
+            octave    = tables.Float32Col(pos=9)
             
         with Locks(None, filename):
             with tables.openFile(filename,'a', title=self.name) as h5file: 
@@ -197,7 +201,7 @@ class BRISKc(Feature.Feature):
         return
  
           
-class ORB(Feature.Feature):
+class ORB(Feature.BaseFeature):
     """
         Initalizes table and calculates the ORB descriptor to be
         placed into the HDF5 table.
@@ -231,12 +235,12 @@ class ORB(Feature.Feature):
             
         self.Columns = Columns
 
-    @Feature.wrapper
+    @calc_wrapper
     def calculate(self, **resource):
         """ Append descriptors to ORB h5 table """
         
         image_uri = resource['image']
-        with Feature.ImageImport(image_uri) as imgimp:
+        with ImageImport(image_uri) as imgimp:
             im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
      
             if im==None:
@@ -275,13 +279,14 @@ class ORB(Feature.Feature):
         featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
         class Columns(tables.IsDescription):
             image  = tables.StringCol(2000,pos=1)
-            feature   = tables.Col.from_atom(featureAtom, pos=2)
-            x         = tables.Float32Col(pos=3)
-            y         = tables.Float32Col(pos=4)
-            response  = tables.Float32Col(pos=5)
-            size      = tables.Float32Col(pos=6)
-            angle     = tables.Float32Col(pos=7)
-            octave    = tables.Float32Col(pos=8)
+            feature_type  = tables.StringCol(20, pos=2)
+            feature   = tables.Col.from_atom(featureAtom, pos=3)
+            x         = tables.Float32Col(pos=4)
+            y         = tables.Float32Col(pos=5)
+            response  = tables.Float32Col(pos=6)
+            size      = tables.Float32Col(pos=7)
+            angle     = tables.Float32Col(pos=8)
+            octave    = tables.Float32Col(pos=9)
             
         with Locks(None, filename):
             with tables.openFile(filename,'a', title=self.name) as h5file: 
@@ -291,7 +296,7 @@ class ORB(Feature.Feature):
         return
  
  
-class ORBc(Feature.Feature):
+class ORBc(Feature.BaseFeature):
     """
         Initalizes table and calculates the ORB descriptor to be
         placed into the HDF5 table.
@@ -327,11 +332,11 @@ class ORBc(Feature.Feature):
             
         self.Columns = Columns
 
-    @Feature.wrapper        
+    @calc_wrapper      
     def calculate(self, **resource):
         """ Append descriptors to ORB h5 table """
         image_uri = resource['image']
-        with Feature.ImageImport(image_uri) as imgimp:
+        with ImageImport(image_uri) as imgimp:
             im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)    
             if im==None:
                 raise ValueError('Format was not supported')
@@ -375,13 +380,14 @@ class ORBc(Feature.Feature):
         featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
         class Columns(tables.IsDescription):
             image  = tables.StringCol(2000,pos=1)
-            feature   = tables.Col.from_atom(featureAtom, pos=2)
-            x         = tables.Float32Col(pos=3)
-            y         = tables.Float32Col(pos=4)
-            response  = tables.Float32Col(pos=5)
-            size      = tables.Float32Col(pos=6)
-            angle     = tables.Float32Col(pos=7)
-            octave    = tables.Float32Col(pos=8)
+            feature_type  = tables.StringCol(20, pos=2)
+            feature   = tables.Col.from_atom(featureAtom, pos=3)
+            x         = tables.Float32Col(pos=4)
+            y         = tables.Float32Col(pos=5)
+            response  = tables.Float32Col(pos=6)
+            size      = tables.Float32Col(pos=7)
+            angle     = tables.Float32Col(pos=8)
+            octave    = tables.Float32Col(pos=9)
             
         with Locks(None, filename):
             with tables.openFile(filename,'a', title=self.name) as h5file: 
@@ -390,7 +396,7 @@ class ORBc(Feature.Feature):
             
         return
 
-class SIFT(Feature.Feature):
+class SIFT(Feature.BaseFeature):
     """
         Initalizes table and calculates the ORB descriptor to be
         placed into the HDF5 table.
@@ -420,12 +426,12 @@ class SIFT(Feature.Feature):
             
         self.Columns = Columns
     
-    @Feature.wrapper
+    @calc_wrapper
     def calculate(self, **resource):
         """ Append descriptors to SIFT h5 table """
         
         image_uri = resource['image']
-        with Feature.ImageImport(image_uri) as imgimp:
+        with ImageImport(image_uri) as imgimp:
             im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
        
             if im==None:
@@ -466,13 +472,14 @@ class SIFT(Feature.Feature):
         featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
         class Columns(tables.IsDescription):
             image  = tables.StringCol(2000,pos=1)
-            feature   = tables.Col.from_atom(featureAtom, pos=2)
-            x         = tables.Float32Col(pos=3)
-            y         = tables.Float32Col(pos=4)
-            response  = tables.Float32Col(pos=5)
-            size      = tables.Float32Col(pos=6)
-            angle     = tables.Float32Col(pos=7)
-            octave    = tables.Float32Col(pos=8)
+            feature_type  = tables.StringCol(20, pos=2)
+            feature   = tables.Col.from_atom(featureAtom, pos=3)
+            x         = tables.Float32Col(pos=4)
+            y         = tables.Float32Col(pos=5)
+            response  = tables.Float32Col(pos=6)
+            size      = tables.Float32Col(pos=7)
+            angle     = tables.Float32Col(pos=8)
+            octave    = tables.Float32Col(pos=9)
             
         with Locks(None, filename):
             with tables.openFile(filename,'a', title=self.name) as h5file: 
@@ -492,12 +499,12 @@ class SIFTc(SIFT):
     name = 'SIFTc'
     description = """Scale-invariant feature transform also know as SIFT """
     
-    @Feature.wrapper        
+    @calc_wrapper       
     def calculate(self, **resource):
         """ Append descriptors to SIFT h5 table """
         
         image_uri = resource['image']
-        with Feature.ImageImport(image_uri) as imgimp:
+        with ImageImport(image_uri) as imgimp:
             im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
    
             if im==None:
@@ -584,7 +591,7 @@ class SIFTc(SIFT):
 #                self.setRow(uri, idnumber, descriptors[i], parameter)
 
                 
-class SURF(Feature.Feature):
+class SURF(Feature.BaseFeature):
     """
         Initalizes table and calculates the SURF descriptor to be
         placed into the HDF5 table.
@@ -613,7 +620,7 @@ class SURF(Feature.Feature):
             
         self.Columns = Columns
         
-    @Feature.wrapper        
+    @calc_wrapper        
     def calculate(self, **resource):
         """ Append descriptors to SURF h5 table """
         #initalizing
@@ -623,7 +630,7 @@ class SURF(Feature.Feature):
         nOctaveLayers = 4
 
         image_uri = resource['image']
-        with Feature.ImageImport(image_uri) as imgimp:
+        with ImageImport(image_uri) as imgimp:
             im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
 
             if im==None:
@@ -658,13 +665,14 @@ class SURF(Feature.Feature):
         featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
         class Columns(tables.IsDescription):
             image  = tables.StringCol(2000,pos=1)
-            feature   = tables.Col.from_atom(featureAtom, pos=2)
-            x         = tables.Float32Col(pos=3)
-            y         = tables.Float32Col(pos=4)
-            laplacian = tables.Float32Col(pos=5)
-            size      = tables.Float32Col(pos=6)
-            direction = tables.Float32Col(pos=7)
-            hessian   = tables.Float32Col(pos=8)
+            feature_type  = tables.StringCol(20, pos=2)            
+            feature   = tables.Col.from_atom(featureAtom, pos=3)
+            x         = tables.Float32Col(pos=4)
+            y         = tables.Float32Col(pos=5)
+            laplacian = tables.Float32Col(pos=6)
+            size      = tables.Float32Col(pos=7)
+            direction = tables.Float32Col(pos=8)
+            hessian   = tables.Float32Col(pos=9)
             
         with Locks(None, filename):
             with tables.openFile(filename,'a', title=self.name) as h5file: 
@@ -684,7 +692,7 @@ class SURFc(SURF):
     description = """Speeded Up Robust Features also know as SURF"""
     
     
-    @Feature.wrapper        
+    @calc_wrapper       
     def calculate(self, **resource):
         """ Append descriptors to SURF h5 table """
         #initalizing
@@ -694,7 +702,7 @@ class SURFc(SURF):
         nOctaveLayers = 4
         image_uri = resource['image']
         
-        with Feature.ImageImport(image_uri) as imgimp:
+        with ImageImport(image_uri) as imgimp:
             im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
 
             if im==None:
@@ -730,7 +738,7 @@ class SURFc(SURF):
         
         return descriptors,x,y,response,size,angle,octave
 
-class FREAKc(Feature.Feature):
+class FREAKc(Feature.BaseFeature):
     """
         Initalizes table and calculates the ORB descriptor to be
         placed into the HDF5 table.
@@ -759,13 +767,13 @@ class FREAKc(Feature.Feature):
             
         self.Columns = Columns
         
-    @Feature.wrapper        
+    @calc_wrapper        
     def calculate(self, uri):
         """ Append descriptors to SIFT h5 table """
         
         image_uri = resource['image']
         
-        with Feature.ImageImport(image_uri) as imgimp:
+        with ImageImport(image_uri) as imgimp:
             im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
         
             if im==None:

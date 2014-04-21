@@ -85,10 +85,8 @@ Ext.define('Bisque.Resource.Dataset.Compact', {
     },
 
     updateContainer : function() {
-        var date = new Date();
-        date.setISO(this.resource.ts);
-
-        this.update('<div class="labelOnImage" style="width:160px;">' + this.resource.name + '<br><span class="smallLabelOnImage">' + Ext.Date.format(date, "m/d/Y") + '</span></div>' + this.getData('previewDiv'));
+        var date = Ext.Date.parse(this.resource.ts, BQ.Date.patterns.BisqueTimestamp);
+        this.update('<div class="labelOnImage" style="width:160px;">' + this.resource.name + '<br><span class="smallLabelOnImage">' + Ext.Date.format(date, BQ.Date.patterns.ISO8601Long) + '</span></div>' + this.getData('previewDiv'));
         this.setLoading(false);
     },
 });
@@ -141,10 +139,8 @@ Ext.define('Bisque.Resource.Dataset.Card', {
     },
 
     updateContainer : function() {
-        var date = new Date();
-        date.setISO(this.resource.ts);
-
-        this.update('<div class="labelOnImage" style="width:260px;">' + this.resource.name + '<br><span class="smallLabelOnImage">' + Ext.Date.format(date, "m/d/Y") + '</span></div>' + this.getData('previewDiv'));
+        var date = Ext.Date.parse(this.resource.ts, BQ.Date.patterns.BisqueTimestamp);
+        this.update('<div class="labelOnImage" style="width:260px;">' + this.resource.name + '<br><span class="smallLabelOnImage">' + Ext.Date.format(date, BQ.Date.patterns.ISO8601Long) + '</span></div>' + this.getData('previewDiv'));
         this.setLoading(false);
     },
 });
@@ -205,11 +201,9 @@ Ext.define('Bisque.Resource.Dataset.Full', {
     },
 
     updateContainer : function() {
-        var date = new Date();
-        date.setISO(this.resource.ts);
-
+        var date = Ext.Date.parse(this.resource.ts, BQ.Date.patterns.BisqueTimestamp);
         var imgDiv = new Ext.get(document.createElement('div'));
-        imgDiv.update('<div class="labelOnImage" style="width:99%;">' + this.resource.name + '<br><span class="smallLabelOnImage">' + Ext.Date.format(date, "m/d/Y") + '</span></div>' + this.getData('previewDiv'));
+        imgDiv.update('<div class="labelOnImage" style="width:99%;">' + this.resource.name + '<br><span class="smallLabelOnImage">' + Ext.Date.format(date, BQ.Date.patterns.ISO8601Long) + '</span></div>' + this.getData('previewDiv'));
 
         this.add(Ext.create('Ext.panel.Panel', {
             border : 0,
@@ -250,11 +244,10 @@ Ext.define('Bisque.Resource.Dataset.List', {
             cls : 'lblModuleOwner',
         });
 
-        var date = new Date();
-        date.setISO(this.resource.ts);
+        var date = Ext.Date.parse(this.resource.ts, BQ.Date.patterns.BisqueTimestamp);
 
         var datasetDate = new Ext.form.Label({
-            text : Ext.Date.format(date, "F j, Y g:i:s a"),
+            text : Ext.Date.format(date, BQ.Date.patterns.ISO8601Long),
             cls : 'lblModuleDate',
             flex : 1,
             //padding:'0 0 0 8',

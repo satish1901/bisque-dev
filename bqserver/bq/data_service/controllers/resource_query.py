@@ -334,14 +334,11 @@ def prepare_permissions (query, user_id, with_public, action = RESOURCE_READ):
                     'true': True, '1': True, 'public': True, 1:True
                     }
     with_public = public_vals.get(with_public, False)
-
-    if not user_id:
-        #user_id = session.get('bq_user_id', None) #get_user_id()
-        user_id = get_user_id()
+    user_id = user_id or get_user_id()
 
     if is_admin():
         if with_public:
-            log.info('user (%s) is admin. Skipping protection filters' , user_id)
+            log.info('user (%s) is admin wpublic %s. Skipping protection filters' , user_id, with_public)
             return query
 
     # Check if logged in, else just check for public items.
@@ -356,6 +353,8 @@ def prepare_permissions (query, user_id, with_public, action = RESOURCE_READ):
         visibility = (Taggable.perm == PUBLIC)
 
     return query.filter(visibility)
+    #v = DBSession.query(Taggable).filter(visibility).subquery()
+    #return query.filter(Taggable.document_id == v.c.id)
 
 
 def prepare_tag_expr (query, tag_query=None):
@@ -699,7 +698,7 @@ def resource_query(resource_type,
                    tag_order=None,
                    parent=None,
                    user_id=None,
-                   wpublic = True,
+                   wpublic = False,
                    action = RESOURCE_READ,
                    **kw):
     '''Perform a query for the specified type, using the credentials user_id.

@@ -858,8 +858,23 @@ def install_bioformats(params):
     if getanswer ("Install bioformats", "Y",
                   "Bioformats can be used as a backup to read many image file types") == "Y":
 
-        #bio_files = [ 'bio-formats.jar', 'loci-common.jar', 'mdbtools-java.jar', 'ome-io.jar',
-        #              'poi-loci.jar', 'jai_imageio.jar', 'loci_tools.jar', 'metakit.jar', 'ome-xml.jar' ]
+        old_bf_files = [
+            'bfconvert', 'bfconvert.bat', 'bfview', 'bfview.bat', 'bio-formats.jar',
+            'domainlist', 'domainlist.bat', 'editor', 'editor.bat', 'formatlist',
+            'formatlist.bat', 'ijview', 'ijview.bat', 'jai_imageio.jar', 'list.txt',
+            'loci_plugins.jar', 'loci_tools.jar', 'loci-common.jar', 'loci-testing-framework.jar',
+            'log4j.properties', 'lwf-stubs.jar', 'mdbtools-java.jar', 'metakit.jar', 'notes',
+            'notes.bat', 'ome_plugins.jar', 'ome_tools.jar', 'ome-editor.jar', 'ome-io.jar',
+            'omeul', 'omeul.bat', 'ome-xml.jar', 'poi-loci.jar', 'scifio.jar', 'showinf',
+            'showinf.bat', 'tiffcomment', 'tiffcomment.bat', 'xmlindent', 'xmlindent.bat', 'xmlvalid', 'xmlvalid.bat'
+        ]
+
+        # first remove old files
+        for f in old_bf_files:
+            p = os.path.join(BQBIN ,f)
+            if os.path.exists(p):
+                os.remove(p)
+
 
         #for bf in bio_files:
         #    copy_link (os.path.join(BQDEPOT, bf), BQBIN)
@@ -985,10 +1000,8 @@ def install_engine_defaults(params):
             params[k] = ENGINE_VARS[k]
         print "  %s=%s" % (k,params[k])
 
-    if getanswer("Change a site variable", 'Y')!='Y':
-        return params
-
-    params = modify_site_cfg(ENGINE_QUESTIONS, params,  append=False)
+    if getanswer("Change a site variable", 'Y')=='Y':
+        params = modify_site_cfg(SITE_QUESTIONS, params)
 
     if getanswer("Update servers", 'Y' if new_install else 'N', 'Modify [server] section of site.cfg') == 'Y':
         server_params = { 'e1.proxyroot' : params['bisque.root'], 'e1.url' : params['bisque.engine'], }
@@ -1310,6 +1323,52 @@ def install_imgcnv ():
         filename_check = os.path.join(filename_dest, 'imgcnv%s'%exev)
         uncompress_dependencies (filename_zip, filename_dest, filename_check)
 
+def install_openslide ():
+    """Install dependencies that aren't handled by setup.py"""
+
+    filename_zip = os.path.join(BQDEPOT, 'openslide-bisque.zip')
+
+    if not os.path.exists(filename_zip):
+        print "No pre-compiled version of openslide exists for your system"
+        print "Please visit our mailing list https://groups.google.com/forum/#!forum/bisque-bioimage for help"
+        return
+
+    if getanswer ("Install OpenSlide converter", "Y",
+                  "OpenSlide will allow image server to read full slide pixel data") == "Y":
+
+        binv = 'bin'
+        exev = ''
+        if sys.platform == 'win32':
+            binv = 'Scripts'
+            exev = '.exe'
+
+        filename_dest = os.path.join(os.environ['VIRTUAL_ENV'], binv)
+        filename_check = ''
+        uncompress_dependencies (filename_zip, filename_dest, filename_check)
+
+def install_imarisconvert ():
+    """Install dependencies that aren't handled by setup.py"""
+
+    filename_zip = os.path.join(BQDEPOT, 'ImarisConvert.zip')
+
+    if not os.path.exists(filename_zip):
+        print "No pre-compiled version of ImarisConvert exists for your system"
+        print "Please visit our mailing list https://groups.google.com/forum/#!forum/bisque-bioimage for help"
+        return
+
+    if getanswer ("Install ImarisConvert", "Y",
+                  "ImarisConvert will allow image server to read many image formats") == "Y":
+
+        binv = 'bin'
+        exev = ''
+        if sys.platform == 'win32':
+            binv = 'Scripts'
+            exev = '.exe'
+
+        filename_dest = os.path.join(os.environ['VIRTUAL_ENV'], binv)
+        filename_check = ''
+        uncompress_dependencies (filename_zip, filename_dest, filename_check)
+
 def install_features ():
     """Install dependencies that aren't handled by setup.py"""
 
@@ -1470,6 +1529,8 @@ install_options= [
            'modules',
            'runtime',
            'imgcnv',
+           'imarisconvert',
+           'openslide',
            'bioformats',
            'features',
            'features_source',
@@ -1494,9 +1555,13 @@ usage = " usage: bq-admin setup [%s] " % ' '.join(install_options)
 
 
 def bisque_installer(options, args):
-    cwd = to_posix_path(os.getcwd())
-    if not os.path.exists ('bqcore'):
-        print "ERROR: This script must be bisque installation directory"
+    #cwd = to_posix_path(os.getcwd())
+    #if not os.path.exists ('bqcore'):
+    #    print "ERROR: This script must be bisque installation directory"
+    #    sys.exit()
+
+    if not os.path.exists('config'):
+        print "Cannot find config.. please run bq-admin setup from bisque install"
         sys.exit()
 
     print """This is the main installer for Bisque
@@ -1553,6 +1618,10 @@ def bisque_installer(options, args):
         install_dependencies()
     if 'imgcnv' in installer:
         install_imgcnv()
+    if 'imarisconvert' in installer:
+        install_imarisconvert()
+    if 'openslide' in installer:
+        install_openslide()
     if 'bioformats' in installer:
         install_bioformats(params)
     if 'features' in installer:

@@ -48,6 +48,16 @@
                 <tag name="species"/>
             </tag>
         </tag>
+        
+        <tag name="Uploader">
+            <tag name="initial_path" value="{date_iso}" type="string">
+                <template>
+                    <tag type="boolean" name="allowBlank" value="true"/>
+                    <tag type="boolean" name="Editable" value="true"/>
+                </template>
+            </tag>
+        </tag>
+        
         <tag name="Viewer">
             <tag type="boolean" name="autoUpdate" value="true">
                 <template>

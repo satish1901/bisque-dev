@@ -171,6 +171,9 @@ def set_admin_mode (groups=None):
         credset.add ('admins')
         credentials['groups'] = tuple (credset)
         return prevset
+    elif groups is True:
+        credentials = request.environ.setdefault('repoze.what.credentials', {})
+        credentials['groups'] = ('admins',)
     elif groups is False:
         credentials = request.environ.setdefault('repoze.what.credentials', {})
         credset = set (credentials.get ('groups') or [])
