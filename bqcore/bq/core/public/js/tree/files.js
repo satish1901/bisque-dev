@@ -371,6 +371,7 @@ Ext.define('BQ.tree.files.Panel', {
         );
         if (node)
             node.expand(false, function(nodes) {
+                if (!nodes || nodes.length<1) return;
                 this.onPath(nodes[0].parentNode, p);
             }, this);
     },
