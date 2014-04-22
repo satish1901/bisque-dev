@@ -1,5 +1,10 @@
 var mouser=null;
 
+function test_visible (pos, pos_view, tolerance ) {
+    tolerance = tolerance || 1.0;
+    return !(pos!=undefined && pos!=null && !isNaN(pos) && Math.abs(pos-pos_view)>=tolerance);
+}
+
 function SVGRenderer (viewer,name) {
     var p = viewer.parameters || {};
     //this.default_showOverlay           = p.rotate          || 0;   // values: 0, 270, 90, 180
@@ -295,9 +300,8 @@ SVGRenderer.prototype.polyline = function (visitor, gob,  viewstate, visibility)
             console.log("vertex  "+i+" of "+gob.vertices.length);
             continue;
         }
-        if (pnt.z && Math.round(pnt.z) != viewstate.z )
-            continue;
-        if (pnt.t && Math.round(pnt.t) != viewstate.t)
+
+        if (!test_visible(pnt.z, viewstate.z) || !test_visible(pnt.t, viewstate.t))
             continue;
 
         var p = viewstate.transformPoint (pnt.x, pnt.y);
@@ -472,12 +476,8 @@ SVGRenderer.prototype.point = function ( visitor, gob, viewstate, visibility) {
     var offset_x  = viewstate.offset_x;
     var offset_y  = viewstate.offset_y;
 
-    var pnt = gob.vertices[0] ;
-    var visible = true;
-    if (pnt.z!=null  && viewstate.z != Math.round(pnt.z))
-        visible = false;
-    if (pnt.t!=null && viewstate.t != Math.round(pnt.t))
-        visible = false;
+    var pnt = gob.vertices[0];
+    var visible = (test_visible(pnt.z, viewstate.z) && test_visible(pnt.t, viewstate.t));
 
     if (visibility!=undefined)
     	gob.visible=visibility;
@@ -552,11 +552,7 @@ SVGRenderer.prototype.rectangle = function ( visitor, gob,  viewstate, visibilit
     var pnt1 = gob.vertices[0];
     var pnt2 = gob.vertices[1];
     if (!pnt1 || !pnt2) return;
-    var visible = true;
-    if (pnt1.z !=null  && viewstate.z != Math.round(pnt1.z))
-        visible = false;
-    if (pnt1.t !=null  && viewstate.t != Math.round(pnt1.t))
-        visible = false;
+    var visible = (test_visible(pnt1.z, viewstate.z) && test_visible(pnt1.t, viewstate.t));
 
     if (visibility!=undefined)
     	gob.visible=visibility;
@@ -637,11 +633,7 @@ SVGRenderer.prototype.square = function ( visitor, gob,  viewstate, visibility) 
     var pnt1 = gob.vertices[0];
     var pnt2 = gob.vertices[1];
     if (!pnt1 || !pnt2) return;
-    var visible = true;
-    if (pnt1.z !=null  && viewstate.z != Math.round(pnt1.z))
-        visible = false;
-    if (pnt1.t !=null  && viewstate.t != Math.round(pnt1.t))
-        visible = false;
+    var visible = (test_visible(pnt1.z, viewstate.z) && test_visible(pnt1.t, viewstate.t));
 
     if (visibility!=undefined)
         gob.visible=visibility;
@@ -685,11 +677,7 @@ SVGRenderer.prototype.circle = function ( visitor, gob,  viewstate, visibility) 
 
     var pnt1 = gob.vertices[0] ;
     var pnt2 = gob.vertices[1] ;
-    var visible = true;
-    if (pnt1.z != null  && viewstate.z != Math.round(pnt1.z))
-        visible = false;
-    if (pnt1.t != null  && viewstate.t != Math.round(pnt1.t))
-        visible = false;
+    var visible = (test_visible(pnt1.z, viewstate.z) && test_visible(pnt1.t, viewstate.t));
 
 	if (visibility!=undefined)
     	gob.visible=visibility;
@@ -759,13 +747,7 @@ SVGRenderer.prototype.ellipse = function ( visitor, gob,  viewstate, visibility)
     var pnt1 = gob.vertices[0];
     var pnt2 = gob.vertices[1];
     var pnt3 = gob.vertices[2];
-
-    var visible = true;
-
-    if (pnt1.z != null  && viewstate.z != Math.round(pnt1.z))
-        visible = false;
-    if (pnt1.t != null  && viewstate.t != Math.round(pnt1.t))
-        visible = false;
+    var visible = (test_visible(pnt1.z, viewstate.z) && test_visible(pnt1.t, viewstate.t));
 
     if (visibility!=undefined)
     	gob.visible=visibility;
@@ -855,13 +837,8 @@ SVGRenderer.prototype.label = function ( visitor, gob, viewstate, visibility) {
     // svgdoc : the SVG document
     var offset_x  = viewstate.offset_x;
     var offset_y  = viewstate.offset_y;
-
-    var pnt = gob.vertices[0] ;
-    var visible = true;
-    if (pnt.z!=null  && viewstate.z != Math.round(pnt.z))
-        visible = false;
-    if (pnt.t!=null && viewstate.t != Math.round(pnt.t))
-        visible = false;
+    var pnt = gob.vertices[0];
+    var visible = (test_visible(pnt.z, viewstate.z) && test_visible(pnt.t, viewstate.t));
 
     if (visibility!=undefined)
     	gob.visible=visibility;
