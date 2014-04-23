@@ -191,18 +191,18 @@ Ext.define('BQ.upload.ZipAnnotator', {
         var types = Ext.create('Ext.data.Store', {
             fields: ['type', 'description'],
             data : [
-                {"type":"zip-bisque",      "description":"BISQUE archive"},
-                {"type":"zip",             "description":"upload as-is: compressed file"},
-                {"type":"zip-multi-file",  "description":"multiple unrelated images"},
-                {"type":"zip-time-series", "description":"multiple files composing one time-series image"},
-                {"type":"zip-z-stack",     "description":"multiple files composing one z-stack"},
-                {"type":"zip-5d-image",    "description":"multiple files composing one 5-D image"},
-                {"type":"zip-volocity",    "description":"Volocity (*.mvd2) images"},
+                {"type":"zip-bisque",      "description":"a BisQue archive (upload and insert BisQue package)"},
+                {"type":"zip",             "description":"just a compressed file (upload without unpacking)"},
+                {"type":"zip-multi-file",  "description":"a set of unrelated images (unpack and insert each file individually)"},
+                {"type":"zip-time-series", "description":"a set of files composing one time-series image (unpack and compose)"},
+                {"type":"zip-z-stack",     "description":"a set of files composing one z-stack (unpack and compose)"},
+                {"type":"zip-5d-image",    "description":"a set of files composing one 5-D image (unpack and compose)"},
+                {"type":"zip-volocity",    "description":"a Volocity (*.mvd2) image (unpack and insert)"},
             ]
         });
 
-        var description = 'The import of compressed file "<b>'+this.file.name+'</b>" is ambiguous, we need some additional information. '+
-                          'See "help" for information about compressed file structure...';
+        var description = 'Please, tell us how to import compressed file "<b>'+this.file.name+'</b>". '+
+                          'See "help" for more information.';
 
         var resolution_question = 'It would also be very nice if you could provide pixel resolution, '+
             'although it\'s optional:';
@@ -214,7 +214,7 @@ Ext.define('BQ.upload.ZipAnnotator', {
             },{
                 xtype: 'combobox',
                 name: 'type',
-                fieldLabel: 'My compressed file contains',
+                fieldLabel: 'My compressed file is ',
                 store: types,
                 allowBlank: false,
                 editable: false,
@@ -282,7 +282,7 @@ Ext.define('BQ.upload.ZipAnnotator', {
             }];
 
         this.buttons = [{
-            text: 'Ok',
+            text: 'OK',
             formBind: true,
             handler: Ext.Function.bind( this.onOk, this ),
         }];
@@ -1450,7 +1450,7 @@ Ext.define('BQ.upload.Panel', {
                 }
             },
             buttons : [{
-                text : 'Ok',
+                text : 'OK',
                 handler : function(cmp, e) {
                     w.close();
                 }
@@ -1469,7 +1469,7 @@ Ext.define('BQ.upload.Panel', {
             border: 0,
             buttonAlign : 'center',
             buttons : [{
-                text : 'Ok',
+                text : 'OK',
                 handler : function(cmp, e) {
                     w.close();
                 }
