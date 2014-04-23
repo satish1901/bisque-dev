@@ -793,13 +793,20 @@ Ext.define('Bisque.Resource.Image.Page', {
     },
 
     onImagePhys : function(viewer, phys, dims) {
+        this.dims = dims;
         if (dims.t>1 || dims.z>1)
             this.toolbar.queryById('menu_view_movie').setDisabled( false );
-        //if (dims.z>1)
+        //if (dims.t>1 || dims.z>1)
         //    this.toolbar.queryById('menu_view_3d').setDisabled( false );
-        if (dims.w>10000 || dims.h>10000) {
-            this.toolbar.queryById('menu_view_movie').setDisabled( false );
-            this.toolbar.queryById('menu_view_3d').setDisabled( false );
+
+        if (dims.x>10000 && dims.y>10000) {
+            this.toolbar.queryById('menu_view_movie').setDisabled( true );
+            this.toolbar.queryById('menu_view_3d').setDisabled( true );
+        }
+
+        if (dims.x>15000 && dims.y>15000) {
+            this.toolbar.queryById('download_as_ometiff').setDisabled( true );
+            this.toolbar.queryById('download_as_omebigtiff').setDisabled( true );
         }
     },
 
@@ -817,10 +824,6 @@ Ext.define('Bisque.Resource.Image.Page', {
         if (image3d) image2d.destroy();
 
         image2d.setVisible(true);
-    },
-
-    show3D : function() {
-
     },
 
     showMovie : function() {
@@ -879,6 +882,10 @@ Ext.define('Bisque.Resource.Image.Page', {
             }]);
 
         }
+    },
+
+    show3D : function() {
+
     },
 
 });
