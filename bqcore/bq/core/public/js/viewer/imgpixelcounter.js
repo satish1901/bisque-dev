@@ -592,13 +592,15 @@ ImgPixelCounter.prototype.resetPixelRegionCounter = function() {
 ImgPixelCounter.prototype.resetimage = function() {
     
     //background of the image viewer
-    var imgViewerBackground = {r:67, g:67, b:67, a:255};
     
-    for (var i = 0; i<(this.canvas_image.width*this.canvas_image.height*4); i+=4) {
-        this.imagesrc[i]     = imgViewerBackground.r; //r
-        this.imagesrc[i+1]   = imgViewerBackground.g; //g
-        this.imagesrc[i+2]   = imgViewerBackground.b; //b
-        this.imagesrc[i+3]   = imgViewerBackground.a;//a
+    var imgViewerBackground = {r:67, g:67, b:67, a:255};
+    if (this.canvas_image) {
+        for (var i = 0; i<(this.canvas_image.width*this.canvas_image.height*4); i+=4) {
+            this.imagesrc[i]     = imgViewerBackground.r; //r
+            this.imagesrc[i+1]   = imgViewerBackground.g; //g
+            this.imagesrc[i+2]   = imgViewerBackground.b; //b
+            this.imagesrc[i+3]   = imgViewerBackground.a;//a
+        }
     }
 };
 
@@ -613,7 +615,7 @@ ImgPixelCounter.prototype.resetsvg = function() {
 
 //sets all values in the mask to 0
 ImgPixelCounter.prototype.resetmask = function() {
-    if (this.masksrc) {
+    if (this.canvas_mask) {
         this.masksrc = this.maskData.data;
         for(var i = 0; i<(this.canvas_mask.width*this.canvas_mask.height*4); i++) {this.masksrc[i] = 0;}
         this.ctx_imgmask.putImageData(this.maskData,0,0);
@@ -944,7 +946,10 @@ Ext.define('BQ.Panel.PixelCounter', {
         
         //set limit on the global counts if image is too large
         if(this.viewer.imagedim.x>10000&&this.viewer.imagedim.y>10000) {
-            this.thresholdPanel.update('<h2>Image is too large</h2>');
+            this.queryById('px_selectinfo_panel').setVisible(false);
+            this.queryById('px_threshold_panel').setVisible(true);
+            this.queryById('px_regioncount_grid').setVisible(false);
+            this.thresholdInfoPanel.update('<p>The global count will not be displayed since image is too large.</p>');
             return;
         }
         
