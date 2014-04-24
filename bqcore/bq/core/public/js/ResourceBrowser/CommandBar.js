@@ -408,6 +408,8 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
         // dima: choose type of organizer here
         //this.btnOrganizerClickTree(reload);
         this.btnOrganizerClickOriginal(reload);
+        if (this.browser.dataset && this.browser.dataset instanceof BQDataset)
+            return;
         this.btnOrganizerClickFiles(reload);
     },
 
