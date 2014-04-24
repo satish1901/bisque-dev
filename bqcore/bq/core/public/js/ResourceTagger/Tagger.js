@@ -3,6 +3,7 @@ Ext.define('Bisque.ResourceTagger', {
     alias: 'widget.bq-tagger',
     layout: 'fit',
     silent: true,
+    animate: false,
 
     constructor: function (config) {
         config = config || {};
@@ -48,16 +49,17 @@ Ext.define('Bisque.ResourceTagger', {
 
     populateComboStore: function () {
         // dima - datastore for the tag value combo box
-        var TagValues = Ext.ModelManager.getModel('TagValues');
-        if (!TagValues) {
-            Ext.define('TagValues', {
+        //var TagValues = Ext.ModelManager.getModel('TagValues');
+        //if (!TagValues) {
+        if (!BQ || !BQ.model || !BQ.model.TagValues) {
+            Ext.define('BQ.model.TagValues', {
                 extend: 'Ext.data.Model',
                 fields: [{ name: 'value', mapping: '@value' }],
             });
         }
 
         this.store_values = Ext.create('Ext.data.Store', {
-            model: 'TagValues',
+            model: 'BQ.model.TagValues',
             autoLoad: true,
             autoSync: false,
 
@@ -80,15 +82,16 @@ Ext.define('Bisque.ResourceTagger', {
         });
 
         // dima - datastore for the tag name combo box
-        var TagNames = Ext.ModelManager.getModel('TagNames');
-        if (!TagNames) {
-            Ext.define('TagNames', {
+        //var TagNames = Ext.ModelManager.getModel('TagNames');
+        //if (!TagNames) {
+        if (!BQ || !BQ.model || !BQ.model.TagNames) {
+            Ext.define('BQ.model.TagNames', {
                 extend: 'Ext.data.Model',
                 fields: [{ name: 'name', mapping: '@name' }],
             });
         }
         this.store_names = Ext.create('Ext.data.Store', {
-            model: 'TagNames',
+            model: 'BQ.model.TagNames',
             autoLoad: true,
             autoSync: false,
 
@@ -240,6 +243,14 @@ Ext.define('Bisque.ResourceTagger', {
             },
         });
 
+        var plugins = [];
+        plugins.push({
+            ptype: 'bufferedrenderer',
+        });
+
+        if (this.viewMgr.state.editable)
+            plugins.push(this.rowEditor);
+
         this.tree = Ext.create('Ext.tree.Panel', {
             layout: 'fit',
             flex: 1,
@@ -250,7 +261,8 @@ Ext.define('Bisque.ResourceTagger', {
             rowLines: true,
             lines: true,
             iconCls: 'icon-grid',
-            animate: this.animate,
+            //animate: this.animate,
+            animate: false,
             header: false,
             deferRowRender: true,
             draggable: false,
@@ -263,7 +275,8 @@ Ext.define('Bisque.ResourceTagger', {
             columns: this.getTreeColumns(),
 
             selModel: this.getSelModel(),
-            plugins: (this.viewMgr.state.editable) ? [this.rowEditor] : null,
+            plugins: plugins,
+
             viewConfig: {
                 plugins: {
                     ptype: 'treeviewdragdrop',
@@ -369,6 +382,7 @@ Ext.define('Bisque.ResourceTagger', {
         {
             defaultRootProperty: this.rootProperty,
             root: data,
+            //lazyFill: true, // dima: may not be working in teh current config
 
             fields: [
             {
