@@ -419,9 +419,10 @@ class BlobServer(RestController, ServiceMixin):
         with TransferTimer() as t:
             blob_id, t.path = self.drive_man.save_blob(fileobj, filename, user_name = user_name, uniq=uniq)
 
-
         log.debug ("_store_fileobj %s %s", blob_id, t.path)
-        resource.set('name', os.path.basename(filename))
+        #dima: probably need to update the resource name ???
+        #resource.set('name', os.path.basename(filename))
+        resource.set('name', os.path.basename(t.path))
         resource.set('value', blob_id)
         #resource.set('resource_uniq', uniq)
         return self.create_resource(resource)
