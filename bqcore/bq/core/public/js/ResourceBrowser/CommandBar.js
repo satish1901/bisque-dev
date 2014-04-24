@@ -184,7 +184,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
                 tooltip : 'Options',
                 menu : {
                     items : [{
-                        text : 'Include public resources',
+                        text : 'Include published resources',
                         itemId : 'btnWpublic',
                         checked : false,
                         listeners : {
