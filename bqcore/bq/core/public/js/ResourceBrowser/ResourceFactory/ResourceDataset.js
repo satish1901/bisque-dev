@@ -347,7 +347,9 @@ Ext.define('Bisque.ResourceBrowser.OperationBar.dataset', {
             for (var i=0; i<members.length; i++)
                 this.dataset_service.run_delete(members[i].resource.uri);
 
-            this.browser.msgBus.fireEvent('Browser_ReloadData', {});
+            //this.browser.msgBus.fireEvent('Browser_ReloadData', {});
+            var msgbus = this.browser.msgBus; // dima: a hack just to get this working before the rewrite
+            setTimeout(function(){ msgbus.fireEvent('Browser_ReloadData', {}); }, 1000);
         } else {
             var selected = {};
             selected[this.resourceCt.resource.uri] = this.resourceCt.resource;
@@ -357,7 +359,9 @@ Ext.define('Bisque.ResourceBrowser.OperationBar.dataset', {
                 msg : 'Deleting...'
             });
             this.dataset_service.run_delete(this.resourceCt.resource.uri);
-            this.browser.msgBus.fireEvent('Browser_ReloadData', {});
+            //this.browser.msgBus.fireEvent('Browser_ReloadData', {});
+            var msgbus = this.browser.msgBus; // dima: a hack just to get this working before the rewrite
+            setTimeout(function(){ msgbus.fireEvent('Browser_ReloadData', {}); }, 1000);
         }
     },
 
