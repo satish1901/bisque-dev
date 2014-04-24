@@ -8,7 +8,6 @@ from pylons.controllers.util import abort
 from fftsd_extract import FFTSD as fftsd
 from lxml import etree
 import urllib, urllib2, cookielib
-from bq.image_service.controllers.locks import Locks
 import random
 from bq.features.controllers.Feature import calc_wrapper, ImageImport #import base class
 from bq.features.controllers import Feature
@@ -24,6 +23,32 @@ class FFTSD(Feature.BaseFeature):
     description = """Fast Fourier Transform Shape Descriptor"""
     length = 500
     confidence = 'good'
+    
+        
+    def output_feature_columns(self):
+        """
+            Columns for the output table for the feature column
+        """
+        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+
+        class Columns(tables.IsDescription):
+            polygon       = tables.StringCol(2000,pos=1)
+            feature_type  = tables.StringCol(20, pos=2)
+            feature       = tables.Col.from_atom(featureAtom, pos=3)
+            
+        return Columns
+
+    def output_error_columns(self):
+        """
+            Columns for the output table for the error columns
+        """
+        class Columns(tables.IsDescription):
+            polygon       = tables.StringCol(2000,pos=1)
+            feature_type  = tables.StringCol(20, pos=2)
+            error_code    = tables.Int32Col(pos=3)
+            error_message = tables.StringCol(200,pos=4)
+            
+        return Columns    
     
     @calc_wrapper       
     def calculate(self, **resource):
@@ -46,31 +71,6 @@ class FFTSD(Feature.BaseFeature):
         #initalizing rows for the table
         return [descriptor[:500]]
     
-    def outputTable(self,filename):
-        """
-        Output table for hdf output requests and uncached features
-        """
-        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
-        class Columns(tables.IsDescription):
-            polygon = tables.StringCol(2000,pos=1)
-            feature = tables.Col.from_atom(featureAtom, pos=2)
-            
-        with Locks(None, filename):
-            with tables.openFile(filename,'a', title=self.name) as h5file: 
-                outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
-
-        class Columns(tables.IsDescription):
-            polygon = tables.StringCol(2000,pos=1)
-            feature_type  = tables.StringCol(20, pos=2)
-            error_code    = tables.Int32Col(pos=3)
-            error_message = tables.StringCol(200,pos=4)
-
-        with Locks(None, filename): 
-            with tables.openFile(filename,'a', title=self.name) as h5file:
-                outtable = h5file.createTable('/', 'errors', Columns, expectedrows=1000000000)
-                outtable.flush()
-            
-        return
     
         
         

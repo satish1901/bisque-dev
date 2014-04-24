@@ -40,6 +40,7 @@ class HAR(Feature.BaseFeature):
         #initalizing rows for the table
         return [descritptors]
             
+            
 class HARColored(Feature.BaseFeature):
     """
         Initalizes table and calculates the colored HAR descriptor to be
@@ -68,6 +69,7 @@ class HARColored(Feature.BaseFeature):
 
         #initalizing rows for the table
         return [descritptors]    
+
 
 class LBP(Feature.BaseFeature):
     """
@@ -205,6 +207,7 @@ class TAS(Feature.BaseFeature):
             
         #initalizing rows for the table
         return [descriptor]
+            
             
 class ZM(Feature.BaseFeature):
     """
