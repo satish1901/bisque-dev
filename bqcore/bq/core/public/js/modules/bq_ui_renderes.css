@@ -6,6 +6,11 @@
     margin: 2px 0px 0px 10px;
 }
 
+div.units {
+    margin: 3px 0px 0px 0px !important;
+    top: 0px !important;
+}
+
 .numberlabel {
     margin: 0px 0px 0px 10px;
 }
@@ -14,11 +19,11 @@
     background: #ffcccc;
     /*border: #FF0000 solid 1px;*/
     border-radius: 5px;
-    -moz-border-radius: 5px;   
-     
+    -moz-border-radius: 5px;
+
     -moz-box-shadow: 0px 0px 5px #ffcccc;
     -webkit-box-shadow: 0px 0px 5px #ffcccc;
-    box-shadow: 0px 0px 5px #ffcccc;    
+    box-shadow: 0px 0px 5px #ffcccc;
 }
 
 /*
@@ -27,7 +32,7 @@ resourcerenderer
 
 .resourcerenderer {
     margin: 5px 0px 0px 0px;
-    padding: 6px;    
+    padding: 6px;
 }
 
 .resourcerenderer label {
@@ -35,12 +40,12 @@ resourcerenderer
     padding: 4px 0px 0px 0px; */
     margin-bottom: 5px;
     display: block;
-    /*float: left;*/   
+    /*float: left;*/
 }
 
 .resourcerenderer .x-toolbar-text {
     display: inline;
-    padding: 4px 5px 0px 5px;   
+    padding: 4px 5px 0px 5px;
 }
 
 .resourcerenderer .bq-image-viewer {
@@ -70,14 +75,14 @@ renderer
 */
 
 .renderer {
-    margin-top: 15px;    
+    margin-top: 15px;
 }
 
 .renderer label {
     font-size: 16px;
     font-family: Georgia, serif;
     font-weight: normal;
-    margin: 0px 0px 5px 0px;    
+    margin: 0px 0px 5px 0px;
 }
 
 .renderer .tagger {
@@ -90,7 +95,7 @@ file renderer
 
 .download {
     background-image: url('/images/toolbar/download.png');
-    background-position: center center;   
-    background-repeat: no-repeat; 
+    background-position: center center;
+    background-repeat: no-repeat;
     padding: 4px;
 }
