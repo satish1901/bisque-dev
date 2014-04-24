@@ -142,7 +142,7 @@ def upload_achive_file( path):
     return r
 
 
-def return_archive_info( bisque_archive, mask):
+def return_archieve_info( bisque_archive, mask):
     
     
     path = os.path.join( LOCAL_STORE_IMAGES, bisque_archive)
@@ -199,9 +199,9 @@ def cleanup_dir():
             
 #importing resources
 RESOURCE_LIST = []
-RESOURCE_LIST.append( return_archive_info( BISQUE_ARCHIVE_1, MASK_1) )
-RESOURCE_LIST.append( return_archive_info( BISQUE_ARCHIVE_2, MASK_2) )
-RESOURCE_LIST.append( return_archive_info( BISQUE_ARCHIVE_3, MASK_3) )
-RESOURCE_LIST.append( return_archive_info( BISQUE_ARCHIVE_4, MASK_4) )
+RESOURCE_LIST.append( return_archieve_info( BISQUE_ARCHIVE_1, MASK_1) )
+RESOURCE_LIST.append( return_archieve_info( BISQUE_ARCHIVE_2, MASK_2) )
+RESOURCE_LIST.append( return_archieve_info( BISQUE_ARCHIVE_3, MASK_3) )
+RESOURCE_LIST.append( return_archieve_info( BISQUE_ARCHIVE_4, MASK_4) )
 
   

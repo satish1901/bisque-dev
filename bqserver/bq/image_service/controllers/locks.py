@@ -37,12 +37,14 @@ class Locks (object):
                              self.ifnm, self.ofnm, msg))
 
 
-    def __init__(self, ifnm, ofnm=None):
+    def __init__(self, ifnm, ofnm=None, failonexist=False, mode="wb"):
         self.wf = self.rf = None
         self.ifnm = ifnm
         self.ofnm = ofnm
+        self.mode = mode
         self.locked = False
         self.thread_r = self.thread_w = False
+        self.failonexist = failonexist
 
     def acquire (self, ifnm=None, ofnm=None):
 
@@ -58,7 +60,7 @@ class Locks (object):
             lock_sleep=LOCK_SLEEP
             while True:
                 try:
-                    self.rf = XFile.XFile(ifnm, 'r')
+                    self.rf = XFile.XFile(ifnm, 'rb')
                     self.rf.lock(XFile.LOCK_SH|XFile.LOCK_NB)
                     self.debug ("GOT RL")
                     break
@@ -74,7 +76,7 @@ class Locks (object):
             self.debug ("acquire0 thread-w")
             rw.acquire_write(ofnm)
             self.thread_w = True
-            if os.path.exists (ofnm):
+            if self.failonexist and os.path.exists (ofnm):
                 self.debug ("out file exists: bailing")
                 self.release()
                 return
@@ -82,7 +84,7 @@ class Locks (object):
         if ofnm and os.name != "nt":
             self.debug ("->WL")
             #open (ofnm, 'w').close()
-            self.wf = XFile.XFile(ofnm, 'w')
+            self.wf = XFile.XFile(ofnm, self.mode)
             try:
                 self.wf.lock(XFile.LOCK_EX|XFile.LOCK_NB)
                 self.debug ("GOT WL")
@@ -101,8 +103,8 @@ class Locks (object):
         if self.wf:
             self.debug ("RELEASE WF")
             self.wf.unlock()
+            stats = os.fstat (self.wf.fileno())
             self.wf.close()
-            stats = os.stat (self.wf.name)
             if stats.st_size == 0:
                 self.debug ('release: unlink 0 length file %s' % stats)
                 try:

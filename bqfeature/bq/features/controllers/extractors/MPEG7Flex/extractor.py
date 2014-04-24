@@ -158,16 +158,46 @@ class mDCD(DCD):
     type = ['color']
     confidence = 'good'  
  
-    def columns(self):
+    def cached_columns(self):
         """
-            creates Columns to be initalized by the create table
+            Columns for the cached tables
         """
         featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+
         class Columns(tables.IsDescription):
             idnumber  = tables.StringCol(32,pos=1)
             feature   = tables.Col.from_atom(featureAtom, pos=2)
             label     = tables.Int32Col(pos=3) 
-        self.Columns = Columns 
+
+        return Columns
+        
+    def output_feature_columns(self):
+        """
+            Columns for the output table for the feature column
+        """
+        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+
+        class Columns(tables.IsDescription):
+            image         = tables.StringCol(2000,pos=1)
+            mask          = tables.StringCol(2000,pos=2)
+            feature_type  = tables.StringCol(20, pos=3)
+            feature       = tables.Col.from_atom(featureAtom, pos=4)
+            label         = tables.Int32Col(pos=5)
+            
+        return Columns
+
+    def output_error_columns(self):
+        """
+            Columns for the output table for the error columns
+        """
+        class Columns(tables.IsDescription):
+            image         = tables.StringCol(2000,pos=1)
+            mask          = tables.StringCol(2000,pos=2)
+            feature_type  = tables.StringCol(20, pos=3)
+            error_code    = tables.Int32Col(pos=4)
+            error_message = tables.StringCol(200,pos=5)
+            
+        return Columns
         
     @calc_wrapper
     def calculate(self, **resource):
@@ -217,37 +247,7 @@ class mDCD(DCD):
                 
         #initalizing rows for the table
         return descritptor_list, label_list
-    
-    def outputTable(self,filename):
-        """
-        output table for hdf output requests and uncached features
-        """
-        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
-        class Columns(tables.IsDescription):
-            image   = tables.StringCol(2000,pos=1)
-            mask    = tables.StringCol(2000,pos=2)
-            feature_type  = tables.StringCol(20, pos=3)
-            feature = tables.Col.from_atom(featureAtom, pos=4)
-            label   = tables.Int32Col(pos=5)
-            
-        with Locks(None, filename):
-            with tables.openFile(filename,'a', title=self.name) as h5file: 
-                outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
-                outtable.flush()
-                
-        class Columns(tables.IsDescription):
-            image         = tables.StringCol(2000,pos=1)
-            mask          = tables.StringCol(2000,pos=2)
-            feature_type  = tables.StringCol(20, pos=3)
-            error_code    = tables.Int32Col(pos=4)
-            error_message = tables.StringCol(200,pos=5)
-
-        with Locks(None, filename): 
-            with tables.openFile(filename,'a', title=self.name) as h5file:
-                outtable = h5file.createTable('/', 'errors', Columns, expectedrows=1000000000)
-                outtable.flush()         
-                   
-        return   
+  
 
 class CSD(Feature.BaseFeature):
     """
@@ -296,16 +296,46 @@ class mCSD(CSD):
     type = ['color']
     confidence = 'good' 
      
-    def columns(self):
+    def cached_columns(self):
         """
-            creates Columns to be initalized by the create table
+            Columns for the cached tables
         """
         featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+
         class Columns(tables.IsDescription):
             idnumber  = tables.StringCol(32,pos=1)
             feature   = tables.Col.from_atom(featureAtom, pos=2)
             label     = tables.Int32Col(pos=3) 
-        self.Columns = Columns 
+
+        return Columns
+        
+    def output_feature_columns(self):
+        """
+            Columns for the output table for the feature column
+        """
+        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+
+        class Columns(tables.IsDescription):
+            image         = tables.StringCol(2000,pos=1)
+            mask          = tables.StringCol(2000,pos=2)
+            feature_type  = tables.StringCol(20, pos=3)
+            feature       = tables.Col.from_atom(featureAtom, pos=4)
+            label         = tables.Int32Col(pos=5)
+            
+        return Columns
+
+    def output_error_columns(self):
+        """
+            Columns for the output table for the error columns
+        """
+        class Columns(tables.IsDescription):
+            image         = tables.StringCol(2000,pos=1)
+            mask          = tables.StringCol(2000,pos=2)
+            feature_type  = tables.StringCol(20, pos=3)
+            error_code    = tables.Int32Col(pos=4)
+            error_message = tables.StringCol(200,pos=5)
+            
+        return Columns
         
     @calc_wrapper
     def calculate(self, **resource):
@@ -343,38 +373,7 @@ class mCSD(CSD):
                     label_list.append(label)
         
         return descritptor_list, label_list
-
-
-    def outputTable(self,filename):
-        """
-        output table for hdf output requests and uncached features
-        """
-        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
-        class Columns(tables.IsDescription):
-            image         = tables.StringCol(2000,pos=1)
-            mask          = tables.StringCol(2000,pos=2)
-            feature_type  = tables.StringCol(20, pos=3)
-            feature       = tables.Col.from_atom(featureAtom, pos=4)
-            label         = tables.Int32Col(pos=5)
-            
-        with Locks(None, filename):
-            with tables.openFile(filename,'a', title=self.name) as h5file: 
-                outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
-                outtable.flush()
-
-        class Columns(tables.IsDescription):
-            image         = tables.StringCol(2000,pos=1)
-            mask          = tables.StringCol(2000,pos=2)
-            feature_type  = tables.StringCol(20, pos=2)
-            error_code    = tables.Int32Col(pos=3)
-            error_message = tables.StringCol(200,pos=4)
-
-        with Locks(None, filename): 
-            with tables.openFile(filename,'a', title=self.name) as h5file:
-                outtable = h5file.createTable('/', 'errors', Columns, expectedrows=1000000000)
-                outtable.flush()
-
-        return  
+ 
 
 class CLD(Feature.BaseFeature):
     """
@@ -421,17 +420,48 @@ class mCLD(CLD):
     resource = ['image','mask']
     type = ['color']
     confidence = 'good' 
-    
-    def columns(self):
+
+    def cached_columns(self):
         """
-            creates Columns to be initalized by the create table
+            Columns for the cached tables
         """
         featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+
         class Columns(tables.IsDescription):
             idnumber  = tables.StringCol(32,pos=1)
             feature   = tables.Col.from_atom(featureAtom, pos=2)
             label     = tables.Int32Col(pos=3) 
-        self.Columns = Columns
+
+        return Columns
+        
+    def output_feature_columns(self):
+        """
+            Columns for the output table for the feature column
+        """
+        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+
+        class Columns(tables.IsDescription):
+            image         = tables.StringCol(2000,pos=1)
+            mask          = tables.StringCol(2000,pos=2)
+            feature_type  = tables.StringCol(20, pos=3)
+            feature       = tables.Col.from_atom(featureAtom, pos=4)
+            label         = tables.Int32Col(pos=5)
+            
+        return Columns
+
+    def output_error_columns(self):
+        """
+            Columns for the output table for the error columns
+        """
+        class Columns(tables.IsDescription):
+            image         = tables.StringCol(2000,pos=1)
+            mask          = tables.StringCol(2000,pos=2)
+            feature_type  = tables.StringCol(20, pos=3)
+            error_code    = tables.Int32Col(pos=4)
+            error_message = tables.StringCol(200,pos=5)
+            
+        return Columns
+
         
     @calc_wrapper
     def calculate(self, **resource):
@@ -471,37 +501,6 @@ class mCLD(CLD):
 
         
         return descritptor_list, label_list
-
-    def outputTable(self,filename):
-        """
-        output table for hdf output requests and uncached features
-        """
-        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
-        class Columns(tables.IsDescription):
-            image         = tables.StringCol(2000,pos=1)
-            mask          = tables.StringCol(2000,pos=2)
-            feature_type  = tables.StringCol(20, pos=3)
-            feature       = tables.Col.from_atom(featureAtom, pos=4)
-            label         = tables.Int32Col(pos=5)
-            
-        with Locks(None, filename):
-            with tables.openFile(filename,'a', title=self.name) as h5file: 
-                outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
-                outtable.flush()
-
-        class Columns(tables.IsDescription):
-            image         = tables.StringCol(2000,pos=1)
-            mask          = tables.StringCol(2000,pos=2)
-            feature_type  = tables.StringCol(20, pos=3)
-            error_code    = tables.Int32Col(pos=4)
-            error_message = tables.StringCol(200,pos=5)
-
-        with Locks(None, filename): 
-            with tables.openFile(filename,'a', title=self.name) as h5file:
-                outtable = h5file.createTable('/', 'errors', Columns, expectedrows=1000000000)
-                outtable.flush()
-            
-        return  
 
 
 
@@ -547,7 +546,36 @@ class pRSD(Feature.BaseFeature):
     resource = ['image','polygon']
     type = ['shape','texture']
     child_feature = ['mRSD']
-    confidence = 'good' 
+    confidence = 'good'
+
+
+        
+    def output_feature_columns(self):
+        """
+            Columns for the output table for the feature column
+        """
+        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+
+        class Columns(tables.IsDescription):
+            image  = tables.StringCol(2000,pos=1)
+            polygon = tables.StringCol(2000,pos=2)
+            feature   = tables.Col.from_atom(featureAtom, pos=3)
+            
+        return Columns
+
+    def output_error_columns(self):
+        """
+            Columns for the output table for the error columns
+        """
+        class Columns(tables.IsDescription):
+            image         = tables.StringCol(2000,pos=1)
+            polygon       = tables.StringCol(2000,pos=2)
+            feature_type  = tables.StringCol(20, pos=3)
+            error_code    = tables.Int32Col(pos=4)
+            error_message = tables.StringCol(200,pos=5)
+            
+        return Columns
+
             
     @calc_wrapper
     def calculate(self, **resource):
@@ -586,34 +614,6 @@ class pRSD(Feature.BaseFeature):
         
         return [descriptors]
     
-    def outputTable(self,filename):
-        """
-        Output table for hdf output requests and uncached features
-        """
-        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
-        class Columns(tables.IsDescription):
-            image  = tables.StringCol(2000,pos=1)
-            polygon = tables.StringCol(2000,pos=2)
-            feature   = tables.Col.from_atom(featureAtom, pos=3)
-            
-        with Locks(None, filename):
-            with tables.openFile(filename,'a', title=self.name) as h5file: 
-                outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
-                outtable.flush()
-
-        class Columns(tables.IsDescription):
-            image         = tables.StringCol(2000,pos=1)
-            polygon       = tables.StringCol(2000,pos=2)
-            feature_type  = tables.StringCol(20, pos=3)
-            error_code    = tables.Int32Col(pos=4)
-            error_message = tables.StringCol(200,pos=5)
-
-        with Locks(None, filename): 
-            with tables.openFile(filename,'a', title=self.name) as h5file:
-                outtable = h5file.createTable('/', 'errors', Columns, expectedrows=1000000000)
-                outtable.flush()
-
-        return
     
 class mRSD(RSD):
     """
@@ -630,16 +630,48 @@ class mRSD(RSD):
     type = ['shape','texture']
     confidence = 'good' 
 
-    def columns(self):
+
+    def cached_columns(self):
         """
-            creates Columns to be initalized by the create table
+            Columns for the cached tables
         """
         featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+
         class Columns(tables.IsDescription):
             idnumber  = tables.StringCol(32,pos=1)
             feature   = tables.Col.from_atom(featureAtom, pos=2)
             label     = tables.Int32Col(pos=3) 
-        self.Columns = Columns
+
+        return Columns
+        
+    def output_feature_columns(self):
+        """
+            Columns for the output table for the feature column
+        """
+        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+
+        class Columns(tables.IsDescription):
+            image         = tables.StringCol(2000,pos=1)
+            mask          = tables.StringCol(2000,pos=2)
+            feature_type  = tables.StringCol(20, pos=3)
+            feature       = tables.Col.from_atom(featureAtom, pos=4)
+            label         = tables.Int32Col(pos=5)
+            
+        return Columns
+
+    def output_error_columns(self):
+        """
+            Columns for the output table for the error columns
+        """
+        class Columns(tables.IsDescription):
+            image         = tables.StringCol(2000,pos=1)
+            mask          = tables.StringCol(2000,pos=2)
+            feature_type  = tables.StringCol(20, pos=3)
+            error_code    = tables.Int32Col(pos=4)
+            error_message = tables.StringCol(200,pos=5)
+            
+        return Columns
+
         
     @calc_wrapper
     def calculate(self, **resource):
@@ -682,34 +714,4 @@ class mRSD(RSD):
         
         return descritptor_list, label_list
     
-    def outputTable(self,filename):
-        """
-        output table for hdf output requests and uncached features
-        """
-        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
-        class Columns(tables.IsDescription):
-            image   = tables.StringCol(2000,pos=1)
-            mask    = tables.StringCol(2000,pos=2)
-            feature_type  = tables.StringCol(20, pos=3)
-            feature = tables.Col.from_atom(featureAtom, pos=4)
-            label   = tables.Int32Col(pos=5)
-            
-        with Locks(None, filename):
-            with tables.openFile(filename,'a', title=self.name) as h5file: 
-                outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
-                outtable.flush()
-
-        class Columns(tables.IsDescription):
-            image         = tables.StringCol(2000,pos=1)
-            mask          = tables.StringCol(2000,pos=2)
-            feature_type  = tables.StringCol(20, pos=3)
-            error_code    = tables.Int32Col(pos=4)
-            error_message = tables.StringCol(200,pos=5)
-
-        with Locks(None, filename): 
-            with tables.openFile(filename,'a', title=self.name) as h5file:
-                outtable = h5file.createTable('/', 'errors', Columns, expectedrows=1000000000)
-                outtable.flush()
-            
-        return  
 
