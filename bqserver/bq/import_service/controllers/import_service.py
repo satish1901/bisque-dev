@@ -584,42 +584,42 @@ class import_serviceController(ServiceController):
     def filter_zip_multifile(self, f, intags):
         unpack_dir, members = self.unpackPackagedFile(f)
         resources =  self.insert_members([ '%s/%s'%(unpack_dir, m) for m in members ], f, unpack_dir)
-        #self.cleanup_packaging(unpack_dir, members)
+        self.cleanup_packaging(unpack_dir, members)
         return resources
 
     def filter_zip_bisque(self, f, intags):
         unpack_dir, resources = self.importBisqueArchive(f, intags)
-        #self.cleanup_packaging(unpack_dir, [])
+        self.cleanup_packaging(unpack_dir, [])
         return resources
 
     def filter_zip_tstack(self, f, intags):
         unpack_dir, combined = self.process5Dimage(f, number_t=0, **intags)
         resources =  self.insert_members([combined] , f, unpack_dir)
-        #self.cleanup_packaging(unpack_dir, [combined])
+        self.cleanup_packaging(unpack_dir, [combined])
         return resources
 
     def filter_zip_zstack(self, f, intags):
         unpack_dir, combined = self.process5Dimage(f, number_z=0, **intags)
         resources =  self.insert_members([combined], f, unpack_dir)
-        #self.cleanup_packaging(unpack_dir, [combined])
+        self.cleanup_packaging(unpack_dir, [combined])
         return resources
 
     def filter_5d_image(self, f, intags):
         unpack_dir, combined = self.process5Dimage(f, **intags)
         resources = self.insert_members([combined], f, unpack_dir)
-        #self.cleanup_packaging(unpack_dir, [combined])
+        self.cleanup_packaging(unpack_dir, [combined])
         return resources
 
     def filter_series_bioformats(self, f, intags):
         unpack_dir, members = self.extractSeriesBioformats(f)
         resources = self.insert_members([ '%s/%s'%(unpack_dir, m) for m in members ], f, unpack_dir)
-        #self.cleanup_packaging(unpack_dir, members)
+        self.cleanup_packaging(unpack_dir, members)
         return resources
 
     def filter_zip_volocity(self, f, intags):
         unpack_dir, members = self.extractSeriesVolocity(f)
         resources = self.insert_members([ '%s/%s'%(unpack_dir, m) for m in members ], f, unpack_dir)
-        #self.cleanup_packaging(unpack_dir, members)
+        self.cleanup_packaging(unpack_dir, members)
         return resources
 
 
