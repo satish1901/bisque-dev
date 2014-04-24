@@ -220,21 +220,25 @@ class ConverterOpenSlide(ConverterBase):
     def thumbnail(cls, ifnm, ofnm, width, height, series=0, **kw):
         '''converts input filename into output thumbnail'''
         log.debug('Thumbnail: %s %s %s for [%s]', width, height, series, ifnm)
-        with Locks (ifnm, ofnm):
-            try:
-                slide = openslide.OpenSlide(ifnm)
-            except (openslide.OpenSlideUnsupportedFormatError, openslide.OpenSlideError):
-                return None
-            img = slide.get_thumbnail((width, height))
-            try:
-                img.save(ofnm, 'JPEG')
-            except IOError:
-                tmp = '%s.tif'%ofnm
-                img.save(tmp, 'TIFF')
-                ConverterImgcnv.thumbnail(tmp, ofnm=ofnm, width=width, height=height)
-            slide.close()
-            return ofnm
-        return None
+        with Locks (ifnm, ofnm) as l:
+            if l.locked: # the file is not being currently written by another process
+                try:
+                    slide = openslide.OpenSlide(ifnm)
+                except (openslide.OpenSlideUnsupportedFormatError, openslide.OpenSlideError):
+                    return None
+                img = slide.get_thumbnail((width, height))
+                try:
+                    img.save(ofnm, 'JPEG')
+                except IOError:
+                    tmp = '%s.tif'%ofnm
+                    img.save(tmp, 'TIFF')
+                    ConverterImgcnv.thumbnail(tmp, ofnm=ofnm, width=width, height=height)
+                slide.close()
+
+        # make sure the file was written
+        with Locks(ofnm):
+            pass
+        return ofnm
 
     @classmethod
     def slice(cls, ifnm, ofnm, z, t, roi=None, series=0, **kw):
@@ -249,16 +253,20 @@ class ConverterOpenSlide(ConverterBase):
         x  = misc.safeint(x, 0)
         y  = misc.safeint(y, 0)
         sz = misc.safeint(sz, 0)
-        with Locks (ifnm, ofnm):
-            try:
-                slide = openslide.OpenSlide(ifnm)
-            except (openslide.OpenSlideUnsupportedFormatError, openslide.OpenSlideError):
-                return None
-            dz = deepzoom.DeepZoomGenerator(slide, tile_size=sz, overlap=0)
-            img = dz.get_tile(dz.level_count-level-1, (x,y))
-            img.save(ofnm, 'TIFF', compression='LZW')
-            slide.close()
-            return ofnm
-        return None
+        with Locks (ifnm, ofnm) as l:
+            if l.locked: # the file is not being currently written by another process            
+                try:
+                    slide = openslide.OpenSlide(ifnm)
+                except (openslide.OpenSlideUnsupportedFormatError, openslide.OpenSlideError):
+                    return None
+                dz = deepzoom.DeepZoomGenerator(slide, tile_size=sz, overlap=0)
+                img = dz.get_tile(dz.level_count-level-1, (x,y))
+                img.save(ofnm, 'TIFF', compression='LZW')
+                slide.close()
+        
+        # make sure the file was written
+        with Locks(ofnm):
+            pass
+        return ofnm
 
 ConverterOpenSlide.init()

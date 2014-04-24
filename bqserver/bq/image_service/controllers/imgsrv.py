@@ -1209,11 +1209,16 @@ class RoiService(object):
         if not os.path.exists(ofile) or len(rois)>0:
             lfile = self.server.getOutFileName( ifile, image_id, '.rois' )
             # global ROI lock on this input since we can't lock on all individual outputs
-            with Locks(ifile, lfile):
-                s = ';'.join(['%s,%s,%s,%s'%(x1-1,y1-1,x2-1,y2-1) for x1,y1,x2,y2 in rois])
-                params = ['-multi', '-roi', s]
-                params += ['-template', '%s.roi_{x1},{y1},{x2},{y2}'%otemp]
-                self.server.imageconvert(image_id, ifile, ofile, fmt=default_format, extra=params)
+            with Locks(ifile, lfile) as l:
+                if l.locked: # the file is not being currently written by another process
+                    s = ';'.join(['%s,%s,%s,%s'%(x1-1,y1-1,x2-1,y2-1) for x1,y1,x2,y2 in rois])
+                    params = ['-multi', '-roi', s]
+                    params += ['-template', '%s.roi_{x1},{y1},{x2},{y2}'%otemp]
+                    self.server.imageconvert(image_id, ifile, ofile, fmt=default_format, extra=params)
+        
+        # ensure the output file is written
+        with Locks(lfile):
+                pass
         try:
             info = self.server.getImageInfo(filename=ofile)
             if 'image_num_x' in info: data_token.dims['image_num_x'] = info['image_num_x']
@@ -1484,8 +1489,9 @@ class TileService(object):
             processed = True
             if not os.path.exists(hstl_name):
                 with Locks(ifname, hstl_name) as l:
-                    # need to generate a histogram file uniformely distributed from 0..255
-                    self.server.converters['imgcnv'].writeHistogram(channels=3, ofnm=hstl_name)
+                    if l.locked: # the file is not being currently written by another process                    
+                        # need to generate a histogram file uniformely distributed from 0..255
+                        self.server.converters['imgcnv'].writeHistogram(channels=3, ofnm=hstl_name)
             if not os.path.exists(ofname):
                 self.server.converters['openslide'].tile(ifname, ofname, level, tnx, tny, tsz)
 
@@ -1493,16 +1499,13 @@ class TileService(object):
         tiles_name = '%s.tif' % (base_name)
         if not processed and not os.path.exists(hist_name):
             with Locks(ifname, hstl_name) as l:
-                if l.locked:
+                if l.locked: # the file is not being currently written by another process
                     params = ['-tile', str(tsz), '-ohst', hist_name]
                     log.debug('Generate tiles: from %s to %s with %s' , ifname, tiles_name, params )
                     #imgcnv.convert(ifname, tiles_name, fmt=default_format, extra=params )
                     self.server.imageconvert(image_id, ifname, tiles_name, fmt=default_format, extra=params)
-                else:
-                    log.debug('Locking failed for %s'%(hist_name) )
 
-        with Locks(hstl_name) as l:
-            log.debug("Tile read lock %s"%(hist_name))
+        with Locks(hstl_name):
             pass
         if os.path.exists(ofname):
             try:
@@ -2670,7 +2673,7 @@ class ImageServer(object):
                 log.debug('Dryrun result: [%s] [%s]', localpath, str(data_token))
                 if os.path.exists(localpath) and data_token.isFile():
                     log.debug('Returning pre-cached result: %s', data_token.data)
-                    with Locks(data_token.data) as l:
+                    with Locks(data_token.data):
                         pass
                     return data_token
 
