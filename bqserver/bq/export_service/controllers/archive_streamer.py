@@ -26,11 +26,12 @@ class ArchiveStreamer():
         self.archiver = ArchiverFactory().getClass(compressionType)
 
 
-    def init(self, archiveName='Bisque', fileList=[], datasetList=[], urlList=[], dirList=[]):
+    def init(self, archiveName='Bisque', fileList=[], datasetList=[], urlList=[], dirList=[], export_meta=True):
         self.fileList = fileList
         self.datasetList = datasetList
         self.urlList = urlList
         self.dirList = dirList
+        self.export_meta = export_meta
 
         filename = archiveName + self.archiver.getFileExtension()
         try:
@@ -44,7 +45,8 @@ class ArchiveStreamer():
         log.debug("ArchiveStreamer: Begin stream %s" % request.url)
 
         flist = self.fileInfoList(self.fileList, self.datasetList, self.urlList, self.dirList)
-        flist = self.writeSummary(flist, self.archiver)
+        if self.export_meta is True:
+            flist = self.writeSummary(flist, self.archiver)
 
         for finfo in flist:
             log.debug ('archiving %s' % finfo)
@@ -112,6 +114,8 @@ class ArchiveStreamer():
         def xmlInfo(finfo):
             file = finfo.copy()
             file['extension'] = '.xml'
+            # need to modify the resource value to point to a local file
+            file['XML'].set('value', os.path.basename(file['XML'].get('value', '')))
             return file
 
         def urlInfo(url, index=0):
@@ -166,7 +170,7 @@ class ArchiveStreamer():
                     fileHash[finfo.get('name')] = 1
 
                 flist.append(finfo)      # blank dataset name for orphan files
-                if finfo.get('uniq') is not None:
+                if self.export_meta is True and finfo.get('uniq') is not None:
                     flist.append(xmlInfo(finfo))
 
         if len(datasetList)>0:     # empty datasetList
@@ -195,7 +199,8 @@ class ArchiveStreamer():
                         fileHash[finfo.get('name')] = 1
 
                     flist.append(finfo)
-                    if finfo.get('type') == 'image':
+                    #if finfo.get('type') == 'image':
+                    if self.export_meta is True and finfo.get('uniq') is not None:
                         flist.append(xmlInfo(finfo))
 
         if len(dirList)>0:
@@ -231,7 +236,8 @@ class ArchiveStreamer():
                         fileHash[finfo.get('name')] = 1
 
                     flist.append(finfo)
-                    if finfo.get('type') == 'image':
+                    #if finfo.get('type') == 'image':
+                    if self.export_meta is True and finfo.get('uniq') is not None:
                         flist.append(xmlInfo(finfo))
 
         if len(urlList)>0:       # empty urlList

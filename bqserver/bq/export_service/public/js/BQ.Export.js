@@ -71,7 +71,7 @@ Ext.define('BQ.Export.Panel', {
                 iconCls : 'icon-download',
                 arrowAlign : 'right',
                 menuAlign : 'bl-tl?',
-                compressionType : 'tar',
+                compressionType : 'gzip',
 
                 handler : this.download,
                 scope : this,
@@ -97,14 +97,21 @@ Ext.define('BQ.Export.Panel', {
                         text : 'as BZip2 archive',
                     }, {
                         compressionType : 'zip',
-                        text : 'as (PK)Zip archive',
+                        text : 'as Zip archive',
                     }],
                 }
             }/*, {
                 text : 'Export to Google Docs',
                 disabled : true,
                 iconCls : 'icon-gdocs',
-            }*/]
+            }*/, {
+                xtype: 'checkbox',
+                itemId: 'check_meta',
+                cls: 'checkbox',
+                boxLabel: 'Include annotations',
+                name: 'meta',
+                checked: true,
+            }]
         }];
 
         this.callParent(arguments);
@@ -193,6 +200,9 @@ Ext.define('BQ.Export.Panel', {
             items : [{
                 name : 'compressionType',
                 value : btn.compressionType,
+            }, {
+                name : 'metadata',
+                value : this.queryById('check_meta').getValue(),
             }, {
                 name : 'files',
                 value : findAllbyType.call(this, 'image').concat(findAllbyType.call(this, 'file')),
