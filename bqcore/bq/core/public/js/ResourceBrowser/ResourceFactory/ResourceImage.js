@@ -57,7 +57,7 @@ Ext.define('Bisque.Resource.Image', {
             };
         } else {
             var el = this.getEl();
-            if (this.getData('fetched') == 1)
+            if (el && this.getData('fetched') == 1)
                 this.mmData = {
                     x : el.getX() + el.getOffsetsTo(this.resource.uri)[0],
                     y : el.getY() + el.getOffsetsTo(this.resource.uri)[1],

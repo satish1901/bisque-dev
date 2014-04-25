@@ -25,6 +25,10 @@
     font-size: 14px;
 }
 
+.footer .checkbox {
+    margin-left: 30px;
+}
+
 .thumbnail {
     margin: 0px 10px 0px 10px;
     width: 40px;

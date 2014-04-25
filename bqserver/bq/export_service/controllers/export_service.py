@@ -236,23 +236,26 @@ class export_serviceController(ServiceController):
                     urls.append(resource.text)
 
         compressionType = kw.pop('compressionType', '')
-
+        
         def extractData(kw, field):
             if field in kw:
                 vals = kw.pop(field)
                 if vals:
                     return vals.split(',')
             return []
-
-        files       =   files + extractData(kw, 'files')
-        datasets    =   datasets + extractData(kw, 'datasets')
-        urls        =   urls + extractData(kw, 'urls')
-        dirs        =   dirs + extractData(kw, 'dirs')
+        
+        jsbool   = {'true': True, 'false': False}
+        export_meta = jsbool.get(kw.get('metadata', 'true'), True);
+        
+        files    = files + extractData(kw, 'files')
+        datasets = datasets + extractData(kw, 'datasets')
+        urls     = urls + extractData(kw, 'urls')
+        dirs     = dirs + extractData(kw, 'dirs')
 
         filename = kw.pop('filename', None) or 'bisque-'+time.strftime("%Y%m%d.%H%M%S")
 
         archiveStreamer = ArchiveStreamer(compressionType)
-        archiveStreamer.init(archiveName=filename, fileList=files, datasetList=datasets, urlList=urls, dirList=dirs)
+        archiveStreamer.init(archiveName=filename, fileList=files, datasetList=datasets, urlList=urls, dirList=dirs, export_meta=export_meta)
         return archiveStreamer.stream()
 
 
