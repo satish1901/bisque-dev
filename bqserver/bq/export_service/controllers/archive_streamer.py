@@ -65,57 +65,91 @@ class ArchiveStreamer():
 
     # Creates an export summary file
     def writeSummary(self, flist, archiver):
-        if len(flist) == 1:
-            return flist
+        summary = etree.Element('resource', type='bisque_package')
+        etree.SubElement(summary, 'tag', name='origin', value=config.get('bisque.root'))
+        etree.SubElement(summary, 'tag', name='version', value=__VERSION__)
+        etree.SubElement(summary, 'tag', name='datetime', value=str(datetime.datetime.now()))
+        
+        index = 0
+        for f in flist:
+            log.debug('writeSummary: %s', f)
+            if f.get('dataset') is None and f.get('path') is None:
+                log.debug('writeSummary Adding: %s', f)                
+                v = etree.SubElement(summary, 'value', index='%s'%index, type='object')
+                v.text = f.get('outpath')
+                index += 1
 
-        summary = etree.Element('resource', type='BISQUE Export Log')
-
-        etree.SubElement(summary, 'tag', name='Server', value=config.get('bisque.root'))
-        etree.SubElement(summary, 'tag', name='Version', value=__VERSION__)
-        etree.SubElement(summary, 'tag', name='Export_DateTime', value=str(datetime.datetime.now()))
-
-        flist.append(dict(  name        =   '_bisque.xml',
-                            content     =   etree.tostring(summary),
-                            dataset     =   '',
-                            extension   =   'URL'))
+        flist.append(dict( name      = '.bisque.xml',
+                           content   = etree.tostring(summary),
+                           outpath   = '.bisque.xml'))
 
         return flist
 
 
     # Returns a list of fileInfo objects based on files' URIs
     def fileInfoList(self, fileList, datasetList, urlList, dirList):
+        log.debug('fileInfoList fileList: %s'%fileList)
+        log.debug('fileInfoList datasetList: %s'%datasetList)
+        log.debug('fileInfoList urlList: %s'%urlList)
+        log.debug('fileInfoList dirList: %s'%dirList)
+        flist = []
+        fileHash = {}   # Use a URI hash to look out for file repetitions
 
-        def fileInfo(dataset, uri, index=0):
-            xml     =   data_service.get_resource(uri, view='deep,clean')
-            name    =   xml.get('name')
+        def fileInfo(relpath, uri, index=0):
+            xml  = data_service.get_resource(uri, view='deep,clean')
+            name = xml.get('name')
+            uniq = xml.get('resource_uniq', None)
 
             # try to figure out a name for the resource
             if not name:
                 name = xml.xpath('./tag[@name="filename"]') or xml.xpath('./tag[@name="name"]')
                 name = name and name[0].get('value')
-            if not name and xml.get('resource_uniq'):
-                name = xml.get('resource_uniq')[-4]
+            if not name and uniq:
+                name = uniq[-4]
             if not name:
                 name = str(index)
 
-            if xml.get('resource_uniq') is not None:
-                path = blob_service.localpath(xml.get('resource_uniq'))
-            else:
-                path = None
+            path = None
+            if uniq is not None:
+                del xml.attrib['resource_uniq'] # dima: strip resource_uniq from exported xml 
+                path = blob_service.localpath(uniq)
+                if not os.path.exists(path):
+                    path = None
+            
+            # if resource is just an XML doc
+            content = None
+            if path is None:
+                content = etree.tostring(xml)
+                name = '%s_%s_%s'%(name, xml.get('ts'), uniq)
+                xml = None
+            
+            # disambiguate file name if present
+            ext = '' if path is not None else '.xml'            
+            outpath = os.path.join(relpath, '%s%s'%(name, ext)).replace('\\', '/')
+            if outpath in fileHash:
+                fname, ext = os.path.splitext(name)
+                name = '%s%s%s'%(fname, uniq, ext)
+                outpath = os.path.join(relpath, '%s%s'%(name, ext)).replace('\\', '/')
+            fileHash[outpath] = name
 
-            return  dict(XML        =   xml,
-                         type       =   xml.tag,
-                         name       =   name,
-                         uniq       =   xml.get('resource_uniq'),
-                         path       =   path,
-                         dataset    =   dataset,
-                         extension  =   '' if xml.get('resource_uniq') is not None else '.xml')
+            return dict(
+                 xml     = xml,
+                 content = content,
+                 name    = name,
+                 uniq    = uniq,
+                 path    = path,
+                 relpath = relpath,
+                 outpath = outpath,
+            )
 
         def xmlInfo(finfo):
             file = finfo.copy()
-            file['extension'] = '.xml'
+            file['outpath'] = '%s.xml'%file['outpath']
             # need to modify the resource value to point to a local file
-            file['XML'].set('value', os.path.basename(file['XML'].get('value', '')))
+            file['xml'].set('value', os.path.basename(file['xml'].get('value', '')))
+            file['content'] = etree.tostring(file['xml'])
+            del file['path']
+            del file['xml']
             return file
 
         def urlInfo(url, index=0):
@@ -151,62 +185,53 @@ class ArchiveStreamer():
                     except UnicodeDecodeError:
                         pass
 
-            return  dict(name       =   fileName,
-                         content    =   content,
-                         dataset    =   '',
-                         extension  =   'URL')
+            return  dict(name      = fileName,
+                         content   = content,
+                         outpath   = fileName)
 
-        flist = []
-        fileHash = {}   # Use a URI hash to look out for file repetitions
 
-        if len(fileList)>0:       # empty fileList
+        if len(fileList)>0:
             for index, uri in enumerate(fileList):
                 finfo = fileInfo('', uri)
-                if fileHash.get(finfo.get('name'))!=None:
-                    fileHash[finfo.get('name')] = fileHash.get(finfo.get('name')) + 1
-                    namef, ext = os.path.splitext(finfo.get('name'))
-                    finfo['name'] = namef + '_' + str(fileHash.get(finfo.get('name'))-1) + ext
-                else:
-                    fileHash[finfo.get('name')] = 1
-
-                flist.append(finfo)      # blank dataset name for orphan files
-                if self.export_meta is True and finfo.get('uniq') is not None:
+                flist.append(finfo)
+                if self.export_meta is True and finfo.get('xml') is not None:
                     flist.append(xmlInfo(finfo))
 
-        if len(datasetList)>0:     # empty datasetList
+        if len(datasetList)>0:
             for uri in datasetList:
-                fileHash = {}
-
                 dataset = data_service.get_resource(uri, view='deep,clean')
                 name = dataset.xpath('/dataset/@name')[0]
                 members = dataset.xpath('/dataset/value')
-
-                # Insert dataset XML into file list
-                flist.append(dict(  name        =   name+'.xml',
-                                    content     =   etree.tostring(dataset),
-                                    dataset     =   '',
-                                    extension   =   'URL'))
-
+                uniq = dataset.get('resource_uniq', '')
+                del dataset.attrib['resource_uniq'] # dima: strip resource_uniq from exported xml 
 
                 for index, member in enumerate(members):
                     finfo = fileInfo(name, member.text, index)
-
-                    if fileHash.get(finfo.get('name'))!=None:
-                        fileHash[finfo.get('name')] = fileHash.get(finfo.get('name')) + 1
-                        namef, ext = os.path.splitext(finfo.get('name'))
-                        finfo['name'] = namef + '_' + str(fileHash.get(finfo.get('name'))-1) + ext
-                    else:
-                        fileHash[finfo.get('name')] = 1
-
+                    finfo['dataset'] = name
                     flist.append(finfo)
-                    #if finfo.get('type') == 'image':
-                    if self.export_meta is True and finfo.get('uniq') is not None:
+                    
+                    # update reference in the dataset xml
+                    if self.export_meta is True and finfo.get('xml') is not None:
                         flist.append(xmlInfo(finfo))
+                        member.text = '%s.xml'%finfo.get('outpath','')
+                    else:
+                        member.text = finfo.get('outpath','')
+
+                if self.export_meta:                
+                    # disambiguate file name if present
+                    name = '%s.xml'%name
+                    if name in fileHash:
+                        fname, ext = os.path.splitext(name)
+                        name = '%s%s%s'%(fname, uniq, ext)
+                    fileHash[name] = name                
+
+                    # Insert dataset XML into file list
+                    flist.append(dict( name      = name,
+                                       content   = etree.tostring(dataset),
+                                       outpath   = name))
 
         if len(dirList)>0:
             for uri in dirList:
-                fileHash = {}
-
                 # read dir from blob storage, dima: need to access blob storage
                 folder = data_service.get_resource(uri, view='deep')
                 members = folder.xpath('//link')
@@ -226,27 +251,17 @@ class ArchiveStreamer():
                             folder.append(parent.get('name', None))
                     folder.reverse()
                     finfo = fileInfo('/'.join(folder), uri, index)
-                    if fileHash.get(finfo.get('name'))!=None:
-                        fileHash[finfo.get('name')] = fileHash.get(finfo.get('name')) + 1
-                        namef, ext = os.path.splitext(finfo.get('name'))
-                        # dima: Only disambiguate if there are repeating files
-                        #finfo['name'] = namef + '_' + str(fileHash.get(finfo.get('name'))-1) + ext
-
-                    else:
-                        fileHash[finfo.get('name')] = 1
-
                     flist.append(finfo)
-                    #if finfo.get('type') == 'image':
-                    if self.export_meta is True and finfo.get('uniq') is not None:
+                    if self.export_meta is True and finfo.get('xml') is not None:
                         flist.append(xmlInfo(finfo))
 
-        if len(urlList)>0:       # empty urlList
+        if len(urlList)>0:
             for index, url in enumerate(urlList):
                 if fileHash.get(url)!=None:
                     continue
                 else:
                     fileHash[url] = 1
                     finfo = urlInfo(url, index)
-                    flist.append(finfo)      # blank dataset name for orphan files
+                    flist.append(finfo)
 
         return flist

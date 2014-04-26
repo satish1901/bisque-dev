@@ -67,6 +67,7 @@ Ext.define('BQ.Export.Panel', {
             },
             items : [{
                 xtype : 'splitbutton',
+                itemId: 'button_download',
                 text : 'Download',
                 iconCls : 'icon-download',
                 arrowAlign : 'right',
@@ -179,24 +180,39 @@ Ext.define('BQ.Export.Panel', {
             BQ.ui.notification('Nothing to download! Please add files or datasets first...');
             return;
         }
+        this.queryById('button_download').compressionType = btn.compressionType;
 
         function findAllbyType(type) {
-            var index = 0, list = [];
-
-            while (( index = this.resourceStore.find('type', type, index)) != -1) {
+            var index=0, list=[], store=this.resourceStore;
+            while (( index = store.find('type', type, index)) != -1) {
                 // add quotes to make it work in Safari
-                list.push(this.resourceStore.getAt(index).get('uri'));
-                index++;
+                list.push(store.getAt(index).get('uri'));
+                ++index;
             }
-
             return list;
         }
 
+        function findAllExceptTypes(types) {
+            var index=0, list=[], store=this.resourceStore, r=undefined;
+            while (r = store.getAt(index)) {
+                if (!(r.get('type') in types))
+                    list.push(r.get('uri'));
+                ++index;
+            }
+            return list;
+        }
+
+        //this.setLoading('Exporting...');
         Ext.create('Ext.form.Panel', {
             url : '/export/initStream',
             defaultType : 'hiddenfield',
-            method : 'GET',
+            method : 'POST',
             standardSubmit : true,
+            /*listeners : {
+                scope : this,
+                actioncomplete : this.onDone,
+                actionfailed : this.onError,
+            },*/
             items : [{
                 name : 'compressionType',
                 value : btn.compressionType,
@@ -205,7 +221,8 @@ Ext.define('BQ.Export.Panel', {
                 value : this.queryById('check_meta').getValue(),
             }, {
                 name : 'files',
-                value : findAllbyType.call(this, 'image').concat(findAllbyType.call(this, 'file')),
+                //value : findAllbyType.call(this, 'image').concat(findAllbyType.call(this, 'file')),
+                value : findAllExceptTypes.call(this, {'dataset': null, 'dir':null}),
             }, {
                 name : 'datasets',
                 value : findAllbyType.call(this, 'dataset'),
@@ -216,7 +233,13 @@ Ext.define('BQ.Export.Panel', {
         }).submit();
     },
 
-    exportResponse : function(response) {
+    onDone : function( me, action, eOpts ) {
+        this.setLoading();
+    },
+
+    onError : function( me, action, eOpts ) {
+        this.setLoading();
+        BQ.ui.error('Export error');
     },
 
     selectImage : function(me) {
@@ -351,7 +374,6 @@ Ext.define('BQ.Export.Panel', {
                         handler : function(grid, rowIndex, colIndex) {
                             var name = grid.store.getAt(rowIndex).get('name');
                             grid.store.removeAt(rowIndex);
-                            BQ.ui.message('Export - Remove', 'File ' + name + ' removed!');
                         }
                     }]
                 }],
