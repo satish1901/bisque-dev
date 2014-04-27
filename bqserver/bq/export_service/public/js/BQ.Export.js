@@ -112,6 +112,14 @@ Ext.define('BQ.Export.Panel', {
                 boxLabel: 'Include annotations',
                 name: 'meta',
                 checked: true,
+            }, {
+                xtype: 'checkbox',
+                itemId: 'check_analysis',
+                cls: 'checkbox',
+                boxLabel: 'Include analysis',
+                name: 'analysis',
+                checked: false,
+                disabled: true,
             }]
         }];
 
@@ -180,7 +188,10 @@ Ext.define('BQ.Export.Panel', {
             BQ.ui.notification('Nothing to download! Please add files or datasets first...');
             return;
         }
-        this.queryById('button_download').compressionType = btn.compressionType;
+        var btn = this.queryById('button_download');
+        btn.compressionType = btn.compressionType;
+        btn.setLoading(true);
+        setTimeout(function(){ btn.setLoading(false); }, 3000);
 
         function findAllbyType(type) {
             var index=0, list=[], store=this.resourceStore;
@@ -202,23 +213,20 @@ Ext.define('BQ.Export.Panel', {
             return list;
         }
 
-        //this.setLoading('Exporting...');
         Ext.create('Ext.form.Panel', {
             url : '/export/initStream',
             defaultType : 'hiddenfield',
             method : 'POST',
             standardSubmit : true,
-            /*listeners : {
-                scope : this,
-                actioncomplete : this.onDone,
-                actionfailed : this.onError,
-            },*/
             items : [{
                 name : 'compressionType',
                 value : btn.compressionType,
             }, {
                 name : 'metadata',
                 value : this.queryById('check_meta').getValue(),
+            }, {
+                name : 'analysis',
+                value : this.queryById('check_analysis').getValue(),
             }, {
                 name : 'files',
                 //value : findAllbyType.call(this, 'image').concat(findAllbyType.call(this, 'file')),

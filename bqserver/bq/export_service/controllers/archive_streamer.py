@@ -26,12 +26,13 @@ class ArchiveStreamer():
         self.archiver = ArchiverFactory().getClass(compressionType)
 
 
-    def init(self, archiveName='Bisque', fileList=[], datasetList=[], urlList=[], dirList=[], export_meta=True):
+    def init(self, archiveName='Bisque', fileList=[], datasetList=[], urlList=[], dirList=[], export_meta=True, export_mexs=False):
         self.fileList = fileList
         self.datasetList = datasetList
         self.urlList = urlList
         self.dirList = dirList
         self.export_meta = export_meta
+        self.export_mexs = False
 
         filename = archiveName + self.archiver.getFileExtension()
         try:
@@ -120,7 +121,7 @@ class ArchiveStreamer():
             content = None
             if path is None:
                 content = etree.tostring(xml)
-                name = '%s_%s_%s'%(name, xml.get('ts'), uniq)
+                name = '%s_%s'%(name, uniq)
                 xml = None
             
             # disambiguate file name if present
@@ -190,13 +191,24 @@ class ArchiveStreamer():
                          outpath   = fileName)
 
 
+        # processing a list of resources
         if len(fileList)>0:
             for index, uri in enumerate(fileList):
                 finfo = fileInfo('', uri)
                 flist.append(finfo)
                 if self.export_meta is True and finfo.get('xml') is not None:
                     flist.append(xmlInfo(finfo))
-
+                # find all mexs that use this resource explicitly
+                # dima: we'll not get any second level mexs
+                # mexs that use mexs, will need closure query in the db for that
+                if self.export_mexs:
+                    mexq = data_service.query(tag_query=finfo['xml'].get('uri'))
+                    members = mexq.xpath('//mex')
+                    for m in members:
+                        uri = m.get('uri')
+                        flist.append(fileInfo('', uri))
+                    
+        # processing a list of datasets
         if len(datasetList)>0:
             for uri in datasetList:
                 dataset = data_service.get_resource(uri, view='deep,clean')
@@ -230,6 +242,7 @@ class ArchiveStreamer():
                                        content   = etree.tostring(dataset),
                                        outpath   = name))
 
+        # processing a list of directories
         if len(dirList)>0:
             for uri in dirList:
                 # read dir from blob storage, dima: need to access blob storage
@@ -255,6 +268,7 @@ class ArchiveStreamer():
                     if self.export_meta is True and finfo.get('xml') is not None:
                         flist.append(xmlInfo(finfo))
 
+        # processing a list of URLs
         if len(urlList)>0:
             for index, url in enumerate(urlList):
                 if fileHash.get(url)!=None:
