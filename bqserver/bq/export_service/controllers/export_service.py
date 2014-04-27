@@ -246,6 +246,7 @@ class export_serviceController(ServiceController):
         
         jsbool   = {'true': True, 'false': False}
         export_meta = jsbool.get(kw.get('metadata', 'true'), True);
+        export_mexs = jsbool.get(kw.get('analysis', 'false'), True);
         
         files    = files + extractData(kw, 'files')
         datasets = datasets + extractData(kw, 'datasets')
@@ -255,7 +256,7 @@ class export_serviceController(ServiceController):
         filename = kw.pop('filename', None) or 'bisque-'+time.strftime("%Y%m%d.%H%M%S")
 
         archiveStreamer = ArchiveStreamer(compressionType)
-        archiveStreamer.init(archiveName=filename, fileList=files, datasetList=datasets, urlList=urls, dirList=dirs, export_meta=export_meta)
+        archiveStreamer.init(archiveName=filename, fileList=files, datasetList=datasets, urlList=urls, dirList=dirs, export_meta=export_meta, export_mexs=export_mexs)
         return archiveStreamer.stream()
 
 

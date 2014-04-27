@@ -488,90 +488,58 @@ class import_serviceController(ServiceController):
 #------------------------------------------------------------------------------
 # Import archives exported by a BISQUE system
 #------------------------------------------------------------------------------
-    def importBisqueArchive(self, file, tags):
+    def safePath(self, path, base):
+        path = os.path.normpath(path)
+        if path.startswith(os.path.normpath(base)): # on windows normpath changes slashes
+            return path
+        else:
+            return os.path.basename(path)
 
-        #-------------------------------------------------------------------
-        # parsePath : parses a path into hash of directories and a filename
-        #-------------------------------------------------------------------
-        def parsePath(filename):
-            (root, name) = os.path.split(filename)
-            dir = []
-
-            while root:
-                root, nextDir = os.path.split(root)
-                dir = dir + [nextDir]
-
-            dir.reverse()
-            return (dir, name)
-
-        #-----------------------------------------------------------------------------------------
-        # ingestResource : recursively ingests a file hierarchy and returns top most parent's XML
-        #-----------------------------------------------------------------------------------------
-        def ingestResource(fileObj):
-            xml = etree.parse((fileObj.get('XML'))).getroot()
-
-            if fileObj.get('isDataset') is None:
-                if fileObj.get('FILE') is not None:
-                    #fileObjUp = UploadedFile(fileObj.get('FILE'), None, None)
-                    with open(fileObj.get('FILE'), 'rb') as f:
-                        #sanitize_filename(os.path.basename(fileObj.get('FILE'))),
-                        resource =  blob_service.store_blob(resource=xml, fileobj=f)
-                    return resource
-                else:
-                    return data_service.new_resource(resource = xml)
-            else:
-                del fileObj['isDataset']
-                del fileObj['XML']
-
-                # delete value fields from the dataset XML
-                for value in xml.iter('value'):
-                    xml.remove(value)
-
-                # iterate through children of the dataset
-                for member, fhash in fileObj.items():
-                    memberXML = ingestResource(fhash)
-                    value = etree.SubElement(xml, 'value', type='object')
-                    value.text = memberXML.get('uri')
-
-                return data_service.new_resource(resource = xml)
-            return None
-        #---------------------------------------------------------------
-        #---------------------------------------------------------------
-
-        unpack_dir, members = self.unpackPackagedFile(file, preserve_structure=True)
-        # memberHash is a nested hash of directories and info for each file
-        # a/b/t.img -> { 'a' : { 'isDataset': True, 'b' : { 'isDataset': True, t : { 'FILE': 'path-info' },}}}
-        memberHash = {}
-
-        # create a hash that maps flat file structure into a hierarchy
-        for member in members:
-
-            if member == '_bisque.xml':
-                continue
-
-            (dirs, name) = parsePath(member)
-            parent = memberHash
-            for d in dirs:
-                parent[d] = parent.get(d) or {}
-                parent[d]['isDataset'] = True
-                parent = parent[d]
-
-            (fname, ext) = os.path.splitext(name)
-            value = 'XML' if ext.lower() == '.xml' else 'FILE'
-            entry = parent.get(fname) or {}
-            entry[value] = os.path.normpath(os.path.join(unpack_dir, member))
-            parent[fname] = entry
-
+    def parseFile(self, filename, path):
+        log.debug('parseFile fn: [%s] path: [%s]', filename, path)
+        mpath = self.safePath(os.path.join(path, filename), path)
+        log.debug('parseFile mpath: [%s]', mpath)
+        xml = etree.parse(mpath).getroot()
+        bpath = self.safePath(os.path.join(path, xml.get('value', '')), path)
+        
+        # if a resource has a value pointing to a file
+        if xml.get('value') is not None and os.path.exists(bpath) is True:
+            return blob_service.store_blob(resource=xml, fileobj=open(bpath, 'rb'))
+        
+        # if a resource is an xml doc
+        elif xml.tag not in ['dataset', 'mex', 'user', 'system', 'module', 'store']:
+            return data_service.new_resource(resource=xml)
+        
+        # dima: if a res is an xml of a system type, store as blob
+        elif xml.tag in ['dataset', 'mex', 'user', 'system', 'module', 'store']:
+            return etree.Element (xml.tag, name=xml.get('name', ''))
+        #    return blob_service.store_blob(resource=xml)
+                
+        # if the resource is a dataset
+        elif xml.tag == 'dataset':
+            members = xml.xpath('/dataset/value')
+            for member in members:
+                r = self.parseFile(member.text, path)
+                member.text = r.get('uri')
+            return data_service.new_resource(resource=xml)
+    
+    # dima: need to pass relative storage path
+    def importBisqueArchive(self, f, tags):
+        unpack_dir, members = self.unpackPackagedFile(f, preserve_structure=True)
+        
+        # parse .bisque.xml
         resources = []
-
-        # store resources and blobs with proper XML attached
-        for file in memberHash:
-            resources.append(ingestResource(memberHash.get(file)))
+        header = os.path.join(unpack_dir, '.bisque.xml')
+        if os.path.exists(header):
+            xml = etree.parse(header).getroot()
+            members = xml.xpath('value')
+            for m in members:
+                resources.append(self.parseFile(m.text, unpack_dir))
 
         return unpack_dir, resources
 
 
-    def cleanup_packaging(self, unpack_dir, members):
+    def cleanup_packaging(self, unpack_dir):
         "cleanup and packaging details "
         if os.path.isdir(unpack_dir):
             shutil.rmtree (unpack_dir)
@@ -584,42 +552,42 @@ class import_serviceController(ServiceController):
     def filter_zip_multifile(self, f, intags):
         unpack_dir, members = self.unpackPackagedFile(f)
         resources =  self.insert_members([ '%s/%s'%(unpack_dir, m) for m in members ], f, unpack_dir)
-        self.cleanup_packaging(unpack_dir, members)
+        self.cleanup_packaging(unpack_dir)
         return resources
 
     def filter_zip_bisque(self, f, intags):
         unpack_dir, resources = self.importBisqueArchive(f, intags)
-        self.cleanup_packaging(unpack_dir, [])
+        #self.cleanup_packaging(unpack_dir)
         return resources
 
     def filter_zip_tstack(self, f, intags):
         unpack_dir, combined = self.process5Dimage(f, number_t=0, **intags)
         resources =  self.insert_members([combined] , f, unpack_dir)
-        self.cleanup_packaging(unpack_dir, [combined])
+        self.cleanup_packaging(unpack_dir)
         return resources
 
     def filter_zip_zstack(self, f, intags):
         unpack_dir, combined = self.process5Dimage(f, number_z=0, **intags)
         resources =  self.insert_members([combined], f, unpack_dir)
-        self.cleanup_packaging(unpack_dir, [combined])
+        self.cleanup_packaging(unpack_dir)
         return resources
 
     def filter_5d_image(self, f, intags):
         unpack_dir, combined = self.process5Dimage(f, **intags)
         resources = self.insert_members([combined], f, unpack_dir)
-        self.cleanup_packaging(unpack_dir, [combined])
+        self.cleanup_packaging(unpack_dir)
         return resources
 
     def filter_series_bioformats(self, f, intags):
         unpack_dir, members = self.extractSeriesBioformats(f)
         resources = self.insert_members([ '%s/%s'%(unpack_dir, m) for m in members ], f, unpack_dir)
-        self.cleanup_packaging(unpack_dir, members)
+        self.cleanup_packaging(unpack_dir)
         return resources
 
     def filter_zip_volocity(self, f, intags):
         unpack_dir, members = self.extractSeriesVolocity(f)
         resources = self.insert_members([ '%s/%s'%(unpack_dir, m) for m in members ], f, unpack_dir)
-        self.cleanup_packaging(unpack_dir, members)
+        self.cleanup_packaging(unpack_dir)
         return resources
 
 
