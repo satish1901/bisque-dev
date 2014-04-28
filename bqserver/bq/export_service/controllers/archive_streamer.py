@@ -202,7 +202,7 @@ class ArchiveStreamer():
                 # dima: we'll not get any second level mexs
                 # mexs that use mexs, will need closure query in the db for that
                 if self.export_mexs:
-                    mexq = data_service.query(tag_query=finfo['xml'].get('uri'))
+                    mexq = data_service.query('mex', tag_query=finfo['xml'].get('uri'))
                     members = mexq.xpath('//mex')
                     for m in members:
                         uri = m.get('uri')
