@@ -120,6 +120,7 @@ Ext.define('BQ.Export.Panel', {
                 name: 'analysis',
                 checked: false,
                 disabled: true,
+                hidden: true,
             }]
         }];
 
@@ -310,11 +311,31 @@ Ext.define('BQ.Export.Panel', {
             border : 0,
             listeners : {
                 scope : this,
-                itemdblclick : function(view, record, item, index) {
+                //itemclick : function(view, record, item, index, e) {
+                /*itemcontextmenu : function(view, record, item, index, e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    var uri = record.get('uri');
+                    var browser = Ext.create('Bisque.ResourceBrowser.Dialog', {
+                        'height' : '85%',
+                        'width' :  '85%',
+                        dataset: bq.url('/data_service/mex'),
+                        tagQuery: '%22'+uri+'%22',
+                        listeners: {
+                            scope: this,
+                            Select: this.addToStore,
+                        },
+                    });
+
+
+                    //var newTab = window.open('', "_blank");
+                    //newTab.location = bq.url('/client_service/view?resource=' + record.get('uri'));
+                },*/
+                /*itemclick : function(view, record, item, index, e) {
                     // delegate resource viewing to ResourceView Dispatcher
                     var newTab = window.open('', "_blank");
                     newTab.location = bq.url('/client_service/view?resource=' + record.get('uri'));
-                }
+                },*/
             },
 
             columns : {
@@ -371,7 +392,35 @@ Ext.define('BQ.Export.Panel', {
                     }
                 }, {
                     xtype : 'actioncolumn',
-                    maxWidth : 80,
+                    text: 'Analysis',
+                    maxWidth : 70,
+                    menuDisabled : true,
+                    sortable : false,
+                    align : 'center',
+                    items : [{
+                        icon : bq.url('/js/ResourceTagger/Images/add.png'),
+                        align : 'center',
+                        tooltip : 'Add analysis resutls for this resource',
+                        scope: this,
+                        handler : function(grid, rowIndex, colIndex) {
+                            var record = grid.store.getAt(rowIndex);
+                            var uri = record.get('uri');
+                            var browser = Ext.create('Bisque.ResourceBrowser.Dialog', {
+                                'height' : '85%',
+                                'width' :  '85%',
+                                dataset: bq.url('/data_service/mex'),
+                                tagQuery: '%22'+uri+'%22',
+                                listeners: {
+                                    scope: this,
+                                    Select: this.addToStore,
+                                },
+                            });
+                        }
+                    }]
+                }, {
+                    xtype : 'actioncolumn',
+                    text: 'Remove',
+                    maxWidth : 70,
                     menuDisabled : true,
                     sortable : false,
                     align : 'center',
