@@ -495,15 +495,21 @@ class import_serviceController(ServiceController):
         else:
             return os.path.basename(path)
 
-    def parseFile(self, filename, path):
+    def parseFile(self, filename, path, relpath):
         log.debug('parseFile fn: [%s] path: [%s]', filename, path)
         mpath = self.safePath(os.path.join(path, filename), path)
         log.debug('parseFile mpath: [%s]', mpath)
+        if not os.path.exists(mpath):
+            return etree.Element ('tag', name=filename)
         xml = etree.parse(mpath).getroot()
-        bpath = self.safePath(os.path.join(path, xml.get('value', '')), path)
+        bpath = self.safePath(os.path.join(path, os.path.dirname(filename), xml.get('value', '')), path)
+        
+        log.debug('parseFile xml: %s', etree.tostring(xml))
         
         # if a resource has a value pointing to a file
         if xml.get('value') is not None and os.path.exists(bpath) is True:
+            xml.set('name', os.path.join(relpath, os.path.dirname(filename), xml.get('value')).replace('\\', '/'))
+            del xml.attrib['value']
             return blob_service.store_blob(resource=xml, fileobj=open(bpath, 'rb'))
         
         # if a resource is an xml doc
@@ -511,7 +517,7 @@ class import_serviceController(ServiceController):
             return data_service.new_resource(resource=xml)
         
         # dima: if a res is an xml of a system type, store as blob
-        elif xml.tag in ['dataset', 'mex', 'user', 'system', 'module', 'store']:
+        elif xml.tag in ['mex', 'user', 'system', 'module', 'store']:
             return etree.Element (xml.tag, name=xml.get('name', ''))
         #    return blob_service.store_blob(resource=xml)
                 
@@ -519,12 +525,14 @@ class import_serviceController(ServiceController):
         elif xml.tag == 'dataset':
             members = xml.xpath('/dataset/value')
             for member in members:
-                r = self.parseFile(member.text, path)
+                r = self.parseFile(member.text, path, relpath)
                 member.text = r.get('uri')
             return data_service.new_resource(resource=xml)
     
     # dima: need to pass relative storage path
     def importBisqueArchive(self, f, tags):
+        log.debug('importBisqueArchive: %s', f)
+        relpath = os.path.dirname(f.orig)
         unpack_dir, members = self.unpackPackagedFile(f, preserve_structure=True)
         
         # parse .bisque.xml
@@ -534,7 +542,9 @@ class import_serviceController(ServiceController):
             xml = etree.parse(header).getroot()
             members = xml.xpath('value')
             for m in members:
-                resources.append(self.parseFile(m.text, unpack_dir))
+                f = self.parseFile(m.text, unpack_dir, relpath)
+                if f is not None:
+                    resources.append(f)
 
         return unpack_dir, resources
 
@@ -557,7 +567,7 @@ class import_serviceController(ServiceController):
 
     def filter_zip_bisque(self, f, intags):
         unpack_dir, resources = self.importBisqueArchive(f, intags)
-        #self.cleanup_packaging(unpack_dir)
+        self.cleanup_packaging(unpack_dir)
         return resources
 
     def filter_zip_tstack(self, f, intags):
