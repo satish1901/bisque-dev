@@ -62,7 +62,7 @@ import urlparse
 import sqlalchemy
 from datetime import datetime
 
-from sqlalchemy import Table, Column, ForeignKey
+from sqlalchemy import Table, Column, ForeignKey, Index
 from sqlalchemy import Integer, String, DateTime, Unicode, Float, Boolean
 from sqlalchemy import Text, UnicodeText
 from sqlalchemy.orm import relation, class_mapper, object_mapper, validates, backref, synonym
@@ -124,6 +124,9 @@ taggable = Table('taggable', metadata,
                  Column('resource_value',  UnicodeText),
                  Column('resource_parent_id', Integer, ForeignKey('taggable.id', name="taggable_children_fk", ondelete="CASCADE"), index=True),
                  Column('document_id', Integer, ForeignKey('taggable.id', name="taggable_document_fk", ondelete="CASCADE"), index=True), # Unique Element
+                 Column('resource_unid', UnicodeText),
+                 #Index('idx_user_unid', 'document_id', 'user_unid', unique=True)
+           Index('idx_user_unid', 'owner_id', 'resource_parent_id', 'resource_unid', unique=True,  mysql_length = {'resource_unid' : 255})
                  )
 
 values = Table ('values', metadata,
@@ -270,7 +273,14 @@ class Taggable(object):
     """
     xmltag = 'resource'
 
-    def __init__(self, resource_type = None, parent = None):
+    def __init__(self, resource_type = None, parent = None, owner_id = None, mex_id = None):
+        """Create a taggable resource : not usually called directly
+
+        @param resource_type: A string type of the new resource i.e. user, project etc.
+        @param parent: A parent of the resource or None
+        @owner_id: An integer ID, a BQUser, current user if None, False : don't set
+        @mex_id: An integer ID, A ModuleExecution, current mex if None, or False : don't set
+        """
         if resource_type is None:
             resource_type = self.xmltag
         self.resource_type = resource_type
@@ -289,25 +299,29 @@ class Taggable(object):
         #if self.resource_type == 'user':
         #    self.owner = self
 
-        self.perm = PUBLIC
+        self.perm = PRIVATE
         self.ts = datetime.now()
         #log.debug("new taggable user:" + str(session.dough_user.__dict__) )
-        owner  = identity.get_user()
-        mex_id = current_mex_id()
-        log.debug ("owner = %s mex = %s" % (owner, mex_id))
-        if mex_id is not None:
-            log.debug ("setting mex_id %s " % mex_id)
-            self.mex_id = mex_id
-        if owner:
-            self.owner_id = owner.id
-            self.perm = PRIVATE
+        if mex_id is not False:
+            mex_id = mex_id or current_mex_id()
+            log.debug ("mex_id = %s" ,  mex_id)
+            if mex_id is not None:
+                log.debug ("setting mex_id %s" , mex_id)
+                self.mex_id = mex_id
 
-        if owner is None:
-            log.warn ("CREATING taggable %s with no owner" % str(self) )
-            admin = identity.get_admin()
-            if admin:
-                log.warn("Setting owner to admin")
-                self.owner_id = admin.id
+        if owner_id is not False:
+            owner_id  = owner_id or identity.get_user_id()
+            if owner_id is not None:
+                if isinstance(owner_id, Taggable):
+                    self.owner = owner_id
+                else:
+                    self.owner_id = owner_id
+            else:
+                log.warn ("CREATING taggable %s with no owner" % str(self) )
+                admin = identity.get_admin()
+                if admin:
+                    log.warn("Setting owner to admin")
+                    self.owner_id = admin.id
 
     def resource (self):
         return "%s/%s" % ( self.table , self.id)
@@ -593,7 +607,7 @@ class BQUser(Taggable):
 
     def __init__(self, user_name=None, password=None,
 					email_address=None, display_name=None,
-					create_tg=False, tg_user = None, **kw):
+					create_tg=False, tg_user = None, create_store=True,**kw):
         super(BQUser, self).__init__()
         if not display_name: display_name = user_name
 
@@ -614,6 +628,13 @@ class BQUser(Taggable):
         dn.owner = self
         self.owner = self
         self.permission = 'published'
+
+        if create_store:
+            root_store = BQStore(owner_id = self)
+            root_store.resource_name='(root)'
+            root_store.resource_unid='(root)'
+            DBSession.add(root_store)
+
 
     @classmethod
     def new_user (cls, email, password, create_tg = False):
@@ -698,6 +719,8 @@ class ModuleExecution(Taggable):
 class Dataset(Taggable):
     xmltag = 'dataset'
 
+class BQStore(Taggable):
+    xmltag = 'store'
 
 class PermissionToken(object):
     '''
@@ -904,6 +927,46 @@ mapper(BQUser,  inherits=Taggable,
 
         }
        )
+mapper(Template, inherits=Taggable,
+        polymorphic_on = taggable.c.resource_type,
+        polymorphic_identity = 'template')
+mapper(Module, inherits=Taggable,
+        polymorphic_on = taggable.c.resource_type,
+        polymorphic_identity = 'module',)
+mapper(ModuleExecution,  inherits=Taggable,
+       polymorphic_on = taggable.c.resource_type,
+       polymorphic_identity = 'mex',
+       properties = {
+        #"status":synonym("resource_value"), # map_column=True) ,
+        'owns' : relation(Taggable,
+                          lazy = True,
+                          cascade = "all, delete-orphan", passive_deletes=True,
+                          #cascade = None,
+                          post_update = True,
+                          enable_typechecks=False,
+                          primaryjoin = (taggable.c.id == taggable.c.mex_id),
+                          backref = backref('mex', post_update=True, remote_side=[taggable.c.id])),
+        })
+mapper( Dataset,  inherits=Taggable,
+        polymorphic_on = taggable.c.resource_type,
+        polymorphic_identity = 'dataset',)
+mapper( BQStore,  inherits=Taggable,
+        polymorphic_on = taggable.c.resource_type,
+        polymorphic_identity = 'store',)
+mapper( Service, inherits=Taggable,
+        polymorphic_on = taggable.c.resource_type,
+        polymorphic_identity = 'service')
+
+#################################################
+# Support Functions
+
+#class_mapper(User).add_property('dough_user',
+#    relation(BQUser,
+#         primaryjoin=(User.dough_user_id == Taggable.id),
+#         foreign_keys=[Taggable.id],
+#    )
+#)
+
 def bquser_callback (tg_user, operation, **kw):
     # Deleted users will receive and update callback
     if tg_user is None:
@@ -947,47 +1010,6 @@ def registration_hook(action, **kw):
             log.error('Fix the display_name')
     elif action =="delete_user":
         pass
-
-
-
-mapper(Template, inherits=Taggable,
-        polymorphic_on = taggable.c.resource_type,
-        polymorphic_identity = 'template')
-mapper(Module, inherits=Taggable,
-        polymorphic_on = taggable.c.resource_type,
-        polymorphic_identity = 'module',)
-mapper(ModuleExecution,  inherits=Taggable,
-       polymorphic_on = taggable.c.resource_type,
-       polymorphic_identity = 'mex',
-       properties = {
-        #"status":synonym("resource_value"), # map_column=True) ,
-        'owns' : relation(Taggable,
-                          lazy = True,
-                          cascade = "all, delete-orphan", passive_deletes=True,
-                          #cascade = None,
-                          post_update = True,
-                          enable_typechecks=False,
-                          primaryjoin = (taggable.c.id == taggable.c.mex_id),
-                          backref = backref('mex', post_update=True, remote_side=[taggable.c.id])),
-        })
-mapper( Dataset,  inherits=Taggable,
-        polymorphic_on = taggable.c.resource_type,
-        polymorphic_identity = 'dataset',)
-mapper( Service, inherits=Taggable,
-        polymorphic_on = taggable.c.resource_type,
-        polymorphic_identity = 'service')
-
-#################################################
-# Support Functions
-
-#class_mapper(User).add_property('dough_user',
-#    relation(BQUser,
-#         primaryjoin=(User.dough_user_id == Taggable.id),
-#         foreign_keys=[Taggable.id],
-#    )
-#)
-
-
 
 def current_mex_id ():
     mex_id = None
