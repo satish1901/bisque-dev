@@ -470,9 +470,11 @@ class BlobServer(RestController, ServiceMixin):
 
     def originalFileName(self, ident):
         log.debug ('originalFileName: deprecated %s', ident)
+        fname  = str (ident)
         resource = DBSession.query(Taggable).filter_by (resource_uniq = ident).first()
-        if resource and resource.resource_name != None:
-            fname =  resource.resource_name
+        if resource:
+            if resource.resource_name != None:
+                fname =  resource.resource_name
         log.debug('Blobsrv - original name %s->%s ' , ident, fname)
         return fname
 

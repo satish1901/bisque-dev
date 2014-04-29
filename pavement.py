@@ -95,26 +95,12 @@ all will install everything including the feature service""")
 
 
 def install_prereqs (options):
-    if options.installing != "engine":
-	pass
-        # Hack as numpy fails to install when in setup.py dependencies
-        #3sh('easy_install numpy==1.6.0')
-        #sh('easy_install numpy==1.6.0')
-        # End Hack
-        sh('pip install http://biodev.ece.ucsb.edu/binaries/download/tw.output/tw.output-0.5.0dev-20110906.tar.gz')
-        sh('pip install http://biodev.ece.ucsb.edu/binaries/depot/tgext.registration2/tgext.registration2-0.5.2.tar.gz')
-    elif 0==1:
-        sh('pip install http://biodev.ece.ucsb.edu/binaries/depot/httplib2/httplib2-0.7.1.tar.gz')
-        sh('pip install http://biodev.ece.ucsb.edu/binaries/depot/Paste/Paste-1.7.5.1bisque2.tar.gz')
-        #sh('pip install http://biodev.ece.ucsb.edu/binaries/depot/bq053/Minimatic-1.0.1.zip')
-        sh('pip install https://bitbucket.org/bisque/minimatic/get/master.zip')
-
+    "Ensure required packages are installed"
+    sh ('pip install -r requirements.txt')
 
 def install_postreqs (options):
-    sh('pip install https://bitbucket.org/bisque/tg2/downloads/TurboGears2-2.1.5.tar.gz')
-    sh('pip install http://biodev.ece.ucsb.edu/binaries/depot/Paste/Paste-1.7.5.1bisque2.tar.gz')
-    sh('pip install pastescript==1.7.3')
-
+    "Install or Modify any packages post installation"
+    pass
 
 
 #############################################################
@@ -124,7 +110,7 @@ def install_postreqs (options):
 def setup(options):
     'install local version and setup local packages'
     process_options(options)
-    #install_prereqs(options)
+    install_prereqs(options)
     setup_developer(options)
     #install_postreqs(options)
 

@@ -57,6 +57,7 @@ import string
 from lxml import etree
 from datetime import datetime
 from datetime import timedelta
+from sqlalchemy.exc import IntegrityError
 
 import tg
 from tg import expose, flash, config, require, abort
@@ -65,6 +66,7 @@ from repoze.what import predicates
 
 from bq.core import  identity
 from bq.core.identity import set_admin_mode
+from bq.core.model import DBSession
 #from bq.core.service import ServiceMixin
 #from bq.core.service import ServiceController
 from bq.exceptions import IllegalOperation, DuplicateFile, ServiceError
@@ -164,6 +166,14 @@ class StoreGenerator(object):
 ###########################################################################
 
 
+
+
+
+###########################################################################
+# PathServer
+###########################################################################
+
+
 class StoreServer(TGController):
     """ Manipulate store paths
     """
@@ -183,35 +193,40 @@ class StoreServer(TGController):
         root = None
         log.debug ("CREATE_PATH %s %s", store, path)
         if isinstance(store, basestring):
-            resource = root = etree.Element ('store', name = store)
-            store = None
+            resource = root = etree.Element ('store', name = store, resource_unid = store)
+            store = self._create_root_store()
 
         parent = store
         while parent and path:
             el = path.pop(0)
             if not el:
                 continue
-            q  = data_service.query(parent=parent, name=el, view='full')
-            if len(q) != 1:
-                #log.error ('multiple names (%s) in store level %s', el, q.get('uri'))
+            q  = data_service.query(parent=parent, resource_unid=el, view='full', cache=False)
+            if len(q) == 0:
+                # no element we are done
                 path.insert(0, el)
+                break
+            if len(q) > 1:
+                log.error ('multiple names (%s) in store level %s', el, q.get('uri'))
+                #path.insert(0, el)
+                parent = q[0]
                 break
             parent = q[0]
         # any left over path needs to be created
-        log.debug ("at %s rest %s", parent and parent.get ('uri'), path)
+        log.debug ("create: at %s rest %s", parent and parent.get ('uri'), path)
         while len(path)>1:
             nm = path.pop(0)
             if root is None:
-                resource = root = etree.Element ('dir', name = nm)
+                resource = root = etree.Element ('dir', name=nm, resource_unid = nm)
             else:
-                resource = etree.SubElement (resource, 'dir', name=nm)
+                resource = etree.SubElement (resource, 'dir', name=nm, resource_unid=nm)
         # The last element might be dir or a link
         if len(path)==1:
             nm = resource_name or path.pop(0)
             if root is None:
-                resource = root = etree.Element ('link' if resource_uniq else 'dir', name = nm)
+                resource = root = etree.Element ('link' if resource_uniq else 'dir', name=nm, resource_unid = nm)
             else:
-                resource = etree.SubElement (resource, 'link' if resource_uniq else 'dir', name=nm)
+                resource = etree.SubElement (resource, 'link' if resource_uniq else 'dir', name=nm, resource_unid=nm)
 
             if resource_uniq:
                 resource.set ('value', resource_uniq)
@@ -233,6 +248,7 @@ class StoreServer(TGController):
         """
         user_name  = identity.current.user_name
         best = None
+        root = self._create_root_store()
         drivers = self.drivers
         for name,driver  in drivers.items():
             if not hasattr(driver, 'user_path'):
@@ -243,7 +259,7 @@ class StoreServer(TGController):
                 if not new_path.startswith(user_path):
                     continue
 
-                store = data_service.query('store', name=name,view='full')
+                store = data_service.query('store', parent=root, resource_unid=name,view='full', cache=False)
                 if len(store) == 0:
                     store = None
                     partial = name + '/' + new_path[len(user_path):]
@@ -253,8 +269,8 @@ class StoreServer(TGController):
                 else:
                     log.error ('multiple  store found %s  - %s', best, new_path)
                     break
-                log.debug ("Matched %s %s ", name, partial)
-                return store, partial.replace('//','/').split ('/')
+                log.debug ("find_store_by_blob: Matched %s %s ", name, partial)
+                return store, [ x for x in partial.replace('//','/').split ('/') if x ]
         return None,None
 
     def find_path_by_blob(self, path, **kw):
@@ -268,7 +284,7 @@ class StoreServer(TGController):
             el = path.pop(0)
             if not el:
                 continue
-            q  = data_service.query(parent=parent, name=el, view='full')
+            q  = data_service.query(parent=parent, resource_unid=el, view='full')
             if len(q) != 1:
                 return None
             if path:
@@ -277,8 +293,8 @@ class StoreServer(TGController):
         return q
 
 
-    #@smokesignal.on(SIG_NEWBLOB)
-    def insert_blob_path(self, path, resource_uniq=None, resource_name=None, **kw):
+
+    def _insert_blob_path_1time(self, path, resource_uniq=None, resource_name=None, **kw):
         """ insert a store path into the store resource
 
         This will create a store element if does not exist
@@ -291,13 +307,26 @@ class StoreServer(TGController):
             # No matching store has been created, but one may have matched.
             if path is None:
                 # No store matched so no Path either.
+                log.warn("No Store and no path found: ignoring")
                 return None
             # we will create a new store (for user) for this path
             #resource = root = etree.Element ('store', name = path.pop(0))
             store = path.pop(0)
 
-        log.info("Insert_blob_path create %s path %s ", store, path)
+        log.info("Insert_blob_path create %s path %s ", str(store), str(path))
         return self._create_full_path(store, path, resource_uniq, resource_name, **kw)
+
+
+    def insert_blob_path(self, path, resource_uniq=None, resource_name=None, **kw):
+        for x in range(8):
+            try:
+                with DBSession.begin_nested():
+                    return self._insert_blob_path_1time (path=path, resource_uniq=resource_uniq,
+                                                     resource_name=resource_name, **kw)
+            except IntegrityError:
+                log.warn ('Integrity Error caught on %s.. retrying %s', x, path)
+        log.error('Could not insert path.. tried too many times')
+        return None
 
     def delete_blob_path(self, path):
         """ Delete an element given the blob path
@@ -306,6 +335,18 @@ class StoreServer(TGController):
         if q:
             data_service.del_resource(q)
 
+    def _create_root_store(self):
+        'create/find hidden root store for each user'
+
+        root = data_service.query('store', resource_unid='(root)', view='full')
+        if len(root) == 0:
+           return  data_service.new_resource(etree.Element('store', name="(root)", resource_unid="(root)"), view='full')
+        elif len(root) > 1:
+            log.error("Root store created more than once: %s ", etree.tostring(root))
+            return None
+
+        return root[0]
+
 
     ###############################################
     # Store operators
@@ -313,7 +354,8 @@ class StoreServer(TGController):
 
     def _load_store(self, store_name):
         'Simply load the store named'
-        q = data_service.query('store', name=store_name, view='full')
+        root = self._create_root_store()
+        q = data_service.query('store', parent=root, resource_unid=store_name, view='full')
         if len(q) == 0:
             log.warn('No store named %s' % store_name)
             return None
@@ -331,7 +373,7 @@ class StoreServer(TGController):
         #log.debug ('ZOOM %s', q.get ('uri'))
         while q and path:
             el= path.pop(0)
-            q = data_service.query(parent=q, name=el, view='full', )
+            q = data_service.query(parent=q, resource_unid=el, view='full', )
             if len(q) != 1:
                 log.error ('multiple names (%s) in store level %s', el, q.get('uri'))
                 return None
@@ -452,10 +494,13 @@ class StoreServer(TGController):
     def index(self):
         stores = etree.Element ('resource', resource_type='stores')
         for k,v in self.drivers.items():
-            etree.SubElement(stores, 'store', name=k, value=v.top)
+            etree.SubElement(stores, 'store', name = k, resource_unid=k, value=v.top)
+
+        self._create_root_store()
         return etree.tostring(stores)
 
     @expose(content_type='text/xml')
+    @require(predicates.not_anonymous())
     def _default(self, *path, **kw):
         """ Dispatch based on request method GET, ...
         """

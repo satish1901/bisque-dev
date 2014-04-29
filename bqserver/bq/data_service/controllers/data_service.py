@@ -336,7 +336,7 @@ class DataServerController(ServiceController):
 
 
 
-    def query(self, resource_tag = None,  parent=None, **kw):
+    def query(self, resource_tag = None,  parent=None, cache=True, **kw):
         '''Query the local database with expr'''
         #resource_type = dbtype_from_tag(resource_tag)
         parent_uri = getattr(parent, 'uri', None)
@@ -350,10 +350,11 @@ class DataServerController(ServiceController):
 
         uri = "%s/%s" % (parent_uri or self.url, resource_tag or '')
 
-        response = self.cache_check (uri, **kw)
-        if response:
-            xml =  etree.XML (response)
-            return xml
+        if cache:
+            response = self.cache_check (uri, **kw)
+            if response:
+                xml =  etree.XML (response)
+                return xml
 
         params = kw.copy()
         view = params.pop('view', None)
@@ -370,7 +371,8 @@ class DataServerController(ServiceController):
             db2tree (nodelist, parent=response,
                      view=view, baseuri = self.url, **params)
 
-        self.cache_save (uri, response=etree.tostring(response), **kw)
+        if cache:
+            self.cache_save (uri, response=etree.tostring(response), **kw)
         #log.debug ("DS: " + etree.tostring(response))
         return response
 
