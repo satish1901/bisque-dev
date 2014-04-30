@@ -113,10 +113,10 @@ class BaseFeature(object):
     #untested - feature has not been tested in the unittest comparison
     confidence = 'untested'
 
-    def __init__ (self):
+    def __init__ ( self):
         self.path = os.path.join( FEATURES_TABLES_FILE_DIR, self.name)
 
-    def localfile(self,hash):
+    def localfile( self, hash):
         """
             returns the path to the table given the hash
         """
@@ -138,7 +138,7 @@ class BaseFeature(object):
         """
             Columns for the cached tables
         """
-        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+        featureAtom = tables.Atom.from_type( self.feature_format, shape=( self.length ))
 
         class Columns(tables.IsDescription):
             idnumber  = tables.StringCol(32,pos=1)
@@ -149,7 +149,7 @@ class BaseFeature(object):
         """
             Columns for the output table for the feature column
         """
-        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+        featureAtom = tables.Atom.from_type( self.feature_format, shape=( self.length))
 
         class Columns(tables.IsDescription):
             image         = tables.StringCol(2000,pos=1)
@@ -203,7 +203,7 @@ class ImageImport:
                 if not self.path:
                     log.debug('Not found in image_service internally: %s'%uri)
                 else:
-                    return 
+                    return
             except Exception: #Resulting from a 403 in image service, needs to be handled better
                 log.debug('Not found in image_service internally: %s'%uri)
 
@@ -259,7 +259,7 @@ class ImageImport:
 ###############################################################
 
 #needs to be replaced with a HEAD instead of using a GET
-def mex_validation(**resource):
+def mex_validation( **resource):
     """
     Checks the mex of the resource to see if the user has access to all the resources
     """

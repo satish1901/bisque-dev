@@ -6,60 +6,39 @@ __author__ = "Dmitry Fedorov, Kris Kvilekval, Carlos Torres and Chris Wheat"
 __copyright__ = "Center for BioImage Informatics, University California, Santa Barbara"
 
 import os
-import io
 import logging
 import pkg_resources
 import tables
 from PytablesMonkeyPatch import pytables_fix
-import numpy as np
-import sys
-import time
 import inspect
-import numpy as np
-import traceback
 import pkgutil
 import importlib
 import uuid
-import threading
-import httplib2
 import urllib2
 import hashlib
+import ntpath
+from lxml import etree
+
 
 from paste.fileapp import FileApp
 from pylons.controllers.util import forward
 from pylons.i18n import ugettext as _, lazy_ugettext as l_
 from pylons.controllers.util import abort
 from tg import expose, flash, config, response, request
-from repoze.what import predicates
+
 from bq.core.service import ServiceController
-
-from lxml import etree
-import lxml
-from datetime import datetime, timedelta
-import urllib
-import time
-
-from repoze.what.predicates import is_user, not_anonymous
-
-import bq
 from bq.util.paths import data_path
-from bq.client_service.controllers import aggregate_service
 from bq import data_service
 from bq.image_service.controllers.locks import Locks
-from bq.api.comm import BQServer
 from bq.util.mkdir import _mkdir
-import traceback
-from ID import ID
-import Feature
-from bq.features.controllers.Feature import BaseFeature
-from TablesInterface import Rows, IDRows, WorkDirRows, Tables, IDTables, WorkDirTable
-log = logging.getLogger("bq.features")
 
-
+from bq.features.controllers.ID import ID
+from bq.features.controllers.Feature import BaseFeature, mex_validation
+from bq.features.controllers.TablesInterface import Rows, IDRows, WorkDirRows, Tables, IDTables, WorkDirTable
 from exceptions import FeatureServiceError,FeatureExtractionError
 from .var import FEATURES_TABLES_FILE_DIR, FEATURES_TEMP_IMAGE_DIR, EXTRACTOR_DIR, FEATURES_TABLES_WORK_DIR, FEATURES_REQUEST_ERRORS_DIR
 
-
+log = logging.getLogger("bq.features")
 
 
 class Feature_Archive(dict):
@@ -71,10 +50,9 @@ class Feature_Archive(dict):
     """
     def __init__(self):
         """
-            Initalizes all the objects found in the extraction_library__init__
-            __all__ object. If one wants to add a new feature to this directory
-            to be initialized look at the documentation file in the
-            extraction_library directory.
+            Looks into extractors/feature_module for extractor. Once found 
+            it will import the library and parse the module for all classes
+            inheriting FeatureBase
         """
         extractors = [name for module_loader, name, ispkg in pkgutil.iter_modules([EXTRACTOR_DIR]) if ispkg]
         for module in extractors:
@@ -132,7 +110,7 @@ class ResourceList(object):
             Returns resource name for the workdir which is an ordered
             list of all the element hashes 
         """
-        return os.path.join(FEATURES_TABLES_WORK_DIR,self.feature.name, self.hash() + '.h5' )     
+        return os.path.join(FEATURES_TABLES_WORK_DIR,self.feature.name, self.hash())     
     
     def hash(self):
         """
@@ -152,7 +130,7 @@ class ResourceList(object):
             appends to element lists and orders the list by hash
             on the first append the types are checked
 
-            input_dict : dictionary where the keys are the input types and the values are the uris
+            @input_dict : dictionary where the keys are the input types and the values are the uris
         """
         # checking type
         if not self.uri_hash_list:  # check on the first entry
@@ -165,7 +143,7 @@ class ResourceList(object):
                 raise FeatureServiceError(400, 'Argument Error: types are not consistance')
 
         #check if user has access to resource
-        if Feature.mex_validation(**input_dict):
+        if mex_validation(**input_dict):
             uri_hash = self.feature().returnhash(**input_dict)
             if uri_hash not in self.element_dict:
                 self.element_dict[uri_hash] = input_dict
@@ -278,12 +256,12 @@ def parse_request(feature_request_uri, feature_name, format_name='xml', method='
     # validating request
     if method == 'POST' and 1 > request.headers['Content-type'].count('xml/text'):
         if not request.body:
-            raise FeatureServiceError(400,'Document Error: No body attached to the POST')
+            raise FeatureServiceError( 400, 'Document Error: No body attached to the POST')
         try:  # parse the resquest
             log.debug('request :%s' % request.body)
             body = etree.fromstring(request.body)
             if body.tag != 'dataset':
-                raise FeatureServiceError(400,'Document Error: Only excepts datasets')
+                raise FeatureServiceError( 400, 'Document Error: Only excepts datasets')
 
 
             # iterating through elements in the dataset parsing and adding to ElementList
@@ -406,18 +384,18 @@ def format_response(resource_list):
     
     if resource_list.feature.cache and not os.path.exists(workdir_filename):  # queries for results in the feature tables
 
-        feature_table = Tables(feature_init)
-        format = resource_list.format(feature_init,request_uri)
-        header = format.return_header(feature_table, resource_list)
-        body = format.return_from_tables(feature_table, resource_list)
+        feature_table = Tables( feature_init)
+        format = resource_list.format( feature_init, request_uri)
+        header = format.return_header( feature_table, resource_list)
+        body = format.return_from_tables( feature_table, resource_list)
         return header, body
 
     else:  #returns unindexed table from the workdir
 
-        uncached_feature_table = WorkDirTable(feature_init)
-        format = resource_list.format(feature_init,request_uri)
-        header = format.return_header(uncached_feature_table, resource_list)
-        body = format.return_from_workdir(uncached_feature_table, resource_list)
+        uncached_feature_table = WorkDirTable( feature_init)
+        format = resource_list.format( feature_init, request_uri)
+        header = format.return_header( uncached_feature_table, resource_list)
+        body = format.return_from_workdir( uncached_feature_table, resource_list)
         return header, body
 
 
@@ -472,7 +450,7 @@ class Xml(Format):
         #element = etree.Element('resource', uri=str(self.feature_request_uri))
         #element = etree.Element('resource')
         nodes = 0
-        xml_doc = '<resource uri = "%s">'%str(self.feature_request_uri)
+        xml_doc = '<resource uri = "%s">'%str(self.feature_request_uri.replace('&','&amp;'))
         yield xml_doc
 
         for i, uri_hash in enumerate(resource_list):
@@ -529,7 +507,7 @@ class Xml(Format):
         
         filename = resource_list.workdir_filename()
         
-        yield '<resource uri = "%s">'%str(self.feature_request_uri)
+        yield '<resource uri = "%s">'%str(self.feature_request_uri.replace('&','&amp;'))
         
         
         
@@ -612,7 +590,7 @@ class Csv(Format):
 
         # creates a title row and writes it to the document
         titles = ",".join(['index', 'feature type'] + resource_names + ['descriptor'] + parameter_names + ['response code','error message'])
-        yield titles
+        yield titles+'\n'
 
         idx = 0
         for i, uri_hash in enumerate(resource_list.uri_hash_list):
@@ -620,7 +598,7 @@ class Csv(Format):
             resource = resource_list[i][1]
 
             rows = table.get(uri_hash)
-
+            
             if rows != None:  # check to see if nothing is return from the tables
 
                 for r in rows:
@@ -629,7 +607,7 @@ class Csv(Format):
                     parameter = []
                     parameter = ['%g'%r[pn] for pn in parameter_names]
                     line = ",".join([str(idx), self.feature.name] + resource_uri + ['"'+value_string+'"'] + parameter + ['200','none'])
-                    yield line
+                    yield line+'\n'
                     idx+=1
 
             else:  # if nothing is return from the tables enter Nan into each vector element
@@ -638,7 +616,7 @@ class Csv(Format):
                 parameter = []
                 parameter = ['Nan' for pn in parameter_names]
                 line = ",".join([str(idx), self.feature.name] + resource_uri + ['"'+value_string+'"']  +  parameter + ['404','The feature was not found in the table. Check feature logs for traceback'])# appends all the row elements
-                yield line
+                yield line+'\n'
                 idx+=1
                 
                      
@@ -648,7 +626,7 @@ class Csv(Format):
             parameter = []
             parameter = ['Nan' for pn in parameter_names]
             line = ",",join([str(idx), self.feature.name] + resource_uri + [value_string]  +  parameter + [error.code,error.message])# appends all the row elements      
-            yield line
+            yield line+'\n'
             idx+=1    
 
     def return_from_workdir(self, table, resource_list, **kw):
@@ -661,7 +639,7 @@ class Csv(Format):
 
         # creates a title row and writes it to the document
         titles = ",".join(['index', 'feature type'] + resource_names + ['descriptor'] + parameter_names + ['response code','error message'])
-        yield titles
+        yield titles+'\n'
 
         with Locks(filename):
             log.debug('Reading from table path: %s'%filename)
@@ -705,32 +683,36 @@ class Hdf(Format):
     content_type = 'application/hdf5'
     
     def return_header(self, table, resource_list, **kw):
-        import ntpath
-        import uuid
-        import hashlib
+
         
         path = resource_list.workdir_filename()
-        self.filename = ntpath.basename(path)
+        filename = ntpath.basename(path)
         uuid.uuid1()
         m = hashlib.md5()
-        m.update(self.filename+uuid.uuid1().hex)
-        filename = m.hexdigest()+'.xml'
+        m.update(filename+uuid.uuid1().hex)
+        self.filename = m.hexdigest()
         try:
-            self.disposition = 'filename="%s"' % self.filename.encode('ascii')
+            self.disposition = 'filename="%s"' % (self.filename+'.h5').encode('ascii')
         except UnicodeEncodeError:
-            self.disposition = 'attachment; filename="%s"; filename*="%s"' % (self.filename.encode('utf8'), self.filename.encode('utf8'))
-
-        header = {
-              'content-type': self.content_type,
-              'Content-Disposition':self.disposition    # sets the file name of the csv file
-        }
-        
+            self.disposition = 'attachment; filename="%s"; filename*="%s"' % ((self.filename+'.h5').encode('utf8'), (self.filename+'.h5').encode('utf8'))
+            
+        if len(resource_list)>0:
+            header = {
+                  'content-type': self.content_type,
+                  'Content-Disposition':self.disposition    # sets the file name of the hdf file
+            }
+            
+        else: #if no resources were found in the resource list
+            header = {
+                  'content-type': 'text/xml',
+            }
+                        
         return header
 
     def return_from_tables(self, table, resource_list, **kw):
         """
-        Returns a newly formed hdf5 table
-        All HDF files are saved in the work dir of the feature service
+            Returns a newly formed hdf5 table
+            All HDF files are saved in the work dir of the feature service
         """
             
         # creating a file name
@@ -755,8 +737,9 @@ class Hdf(Format):
                     response_table.append([row])
                 response_table.flush()
         
-        workdir_feature_table.create_h5_file( path, func)
-
+        if len(resource_list)>0: #no table will be created it their are no elements
+            workdir_feature_table.create_h5_file( path, func)
+        
         return self.return_from_workdir(workdir_feature_table,resource_list)
 
 
@@ -769,63 +752,55 @@ class Hdf(Format):
         # returned
         path = resource_list.workdir_filename() #path
         
-#        #write the error table to the h5 table
-#        def func(h5file):
-#            response_table = h5file.root.errors
-#            for i, error in enumerate(resource_list.error_list):
-#                row = ()
-#                for e in self.feature.resource:  # adding input resource uris
-#                    row += tuple([error.resource[e]])
-#                row += tuple([resource_list.feature.name])
-#                row += tuple([error.code])
-#                row += tuple([error.message])
-#                response_table.append([row])
-#            response_table.flush()
-#        table.append_to_table(func)
-        
         #if errors write error response xml
         if len(resource_list.error_list)>0:
             
             if self.filename:
             
-                _mddir(FEATURES_REQUEST_ERRORS_DIR)
+                _mkdir(FEATURES_REQUEST_ERRORS_DIR)
                 
-                error_path = os.path.join(FEATURES_REQUEST_ERRORS_DIR,self.filename)
+                error_path = os.path.join(FEATURES_REQUEST_ERRORS_DIR,self.filename+'.xml')
                 
-                with Lock(None,error_path,failonexist=True):
+                with Locks(None,error_path,failonexist=True) as l:
                     if not l.locked:
-                        log.debug('Already initialized xml file path: %s'%filename)  
+                        log.debug('Already initialized xml file path: %s'%self.filename)  
                     else:              
                         with open(error_path,'w') as f:
                             #read through errors
                             f.write('<resource uri = "%s">'%str(self.feature_request_uri))
                             for i, error in enumerate(resource_list.error_list):
-                                subelement = etree.SubElement(
-                                                                  element, 'feature_error' ,
-                                                                  error.resource,
-                                                                  error_code = str(error.code),
-                                                                  type=str(self.feature.name),
-                                                                  error=error.message
+                                subelement = etree.Element(
+                                  'feature_error' ,
+                                  error.resource,
+                                  error_code = str(error.code),
+                                  type=str(self.feature.name),
+                                  error=error.message
                                 )
-                                f.write(etree.toString(element))
+                                f.write(etree.tostring(subelement))
                             f.write('</resource>')
             else:
                 raise FeatureServiceError(error_code=500, error_message='return_header was not called before return_from_workdir')
             
         
-        #require read lock to stream
-        with Locks(path):
-            pass
-        if not self.content_type or not self.disposition:
-            raise FeatureServiceError(error_code=500, error_message='return_header was not called before return_from_workdir')
+        if len(resource_list)>0 and os.path.exists(path):
+            #require read lock to stream
+            with Locks(path):
+                pass
             
-        body = forward(FileApp(path,
-                       content_type = self.content_type,
-                       content_disposition = self.disposition,
-                       ).cache_control( max_age=60*60*24*7*6)) # 6 weeks
+            if not self.content_type or not self.disposition:
+                raise FeatureServiceError(error_code=500, error_message='return_header was not called before return_from_workdir')
+            request.method = 'GET' #hack to get the forward to work
+            return forward(FileApp(path,
+                           content_type = self.content_type,
+                           content_disposition = self.disposition,
+                           ).cache_control( max_age=60*60*24*7*6)) # 6 weeks
+
+        else: 
+            content = etree.Element('Error', uri = str(self.feature_request_uri), debug_uri = str("%s/features/debug/%s" % (request.host, self.filename)))
+            content.text = "An error occurred in all the resources requested on, check %s/features/debug/%s for more details" % (request.host, self.filename)
+            return etree.tostring(content)
+
             
-        return body
-#        return header,f.read()
 
 #-------------------------------------------------------------
 # Formatters - No Ouptut
@@ -988,6 +963,7 @@ class FeatureDoc():
 
         resource = etree.Element('resource', uri=str(request.url))
         feature = etree.SubElement(resource, 'format', name=str(format.name))
+        
         for key, value in xml_attributes.iteritems():
             attrib = {key:value}
             info = etree.SubElement(feature, 'info', attrib)
@@ -1007,6 +983,7 @@ class featuresController(ServiceController):
         _mkdir(FEATURES_TABLES_FILE_DIR)
         _mkdir(FEATURES_TEMP_IMAGE_DIR)
         _mkdir(FEATURES_REQUEST_ERRORS_DIR)
+        
         log.debug('importing features')
         self.docs = FeatureDoc()
 
@@ -1021,11 +998,11 @@ class featuresController(ServiceController):
         """
         # documentation
         log.info('%s : %s'%(request.method,request.url))
+
         if not args and request.method =='GET':
             body = self.docs.feature_server()  #print documentation
             header = {'content-type':'text/xml'}
             log.info('Content Type: %s  Returning Feature List'%(header['content-type'])) 
-        
         elif len(args) == 1 and request.method =='GET' and not kw:
             try:
                 body = self.docs.feature(args[0])
@@ -1042,11 +1019,11 @@ class featuresController(ServiceController):
                 resource_list = parse_request( request.url, args[0], args[1], request.method, **kw)
                 operations( resource_list)
                 header, body = format_response( resource_list)
-                log.info('Content Type: %s  Returning Feature: %s'%(header['content-type'],args[0]))
+                log.info( 'Content Type: %s  Returning Feature: %s'%(header['content-type'],args[0]))
                 
             except FeatureServiceError as e:
                 log.error('Error Code: %s - Error Message: %s'%(e.error_code,e.error_message))
-                abort(e.error_code, e.error_message)
+                abort( e.error_code, e.error_message)
 
         else:
             log.error('Malformed Request: Not a valid features request')
@@ -1082,6 +1059,7 @@ class featuresController(ServiceController):
                 
             response.headers.update(header)
             return body
+        
         else:
             log.error('Malformed Request: Not a valid features request only excepts GET method')
             abort(400, 'Malformed Request: Not a valid features request only excepts GET method')         
@@ -1106,29 +1084,39 @@ class featuresController(ServiceController):
     def debug(self, id):
         """
             returns status of failed requests
+            
+            id - a hash of the h5 file stored in the work dir and uuid base on time.
+            This id is returned as the name of the h5 file. If no errors occured during
+            the request no file is stored in the request_errors dir and a standard output
+            is returned
         """
-        #check dir
-        path = os.path.join(FEATURES_REQUEST_ERRORS_DIR,id)
-        if os.path.exists(path):
-            #if there return the xml file
-            try:
-                disposition = 'filename="%s"' % id.encode('ascii')
-            except UnicodeEncodeError:
-                disposition = 'attachment; filename="%s"; filename*="%s"' % (id.encode('utf8'), id.encode('utf8'))
-
-            with Locks( path) as l:
-                pass
-            return forward(FileApp(path,
-                           content_type = 'text/xml',
-                           content_disposition = disposition,
-            ).cache_control( max_age=60*60*24*7*6)) # 6 weeks
-         
-        else:    
-            #else returns no errors in the calculation
-            return '<resource>Did not find an error file<resource/>'
+        log.info('%s : %s'%(request.method,request.url))
+        if request.method == 'GET':
+            #check dir
+            path = os.path.join(FEATURES_REQUEST_ERRORS_DIR,id+'.xml')
+            if os.path.exists(path):
+                #if there return the xml file
+                with Locks( path) as l:
+                    pass
+                
+                header = {'content-type':'text/xml'}
+                response.headers.update(header)
+                return forward(FileApp(path,
+                               content_type = 'text/xml',
+                ).cache_control( max_age=60*60*24*7*6)) # 6 weeks
+             
+            else:    
+                #else returns no errors in the calculation
+                header = {'content-type':'text/xml'}
+                response.headers.update(header)
+                return '<resource>Did not find an error file</resource>'
+            
+        else:
+            log.error('Malformed Request: Not a valid features request only excepts GET method')
+            abort(400, 'Malformed Request: Not a valid features request only excepts GET method') 
 
 #######################################################################
-# ## Initializing Service
+### Initializing Service
 #######################################################################
 
 def initialize(uri):

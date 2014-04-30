@@ -354,7 +354,6 @@ class FeatureBase(object):
         command, body = self.make_POST_request(response_type)
         headers = TestGlobals.SESSION.c.prepare_headers({'Content-Type':'text/xml', 'Accept':'text/xml'})
         header, content = TestGlobals.SESSION.c.http.request(command, headers = headers, body=body, method = method)
-
         with tempfile.NamedTemporaryFile(dir='Temp', prefix='feature_', delete=False) as f:
             f.write(content)
             path = f.name
