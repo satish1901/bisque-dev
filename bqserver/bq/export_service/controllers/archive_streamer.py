@@ -147,7 +147,8 @@ class ArchiveStreamer():
             file = finfo.copy()
             file['outpath'] = '%s.xml'%file['outpath']
             # need to modify the resource value to point to a local file
-            file['xml'].set('value', os.path.basename(file['xml'].get('value', '')))
+            #file['xml'].set('value', os.path.basename(file['xml'].get('value', '')))
+            file['xml'].set('value', finfo['name'])
             file['content'] = etree.tostring(file['xml'])
             del file['path']
             del file['xml']
