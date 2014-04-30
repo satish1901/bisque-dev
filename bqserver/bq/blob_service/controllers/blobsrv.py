@@ -108,8 +108,8 @@ def transfer_msg(flocal, transfer_t):
     fsize = os.path.getsize (flocal)
     name  = os.path.basename(flocal)
     if transfer_t == 0:
-        return "transferred %s in 0 sec!" % fsize
-    return "{name} transferred {size} in {time} ({speed}/sec)".format(
+        return u"transferred %s in 0 sec!" % fsize
+    return u"{name} transferred {size} in {time} ({speed}/sec)".format(
         name=name, size=sizeof_fmt(fsize),
         time=timedelta(seconds=transfer_t),
         speed = sizeof_fmt(fsize/transfer_t))
@@ -158,7 +158,8 @@ class DriverManager(object):
         return path
 
     def save_blob(self, fileobj, filename, user_name, uniq):
-        filename_safe = filename.encode('ascii', 'xmlcharrefreplace')
+        #filename_safe = filename.encode('ascii', 'xmlcharrefreplace')
+        filename_safe = filename
         if filename_safe[0]=='/':
             return self.save_2store(fileobj, filename_safe, user_name, uniq)
         else:
