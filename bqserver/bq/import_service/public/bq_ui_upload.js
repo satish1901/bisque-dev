@@ -555,7 +555,7 @@ Ext.define('BQ.upload.Item', {
                      ' at '+ speed;
 
         // parse response
-        if (e && e.target && e.target.responseXML) {
+        if (e && e.target && e.target.responseXML && e.target.responseXML.firstChild && e.target.responseXML.firstChild.firstChild) {
             this.resource = BQFactory.createFromXml(e.target.responseXML.firstChild.firstChild);
 
             if (this.resource.uri) {
