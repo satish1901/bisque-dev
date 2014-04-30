@@ -892,7 +892,7 @@ class import_serviceController(ServiceController):
                 if resource is None:
                     resource = etree.Element('resource', name=sanitize_filename (getattr(f, 'filename', '')))
                 files.append(UploadedResource(fileobj=f.file, resource=resource))
-                log.debug ("TRASNFERED %s %s" % (f.filename, etree.tostring(resource)))
+                log.debug ("TRANSFERRED %s %s" % (f.filename, etree.tostring(resource)))
             if pname.endswith('.uploaded'):
                 # Entry point for NGINX upload and insert
                 transfers.pop(pname)

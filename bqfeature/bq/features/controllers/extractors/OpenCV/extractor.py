@@ -3,17 +3,16 @@
 
 No opencv supprot for bisque.
 """
-#import cv2
-#import cv
+import cv2
+import cv
 import logging
 import numpy as np
 from pylons.controllers.util import abort
 from bq.image_service.controllers.locks import Locks
 from bq.features.controllers.Feature import calc_wrapper, ImageImport, rgb2gray #import base class
-#from bq.features.controllers import Feature
+from bq.features.controllers import Feature
 from PIL import Image
 import tables
-
 
 log = logging.getLogger("bq.features")
 
@@ -44,7 +43,7 @@ class BRISK(Feature.BaseFeature):
             angle     = tables.Float32Col(pos=7)
             octave    = tables.Float32Col(pos=8)
             
-        self.Columns 
+        return Columns 
         
     def output_feature_columns(self):
         """
@@ -107,28 +106,6 @@ class BRISK(Feature.BaseFeature):
         
         return descriptors,x,y,response,size,angle,octave
     
-    def outputTable(self,filename):
-        """
-        Output table for hdf output requests and uncached features
-        """
-        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
-        class Columns(tables.IsDescription):
-            image  = tables.StringCol(2000,pos=1)
-            feature_type  = tables.StringCol(20, pos=2)
-            feature   = tables.Col.from_atom(featureAtom, pos=3)
-            x         = tables.Float32Col(pos=4)
-            y         = tables.Float32Col(pos=5)
-            response  = tables.Float32Col(pos=6)
-            size      = tables.Float32Col(pos=7)
-            angle     = tables.Float32Col(pos=8)
-            octave    = tables.Float32Col(pos=9)
-            
-        with Locks(None, filename):
-            with tables.openFile(filename,'a', title=self.name) as h5file: 
-                outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
-                outtable.flush()
-            
-        return
 
 
 class BRISKc(Feature.BaseFeature):
@@ -158,7 +135,7 @@ class BRISKc(Feature.BaseFeature):
             angle     = tables.Float32Col(pos=7)
             octave    = tables.Float32Col(pos=8)
             
-        self.Columns = Columns
+        return Columns
         
     def output_feature_columns(self):
         """
@@ -260,7 +237,7 @@ class ORB(Feature.BaseFeature):
             angle     = tables.Float32Col(pos=7)
             octave    = tables.Float32Col(pos=8)
             
-        self.Columns = Columns
+        return Columns
         
     def output_feature_columns(self):
         """
@@ -323,29 +300,6 @@ class ORB(Feature.BaseFeature):
         
         return descriptors,x,y,response,size,angle,octave
 
-    def outputTable(self,filename):
-        """
-        Output table for hdf output requests and uncached features
-        """
-        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
-        class Columns(tables.IsDescription):
-            image  = tables.StringCol(2000,pos=1)
-            feature_type  = tables.StringCol(20, pos=2)
-            feature   = tables.Col.from_atom(featureAtom, pos=3)
-            x         = tables.Float32Col(pos=4)
-            y         = tables.Float32Col(pos=5)
-            response  = tables.Float32Col(pos=6)
-            size      = tables.Float32Col(pos=7)
-            angle     = tables.Float32Col(pos=8)
-            octave    = tables.Float32Col(pos=9)
-            
-        with Locks(None, filename):
-            with tables.openFile(filename,'a', title=self.name) as h5file: 
-                outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
-                outtable.flush()
-            
-        return
- 
  
 class ORBc(Feature.BaseFeature):
     """
@@ -381,7 +335,7 @@ class ORBc(Feature.BaseFeature):
             angle     = tables.Float32Col(pos=7)
             octave    = tables.Float32Col(pos=8)
             
-        self.Columns = Columns
+        return Columns
         
     def output_feature_columns(self):
         """
@@ -477,7 +431,7 @@ class SIFT(Feature.BaseFeature):
             angle     = tables.Float32Col(pos=7)
             octave    = tables.Float32Col(pos=8)
             
-        self.Columns = Columns
+        return Columns
         
     def output_feature_columns(self):
         """
@@ -676,7 +630,7 @@ class SURF(Feature.BaseFeature):
             direction = tables.Float32Col(pos=7)
             hessian   = tables.Float32Col(pos=8)
             
-        self.Columns = Columns
+        return Columns
         
     def output_feature_columns(self):
         """
