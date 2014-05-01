@@ -199,7 +199,7 @@ class ConverterBase(object):
                 #     return None
 
         # make sure the write of the output file have finished
-        if ofnm is not None: 
+        if ofnm is not None and os.path.exists(ofnm):
             with Locks(ofnm):
                 pass
 
