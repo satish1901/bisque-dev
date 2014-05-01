@@ -66,6 +66,7 @@ from tg.controllers import RestController
 #from paste.fileapp import FileApp
 from bq.util.fileapp import BQFileApp
 from pylons.controllers.util import forward
+from paste.deploy.converters import asbool
 from repoze.what import predicates
 
 from bq.core import  identity
@@ -396,9 +397,10 @@ class BlobServer(RestController, ServiceMixin):
                     resource =  self._store_reference(resource, resource.get('value') )
                 #smokesignal.emit(SIG_NEWBLOB, self.store, path=resource.get('value'), resource_uniq=resource.get ('resource_uniq'))
 
-                self.store.insert_blob_path( path=resource.get('value'),
-                                             resource_name = resource.get('name'),
-                                             resource_uniq = resource.get ('resource_uniq'))
+                if asbool(config.get ('bisque.blob_service.store_paths', True)):
+                    self.store.insert_blob_path( path=resource.get('value'),
+                                                 resource_name = resource.get('name'),
+                                                 resource_uniq = resource.get ('resource_uniq'))
                 return resource
             except DuplicateFile, e:
                 log.warn("Duplicate file. renaming")

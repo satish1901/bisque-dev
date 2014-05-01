@@ -99,6 +99,9 @@ bisque.paths.root  =
 
 
 # Blobservice
+#bisque.blob_service.store_paths = true
+#bisque.blob_service.store_paths.subtransaction = true
+
 # Ordered list of stores .. path is created based on template
 # bisque.blob_service.stores = irods1,s3,local
 bisque.blob_service.stores=local
