@@ -66,9 +66,9 @@ class RunnerException(Exception):
         super( RunnerException, self).__init__(msg)
         self.mex = mex
     def __str__(self):
-        #return "\n".join( [ str (super( RunnerException, self) ) ] +  
+        #return "\n".join( [ str (super( RunnerException, self) ) ] +
         #                  [ "%s: %s" % (k, self.mex[k]) for k in sorted(self.mex.keys() )] )
-        return "%s env=%s" % (super( RunnerException, self).__str__(), self.mex ) 
+        return "%s env=%s" % (super( RunnerException, self).__str__(), self.mex )
 
 
 
@@ -120,7 +120,7 @@ class BaseRunner(object):
 
 
     The engine will launch a subprocess with the following template:
-        
+
       launcher arg1 arg2 arg3 mex=http://somehost/ms/mex/1212 start
 
     The launcher code will strip off the last 2 arguments and
@@ -152,7 +152,7 @@ class BaseRunner(object):
         log.log( level, msg )
 
     ###########################################
-    # Config 
+    # Config
     def read_config (self, **kw):
         """Initial state of a runner.  The module-runtime.cfg is read
         and the relevent runner section is applied.  The environment
@@ -183,7 +183,7 @@ class BaseRunner(object):
         #    setattr(self,k,v)
 
     #########################################################
-    # Helpers 
+    # Helpers
     def create_environments(self,  **kw):
         """Build the set of environments listed by the module config"""
         if isinstance(self.config.environments, basestring):
@@ -201,7 +201,7 @@ class BaseRunner(object):
 
     def process_config(self, **kw):
         """Configuration occurs in several passes.
-        1.  read config file and associated runtime section 
+        1.  read config file and associated runtime section
              create environments
         2.   Process the config values converting types
         """
@@ -247,15 +247,15 @@ class BaseRunner(object):
         #self.executable.extend (arguments)
 
         topmex = AttrDict(self.config)
-        topmex.update(dict(named_args={}, 
-                           executable=list(executable), 
+        topmex.update(dict(named_args={},
+                           executable=list(executable),
 #                           arguments = [],
                            mex_url = self.mex_tree is not None and self.mex_tree.get('uri') or None,
-                           bisque_token = self.bisque_token, 
+                           bisque_token = self.bisque_token,
                            rundir = self.rundir))
         self.mexes.append(topmex)
 
-        # Pull out command line arguments 
+        # Pull out command line arguments
         self.options, topmex.arguments = self.parser.parse_args(args)
         self.command = topmex.arguments.pop()
         # Scan argument looking for named arguments
@@ -265,36 +265,36 @@ class BaseRunner(object):
                 topmex.named_args[tag] = val
 
 
-        # Pull out arguments from mex 
+        # Pull out arguments from mex
         if self.mex_tree is not None and self.module_tree is not None:
             mexparser = MexParser()
-            mex_inputs  = mexparser.prepare_mex_params(self.module_tree, self.mex_tree)
+            mex_inputs  = mexparser.prepare_inputs(self.module_tree, self.mex_tree)
             module_options = mexparser.prepare_options(self.module_tree, self.mex_tree)
 
-            argument_style = module_options.get('argument_style')
-            if argument_style == 'named':
-                topmex.named_args.update ( [x.split('=') for x in mex_inputs] )
-            topmex.executable.extend(mex_inputs)
+            argument_style = module_options.get('argument_style', 'positional')
+            topmex.named_args.update ( mexparser.prepare_mex_params( mex_inputs ) )
+            topmex.executable.extend(mexparser.prepare_mex_params (mex_inputs, argument_style))
             topmex.rundir = self.rundir
             #topmex.options = module_options
-            
+
             # Create a nested list of  arguments  (in case of submex)
             submexes = self.mex_tree.xpath('/mex/mex')
             for mex in submexes:
-                sub_inputs = mexparser.prepare_mex_params(self.module_tree, mex)
+                sub_inputs = mexparser.prepare_inputs(self.module_tree, mex)
                 submex = AttrDict(self.config)
-                submex.update(dict(named_args=dict(topmex.named_args), 
+                submex.update(dict(named_args=dict(topmex.named_args),
 #                                   arguments =list(topmex.arguments),
                                    executable=list(executable), #+ topmex.arguments,
-                                   mex_url = mex.get('uri'), 
+                                   mex_url = mex.get('uri'),
                                    bisque_token = self.bisque_token,
                                    rundir = self.rundir))
                 #if argument_style == 'named':
                 #    submex.named_args.update ( [x.split('=') for x in sub_inputs] )
-                submex.executable.extend(sub_inputs)
+                submex.named_args.update(mexparser.prepare_mex_params(sub_inputs))
+                submex.executable.extend(mexparser.prepare_mex_params(sub_inputs, argument_style))
                 self.mexes.append(submex)
             # Submex's imply that we are iterated.
-            # We can set up some options here and remove any execution 
+            # We can set up some options here and remove any execution
             # for the top mex.
             topmex.iterables = len(self.mexes) > 1 and mexparser.process_iterables(self.module_tree, self.mex_tree)
             if topmex.iterables:
@@ -343,7 +343,7 @@ class BaseRunner(object):
         if self.mexes[0].iterables:
             if self.session is None:
                 self.session = BQSession().init_mex(self.mexes[0].mex_url, self.mexes[0].bisque_token)
-            # outputs 
+            # outputs
             #   mex_rul
             #   dataset_url
             tags = None
@@ -424,8 +424,8 @@ class CommandRunner(BaseRunner):
         super(CommandRunner, self).read_config (**kw)
         self.log("CommandRunner: read_config")
         self.load_section('command', self.module_cfg) # Runner's name
-        
-    
+
+
     def process_config(self, **kw):
         super(CommandRunner, self).process_config(**kw)
         for mex in self.mexes:
@@ -453,7 +453,7 @@ class CommandRunner(BaseRunner):
 
             self.processes.append(dict( command_line = command_line, logfile = mex.log_name, rundir = rundir, mex=mex))
 
-        # ****NOTE***  
+        # ****NOTE***
         # execone must be in engine_service as otherwise multiprocessing is unable to find it
         # I have no idea why not.
         from bq.engine.controllers.execone import execone
@@ -490,7 +490,7 @@ class CommandRunner(BaseRunner):
             self.session = BQSession().init_mex(self.mexes[0].mex_url, self.mexes[0].bisque_token)
         if self.session.mex.value not in ('FAILED', 'FINISHED'):
             self.session.fail_mex (msg)
-        
+
 
 
 
