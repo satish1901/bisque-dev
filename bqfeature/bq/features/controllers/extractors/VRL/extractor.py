@@ -100,23 +100,47 @@ class mHTD(Feature.BaseFeature):
     calculated and the descriptor is returned. Requires a mask along with the image"""
     length = 48
 
-    def returnhash(self,**resouce):
-        image_uri = resouce['image']
-        mask_uri = resouce['mask']
-        uri_hash = uuid.uuid5(uuid.NAMESPACE_URL, str(image_uri)+str(mask_uri)) #combine the uris into one hash
-        uri_hash = uri_hash.hex
-        return uri_hash
 
-    def columns(self):
+    def cached_columns(self):
         """
-            creates Columns to be initalized by the create table
+            Columns for the cached tables
         """
         featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+
         class Columns(tables.IsDescription):
             idnumber  = tables.StringCol(32,pos=1)
             feature   = tables.Col.from_atom(featureAtom, pos=2)
             label     = tables.Int32Col(pos=3) 
-        self.Columns = Columns
+
+        return Columns
+        
+    def output_feature_columns(self):
+        """
+            Columns for the output table for the feature column
+        """
+        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+
+        class Columns(tables.IsDescription):
+            image   = tables.StringCol(2000,pos=1)
+            mask    = tables.StringCol(2000,pos=2)
+            feature_type  = tables.StringCol(20, pos=3)
+            feature = tables.Col.from_atom(featureAtom, pos=4)
+            label   = tables.Int32Col(pos=5)
+            
+        return Columns
+
+    def output_error_columns(self):
+        """
+            Columns for the output table for the error columns
+        """
+        class Columns(tables.IsDescription):
+            image         = tables.StringCol(2000,pos=1)
+            mask          = tables.StringCol(2000,pos=2)
+            feature_type  = tables.StringCol(20, pos=3)
+            error_code    = tables.Int32Col(pos=4)
+            error_message = tables.StringCol(200,pos=5)
+            
+        return Columns
 
     
     @calc_wrapper  
@@ -141,38 +165,7 @@ class mHTD(Feature.BaseFeature):
                 mask = np.asarray(mask)                    
                 descriptors,labels = extractHTD(im, mask=mask) #calculating descriptor
             
-
         #initalizing rows for the table
         return descriptors, labels  
-
-    def outputTable(self,filename):
-        """
-        output table for hdf output requests and uncached features
-        """
-        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
-        class Columns(tables.IsDescription):
-            image   = tables.StringCol(2000,pos=1)
-            mask    = tables.StringCol(2000,pos=2)
-            feature_type  = tables.StringCol(20, pos=3)
-            feature = tables.Col.from_atom(featureAtom, pos=4)
-            label   = tables.Int32Col(pos=5)
-            
-        with Locks(None, filename):
-            with tables.openFile(filename,'a', title=self.name) as h5file: 
-                outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
-                outtable.flush()
-
-        class Columns(tables.IsDescription):
-            image         = tables.StringCol(2000,pos=1)
-            mask          = tables.StringCol(2000,pos=2)
-            feature_type  = tables.StringCol(20, pos=3)
-            error_code    = tables.Int32Col(pos=4)
-            error_message = tables.StringCol(200,pos=5)
-
-        with Locks(None, filename): 
-            with tables.openFile(filename,'a', title=self.name) as h5file:
-                outtable = h5file.createTable('/', 'errors', Columns, expectedrows=1000000000)
-                outtable.flush()
-            
-        return    
+  
     

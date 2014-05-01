@@ -66,6 +66,7 @@ from tg.controllers import RestController
 #from paste.fileapp import FileApp
 from bq.util.fileapp import BQFileApp
 from pylons.controllers.util import forward
+from paste.deploy.converters import asbool
 from repoze.what import predicates
 
 from bq.core import  identity
@@ -108,8 +109,8 @@ def transfer_msg(flocal, transfer_t):
     fsize = os.path.getsize (flocal)
     name  = os.path.basename(flocal)
     if transfer_t == 0:
-        return "transferred %s in 0 sec!" % fsize
-    return "{name} transferred {size} in {time} ({speed}/sec)".format(
+        return u"transferred %s in 0 sec!" % fsize
+    return u"{name} transferred {size} in {time} ({speed}/sec)".format(
         name=name, size=sizeof_fmt(fsize),
         time=timedelta(seconds=transfer_t),
         speed = sizeof_fmt(fsize/transfer_t))
@@ -158,7 +159,8 @@ class DriverManager(object):
         return path
 
     def save_blob(self, fileobj, filename, user_name, uniq):
-        filename_safe = filename.encode('ascii', 'xmlcharrefreplace')
+        #filename_safe = filename.encode('ascii', 'xmlcharrefreplace')
+        filename_safe = filename
         if filename_safe[0]=='/':
             return self.save_2store(fileobj, filename_safe, user_name, uniq)
         else:
@@ -395,9 +397,10 @@ class BlobServer(RestController, ServiceMixin):
                     resource =  self._store_reference(resource, resource.get('value') )
                 #smokesignal.emit(SIG_NEWBLOB, self.store, path=resource.get('value'), resource_uniq=resource.get ('resource_uniq'))
 
-                self.store.insert_blob_path( path=resource.get('value'),
-                                             resource_name = resource.get('name'),
-                                             resource_uniq = resource.get ('resource_uniq'))
+                if asbool(config.get ('bisque.blob_service.store_paths', True)):
+                    self.store.insert_blob_path( path=resource.get('value'),
+                                                 resource_name = resource.get('name'),
+                                                 resource_uniq = resource.get ('resource_uniq'))
                 return resource
             except DuplicateFile, e:
                 log.warn("Duplicate file. renaming")
@@ -419,9 +422,10 @@ class BlobServer(RestController, ServiceMixin):
         with TransferTimer() as t:
             blob_id, t.path = self.drive_man.save_blob(fileobj, filename, user_name = user_name, uniq=uniq)
 
-
         log.debug ("_store_fileobj %s %s", blob_id, t.path)
-        resource.set('name', os.path.basename(filename))
+        #dima: probably need to update the resource name ???
+        #resource.set('name', os.path.basename(filename))
+        resource.set('name', os.path.basename(t.path))
         resource.set('value', blob_id)
         #resource.set('resource_uniq', uniq)
         return self.create_resource(resource)
@@ -469,9 +473,11 @@ class BlobServer(RestController, ServiceMixin):
 
     def originalFileName(self, ident):
         log.debug ('originalFileName: deprecated %s', ident)
+        fname  = str (ident)
         resource = DBSession.query(Taggable).filter_by (resource_uniq = ident).first()
-        if resource and resource.resource_name != None:
-            fname =  resource.resource_name
+        if resource:
+            if resource.resource_name != None:
+                fname =  resource.resource_name
         log.debug('Blobsrv - original name %s->%s ' , ident, fname)
         return fname
 

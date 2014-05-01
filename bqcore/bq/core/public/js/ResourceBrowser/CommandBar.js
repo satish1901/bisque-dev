@@ -184,7 +184,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
                 tooltip : 'Options',
                 menu : {
                     items : [{
-                        text : 'Include public resources',
+                        text : 'Include published resources',
                         itemId : 'btnWpublic',
                         checked : false,
                         listeners : {
@@ -408,6 +408,8 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
         // dima: choose type of organizer here
         //this.btnOrganizerClickTree(reload);
         this.btnOrganizerClickOriginal(reload);
+        if (this.browser.dataset && this.browser.dataset instanceof BQDataset)
+            return;
         this.btnOrganizerClickFiles(reload);
     },
 

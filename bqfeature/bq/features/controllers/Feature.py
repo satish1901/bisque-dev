@@ -20,7 +20,7 @@ from tg import abort
 from webob import Request
 
 from bq import image_service
-from bq.image_service.controllers.locks import Locks
+#from bq.image_service.controllers.locks import Locks
 from bq.core import identity
 from bq.util import http
 #from bq.features.controllers.service import FeatureServiceError
@@ -35,7 +35,7 @@ def calc_wrapper(func):
         id = self.returnhash(**kw)
 
         results = func(self,**kw) #runs calculation
-        column_count = len(self.Columns.columns)-1 #finds length of columns to determin how to parse
+        column_count = len(self.cached_columns().columns)-1 #finds length of columns to determin how to parse
         if column_count == 1:
             results=tuple([results])
 
@@ -75,8 +75,6 @@ class BaseFeature(object):
     appearing in the description for this feature no description has been provided for this
     feature"""
 
-    version = '0.0.0'
-
     #parent class tag
     child_feature = []
 
@@ -115,11 +113,10 @@ class BaseFeature(object):
     #untested - feature has not been tested in the unittest comparison
     confidence = 'untested'
 
-    def __init__ (self):
+    def __init__ ( self):
         self.path = os.path.join( FEATURES_TABLES_FILE_DIR, self.name)
-        self.columns()
 
-    def localfile(self,hash):
+    def localfile( self, hash):
         """
             returns the path to the table given the hash
         """
@@ -137,66 +134,39 @@ class BaseFeature(object):
         uri_hash = uri_hash.hex
         return uri_hash
 
-
-    def columns(self):
+    def cached_columns(self):
         """
-            creates Columns to be initalized by the create table
+            Columns for the cached tables
         """
-        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+        featureAtom = tables.Atom.from_type( self.feature_format, shape=( self.length ))
 
         class Columns(tables.IsDescription):
             idnumber  = tables.StringCol(32,pos=1)
             feature   = tables.Col.from_atom(featureAtom, pos=2)
-
-        self.Columns = Columns
-
-
-    def createtable(self,filename):
+        return Columns
+        
+    def output_feature_columns(self):
         """
-            Initializes the Feature table returns the column class
+            Columns for the output table for the feature column
         """
-
-        #creating table
-        with Locks(None, filename):
-            with tables.openFile(filename,'a', title=self.name)  as h5file:
-                table = h5file.createTable('/', 'values', self.Columns, expectedrows=1000000000)
-
-                if self.index: #turns on the index
-                    table.cols.idnumber.removeIndex()
-                    table.cols.idnumber.createIndex()
-
-                table.flush()
-        return
-
-
-    def outputTable(self,filename):
-        """
-        Output table for hdf output requests and uncached features
-        """
-        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
+        featureAtom = tables.Atom.from_type( self.feature_format, shape=( self.length))
 
         class Columns(tables.IsDescription):
             image         = tables.StringCol(2000,pos=1)
             feature_type  = tables.StringCol(20, pos=2)
             feature       = tables.Col.from_atom(featureAtom, pos=3)
+        return Columns
 
-        with Locks(None, filename): 
-            with tables.openFile(filename,'a', title=self.name) as h5file:
-                outtable = h5file.createTable('/', 'values', Columns, expectedrows=1000000000)
-                outtable.flush()
-                
+    def output_error_columns(self):
+        """
+            Columns for the output table for the error columns
+        """
         class Columns(tables.IsDescription):
             image         = tables.StringCol(2000,pos=1)
             feature_type  = tables.StringCol(20, pos=2)
             error_code    = tables.Int32Col(pos=3)
             error_message = tables.StringCol(200,pos=4)
-
-        with Locks(None, filename): 
-            with tables.openFile(filename,'a', title=self.name) as h5file:
-                outtable = h5file.createTable('/', 'errors', Columns, expectedrows=1000000000)
-                outtable.flush()
-
-        return
+        return Columns
 
     @calc_wrapper
     def calculate(self, **resource):
@@ -233,7 +203,7 @@ class ImageImport:
                 if not self.path:
                     log.debug('Not found in image_service internally: %s'%uri)
                 else:
-                    return 
+                    return
             except Exception: #Resulting from a 403 in image service, needs to be handled better
                 log.debug('Not found in image_service internally: %s'%uri)
 
@@ -289,7 +259,7 @@ class ImageImport:
 ###############################################################
 
 #needs to be replaced with a HEAD instead of using a GET
-def mex_validation(**resource):
+def mex_validation( **resource):
     """
     Checks the mex of the resource to see if the user has access to all the resources
     """

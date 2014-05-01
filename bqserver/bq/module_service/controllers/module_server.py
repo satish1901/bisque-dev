@@ -554,9 +554,9 @@ class ModuleServer(ServiceController):
         "(re)Load all registered service points "
 
         if name:
-            modules = data_service.query('module', name=name, view='deep')
+            modules = data_service.query('module', name=name, wpublic='1', view='deep')
         else:
-            modules = data_service.query('module', view='deep')
+            modules = data_service.query('module', wpublic='1', view='deep')
         service_list = {}
         for module in modules:
             log.debug ("FOUND module: %s" % (module.get('uri')))

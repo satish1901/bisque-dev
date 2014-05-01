@@ -420,8 +420,8 @@ class EngineModuleResource(BaseController):
 
         self.inputs  = define_tempalte( self.module_xml.xpath('//tag[@name="inputs"]/*') )
         self.outputs = define_tempalte( self.module_xml.xpath('//tag[@name="outputs"]/*') )
-        log.debug(str(self.inputs))
-        log.debug(str(self.outputs))
+        log.debug("Inputs : %s", self.inputs)
+        log.debug("Outputs: %s", self.outputs)
 
 
     @expose()

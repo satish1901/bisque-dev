@@ -175,10 +175,12 @@ class UploadedResource(object):
     filename = None      # The  filename  to be stored with the resource
     fileobj  = None      # The fileobj (if coming from an upload form)
     path     = None      # A path to the file, if already local
+    orig     = None      # original name passed by the uploader
 
-    def __init__(self, resource, fileobj=None ):
+    def __init__(self, resource, fileobj=None, orig=None ):
         self.resource = resource
         self.fileobj = fileobj
+        self.orig = orig or resource.get('name')
 
         # Set the path and filename of the UploadFile
         # A local path will be available in 'value'
@@ -207,7 +209,7 @@ class UploadedResource(object):
         self.close()
 
     def __repr__(self):
-        return 'UploadFile([%s] [%s] [%s] [%s])'%(self.path, self.filename, self.resource, self.fileobj)
+        return 'UploadFile([%s] [%s] [%s] [%s] [%s])'%(self.path, self.filename, self.resource, self.fileobj, self.orig)
 
     #def __str__(self):
     #    return 'UploadFile([%s] [%s])'%(self.filename, etree.tostring(self.resource))
@@ -343,43 +345,18 @@ class import_serviceController(ServiceController):
             else:
                 return self.unTar(filename, folderName)
 
-    # DEPRECATED
-    # def localcopy (self, upload_file, suggested):
-    #     'force a local copy to be created for the uploadfile'
-    #     if upload_file.path:
-    #         return upload_file.path
-    #     if upload_file.fileobj:
-    #         path = os.path.abspath(upload_file.fileobj.name)
-    #         if os.path.isfile (path):
-    #             upload_file.path = path
-    #             return path
-    #         with open(suggested,'wb') as trg:
-    #             shutil.copyfileobj(upload_file.fileobj, trg)
-    #             return suggested
-    #     if upload_file.resource.get('value'):
-    #         path = blob_service.fetch_blob (upload_file.resource.get('value'))
-    #         upload_file.path = path
-    #         return path
-    #     return None
-
-
     def unpackPackagedFile(self, upload_file, preserve_structure=False):
         ''' This method unpacked uploaded file into a proper location '''
-
-        uploadroot = UPLOAD_DIR #config.get('bisque.image_service.upload_dir', data_path('uploads'))
-        upload_dir = '%s/%s'%(uploadroot, str(bq.core.identity.get_user().name)) # .user_name
-        filename   = sanitize_filename(upload_file.filename)
-        filepath   = '%s/%s.%s'%(upload_dir, strftime('%Y%m%d%H%M%S'), filename)
-        unpack_dir = '%s/%s.%s.UNPACKED'%( upload_dir, strftime('%Y%m%d%H%M%S'), filename )
-        _mkdir (unpack_dir)
-
-#        log.debug('unpackPackagedFile ::::: uploadroot\n %s'% uploadroot )
-#        log.debug('unpackPackagedFile ::::: upload_dir\n %s'% upload_dir )
-#        log.debug('unpackPackagedFile ::::: filepath\n %s'% filepath )
-#        log.debug('unpackPackagedFile ::::: unpack_dir\n %s'% unpack_dir )
-
-        #filepath = self.localcopy(upload_file, filepath)
+        # need to unpack into a local temp dir and then insert into blob storage (which later may go up to irods or s3)
         filepath = blob_service.localpath (upload_file.resource.get('resource_uniq'))
+        #unpack_dir = '%s.UNPACKED'%( filepath ) # dima: can be optimized writing directly into output
+        unpack_dir = os.path.join(UPLOAD_DIR, bq.core.identity.get_user().name, upload_file.resource.get('resource_uniq'))
+        unpack_dir = os.path.join(unpack_dir, '%s.UNPACKED'%os.path.basename(filepath)).replace('\\', '/')
+        _mkdir (unpack_dir)
+        
+        log.debug('unpackPackagedFile, filepath: [%s]', filepath )
+        log.debug('unpackPackagedFile, unpack_dir: [%s]', unpack_dir )
+        
         # unpack the contents of the packaged file
         try:
             members = self.unPack(filepath, unpack_dir, preserve_structure)
@@ -396,19 +373,9 @@ class import_serviceController(ServiceController):
     def process5Dimage(self, upload_file, **kw):
         self.check_imgcnv()
         unpack_dir, members = self.unpackPackagedFile(upload_file)
-
-        uploadroot = UPLOAD_DIR #config.get('bisque.image_service.upload_dir', data_path('uploads'))
-        upload_dir = '%s/%s'%(uploadroot, str(bq.core.identity.get_user().name)) # .user_name
-        filename   = sanitize_filename(upload_file.filename)
-        #combined_filename = '%s.%s.ome.tif'%(strftime('%Y%m%d%H%M%S'), filename)
-        combined_filename = '%s.ome.tif'%(os.path.splitext(os.path.basename(filename))[0])
-        combined_filepath = '%s/%s'%(upload_dir, combined_filename)
-
-#        log.debug('process5Dimage ::::: uploadroot\n %s'% uploadroot )
-#        log.debug('process5Dimage ::::: upload_dir\n %s'% upload_dir )
-#        log.debug('process5Dimage ::::: combined_filename\n %s'% combined_filename )
-#        log.debug('process5Dimage ::::: combined_filepath\n %s'% combined_filepath )
-#        log.debug('process5Dimage ::::: args:\n %s'% kw )
+        output_dir = os.path.dirname(unpack_dir)
+        combined_filename = '%s.ome.tif'%os.path.basename(blob_service.localpath (upload_file.resource.get('resource_uniq')))
+        combined_filepath = os.path.join(output_dir, combined_filename).replace('\\', '/')
 
         num_pages = len(members)
         z=None; t=None
@@ -419,7 +386,6 @@ class import_serviceController(ServiceController):
 
         # combine unpacked files into a multipage image file
         self.assemble5DImage(unpack_dir, members, combined_filepath, z=z, t=t, **kw)
-
         return unpack_dir, combined_filepath
 
     # dima - add a better sorting algorithm for sorting based on alphanumeric blocks
@@ -443,7 +409,11 @@ class import_serviceController(ServiceController):
             extra.extend(['-resolution', '%s,%s,%s,%s'%(params['resolution_x'], params['resolution_y'], params['resolution_z'], params['resolution_t'])])
 
         ifnm = members.pop(0)
+        if os.name == 'nt': 
+            ifnm = ifnm.replace('/', '\\')
+            combined_filepath = combined_filepath.replace('/', '\\')
         for f in members:
+            if os.name == 'nt': f = f.replace('/', '\\')
             extra.extend(['-i', f])
         log.debug('assemble5DImage ========================== extra: \n%s'% extra )
         self.imgcnv.convert(ifnm, combined_filepath, fmt='ome-bigtiff', series=0, extra=extra)
@@ -458,25 +428,27 @@ class import_serviceController(ServiceController):
         ''' This method unpacked uploaded file into a proper location '''
         self.check_bioformats()
 
-        uploadroot = UPLOAD_DIR #config.get('bisque.image_service.upload_dir', data_path('uploads'))
-        upload_dir = '%s/%s'%(uploadroot, str(bq.core.identity.get_user().name)) # .user_name
-        filename   = sanitize_filename(upload_file.filename)
-        filepath   = '%s/%s.%s'%(upload_dir, strftime('%Y%m%d%H%M%S'), filename)
-        unpack_dir = '%s/%s.%s.EXTRACTED'%( upload_dir, strftime('%Y%m%d%H%M%S'), filename )
-        _mkdir (unpack_dir)
-
-        #filepath = self.localcopy(upload_file, filepath)
+        # need to unpack into a local temp dir and then insert into blob storage (which later may go up to irods or s3)
         filepath = blob_service.localpath (upload_file.resource.get('resource_uniq'))
-        members = []
+        #unpack_dir = '%s.EXTRACTED'%( filepath ) # dima: can be optimized writing directly into output
+        unpack_dir = os.path.join(UPLOAD_DIR, bq.core.identity.get_user().name, upload_file.resource.get('resource_uniq'))
+        unpack_dir = os.path.join(unpack_dir, '%s.UNPACKED'%os.path.basename(filepath)).replace('\\', '/')
+        _mkdir (unpack_dir)        
+
+        if os.name == 'nt': 
+            filepath = filepath.replace('/', '\\')
 
         # extract all the series from the file
+        members = []
         info = self.bioformats.info(filepath)
         if len(info)>0:
             if 'image_num_series' in info:
                 n = info['image_num_series']
                 for i in range(n):
                     fn = 'series_%.5d.ome.tif'%i
-                    outfile = '%s/%s'%(unpack_dir, fn)
+                    outfile = os.path.join(unpack_dir, fn)
+                    if os.name == 'nt': 
+                        outfile = outfile.replace('/', '\\')
                     self.bioformats.convertToOmeTiff(ifnm=filepath, ofnm=outfile, series=i)
                     if os.path.exists(outfile) and self.imgcnv.supported(outfile):
                         members.append(fn)
@@ -503,6 +475,9 @@ class import_serviceController(ServiceController):
                 fn = '%s.ome.tif'%m
                 fn_in  = os.path.join(unpack_dir, m)
                 fn_out = os.path.join(unpack_dir, fn)
+                if os.name == 'nt': 
+                    fn_in = fn_in.replace('/', '\\')
+                    fn_out = fn_out.replace('/', '\\')                    
                 self.bioformats.convertToOmeTiff(ifnm=fn_in, ofnm=fn_out)
                 if os.path.exists(fn_out) and self.imgcnv.supported(fn_out):
                     mvd2.append(fn)
@@ -513,90 +488,68 @@ class import_serviceController(ServiceController):
 #------------------------------------------------------------------------------
 # Import archives exported by a BISQUE system
 #------------------------------------------------------------------------------
-    def importBisqueArchive(self, file, tags):
+    def safePath(self, path, base):
+        path = os.path.normpath(path)
+        if path.startswith(os.path.normpath(base)): # on windows normpath changes slashes
+            return path
+        else:
+            return os.path.basename(path)
 
-        #-------------------------------------------------------------------
-        # parsePath : parses a path into hash of directories and a filename
-        #-------------------------------------------------------------------
-        def parsePath(filename):
-            (root, name) = os.path.split(filename)
-            dir = []
-
-            while root:
-                root, nextDir = os.path.split(root)
-                dir = dir + [nextDir]
-
-            dir.reverse()
-            return (dir, name)
-
-        #-----------------------------------------------------------------------------------------
-        # ingestResource : recursively ingests a file hierarchy and returns top most parent's XML
-        #-----------------------------------------------------------------------------------------
-        def ingestResource(fileObj):
-            xml = etree.parse((fileObj.get('XML'))).getroot()
-
-            if fileObj.get('isDataset') is None:
-                if fileObj.get('FILE') is not None:
-                    #fileObjUp = UploadedFile(fileObj.get('FILE'), None, None)
-                    with open(fileObj.get('FILE'), 'rb') as f:
-                        #sanitize_filename(os.path.basename(fileObj.get('FILE'))),
-                        resource =  blob_service.store_blob(resource=xml, fileobj=f)
-                    return resource
-                else:
-                    return data_service.new_resource(resource = xml)
-            else:
-                del fileObj['isDataset']
-                del fileObj['XML']
-
-                # delete value fields from the dataset XML
-                for value in xml.iter('value'):
-                    xml.remove(value)
-
-                # iterate through children of the dataset
-                for member, fhash in fileObj.items():
-                    memberXML = ingestResource(fhash)
-                    value = etree.SubElement(xml, 'value', type='object')
-                    value.text = memberXML.get('uri')
-
-                return data_service.new_resource(resource = xml)
-            return None
-        #---------------------------------------------------------------
-        #---------------------------------------------------------------
-
-        unpack_dir, members = self.unpackPackagedFile(file, preserve_structure=True)
-        # memberHash is a nested hash of directories and info for each file
-        # a/b/t.img -> { 'a' : { 'isDataset': True, 'b' : { 'isDataset': True, t : { 'FILE': 'path-info' },}}}
-        memberHash = {}
-
-        # create a hash that maps flat file structure into a hierarchy
-        for member in members:
-
-            if member == '_bisque.xml':
-                continue
-
-            (dirs, name) = parsePath(member)
-            parent = memberHash
-            for d in dirs:
-                parent[d] = parent.get(d) or {}
-                parent[d]['isDataset'] = True
-                parent = parent[d]
-
-            (fname, ext) = os.path.splitext(name)
-            value = 'XML' if ext.lower() == '.xml' else 'FILE'
-            entry = parent.get(fname) or {}
-            entry[value] = os.path.normpath(os.path.join(unpack_dir, member))
-            parent[fname] = entry
-
+    def parseFile(self, filename, path, relpath):
+        log.debug('parseFile fn: [%s] path: [%s]', filename, path)
+        mpath = self.safePath(os.path.join(path, filename), path)
+        log.debug('parseFile mpath: [%s]', mpath)
+        if not os.path.exists(mpath):
+            return etree.Element ('tag', name=filename)
+        xml = etree.parse(mpath).getroot()
+        bpath = self.safePath(os.path.join(path, os.path.dirname(filename), xml.get('value', '')), path)
+        
+        log.debug('parseFile xml: %s', etree.tostring(xml))
+        
+        # if a resource has a value pointing to a file
+        if xml.get('value') is not None and os.path.exists(bpath) is True:
+            xml.set('name', os.path.join(relpath, os.path.dirname(filename), xml.get('value')).replace('\\', '/'))
+            del xml.attrib['value']
+            return blob_service.store_blob(resource=xml, fileobj=open(bpath, 'rb'))
+        
+        # if a resource is an xml doc
+        elif xml.tag not in ['dataset', 'mex', 'user', 'system', 'module', 'store']:
+            return data_service.new_resource(resource=xml)
+        
+        # dima: if a res is an xml of a system type, store as blob
+        elif xml.tag in ['mex', 'user', 'system', 'module', 'store']:
+            return etree.Element (xml.tag, name=xml.get('name', ''))
+        #    return blob_service.store_blob(resource=xml)
+                
+        # if the resource is a dataset
+        elif xml.tag == 'dataset':
+            members = xml.xpath('/dataset/value')
+            for member in members:
+                r = self.parseFile(member.text, path, relpath)
+                member.text = r.get('uri')
+            return data_service.new_resource(resource=xml)
+    
+    # dima: need to pass relative storage path
+    def importBisqueArchive(self, f, tags):
+        log.debug('importBisqueArchive: %s', f)
+        relpath = os.path.dirname(f.orig)
+        unpack_dir, members = self.unpackPackagedFile(f, preserve_structure=True)
+        
+        # parse .bisque.xml
         resources = []
-
-        # store resources and blobs with proper XML attached
-        for file in memberHash:
-            resources.append(ingestResource(memberHash.get(file)))
+        header = os.path.join(unpack_dir, '.bisque.xml')
+        if os.path.exists(header):
+            xml = etree.parse(header).getroot()
+            members = xml.xpath('value')
+            for m in members:
+                f = self.parseFile(m.text, unpack_dir, relpath)
+                if f is not None:
+                    resources.append(f)
 
         return unpack_dir, resources
 
 
-    def cleanup_packaging(self, unpack_dir, members):
+    def cleanup_packaging(self, unpack_dir):
         "cleanup and packaging details "
         if os.path.isdir(unpack_dir):
             shutil.rmtree (unpack_dir)
@@ -608,43 +561,43 @@ class import_serviceController(ServiceController):
 
     def filter_zip_multifile(self, f, intags):
         unpack_dir, members = self.unpackPackagedFile(f)
-        resources =  self.insert_members([ '%s/%s'%(unpack_dir, m) for m in members ], f)
-        self.cleanup_packaging(unpack_dir, members)
+        resources =  self.insert_members([ '%s/%s'%(unpack_dir, m) for m in members ], f, unpack_dir)
+        self.cleanup_packaging(unpack_dir)
         return resources
 
     def filter_zip_bisque(self, f, intags):
-        unpack_dir, resources =  self.importBisqueArchive(f, intags)
-        self.cleanup_packaging(unpack_dir, [])
+        unpack_dir, resources = self.importBisqueArchive(f, intags)
+        self.cleanup_packaging(unpack_dir)
         return resources
 
     def filter_zip_tstack(self, f, intags):
         unpack_dir, combined = self.process5Dimage(f, number_t=0, **intags)
-        resources =  self.insert_members([combined] , f)
-        self.cleanup_packaging(unpack_dir, [combined])
+        resources =  self.insert_members([combined] , f, unpack_dir)
+        self.cleanup_packaging(unpack_dir)
         return resources
 
     def filter_zip_zstack(self, f, intags):
         unpack_dir, combined = self.process5Dimage(f, number_z=0, **intags)
-        resources =  self.insert_members([combined], f)
-        self.cleanup_packaging(unpack_dir, [combined])
+        resources =  self.insert_members([combined], f, unpack_dir)
+        self.cleanup_packaging(unpack_dir)
         return resources
 
     def filter_5d_image(self, f, intags):
         unpack_dir, combined = self.process5Dimage(f, **intags)
-        resources = self.insert_members([combined], f)
-        self.cleanup_packaging(unpack_dir, [combined])
+        resources = self.insert_members([combined], f, unpack_dir)
+        self.cleanup_packaging(unpack_dir)
         return resources
 
     def filter_series_bioformats(self, f, intags):
         unpack_dir, members = self.extractSeriesBioformats(f)
-        resources = self.insert_members([ '%s/%s'%(unpack_dir, m) for m in members ], f)
-        self.cleanup_packaging(unpack_dir, members)
+        resources = self.insert_members([ '%s/%s'%(unpack_dir, m) for m in members ], f, unpack_dir)
+        self.cleanup_packaging(unpack_dir)
         return resources
 
     def filter_zip_volocity(self, f, intags):
         unpack_dir, members = self.extractSeriesVolocity(f)
-        resources = self.insert_members([ '%s/%s'%(unpack_dir, m) for m in members ], f)
-        self.cleanup_packaging(unpack_dir, members)
+        resources = self.insert_members([ '%s/%s'%(unpack_dir, m) for m in members ], f, unpack_dir)
+        self.cleanup_packaging(unpack_dir)
         return resources
 
 
@@ -672,20 +625,31 @@ class import_serviceController(ServiceController):
         #uf.resource = resource
         return resource
 
-    def insert_members(self, filelist, uf):
+    def insert_members(self, filelist, uf, basepath):
         parent_uri =  uf.resource.get('uri')
+        parent_name =  uf.orig
         # pre-process succeeded
-        log.debug('filter filelist: %s'% filelist )
+        log.debug('uf: %s', uf )
+        log.debug('filter filelist: %s', filelist )
         resources = []
         for fn in filelist:
-            name = os.path.basename(fn)
-            # Construct name based on original name
-            #if uf.filename not in name:
-            #    name = '%s.%s'%(uf.filename, name )
+            basepath = '%s/'%os.path.dirname(basepath)
+            
+            # name may contain a relative upload path, construct based on original name
+            log.debug( 'insert_members, basepath: [%s], parent_name: [%s]', basepath, parent_name )
+            name = os.path.join(os.path.dirname(parent_name), fn.replace(basepath, '')).replace('\\', '/')
+            
+            # dima: not sure about appending file:///, there's some logic in blob to use relative names
+            # also irods paths would have to be different 
             resource = etree.Element ('resource', name=name)
+            #resource = etree.Element ('resource', name=name, value='file:///%s'%fn)
             resource.extend (copy.deepcopy (list (uf.resource)))
             etree.SubElement(resource, 'tag', name="original_upload", value=parent_uri, type='resource' )
+            
+            # dima: instead of moving files, ingest inplace, they are already positioned in the final destination
+            # this would probaby not work for irods ?
             myf = UploadedResource(fileobj=open(fn, 'rb'), resource=resource)
+            #myf = UploadedResource(resource=resource)
             ### NOTE ###
             # could easily use self.process (myf)
             resources.append(self.insert_resource(myf))
@@ -738,7 +702,7 @@ class import_serviceController(ServiceController):
         resource.extend (tags)
         try:
             # call filter on f with ingest tags
-            resources = self.filters[ intags['type'] ](UploadedResource(resource), intags)
+            resources = self.filters[ intags['type'] ](UploadedResource(resource, orig=uf.orig), intags)
         except Exception, e:
             log.exception('Problem in processing file: %s : %s'  % (intags['type'], uf))
             error = 'Problem processing the file: %s'%e
@@ -784,7 +748,7 @@ class import_serviceController(ServiceController):
             index += 1
 
         log.debug('processed resource :::::\n %s'% etree.tostring(dataset) )
-        resource = data_service.new_resource(resource=dataset, view='deep') # dima: possible to request on post???
+        resource = data_service.new_resource(resource=dataset, view='deep')
         log.debug('process created resource :::::\n %s'% etree.tostring(resource) )
         return resource
 
@@ -928,7 +892,7 @@ class import_serviceController(ServiceController):
                 if resource is None:
                     resource = etree.Element('resource', name=sanitize_filename (getattr(f, 'filename', '')))
                 files.append(UploadedResource(fileobj=f.file, resource=resource))
-                log.debug ("TRASNFERED %s %s" % (f.filename, etree.tostring(resource)))
+                log.debug ("TRANSFERRED %s %s" % (f.filename, etree.tostring(resource)))
             if pname.endswith('.uploaded'):
                 # Entry point for NGINX upload and insert
                 transfers.pop(pname)

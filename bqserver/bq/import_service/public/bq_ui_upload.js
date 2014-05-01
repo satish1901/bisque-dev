@@ -75,9 +75,7 @@ if (bq) {
     bq.html5uploads = (window.File && window.FileList); // && window.FileReader); // - safari does not have FileReader...
 };
 
-//Ext.require(['BQ.is.Formats']);
-
-var annotators = {
+BQ.upload.annotators = {
     'application/x-zip-compressed' : 'BQ.upload.ZipAnnotator',
     'application/x-compressed'     : 'BQ.upload.ZipAnnotator',
     'application/x-gzip'           : 'BQ.upload.ZipAnnotator',
@@ -87,54 +85,23 @@ var annotators = {
     'application/x-gtar'           : 'BQ.upload.ZipAnnotator',
 };
 
-var mymime = {
+BQ.upload.mymime = {
     'zip' : 'application/zip',
     'tar' : 'application/x-tar',
     'gz'  : 'application/x-gzip',
     'tgz' : 'application/x-gzip',
 };
 
-var view_resource = '/client_service/view?resource=';
+BQ.upload.view_resource = '/client_service/view?resource=';
 
-//--------------------------------------------------------------------------------------
-// trivial resource renderers - receive a resource and return a string
-//--------------------------------------------------------------------------------------
-/*
-function renderer_resource(r) {
-    return 'Created a resource of type <b>'+r.resource_type+'</b>';
-}
-
-function renderer_image(r) {
-    var s = '';
-    s += 'Created an <b>image</b> with geometry: ';
-    if (r.x) s += 'x: '+r.x+' ';
-    if (r.y) s += 'y: '+r.y+' ';
-    if (r.z) s += 'z: '+r.z+' ';
-    if (r.t) s += 't: '+r.t+' ';
-    if (r.ch) s += 'ch: '+r.ch+' ';
-    return s;
-}
-
-function renderer_dataset(r) {
-    var m = r.getMembers();
-    return 'Created a <b>dataset</b> with '+ m.values.length +' members';
-}
-
-var resource_renderers = { 'image': renderer_image, 'dataset': renderer_dataset };
-
-function render_resource(r) {
-    var f = renderer_resource;
-    if (r.resource_type in resource_renderers)
-        f = resource_renderers[r.resource_type];
-    return f(r);
-}
-*/
 //--------------------------------------------------------------------------------------
 // BQ.upload.Annotator
 // a base component for acquiring required annotations about a file being uploaded
 // derived classes only need to provide the proper items list to create a form
 // all elements of the form will be dynamically queried and added to the dictionary
 // emmited in the "done" event
+// Events:
+//   done
 //--------------------------------------------------------------------------------------
 
 Ext.define('BQ.upload.Annotator', {
@@ -150,14 +117,6 @@ Ext.define('BQ.upload.Annotator', {
         labelAlign: 'right',
         labelWidth: 200,
         anchor: '100%',
-    },
-
-    constructor: function(config) {
-        this.addEvents({
-            'done' : true,
-        });
-        this.callParent(arguments);
-        return this;
     },
 
     onOk: function(e) {
@@ -182,27 +141,32 @@ Ext.define('BQ.upload.Annotator', {
 // a specification for requesting additional annotations about the ZIP file
 //--------------------------------------------------------------------------------------
 
+BQ.upload.Annotator.TYPES = {
+    'zip-bisque':      "BisQue archive (upload and insert BisQue package)",
+    'zip':             "just a compressed file (upload without unpacking)",
+    'zip-multi-file':  "several unrelated images (unpack and insert each file individually)",
+    'zip-time-series': "one time-series composed by a set of files (unpack and compose)",
+    'zip-z-stack':     "one z-stack composed by a set of files (unpack and compose)",
+    'zip-5d-image':    "one 5-D image composed by a set of files (unpack and compose)",
+    'zip-volocity':    "Volocity (*.mvd2) image (unpack and insert)",
+};
+
 Ext.define('BQ.upload.ZipAnnotator', {
     extend: 'BQ.upload.Annotator',
     alias: 'widget.uploadzipannotator',
 
     initComponent : function() {
 
-        var types = Ext.create('Ext.data.Store', {
+        var types_data = [];
+        for (var t in BQ.upload.Annotator.TYPES)
+            types_data.push({ 'type': t, 'description': BQ.upload.Annotator.TYPES[t], });
+        this.store_types = Ext.create('Ext.data.Store', {
             fields: ['type', 'description'],
-            data : [
-                {"type":"zip-bisque",      "description":"BISQUE archive"},
-                {"type":"zip",             "description":"upload as-is: compressed file"},
-                {"type":"zip-multi-file",  "description":"multiple unrelated images"},
-                {"type":"zip-time-series", "description":"multiple files composing one time-series image"},
-                {"type":"zip-z-stack",     "description":"multiple files composing one z-stack"},
-                {"type":"zip-5d-image",    "description":"multiple files composing one 5-D image"},
-                {"type":"zip-volocity",    "description":"Volocity (*.mvd2) images"},
-            ]
+            data : types_data,
         });
 
-        var description = 'The import of compressed file "<b>'+this.file.name+'</b>" is ambiguous, we need some additional information. '+
-                          'See "help" for information about compressed file structure...';
+        var description = 'Please, tell us how to import compressed file "<b>'+this.file.name+'</b>". '+
+                          'See "help" for more information.';
 
         var resolution_question = 'It would also be very nice if you could provide pixel resolution, '+
             'although it\'s optional:';
@@ -214,8 +178,8 @@ Ext.define('BQ.upload.ZipAnnotator', {
             },{
                 xtype: 'combobox',
                 name: 'type',
-                fieldLabel: 'My compressed file contains',
-                store: types,
+                fieldLabel: 'My compressed file is ',
+                store: this.store_types,
                 allowBlank: false,
                 editable: false,
                 queryMode: 'local',
@@ -282,7 +246,7 @@ Ext.define('BQ.upload.ZipAnnotator', {
             }];
 
         this.buttons = [{
-            text: 'Ok',
+            text: 'OK',
             formBind: true,
             handler: Ext.Function.bind( this.onOk, this ),
         }];
@@ -300,23 +264,29 @@ Ext.define('BQ.upload.ZipAnnotator', {
             'zip-z-stack'    : {'resolution_title':null, 'resolution_x':null, 'resolution_y':null, 'resolution_z':null},
             'zip-5d-image'   : {'number_z':null, 'number_t':null, 'resolution_title':null,
                                 'resolution_x':null, 'resolution_y':null, 'resolution_z':null, 'resolution_t':null},
+            'zip'            : {},
             'zip-volocity'   : {},
             'zip-bisque'     : {},
         };
 
         // the default state is false
+        var numfileds = 0;
         var form = this.getForm();
         for (var i in togglable_fileds) {
             var e = my_types[records[0].data.type];
             var f = form.findField(i);
             if (!f) continue;
 
-            if (i in e)
+            if (i in e) {
                 f.setVisible(true);
-            else
+                ++numfileds;
+            } else
                 f.setVisible(false);
         }
-
+        if (numfileds === 0) {
+            var me = this;
+            setTimeout(function(){ me.onOk(); }, 10);
+        }
     },
 
 });
@@ -326,6 +296,10 @@ Ext.define('BQ.upload.ZipAnnotator', {
 //--------------------------------------------------------------------------------------
 // BQ.ui.UploadItem
 // item manages one file upload aspects, UI, progress and intentiates the actual uploader
+// Events:
+//   fileuploaded
+//   filecanceled
+//   fileerror
 //--------------------------------------------------------------------------------------
 
 var formatFileSize = function (sz) {
@@ -350,17 +324,7 @@ Ext.define('BQ.upload.Item', {
     defaults: {
         border: 0,
         height_normal: 90,
-        hysteresis: 100,
-    }, // hysteresis in ms
-
-    constructor: function(config) {
-        /*this.addEvents({
-            'fileuploaded' : true,
-            'filecanceled' : true,
-            'fileerror'    : true,
-        });*/
-        this.callParent(arguments);
-        return this;
+        hysteresis: 100, // hysteresis in ms
     },
 
     initComponent : function() {
@@ -374,7 +338,7 @@ Ext.define('BQ.upload.Item', {
 
         var fn = this.file.relativePath || this.file.webkitRelativePath || this.file.name || this.file.fileName;
         this.fileName = Ext.create('Ext.toolbar.TextItem', {
-            text: fn,
+            text: '<b>'+fn+'</b>',
             cls: 'title',
             indent: true,
         });
@@ -389,6 +353,7 @@ Ext.define('BQ.upload.Item', {
         }
 
         this.fileSize = Ext.create('Ext.toolbar.TextItem', {
+            itemId: 'label_size',
             cls: 'info',
             text: s,
             indent: true,
@@ -423,16 +388,16 @@ Ext.define('BQ.upload.Item', {
         // try to safeguard this issue using the extension
         var file_type = this.file.type;
         var ext = this.file.name.split('.').reverse()[0];
-        if (ext in mymime)
-            file_type = mymime[ext];
+        if (ext in BQ.upload.mymime)
+            file_type = BQ.upload.mymime[ext];
 
         this.annotator = undefined;
-        if (file_type in annotators) {
+        if (file_type in BQ.upload.annotators) {
             this.state = BQ.upload.Item.STATES.ANNOTATING;
             this.progress.setVisible(false);
             this.fileName.setVisible(false);
             this.fileSize.setVisible(false);
-            this.annotator = Ext.create(annotators[file_type], {
+            this.annotator = Ext.create(BQ.upload.annotators[file_type], {
                 file: this.file,
                 listeners: {
                     done: this.onAnnotated,
@@ -590,13 +555,13 @@ Ext.define('BQ.upload.Item', {
                      ' at '+ speed;
 
         // parse response
-        if (e && e.target && e.target.responseXML) {
+        if (e && e.target && e.target.responseXML && e.target.responseXML.firstChild && e.target.responseXML.firstChild.firstChild) {
             this.resource = BQFactory.createFromXml(e.target.responseXML.firstChild.firstChild);
 
             if (this.resource.uri) {
                 // image inserted correctly
                 this.state = BQ.upload.Item.STATES.DONE;
-                var s = 'Uploaded <a href="'+view_resource+this.resource.uri+'">'+this.file.name+'</a>'+' as <b>'+this.resource.resource_type+'</b> '+timing;
+                var s = 'Uploaded <a href="'+BQ.upload.view_resource+this.resource.uri+'">'+this.file.name+'</a>'+' as <b>'+this.resource.resource_type+'</b> '+timing;
                 this.fileName.setText(s);
             } else { // error returned in an XML doc
                 var d = this.resource.toDict();
@@ -672,6 +637,8 @@ Ext.define('BQ.upload.Item', {
         this.fileName.setVisible(true);
         this.fileSize.setVisible(true);
         this.annotation_dict = ann;
+        var s = this.fileName.text+' - '+BQ.upload.Annotator.TYPES[ann.type];
+        this.fileName.setText(s);
     },
 
 });
@@ -709,6 +676,14 @@ BQ.upload.Item.PERMISSIONS_STRINGS = {
 //--------------------------------------------------------------------------------------
 // BQ.upload.Panel
 // upload manages items and all other UI aspects like drag and drop
+// Events:
+//    fileuploaded
+//    filesuploaded
+//    datasetcreated
+//    filecanceled
+//    filescanceled
+//    fileadded
+//    fileerror
 //--------------------------------------------------------------------------------------
 
 BQ.upload.UPLOAD_STRING = 'Uploading';
@@ -753,20 +728,6 @@ Ext.define('BQ.upload.Panel', {
     autoScroll: true,
     layout: 'fit',
     defaults: BQ.upload.DEFAULTS,
-
-    constructor: function(config) {
-        /*this.addEvents({
-            'fileuploaded'   : true,
-            'filesuploaded'  : true,
-            'datasetcreated' : true,
-            'filecanceled'   : true,
-            'filescanceled'  : true,
-            'fileadded'      : true,
-            'fileerror'      : true,
-        });*/
-        this.callParent(arguments);
-        return this;
-    },
 
     processConfig: function() {
         if (this.maxFiles == 1)
@@ -1450,7 +1411,7 @@ Ext.define('BQ.upload.Panel', {
                 }
             },
             buttons : [{
-                text : 'Ok',
+                text : 'OK',
                 handler : function(cmp, e) {
                     w.close();
                 }
@@ -1469,7 +1430,7 @@ Ext.define('BQ.upload.Panel', {
             border: 0,
             buttonAlign : 'center',
             buttons : [{
-                text : 'Ok',
+                text : 'OK',
                 handler : function(cmp, e) {
                     w.close();
                 }
@@ -1635,6 +1596,8 @@ Ext.define('BQ.upload.Panel', {
 //--------------------------------------------------------------------------------------
 // BQ.upload.Dialog
 // Instantiates upload panel in a modal window
+// Events:
+//   uploaded
 //--------------------------------------------------------------------------------------
 
 Ext.define('BQ.upload.Dialog', {
@@ -1647,11 +1610,6 @@ Ext.define('BQ.upload.Dialog', {
     height : '85%',
 
     constructor : function(config) {
-
-        this.addEvents({
-            'uploaded'   : true,
-        });
-
         var uploader_config = {
             border: 0,
             flex:2,

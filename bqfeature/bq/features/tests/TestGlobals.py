@@ -134,7 +134,7 @@ def upload_achive_file( path):
         upload bisque archive files
     """
     filename = ntpath.basename(path)
-    resource = etree.Element('resource', image = filename)
+    resource = etree.Element('resource', name = filename)
     tag = etree.SubElement(resource,'tag', name = 'ingest')
     etree.SubElement(tag,'tag', name = 'type', value = 'zip-bisque')
     r = save_blob(SESSION,  path, resource = resource)
@@ -142,7 +142,7 @@ def upload_achive_file( path):
     return r
 
 
-def return_archive_info( bisque_archive, mask):
+def return_archieve_info( bisque_archive, mask):
     
     
     path = os.path.join( LOCAL_STORE_IMAGES, bisque_archive)
@@ -161,7 +161,7 @@ def return_archive_info( bisque_archive, mask):
     bisque_archive_xml         = SESSION.fetchxml(bisque_archive_data_xml_top.attrib['uri']+'?view=deep')
     polygon_xml                = bisque_archive_xml.xpath('//polygon')
     bisque_archive_polygon     = polygon_xml[0].attrib['uri']
-
+    
     return ({
              'filename'      : bisque_archive,
              'mask_filename' : mask,
@@ -199,9 +199,9 @@ def cleanup_dir():
             
 #importing resources
 RESOURCE_LIST = []
-RESOURCE_LIST.append( return_archive_info( BISQUE_ARCHIVE_1, MASK_1) )
-RESOURCE_LIST.append( return_archive_info( BISQUE_ARCHIVE_2, MASK_2) )
-RESOURCE_LIST.append( return_archive_info( BISQUE_ARCHIVE_3, MASK_3) )
-RESOURCE_LIST.append( return_archive_info( BISQUE_ARCHIVE_4, MASK_4) )
+RESOURCE_LIST.append( return_archieve_info( BISQUE_ARCHIVE_1, MASK_1) )
+RESOURCE_LIST.append( return_archieve_info( BISQUE_ARCHIVE_2, MASK_2) )
+RESOURCE_LIST.append( return_archieve_info( BISQUE_ARCHIVE_3, MASK_3) )
+RESOURCE_LIST.append( return_archieve_info( BISQUE_ARCHIVE_4, MASK_4) )
 
   

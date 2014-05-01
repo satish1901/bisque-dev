@@ -1,10 +1,12 @@
 #
 #
 
-#from model import *
+#from storemodel import *
 
 def init_model(engine):
     """Call me before using any of the tables or classes in the model."""
+
+    DBSession.configure(bind=engine)
 
     #DBSession.configure(bind=engine)
     # If you are using reflection to introspect your database and create
