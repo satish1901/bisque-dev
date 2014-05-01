@@ -31,7 +31,7 @@ def bootstrap(command, conf, vars):
 
     log.info('BEGIN boostrap')
     try:
-        initial_mex = ModuleExecution()
+        initial_mex = ModuleExecution(mex_id = False, owner_id = False)
         initial_mex.mex = initial_mex
         initial_mex.name = "initialization"
         initial_mex.type = "initialization"
