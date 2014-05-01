@@ -818,7 +818,7 @@ Ext.define('BQ.selectors.PixelResolution', {
 
                 value: resource.values[i] ? parseFloat(resource.values[i].value) : 0.0,
                 minValue: 0,
-                maxValue: 33,
+                //maxValue: 33,
                 allowDecimals: true,
                 decimalPrecision: 4,
                 step: 0.01,
@@ -847,10 +847,16 @@ Ext.define('BQ.selectors.PixelResolution', {
             });
 
             this.items.push(this.field_res[i]);
+            this.items.push({
+                xtype: 'tbtext',
+                itemId: 'units'+i,
+                //html:'<label>'+template.units+'</label>',
+                cls: 'units',
+            });
         }
 
-        if (template.units)
-            this.items.push({ xtype: 'container', html:'<label>'+template.units+'</label>', cls: 'units', });
+        //if (template.units)
+        //    this.items.push({ xtype: 'container', html:'<label>'+template.units+'</label>', cls: 'units', });
 
         this.callParent();
     },
@@ -881,13 +887,17 @@ Ext.define('BQ.selectors.PixelResolution', {
         if (this.selected_value)
             this.selected_value = undefined;
         else
-            for (var i=0; i<4; i++)
-                this.field_res[i].setValue( phys.pixel_size[i] );
+        for (var i=0; i<4; i++) {
+            this.field_res[i].setValue( phys.pixel_size[i] );
+            this.queryById('units'+i).setText(phys.pixel_units[i]);
+        }
 
-        if (phys.t>1)
+        if (phys.t>1) {
             this.field_res[3].setVisible(true);
-        else {
+            this.queryById('units3').setVisible(true);
+        } else {
             this.field_res[3].setVisible(false);
+            this.queryById('units3').setVisible(false);
             resource.values[3] = new BQValue ('number', 1.0, 3);
         }
     },
@@ -1339,10 +1349,10 @@ Ext.define('BQ.selectors.Number', {
 
     isValid: function() {
         var valid = true;
-        if (!this.multivalue && !this.resource.value) valid = false;
+        if (!this.multivalue && (this.resource.value===undefined || this.resource.value===null)) valid = false;
         if (this.multivalue)
             for (var i=0; (v=this.resource.values[i]); i++)
-                valid = valid && v.value;
+                valid = valid && v.value!==undefined && v.value!==null;
 
         if (!valid) {
             var template = this.resource.template || {};

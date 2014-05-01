@@ -50,7 +50,7 @@ DESCRIPTION
 ===========
 
  Base engine adaptor for common code
- 
+
 """
 import copy
 import logging
@@ -118,7 +118,7 @@ class MexParser(object):
                 else:
                     log.warn ('missing input for parameter %s' % mi.get('value'))
 
-        # Add the index 
+        # Add the index
         for i, node in enumerate(input_nodes):
             if 'index' in node.keys():
                 continue
@@ -127,7 +127,7 @@ class MexParser(object):
         input_nodes.sort (lambda n1,n2: cmp(int(n1.get('index')), int(n2.get('index'))))
         return input_nodes
 
-    
+
     def prepare_outputs (self, module, mex):
         '''Scan the module definition and the mex and match output
         parameters creating a list in the proper order
@@ -166,31 +166,28 @@ class MexParser(object):
         log.debug("options=%s" % options)
         return options
 
-        
-    def prepare_mex_params(self, module, mex):
-        'Create list of params based on execution options: named or positional'
-        input_nodes = self.prepare_inputs(module=module, mex=mex)
-        options     = self.prepare_options (module=module, mex=mex)
-        arguments = options.get("argument_style", None)
-        if arguments is not None and arguments == 'named':
+
+    def prepare_mex_params(self, input_nodes,  style = None ):
+        """Create list of params based on execution : named or positional, or tuples (None)
+        @param inputs:  a etree document of formal_param, actual_param
+        @param style: 'named' return a list formal=actual, None return (formal, actual), else actual
+        """
+        if style is None:
+            params = [ (i.get('name'), i.get('value')) for i in input_nodes]
+        elif style == 'named':
             params = ['%s=%s'%(i.get('name'), i.get('value')) for i in input_nodes]
         else:
             params = [ i.get('value', '') for i in input_nodes ]
         log.debug('\n\nPARAMS : %s'%params)
         return params
 
-    def prepare_submexes(self, module, mex):
-        "Find and return list  of toplevel submex"
-        mexes = mex.xpath('/mex/mex')
-        return [ self.prepare_mex_params(module, mx) for mx in mexes ] 
-
     def process_iterables(self, module, mex):
         """extract iterables from the mex as tuple i.e.  iterable_tag_name, dataset_url
-         (input tagname, value, type) 
+         (input tagname, value, type)
         ('resource_url', 'http://host/dataservice/image/121',  'image')
         """
 
-        #log.debug ('iteraable module = %s' % etree.tostring(module)) 
+        #log.debug ('iteraable module = %s' % etree.tostring(module))
         iterables = []
         mod_iterables = module.xpath('./tag[@name="execute_options"]/tag[@name="iterable"]')
         mex_inputs    = mex.xpath('./tag[@name="inputs"]')[0]

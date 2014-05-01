@@ -87,19 +87,18 @@ BQ.resources.preferred = {
 
 //--------------------------------------------------------------------------------------
 // BQ.Application
+// Events:
+//   signedin
+//   signedout
+//   gotuser
+//   nouser
+//   userListLoaded
 //--------------------------------------------------------------------------------------
 
 Ext.define('BQ.Application', {
     extend: 'Ext.util.Observable',
 
     constructor: function(config) {
-        this.addEvents({
-            "signedin" : true,
-            "signedout" : true,
-            "gotuser" : true,
-            "nouser" : true,
-            "userListLoaded" : true,
-        });
         config = config || {};
         this.callParent();
 

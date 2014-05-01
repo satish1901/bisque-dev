@@ -67,11 +67,12 @@ Ext.define('BQ.Export.Panel', {
             },
             items : [{
                 xtype : 'splitbutton',
+                itemId: 'button_download',
                 text : 'Download',
                 iconCls : 'icon-download',
                 arrowAlign : 'right',
                 menuAlign : 'bl-tl?',
-                compressionType : 'tar',
+                compressionType : 'gzip',
 
                 handler : this.download,
                 scope : this,
@@ -97,14 +98,30 @@ Ext.define('BQ.Export.Panel', {
                         text : 'as BZip2 archive',
                     }, {
                         compressionType : 'zip',
-                        text : 'as (PK)Zip archive',
+                        text : 'as Zip archive',
                     }],
                 }
             }/*, {
                 text : 'Export to Google Docs',
                 disabled : true,
                 iconCls : 'icon-gdocs',
-            }*/]
+            }*/, {
+                xtype: 'checkbox',
+                itemId: 'check_meta',
+                cls: 'checkbox',
+                boxLabel: 'Include annotations',
+                name: 'meta',
+                checked: true,
+            }, {
+                xtype: 'checkbox',
+                itemId: 'check_analysis',
+                cls: 'checkbox',
+                boxLabel: 'Include analysis',
+                name: 'analysis',
+                checked: false,
+                disabled: true,
+                hidden: true,
+            }]
         }];
 
         this.callParent(arguments);
@@ -172,30 +189,49 @@ Ext.define('BQ.Export.Panel', {
             BQ.ui.notification('Nothing to download! Please add files or datasets first...');
             return;
         }
+        var btn = this.queryById('button_download');
+        btn.compressionType = btn.compressionType;
+        btn.setLoading(true);
+        setTimeout(function(){ btn.setLoading(false); }, 3000);
 
         function findAllbyType(type) {
-            var index = 0, list = [];
-
-            while (( index = this.resourceStore.find('type', type, index)) != -1) {
+            var index=0, list=[], store=this.resourceStore;
+            while (( index = store.find('type', type, index)) != -1) {
                 // add quotes to make it work in Safari
-                list.push(this.resourceStore.getAt(index).get('uri'));
-                index++;
+                list.push(store.getAt(index).get('uri'));
+                ++index;
             }
+            return list;
+        }
 
+        function findAllExceptTypes(types) {
+            var index=0, list=[], store=this.resourceStore, r=undefined;
+            while (r = store.getAt(index)) {
+                if (!(r.get('type') in types))
+                    list.push(r.get('uri'));
+                ++index;
+            }
             return list;
         }
 
         Ext.create('Ext.form.Panel', {
             url : '/export/initStream',
             defaultType : 'hiddenfield',
-            method : 'GET',
+            method : 'POST',
             standardSubmit : true,
             items : [{
                 name : 'compressionType',
                 value : btn.compressionType,
             }, {
+                name : 'metadata',
+                value : this.queryById('check_meta').getValue(),
+            }, {
+                name : 'analysis',
+                value : this.queryById('check_analysis').getValue(),
+            }, {
                 name : 'files',
-                value : findAllbyType.call(this, 'image').concat(findAllbyType.call(this, 'file')),
+                //value : findAllbyType.call(this, 'image').concat(findAllbyType.call(this, 'file')),
+                value : findAllExceptTypes.call(this, {'dataset': null, 'dir':null}),
             }, {
                 name : 'datasets',
                 value : findAllbyType.call(this, 'dataset'),
@@ -206,7 +242,13 @@ Ext.define('BQ.Export.Panel', {
         }).submit();
     },
 
-    exportResponse : function(response) {
+    onDone : function( me, action, eOpts ) {
+        this.setLoading();
+    },
+
+    onError : function( me, action, eOpts ) {
+        this.setLoading();
+        BQ.ui.error('Export error');
     },
 
     selectImage : function(me) {
@@ -269,11 +311,31 @@ Ext.define('BQ.Export.Panel', {
             border : 0,
             listeners : {
                 scope : this,
-                itemdblclick : function(view, record, item, index) {
+                //itemclick : function(view, record, item, index, e) {
+                /*itemcontextmenu : function(view, record, item, index, e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    var uri = record.get('uri');
+                    var browser = Ext.create('Bisque.ResourceBrowser.Dialog', {
+                        'height' : '85%',
+                        'width' :  '85%',
+                        dataset: bq.url('/data_service/mex'),
+                        tagQuery: '%22'+uri+'%22',
+                        listeners: {
+                            scope: this,
+                            Select: this.addToStore,
+                        },
+                    });
+
+
+                    //var newTab = window.open('', "_blank");
+                    //newTab.location = bq.url('/client_service/view?resource=' + record.get('uri'));
+                },*/
+                /*itemclick : function(view, record, item, index, e) {
                     // delegate resource viewing to ResourceView Dispatcher
                     var newTab = window.open('', "_blank");
                     newTab.location = bq.url('/client_service/view?resource=' + record.get('uri'));
-                }
+                },*/
             },
 
             columns : {
@@ -330,7 +392,35 @@ Ext.define('BQ.Export.Panel', {
                     }
                 }, {
                     xtype : 'actioncolumn',
-                    maxWidth : 80,
+                    text: 'Analysis',
+                    maxWidth : 70,
+                    menuDisabled : true,
+                    sortable : false,
+                    align : 'center',
+                    items : [{
+                        icon : bq.url('/js/ResourceTagger/Images/add.png'),
+                        align : 'center',
+                        tooltip : 'Add analysis resutls for this resource',
+                        scope: this,
+                        handler : function(grid, rowIndex, colIndex) {
+                            var record = grid.store.getAt(rowIndex);
+                            var uri = record.get('uri');
+                            var browser = Ext.create('Bisque.ResourceBrowser.Dialog', {
+                                'height' : '85%',
+                                'width' :  '85%',
+                                dataset: bq.url('/data_service/mex'),
+                                tagQuery: '%22'+uri+'%22',
+                                listeners: {
+                                    scope: this,
+                                    Select: this.addToStore,
+                                },
+                            });
+                        }
+                    }]
+                }, {
+                    xtype : 'actioncolumn',
+                    text: 'Remove',
+                    maxWidth : 70,
                     menuDisabled : true,
                     sortable : false,
                     align : 'center',
@@ -341,7 +431,6 @@ Ext.define('BQ.Export.Panel', {
                         handler : function(grid, rowIndex, colIndex) {
                             var name = grid.store.getAt(rowIndex).get('name');
                             grid.store.removeAt(rowIndex);
-                            BQ.ui.message('Export - Remove', 'File ' + name + ' removed!');
                         }
                     }]
                 }],

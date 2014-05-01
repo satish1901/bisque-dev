@@ -25,22 +25,26 @@
     font-size: 14px;
 }
 
+.footer .checkbox {
+    margin-left: 30px;
+}
+
 .thumbnail {
     margin: 0px 10px 0px 10px;
     width: 40px;
     height: 40px;
-    background-image: url('../images/file.png');
+    background-image: url('/js/ResourceBrowser/Images/file.svg');
     background-repeat: no-repeat;
     background-size: contain;
     background-position: center;
 }
 
 .thumbnail.dataset {
-    background-image: url('../images/folder.png');
+    background-image: url('/js/ResourceBrowser/Images/folder.svg');
 }
 
 .thumbnail.dir {
-    background-image: url('../images/folder.png');
+    background-image: url('/js/ResourceBrowser/Images/folder.svg');
 }
 
 .thumbnail.image {

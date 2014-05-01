@@ -20,22 +20,53 @@ Ext.define('BQ.viewer.Movie', {
     extend: 'Ext.container.Container',
     border: 0,
     cls: 'bq-viewer-movie',
+    layout: 'fit',
 
-    update_delay_ms: 250,  // Update the viewer asynchronously
-
-    constructor: function(config) {
-        this.addEvents({
-            'loaded': true,
-            'changed': true,
-        });
-        this.callParent(arguments);
-        return this;
-    },
+    update_delay_ms: 500,  // Update the viewer asynchronously
 
     initComponent : function() {
-        /*this.addListener( 'resize', function(me, width, height) {
-            if (me.viewer) me.viewer.resize();
-        });*/
+        this.items = [{
+            xtype: 'component',
+            itemId: 'player',
+            autoEl: {
+                tag: 'video',
+                cls: 'player',
+            },
+            listeners: {
+                scope: this,
+                stalled: {
+                    element: 'el', //bind to the underlying el property on the panel
+                    fn: function() { this.onworking('Loading movie...'); },
+                },
+                /*loadstart: {
+                    element: 'el', //bind to the underlying el property on the panel
+                    fn: this.onworking, //function() { BQ.ui.message('loadstart'); },
+                },*/
+                loadeddata: {
+                    element: 'el', //bind to the underlying el property on the panel
+                    fn: this.ondone, //function() { BQ.ui.message('loadeddata'); },
+                },
+                error: {
+                    element: 'el', //bind to the underlying el property on the panel
+                    fn: this.onerror, //function() { BQ.ui.message('error'); },
+                },
+            },
+        }, {
+            xtype: 'component',
+            itemId: 'button-menu',
+            autoEl: {
+                tag: 'span',
+                cls: 'viewoptions',
+            },
+            listeners: {
+                scope: this,
+                click: {
+                    element: 'el', //bind to the underlying el property on the panel
+                    fn: this.onMenuClick,
+                },
+            },
+        }];
+        //this.on('resize', this.onResize, this);
         this.callParent();
         this.plug_ins = [ new PlayerSlice(this), new PlayerSize(this), new PlayerDisplay(this), new PlayerFormat(this) ];
     },
@@ -102,16 +133,12 @@ Ext.define('BQ.viewer.Movie', {
     loadPlayer: function() {
         if (this.viewer) return;
 
-        var id = Ext.getVersion('core').isGreaterThan('4.2.0') ? this.getId()+'-innerCt' : this.getId();
-        this.parent = document.getElementById(id);
-        this.viewer = document.createElementNS (xhtmlns, 'video');
-        this.viewer.setAttribute('controls', '');
-        this.viewer.setAttribute('autoplay', '');
-        this.viewer.setAttribute('loop', '');
-        //this.viewer.id="imgviewer_image";
-        //this.viewer.className = "image_viewer_display";
+        this.player = this.queryById('player');
+        this.viewer = this.player.getEl().dom;
+        this.viewer.controls = true;
+        this.viewer.autoplay = true;
+        this.viewer.loop = true;
 
-        // create menu
         this.createViewMenu();
 
         // init plug-ins
@@ -119,21 +146,13 @@ Ext.define('BQ.viewer.Movie', {
         for (var i=0; (plugin=this.plug_ins[i]); i++)
             plugin.init();
 
-        this.viewer.setAttribute('poster', this.constructPreviewUrl());
-
-        this.sourceWEBM = document.createElementNS (xhtmlns, 'source');
-        this.sourceWEBM.setAttribute('src', this.constructMovieUrl('webm'));
-        this.sourceWEBM.setAttribute('type', 'video/webm;codecs="vp8, vorbis"');
-        this.viewer.appendChild(this.sourceWEBM);
-
-        this.sourceH264 = document.createElementNS (xhtmlns, 'source');
-        this.sourceH264.setAttribute('src', this.constructMovieUrl('h264'));
-        this.sourceH264.setAttribute('type', 'video/mp4');
-        this.viewer.appendChild(this.sourceH264);
-
-        this.parent.appendChild(this.viewer);
-
+        this.viewer.poster = this.constructPreviewUrl();
+        this.doUpdate();
         this.fireEvent( 'loaded', this );
+    },
+
+    onResize: function(me, width, height) {
+        if (me.viewer) me.viewer.resize();
     },
 
     constructUrl: function(opts) {
@@ -164,7 +183,7 @@ Ext.define('BQ.viewer.Movie', {
 
     doUpdate: function () {
         this.update_needed = undefined;
-        if (Ext.isChrome() || Ext.isGecko())
+        if (Ext.isChrome || Ext.isGecko || Ext.isOpera)
             this.viewer.src = this.constructMovieUrl('webm');
         else
             this.viewer.src = this.constructMovieUrl('h264');
@@ -183,6 +202,7 @@ Ext.define('BQ.viewer.Movie', {
     },
 
     onworking : function(message) {
+        message = message || 'loading movie...';
         if (this.hasListeners.working)
             this.fireEvent( 'working', message );
         else
@@ -195,6 +215,7 @@ Ext.define('BQ.viewer.Movie', {
     },
 
     onerror : function(error) {
+        error = error.message_short ? error : { message: 'Error loading movie', message_short: 'Error loading movie', };
         this.setLoading(false);
         if (this.hasListeners.error)
             this.fireEvent( 'error', error );
@@ -225,29 +246,17 @@ Ext.define('BQ.viewer.Movie', {
             value: def,
             listeners:{
                 scope: scope,
-                'select': cb,
+                select: cb,
             },
         });
         return combo;
     },
 
     createViewMenu: function() {
-        if (!this.menubutton) {
-            this.menubutton = document.createElement('span');
-
-            // temp fix to work similar to panojs3, will be updated to media queries
-            if (isClientTouch())
-                this.menubutton.className = 'viewoptions touch';
-            else if (isClientPhone())
-                this.menubutton.className = 'viewoptions phone';
-            else
-                this.menubutton.className = 'viewoptions';
-            this.parent.appendChild(this.menubutton);
-        }
-
         if (!this.menu) {
+            var menubutton = this.queryById('button-menu');
             this.menu = Ext.create('Ext.tip.ToolTip', {
-                target: this.menubutton,
+                target: menubutton.getEl(),
                 anchor: 'top',
                 anchorToTarget: true,
                 cls: 'bq-viewer-menu',
@@ -265,8 +274,6 @@ Ext.define('BQ.viewer.Movie', {
                     labelWidth: 200,
                 },
             });
-            var el = Ext.get(this.menubutton);
-            el.on('click', this.onMenuClick, this);
         }
     },
 
@@ -642,10 +649,9 @@ PlayerFormat.prototype.init = function () {
     var z = parseInt(this.player.dims.z);
     var t = parseInt(this.player.dims.t);
     var pages = t * z;
-
     var fps = 30;
-    if (pages < 20) fps = 15;
-    if (pages < 10) fps = 6;
+    if (pages < 30) fps = 15;
+    if (pages < 15) fps = 6;
 
     var index = this.menu.items.findIndex( 'itemId', 'combo_resolution' );
     this.menu.insert(index+1, {

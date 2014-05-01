@@ -177,7 +177,7 @@ class ResponseCache(object):
     def save(self, url, headers, value,user):
         cachename = os.path.join(self.cachepath, self._cache_name(url, user))
         headers = dict ([ (k,v) for k,v in headers.items() if k in self.known_headers])
-        log.debug ('cache write %s to %s' % (url, cachename) )
+        log.debug (u'cache write %s to %s', url, cachename )
         with  open (cachename, 'wb') as f:
             f.write (str (headers))
             f.write ('\n\n')
@@ -187,11 +187,11 @@ class ResponseCache(object):
         #log.debug ('cache fetch %s' % url)
         try:
             cachename = os.path.join(self.cachepath, self._cache_name(url, user))
-            log.debug ('cache check %s', cachename)
+            log.debug (u'cache check %s', cachename)
             if os.path.exists (cachename):
                 with open(cachename) as f:
                     headers, cached = f.read().split ('\n\n', 1)
-                    log.info ('cache fetch serviced %s' % url)
+                    log.info (u'cache fetch serviced %s', url)
                     headers = eval (headers)
                     return headers, cached
         except ValueError,e:

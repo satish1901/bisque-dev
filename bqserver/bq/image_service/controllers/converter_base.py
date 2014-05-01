@@ -180,23 +180,29 @@ class ConverterBase(object):
         if not cls.installed:
             return None
         with Locks(ifnm, ofnm) as l:
-            if not l.locked:
-                return None
-            command = [cls.CONVERTERCOMMAND]
-            command.extend(args)
-            log.debug('Run command: [%s]', command)
-            if ofnm is not None and os.path.exists(ofnm):
-                log.warning ('Run: output exists before command [%s]', ofnm)
-            retcode = call (command)
-            if retcode != 0:
-                log.warning ('Run: returned [%s] for [%s]', retcode, command)
-                return None
-            if ofnm is None:
-                return str(retcode)
-            # tile command does not produce a file with this filename
-#             if not os.path.exists(ofnm):
-#                 log.error ('Run: output does not exist after command [%s]', ofnm)
-#                 return None
+            if l.locked: # the file is not being currently written by another process
+                command = [cls.CONVERTERCOMMAND]
+                command.extend(args)
+                log.debug('Run command: [%s]', command)
+                if ofnm is not None and os.path.exists(ofnm):
+                    log.warning ('Run: output exists before command [%s]', ofnm)
+                retcode = call (command)
+                if retcode != 0:
+                    log.warning ('Run: returned [%s] for [%s]', retcode, command)
+                    return None
+                if ofnm is None:
+                    return str(retcode)
+                # output file does not exist for some operations, like tiles
+                # tile command does not produce a file with this filename
+                # if not os.path.exists(ofnm):
+                #     log.error ('Run: output does not exist after command [%s]', ofnm)
+                #     return None
+
+        # make sure the write of the output file have finished
+        if ofnm is not None and os.path.exists(ofnm):
+            with Locks(ofnm):
+                pass
+
         # safeguard for incorrectly converted files, sometimes only the tiff header can be written
         # empty lock files are automatically removed before by lock code
         if os.path.exists(ofnm) and os.path.getsize(ofnm) < 16:

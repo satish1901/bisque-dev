@@ -240,7 +240,7 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
         if (browserPref != undefined && !this.browserParams.viewMode) {
             this.browserParams.tagQuery = this.browserParams.tagQuery || browserPref["Tag Query"];
             this.layoutKey = parseInt(this.browserParams.layout || Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS[browserPref["Layout"]]);
-            this.browserParams.wpublic = (browserPref["Include Public Resources"] == undefined) ? this.browserParams.wpublic : browserPref["Include Public Resources"];
+            this.browserParams.wpublic = (browserPref["Include published resources"] == undefined) ? this.browserParams.wpublic : browserPref["Include published resources"];
         }
     },
 

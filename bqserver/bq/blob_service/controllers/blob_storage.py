@@ -232,7 +232,7 @@ class LocalStorage(BlobStorage):
         origpath = localpath = url2localpath(filepath)
         fpath,ext = os.path.splitext(origpath)
         _mkdir (os.path.dirname(localpath))
-        for x in xrange(4):
+        for x in xrange(len(uniq)-7):
             if not os.path.exists (localpath):
                 log.debug('local.write: %s -> %s' , filename, localpath)
                 #patch for no copy file uploads - check for regular file or file like object
