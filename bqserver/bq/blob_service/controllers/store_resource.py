@@ -58,6 +58,7 @@ from lxml import etree
 from datetime import datetime
 from datetime import timedelta
 from sqlalchemy.exc import IntegrityError
+from paste.deploy.converters import asbool
 
 import tg
 from tg import expose, flash, config, require, abort
@@ -318,15 +319,19 @@ class StoreServer(TGController):
 
 
     def insert_blob_path(self, path, resource_uniq=None, resource_name=None, **kw):
-        for x in range(8):
-            try:
-                with DBSession.begin_nested():
-                    return self._insert_blob_path_1time (path=path, resource_uniq=resource_uniq,
-                                                     resource_name=resource_name, **kw)
-            except IntegrityError:
-                log.exception ('Integrity Error caught on %s.. retrying %s', x, path)
-        log.error('Could not insert path.. tried too many times')
-        return None
+        if asbool(config.get ('bisque.blob_service.store_paths.subtransaction', True)):
+            for x in range(8):
+                try:
+                    with DBSession.begin_nested():
+                        return self._insert_blob_path_1time (path=path, resource_uniq=resource_uniq,
+                                                             resource_name=resource_name, **kw)
+                except IntegrityError:
+                    log.exception ('Integrity Error caught on %s.. retrying %s', x, path)
+                    log.error('Could not insert path.. tried too many times')
+            return None
+        else:
+            return self._insert_blob_path_1time (path=path, resource_uniq=resource_uniq,
+                                                 resource_name=resource_name, **kw)
 
     def delete_blob_path(self, path):
         """ Delete an element given the blob path
