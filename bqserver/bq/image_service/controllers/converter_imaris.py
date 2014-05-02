@@ -154,13 +154,9 @@ class ConverterImaris(ConverterBase):
         if not self.installed:
             return {}
         log.debug('Meta for: %s', ifnm )
-        with Locks (ifnm):
-            t = tempfile.mkstemp(suffix='.log')
-            logfile = t[1]
-            meta = misc.run_command( [self.CONVERTERCOMMAND, '-i', ifnm, '-m', '-l', logfile] )
-            #with open(metafile, 'r') as f:
-            #    meta = f.read()
-            #os.remove(metafile) # felix suggested error
+        t = tempfile.mkstemp(suffix='.log')
+        logfile = t[1]
+        meta = self.run_read(ifnm, [self.CONVERTERCOMMAND, '-i', ifnm, '-m', '-l', logfile] )
         if meta is None:
             return {}
 

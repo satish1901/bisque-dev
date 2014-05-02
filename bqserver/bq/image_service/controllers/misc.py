@@ -14,6 +14,11 @@ __date__      = "$Date$"
 __copyright__ = "Center for BioImage Informatics, University California, Santa Barbara"
 
 from subprocess import Popen, PIPE
+import os
+import ctypes
+import tempfile
+import hashlib
+import datetime
 
 import logging
 log = logging.getLogger('bq.image_service.misc')
@@ -85,3 +90,58 @@ def run_command(command):
     except:
         log.exception ('Exception during execution [%s]', command )
     return None
+
+def isascii(s):
+    if isinstance(s, str) is True:
+        return True
+    try:
+        s.encode('ascii')
+    except UnicodeEncodeError:
+        return False
+    return True
+
+def hardlink(source, link_name):
+    source = unicode(os.path.normpath(source))
+    link_name = unicode(os.path.normpath(link_name))
+    csl = ctypes.windll.kernel32.CreateHardLinkW
+    if csl(link_name, source, 0) == 0:
+        raise ctypes.WinError()
+
+# dima: We have to do some ugly stuff to get all unicode filenames to work correctly 
+# under windows, although imgcnv and ImarisConvert support unicode filenames
+# bioformats and openslide do not, moreover in python <3 subprocess package 
+# does not support unicode either, thus we decided to rename unicode files
+# prior to operations and rename them back right after, this is a
+# windows only problem!
+if os.name != 'nt':
+    def start_nounicode_win(ifnm, command):
+        return command, None
+    
+    def end_nounicode_win(ifnm, tmp):
+        pass
+
+else:
+    def start_nounicode_win(ifnm, command):
+        if isascii(ifnm):
+            return command, None
+        ext = os.path.splitext(ifnm)[1]
+        uniq = hashlib.md5('%s%s'%(ifnm.encode('ascii', 'xmlcharrefreplace'),datetime.datetime.now())).hexdigest()
+        tmp = '%s\\%s%s'%(os.path.splitdrive(ifnm)[0], uniq, ext) # for the case of files on different drives
+        #tmp = '%s%s'%(uniq, ext) # same drive
+        log.debug('start_nounicode_win hardlink: [%s] -> [%s]', ifnm, tmp)
+        try:
+            hardlink(ifnm, tmp)
+        except ctypes.WinError:
+            return command, None
+        command = [tmp if x==ifnm else x for x in command]
+        return command, tmp
+    
+    def end_nounicode_win(tmp):
+        if tmp is None:
+            return
+        log.debug('end_nounicode_win unlink: [%s]', tmp)
+        try:
+            os.remove(tmp) # gets the system into a dark state of recursion?
+        except OSError:
+            pass
+

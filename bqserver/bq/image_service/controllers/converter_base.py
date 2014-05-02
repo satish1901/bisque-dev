@@ -19,6 +19,7 @@ from subprocess import call
 from bq.util.compat import OrderedDict
 
 from .locks import Locks
+from . import misc
 
 import logging
 log = logging.getLogger('bq.image_service.converter')
@@ -175,6 +176,14 @@ class ConverterBase(object):
     #######################################
 
     @classmethod
+    def run_read(cls, ifnm, command ):
+        with Locks(ifnm):
+            command, tmp = misc.start_nounicode_win(ifnm, command)
+            out = misc.run_command( command )
+            misc.end_nounicode_win(tmp)
+        return out
+
+    @classmethod
     def run(cls, ifnm, ofnm, args ):
         '''converts input filename into output using exact arguments as provided in args'''
         if not cls.installed:
@@ -186,7 +195,9 @@ class ConverterBase(object):
                 log.debug('Run command: [%s]', command)
                 if ofnm is not None and os.path.exists(ofnm):
                     log.warning ('Run: output exists before command [%s]', ofnm)
+                command, tmp = misc.start_nounicode_win(ifnm, command)
                 retcode = call (command)
+                misc.end_nounicode_win(tmp)
                 if retcode != 0:
                     log.warning ('Run: returned [%s] for [%s]', retcode, command)
                     return None

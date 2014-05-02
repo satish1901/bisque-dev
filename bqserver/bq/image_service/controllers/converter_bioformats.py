@@ -165,8 +165,7 @@ class ConverterBioformats(ConverterBase):
         if not os.path.exists(ifnm):
             return {}
         log.debug('Meta for: %s', ifnm )
-        with Locks(ifnm):
-            o = misc.run_command( [self.BFINFO, '-nopix', '-omexml', '-novalid', '-no-upgrade', ifnm] )
+        o = self.run_read(ifnm, [self.BFINFO, '-nopix', '-omexml', '-novalid', '-no-upgrade', ifnm] )
         if o is None:
             return {}
 
@@ -304,10 +303,7 @@ class ConverterBioformats(ConverterBase):
         if not os.path.exists(ifnm):
             return {}
         log.debug('Info for: %s', ifnm )
-        command = [self.BFINFO, '-nopix', '-nometa', '-no-upgrade', ifnm]
-
-        with Locks(ifnm):
-            o = misc.run_command( command )
+        o = self.run_read(ifnm, [self.BFINFO, '-nopix', '-nometa', '-no-upgrade', ifnm] )
         if o is None:
             return {}
 

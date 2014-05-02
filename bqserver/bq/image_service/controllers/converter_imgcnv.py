@@ -132,8 +132,7 @@ class ConverterImgcnv(ConverterBase):
     def supported(self, ifnm):
         '''return True if the input file format is supported'''
         log.debug('Supported for: %s', ifnm )
-        with Locks (ifnm):
-            supported = misc.run_command( [self.CONVERTERCOMMAND, '-supported', '-i', misc.safeencode(ifnm)] )
+        supported = self.run_read(ifnm, [self.CONVERTERCOMMAND, '-supported', '-i', ifnm]) 
         return supported.startswith('yes')
 
 
@@ -147,8 +146,7 @@ class ConverterImgcnv(ConverterBase):
         if not self.installed:
             return {}
 
-        with Locks (ifnm):
-            meta = misc.run_command( [self.CONVERTERCOMMAND, '-meta', '-i', ifnm] )
+        meta = self.run_read(ifnm, [self.CONVERTERCOMMAND, '-meta', '-i', ifnm] )
         if meta is None:
             return {}
         rd = {}
@@ -177,8 +175,7 @@ class ConverterImgcnv(ConverterBase):
         if not os.path.exists(ifnm):
             return {}
 
-        with Locks(ifnm):
-            info = misc.run_command( [self.CONVERTERCOMMAND, '-info', '-i', ifnm] )
+        info = self.run_read(ifnm, [self.CONVERTERCOMMAND, '-info', '-i', ifnm] )
         if info is None:
             return {}
         rd = {}
