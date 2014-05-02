@@ -140,7 +140,7 @@
                 </template>
             </tag>
 
-            <tag name="hide_gobjects_creation" value="label,rectangle,square,ellipse" />
+            <tag name="hide_gobjects_creation" value="" />
 
         </tag>  
     </tag>
