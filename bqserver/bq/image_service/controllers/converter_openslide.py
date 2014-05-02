@@ -134,8 +134,10 @@ class ConverterOpenSlide(ConverterBase):
             if not os.path.exists(ifnm):
                 return {}
             try:
-                slide = openslide.OpenSlide(ifnm)
+                _, tmp = misc.start_nounicode_win(ifnm, [])
+                slide = openslide.OpenSlide(tmp or ifnm)
             except (openslide.OpenSlideUnsupportedFormatError, openslide.OpenSlideError):
+                misc.end_nounicode_win(tmp)
                 return {}
             info = {
                 'format': slide.properties[openslide.PROPERTY_NAME_VENDOR],
@@ -156,6 +158,7 @@ class ConverterOpenSlide(ConverterBase):
                 'pixel_resolution_unit_z': 'microns'
             }
             slide.close()
+            misc.end_nounicode_win(tmp)
             return info
         return {}
 
@@ -169,8 +172,10 @@ class ConverterOpenSlide(ConverterBase):
         log.debug('Meta for: %s', ifnm )
         with Locks (ifnm):
             try:
-                slide = openslide.OpenSlide(ifnm)
+                _, tmp = misc.start_nounicode_win(ifnm, [])
+                slide = openslide.OpenSlide(tmp or ifnm)
             except (openslide.OpenSlideUnsupportedFormatError, openslide.OpenSlideError):
+                misc.end_nounicode_win(tmp)
                 return {}
             rd = {
                 'format': slide.properties[openslide.PROPERTY_NAME_VENDOR],
@@ -202,6 +207,7 @@ class ConverterOpenSlide(ConverterBase):
             for k,v in slide.properties.iteritems():
                 rd['custom/%s'%k.replace('.', '/')] = v
             slide.close()
+            misc.end_nounicode_win(tmp)
         return rd
 
     #######################################
@@ -223,8 +229,10 @@ class ConverterOpenSlide(ConverterBase):
         with Locks (ifnm, ofnm) as l:
             if l.locked: # the file is not being currently written by another process
                 try:
-                    slide = openslide.OpenSlide(ifnm)
+                    _, tmp = misc.start_nounicode_win(ifnm, [])
+                    slide = openslide.OpenSlide(tmp or ifnm)
                 except (openslide.OpenSlideUnsupportedFormatError, openslide.OpenSlideError):
+                    misc.end_nounicode_win(tmp)
                     return None
                 img = slide.get_thumbnail((width, height))
                 try:
@@ -234,6 +242,7 @@ class ConverterOpenSlide(ConverterBase):
                     img.save(tmp, 'TIFF')
                     ConverterImgcnv.thumbnail(tmp, ofnm=ofnm, width=width, height=height)
                 slide.close()
+                misc.end_nounicode_win(tmp)
 
         # make sure the file was written
         with Locks(ofnm):
@@ -256,13 +265,16 @@ class ConverterOpenSlide(ConverterBase):
         with Locks (ifnm, ofnm) as l:
             if l.locked: # the file is not being currently written by another process            
                 try:
-                    slide = openslide.OpenSlide(ifnm)
+                    _, tmp = misc.start_nounicode_win(ifnm, [])
+                    slide = openslide.OpenSlide(tmp or ifnm)                    
                 except (openslide.OpenSlideUnsupportedFormatError, openslide.OpenSlideError):
+                    misc.end_nounicode_win(tmp)
                     return None
                 dz = deepzoom.DeepZoomGenerator(slide, tile_size=sz, overlap=0)
                 img = dz.get_tile(dz.level_count-level-1, (x,y))
                 img.save(ofnm, 'TIFF', compression='LZW')
                 slide.close()
+                misc.end_nounicode_win(tmp)
         
         # make sure the file was written
         with Locks(ofnm):

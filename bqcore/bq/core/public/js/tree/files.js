@@ -269,7 +269,7 @@ Ext.define('BQ.tree.files.Panel', {
             },
             fields : [{
                 name : 'name',
-                mapping : '@resource_unid',
+                mapping : '@name',
             }, {
                 name : 'value',
                 mapping : '@value',
