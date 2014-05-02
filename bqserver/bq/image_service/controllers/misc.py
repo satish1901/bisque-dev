@@ -117,7 +117,7 @@ if os.name != 'nt':
     def start_nounicode_win(ifnm, command):
         return command, None
     
-    def end_nounicode_win(ifnm, tmp):
+    def end_nounicode_win(tmp):
         pass
 
 else:
