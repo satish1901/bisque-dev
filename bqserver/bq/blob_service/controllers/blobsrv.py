@@ -62,7 +62,7 @@ from datetime import timedelta
 
 import tg
 from tg import expose, config, require, abort
-from tg.controllers import RestController
+from tg.controllers import RestController, TGController
 #from paste.fileapp import FileApp
 from bq.util.fileapp import BQFileApp
 from pylons.controllers.util import forward
@@ -199,6 +199,62 @@ class DriverManager(object):
     def __str__(self):
         return "drivers%s" % [ "(%s, %s)" % (k,v) for k,v in self.drivers.items() ]
 
+###########################################################################
+# BlobServer
+###########################################################################
+
+class PathService (TGController):
+    """Manipulate paths in the database
+
+    Service to be used by filesystem agents to move references to files
+    """
+    def __init__(self, blobsrv):
+        super (PathService, self).__init__()
+        self.blobsrv = blobsrv
+
+    @expose(content_type='text/xml')
+    def index(self):
+        "Path service initial page"
+        return "<resource resource_type='Path service'/>"
+
+    @expose(content_type='text/xml')
+    @require(predicates.not_anonymous())
+    def list_path(self, src, *args,  **kwargs):
+        'Find a resource identified by a path'
+        log.info("move() called %s" ,  src)
+        resource = data_service.query(None, resource_value = src)
+        return etree.tostring(resource)
+
+    @expose(content_type='text/xml')
+    @require(predicates.not_anonymous())
+    def insert_path(self, path, resource_type = 'file', *args,  **kwargs):
+        ' Move a resource identified by path  '
+        log.info("insert_path() called %s %s" , path, args)
+        resource = etree.Element(resource_type, value = path)
+        resource = self.blobsrv.store_blob(resource)
+        return etree.tostring(resource)
+
+    @expose(content_type='text/xml')
+    @require(predicates.not_anonymous())
+    def move_path(self, src, dst, *args,  **kwargs):
+        ' Move a resource identified by path  '
+        log.info("move() called %s" , args)
+        resource = data_service.query(None, resource_value = src)
+        for child in resource:
+            child.set('resource_value',  dst)
+            resource = data_service.update(child)
+        return etree.tostring(resource)
+
+    @expose(content_type='text/xml')
+    @require(predicates.not_anonymous())
+    def delete_path(self, path,  **kwargs):
+        ' Delete a resource identified by path  '
+        log.info("delete() called %s" , path)
+        resource = data_service.query(None, resource_value = path)
+        for child in resource:
+            data_service.del_resource(child)
+        return ""
+
 
 
 
@@ -217,6 +273,7 @@ class BlobServer(RestController, ServiceMixin):
         ServiceMixin.__init__(self, url)
         self.drive_man = DriverManager()
         self.__class__.store = store_resource.StoreServer(self.drive_man.drivers)
+        self.__class__.pathsrv  = PathService(self)
 
 #################################
 # service  functions
@@ -318,43 +375,6 @@ class BlobServer(RestController, ServiceMixin):
         return ""
 
 
-    @expose()
-    @require(predicates.not_anonymous())
-    def list_path(self, src, *args,  **kwargs):
-        ' Move a resource identified by path  '
-        log.info("move() called %s" ,  src)
-        resource = data_service.query(None, resource_value = src)
-        return etree.tostring(resource)
-
-    @expose()
-    @require(predicates.not_anonymous())
-    def insert_path(self, path, *args,  **kwargs):
-        ' Move a resource identified by path  '
-        log.info("insert_path() called %s %s" , path, args)
-        resource = etree.Element('file', value = path)
-        resource = self.store_blob(resource)
-        return etree.tostring(resource)
-
-    @expose()
-    @require(predicates.not_anonymous())
-    def move_path(self, src, dst, *args,  **kwargs):
-        ' Move a resource identified by path  '
-        log.info("move() called %s" , args)
-        resource = data_service.query(None, resource_value = src)
-        if resource:
-            resource.set('resource_value',  dst)
-        resource = data_service.update(resource)
-        return etree.tostring(resource)
-
-    @expose()
-    @require(predicates.not_anonymous())
-    def delete_path(self, path,  **kwargs):
-        ' Delete a resource identified by path  '
-        log.info("delete() called %s" , path)
-        resource = data_service.query(None, resource_value = path)
-        for child in resource:
-            data_service.del_resource(child)
-        return ""
 
 
 
