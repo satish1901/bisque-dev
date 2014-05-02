@@ -2,7 +2,7 @@ import shutil
 import os
 import logging
 
-log = logging.getLogger('bq.util')
+log = logging.getLogger('bq.util.mkdir')
 
 def _mkdir(newdir):
     """works the way a good mkdir should :)
@@ -24,4 +24,4 @@ def _mkdir(newdir):
             try:
                 os.mkdir(newdir)
             except OSError, e:
-                log.error ('MKDIR: '+ str(e))
+                log.warn ('mkdir: %s', str(e))
