@@ -967,9 +967,11 @@ PanoJS.prototype.resolveCoordinates = function(e) {
   if (this.maximized)
     return { 'x' : e.clientX, 'y' : e.clientY };
 
+  var x = e.layerX || (e.pageX || (e.clientX + (document.documentElement.scrollLeft || document.body.scrollLeft))) - this.left;
+  var y = e.layerY || (e.pageY || (e.clientY + (document.documentElement.scrollTop || document.body.scrollTop))) - this.top;
   return {
-    'x' : (e.pageX || (e.clientX + (document.documentElement.scrollLeft || document.body.scrollLeft))) - this.left,
-    'y' : (e.pageY || (e.clientY + (document.documentElement.scrollTop || document.body.scrollTop))) - this.top
+    'x' : x,
+    'y' : y,
   };
 };
 
