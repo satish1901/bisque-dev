@@ -157,6 +157,7 @@ Ext.define('BQ.share.Panel', {
         if (this.resource)
             this.url = this.resource.uri+'/auth';
 
+        this.setLoading('Fetching users...');
         this.store_users = Ext.create('Ext.data.Store', {
             model : 'BQ.model.Users',
             autoLoad : true,
@@ -401,6 +402,7 @@ Ext.define('BQ.share.Panel', {
     },
 
     onUsersStoreLoaded: function( store, records, successful, eOpts) {
+        this.setLoading(false);
         this.users_xml = this.store_users.proxy.reader.rawData;
         if (this.resource)
             this.store.load();
