@@ -320,22 +320,31 @@ class preferences (object):
             for el in system.getiterator(tag=etree.Element):
                 el.set ('permission', 'published')
             system = data_service.new_resource(system, view='deep')
+        elif self.args[0].startswith('read'):
+            system = data_service.query('system', view='deep')
+            if len(system):
+                system = system[0]
+            else:
+                system = None
         else:
+            if not os.path.exists(prefs):
+                print "Need %s" % prefs
+                return
             system = etree.parse(prefs).getroot()
             # Esnure all elements are published
             for el in system.getiterator(tag=etree.Element):
                 el.set ('permission', 'published')
             # Read system object
             uri = system.get('uri')
-            if self.args[0].startswith('read'):
-                system = data_service.get_resource(uri, view='deep')
-            elif self.args[0] == 'save':
-                logging.debug ('system = %s' % etree.tostring(system))
-                system = data_service.update_resource(new_resource=system, resource=uri,  view='deep')
+            print  'system = %s' % etree.tostring(system)
+
+            system = data_service.update_resource(new_resource=system, resource=uri,  view='deep')
+            print etree.tostring (system)
         transaction.commit()
-        with open(prefs,'w') as f:
-            f.write(etree.tostring(system, pretty_print=True))
-            print "Wrote %s" % prefs
+        if system is not None:
+            with open(prefs,'w') as f:
+                f.write(etree.tostring(system, pretty_print=True))
+                print "Wrote %s" % prefs
 
 
 class sql(object):
