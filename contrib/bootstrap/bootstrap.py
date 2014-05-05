@@ -48,7 +48,7 @@ def main():
     print "********************************"
     print
     print
-    #subprocess.call(['pip', 'install', '-r', 'requirements.txt'])
+    subprocess.call(['pip', 'install', '-r', 'requirements.txt'])
 
     print "*********************************"
     print "* Execute the following commands*"
