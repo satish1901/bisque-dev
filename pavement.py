@@ -31,8 +31,8 @@ options(
 )
 
 feature_subdirs=['bqfeature' ]
-server_subdirs=['bqdev', 'bqcore', 'bqserver', 'bqengine' ]
-engine_subdirs=['bqdev', 'bqcore', 'bqengine' ]
+server_subdirs=['bqapi', 'bqcore', 'bqserver', 'bqengine' ]
+engine_subdirs=['bqapi', 'bqcore', 'bqengine' ]
 
 all_packages = set (feature_subdirs + server_subdirs + engine_subdirs)
 
