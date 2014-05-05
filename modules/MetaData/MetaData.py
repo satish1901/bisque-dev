@@ -1,6 +1,6 @@
 import sys
 from lxml import etree as ET
-from bq.api import BQSession, BQTag
+from bqapi import BQSession, BQTag
 import logging
 
 

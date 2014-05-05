@@ -7,8 +7,8 @@ import csv
 import logging
 import itertools
 
-from bq.api import BQSession
-from bq.api.util import fetch_image_planes, AttrDict
+from bqapi import BQSession
+from bqapi.util import fetch_image_planes, AttrDict
 
 
 logging.basicConfig(level=logging.DEBUG)

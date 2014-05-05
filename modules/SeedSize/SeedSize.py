@@ -9,8 +9,8 @@ import pickle
 import logging
 import itertools
 
-from bq.api import BQSession
-from bq.api.util import fetch_dataset, fetch_image_pixels, d2xml
+from bqapi import BQSession
+from bqapi.util import fetch_dataset, fetch_image_pixels, d2xml
 
 
 

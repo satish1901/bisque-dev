@@ -96,7 +96,7 @@ all will install everything including the feature service""")
 
 def install_prereqs (options):
     "Ensure required packages are installed"
-     pass
+    pass
 
 def install_postreqs (options):
     "Install or Modify any packages post installation"
