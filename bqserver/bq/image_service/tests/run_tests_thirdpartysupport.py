@@ -64,17 +64,17 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
         self.session = BQSession().init_local(self.user, self.pswd,  bisque_root=self.root, create_mex=False)
 
         # download and upload test images ang get their IDs
-        self.resource_imaris_hela  = self.ensure_bisque_file(image_imaris_hela)
-        self.resource_imaris_r18  = self.ensure_bisque_file(image_imaris_r18)
-        self.resource_zeiss_czi_rat  = self.ensure_bisque_file(image_zeiss_czi_rat)
-        self.resource_zeiss_czi_mouse  = self.ensure_bisque_file(image_zeiss_czi_mouse)
-        self.resource_nikon_nd2  = self.ensure_bisque_file(image_nikon_nd2)
+        self.resource_imaris_hela       = self.ensure_bisque_file(image_imaris_hela)
+        self.resource_imaris_r18        = self.ensure_bisque_file(image_imaris_r18)
+        self.resource_zeiss_czi_rat     = self.ensure_bisque_file(image_zeiss_czi_rat)
+        self.resource_zeiss_czi_mouse   = self.ensure_bisque_file(image_zeiss_czi_mouse)
+        self.resource_nikon_nd2         = self.ensure_bisque_file(image_nikon_nd2)
         self.resource_nikon_nd2_deconv  = self.ensure_bisque_file(image_nikon_nd2_deconv)
-        self.resource_leica_lif  = self.ensure_bisque_file(image_leica_lif)
-        #self.resource_slidebook  = self.ensure_bisque_file(image_slidebook) # dima: this slidebook file contains multiple series and will have to be tested as such
-        self.resource_dicom_3d   = self.ensure_bisque_file(image_dicom_3d)
-        self.resource_dicom_2d   = self.ensure_bisque_file(image_dicom_2d)
-        self.resource_svs        = self.ensure_bisque_file(image_svs)
+        self.resource_leica_lif         = self.ensure_bisque_file(image_leica_lif)
+        #self.resource_slidebook         = self.ensure_bisque_file(image_slidebook) # dima: this slidebook file contains multiple series and will have to be tested as such
+        self.resource_dicom_3d          = self.ensure_bisque_file(image_dicom_3d)
+        self.resource_dicom_2d          = self.ensure_bisque_file(image_dicom_2d)
+        self.resource_svs               = self.ensure_bisque_file(image_svs)
 
     @classmethod
     def tearDownClass(self):
@@ -99,6 +99,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
     # ---------------------------------------------------
     def test_thumbnail_imaris_hela (self):
         resource = self.resource_imaris_hela
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'imaris_hela.thumbnail.jpg'
         commands = [('thumbnail', None)]
         meta_required = { 'format': 'JPEG',
@@ -113,6 +114,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
 
     def test_meta_imaris_hela (self):
         resource = self.resource_imaris_hela
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'imaris_hela.meta.xml'
         commands = [('meta', None)]
         meta_required = [
@@ -136,6 +138,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
 
     def test_slice_imaris_hela (self):
         resource = self.resource_imaris_hela
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'imaris_hela.slice.tif'
         commands = [('slice', ',,1,1')]
         meta_required = {
@@ -152,6 +155,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
 
     def test_format_imaris_hela (self):
         resource = self.resource_imaris_hela
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'imaris_hela.format.ome.tif'
         commands = [('format', 'ome-tiff')]
         meta_required = {
@@ -171,6 +175,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
     # ---------------------------------------------------
     def test_thumbnail_imaris_r18 (self):
         resource = self.resource_imaris_r18
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'imaris_r18.thumbnail.jpg'
         commands = [('thumbnail', None)]
         meta_required = {
@@ -187,6 +192,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
 
     def test_meta_imaris_r18 (self):
         resource = self.resource_imaris_r18
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'imaris_r18.meta.xml'
         commands = [('meta', None)]
         meta_required = [
@@ -210,6 +216,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
 
     def test_slice_imaris_r18 (self):
         resource = self.resource_imaris_r18
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'imaris_r18.slice.tif'
         commands = [('slice', ',,1,1')]
         meta_required = {
@@ -226,6 +233,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
 
     def test_format_imaris_r18 (self):
         resource = self.resource_imaris_r18
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'imaris_r18.format.ome.tif'
         commands = [('format', 'ome-tiff')]
         meta_required = {
@@ -245,6 +253,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
     # ---------------------------------------------------
     def test_thumbnail_zeiss_czi_rat (self):
         resource = self.resource_zeiss_czi_rat
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'zeiss_czi_rat.thumbnail.jpg'
         commands = [('thumbnail', None)]
         meta_required = { 'format': 'JPEG',
@@ -259,6 +268,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
 
     def test_meta_zeiss_czi_rat (self):
         resource = self.resource_zeiss_czi_rat
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'zeiss_czi_rat.meta.xml'
         commands = [('meta', None)]
         meta_required = [
@@ -282,6 +292,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
 
     def test_slice_zeiss_czi_rat (self):
         resource = self.resource_zeiss_czi_rat
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'zeiss_czi_rat.slice.tif'
         commands = [('slice', ',,1,1')]
         meta_required = {
@@ -298,6 +309,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
 
     def test_format_zeiss_czi_rat (self):
         resource = self.resource_zeiss_czi_rat
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'zeiss_czi_rat.format.ome.tif'
         commands = [('format', 'ome-tiff')]
         meta_required = {
@@ -317,6 +329,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
     # ---------------------------------------------------
     def test_thumbnail_zeiss_czi_mouse (self):
         resource = self.resource_zeiss_czi_mouse
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'zeiss_czi_mouse.thumbnail.jpg'
         commands = [('thumbnail', None)]
         meta_required = { 'format': 'JPEG',
@@ -331,6 +344,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
 
     def test_meta_zeiss_czi_mouse (self):
         resource = self.resource_zeiss_czi_mouse
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'zeiss_czi_mouse.meta.xml'
         commands = [('meta', None)]
         meta_required = [
@@ -354,6 +368,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
 
     def test_slice_zeiss_czi_mouse (self):
         resource = self.resource_zeiss_czi_mouse
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'zeiss_czi_mouse.slice.tif'
         commands = [('slice', ',,1,1')]
         meta_required = {
@@ -370,6 +385,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
 
     def test_format_zeiss_czi_mouse(self):
         resource = self.resource_zeiss_czi_mouse
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'zeiss_czi_mouse.format.ome.tif'
         commands = [('format', 'ome-tiff')]
         meta_required = {
@@ -389,6 +405,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
     # ---------------------------------------------------
     def test_thumbnail_nikon_nd2 (self):
         resource = self.resource_nikon_nd2
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'nikon_nd2.thumbnail.jpg'
         commands = [('thumbnail', None)]
         meta_required = { 'format': 'JPEG',
@@ -403,6 +420,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
 
     def test_meta_nikon_nd2 (self):
         resource = self.resource_nikon_nd2
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'nikon_nd2.meta.xml'
         commands = [('meta', None)]
         meta_required = [
@@ -426,6 +444,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
 
     def test_slice_nikon_nd2 (self):
         resource = self.resource_nikon_nd2
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'nikon_nd2.slice.tif'
         commands = [('slice', ',,1,1')]
         meta_required = {
@@ -442,6 +461,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
 
     def test_format_nikon_nd2(self):
         resource = self.resource_nikon_nd2
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'nikon_nd2.format.ome.tif'
         commands = [('format', 'ome-tiff')]
         meta_required = {
@@ -461,6 +481,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
     # ---------------------------------------------------
     def test_thumbnail_nikon_nd2_deconv (self):
         resource = self.resource_nikon_nd2_deconv
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'nikon_nd2_deconv.thumbnail.jpg'
         commands = [('thumbnail', None)]
         meta_required = { 'format': 'JPEG',
@@ -475,6 +496,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
 
     def test_meta_nikon_nd2_deconv (self):
         resource = self.resource_nikon_nd2_deconv
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'nikon_nd2_deconv.meta.xml'
         commands = [('meta', None)]
         meta_required = [
@@ -498,6 +520,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
 
     def test_slice_nikon_nd2_deconv (self):
         resource = self.resource_nikon_nd2_deconv
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'nikon_nd2_deconv.slice.tif'
         commands = [('slice', ',,1,1')]
         meta_required = {
@@ -514,6 +537,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
 
     def test_format_nikon_nd2_deconv(self):
         resource = self.resource_nikon_nd2_deconv
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'nikon_nd2_deconv.format.ome.tif'
         commands = [('format', 'ome-tiff')]
         meta_required = {
@@ -533,6 +557,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
     # ---------------------------------------------------
     def test_thumbnail_leica_lif (self):
         resource = self.resource_leica_lif
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'leica_lif.thumbnail.jpg'
         commands = [('thumbnail', None)]
         meta_required = { 'format': 'JPEG',
@@ -547,6 +572,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
 
     def test_meta_leica_lif (self):
         resource = self.resource_leica_lif
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'leica_lif.meta.xml'
         commands = [('meta', None)]
         meta_required = [
@@ -571,6 +597,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
     # combined test becuase this file has 1 T and 1 Z and so the slice will shortcut and will not be readable by imgcnv
     def test_slice_format_leica_lif (self):
         resource = self.resource_leica_lif
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'leica_lif.slice.tif'
         commands = [('slice', ',,1,1'), ('format', 'ome-tiff')]
         meta_required = {
@@ -587,6 +614,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
 
     def test_format_leica_lif(self):
         resource = self.resource_leica_lif
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'leica_lif.format.ome.tif'
         commands = [('format', 'ome-tiff')]
         meta_required = {
@@ -608,6 +636,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
 #     # ---------------------------------------------------
 #     def test_thumbnail_slidebook (self):
 #         resource = self.resource_slidebook
+#         self.assertIsNotNone(resource, 'Resource was not uploaded')
 #         filename = 'slidebook.thumbnail.jpg'
 #         commands = [('thumbnail', None)]
 #         meta_required = { 'format': 'JPEG',
@@ -622,6 +651,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
 #
 #     def test_meta_slidebook (self):
 #         resource = self.resource_slidebook
+#         self.assertIsNotNone(resource, 'Resource was not uploaded')
 #         filename = 'slidebook.meta.xml'
 #         commands = [('meta', None)]
 #         meta_required = [
@@ -645,6 +675,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
 #
 #     def test_slice_slidebook (self):
 #         resource = self.resource_slidebook
+#         self.assertIsNotNone(resource, 'Resource was not uploaded')
 #         filename = 'slidebook.slice.tif'
 #         commands = [('slice', ',,1,1')]
 #         meta_required = {
@@ -661,6 +692,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
 #
 #     def test_format_slidebook(self):
 #         resource = self.resource_slidebook
+#         self.assertIsNotNone(resource, 'Resource was not uploaded')
 #         filename = 'slidebook.format.ome.tif'
 #         commands = [('format', 'ome-tiff')]
 #         meta_required = {
@@ -680,6 +712,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
     # ---------------------------------------------------
     def test_thumbnail_dicom_3d(self):
         resource = self.resource_dicom_3d
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'dicom_3d.thumbnail.jpg'
         commands = [('thumbnail', None)]
         meta_required = { 'format': 'JPEG',
@@ -694,6 +727,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
 
     def test_meta_dicom_3d(self):
         resource = self.resource_dicom_3d
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'dicom_3d.meta.xml'
         commands = [('meta', None)]
         meta_required = [
@@ -711,6 +745,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
 
     def test_slice_dicom_3d(self):
         resource = self.resource_dicom_3d
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'dicom_3d.slice.tif'
         commands = [('slice', ',,1,1')]
         meta_required = { 'format': 'bigtiff',
@@ -725,6 +760,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
 
     def test_format_dicom_3d(self):
         resource = self.resource_dicom_3d
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'dicom_3d.format.ome.tif'
         commands = [('format', 'ome-tiff')]
         meta_required = {
@@ -744,6 +780,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
     # ---------------------------------------------------
     def test_thumbnail_dicom_2d(self):
         resource = self.resource_dicom_2d
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'dicom_2d.thumbnail.jpg'
         commands = [('thumbnail', None)]
         meta_required = { 'format': 'JPEG',
@@ -758,6 +795,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
 
     def test_meta_dicom_2d(self):
         resource = self.resource_dicom_2d
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'dicom_2d.meta.xml'
         commands = [('meta', None)]
         meta_required = [
@@ -782,6 +820,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
     # combined test becuase this file has 1 T and 1 Z and so the slice will shortcut and will not be readable by imgcnv
     def test_slice_format_dicom_2d(self):
         resource = self.resource_dicom_2d
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'dicom_2d.slice.tif'
         commands = [('slice', ',,1,1'), ('format', 'ome-tiff')]
         meta_required = {
@@ -798,6 +837,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
 
     def test_format_dicom_2d(self):
         resource = self.resource_dicom_2d
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'dicom_2d.format.ome.tif'
         commands = [('format', 'ome-tiff')]
         meta_required = {
@@ -818,6 +858,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
     # ---------------------------------------------------
     def test_thumbnail_svs (self):
         resource = self.resource_svs
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'svs.thumbnail.jpg'
         commands = [('thumbnail', None)]
         meta_required = {
@@ -833,6 +874,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
 
     def test_meta_svs (self):
         resource = self.resource_svs
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'svs.meta.xml'
         commands = [('meta', None)]
         meta_required = [
@@ -853,6 +895,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
 
     def test_tile_svs (self):
         resource = self.resource_svs
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'svs.tile.tif'
         commands = [('tile', '0,0,0,512')]
         meta_required = {

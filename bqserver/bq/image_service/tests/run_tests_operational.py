@@ -73,7 +73,7 @@ class ImageServiceTestsOperational(ImageServiceTestBase):
         # test upload
         print '\nUploading %s\n'%image_2k
         resource  = self.ensure_bisque_file(image_2k, image_2k_meta)
-
+        self.assertIsNotNone(resource, msg='File could not be uploaded: %s'%image_2k)
         # test standard tile op
         print 'Getting tiles for %s'%image_2k
         filename = 'image.2k.tile.jpg'
@@ -97,6 +97,7 @@ class ImageServiceTestsOperational(ImageServiceTestBase):
         # test upload
         print '\nUploading %s\n'%image_5k
         resource  = self.ensure_bisque_file(image_5k, image_5k_meta)
+        self.assertIsNotNone(resource, msg='File could not be uploaded: %s'%image_5k)
 
         # test standard tile op
         print 'Getting tiles for %s'%image_5k
@@ -121,7 +122,7 @@ class ImageServiceTestsOperational(ImageServiceTestBase):
         # test upload
         print '\nUploading %s\n'%image_2k
         resource  = self.ensure_bisque_file(image_2k, image_2k_gobs)
-        self.assertTrue(resource is not None, msg='File could not be uploaded: %s'%image_2k)
+        self.assertIsNotNone(resource, msg='File could not be uploaded: %s'%image_2k)
         # test removing the resource
         self.delete_resource(resource)
 

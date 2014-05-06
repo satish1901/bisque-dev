@@ -7,7 +7,7 @@ import time
 from lxml import etree as ET
 from xmldict import xml2d, d2xml
 from bqclass import fromXml, toXml, BQMex
-
+import comm
 
 class AttrDict(dict):
     def __init__(self, *args, **kwargs):
@@ -86,11 +86,17 @@ def save_blob(session,  localfile, resource=None):
         if resource is not None:
             fields['file_resource'] = ET.tostring (resource)
         body, headers = poster.encode.multipart_encode(fields)
-        content = session.c.post(url, headers=headers, content=body)
+        try:
+            content = session.c.post(url, headers=headers, content=body)
+        except comm.BQCommError:
+            return None
+        
         try:
             rl = ET.XML (content)
+            if len(rl)<1:
+                return None
             return rl[0]
-        except ET.ParseError,e :
+        except ET.ParseError, e:
             pass
 
         return None

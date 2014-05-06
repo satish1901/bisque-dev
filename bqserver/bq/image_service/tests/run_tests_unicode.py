@@ -58,7 +58,7 @@ class ImageServiceTestsUnicode(ImageServiceTestBase):
 
     def test_thumbnail_unicode(self):
         resource = self.resource_unicode
-        self.assertIsNotNone(self.resource_unicode, 'Could not upload image')
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'unicode.thumbnail.jpg'
         commands = [('thumbnail', None)]
         meta_required = { 'format': 'JPEG',
