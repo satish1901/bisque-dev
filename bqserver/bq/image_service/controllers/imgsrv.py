@@ -1215,10 +1215,14 @@ class RoiService(object):
                     params = ['-multi', '-roi', s]
                     params += ['-template', '%s.roi_{x1},{y1},{x2},{y2}'%otemp]
                     self.server.imageconvert(image_id, ifile, ofile, fmt=default_format, extra=params)
+                    # ensure the virtual locking file is not removed
+                    with open(lfile, 'wb') as f:
+                        f.write('#Temporary locking file')
         
-        # ensure the output file is written
-        with Locks(lfile):
-                pass
+        # ensure the operation is finished
+        if os.path.exists(lfile):
+            with Locks(lfile):
+                    pass
         try:
             info = self.server.getImageInfo(filename=ofile)
             if 'image_num_x' in info: data_token.dims['image_num_x'] = info['image_num_x']
