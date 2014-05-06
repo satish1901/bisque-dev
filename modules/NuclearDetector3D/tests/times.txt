@@ -1,0 +1,12 @@
+1 server - 2X 4core Xeon E5520 2.27GHz - 16GB RAM
+
+
+dough v5.5:
+
+Ran 1 test in 119.812s
+Ran 1 test in 136.072s
+Ran 1 test in 144.958s
+
+bovary: 1 servers
+
+
