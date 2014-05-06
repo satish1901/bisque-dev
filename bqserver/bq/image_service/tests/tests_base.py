@@ -179,10 +179,14 @@ class ImageServiceTestBase(unittest.TestCase):
     def upload_file(self, path, resource=None):
         r = save_blob(self.session,  path, resource=resource)
         print 'Uploaded id: %s url: %s'%(r.get('resource_uniq'), r.get('uri'))
+        if r.get('resource_uniq') is None or r.get('uri') is None:
+            return None
         return r
 
     @classmethod
     def delete_resource(self, r):
+        if r is None:
+            return
         url = r.get('uri')
         print 'Deleting id: %s url: %s'%(r.get('resource_uniq'), url)
         self.session.postxml(url, etree.Element ('resource') , method='DELETE')

@@ -12,7 +12,7 @@ setup(
     author_email='',
     #url='',
     install_requires=["bqcore",
-                      "bqdev",
+                      "bqapi",
                       "httplib2",
                       'bbfreeze',
                       ],

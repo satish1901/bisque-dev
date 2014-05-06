@@ -133,7 +133,7 @@ function NuclearDetector3D(mex_url, access_token, image_url, varargin)
 
         for j=1:length(np),        
             for i=1:size(np{j},1),       
-                n = g.addGobject('nucleus', int2str(j*i));        
+                n = g.addGobject('nucleus', sprintf('%d:%d', j, i));
                 v = [np{j}(i,1:3), j];
                 p = n.addGobject('point', 'centroid', v );
                 p.addTag('confidence', np{j}(i,5)*100, 'number'); 

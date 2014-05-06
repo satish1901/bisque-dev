@@ -48,7 +48,7 @@ image_svs              = 'CMU-1-Small-Region.svs'
 # ImageServiceTests
 ##################################################################
 
-class ImageServiceTests(ImageServiceTestBase):
+class ImageServiceTestsThirdParty(ImageServiceTestBase):
 
     # setups
 

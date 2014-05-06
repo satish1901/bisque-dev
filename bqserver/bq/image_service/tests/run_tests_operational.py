@@ -51,7 +51,7 @@ def repeat(times):
 # ImageServiceTests
 ##################################################################
 
-class ImageServiceTests(ImageServiceTestBase):
+class ImageServiceTestsOperational(ImageServiceTestBase):
 
     @classmethod
     def setUpClass(self):
