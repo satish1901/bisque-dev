@@ -885,7 +885,7 @@ class FeatureDoc():
                                   'feature',
                                   name=featuretype,
                                   permission="Published",
-                                  uri='features/list/' + featuretype
+                                  uri='features/' + featuretype
             )
 
         return etree.tostring(resource)
@@ -920,8 +920,11 @@ class FeatureDoc():
         resource = etree.Element('resource', uri=str(request.url))
         feature = etree.SubElement(resource, 'feature', name=str(feature_module.name))
         for key, value in xml_attributes.iteritems():
-            attrib = {key:value}
-            info = etree.SubElement(feature, 'info', **attrib)
+            attrib = {
+                      'name':key,
+                      'value':value
+                      }
+            info = etree.SubElement(feature, 'tag', **attrib)
         return etree.tostring(resource)
 
 
