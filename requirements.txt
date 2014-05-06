@@ -7,7 +7,7 @@ Genshi==0.7
 Mako==0.9.1
 MarkupSafe==0.21
 Minimatic==1.0.1
-Paste==1.7.5.1bisque2
+Paste==1.7.5.1-2
 PasteDeploy==1.3.4
 PasteScript==1.7.3
 Paver==1.2.2
@@ -31,7 +31,7 @@ altgraph==0.9
 #argparse==1.2.1
 #astroid==1.0.1
 bbfreeze==1.1.3
-bbfreeze-loader==1.1.0
+bbfreeze-loader==1.1.3
 beautifulsoup4==4.3.2
 boto==2.27.0
 # -e ./bqcore
@@ -45,7 +45,7 @@ decorator==3.4.0
 ecdsa==0.11
 furl==0.3.7
 gdata==2.0.18
-httplib2==0.7.1
+httplib2==0.7.1-1
 importlib==1.0.3
 lxml==3.3.5
 nose==1.3.1
