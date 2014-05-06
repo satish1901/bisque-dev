@@ -60,7 +60,7 @@ import logging
 from urllib import quote
 from lxml import etree
 
-log = logging.getLogger('bq.api.class')
+log = logging.getLogger('bqapi.class')
 
 __all__ = [ 'BQFactory', 'BQNode', 'BQResource', 'BQValue', 'BQTag', 'BQVertex', 'BQGObject', 'gobject_primitives',
             'BQPoint', 'BQLabel', 'BQPolyline', 'BQPolygon', 'BQCircle', 'BQEllipse', 'BQRectangle', 'BQSquare', 'toXml', 'fromXml' ]
@@ -91,10 +91,10 @@ class BQNode (object):
 
     def __repr__(self):
         return '(%s:%s)' % (self.xmltag, id(self) )
-    
+
     def __str__(self):
         return '(%s:%s)'%(self.xmltag,','.join (['%s=%s' % (f, getattr(self,f,'')) for f in self.xmlfields]))
-    
+
     def toTuple (self):
         return tuple( [ x for x in self.xmlfields ] )
 
@@ -132,14 +132,14 @@ class BQResource (BQNode):
             tag = BQTag(name, value)
         self.tags.append(tag)
         return tag
-    
+
     def addGObject(self, name='', value='', gob=None):
         if gob is None:
             gob = BQGObject(name, value)
         self.gobjects.append(gob)
         #self.session.dirty.add(self)
         #self.session.new.add(tag)
-        
+
     def tag(self, name):
         results = []
         for tg in self.tags:
@@ -176,7 +176,7 @@ class BQImage(BQResource):
     def __init__(self):
         super(BQImage, self).__init__()
         self._geometry = None
-        
+
     def geometry(self):
         'return x,y,z,t,ch of image'
         if self._geometry is None:
@@ -210,7 +210,7 @@ class BQImagePixels(object):
         """build the final url based on the operation
         """
         session = self.image.session
-        return session.service_url('image_service', "images/%s?%s" 
+        return session.service_url('image_service', "images/%s?%s"
                                    % (self.image.resource_uniq, '&'.join(self.ops)))
     def fetch(self, path=None):
         """resolve the current and fetch the pixel
@@ -218,14 +218,14 @@ class BQImagePixels(object):
         url = self._construct_url()
         session = self.image.session
         return session.c.fetch (url, path=path)
-    
+
     def command(self, operation, arguments=None):
         if arguments is not None:
             self.ops.append('%s=%s'%(operation, arguments))
         else:
-            self.ops.append(operation)            
-        return self    
-    
+            self.ops.append(operation)
+        return self
+
     def slice(self, x='', y='',z='',t=''):
         """Slice the current image"""
         return self.command('slice', '%s,%s,%s,%s' % (x,y,z,t))
@@ -243,7 +243,7 @@ class BQImagePixels(object):
 
     def meta(self):
         return self.command('meta')
-    
+
     def info(self):
         return self.command('info')
 
@@ -276,14 +276,14 @@ class BQValue (BQNode):
         except:
             self.index = None
         self.value = xmlnode.text
-        
+
     def toetree(self, parent, baseuri):
         n = etree.SubElement(parent, 'value', )
         if self.type is not None: n.set('type', str(self.type))
         if self.index is not None: n.set('index', str(self.index))
         if self.value is not None: n.text = str(self.value)
         return n
-        
+
     #def __call__(self):
     #    if len(self.values<=0): return ''
     #    elif len(self.values==1): return str(self.values[0])
@@ -312,12 +312,12 @@ class BQTag (BQResource):
             return None
         if len(self.values)==1:
             return self.values[0].value
-        return [ x.value for x in self.values ] 
+        return [ x.value for x in self.values ]
     def set_value(self, values):
         if not isinstance(values, list):
             self.values = [ BQValue(values)]
         else:
-            self.values = [ BQValue(v) for v in values ] 
+            self.values = [ BQValue(v) for v in values ]
 
     value = property(get_value, set_value)
 
@@ -349,7 +349,7 @@ class BQVertex (BQNode):
 
     def __init__(self, **kw):
         self.fromObj(**kw)
-        
+
     def __repr__(self):
         return 'vertex(x:%s,y:%s,z:%s,t:%s)'%(self.x, self.y, self.z, self.t)
 
@@ -366,7 +366,7 @@ class BQVertex (BQNode):
     def fromObj(self, **kw):
         for k,v in kw.items():
             if k in self.xmlfields:
-                setattr(self,k,v) 
+                setattr(self,k,v)
 
 class BQGObject(BQResource):
     '''Gobject resource: A grpahical annotation'''

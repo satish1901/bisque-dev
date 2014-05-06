@@ -1,6 +1,6 @@
-#from bq.api.bqclass import fromXml # bisque
-#from bq.api.comm import BQSession, BQCommError # bisque
-#from bq.api.util import save_blob # bisque
+#from bqapi.bqclass import fromXml # bisque
+#from bqapi.comm import BQSession, BQCommError # bisque
+#from bqapi.util import save_blob # bisque
 import urllib
 import zipfile
 from FeatureTest import FeatureBase
@@ -22,7 +22,7 @@ import tables
 import pdb
 from TestGlobals import check_for_file, fetch_file, delete_resource, cleanup_dir
 from TestGlobals import LOCAL_FEATURES_STORE,TEST_TYPE
-from nose.plugins.attrib import attr  
+from nose.plugins.attrib import attr
 #clearing logs
 #with open('test.log', 'w'): pass
 
@@ -49,7 +49,7 @@ image_archive_zip    = 'D91AC09AB1A1086F71BF6EC03E518DA3DF701870-feature_test_im
 feature_archive_zip  = '4236628712FCF4543F640513AB9DA9F28616BEC5-feature_test_features.zip'
 
 feature_zip          = 'feature_test_features'
-image_zip            = 'feature_test_images'  
+image_zip            = 'feature_test_images'
 
 #imported files
 bisque_archive_1     = 'image_08093.tar'
@@ -71,7 +71,7 @@ def setUpModule():
         (moved to the TestGlobals module so that everything is initalized before nose startes)
     """
     if 'features' in TEST_TYPE or 'all' in TEST_TYPE:
-        
+
         #importing pre-calculated features on images
         TestGlobals.check_for_file(TestGlobals.BISQUE_ARCHIVE_1+'.h5', TestGlobals.FEATURE_ARCHIVE_ZIP,local_dir=TestGlobals.LOCAL_FEATURES_STORE)
         TestGlobals.fetch_file(TestGlobals.BISQUE_ARCHIVE_1+'.h5',local_dir=TestGlobals.LOCAL_FEATURES_STORE)
@@ -80,12 +80,12 @@ def setUpModule():
         TestGlobals.check_for_file(TestGlobals.BISQUE_ARCHIVE_3+'.h5', TestGlobals.FEATURE_ARCHIVE_ZIP,local_dir=TestGlobals.LOCAL_FEATURES_STORE)
         TestGlobals.fetch_file(TestGlobals.BISQUE_ARCHIVE_3+'.h5',local_dir=TestGlobals.LOCAL_FEATURES_STORE)
         TestGlobals.check_for_file(TestGlobals.BISQUE_ARCHIVE_4+'.h5', TestGlobals.FEATURE_ARCHIVE_ZIP,local_dir=TestGlobals.LOCAL_FEATURES_STORE)
-        TestGlobals.fetch_file(TestGlobals.BISQUE_ARCHIVE_4+'.h5',local_dir=TestGlobals.LOCAL_FEATURES_STORE) 
+        TestGlobals.fetch_file(TestGlobals.BISQUE_ARCHIVE_4+'.h5',local_dir=TestGlobals.LOCAL_FEATURES_STORE)
 
 
 
 def tearDownModule():
-    
+
     bisque_archive_1_uri = delete_resource(TestGlobals.RESOURCE_LIST[0]['image_xml'])
     mask_1_uri           = delete_resource(TestGlobals.RESOURCE_LIST[0]['mask_xml'])
     bisque_archive_2_uri = delete_resource(TestGlobals.RESOURCE_LIST[1]['image_xml'])
@@ -94,10 +94,10 @@ def tearDownModule():
     mask_3_uri           = delete_resource(TestGlobals.RESOURCE_LIST[2]['mask_xml'])
     bisque_archive_4_uri = delete_resource(TestGlobals.RESOURCE_LIST[3]['image_xml'])
     mask_4_uri           = delete_resource(TestGlobals.RESOURCE_LIST[3]['mask_xml'])
-    
+
     cleanup_dir()
     TestGlobals.SESSION.finish_mex()
-    
+
     #remove all files form temp dir
 
     tempfilelist = glob.glob(os.path.join('Temp','*'))
@@ -116,19 +116,19 @@ class TestFeatureMain(RequestBase):
     name = 'feature_main'
     request = TestGlobals.ROOT+'/features'
     response_code = '200'
-    
+
 class TestFeatureList(RequestBase):
 
-    name = 'feature_list' 
+    name = 'feature_list'
     request = TestGlobals.ROOT+'/features/list'
-    response_code = '200'    
-    
+    response_code = '200'
+
 class TestFormats(RequestBase):
-  
-    name = 'formats' 
+
+    name = 'formats'
     request = TestGlobals.ROOT+'/features/formats'
     response_code = '200'
-               
+
 #######################################
 ###      Feature Functionality
 #######################################
@@ -136,7 +136,7 @@ class TestFeature(RequestBase):
     """
         Testing on a Test Features
     """
-    name = 'feature' 
+    name = 'feature'
     request = TestGlobals.ROOT+'/features/TestFeature'
     response_code = '200'
 
@@ -144,7 +144,7 @@ class TestFeatureCached(RequestBase):
     """
         Testing on a Cached Test Features
     """
-    name = 'feature_cached' 
+    name = 'feature_cached'
     request = TestGlobals.ROOT+'/features/TestFeature'
     response_code = '200'
 
@@ -152,28 +152,28 @@ class TestFeatureCached(RequestBase):
 ###     Malformed Requests
 ############################################
 class TestMultibleSameElementTypes(RequestBase):
-    
-    name = 'multible_same_element_types' 
+
+    name = 'multible_same_element_types'
     request = TestGlobals.ROOT+'/features/TestFeature/none?'+TestGlobals.RESOURCE_LIST[0]['image']+'&'+TestGlobals.RESOURCE_LIST[0]['image']
     response_code = '400'
 
 
 class TestNonlistedFeature(RequestBase):
-    
-    name = 'nonlisted_feature' 
+
+    name = 'nonlisted_feature'
     request = TestGlobals.ROOT+'/features/asdf/none?'+TestGlobals.RESOURCE_LIST[0]['image']
     response_code = '404'
-           
-        
+
+
 class TestNonlistedFormat(RequestBase):
-    
-    name = 'nonlisted_format' 
-    request = TestGlobals.ROOT+'/features/TestFeature/sadf?image='+TestGlobals.RESOURCE_LIST[0]['image'] 
+
+    name = 'nonlisted_format'
+    request = TestGlobals.ROOT+'/features/TestFeature/sadf?image='+TestGlobals.RESOURCE_LIST[0]['image']
     response_code = '404'
 
-        
+
 class TestIncorrectResourceInputType(RequestBase):
-    
+
     name = 'incorrect_resource_input_type'
     request = TestGlobals.ROOT+'/features/TestFeature/none?stuff='+TestGlobals.RESOURCE_LIST[0]['image']
     response_code = '400'
@@ -182,21 +182,21 @@ class TestIncorrectResourceInputType(RequestBase):
 class TestResourceTypeNotFound(RequestBase):
 
     name = 'resource_type_not_found'
-    request = TestGlobals.ROOT+'/features/TestFeature/xml?image='+TestGlobals.ROOT+'/image_service/image/notaresource"'  
+    request = TestGlobals.ROOT+'/features/TestFeature/xml?image='+TestGlobals.ROOT+'/image_service/image/notaresource"'
     response_code = '200'
-    
+
 
 class TestDocumentationIncorrectFeature(RequestBase):
-    
+
     name = 'documentation_of_incorrect_feature'
-    request = TestGlobals.ROOT+'/features/asdf'  
+    request = TestGlobals.ROOT+'/features/asdf'
     response_code = '404'
-    
+
 
 class TestDocumentationIncorrectFormat(RequestBase):
-    
+
     name = 'documentation_of_incorrect_format'
-    request = TestGlobals.ROOT+'/features/format/asdf'  
+    request = TestGlobals.ROOT+'/features/format/asdf'
     response_code = '404'
 
 class TestPostWithoutABody(RequestBase):
@@ -212,21 +212,21 @@ class TestHTD(FeatureBase):
     name = 'HTD'
     family_name = 'VRL'
     length = 48
-    
+
 
 class TestEHD(FeatureBase):
     name = 'EHD'
     family_name = 'VRL'
     length = 80
-    
-    
+
+
 class TestmHTD(FeatureBase):
     name = 'mHTD'
     family_name = 'VRL'
     length = 48
     input_resource = ['image','mask']
     parameters = ['label']
-    
+
     def def_hdf_column(self):
         class Columns(tables.IsDescription):
             image         = tables.StringCol(2000,pos=0)
@@ -234,9 +234,9 @@ class TestmHTD(FeatureBase):
             feature_type  = tables.StringCol(20, pos=2)
             feature       = tables.Float32Col(shape=(self.length), pos=3)
             label         = tables.Float32Col(pos=4)
-        return Columns    
-    
-    
+        return Columns
+
+
 ###################################
 #### MPEG7Flex Features
 ###################################
@@ -244,27 +244,27 @@ class TestCLD(FeatureBase):
     name = 'CLD'
     family_name = 'MPEG7Flex'
     length = 120
-    
+
 class TestCSD(FeatureBase):
     name = 'CSD'
     family_name = 'MPEG7Flex'
     length = 64
-    
+
 class TestSCD(FeatureBase):
     name = 'SCD'
     family_name = 'MPEG7Flex'
     length = 256
-    
+
 class TestDCD(FeatureBase):
     name = 'DCD'
     family_name = 'MPEG7Flex'
     length = 100
-    
+
 class TestHTD2(FeatureBase):
     name = 'HTD2'
     family_name = 'MPEG7Flex'
     length = 62
-    
+
 class TestEHD2(FeatureBase):
     name = 'EHD2'
     family_name = 'MPEG7Flex'
@@ -291,7 +291,7 @@ class TestmCLD(FeatureBase):
             feature       = tables.Float32Col(shape=(self.length), pos=3)
             label         = tables.Float32Col(pos=4)
         return Columns
-    
+
 class TestmCSD(FeatureBase):
     name = 'mCSD'
     family_name = 'MPEG7Flex'
@@ -307,15 +307,15 @@ class TestmCSD(FeatureBase):
             feature       = tables.Float32Col(shape=(self.length), pos=3)
             label         = tables.Float32Col(pos=4)
         return Columns
-  
-    
+
+
 class TestmDCD(FeatureBase):
     name = 'mDCD'
     family_name = 'MPEG7Flex'
     length = 100
-    input_resource = ['image','mask']     
+    input_resource = ['image','mask']
     parameters = ['label']
-    
+
     def def_hdf_column(self):
         class Columns(tables.IsDescription):
             image         = tables.StringCol(2000,pos=0)
@@ -324,7 +324,7 @@ class TestmDCD(FeatureBase):
             feature       = tables.Float32Col(shape=(self.length), pos=3)
             label         = tables.Float32Col(pos=4)
         return Columns
-    
+
 
 class TestmRSD(FeatureBase):
     name = 'mRSD'
@@ -332,7 +332,7 @@ class TestmRSD(FeatureBase):
     length = 35
     input_resource = ['image','mask']
     parameters = ['label']
-    
+
     def def_hdf_column(self):
         class Columns(tables.IsDescription):
             image         = tables.StringCol(2000,pos=0)
@@ -341,8 +341,8 @@ class TestmRSD(FeatureBase):
             feature       = tables.Float32Col(shape=(self.length), pos=3)
             label         = tables.Float32Col(pos=4)
         return Columns
-    
-    
+
+
 ###################################
 #### WNDCharm Features
 ###################################
@@ -350,12 +350,12 @@ class TestChebishev_Statistics(FeatureBase):
     name = 'Chebishev_Statistics'
     family_name = 'WNDCharm'
     length = 32
-    
+
 class TestChebyshev_Fourier_Transform(FeatureBase):
     name = 'Chebyshev_Fourier_Transform'
     family_name = 'WNDCharm'
     length = 32
-    
+
 class TestColor_Histogram(FeatureBase):
     name = 'Color_Histogram'
     family_name = 'WNDCharm'
@@ -365,23 +365,23 @@ class TestComb_Moments(FeatureBase):
     name = 'Comb_Moments'
     family_name = 'WNDCharm'
     length = 48
-    
+
 #only fails on hdf
 class TestEdge_Features(FeatureBase):
     name = 'Edge_Features'
     family_name = 'WNDCharm'
     length = 28
-    
+
 class TestFractal_Features(FeatureBase):
     name = 'Fractal_Features'
     family_name = 'WNDCharm'
     length = 20
-    
+
 class TestGini_Coefficient(FeatureBase):
     name = 'Gini_Coefficient'
     family_name = 'WNDCharm'
     length = 1
-    
+
 class TestGabor_Textures(FeatureBase):
     name = 'Gabor_Textures'
     family_name = 'WNDCharm'
@@ -391,7 +391,7 @@ class TestHaralick_Textures(FeatureBase):
     name = 'Haralick_Textures'
     family_name = 'WNDCharm'
     length = 28
-    
+
 class TestMultiscale_Historgram(FeatureBase):
     name = 'Multiscale_Historgram'
     family_name = 'WNDCharm'
@@ -411,17 +411,17 @@ class TestPixel_Intensity_Statistics(FeatureBase):
     name = 'Pixel_Intensity_Statistics'
     family_name = 'WNDCharm'
     length = 5
-    
+
 class TestRadon_Coefficients(FeatureBase):
     name = 'Radon_Coefficients'
     family_name = 'WNDCharm'
     length = 12
-    
+
 class TestTamura_Textures(FeatureBase):
     name = 'Tamura_Textures'
     family_name = 'WNDCharm'
     length = 6
-    
+
 class TestZernike_Coefficients(FeatureBase):
     name = 'Zernike_Coefficients'
     family_name = 'WNDCharm'
@@ -437,27 +437,7 @@ class TestBRISK(FeatureBase):
     family_name = 'OpenCV'
     length = 64
     parameters = ['x','y','response','size','angle','octave']
-    
-    def def_hdf_column(self):
-        class Columns(tables.IsDescription):
-            image         = tables.StringCol(2000,pos=0)
-            feature_type  = tables.StringCol(20, pos=1)
-            feature       = tables.Float32Col(shape=(self.length), pos=2)
-            x         = tables.Float32Col(pos=4)
-            y         = tables.Float32Col(pos=5)
-            response  = tables.Float32Col(pos=6)
-            size      = tables.Float32Col(pos=7)
-            angle     = tables.Float32Col(pos=8)
-            octave    = tables.Float32Col(pos=9)            
-        return Columns     
 
-    
-class TestORB(FeatureBase):
-    name = 'ORB'
-    family_name = 'OpenCV'
-    length = 32
-    parameters = ['x','y','response','size','angle','octave']
-    
     def def_hdf_column(self):
         class Columns(tables.IsDescription):
             image         = tables.StringCol(2000,pos=0)
@@ -469,14 +449,34 @@ class TestORB(FeatureBase):
             size      = tables.Float32Col(pos=7)
             angle     = tables.Float32Col(pos=8)
             octave    = tables.Float32Col(pos=9)
-        return Columns     
+        return Columns
 
-    
+
+class TestORB(FeatureBase):
+    name = 'ORB'
+    family_name = 'OpenCV'
+    length = 32
+    parameters = ['x','y','response','size','angle','octave']
+
+    def def_hdf_column(self):
+        class Columns(tables.IsDescription):
+            image         = tables.StringCol(2000,pos=0)
+            feature_type  = tables.StringCol(20, pos=1)
+            feature       = tables.Float32Col(shape=(self.length), pos=2)
+            x         = tables.Float32Col(pos=4)
+            y         = tables.Float32Col(pos=5)
+            response  = tables.Float32Col(pos=6)
+            size      = tables.Float32Col(pos=7)
+            angle     = tables.Float32Col(pos=8)
+            octave    = tables.Float32Col(pos=9)
+        return Columns
+
+
 class TestSIFT(FeatureBase):
     name = 'SIFT'
     family_name = 'OpenCV'
     length = 128
-    parameters = ['x','y','response','size','angle','octave']  
+    parameters = ['x','y','response','size','angle','octave']
 
     def def_hdf_column(self):
         class Columns(tables.IsDescription):
@@ -489,14 +489,14 @@ class TestSIFT(FeatureBase):
             size      = tables.Float32Col(pos=6)
             angle     = tables.Float32Col(pos=7)
             octave    = tables.Float32Col(pos=8)
-        return Columns 
+        return Columns
 
-    
+
 class TestSURF(FeatureBase):
     name = 'SURF'
     family_name = 'OpenCV'
     length = 64
-    parameters = ['x','y','laplacian','size','direction','hessian'] 
+    parameters = ['x','y','laplacian','size','direction','hessian']
 
     def def_hdf_column(self):
         class Columns(tables.IsDescription):
@@ -509,7 +509,7 @@ class TestSURF(FeatureBase):
             size      = tables.Float32Col(pos=7)
             direction = tables.Float32Col(pos=8)
             hessian   = tables.Float32Col(pos=9)
-        return Columns 
+        return Columns
 
 #############################################
 #### Mahotas Features
@@ -518,20 +518,20 @@ class TestLBP(FeatureBase):
     name = 'LBP'
     family_name = 'Mahotas'
     length = 8
-    
-    
+
+
 class TestPFTAS(FeatureBase):
     name = 'PFTAS'
     family_name = 'Mahotas'
     length = 162
-    
-    
+
+
 class TestTAS(FeatureBase):
     name = 'TAS'
     family_name = 'Mahotas'
     length = 162
-    
-    
+
+
 class TestZM(FeatureBase):
     name = 'ZM'
     family_name = 'Mahotas'
@@ -542,17 +542,17 @@ class TestHAR(FeatureBase):
     name = 'HAR'
     family_name = 'Mahotas'
     length = 52
-    
-    
+
+
 #class FFTSD(FeatureBase):
 #    name = 'FFTSD'
 #    family_name = 'MyFeatures'
 #    length = 500
-#    input_resource = ['polygon']    
+#    input_resource = ['polygon']
 
 
 if __name__ == '__main__':
     import nose
     nose.runmodule(argv=[__file__])
-    
-    
+
+

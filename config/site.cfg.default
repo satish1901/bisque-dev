@@ -277,7 +277,7 @@ toscawidgets.framework.resource_variant=debug
 ################################################################################
 
 [loggers]
-keys = root, bq, sqlalchemy, auth
+keys = root, bq, bqapi, sqlalchemy, auth
 
 [handlers]
 #keys = console, syslog, file, timedfile, pylog
@@ -300,6 +300,11 @@ handlers = console
 level = INFO
 handlers =
 qualname = bq
+
+[logger_bqapi]
+level = INFO
+handlers =
+qualname = bqapi
 
 #[logger_bq_imgsrv]
 #level = DEBUG

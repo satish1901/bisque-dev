@@ -109,8 +109,8 @@ def transfer_msg(flocal, transfer_t):
     fsize = os.path.getsize (flocal)
     name  = os.path.basename(flocal)
     if transfer_t == 0:
-        return u"transferred %s in 0 sec!" % fsize
-    return u"{name} transferred {size} in {time} ({speed}/sec)".format(
+        return "transferred %s in 0 sec!" % fsize
+    return "{name} transferred {size} in {time} ({speed}/sec)".format(
         name=name, size=sizeof_fmt(fsize),
         time=timedelta(seconds=transfer_t),
         speed = sizeof_fmt(fsize/transfer_t))
@@ -485,7 +485,7 @@ class BlobServer(RestController, ServiceMixin):
         resource = DBSession.query(Taggable).filter_by (resource_uniq = uniq_ident).first()
         path = None
         if resource is not None and resource.resource_value:
-            blob_id  = resource.resource_value
+            blob_id  = resource.resource_value.encode('utf-8')
             path = self.drive_man.fetch_blob(blob_id)
             log.debug('using %s full=%s localpath=%s' , uniq_ident, blob_id, path)
             return path

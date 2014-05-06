@@ -10,8 +10,8 @@ from subprocess import call
 from shutil import copy2
 from glob import glob
 from optparse import OptionParser
-from bq.api import BQSession, BQTag, BQGObject, BQEllipse, BQVertex
-from bq.api.util import fetch_image_pixels, fetch_dataset, save_image_pixels
+from bqapi import BQSession, BQTag, BQGObject, BQEllipse, BQVertex
+from bqapi.util import fetch_image_pixels, fetch_dataset, save_image_pixels
 
 
 logging.basicConfig(level=logging.DEBUG)
