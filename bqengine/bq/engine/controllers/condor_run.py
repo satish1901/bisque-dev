@@ -7,7 +7,7 @@ import subprocess
 import StringIO
 
 from bq.util.configfile import ConfigFile
-from bq.api import BQSession
+from bqapi import BQSession
 
 from command_run import CommandRunner, strtolist, AttrDict, check_exec
 from condor_templates import CondorTemplates
@@ -15,15 +15,15 @@ from condor_templates import CondorTemplates
 class CondorRunner (CommandRunner):
     """A Runtime to execute a module on a condor enabled system
 
-    
+
     """
     name     = "condor"
-    
+
     transfers= []  # Condor transfers (see condor docs)
     requirements = ""  #  Condor "&& (Memory > 3000) && IsWholeMachineSlot"
     dag_template = ""
     submit_template = ""
-    
+
 
     def __init__(self, **kw):
         super(CondorRunner, self).__init__(**kw)
@@ -35,7 +35,7 @@ class CondorRunner (CommandRunner):
         self.load_section ('condor', self.module_cfg)
         self.load_section ('condor_submit', self.bisque_cfg)
         self.load_section ('condor_submit', self.module_cfg)
-        
+
     def process_config(self, **kw):
         super(CondorRunner, self).process_config(**kw)
 
@@ -58,7 +58,7 @@ class CondorRunner (CommandRunner):
         topmex = self.mexes[0]
         executable = topmex.executable
         if len(self.mexes)>1:
-            # multimex 
+            # multimex
             executable = self.mexes[1].executable
 
         postargs=[]
@@ -105,7 +105,7 @@ class CondorRunner (CommandRunner):
                                       for k,v in self.sections['condor_submit'].items()])
             )
         self.helper.prepare_submit(top_vars)
-            
+
         # Immediately go to execute
         return self.command_execute
 
@@ -171,9 +171,9 @@ class CondorRunner (CommandRunner):
 
 
 class CondorMatlabRunner(CondorRunner):
-    
+
    def process_config(self, **kw):
         super(CondorMatlabRunner, self).process_config(**kw)
 
-   
+
 

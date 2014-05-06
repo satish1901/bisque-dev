@@ -71,7 +71,7 @@ else:
 from util import parse_qs, make_qs, xml2d, d2xml
 
 
-log = logging.getLogger('bq.api.comm')
+log = logging.getLogger('bqapi.comm')
 
 class BQException(Exception):
     "BQException"
@@ -197,7 +197,7 @@ class BQSession(object):
             if self.mex :
                 mextoken = self.mex.resource_uniq
                 self.c.authenticate_mex("%s:%s" % (user, mextoken), bisque_root)
- 
+
         return self
 
     def init_mex(self, mex_url, auth_token, bisque_root= None):

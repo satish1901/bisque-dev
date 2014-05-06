@@ -14,7 +14,7 @@ try:
 except:
     from xml.etree import ElementTree as et
 from bq.util.configfile import ConfigFile
-from bq.api import BQSession
+from bqapi import BQSession
 
 from module_env import MODULE_ENVS, ModuleEnvironmentError
 from mexparser import MexParser

@@ -1,4 +1,4 @@
-#!/usr/bin/python 
+#!/usr/bin/python
 
 """ Image service operational testing framework
 update config to your system: config.cfg
@@ -21,7 +21,7 @@ else:
 import os
 import ConfigParser
 import time
-from bq.api.comm import BQSession
+from bqapi.comm import BQSession
 
 from bq.image_service.tests.tests_base import ImageServiceTestBase
 
@@ -52,7 +52,7 @@ def repeat(times):
 ##################################################################
 
 class ImageServiceTests(ImageServiceTestBase):
-    
+
     @classmethod
     def setUpClass(self):
         config = ConfigParser.ConfigParser()
@@ -65,55 +65,55 @@ class ImageServiceTests(ImageServiceTestBase):
     @classmethod
     def tearDownClass(self):
         self.cleanup_tests_dir()
-        pass    
-    
+        pass
+
     # this tests will test uploading image, first time tiling operation and deleting an image
     @repeat(10)
     def test_image_2k_upload_tile(self):
         # test upload
         print '\nUploading %s\n'%image_2k
         resource  = self.ensure_bisque_file(image_2k, image_2k_meta)
-        
+
         # test standard tile op
         print 'Getting tiles for %s'%image_2k
         filename = 'image.2k.tile.jpg'
         commands = [('slice', ',,1,1'), ('tile', '0,0,0,512'), ('depth', '8,f'), ('fuse', '255,255,255;:m'), ('format', 'jpeg')]
-        meta_required = { 'format': 'JPEG', 
-            'image_num_x': '512', 
-            'image_num_y': '512', 
-            'image_num_c': '3', 
+        meta_required = { 'format': 'JPEG',
+            'image_num_x': '512',
+            'image_num_y': '512',
+            'image_num_c': '3',
             'image_num_z': '1',
             'image_num_t': '1',
             'image_pixel_depth': '8',
             'image_pixel_format': 'unsigned integer' }
         self.validate_image_variant(resource, filename, commands, meta_required)
-        
+
         # test removing the resource
         self.delete_resource(resource)
-    
+
     # this tests will test uploading image, first time tiling operation and deleting an image
     @repeat(10)
     def test_image_5k_upload_tile(self):
         # test upload
         print '\nUploading %s\n'%image_5k
         resource  = self.ensure_bisque_file(image_5k, image_5k_meta)
-        
+
         # test standard tile op
         print 'Getting tiles for %s'%image_5k
         filename = 'image.5k.tile.jpg'
         commands = [('slice', ',,1,1'), ('tile', '0,0,0,512'), ('depth', '8,f'), ('fuse', '255,255,255;:m'), ('format', 'jpeg')]
-        meta_required = { 'format': 'JPEG', 
-            'image_num_x': '512', 
-            'image_num_y': '512', 
-            'image_num_c': '3', 
+        meta_required = { 'format': 'JPEG',
+            'image_num_x': '512',
+            'image_num_y': '512',
+            'image_num_c': '3',
             'image_num_z': '1',
             'image_num_t': '1',
             'image_pixel_depth': '8',
             'image_pixel_format': 'unsigned integer' }
         self.validate_image_variant(resource, filename, commands, meta_required)
-        
+
         # test removing the resource
-        self.delete_resource(resource) 
+        self.delete_resource(resource)
 
     # this tests will test uploading image, first time tiling operation and deleting an image
     @repeat(10)
@@ -128,7 +128,7 @@ class ImageServiceTests(ImageServiceTestBase):
 #def suite():
 #    tests = ['test_thumbnail']
 #    return unittest.TestSuite(map(ImageServiceTests, tests))
-        
+
 if __name__=='__main__':
     if not os.path.exists('images'):
         os.makedirs('images')
@@ -148,5 +148,5 @@ if __name__=='__main__':
 
 
 
-    
-           
+
+

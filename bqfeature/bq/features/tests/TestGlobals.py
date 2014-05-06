@@ -1,13 +1,15 @@
 #global variables for the test script
 import ConfigParser
 import os
+import urllib
+import zipfile
 import ntpath
 from lxml import etree
 import urllib
 import zipfile
-from bq.api.bqclass import fromXml # local
-from bq.api.comm import BQSession, BQCommError
-from bq.api.util import save_blob # local
+from bqapi.bqclass import fromXml # local
+from bqapi.comm import BQSession, BQCommError
+from bqapi.util import save_blob # local
 import posixpath
 import sys
 
@@ -85,12 +87,12 @@ def check_for_file( filename, zip_filename,local_dir='.'):
         If not found fetches the files from a store
     """
     path = os.path.join(local_dir, filename)
-    
+
     if not os.path.exists(path):
         fetch_zip(zip_filename, local_dir)
         if not os.path.exists(path):
             raise DownloadError(filename)
-   
+
 
 def fetch_zip( filename, local_dir='.'):
     """
@@ -100,14 +102,14 @@ def fetch_zip( filename, local_dir='.'):
     path = os.path.join( local_dir, filename)
     if not os.path.exists( local_dir):
         os.makedirs( local_dir)
-        
+
     if not os.path.exists(path):
         urllib.urlretrieve(url, path)
-    
+
     Zip = zipfile.ZipFile(path)
     Zip.extractall(local_dir)
     return
-   
+
 
 def fetch_file( filename, local_dir='.'):
     """
@@ -143,25 +145,25 @@ def upload_achive_file( path):
 
 
 def return_archieve_info( bisque_archive, mask):
-    
-    
+
+
     path = os.path.join( LOCAL_STORE_IMAGES, bisque_archive)
     check_for_file( bisque_archive, IMAGE_ARCHIVE_ZIP, local_dir=LOCAL_STORE_IMAGES)
-            
+
     bisque_archive_data_xml_top    = upload_achive_file(path)
-    
+
 #    bisque_archive_image_uri       = ROOT+'/image_service/image/'+bisque_archive_data_xml_top.attrib['resource_uniq']
 
 
     path = os.path.join(LOCAL_STORE_IMAGES, mask)
     check_for_file(mask, IMAGE_ARCHIVE_ZIP,local_dir=LOCAL_STORE_IMAGES)
-    
+
     mask_xml_top               = upload_new_file(path)
-    
+
     bisque_archive_xml         = SESSION.fetchxml(bisque_archive_data_xml_top.attrib['uri']+'?view=deep')
     polygon_xml                = bisque_archive_xml.xpath('//polygon')
     bisque_archive_polygon     = polygon_xml[0].attrib['uri']
-    
+
     return ({
              'filename'      : bisque_archive,
              'mask_filename' : mask,
@@ -169,7 +171,7 @@ def return_archieve_info( bisque_archive, mask):
              'image_xml'     : bisque_archive_data_xml_top,
              'mask'          : ROOT+'/image_service/image/'+mask_xml_top.attrib['resource_uniq'],
              'mask_xml'      : mask_xml_top,
-             'polygon'       : bisque_archive_polygon   
+             'polygon'       : bisque_archive_polygon
              })
 
 #test breakdown
@@ -193,10 +195,10 @@ def cleanup_dir():
                 os.remove(os.path.join(root, name))
             except:
                 pass
-            
-            
 
-            
+
+
+
 #importing resources
 RESOURCE_LIST = []
 RESOURCE_LIST.append( return_archieve_info( BISQUE_ARCHIVE_1, MASK_1) )
@@ -204,4 +206,4 @@ RESOURCE_LIST.append( return_archieve_info( BISQUE_ARCHIVE_2, MASK_2) )
 RESOURCE_LIST.append( return_archieve_info( BISQUE_ARCHIVE_3, MASK_3) )
 RESOURCE_LIST.append( return_archieve_info( BISQUE_ARCHIVE_4, MASK_4) )
 
-  
+
