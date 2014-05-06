@@ -151,17 +151,14 @@ class ImageServiceTestBase(unittest.TestCase):
 
         self.session = BQSession().init_local(self.user, self.pswd,  bisque_root=self.root, create_mex=False)
 
-
         # download and upload test images ang get their IDs
-        self.uniq_2d_uint8  = self.ensure_bisque_file(image_rgb_uint8)
-        self.uniq_3d_uint16 = self.ensure_bisque_file(image_zstack_uint16)
-        self.uniq_2d_float  = self.ensure_bisque_file(image_float)
+        #self.uniq_2d_uint8  = self.ensure_bisque_file(image_rgb_uint8)
+        #self.uniq_3d_uint16 = self.ensure_bisque_file(image_zstack_uint16)
 
     @classmethod
     def tearDownClass(self):
-        self.delete_resource(self.uniq_2d_uint8)
-        self.delete_resource(self.uniq_3d_uint16)
-        self.delete_resource(self.uniq_2d_float)
+        #self.delete_resource(self.uniq_2d_uint8)
+        #self.delete_resource(self.uniq_3d_uint16)
         self.cleanup_tests_dir()
         pass
 
@@ -178,9 +175,10 @@ class ImageServiceTestBase(unittest.TestCase):
     @classmethod
     def upload_file(self, path, resource=None):
         r = save_blob(self.session,  path, resource=resource)
-        print 'Uploaded id: %s url: %s'%(r.get('resource_uniq'), r.get('uri'))
-        if r.get('resource_uniq') is None or r.get('uri') is None:
+        if r is None:
+            print 'Error uploading: %s'%path
             return None
+        print 'Uploaded id: %s url: %s'%(r.get('resource_uniq'), r.get('uri'))
         return r
 
     @classmethod
