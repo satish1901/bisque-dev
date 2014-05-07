@@ -856,12 +856,11 @@ class FeatureDoc():
         """
         #response.headers['Content-Type'] = 'text/xml'
         resource = etree.Element('resource', uri=str(request.url))
-        command  = etree.SubElement(resource, 'command', name='/*feature name*', type='string', value='Documentation of specific feature')
-        command  = etree.SubElement(resource, 'command', name='/list', type='string', value='List of features')
-        command  = etree.SubElement(resource, 'command', name='/format', type='string', value='List of formats')
-        command  = etree.SubElement(resource, 'command', name='/format/*format name*', type='string', value='Documentation of specific format')
-        command  = etree.SubElement(resource, 'command', name='/*feature name*?uri=http://...', type='string', value='Returns feature in format set to xml')
-        command  = etree.SubElement(resource, 'command', name='/*feature name*/*format name*?*resource type*=http://...(&*resource type*=http://...)', type='string', value='Returns feature in format specified')
+        command  = etree.SubElement(resource, 'command', name='FEATURE_NAME', type='string', value='Documentation of specific feature')
+        command  = etree.SubElement(resource, 'command', name='list', type='string', value='List of features')
+        command  = etree.SubElement(resource, 'command', name='formats', type='string', value='List of formats')
+        command  = etree.SubElement(resource, 'command', name='format/FORMAT_NAME', type='string', value='Documentation of specific format')
+        command  = etree.SubElement(resource, 'command', name='/FEATURE_NAME/FORMAT_NAME?image|mask|gobject=URL[&image|mask|gobject=URL]', type='string', value='Returns feature in format specified')
         command  = etree.SubElement(resource, 'attribute', name='resource', value='The name of the resource depends on the requested feature')
         return etree.tostring(resource)
 
@@ -885,7 +884,7 @@ class FeatureDoc():
                                   'feature',
                                   name=featuretype,
                                   permission="Published",
-                                  uri='features/' + featuretype
+                                  uri='/features/' + featuretype
             )
 
         return etree.tostring(resource)
@@ -961,15 +960,18 @@ class FeatureDoc():
         xml_attributes = {
                           'Name':str(format.name),
                           'Description':str(format.description),
-                          'Limit':str(format.limit)
+                          'content_type': str(format.content_type)
                           }
 
         resource = etree.Element('resource', uri=str(request.url))
         feature = etree.SubElement(resource, 'format', name=str(format.name))
         
         for key, value in xml_attributes.iteritems():
-            attrib = {key:value}
-            info = etree.SubElement(feature, 'info', attrib)
+            attrib = {
+                      'name':key,
+                      'value':value
+                      }
+            info = etree.SubElement(feature, 'tag', attrib)
         return etree.tostring(resource)
 
 ###################################################################
@@ -1036,6 +1038,13 @@ class featuresController(ServiceController):
         return body
 
     @expose()
+    def format(self,*args):
+        """
+            entry point for format documentation
+        """
+        return self.formats(*args)
+
+    @expose()
     def formats(self, *args):
         """
             entry point for format documentation
@@ -1050,7 +1059,7 @@ class featuresController(ServiceController):
             elif len(args) < 2: #returining info on specific format
                 try:
                     body = self.docs.format(args[0])
-                    header = {'Content-Type':'text/xml'}
+                    header = {'content-type':'text/xml'}
                     log.info('Content Type: %s  Returning Format Type: %s'%(header['content-type'],args[0]))
                     
                 except FeatureServiceError as e:
