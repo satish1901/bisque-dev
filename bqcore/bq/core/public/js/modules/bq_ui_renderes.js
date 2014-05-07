@@ -523,7 +523,10 @@ Ext.define('BQ.selectors.Gobject', {
         this.viewer = Ext.create('BQ.viewer.Image', {
             resource: this.selected_resource || resource.parent.value,
             parameters: parameters,
-            listeners: { 'changed': this.onchanged, scope: this, },
+            listeners: {
+                scope: this,
+                changed: this.onchanged,
+            },
         });
 
         this.items = [this.viewer];
@@ -569,7 +572,7 @@ Ext.define('BQ.selectors.Gobject', {
             BQ.ui.tip(this.viewer.getId(), msg, {anchor:'left',});
             return false;
         }
-
+        //this.resource.gobjects = Ext.clone( this.viewer.getGobjects() );
         return true;
     },
 

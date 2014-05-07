@@ -371,8 +371,11 @@ ImgEdit.prototype.store_new_gobject = function (gob) {
     //    this.viewer.parameters.gobjectCreated(gob);
 
     // save to DB
-    if (!this.test_save_permission(this.viewer.image.uri + '/gobject'))
+    if (!this.test_save_permission(this.viewer.image.uri + '/gobject')) {
+        if (me.viewer.parameters.gobjectCreated)
+            me.viewer.parameters.gobjectCreated(gob);
         return;
+    }
 
     var pars = this.viewer.parameters || {};
     if (pars.onworking)
