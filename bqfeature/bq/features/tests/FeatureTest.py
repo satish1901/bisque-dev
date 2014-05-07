@@ -47,7 +47,7 @@ class FeatureBase(object):
         resource = etree.Element('resource', uri=str(uri))
         for r in resource_list:
             
-            with tables.open_file(os.path.join('features',r['filename']+'.h5'),'r') as h5file:
+            with tables.open_file(os.path.join(TestGlobals.LOCAL_FEATURES_STORE,r['feature_filename']),'r') as h5file:
                 group = getattr(h5file.root, self.name)
                 feature_array_list = getattr(group, 'feature')
                 
@@ -90,7 +90,7 @@ class FeatureBase(object):
         writer.writerow(titles)
         line_idx = 0
         for r in resource_list:
-            with tables.open_file(os.path.join('features',r['filename']+'.h5'),'r') as h5file:
+            with tables.open_file(os.path.join(TestGlobals.LOCAL_FEATURES_STORE,r['feature_filename']),'r')  as h5file:
                 group = getattr(h5file.root, self.name)
                 feature_array_list = getattr(group, 'feature')
                 for idx,feature_array in enumerate(feature_array_list):
@@ -129,12 +129,12 @@ class FeatureBase(object):
             output
             @resource(str) - the path to the ideal hdf table
         """
-        f = tempfile.NamedTemporaryFile(dir='Temp', prefix='feature_', delete=False) 
+        f = tempfile.NamedTemporaryFile(dir=TestGlobals.TEMP_DIR, prefix='feature_', delete=False) 
         with tables.open_file(f.name,'a') as h5file_ideal:
             table = h5file_ideal.createTable('/', 'values', self.def_hdf_column(), expectedrows=100)
             
             for r in resource_list:
-                with tables.open_file(os.path.join('features',r['filename']+'.h5'),'r') as h5file_feature:
+                with tables.open_file(os.path.join(TestGlobals.LOCAL_FEATURES_STORE,r['feature_filename']),'r') as h5file_feature:
                     group = getattr(h5file_feature.root, self.name)
                     feature_array_list = getattr(group, 'feature')
                     for idx,feature_array in enumerate(feature_array_list):
@@ -243,8 +243,8 @@ class FeatureBase(object):
     @attr('GET')
     def test_GET_hdfresponse(self):
         import os 
-        if not os.path.isdir(TestGlobals.TEMP):
-            os.mkdir(TestGlobals.TEMP)
+        if not os.path.isdir(TestGlobals.TEMP_DIR):
+            os.mkdir(TestGlobals.TEMP_DIR)
                 
         response_code = 200
         response_type = 'hdf'
@@ -255,7 +255,7 @@ class FeatureBase(object):
         headers = TestGlobals.SESSION.c.prepare_headers({'Content-Type':'application/hdf5', 'Accept':'application/hdf5'})
         header, content = TestGlobals.SESSION.c.http.request(command, headers = headers, method = method)
         
-        with tempfile.NamedTemporaryFile(dir='Temp', prefix='feature_', delete=False) as f:
+        with tempfile.NamedTemporaryFile(dir=TestGlobals.TEMP_DIR, prefix='feature_', delete=False) as f:
             f.write(content)
             path = f.name
         resource_list = [TestGlobals.RESOURCE_LIST[0]]
@@ -344,8 +344,8 @@ class FeatureBase(object):
     @attr('POST')
     def test_POST_hdfresponse(self):
         import os 
-        if not os.path.isdir(TestGlobals.TEMP):
-            os.mkdir(TestGlobals.TEMP)
+        if not os.path.isdir(TestGlobals.TEMP_DIR):
+            os.mkdir(TestGlobals.TEMP_DIR)
         response_code = 200
         response_type = 'hdf'
         method = 'POST'

@@ -15,10 +15,14 @@ class RequestBase():
     body_check = None
     method = 'GET'
     
+    
+    def write_request(self): self.request = ''
+    
     def test_request(self):
         
         #make request
         headers = TestGlobals.SESSION.c.prepare_headers({'Content-Type':'text/xml', 'Accept':'text/xml'})
+        self.write_request()
         command = TestGlobals.ROOT+self.request
 
         header, content = TestGlobals.SESSION.c.http.request(self.request, headers = headers, method = self.method)
