@@ -243,7 +243,7 @@ class ProcessToken(object):
         if self.dims is not None:
             self.dims['format'] = fmt
         fmt = fmt.lower()
-                    
+
         # mime types
         if fmt in mime_types:
             self.contentType = mime_types[fmt]
@@ -251,14 +251,14 @@ class ProcessToken(object):
             self.contentType = 'image/' + fmt
             if fmt.startswith('mpeg'):
                 self.contentType = 'video/mpeg'
-            
+
         # histogram
         if 'hist' in kw:
             self.histogram = kw['hist']
-        
+
         # cache
         self.cacheInfo = cache_info['month']
-        
+
         return self
 
     def setFile (self, fname):
@@ -788,7 +788,7 @@ class FormatService(object):
             # first try first converter that supports this output format
             c = self.server.writable_formats[fmt]
             r = c.convert(ifile, ofile, fmt, series=0, extra=extra)
-            
+
             # try using other converters directly
             if r is None:
                 for n,c in self.server.converters.iteritems():
@@ -797,11 +797,11 @@ class FormatService(object):
                     r = c.convert(ifile, ofile, fmt, series=0, extra=extra)
                     if r is not None and os.path.exists(ofile):
                         break
-                
+
             # using ome-tiff as intermediate
             if r is None:
                 self.server.imageconvert(image_id, ifile, ofile, fmt=fmt, extra=['-multi'])
-                
+
             if r is None:
                 log.error('Format: %s could not convert with [%s] format [%s] -> [%s]', c.CONVERTERCOMMAND, fmt, ifile, ofile)
                 abort(415, 'Could not convert into %s format'%fmt )
@@ -1178,8 +1178,8 @@ class RoiService(object):
         vs = arg.split(';')[0].split(',', 4)
         x1 = int(vs[0]) if len(vs)>0 and vs[0].isdigit() else 0
         y1 = int(vs[1]) if len(vs)>1 and vs[1].isdigit() else 0
-        x2 = int(vs[2]) if len(vs)>2 and vs[2].isdigit() else 0        
-        y2 = int(vs[3]) if len(vs)>3 and vs[3].isdigit() else 0                
+        x2 = int(vs[2]) if len(vs)>2 and vs[2].isdigit() else 0
+        y2 = int(vs[3]) if len(vs)>3 and vs[3].isdigit() else 0
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.roi_%d,%d,%d,%d'%(x1-1,y1-1,x2-1,y2-1) )
         return data_token.setImage(ofile, fmt=default_format)
@@ -1190,7 +1190,7 @@ class RoiService(object):
             vs = a.split(',', 4)
             x1 = int(vs[0]) if len(vs)>0 and vs[0].isdigit() else 0
             y1 = int(vs[1]) if len(vs)>1 and vs[1].isdigit() else 0
-            x2 = int(vs[2]) if len(vs)>2 and vs[2].isdigit() else 0        
+            x2 = int(vs[2]) if len(vs)>2 and vs[2].isdigit() else 0
             y2 = int(vs[3]) if len(vs)>3 and vs[3].isdigit() else 0
             rois.append((x1,y1,x2,y2))
         x1,y1,x2,y2 = rois[0]
@@ -1202,7 +1202,7 @@ class RoiService(object):
         otemp = self.server.getOutFileName( ifile, image_id, '' )
         ofile = '%s.roi_%d,%d,%d,%d'%(otemp,x1-1,y1-1,x2-1,y2-1)
         log.debug('ROI: %s to %s'%(ifile, ofile))
-        
+
         # remove pre-computed ROIs
         rois = [(_x1,_y1,_x2,_y2) for _x1,_y1,_x2,_y2 in rois if not os.path.exists('%s.roi_%d,%d,%d,%d'%(otemp,_x1-1,_y1-1,_x2-1,_y2-1))]
 
@@ -1218,7 +1218,7 @@ class RoiService(object):
                     # ensure the virtual locking file is not removed
                     with open(lfile, 'wb') as f:
                         f.write('#Temporary locking file')
-        
+
         # ensure the operation is finished
         if os.path.exists(lfile):
             with Locks(lfile):
@@ -1493,7 +1493,7 @@ class TileService(object):
             processed = True
             if not os.path.exists(hstl_name):
                 with Locks(ifname, hstl_name) as l:
-                    if l.locked: # the file is not being currently written by another process                    
+                    if l.locked: # the file is not being currently written by another process
                         # need to generate a histogram file uniformely distributed from 0..255
                         self.server.converters['imgcnv'].writeHistogram(channels=3, ofnm=hstl_name)
             if not os.path.exists(ofname):
@@ -1802,7 +1802,7 @@ class BrightnessContrastService(object):
         if not os.path.exists(ofile):
             extra=['-brightnesscontrast', arg]
             if data_token.histogram is not None:
-                extra.extend([ '-ihst', data_token.histogram, '-ohst', ohist])            
+                extra.extend([ '-ihst', data_token.histogram, '-ohst', ohist])
             self.server.imageconvert(image_id, ifile, ofile, fmt=default_format, extra=extra)
 
         return data_token.setImage(fname=ofile, fmt=default_format, hist = ohist if data_token.histogram is not None else None)
