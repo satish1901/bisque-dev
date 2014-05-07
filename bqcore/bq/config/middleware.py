@@ -7,25 +7,27 @@ import pkg_resources
 
 from paste.httpexceptions import HTTPNotFound
 #from paste.cascade import Cascade
-from direct_cascade import DirectCascade
 from paste.fileapp import FileApp
 from paste.urlparser import StaticURLParser
 from paste.httpheaders import ETAG
 
-from repoze.who.config import make_middleware_with_config
+#from repoze.who.config import make_middleware_with_config
+from repoze.who.plugins.testutil import make_middleware_with_config
 
 from bq.config.app_cfg import base_config
 from bq.config.environment import load_environment
 from bq.core.controllers import root
 from bq.util.paths import site_cfg_path
 
+from .direct_cascade import DirectCascade
+
 
 __all__ = ['make_app', 'bisque_app']
 
 log = logging.getLogger("bq.config.middleware")
 
-# Use base_config to setup the necessary PasteDeploy application factory. 
-# make_base_app will wrap the TG2 app with all the middleware it needs. 
+# Use base_config to setup the necessary PasteDeploy application factory.
+# make_base_app will wrap the TG2 app with all the middleware it needs.
 make_base_app = base_config.setup_tg_wsgi_app(load_environment)
 
 
@@ -47,16 +49,16 @@ class BQStaticURLParser (object):
                 if prefix:
                     #print "PREFIX: ", prefix
                     partpath  = os.path.join(prefix, partpath[1:])
-                    
+
                 partpath = partpath.replace('\\', '/')
                 if partpath in self.files:
                     log.error("static files : %s will overwrite previous %s "
                               % (pathname, self.files[partpath]))
                     continue
-                log.debug(  "ADDING %s -> %s " % (partpath, pathname) )
+                #log.debug(  "ADDING %s -> %s " % (partpath, pathname) )
                 self.files[partpath] = (pathname, None)
-            
-    
+
+
     def __call__(self, environ, start_response):
         path_info = environ['PATH_INFO']
         #log.debug ('static search for %s' % path_info)
@@ -78,7 +80,7 @@ class BQStaticURLParser (object):
             app = HTTPNotFound(comment=path_info)
         return app(environ, start_response)
 
-        
+
         #return StaticURLParser.__call__(self, environ, start_response)
 
 
@@ -102,7 +104,7 @@ def make_app(global_conf, full_stack=True, **app_conf):
     """
     Set bqcore up with the settings found in the PasteDeploy configuration
     file used.
-    
+
     :param global_conf: The global settings for bqcore (those
         defined under the ``[DEFAULT]`` section).
     :type global_conf: dict
@@ -110,22 +112,36 @@ def make_app(global_conf, full_stack=True, **app_conf):
     :type full_stack: str or bool
     :return: The bqcore application with all the relevant middleware
         loaded.
-    
+
     This is the PasteDeploy factory for the bqcore application.
-    
+
     ``app_conf`` contains all the application-specific settings (those defined
     under ``[app:main]``.
-    
-   
+
+
     """
     global public_file_filter
     global bisque_app
-    
+
     app = make_base_app(global_conf, full_stack=True, **app_conf)
+
+    #from repoze.profile.profiler import AccumulatingProfileMiddleware
+
+    # Wrap your base TurboGears 2 application with custom middleware here
+    #app = AccumulatingProfileMiddleware(
+    #    app,
+    #    log_filename='/tmp/proj.log',
+    #    cachegrind_filename='/tmp/cachegrind.out.bar',
+    #    discard_first_request=True,
+    #    flush_at_shutdown=True,
+    #    path='/__profile__'
+    #    )
+
+
 
     site_cfg = site_cfg_path()
     logging.config.fileConfig(site_cfg)
-    
+
 
     public_file_filter = static_app = BQStaticURLParser()
     if 'who.config_file' in app_conf:
@@ -133,32 +149,35 @@ def make_app(global_conf, full_stack=True, **app_conf):
             app, global_conf,
             app_conf['who.config_file'],
             app_conf['who.log_stream'],
-            app_conf['who.log_level']
+            app_conf['who.log_level'],
+            skip_authentication=app_conf.get('skip_authentication', False),
             )
 
     # Wrap your base TurboGears 2 application with custom middleware here
+    from tg import config
+    from paste.deploy.converters import asbool
 
-    log.info( "LOADING STATICS")
-    ###staticfilters = []
-    
-    for x in pkg_resources.iter_entry_points ("bisque.services"):
-        try:
-            log.info ('found static service: ' + str(x))
-            service = x.load()
-            if not hasattr(service, 'get_static_dirs'):
+    if asbool(config.get ('bisque.static_files', True)):
+        log.info( "LOADING STATICS")
+        ###staticfilters = []
+        for x in pkg_resources.iter_entry_points ("bisque.services"):
+            try:
+                log.info ('found static service: ' + str(x))
+                service = x.load()
+                if not hasattr(service, 'get_static_dirs'):
+                    continue
+                staticdirs  = service.get_static_dirs()
+                for d,r in staticdirs:
+                    log.debug( "adding static: %s %s" % ( d,r ))
+                    static_app.add_path(d,r)
+            except ImportError:
+                log.warn ("Couldn't load bisque service %s" % x)
                 continue
-            staticdirs  = service.get_static_dirs()
-            for d,r in staticdirs:
-                log.debug( "adding static: %s %s" % ( d,r ))
-                static_app.add_path(d,r)
-        except ImportError:
-            log.warn ("Couldn't load bisque service %s" % x)
-            continue
-        #    static_app = BQStaticURLParser(d)
-        #    staticfilters.append (static_app)
-    #cascade = staticfilters + [app]
-    #print ("CASCADE", cascade)
-    app = DirectCascade([static_app, app])
+            #    static_app = BQStaticURLParser(d)
+            #    staticfilters.append (static_app)
+        #cascade = staticfilters + [app]
+        #print ("CASCADE", cascade)
+        app = DirectCascade([static_app, app])
     bisque_app = app
 
     log.info( "END STATICS: discovered %s static files " % len(static_app.files.keys()))
@@ -169,7 +188,7 @@ def make_app(global_conf, full_stack=True, **app_conf):
     log.info ("Root-Controller: startup complete")
 
     app = LogWSGIErrors(app, logging.getLogger('bq.middleware'), logging.ERROR)
-    
+
     return app
 
 
