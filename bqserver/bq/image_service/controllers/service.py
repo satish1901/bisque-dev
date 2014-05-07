@@ -144,7 +144,7 @@ class image_serviceController(ServiceController):
         """
         if self.format_exts is None:
             self.format_exts = set(self.srv.converters.extensions()) - extensions_ignore
-            
+
         filename = filename.strip()
         ext = os.path.splitext(filename)[1][1:].lower()
         return ext in self.format_exts
@@ -259,7 +259,7 @@ class image_serviceController(ServiceController):
 
         #first check if the output is an error
         if data_token.isHttpError():
-            log.error('Responce Code: %s : %s' % (data_token.httpResponseCode, data_token.data))
+            log.error('Responce Code: %s for %s: %s ' % (data_token.httpResponseCode, ident, data_token.data))
             tg.response.status_int = data_token.httpResponseCode
             tg.response.content_type = data_token.contentType
             tg.response.charset = 'utf8'

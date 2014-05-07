@@ -221,10 +221,10 @@ class PathService (TGController):
 
     @expose(content_type='text/xml')
     @require(predicates.not_anonymous())
-    def list_path(self, src, *args,  **kwargs):
+    def list_path(self, path, *args,  **kwargs):
         'Find a resource identified by a path'
-        log.info("move() called %s" ,  src)
-        resource = data_service.query(None, resource_value = src)
+        log.info("move() called %s" ,  path)
+        resource = data_service.query(None, resource_value = path)
         return etree.tostring(resource)
 
     @expose(content_type='text/xml')
@@ -238,10 +238,10 @@ class PathService (TGController):
 
     @expose(content_type='text/xml')
     @require(predicates.not_anonymous())
-    def move_path(self, src, dst, *args,  **kwargs):
+    def move_path(self, path, dst, *args,  **kwargs):
         ' Move a resource identified by path  '
         log.info("move() called %s" , args)
-        resource = data_service.query(None, resource_value = src)
+        resource = data_service.query(None, resource_value = path)
         for child in resource:
             child.set('resource_value',  dst)
             resource = data_service.update(child)
@@ -275,7 +275,7 @@ class BlobServer(RestController, ServiceMixin):
         ServiceMixin.__init__(self, url)
         self.drive_man = DriverManager()
         self.__class__.store = store_resource.StoreServer(self.drive_man.drivers)
-        self.__class__.pathsrv  = PathService(self)
+        self.__class__.paths  = PathService(self)
 
 #################################
 # service  functions
@@ -312,7 +312,7 @@ class BlobServer(RestController, ServiceMixin):
         self.check_access(ident, RESOURCE_READ)
         try:
             localpath = os.path.normpath(self.localpath(ident))
-            filename = self.originalFilename(ident)
+            filename = self.originalFileName(ident)
             if 'localpath' in kw:
                 tg.response.headers['Content-Type']  = 'text/xml'
                 resource = etree.Element ('resource', name=filename, value = localpath)
