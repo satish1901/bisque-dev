@@ -77,11 +77,12 @@ bisque.organization = ORG
 bisque.title = BioImage Repository
 bisque.admin_email = admin@nowhere.com
 bisque.welcome_message = Welcome to the Bisque database
-#set environment to development for test/debug
-bisque.js_environment = development
-#bisque.js_environment = production
 #bisque.background_query = welcome_background:
 #bisque.background_resource  =
+#set environment to development for test/debug
+#bisque.js_environment = development
+bisque.js_environment = production
+#bisque.static_files = true
 
 # tags used by the front page for site contents overview
 bisque.welcome_tags=Types of images:image_type;Experimenters:experimenter;Species:species;
@@ -99,7 +100,9 @@ bisque.paths.root  =
 
 
 # Blobservice
+# Store paths all uploaded objects (into a store resource)
 #bisque.blob_service.store_paths = true
+# Use subtransactions for storing paths (must  be false when  sqlite is used)
 #bisque.blob_service.store_paths.subtransaction = true
 
 # Ordered list of stores .. path is created based on template
