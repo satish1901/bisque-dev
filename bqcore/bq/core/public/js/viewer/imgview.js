@@ -521,6 +521,10 @@ ImgViewer.prototype.findPlugin = function(name) {
     return this.plugins_by_name[name];
 };
 
+ImgViewer.prototype.gobjects = function() {
+    return this.image.gobjects;
+},
+
 ImgViewer.prototype.loadGObjects = function(gobs) {
 
     if (gobs instanceof Array ) {
