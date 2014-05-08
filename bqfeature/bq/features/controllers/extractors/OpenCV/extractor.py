@@ -11,10 +11,20 @@ from pylons.controllers.util import abort
 from bq.image_service.controllers.locks import Locks
 from bq.features.controllers.Feature import calc_wrapper, ImageImport, rgb2gray #import base class
 from bq.features.controllers import Feature
+from bq.features.controllers.exceptions import FeatureImportError
 from PIL import Image
 import tables
 
 log = logging.getLogger("bq.features")
+
+
+try:
+    cv2_v = [int(s) for s in cv2.__version__.split('.')]
+    if (cv2_v < [2, 4, 0] or cv2_v > [2, 4, 9]):
+        raise FeatureImportError('OpenCV','Must use OpenCV version >= 2.4.0 and <= 2.4.9')
+except ValueError:
+    raise FeatureImportError('OpenCV','Must use OpenCV version >= 2.4.0 and <= 2.4.9')
+
 
 class BRISK(Feature.BaseFeature):
     """

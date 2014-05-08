@@ -35,7 +35,7 @@ from bq.util.mkdir import _mkdir
 from bq.features.controllers.ID import ID
 from bq.features.controllers.Feature import BaseFeature, mex_validation
 from bq.features.controllers.TablesInterface import Rows, IDRows, WorkDirRows, Tables, IDTables, WorkDirTable
-from exceptions import FeatureServiceError,FeatureExtractionError
+from exceptions import FeatureServiceError,FeatureExtractionError, FeatureImportError
 from .var import FEATURES_TABLES_FILE_DIR, FEATURES_TEMP_IMAGE_DIR, EXTRACTOR_DIR, FEATURES_TABLES_WORK_DIR, FEATURES_REQUEST_ERRORS_DIR
 
 log = logging.getLogger("bq.features")
@@ -63,8 +63,14 @@ class Feature_Archive(dict):
                         log.debug('Imported Feature: %s' % item.name)
                         item.library = module #for the list of features
                         self[item.name] = item
-            except StandardError, err:  # need to pick a narrower error band but not quite sure right now
+            
+            except FeatureImportError, e:
+                log.exception('Failed to import %s: %s'%(e.extractor_package_name, e.message))
+                continue
+                
+            except StandardError:  # need to pick a narrower error band but not quite sure right now
                 log.exception('Failed Imported Feature: %s\n' % module)  # failed to import feature
+                continue
 
 
 FEATURE_ARCHIVE = Feature_Archive()
