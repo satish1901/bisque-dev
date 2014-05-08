@@ -4,9 +4,9 @@ import csv
 import time
 import sys
 import math
+import subprocess
 
 from lxml import etree
-from subprocess import call
 from shutil import copy2
 from glob import glob
 from optparse import OptionParser
@@ -117,7 +117,14 @@ class CellProfiler(object):
         else:
             executable = "CellProfiler"
 
-        call([executable, "-c", "-r", "-i", self.inputDir, "-o", self.outputDir, "-p", self.pipeline])
+        cp_cmd = [executable, "-c", "-r", "-i", self.inputDir, "-o", self.outputDir, "-p", self.pipeline]
+        logger.info ("calling: %s", " ".join(cp_cmd))
+        p = subprocess.Popen(cp_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        (stout, sterr) = p.communicate()
+
+        #if r != 0:   CP DOES NOT RETURN AN ERROR CODE ON FAILURE
+        if not os.path.exists (os.path.join(self.outputDir, "DefaultOUT_Summary.csv")):
+            self.bqSession.fail_mex ("cell profiler did not complete: %s" % stout)
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
@@ -158,10 +165,8 @@ class CellProfiler(object):
                 shape = CPShape()
                 shape.addEllipse(header=header, record=records[i])
                 shape.addTag(name="Area", value=records[i][header.index('AreaShape_Area')])
-
                 parentGObject.addGObject(gob=shape)
-
-        imageTag.addGObject(gob=parentGObject)
+            imageTag.addGObject(gob=parentGObject)
 
         # Read any image files that the pipeline generated and post them to mex
         imgFormats  = ['*.tif*', '*.jpg']
