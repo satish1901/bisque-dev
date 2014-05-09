@@ -114,6 +114,8 @@ function NuclearDetector3D(mex_url, access_token, image_url, varargin)
             
             fprintf('Total processing time: %.4f seconds\n', toc(totalStart));
             
+            disp(ps); % debugging
+            
             %fprintf('Removing temp files\n');
             %tmpnames = sprintf('8nyJ2VWWdfjf3RrkYZDiVb-bill_smith.ome.tif.0-0,0-0,*-*,%d-%d*', current_t, current_t);
             %delete(tmpnames);
@@ -140,7 +142,8 @@ function NuclearDetector3D(mex_url, access_token, image_url, varargin)
             end
         end
         
-        %g.save('output.xml');             
+        %g.save('output.xml'); % debugging 
+        fprintf('Final result:\n%s', g.toString()); % debugging
         session.finish();
         fprintf('Storing time: %.4f seconds\n', toc(totalStart));
     catch err
