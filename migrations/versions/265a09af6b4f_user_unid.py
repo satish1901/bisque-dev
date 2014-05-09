@@ -34,7 +34,7 @@ def upgrade():
 
     initial_mex = DBSession.query(ModuleExecution).filter_by(resource_name='initialization').first()
     if initial_mex is None:
-        initial_mex = ModuleExecution()
+        initial_mex = ModuleExecution(owner_id = False, mex_id = False)
         initial_mex.mex = initial_mex
         initial_mex.name = "initialization"
         initial_mex.type = "initialization"

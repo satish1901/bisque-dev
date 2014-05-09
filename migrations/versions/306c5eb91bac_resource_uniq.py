@@ -12,9 +12,11 @@ down_revision = '156205cd1d39'
 
 from alembic import op, context
 import sqlalchemy as sa
+from sqlalchemy import Table, MetaData
 from sqlalchemy.orm import sessionmaker
 from bq.util.hash import make_uniq_code
-from bq.data_service.model.tag_model import Taggable
+#from bq.data_service.model.tag_model import Taggable
+from sqlalchemy.ext.declarative import declarative_base
 
 
 def upgrade():
@@ -31,6 +33,11 @@ def upgrade():
     #     print resource.resource_type, uid
     #     resource.resource_uniq = "00-%s" % uid
 
+    Base = declarative_base()
+    metadata = MetaData(bind=cntxt.bind)
+    class Taggable(Base):
+        __table__ = Table('taggable', metadata, autoload=True)
+
     DBSession = SessionMaker()
     toplevel = DBSession.query(Taggable).filter(Taggable.resource_parent_id == None)
     for resource in toplevel:
@@ -45,7 +52,9 @@ def upgrade():
         else:
             resource.resource_uniq = "00-%s" % resource.resource_uniq
         print "updating %s -> %s" % (resource.id, resource.resource_uniq)
-    DBSession.flush()
+    DBSession.commit()
+    DBSession.close()
+
 
 
 
