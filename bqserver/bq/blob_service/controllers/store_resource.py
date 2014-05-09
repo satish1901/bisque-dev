@@ -326,8 +326,8 @@ class StoreServer(TGController):
                         return self._insert_blob_path_1time (path=path, resource_uniq=resource_uniq,
                                                              resource_name=resource_name, **kw)
                 except IntegrityError:
-                    log.exception ('Integrity Error caught on %s.. retrying %s', x, path)
-                    log.error('Could not insert path.. tried too many times')
+                    log.warn ('Integrity Error caught on %s.. retrying %s', x, path)
+            log.error('StoreError: tried too many %s.. not inserting %s', x, path)
             return None
         else:
             return self._insert_blob_path_1time (path=path, resource_uniq=resource_uniq,
