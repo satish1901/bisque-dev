@@ -796,8 +796,8 @@ Ext.define('Bisque.Resource.Image.Page', {
         this.dims = dims;
         if (dims.t>1 || dims.z>1)
             this.toolbar.queryById('menu_view_movie').setDisabled( false );
-        //if (dims.t>1 || dims.z>1)
-        //    this.toolbar.queryById('menu_view_3d').setDisabled( false );
+        if (dims.t>1 || dims.z>1)
+            this.toolbar.queryById('menu_view_3d').setDisabled( false );
 
         if (dims.x>10000 && dims.y>10000) {
             this.toolbar.queryById('menu_view_movie').setDisabled( true );
@@ -885,7 +885,28 @@ Ext.define('Bisque.Resource.Image.Page', {
     },
 
     show3D : function() {
+        var btn = this.queryById('button_view');
+        btn.setText('View: 3D');
+        btn.setIconCls('view3d');
 
+        var image3d = this.queryById('main_view_3d');
+        if (image3d && image3d.isVisible()) return;
+
+        var image2d = this.queryById('main_view_2d');
+        if (image2d) image2d.setVisible(false);
+        var movie = this.queryById('main_view_3d');
+        if (movie) movie.setVisible(false);
+
+        var cnt = this.queryById('main_container');
+        cnt.add({
+            region : 'center',
+            xtype: 'bq_volume_panel',
+            itemId: 'main_view_3d',
+            resource: this.resource,
+            toolbar: this.toolbar,
+            phys: this.viewerContainer.viewer.imagephys,
+            preferences: this.viewerContainer.viewer.preferences,
+        });
     },
 
 });
