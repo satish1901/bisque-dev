@@ -790,7 +790,10 @@ def resource_query(resource_type,
                 elif op == '<':
                     query =query.filter( getattr(dbtype, k) < val )
                 else:
-                    query =query.filter( getattr(dbtype, k)==val)
+                    if '*' in val:
+                        query =query.filter( getattr(dbtype, k).like (val.replace('*', '%')))
+                    else:
+                        query =query.filter( getattr(dbtype, k)==val)
             del kw[ky]
 
     # These must be last @ SQLAlchemy issues
@@ -829,10 +832,10 @@ def resource_permission(resource, action = RESOURCE_READ, user_id=None, with_pub
 
 
 
-def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth=None,notify=True):
+def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth=None,notify=True, invalidate=True):
     """View or edit authoization records associated the resource"""
     log.debug ("resource_auth %s %s", str(resource), str(newauth))
-
+    DBSession.autoflush = False
     q = DBSession.query (TaggableAcl).filter_by (taggable_id = resource.id)
     current_user = get_user()
     # If simply trying to read permissions then, we can answer right away.
@@ -938,7 +941,7 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
                         common_email,
                         name = name,
                         email = email)
-                    log.debug("AUTH: new user %s" % user)
+                    log.debug("AUTH: new user %s" , user.id)
                 elif user not in previous_shares:
                     invite = string.Template(textwrap.dedent(share_msg)).substitute(
                         common_email,
@@ -946,10 +949,10 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
                 else:
                     previous_shares.remove(user)
 
-
+                user = DBSession.merge(user)
                 ####################
                 # User is now available modify ACL in DB
-                log.debug ('AUTH: user = %s'% user)
+                log.debug ('AUTH: user  %s invalidate %s ',  user.id, invalidate)
                 # Find acl or create
                 try:
                     acl = (a for a in resource.acl if a.user == user).next()
@@ -958,16 +961,13 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
                     acl = TaggableAcl()
                     log.info('new acl for user %s' % user.name)
                     acl.user = user
-                    resource.acl.append(acl)
-                    #DBDBSession.add(acl)
+                    #resource.acl.append(acl)
 
                 current_shares.append (user)
                 shares.append(acl)
                 acl.action = action
-                Resource.hier_cache.invalidate ('/', user = user.id)
-                #image_service.set_file_acl(resource.src,
-                #                           user.user_name,
-                #                           action)
+                if invalidate:
+                    Resource.hier_cache.invalidate ('/', user = user.id)
 
                 try:
                     if notify and invite is not None:
@@ -980,8 +980,10 @@ def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth
                     log.exception("Mail not sent")
 
         resource.acl = shares
-        for user in set(previous_shares) - set(current_shares):
-            Resource.hier_cache.invalidate ('/', user = user.id)
+        if invalidate:
+            for user in set(previous_shares) - set(current_shares):
+                Resource.hier_cache.invalidate ('/', user = user.id)
+        DBSession.flush()
 
     return []
 
