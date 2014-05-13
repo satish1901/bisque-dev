@@ -441,6 +441,17 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
                         this.xTexSizeRatio = this.dims.atlasResized.x/this.dims.atlas.x;
                         this.yTexSizeRatio = this.dims.atlasResized.y/this.dims.atlas.y;
+
+	                    //a lot of information is already loaded by the phys object:
+                        this.dims.slice.x = this.phys.x;
+                        this.dims.slice.y = this.phys.y;
+                        this.dims.slice.z = this.phys.z;
+                        this.dims.t = this.phys.t;
+	                    this.initFrameLabel();
+                        this.dims.pixel.x = this.phys.pixel_size[0] === 0 ? 1 : this.phys.pixel_size[0];
+                        this.dims.pixel.y = this.phys.pixel_size[1] === 0 ? 1 : this.phys.pixel_size[1];
+                        this.dims.pixel.z = this.phys.pixel_size[2] === 0 ? 1 : this.phys.pixel_size[2];
+
                         this.sceneVolume.setUniform('TEX_RES_X', this.xTexSizeRatio * this.dims.slice.x);
                         this.sceneVolume.setUniform('TEX_RES_Y', this.yTexSizeRatio * this.dims.slice.y);
 
@@ -587,16 +598,6 @@ Ext.define('BQ.viewer.Volume.Panel', {
         if (!phys)
             return;
         this.phys = phys;
-	    //a lot of information is already loaded by the phys object:
-        this.dims.slice.x = this.phys.x;
-        this.dims.slice.y = this.phys.y;
-        this.dims.slice.z = this.phys.z;
-        this.dims.t = this.phys.t;
-	    this.initFrameLabel();
-        this.dims.pixel.x = this.phys.pixel_size[0] === 0 ? 1 : this.phys.pixel_size[0];
-        this.dims.pixel.y = this.phys.pixel_size[1] === 0 ? 1 : this.phys.pixel_size[1];
-        this.dims.pixel.z = this.phys.pixel_size[2] === 0 ? 1 : this.phys.pixel_size[2];
-
         this.onPartFetch();
     },
 
