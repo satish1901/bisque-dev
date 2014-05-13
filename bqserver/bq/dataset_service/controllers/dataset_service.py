@@ -116,9 +116,9 @@ class TagEditOp (DatasetOp):
 
 class ShareOp (DatasetOp):
     'Apply sharing options to  each member'
-    def action(self, member, auth, **kw):
+    def action(self, member, auth, last=False, **kw):
         member = member.text
-        data_service.auth_resource(member, action=data_service.RESOURCE_EDIT, auth=auth, notify=False)
+        data_service.auth_resource(member, action=data_service.RESOURCE_EDIT, auth=auth, notify=False, invalidate=last)
         return None
 
 
@@ -143,7 +143,7 @@ class DatasetServer(ServiceController):
     def __init__(self, server_url):
         super(DatasetServer, self).__init__(server_url)
 
-    def iterate(self, duri=None, operation='idem', dataset=None, members = None, **kw):
+    def iterate(self, duri=None, operation='idem', dataset=None, members = None, last= False, **kw):
         """Iterate over a dataset executing an operation on each member
 
         @param  duri: dataset uri
@@ -164,11 +164,22 @@ class DatasetServer(ServiceController):
 
         log.debug ("%s on  members %s" , str( op ),  [ x.text for x in members ] )
         results = etree.Element('resource', uri=self.baseuri + 'iterate')
+        if last:
+            last_member = members[-1]
+            members = members[:-1]
+
         for val in members:
             result =  op(member = val, **kw)
             log.debug ("%s on %s -> %s" , operation, val.text, result )
             if result is not None:
                 results.append (result)
+
+        if last:
+            result =  op(member = last_member, last = True, **kw)
+            log.debug ("%s on %s -> %s" , operation, last_member.text, result )
+            if result is not None:
+                results.append (result)
+
 
         #module_service.end_internal_mex(mex.uri)
 
@@ -191,6 +202,7 @@ class DatasetServer(ServiceController):
         @param resource_tag:resource type tag i.e. images
         @param tag_query:  expression of tag search
         """
+        log.info ("dataset: addquery members of %s tag %s query %s " , duri, resource_tag, tag_query)
 
         dataset = data_service.get_resource(duri, view='deep')
         members = dataset.xpath('./value')
@@ -216,6 +228,7 @@ class DatasetServer(ServiceController):
     @require(predicates.not_anonymous())
     def delete(self, duri, **kw):
         # remove all member
+        log.info ("dataset: delete members of %s to " , duri)
         dataset = data_service.get_resource(duri, view='full')
         members = dataset.xpath('./value')
         data_service.del_resource(dataset)
@@ -224,6 +237,7 @@ class DatasetServer(ServiceController):
     @expose(content_type="text/xml")
     @require(predicates.not_anonymous())
     def permission(self, duri, **kw):
+        log.info ("dataset: permission members of %s to %s" , duri, kw.get ('permission'))
         ds = etree.Element ('dataset', uri = duri, permission= kw["permission"])
         data_service.update(ds)
         return self.iterate(duri, operation='permission', **kw)
@@ -238,8 +252,9 @@ class DatasetServer(ServiceController):
     def share(self, duri, **kw):
         'Apply share settings of dataset to all members'
         dataset_auth = data_service.auth_resource(duri)
-        log.debug ("dataset: auth setting members of %s to %s" % (duri, etree.tostring(dataset_auth)))
-        return self.iterate(duri, operation='share', auth=dataset_auth, **kw)
+        log.info ("dataset: auth setting members of %s to %s" , duri, etree.tostring(dataset_auth))
+        values =  self.iterate(duri, operation='share', auth=dataset_auth, last=True, **kw)
+        return values
 
 
 
