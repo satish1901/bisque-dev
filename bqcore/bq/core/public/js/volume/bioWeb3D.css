@@ -1,0 +1,468 @@
+/*******************************************************************************
+
+@author John Delaney
+
+
+*******************************************************************************/
+
+/*
+LICENSE
+
+Center for Bio-Image Informatics, University of California at Santa Barbara
+
+Copyright (c) 2007-2014 by the Regents of the University of California
+All rights reserved
+
+Redistribution and use in source and binary forms, in whole or in parts, with or without
+modification, are permitted provided that the following conditions are met:
+
+    Redistributions of source code must retain the above copyright
+    notice, this list of conditions, and the following disclaimer.
+
+    Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions, and the following disclaimer in
+    the documentation and/or other materials provided with the
+    distribution.
+
+    Use or redistribution must display the attribution with the logo
+    or project name and the project URL link in a location commonly
+    visible by the end users, unless specifically permitted by the
+    license holders.
+
+THIS SOFTWARE IS PROVIDED BY THE REGENTS OF THE UNIVERSITY OF CALIFORNIA ''AS IS'' AND ANY
+EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE REGENTS OF THE UNIVERSITY OF CALIFORNIA OR
+CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
+/*******************************************************************************
+ menu
+*******************************************************************************/
+
+.bq-volume-menu {
+    background-color: rgba(0, 0, 0, 0.7);
+    opacity: 0.1;
+    border-color: rgba(255,255,255,0.2);
+    border-radius: 5px;
+    padding: 0px 0px 5px 10px;
+    z-index: 2147483647 !important;
+
+}
+
+.x-boundlist-floating {
+    z-index: 2147483647 !important;
+}
+
+.bq-volume-menu .x-tip-anchor {
+    border-bottom-color: rgba(255,255,255,0.2);
+}
+
+.bq-volume-menu .x-field {
+    margin-left: 15px;
+}
+
+.bq-volume-menu label {
+    color: #ffffff;
+}
+
+.bq-volume-menu .heading {
+    /*width: 100%;*/
+    margin: 5px 0px 10px 0px;
+}
+
+.bq-volume-menu .heading td {
+    width: 100% !important;
+}
+
+.bq-volume-menu .heading label {
+    width: 100% !important;
+    font-size: 16px !important;
+}
+
+.bq-volume-menu .x-tool img {
+    background-image: url('/js/volume/icons/viewer/16px_close.png');
+    background-repeat: no-repeat;
+    background-size: 10px;
+    margin: 4px 4px 0px 0px;
+    background-color: transparent;
+    background-position: 0px 0px;
+}
+
+
+.bq-three-container .framelabel {
+    position: absolute;
+    z-index: 26 !important;
+    padding: 5px;
+    left: 10px;
+    bottom: 10px;
+    color: white;
+    background-color: black;
+    opacity: 0.6;
+    border-radius: 4px;
+}
+
+.bq-three-container .viewoptions {
+    position: absolute;
+    z-index: 26 !important;
+    width: 20px;
+    height: 20px;
+    left: 40px;
+    top: 10px;
+
+    background-image: url('/js/volume/icons/iadd16.png');
+    background-size: 20px;
+    background-color: transparent;
+    background-repeat: no-repeat;
+}
+
+/*******************************************************************************
+ toolbar selecter
+*******************************************************************************/
+
+.bq-volume-toolbar-menu {
+    position: absolute;
+    left: 72px;
+    top: 10px;
+    width: 120px;
+    height: 20px;
+    z-index: 2147483647 !important;
+    opacity: 0.8;
+}
+
+.bq-volume-toolbar-menu .x-btn{
+    height: 20px;
+}
+
+/*******************************************************************************
+ toolbar
+*******************************************************************************/
+
+.bq-volume-toolbar {
+    position: absolute;
+    right: 40px;
+    top: 10px;
+    width: 200px;
+    z-index: 2147483647 !important;
+    opacity: 0.2;
+}
+
+.bq-volume-toolbar .x-panel-header-text {
+    color: white;
+}
+
+
+.bq-volume-toolbar .x-panel-header {
+    color: white;
+    background-color: rgba(0, 0, 0, 0.7);
+    background-image: none;
+    border: 2px solid;
+    border-radius: 5px 5px 0px 0px;
+    border-color: #333333;
+    box-shadow: none;
+}
+
+.bq-volume-toolbar .x-panel-body {
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 5px;
+    border: 2px solid;
+    border-radius: 0px 0px 5px 5px;
+    border-color: #333333;
+    vertical-align: middle;
+    //display: none;
+}
+
+.bq-volume-toolbar .x-field {
+    margin-left: 15px;
+}
+
+.bq-volume-toolbar label {
+    color: #ffffff;
+}
+
+.bq-volume-toolbar .heading {
+    /*width: 100%;*/
+    margin: 5px 0px 10px 0px;
+}
+
+.bq-volume-toolbar .heading td {
+    width: 100% !important;
+}
+
+.bq-volume-toolbar .heading label {
+    width: 100% !important;
+    font-size: 16px !important;
+}
+
+.bq-volume-toolbar .x-tool img {
+    background-image: url('/js/volume/icons/viewer/16px_close.png');
+    background-repeat: no-repeat;
+    background-size: 10px;
+    margin: 4px 4px 0px 0px;
+    background-color: transparent;
+    background-position: 0px 0px;
+}
+
+/*******************************************************************************
+ playback
+*******************************************************************************/
+
+.bq-volume-playback {
+    margin-left:auto;
+    margin-right:auto;
+
+    bottom: 80px;
+    width: 60%;
+    opacity: 0.2;
+    z-index: 2147483647 !important;
+}
+
+.bq-volume-playback .x-panel-header-text {
+    color: white;
+}
+
+
+.bq-volume-playback .x-panel-header {
+    color: white;
+    background-color: rgba(0, 0, 0, 0.7);
+    background-image: none;
+    border: 2px solid;
+    border-radius: 5px 5px 0px 0px;
+    border-color: #333333;
+}
+
+.bq-volume-playback .x-panel-body {
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 5px;
+    border: 2px solid;
+    border-radius: 5px 5px 5px 5px;
+    border-color: #333333;
+    vertical-align: middle;
+}
+
+.bq-volume-playback .x-field {
+    margin-left: 15px;
+}
+
+.bq-volume-playback label {
+    color: #ffffff;
+}
+
+.bq-volume-playback .heading {
+    /*width: 100%;*/
+    margin: 5px 0px 10px 0px;
+}
+
+.bq-volume-playback .heading td {
+    width: 100% !important;
+}
+
+.bq-volume-playback .heading label {
+    width: 100% !important;
+    font-size: 16px !important;
+}
+
+.bq-volume-playback .x-box-inner {
+    border-style: none;
+    background-image: none;
+    background-color: rgba(0, 0, 0, 0.0);
+}
+
+.bq-volume-playback .x-toolbar {
+    border-style: none;
+    background-image: none;
+    background-color: rgba(0, 0, 0, 0.0);
+    vertical-align: middle;
+}
+
+.bq-volume-playback .x-btn {
+    background-image: none;
+    border-style: none;
+    color: white;
+    background-color: rgba(0, 0, 0, 0.0);
+    vertical-align: middle;
+}
+
+.bq-volume-playback .x-btn-inner {
+    background-image: none;
+    border-style: none;
+    color: white;
+    background-color: rgba(0, 0, 0, 0.0);
+}
+
+.bq-volume-playback .x-toolbar-text-default {
+    color: white;
+    width: 40px;
+
+    margin: 4px;
+    left:auto;
+    right:auto;
+    background-color: transparent;
+}
+
+.bq-volume-playback .x-tool img {
+    background-image: url('/js/volume/icons/viewer/16px_close.png');
+    background-repeat: no-repeat;
+    background-size: 10px;
+    margin: 4px 4px 0px 0px;
+    background-color: transparent;
+    background-position: 0px 0px;
+}
+
+.x-btn-icon .addbutton {
+    background-image: url(/js/volume/icons/iadd16.png) !important;
+    width:16px!important;
+    height:16px!important;
+}
+
+.x-btn-icon .loopbutton {
+    background-image: url(/js/volume/icons/iLoop.png) !important;
+    width:16px!important;
+    height:16px!important;
+}
+
+.x-btn-icon .deletebutton {
+background-image: url(/js/volume/icons/idelete16.png) !important;
+width:16px!important;
+height:16px!important;
+}
+
+.x-btn-play {
+background-image: url(/js/volume/icons/playbutton.svg) !important;
+background-color: none;
+background-size: cover;
+width:32px!important;
+height:32px!important;
+}
+
+.x-btn-pressed .playbutton {
+background-image: url(/js/volume/icons/ipause16.png) !important;
+background-color: none;
+width:16px!important;
+height:16px!important;
+}
+
+.x-btn-disabled .playbutton {
+background-image: url(/js/volume/icons/ipause16.png) !important;
+background-color: none;
+width:16px!important;
+height:16px!important;
+}
+
+
+
+.x-btn-icon .pausebutton {
+background-image: url(/js/volume/icons/ipause16.png) !important;
+width:16px!important;
+height:16px!important;
+}
+
+.x-btn-icon .recordbutton {
+background-image: url(/js/volume/icons/ivideo16.png) !important;
+width:16px!important;
+height:16px!important;
+}
+
+.x-btn-icon .redbutton {
+background-image: url(/js/volume/icons/ired16.png) !important;
+width:16px!important;
+height:16px!important;
+}
+
+.x-btn-icon .greenbutton {
+background-image: url(/js/volume/icons/igreen16.png) !important;
+width:16px!important;
+height:16px!important;
+}
+
+.x-btn-icon .bluebutton {
+background-image: url(/js/volume/icons/iblue16.png) !important;
+width:16px!important;
+height:16px!important;
+}
+
+/*.key-slider {
+    padding-top:6px;
+    background-image:url(/js/volume/icons/ticks.gif);
+}*/
+
+.time-slider .x-slider-thumb {
+    background-image:url(/js/volume/icons/slider-thumb.png);
+}
+
+.time-slider .x-slider-horz .x-slider-inner  {
+    background-image:url(/js/volume/icons/slider-bg.png);
+}
+
+.time-slider .x-slider-end {
+    background-image:url(/js/volume/icons/slider-bg.png);
+}
+
+.time-slider .x-slider-horz {
+    background-image:url(/js/volume/icons/slider-bg.png);
+}
+
+.key-slider {
+    z-index: 1000;
+}
+
+.key-slider .x-slider-horz .x-slider-inner  {
+    background-image:url(/js/volume/icons/slider-bg.png);
+}
+
+.key-slider .x-slider-head {
+    z-index: 1000;
+    position: absolute;
+
+    width: 0.5%;
+    height: 400%;
+    margin-left: -0.25%;
+    margin-top: -2%;
+    opacity: 0.7;
+    /*
+    background-image:url(/js/volume/icons/slider-thumb.png);
+    */
+    background-image:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' ><linearGradient id='gradient'><stop offset='10%' stop-color='%23F00'/><stop offset='90%' stop-color='%23fcc'/> </linearGradient><rect fill='url(%23gradient)' x='0' y='0' width='100%' height='100%' opacity='0.7' /></svg>");
+}
+
+.key-slider .x-slider-thumb {
+    z-index: 1000;
+    background-image:url(/js/volume/icons/key-thumb.png);
+}
+
+.key-slider .x-slider-end {
+    background-image:url(/js/volume/icons/slider-bg.png);
+}
+
+.key-slider .x-slider-horz {
+    background-image:url(/js/volume/icons/slider-bg.png);
+}
+
+.key-slider .tick-slider{
+z-index: 900;
+position: absolute;
+width:  100%;
+height: 100%;
+top: 0px;
+left: 0px;
+}
+
+.key-slider .time-slider{
+z-index: 1100;
+position: absolute;
+width:  1%;
+height: 100%;
+top: 0px;
+left: 0px;
+}
+
+h3 {
+    padding:15px 0 5px;
+}
