@@ -8,6 +8,7 @@ import shutil
 import fnmatch
 import subprocess
 import zipfile
+import tarfile
 import StringIO
 import textwrap
 import getpass
@@ -286,6 +287,14 @@ RUNTIME_CFG  = config_path('runtime-bisque.cfg')
 UWSGI_DEFAULT = config_path('uwsgi.cfg.default')
 
 HOSTNAME = socket.getfqdn()
+if os.name == 'nt':
+    SCRIPT_EXT = '.exe'
+    ARCHIVE_EXT = '.zip'
+else:
+    SCRIPT_EXT = ''
+    ARCHIVE_EXT = '.tar.gz'
+
+
 
 
 #################################################
@@ -801,7 +810,6 @@ def install_matlabwrap(params):
     http://biodev.ece.ucsb.edu/projects/bisquik/wiki/RequiredAndSuggestedSoftware
 
     """
-    import tarfile
 
     BUILD = to_sys_path("../build")
     if not os.path.exists (BUILD):
@@ -1259,14 +1267,17 @@ def fetch_external_binaries ():
 
 #######################################################
 #
-def uncompress_dependencies (filename_zip, filename_dest, filename_check, strip_root=None):
+def uncompress_dependencies (archive, filename_dest, filename_check, strip_root=None):
     """Install dependencies that aren't handled by setup.py"""
 
-    if os.path.exists(filename_check) and os.path.getmtime(filename_zip) < os.path.getmtime(filename_check):
+    if os.path.exists(filename_check) and os.path.getmtime(archive) < os.path.getmtime(filename_check):
         return
 
-    print "Unpacking %s into %s"  % (filename_zip, filename_dest)
-    return unpack_zip(filename_zip, filename_dest, strip_root)
+    print "Unpacking %s into %s"  % (archive, filename_dest)
+    if tarfile.is_tarfile(archive):
+        return tarfile.open(archive).extractall (filename_dest)
+    else:
+        return unpack_zip(archive, filename_dest, strip_root)
 
 def uncompress_extjs (extzip, public, extjs):
     """Install extjs"""
@@ -1326,32 +1337,21 @@ def install_imgcnv ():
 def install_openslide ():
     """Install dependencies that aren't handled by setup.py"""
 
-    filename_zip = os.path.join(BQDEPOT, 'openslide-bisque.zip')
-
-    if not os.path.exists(filename_zip):
+    archive = os.path.join(BQDEPOT, 'openslide-bisque%s' % ARCHIVE_EXT)
+    if not os.path.exists(archive):
         print "No pre-compiled version of openslide exists for your system"
         print "Please visit our mailing list https://groups.google.com/forum/#!forum/bisque-bioimage for help"
         return
-
     if getanswer ("Install OpenSlide converter", "Y",
                   "OpenSlide will allow image server to read full slide pixel data") == "Y":
-
-        binv = 'bin'
-        exev = ''
-        if sys.platform == 'win32':
-            binv = 'Scripts'
-            exev = '.exe'
-
-        filename_dest = os.path.join(os.environ['VIRTUAL_ENV'], binv)
-        filename_check = ''
-        uncompress_dependencies (filename_zip, filename_dest, filename_check)
+        uncompress_dependencies (archive, BQBIN, '')
 
 def install_imarisconvert ():
     """Install dependencies that aren't handled by setup.py"""
 
-    filename_zip = os.path.join(BQDEPOT, 'ImarisConvert.zip')
+    archive = os.path.join(BQDEPOT, 'ImarisConvert%s' % ARCHIVE_EXT)
 
-    if not os.path.exists(filename_zip):
+    if not os.path.exists(archive):
         print "No pre-compiled version of ImarisConvert exists for your system"
         print "Please visit our mailing list https://groups.google.com/forum/#!forum/bisque-bioimage for help"
         return
@@ -1359,15 +1359,9 @@ def install_imarisconvert ():
     if getanswer ("Install ImarisConvert", "Y",
                   "ImarisConvert will allow image server to read many image formats") == "Y":
 
-        binv = 'bin'
-        exev = ''
-        if sys.platform == 'win32':
-            binv = 'Scripts'
-            exev = '.exe'
+        filename_check = 'ImarisConvert'
+        uncompress_dependencies (archive, BQBIN, filename_check)
 
-        filename_dest = os.path.join(os.environ['VIRTUAL_ENV'], binv)
-        filename_check = ''
-        uncompress_dependencies (filename_zip, filename_dest, filename_check)
 
 def install_features ():
     """Install dependencies that aren't handled by setup.py"""
@@ -1528,10 +1522,6 @@ install_options= [
            'matlab',
            'modules',
            'runtime',
-           'imgcnv',
-           'imarisconvert',
-           'openslide',
-           'bioformats',
            'features',
            'features_source',
            'server',
@@ -1546,7 +1536,6 @@ engine_options= [
            'matlab',
            'modules',
            'runtime',
-#           'bioformats',
            'engine',
            ]
 
@@ -1616,13 +1605,9 @@ def bisque_installer(options, args):
     if 'binaries' in installer:
         fetch_external_binaries()
         install_dependencies()
-    if 'imgcnv' in installer:
         install_imgcnv()
-    if 'imarisconvert' in installer:
         install_imarisconvert()
-    if 'openslide' in installer:
         install_openslide()
-    if 'bioformats' in installer:
         install_bioformats(params)
     if 'features' in installer:
         install_features()
