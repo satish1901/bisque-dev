@@ -104,7 +104,7 @@ def guess_type(filename):
 
 def transfer_msg(flocal, transfer_t):
     'return a human string for transfer time and size'
-    if not os.path.exists(flocal):
+    if flocal is None or not os.path.exists(flocal):
         return "NO FILE to measure %s" % flocal
     fsize = os.path.getsize (flocal)
     name  = os.path.basename(flocal)
