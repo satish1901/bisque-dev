@@ -153,6 +153,8 @@ class ConverterImaris(ConverterBase):
     def meta(self, ifnm, series=0):
         if not self.installed:
             return {}
+        series = int(series)
+        
         log.debug('Meta for: %s', ifnm )
         t = tempfile.mkstemp(suffix='.log')
         logfile = t[1]
@@ -164,23 +166,36 @@ class ConverterImaris(ConverterBase):
         # fix a bug in Imaris Convert exporting XML with invalid chars
         # by removing the <ImplParameters> tag
         # params is formatted in INI format
+        params = []
         try:
-            params = misc.between(BLOCK_START, BLOCK_END, meta)
-            # Meta is an XML
-            meta = meta.replace(params, '', 1)
+            while True:
+                p = misc.between(BLOCK_START, BLOCK_END, meta)
+                meta = meta.replace('%s%s%s'%(BLOCK_START, p, BLOCK_END), '', 1)
+                if p is None or p=='':
+                    break
+                params.append(p)
         except UnboundLocalError:
             return {}
 
         ########################################
         # Parse Meta XML
+        # most files have improper encodings, try to recover
         ########################################
         rd = {}
         try:
             mee = etree.fromstring(meta)
         except etree.XMLSyntaxError:
-            log.error ("Unparsable %s", meta)
-            return {}
-
+            try:
+                mee = etree.fromstring(meta, parser=etree.XMLParser(encoding='iso-8859-1'))
+            except (etree.XMLSyntaxError, LookupError):
+                try:
+                    mee = etree.fromstring(meta, parser=etree.XMLParser(encoding='utf-16'))
+                except (etree.XMLSyntaxError, LookupError):
+                    try:
+                        mee = etree.fromstring(meta, parser=etree.XMLParser(recover=True))
+                    except etree.XMLSyntaxError:
+                        log.error ("Unparsable %s", meta)
+                        return {}
 
         if '<FileInfo2>' in meta: # v7
             rd['image_num_series'] = misc.safeint(misc.xpathtextnode(mee, '/FileInfo2/NumberOfImages'), 1)
@@ -189,6 +204,11 @@ class ConverterImaris(ConverterBase):
             rd['image_num_series'] = misc.safeint(misc.xpathtextnode(mee, '/MetaData/NumberOfImages'), 1)
             imagenodepath = '/MetaData/Image[@mIndex="%s"]'%series
 
+        if len(params)<int(rd['image_num_series']):
+            log.debug('Number of parameters (%s) is less than the requested series (%s), aborting', len(params), rd['image_num_series'])
+            return {}
+
+        rd['image_series_index'] = series
         rd['date_time'] = misc.xpathtextnode(mee, '%s/ImplTimeInfo'%imagenodepath).split(';', 1)[0]
         #rd['format']    = misc.xpathtextnode(mee, '%s/BaseDescription'%imagenodepath).split(':', 1)[1].strip(' ')
         rd['format']    = misc.xpathtextnode(mee, '%s/BaseDescription'%imagenodepath) #.split(':', 1)[1].strip(' ')
@@ -242,7 +262,7 @@ class ConverterImaris(ConverterBase):
         ########################################
         #params = misc.xpathtextnode(mee, '%s/ImplParameters'%imagenodepath)
 
-        sp = StringIO.StringIO(params)
+        sp = StringIO.StringIO(params[series])
         config = ConfigParser.ConfigParser()
         config.readfp(sp)
         sp.close()
@@ -283,7 +303,7 @@ class ConverterImaris(ConverterBase):
             return {}
         rd = self.meta(ifnm, series)
         core = [ 'image_num_series', 'image_num_x', 'image_num_y', 'image_num_z', 'image_num_c', 'image_num_t',
-                 'image_pixel_format', 'image_pixel_depth',
+                 'image_pixel_format', 'image_pixel_depth', 'image_series_index',
                  'pixel_resolution_x', 'pixel_resolution_y', 'pixel_resolution_z',
                  'pixel_resolution_unit_x', 'pixel_resolution_unit_y', 'pixel_resolution_unit_z' ]
 
