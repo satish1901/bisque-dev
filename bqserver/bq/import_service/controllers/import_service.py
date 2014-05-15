@@ -241,7 +241,7 @@ class import_serviceController(ServiceController):
         self.filters['zip-volocity']    = self.filter_zip_volocity
         self.filters['image/slidebook'] = self.filter_series_bioformats
         self.filters['image/volocity']  = self.filter_series_bioformats
-
+        
         self.bioformats = ConverterBioformats()
         self.imgcnv = ConverterImgcnv()
 
@@ -348,15 +348,15 @@ class import_serviceController(ServiceController):
     def unpackPackagedFile(self, upload_file, preserve_structure=False):
         ''' This method unpacked uploaded file into a proper location '''
         # need to unpack into a local temp dir and then insert into blob storage (which later may go up to irods or s3)
-        filepath = blob_service.localpath (upload_file.resource.get('resource_uniq'))
+        filepath,_ = blob_service.localpath (upload_file.resource.get('resource_uniq'))
         #unpack_dir = '%s.UNPACKED'%( filepath ) # dima: can be optimized writing directly into output
         unpack_dir = os.path.join(UPLOAD_DIR, bq.core.identity.get_user().name, upload_file.resource.get('resource_uniq'))
         unpack_dir = os.path.join(unpack_dir, '%s.UNPACKED'%os.path.basename(filepath)).replace('\\', '/')
         _mkdir (unpack_dir)
-
+        
         log.debug('unpackPackagedFile, filepath: [%s]', filepath )
         log.debug('unpackPackagedFile, unpack_dir: [%s]', unpack_dir )
-
+        
         # unpack the contents of the packaged file
         try:
             members = self.unPack(filepath, unpack_dir, preserve_structure)
@@ -374,7 +374,8 @@ class import_serviceController(ServiceController):
         self.check_imgcnv()
         unpack_dir, members = self.unpackPackagedFile(upload_file)
         output_dir = os.path.dirname(unpack_dir)
-        combined_filename = '%s.ome.tif'%os.path.basename(blob_service.localpath (upload_file.resource.get('resource_uniq')))
+        localpath,_ = blob_service.localpath (upload_file.resource.get('resource_uniq'))
+        combined_filename = '%s.ome.tif'%os.path.basename(localpath)
         combined_filepath = os.path.join(output_dir, combined_filename).replace('\\', '/')
 
         num_pages = len(members)
@@ -409,7 +410,7 @@ class import_serviceController(ServiceController):
             extra.extend(['-resolution', '%s,%s,%s,%s'%(params['resolution_x'], params['resolution_y'], params['resolution_z'], params['resolution_t'])])
 
         ifnm = members.pop(0)
-        if os.name == 'nt':
+        if os.name == 'nt': 
             ifnm = ifnm.replace('/', '\\')
             combined_filepath = combined_filepath.replace('/', '\\')
         for f in members:
@@ -429,13 +430,13 @@ class import_serviceController(ServiceController):
         self.check_bioformats()
 
         # need to unpack into a local temp dir and then insert into blob storage (which later may go up to irods or s3)
-        filepath = blob_service.localpath (upload_file.resource.get('resource_uniq'))
+        filepath,_ = blob_service.localpath (upload_file.resource.get('resource_uniq'))
         #unpack_dir = '%s.EXTRACTED'%( filepath ) # dima: can be optimized writing directly into output
         unpack_dir = os.path.join(UPLOAD_DIR, bq.core.identity.get_user().name, upload_file.resource.get('resource_uniq'))
         unpack_dir = os.path.join(unpack_dir, '%s.UNPACKED'%os.path.basename(filepath)).replace('\\', '/')
-        _mkdir (unpack_dir)
+        _mkdir (unpack_dir)        
 
-        if os.name == 'nt':
+        if os.name == 'nt': 
             filepath = filepath.replace('/', '\\')
 
         # extract all the series from the file
@@ -447,7 +448,7 @@ class import_serviceController(ServiceController):
                 for i in range(n):
                     fn = 'series_%.5d.ome.tif'%i
                     outfile = os.path.join(unpack_dir, fn)
-                    if os.name == 'nt':
+                    if os.name == 'nt': 
                         outfile = outfile.replace('/', '\\')
                     self.bioformats.convertToOmeTiff(ifnm=filepath, ofnm=outfile, series=i)
                     if os.path.exists(outfile) and self.imgcnv.supported(outfile):
@@ -475,9 +476,9 @@ class import_serviceController(ServiceController):
                 fn = '%s.ome.tif'%m
                 fn_in  = os.path.join(unpack_dir, m)
                 fn_out = os.path.join(unpack_dir, fn)
-                if os.name == 'nt':
+                if os.name == 'nt': 
                     fn_in = fn_in.replace('/', '\\')
-                    fn_out = fn_out.replace('/', '\\')
+                    fn_out = fn_out.replace('/', '\\')                    
                 self.bioformats.convertToOmeTiff(ifnm=fn_in, ofnm=fn_out)
                 if os.path.exists(fn_out) and self.imgcnv.supported(fn_out):
                     mvd2.append(fn)
@@ -503,24 +504,24 @@ class import_serviceController(ServiceController):
             return etree.Element ('tag', name=filename)
         xml = etree.parse(mpath).getroot()
         bpath = self.safePath(os.path.join(path, os.path.dirname(filename), xml.get('value', '')), path)
-
+        
         log.debug('parseFile xml: %s', etree.tostring(xml))
-
+        
         # if a resource has a value pointing to a file
         if xml.get('value') is not None and os.path.exists(bpath) is True:
             xml.set('name', os.path.join(relpath, os.path.dirname(filename), xml.get('value')).replace('\\', '/'))
             del xml.attrib['value']
             return blob_service.store_blob(resource=xml, fileobj=open(bpath, 'rb'))
-
+        
         # if a resource is an xml doc
         elif xml.tag not in ['dataset', 'mex', 'user', 'system', 'module', 'store']:
             return data_service.new_resource(resource=xml)
-
+        
         # dima: if a res is an xml of a system type, store as blob
         elif xml.tag in ['mex', 'user', 'system', 'module', 'store']:
             return etree.Element (xml.tag, name=xml.get('name', ''))
         #    return blob_service.store_blob(resource=xml)
-
+                
         # if the resource is a dataset
         elif xml.tag == 'dataset':
             members = xml.xpath('/dataset/value')
@@ -528,13 +529,13 @@ class import_serviceController(ServiceController):
                 r = self.parseFile(member.text, path, relpath)
                 member.text = r.get('uri')
             return data_service.new_resource(resource=xml)
-
+    
     # dima: need to pass relative storage path
     def importBisqueArchive(self, f, tags):
         log.debug('importBisqueArchive: %s', f)
         relpath = os.path.dirname(f.orig)
         unpack_dir, members = self.unpackPackagedFile(f, preserve_structure=True)
-
+        
         # parse .bisque.xml
         resources = []
         header = os.path.join(unpack_dir, '.bisque.xml')
@@ -634,18 +635,18 @@ class import_serviceController(ServiceController):
         resources = []
         for fn in filelist:
             basepath = '%s/'%os.path.dirname(basepath)
-
+            
             # name may contain a relative upload path, construct based on original name
             log.debug( 'insert_members, basepath: [%s], parent_name: [%s]', basepath, parent_name )
             name = os.path.join(os.path.dirname(parent_name), fn.replace(basepath, '')).replace('\\', '/')
-
+            
             # dima: not sure about appending file:///, there's some logic in blob to use relative names
-            # also irods paths would have to be different
+            # also irods paths would have to be different 
             resource = etree.Element ('resource', name=name)
             #resource = etree.Element ('resource', name=name, value='file:///%s'%fn)
             resource.extend (copy.deepcopy (list (uf.resource)))
             etree.SubElement(resource, 'tag', name="original_upload", value=parent_uri, type='resource' )
-
+            
             # dima: instead of moving files, ingest inplace, they are already positioned in the final destination
             # this would probaby not work for irods ?
             myf = UploadedResource(fileobj=open(fn, 'rb'), resource=resource)

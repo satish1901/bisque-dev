@@ -113,7 +113,7 @@ class ArchiveStreamer():
             path = None
             if uniq is not None:
                 del xml.attrib['resource_uniq'] # dima: strip resource_uniq from exported xml 
-                path = blob_service.localpath(uniq)
+                path,_ = blob_service.localpath(uniq)
                 if not os.path.exists(path):
                     path = None
             

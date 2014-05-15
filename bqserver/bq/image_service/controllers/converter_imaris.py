@@ -353,7 +353,7 @@ class ConverterImaris(ConverterBase):
                 if r is None:
                     return None
             # extract slices
-            return ConverterImgcnv.slice(ometiff, ofnm=ofnm, z=z, t=t, roi=roi, series=series, **kw)
+            return ConverterImgcnv.slice(ometiff, ofnm=ofnm, z=z, t=t, roi=roi, series=0, **kw)
 
 
 ConverterImaris.init()
