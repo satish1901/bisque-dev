@@ -500,6 +500,17 @@ class BlobServer(RestController, ServiceMixin):
             path,sub = self.drive_man.fetch_blob(blob_id)
             log.debug('using %s full=%s localpath=%s sub=%s' , uniq_ident, blob_id, path, sub)
             return path,sub
+        elif resource is not None and resource.resource_value is None:
+            #in case of a multi-file resource
+            response = data_service.query(resource_uniq=uniq_ident, view='full')
+            values = response.xpath('//value')
+            if values is not None and len(values)>0:
+                blob_id = values[0].text
+                if os.name != 'nt':
+                    blob_id  = blob_id.encode('utf-8')
+                path,sub = self.drive_man.fetch_blob(blob_id)
+                log.debug('using %s full=%s localpath=%s sub=%s' , uniq_ident, blob_id, path, sub)
+                return path,sub        
         raise IllegalOperation("bad resource value %s" % uniq_ident)
 
     def originalFileName(self, ident):

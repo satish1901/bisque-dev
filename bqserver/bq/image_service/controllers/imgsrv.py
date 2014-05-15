@@ -2537,7 +2537,7 @@ class ImageServer(object):
 
             # If file info is not cached, get it and cache!
             for n,c in self.converters.iteritems():
-                info = c.info(filename, series=sub)
+                info = c.info(filename, series=(sub or 0))
                 if info is not None and len(info)>0:
                     info['converter'] = n
                     break
@@ -2687,7 +2687,7 @@ class ImageServer(object):
 
             # start the processing
             original_filename,sub = self.ensureOriginalFile(ident)
-            data_token.setFile(original_filename, series=sub)
+            data_token.setFile(original_filename, series=(sub or 0))
 
             #if not blob_service.file_exists(ident):
             if not os.path.exists(original_filename):
