@@ -2572,16 +2572,16 @@ class ImageServer(object):
         if r is not None:
             return r
         # if the conversion failed, convert input to OME-TIFF using other converts
+        ometiff = self.getOutFileName( ifnm, image_id, '.ome.tif' )
         for n,c in self.converters.iteritems():
             if n=='imgcnv':
                 continue
-            ometiff = self.getOutFileName( ifnm, image_id, '.ome.tif' )
             if not os.path.exists(ometiff):
                 r = c.convertToOmeTiff(ifnm, ometiff, series)
             else:
                 r = ometiff
             if r is not None and os.path.exists(ometiff):
-                return self.converters['imgcnv'].convert( ometiff, ofnm, fmt=fmt, series=series, extra=extra)
+                return self.converters['imgcnv'].convert( ometiff, ofnm, fmt=fmt, series=0, extra=extra)
 
     def setImageInfo(self, id=None, data_token=None, info=None, filename=None):
         if info is None: return

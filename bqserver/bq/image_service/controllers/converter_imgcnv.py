@@ -160,6 +160,8 @@ class ConverterImgcnv(ConverterBase):
 
         if rd['image_num_z']==1 and rd['image_num_t']==1 and rd['image_num_p']>1:
             rd['image_num_t'] = rd['image_num_p']
+        rd['image_num_series'] = 0
+        rd['image_series_index'] = 0
 
         return rd
 
@@ -198,6 +200,8 @@ class ConverterImgcnv(ConverterBase):
             }
             rd['image_pixel_format'] = pf_map[rd['image_pixel_format']]
 
+        rd['image_num_series'] = 0
+        rd['image_series_index'] = 0
         rd.setdefault('image_num_z', 1)
         rd.setdefault('image_num_t', 1)
         rd.setdefault('image_num_p', 1)
