@@ -142,6 +142,7 @@ class ConverterOpenSlide(ConverterBase):
             info = {
                 'format': slide.properties[openslide.PROPERTY_NAME_VENDOR],
                 'image_num_series': 0,
+                'image_series_index': 0,
                 'image_num_x': slide.dimensions[0],
                 'image_num_y': slide.dimensions[1],
                 'image_num_z': 1,

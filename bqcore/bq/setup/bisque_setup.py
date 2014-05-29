@@ -1391,6 +1391,58 @@ def install_features_source ():
           bqserver/bq/features/src/extractors/build/Readme.txt
         """
 
+def install_opencv():
+    """
+        Install dependencies that aren't handled by setup.py
+        
+        Downloads and installs opencv in sitepackages in bqenv
+    """
+    
+    
+    def extract_archive_dir(zip_file,zip_dir,destination,verbose = True):
+        """
+            unzips files in dir in the zipfile
+            warning: can not extract a dir in that dir
+            @zip_file - name of the zip file
+            @zip_dir - path to the dir in the zip file from the root file in the zip
+            @destination - dir were the extracted files will be placed
+            @verbose 
+            
+            @output - none
+        """
+        with zipfile.ZipFile(zip_file, 'r') as z:
+            for f in z.namelist():
+                if os.path.normpath(f).startswith(zip_dir) and not os.path.normpath(f) == zip_dir:
+                    with open(os.path.join(filename_dest,os.path.relpath(f, zip_dir)), 'wb') as fout:
+                        fout.write(z.read(f))
+                        if verbose:
+                            print 'Extracted %s -> %s'%(f,os.path.join(filename_dest,os.path.relpath(f, zip_dir)))
+        return
+    
+    
+    if getanswer ("Install OpenCV-2.4.6", "Y",
+                  "Enables descriptors in the Feature Server that use OpenCV-2.4.6") == "Y":
+        
+        filename_check = ''
+        python_version = sys.version_info[:2]
+        if not (python_version==(2,6) or python_version==(2,7)):
+            print 'Failed to install opencv. Requires python 2.6 or 2.7'
+            return 
+        
+        filename_zip = os.path.join(BQDEPOT, 'opencv-2.4.6.zip')
+
+        if sys.platform == 'linux2': #linux
+            filename_dest = os.path.join('bqenv','lib','python%s.%s'%python_version,'site-packages')
+        elif sys.platform == 'win32': #windows
+            filename_dest = os.path.join('bqenv','Lib','site-packages')
+            extract_archive_dir(filename_zip,os.path.join('opencv-2.4.6','dyn_libs',''), filename_dest)
+        else:
+            print 'Failed to install opencv. System type is neither linux or windows'
+            return
+        
+        #unpackes opencv cv2.so/.dll and cv.py in to bqenv site-packages
+        extract_archive_dir(filename_zip,os.path.join('opencv-2.4.6','python%s.%s'%python_version,''), filename_dest)
+
 
 #######################################################
 #
@@ -1524,6 +1576,7 @@ install_options= [
            'runtime',
            'features',
            'features_source',
+           'opencv', #currently only being used for features in the feature server required numpy 1.6.0
            'server',
            'mail',
            'preferences',
@@ -1613,6 +1666,8 @@ def bisque_installer(options, args):
         install_features()
     if 'features_source' in installer:
         install_features_source()
+    if 'opencv' in installer:
+        install_opencv()
     if 'database'  in installer:
         params = install_database(params)
     if 'matlab'  in installer:
