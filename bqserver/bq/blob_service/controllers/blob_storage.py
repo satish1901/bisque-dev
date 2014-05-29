@@ -110,6 +110,16 @@ def formatPath(format_path, user, filename, uniq, **params):
         filebase=filebase,
         fileext=fileext, **params)
 
+def split_subpath(path):
+    """Splits sub path that follows # sign if present
+    """
+    try:
+        path,sub = path.rsplit('#',1)
+        return path,sub
+    except ValueError:
+        return path,None
+
+
 #################################################
 #  Define helper functions for NT vs Unix/Mac
 #
@@ -178,7 +188,7 @@ class BlobStorage(object):
     def valid(self, ident):
         'determine whether this store can access the identified file'
     def localpath(self, ident):
-        'return the local path of  the identified file'
+        'return the local path of the identified file, if sub path present (after #), extract or return'
     def write(self, fp, name, user_name=None, uniq=None):
         'write the file to a local blob returning a short ident and the localpath'
     def walk(self):
@@ -218,6 +228,7 @@ class LocalStorage(BlobStorage):
         log.info("created localstore %s (%s) options %s" , self.format_path, self.top, self.options)
 
     def valid(self, ident):
+        ident,_ = split_subpath(ident)
         return ((ident.startswith(self.top)  and ident)
                 or  (urlparse.urlparse(ident).scheme == '' and os.path.join(self.top, ident).replace('\\', '/')))
                 #and os.path.exists(self.localpath(ident)))
@@ -250,11 +261,13 @@ class LocalStorage(BlobStorage):
         raise DuplicateFile(localpath)
 
     def localpath(self, path):
+        path,sub = split_subpath(path)
         path = path.replace('\\', '/')
         if not path.startswith('file://'):
             path = os.path.join(self.top, path)
             path = path.replace('\\', '/')
-        return url2localpath(path)
+        # local storage can't extract sub paths, pass it along
+        return url2localpath(path),sub
 
     def walk(self):
         'walk store returning all elements'
@@ -262,6 +275,7 @@ class LocalStorage(BlobStorage):
             yield tp
 
     def delete(self, ident):
+        #ident,_ = split_subpath(ident) # reference counting required?
         fullpath = os.path.join(self.top[5:], ident) # remove file
         log.debug("deleting %s" ,  fullpath)
         os.remove (fullpath)
@@ -300,7 +314,7 @@ class iRodsStorage(BlobStorage):
         log.info("created irods store %s (%s)" , self.format_path, self.top)
 
     def valid(self, irods_ident):
-        return  irods_ident.startswith(self.top) and irods_ident
+        return irods_ident.startswith(self.top) and irods_ident
 
     def write(self, fp, filename, user_name=None, uniq=None):
         blob_ident = formatPath(self.format_path, user_name, filename, uniq)
@@ -310,8 +324,10 @@ class iRodsStorage(BlobStorage):
 
     def localpath(self, irods_ident):
         try:
+            # if irods will provide extraction of sub files from compressed (zip, tar, ...) ask for it and return sub as None
+            irods_ident,sub = split_subpath(irods_ident)
             path = irods_handler.irods_fetch_file(irods_ident, user=self.user, password=self.password)
-            return  path
+            return  path, sub
         except irods_handler.IrodsError, e:
             log.exception ("Error fetching %s ", irods_ident)
         return None
@@ -383,9 +399,11 @@ class S3Storage(BlobStorage):
 
     def localpath(self, s3_ident):
         'return path to local copy of the s3 resource'
+        # if s3 will provide extraction of sub files from compressed (zip, tar, ...) ask for it and return sub as None
+        s3_ident,sub = split_subpath(s3_ident)
         s3_key = s3_ident.replace("s3://","")
         path = s3_handler.s3_fetch_file(self.bucket, s3_key)
-        return  path
+        return path,sub
 
     def delete(self, s3_ident):
         s3_key = s3_ident.replace("s3://","")
