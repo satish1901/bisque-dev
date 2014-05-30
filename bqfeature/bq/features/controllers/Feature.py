@@ -33,8 +33,9 @@ log = logging.getLogger("bq.features")
 def calc_wrapper(func):
     def calc(self,kw):
         id = self.returnhash(**kw)
-
+        
         results = func(self,**kw) #runs calculation
+        log.debug('Successfully calculated feature!')
         column_count = len(self.cached_columns().columns)-1 #finds length of columns to determin how to parse
         if column_count == 1:
             results=tuple([results])
@@ -196,10 +197,10 @@ class ImageImport:
 
         if 'image_service' in uri:
             #finds image resource though local image service
-            self.uri=uri
+            self.uri = uri
             try:
                 self.path = image_service.local_file(uri)
-                log.debug("path: %s"% self.path)
+                log.debug("Image Service path: %s"% self.path)
                 if not self.path:
                     log.debug('Not found in image_service internally: %s'%uri)
                 else:
@@ -231,11 +232,14 @@ class ImageImport:
                 log.debug("begin routing externally: %s" % uri)
                 response = http.send(req)
                 log.debug("end routing externally: status %s" % response.status_int)
-                if response.status_int == 200:
+                #if response.status_int == 200:
+                if response.status_int < 400:
                     f.write(response.body)
                     return 
                 else:
                     log.debug("User is not authorized to read resource externally: %s",uri)
+                    raise Exception("Error Code: %s User is not authorized to read resource externally: %s",(response.status_int,uri))
+
             except:
                 log.exception ("While retrieving URL %s" % uri)
 
@@ -288,7 +292,8 @@ def mex_validation( **resource):
             log.debug("begin routing externally: %s" % resource[r])
             resp = http.send(req)
             log.debug("end routing externally: status %s" % resp.status_int)
-            if resp.status_int == 200:
+#            if resp.status_int == 200:
+            if resp.status_int < 400:
                 continue
             else:
                 log.debug("User is not authorized to read resource: %s",resource[r])
