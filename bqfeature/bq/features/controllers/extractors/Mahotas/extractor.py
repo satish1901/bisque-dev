@@ -29,7 +29,7 @@ class HAR(Feature.BaseFeature):
             #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
             im = np.array(Image.open(str(imgimp)))
             if len(im.shape)==3:
-                im = rgb2gray(im)            
+                im = rgb2gray(im)        
             
             im=np.asarray(im)
             im = im.astype(np.uint8)  
@@ -49,7 +49,7 @@ class HARColored(Feature.BaseFeature):
     #parameters
     name = 'HARColored'
     description = """Haralick Texure Features with colored image input"""
-    length = 169  
+    length = 169
         
     @calc_wrapper
     def calculate(self, **resource):
@@ -159,6 +159,39 @@ class PFTAS(Feature.BaseFeature):
     #parameters
     name = 'PFTAS'
     description = """parameter free Threshold Adjacency Statistics"""
+    length = 54 
+    confidence = 'good' 
+    
+    @calc_wrapper
+    def calculate(self, **resource):
+        """ Append descriptors to SURF h5 table """
+        #initalizing
+        image_uri = resource['image']
+        
+        with ImageImport(image_uri) as imgimp:
+            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
+            im = np.array(Image.open(str(imgimp)))
+            if len(im.shape)==3:
+                im = rgb2gray(im)   
+            im = im.astype(np.uint8)  
+            #if im==None:
+            #    raise ValueError('Format was not supported')
+            im = np.asarray(im)
+            
+            descriptor = pftas(im)
+            
+        #initalizing rows for the table
+        return [descriptor]
+    
+class PFTASColored(Feature.BaseFeature):
+    """
+        Initalizes table and calculates the SURF descriptor to be
+        placed into the HDF5 table.
+    """
+    
+    #parameters
+    name = 'PFTAScolored'
+    description = """parameter free Threshold Adjacency Statistics"""
     length = 162 
     confidence = 'good' 
     
@@ -171,9 +204,12 @@ class PFTAS(Feature.BaseFeature):
         with ImageImport(image_uri) as imgimp:
             #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
             im = np.array(Image.open(str(imgimp)))
+            if len(im.shape)==2:
+                im = gray2rgb(im) 
+            im = im.astype(np.uint8)  
             #if im==None:
             #    raise ValueError('Format was not supported')
-            im=np.asarray(im)
+            im = np.asarray(im)
             
             descriptor = pftas(im)
             
@@ -189,6 +225,36 @@ class TAS(Feature.BaseFeature):
     #parameters
     name = 'TAS'
     description = """Threshold Adjacency Statistics"""
+    length = 54 
+    confidence = 'good' 
+    
+    @calc_wrapper
+    def calculate(self, **resource):
+        """ Append descriptors to TAS h5 table """
+        #initalizing
+        image_uri = resource['image'] 
+        with ImageImport(image_uri) as imgimp:
+            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
+            im = np.array(Image.open(str(imgimp)))
+            if len(im.shape)==3:
+                im = rgb2gray(im)   
+            im = im.astype(np.uint8)  
+            im=np.asarray(im) 
+                   
+            descriptor = tas(im)
+            
+        #initalizing rows for the table
+        return [descriptor]
+
+class TASColored(Feature.BaseFeature):
+    """
+        Initalizes table and calculates the SURF descriptor to be
+        placed into the HDF5 table.
+    """
+    
+    #parameters
+    name = 'TASColored'
+    description = """Threshold Adjacency Statistics"""
     length = 162 
     confidence = 'good' 
     
@@ -201,6 +267,9 @@ class TAS(Feature.BaseFeature):
         with ImageImport(image_uri) as imgimp:
             #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
             im = np.array(Image.open(str(imgimp)))
+            if len(im.shape)==2:
+                im = gray2rgb(im) 
+            im = im.astype(np.uint8)  
             im=np.asarray(im) 
                    
             descriptor = tas(im)
