@@ -181,6 +181,7 @@ class ConverterBioformats(ConverterBase):
         ########################################
         rd = {}
         rd['image_num_series'] = misc.safeint(misc.between('Series count =', '\n', o),1)
+        rd['image_series_index'] = series
         rd['format'] = misc.between('Checking file format [', ']', o)
 
         ########################################
@@ -333,11 +334,12 @@ class ConverterBioformats(ConverterBase):
                 rd['image_num_series'] = misc.safetypeparse(val)
                 continue
 
-            if line.startswith('Series #0'):
+            if line.startswith('Series #%s'%series):
+                rd['image_series_index'] = series
                 in_series = True
                 continue
 
-            if line.startswith('Series #1'):
+            if line.startswith('Series #%s'%(int(series)+1)):
                 break
 
             if not in_series:
