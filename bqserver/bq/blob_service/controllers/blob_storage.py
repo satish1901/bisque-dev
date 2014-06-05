@@ -131,8 +131,13 @@ if os.name == 'nt':
         return path
 else:
     def move_file (fp, newpath):
-        oldpath = os.path.abspath(fp.name)
-        shutil.move (oldpath, newpath)
+        log.debug ("moving file %s", fp.name)
+        if os.path.exists(fp.name):
+            oldpath = os.path.abspath(fp.name)
+            shutil.move (oldpath, newpath)
+        else:
+            with open(newpath, 'wb') as trg:
+                shutil.copyfileobj(fp, trg)
 
     data_url_path = data_path
 

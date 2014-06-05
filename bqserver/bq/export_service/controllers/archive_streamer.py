@@ -1,20 +1,63 @@
+###############################################################################
+##  Bisque                                                                   ##
+##  Center for Bio-Image Informatics                                         ##
+##  University of California at Santa Barbara                                ##
+## ------------------------------------------------------------------------- ##
+##                                                                           ##
+##     Copyright (c) 2007,2008,2009,2010,2011,2012,2013,2014                 ##
+##     by the Regents of the University of California                        ##
+##                            All rights reserved                            ##
+##                                                                           ##
+## Redistribution and use in source and binary forms, with or without        ##
+## modification, are permitted provided that the following conditions are    ##
+## met:                                                                      ##
+##                                                                           ##
+##     1. Redistributions of source code must retain the above copyright     ##
+##        notice, this list of conditions, and the following disclaimer.     ##
+##                                                                           ##
+##     2. Redistributions in binary form must reproduce the above copyright  ##
+##        notice, this list of conditions, and the following disclaimer in   ##
+##        the documentation and/or other materials provided with the         ##
+##        distribution.                                                      ##
+##                                                                           ##
+##                                                                           ##
+## THIS SOFTWARE IS PROVIDED BY <COPYRIGHT HOLDER> ''AS IS'' AND ANY         ##
+## EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE         ##
+## IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR        ##
+## PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> OR           ##
+## CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,     ##
+## EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,       ##
+## PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR        ##
+## PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF    ##
+## LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING      ##
+## NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS        ##
+## SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.              ##
+##                                                                           ##
+## The views and conclusions contained in the software and documentation     ##
+## are those of the authors and should not be interpreted as representing    ##
+## official policies, either expressed or implied, of <copyright holder>.    ##
+###############################################################################
+"""
+SYNOPSIS
+========
+
+
+DESCRIPTION
+===========
+
+"""
+
 import os
-import tarfile
-import copy
-import string
 import logging
 import httplib2
 import urlparse
-import os
 import datetime
 from bq.release import __VERSION__
 
-from tg import request, response, expose, config
+from tg import request, response, config
 from lxml import etree
-from cStringIO import StringIO
-from bq.exceptions import IllegalOperation
-from bq import data_service, image_service, blob_service
-from bq.export_service.controllers.archiver.archiver_factory import ArchiverFactory
+from bq import data_service, blob_service
+from .archiver.archiver_factory import ArchiverFactory
 
 log = logging.getLogger("bq.export_service.archive_streamer")
 
@@ -26,13 +69,13 @@ class ArchiveStreamer():
         self.archiver = ArchiverFactory().getClass(compressionType)
 
 
-    def init(self, archiveName='Bisque', fileList=[], datasetList=[], urlList=[], dirList=[], export_meta=True, export_mexs=False):
-        self.fileList = fileList
-        self.datasetList = datasetList
-        self.urlList = urlList
-        self.dirList = dirList
+    def init(self, archiveName='Bisque', fileList=None, datasetList=None, urlList=None, dirList=None, export_meta=True, export_mexs=False):
+        self.fileList = fileList or []
+        self.datasetList = datasetList or []
+        self.urlList = urlList or []
+        self.dirList = dirList or []
         self.export_meta = export_meta
-        self.export_mexs = False
+        self.export_mexs = export_mexs
 
         filename = archiveName + self.archiver.getFileExtension()
         try:
@@ -70,12 +113,12 @@ class ArchiveStreamer():
         etree.SubElement(summary, 'tag', name='origin', value=config.get('bisque.root'))
         etree.SubElement(summary, 'tag', name='version', value=__VERSION__)
         etree.SubElement(summary, 'tag', name='datetime', value=str(datetime.datetime.now()))
-        
+
         index = 0
         for f in flist:
             log.debug('writeSummary: %s', f)
             if f.get('dataset') is None and f.get('path') is None:
-                log.debug('writeSummary Adding: %s', f)                
+                log.debug('writeSummary Adding: %s', f)
                 v = etree.SubElement(summary, 'value', index='%s'%index, type='object')
                 v.text = f.get('outpath')
                 index += 1
@@ -98,6 +141,10 @@ class ArchiveStreamer():
 
         def fileInfo(relpath, uri, index=0):
             xml  = data_service.get_resource(uri, view='deep,clean')
+            if xml is None:
+                log.warn ('skipping unreadable uri %s', uri)
+                return None
+
             name = xml.get('name')
             uniq = xml.get('resource_uniq', None)
 
@@ -112,20 +159,20 @@ class ArchiveStreamer():
 
             path = None
             if uniq is not None:
-                del xml.attrib['resource_uniq'] # dima: strip resource_uniq from exported xml 
+                del xml.attrib['resource_uniq'] # dima: strip resource_uniq from exported xml
                 path = blob_service.localpath(uniq)
-                if not os.path.exists(path):
+                if path and not os.path.exists(path):
                     path = None
-            
+
             # if resource is just an XML doc
             content = None
             if path is None:
                 content = etree.tostring(xml)
                 name = '%s_%s'%(name, uniq)
                 xml = None
-            
+
             # disambiguate file name if present
-            ext = '' if path is not None else '.xml'            
+            ext = '' if path is not None else '.xml'
             outpath = os.path.join(relpath, '%s%s'%(name, ext)).replace('\\', '/')
             if outpath in fileHash:
                 fname, ext = os.path.splitext(name)
@@ -196,6 +243,8 @@ class ArchiveStreamer():
         if len(fileList)>0:
             for index, uri in enumerate(fileList):
                 finfo = fileInfo('', uri)
+                if finfo is None:
+                    continue
                 flist.append(finfo)
                 if self.export_meta is True and finfo.get('xml') is not None:
                     flist.append(xmlInfo(finfo))
@@ -208,7 +257,7 @@ class ArchiveStreamer():
                     for m in members:
                         uri = m.get('uri')
                         flist.append(fileInfo('', uri))
-                    
+
         # processing a list of datasets
         if len(datasetList)>0:
             for uri in datasetList:
@@ -216,13 +265,15 @@ class ArchiveStreamer():
                 name = dataset.xpath('/dataset/@name')[0]
                 members = dataset.xpath('/dataset/value')
                 uniq = dataset.get('resource_uniq', '')
-                del dataset.attrib['resource_uniq'] # dima: strip resource_uniq from exported xml 
+                del dataset.attrib['resource_uniq'] # dima: strip resource_uniq from exported xml
 
                 for index, member in enumerate(members):
                     finfo = fileInfo(name, member.text, index)
+                    if finfo is None:
+                        continue
                     finfo['dataset'] = name
                     flist.append(finfo)
-                    
+
                     # update reference in the dataset xml
                     if self.export_meta is True and finfo.get('xml') is not None:
                         flist.append(xmlInfo(finfo))
@@ -230,13 +281,13 @@ class ArchiveStreamer():
                     else:
                         member.text = finfo.get('outpath','')
 
-                if self.export_meta:                
+                if self.export_meta:
                     # disambiguate file name if present
                     name = '%s.xml'%name
                     if name in fileHash:
                         fname, ext = os.path.splitext(name)
                         name = '%s%s%s'%(fname, uniq, ext)
-                    fileHash[name] = name                
+                    fileHash[name] = name
 
                     # Insert dataset XML into file list
                     flist.append(dict( name      = name,
@@ -265,6 +316,8 @@ class ArchiveStreamer():
                             folder.append(parent.get('name', None))
                     folder.reverse()
                     finfo = fileInfo('/'.join(folder), uri, index)
+                    if finfo is None:
+                        continue
                     flist.append(finfo)
                     if self.export_meta is True and finfo.get('xml') is not None:
                         flist.append(xmlInfo(finfo))

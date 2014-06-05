@@ -674,7 +674,9 @@ def parse_uri(uri):
     @return: The parse resouece
     '''
     url = urlparse.urlsplit(uri)
+    # (scheme, host, path, ...)
     parts = url[2].split('/')
+    # paths are /class/id or /resource_uniq
     if len(parts)>=2:
         name, ida = parts[-2:]
     else:
@@ -685,7 +687,7 @@ def parse_uri(uri):
         name,ida = parts[-2:]
     return url[1], name, ida, rest
 
-def load_uri (uri):
+def load_uri (uri, query=False):
     '''Load the object specified by the root tree and return a rsource
     @type   root: Element
     @param  root: The db object root with a uri attribute
@@ -697,16 +699,18 @@ def load_uri (uri):
     net, name, ida, rest = parse_uri(uri)
     if name == 'data_service': # and ida.startswith('00-'):
         log.debug("loading resource_uniq %s" % ida)
-        resource = DBSession.query(Taggable).filter_by(resource_uniq = ida).first()
+        resource = DBSession.query(Taggable).filter_by(resource_uniq = ida)
     else:
         if ida.startswith("00-"):
             log.debug("loading resource_uniq %s" % ida)
-            resource = DBSession.query(Taggable).filter_by(resource_uniq = ida).first()
+            resource = DBSession.query(Taggable).filter_by(resource_uniq = ida)
         else:
             name, dbcls = dbtype_from_tag(name)
             log.debug("loading %s -> name/type (%s/%s)(%s) " %(uri, name,  str(dbcls), ida))
             #resource = DBSession.query(dbcls).get (int (ida))
-            resource = DBSession.query(dbcls).filter (dbcls.id == int(ida)).first()
+            resource = DBSession.query(dbcls).filter (dbcls.id == int(ida))
+    if not query:
+        resource = resource.first()
     log.debug ("loaded %s", str(resource))
     return resource
 
