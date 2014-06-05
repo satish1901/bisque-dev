@@ -151,14 +151,20 @@ class DriverManager(object):
         """Find a driver matching the prefix of blob_id
         """
         path = None
+        sub = None
         for driver in self.drivers.values():
             if driver.valid(blob_id):
                 with TransferTimer() as t:
-                    path = t.path =  driver.localpath(blob_id)
-                break
+                    path,sub = t.path,_ = driver.localpath(blob_id)
+                if path:
+                    break
         if path is None:
-            log.warn ("failed to fetch blob %s" , blob_id)
-        return path
+            log.warn ("failed to fetch blob [%s] [%s]" , blob_id, sub)
+        elif sub is not None:
+            # if sub path could not be serviced by the storage system and the file is a package (zip, tar, ...)
+            # extract the sub element here and return the extracted path with sub as None
+            pass
+        return path,sub
 
     def save_blob(self, fileobj, filename, user_name, uniq):
         #filename_safe = filename.encode('ascii', 'xmlcharrefreplace')
@@ -491,12 +497,21 @@ class BlobServer(RestController, ServiceMixin):
                 blob_id  = resource.resource_value.encode('utf-8')
             else:
                 blob_id  = resource.resource_value
-            path = self.drive_man.fetch_blob(blob_id)
-            log.debug('using %s full=%s localpath=%s' , uniq_ident, blob_id, path)
-            return path
-        log.warn('No localpath for %s and %s', uniq_ident, path)
+            path,sub = self.drive_man.fetch_blob(blob_id)
+            log.debug('using %s full=%s localpath=%s sub=%s' , uniq_ident, blob_id, path, sub)
+            return path,sub
+        elif resource is not None and resource.resource_value is None:
+            #in case of a multi-file resource
+            response = data_service.query(resource_uniq=uniq_ident, view='full')
+            values = response.xpath('//value')
+            if values is not None and len(values)>0:
+                blob_id = values[0].text
+                if os.name != 'nt':
+                    blob_id  = blob_id.encode('utf-8')
+                path,sub = self.drive_man.fetch_blob(blob_id)
+                log.debug('using %s full=%s localpath=%s sub=%s' , uniq_ident, blob_id, path, sub)
+                return path,sub        
         return None
-        #raise IllegalOperation("bad resource value %s" % uniq_ident)
 
     def originalFileName(self, ident):
         log.debug ('originalFileName: deprecated %s', ident)

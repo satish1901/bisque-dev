@@ -24,3 +24,6 @@ Ran 37 tests in 52.199s
 Ran 37 tests in 43.292s
 Ran 37 tests in 28.721s
 Ran 37 tests in 32.531s
+
+v5.5
+Ran 38 tests in 31.458s
