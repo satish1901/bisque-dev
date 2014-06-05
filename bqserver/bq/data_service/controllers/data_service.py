@@ -77,7 +77,7 @@ from bq.util.hash import make_uniq_code, is_uniq_code
 
 from .bisquik_resource import BisquikResource, force_dbload, check_access
 from .resource_query import resource_query, resource_count, resource_load, resource_delete, resource_types, resource_auth
-from .resource_query import RESOURCE_READ, RESOURCE_EDIT
+from .resource_query import prepare_permissions, RESOURCE_READ, RESOURCE_EDIT
 from .resource import HierarchicalCache
 from .formats import find_formatter
 #from .doc_resource import XMLDocumentResource
@@ -257,11 +257,14 @@ class DataServerController(ServiceController):
                 return xml
             else:
                 net, name, ida, rest = parse_uri(uri)
-                resource = load_uri (uri)
+                resource = load_uri (uri, query=True)
                 if rest:  # Fetch resource is really a query
                     resource = self.query(resource_tag=rest[-1], parent=resource,**kw)
                     #self.cache_save (uri, response=etree.tostring(resource), **kw)
                     return resource
+                resource = prepare_permissions(resource, user_id=None, with_public = kw.get('wpublic')).first()
+
+        log.debug ("get_resource: uri %s -> %s", uri, str(resource))
         if resource is None:
             return resource
         xtree = db2tree(resource, baseuri = self.url, **kw)

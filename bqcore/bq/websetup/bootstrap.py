@@ -44,6 +44,7 @@ def bootstrap(command, conf, vars):
             display_name = config.get('bisque.admin_display_name', 'Bisque admin'),
             email_address = config.get('bisque.admin_email', 'manager@somedomain.com'),
             password = u'admin')
+        #admin.password = u'admin'
         model.DBSession.add(admin)
 
         for g in [ u'admins', u'managers' ] :
@@ -91,6 +92,7 @@ def bootstrap(command, conf, vars):
             if os.path.exists(system_prefs):
                 with open (system_prefs) as f:
                     system = bisquik2db (f)
+                    system.permission = 'published'
             else:
                 print( "Couldn't find %s: using minimal default preferences" % system_prefs)
                 system = Taggable(resource_type = 'system')

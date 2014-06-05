@@ -1,5 +1,5 @@
-<system name="system" >
-    <tag name="version" value="0.5.4" />
+<system name="system"  >
+    <tag name="version" value="0.5.5" />
     <tag name="Preferences">
         <tag name="titles">
             <tag name="organization" value="" />
@@ -12,9 +12,9 @@
         </tag>
         <tag name="Toolbar">
             <tag name="registration" value="/auth_service/login" /> <!-- /registration -->
-            <tag name="password_recovery" value="/auth_service/login" /> <!-- /registration/lost_password -->         
+            <tag name="password_recovery" value="/auth_service/login" /> <!-- /registration/lost_password -->
             <tag name="user_profile" value="/registration/edit_user" />
-        </tag>  
+        </tag>
         <tag name="ResourceBrowser">
             <tag name="Browser">
                 <tag name="Tag Query"/>
@@ -26,7 +26,7 @@
                         <tag type="boolean" name="Editable" value="true"/>
                         <tag type="string" name="select" value="Compact,Grid,Card,Full"/>
                     </template>
-                </tag>                
+                </tag>
                 <tag name="Include Public Resources" value="false">
                     <template>
                         <tag type="string" name="Type" value="Boolean"/>
@@ -34,7 +34,7 @@
                         <tag type="boolean" name="allowBlank" value="false"/>
                         <tag type="boolean" name="Editable" value="true"/>
                     </template>
-                </tag>                
+                </tag>
             </tag>
             <tag name="Images">
                 <tag name="ImageParameters"/>
@@ -48,7 +48,7 @@
                 <tag name="species"/>
             </tag>
         </tag>
-        
+
         <tag name="Uploader">
             <tag name="initial_path" value="{date_iso}" type="string">
                 <template>
@@ -57,7 +57,7 @@
                 </template>
             </tag>
         </tag>
-        
+
         <tag name="Viewer">
             <tag type="boolean" name="autoUpdate" value="true">
                 <template>
@@ -67,7 +67,7 @@
                     <tag type="boolean" name="Editable" value="true"/>
                 </template>
             </tag>
-            
+
             <tag type="boolean" name="negative" value="false">
                 <template>
                     <tag type="string" name="Type" value="Boolean"/>
@@ -76,7 +76,7 @@
                     <tag type="boolean" name="Editable" value="true"/>
                 </template>
             </tag>
-            
+
             <tag name="enhancement" value="d">
                 <template>
                     <tag type="string" name="Type" value="ComboBox"/>
@@ -87,7 +87,7 @@
                     <tag type="string" name="passedValues" value="d,f,t,e"/>
                 </template>
             </tag>
-            
+
             <tag name="projection" value="">
                 <template>
                     <tag type="string" name="Type" value="ComboBox"/>
@@ -109,7 +109,7 @@
                     <tag type="string" name="passedValues" value="d,f,t,e"/>
                 </template>
             </tag>
-            
+
             <tag name="fusion" value="m">
                 <template>
                     <tag type="string" name="Type" value="ComboBox"/>
@@ -128,7 +128,7 @@
                     <tag type="boolean" name="allowBlank" value="false"/>
                     <tag type="boolean" name="Editable" value="true"/>
                     <tag type="string" name="select" value="None,Dots,Grid"/>
-                    <tag type="string" name="passedValues" value="false,dots,grid"/>                    
+                    <tag type="string" name="passedValues" value="false,dots,grid"/>
                 </template>
             </tag>
 
@@ -142,6 +142,6 @@
 
             <tag name="hide_gobjects_creation" value="" />
 
-        </tag>  
+        </tag>
     </tag>
 </system>
