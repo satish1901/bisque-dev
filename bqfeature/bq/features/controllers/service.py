@@ -34,7 +34,7 @@ from bq.util.mkdir import _mkdir
 
 from bq.features.controllers.ID import ID
 from bq.features.controllers.Feature import BaseFeature, mex_validation
-from bq.features.controllers.TablesInterface import Rows, IDRows, WorkDirRows, Tables, IDTables, WorkDirTable
+from bq.features.controllers.TablesInterface import Rows, IDRows, WorkDirRows, Tables, IDTables, WorkDirTable, QueryQueue
 from exceptions import FeatureServiceError,FeatureExtractionError, FeatureImportError
 from .var import FEATURES_TABLES_FILE_DIR, FEATURES_TEMP_IMAGE_DIR, EXTRACTOR_DIR, FEATURES_TABLES_WORK_DIR, FEATURES_REQUEST_ERRORS_DIR
 
@@ -181,6 +181,17 @@ class ResourceList(object):
         else:
             return
 
+    def get_query_queue(self):
+        """
+            returns a query queue with all the resources in resource list
+        """
+        query_queue = QueryQueue(self.feature())
+        
+        for uri_hash in self.uri_hash_list:
+            query_queue.push(uri_hash)
+            
+        return query_queue
+
     def __getitem__(self, index):
         """ get with index, the list is always ordered """
         return (self.uri_hash_list[index], self.element_dict[self.uri_hash_list[index]])
@@ -189,7 +200,6 @@ class ResourceList(object):
         return len(self.uri_hash_list)
     
     def __iter__(self): 
-        #TODO: make a better iter function
         return iter(self.uri_hash_list)
     
     def error_list(self):
@@ -260,15 +270,14 @@ def parse_request(feature_request_uri, feature_name, format_name='xml', method='
     resource_list = ResourceList( feature_request_uri, feature_name, format_name, options=options )
 
     # validating request
-    if method == 'POST' and 1 > request.headers['Content-type'].count('xml/text'):
+    if method=='POST' and 1>request.headers['Content-type'].count('xml/text'):
         if not request.body:
             raise FeatureServiceError( 400, 'Document Error: No body attached to the POST')
         try:  # parse the resquest
             log.debug('request :%s' % request.body)
-            body = etree.fromstring(request.body)
-            if body.tag != 'dataset':
+            body = etree.fromstring( request.body)
+            if body.tag!='dataset':
                 raise FeatureServiceError( 400, 'Document Error: Only excepts datasets')
-
 
             # iterating through elements in the dataset parsing and adding to ElementList
             for value in body.xpath('value[@type="query"]'):
@@ -319,41 +328,47 @@ def operations(resource_list):
             feature_rows = Rows(resource_list.feature())
             
             element_list_in_table = []
-            for i, uri_hash in enumerate(resource_list):
-                if feature_table.find(uri_hash):
-                    log.debug("Returning Resource: %s from the feature table"%resource_list.element_dict[uri_hash])
+            
 
-                else:
-                    log.debug("Resource: %s was not found in the feature table"%resource_list.element_dict[uri_hash])
-                    resource_uris_dict = resource_list.get(uri_hash)[1]
-                    
-                    #checks to see if the feature calculation succeeded, if error
-                    #then the resource is removed from the element list
-                    try:
-                        feature_rows.push(**resource_uris_dict)
-                    except FeatureExtractionError as feature_extractor_error: #if error occured the element is moved for the resource list to the error list
-                        resource_list.remove(resource_uris_dict,feature_extractor_error)
-                        log.debug('Exception: Error Code %s : Error Message %s'%(resource_list.error_list[-1].code,resource_list.error_list[-1].message))
-
-            # store features
-            feature_table.store(feature_rows)
+            query_queue = resource_list.get_query_queue()
+            
+            for results in feature_table.find(query_queue):
+                for (r,uri_hash) in results:
+                    if r:
+                        log.debug("Returning Resource: %s from the feature table"%resource_list.element_dict[uri_hash])
+                    else:
+                        log.debug("Resource: %s was not found in the feature table"%resource_list.element_dict[uri_hash])
+                        resource_uris_dict = resource_list.get(uri_hash)[1]
+                        
+                        #checks to see if the feature calculation succeeded, if error
+                        #then the resource is removed from the element list
+                        try:
+                            feature_rows.push(**resource_uris_dict)
+                        except FeatureExtractionError as feature_extractor_error: #if error occured the element is moved for the resource list to the error list
+                            resource_list.remove(resource_uris_dict,feature_extractor_error)
+                            log.debug('Exception: Error Code %s : Error Message %s'%(resource_list.error_list[-1].code,resource_list.error_list[-1].message))  
+                
+                # store features     
+                feature_table.store(feature_rows)
+            
 
             # store in id table after just in case some features fail so their ids are not stored
             hash_table = IDTables()
             hash_row = IDRows(resource_list.feature())
-            
-            # finding hashes
-            element_list_in_table = []
-            for i, uri_hash in enumerate(resource_list):
-                if hash_table.find(uri_hash):
-                    log.debug("Returning Resource: %s from the uri table"%resource_list.element_dict[uri_hash])
-                    
-                else:
-                    log.debug("Resource: %s was not found in the uri table"%resource_list.element_dict[uri_hash])
-                    hash_row.push(**resource_list.get(uri_hash)[1])
 
-            # store hashes
-            hash_table.store(hash_row)
+            query_queue = resource_list.get_query_queue()
+            # finding hashes
+            for results in hash_table.find(query_queue):
+                for (r,uri_hash) in results:
+                    if r:
+                        log.debug("Found Resource: %s in the uri table"%resource_list.element_dict[uri_hash])
+                    else:
+                        log.debug("Resource: %s was not found in the uri table"%resource_list.element_dict[uri_hash])
+                        resource_uris_dict = resource_list.get(uri_hash)[1]
+                        hash_row.push(**resource_uris_dict)
+
+                # store hashes
+                hash_table.store(hash_row)
 
         else: #creating table for uncached features in the work dir
             log.debug('Calculating on uncached feature')
@@ -458,39 +473,40 @@ class Xml(Format):
         nodes = 0
         xml_doc = '<resource uri = "%s">'%str(self.feature_request_uri.replace('&','&amp;'))
         yield xml_doc
-
-        for i, uri_hash in enumerate(resource_list):
-            rows = table.get(uri_hash)
-            if rows != None:  # a feature was found for the query
-                resource = resource_list[i][1]
-
-                for r in rows:
-                    subelement = etree.Element( 'feature' , resource , type=str(self.feature.name))
-
-                    if self.feature.parameter:
-                        parameters = {}
-                        # creates list of parameters to append to the xml
-                        for parameter_name in self.feature.parameter:
-                            parameters[parameter_name] = str(r[parameter_name])
-                        etree.SubElement(subelement, 'parameters', parameters)
-
-                    value = etree.SubElement(subelement, 'value')
-                    value.text = " ".join('%g' % item for item in r['feature'])  # writes the feature vector to the xml
-                    nodes += 1
-
+        
+        query_queue = resource_list.get_query_queue()
+        for query in table.get(query_queue):
+            for rows,hash in query:
+                if rows != None:  # a feature was found for the query
+                    resource = resource_list.get(hash)[1]
+    
+                    for r in rows:
+                        subelement = etree.Element( 'feature' , resource , type=str(self.feature.name))
+    
+                        if self.feature.parameter:
+                            parameters = {}
+                            # creates list of parameters to append to the xml
+                            for parameter_name in self.feature.parameter:
+                                parameters[parameter_name] = str(r[parameter_name])
+                            etree.SubElement(subelement, 'parameters', parameters)
+    
+                        value = etree.SubElement(subelement, 'value')
+                        value.text = " ".join('%g' % item for item in r['feature'])  # writes the feature vector to the xml
+                        nodes += 1
+    
+                        xml_doc = etree.tostring(subelement)
+                        yield xml_doc
+    
+                else:  # no feature was found from the query, adds an error message to the xml
+                    subelement = etree.Element(
+                                                      'feature' ,
+                                                      resource,
+                                                      error_code = '404',
+                                                      type=str(self.feature.name),
+                                                      error='404 Not Found: The feature was not found in the table. Check feature logs for traceback'
+                                               )
                     xml_doc = etree.tostring(subelement)
-                    yield xml_doc
-
-            else:  # no feature was found from the query, adds an error message to the xml
-                subelement = etree.Element(
-                                                  'feature' ,
-                                                  resource,
-                                                  error_code = '404',
-                                                  type=str(self.feature.name),
-                                                  error='404 Not Found: The feature was not found in the table. Check feature logs for traceback'
-                                           )
-                xml_doc = etree.tostring(subelement)
-                yield xml_doc
+                    yield xml_doc                
                 
                 
         #read through errors
@@ -599,31 +615,29 @@ class Csv(Format):
         yield titles+'\n'
 
         idx = 0
-        for i, uri_hash in enumerate(resource_list.uri_hash_list):
+        query_queue = resource_list.get_query_queue()
+        for query in table.get(query_queue):
+            for rows,hash in query:
+                if rows != None:  # a feature was found for the query
+                    resource = resource_list.get(hash)[1]
 
-            resource = resource_list[i][1]
-
-            rows = table.get(uri_hash)
-            
-            if rows != None:  # check to see if nothing is return from the tables
-
-                for r in rows:
-                    value_string = ",".join('%g' % i for i in r['feature'])  # parses the table output and returns a string of the vector separated by commas
+                    for r in rows:
+                        value_string = ",".join('%g' % i for i in r['feature'])  # parses the table output and returns a string of the vector separated by commas
+                        resource_uri = [resource[rn] for rn in resource_names]
+                        parameter = []
+                        parameter = ['%g'%r[pn] for pn in parameter_names]
+                        line = ",".join([str(idx), self.feature.name] + resource_uri + ['"'+value_string+'"'] + parameter + ['200','none'])
+                        yield line+'\n'
+                        idx += 1
+    
+                else:  # if nothing is return from the tables enter Nan into each vector element
+                    value_string = ",".join(['Nan' for i in range(self.feature.length)])
                     resource_uri = [resource[rn] for rn in resource_names]
                     parameter = []
-                    parameter = ['%g'%r[pn] for pn in parameter_names]
-                    line = ",".join([str(idx), self.feature.name] + resource_uri + ['"'+value_string+'"'] + parameter + ['200','none'])
+                    parameter = ['Nan' for pn in parameter_names]
+                    line = ",".join([str(idx), self.feature.name] + resource_uri + ['"'+value_string+'"']  +  parameter + ['404','The feature was not found in the table. Check feature logs for traceback'])# appends all the row elements
                     yield line+'\n'
-                    idx+=1
-
-            else:  # if nothing is return from the tables enter Nan into each vector element
-                value_string = ",".join(['Nan' for i in range(self.feature.length)])
-                resource_uri = [resource[rn] for rn in resource_names]
-                parameter = []
-                parameter = ['Nan' for pn in parameter_names]
-                line = ",".join([str(idx), self.feature.name] + resource_uri + ['"'+value_string+'"']  +  parameter + ['404','The feature was not found in the table. Check feature logs for traceback'])# appends all the row elements
-                yield line+'\n'
-                idx+=1
+                    idx += 1
                 
                      
         for i, error in enumerate(resource_list.error_list):
@@ -633,7 +647,7 @@ class Csv(Format):
             parameter = ['Nan' for pn in parameter_names]
             line = ",",join([str(idx), self.feature.name] + resource_uri + [value_string]  +  parameter + [error.code,error.message])# appends all the row elements      
             yield line+'\n'
-            idx+=1    
+            idx += 1    
 
     def return_from_workdir(self, table, resource_list, **kw):
         """
@@ -690,7 +704,6 @@ class Hdf(Format):
     
     def return_header(self, table, resource_list, **kw):
 
-        
         path = resource_list.workdir_filename()
         filename = ntpath.basename(path)
         uuid.uuid1()
@@ -730,18 +743,24 @@ class Hdf(Format):
         def func(h5file):
             #writing to table
             response_table = h5file.root.values
-            for i, uri_hash in enumerate(resource_list.uri_hash_list):
-                rows = table.get(uri_hash)
-                for r in rows:  # taking rows out of one and placing them into the rows of the output table
-                    row = ()
-                    for e in self.feature.resource:  # adding input resource uris
-                        row += tuple([resource_list[i][1][e]])
-                    row += tuple([resource_list.feature.name])
-                    row += tuple([r['feature']])
-                    for p in self.feature.parameter:
-                        row += tuple([r[p]])
-                    response_table.append([row])
-                response_table.flush()
+            query_queue = resource_list.get_query_queue()
+            for query in table.get(query_queue):
+                for rows,hash in query:
+                    if rows != None:  # a feature was found for the query
+                        resource = resource_list.get(hash)[1]
+                        resource_list.remove(input_dict,FeatureExtractionError(resource, 404, 'Resource was not found in the feature tables: %s'%resource))
+                        log.warning('Resource: %s was not found in the feature tables'%resource)
+                    else:
+                        for r in rows:  # taking rows out of the cached tables and placing them into the rows of the output table
+                            row = ()
+                            for e in self.feature.resource:  # adding input resource uris
+                                row += tuple([resource_list[i][1][e]])
+                            row += tuple([resource_list.feature.name])
+                            row += tuple([r['feature']])
+                            for p in self.feature.parameter:
+                                row += tuple([r[p]])
+                            response_table.append([row])
+                        response_table.flush()
         
         if len(resource_list)>0: #no table will be created it their are no elements
             workdir_feature_table.create_h5_file( path, func)
@@ -838,7 +857,7 @@ FORMAT_DICT = {
     'xml'      : Xml,
     'csv'      : Csv,
     'hdf'      : Hdf,
-    'none'     : NoOutput,
+    #'none'     : NoOutput,
     #'localpath': LocalPath
 }
 

@@ -19,6 +19,9 @@
     <link href="//fonts.googleapis.com/css?family=Abel|Varela+Round" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" type="text/css" href="${tg.url('/extjs/resources/css/ext-all.css')}" />
     <!--<link rel="stylesheet" type="text/css" href="${tg.url('/extjs/resources/css/ext-all-neptune.css')}"/>-->
+
+    <!-- ExtJS5 styles -->
+    <!--<link rel="stylesheet" type="text/css" href="${tg.url('/extjs/packages/ext-theme-classic/build/resources/ext-theme-classic-all.css')}"/>-->
     <!--<link rel="stylesheet" type="text/css" href="${tg.url('/extjs/packages/ext-theme-crisp/build/resources/ext-theme-crisp-all.css')}"/>-->
 
 
@@ -41,7 +44,7 @@
     '/js/movie/movie.css',
     { 'file': '/dataset_service/public/dataset_panel.css', 'path' : h.file_root() + 'bqserver/bq' },
     '/js/renderers/dataset.css',
-#    '/js/volume/bioWeb3D.css',
+    '/js/volume/bioWeb3D.css',
     {'file' : '/export_service/public/css/BQ.Export.css', 'path' : h.file_root() + 'bqserver/bq'},
     '/css/bisquik_extjs_fix.css',
     # combined will not work for now due to relative urls in .css files
@@ -54,6 +57,7 @@
     <script py:if="tg.config.get('bisque.js_environment', None) == 'production'" type="text/javascript" src="${tg.url('/extjs/ext-all.js')}"></script>
     <script py:if="tg.config.get('bisque.js_environment', None) != 'production'" type="text/javascript" src="${tg.url('/extjs/ext-all-debug.js')}"></script>
 
+
     <!-- ExtJS 5 -->
     <!--
     <script>
@@ -64,8 +68,8 @@
             },
         };
     </script>
-    <script py:if="tg.config.get('bisque.js_environment', None) == 'production'" type="text/javascript" src="${tg.url('/extjs/build/ext-all.js')}"></script>
-    <script py:if="tg.config.get('bisque.js_environment', None) != 'production'" type="text/javascript" src="${tg.url('/extjs/build/ext-all-debug.js')}"></script>
+    <script py:if="tg.config.get('bisque.js_environment', None) == 'production'" type="text/javascript" src="${tg.url('/extjs/ext-all.js')}"></script>
+    <script py:if="tg.config.get('bisque.js_environment', None) != 'production'" type="text/javascript" src="${tg.url('/extjs/ext-all-debug.js')}"></script>
     -->
 
     <!-- GMaps API -->
@@ -208,6 +212,15 @@
     { 'file': '/dataset_service/public/dataset_panel.js','path': h.file_root() + 'bqserver/bq/'},
     '/js/renderers/dataset.js',
     '/js/resourceview.js',
+
+    # -- WebGL viewer --
+    '/js/volume/lib/whammy.js',
+    '/js/volume/threejs/three.min.js',
+    '/js/volume/threejs/OrbitControls.js',
+    '/js/volume/animationControls.js',
+    '/js/volume/renderingControls.js',
+    '/js/volume/extThreeJS.js',
+    '/js/volume/bioWeb3D.js',
 
     {'file': '/dataset_service/public/dataset_service.js', 'path': h.file_root() + 'bqserver/bq/'},
 
