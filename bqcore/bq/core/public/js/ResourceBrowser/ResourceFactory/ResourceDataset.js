@@ -331,38 +331,40 @@ Ext.define('Bisque.ResourceBrowser.OperationBar.dataset', {
 
     deleteDataset : function(me, e) {
         e.stopPropagation();
-        var list = Ext.Object.getSize(this.browser.resourceQueue.selectedRes);
+        Ext.MessageBox.confirm( 'Delete dataset?', 'Just confirming that you are deleting this dataset and all of its elements?', function(btn) {
+            if (btn != 'yes') return;
+            var list = Ext.Object.getSize(this.browser.resourceQueue.selectedRes);
+            if (list > 1) {
+                this.fireEvent( 'removed', this.browser.resourceQueue.selectedRes );
+                var members = [];
 
-        if (list > 1) {
-            this.fireEvent( 'removed', this.browser.resourceQueue.selectedRes );
-            var members = [];
+                for (var res in this.browser.resourceQueue.selectedRes) {
+                    this.browser.resourceQueue.selectedRes[res].setLoading({
+                        msg : 'Deleting...'
+                    });
+                    members.push(this.browser.resourceQueue.selectedRes[res]);
+                }
 
-            for (var res in this.browser.resourceQueue.selectedRes) {
-                this.browser.resourceQueue.selectedRes[res].setLoading({
+                for (var i=0; i<members.length; i++)
+                    this.dataset_service.run_delete(members[i].resource.uri);
+
+                //this.browser.msgBus.fireEvent('Browser_ReloadData', {});
+                var msgbus = this.browser.msgBus; // dima: a hack just to get this working before the rewrite
+                setTimeout(function(){ msgbus.fireEvent('Browser_ReloadData', {}); }, 1000);
+            } else {
+                var selected = {};
+                selected[this.resourceCt.resource.uri] = this.resourceCt.resource;
+                this.fireEvent( 'removed', selected );
+
+                this.resourceCt.setLoading({
                     msg : 'Deleting...'
                 });
-                members.push(this.browser.resourceQueue.selectedRes[res]);
+                this.dataset_service.run_delete(this.resourceCt.resource.uri);
+                //this.browser.msgBus.fireEvent('Browser_ReloadData', {});
+                var msgbus = this.browser.msgBus; // dima: a hack just to get this working before the rewrite
+                setTimeout(function(){ msgbus.fireEvent('Browser_ReloadData', {}); }, 1000);
             }
-
-            for (var i=0; i<members.length; i++)
-                this.dataset_service.run_delete(members[i].resource.uri);
-
-            //this.browser.msgBus.fireEvent('Browser_ReloadData', {});
-            var msgbus = this.browser.msgBus; // dima: a hack just to get this working before the rewrite
-            setTimeout(function(){ msgbus.fireEvent('Browser_ReloadData', {}); }, 1000);
-        } else {
-            var selected = {};
-            selected[this.resourceCt.resource.uri] = this.resourceCt.resource;
-            this.fireEvent( 'removed', selected );
-
-            this.resourceCt.setLoading({
-                msg : 'Deleting...'
-            });
-            this.dataset_service.run_delete(this.resourceCt.resource.uri);
-            //this.browser.msgBus.fireEvent('Browser_ReloadData', {});
-            var msgbus = this.browser.msgBus; // dima: a hack just to get this working before the rewrite
-            setTimeout(function(){ msgbus.fireEvent('Browser_ReloadData', {}); }, 1000);
-        }
+        }, this );
     },
 
 });

@@ -179,6 +179,7 @@ class ConverterBase(object):
     def run_read(cls, ifnm, command ):
         with Locks(ifnm):
             command, tmp = misc.start_nounicode_win(ifnm, command)
+            log.debug('run_read command: [%s]', command)
             out = misc.run_command( command )
             misc.end_nounicode_win(tmp)
         return out
