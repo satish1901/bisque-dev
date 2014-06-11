@@ -394,7 +394,7 @@ class StoreServer(TGController):
         store = self._load_store(store_name)
         if store is None:
             store = store_name
-        return self._create_full_path(store, path,  resource_uniq=None, resource_name=None, **kw)
+        return self._create_full_path(store, path, resource_uniq, resource_name, **kw)
 
     def delete_store_path (self, store_name, path, **kw):
         """ Delete an store element and all below it
@@ -472,7 +472,8 @@ class StoreServer(TGController):
         if len(path)==0:
             return self.index()
         store_name = path.pop(0)
-        return self.insert_store_path (store_name, path, **kw)
+        q = self.insert_store_path (store_name, path, **kw)
+        return etree.tostring(q)        
 
     def delete(self, path, **kw):
         log.info ("DELETE %s with %s" ,  path, kw)
