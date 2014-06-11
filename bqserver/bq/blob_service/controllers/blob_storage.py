@@ -136,7 +136,7 @@ if os.name == 'nt':
 
     def url2localpath(url):
         path = urlparse.urlparse(url).path
-        if path[2] == ':' and path[0] == '/':
+        if len(path)>3 and path[2] == ':' and path[0] == '/':
             path = path[1:]
         return path
 else:
