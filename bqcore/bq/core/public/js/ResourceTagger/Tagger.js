@@ -937,7 +937,7 @@ Ext.define('Bisque.ResourceTagger', {
     },
 
     exportToXml: function () {
-        var url = '/export/initStream?urls=';
+        var url = '/export/stream?urls=';
         url += encodeURIComponent(this.resource.uri + '?view=deep');
         url += '&filename=' + (this.resource.name || 'document');
 

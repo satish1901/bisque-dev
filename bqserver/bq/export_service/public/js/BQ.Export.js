@@ -72,7 +72,7 @@ Ext.define('BQ.Export.Panel', {
                 iconCls : 'icon-download',
                 arrowAlign : 'right',
                 menuAlign : 'bl-tl?',
-                compressionType : 'gzip',
+                compression : 'gzip',
 
                 handler : this.download,
                 scope : this,
@@ -87,17 +87,17 @@ Ext.define('BQ.Export.Panel', {
                         handler : this.download,
                     },
                     items : [{
-                        compressionType : 'tar',
+                        compression : 'tar',
                         text : 'as TARball',
                     }, {
-                        compressionType : 'gzip',
+                        compression : 'gzip',
                         text : 'as GZip archive',
                         checked : true,
                     }, {
-                        compressionType : 'bz2',
+                        compression : 'bz2',
                         text : 'as BZip2 archive',
                     }, {
-                        compressionType : 'zip',
+                        compression : 'zip',
                         text : 'as Zip archive',
                     }],
                 }
@@ -180,7 +180,7 @@ Ext.define('BQ.Export.Panel', {
 
         this.resourceStore.loadData(record);
         this.download({
-            compressionType : compression
+            compression : compression
         });
     },
 
@@ -190,7 +190,7 @@ Ext.define('BQ.Export.Panel', {
             return;
         }
         var btn = this.queryById('button_download');
-        btn.compressionType = btn.compressionType;
+        btn.compression = btn.compression;
         btn.setLoading(true);
         setTimeout(function(){ btn.setLoading(false); }, 3000);
 
@@ -215,13 +215,13 @@ Ext.define('BQ.Export.Panel', {
         }
 
         Ext.create('Ext.form.Panel', {
-            url : '/export/initStream',
+            url : '/export/stream',
             defaultType : 'hiddenfield',
             method : 'POST',
             standardSubmit : true,
             items : [{
-                name : 'compressionType',
-                value : btn.compressionType,
+                name : 'compression',
+                value : btn.compression,
             }, {
                 name : 'metadata',
                 value : this.queryById('check_meta').getValue(),
