@@ -65,8 +65,8 @@ class ArchiveStreamer():
 
     block_size = 1024 * 64
 
-    def __init__(self, compressionType):
-        self.archiver = ArchiverFactory().getClass(compressionType)
+    def __init__(self, compression):
+        self.archiver = ArchiverFactory().getClass(compression)
 
 
     def init(self, archiveName='Bisque', fileList=None, datasetList=None, urlList=None, dirList=None, export_meta=True, export_mexs=False):

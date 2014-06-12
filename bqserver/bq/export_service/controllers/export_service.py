@@ -104,6 +104,7 @@ from repoze.what import predicates
 from bq.core.service import ServiceController
 from bq import data_service
 
+from bq.export_service.controllers.archive_streamer import ArchiveStreamer
 
 #---------------------------------------------------------------------------------------
 # inits
@@ -181,20 +182,20 @@ class export_serviceController(ServiceController):
         return dict(error=None, google_url=str(entry.GetAlternateLink().href))
 
 
-    @expose()
-    def exportString(self, **kw):
-        value = kw.pop('value', '')
-        return value
+#     @expose()
+#     def exportString(self, **kw):
+#         value = kw.pop('value', '')
+#         return value
 
     #------------------------------------------------------------------
     # new ArchiveStreamer - Utkarsh
     #------------------------------------------------------------------
 
     @expose()
-    def initStream(self, **kw):
+    def stream(self, **kw):
         """Create and return a streaming archive
 
-        :param compressionType: tar, zip, gzip, bz2
+        :param compression: tar, zip, gzip, bz2
         :param files: a comma separated list of resource URIs to include in the archive
         :param datasets: a comma separated list of dataset resource URIs to include in the archive
         :param urls: a comma separated list of any url accessible over HTTP to include in the archive
@@ -211,7 +212,6 @@ class export_serviceController(ServiceController):
 
         """
 
-        from bq.export_service.controllers.archive_streamer import ArchiveStreamer
         files    = []
         datasets = []
         urls     = []
@@ -235,7 +235,7 @@ class export_serviceController(ServiceController):
                 else:
                     urls.append(resource.text)
 
-        compressionType = kw.pop('compressionType', '')
+        compression = kw.pop('compression', '')
         
         def extractData(kw, field):
             if field in kw:
@@ -255,7 +255,7 @@ class export_serviceController(ServiceController):
 
         filename = kw.pop('filename', None) or 'bisque-'+time.strftime("%Y%m%d.%H%M%S")
 
-        archiveStreamer = ArchiveStreamer(compressionType)
+        archiveStreamer = ArchiveStreamer(compression)
         archiveStreamer.init(archiveName=filename, fileList=files, datasetList=datasets, urlList=urls, dirList=dirs, export_meta=export_meta, export_mexs=export_mexs)
         return archiveStreamer.stream()
 

@@ -1943,7 +1943,7 @@ Ext.define('BQ.renderers.RendererWithTools', {
             text: 'complete document as a GZip package',
             scope: this,
             handler: function() {
-                window.open(bq.url('/export/initStream?compressionType=gzip&urls='+this.res_uri_for_tools + '?view=deep'));
+                window.open(bq.url('/export/stream?compression=gzip&urls='+this.res_uri_for_tools + '?view=deep'));
             },
         });
     },
