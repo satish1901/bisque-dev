@@ -54,7 +54,7 @@ class MexAuthenticatePlugin(object):
 
         if not config.get('has_database'):
             environ['repoze.what.credentials'] = { 'repoze.who.userid': mex_token }
-            return mexid
+            return mex_token
 
         from bq.data_service.model import ModuleExecution
         log.debug("MexAuthenticate:auth %s" % (identity))

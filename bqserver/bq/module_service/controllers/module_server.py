@@ -73,13 +73,13 @@ DESCRIPTION
 import os
 import socket
 import copy
-import Queue
 import time
 import logging
 import thread
 import threading
 import transaction
 import tg
+import urlparse
 
 from lxml import etree
 from datetime import datetime, timedelta
@@ -383,7 +383,7 @@ def POST_mex (service_uri, mex, username):
 
     body = etree.tostring(mex)
     try:
-        resp, content = http.xmlrequest(service_uri +"/execute", "POST",
+        resp, content = http.xmlrequest(urlparse.urljoin(service_uri ,"execute"), "POST",
                                         body = body,
                                         headers = {'Mex': mex_uniq,
                                                    'Authorization' : "Mex %s" % mex_token})
