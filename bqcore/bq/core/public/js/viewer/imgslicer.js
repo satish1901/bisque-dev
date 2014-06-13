@@ -102,11 +102,13 @@ ImgSlicer.prototype.updateView = function (view) {
         var newdimz = 1;
         var newdimt = 1;
         var prjtype = projection;
+
         if (prjtype.match('^projectmax')=='projectmax' ) projection = 'projectmax';
         if (prjtype.match('^projectmin')=='projectmin' ) projection = 'projectmin';
 
         // now take care of required pre-slicing for 4D/5D cases
         var dim = view.imagedim;
+
         if (prjtype=='projectmaxz' || prjtype=='projectminz') {
             this.params.z1 = 1;
             this.params.z2 = dim.z;
@@ -128,6 +130,7 @@ ImgSlicer.prototype.updateView = function (view) {
         view.addParams (projection);
         view.imagedim.t = newdimt;
         view.imagedim.z = newdimz;
+        view.imagedim.project = prjtype;
         if (this.zslider) this.zslider.setVisible(showzslider);
         if (this.tslider) this.tslider.setVisible(showtslider);
     }

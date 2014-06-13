@@ -26,7 +26,7 @@ modification, are permitted provided that the following conditions are met:
 
     Use or redistribution must display the attribution with the logo
     or project name and the project URL link in a location commonly
-    visible by the end users, unless specifically permitted by the 
+    visible by the end users, unless specifically permitted by the
     license holders.
 
 THIS SOFTWARE IS PROVIDED BY THE REGENTS OF THE UNIVERSITY OF CALIFORNIA ''AS IS'' AND ANY
@@ -39,7 +39,7 @@ PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
 PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
 LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 function get_string_from_URL (url) {
@@ -89,7 +89,6 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
     border : 0,
     frame : false,
     layout : 'fit',
-    cls : 'bq-three-container',
 
     constructor : function(config) {
         this.addEvents({
@@ -105,7 +104,8 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
         this.addListener('resize', this.onresize, this);
 	    this.zooming     = false;
         this.selectLight = false;
-	    this.callParent();
+	    this.animate_funcs = new Array();
+        this.callParent();
 
     },
 
@@ -126,7 +126,6 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
         thisDom.addEventListener('mousewheel', me.onMouseWheel.bind(this),false);
         thisDom.addEventListener('DOMMouseScroll',me.onMouseWheel, false);
 
-
         this.renderer = new THREE.WebGLRenderer({
             preserveDrawingBuffer : true
         });
@@ -137,8 +136,9 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
 
         var aspect = this.getWidth() / this.getHeight();
 
-        this.camera = new THREE.PerspectiveCamera(20, aspect, .01, 100);
+        this.camera = new THREE.PerspectiveCamera(20, aspect, .01, 20);
         this.camera.position.z = 5.0;
+
         this.controls = new THREE.OrbitControls(this.camera, thisDom);
 
         this.projector = new THREE.Projector();
@@ -156,7 +156,7 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
         this.mousedown = false;
         this.needs_render = true;
 
-
+        this.fireEvent('loaded', this);
         this.callParent();
     },
 
@@ -186,8 +186,6 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
 	        this.zooming = true;
 	    }
         this.needs_render = true;
-
-
     },
 
     onMouseUp : function(event) {
@@ -198,8 +196,6 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
 
     onMouseMove : function(event){
     },
-
-
 
     onresize : function() {
         var aspect = this.getWidth() / this.getHeight();
@@ -220,10 +216,18 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
         var me = this;
 	    if(this.onAnimate)
 	        this.onAnimate();
-
-        if (this.needs_render) {
+        if(this.needs_render){
+            //if(this.render_override)
+                //this.onAnimateOverride();
+            //else
+            for(var i = 0; i < this.animate_funcs.length; i++){
+                this.animate_funcs[i]();
+            }
             this.renderer.render(this.scene, this.camera);
+
         }
+
+
         this.controls.update();
         requestAnimationFrame(function() {
             me.doAnimate()

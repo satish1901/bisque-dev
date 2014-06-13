@@ -13,40 +13,40 @@
 *******************************************************************************/
 
 /*
-LICENSE
+  LICENSE
 
-Center for Bio-Image Informatics, University of California at Santa Barbara
+  Center for Bio-Image Informatics, University of California at Santa Barbara
 
-Copyright (c) 2007-2014 by the Regents of the University of California
-All rights reserved
+  Copyright (c) 2007-2014 by the Regents of the University of California
+  All rights reserved
 
-Redistribution and use in source and binary forms, in whole or in parts, with or without
-modification, are permitted provided that the following conditions are met:
+  Redistribution and use in source and binary forms, in whole or in parts, with or without
+  modification, are permitted provided that the following conditions are met:
 
-    Redistributions of source code must retain the above copyright
-    notice, this list of conditions, and the following disclaimer.
+  Redistributions of source code must retain the above copyright
+  notice, this list of conditions, and the following disclaimer.
 
-    Redistributions in binary form must reproduce the above copyright
-    notice, this list of conditions, and the following disclaimer in
-    the documentation and/or other materials provided with the
-    distribution.
+  Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions, and the following disclaimer in
+  the documentation and/or other materials provided with the
+  distribution.
 
-    Use or redistribution must display the attribution with the logo
-    or project name and the project URL link in a location commonly
-    visible by the end users, unless specifically permitted by the
-    license holders.
+  Use or redistribution must display the attribution with the logo
+  or project name and the project URL link in a location commonly
+  visible by the end users, unless specifically permitted by the
+  license holders.
 
-THIS SOFTWARE IS PROVIDED BY THE REGENTS OF THE UNIVERSITY OF CALIFORNIA ''AS IS'' AND ANY
-EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE REGENTS OF THE UNIVERSITY OF CALIFORNIA OR
-CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  THIS SOFTWARE IS PROVIDED BY THE REGENTS OF THE UNIVERSITY OF CALIFORNIA ''AS IS'' AND ANY
+  EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+  PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE REGENTS OF THE UNIVERSITY OF CALIFORNIA OR
+  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+  LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 Ext.require([
@@ -86,7 +86,10 @@ Ext.define('BQ.viewer.Volume.volumeScene', {
         this.uniforms  = {};
 
         this.scene = new THREE.Scene();
-	    var material = new THREE.MeshBasicMaterial( {color: 0xffff00} );
+	    this.sceneData      = new THREE.Scene();
+	    this.sceneDataColor = new THREE.Scene();
+
+        var material = new THREE.MeshBasicMaterial( {color: 0xffff00} );
 
         this.cube = new THREE.CubeGeometry(1.0, 1.0, 1.0 );
         this.cubeMesh = new THREE.Mesh(this.cube, this.material);
@@ -101,15 +104,20 @@ Ext.define('BQ.viewer.Volume.volumeScene', {
 
         this.canvas3D.plane = this.plane;
         this.setMaxSteps = 32;
+
+
+
     },
 
     initComponent : function() {
     },
 
     setUniform : function(name, value, reset){
-        if(typeof(reset) === 'undefine') reset = true;
+        //console.log('bef',reset);
+        if(typeof(reset) === 'undefined') reset = true;
+        //console.log('aft',reset);
         this.uniforms[name].value = value;
-        if(name != 'setMaxSteps')
+        if(reset)
             this.setMaxSteps = 32;
 
         this.canvas3D.rerender();
@@ -127,17 +135,23 @@ Ext.define('BQ.viewer.Volume.volumeScene', {
 
     scaleCube : function(inScale){
         this.setUniform('BOX_SIZE',inScale);
-	    var cube = this.cube;
+
+        var cube = this.cube;
 	    var bMax = cube.vertices[0];
         var scale = inScale.clone();
+
         scale.divide(bMax);
+
         cube.dynamic = true;
         cube.verticesNeedUpdate = true;
-        for (var i = 0; i < cube.vertices.length; i++) {
-		    var corner = cube.vertices[i];
-		    cube.vertices[i].multiplyVectors(corner, scale);
-        }
+        var mat = new THREE.Matrix4().scale(scale);
+        this.cube.applyMatrix(mat);
         this.canvas3D.rerender();
+    },
+
+    getHalf : function(){
+        var cube = this.cube;
+        return cube.vertices[0];
     },
 
     constructMaterial : function(material){
@@ -222,15 +236,17 @@ Ext.define('BQ.viewer.Volume.volumeScene', {
         var fragUrl = config.fragConfig.url;
         var vertId =  vertUrl;
         var fragId =  fragUrl;
-        var uniforms = this.uniforms;
+        var uniforms = config.uniforms ? config.uniforms : this.uniforms;
+
         if(config.vertConfig.id) vertId = config.vertConfig.id;
         if(config.fragConfig.id) fragId = config.fragConfig.id;
-        if(config.uniforms) uniforms = config.uniforms;
+
 
         var threeMaterial = new THREE.ShaderMaterial({
-            uniforms : this.uniforms,
+            uniforms : uniforms,
             vertexShader : "",
-            fragmentShader : ""
+            fragmentShader : "",
+            side: THREE.DoubleSide,
         });
 
         var newMaterial = {name: name,
@@ -239,7 +255,7 @@ Ext.define('BQ.viewer.Volume.volumeScene', {
                            built: false,
                            threeShader: threeMaterial,
                            buildFunc:this.defaultBuildFunc ,};
-
+        console.log(name,": ", newMaterial);
         this.materials[name] = newMaterial;
         this.initFragment(vertUrl, vertId, config.vertConfig.manipulate);
         this.initFragment(fragUrl, fragId, config.fragConfig.manipulate);
@@ -278,34 +294,27 @@ Ext.define('BQ.viewer.Volume.renderProgress', {
 
 
 Ext.define('BQ.viewer.Volume.Panel', {
-    extend : 'Ext.panel.Panel',
     alias: 'widget.bq_volume_panel',
-    cls : 'bq-three-container',
-
+    extend : 'Ext.container.Container',
     border: 0,
+    cls : 'bq-three-container',
     layout: 'fit',
-    border : false,
-    buttonAlign: 'center',
-    autoScroll: true,
 
-    constructor : function(config) {
-        config = config || {};
+
+    initComponent : function() {
+	    this.addListener('resize', this.onresize, this);
+
         this.canvas3D = Ext.create('BQ.viewer.Volume.ThreejsPanel',{
             itemId: 'canvas3D',
-            onAnimate : callback(this, this.onAnimate),
-            resource: config.resource,
+            //onAnimate : callback(this, this.onAnimate),
+            //onAnimateOverride : callback(this, this.onAnimateOverride),
         });
+        this.canvas3D.animate_funcs[1] = callback(this, this.onAnimate);
         //var panel3D = this.panel3D;
         this.sceneVolume = new BQ.viewer.Volume.volumeScene({
             canvas3D: this.canvas3D
         });
 
-        //this.sceneVolume.initFragment("/src/shaders/rayCast.vs", null, 10);
-        /*
-        this.sceneVolume.initMaterial({ name: 'test',
-                                        vertUrl: "/src/shaders/rayCast.vs",
-                                        fragUrl: "/src/shaders/rayCastBlocks.fs"});
-        */
         this.sceneVolume.initMaterial({
             name:    'diffuse',
             vertConfig:{
@@ -316,30 +325,128 @@ Ext.define('BQ.viewer.Volume.Panel', {
             }
         });
 
-        this.addEvents({
-            'loaded' : true,
-            'changed' : true,
-        });
-
-        Ext.apply(this, {
-            bbar: {
-                xtype: 'renderProgress',
-                panel3D:this
-            },
-            items: [ this.canvas3D ],
-        }, config);
-
         this.plug_ins = [new VolumeTime(this), new VolumeAtlas(this),
                          new VolumeDisplay(this), new VolumeFormat(this)];
-        this.callParent(arguments);
-        this.show();
+
+        this.preMultiplyAlpha = false;
+        this.currentTime = 0;
+        //this.createPlaybackPanel();
+        var me = this;
+
+        this.items = [this.canvas3D,{
+            xtype: 'component',
+            itemId: 'button-menu',
+            autoEl: {
+                tag: 'span',
+                cls: 'viewoptions',
+            },
+            listeners: {
+                scope: this,
+                click: {
+                    element: 'el', //bind to the underlying el property on the panel
+                    fn: this.onMenuClick,
+                },
+            },
+        },{
+            xtype: 'component',
+            itemId: 'tool-menu',
+            autoEl: {
+                tag: 'span',
+                cls: 'tooloptions',
+            },
+            listeners: {
+                scope: this,
+                click: {
+                    element: 'el', //bind to the underlying el property on the panel
+                    fn: this.onToolMenuClick,
+                },
+            },
+        }];
+
+	    this.on({
+	        loaded: function(){
+                console.log(this.constructAtlasUrl());
+                me.initUniforms();
+                me.wipeTextureTimeBuffer();
+                me.updateTextureUniform();
+
+
+                me.createToolPanel();
+		        me.createClipSlider();
+                me.createZoomSlider();
+
+                me.createAnimPanel();
+                me.createPlaybackPanel();
+
+                me.createToolMenu();
+
+                this.playbackPanel.show();
+                this.animPanel.hide();
+
+                //this.setLoading(false);
+                me.canvas3D.doAnimate();
+		    },
+	        scope: me,
+	    });
+
+        this.callParent();
     },
+
+
 
     onresize : function() {
         if (this.sceneVolume.uniforms['iResolution']) {
+            var w = this.canvas3D.getWidth();
+            var h = this.canvas3D.getHeight();
             var newRes =
                 new THREE.Vector2(this.canvas3D.getWidth(), this.canvas3D.getHeight());
             this.sceneVolume.setUniform('iResolution', newRes);
+
+            this.accumBuffer0
+                = new THREE.WebGLRenderTarget(this.getWidth(), this.getHeight(),
+                                              { minFilter: THREE.LinearFilter,
+                                                magFilter: THREE.NearestFilter,
+                                                format: THREE.RGBAFormat });
+            this.accumBuffer1
+                = new THREE.WebGLRenderTarget(this.getWidth(), this.getHeight(),
+                                              { minFilter: THREE.LinearFilter,
+                                                magFilter: THREE.NearestFilter,
+                                                format: THREE.RGBAFormat });
+
+            var materialScreen = this.sceneVolume.getMaterial('screen');
+            materialScreen.depthWrite = false;
+            materialScreen.threeShader.uniforms.tDiffuse.value = this.accumulationBuffer;
+
+            var quad = this.sceneScreen.children[0];
+            //this.sceneScreen.remove(quad);
+            /*
+            var plane = new THREE.PlaneGeometry( this.getWidth(), this.getHeight() );
+            quad = new THREE.Mesh( plane, materialScreen.threeShader );
+		    quad.position.z = -100;
+            this.sceneScreen.add(quad);
+            */
+
+            quad.geometry.width = w;
+            quad.geometry.height = h;
+            quad.geometry.vertices[0] = new THREE.Vector3(-w/2, h/2,0);
+            quad.geometry.vertices[1] = new THREE.Vector3( w/2, h/2,0);
+            quad.geometry.vertices[2] = new THREE.Vector3(-w/2,-h/2,0);
+            quad.geometry.vertices[3] = new THREE.Vector3( w/2,-h/2,0);
+
+            console.log(w,h, quad.geometry.vertices[0].x, quad.geometry.vertices[0].y, this.orthoCamera);
+
+            quad.geometry.verticesNeedUpdate = true;
+            quad.geometry.dynamic = true;
+
+            //this.sceneScreen.children[0] =
+
+            this.orthoCamera.left   = -w/2;
+            this.orthoCamera.right  =  w/2;
+            this.orthoCamera.top    =  h/2;
+            this.orthoCamera.bottom = -h/2;
+            this.orthoCamera.updateProjectionMatrix();
+
+
             this.rerender();
         }
     },
@@ -349,9 +456,11 @@ Ext.define('BQ.viewer.Volume.Panel', {
             this.sceneVolume.setMaxSteps = 32;
 
         if(this.sceneVolume.setMaxSteps < 512){
-            this.sceneVolume.setMaxSteps *= 1.5;
+            //console.log('multiplying',this.sceneVolume.setMaxSteps);
+
             this.sceneVolume.setUniform('setMaxSteps',
                                         this.sceneVolume.setMaxSteps, false);
+            this.sceneVolume.setMaxSteps *= 1.5;
         }
         else {
             this.sceneVolume.setMaxSteps = 512;
@@ -360,13 +469,39 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
     },
 
-    initComponent : function() {
-	    this.addListener('resize', this.onresize, this);
 
-        this.preMultiplyAlpha = false;
-        this.currentTime = 0;
+    onAnimateOverride : function(){
+        if(!this.sceneScreen) return;
 
-        this.callParent();
+        var materialForward = this.sceneVolume.getMaterial('forwardDiffuse');
+        this.sceneVolume.cubeMesh.material = materialForward.threeShader;
+        this.canvas3D.renderer.clearTarget(this.accumBuffer0,
+                                           true, true, true);
+        this.canvas3D.renderer.clearTarget(this.accumBuffer1,
+                                           true, true, true);
+
+        var pass = 0;
+        var toggle = true;
+        while(pass <this.sceneVolume.setMaxSteps){
+
+
+            var buffer0 = toggle ? this.accumBuffer0 : this.accumBuffer1;
+            var buffer1 = toggle ? this.accumBuffer1 : this.accumBuffer0;
+            this.sceneVolume.setUniform('BUFFER0', buffer1, false);
+            this.sceneVolume.setUniform('STEP', pass, false);
+            this.canvas3D.renderer.render(this.canvas3D.scene,
+                                          this.canvas3D.camera,
+                                          buffer0);
+            toggle = !toggle;
+            pass++;
+        }
+        var buffer0 = !toggle ? this.accumBuffer0 : this.accumBuffer1;
+        var materialScreen = this.sceneVolume.getMaterial('screen');
+        materialScreen.threeShader.uniforms.tDiffuse.value = buffer0;
+        this.canvas3D.renderer.render(this.sceneScreen,
+                                      this.orthoCamera);
+
+
     },
 
     afterFirstLayout : function() {
@@ -391,18 +526,83 @@ Ext.define('BQ.viewer.Volume.Panel', {
         }
 
 	    var me = this;
-	    this.on({
-	        loaded: function(){
-		        console.log("creating");
-		        me.createAnimPanel();
-		        me.createPlaybackPanel();
-		        me.createToolPanel();
-		        me.createZoomSlider();
-		        me.createToolMenu();
-		        //this.setLoading(false);
-	        },
-	        scope: me,
-	    });
+/////////////////////////////////////////////////
+// begin setup backbuffer rendering:
+// putting it here for experimentation
+/////////////////////////////////////////////////
+
+        this.accumBuffer0
+            = new THREE.WebGLRenderTarget(this.getWidth(), this.getHeight(),
+                                          { minFilter: THREE.LinearFilter,
+                                            magFilter: THREE.NearestFilter,
+                                            format: THREE.RGBAFormat });
+
+        this.accumBuffer1
+            = new THREE.WebGLRenderTarget(this.getWidth(), this.getHeight(),
+                                          { minFilter: THREE.LinearFilter,
+                                            magFilter: THREE.NearestFilter,
+                                            format: THREE.RGBAFormat });
+
+        this.accumBuffer2
+            = new THREE.WebGLRenderTarget(this.getWidth(), this.getHeight(),
+                                          { minFilter: THREE.LinearFilter,
+                                            magFilter: THREE.NearestFilter,
+                                            format: THREE.RGBAFormat });
+
+        this.toggle = true;
+
+        this.orthoCamera = new THREE.OrthographicCamera(-this.getWidth()/2,
+                                                          this.getWidth()/2,
+                                                          this.getHeight()/2,
+                                                         -this.getHeight()/2,
+                                                          -10000, 10000 );
+        this.orthoCamera.position.z = 1000;
+
+        console.log("--ortho--: ", this.orthoCamera);
+
+
+        var screenUniforms = {
+            tDiffuse: { type: "t", value: this.accumBuffer0 }
+        };
+
+        this.sceneVolume.initMaterial({
+            name:    'screen',
+            vertConfig:{
+                url: "/js/volume/shaders/screen.vs"
+            },
+            fragConfig: {
+                url: "/js/volume/shaders/screen.fs",
+            },
+            uniforms: screenUniforms,
+        });
+
+        this.sceneVolume.initMaterial({
+            name:    'forwardDiffuse',
+            vertConfig:{
+                url: "/js/volume/shaders/rayCast.vs"
+            },
+            fragConfig: {
+                url: "/js/volume/shaders/rayCastBlocksForward.fs",
+            },
+
+        });
+
+
+        var materialScreen = this.sceneVolume.getMaterial('screen');
+        materialScreen.depthWrite = false;
+
+		this.sceneScreen = new THREE.Scene();
+
+        var plane = new THREE.PlaneGeometry( this.getWidth(), this.getHeight() );
+		var quad = new THREE.Mesh( plane, materialScreen.threeShader );
+		quad.position.z = -100;
+
+		this.sceneScreen.add( quad );
+        this.canvas3D.render_override = true;
+		this.canvas3D.renderer.preserveDrawingBuffer = true;
+
+/////////////////////////////////////////////////
+/////////////////////////////////////////////////
 
         this.callParent();
     },
@@ -443,29 +643,15 @@ Ext.define('BQ.viewer.Volume.Panel', {
                         this.yTexSizeRatio = this.dims.atlasResized.y/this.dims.atlas.y;
 
 	                    //a lot of information is already loaded by the phys object:
-                        this.dims.slice.x = this.phys.x;
-                        this.dims.slice.y = this.phys.y;
-                        this.dims.slice.z = this.phys.z;
-                        this.dims.t = this.phys.t;
-	                    this.initFrameLabel();
-                        this.dims.pixel.x = this.phys.pixel_size[0] === 0 ? 1 : this.phys.pixel_size[0];
-                        this.dims.pixel.y = this.phys.pixel_size[1] === 0 ? 1 : this.phys.pixel_size[1];
-                        this.dims.pixel.z = this.phys.pixel_size[2] === 0 ? 1 : this.phys.pixel_size[2];
-
-                        this.sceneVolume.setUniform('TEX_RES_X', this.xTexSizeRatio * this.dims.slice.x);
-                        this.sceneVolume.setUniform('TEX_RES_Y', this.yTexSizeRatio * this.dims.slice.y);
-
-                        this.sceneVolume.setUniform('ATLAS_X', this.dims.atlas.x / this.dims.slice.x);
-                        this.sceneVolume.setUniform('ATLAS_Y', this.dims.atlas.y / this.dims.slice.y);
-                        this.sceneVolume.setUniform('SLICES', this.dims.slice.z);
-
                         this.setLoading(false);
+                        //this.sceneVolume.loadMaterial('diffuse');
+                        //this.sceneVolume.loadMaterial('forwardDiffuse');
+                        this.tempMaterial
+                            = new THREE.MeshBasicMaterial( { color: 0xffffff } );
+                        this.sceneVolume.cubeMesh.material = this.tempMaterial;
+
                         this.fireEvent('loaded', this);
-			            this.textureTimeBuffer = new Array();
-			            this.updateTextureUniform();
-                        this.sceneVolume.loadMaterial('diffuse');
-                        console.log('uniforms: ',this.sceneVolume.uniforms);
-                        this.canvas3D.doAnimate();
+
                     }
                 }
             },
@@ -473,35 +659,42 @@ Ext.define('BQ.viewer.Volume.Panel', {
     },
 
     //----------------------------------------------------------------------
-    // texture loading
+    // texture loadi
     //----------------------------------------------------------------------
     updateTextureUniform : function() {
-        if (!this.textureTimeBuffer[this.currentTime]) {
-            var dataBase0 = new Array();
-	        console.log("texture atlas: ", this.constructAtlasUrl());
-	        dataBase0[0] = new THREE.ImageUtils.loadTexture(this.constructAtlasUrl());
-            dataBase0[0].generateMipmaps = false;
-            dataBase0[0].magFilter = THREE.LinearFilter;
-            dataBase0[0].minFilter = THREE.LinearFilter;
+        var me = this;
 
-            this.textureTimeBuffer[this.currentTime] = dataBase0;
-            //this.uniforms.dataBase0.value = dataBase0;
+        if (!this.textureTimeBuffer[this.currentTime]) {
+            //var textureAtlas' = new Array();
+	        var textureAtlas = new THREE.ImageUtils.loadTexture(this.constructAtlasUrl(),undefined, function(){ me.rerender()});
+            textureAtlas.generateMipmaps = false;
+            textureAtlas.magFilter = THREE.LinearFilter;
+            textureAtlas.minFilter = THREE.LinearFilter;
+            textureAtlas.wrapS = THREE.MirroredRepeatWrapping;
+            textureAtlas.wrapT = THREE.MirroredRepeatWrapping;
+
+            this.textureTimeBuffer[this.currentTime] = textureAtlas;
+            //this.uniforms.textureAtlas.value = textureAtlas;
         }
-        this.sceneVolume.setUniform('dataBase0',this.textureTimeBuffer[this.currentTime]);
+        this.sceneVolume.setUniform('textureAtlas',this.textureTimeBuffer[this.currentTime]);
 	    this.update = true;
     },
 
     initTextures : function() {
-
-        this.initUniforms();
-
 	    var resUniqueUrl = (this.hostName ? this.hostName : '') + '/image_service/image/' + this.resource.resource_uniq;
-
-        //var resUniqueUrl = 'http://vidi.ece.ucsb.edu:9090/image_service/image/' +
-	    //    this.resource.resource_uniq;
 	    var slice;
 	    console.log("init tex dims: ", this.dims);
 	    console.log("hostname: ", this.hostName);
+        console.log("phys: ", this.phys);
+        this.dims.slice.x = this.phys.x;
+        this.dims.slice.y = this.phys.y;
+        this.dims.slice.z = this.phys.z;
+        this.dims.t = this.phys.t;
+	    this.initFrameLabel();
+        this.dims.pixel.x = this.phys.pixel_size[0] === 0 ? 1 : this.phys.pixel_size[0];
+        this.dims.pixel.y = this.phys.pixel_size[1] === 0 ? 1 : this.phys.pixel_size[1];
+        this.dims.pixel.z = this.phys.pixel_size[2] === 0 ? 1 : this.phys.pixel_size[2];
+
 	    if(this.dims.t > 1 && this.dims.slice.z == 1){
 	        var z = this.dims.t;
 	        this.dims.t = this.dims.slice.z;
@@ -512,13 +705,13 @@ Ext.define('BQ.viewer.Volume.Panel', {
 	    }
 	    else
 	        slice = 'slice=,,,1';
-        var dims = '&dims';
-        var meta = '&meta';
+        var dims  = '&dims';
+        var meta  = '&meta';
         var atlas = '&textureatlas';
-        var baseUrl = resUniqueUrl + '?' + dims;
-        var sliceUrl = resUniqueUrl + '?' + slice + dims;
-        var sliceUrlMeta = resUniqueUrl + '?' + slice + meta;
-        var fullAtlasUrl = resUniqueUrl + '?' + slice + atlas + dims;
+        var baseUrl        = resUniqueUrl + '?' + dims;
+        var sliceUrl       = resUniqueUrl + '?' + slice + dims;
+        var sliceUrlMeta   = resUniqueUrl + '?' + slice + meta;
+        var fullAtlasUrl   = resUniqueUrl + '?' + slice + atlas + dims;
         var resizeAtlasUrl = resUniqueUrl + '?' + slice + atlas + '&resize=8192,8192,BC,MX' + dims;
         this.loadedDimFullAtlas = false;
         this.loadedDimResizeAtlas = false;
@@ -526,6 +719,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
         //Ajax request the values pertinent to the volume atlases
         this.ajaxDimRequest(fullAtlasUrl, 'atlas');
         this.ajaxDimRequest(resizeAtlasUrl, 'resized');
+
     },
 
     wipeTextureTimeBuffer : function() {
@@ -536,28 +730,49 @@ Ext.define('BQ.viewer.Volume.Panel', {
     initUniforms : function() {
         var res = new THREE.Vector2(this.canvas3D.getWidth(), this.canvas3D.getHeight());
         this.sceneVolume.initUniform('iResolution', "v2", res);
+
         this.sceneVolume.initUniform('setMaxSteps', "i", this.setMaxSteps);
-        this.sceneVolume.initUniform('TEX_RES_X', "i", 1);
-        this.sceneVolume.initUniform('TEX_RES_Y', "i", 1);
-        this.sceneVolume.initUniform('ATLAS_X', "i", 1);
-        this.sceneVolume.initUniform('ATLAS_Y', "i", 1);
-        this.sceneVolume.initUniform('SLICES', "i", 1);
-        this.sceneVolume.initUniform('RES_X', "i", 1);
-        this.sceneVolume.initUniform('RES_Y', "i", 1);
-        this.sceneVolume.initUniform('RES_Z', "i", 1);
-        this.sceneVolume.initUniform('dataBase0', "tv", 1);
+        console.log("textures: ", this.xTexSizeRatio, this.dims.slice.x);
+        this.sceneVolume.initUniform('TEX_RES_X', "i", this.xTexSizeRatio * this.dims.slice.x);
+        this.sceneVolume.initUniform('TEX_RES_Y', "i", this.yTexSizeRatio * this.dims.slice.y);
+        this.sceneVolume.initUniform('ATLAS_X', "i", this.dims.atlas.x / this.dims.slice.x);
+        this.sceneVolume.initUniform('ATLAS_Y', "i", this.dims.atlas.y / this.dims.slice.y);
+        this.sceneVolume.initUniform('SLICES', "i", this.dims.slice.z);
+        this.sceneVolume.initUniform('BLOCK_RES_X', "i", 1);
+        this.sceneVolume.initUniform('BLOCK_RES_Y', "i", 1);
+        this.sceneVolume.initUniform('BLOCK_RES_Z', "i", 1);
+        this.sceneVolume.initUniform('textureAtlas', "t", 1);
+
+        this.sceneVolume.initUniform('STEP', "i", 0);
+        this.sceneVolume.initUniform('BACKGROUND_DEPTH', "t", this.accumBuffer0);
+        this.sceneVolume.initUniform('BACKGROUND_COLOR', "t", this.accumBuffer0);
+
+        /*
+        var pixels = new Uint8Array([0,0,0, 0,
+                                     50, 20, 2, 40,
+                                     50, 15, 20, 40,
+                                     80, 10, 10, 80,
+                                     50, 10, 1, 80,
+                                     40, 10, 1, 100,
+                                     50,50,50, 200,
+                                     50,50,50, 200,
+                                    ]);
+
+        rampTex = new THREE.DataTexture( pixels, 8, 1, THREE.RGBAFormat );
+        rampTex.needsUpdate = true;
+        this.sceneVolume.initUniform('transfer', "t", rampTex);
+        this.sceneVolume.initUniform('TRANSFER_SIZE', "i", 6);
+        */
     },
 
 
     onImage : function(resource) {
 	    //build custom atlas dims here, maybe this can get cuter...
-	    var dataBase0 = new Array();
 
-        dataBase0[0] = new THREE.ImageUtils.loadTexture('/images/bisque_logo_400.png');
-        //console.log(dataBase0[0]);
-        dataBase0[0].generateMipmaps  = false;
-        dataBase0[0].magFilter        = THREE.LinearFilter;
-        dataBase0[0].minFilter        = THREE.LinearFilter;
+        var textureAtlas = new THREE.ImageUtils.loadTexture('/images/bisque_logo_400.png');
+        textureAtlas.generateMipmaps  = false;
+        textureAtlas.magFilter        = THREE.LinearFilter;
+        textureAtlas.minFilter        = THREE.LinearFilter;
 	    this.dims = {
             slice : {
                 x : 0,
@@ -607,6 +822,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 	    console.log(this.hostName);
         this.initTextures();
 	    this.createViewMenu();
+        //this.createToolMenu();
         for (var i = 0; ( plugin = this.plug_ins[i]); i++)
             plugin.init();
     },
@@ -620,26 +836,26 @@ Ext.define('BQ.viewer.Volume.Panel', {
 	        console.log('error, bisque service not available.');
             //BQ.ui.error(error.message_short);
             /*
-            this.xTexSizeRatio = 1.0;
-            this.yTexSizeRatio = 1.0;
-	        this.initUniforms();
-            this.uniforms.TEX_RES_X.value = 1;
-            this.uniforms.TEX_RES_Y.value = 1;
-            this.uniforms.ATLAS_X.value   = 1;
-            this.uniforms.ATLAS_Y.value   = 1;
-            this.uniforms.SLICES.value    = 1;
+              this.xTexSizeRatio = 1.0;
+              this.yTexSizeRatio = 1.0;
+	          this.initUniforms();
+              this.uniforms.TEX_RES_X.value = 1;
+              this.uniforms.TEX_RES_Y.value = 1;
+              this.uniforms.ATLAS_X.value   = 1;
+              this.uniforms.ATLAS_Y.value   = 1;
+              this.uniforms.SLICES.value    = 1;
 
-            this.setLoading(false);
+              this.setLoading(false);
 
-            this.canvas3D.initScene(this.uniforms);
-            var dataBase0 = new Array();
-	        dataBase0[0] = null;
-            this.uniforms.dataBase0.value = dataBase0;
-            this.fireEvent('loaded', this);
-	        this.textureTimeBuffer = new Array();
-	        this.textureTimeBuffer[0] = null;
-	        this.setLoading(false);
-	        this.canvas3D.doAnimate();
+              this.canvas3D.initScene(this.uniforms);
+              var dataBase0 = new Array();
+	          dataBase0[0] = null;
+              this.uniforms.dataBase0.value = dataBase0;
+              this.fireEvent('loaded', this);
+	          this.textureTimeBuffer = new Array();
+	          this.textureTimeBuffer[0] = null;
+	          this.setLoading(false);
+	          this.canvas3D.doAnimate();
 	        */
         }
     },
@@ -672,6 +888,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		        this.currentTime = time;
 		        this.updateFrameLabel(time);
 		        this.needs_update();
+                this.fireEvent('time', this);
 	        }
 
 	    }
@@ -685,6 +902,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		        this.currentTime = time;
 		        this.updateFrameLabel(time);
 		        this.needs_update();
+                this.fireEvent('time', this);
 	        }
 
 	    }
@@ -707,9 +925,10 @@ Ext.define('BQ.viewer.Volume.Panel', {
         this.update_needed = setTimeout(callback(this, this.doUpdate), this.update_delay_ms);
     },
 
-    rerender : function() {
+    rerender : function(input) {
+        if(!input) input = 32;
         this.canvas3D.rerender();
-	    this.sceneVolume.setMaxSteps = 32;
+	    this.sceneVolume.setMaxSteps = input;
     },
 
     //----------------------------------------------------------------------
@@ -777,7 +996,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 	        }],
 	    });
 	    this.addFade(this.playbackPanel);
-	    this.playbackPanel.hide();
+
     },
 
     //----------------------------------------------------------------------
@@ -799,6 +1018,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		        defaults: {
 		            collapsible: true,
 		            sceneVolume: this.sceneVolume,
+                    panel3D: this,
                     layout: {
 	                    type: 'vbox',
 	                    align : 'stretch',
@@ -813,8 +1033,6 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		            },{
 			            xtype: 'material',
 		            },{
-			            xtype: 'clip'
-		            },{
 			            xtype: 'gamma',
                         panel3D: this,
 		            },{
@@ -823,6 +1041,14 @@ Ext.define('BQ.viewer.Volume.Panel', {
 			            xtype: 'lightControl',
                         canvas3D: this.canvas3D,
 		            },{
+			            xtype: 'transfer',
+                        canvas3D: this.canvas3D,
+		            },{
+			            xtype: 'pointControl',
+                        canvas3D: this.canvas3D,
+                        gobjects: this.phys.image.gobjects,
+
+		            },{
 			            xtype: 'glinfo',
                         canvas3D: this.canvas3D,
 		            },]
@@ -830,6 +1056,46 @@ Ext.define('BQ.viewer.Volume.Panel', {
 	        this.addFade(this.toolPanel);
 	    }
 
+    },
+
+    //----------------------------------------------------------------------
+    // Clip  Slider
+    //---------------------------------------------------------------------
+
+    createClipSlider : function(){
+        this.sceneVolume.initUniform('CLIP_NEAR', "f", 0.0);
+	    this.sceneVolume.initUniform('CLIP_FAR', "f", 3.0);
+
+        var me = this;
+	    var thisDom = this.getEl().dom;
+        this.clipSlider = Ext.create('Ext.slider.Multi', {
+            renderTo : thisDom,
+            id : 'clip-slider',
+            cls: 'bq-clip-slider',
+	        fieldLabel: 'clip',
+	        labelWidth: 60,
+            minValue: 0.00,
+            maxValue: 100,
+            values: [0,100],
+            hideLabel : true,
+            increment : 0.25,
+           listeners: {
+		        change: function(slider, value, thumb) {
+		            if(thumb.index == 0){
+                        me.sceneVolume.setUniform('CLIP_NEAR', value/100);
+		            } else{
+                        me.sceneVolume.setUniform('CLIP_FAR', value/100);
+		            }
+                },
+                scope: me,
+            },
+
+            vertical : false,
+            animation : false,
+
+        });
+
+	    this.addFade(this.clipSlider);
     },
 
     //----------------------------------------------------------------------
@@ -842,11 +1108,12 @@ Ext.define('BQ.viewer.Volume.Panel', {
         this.zoomSlider = Ext.create('Ext.slider.Single', {
             renderTo : thisDom,
             id : 'zoom slider',
+            cls: 'bq-zoom-slider',
             hideLabel : true,
             minValue : 0,
             maxValue : 100,
             increment : 1,
-            height : 125,
+            height: 300,
             x : 10,
             y : 10,
             style : {
@@ -902,69 +1169,89 @@ Ext.define('BQ.viewer.Volume.Panel', {
     //----------------------------------------------------------------------
     // tool combo
     //---------------------------------------------------------------------
-    createToolMenu : function(){
-	    var me = this;
-	    var thisDom = this.getEl().dom;
-	    this.toolMenu = Ext.create('Ext.menu.Menu', {
-	        margin: '0 0 10 0',
-	        //renderTo: thisDom,
-	        floating: true,  // usually you want this set to True (default)
-	        items: [{
-		        text: 'settings',
+    toolMenuRadioHandler : function(){
+        var radio1 = Ext.getCmp('toolRadio1'),
+        radio2 = Ext.getCmp('toolRadio2');
+        console.log(radio1.getValue(),radio2.getValue());
+        if (radio2.getValue()) {
+            this.playbackPanel.hide();
+			this.animPanel.show();
+            return;
+        }
+        else{
+            this.playbackPanel.show();
+			this.animPanel.hide();
+            return;
+        }
+    },
+
+    createToolMenu : function() {
+        if (!this.toolMenu) {
+            var menubutton = this.queryById('tool-menu');
+            this.toolMenu = Ext.create('Ext.tip.ToolTip', {
+                target : menubutton.getEl(),
+                anchor : 'top',
+                anchorToTarget : true,
+                cls : 'bq-volume-menu',
+                maxWidth : 460,
+                anchorOffset : -10,
+                autoHide : false,
+                shadow : false,
+                closable : true,
+                layout : {
+                    type : 'vbox',
+                },
+
+	        });
+            var me = this;
+            this.toolMenu.add([{
+		        boxLabel: 'settings',
 		        checked: true,
-		        checkHandler: function(item, checked){
-		            if(checked){
+                width: 200,
+                cls : 'toolItem',
+                xtype: 'checkbox',
+		        handler: function(item, checked){
+		            console.log(item, checked);
+                    if(checked){
 			            me.toolPanel.show();
 		            }
 		            else
 			            me.toolPanel.hide();
 		        },
-	        },{
-		        text: 'standard player',
-		        checked: false,
-		        checkHandler: function(item, checked){
-		            var itemOther = me.toolMenu.items.items[2];
-		            if(checked){
-			            me.playbackPanel.show();
-			            me.animPanel.hide();
-			            itemOther.setChecked(false);
-		            }
-		            else
-			            me.playbackPanel.hide()
-		        }
-	        },{
-		        text: 'animation player',
-		        checked: true,
-		        checkHandler: function(item, checked){
-		            var itemOther = me.toolMenu.items.items[1];
-		            if(checked){
-			            me.animPanel.show();
-			            me.playbackPanel.hide();
-			            itemOther.setChecked(false);
-		            }
-		            else
-			            me.animPanel.hide()
-		        }
-	        }]
-	    });
-
-	    this.toolMenuButton = Ext.create('Ext.panel.Panel', {
-	        cls: 'bq-volume-toolbar-menu',
-	        renderTo: thisDom,
-	        layout: {
-		        type: 'vbox',
-		        align : 'stretch',
-		        //pack  : 'start',
 	        },
-	        items:[{
-		        xtype: 'button',
-		        text:'toolbars',
-		        menu: this.toolMenu,
-	        }]
-	    });
-	    console.log('tool menu: ', this.toolMenuButton);
-	    console.log(this.toolMenu);
+                               {
+                                   xtype: 'radio',
+		                           fieldLabel: 'standard player',
+                                   width: 200,
+                                   checked: true,
+                                   name: 'tools',
+                                   id: 'toolRadio1',
+                                   cls : 'toolItem',
+                                   handler: this.toolMenuRadioHandler,
+                                   scope: this,
+	                           },{
+                                   xtype: 'radio',
+		                           fieldLabel: 'animation player',
+                                   width: 200,
+                                   name: 'tools',
+                                   id: 'toolRadio2',
+                                   cls : 'toolItem',
+                                   handler: this.toolMenuRadioHandler,
+                                   scope: this,
+		                       },
+                              ]);
+        }
     },
+
+    onToolMenuClick : function(e, btn) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (this.toolMenu.isVisible())
+            this.toolMenu.hide();
+        else
+            this.toolMenu.show();
+    },
+
 
     //----------------------------------------------------------------------
     // view menu
@@ -997,21 +1284,11 @@ Ext.define('BQ.viewer.Volume.Panel', {
     },
 
     createViewMenu : function() {
-        if (!this.menubutton) {
-            this.menubutton = document.createElement('span');
-            // temp fix to work similar to panojs3, will be updated to media queries
-            if (isClientTouch())
-                this.menubutton.className = 'viewoptions touch';
-            else if (isClientPhone())
-                this.menubutton.className = 'viewoptions phone';
-            else
-                this.menubutton.className = 'viewoptions';
-            this.getEl().dom.appendChild(this.menubutton);
-        }
 
         if (!this.menu) {
+            var menubutton = this.queryById('button-menu');
             this.menu = Ext.create('Ext.tip.ToolTip', {
-                target : this.menubutton,
+                target : menubutton.getEl(),
                 anchor : 'top',
                 anchorToTarget : true,
                 cls : 'bq-volume-menu',
@@ -1029,8 +1306,6 @@ Ext.define('BQ.viewer.Volume.Panel', {
                     labelWidth : 200,
                 },
             });
-            var el = Ext.get(this.menubutton);
-            el.on('click', this.onMenuClick, this);
         }
     },
 
@@ -1043,6 +1318,8 @@ Ext.define('BQ.viewer.Volume.Panel', {
             this.menu.show();
     },
 });
+
+
 
 //--------------------------------------------------------------------------------------
 // Dialogue Box
@@ -1065,7 +1342,7 @@ Ext.define('BQ.viewer.Volume.Dialog', {
         config = config || {};
 
         Ext.apply(this, {
-            title : 'Movie for ' + config.resource.name,
+            title : 'Move for ' + config.resource.name,
             items : [{
                 xtype : 'bq_volume_panel',
 		        hostName: config.hostName,
@@ -1121,47 +1398,6 @@ function VolumeSize(player) {
     };
 };
 
-VolumeSize.prototype = new VolumePlugin();
-
-VolumeSize.prototype.init = function() {
-    var p = this.player.preferences || {};
-    this.def = {
-        videoResolution : p.videoResolution || 'HD', // values: 'SD', 'HD720', 'HD', '4K'
-    };
-    if (!this.menu)
-        this.createMenu();
-};
-
-VolumeSize.prototype.addCommand = function(command, pars) {
-    var r = this.resolutions[this.combo_resolution.getValue()];
-    command.push('resize=' + r.w + ',' + r.h + ',BC,MX');
-};
-
-VolumeSize.prototype.createMenu = function() {
-    if (this.menu)
-        return;
-    this.menu = this.player.menu;
-
-    this.menu.add({
-        xtype : 'displayfield',
-        fieldLabel : 'Video',
-        cls : 'heading',
-    });
-    this.combo_resolution = this.player.createCombo('Video Resolution', [{
-        "value" : "SD",
-        "text" : "SD (720x480)"
-    }, {
-        "value" : "HD720",
-        "text" : "HD 720p (1280x720)"
-    }, {
-        "value" : "HD",
-        "text" : "HD 1080p (1920x1080)"
-    }, {
-        "value" : "4K",
-        "text" : "4K (3840x2160)"
-    }], this.def.videoResolution, this, this.changed, 'combo_resolution');
-
-};
 
 function VolumeFormat(volume) {
     this.base = VolumePlugin;
@@ -1194,6 +1430,7 @@ VolumeTime.prototype.onTime = function() {
 };
 
 VolumeTime.prototype.addCommand = function(command, pars) {
+
     if (this.volume.dims)
 	    if(this.volume.dims.timeSeries)
 	        command.push('slice=,,,,');
@@ -1252,15 +1489,9 @@ VolumePlugin.prototype.changed = function() {
 };
 
 VolumeDisplay.prototype.addCommand = function (command, pars) {
-    command.push ('remap=display');
+
     if (!this.menu) return;
-
     command.push ('depth=8,' + this.combo_enhancement.getValue());
-
-    var b = this.menu.queryById('slider_brightness').getValue();
-    var c = this.menu.queryById('slider_contrast').getValue();
-    if (b!==0 || c!==0)
-        command.push('brightnesscontrast='+b+','+c);
 
     var fusion='';
     for (var i=0; i<this.channel_colors.length; i++) {
@@ -1292,37 +1523,6 @@ VolumeDisplay.prototype.createMenu = function () {
         xtype: 'displayfield',
         fieldLabel: 'View',
         cls: 'heading',
-    });
-
-    this.menu.add({
-        xtype: 'slider',
-        itemId: 'slider_brightness',
-        fieldLabel: 'Brightness',
-        width: 400,
-        value: 0,
-        increment: 1,
-        minValue: -100,
-        maxValue: 100,
-        listeners: {
-            scope: this,
-            change: this.changed,
-        },
-    });
-
-    this.menu.add({
-        xtype: 'slider',
-        itemId: 'slider_contrast',
-        fieldLabel: 'Contrast',
-        width: 400,
-        value: 0,
-        increment: 1,
-        minValue: -100,
-        maxValue: 100,
-        zeroBasedSnapping: true,
-        listeners: {
-            scope: this,
-            change: this.changed,
-        },
     });
 
     this.combo_fusion = this.volume.createCombo( 'Fusion', [

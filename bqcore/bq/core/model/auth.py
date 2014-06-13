@@ -31,6 +31,15 @@ from bq.core.model import DeclarativeBase, metadata, DBSession
 
 __all__ = ['User', 'Group', 'Permission', 'HashPassword', 'FreeTextPassword']
 
+from sqlalchemy.engine import Engine
+
+@event.listens_for(Engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    if config.get('sqlalchemy.url', '').startswith ("sqlite://"):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
 
 #{ Association tables
 

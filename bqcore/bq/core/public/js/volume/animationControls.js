@@ -26,7 +26,7 @@ modification, are permitted provided that the following conditions are met:
 
     Use or redistribution must display the attribution with the logo
     or project name and the project URL link in a location commonly
-    visible by the end users, unless specifically permitted by the 
+    visible by the end users, unless specifically permitted by the
     license holders.
 
 THIS SOFTWARE IS PROVIDED BY THE REGENTS OF THE UNIVERSITY OF CALIFORNIA ''AS IS'' AND ANY
@@ -39,7 +39,7 @@ PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
 PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
 LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 //////////////////////////////////////////////////////////////////
@@ -75,8 +75,7 @@ Ext.define('BQ.viewer.Volume.playbackcontroller',{
 		        change: function(slider, value) {
 		            var ratio = (value)/(this.timeSlider.maxValue-1);
 		            this.panel3D.setCurrentTimeRatio(ratio);
-		            this.panel3D.setMaxSteps = this.sampleRate;
-		            this.panel3D.rerender();
+		            this.panel3D.rerender(this.sampleRate);
 		            this.frameNumber.setText((value+1) + "/" + this.endFrame);
 		        },
 		        scope:me
@@ -84,7 +83,7 @@ Ext.define('BQ.viewer.Volume.playbackcontroller',{
 	    });
 
 	    this.playButton = Ext.create('Ext.Button', {
-	        cls: 'x-btn-play',
+	        cls: 'bq-btn-play',
 	        enableToggle: true,
 	        handler: function(){
 		        console.log(this.playButton);
@@ -588,8 +587,7 @@ Ext.define('BQ.viewer.Volume.keySlider',{
     },
 
     removeKeyFrame : function(frame){
-	    console.log("pre: ", this.keyArray, this.keyArray.length);
-	    console.log("pre: ", this.thumbs);
+
 	    if(frame > -1){
 	        var it = -1;
 	        var minDist = 999;
@@ -673,7 +671,7 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 			            var ratio = (value)/(slider.maxValue-1);
 			            this.panel3D.setCurrentTimeRatio(ratio);
 			            this.panel3D.setMaxSteps = this.sampleRate;
-			            this.panel3D.rerender();
+			            this.panel3D.rerender(this.sampleRate);
 
 			            var nearFrame = this.keySlider.getFloorFrame(value);
 			            var interp = this.keySlider.getInterpolatedValue(nearFrame, value);
@@ -716,7 +714,7 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 
 	    var playButton = Ext.create('Ext.Button', {
 	        //iconCls: 'playbutton',
-            cls: 'x-btn-play',
+            cls: 'bq-btn-play',
 	        enableToggle: true,
 
 	        handler: function(){
