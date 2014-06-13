@@ -255,7 +255,6 @@ Ext.define('BQ.viewer.Volume.volumeScene', {
                            built: false,
                            threeShader: threeMaterial,
                            buildFunc:this.defaultBuildFunc ,};
-        console.log(name,": ", newMaterial);
         this.materials[name] = newMaterial;
         this.initFragment(vertUrl, vertId, config.vertConfig.manipulate);
         this.initFragment(fragUrl, fragId, config.fragConfig.manipulate);
@@ -433,8 +432,6 @@ Ext.define('BQ.viewer.Volume.Panel', {
             quad.geometry.vertices[2] = new THREE.Vector3(-w/2,-h/2,0);
             quad.geometry.vertices[3] = new THREE.Vector3( w/2,-h/2,0);
 
-            console.log(w,h, quad.geometry.vertices[0].x, quad.geometry.vertices[0].y, this.orthoCamera);
-
             quad.geometry.verticesNeedUpdate = true;
             quad.geometry.dynamic = true;
 
@@ -558,8 +555,6 @@ Ext.define('BQ.viewer.Volume.Panel', {
                                                           -10000, 10000 );
         this.orthoCamera.position.z = 1000;
 
-        console.log("--ortho--: ", this.orthoCamera);
-
 
         var screenUniforms = {
             tDiffuse: { type: "t", value: this.accumBuffer0 }
@@ -624,7 +619,6 @@ Ext.define('BQ.viewer.Volume.Panel', {
                     if (type == 'slice' || type == 'atlas' || type == 'resized') {
                         var xRes = evaluateXPath(xmlDoc, "//tag[@name='image_num_x']/@value");
                         var yRes = evaluateXPath(xmlDoc, "//tag[@name='image_num_y']/@value");
-			            console.log("xRes: ", xRes);
                         if (type == 'atlas') {
                             this.loadedDimFullAtlas = true;
                             this.dims.atlas.x = xRes[0].value;
@@ -683,10 +677,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
     initTextures : function() {
 	    var resUniqueUrl = (this.hostName ? this.hostName : '') + '/image_service/image/' + this.resource.resource_uniq;
 	    var slice;
-	    console.log("init tex dims: ", this.dims);
-	    console.log("hostname: ", this.hostName);
-        console.log("phys: ", this.phys);
-        this.dims.slice.x = this.phys.x;
+	    this.dims.slice.x = this.phys.x;
         this.dims.slice.y = this.phys.y;
         this.dims.slice.z = this.phys.z;
         this.dims.t = this.phys.t;
@@ -701,7 +692,6 @@ Ext.define('BQ.viewer.Volume.Panel', {
 	        this.dims.slice.z = z;
             slice = 'slice=,,,,';
 	        this.dims.timeSeries = true;
-	        console.log("slice: ", slice);
 	    }
 	    else
 	        slice = 'slice=,,,1';
@@ -732,7 +722,6 @@ Ext.define('BQ.viewer.Volume.Panel', {
         this.sceneVolume.initUniform('iResolution', "v2", res);
 
         this.sceneVolume.initUniform('setMaxSteps', "i", this.setMaxSteps);
-        console.log("textures: ", this.xTexSizeRatio, this.dims.slice.x);
         this.sceneVolume.initUniform('TEX_RES_X', "i", this.xTexSizeRatio * this.dims.slice.x);
         this.sceneVolume.initUniform('TEX_RES_Y', "i", this.yTexSizeRatio * this.dims.slice.y);
         this.sceneVolume.initUniform('ATLAS_X', "i", this.dims.atlas.x / this.dims.slice.x);
@@ -819,8 +808,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
     onPartFetch : function() {
         if (!this.resource || !this.phys)
             return;
-	    console.log(this.hostName);
-        this.initTextures();
+	    this.initTextures();
 	    this.createViewMenu();
         //this.createToolMenu();
         for (var i = 0; ( plugin = this.plug_ins[i]); i++)
@@ -1005,8 +993,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
     createToolPanel : function(){
 	    if(!this.toolPanel){
-            console.log("dims: ", this.dims);
-	        var thisDom = this.getEl().dom;
+            var thisDom = this.getEl().dom;
 	        this.toolPanel = Ext.create('Ext.panel.Panel',{
 		        renderTo: thisDom,
 		        title: 'Settings',
@@ -1172,7 +1159,6 @@ Ext.define('BQ.viewer.Volume.Panel', {
     toolMenuRadioHandler : function(){
         var radio1 = Ext.getCmp('toolRadio1'),
         radio2 = Ext.getCmp('toolRadio2');
-        console.log(radio1.getValue(),radio2.getValue());
         if (radio2.getValue()) {
             this.playbackPanel.hide();
 			this.animPanel.show();
@@ -1211,8 +1197,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
                 cls : 'toolItem',
                 xtype: 'checkbox',
 		        handler: function(item, checked){
-		            console.log(item, checked);
-                    if(checked){
+		            if(checked){
 			            me.toolPanel.show();
 		            }
 		            else
@@ -1468,7 +1453,6 @@ function VolumeDisplay(volume) {
 VolumeDisplay.prototype = new VolumePlugin();
 
 VolumeDisplay.prototype.init = function() {
-    console.log("plug init: ", this.volume);
     var p = this.volume.preferences || {};
     this.def = {
         enhancement : p.enhancement || 'd', // values: 'd', 'f', 't', 'e'

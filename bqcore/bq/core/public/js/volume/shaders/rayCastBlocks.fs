@@ -309,7 +309,7 @@ vec4 integrateVolume(vec4 eye_o,vec4 eye_d,
   vec2 vUv = gl_FragCoord.xy/iResolution.xy;
   vec4 D = texture2D(BACKGROUND_DEPTH, vUv);
   vec4 C = texture2D(BACKGROUND_COLOR, vUv);
-
+  return D;
   float zNear = 0.01;
   float zFar = 20.0;
   float z_b = unpack(D);
