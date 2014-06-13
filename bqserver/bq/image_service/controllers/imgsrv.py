@@ -1213,9 +1213,8 @@ class RoiService(object):
         # remove pre-computed ROIs
         rois = [(_x1,_y1,_x2,_y2) for _x1,_y1,_x2,_y2 in rois if not os.path.exists('%s.roi_%d,%d,%d,%d'%(otemp,_x1-1,_y1-1,_x2-1,_y2-1))]
 
-        lfile = None
+        lfile = self.server.getOutFileName( ifile, image_id, '.rois' )
         if not os.path.exists(ofile) or len(rois)>0:
-            lfile = self.server.getOutFileName( ifile, image_id, '.rois' )
             # global ROI lock on this input since we can't lock on all individual outputs
             with Locks(ifile, lfile) as l:
                 if l.locked: # the file is not being currently written by another process
@@ -1228,9 +1227,9 @@ class RoiService(object):
                         f.write('#Temporary locking file')
 
         # ensure the operation is finished
-        if lfile is not None and os.path.exists(lfile):
+        if os.path.exists(lfile):
             with Locks(lfile):
-                    pass
+                pass
         try:
             info = self.server.getImageInfo(filename=ofile)
             if 'image_num_x' in info: data_token.dims['image_num_x'] = info['image_num_x']
