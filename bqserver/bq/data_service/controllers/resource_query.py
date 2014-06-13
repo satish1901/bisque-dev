@@ -103,8 +103,8 @@ LEGAL_ATTRIBUTES = {
      'value': 'resource_value', 'resource_value' : 'resource_value',
      'hidden': 'resource_hidden', 'resource_hidden': 'resource_hidden',
      'ts': 'ts', 'created': 'created',
-     'resource_unid' : 'resource_unid',
-     'unid' : 'resource_unid',
+     'unid' : 'resource_unid', 'resource_unid' : 'resource_unid',
+     'uniq' : 'resource_uniq', 'resource_uniq' : 'resource_uniq' 
      }
 
 
