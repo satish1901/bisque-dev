@@ -2276,6 +2276,7 @@ Ext.define('BQ.viewer.Volume.pointControl', {
         ].join('\n');
 
         var spriteTex = THREE.ImageUtils.loadTexture( '/js/volume/icons/redDot.png' );
+        console.log('sprites: ', spriteTex);
         var frag = [
             'uniform sampler2D tex1;',
             'uniform float near;',
@@ -2285,10 +2286,14 @@ Ext.define('BQ.viewer.Volume.pointControl', {
             //'varying float depth;',
             pack,
             'void main() {',
-            ' if(USE_COLOR == 0)',
-            '    gl_FragColor = pack(gl_FragCoord.z);',
-            ' else',
-            '  gl_FragColor = texture2D(tex1, gl_PointCoord);',
+            ' if(USE_COLOR == 0){',
+            '  vec4 C = texture2D(tex1, gl_PointCoord);',
+            '  gl_FragColor = C.a*pack(gl_FragCoord.z) - (1.0 - C.a)*gl_FragColor;',
+            ' }',
+            ' else{',
+            '  vec4 C = texture2D(tex1, gl_PointCoord);',
+            '  gl_FragColor = C.a*C + (1.0 - C.a)*gl_FragColor;',
+            '  }',
             '}'
         ].join('\n');
 
@@ -2314,6 +2319,8 @@ Ext.define('BQ.viewer.Volume.pointControl', {
 			attributes: {
 				alpha: { type: 'f', value: null },
 			},
+            //blendSrc: 'oneMinusSrcAlphaFactor',
+            //blendDst: 'oneMinusSrcColorFactor',
 			vertexShader:   vert,
 			fragmentShader: frag,
 			transparent: false
@@ -2337,8 +2344,6 @@ Ext.define('BQ.viewer.Volume.pointControl', {
 
 
         this.panel3D.on('time', this.loadPoints, me);
-        this.pointTimeSets = new Array();
-        this.loadPoints();
 
         this.raycaster = new THREE.Raycaster();
         this.raycaster.params.PointCloud.threshold = 0.0025;
@@ -2355,7 +2360,10 @@ Ext.define('BQ.viewer.Volume.pointControl', {
         //backGround.doubleSided = true;
         this.sceneVolume.sceneData.add(backGround);
 
+        this.pointTimeSets = new Array();
+        this.loadPoints();
 
+        console.log(this.sceneVolume.sceneData);
 	    this.addUniforms();
 	    this.isLoaded = true;
         this.panel3D.canvas3D.animate_funcs[0] = callback(this, this.onAnimate);
