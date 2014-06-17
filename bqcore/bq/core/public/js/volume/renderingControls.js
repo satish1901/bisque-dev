@@ -2087,38 +2087,190 @@ Ext.define('BQ.viewer.Volume.pointControl', {
         console.log(this.points);
     },
 
+    setVisible : function( vis ){
+        var t = this.panel3D.currentTime;
+        this.currentSet = this.gObjectBuffers[t];
+        for (var item in this.currentSet){
+            if(!item) continue;
+            var curMesh = this.currentSet[item];
+            curMesh.visible = vis;
+        }
+    },
+
     updateScene : function(){
         var t = this.panel3D.currentTime;
-        this.sceneVolume.sceneData.remove( this.points ); // remove current point set
-        this.sceneVolume.sceneData.add( this.pointTimeSets[t] ); //add new set
 
-        this.points = this.pointTimeSets[t]; //set current pointer to loaded set
+        if(!this.currentSet) this.currentSet = {};
+        for (var item in this.currentSet){
+            if(!item) continue;
+            var curMesh = this.currentSet[item];
+            this.sceneVolume.sceneData.remove( curMesh ); // remove current point set
+        }
+        this.currentSet = this.gObjectBuffers[t];
+        for (var item in this.currentSet){
+            if(!item) continue;
+            var curMesh = this.currentSet[item];
+            this.sceneVolume.sceneData.add( curMesh ); // remove current point set
+            if(this.state === 1)
+      	        curMesh.visible = true;
+            else
+      	        curMesh.visible = false;
+        }
 
-        if(this.state === 1)
-      	    this.points.visible = true;
-        else
-      	    this.points.visible = false;
+        this.points   = this.currentSet.points; //set current pointer to loaded set
         this.pointclouds = [this.points];
     },
 
-    loadPoints : function(){
-
+    loadGObjects : function(){
         var t = this.panel3D.currentTime;
-        if(this.pointTimeSets[t]) { //load points in lazily
+        if(this.gObjectSets[t]) { //load points in lazily
             this.updateScene();
             return;
         }
 
+        this.gObjectBuffers[t] = {};
+        this.gObjectSets[t] = {
+            points:    new Array(),
+            lines:      new Array(),
+            circles:    new Array(),
+            ellipses:   new Array(),
+            polylines:  new Array(),
+            polygons:   new Array(),
+            rectangles: new Array(),
+            squares:    new Array(),
+            labels:     new Array(),
+            gobjects:     new Array(),
+        };
+
+        var thisSet = this.gObjectSets[t];
         var collectedPoints = new Array();
         for(var i = 0; i < this.gobjects.length; i++){
             var g = this.gobjects[i];
-
-            if(g.resource_type == 'point' && g.vertices[0].t == t) {
-                collectedPoints.push(g.vertices[0]);
+            if(g.vertices[0].t == t){
+                console.log(g.resource_type);
+                thisSet[g.resource_type + 's'].push(g);
             }
         }
+        console.log('loadedFrame', thisSet);
 
-        var amountOfPoints = collectedPoints.length;
+        this.loadPoints();
+        this.loadPolygons();
+    },
+
+    pushPosition : function(p, x, positions){
+        var dims  = this.panel3D.dims.slice;
+        var scale = { x:this.panel3D.dims.pixel.x,
+                      y:this.panel3D.dims.pixel.y,
+                      z:this.panel3D.dims.pixel.z };
+
+        scale.y = scale.x/scale.y;
+        scale.z = scale.x/scale.z;
+        scale.x = 1.0;
+        positions[ x * 3 + 0 ] = scale.x*(p.x/dims.x - 0.5);
+		positions[ x * 3 + 1 ] = scale.y*(0.5 - p.y/dims.y);
+		positions[ x * 3 + 2 ] = scale.z*(0.5 - p.z/dims.z);
+    },
+
+    isClockWise : function(poly){
+        //use shoelace determinate
+        var det = 0;
+        for(var i = 0; i < poly.length; i++){
+            var cur = poly[i];
+            var nex = poly[(i+1)%poly.length];
+            det += cur.x*nex.y - cur.y*nex.x;
+        }
+        return det > 0;
+    },
+
+    pushPolygon : function(poly, indices, positions, colors){
+        //poly is any object with an x and a y.
+        //loads necessary data onto the vertex buffer
+        var lindex = [];
+        if(!this.isClockWise(polys[i].vertices))
+            lindex = POLYGON.tessellate(polys[i].vertices, []);
+        else
+            lindex = POLYGON.tessellate(polys[i].vertices.reverse(), []);
+
+        for(var j = 0; j < lindex.length; j++){
+            lindex[j] += triCounter;
+        }
+
+        var lcolor = {r: Math.random(),g: Math.random(),b: Math.random()}
+        for(var j = 0; j < polys[i].vertices.length; j++){
+            color.push(lcolor);
+        }
+
+        position = position.concat(polys[i].vertices);
+        index = index.concat(lindex);
+        triCounter += polys[i].vertices.length;
+    },
+
+    loadPolygons : function(){
+        var t = this.panel3D.currentTime;
+        var amountOfPoints = this.gObjectSets[t].points.length;
+        var polys = this.gObjectSets[t].polygons;
+        var triCounter = 0;
+        var index = new Array();
+        var position = new Array();
+        var color = new Array();
+        var offsets = {};
+        for(var i = 0; i < polys.length; i++){
+            this.pushPolygon :
+            var lindex = [];
+            if(!this.isClockWise(polys[i].vertices))
+                lindex = POLYGON.tessellate(polys[i].vertices, []);
+            else
+                lindex = POLYGON.tessellate(polys[i].vertices.reverse(), []);
+
+            for(var j = 0; j < lindex.length; j++){
+                lindex[j] += triCounter;
+            }
+
+            var lcolor = {r: Math.random(),g: Math.random(),b: Math.random()}
+            for(var j = 0; j < polys[i].vertices.length; j++){
+                color.push(lcolor);
+            }
+
+            position = position.concat(polys[i].vertices);
+            index = index.concat(lindex);
+            triCounter += polys[i].vertices.length;
+        }
+
+        var geometry = new THREE.BufferGeometry();
+		geometry.addAttribute( 'index',    new THREE.BufferAttribute( new Uint32Array( index.length ), 1 ));
+		geometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( position.length * 3 ), 3 ) );
+		geometry.addAttribute( 'color',    new THREE.BufferAttribute( new Float32Array( color.length * 3 ), 3 ) );
+        var gpositions = geometry.getAttribute('position').array;
+        var gindex     = geometry.getAttribute('index').array;
+        var gcolor     = geometry.getAttribute('color').array;
+        //var check0 = index.slice(0);
+
+        for(var i = 0; i < index.length; i++){
+            gindex[i] = index[i];
+        }
+
+        for(var i = 0; i < position.length; i++){
+            this.pushPosition(position[i], i, gpositions);
+        }
+
+        for(var i = 0; i < color.length; i++){
+            gcolor[3*i + 0] = color[i].r;
+            gcolor[3*i + 1] = color[i].g;
+            gcolor[3*i + 2] = color[i].b;
+        }
+
+        var polymesh = new THREE.Mesh( geometry, this.polyShaderMaterial );
+
+        polymesh.geometry.dynamic = true;
+        polymesh.geometry.computeBoundingBox();
+        polymesh.geometry.verticesNeedUpdate = true;
+        this.gObjectBuffers[t].polygons = polymesh;
+        this.updateScene();
+    },
+
+    loadPoints : function(){
+        var t = this.panel3D.currentTime;
+        var amountOfPoints = this.gObjectSets[t].points.length;
 	    var pointGeom = new THREE.BufferGeometry();
 
 		pointGeom.attributes = {
@@ -2137,7 +2289,6 @@ Ext.define('BQ.viewer.Volume.pointControl', {
 		var positions = pointGeom.attributes.position.array;
 		var alphas = pointGeom.attributes.alpha.array;
 
-
         var dims  = this.panel3D.dims.slice;
         var scale = { x:this.panel3D.dims.pixel.x,
                       y:this.panel3D.dims.pixel.y,
@@ -2146,13 +2297,11 @@ Ext.define('BQ.viewer.Volume.pointControl', {
         scale.y = scale.x/scale.y;
         scale.z = scale.x/scale.z;
         scale.x = 1.0;
-        console.log('scale: ', scale);
+
         var x = 0;
         while (x < amountOfPoints){
-            var p = collectedPoints[x];
-            positions[ x * 3 + 0 ] = scale.x*(p.x/dims.x - 0.5);
-			positions[ x * 3 + 1 ] = scale.y*(p.y/dims.y - 0.5);
-			positions[ x * 3 + 2 ] = scale.z*(p.z/dims.z - 0.5);
+            var p = this.gObjectSets[t].points[x].vertices[0];
+            this.pushPosition(p,x,positions);
             alphas[x] = 1.0;
             x++;
         }
@@ -2185,8 +2334,11 @@ Ext.define('BQ.viewer.Volume.pointControl', {
         points.geometry.dynamic = true;
         points.geometry.computeBoundingBox();
         points.geometry.verticesNeedUpdate = true;
+        if(!this.gObjectSets[t]){
+            this.gObjectSets[t] = {};
+        }
 
-        this.pointTimeSets[t] = points;
+        this.gObjectBuffers[t].points = points;
 
         this.updateScene();
 
@@ -2205,9 +2357,9 @@ Ext.define('BQ.viewer.Volume.pointControl', {
 	        handler: function(){
 	            this.state ^= 1;
 		        if((this.state&1) === 1){
-                    this.points.visible = true;
+                    this.setVisible(true);
 		        } else {
-                    this.points.visible = false;
+                    this.setVisible(false);
 		        }
                 this.rescalePoints();
                 this.panel3D.rerender();
@@ -2276,7 +2428,7 @@ Ext.define('BQ.viewer.Volume.pointControl', {
         ].join('\n');
 
         var spriteTex = THREE.ImageUtils.loadTexture( '/js/volume/icons/redDot.png' );
-        console.log('sprites: ', spriteTex);
+
         var frag = [
             'uniform sampler2D tex1;',
             'uniform float near;',
@@ -2287,12 +2439,13 @@ Ext.define('BQ.viewer.Volume.pointControl', {
             pack,
             'void main() {',
             ' if(USE_COLOR == 0){',
-            '  vec4 C = texture2D(tex1, gl_PointCoord);',
-            '  gl_FragColor = C.a*pack(gl_FragCoord.z) - (1.0 - C.a)*gl_FragColor;',
-            ' }',
+           '  vec4 C = vec4(texture2D(tex1, gl_PointCoord).a);',
+            '  gl_FragColor = pack(gl_FragCoord.z);',
+            //'  gl_FragColor = pack(gl_FragCoord.z);',
+            '}',
             ' else{',
             '  vec4 C = texture2D(tex1, gl_PointCoord);',
-            '  gl_FragColor = C.a*C + (1.0 - C.a)*gl_FragColor;',
+            '  gl_FragColor = C;',
             '  }',
             '}'
         ].join('\n');
@@ -2319,17 +2472,27 @@ Ext.define('BQ.viewer.Volume.pointControl', {
 			attributes: {
 				alpha: { type: 'f', value: null },
 			},
-            //blendSrc: 'oneMinusSrcAlphaFactor',
-            //blendDst: 'oneMinusSrcColorFactor',
 			vertexShader:   vert,
 			fragmentShader: frag,
 			transparent: false
 		});
+
+
 /*
         backGroundShaderMaterial = new THREE.MeshDepthMaterial( {
             side: THREE.DoubleSide,
 		});
 */
+        this.polyShaderMaterial = new THREE.ShaderMaterial( {
+			uniforms: {
+                near: {type: 'f', value: 0.1},
+                far:  {type: 'f', value: 20.0},
+			},
+			vertexShader:   vertDepth,
+			fragmentShader: fragDepth,
+            side: THREE.DoubleSide,
+			//transparent: true
+		});
 
 		backGroundShaderMaterial = new THREE.ShaderMaterial( {
 			uniforms: {
@@ -2342,17 +2505,20 @@ Ext.define('BQ.viewer.Volume.pointControl', {
 			//transparent: true
 		});
 
+        this.gObjectSets = new Array();
+        this.gObjectBuffers = new Array();
+        this.loadGObjects();
+        this.panel3D.on('time', this.loadGObjects, me);
 
-        this.panel3D.on('time', this.loadPoints, me);
 
         this.raycaster = new THREE.Raycaster();
         this.raycaster.params.PointCloud.threshold = 0.0025;
-
+/*
 		var sphereGeometry = new THREE.SphereGeometry( 0.01, 32, 32 );
 		var sphereMaterial = new THREE.MeshBasicMaterial( { color: 0xff0000, shading: THREE.FlatShading } );
 		this.sphere =  new THREE.Mesh( sphereGeometry, backGroundShaderMaterial );
         this.sceneVolume.sceneData.add( this.sphere );
-
+*/
         //var backGroundGeometry = new THREE.CubeGeometry(8.0, 8.0, 8.0);
         var backGroundGeometry = new THREE.SphereGeometry( 8.0, 32, 32 );
         var backGround = new THREE.Mesh(backGroundGeometry, backGroundShaderMaterial);
@@ -2360,10 +2526,7 @@ Ext.define('BQ.viewer.Volume.pointControl', {
         //backGround.doubleSided = true;
         this.sceneVolume.sceneData.add(backGround);
 
-        this.pointTimeSets = new Array();
-        this.loadPoints();
 
-        console.log(this.sceneVolume.sceneData);
 	    this.addUniforms();
 	    this.isLoaded = true;
         this.panel3D.canvas3D.animate_funcs[0] = callback(this, this.onAnimate);
@@ -2396,12 +2559,13 @@ Ext.define('BQ.viewer.Volume.pointControl', {
 
             this.pointShaderMaterial.uniforms.USE_COLOR.value = 0;
             panel.canvas3D.renderer.render(this.sceneVolume.sceneData,
-                                          this.canvas3D.camera,
-                                          this.depthBuffer);
+                                           this.canvas3D.camera,
+                                           this.depthBuffer);
+
             this.pointShaderMaterial.uniforms.USE_COLOR.value = 1;
             panel.canvas3D.renderer.render(this.sceneVolume.sceneData,
-                                          this.canvas3D.camera,
-                                          this.colorBuffer);
+                                           this.canvas3D.camera,
+                                           this.colorBuffer);
 
             panel.sceneVolume.setUniform('BACKGROUND_DEPTH', this.depthBuffer, false);
             panel.sceneVolume.setUniform('BACKGROUND_COLOR', this.colorBuffer, false);

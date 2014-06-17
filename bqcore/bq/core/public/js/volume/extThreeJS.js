@@ -127,7 +127,9 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
         thisDom.addEventListener('DOMMouseScroll',me.onMouseWheel, false);
 
         this.renderer = new THREE.WebGLRenderer({
-            preserveDrawingBuffer : true
+            preserveDrawingBuffer : true,
+            clearAlpha: 1,
+            sortObjects: true,
         });
 
         this.renderer.setSize(this.getWidth(), this.getHeight());
