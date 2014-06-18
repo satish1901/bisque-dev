@@ -2229,27 +2229,6 @@ Ext.define('BQ.viewer.Volume.pointControl', {
         var offsets = {};
         for(var i = 0; i < polys.length; i++){
             this.pushPolygon(polys[i].vertices, index, position, color);
-            var here;
-            /*
-            var lindex = [];
-            if(!this.isClockWise(polys[i].vertices))
-                lindex = POLYGON.tessellate(polys[i].vertices, []);
-            else
-                lindex = POLYGON.tessellate(polys[i].vertices.reverse(), []);
-
-            for(var j = 0; j < lindex.length; j++){
-                lindex[j] += triCounter;
-            }
-
-            var lcolor = {r: Math.random(),g: Math.random(),b: Math.random()}
-            for(var j = 0; j < polys[i].vertices.length; j++){
-                color.push(lcolor);
-            }
-
-            position = position.concat(polys[i].vertices);
-            index = index.concat(lindex);
-            triCounter += polys[i].vertices.length;
-            */
         }
         console.log(index, position, color);
         var geometry = new THREE.BufferGeometry();
