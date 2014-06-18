@@ -2148,7 +2148,11 @@ Ext.define('BQ.viewer.Volume.pointControl', {
             var g = this.gobjects[i];
             if(g.vertices[0].t == t){
                 console.log(g.resource_type);
-                thisSet[g.resource_type + 's'].push(g);
+                /*if(g.resource_type == 'polygon')
+                    this.pushPolygon(g.vertices, index, position, color);
+                */
+                else
+                    thisSet[g.resource_type + 's'].push(g);
             }
         }
         console.log('loadedFrame', thisSet);
@@ -2186,23 +2190,30 @@ Ext.define('BQ.viewer.Volume.pointControl', {
         //poly is any object with an x and a y.
         //loads necessary data onto the vertex buffer
         var lindex = [];
-        if(!this.isClockWise(polys[i].vertices))
-            lindex = POLYGON.tessellate(polys[i].vertices, []);
+        if(!this.isClockWise(poly))
+            lindex = POLYGON.tessellate(poly, []);
         else
-            lindex = POLYGON.tessellate(polys[i].vertices.reverse(), []);
+            lindex = POLYGON.tessellate(poly.reverse(), []);
 
         for(var j = 0; j < lindex.length; j++){
-            lindex[j] += triCounter;
+            lindex[j] += positions.length;
         }
 
         var lcolor = {r: Math.random(),g: Math.random(),b: Math.random()}
-        for(var j = 0; j < polys[i].vertices.length; j++){
-            color.push(lcolor);
+        for(var j = 0; j < poly.length; j++){
+            colors.push(lcolor);
         }
 
-        position = position.concat(polys[i].vertices);
-        index = index.concat(lindex);
-        triCounter += polys[i].vertices.length;
+        for(var i = 0; i < poly.length; i++){
+            positions.push(poly[i]);// = positions.concat(poly)
+        };
+
+        for(var i = 0; i < lindex.length; i++){
+            indices.push(lindex[i]);// = positions.concat(poly)
+        };
+        //indices.push(lindex);// = indices.concat(lindex);
+        //console.log('local: ', lindex, 'localpoly: ', poly, 'global: ', indices, 'global p: ',positions);
+        //triCounter += polys[i].vertices.length;
     },
 
     loadPolygons : function(){
@@ -2215,7 +2226,9 @@ Ext.define('BQ.viewer.Volume.pointControl', {
         var color = new Array();
         var offsets = {};
         for(var i = 0; i < polys.length; i++){
-            this.pushPolygon :
+            this.pushPolygon(polys[i].vertices, index, position, color);
+            var here;
+            /*
             var lindex = [];
             if(!this.isClockWise(polys[i].vertices))
                 lindex = POLYGON.tessellate(polys[i].vertices, []);
@@ -2234,8 +2247,9 @@ Ext.define('BQ.viewer.Volume.pointControl', {
             position = position.concat(polys[i].vertices);
             index = index.concat(lindex);
             triCounter += polys[i].vertices.length;
+            */
         }
-
+        console.log(index, position, color);
         var geometry = new THREE.BufferGeometry();
 		geometry.addAttribute( 'index',    new THREE.BufferAttribute( new Uint32Array( index.length ), 1 ));
 		geometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( position.length * 3 ), 3 ) );
@@ -2265,7 +2279,7 @@ Ext.define('BQ.viewer.Volume.pointControl', {
         polymesh.geometry.computeBoundingBox();
         polymesh.geometry.verticesNeedUpdate = true;
         this.gObjectBuffers[t].polygons = polymesh;
-        this.updateScene();
+       this.updateScene();
     },
 
     loadPoints : function(){
@@ -2296,8 +2310,8 @@ Ext.define('BQ.viewer.Volume.pointControl', {
 
         scale.y = scale.x/scale.y;
         scale.z = scale.x/scale.z;
-        scale.x = 1.0;
-
+        scale.x = 1.0
+;
         var x = 0;
         while (x < amountOfPoints){
             var p = this.gObjectSets[t].points[x].vertices[0];
