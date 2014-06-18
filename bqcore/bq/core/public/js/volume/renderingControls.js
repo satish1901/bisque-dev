@@ -2150,9 +2150,11 @@ Ext.define('BQ.viewer.Volume.pointControl', {
                 console.log(g.resource_type);
                 /*if(g.resource_type == 'polygon')
                     this.pushPolygon(g.vertices, index, position, color);
-                */
+
                 else
                     thisSet[g.resource_type + 's'].push(g);
+                */
+                thisSet[g.resource_type + 's'].push(g)
             }
         }
         console.log('loadedFrame', thisSet);
