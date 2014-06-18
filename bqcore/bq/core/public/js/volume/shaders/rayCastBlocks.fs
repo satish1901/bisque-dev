@@ -1,6 +1,6 @@
 /*******************************************************************************
 
-@author John Delaney
+@Author John Delaney
 
 
 *******************************************************************************/
@@ -26,7 +26,7 @@ modification, are permitted provided that the following conditions are met:
 
     Use or redistribution must display the attribution with the logo
     or project name and the project URL link in a location commonly
-    visible by the end users, unless specifically permitted by the 
+    visible by the end users, unless specifically permitted by the
     license holders.
 
 THIS SOFTWARE IS PROVIDED BY THE REGENTS OF THE UNIVERSITY OF CALIFORNIA ''AS IS'' AND ANY
@@ -39,9 +39,8 @@ PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
 PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
 LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-
 
 #ifdef GL_ES
 precision highp float;
@@ -90,7 +89,15 @@ uniform float density;
 
 //uniform sampler2D backGround;
 
-uniform sampler2D dataBase0[1];
+uniform sampler2D textureAtlas;
+uniform sampler2D transfer;
+uniform int TRANSFER_SIZE;
+uniform int USE_TRANSFER;
+
+uniform sampler2D BACKGROUND_DEPTH;
+uniform sampler2D BACKGROUND_COLOR;
+
+
 //uniform sampler2D dataBase1[1];
 
 uniform int TEX_RES_X;
@@ -98,12 +105,30 @@ uniform int TEX_RES_Y;
 uniform int ATLAS_X;
 uniform int ATLAS_Y;
 uniform int SLICES;
-uniform int RES_X;
-uniform int RES_Y;
-uniform int RES_Z;
+uniform int BLOCK_RES_X;
+uniform int BLOCK_RES_Y;
+uniform int BLOCK_RES_Z;
 
 uniform float CLIP_NEAR;
 uniform float CLIP_FAR;
+
+
+
+float rand(vec2 co){
+  float threadId = gl_FragCoord.x/(gl_FragCoord.y + 1.0);
+  float bigVal = threadId*1299721.0/911.0;
+  float smallVal0 = threadId*7927.0/577.0;
+  float smallVal1 = threadId*104743.0/1039.0;
+  //return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+  return fract(sin(dot(co.xy ,vec2(smallVal0,smallVal1))) * bigVal);
+}
+
+vec4 getTransfer(float density){
+  //float t = density*float(TRANSFER_SIZE);
+  //density += 0.01*rand(gl_FragCoord.yx/iResolution.xy);
+  return texture2D(transfer, vec2(density,0.0));
+
+}
 
 vec4 luma2Alpha(vec4 color, float min, float max, float C){
   float x = sqrt(color[0]*color[0] +color[1]*color[1] +color[2]*color[2]);
@@ -113,13 +138,6 @@ vec4 luma2Alpha(vec4 color, float min, float max, float C){
   y = clamp(y,0.0,1.0);
   color[3] = y;
   return(color);
-}
-
-vec4 channel(vec4 smp){
-  vec4 col = vec4(float(RED_CHANNEL)*smp[0],
-                  float(GREEN_CHANNEL)*smp[1],
-                  float(BLUE_CHANNEL)*smp[2],0.0);
-  return col;
 }
 
 vec2 offsetBackFront(float t, float nx){
@@ -141,12 +159,12 @@ vec4 sampleAs3DTexture(sampler2D tex, vec4 pos) {
   //return pos;
   //vec4 pos = 0.5*(1.0 - texCoord);
   //return vec4(pos.xyz,0.05);
-  pos = clamp(pos,vec4(-0.999),vec4(0.999));
-  for(int i = 0; i < 3; i++){
-
-  }
-
-
+  pos = 0.5*(1.0 - pos);
+  pos[0] = 1.0 - pos[0];
+  //pos = clamp(pos,vec4(0.0),vec4(0.999));
+  float bounds = float(pos[0] < 1.0 && pos[0] > 0.0 &&
+                      pos[1] < 1.0 && pos[1] > 0.0 &&
+                      pos[2] < 1.0 && pos[2] > 0.0 );
   float nx      = float(ATLAS_X);
   float ny      = float(ATLAS_Y);
   float nSlices = float(SLICES);
@@ -172,64 +190,10 @@ vec4 sampleAs3DTexture(sampler2D tex, vec4 pos) {
   float t = mod(iz, 1.0);
   vec4 slice0Color = texture2D(tex, loc + o0);
   vec4 slice1Color = texture2D(tex, loc + o1);
-
-  return mix(slice0Color, slice1Color, t);
+  return bounds*mix(slice0Color, slice1Color, t);
 }
 
-
-
-vec4 sampleBlocks(sampler2D dataBase0[1], vec4 texCoord, ivec4 nBlocks) {
-
-
-  texCoord = clamp(texCoord,vec4(-0.999),vec4(0.999));
-  vec4 pos = 0.5*(1.0 - texCoord);
-  pos[0] = 1.0 - pos[0];
-
-  vec4 nBlocksf = vec4(nBlocks);
-  vec4  blockf  = pos*nBlocksf;
-  vec4  blockif = vec4(floor(blockf));
-  ivec4 blocki  = ivec4(blockif);
-  int blockInd = blocki[0] + blocki[1]*nBlocks[0] + blocki[2]*nBlocks[0]*nBlocks[1];
-
-  vec4 blockPos = blockf - vec4(blocki);
-  //return blockPos;
-  float nx      = float(ATLAS_X);
-  float ny      = float(ATLAS_Y);
-  float nSlices = float(SLICES);
-  float sx      = float(TEX_RES_X);
-  float sy      = float(TEX_RES_Y);
-  vec4 imgRes = vec4(sx,sy,nSlices,1.0);
-  vec4 imgPos = blockPos*imgRes;
-
-  if(blockInd == 0) return sampleAs3DTexture(dataBase0[0],blockPos);
-#if 0
-  if(blockInd == 1) return sampleAs3DTexture(dataBase0[1],blockPos);
-  if(blockInd == 2) return sampleAs3DTexture(dataBase0[2],blockPos);
-  if(blockInd == 3) return sampleAs3DTexture(dataBase0[3],blockPos);
-  if(blockInd == 4) return sampleAs3DTexture(dataBase0[4],blockPos);
-  if(blockInd == 5) return sampleAs3DTexture(dataBase0[5],blockPos);
-  if(blockInd == 6) return sampleAs3DTexture(dataBase0[6],blockPos);
-  if(blockInd == 7) return sampleAs3DTexture(dataBase0[7],blockPos);
-
-  if(blockInd == 8) return sampleAs3DTexture(dataBase1[0],blockPos);
-  if(blockInd == 9) return sampleAs3DTexture(dataBase1[1],blockPos);
-  if(blockInd == 10) return sampleAs3DTexture(dataBase1[2],blockPos);
-  if(blockInd == 11) return sampleAs3DTexture(dataBase1[3],blockPos);
-  if(blockInd == 12) return sampleAs3DTexture(dataBase1[4],blockPos);
-  if(blockInd == 13) return sampleAs3DTexture(dataBase1[5],blockPos);
-  if(blockInd == 14) return sampleAs3DTexture(dataBase1[6],blockPos);
-  if(blockInd == 15) return sampleAs3DTexture(dataBase1[7],blockPos);
-#endif
-
-  return vec4(0.0);
-}
-
-
-float rand(vec2 co){
-  return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
-}
-
-vec4 getNormal(sampler2D tex[1], vec4 texCoord, ivec4 nBlocks){
+vec4 getNormal(sampler2D tex, vec4 texCoord){
   float nx      = float(ATLAS_X);
   float ny      = float(ATLAS_Y);
   /*
@@ -240,35 +204,58 @@ vec4 getNormal(sampler2D tex[1], vec4 texCoord, ivec4 nBlocks){
     ry = clamp(rx, 0.25, 1.0);
     rz = clamp(rx, 0.25, 1.0);
   */
-  float nSlices = float(SLICES);
-  float sx      = float(TEX_RES_X);
-  float sy      = float(TEX_RES_Y);
+  float iz = 1.0/float(SLICES);
+  float ix      = 1.0/float(TEX_RES_X);
+  float iy      = 1.0/float(TEX_RES_Y);
 
-  float v0 = length(sampleBlocks(tex, texCoord + vec4(1.0/sx, 0.    ,  0., 0.),nBlocks));
-  float v1 = length(sampleBlocks(tex, texCoord - vec4(1.0/sx, 0.    ,  0., 0.),nBlocks));
-  float v2 = length(sampleBlocks(tex, texCoord + vec4(0.,     1.0/sx,  0., 0.),nBlocks));
-  float v3 = length(sampleBlocks(tex, texCoord - vec4(0.,     1.0/sy,  0., 0.),nBlocks));
-  float v4 = length(sampleBlocks(tex, texCoord + vec4(0., 0., 1.0/nSlices, 0.),nBlocks));
-  float v5 = length(sampleBlocks(tex, texCoord - vec4(0., 0., 1.0/nSlices, 0.),nBlocks));
-  vec3 grad = -vec3((v0-v1),(v2-v3),(v4-v5));
+  vec4 pos = texCoord;
+  //s[0] = 1.0 - pos[0];
+  float C = 2.0;
+  float px = float(pos[0] >= (C*ix - 1.0));
+  float py = float(pos[1] >= (C*iy - 1.0));
+  float pz = float(pos[2] >= (C*iz - 1.0));
+  float mx = float(pos[0] <= (1.0 - C*ix));
+  float my = float(pos[1] <= (1.0 - C*iy));
+  float mz = float(pos[2] <= (1.0 - C*iz));
+  vec4 v0 = sampleAs3DTexture(tex, texCoord + px*vec4(ix, 0., 0., 0.));
+  vec4 v1 = sampleAs3DTexture(tex, texCoord - vec4(ix, 0., 0., 0.));
+  vec4 v2 = sampleAs3DTexture(tex, texCoord + py*vec4(0.,     iy,  0., 0.));
+  vec4 v3 = sampleAs3DTexture(tex, texCoord - my*vec4(0.,     iy,  0., 0.));
+  vec4 v4 = sampleAs3DTexture(tex, texCoord + vec4(0., 0., iz, 0.));
+  vec4 v5 = sampleAs3DTexture(tex, texCoord - mz*vec4(0., 0., iz, 0.));
+  v0 = luma2Alpha(v0, GAMMA_MIN, GAMMA_MAX, GAMMA_SCALE);
+  v1 = luma2Alpha(v1, GAMMA_MIN, GAMMA_MAX, GAMMA_SCALE);
+  v2 = luma2Alpha(v2, GAMMA_MIN, GAMMA_MAX, GAMMA_SCALE);
+  v3 = luma2Alpha(v3, GAMMA_MIN, GAMMA_MAX, GAMMA_SCALE);
+  v4 = luma2Alpha(v4, GAMMA_MIN, GAMMA_MAX, GAMMA_SCALE);
+  v5 = luma2Alpha(v5, GAMMA_MIN, GAMMA_MAX, GAMMA_SCALE);
 
-  /*
-    vec4 v40 = sampleBlocks(tex, texCoord + vec4(1.0/sx, 0.    ,  0., 0.),nBlocks);
-    vec4 v41 = sampleBlocks(tex, texCoord - vec4(1.0/sx, 0.    ,  0., 0.),nBlocks);
-    vec4 v42 = sampleBlocks(tex, texCoord + vec4(0.,     1.0/sx,  0., 0.),nBlocks);
-    vec4 v43 = sampleBlocks(tex, texCoord - vec4(0.,     1.0/sy,  0., 0.),nBlocks);
-    vec4 v44 = sampleBlocks(tex, texCoord + vec4(0., 0., 1.0/nSlices, 0.),nBlocks);
-    vec4 v45 = sampleBlocks(tex, texCoord - vec4(0., 0., 1.0/nSlices, 0.),nBlocks);
-    float vx = length(v40 - v41);
-    float vy = length(v43 - v43);
-    float vz = length(v44 - v45);
-    vec3 grad = -vec3(vx,vy,vz);
-  */
+  if(USE_TRANSFER == 1){
+    v0 = getTransfer(v0[3]);
+    v1 = getTransfer(v1[3]);
+    v2 = getTransfer(v2[3]);
+    v3 = getTransfer(v3[3]);
+    v4 = getTransfer(v4[3]);
+    v5 = getTransfer(v5[3]);
+  }
+
+  float l0 = v0[3];
+  float l1 = v1[3];
+  float l2 = v2[3];
+  float l3 = v4[3];
+  float l4 = v4[3];
+  float l5 = v5[3];
+
+  vec3 grad = -vec3((l0-l1),(l2-l3),(l4-l5));
+  grad *= px*py*pz*mx*my*mz;
+
   float a =  length(grad);
+
   if(a < 1e-9)
     return vec4(0.0);
   else
     return vec4(normalize(grad),a);
+
   //return grad;
 }
 
@@ -302,12 +289,48 @@ bool intersectBox(in vec4 r_o, in vec4 r_d, in vec4 boxmin, in vec4 boxmax,
 //  return 1.25*t;
 //}
 
+float unpack (vec4 colour)
+{
+
+  const vec4 bitShifts = vec4(1.0 / (256.0 * 256.0 * 256.0),
+                              1.0 / (256.0 * 256.0),
+                              1.0 / 256.0,
+                              1.0);
+
+  return dot(colour , bitShifts);
+}
+
 vec4 integrateVolume(vec4 eye_o,vec4 eye_d,
                      vec4 boxMin, vec4 boxMax,vec4 boxScale,
-                     sampler2D dataBase0[1],
+                     sampler2D textureAtlas,
                      //sampler2D dataBase1[1],
                      ivec4 nBlocks){
+
+  vec2 vUv = gl_FragCoord.xy/iResolution.xy;
+  vec4 D = texture2D(BACKGROUND_DEPTH, vUv);
+  vec4 C = texture2D(BACKGROUND_COLOR, vUv);
+
+  float zNear = 0.01;
+  float zFar = 20.0;
+  float z_b = unpack(D);
+  //return vec4(z_b);
+  float z_n = 2.0 * z_b - 1.0;
+  float z_e = 2.0 * zNear * zFar / (zFar + zNear - z_n * (zFar - zNear));
+
+
+  C = vec4(1.0, 0.0, 0.0, 0.0);
+
+  if(z_e > 6.0) {
+    C = vec4(0.5);
+      //C.r = 0.5*(1.0+sin(2.0*(z_e)));
+      //C.g = 0.5*(1.0+sin(2.0*(z_e + 2.0/3.0*3.1417)));
+      //C.b = 0.5*(1.0+sin(2.0*(z_e + 4.0/3.0*3.1417)));
+  }
+
+
   float tnear, tfar;
+  //return vec4(C.r,maxt,maxt,maxt);
+  //return C;
   bool hit = intersectBox(eye_o, eye_d, boxMin, boxMax, tnear,  tfar);
 
 
@@ -316,27 +339,45 @@ vec4 integrateVolume(vec4 eye_o,vec4 eye_d,
   }
 
   // march along ray from back to front, accumulating color
+  float ray_mag = length(eye_d);
+  float tobs   = z_e/ray_mag;
+  //return vec4(float(tfar > tobs));
+  if(tobs < tfar) tfar = tobs;
+  //tobs = clamp(tobs, tobs, tfar);
+  //tfar = clamp(tfar, tobs, tfar);
+  float tbegin = tfar;
+  float tend   = tnear;
+  //determine slice plane normal.  half between the light and the view direction
+  vec4 sliceP = -0.1*normalize(eye_o);
+  vec4 sliceN = vec4(LIGHT_POSITION, 0.0) - vec4(0.0);
+  sliceN = normalize(0.5*sliceN - 0.5*eye_d);
+
+  //estimate step length
   const int maxSteps = 512;
   float csteps = float(setMaxSteps);
   csteps = clamp(csteps,0.0,float(maxSteps));
   float isteps = 1.0/csteps;
 
-  float tstep = 0.3*isteps;
+  //figure out which box side is longest, w/respect to the view angle, use that to scale the stepsize
+  vec4 eye_n = -normalize(eye_o);
+  float dotSidex = eye_n.x*(boxMax.x - boxMin.x);
+  float dotSidey = eye_n.y*(boxMax.y - boxMin.y);
+  float dotSidez = eye_n.z*(boxMax.z - boxMin.z);
 
-  float tbegin = tfar;
-  float tend   = tnear;
+  float maxSide = max(abs(dotSidex), max(abs(dotSidey), abs(dotSidez)));
+  float tstep = 0.4*maxSide*isteps;
+  //float tstep = 0.3*isteps;
 
-  float tfarsurf = CLIP_FAR; // choose some arbitrarily far surface
+  //now that we have
+  float tfarsurf = dot(sliceP - eye_o, sliceN)/dot(eye_d,sliceN); //project to far plane to determine overflow
   float overflow = (tfarsurf - tfar)/tstep;
   overflow -= floor(overflow);
   float r = 1.0*rand(eye_d.xy);
 
   float t = tbegin + (overflow)*tstep;
   t = clamp(t, 0.0, CLIP_FAR);
-  t += float(DITHERING)*r*tstep;
+  t += 2.0*float(DITHERING)*r*tstep;
 
-  vec4 C = vec4(0.0);
-  C+= vec4(0.5);
 
   float A = 0.0;
   float     tdist    = 0.0;
@@ -344,39 +385,46 @@ vec4 integrateVolume(vec4 eye_o,vec4 eye_d,
 
   float lstep = LIGHT_DEPTH/float(LIGHT_SAMPLES);
   float absorption = 1.;
-  vec4 lightPos = vec4(LIGHT_POSITION,.0);
+  vec4 lightPos = 2.0*vec4(LIGHT_POSITION,.0);
 
   float T = 1.0;
   int numSteps = 0;
   for(int i=0; i<maxSteps; i++){
-
+    //if(t > maxt && maxt > 10.0) continue;
     vec4 pos = (eye_o + eye_d*t)/boxScale; // map position to [0, 1] coordinates
-    vec4 smp = sampleBlocks(dataBase0,pos,nBlocks);
+    vec4 smp = sampleAs3DTexture(textureAtlas,pos);
     vec4 col = luma2Alpha(smp, GAMMA_MIN, GAMMA_MAX, GAMMA_SCALE);
-    //col = vec4(col[3]);
+    //float x01 = 0.5*pos.x + 0.5;
+    //col = vec4(x01,x01,x01,x01);
+    float xfer = float(USE_TRANSFER);
+    col =   xfer*getTransfer(col[3]) + (1.0 - xfer)*col;
     vec4 dl = lightPos - pos;
+
 #if PHONG
-    vec4 N = getNormal(dataBase0,pos,nBlocks);
+    vec4 N = getNormal(textureAtlas,pos);
     float lum = N[3];
 
+    float dist = length(dl);
     dl = normalize(dl);
     vec4 V = -normalize(eye_d);
     vec4 H = dl + V;
     H = normalize(H);
+
     float lightVal = dot(dl.xyz, N.xyz);
-    float spec = pow(1.1*dot( N.xyz, H.xyz ),SPEC_SIZE);
+    float spec = pow(dot( N.xyz, H.xyz ),SPEC_SIZE);
     spec = clamp(spec, 0.0, spec);
     // += vec4(vec3(spec),0.0);
 
-    float kn = pow(10.0*N[3],1.0*NORMAL_INTENSITY);
+    float kn = pow(10.0*N[3],NORMAL_INTENSITY);
     float ka = KA;
     float kd = KD;
     float ks = SPEC_INTENSITY;
     kn = clamp(kn,0.0,1.0);
     //float kn = 1.0;
     col *= (ka + kd*vec4(vec3(lightVal),kn));
-    col +=  ks*N[3]*vec4(spec);
+    col += col[3]*ks*N[3]*vec4(spec);
     col = clamp(col, 0.0, 1.0);
+    //col += H;
     //col = N;
 #endif
 
@@ -386,48 +434,54 @@ vec4 integrateVolume(vec4 eye_o,vec4 eye_d,
 
     vec3 DISP_BIAS = vec3(100.5, 200.3, 0.004);
     dl = normalize(dl);
+
     vec3 dtemp = cross(dl.xyz,vec3(1.0,1.0,1.0)); dtemp = normalize(dtemp);
     vec3 N1 = cross(dl.xyz,dtemp);
     vec3 N2 = cross(dl.xyz,N1);
-    N1 = normalize(N1);
-    N2 = normalize(N2);
-    //float r0 = 0.1*rand(pos.xy + eye_d.xz);
+    //N1 = normalize(N1);
+    //N2 = normalize(N2);
+
+    float r0 = 1.0 - 2.0*rand(pos.xy + eye_d.zx);
     float r1 = 1.0 - 2.0*rand(pos.yz + eye_d.zx);
     float r2 = 1.0 - 2.0*rand(pos.xz + eye_d.yx);
     for(int j=0; j<maxStepsLight; j++){ //*/
       if (j > LIGHT_SAMPLES) break;
 
       float lti = (float(j))*lstep;
-      vec3 Ni   = DISPERSION*normalize(r1*N1 + r2*N2);
-      vec4 lpos = pos + lti*normalize(dl + vec4(Ni,0.0));
+      vec4 Ni   = DISPERSION*(r0*dl + vec4(r1*N1 + r2*N2, 0.0));
 
-      vec4 dsmp = sampleBlocks(dataBase0,lpos,nBlocks);
+      vec4 lpos = pos + lti*dl;
+      lpos += lti*Ni;
+      vec4 dsmp = sampleAs3DTexture(textureAtlas,lpos);
       vec4 dens = luma2Alpha(dsmp, GAMMA_MIN, GAMMA_MAX, GAMMA_SCALE);
+      if(USE_TRANSFER == 1){ dens = getTransfer(dens[3]);}
       float Kdisp = DISP_SIG;
       float sl = float(maxStepsLight)/float(LIGHT_SAMPLES);
       dens.w *= 1.0*density;
-      dens.w = 1.0 - pow(1.0-dens.w/DISP_SIG,sl);
-      dens.w = clamp(dens.w, 0.0, 1.0);
-      Dl =  (1.0-dens.w)*Dl + dens.w;
+      dens.w = 1.0 - pow(1.0-dens.w, sl);
+      //dens.w = clamp(dens.w, 0.0, 1.0);
+      Dl =  (1.0-Dl)*dens.w + Dl;
+      //Dl =  (1.0-dens.w)*Dl + dens.w;
     }
-    col *= (1.0 - exp(-Dl));
-    col.xyz *= 1.0 - Dl;
-    col.xyz *= 100.0*brightness;
+    //Dl = clamp(Dl,0.0,1.0);
+    //col *= (1.0 - exp(-Dl));
+    col.xyz *= (1.0 - Dl);
+    col.xyz *= 2.0*brightness;
 #else
     col.xyz *= brightness;
 #endif
     float s = float(maxSteps)/float(setMaxSteps);
-   
     col.w *= density;
     col.w = 1.0 - pow((1.0-col.w),s);
 
     col.xyz *= col.w;
 
     C = (1.0-col.w)*C + col;
-
+    //float r0 = 0.5 + 1.0*rand(eye_d.xy);
     t -= tstep;
     numSteps = i;
-    if (i > setMaxSteps || t  < tend || t < CLIP_NEAR) break;
+
+    if (i > setMaxSteps || t  < tend || t < CLIP_NEAR ) break;
   }
 
 
@@ -440,11 +494,6 @@ void getRay(in vec2 screen, in vec2 res,
   vec4 eyeRay_d;
   ed.xy = 2.0*screen.xy/res.xy - 1.0;
   ed[0] *= iResolution.x/iResolution.y;
-
-  //gl_FragColor = vec4(rand(gl_FragCoord.xy));
-  //if(gl_FragCoord.x/iResolution.x/1.25 > 1.0)   gl_FragColor = vec4(1.0,0.0,0.,0.);
-  //if(gl_FragCoord.y/iResolution.y/1.25 > 1.0)   gl_FragColor = vec4(0.0,1.0,0.,0.);
-  //return;
 
   float fovr = 20.*M_PI/180.;
   ed[2] = -1.0/tan(fovr*0.5);
@@ -459,23 +508,28 @@ void main()
 {
   vec4 eyeRay_d, eyeRay_o;
   vec2 fragCoord = gl_FragCoord.xy;
-
+  //gl_FragColor = vec4(gl_FragCoord.xy/iResolution.xy,0.0,0.0);
+  //return;
 
   getRay(fragCoord, iResolution.xy, eyeRay_o, eyeRay_d);
+
   vec4 boxMin = vec4(-1.0);
   vec4 boxMax = vec4( 1.0);
   vec4 boxTrans = vec4(0.0, 0.0, 0.0, 0.0);
   vec4 boxScale = vec4(BOX_SIZE,1.0);
-
+  //boxScale = vec4(0.5);
   boxMin *= boxScale;
   boxMax *= boxScale;
-  //boxMin += boxTrans;
-  //boxMax += boxTrans;
-  ivec4 nBlocks = ivec4(RES_X,RES_Y,RES_Z,1);
+  boxMin += boxTrans;
+  boxMax += boxTrans;
+  ivec4 nBlocks = ivec4(BLOCK_RES_X,
+                        BLOCK_RES_Y,
+                        BLOCK_RES_Z,1);
 
   vec4 C = integrateVolume(eyeRay_o, eyeRay_d,
                            boxMin, boxMax, boxScale,
-                           dataBase0,nBlocks);
+                           textureAtlas,nBlocks);
+
   gl_FragColor = C;
   return;
 

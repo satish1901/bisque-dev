@@ -285,6 +285,7 @@ ImgEdit.prototype.mousedown = function (e) {
 };
 
 ImgEdit.prototype.mousemove = function (e) {
+    //console.log(this, e);
     if (!e) e = window.event;  // IE event model
     if (e == null) return;
     if (!(e.target===this.renderer.svgdoc ||
