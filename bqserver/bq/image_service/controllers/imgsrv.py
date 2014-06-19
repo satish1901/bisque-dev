@@ -497,13 +497,13 @@ class MetaService(object):
                 except ValueError:
                     pass
 
-            log.debug('Meta: storing metadata into %s', metacache)
+            log.debug('Meta %s: storing metadata into %s', image_id, metacache)
             xmlstr = etree.tostring(image)
             with open(metacache, "w") as f:
                 f.write(xmlstr)
             return data_token.setXml(xmlstr)
 
-        log.debug('Meta: reading metadata from %s', metacache)
+        log.debug('Meta %s: reading metadata from %s', image_id, metacache)
         return data_token.setXmlFile(metacache)
 
 #class FileNameService(object):
@@ -545,7 +545,7 @@ class LocalPathService(object):
     def action(self, image_id, data_token, arg):
         ifile = self.server.getInFileName( data_token, image_id )
         ifile = os.path.abspath(ifile)
-        log.debug('Localpath: %s'%ifile)
+        log.debug('Localpath %s: %s', image_id, ifile)
 
         if os.path.exists(ifile):
             res = etree.Element ('resource', type='file', src='file:%s'%(ifile))
@@ -569,7 +569,7 @@ class CacheCleanService(object):
     def action(self, image_id, data_token, arg):
         ifname = self.server.getInFileName( data_token, image_id )
         ofname = self.server.getOutFileName( ifname, image_id, '' )
-        log.debug('Cleaning local cache: %s', ofname)
+        log.debug('Cleaning local cache %s: %s', image_id, ofname)
         path = os.path.dirname(ofname)
         fname = os.path.basename(ofname)
         for root, dirs, files in os.walk(path, topdown=False):
@@ -687,7 +687,7 @@ class SliceService(object):
         # construct a sliced filename
         ifname = self.server.getInFileName( data_token, image_id )
         ofname = self.server.getOutFileName( ifname, image_id, '.%d-%d,%d-%d,%d-%d,%d-%d' % (x1,x2,y1,y2,z1,z2,t1,t2) )
-        log.debug('Slice: from [%s] to [%s]', ifname, ofname)
+        log.debug('Slice %s: from [%s] to [%s]', image_id, ifname, ofname)
 
         # slice the image
         if not os.path.exists(ofname):
@@ -697,7 +697,7 @@ class SliceService(object):
                 if r is not None:
                     break
             if r is None:
-                log.error('Slice: could not generate slice for [%s]', ifname)
+                log.error('Slice %s: could not generate slice for [%s]', image_id, ifname)
                 abort(415, 'Could not generate slice' )
 
         try:
@@ -774,7 +774,7 @@ class FormatService(object):
 
         # avoid doing anything if requested format is in requested format
         if data_token.dims is not None and data_token.dims.get('format','').lower() == fmt:
-            log.debug('Input is in requested format, avoid reconvert...')
+            log.debug('%s: Input is in requested format, avoid reconvert...', image_id)
             return data_token
 
         if fmt not in self.server.writable_formats:
@@ -784,7 +784,7 @@ class FormatService(object):
         ext = self.server.converters.defaultExtension(fmt)
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.%s%s.%s'%(name_extra, fmt, ext) )
-        log.debug('Format: %s -> %s with %s opts=[%s]', ifile, ofile, fmt, args)
+        log.debug('Format %s: %s -> %s with %s opts=[%s]', image_id, ifile, ofile, fmt, args)
 
         if not os.path.exists(ofile):
             extra = []
@@ -811,7 +811,7 @@ class FormatService(object):
                 self.server.imageconvert(image_id, ifile, ofile, fmt=fmt, series=data_token.series, extra=['-multi'])
 
             if r is None:
-                log.error('Format: %s could not convert with [%s] format [%s] -> [%s]', c.CONVERTERCOMMAND, fmt, ifile, ofile)
+                log.error('Format %s: %s could not convert with [%s] format [%s] -> [%s]', image_id, c.CONVERTERCOMMAND, fmt, ifile, ofile)
                 abort(415, 'Could not convert into %s format'%fmt )
 
         if stream:
@@ -873,7 +873,7 @@ class ResizeService(object):
         return data_token.setImage(ofile, fmt=default_format)
 
     def action(self, image_id, data_token, arg):
-        log.debug('Resize: %s'%arg)
+        log.debug('Resize %s: %s', image_id, arg)
 
         #size = tuple(map(int, arg.split(',')))
         ss = arg.split(',')
@@ -910,7 +910,7 @@ class ResizeService(object):
 
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.size_%d,%d,%s,%s' % (size[0], size[1], method,textAddition) )
-        log.debug('Resize: [%s] to [%s]', ifile, ofile)
+        log.debug('Resize %s: [%s] to [%s]', image_id, ifile, ofile)
 
         if not os.path.exists(ofile):
             args = ['-multi', '-resize', '%s,%s,%s%s'%(size[0], size[1], method,aspectRatio)]
@@ -966,7 +966,7 @@ class Resize3DService(object):
         return data_token.setImage(ofile, fmt=default_format)
 
     def action(self, image_id, data_token, arg):
-        log.debug('Resize3D: %s'%arg )
+        log.debug('Resize3D %s: %s', image_id, arg )
 
         #size = tuple(map(int, arg.split(',')))
         ss = arg.split(',')
@@ -1014,7 +1014,7 @@ class Resize3DService(object):
 
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.size3d_%d,%d,%d,%s,%s' % (size[0], size[1], size[2], method,textAddition) )
-        log.debug('Resize3D: %s to %s'%(ifile, ofile))
+        log.debug('Resize3D %s: %s to %s', image_id, ifile, ofile)
 
         if not os.path.exists(ofile):
             args = ['-multi', '-resize3d', '%s,%s,%s,%s%s'%(size[0], size[1], size[2], method, aspectRatio)]
@@ -1053,7 +1053,7 @@ class Rearrange3DService(object):
         return data_token.setImage(ofile, fmt=default_format)
 
     def action(self, image_id, data_token, arg):
-        log.debug('Rearrange3D: %s'%arg )
+        log.debug('Rearrange3D %s: %s', image_id, arg )
         arg = arg.lower()
 
         if arg not in ['xzy', 'yzx']:
@@ -1149,7 +1149,7 @@ class ThumbnailService(object):
                 if r is not None:
                     break
             if r is None:
-                log.error('Thumbnail: could not generate thumbnail for [%s]', ifile)
+                log.error('Thumbnail %s: could not generate thumbnail for [%s]', image_id, ifile)
                 abort(415, 'Could not generate thumbnail' )
 
         try:
@@ -1208,7 +1208,7 @@ class RoiService(object):
         ifile = self.server.getInFileName( data_token, image_id )
         otemp = self.server.getOutFileName( ifile, image_id, '' )
         ofile = '%s.roi_%d,%d,%d,%d'%(otemp,x1-1,y1-1,x2-1,y2-1)
-        log.debug('ROI: %s to %s'%(ifile, ofile))
+        log.debug('ROI %s: %s to %s', image_id, ifile, ofile)
 
         # remove pre-computed ROIs
         rois = [(_x1,_y1,_x2,_y2) for _x1,_y1,_x2,_y2 in rois if not os.path.exists('%s.roi_%d,%d,%d,%d'%(otemp,_x1-1,_y1-1,_x2-1,_y2-1))]
@@ -1264,7 +1264,7 @@ class RemapService(object):
         arg = arg.lower()
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.map_%s'%arg )
-        log.debug('Remap: %s to %s with [%s]'%(ifile, ofile, arg))
+        log.debug('Remap %s: %s to %s with [%s]', image_id, ifile, ofile, arg)
 
         if arg == 'display':
             arg = ['-multi' '-display']
@@ -1317,7 +1317,7 @@ class FuseService(object):
 
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.fuse_%s'%(argenc) )
-        log.debug('Fuse: %s to %s with [%s:%s]'%(ifile, ofile, arg, method))
+        log.debug('Fuse %s: %s to %s with [%s:%s]', image_id, ifile, ofile, arg, method)
 
         if arg == 'display':
             arg = ['-multi', '-fusemeta']
@@ -1399,7 +1399,7 @@ class DepthService(object):
         ifile = self.server.getInFileName(data_token, image_id)
         ofile = self.server.getOutFileName(ifile, image_id, '.depth_%s'%arg)
         ohist = self.server.getOutFileName(ifile, image_id, '.histogram_depth_%s'%arg)
-        log.debug('Depth: %s to %s with [%s]'%(ifile, ofile, arg))
+        log.debug('Depth %s: %s to %s with [%s]', image_id, ifile, ofile, arg)
 
         if not os.path.exists(ofile):
             extra=['-multi', '-depth', arg]
@@ -1461,7 +1461,7 @@ class TileService(object):
         base_name = self.server.getOutFileName(ifname, image_id, '' )
         base_name = self.server.getOutFileName(os.path.join('%s.tiles'%(base_name), '%s'%tsz), image_id, '' )
         ofname    = '%s_%.3d_%.3d_%.3d.tif' % (base_name, l, tnx, tny)
-        #log.debug('Tiles dryrun: from %s to %s' % (ifname, ofname) )
+        #log.debug('Tiles dryrun %s: from %s to %s', image_id, ifname, ofname)
         return data_token.setImage(ofname, fmt=default_format)
 
     def action(self, image_id, data_token, arg):
@@ -1511,7 +1511,7 @@ class TileService(object):
             with Locks(ifname, hstl_name) as l:
                 if l.locked: # the file is not being currently written by another process
                     params = ['-tile', str(tsz), '-ohst', hist_name]
-                    log.debug('Generate tiles: from %s to %s with %s' , ifname, tiles_name, params )
+                    log.debug('Generate tiles %s: from %s to %s with %s', image_id, ifname, tiles_name, params )
                     self.server.imageconvert(image_id, ifname, tiles_name, fmt=default_format, series=data_token.series, extra=params)
 
         with Locks(hstl_name):
@@ -1558,7 +1558,7 @@ class ProjectMaxService(object):
 
         ifile = self.server.getInFileName(data_token, image_id)
         ofile = self.server.getOutFileName(ifile, image_id, '.projectmax')
-        log.debug('ProjectMax: ' + ifile + ' to '+ ofile )
+        log.debug('ProjectMax %s: %s to %s', image_id, ifile, ofile )
 
         if not os.path.exists(ofile):
             self.server.imageconvert(image_id, ifile, ofile, fmt=default_format, series=data_token.series, extra=['-projectmax'])
@@ -1587,7 +1587,7 @@ class ProjectMinService(object):
 
         ifile = self.server.getInFileName(data_token, image_id)
         ofile = self.server.getOutFileName(ifile, image_id, '.projectmin')
-        log.debug('Projectmin: %s to %s'%(ifile, ofile))
+        log.debug('ProjectMax %s: %s to %s', image_id, ifile, ofile )
 
         if not os.path.exists(ofile):
             self.server.imageconvert(image_id, ifile, ofile, fmt=default_format, series=data_token.series, extra=['-projectmin'])
@@ -1616,7 +1616,7 @@ class NegativeService(object):
 
         ifile = self.server.getInFileName(data_token, image_id)
         ofile = self.server.getOutFileName(ifile, image_id, '.negative')
-        log.debug('Negative: %s to %s'%(ifile, ofile) )
+        log.debug('Negative %s: %s to %s', image_id, ifile, ofile)
 
         if not os.path.exists(ofile):
             self.server.imageconvert(image_id, ifile, ofile, fmt=default_format, series=data_token.series, extra=['-negative', '-multi'])
@@ -1642,7 +1642,7 @@ class DeinterlaceService(object):
 
         ifile = self.server.getInFileName(data_token, image_id)
         ofile = self.server.getOutFileName(ifile, image_id, '.deinterlace')
-        log.debug('Deinterlace: %s to %s'%(ifile, ofile))
+        log.debug('Deinterlace %s: %s to %s', image_id, ifile, ofile)
 
         if not os.path.exists(ofile):
             self.server.imageconvert(image_id, ifile, ofile, fmt=default_format, series=data_token.series, extra=['-deinterlace', 'avg', '-multi'])
@@ -1684,7 +1684,7 @@ class ThresholdService(object):
         arg = '%s,%s'%(args[0], method)
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.threshold_%s'%arg )
-        log.debug('Threshold: %s to %s with [%s]'%(ifile, ofile, arg))
+        log.debug('Threshold %: %s to %s with [%s]', image_id, ifile, ofile, arg)
 
         if not os.path.exists(ofile):
             self.server.imageconvert(image_id, ifile, ofile, fmt=default_format, series=data_token.series, extra=['-threshold', arg])
@@ -1713,7 +1713,7 @@ class PixelCounterService(object):
         arg = misc.safeint(arg.lower(), 256)-1
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.pixelcount_%s.xml'%arg )
-        log.debug('Pixelcount: %s to %s with [%s]'%(ifile, ofile, arg))
+        log.debug('Pixelcount %s: %s to %s with [%s]', image_id, ifile, ofile, arg)
 
         if not os.path.exists(ofile):
             self.server.imageconvert(image_id, ifile, ofile, series=data_token.series, extra=['-pixelcounts', str(arg)])
@@ -1739,7 +1739,7 @@ class HistogramService(object):
 
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.histogram.xml' )
-        log.debug('Histogram: %s to %s'%(ifile, ofile))
+        log.debug('Histogram %s: %s to %s', image_id, ifile, ofile)
 
         if not os.path.exists(ofile):
             self.server.imageconvert(image_id, ifile, None, series=data_token.series, extra=['-ohstxml', ofile])
@@ -1769,7 +1769,7 @@ class LevelsService(object):
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.levels_%s'%arg )
         ohist = self.server.getOutFileName(ifile, image_id, '.histogram_levels_%s'%arg)
-        log.debug('Levels: %s to %s with [%s]'%(ifile, ofile, arg))
+        log.debug('Levels %s: %s to %s with [%s]', image_id, ifile, ofile, arg)
 
         if not os.path.exists(ofile):
             extra=['-levels', arg]
@@ -1802,7 +1802,7 @@ class BrightnessContrastService(object):
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.brightnesscontrast_%s'%arg )
         ohist = self.server.getOutFileName(ifile, image_id, '.histogram_brightnesscontrast_%s'%arg)
-        log.debug('Brightnesscontrast: %s to %s with [%s]'%(ifile, ofile, arg))
+        log.debug('Brightnesscontrast %s: %s to %s with [%s]', image_id, ifile, ofile, arg)
 
         if not os.path.exists(ofile):
             extra=['-brightnesscontrast', arg]
@@ -1832,8 +1832,7 @@ class TextureAtlasService(object):
     def action(self, image_id, data_token, arg):
         ifile = self.server.getInFileName(data_token, image_id)
         ofile = self.server.getOutFileName(ifile, image_id, '.textureatlas')
-        log.debug('Texture Atlas: %s to %s'%(ifile, ofile))
-        log.debug('Current dir: %s'%(os.getcwd()))
+        log.debug('Texture Atlas %s: %s to %s', image_id, ifile, ofile)
         if not os.path.exists(ofile):
             self.server.imageconvert(image_id, ifile, ofile, fmt=default_format, series=data_token.series, extra=['-textureatlas'])
 
@@ -1876,7 +1875,7 @@ class TransformService(object):
         params = args[1:]
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.transform_%s'%arg )
-        log.debug('Transform: %s to %s with [%s]'%(ifile, ofile, arg))
+        log.debug('Transform %s: %s to %s with [%s]', image_id, ifile, ofile, arg)
 
         extra = ['-multi']
         if not os.path.exists(ofile):
@@ -1923,7 +1922,7 @@ class SampleFramesService(object):
 
         ifile = self.server.getInFileName(data_token, image_id)
         ofile = self.server.getOutFileName(ifile, image_id, '.framessampled_%s'%arg)
-        log.debug('SampleFrames: %s to %s with [%s]'%(ifile, ofile, arg))
+        log.debug('SampleFrames %s: %s to %s with [%s]', image_id, ifile, ofile, arg)
 
         if not os.path.exists(ofile):
             self.server.imageconvert(image_id, ifile, ofile, fmt=default_format, series=data_token.series, extra=['-multi', '-sampleframes', arg])
@@ -1962,7 +1961,7 @@ class FramesService(object):
 
         ifile = self.server.getInFileName(data_token, image_id)
         ofile = self.server.getOutFileName(ifile, image_id, '.frames_%s'%arg)
-        log.debug('Frames: %s to %s with [%s]'%(ifile, ofile, arg))
+        log.debug('Frames %s: %s to %s with [%s]', image_id, ifile, ofile, arg)
 
         if not os.path.exists(ofile):
             self.server.imageconvert(image_id, ifile, ofile, fmt=default_format, series=data_token.series, extra=['-multi', '-page', arg])
@@ -2007,7 +2006,7 @@ class RotateService(object):
 
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.rotated_%s'%ang )
-        log.debug('Rotate service: %s to %s'%(ifile, ofile))
+        log.debug('Rotate %s: %s to %s', image_id, ifile, ofile)
         if ang=='0':
             ofile = ifile
 
@@ -2655,9 +2654,9 @@ class ImageServer(object):
 
     def process(self, url, ident, **kw):
         query = getQuery4Url(url)
-        log.debug ('STARTING query: %s', query)
+        log.debug ('STARTING %s: %s', ident, query)
         os.chdir(self.workdir)
-        log.debug('Current path: %s', self.workdir)
+        log.debug('Current path %s: %s', ident, self.workdir)
 
         # init the output to a simple file
         data_token = ProcessToken()
@@ -2678,9 +2677,9 @@ class ImageServer(object):
                         break
                 localpath = os.path.join(os.path.realpath(self.workdir), data_token.data)
                 #localpath = os.path.realpath(data_token.data)
-                log.debug('Dryrun result: [%s] [%s]', localpath, str(data_token))
+                log.debug('Dryrun test %s: [%s] [%s]', ident, localpath, str(data_token))
                 if os.path.exists(localpath) and data_token.isFile():
-                    log.debug('Returning pre-cached result: %s', data_token.data)
+                    log.debug('FINISHED %s: returning pre-cached result %s', ident, data_token.data)
                     with Locks(data_token.data):
                         pass
                     return data_token
@@ -2704,7 +2703,7 @@ class ImageServer(object):
 
         #process all the requested operations
         for action,args in query:
-            log.debug ('ACTION: %s',  action)
+            log.debug ('ACTION %s: %s', ident, action)
             data_token = self.request(action, ident, data_token, args)
             if data_token.isHttpError():
                 break
@@ -2724,6 +2723,6 @@ class ImageServer(object):
                 data_token.outFileName = args
                 break
 
-        log.debug ('FINISHED query: %s', query)
+        log.debug ('FINISHED %s: %s', ident, query)
         return data_token
 

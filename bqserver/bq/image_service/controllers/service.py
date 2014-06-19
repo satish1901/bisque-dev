@@ -237,7 +237,7 @@ class image_serviceController(ServiceController):
     def images(self, ident, **kw):
         request = tg.request
         response = tg.response
-        log.info ('STARTING Request: %s' % request.url)
+        log.info ('STARTING %s: %s', ident, request.url)
 
         path   = request.path+'?'+request.query_string
 
@@ -306,13 +306,13 @@ class image_serviceController(ServiceController):
 
             # fix for the cherrypy error 10055 "No buffer space available" on windows
             # by streaming the contents of the files as opposite to sendall the whole thing
-            log.info ("returning %s type %s"%(data_token.data, data_token.contentType ))
+            log.info ("%s: returning %s with mime %s"%(ident, data_token.data, data_token.contentType ))
             return forward(FileApp(data_token.data,
                                    content_type=data_token.contentType,
                                    content_disposition=disposition,
                                    ).cache_control (max_age=60*60*24*7*6)) # 6 weeks
 
-        log.error ("unknown image issue")
+        log.error ("%s: unknown image issue"%ident)
         tg.response.status_int = 404
         return "File not found"
 
@@ -335,56 +335,56 @@ class image_serviceController(ServiceController):
 #        image_id, path, x, y , ch, z ,t = self.srv.addImage( file, None, ownerId = userId, permission = userPerm, **kw )
 #        #return turbogears.url('/imgsrv/images/'+str(image_id))
 #        return '/imgsrv/images/'+str(image_id), x, y, ch, z, t
-
-    @expose()
-    def update_image_permission(self):
-
-        # parse the request
-        request = tg.request
-        clen = int(request.headers.get('Content-Length') or 0 )
-        if (clen<=0): return ""
-        xmldata = request.body
-        log.debug ("XML = " + xmldata)
-        request = etree.XML(xmldata)
-        image = request[0]
-        src  = image.attrib['src']
-        perm = image.attrib['perm']
-
-        # check identity
-        id = get_image_id(src)
-        userId = identity.current.user_name
-        if self.srv.changePermission( id, userId ) == False:
-            tg.response.status_int = 401
-            return 'Permission denied...'
-
-        # Deal w/request
-        log.debug ('permission: %s -> %s ' %( src, perm))
-        self.set_file_info(src, perm=int(perm))
-        return dict()
-
-    @expose(content_type='text/xml')
-    def find(self, hash=None):
-
-        # parse the request
-        if not hash:
-            request = tg.request
-            clen = int(request.headers.get('Content-Length') or 0 )
-            if (clen<=0): return "<response/>"
-            xmldata = request.body
-
-            log.debug ("XML = " + xmldata)
-            request = etree.XML(xmldata)
-            image = request[0]
-            hash  = image.attrib['hash']
-
-        uris = self.find_uris(hash)
-
-        response = etree.Element ('response')
-        for uri in uris:
-            tag = etree.SubElement(response, 'image')
-            tag.attrib['uri'] = str(uri)
-
-        return etree.tostring(response)
+#
+#     @expose()
+#     def update_image_permission(self):
+# 
+#         # parse the request
+#         request = tg.request
+#         clen = int(request.headers.get('Content-Length') or 0 )
+#         if (clen<=0): return ""
+#         xmldata = request.body
+#         log.debug ("XML = " + xmldata)
+#         request = etree.XML(xmldata)
+#         image = request[0]
+#         src  = image.attrib['src']
+#         perm = image.attrib['perm']
+# 
+#         # check identity
+#         id = get_image_id(src)
+#         userId = identity.current.user_name
+#         if self.srv.changePermission( id, userId ) == False:
+#             tg.response.status_int = 401
+#             return 'Permission denied...'
+# 
+#         # Deal w/request
+#         log.debug ('permission: %s -> %s ' %( src, perm))
+#         self.set_file_info(src, perm=int(perm))
+#         return dict()
+# 
+#     @expose(content_type='text/xml')
+#     def find(self, hash=None):
+# 
+#         # parse the request
+#         if not hash:
+#             request = tg.request
+#             clen = int(request.headers.get('Content-Length') or 0 )
+#             if (clen<=0): return "<response/>"
+#             xmldata = request.body
+# 
+#             log.debug ("XML = " + xmldata)
+#             request = etree.XML(xmldata)
+#             image = request[0]
+#             hash  = image.attrib['hash']
+# 
+#         uris = self.find_uris(hash)
+# 
+#         response = etree.Element ('response')
+#         for uri in uris:
+#             tag = etree.SubElement(response, 'image')
+#             tag.attrib['uri'] = str(uri)
+# 
+#         return etree.tostring(response)
 
 
 
