@@ -86,6 +86,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     font-size: 16px !important;
 }
 
+/*
 .bq-volume-menu .x-tool img {
     background-image: url('/js/volume/icons/16px_close.png');
     background-repeat: no-repeat;
@@ -94,7 +95,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     background-color: transparent;
     background-position: 0px 0px;
 }
-
+*/
 
 .bq-three-container .framelabel {
     position: absolute;
@@ -371,13 +372,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     width:16px!important;
     height:16px!important;
 }
-
+/*
 .x-btn-icon .loopbutton {
     background-image: url(/js/volume/icons/iLoop.png) !important;
     width:16px!important;
     height:16px!important;
 }
-
+*/
 .x-btn-icon .deletebutton {
 background-image: url(/js/volume/icons/idelete16.png) !important;
 width:16px!important;

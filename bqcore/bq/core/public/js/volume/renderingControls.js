@@ -105,6 +105,7 @@ Ext.define('BQ.viewer.Volume.glinfo', {
     initParameters : function(){
     	this.params = new Array();
 	    var ctx = this.canvas3D.renderer.getContext();
+        console.log("ctx: ", ctx);
 	    this.params[0] = ['Platform',  navigator.platform];
 	    this.params[1] = ['Agent',     navigator.userAgent];
 	    if(ctx){
@@ -135,12 +136,12 @@ Ext.define('BQ.viewer.Volume.glinfo', {
 	        this.params[18] = ['Max Render Buffer Size', ctx.getParameter(ctx.RENDERBUFFER_SIZE)];
 	        this.params[19] = ['Max texture image units', ctx.getParameter(ctx.MAX_TEXTURE_IMAGE_UNITS)];
 
-            this.params[13] = ['Max vertex uniform vectors', ctx.getParameter(ctx.MAX_VERTEX_UNIFORM_VECTORS)];
+            this.params[20] = ['Max vertex uniform vectors', ctx.getParameter(ctx.MAX_VERTEX_UNIFORM_VECTORS)];
 	        //this.params[13] = ['Max Cube Map Texture', ctx.getParameter(ctx.MAX_CUBE_MAP_TEXTURE_SIZE)];
 
-            this.params[20] = ['Max Viewport Dimensions', ctx.getParameter(ctx.MAX_VIEWPORT_DIMS)];
-	        this.params[21] = ['Aliased Line Width Range', ctx.getParameter(ctx.ALIASED_LINE_WIDTH_RANGE)];
-	        this.params[22] = ['Aliased Point Size Range', ctx.getParameter(ctx.ALIASED_POINT_SIZE_RANGE)];
+            this.params[21] = ['Max Viewport Dimensions', ctx.getParameter(ctx.MAX_VIEWPORT_DIMS)];
+	        this.params[22] = ['Aliased Line Width Range', ctx.getParameter(ctx.ALIASED_LINE_WIDTH_RANGE)];
+	        this.params[23] = ['Aliased Point Size Range', ctx.getParameter(ctx.ALIASED_POINT_SIZE_RANGE)];
 
             for(var i = 0; i < this.params.length; i++ ){
 
@@ -617,12 +618,12 @@ Ext.define('BQ.viewer.Volume.lightpanel', {
 		            this.depthSlider.show();
 		            this.sampleField.show();
 		            this.dispSlider.show();
-		            this.dispAmtSlider.show();
+
 		        } else {
 		            this.depthSlider.hide();
 		            this.sampleField.hide();
-		            this.dispSlider.hide();
-		            this.dispAmtSlider.hide();
+                    this.dispSlider.hide();
+
 		        }
                 this.panel3D.rerender();
 	        },
@@ -638,7 +639,7 @@ Ext.define('BQ.viewer.Volume.lightpanel', {
 		        if( (this.state & 2) === 2){
 		            this.kaSlider.show();
 		            this.kdSlider.show();
-		            this.normInSlider.show();
+		            //this.normInSlider.show();
 		            this.specSizeSlider.show();
 		            this.specInSlider.show();
 		        } else {
@@ -646,7 +647,7 @@ Ext.define('BQ.viewer.Volume.lightpanel', {
 		            this.kaSlider.hide();
 		            this.kdSlider.hide();
 
-		            this.normInSlider.hide();
+		            //this.normInSlider.hide();
 		            this.specSizeSlider.hide();
 		            this.specInSlider.hide();
 		        }
@@ -805,8 +806,7 @@ Ext.define('BQ.viewer.Volume.lightpanel', {
 	    this.items = [this.lighting,
 		              this.sampleField, this.depthSlider,
 		              this.dispSlider,// this.dispAmtSlider,
-		              this.specular, this.kaSlider, this.kdSlider,
-		              this.normInSlider, this.specInSlider, this.specSizeSlider];
+		              this.specular, this.kaSlider, this.kdSlider,this.specInSlider, this.specSizeSlider];
 	    this.changed();
 	    this.callParent();
     },
@@ -1051,7 +1051,7 @@ Ext.define('BQ.viewer.Volume.general', {
 		            if(typeof newValue != 'number') return;
 		            newValue = newValue < 0.1 ? 0.1:newValue;
 		            this.boxSize.x = 0.5*newValue;
-                    this.sceneVolume.scaleCube(this.boxSize);
+                    this.panel3D.scaleCube(this.boxSize);
 		        },
 		        scope:me
             },
@@ -1070,7 +1070,7 @@ Ext.define('BQ.viewer.Volume.general', {
 		            if(typeof newValue != 'number') return;
 		            newValue = newValue < 0.1 ? 0.1:newValue;
 		            this.boxSize.y = 0.5*newValue;
-		            this.sceneVolume.scaleCube(this.boxSize);
+		            this.panel3D.scaleCube(this.boxSize);
 		        },
 		        scope:me
             },
@@ -1089,7 +1089,7 @@ Ext.define('BQ.viewer.Volume.general', {
 		            if(typeof newValue != 'number') return;
 		            newValue = newValue < 0.1 ? 0.1:newValue;
 		            this.boxSize.z = 0.5*newValue;
-		            this.sceneVolume.scaleCube(this.boxSize);
+		            this.panel3D.scaleCube(this.boxSize);
 		        },
 		        scope:me
             },
@@ -1862,7 +1862,6 @@ Ext.define('BQ.viewer.Volume.transfer', {
     },
 
     changed : function(){
-        console.log(this.transferSlider);
         if(this.transferSlider.stops.length < 2) return;
         var pixels = new Uint8Array(256);
         var cStop = 0;
@@ -2056,6 +2055,206 @@ Ext.define('BQ.viewer.Volume.transfer', {
     },
 });
 
+function gObjectBuffer(volume){
+    this.volume = volume
+    this.position = new Array();
+    this.index = new Array();
+    this.colors = new Array();
+
+};
+
+gObjectBuffer.prototype.rescale = function(){
+    var scale = this.volume.sceneVolume.getRescale().clone();
+    this.mesh.geometry.dynamic = true;
+    this.mesh.geometry.verticesNeedUpdate = true;
+    var mat = new THREE.Matrix4().scale(scale);
+    this.mesh.geometry.applyMatrix(mat);
+    this.mesh.geometry.computeBoundingBox();
+    //console.log(this.points);
+};
+
+gObjectBuffer.prototype.pushPosition  = function(p, x, positions){
+    var dims  = this.volume.dims.slice;
+    var scale = { x:this.volume.dims.pixel.x,
+                  y:this.volume.dims.pixel.y,
+                  z:this.volume.dims.pixel.z };
+
+    scale.y = scale.x/scale.y;
+    scale.z = scale.x/scale.z;
+    scale.x = 1.0;
+    positions[ x * 3 + 0 ] = scale.x*(p.x/dims.x - 0.5);
+	positions[ x * 3 + 1 ] = scale.y*(0.5 - p.y/dims.y);
+	positions[ x * 3 + 2 ] = scale.z*(0.5 - p.z/dims.z);
+};
+
+gObjectBuffer.prototype.push = function(poly){
+}
+
+gObjectBuffer.prototype.allocateMesh = function(){
+}
+
+gObjectBuffer.prototype.buildBuffer = function(){
+        var geometry = new THREE.BufferGeometry();
+	geometry.addAttribute( 'index',    new THREE.BufferAttribute( new Uint32Array( this.index.length ), 1 ));
+	geometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array(this. position.length * 3 ), 3 ) );
+	geometry.addAttribute( 'color',    new THREE.BufferAttribute( new Float32Array( this.colors.length * 3 ), 3 ) );
+    var gpositions = geometry.getAttribute('position').array;
+    var gindex     = geometry.getAttribute('index').array;
+    var gcolor     = geometry.getAttribute('color').array;
+    //var check0 = index.slice(0);
+
+    for(var i = 0; i < this.index.length; i++){
+        gindex[i] = this.index[i];
+    }
+
+    for(var i = 0; i < this.position.length; i++){
+        this.pushPosition(this.position[i], i, gpositions);
+    }
+
+    for(var i = 0; i < this.colors.length; i++){
+        gcolor[3*i + 0] = this.colors[i].r;
+        gcolor[3*i + 1] = this.colors[i].g;
+        gcolor[3*i + 2] = this.colors[i].b;
+    }
+
+    this.mesh = this.allocateMesh(geometry, this.material);
+
+    this.mesh.geometry.dynamic = true;
+    this.mesh.geometry.computeBoundingBox();
+    this.mesh.geometry.verticesNeedUpdate = true;
+}
+
+
+function pointBuffer(volume) {
+    gObjectBuffer.call(this,volume);
+    this.volume = volume;
+};
+
+pointBuffer.prototype = new gObjectBuffer();
+
+pointBuffer.prototype.isClockWise  =function(poly){
+    //use shoelace determinate
+    var det = 0;
+    for(var i = 0; i < poly.length; i++){
+        var cur = poly[i];
+        var nex = poly[(i+1)%poly.length];
+        det += cur.x*nex.y - cur.y*nex.x;
+    }
+    return det > 0;
+};
+
+pointBuffer.prototype.push = function(poly){
+
+    var lcolor = {r: Math.random(),g: Math.random(),b: Math.random()}
+    this.colors.push(lcolor);
+    this.position.push(poly[0]);// = positions.concat(poly)
+    this.index.push(this.index.length);
+
+    //index.push(lindex);// = index.concat(lindex);
+    //console.log('local: ', lindex, 'localpoly: ', poly, 'global: ', index, 'global p: ',positions);
+    //triCounter += polys[i].vertices.length;
+};
+
+pointBuffer.prototype.allocateMesh = function(geometry, material){
+    return new THREE.PointCloud( geometry, material);
+};
+
+
+function polyBuffer(volume) {
+    gObjectBuffer.call(this,volume);
+};
+
+polyBuffer.prototype = new gObjectBuffer();
+
+polyBuffer.prototype.isClockWise  =function(poly){
+    //use shoelace determinate
+    var det = 0;
+    for(var i = 0; i < poly.length; i++){
+        var cur = poly[i];
+        var nex = poly[(i+1)%poly.length];
+        det += cur.x*nex.y - cur.y*nex.x;
+    }
+    return det > 0;
+};
+
+polyBuffer.prototype.rescale = function(){
+    var scale = this.volume.sceneVolume.getRescale().clone();
+
+    this.mesh.geometry.dynamic = true;
+    this.mesh.geometry.verticesNeedUpdate = true;
+    var mat = new THREE.Matrix4().scale(scale);
+    this.mesh.geometry.applyMatrix(mat);
+    this.mesh.geometry.computeBoundingBox();
+    //console.log(this.points);
+};
+
+polyBuffer.prototype.push = function(poly){
+    //poly is any object with an x and a y.
+    //loads necessary data onto the vertex buffer
+    var lindex = [];
+    if(!this.isClockWise(poly))
+        lindex = POLYGON.tessellate(poly, []);
+    else
+        lindex = POLYGON.tessellate(poly.reverse(), []);
+
+    for(var j = 0; j < lindex.length; j++){
+        lindex[j] += this.position.length;
+    }
+
+    var lcolor = {r: Math.random(),g: Math.random(),b: Math.random()}
+    for(var j = 0; j < poly.length; j++){
+        this.colors.push(lcolor);
+    }
+
+    for(var i = 0; i < poly.length; i++){
+        this.position.push(poly[i]);// = positions.concat(poly)
+    };
+
+    for(var i = 0; i < lindex.length; i++){
+        this.index.push(lindex[i]);// = positions.concat(poly)
+    };
+    //index.push(lindex);// = index.concat(lindex);
+    //console.log('local: ', lindex, 'localpoly: ', poly, 'global: ', index, 'global p: ',positions);
+    //triCounter += polys[i].vertices.length;
+};
+
+polyBuffer.prototype.allocateMesh = function(geometry, material){
+    return new THREE.Mesh( geometry, material);
+};
+
+/*
+polyBuffer.prototype.buildBuffer = function(){
+    var geometry = new THREE.BufferGeometry();
+	geometry.addAttribute( 'index',    new THREE.BufferAttribute( new Uint32Array( this.index.length ), 1 ));
+	geometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array(this. position.length * 3 ), 3 ) );
+	geometry.addAttribute( 'color',    new THREE.BufferAttribute( new Float32Array( this.colors.length * 3 ), 3 ) );
+    var gpositions = geometry.getAttribute('position').array;
+    var gindex     = geometry.getAttribute('index').array;
+    var gcolor     = geometry.getAttribute('color').array;
+    //var check0 = index.slice(0);
+
+    for(var i = 0; i < this.index.length; i++){
+        gindex[i] = this.index[i];
+    }
+
+    for(var i = 0; i < this.position.length; i++){
+        this.pushPosition(this.position[i], i, gpositions);
+    }
+
+    for(var i = 0; i < this.colors.length; i++){
+        gcolor[3*i + 0] = this.colors[i].r;
+        gcolor[3*i + 1] = this.colors[i].g;
+        gcolor[3*i + 2] = this.colors[i].b;
+    }
+
+    this.mesh = new THREE.Mesh( geometry, this.material);
+
+    this.mesh.geometry.dynamic = true;
+    this.mesh.geometry.computeBoundingBox();
+    this.mesh.geometry.verticesNeedUpdate = true;
+};
+*/
+
 Ext.define('BQ.viewer.Volume.pointControl', {
     extend: 'Ext.container.Container',
     alias: 'widget.pointControl',
@@ -2070,21 +2269,10 @@ Ext.define('BQ.viewer.Volume.pointControl', {
 
     },
 
-
-
     rescalePoints : function(){
-        var bbhalf = this.panel3D.sceneVolume.getHalf();
-        var bbox = this.points.geometry.boundingBox;
-        var phalf = bbox.max.clone().sub(bbox.min);
-        phalf.multiplyScalar(0.5);
-        var scale = bbhalf.clone().divide(phalf);
-        var amountOfPoints = 1000;
-	    this.points.geometry.dynamic = true;
-        this.points.geometry.verticesNeedUpdate = true;
-        var mat = new THREE.Matrix4().scale(scale);
-        this.points.geometry.applyMatrix(mat);
-        this.points.geometry.computeBoundingBox();
-        console.log(this.points);
+        this.currentSet.points.rescale();
+        this.currentSet.polygons.rescale();
+        //console.log(this.points);
     },
 
     setVisible : function( vis ){
@@ -2092,7 +2280,7 @@ Ext.define('BQ.viewer.Volume.pointControl', {
         this.currentSet = this.gObjectBuffers[t];
         for (var item in this.currentSet){
             if(!item) continue;
-            var curMesh = this.currentSet[item];
+            var curMesh = this.currentSet[item].mesh;
             curMesh.visible = vis;
         }
     },
@@ -2103,242 +2291,64 @@ Ext.define('BQ.viewer.Volume.pointControl', {
         if(!this.currentSet) this.currentSet = {};
         for (var item in this.currentSet){
             if(!item) continue;
-            var curMesh = this.currentSet[item];
-            this.sceneVolume.sceneData.remove( curMesh ); // remove current point set
+
+            var curMesh = this.currentSet[item].mesh;
+            if(curMesh)
+                this.sceneVolume.sceneData.remove( curMesh ); // remove current point set
         }
+        console.log('before: ', this.currentSet);
         this.currentSet = this.gObjectBuffers[t];
+        console.log('after: ', this.currentSet);
         for (var item in this.currentSet){
             if(!item) continue;
-            var curMesh = this.currentSet[item];
-            this.sceneVolume.sceneData.add( curMesh ); // remove current point set
-            if(this.state === 1)
-      	        curMesh.visible = true;
-            else
-      	        curMesh.visible = false;
+            var curMesh = this.currentSet[item].mesh;
+            if(curMesh){
+                this.sceneVolume.sceneData.add( curMesh ); // remove current point set
+                if(this.state === 1)
+      	            curMesh.visible = true;
+                else
+      	            curMesh.visible = false;
+            }
         }
 
-        this.points   = this.currentSet.points; //set current pointer to loaded set
+        this.points   = this.currentSet.points.mesh; //set current pointer to loaded set
         this.pointclouds = [this.points];
     },
 
     loadGObjects : function(){
         var t = this.panel3D.currentTime;
-        if(this.gObjectSets[t]) { //load points in lazily
+        if(this.gObjectBuffers[t]) { //load points in lazily
             this.updateScene();
             return;
         }
 
         this.gObjectBuffers[t] = {};
-        this.gObjectSets[t] = {
-            points:    new Array(),
-            lines:      new Array(),
-            circles:    new Array(),
-            ellipses:   new Array(),
-            polylines:  new Array(),
-            polygons:   new Array(),
-            rectangles: new Array(),
-            squares:    new Array(),
-            labels:     new Array(),
-            gobjects:     new Array(),
-        };
 
-        var thisSet = this.gObjectSets[t];
-        var collectedPoints = new Array();
+        var pBuffer = new polyBuffer(this.panel3D);
+        pBuffer.material = this.polyShaderMaterial;
+        this.gObjectBuffers[t].polygons = pBuffer;
+
+        var cBuffer = new pointBuffer(this.panel3D);
+        cBuffer.material = this.pointShaderMaterial;
+        this.gObjectBuffers[t].points = cBuffer;
+
+        this.gObjectBuffers[t].polygons = pBuffer;
+        //todo: I think we want to build buffers for every frame right here,
+        //      rather than load lazily... if we have 10 million gobjects to
+        //      sift through, then this will get pretty slow
         for(var i = 0; i < this.gobjects.length; i++){
             var g = this.gobjects[i];
             if(g.vertices[0].t == t){
-                console.log(g.resource_type);
-                /*if(g.resource_type == 'polygon')
-                    this.pushPolygon(g.vertices, index, position, color);
+                if(g.resource_type == 'point')
+                    cBuffer.push(g.vertices);
 
-                else
-                    thisSet[g.resource_type + 's'].push(g);
-                */
-                thisSet[g.resource_type + 's'].push(g)
+                if(g.resource_type == 'polygon')
+                    pBuffer.push(g.vertices);
             }
         }
-        console.log('loadedFrame', thisSet);
-
-        this.loadPoints();
-        this.loadPolygons();
-    },
-
-    pushPosition : function(p, x, positions){
-        var dims  = this.panel3D.dims.slice;
-        var scale = { x:this.panel3D.dims.pixel.x,
-                      y:this.panel3D.dims.pixel.y,
-                      z:this.panel3D.dims.pixel.z };
-
-        scale.y = scale.x/scale.y;
-        scale.z = scale.x/scale.z;
-        scale.x = 1.0;
-        positions[ x * 3 + 0 ] = scale.x*(p.x/dims.x - 0.5);
-		positions[ x * 3 + 1 ] = scale.y*(0.5 - p.y/dims.y);
-		positions[ x * 3 + 2 ] = scale.z*(0.5 - p.z/dims.z);
-    },
-
-    isClockWise : function(poly){
-        //use shoelace determinate
-        var det = 0;
-        for(var i = 0; i < poly.length; i++){
-            var cur = poly[i];
-            var nex = poly[(i+1)%poly.length];
-            det += cur.x*nex.y - cur.y*nex.x;
-        }
-        return det > 0;
-    },
-
-    pushPolygon : function(poly, indices, positions, colors){
-        //poly is any object with an x and a y.
-        //loads necessary data onto the vertex buffer
-        var lindex = [];
-        if(!this.isClockWise(poly))
-            lindex = POLYGON.tessellate(poly, []);
-        else
-            lindex = POLYGON.tessellate(poly.reverse(), []);
-
-        for(var j = 0; j < lindex.length; j++){
-            lindex[j] += positions.length;
-        }
-
-        var lcolor = {r: Math.random(),g: Math.random(),b: Math.random()}
-        for(var j = 0; j < poly.length; j++){
-            colors.push(lcolor);
-        }
-
-        for(var i = 0; i < poly.length; i++){
-            positions.push(poly[i]);// = positions.concat(poly)
-        };
-
-        for(var i = 0; i < lindex.length; i++){
-            indices.push(lindex[i]);// = positions.concat(poly)
-        };
-        //indices.push(lindex);// = indices.concat(lindex);
-        //console.log('local: ', lindex, 'localpoly: ', poly, 'global: ', indices, 'global p: ',positions);
-        //triCounter += polys[i].vertices.length;
-    },
-
-    loadPolygons : function(){
-        var t = this.panel3D.currentTime;
-        var amountOfPoints = this.gObjectSets[t].points.length;
-        var polys = this.gObjectSets[t].polygons;
-        var triCounter = 0;
-        var index = new Array();
-        var position = new Array();
-        var color = new Array();
-        var offsets = {};
-        for(var i = 0; i < polys.length; i++){
-            this.pushPolygon(polys[i].vertices, index, position, color);
-        }
-        console.log(index, position, color);
-        var geometry = new THREE.BufferGeometry();
-		geometry.addAttribute( 'index',    new THREE.BufferAttribute( new Uint32Array( index.length ), 1 ));
-		geometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( position.length * 3 ), 3 ) );
-		geometry.addAttribute( 'color',    new THREE.BufferAttribute( new Float32Array( color.length * 3 ), 3 ) );
-        var gpositions = geometry.getAttribute('position').array;
-        var gindex     = geometry.getAttribute('index').array;
-        var gcolor     = geometry.getAttribute('color').array;
-        //var check0 = index.slice(0);
-
-        for(var i = 0; i < index.length; i++){
-            gindex[i] = index[i];
-        }
-
-        for(var i = 0; i < position.length; i++){
-            this.pushPosition(position[i], i, gpositions);
-        }
-
-        for(var i = 0; i < color.length; i++){
-            gcolor[3*i + 0] = color[i].r;
-            gcolor[3*i + 1] = color[i].g;
-            gcolor[3*i + 2] = color[i].b;
-        }
-
-        var polymesh = new THREE.Mesh( geometry, this.polyShaderMaterial );
-
-        polymesh.geometry.dynamic = true;
-        polymesh.geometry.computeBoundingBox();
-        polymesh.geometry.verticesNeedUpdate = true;
-        this.gObjectBuffers[t].polygons = polymesh;
-       this.updateScene();
-    },
-
-    loadPoints : function(){
-        var t = this.panel3D.currentTime;
-        var amountOfPoints = this.gObjectSets[t].points.length;
-	    var pointGeom = new THREE.BufferGeometry();
-
-		pointGeom.attributes = {
-			position: {
-				itemSize: 3,
-				array: new Float32Array( amountOfPoints * 3 )
-			},
-
-			alpha: {
-				itemSize: 1,
-				array: new Float32Array( amountOfPoints )
-			}
-
-		};
-
-		var positions = pointGeom.attributes.position.array;
-		var alphas = pointGeom.attributes.alpha.array;
-
-        var dims  = this.panel3D.dims.slice;
-        var scale = { x:this.panel3D.dims.pixel.x,
-                      y:this.panel3D.dims.pixel.y,
-                      z:this.panel3D.dims.pixel.z };
-
-        scale.y = scale.x/scale.y;
-        scale.z = scale.x/scale.z;
-        scale.x = 1.0
-;
-        var x = 0;
-        while (x < amountOfPoints){
-            var p = this.gObjectSets[t].points[x].vertices[0];
-            this.pushPosition(p,x,positions);
-            alphas[x] = 1.0;
-            x++;
-        }
-        /* recursive random cluster generator
-        while (x < amountOfPoints){
-
-            var seed = [1.0 - 2.0*Math.random() * 1,
-                        1.0 - 2.0*Math.random() * 1,
-                        1.0 - 2.0*Math.random() * 1];
-            var cx = x;
-            var clustSize = 20*Math.random();
-            for(var y = cx; y < cx + clustSize; y++ ){
-                var r = 0.5*Math.random();
-                var nseed = [seed [0] + r*(1.0 - 2.0*Math.random() * 1),
-                             seed [1] + r*(1.0 - 2.0*Math.random() * 1),
-                             seed [1] + r*(1.0 - 2.0*Math.random() * 1),]
-                for(var z = cx; z < cx + clustSize*2; z++ ){
-                    var r0 = 0.5*r*Math.random();
-                    positions[ z * 3 + 0 ] = seed [0] + r0*(1.0 - 2.0*Math.random() * 1);
-			        positions[ z * 3 + 1 ] = seed [1] + r0*(1.0 - 2.0*Math.random() * 1);
-			        positions[ z * 3 + 2 ] = seed [2] + r0*(1.0 - 2.0*Math.random() * 1);
-                    alphas[y] = 1.0;
-                    x++;
-                }
-            }
-        }
-        */
-        var points = new THREE.PointCloud( pointGeom, this.pointShaderMaterial );
-
-        points.geometry.dynamic = true;
-        points.geometry.computeBoundingBox();
-        points.geometry.verticesNeedUpdate = true;
-        if(!this.gObjectSets[t]){
-            this.gObjectSets[t] = {};
-        }
-
-        this.gObjectBuffers[t].points = points;
-
+        cBuffer.buildBuffer();
+        pBuffer.buildBuffer();
         this.updateScene();
-
-        //nsole.log(this.points);
-
     },
 
     initComponent : function(){
@@ -2503,7 +2513,9 @@ Ext.define('BQ.viewer.Volume.pointControl', {
         this.gObjectSets = new Array();
         this.gObjectBuffers = new Array();
         this.loadGObjects();
+
         this.panel3D.on('time', this.loadGObjects, me);
+        this.panel3D.on('scale', this.rescalePoints, me);
 
 
         this.raycaster = new THREE.Raycaster();
@@ -2537,14 +2549,14 @@ Ext.define('BQ.viewer.Volume.pointControl', {
                                                 magFilter: THREE.NearestFilter,
                                                 format: THREE.RGBAFormat });
 
-
+        this.updateScene();
         this.items = [this.lighting];
 	    this.callParent();
     },
 
     onAnimate : function(){
 
-        if(this.sceneVolume.sceneData && this.sceneVolume.setMaxSteps == 32){
+        if(this.sceneVolume.sceneData){
             var panel = this.panel3D;
             //move this to background plug-in
             panel.canvas3D.renderer.clearTarget(this.accumBuffer0,
@@ -2623,21 +2635,18 @@ Ext.define('BQ.viewer.Volume.pointControl', {
 
             this.label.style.top  = '' + 0.5*height*(1.0-pos.y) + cy + 'px';
             this.label.style.left = '' + 0.5*width*( 1.0+pos.x) - cx  + 'px';
-            this.label.textContent = [pos.x,
-                                      pos.y,
-                                      pos.z].join(",\n");
+            this.label.textContent = [intersection.index].join(",\n");
 
         }
         if(!this.label){
             this.label = document.createElement('div');
-            this.label.textContent = 'Earth';
             this.label.style.backgroundColor = 'white';
             this.label.style.position = 'absolute';
             this.label.style.padding = '1px 4px';
             this.label.style.borderRadius = '2px';
             this.canvas3D.getEl().dom.appendChild(this.label);
         }
-        this.panel3D.rerender();
+        //this.panel3D.rerender();
     },
 
     afterFirstLayout : function(){
