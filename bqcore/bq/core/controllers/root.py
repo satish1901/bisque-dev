@@ -80,7 +80,6 @@ from bq.core.controllers.error import ErrorController
 
 log = logging.getLogger("bq.root")
 
-
 class MDWrap(object):
   """A Multidictionary that provides attribute-style access."""
 
@@ -176,8 +175,8 @@ class RootController(BaseController):
         URL are formed with
         <service_type>/<path>?arguments
         """
-        #log.info ('[%s] %s %s %s' % (request.identity.get('repoze.who.userid'), request.method, request.url, request.headers))
-        log.info ('[%s] %s %s' % (request.identity.get('repoze.who.userid'), request.method, request.url ))
+        log.info ('[%s] %s %s', request.identity.get('repoze.who.userid'), request.method, request.url )
+        log.debug ('HEADERS: %s %s', request.url, request.headers)
         log.info ('PATH %s', request.path)
         if service_type in oldnames:
             log.warn ('found oldname( %s ) in request' % (service_type))
