@@ -105,8 +105,8 @@ Ext.define('BQ.viewer.Volume.volumeScene', {
         this.canvas3D.plane = this.plane;
         this.setMaxSteps = 32;
 
-
-
+        this.oldScale     = new THREE.Vector3(0.5, 0.5, 0.5);
+        this.currentScale = new THREE.Vector3(0.5, 0.5, 0.5);
     },
 
     initComponent : function() {
@@ -134,19 +134,31 @@ Ext.define('BQ.viewer.Volume.volumeScene', {
     },
 
     scaleCube : function(inScale){
+
         this.setUniform('BOX_SIZE',inScale);
 
         var cube = this.cube;
 	    var bMax = cube.vertices[0];
         var scale = inScale.clone();
 
-        scale.divide(bMax);
+        scale.divide(this.currentScale);
+
+        this.oldScale = this.currentScale.clone();
+        this.currentScale = inScale.clone();
 
         cube.dynamic = true;
         cube.verticesNeedUpdate = true;
         var mat = new THREE.Matrix4().scale(scale);
         this.cube.applyMatrix(mat);
         this.canvas3D.rerender();
+    },
+
+    getRescale : function() {
+        //since we scale locally, we lose the old scale that we scaled from, so we track
+        //it then return the new scaling parameter
+        var scale = this.currentScale.clone();
+        scale.divide(this.oldScale);
+        return scale;
     },
 
     getHalf : function(){
@@ -599,7 +611,18 @@ Ext.define('BQ.viewer.Volume.Panel', {
 /////////////////////////////////////////////////
 /////////////////////////////////////////////////
 
+        //query the maximum render buffer size from the gpu
+        //
+
         this.callParent();
+    },
+
+    getMaxTextureSize : function(){
+        if(!this.maxTextureSize){
+            var ctx = this.canvas3D.renderer.getContext();
+            this.maxTextureSize = 0.5*ctx.getParameter(ctx.MAX_TEXTURE_SIZE);
+        }
+        return this.maxTextureSize;
     },
 
     ajaxDimRequest : function(url, type) {
@@ -655,6 +678,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
     //----------------------------------------------------------------------
     // texture loadi
     //----------------------------------------------------------------------
+
     updateTextureUniform : function() {
         var me = this;
 
@@ -698,11 +722,13 @@ Ext.define('BQ.viewer.Volume.Panel', {
         var dims  = '&dims';
         var meta  = '&meta';
         var atlas = '&textureatlas';
+        var maxTexture = this.getMaxTextureSize();
+        var resize = '&resize=' + this.maxTextureSize + ',' + this.maxTextureSize + ',BC,MX';
         var baseUrl        = resUniqueUrl + '?' + dims;
         var sliceUrl       = resUniqueUrl + '?' + slice + dims;
         var sliceUrlMeta   = resUniqueUrl + '?' + slice + meta;
         var fullAtlasUrl   = resUniqueUrl + '?' + slice + atlas + dims;
-        var resizeAtlasUrl = resUniqueUrl + '?' + slice + atlas + '&resize=8192,8192,BC,MX' + dims;
+        var resizeAtlasUrl = resUniqueUrl + '?' + slice + atlas + resize + dims;
         this.loadedDimFullAtlas = false;
         this.loadedDimResizeAtlas = false;
 
@@ -867,6 +893,11 @@ Ext.define('BQ.viewer.Volume.Panel', {
 	    this.frameLabel.className = "framelabel"
 	    this.updateFrameLabel(0);
 	    this.getEl().dom.appendChild(this.frameLabel);
+    },
+
+    scaleCube : function(inScale){
+        this.sceneVolume.scaleCube(inScale);
+        this.fireEvent('scale', this);
     },
 
     setCurrentTime : function(time){
@@ -1435,7 +1466,9 @@ VolumeAtlas.prototype.init = function() {
 };
 
 VolumeAtlas.prototype.addCommand = function(command, pars) {
-    command.push('textureatlas&resize=8192,8192,BC,MX');
+    var maxTexture = this.volume.getMaxTextureSize();
+    var resize = '&resize=' + maxTexture + ',' + maxTexture + ',BC,MX';
+    command.push('textureatlas&' + resize);
     //command.push('textureatlas&resize=4096,4096,BC,MX');
 };
 
