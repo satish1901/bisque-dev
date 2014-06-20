@@ -255,7 +255,7 @@ def unpack_zip (zfile, dest, strip_root=None):
         names = []
         for info in z.infolist():
             new_path = info.filename.replace(top_dir, '')
-            filename = os.path.join (dest, new_path)
+            filename = os.path.join(dest, new_path)
             names.append(filename)
             if os.name == 'nt':
                 filename = filename.replace('/', '\\')
@@ -263,9 +263,12 @@ def unpack_zip (zfile, dest, strip_root=None):
             if not os.path.exists(mypath):
                 os.makedirs(mypath)
             # write the file, .extract would force the subpath and can't be used
-            f = open(filename, 'wb')
-            f.write(z.read(info))
-            f.close()
+            try:
+                f = open(filename, 'wb')
+                f.write(z.read(info))
+                f.close()
+            except IOError:
+                pass
     z.close()
     return names
 
@@ -1403,6 +1406,34 @@ def install_features_source ():
         print """Now you can recompile feature extractors. Follow instructions located in:
           bqserver/bq/features/src/extractors/build/Readme.txt
         """
+        
+def install_libtiff():
+    """
+        Install dependencies that aren't handled by setup.py
+        
+        Downloads and installs libtiff-4.0.3 in sitepackages in bqenv/Scripts
+        
+        Only for Windows, for debian linux use apt-get
+    """
+    import urllib
+    src = 'https://bitbucket.org/bisque/pylibtiff/downloads/LibTiff-4.0.3-Windows-64bit.zip'
+    filename_zip = os.path.join(BQDEPOT, 'LibTiff-4.0.3-Windows-64bit.zip')
+    filename_dest = bisque_path(os.path.join('bqenv','Scripts'))
+    filename_check = ''
+    
+    if sys.platform == 'win32':
+        if getanswer ("Install libtiff-4.0.3", "Y",
+                      "Enables reading OME-bigtiff for feature extraction") == "Y":
+            print 'Fetching from %s'%src
+
+            urllib.urlretrieve ( src, filename_zip)
+            uncompress_dependencies ( filename_zip, filename_dest, filename_check, strip_root=True)
+            print 'Installed libtiff-4.0.3 in %s'%filename_dest
+    else:
+        print """To enable the feature service to read OME-bigtiff for feature extraction install
+        libtiff4 
+        For Debian use the command apt-get libtiff4-dev
+        """
 
 def install_opencv():
     """
@@ -1410,7 +1441,6 @@ def install_opencv():
         
         Downloads and installs opencv in sitepackages in bqenv
     """
-    
     
     def extract_archive_dir(zip_file,zip_dir,destination,verbose = True):
         """
@@ -1439,7 +1469,7 @@ def install_opencv():
         filename_check = ''
         python_version = sys.version_info[:2]
         if not (python_version==(2,6) or python_version==(2,7)):
-            print 'Failed to install opencv. Requires python 2.6 or 2.7'
+            print 'Failed to install opencv. Requires python 2.6 or 2.7.'
             return 
         
         filename_zip = os.path.join(BQDEPOT, 'opencv-2.4.6.zip')
@@ -1589,6 +1619,7 @@ install_options= [
            'runtime',
            'features',
            'features_source',
+           'libtiff',
            'opencv', #currently only being used for features in the feature server required numpy 1.6.0
            'server',
            'mail',
@@ -1680,6 +1711,8 @@ def bisque_installer(options, args):
         install_features()
     if 'features_source' in installer:
         install_features_source()
+    if 'libtiff' in installer:
+        install_libtiff()
     if 'opencv' in installer:
         install_opencv()
     if 'database'  in installer:
