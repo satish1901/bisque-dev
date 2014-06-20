@@ -528,20 +528,33 @@ class TestLBP(FeatureBase):
 class TestPFTAS(FeatureBase):
     name = 'PFTAS'
     family_name = 'Mahotas'
+    length = 54
+    
+class TestPFTASColored(FeatureBase):
+    name = 'PFTASColored'
+    family_name = 'Mahotas'
     length = 162
-    
-    
+
 class TestTAS(FeatureBase):
     name = 'TAS'
     family_name = 'Mahotas'
-    length = 162
+    length = 54
     
+class TestTASColored(FeatureBase):
+    name = 'TASColored'
+    family_name = 'Mahotas'
+    length = 162    
     
 class TestZM(FeatureBase):
     name = 'ZM'
     family_name = 'Mahotas'
     length = 25
 
+
+class TestHARColored(FeatureBase):
+    name = 'HARColored'
+    family_name = 'Mahotas'
+    length = 169
 
 class TestHAR(FeatureBase):
     name = 'HAR'
