@@ -15,10 +15,11 @@ import urllib2
 import shutil
 import socket
 import tempfile
-
+import urlparse
+import urllib
 from tg import abort
 from webob import Request
-
+from PIL import Image
 from bq import image_service
 #from bq.image_service.controllers.locks import Locks
 from bq.core import identity
@@ -190,46 +191,65 @@ class ImageImport:
     def __enter__(self):
         return self
     
-    def __init__(self, uri):
+    def __init__(self, uri, try_tiff = True):
         self.uri = uri
+        self.path = None
+        self.istiff = False
         self.tmp_flag = 0 #set a flag to if a temp file was made
         from bq.config.middleware import bisque_app
-
-        if 'image_service' in uri:
+        
+        o = urlparse.urlsplit( self.uri)
+        
+        if 'image_service' in o.path:
             #finds image resource though local image service
-            self.uri = uri
+            
+            if try_tiff == True:
+                urlparse.parse_qsl( o.query)
+                query_arg = urlparse.parse_qsl( o.query, keep_blank_values=True)
+                
+                
+                
+                query_arg.append(('format','OME-BigTIFF'))
+                query_pairs = query_arg
+                
+                log.debug( 'query_arg %s'% query_pairs)
+                query_str = urllib.urlencode( query_pairs)
+                self.istiff = True
+                self.uri = urlparse.urlunsplit((o.scheme,o.netloc,o.path,query_str,o.fragment))
+            
             try:
-                self.path = image_service.local_file(uri)
+                self.path = image_service.local_file(self.uri)
                 log.debug("Image Service path: %s"% self.path)
                 if not self.path:
-                    log.debug('Not found in image_service internally: %s'%uri)
+                    log.debug('Not found in image_service internally: %s'%self.uri)
                 else:
                     return
             except Exception: #Resulting from a 403 in image service, needs to be handled better
-                log.debug('Not found in image_service internally: %s'%uri)
+                log.debug('Not found in image_service internally: %s'%self.uri)
 
         with tempfile.NamedTemporaryFile(dir=FEATURES_TEMP_IMAGE_DIR, prefix='image', delete=False) as f:
             self.tmp_flag = 1 #tmp file is create, set flag
             self.path = f.name
             try:
-                req = Request.blank(uri)
+                req = Request.blank(self.uri)
                 req.headers['Authorization'] = "Mex %s" % identity.mex_authorization_token()
                 req.headers['Accept'] = 'text/xml'
-                log.debug("begin routing internally %s" % uri)
+                log.debug("begin routing internally %s" % self.uri)
                 response = req.get_response(bisque_app)
                 log.debug("end routing internally: status %s" % response.status_int)
                 if response.status_int == 200:
                     f.write(response.body)
                     return 
                 if response.status_int in set([401,403]):
-                    log.debug("User is not authorized to read resource internally: %s",uri)
+                    self.path = None
+                    log.debug("User is not authorized to read resource internally: %s",self.uri)
                     #raise ValueError('User is not authorized to read resource internally: %s') 
 
                 # Try to route externally
-                req = Request.blank(uri)
+                req = Request.blank(self.uri)
                 req.headers['Authorization'] = "Mex %s" % identity.mex_authorization_token()
                 req.headers['Accept'] = 'text/xml'
-                log.debug("begin routing externally: %s" % uri)
+                log.debug("begin routing externally: %s" % self.uri)
                 response = http.send(req)
                 log.debug("end routing externally: status %s" % response.status_int)
                 #if response.status_int == 200:
@@ -237,17 +257,70 @@ class ImageImport:
                     f.write(response.body)
                     return 
                 else:
-                    log.debug("User is not authorized to read resource externally: %s",uri)
-                    raise Exception("Error Code: %s User is not authorized to read resource externally: %s",(response.status_int,uri))
+                    self.path = None
+                    log.debug("User is not authorized to read resource externally: %s",self.uri)
+                    raise Exception("Error Code: %s User is not authorized to read resource externally: %s",(response.status_int,self.uri))
 
             except:
+                self.path = None
                 log.exception ("While retrieving URL %s" % uri)
 
+
+    def from_tiff2D_to_numpy(self):
+        """
+            Imports a 2D Tiff as numpy array
+        """
+        try:
+            from libtiff import TIFF
+        except ImportError:
+            log.exception("Failed to import PyLibTiff.")
+            return np.array(Image.open(str(self.path))) #try to return something, pil doesnt support bigtiff
+            
+
+        if self.istiff and self.path:
+            try:
+                tif = TIFF.open(self.path, mode = 'r')
+#                    sample_per_pixel = tif.GetField('SAMPLESPERPIXEL')
+#                    sample_format = tif.GetField('SAMPLEFORMAT')
+#                    protometric_interpretation = tif.GetFile('PHOTOMETRICINTERPRETATION') #rgb
+#                    image_length = tif.GetFile('IMAGELENGTH')
+#                    image_width = tif.GetFile('IMAGEWIDTH')
+#                    bits_per_sample = tif.GetFile('BITSPERSAMPLE')
+#                    strip_length = tif.GetFile('STRIPLENGTH')
+                image = []
+                for im in tif.iter_images():
+                    image.append(im)
+                
+                if len(image)>1:
+                    image = np.dstack(image)
+                else:
+                    image = image[0]
+#                im = tif.read_image()
+                
+                if len(image.shape) == 2:
+                    return image
+                elif len(image.shape) == 3:
+                    if image.shape[2] == 3:
+                        return image
+                
+                raise IOError('Not a grayscale or RGB image')
+                
+            except IOError:
+                log.exception("Not a tiff file!")
+                return
+                
+        elif self.path:
+            log.debug("format is not a tiff")
+            return np.array(Image.open(str(self.path))) #try to return something, pil doesnt support bigtiff
+        
+        else:
+            log.exception("Cannot import image when no path found!")
+            return 
 
     def __str__(self):
         return self.path
         
-    def path(self):
+    def return_path(self):
         return self.path
     
     def __exit__(self,type,value,traceback):

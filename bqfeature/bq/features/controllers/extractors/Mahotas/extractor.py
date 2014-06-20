@@ -26,14 +26,11 @@ class HAR(Feature.BaseFeature):
         #initalizing 
         image_uri = resource['image']
         with Feature.ImageImport(image_uri) as imgimp:
-            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
-            im = np.array(Image.open(str(imgimp)))
+            im = np.uint8(imgimp.from_tiff2D_to_numpy())
             if len(im.shape)==3:
-                im = rgb2gray(im)        
-            
-            im=np.asarray(im)
-            im = im.astype(np.uint8)  
+                im = rgb2gray(im)
         
+        im = np.uint8(im)
         #calculate descriptor 
         descritptors = np.hstack(haralick(im))
 
@@ -56,12 +53,9 @@ class HARColored(Feature.BaseFeature):
         #initalizing 
         image_uri = resource['image']
         with Feature.ImageImport(image_uri) as imgimp:
-            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
-            im = np.array(Image.open(str(imgimp)))
+            im = np.uint8(imgimp.from_tiff2D_to_numpy())
             if len(im.shape)==2:
-                im = gray2rgb(im)   
-            im = im.astype(np.uint8)         
-            im=np.asarray(im)
+                im = gray2rgb(im)
             
         
         #calculate descriptor 
@@ -89,10 +83,9 @@ class LBP(Feature.BaseFeature):
         image_uri = resource['image']
         
         with ImageImport(image_uri) as imgimp:
-            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
-            im = np.array(Image.open(str(imgimp)))
+            im = imgimp.from_tiff2D_to_numpy()
             if len(im.shape)==3:
-                im = rgb2gray(im)
+                im = rgb2gray(np.uint8(im))
             
             im=np.asarray(im)
             
@@ -169,15 +162,12 @@ class PFTAS(Feature.BaseFeature):
         image_uri = resource['image']
         
         with ImageImport(image_uri) as imgimp:
-            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
-            im = np.array(Image.open(str(imgimp)))
+            im = imgimp.from_tiff2D_to_numpy()
             if len(im.shape)==3:
-                im = rgb2gray(im)   
-            im = im.astype(np.uint8)  
-            #if im==None:
-            #    raise ValueError('Format was not supported')
+                im = rgb2gray(np.uint8(im))  
+ 
             im = np.asarray(im)
-            
+            im = np.uint8(im)
             descriptor = pftas(im)
             
         #initalizing rows for the table
@@ -185,12 +175,10 @@ class PFTAS(Feature.BaseFeature):
     
 class PFTASColored(Feature.BaseFeature):
     """
-        Initalizes table and calculates the SURF descriptor to be
-        placed into the HDF5 table.
     """
     
     #parameters
-    name = 'PFTAScolored'
+    name = 'PFTASColored'
     description = """parameter free Threshold Adjacency Statistics"""
     length = 162 
     confidence = 'good' 
@@ -202,15 +190,12 @@ class PFTASColored(Feature.BaseFeature):
         image_uri = resource['image']
         
         with ImageImport(image_uri) as imgimp:
-            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
-            im = np.array(Image.open(str(imgimp)))
+            im = np.uint8(imgimp.from_tiff2D_to_numpy())
             if len(im.shape)==2:
                 im = gray2rgb(im) 
-            im = im.astype(np.uint8)  
-            #if im==None:
-            #    raise ValueError('Format was not supported')
+
             im = np.asarray(im)
-            
+            im = np.uint8(im)
             descriptor = pftas(im)
             
         #initalizing rows for the table
@@ -218,8 +203,6 @@ class PFTASColored(Feature.BaseFeature):
             
 class TAS(Feature.BaseFeature):
     """
-        Initalizes table and calculates the SURF descriptor to be
-        placed into the HDF5 table.
     """
     
     #parameters
@@ -234,13 +217,12 @@ class TAS(Feature.BaseFeature):
         #initalizing
         image_uri = resource['image'] 
         with ImageImport(image_uri) as imgimp:
-            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
-            im = np.array(Image.open(str(imgimp)))
+            im = imgimp.from_tiff2D_to_numpy()
             if len(im.shape)==3:
-                im = rgb2gray(im)   
-            im = im.astype(np.uint8)  
+                im = rgb2gray(np.uint8(im))  
+
             im=np.asarray(im) 
-                   
+            im = np.uint8(im)
             descriptor = tas(im)
             
         #initalizing rows for the table
@@ -248,8 +230,6 @@ class TAS(Feature.BaseFeature):
 
 class TASColored(Feature.BaseFeature):
     """
-        Initalizes table and calculates the SURF descriptor to be
-        placed into the HDF5 table.
     """
     
     #parameters
@@ -265,13 +245,12 @@ class TASColored(Feature.BaseFeature):
         image_uri = resource['image']
         
         with ImageImport(image_uri) as imgimp:
-            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
-            im = np.array(Image.open(str(imgimp)))
+            im = np.uint8(imgimp.from_tiff2D_to_numpy())
             if len(im.shape)==2:
                 im = gray2rgb(im) 
-            im = im.astype(np.uint8)  
+
             im=np.asarray(im) 
-                   
+            im = np.uint8(im)
             descriptor = tas(im)
             
         #initalizing rows for the table
@@ -280,8 +259,6 @@ class TASColored(Feature.BaseFeature):
             
 class ZM(Feature.BaseFeature):
     """
-        Initalizes table and calculates the SURF descriptor to be
-        placed into the HDF5 table.
     """
     
     #parameters
@@ -297,10 +274,10 @@ class ZM(Feature.BaseFeature):
         image_uri = resource['image']
         
         with ImageImport(image_uri) as imgimp:
-            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
-            im = np.array(Image.open(str(imgimp)))
+            im = imgimp.from_tiff2D_to_numpy()
             if len(im.shape)==3:
-                im = rgb2gray(im)
+                im = rgb2gray(np.uint8(im))
+                
             im=np.asarray(im)        
             radius=8
             degree=8

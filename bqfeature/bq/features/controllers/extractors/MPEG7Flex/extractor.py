@@ -29,13 +29,14 @@ class SCD(Feature.BaseFeature):
     def calculate(self, **resource):
         """ Append descriptors to h5 table """
         image_uri = resource['image']
-        
+        log.debug('calculating scd')
         with ImageImport(image_uri) as imgimp: #looking for the file internally and externally
             #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
-            im = np.array(Image.open(str(imgimp)))
-            im=np.asarray(im)
+            im = imgimp.from_tiff2D_to_numpy()
+            
+            im = np.asarray(im)
             descriptors = extractSCD(im, descSize=256) #calculating descriptor
-        
+            log.debug('descriptors: %s'%descriptors)
         return [descriptors]
 
 class HTD2(Feature.BaseFeature):
@@ -55,8 +56,7 @@ class HTD2(Feature.BaseFeature):
         image_uri = resource['image']
         
         with ImageImport(image_uri) as imgimp: #looking for the file internally and externally
-            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
-            im = np.array(Image.open(str(imgimp)))
+            im = imgimp.from_tiff2D_to_numpy()
             if len(im.shape)==3:
                 im = rgb2gray(im)
             im = np.asarray(im)
@@ -90,10 +90,7 @@ class EHD2(Feature.BaseFeature):
         image_uri = resource['image']
         
         with ImageImport(image_uri) as imgimp:
-            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
-            im = np.array(Image.open(str(imgimp)))
-            if im==None:
-                raise ValueError('Format was not supported')
+            im = imgimp.from_tiff2D_to_numpy()
             im=np.asarray(im)
             
             descriptors = extractEHD(im) #calculating descriptor
@@ -120,10 +117,7 @@ class DCD(Feature.BaseFeature):
         image_uri = resource['image']
         
         with ImageImport(image_uri) as imgimp:
-            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
-            im = np.array(Image.open(str(imgimp)))
-            if im==None:
-                raise ValueError('Format was not supported')
+            im = imgimp.from_tiff2D_to_numpy()
             im=np.asarray(im)
             
             #calculating descriptor
@@ -209,12 +203,9 @@ class mDCD(DCD):
         with ImageImport(image_uri) as imgimp:
             with Feature.ImageImport(mask_uri) as maskimp:
             
-                #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
-                im = np.array(Image.open(str(imgimp)))
+                im = imgimp.from_tiff2D_to_numpy()
 
-                
-                #mask = cv2.imread(str(maskimp), 2)
-                mask = np.array(Image.open(str(maskimp)))
+                mask = maskimp.from_tiff2D_to_numpy()
 
                 #must atleast be grayscale
                 if len(mask.shape)==3:
@@ -271,10 +262,7 @@ class CSD(Feature.BaseFeature):
         image_uri = resource['image']
         
         with ImageImport(image_uri) as imgimp:
-            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
-            im = np.array(Image.open(str(imgimp)))
-            if im==None:
-                raise ValueError('Format was not supported')
+            im = imgimp.from_tiff2D_to_numpy()
             im=np.asarray(im)
             descriptors = extractCSD(im, descSize=64) #calculating descriptor
         
@@ -346,13 +334,11 @@ class mCSD(CSD):
         
         with ImageImport(image_uri) as imgimp:
             with ImageImport(mask_uri) as maskimp:
-                #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
-                im = np.array(Image.open(str(imgimp)))
-                
+
+                im = imgimp.from_tiff2D_to_numpy()
                 im=np.asarray(im)
-                
-                #mask = cv2.imread(str(maskimp), 2)
-                mask = np.array(Image.open(str(maskimp)))
+
+                mask = maskimp.from_tiff2D_to_numpy()
 
                 #must atleast be grayscale
                 if len(mask.shape)==3:
@@ -394,12 +380,8 @@ class CLD(Feature.BaseFeature):
         
         image_uri = resource['image']
         with ImageImport(image_uri) as imgimp:
-            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
-            im = np.array(Image.open(str(imgimp)))
-            
-            if im==None:
-                raise ValueError('Format was not supported')
-            im=np.asarray(im)
+            im = imgimp.from_tiff2D_to_numpy()
+            im = np.asarray(im)
             
             descriptors = extractCLD(im, numYCoef=64, numCCoef = 28)
             
@@ -473,15 +455,10 @@ class mCLD(CLD):
         with ImageImport(image_uri) as imgimp:
             with ImageImport(mask_uri) as maskimp:
                 
-                #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
-                im = np.array(Image.open(str(imgimp)))
-                
+                im = imgimp.from_tiff2D_to_numpy()
                 im=np.asarray(im)
                 
-                
-                Im = Feature.ImageImport(mask_uri) #importing image from image service
-                #mask = cv2.imread(str(maskimp), 2)
-                mask = np.array(Image.open(str(maskimp)))
+                mask = maskimp.from_tiff2D_to_numpy()
                 
                 #must atleast be grayscale
                 if len(mask.shape)==3:
@@ -520,11 +497,8 @@ class RSD(Feature.BaseFeature):
         
         with ImageImport(image_uri) as imgimp:
 
-            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
-            im = np.array(Image.open(str(imgimp)))
+            im = imgimp.from_tiff2D_to_numpy()
             
-            if im==None:
-                raise ValueError('Format was not supported')
             im=np.asarray(im)
                 
             descriptors = extractRSD(im)
@@ -595,8 +569,7 @@ class pRSD(Feature.BaseFeature):
         
         self.image_uri = resource['image']
         with ImageImport(image_uri) as imgimp:
-            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
-            im = np.array(Image.open(str(imgimp)))
+            im = imgimp.from_tiff2D_to_numpy()
             
             col,row,channel = im.shape
             #creating mask
@@ -686,13 +659,12 @@ class mRSD(RSD):
                 
                 
                 #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
+                im = imgimp.from_tiff2D_to_numpy()
                 im = np.array(Image.open(str(imgimp)))
-                if im==None:
-                    raise ValueError('Format was not supported')
+
                 im=np.asarray(im)
                 
-                #mask = cv2.imread(str(maskimp), 2)
-                mask = np.array(Image.open(str(maskimp)))
+                mask = maskimp.from_tiff2D_to_numpy()
                 
                 #must atleast be grayscale
                 if len(mask.shape)==3:
