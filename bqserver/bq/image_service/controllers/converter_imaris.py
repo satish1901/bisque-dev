@@ -158,7 +158,7 @@ class ConverterImaris(ConverterBase):
         log.debug('Meta for: %s', ifnm )
         t = tempfile.mkstemp(suffix='.log')
         logfile = t[1]
-        meta = self.run_read(ifnm, [self.CONVERTERCOMMAND, '-i', ifnm, '-m', '-l', logfile] )
+        meta = self.run_read(ifnm, [self.CONVERTERCOMMAND, '-i', ifnm, '-m', '-l', logfile, '-ii', '%s'%series] )
         if meta is None:
             return {}
 
@@ -283,6 +283,10 @@ class ConverterImaris(ConverterBase):
             except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
                 pass
 
+        # preferred channel mapping
+        #if rd['image_num_c']==1:
+        #    rd['channel_color_0'] = '255,255,255'
+
         # custom - any other tags in proprietary files should go further prefixed by the custom parent
         for section in config.sections():
             for option in config.options(section):
@@ -315,7 +319,7 @@ class ConverterImaris(ConverterBase):
     #######################################
 
     @classmethod
-    def convert(cls, ifnm, ofnm, fmt=None, series=0, extra=[]):
+    def convert(cls, ifnm, ofnm, fmt=None, series=0, extra=None):
         '''converts a file and returns output filename'''
         log.debug('convert: [%s] -> [%s] into %s for series %s with [%s]', ifnm, ofnm, fmt, series, extra)
         if fmt in cls.format_map:
@@ -327,14 +331,15 @@ class ConverterImaris(ConverterBase):
             command.extend (['-of', fmt])
         if series is not None:
             command.extend (['-ii', str(series)])
-        #command.extend (extra)
+        #if extra is not None:
+        #    command.extend (extra)
         return cls.run(ifnm, ofnm, command )
 
     @classmethod
-    def convertToOmeTiff(cls, ifnm, ofnm, series=0, extra=[]):
+    def convertToOmeTiff(cls, ifnm, ofnm, series=0, extra=None, **kw):
         '''converts input filename into output in OME-TIFF format'''
         log.debug('convertToOmeTiff: [%s] -> [%s] for series %s with [%s]', ifnm, ofnm, series, extra)
-        return cls.run(ifnm, ofnm, ['-i', ifnm, '-o', ofnm, '-of', 'OmeTiff', '-ii', '%s'%series] )
+        return cls.run(ifnm, ofnm, ['-i', ifnm, '-o', ofnm, '-of', 'OmeTiff', '-ii', '%s'%series], **kw )
 
     @classmethod
     def thumbnail(cls, ifnm, ofnm, width, height, series=0, **kw):
@@ -369,7 +374,7 @@ class ConverterImaris(ConverterBase):
         else:
             # create an intermediate OME-TIFF
             if not os.path.exists(ometiff):
-                r = cls.convertToOmeTiff(ifnm, ometiff, series=series)
+                r = cls.convertToOmeTiff(ifnm, ometiff, series=series, nooverwrite=True)
                 if r is None:
                     return None
             # extract slices

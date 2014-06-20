@@ -216,11 +216,11 @@ class ConverterOpenSlide(ConverterBase):
     #######################################
 
     @classmethod
-    def convert(cls, ifnm, ofnm, fmt=None, series=0, extra=[]):
+    def convert(cls, ifnm, ofnm, fmt=None, series=0, extra=None):
         return None
 
     @classmethod
-    def convertToOmeTiff(cls, ifnm, ofnm, series=0, extra=[]):
+    def convertToOmeTiff(cls, ifnm, ofnm, series=0, extra=None, **kw):
         return None
 
     @classmethod
