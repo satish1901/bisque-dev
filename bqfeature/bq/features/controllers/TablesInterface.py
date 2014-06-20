@@ -8,7 +8,7 @@ import tables
 import logging
 import Queue
 import numexpr
-numexpr.set_num_threads(1)
+numexpr.set_num_threads(1) #make numexpr thread-safe
 
 LOCKING_DELAY = .5 #secs
 
@@ -182,22 +182,33 @@ class Tables(object):
         self.table_parameters.append(('values',self.init_feature.cached_columns(),['idnumber']))      
             
 
+    def get_path(self):
+        """
+        """
+        return self.init_feature.path
+
     def init_h5(self,filename,table_parameters, func=None):
         """
             Must be placed within a lock
         """
-        with tables.openFile(filename,'w')  as h5file:
-            for (table_name, columns, indexed) in table_parameters:
-                table = h5file.createTable('/', table_name, columns, expectedrows=1000000000)
-                for col_name in indexed:
-                    column = getattr(table.cols,col_name)
-                    column.removeIndex()
-                    column.createIndex()
-                table.flush()
-                
-            if func:
-                func(h5file)        
-
+        try:
+            with tables.openFile(filename,'w')  as h5file:
+                for (table_name, columns, indexed) in table_parameters:
+                    table = h5file.createTable('/', table_name, columns, expectedrows=1000000000)
+                    for col_name in indexed:
+                        column = getattr(table.cols,col_name)
+                        column.removeIndex()
+                        column.createIndex()
+                    table.flush()
+                    
+                if func:
+                    func(h5file)        
+        
+        except tables.exceptions.HDF5ExtError:
+            log.debug('Failed to find table %s'%filename)
+            #raise FeatureServiceError()
+         
+        
     def write_to_table(self,filename, table_parameters, func=None):
         """
             Initalizes a table in the file
@@ -234,11 +245,16 @@ class Tables(object):
                     continue
                     
                 log.debug('Reading from table path: %s'%filename)
-                with tables.openFile(filename, 'r') as h5file:
-                    return func(h5file)
-
+                try:
+                    with tables.openFile(filename, 'r') as h5file:
+                        return func(h5file)
+                    
+                except tables.exceptions.HDF5ExtError:
+                    log.debug('Failed to find table %s'%filename)
+                    return None
+                    #raise FeatureServiceError()
                 
-    
+
     def append_to_table(self, filename, func):
         """
             Appends rows to the table
@@ -258,8 +274,14 @@ class Tables(object):
                     continue      
                 
                 log.debug('Appending to table path: %s'%filename)
-                with tables.openFile(filename, 'a') as h5file:
-                    return func(h5file)
+                try:
+                    with tables.openFile(filename, 'a') as h5file:
+                        return func(h5file)
+                    
+                except tables.exceptions.HDF5ExtError:
+                    log.debug('Failed to find table %s'%filename)
+                    return
+                    #raise FeatureServiceError()
 
     
     def create_h5_file(self, filename, func = None):
@@ -287,10 +309,10 @@ class Tables(object):
                 while not query_queue[filename].empty():
                     hash = query_queue[filename].get()
                     query = 'idnumber=="%s"' % str(hash)
-                    log.debug('Find: query -> %s'%query)
+                    #log.debug('Find: query -> %s'%query)
                     
                     try:
-                        table.where(query).next()
+                        table.where(query).next() #if the list contains one element
                         query_results.append((True,hash))
                         log.debug('Find: query: %s -> Found!'%query)
                     except StopIteration: #fails to get next
@@ -311,18 +333,19 @@ class Tables(object):
 
             def func(h5file):
                 table = h5file.root.values
-                
                 while not queue.empty():
                     row = queue.get()
                     query = 'idnumber=="%s"' % str(row[0][0])  # queries the hash to see if a feature has been already added
-                    log.debug('Query table -> %s'%query)
-                    index = table.getWhereList(query)  # appended already
-                    log.debug('Result of query -> %s'%index)
-                    if len(index) < 1:
+                    #log.debug('Query table -> %s'%query)
+                    try:
+                        table.where(query).next() #if the list contains one element
+                        log.debug('Skipping %s - already found in table'%str(row[0][0]))   
+                                   
+                    except StopIteration: #fails to get next
                         log.debug('Appending %s to table'%str(row[0][0]))
-                        table.append(row)
-                    else:
-                        log.debug('Skipping %s - already found in table'%str(row[0][0]))
+                        for r in row:
+                            table.append([r])                  
+
                 table.flush()
                 
             self.append_to_table(filename,func)
@@ -408,6 +431,12 @@ class IDTables(Tables):
         self.table_parameters.append(('values',self.init_ID.cached_columns(),['idnumber'])) 
 
 
+    def get_path(self):
+        """
+        """
+        return
+    
+
     def init_h5(self,filename,table_parameters, func=None):
         """
             Must be placed within a lock
@@ -431,6 +460,7 @@ class IDTables(Tables):
         
 
         self.write_to_table(filename, self.table_parameters,func=func)
+
 
     def store(self, rowgenorator):
         """
@@ -477,7 +507,10 @@ class WorkDirTable(Tables):
         self.table_parameters = []
         self.table_parameters.append(('values',self.init_feature.output_feature_columns(),[]))
             
-
+    def get_path(self):
+        """
+        """
+        return
 
     def store(self, rowgenorator, filename):
         """
