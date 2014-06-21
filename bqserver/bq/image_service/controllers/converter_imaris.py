@@ -158,7 +158,7 @@ class ConverterImaris(ConverterBase):
         log.debug('Meta for: %s', ifnm )
         t = tempfile.mkstemp(suffix='.log')
         logfile = t[1]
-        meta = self.run_read(ifnm, [self.CONVERTERCOMMAND, '-i', ifnm, '-m', '-l', logfile, '-ii', '%s'%series] )
+        meta = self.run_read(ifnm, [self.CONVERTERCOMMAND, '-i', ifnm, '-m', '-l', logfile]) #, '-ii', '%s'%series] )
         if meta is None:
             return {}
 
