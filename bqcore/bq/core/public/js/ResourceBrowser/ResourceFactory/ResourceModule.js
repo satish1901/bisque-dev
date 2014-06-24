@@ -43,7 +43,7 @@ Ext.define('Bisque.Resource.Module.Compact', {
         this.setData('fetched', 1);
         //Loaded
 
-        var renderedRef = this.getData('renderedRef')
+        var renderedRef = this.getData('renderedRef');
         if (renderedRef)
             renderedRef.updateContainer();
     },
@@ -52,17 +52,17 @@ Ext.define('Bisque.Resource.Module.Compact', {
         var name = Ext.create('Ext.container.Container', {
             cls : 'lblHeading1',
             html : this.resource.name,
-        })
+        });
 
         var type = Ext.create('Ext.container.Container', {
             cls : 'lblHeading2',
             html : this.getData('owner'),
-        })
+        });
 
         var value = Ext.create('Ext.container.Container', {
             cls : 'lblContent',
             html : this.resource.value,
-        })
+        });
 
         this.add([name, type, value]);
         this.setLoading(false);
@@ -72,15 +72,9 @@ Ext.define('Bisque.Resource.Module.Compact', {
 Ext.define('Bisque.Resource.Module.List', {
     extend : 'Bisque.Resource.Module',
 
-    constructor : function() {
-        Ext.apply(this, {
-            layout : {
-                type : 'hbox',
-                align : 'middle'
-            }
-        });
-
-        this.callParent(arguments);
+    layout : {
+        type : 'hbox',
+        align : 'middle',
     },
 
     afterRenderFn : function(me) {
@@ -97,7 +91,7 @@ Ext.define('Bisque.Resource.Module.List', {
                         if (!this.tagsLoaded)
                             me.setLoading({
                                 msg : ''
-                            })
+                            });
                     },
                     scope : this
                 }
@@ -170,7 +164,7 @@ Ext.define('Bisque.Resource.Module.List', {
         this.setData('fetched', 1);
         // 1 = Loaded
 
-        var renderedRef = this.getData('renderedRef')
+        var renderedRef = this.getData('renderedRef');
         if (renderedRef)
             renderedRef.updateContainer();
     },
@@ -180,19 +174,19 @@ Ext.define('Bisque.Resource.Module.List', {
             text : ' ' + this.resource.name + ' ',
             //padding:5,
             cls : 'lblModuleName',
-        })
+        });
 
         var moduleOwner = new Ext.form.Label({
             text : this.getData('owner'),
             //padding:'0 0 0 5',
             cls : 'lblModuleOwner'
-        })
+        });
 
         var moduleType = new Ext.form.Label({
             text : this.resource.type,
             padding : 5,
             style : 'color:#444'
-        })
+        });
 
         this.add([moduleName, moduleOwner, moduleType]);
         this.setLoading(false);
@@ -204,6 +198,7 @@ Ext.define('Bisque.Resource.Module.IconList', {
 
     initComponent : function() {
         this.addCls('icon-list');
+        this.addCls('mex');
         this.callParent();
     },
 
@@ -221,30 +216,40 @@ Ext.define('Bisque.Resource.Module.IconList', {
             if (tags[i].name == "description")
                 description = tags[i].value;
 
-        var imgCt = Ext.create('Ext.container.Container', {
-            margin : '0 0 0 4',
-            width : 110,
-            height : 110,
-            html : '<img style="position:relative;height:110px;width:110px" src="' + serviceURL + '/thumbnail"/>'
-        });
+        var imgCt = {
+            xtype: 'component',
+            itemId: 'thumbnail',
+            cls: 'thumbnail',
+            autoEl: {
+                tag: 'img',
+                src: serviceURL + '/thumbnail',
+            },
+            listeners: {
+                scope: this,
+                error: {
+                    element: 'el',
+                    fn: this.onThumbnailError,
+                },
+            },
+        };
 
         var moduleName = new Ext.form.Label({
             text : this.resource.name,
             //padding:'0 0 1 3',
             cls : 'lblModuleName',
-        })
+        });
 
         var moduleInfo = new Ext.form.Label({
             html : this.getData('owner') != 0 ? 'Owner: ' + this.getData('owner') : '',
             //padding:'0 0 0 3',
             maxHeight : 18,
             cls : 'lblModuleOwner'
-        })
+        });
 
         var moduleDesc = new Ext.form.Label({
             html : description,
             padding : '7 2 0 3',
-        })
+        });
 
         var rightCt = Ext.create('Ext.container.Container', {
             layout : {
@@ -260,7 +265,14 @@ Ext.define('Bisque.Resource.Module.IconList', {
 
         this.add([imgCt, rightCt]);
         this.setLoading(false);
-    }
+    },
+
+    onThumbnailError : function() {
+        this.addCls('disabled');
+        this.resource.available = false;
+        var cmp = this.queryById('thumbnail');
+        cmp.getEl().dom.src = '/js/ResourceBrowser/Images/stop.svg';
+    },
 });
 
 // Page view for a module
