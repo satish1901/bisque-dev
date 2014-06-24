@@ -54,6 +54,7 @@ function analysisAction(o, e) {
         dataset : '/module_service/',
         listeners : {
             'Select' : function(rb, module) {
+                if (module.available === false) return;
                 if (BQApp.resource)
                     pageAction('/module_service/' + module.name + '/?resource=' + BQApp.resource.uri);
                 else
@@ -639,16 +640,16 @@ Ext.define('BQ.Application.Toolbar', {
             plain: true,
             items: [],
         };
+        types = Ext.Object.merge(types, BQ.resources.preferred);
 
         var keys = Object.keys(types).sort();
-        //for (var name in types) {
         var name = null;
         for (var i=0; name=keys[i]; ++i) {
-            //if (name == 'dataset') continue;
+            var path = types[name] || '/data_service/'+name;
             menu.items.push({
                 text: name,
                 scope: this,
-                handler: Ext.Function.pass(this.doBrowse, '/client_service/browser?resource='+types[name]),
+                handler: Ext.Function.pass(this.doBrowse, '/client_service/browser?resource='+path),
             });
         }
 

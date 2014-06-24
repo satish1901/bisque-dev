@@ -32,40 +32,42 @@ Ext.define('Bisque.ResourceBrowser.OperationBar', {
 
     deleteResource : function(me, e) {
         e.stopPropagation();
-        var list = Ext.Object.getSize(this.browser.resourceQueue.selectedRes);
+        Ext.MessageBox.confirm( 'Delete resource?', 'Just confirming that you are deleting this resource?', function(btn) {
+            if (btn != 'yes') return;
+            var list = Ext.Object.getSize(this.browser.resourceQueue.selectedRes);
+            if (list > 1) {
+                this.fireEvent( 'removed', this.browser.resourceQueue.selectedRes );
 
-        if (list > 1) {
-            this.fireEvent( 'removed', this.browser.resourceQueue.selectedRes );
+                // Client-side temporary dataset
+                var tempDS = new BQDataset(), members = [];
 
-            // Client-side temporary dataset
-            var tempDS = new BQDataset(), members = [];
+                for (var res in this.browser.resourceQueue.selectedRes) {
+                    this.browser.resourceQueue.selectedRes[res].setLoading({
+                        msg : 'Deleting...'
+                    });
+                    members.push(this.browser.resourceQueue.selectedRes[res]);
+                }
 
-            for (var res in this.browser.resourceQueue.selectedRes) {
-                this.browser.resourceQueue.selectedRes[res].setLoading({
+                tempDS.tmp_setMembers(members);
+
+                tempDS.tmp_deleteMembers(Ext.bind(result, this));
+
+                function result(summary) {
+                    BQ.ui.notification(summary.success + ' resources deleted. ' + summary.failure + ' resources failed.');
+                    this.browser.msgBus.fireEvent('Browser_ReloadData', {});
+                }
+            } else {
+                var selected = {};
+                selected[this.resourceCt.resource.uri] = this.resourceCt.resource;
+                this.fireEvent( 'removed', selected );
+
+                me.operation = Ext.pass(this.resourceCt.resource.delete_, [Ext.bind(this.success, this), Ext.Function.pass(this.failure, ['Delete operation failed!'])], this.resourceCt.resource);
+                this.resourceCt.setLoading({
                     msg : 'Deleting...'
                 });
-                members.push(this.browser.resourceQueue.selectedRes[res]);
+                this.resourceCt.testAuth1(me);
             }
-
-            tempDS.tmp_setMembers(members);
-
-            tempDS.tmp_deleteMembers(Ext.bind(result, this));
-
-            function result(summary) {
-                BQ.ui.notification(summary.success + ' resources deleted. ' + summary.failure + ' resources failed.');
-                this.browser.msgBus.fireEvent('Browser_ReloadData', {});
-            }
-        } else {
-            var selected = {};
-            selected[this.resourceCt.resource.uri] = this.resourceCt.resource;
-            this.fireEvent( 'removed', selected );
-
-            me.operation = Ext.pass(this.resourceCt.resource.delete_, [Ext.bind(this.success, this), Ext.Function.pass(this.failure, ['Delete operation failed!'])], this.resourceCt.resource);
-            this.resourceCt.setLoading({
-                msg : 'Deleting...'
-            });
-            this.resourceCt.testAuth1(me);
-        }
+        }, this );
     },
 
     removeResource : function(me, e) {

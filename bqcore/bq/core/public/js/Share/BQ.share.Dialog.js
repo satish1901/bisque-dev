@@ -157,10 +157,10 @@ Ext.define('BQ.share.Panel', {
         if (this.resource)
             this.url = this.resource.uri+'/auth';
 
-        this.setLoading('Fetching users...');
+        //this.setLoading('Fetching users...');
         this.store_users = Ext.create('Ext.data.Store', {
             model : 'BQ.model.Users',
-            autoLoad : true,
+            autoLoad : false,
             autoSync : false,
             listeners : {
                 'load': this.onUsersStoreLoaded,
@@ -399,6 +399,12 @@ Ext.define('BQ.share.Panel', {
             html: '<p>Add new shares by <b>user name</b> or by any <b>e-mail</b>, if the e-mail is not registered with the system a new user will be created and notified.</p>',
         }, new_share_cnt, grid_panel ];
         this.callParent();
+    },
+
+    afterRender : function() {
+        this.callParent();
+        this.setLoading('Fetching users...');
+        this.store_users.load();
     },
 
     onUsersStoreLoaded: function( store, records, successful, eOpts) {
