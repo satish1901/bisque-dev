@@ -262,7 +262,7 @@ class DataServerController(ServiceController):
                     resource = self.query(resource_tag=rest[-1], parent=resource,**kw)
                     #self.cache_save (uri, response=etree.tostring(resource), **kw)
                     return resource
-                resource = prepare_permissions(resource, user_id=None, with_public = kw.get('wpublic')).first()
+                resource = prepare_permissions(resource, user_id=None, with_public = True).first()
 
         log.debug ("get_resource: uri %s -> %s", uri, str(resource))
         if resource is None:
