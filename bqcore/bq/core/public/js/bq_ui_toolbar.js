@@ -54,6 +54,7 @@ function analysisAction(o, e) {
         dataset : '/module_service/',
         listeners : {
             'Select' : function(rb, module) {
+                if (module.available === false) return;
                 if (BQApp.resource)
                     pageAction('/module_service/' + module.name + '/?resource=' + BQApp.resource.uri);
                 else
