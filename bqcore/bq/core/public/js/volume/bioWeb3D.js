@@ -455,9 +455,14 @@ Ext.define('BQ.viewer.Volume.Panel', {
             this.orthoCamera.bottom = -h/2;
             this.orthoCamera.updateProjectionMatrix();
 
-
             this.rerender();
         }
+    },
+
+    rerender : function(input) {
+        if(!input) input = 32;
+        this.canvas3D.rerender();
+	    this.sceneVolume.setMaxSteps = input;
     },
 
     onAnimate : function(){
@@ -942,12 +947,6 @@ Ext.define('BQ.viewer.Volume.Panel', {
         if (this.update_needed)
             clearTimeout(this.update_needed);
         this.update_needed = setTimeout(callback(this, this.doUpdate), this.update_delay_ms);
-    },
-
-    rerender : function(input) {
-        if(!input) input = 32;
-        this.canvas3D.rerender();
-	    this.sceneVolume.setMaxSteps = input;
     },
 
     //----------------------------------------------------------------------

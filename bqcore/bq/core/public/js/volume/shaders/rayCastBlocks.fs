@@ -292,10 +292,10 @@ bool intersectBox(in vec4 r_o, in vec4 r_d, in vec4 boxmin, in vec4 boxmax,
 float unpack (vec4 colour)
 {
 
-  const vec4 bitShifts = vec4(1.0 / (256.0 * 256.0 * 256.0),
-                              1.0 / (256.0 * 256.0),
-                              1.0 / 256.0,
-                              1.0);
+  const vec4 bitShifts = vec4(1.0 / (256.0 * 256.0),
+                              1.0 / (256.0),
+                              1.0,
+                              0.0);
 
   return dot(colour , bitShifts);
 }
@@ -318,10 +318,10 @@ vec4 integrateVolume(vec4 eye_o,vec4 eye_d,
   float z_e = 2.0 * zNear * zFar / (zFar + zNear - z_n * (zFar - zNear));
 
 
-  C = vec4(1.0, 0.0, 0.0, 0.0);
+  //C = vec4(1.0, 0.0, 0.0, 0.0);
 
   if(z_e > 6.0) {
-    C = vec4(0.5);
+    //C = vec4(0.5);
       //C.r = 0.5*(1.0+sin(2.0*(z_e)));
       //C.g = 0.5*(1.0+sin(2.0*(z_e + 2.0/3.0*3.1417)));
       //C.b = 0.5*(1.0+sin(2.0*(z_e + 4.0/3.0*3.1417)));
