@@ -24,6 +24,12 @@
         background-image: url('${thumbnail}=800,600');
     }
 </style>
+<style type="text/css" py:if="not thumbnail">
+    body {
+        background-image: url('${tg.url("/client_service/welcomebackground?size=800,600")}');
+    }
+</style>
+
 
 <script type="text/javascript">
 

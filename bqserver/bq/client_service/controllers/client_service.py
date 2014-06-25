@@ -118,19 +118,27 @@ class ClientServer(ServiceController):
         log.info("WELCOME %s " % session )
         wpublic = kw.pop('wpublic', not bq.core.identity.current)
         pybool = {'True': 'true', 'False': 'false'}
-        welcome_tags = config.get ('bisque.welcome_tags', "")
         welcome_message = config.get ('bisque.welcome_message', "Welcome to the Bisque image database")
-        #image_count = aggregate_service.count("image", wpublic=wpublic)
-        #image_count = data_service.count("image", wpublic=wpublic)
 
+        return dict(imageurl=None,
+                    thumbnail=None,
+                    wpublicjs = pybool[str(wpublic)],
+                    welcome_message = welcome_message
+                    )
+
+    @expose(template='bq.client_service.templates.welcome')
+    def welcomebackground(self, **kw):
+        log.info("BACKGROUND %s " % session )
+        wpublic = kw.pop('wpublic', not bq.core.identity.current)
         thumbnail = None
         imageurl = None
         welcome_resource = config.get ('bisque.background_resource', None)
+        thumb_size = kw.get('size', '800,600')
         if welcome_resource:
             imageurl = welcome_resource
             try:
-                image  = data_service.get_resource(imageurl)
-                thumbnail = "/image_service/images/%s?thumbnail" % image.get('resource_uniq')
+                image = data_service.get_resource(imageurl)
+                thumbnail = '/image_service/image/%s?thumbnail=%s'%(image.get('resource_uniq'), thumb_size)
             except:
                 log.exception('bisque.background (%s) set but not available' % imageurl)
         else:
@@ -147,18 +155,12 @@ class ClientServer(ServiceController):
                 wpublic_query = wpublic
             if image_count:
                 im = random.randint(0, image_count-1)
-                #image = aggregate_service.retrieve("image", view=None, wpublic=wpublic)[im]
                 image  = data_service.query('image', tag_query=tag_query, wpublic=wpublic_query,
                                             offset = im, limit = 1)[0]
-                imageurl = self.viewlink(image.attrib['uri'])
-                #thumbnail = image.attrib['src'] +'?thumbnail'
-                thumbnail = "/image_service/images/%s?thumbnail" % image.get('resource_uniq')
+                #imageurl = self.viewlink(image.attrib['uri'])
+                thumbnail = '/image_service/image/%s?thumbnail=%s'%(image.get('resource_uniq'), thumb_size)
 
-        return dict(imageurl=imageurl,
-                    thumbnail=thumbnail,
-                    wpublicjs = pybool[str(wpublic)],
-                    welcome_message = welcome_message
-                    )
+        redirect (base_url=thumbnail)
 
     @expose(template='bq.client_service.templates.browser')
     def browser(self, **kw):
