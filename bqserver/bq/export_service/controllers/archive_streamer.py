@@ -216,7 +216,7 @@ class ArchiveStreamer():
             header, content = httpReader.request(url, headers=headers)
 
             if not header['status'].startswith('200'):
-                log.error("URL request returned %s" % header['status'])
+                log.error("URL %s request returned %s" , url, header['status'])
                 return None
             items = (header.get('content-disposition') or header.get('Content-Disposition') or '').split(';')
             fileName = str(index) + '.'
@@ -256,7 +256,10 @@ class ArchiveStreamer():
                     members = mexq.xpath('//mex')
                     for m in members:
                         uri = m.get('uri')
-                        flist.append(fileInfo('', uri))
+                        mexinfo = fileInfo('', uri)
+                        if mexinfo is None:
+                            continue
+                        flist.append(mexinfo)
 
         # processing a list of datasets
         if len(datasetList)>0:
@@ -330,6 +333,8 @@ class ArchiveStreamer():
                 else:
                     fileHash[url] = 1
                     finfo = urlInfo(url, index)
+                    if finfo is None:
+                        continue
                     flist.append(finfo)
 
         return flist
