@@ -1145,7 +1145,7 @@ class ThumbnailService(object):
             depth = data_token.dims.get('image_pixel_depth', 16)
             intermediate = self.server.getOutFileName( ifile, image_id, '.ome.tif' )
             for c in self.server.converters.itervalues():
-                r = c.thumbnail(ifile, ofile, size[0], size[1], series=data_token.series, method=method, depth=depth, intermediate=intermediate)
+                r = c.thumbnail(ifile, ofile, size[0], size[1], series=data_token.series, method=method, depth=depth, intermediate=intermediate, info=data_token.dims)
                 if r is not None:
                     break
             if r is None:

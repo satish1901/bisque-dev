@@ -215,7 +215,7 @@ class ConverterImgcnv(ConverterBase):
     #######################################
 
     @classmethod
-    def convert(cls, ifnm, ofnm, fmt=None, series=0, extra=[]):
+    def convert(cls, ifnm, ofnm, fmt=None, series=0, extra=None):
         '''converts a file and returns output filename'''
         log.debug('convert: [%s] -> [%s] into %s for series %s with [%s]', ifnm, ofnm, fmt, series, extra)
         command = ['-i', ifnm]
@@ -227,7 +227,8 @@ class ConverterImgcnv(ConverterBase):
                 extra.extend(['-multi'])
             else:
                 extra.extend(['-page', '1'])
-        command.extend (extra)
+        if extra is not None:
+            command.extend (extra)
         return cls.run(ifnm, ofnm, command )
 
     #def convertToOmeTiff(cls, ifnm, ofnm, series=0, extra=[]):
