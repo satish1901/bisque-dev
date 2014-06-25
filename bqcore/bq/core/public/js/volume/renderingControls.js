@@ -2060,8 +2060,8 @@ function gObjectBuffer(volume){
     this.position = new Array();
     this.index = new Array();
     this.colors = new Array();
-
 };
+
 
 gObjectBuffer.prototype.rescale = function(){
     var scale = this.volume.sceneVolume.getRescale().clone();
@@ -2084,7 +2084,7 @@ gObjectBuffer.prototype.pushPosition  = function(p, x, positions){
     scale.x = 1.0;
     positions[ x * 3 + 0 ] = scale.x*(p.x/dims.x - 0.5);
 	positions[ x * 3 + 1 ] = scale.y*(0.5 - p.y/dims.y);
-	positions[ x * 3 + 2 ] = scale.z*(0.5 - p.z/dims.z);
+	positions[ x * 3 + 2 ] = scale.z*(0.5 - p.z/dims.z - 0.5/dims.z);
 };
 
 gObjectBuffer.prototype.push = function(poly){
@@ -2118,12 +2118,11 @@ gObjectBuffer.prototype.buildBuffer = function(){
     }
 
     this.mesh = this.allocateMesh(geometry, this.material);
-
     this.mesh.geometry.dynamic = true;
     this.mesh.geometry.computeBoundingBox();
     this.mesh.geometry.verticesNeedUpdate = true;
-}
 
+}
 
 function pointBuffer(volume) {
     gObjectBuffer.call(this,volume);
@@ -2131,17 +2130,6 @@ function pointBuffer(volume) {
 };
 
 pointBuffer.prototype = new gObjectBuffer();
-
-pointBuffer.prototype.isClockWise  =function(poly){
-    //use shoelace determinate
-    var det = 0;
-    for(var i = 0; i < poly.length; i++){
-        var cur = poly[i];
-        var nex = poly[(i+1)%poly.length];
-        det += cur.x*nex.y - cur.y*nex.x;
-    }
-    return det > 0;
-};
 
 pointBuffer.prototype.push = function(poly){
 
@@ -2156,7 +2144,170 @@ pointBuffer.prototype.push = function(poly){
 };
 
 pointBuffer.prototype.allocateMesh = function(geometry, material){
-    return new THREE.PointCloud( geometry, material);
+    var cloud = new THREE.PointCloud( geometry, material);
+    return cloud;
+};
+
+pointBuffer.prototype.sortParticles = function(pos){
+    var gpositions = this.mesh.geometry.getAttribute('position').array;
+    var gindex     = this.mesh.geometry.getAttribute('index').array;
+    var gcolor     = this.mesh.geometry.getAttribute('color').array;
+
+    if(!this.permutation) {
+        //preallocate the distance array
+        this.permutation = new Array(gindex.length);
+        for(var i = 0; i < this.permutation.length; i++){
+            this.permutation[i] = {i: i, dist: 0.0, visited: false};
+        }
+    }
+
+    for(var i = 0; i < this.permutation.length; i++){
+        this.permutation[i].i = i;
+        var d0 = pos.x - gpositions[3*i + 0];
+        var d1 = pos.y - gpositions[3*i + 1];
+        var d2 = pos.z - gpositions[3*i + 2];
+        this.permutation[i].dist = d0*d0 + d1*d1 + d2*d2;
+    }
+    this.permutation.sort(function(a,b){ return b.dist - a.dist}); //sort the permutations in descending order
+
+    var assign = function(i,bigArr, tmpArr, sz){
+		for ( y = 0; y < sz; y ++ ) {
+			bigArr[ sz*i + y ]=tmpArr[y];
+		}
+    };
+
+    var getSet = function(i, index, pos, col){
+        //var pi = perm[i].i;
+        var set = {
+            ind: [index[i]],
+            col: [col[3*i + 0],
+                  col[3*i + 1],
+                  col[3*i + 2]],
+            pos: [pos[3*i + 0],
+                  pos[3*i + 1],
+                  pos[3*i + 2]],
+        };
+        return set;
+    };
+
+    //debugger;
+
+    for(var i = 0; i < this.permutation.length; i++){
+        var begin = getSet(i, gindex, gpositions, gcolor)
+        var k = 0;
+        var iterating = 1;
+        var ci = i;
+        if (this.permutation[i].visited == true) continue;
+        while(iterating == 1){
+            var swapVars = getSet(this.permutation[ci].i, gindex, gpositions, gcolor);
+
+            assign(ci, gindex,    swapVars.ind,1);
+            assign(ci,gpositions, swapVars.pos,3);
+            assign(ci,gcolor,     swapVars.col,3);
+
+            if(this.permutation[ci].i == i) {
+                assign(ci, gindex,    begin.ind,1);
+                assign(ci,gpositions, begin.pos,3);
+                assign(ci,gcolor,     begin.col,3);
+                iterating = false;
+                continue;
+            }
+            ci = this.permutation[ci].i;
+            this.permutation[ci].visited = true;
+            k++;
+        }
+    }
+
+    var logOut = '';
+    for(var i = 0; i < gpositions.length/3; i++){
+        var d0 = pos.x - gpositions[3*i + 0];
+        var d1 = pos.y - gpositions[3*i + 1];
+        var d2 = pos.z - gpositions[3*i + 2];
+        logOut += d0*d0 + d1*d1 + d2*d2 + ' ';
+    }
+    this.mesh.geometry.dynamic = true;
+    this.mesh.geometry.verticesNeedUpdate = true;
+    this.mesh.geometry.attributes.index.needsUpdate = true;
+    this.mesh.geometry.attributes.position.needsUpdate = true;
+    this.mesh.geometry.attributes.color.needsUpdate = true;
+    //console.log(logOut);
+}
+
+function lineBuffer(volume) {
+    gObjectBuffer.call(this,volume);
+};
+
+lineBuffer.prototype = new gObjectBuffer();
+/*
+lineBuffer.prototype.push = function(poly){
+
+    var lcolor = {r: Math.random(),g: Math.random(),b: Math.random()}
+
+    for(var i = 0; i < poly.length; i++){
+        this.colors.push(lcolor);
+        this.index.push(this.position.length, this.position.length + 1);// = positions.concat(poly)
+        //this.index.push(this.position.length + 1);// = positions.concat(poly)
+
+        this.position.push(poly[i]);// = positions.concat(poly)
+    };
+
+    //index.push(lindex);// = index.concat(lindex);
+    //console.log('local: ', lindex, 'localpoly: ', poly, 'global: ', index, 'global p: ',positions);
+    //triCounter += polys[i].vertices.length;
+};
+*/
+
+lineBuffer.prototype.isClockWise  =function(poly){
+    //use shoelace determinate
+    var det = 0;
+    for(var i = 0; i < poly.length; i++){
+        var cur = poly[i];
+        var nex = poly[(i+1)%poly.length];
+        det += cur.x*nex.y - cur.y*nex.x;
+    }
+    return det > 0;
+};
+
+lineBuffer.prototype.push = function(poly){
+    //poly is any object with an x and a y.
+    //loads necessary data onto the vertex buffer
+    var lindex = [];
+
+    for(var i = 0; i < poly.length-1; i++){
+        lindex.push(i);
+        lindex.push(i+1);
+    }
+    //lindex.push(poly.length-1);
+    //lindex = POLYGON.tessellate(poly, []);
+    /*
+    if(!this.isClockWise(poly))
+        lindex = POLYGON.tessellate(poly, []);
+    else
+        lindex = POLYGON.tessellate(poly.reverse(), []);
+    */
+    for(var j = 0; j < lindex.length; j++){
+        lindex[j] += this.position.length;
+    }
+
+    var lcolor = {r: Math.random(),g: Math.random(),b: Math.random()}
+    for(var j = 0; j < poly.length; j++){
+        this.colors.push(lcolor);
+    }
+
+    for(var i = 0; i < poly.length; i++){
+        this.position.push(poly[i]);// = positions.concat(poly)
+    };
+
+    for(var i = 0; i < lindex.length; i++){
+        this.index.push(lindex[i]);// = positions.concat(poly)
+    };
+    //index.push(lindex);// = index.concat(lindex);
+    //console.log('local: ', lindex, 'localpoly: ', poly, 'global: ', index, 'global p: ',positions);
+    //triCounter += polys[i].vertices.length;
+};
+
+lineBuffer.prototype.allocateMesh = function(geometry, material){
+    return new THREE.Line( geometry, material, THREE.LinePieces );
 };
 
 
@@ -2175,17 +2326,6 @@ polyBuffer.prototype.isClockWise  =function(poly){
         det += cur.x*nex.y - cur.y*nex.x;
     }
     return det > 0;
-};
-
-polyBuffer.prototype.rescale = function(){
-    var scale = this.volume.sceneVolume.getRescale().clone();
-
-    this.mesh.geometry.dynamic = true;
-    this.mesh.geometry.verticesNeedUpdate = true;
-    var mat = new THREE.Matrix4().scale(scale);
-    this.mesh.geometry.applyMatrix(mat);
-    this.mesh.geometry.computeBoundingBox();
-    //console.log(this.points);
 };
 
 polyBuffer.prototype.push = function(poly){
@@ -2271,6 +2411,7 @@ Ext.define('BQ.viewer.Volume.pointControl', {
 
     rescalePoints : function(){
         this.currentSet.points.rescale();
+        this.currentSet.polylines.rescale();
         this.currentSet.polygons.rescale();
         //console.log(this.points);
     },
@@ -2296,12 +2437,11 @@ Ext.define('BQ.viewer.Volume.pointControl', {
             if(curMesh)
                 this.sceneVolume.sceneData.remove( curMesh ); // remove current point set
         }
-        console.log('before: ', this.currentSet);
         this.currentSet = this.gObjectBuffers[t];
-        console.log('after: ', this.currentSet);
         for (var item in this.currentSet){
             if(!item) continue;
             var curMesh = this.currentSet[item].mesh;
+            console.log('item: ', item);
             if(curMesh){
                 this.sceneVolume.sceneData.add( curMesh ); // remove current point set
                 if(this.state === 1)
@@ -2312,7 +2452,13 @@ Ext.define('BQ.viewer.Volume.pointControl', {
         }
 
         this.points   = this.currentSet.points.mesh; //set current pointer to loaded set
-        this.pointclouds = [this.points];
+
+        this.pointclouds = new Array();
+
+        for(var c in this.currentSet){
+            if(this.currentSet[c])
+                this.pointclouds.push(this.currentSet[c].mesh);
+        }
     },
 
     loadGObjects : function(){
@@ -2328,6 +2474,10 @@ Ext.define('BQ.viewer.Volume.pointControl', {
         pBuffer.material = this.polyShaderMaterial;
         this.gObjectBuffers[t].polygons = pBuffer;
 
+        var lBuffer = new lineBuffer(this.panel3D);
+        lBuffer.material = this.polyShaderMaterial;
+        this.gObjectBuffers[t].polylines = lBuffer;
+
         var cBuffer = new pointBuffer(this.panel3D);
         cBuffer.material = this.pointShaderMaterial;
         this.gObjectBuffers[t].points = cBuffer;
@@ -2342,10 +2492,15 @@ Ext.define('BQ.viewer.Volume.pointControl', {
                 if(g.resource_type == 'point')
                     cBuffer.push(g.vertices);
 
+                if(g.resource_type == 'polyline')
+                    lBuffer.push(g.vertices);
+
                 if(g.resource_type == 'polygon')
                     pBuffer.push(g.vertices);
             }
         }
+
+        lBuffer.buildBuffer();
         cBuffer.buildBuffer();
         pBuffer.buildBuffer();
         this.updateScene();
@@ -2392,10 +2547,10 @@ Ext.define('BQ.viewer.Volume.pointControl', {
 
         var pack = [
             'vec4 pack (float depth){',
-            'const vec4 bitSh = vec4(256 * 256 * 256,',
-            '                        256 * 256,',
+            'const vec4 bitSh = vec4(256 * 256,',
             '                        256,',
-            '                        1.0);',
+            '                        1.0,',
+            '                        0.0);',
             'const vec4 bitMsk = vec4(0.0,',
             '                         1.0 / 256.0,',
             '                         1.0 / 256.0,',
@@ -2403,95 +2558,162 @@ Ext.define('BQ.viewer.Volume.pointControl', {
             'highp vec4 comp = fract(depth * bitSh);',
             'comp -= comp.xxyz * bitMsk;',
             'return comp;',
-        '}'
+            '}'
         ].join('\n');
+
+        if(0){ //shader pack float test routine
+            var unpackjs = function(c){
+                var shift = [1/256/256/256, 1/256/256, 1/256,1];
+                var sum = 0;
+                shift.forEach(function(e,i,a){sum += a[i]*c[i]})
+                return sum;
+            };
+
+            var packjs = function(d){
+                var bitsh   = [256*256, 256, 1, 1/256];
+                var bitMask = [0, 1/256, 1/256, 1/256];
+                var comp = [bitsh[0]*d, bitsh[1]*d, bitsh[2]*d, bitsh[3]*d];
+                console.log('1: ', comp);
+                comp.forEach(function(e,i,a){a[i] = e%1});
+                console.log('2: ', comp);
+                comp = [comp[0]-comp[0]*bitMask[0],
+                        comp[1]-comp[0]*bitMask[1],
+                        comp[2]-comp[1]*bitMask[2],
+                        comp[3]-comp[2]*bitMask[3]];
+                console.log('3: ', comp);
+                return comp;
+            };
+
+            var unpackjs = function(c){
+                var shift = [1/256/256, 1/256, 1, 256];
+                var sum = 0;
+                shift.forEach(function(e,i,a){sum += a[i]*c[i]})
+                return sum;
+            };
+
+            var test = [1/255, 1/127, 1/63, 1/31, 1/15, 1/7, 0.0, 2.0, 4.0, 8.0, 16.0, 356 + 1/7];
+            test.forEach(function(e,i,a){
+                var p = packjs(e);
+                var up = unpackjs(p);
+                console.log('test ' + i + ': ', e,up,p);
+            });
+        }
+        //24 bit precision pack that preserves the alpha value.
+        var fragDepthBack = [
+            'varying vec2 vUv;',
+            'uniform float near;',
+            'uniform float far;',
+            'uniform int USE_COLOR;',
+            'varying vec3 vColor;',
+            pack,
+            'void main() {',
+            ' if(USE_COLOR == 0){',
+            '  gl_FragColor = pack(0.999999);',
+            ' } ',
+            ' else{',
+            '  gl_FragColor = vec4(0.5);',
+            ' }',
+            '}'
+        ].join('\n');
+
 
         var fragDepth = [
             'varying vec2 vUv;',
             'uniform float near;',
             'uniform float far;',
-            //'varying highp float depth;',
+            'uniform int USE_COLOR;',
+            'varying vec3 vColor;',
             pack,
             'void main() {',
-            //' float depth = gl_FragCoord.z/gl_FragCoord.w;',
-            //'  float f = smoothstep( near, far, depth );',
+            ' if(USE_COLOR == 0){',
             '  gl_FragColor = pack(gl_FragCoord.z);',
-            //'  float f = gl_FragCoord.z;',
-            //'  gl_FragColor = vec4(f, f, f, 1.0);',
+            ' } ',
+            ' else{',
+            '  gl_FragColor.xyz = vColor;',
+            ' }',
             '}'
         ].join('\n');
 
         var vertDepth = [
+            'attribute vec3 color;',
             'varying vec2 vUv;',
-            //'varying highp float depth;',
+            'varying vec3 vColor;',
             'void main() {',
 			'  vUv = uv;',
+            '  vColor = color;',
 			'  vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );',
             '  gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );',
-            //'  depth = length(cameraPosition - mvPosition.xyz);',
             '}'
         ].join('\n');
 
-        var spriteTex = THREE.ImageUtils.loadTexture( '/js/volume/icons/redDot.png' );
+        var spriteTex = THREE.ImageUtils.loadTexture( '/js/volume/icons/dot.png' );
 
         var frag = [
             'uniform sampler2D tex1;',
             'uniform float near;',
             'uniform float far;',
             'uniform int USE_COLOR;',
-            'varying float vAlpha;',
+            'varying vec3 vColor;',
+
             //'varying float depth;',
             pack,
             'void main() {',
+            ' float r2 = dot(gl_PointCoord - vec2(0.5),gl_PointCoord - vec2(0.5));',
+            ' float sw = float(r2 < 0.25);',
             ' if(USE_COLOR == 0){',
-           '  vec4 C = vec4(texture2D(tex1, gl_PointCoord).a);',
-            '  gl_FragColor = pack(gl_FragCoord.z);',
-            //'  gl_FragColor = pack(gl_FragCoord.z);',
-            '}',
+            '   vec4 C  = texture2D(tex1, gl_PointCoord);',
+            '   float a = C.a;',
+            '   float d = gl_FragCoord.z;',
+            '   vec4 packd = pack(d);',
+            '   packd.a = a;',
+            '   gl_FragColor = packd;',
+            ' }',
             ' else{',
-            '  vec4 C = texture2D(tex1, gl_PointCoord);',
-            '  gl_FragColor = C;',
-            '  }',
+            '  vec4 C = vec4(vColor,0.0);',
+            '  C.a += sw;',
+            //'  gl_FragColor.rgb = vColor;',
+            '  gl_FragColor  = texture2D(tex1, gl_PointCoord);',
+            '  gl_FragColor.xyz *= vColor;',
+
+            ' }',
             '}'
         ].join('\n');
 
         var vert = [
-            'attribute float alpha;',
-            'varying float vAlpha;',
+            'attribute vec3 color;',
+            'varying vec3 vColor;',
             'void main() {',
-            '  vAlpha = 1.0 - alpha;',
+            '  vColor = color;',
             '  vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );',
             '  gl_PointSize = 0.1 * ( 300.0 / length( mvPosition.xyz ) );',
             '  gl_Position = projectionMatrix * mvPosition;',
             '}'
         ].join('\n');
-
+        this.useColor = 0;
 		this.pointShaderMaterial = new THREE.ShaderMaterial( {
 			uniforms: {
 				tex1: { type: "t", value: spriteTex },
 				zoom: { type: 'f', value: 100.0 },
                 near: {type: 'f', value: 0.1},
                 far:  {type: 'f', value: 20.0},
-                USE_COLOR: {type: 'i', value: 0}
+                USE_COLOR: {type: 'i', value: this.useColor}
 			},
 			attributes: {
 				alpha: { type: 'f', value: null },
 			},
 			vertexShader:   vert,
 			fragmentShader: frag,
-			transparent: false
+			side: THREE.DoubleSide,
+            alphaTest: 0.5,
+            transparent: true
 		});
 
 
-/*
-        backGroundShaderMaterial = new THREE.MeshDepthMaterial( {
-            side: THREE.DoubleSide,
-		});
-*/
         this.polyShaderMaterial = new THREE.ShaderMaterial( {
 			uniforms: {
                 near: {type: 'f', value: 0.1},
                 far:  {type: 'f', value: 20.0},
+                USE_COLOR: {type: 'i', value: this.useColor}
 			},
 			vertexShader:   vertDepth,
 			fragmentShader: fragDepth,
@@ -2499,13 +2721,14 @@ Ext.define('BQ.viewer.Volume.pointControl', {
 			//transparent: true
 		});
 
-		backGroundShaderMaterial = new THREE.ShaderMaterial( {
+		this.backGroundShaderMaterial = new THREE.ShaderMaterial( {
 			uniforms: {
                 near: {type: 'f', value: 0.1},
                 far:  {type: 'f', value: 20.0},
+                USE_COLOR: {type: 'i', value: this.useColor}
 			},
 			vertexShader:   vertDepth,
-			fragmentShader: fragDepth,
+			fragmentShader: fragDepthBack,
             side: THREE.BackSide,
 			//transparent: true
 		});
@@ -2528,7 +2751,7 @@ Ext.define('BQ.viewer.Volume.pointControl', {
 */
         //var backGroundGeometry = new THREE.CubeGeometry(8.0, 8.0, 8.0);
         var backGroundGeometry = new THREE.SphereGeometry( 8.0, 32, 32 );
-        var backGround = new THREE.Mesh(backGroundGeometry, backGroundShaderMaterial);
+        var backGround = new THREE.Mesh(backGroundGeometry, this.backGroundShaderMaterial);
         //backGround.overdraw = true;
         //backGround.doubleSided = true;
         this.sceneVolume.sceneData.add(backGround);
@@ -2557,19 +2780,28 @@ Ext.define('BQ.viewer.Volume.pointControl', {
     onAnimate : function(){
 
         if(this.sceneVolume.sceneData){
+
             var panel = this.panel3D;
             //move this to background plug-in
+            var camPos = this.panel3D.canvas3D.camera.position;
+            this.currentSet.points.sortParticles(camPos);
             panel.canvas3D.renderer.clearTarget(this.accumBuffer0,
                                                true, true, true);
             var buffer = this.accumBuffer0;
             var bufferColor = this.accumBuffer1;
 
             this.pointShaderMaterial.uniforms.USE_COLOR.value = 0;
+            this.polyShaderMaterial.uniforms.USE_COLOR.value = 0;
+            this.backGroundShaderMaterial.uniforms.USE_COLOR.value = 0;
+            //this.useColor = 0;
             panel.canvas3D.renderer.render(this.sceneVolume.sceneData,
                                            this.canvas3D.camera,
                                            this.depthBuffer);
 
+            this.pointShaderMaterial.transparent = true;
             this.pointShaderMaterial.uniforms.USE_COLOR.value = 1;
+            this.polyShaderMaterial.uniforms.USE_COLOR.value = 1;
+            this.backGroundShaderMaterial.uniforms.USE_COLOR.value = 1;
             panel.canvas3D.renderer.render(this.sceneVolume.sceneData,
                                            this.canvas3D.camera,
                                            this.colorBuffer);
@@ -2631,11 +2863,16 @@ Ext.define('BQ.viewer.Volume.pointControl', {
 		intersection = ( intersections.length ) > 0 ? intersections[ 0 ] : null;
         if(intersection !== null){
             //this.sphere.position.copy( intersection.point );
+            var gindex     = intersections[0].object.geometry.getAttribute('index').array;
             var pos = this.canvas3D.projector.projectVector(intersection.point.clone(), camera);
-
+            var index;
+            if(intersection.index)
+                index = gindex[intersection.index];
+            if(intersection.indices)
+                index = intersection.indices;
             this.label.style.top  = '' + 0.5*height*(1.0-pos.y) + cy + 'px';
             this.label.style.left = '' + 0.5*width*( 1.0+pos.x) - cx  + 'px';
-            this.label.textContent = [intersection.index].join(",\n");
+            this.label.textContent = [index].join(", ");
 
         }
         if(!this.label){
