@@ -706,7 +706,6 @@ class Hdf(Format):
 
         path = resource_list.workdir_filename()
         filename = ntpath.basename(path)
-        uuid.uuid1()
         m = hashlib.md5()
         m.update(filename+uuid.uuid1().hex)
         self.filename = m.hexdigest()
@@ -734,9 +733,7 @@ class Hdf(Format):
             All HDF files are saved in the work dir of the feature service
         """
             
-        # creating a file name
-        path = resource_list.workdir_filename()
-        
+
         #writing the output to an uncached table
         workdir_feature_table = WorkDirTable(resource_list.feature())
         
@@ -746,22 +743,25 @@ class Hdf(Format):
             query_queue = resource_list.get_query_queue()
             for query in table.get(query_queue):
                 for rows,hash in query:
-                    if rows != None:  # a feature was found for the query
-                        resource = resource_list.get(hash)[1]
-                        resource_list.remove(input_dict,FeatureExtractionError(resource, 404, 'Resource was not found in the feature tables: %s'%resource))
+                    resource = resource_list.get(hash)[1]
+                    if rows == None:  # a feature was found for the query
+                        resource_list.remove(resource,FeatureExtractionError(resource, 404, 'Resource was not found in the feature tables: %s'%resource))
                         log.warning('Resource: %s was not found in the feature tables'%resource)
                     else:
                         for r in rows:  # taking rows out of the cached tables and placing them into the rows of the output table
                             row = ()
                             for e in self.feature.resource:  # adding input resource uris
-                                row += tuple([resource_list[i][1][e]])
+                                row += tuple([resource[e]])
                             row += tuple([resource_list.feature.name])
                             row += tuple([r['feature']])
                             for p in self.feature.parameter:
                                 row += tuple([r[p]])
                             response_table.append([row])
                         response_table.flush()
-        
+
+        # creating a file name
+        path = resource_list.workdir_filename()
+
         if len(resource_list)>0: #no table will be created it their are no elements
             workdir_feature_table.create_h5_file( path, func)
         
@@ -770,7 +770,6 @@ class Hdf(Format):
 
     def return_from_workdir(self, table, resource_list, **kw):
         """
-        
             Note: return header must be called first to establish a file name
         """
         # since the uncached table is already saved in the workdir the file is just
@@ -825,7 +824,7 @@ class Hdf(Format):
             content.text = "An error occurred in all the resources requested on, check %s/features/debug/%s for more details" % (request.host, self.filename)
             return etree.tostring(content)
 
-            
+     
 
 #-------------------------------------------------------------
 # Formatters - No Ouptut
@@ -834,20 +833,47 @@ class Hdf(Format):
 #-------------------------------------------------------------
 class NoOutput(Format):
     name = 'No Output'
-
+    description = 'Has no body attached to the response'
+    content_type = None
 
 #-------------------------------------------------------------
 # Formatters - Numpy
 # Only for internal use
 #-------------------------------------------------------------
-class ReturnNumpy(Format):
+class NumPy(Format):
     """
     """
     name = 'numpy'
     description = 'Returns numpy arrays for features'
-    content_type = ''    
+    content_type = None
     def return_from_tables(self, table, element_list, **kw):
+        query_queue = resource_list.get_query_queue()
+        numpy_response = []
+        for query in table.get(query_queue):
+            for results in query:
+                numpy_response.append(results[0])
+        return numpy_response
+    
+    def return_from_workdir(self, table, filename, **kw):
         pass
+
+
+#-------------------------------------------------------------
+# Formatters - LocalPath
+# Only for internal use
+#-------------------------------------------------------------
+class LocalPath(Format):
+    """
+    """
+    name = 'localpath'
+    description = 'returns the path and the hash were a feature is stored'
+    content_type = None
+    
+    def return_from_tables(self, table, element_list, **kw):
+        localpath = []
+        for hash in resource_list:
+            localpath.append((os.path.join(table.get_path(),hash[:self.feature.hash]),hash))
+        return localpath
     
     def return_from_workdir(self, table, filename, **kw):
         pass
@@ -1037,7 +1063,7 @@ class featuresController(ServiceController):
             try:
                 body = self.docs.feature(args[0])
                 header = {'content-type':'text/xml'}
-                log.info('Content Type:%s  Returning Feature Info: %s'%(header['content-type'],args[0])) 
+                log.info('Content Type: %s Returning Feature Info: %s'%(header['content-type'],args[0])) 
                                 
             except FeatureServiceError as e:
                 log.error('Error Code: %s - Error Message: %s'%(e.error_code,e.error_message))                
@@ -1151,6 +1177,7 @@ class featuresController(ServiceController):
         else:
             log.error('Malformed Request: Not a valid features request only excepts GET method')
             abort(400, 'Malformed Request: Not a valid features request only excepts GET method') 
+
 
 #######################################################################
 ### Initializing Service

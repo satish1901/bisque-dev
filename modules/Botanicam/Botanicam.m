@@ -37,7 +37,7 @@ function Botanicam(mex_url, access_token, image_url,plantpart)
         queryurl=regexprep(queryurl,' ','%20');
         queryurl=regexprep(queryurl,'(','%28');
         queryurl=regexprep(queryurl,')','%29');
-        data_service=[session.bisque_root,'/data_service/file/?','tag_query=',queryurl,'&tag_order=@ts:asc&limit=1&wpublic=1'];
+        data_service=[session.bisque_root,'/data_service/file?','tag_query=',queryurl,'&tag_order=@ts:asc&limit=1&wpublic=1'];
         dataset=session.fetch(data_service);
 
         % parces out the webpage to find the url were the files are located

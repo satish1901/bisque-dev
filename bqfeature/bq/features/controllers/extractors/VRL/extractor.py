@@ -35,8 +35,7 @@ class EHD(Feature.BaseFeature):
         image_uri = resource['image']
         
         with ImageImport(image_uri) as imgimp:
-            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
-            im = np.array(Image.open(str(imgimp)))
+            im = imgimp.from_tiff2D_to_numpy()
             if len(im.shape)==3:           
                 im = rgb2gray(im)
             im = np.asarray(im)        
@@ -71,7 +70,7 @@ class HTD(Feature.BaseFeature):
         with ImageImport(image_uri) as imgimp:
             #log.debug('Image Location: %s'%imgimp.path)
             #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
-            im = np.array(Image.open(str(imgimp)))
+            im = imgimp.from_tiff2D_to_numpy()
             
             if len(im.shape)==3:           
                 im = rgb2gray(im)
@@ -152,11 +151,10 @@ class mHTD(Feature.BaseFeature):
         with ImageImport(image_uri) as imgimp:
             with Feature.ImageImport(mask_uri) as maskimp:
 
-                #im = cv2.imread(str(imgimp), 2)
-                im = np.array(Image.open(str(imgimp)))
+                im = imgimp.from_tiff2D_to_numpy()
                 im = rgb2gray(im)
-                #mask = cv2.imread(str(maskimp), 2)
-                mask = np.array(Image.open(str(maskimp)))
+
+                mask = maskimp.from_tiff2D_to_numpy()
 
                 if len(mask.shape)==3:
                     mask = rgb2gray(mask)

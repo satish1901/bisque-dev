@@ -185,7 +185,7 @@ class ConverterBase(object):
         return out
 
     @classmethod
-    def run(cls, ifnm, ofnm, args ):
+    def run(cls, ifnm, ofnm, args, **kw ):
         '''converts input filename into output using exact arguments as provided in args'''
         if not cls.installed:
             return None
@@ -194,21 +194,27 @@ class ConverterBase(object):
                 command = [cls.CONVERTERCOMMAND]
                 command.extend(args)
                 log.debug('Run command: [%s]', command)
-                if ofnm is not None and os.path.exists(ofnm):
-                    log.warning ('Run: output exists before command [%s]', ofnm)
-                command, tmp = misc.start_nounicode_win(ifnm, command)
-                retcode = call (command)
-                misc.end_nounicode_win(tmp)
-                if retcode != 0:
-                    log.warning ('Run: returned [%s] for [%s]', retcode, command)
-                    return None
-                if ofnm is None:
-                    return str(retcode)
-                # output file does not exist for some operations, like tiles
-                # tile command does not produce a file with this filename
-                # if not os.path.exists(ofnm):
-                #     log.error ('Run: output does not exist after command [%s]', ofnm)
-                #     return None
+                proceed = True
+                if ofnm is not None and os.path.exists(ofnm) and os.path.getsize(ofnm)>16:
+                    if kw.get('nooverwrite', False) is True:
+                        proceed = False
+                        log.warning ('Run: output exists before command [%s], skipping', ofnm)
+                    else:
+                        log.warning ('Run: output exists before command [%s], overwriting', ofnm)
+                if proceed is True:
+                    command, tmp = misc.start_nounicode_win(ifnm, command)
+                    retcode = call (command)
+                    misc.end_nounicode_win(tmp)
+                    if retcode != 0:
+                        log.warning ('Run: returned [%s] for [%s]', retcode, command)
+                        return None
+                    if ofnm is None:
+                        return str(retcode)
+                    # output file does not exist for some operations, like tiles
+                    # tile command does not produce a file with this filename
+                    # if not os.path.exists(ofnm):
+                    #     log.error ('Run: output does not exist after command [%s]', ofnm)
+                    #     return None
 
         # make sure the write of the output file have finished
         if ofnm is not None and os.path.exists(ofnm):
@@ -224,7 +230,7 @@ class ConverterBase(object):
         return ofnm
 
     @classmethod
-    def convert(cls, ifnm, ofnm, fmt=None, series=0, extra=[]):
+    def convert(cls, ifnm, ofnm, fmt=None, series=0, extra=None):
         '''converts a file and returns output filename'''
         command = ['-input', ifnm]
         if ofnm is not None:
@@ -238,7 +244,7 @@ class ConverterBase(object):
 
     # overwrite with appropriate implementation
     @classmethod
-    def convertToOmeTiff(cls, ifnm, ofnm, series=0, extra=[]):
+    def convertToOmeTiff(cls, ifnm, ofnm, series=0, extra=None, **kw):
         '''converts input filename into output in OME-TIFF format'''
         return cls.run(ifnm, ofnm, ['-input', ifnm, '-output', ofnm, '-format', 'OmeTiff', '-series', '%s'%series] )
 

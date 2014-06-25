@@ -1,5 +1,6 @@
 from __future__ import print_function
 import sys
+import os
 import argparse
 import urlparse
 import requests
@@ -9,9 +10,14 @@ import contextlib
 CLEAN_URL = "/image_service/image/{resource_uniq}?cleancache"
 SERVICE_URL = "/image_service/image/{resource_uniq}?thumbnail"
 
-WLOG="httperf --rate=8 --hog  --wlog=Y,reqs.txt --num-conn=100 {options}"
-WSESS="httperf --rate=8 --hog  --wsesslog=10,1,reqs.txt --num-conn=100 {options}"
-
+if os.name != 'nt':
+    WLOG="httperf --rate=8 --hog --wlog=Y,reqs.txt --num-conn=100 {options}"
+    WSESS="httperf --rate=8 --hog --wsesslog=10,1,reqs.txt --num-conn=100 {options}"
+else:
+    # --hog would hang httperf on cygwin, removing it for windows
+    WLOG="httperf --rate=8 --wlog=Y,reqs.txt --num-conn=100 {options}"
+    WSESS="httperf --rate=8 --wsesslog=10,1,reqs.txt --num-conn=100 {options}"
+    
 PRE_SCRIPT="""
 import requests
 import subprocess
