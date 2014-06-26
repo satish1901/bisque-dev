@@ -210,6 +210,7 @@ class ProcessToken(object):
         self.histogram   = None
         self.is_file     = False
         self.series      = 0
+        self.timeout     = None
 
     def setData (self, data_buf, content_type):
         self.data = data_buf
@@ -693,7 +694,7 @@ class SliceService(object):
         if not os.path.exists(ofname):
             intermediate = self.server.getOutFileName( ifname, image_id, '.ome.tif' )
             for c in self.server.converters.itervalues():
-                r = c.slice(ifname, ofname, z=(z1,z2), t=(t1,t2), roi=(x1,x2,y1,y2), series=data_token.series, info=data_token.dims, fmt=default_format, intermediate=intermediate)
+                r = c.slice(ifname, ofname, z=(z1,z2), t=(t1,t2), roi=(x1,x2,y1,y2), series=data_token.series, token=data_token, fmt=default_format, intermediate=intermediate)
                 if r is not None:
                     break
             if r is None:
@@ -1086,7 +1087,7 @@ class Rearrange3DService(object):
 class ThumbnailService(object):
     '''Create and provide thumbnails for images:
        If no arguments are specified then uses: 128,128,BL
-       arg = [w,h][,method]
+       arg = [w,h][,method][,format]
        w - new width
        h - new height
        method - NN or BL, or BC (Nearest neighbor, Bilinear, Bicubic respectively)
@@ -1100,15 +1101,10 @@ class ThumbnailService(object):
 
     def dryrun(self, image_id, data_token, arg):
         ss = arg.split(',')
-        size = [128,128]
-        method = 'BC'
-
-        if len(ss)>0 and ss[0].isdigit():
-            size[0] = int(ss[0])
-        if len(ss)>1 and ss[1].isdigit():
-            size[1] = int(ss[1])
-        if len(ss)>2:
-            method = ss[2].upper()
+        size = [misc.safeint(ss[0], 128) if len(ss)>0 else 128, 
+                misc.safeint(ss[1], 128) if len(ss)>1 else 128]
+        method = ss[2].upper() if len(ss)>2 and len(ss[2])>0 else 'BC'
+        fmt = ss[3].lower() if len(ss)>3 and len(ss[3])>0 else 'jpeg'
 
         data_token.dims['image_num_p']  = 1
         data_token.dims['image_num_z']  = 1
@@ -1117,20 +1113,14 @@ class ThumbnailService(object):
 
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.thumb_%s,%s,%s.jpg'%(size[0],size[1],method) )
-        return data_token.setImage(ofile, fmt='jpeg')
+        return data_token.setImage(ofile, fmt=fmt)
 
     def action(self, image_id, data_token, arg):
-
         ss = arg.split(',')
-        size = [128,128]
-        method = 'BC'
-
-        if len(ss)>0 and ss[0].isdigit():
-            size[0] = int(ss[0])
-        if len(ss)>1 and ss[1].isdigit():
-            size[1] = int(ss[1])
-        if len(ss)>2:
-            method = ss[2].upper()
+        size = [misc.safeint(ss[0], 128) if len(ss)>0 else 128, 
+                misc.safeint(ss[1], 128) if len(ss)>1 else 128]
+        method = ss[2].upper() if len(ss)>2 and len(ss[2])>0 else 'BC'
+        fmt = ss[3].lower() if len(ss)>3 and len(ss[3])>0 else 'jpeg'
 
         if size[0]<=0 and size[1]<=0:
             abort(400, 'Thumbnail: size is unsupported [%s]'%arg)
@@ -1138,14 +1128,15 @@ class ThumbnailService(object):
         if method not in ['NN', 'BL', 'BC']:
             abort(400, 'Thumbnail: method is unsupported [%s]'%arg)
 
+        ext = self.server.converters.defaultExtension(fmt)
         ifile = self.server.getInFileName( data_token, image_id )
-        ofile = self.server.getOutFileName( ifile, image_id, '.thumb_%s,%s,%s.jpg'%(size[0],size[1],method) )
+        ofile = self.server.getOutFileName( ifile, image_id, '.thumb_%s,%s,%s.%s'%(size[0],size[1],method,ext) )
 
         if not os.path.exists(ofile):
             depth = data_token.dims.get('image_pixel_depth', 16)
             intermediate = self.server.getOutFileName( ifile, image_id, '.ome.tif' )
             for c in self.server.converters.itervalues():
-                r = c.thumbnail(ifile, ofile, size[0], size[1], series=data_token.series, method=method, depth=depth, intermediate=intermediate, info=data_token.dims)
+                r = c.thumbnail(ifile, ofile, size[0], size[1], series=data_token.series, method=method, depth=depth, intermediate=intermediate, token=data_token, fmt=fmt)
                 if r is not None:
                     break
             if r is None:
@@ -1163,7 +1154,7 @@ class ThumbnailService(object):
         finally:
             pass
 
-        return data_token.setImage(ofile, fmt='jpeg')
+        return data_token.setImage(ofile, fmt=fmt)
 
 class RoiService(object):
     '''Provides ROI for requested images
@@ -2660,6 +2651,7 @@ class ImageServer(object):
 
         # init the output to a simple file
         data_token = ProcessToken()
+        data_token.timeout = kw.get('timeout', None)
         if ident is not None:
 
             # pre-compute final filename and check if it exists before starting any other processing

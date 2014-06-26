@@ -227,6 +227,7 @@ class ConverterOpenSlide(ConverterBase):
     def thumbnail(cls, ifnm, ofnm, width, height, series=0, **kw):
         '''converts input filename into output thumbnail'''
         log.debug('Thumbnail: %s %s %s for [%s]', width, height, series, ifnm)
+        fmt = kw.get('fmt', 'jpeg').upper()
         with Locks (ifnm, ofnm) as l:
             if l.locked: # the file is not being currently written by another process
                 try:
@@ -237,11 +238,11 @@ class ConverterOpenSlide(ConverterBase):
                     return None
                 img = slide.get_thumbnail((width, height))
                 try:
-                    img.save(ofnm, 'JPEG')
+                    img.save(ofnm, fmt)
                 except IOError:
                     tmp = '%s.tif'%ofnm
                     img.save(tmp, 'TIFF')
-                    ConverterImgcnv.thumbnail(tmp, ofnm=ofnm, width=width, height=height)
+                    ConverterImgcnv.thumbnail(tmp, ofnm=ofnm, width=width, height=height, **kw)
                 slide.close()
                 misc.end_nounicode_win(tmp)
 

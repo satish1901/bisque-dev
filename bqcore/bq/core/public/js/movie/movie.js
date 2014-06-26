@@ -502,8 +502,10 @@ PlayerDisplay.prototype.init = function () {
 };
 
 PlayerDisplay.prototype.addCommand = function (command, pars) {
-    command.push ('remap=display');
-    if (!this.menu) return;
+    if (!this.menu) {
+        command.push ('remap=display');
+        return;
+    }
 
     command.push ('depth=8,' + this.combo_enhancement.getValue());
 

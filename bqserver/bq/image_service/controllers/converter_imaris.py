@@ -339,16 +339,30 @@ class ConverterImaris(ConverterBase):
     def convertToOmeTiff(cls, ifnm, ofnm, series=0, extra=None, **kw):
         '''converts input filename into output in OME-TIFF format'''
         log.debug('convertToOmeTiff: [%s] -> [%s] for series %s with [%s]', ifnm, ofnm, series, extra)
-        return cls.run(ifnm, ofnm, ['-i', ifnm, '-o', ofnm, '-of', 'OmeTiff', '-ii', '%s'%series], **kw )
+        command = ['-i', ifnm, '-o', ofnm, '-of', 'OmeTiff', '-ii', '%s'%series]
+        token = kw.get('token', None)
+        timeout = token.timeout if token is not None else None
+        if timeout is not None:
+            command.extend (['-timeout', '%s'%timeout])        
+        return cls.run(ifnm, ofnm, command, **kw )
 
     @classmethod
     def thumbnail(cls, ifnm, ofnm, width, height, series=0, **kw):
         '''converts input filename into output thumbnail'''
         log.debug('Thumbnail: %s %s %s for [%s]', width, height, series, ifnm)
-        command = ['-i', ifnm, '-t', ofnm, '-tf', 'jpeg', '-ii', '%s'%series]
+        fmt = kw.get('fmt', 'jpeg')
+        if fmt in cls.format_map:
+            fmt = cls.format_map[fmt]
+        command = ['-i', ifnm, '-t', ofnm, '-tf', fmt, '-ii', '%s'%series]
         command.extend (['-tl', '%s'%min(width, height)])
         #command.extend (['-ts', '%s,%s'%(width, height)])
         #command.extend (['-tb', '#FFFFFF']) # dima: thumbnails are all padded, ask for white right now, before the fix is final
+        
+        token = kw.get('token', None)
+        timeout = token.timeout if token is not None else None
+        if timeout is not None:
+            command.extend (['-timeout', '%s'%timeout])
+        
         return cls.run(ifnm, ofnm, command)
 
     @classmethod
@@ -358,11 +372,18 @@ class ConverterImaris(ConverterBase):
         z1,z2 = z
         t1,t2 = t
         x1,x2,y1,y2 = roi
-        ometiff = kw['intermediate']
+
+        ometiff = kw.get('intermediate', None)
+        token = kw.get('token', None)
+        #info = token.dims if token is not None else {}
+        timeout = token.timeout if token is not None else None
 
         if z1>z2 and z2==0 and t1>t2 and t2==0 and x1==0 and x2==0 and y1==0 and y2==0:
             # converting one slice z or t, does not support ome-tiff, tiff or jpeg produces an RGBA image
-            r = cls.run(ifnm, ofnm, ['-i', ifnm, '-o', ofnm, '-of', 'OmeTiff', '-ii', str(series), '-ic', '0,0,0,0,%s,%s,0,0,%s,%s'%(z1-1,z1,t1-1,t1)])
+            command = ['-i', ifnm, '-o', ofnm, '-of', 'OmeTiff', '-ii', str(series), '-ic', '0,0,0,0,%s,%s,0,0,%s,%s'%(z1-1,z1,t1-1,t1)]
+            if timeout is not None:
+                command.extend (['-timeout', '%s'%timeout])
+            r = cls.run(ifnm, ofnm, command)
             if r is None:
                 return None
             # imaris convert appends .tif extension to the file
@@ -374,7 +395,7 @@ class ConverterImaris(ConverterBase):
         else:
             # create an intermediate OME-TIFF
             if not os.path.exists(ometiff):
-                r = cls.convertToOmeTiff(ifnm, ometiff, series=series, nooverwrite=True)
+                r = cls.convertToOmeTiff(ifnm, ometiff, series=series, nooverwrite=True, token=token)
                 if r is None:
                     return None
             # extract slices

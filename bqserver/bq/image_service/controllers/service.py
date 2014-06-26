@@ -245,13 +245,15 @@ class image_serviceController(ServiceController):
         from bq.data_service.controllers.resource_query import RESOURCE_READ, RESOURCE_EDIT
         self.check_access(ident, RESOURCE_READ)
 
-
         # dima: patch for incorrect /auth requests for image service
         if path.find('/auth')>=0:
-            tg.response.headers['Content-Type']  = 'text/xml'
+            tg.response.headers['Content-Type'] = 'text/xml'
             return '<resource />'
 
-        data_token = self.srv.process(path, ident, **kw)
+        # extract requested timeout: BQ-Operation-Timeout: 30
+        timeout = request.headers.get('BQ-Operation-Timeout', None)
+
+        data_token = self.srv.process(path, ident, timeout=timeout, **kw)
         tg.response.headers['Content-Type']  = data_token.contentType
         #tg.response.content_type  = data_token.contentType
         #tg.response.headers['Cache-Control'] = ",".join ([data_token.cacheInfo, "public"])

@@ -15,6 +15,7 @@ __copyright__ = "Center for BioImage Informatics, University California, Santa B
 
 import os.path
 from subprocess import call
+from pylons.controllers.util import abort
 #from collections import OrderedDict
 from bq.util.compat import OrderedDict
 
@@ -205,7 +206,13 @@ class ConverterBase(object):
                     command, tmp = misc.start_nounicode_win(ifnm, command)
                     retcode = call (command)
                     misc.end_nounicode_win(tmp)
-                    if retcode != 0:
+                    if retcode == 99:
+                        # in case of a timeout
+                        log.info ('Run: timed-out for [%s]', command)
+                        if ofnm is not None and os.path.exists(ofnm):
+                            os.remove(ofnm)
+                        abort(412, 'Requested timeout reached')
+                    if retcode!=0:
                         log.warning ('Run: returned [%s] for [%s]', retcode, command)
                         return None
                     if ofnm is None:
@@ -261,7 +268,7 @@ class ConverterBase(object):
         #z1,z2 = z
         #t1,t2 = t
         #x1,x2,y1,y2 = roi
-        #info = kw['info']
+        #token = kw.get('token', None)
 
         return cls.run(ifnm, ofnm, ['-input', ifnm, '-output', ofnm, '-format', 'OmeTiff', '-series', '%s'%series, 'z', '%s'%z, 't', '%s'%t] )
 

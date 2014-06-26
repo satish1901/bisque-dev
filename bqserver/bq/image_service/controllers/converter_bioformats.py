@@ -424,7 +424,8 @@ class ConverterBioformats(ConverterBase):
         # dima: BF has a bug exporting only one channel when -z or -timepoint are requested
         # dima: will run plane extraction only if the image has 1 channel
         # dima: once fixed, remove test and perform plane extraction always
-        info = kw.get('info', None) or {}
+        token = kw.get('token', None)
+        info = token.dims if token is not None else {}
         num_channels = info.get('image_num_c', 1)
         if num_channels == 1:
             ometiff = kw['intermediate'].replace('.ome.tif', '.t0.z0.ome.tif')
@@ -465,7 +466,7 @@ class ConverterBioformats(ConverterBase):
 #             return ofnm
 
         # create an intermediate OME-TIFF
-        ometiff = kw['intermediate']
+        ometiff = kw.get('intermediate', None)
         if not os.path.exists(ometiff):
             r = cls.convertToOmeTiff(ifnm, ometiff, series=series, nooverwrite=True)
             if r is None:

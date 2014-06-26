@@ -239,8 +239,8 @@ class ConverterImgcnv(ConverterBase):
     def thumbnail(cls, ifnm, ofnm, width, height, series=0, **kw):
         '''converts input filename into output thumbnail'''
         log.debug('Thumbnail: %s %s %s for [%s]', width, height, series, ifnm)
-
-        command = ['-i', ifnm, '-o', ofnm, '-t', 'jpeg']
+        fmt = kw.get('fmt', 'jpeg')
+        command = ['-i', ifnm, '-o', ofnm, '-t', fmt]
         method = kw.get('method', 'BC')
         depth = kw.get('depth', 16)
         if depth == 8:
@@ -249,7 +249,8 @@ class ConverterImgcnv(ConverterBase):
             command.extend(thumbnail_cmd.split(' '))
 
         command.extend([ '-resize', '%s,%s,%s,AR'%(width,height,method)])
-        command.extend([ '-options', 'quality 95 progressive yes'])
+        if fmt == 'jpeg':
+            command.extend([ '-options', 'quality 95 progressive yes'])
 
         return cls.run(ifnm, ofnm, command )
 
@@ -260,8 +261,9 @@ class ConverterImgcnv(ConverterBase):
         z1,z2 = z
         t1,t2 = t
         x1,x2,y1,y2 = roi
-        info = kw['info']
         fmt = kw.get('fmt', 'bigtiff')
+        token = kw.get('token', None)
+        info = token.info if token is not None else None
 
         command = ['-i', ifnm, '-o', ofnm, '-t', fmt]
 
