@@ -456,7 +456,7 @@ class MetaService(object):
         infoname = self.server.getOutFileName( ifile, image_id, '.info' )
         metacache = self.server.getOutFileName( ifile, image_id, '.meta' )
 
-        if not os.path.exists(metacache):
+        if not os.path.exists(metacache) or os.path.getsize(metacache)<16:
             meta = {}
             if os.path.exists(ifile):
                 for c in self.server.converters.itervalues():
@@ -2528,7 +2528,7 @@ class ImageServer(object):
         infofile = self.getOutFileName( filename, ident, '.info' )
 
         info = {}
-        if os.path.exists(infofile):
+        if os.path.exists(infofile) and os.path.getsize(infofile)>16:
             info = self.getFileInfo(id=ident, filename=filename)
         else:
             if not os.path.exists(filename):
@@ -2575,11 +2575,11 @@ class ImageServer(object):
         for n,c in self.converters.iteritems():
             if n=='imgcnv':
                 continue
-            if not os.path.exists(ometiff):
+            if not os.path.exists(ometiff) or os.path.getsize(ometiff)<16:
                 r = c.convertToOmeTiff(ifnm, ometiff, series)
             else:
                 r = ometiff
-            if r is not None and os.path.exists(ometiff):
+            if r is not None and os.path.exists(ometiff) and os.path.getsize(ometiff)>16:
                 return self.converters['imgcnv'].convert( ometiff, ofnm, fmt=fmt, series=0, extra=extra)
 
     def setImageInfo(self, id=None, data_token=None, info=None, filename=None):
