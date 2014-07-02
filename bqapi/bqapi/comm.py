@@ -194,10 +194,6 @@ class BQSession(object):
                 mextoken = self.mex.resource_uniq
                 self.c.authenticate_mex("%s:%s" % (user, mextoken), bisque_root)
 
-            if self.mex :
-                mextoken = self.mex.resource_uniq
-                self.c.authenticate_mex("%s:%s" % (user, mextoken), bisque_root)
-
         return self
 
     def init_mex(self, mex_url, auth_token, bisque_root= None):
