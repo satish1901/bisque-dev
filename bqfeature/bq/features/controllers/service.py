@@ -273,29 +273,24 @@ def parse_request(feature_request_uri, feature_name, format_name='xml', method='
     if method=='POST' and 1>request.headers['Content-type'].count('xml/text'):
         if not request.body:
             raise FeatureServiceError( 400, 'Document Error: No body attached to the POST')
-        try:  # parse the resquest
-            log.debug('request :%s' % request.body)
-            body = etree.fromstring( request.body)
-            if body.tag!='dataset':
-                raise FeatureServiceError( 400, 'Document Error: Only excepts datasets')
+        #try:  # parse the resquest
+        log.debug('request :%s' % request.body)
+        body = etree.fromstring( request.body)
+        if body.tag!='resource':
+            raise FeatureServiceError( 400, 'Document Error: Only excepts datasets')
 
-            # iterating through elements in the dataset parsing and adding to ElementList
-            for value in body.xpath('value[@type="query"]'):
-                query = value.text
-                query = query.decode("utf8")
-                log.debug('query: %s' % query)
-                query = query.split('&')
-                element = {}
-                
-                for q in query:
-                    q = q.split('=')
-                    element[q[0]] = q[1].replace('"', '')
+        # iterating through elements in the dataset parsing and adding to ElementList
+        for feature_node in body.xpath('feature'):
+            element = {}
+            for resource in feature_node.attrib.keys():
+                if resource!='type': #type is not required and if the type is the wrong feature, nothing is done
+                    element[resource] = feature_node.attrib[resource]
 
-                log.debug('Resource: %s' % element)
-                resource_list.append(element)
-        except:
-            log.exception('Request Error: Xml document is malformed')
-            raise FeatureServiceError(400, 'Xml document is malformed')
+            log.debug('Resource: %s' % element)
+            resource_list.append(element)
+#        except:
+#            log.exception('Request Error: Xml document is malformed')
+#            raise FeatureServiceError(400, 'Xml document is malformed')
 
     elif method == 'GET':
         kw = resource_list.append(kw) #kw is a dictionary where the keys are the input types and the values are the uris
@@ -471,8 +466,7 @@ class Xml(Format):
         #element = etree.Element('resource', uri=str(self.feature_request_uri))
         #element = etree.Element('resource')
         nodes = 0
-        xml_doc = '<resource uri = "%s">'%str(self.feature_request_uri.replace('&','&amp;'))
-        yield xml_doc
+        yield '<resource uri = "%s">'%str(self.feature_request_uri.replace('&','&amp;'))
         
         query_queue = resource_list.get_query_queue()
         for query in table.get(query_queue):
@@ -481,43 +475,40 @@ class Xml(Format):
                     resource = resource_list.get(hash)[1]
     
                     for r in rows:
-                        subelement = etree.Element( 'feature' , resource , type=str(self.feature.name))
+                        subelement = etree.Element( 'feature', resource, type=str(self.feature.name))
     
                         if self.feature.parameter:
-                            parameters = {}
+
                             # creates list of parameters to append to the xml
                             for parameter_name in self.feature.parameter:
-                                parameters[parameter_name] = str(r[parameter_name])
-                            etree.SubElement(subelement, 'parameters', parameters)
+                                etree.SubElement(subelement, 'tag', name=parameter_name, value=str(r[parameter_name]))
     
-                        value = etree.SubElement(subelement, 'value')
-                        value.text = " ".join('%g' % item for item in r['feature'])  # writes the feature vector to the xml
+                        value = etree.SubElement(subelement, 'tag', name= 'feature', value= ",".join('%g' % item for item in r['feature']))
+                        #value.text = ",".join('%g' % item for item in r['feature'])  # writes the feature vector to the xml
                         nodes += 1
-    
-                        xml_doc = etree.tostring(subelement)
-                        yield xml_doc
+
+                        yield etree.tostring(subelement)
     
                 else:  # no feature was found from the query, adds an error message to the xml
                     subelement = etree.Element(
-                                                      'feature' ,
+                                                      'feature_error' ,
                                                       resource,
-                                                      error_code = '404',
                                                       type=str(self.feature.name),
-                                                      error='404 Not Found: The feature was not found in the table. Check feature logs for traceback'
                                                )
-                    xml_doc = etree.tostring(subelement)
-                    yield xml_doc                
+                    etree.SubElement('tag', subelement, name='code', value='404')
+                    etree.SubElement('tag', subelement, name='message', value='404 Not Found: The feature was not found in the table.')
+                    yield etree.tostring(subelement)                
                 
                 
         #read through errors
         for i, error in enumerate(resource_list.error_list):
             subelement = etree.Element(
-                                              'feature_error' ,
+                                              'feature_error',
                                               error.resource,
-                                              error_code = str(error.code),
                                               type=str(self.feature.name),
-                                              error=error.message
                                           )
+            etree.SubElement('tag', subelement, name='code', value=str(error.code))
+            etree.SubElement('tag', subelement, name='message', value=error.message)
             xml_doc = etree.tostring(subelement)
             yield xml_doc
         xml_doc = '</resource>'
@@ -531,8 +522,6 @@ class Xml(Format):
         
         yield '<resource uri = "%s">'%str(self.feature_request_uri.replace('&','&amp;'))
         
-        
-        
         with Locks(filename):
             log.debug('Reading from table path: %s'%filename)
             with tables.openFile(filename, 'r') as h5file:
@@ -545,31 +534,25 @@ class Xml(Format):
                     for res in self.feature.resource:
                         resource[res] = r[res]
     
-                    subelement = etree.Element( 'feature' , resource, type=str(self.feature.name))
+                    subelement = etree.Element( 'feature', resource, type=str(self.feature.name))
     
                     if self.feature.parameter:
-                        parameters = {}
     
-                        # creates list of parameters to append to the xml node
+                        # creates list of parameters to append to the xml
                         for parameter_name in self.feature.parameter:
-                            parameters[parameter_name] = str(r[parameter_name])
-                        etree.SubElement(subelement, 'parameters', parameters)
+                            etree.SubElement(subelement, 'tag', name=parameter_name, value=str(r[parameter_name]))
     
-                    value = etree.SubElement(subelement, 'value')
-                    value.text = " ".join('%g' % item for item in r['feature'])  # writes the feature vector to the xml
+                    value = etree.SubElement(subelement, 'tag', name= 'feature', value= ",".join('%g' % item for item in r['feature']))
+                    #value.text = ",".join('%g' % item for item in r['feature'])  # writes the feature vector to the xml
                     
                     yield etree.tostring(subelement)
 
 
         for i, error in enumerate(resource_list.error_list):
-            subelement = etree.Element(
-                                              'feature_error' ,
-                                              error.resource,
-                                              error_code = str(error.code),
-                                              type=str(self.feature.name),
-                                              error=error.message
-            )
-            yield etree.tostring(subelement)
+            subelement = etree.Element( 'feature_error', resource , type=str(self.feature.name))
+            etree.SubElement('tag', subelement, name='code', value='404')
+            etree.SubElement('tag', subelement, name='message', value='404 Not Found: The feature was not found in the table.')
+            yield etree.tostring(subelement) 
 
         yield '</resource>'
 
@@ -604,15 +587,15 @@ class Csv(Format):
         return header
 
     def return_from_tables(self, table, resource_list, **kw):
-        """Drafts the csv output"""
-        # # plan to impliment for query and include parameters
-
+        """
+            Drafts the csv output
+        """
         resource_names = self.feature.resource
         parameter_names = self.feature.parameter
 
         # creates a title row and writes it to the document
-        titles = ",".join(['index', 'feature type'] + resource_names + ['descriptor'] + parameter_names + ['response code','error message'])
-        yield titles+'\n'
+        #titles = ",".join(['index', 'feature type'] + resource_names + ['feature'] + parameter_names + ['response code','error message'])
+        yield ",".join(['index', 'feature type'] + resource_names + ['feature'] + parameter_names + ['response code','error message'])
 
         idx = 0
         query_queue = resource_list.get_query_queue()
@@ -623,35 +606,30 @@ class Csv(Format):
 
                     for r in rows:
                         value_string = ",".join('%g' % i for i in r['feature'])  # parses the table output and returns a string of the vector separated by commas
-                        resource_uri = [resource[rn] for rn in resource_names]
-                        parameter = []
+                        resource_uri_string = ",".join([resource[rn] for rn in resource_names])
                         parameter = ['%g'%r[pn] for pn in parameter_names]
-                        line = ",".join([str(idx), self.feature.name] + resource_uri + ['"'+value_string+'"'] + parameter + ['200','none'])
-                        yield line+'\n'
+                        yield "%s%s"%(",".join([str(idx), self.feature.name] + resource_uri + ['"%s"'%value_string] + parameter + ['200','none']),os.linesep)
                         idx += 1
     
                 else:  # if nothing is return from the tables enter Nan into each vector element
                     value_string = ",".join(['Nan' for i in range(self.feature.length)])
                     resource_uri = [resource[rn] for rn in resource_names]
-                    parameter = []
                     parameter = ['Nan' for pn in parameter_names]
-                    line = ",".join([str(idx), self.feature.name] + resource_uri + ['"'+value_string+'"']  +  parameter + ['404','The feature was not found in the table. Check feature logs for traceback'])# appends all the row elements
-                    yield line+'\n'
+                    #line = ",".join([str(idx), self.feature.name] + resource_uri + ['"'+value_string+'"']  +  parameter + ['404','The feature was not found in the table.'])# appends all the row elements
+                    yield "%s%s"%(",".join([str(idx), self.feature.name] + resource_uri + ['"'+value_string+'"']  +  parameter + ['404','The feature was not found in the table.']),os.linesep)
                     idx += 1
-                
                      
         for i, error in enumerate(resource_list.error_list):
             value_string = ",".join(['Nan' for i in range(self.feature.length)])
             resource_uri = [error.resource[rn] for rn in resource_names]
-            parameter = []
             parameter = ['Nan' for pn in parameter_names]
-            line = ",",join([str(idx), self.feature.name] + resource_uri + [value_string]  +  parameter + [error.code,error.message])# appends all the row elements      
-            yield line+'\n'
+            line = ",".join([str(idx), self.feature.name] + resource_uri + [value_string]  +  parameter + [error.code,error.message])# appends all the row elements      
+            yield "%s%s"%(",".join([str(idx), self.feature.name] + resource_uri + [value_string]  +  parameter + [error.code,error.message]),os.linesep)
             idx += 1    
 
     def return_from_workdir(self, table, resource_list, **kw):
         """
-            returns csv for features without cache
+            returns csv from workdir
         """
         filename = resource_list.workdir_filename()
         resource_names = self.feature.resource
@@ -659,7 +637,7 @@ class Csv(Format):
 
         # creates a title row and writes it to the document
         titles = ",".join(['index', 'feature type'] + resource_names + ['descriptor'] + parameter_names + ['response code','error message'])
-        yield titles+'\n'
+        yield titles+os.linesep
 
         with Locks(filename):
             log.debug('Reading from table path: %s'%filename)
@@ -675,8 +653,8 @@ class Csv(Format):
                     value_string = ",".join('%g' % i for i in r['feature'])  # parses the table output and returns a string of the vector separated by commas
                     resource_uri = [resource[rn] for rn in resource_names]
                     parameter = [r[pn] for pn in parameter_names]
-                    line = ",".join([str(idx), self.feature.name] + resource_uri + ['"'+value_string+'"'] + parameter + ['200','none']) # appends all the row elements
-                    yield line+'\n' # writes line to the document            
+                    #line = ",".join([str(idx), self.feature.name] + resource_uri + ['"'+value_string+'"'] + parameter + ['200','none']) # appends all the row elements
+                    yield "%s%s"%(",".join([str(idx), self.feature.name] + resource_uri + ['"%s"'%value_string] + parameter + ['200','none']),os.linesep)           
 
 
         for i, error in enumerate(resource_list.error_list):
@@ -684,8 +662,8 @@ class Csv(Format):
             resource_uri = [error.resource[rn] for rn in resource_names]
             parameter = []
             parameter = ['Nan' for pn in parameter_names]
-            line = ",",join([str(idx), self.feature.name] + resource_uri + ['"'+value_string+'"']  +  parameter + [error.code,error.message])# appends all the row elements
-            yield line+'\n'  # write line to the document        
+            #line = ",",join([str(idx), self.feature.name] + resource_uri + ['"'+value_string+'"']  +  parameter + [error.code,error.message])# appends all the row elements
+            yield "%s%s"%(",".join([str(idx), self.feature.name] + resource_uri + [value_string]  +  parameter + [error.code,error.message]),os.linesep)     
             idx+=1
 
 
@@ -969,6 +947,14 @@ class FeatureDoc():
 
         resource = etree.Element('resource', uri=str(request.url))
         feature = etree.SubElement(resource, 'feature', name=str(feature_module.name))
+#        require_resource_list = etree.SubElement(feature, 'tag', name='resquired_resource_list')
+#        for key, value in feature_module.resource.iteritems():
+#            attrib = {
+#                      'name' : 'required_resource',
+#                      'value': key,
+#                      'type' : value,
+#                      }
+        
         for key, value in xml_attributes.iteritems():
             attrib = {
                       'name':key,
