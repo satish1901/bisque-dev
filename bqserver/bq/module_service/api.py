@@ -50,8 +50,8 @@ DESCRIPTION
 ===========
   module service
 """
-import os
-import pkg_resources
+#import os
+#import pkg_resources
 from bq.core.service import service_registry
 from bq.exceptions import RequestError
 
@@ -72,8 +72,6 @@ def register_engine(body, server = None ):
         return server.register_engine (body = body)
     raise RequestError ("no server available")
 
-
-
 def begin_internal_mex(**kw):
     """Begin an internal mex for tracking changes from users"""
     server = service_registry.find_service ('module_service')
@@ -83,33 +81,20 @@ def end_internal_mex(mexid):
     server = service_registry.find_service ('module_service')
     return server.end_internal_mex(mexid)
 
-def execute(module_uri, **kw):
-    """Execute the module specified(create a mex request)
-       Use the passed arguments to create the mex i.e.
-       execute('/module/10', image_url='/ds/image/1', threshhold='90')
-       <mex module_uri='/module/10'>
-         <tag name='image_url' value='/ds/image/1' >
-         ...
-       </mex>
-    """
-    server = _preferred
-    return server.execute(module_uri, **kw)
-    
-
 def begin_execute (mex_request, server = None):
-    if server is None: server = service_registry.find_service ('module_service')
+    server = server or service_registry.find_service ('module_service')
     return server.begin_execute (mex_request)
 
 def end_execute (mex_request, server = None):
-    if server is None: server = service_registry.find_service ('module_service')
+    server = server or service_registry.find_service ('module_service')
     return server.end_execute (mex_request)
-    
+
 def heartbeat(hbdoc, server = None):
-    if server is None: server = service_registry.find_service ('module_service')
+    server = server or service_registry.find_service ('module_service')
     return server.heartbeat(hbdoc)
 
 def engines(server = None):
-    if server is None: server = service_registry.find_service ('module_service')
+    server = server or service_registry.find_service ('module_service')
     return server.engine.dir()
 
 

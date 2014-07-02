@@ -524,11 +524,11 @@ class stores(object):
 
 
 class password(object):
-    desc = 'Password utilities'
+    desc = 'Password utilities for manipulating passwords'
 
     def __init__(self, version):
         parser = optparse.OptionParser(
-                    usage="%prog sql <sql>",
+                    usage="%prog password [convert: freetext to hashed][list: users and password][set: username password] ",
                     version="%prog " + version)
         parser.add_option('-c','--config', default="config/site.cfg")
         parser.add_option('-f','--force', action="store_true", default=False)
@@ -536,19 +536,20 @@ class password(object):
 
         if len(args) > 0:
             self.command = args.pop(0)
+        else:
+            parser.error("Need at least one command")
 
         self.args = args
         self.options = options
         if self.command not in ('convert', 'set', 'list'):
-            parser.print_help()
-            return
+            parser.error("illegal command")
 
     def run(self):
         import transaction
         load_config(self.options.config)
 
         from tg import config
-        print config.get ('bisque.login.password', 'freetext')
+        print "password mechanism:", config.get ('bisque.login.password', 'freetext')
 
 
         if self.command == 'set':
