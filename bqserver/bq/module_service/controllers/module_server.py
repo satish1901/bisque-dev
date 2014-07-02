@@ -53,7 +53,7 @@ DESCRIPTION
    known as MEX.
 
    Clients can request an execution of a particular module by
-   preparing a MEX document (see XXX) and POST it the module server.
+   preparing a MEX document (see http://biodev.ece.ucsb.edu/projects/bisquik/wiki/Developer/ModuleSystem/MexRequestSpecification) and POST it the module server.
    The module server finds an appropiate engine (i.e. a node that can
    actually execute the module), registers the MEX and launches it on
    the engine.  It then return the mex uri so that the client can
@@ -75,45 +75,36 @@ import socket
 import copy
 import time
 import logging
-import thread
-import threading
 import transaction
 import tg
 import urlparse
 
 from lxml import etree
-from datetime import datetime, timedelta
+from datetime import datetime
 from paste.proxy import make_proxy
-from paste.util.multidict import MultiDict
 from pylons.controllers.util import abort
 from tg import controllers, expose, config, override_template
 from tg import require
-from repoze.what import predicates
+# pylint: disable=E0611,F0401
 from repoze.what.predicates import not_anonymous
 #from tgext.asyncjob import asyncjob_perform, asyncjob_timed_query
 
 
-
 from bq import data_service
 from bq.util import http
-from bq.util.xmldict import d2xml, xml2d
+from bq.util.xmldict import d2xml
 from bq.util.thread_pool import WorkRequest, NoResultsPending
+from bq.util.bisquik2db import bisquik2db, load_uri
 from bq.core.identity import  set_admin_mode, set_current_user, get_username
-from bq.core.permission import *
-from bq.exceptions import RequestError
-
-log = logging.getLogger('bq.module_server')
-
+#from bq.core.permission import *
 from bq.core.service import ServiceController
-from bq.module_service import model
-
 from bq.core.model import DBSession
 
 from bq.data_service.controllers.resource import Resource
-from bq.data_service.controllers.bisquik_resource import BisquikResource
 from bq.data_service import resource_controller
-from bq.data_service.model import Service, Module, Tag, ModuleExecution
-from bq.util.bisquik2db import bisquik2db, db2tree, load_uri
+from bq.data_service.model import  ModuleExecution
+
+log = logging.getLogger('bq.module_server')
 
 
 
@@ -121,17 +112,17 @@ class MexDelegate (Resource):
     def __init__(self,  url, runner = None):
         super(MexDelegate, self).__init__(uri = url)
         self.runner = runner
-        log.info ("mexdelegate %s" % self.url)
+        log.info ("mexdelegate %s" , self.url)
 
     def remap_uri (self, mex):
         uri = mex.get('uri')
         if uri:
             mexid = uri.rsplit('/',1)[1]
-            log.debug ('remap -> %s' % self.url)
+            log.debug ('remap -> %s' , self.url)
             mex.set ('uri', "%s%s" % (self.url, mexid))
 
     def load(self, token):
-        log.debug ("load of %s " % tg.request.url)
+        log.debug ("load of %s " , tg.request.url)
         return load_uri(tg.request.url)
 
     def create(self, **kw):
@@ -139,21 +130,20 @@ class MexDelegate (Resource):
 
     @expose(content_type='text/xml')
     def dir(self, **kw):
-        data_service.query
-        parent = self.parent
-        log.info ('DIR %s ' % parent)
+        parent = getattr(self, 'parent',None)
+        log.info ('MEX DIR %s ' , parent)
         return ""
 
 
     @expose()
     @require(not_anonymous())
     def new(self, factory, xml, **kw):
+        log.info ("MEX NEW")
         mex = etree.XML (xml)
         if mex.tag == "request":
             mex = mex[0]
         mex = self.create_mex(mex)
         response = etree.tostring(mex)
-        #log.debug ("return MEX=%s" % response)
         tg.response.headers['Content-Type'] = 'text/xml'
         return response
 
@@ -166,7 +156,7 @@ class MexDelegate (Resource):
                          value=time.strftime("%Y-%m-%d %H:%M:%S",
                                              time.localtime()))
 
-        log.info ("MexDelegate %s" % etree.tostring (mex))
+        log.debug ("MexDelegate %s" , etree.tostring (mex))
         #kw.pop('view', None)
         #response =  self.delegate.new (factory, mex, view='deep',**kw)
         mex = data_service.new_resource (mex, view='deep')
@@ -183,7 +173,7 @@ class MexDelegate (Resource):
         Modify the mex in place.  Use to update status
         """
         #return self.delegate.modify (resource, xml, **kw)
-        log.debug('MEX MODIFY')
+        log.info('MEX MODIFY')
         mex = etree.XML (xml)
         mex = check_mex(mex)
         mex = data_service.update(mex, view=view)
@@ -197,7 +187,6 @@ class MexDelegate (Resource):
         fetches the resource, and returns a representation of the resource.
         """
         mex = data_service.get_resource(resource, view=view)
-        #log.debug ("dataservice fetch -> %s" % etree.tostring(mex))
         self.remap_uri (mex)
         tg.response.headers['Content-Type'] = 'text/xml'
         return etree.tostring (mex)
@@ -208,7 +197,7 @@ class MexDelegate (Resource):
         """
         Append a value to the mex
         """
-        log.debug('MEX APPEND')
+        log.info('MEX APPEND')
         mex = etree.XML(xml)
         mex = check_mex(mex)
         mex = data_service.update(mex, view=view)
@@ -223,6 +212,7 @@ class MexDelegate (Resource):
         """
         Delete the resource from the database
         """
+        log.info('MEX DELETE')
         raise abort(501)
 
 
@@ -243,26 +233,26 @@ def create_mex(module, name, mex = None, **kw):
         real_params = dict(kw)
         mex = etree.Element('mex',
                             name = module.get('name'),
-                            value = 'PENDING', type = module_url)
+                            value = 'PENDING', type = module.get('uri'))
         inputs = etree.SubElement(mex, 'tag', name='inputs')
         #mex_inputs = etree.SubElement(mex, 'tag', name='inputs')
         for mi in formal_inputs:
             param_name = mi.get('name')
-            log.debug ('param check %s' % param_name)
+            log.debug ('param check %s' , param_name)
             if param_name in real_params:
                 param_val = real_params.pop(param_name)
                 #etree.SubElement(mex_inputs, 'tag',
                 etree.SubElement(inputs, 'tag',
                                  name = param_name,
                                  value= param_val)
-                log.debug ('param found %s=%s' % (param_name, param_val))
+                log.debug ('param found %s=%s' , param_name, param_val)
         return mex
     # Process Mex
     mex.set('name', name)
     mex.set('value', 'DISPATCH')
     mex.set('type', module.get('uri'))
 
-    log.debug('mex original %s' % etree.tostring(mex))
+    log.debug('mex original %s' , etree.tostring(mex))
     # Check that we might have an iterable resource in mex/tag[name='inputs']
     #
     # <moudule> <tag name="execute_options">
@@ -283,19 +273,19 @@ def create_mex(module, name, mex = None, **kw):
             if itr[0].get('name') == 'xpath':
                 resource_xpath = itr[0].get('value')
         iters.setdefault(resource_tag, {})[resource_type] =  resource_xpath
-    log.debug ('iterables in module %s' % iters)
+    log.debug ('iterables in module %s' , iters)
 
     # Find an iterable tags (that match name and type) in the mex inputs, add them mex_tags
     mex_inputs = mex.xpath('./tag[@name="inputs"]')[0]
     mex_tags = {}   # iterable_input name :  [ mex_xml_node1, mex_xml2 ]
     for iter_tag, iter_d in iters.items():
         for iter_type in iter_d.keys():
-            log.debug ("checking name=%s type=%s" % (iter_tag, iter_type))
+            log.debug ("checking name=%s type=%s" , iter_tag, iter_type)
             resource_tag = mex_inputs.xpath('./tag[@name="%s" and @type="%s"]' % (iter_tag, iter_type))
             if len(resource_tag):
                 # Hmm assert len(resource_tag) == 1
                 mex_tags[iter_tag] = resource_tag[0]
-    log.debug ('iterable tags found in mex %s' % mex_tags)
+    log.debug ('iterable tags found in mex %s' , mex_tags)
 
     # for each iterable found in the mex inputs, check the resource type
     for iter_tag, iterable in mex_tags.items():
@@ -308,7 +298,7 @@ def create_mex(module, name, mex = None, **kw):
         if not (resource_type == resource.tag or resource_type == resource.get('type')):
             continue
         members = resource.xpath(resource_xpath)
-        log.debug ('iterated xpath %s members %s' % (resource_xpath, members))
+        log.debug ('iterated xpath %s members %s' , resource_xpath, members)
         for value in members:
             # Create SubMex section with original parameters replaced with iterated members
             subinputs = copy.deepcopy(mex_inputs)
@@ -318,7 +308,7 @@ def create_mex(module, name, mex = None, **kw):
             submex = etree.Element('mex', name=name, type=module.get ('uri'))
             submex.append(subinputs)
             mex.append(submex)
-    log.info('mex rewritten-> %s' % etree.tostring(mex))
+    log.debug('mex rewritten-> %s' , etree.tostring(mex))
     return mex
 
 
@@ -334,29 +324,30 @@ def check_mex(mex):
 
 
 
-from tg import config, session, request
+from tg import  session, request
 from paste.registry import Registry
 from beaker.session import Session, SessionObject
 from pylons.controllers.util import Request
 
+# pylint: disable=W0102
 def async_dbaction (func, args=[], params={}):
-    log.debug ('ASYNCH_DB %s %s %s' % (func, args, params))
+    log.debug ('ASYNCH_DB %s %s %s' , str(func), str(args), str(params))
     transaction.begin()
     try:
         log.debug ('ASYNCH_DB: BEGIN')
         func(*args, **params)
         transaction.commit()
-    except Exception, e:
-        log.exception ('ASYNCH_DB %s %s %s' % (func, args, params))
+    except Exception:
+        log.exception ('ASYNCH_DB %s %s %s' , str(func), str(args), str(params))
         transaction.abort()
     config.DBSession.remove()
 
 def NO_action(module, mex, username):
-    log.debug ('NO_ACTION %s %s %s' % (module, mex, username))
+    log.debug ('NO_ACTION %s %s %s' , module, mex, username)
 
 
 def wait_for_query (query, retries = 10, interval = 1):
-    log.debug ("WAIT query %s" % query)
+    log.debug ("WAIT query %s" , str(query))
     counter = retries
     time.sleep(1)
     found = query.first()
@@ -372,6 +363,8 @@ def POST_mex (service_uri, mex, username):
     mex_uniq = mex.get('resource_uniq')
 
     log.debug ("MEX Dispatch : waiting for mex")
+    #Instance of 'scoped_session' has no 'query' member
+    # pylint: disable=E1101
     mexq = wait_for_query (DBSession.query(ModuleExecution).filter_by (resource_uniq =  mex_uniq)).first()
     if mexq is None:
         log.error('Mex not in DB: abondoning dispatch')
@@ -379,7 +372,7 @@ def POST_mex (service_uri, mex, username):
         return
 
     mex_token = "%(user)s:%(uniq)s" % dict(user=username, uniq=mex_uniq)
-    log.info("DISPATCH: POST %s  with %s for %s" % (service_uri,  mex_token, mex_url ))
+    log.info("DISPATCH: POST %s  with %s for %s" , service_uri,  mex_token, mex_url )
 
     body = etree.tostring(mex)
     try:
@@ -390,9 +383,11 @@ def POST_mex (service_uri, mex, username):
     except socket.error:
         resp = {'status':'503', }
         content = ""
-    log.debug ("DISPATCH: RESULT %s->%s %s" % (service_uri, resp['status'], content))
+    status = resp.get('status')
+    log.info ("DISPATCH: RESULT %s (%s) ->%s", service_uri, mex_url, status)
+    log.debug("DISPATCH: RESULT %s", content)
 
-    if resp.status != 200:
+    if status != 200:
         POST_error(mex_url, username, resp, content)
 
 
@@ -406,7 +401,7 @@ def POST_error (mex_url, username, resp, content):
         if mextree.tag != "mex":
             mextree = None
     except etree.ParseError:
-        log.warn("Bad Mex Content %s" % content)
+        log.warn("Bad Mex Content %s" , content)
 
     if mextree is None:
         mextree = etree.Element ('mex', uri=mex_url)
@@ -417,9 +412,8 @@ def POST_error (mex_url, username, resp, content):
                                          time.localtime()))
     etree.SubElement (mextree, 'tag',
                       name="error_message",
-                      value="Problem in dispatch:%s:%s" % (resp['status'], getattr(resp,'reason','Unavailable'))
-                      )
-    log.debug ("MexError: %s " % etree.tostring(mextree))
+                      value="Problem in dispatch:%s:%s" % (resp['status'], getattr(resp,'reason','Unavailable')))
+    log.debug ("MexError: %s " , etree.tostring(mextree))
     # Need to setup current user who is running mex/
     registry = Registry()
     registry.prepare()
@@ -430,7 +424,7 @@ def POST_error (mex_url, username, resp, content):
     bisquik2db(mextree)
 
 def POST_over (request, result):
-    log.debug ('CLEANING workers %s -> %s' % (request, result))
+    log.debug ('CLEANING workers %s -> %s', str(request), str(result))
     if request.exception:
         log.error ('An exception occured in %s' % request)
 
@@ -454,11 +448,11 @@ class ServiceDelegate(controllers.WSGIAppController):
     #@require(not_anonymous(msg='You need to log-in to run a module'))
     @expose()
     def _default (self, *args, **kw):
-        log.info ("Service proxy request %s" % ('/'.join(args)) )
+        log.info ("PROXY request %s" , '/'.join(args))
         try:
             html = super(ServiceDelegate, self)._default(*args, **kw)
-        except socket.error, e:
-            log.error('service %s at %s is not available' % (self.name, self.service_url))
+        except socket.error:
+            log.exception('service %s at %s is not available' , self.name, self.service_url)
             override_template(self._default, "genshi:bq.core.templates.master")
             abort(503, 'The service provider for %s at %s is unavailable' % (self.name, self.service_url))
         #log.info("Service proxy return status %s body %s" % (tg.response.status_int, html))
@@ -470,7 +464,7 @@ class ServiceDelegate(controllers.WSGIAppController):
     @require(not_anonymous(msg='You need to log-in to run a module'))
     @expose(content_type='text/xml')
     def execute(self, **kw):
-        log.debug ('EXECUTE %s with %s' % (self.module, kw))
+        log.info ('EXECUTE %s with %s' , str(self.module), str(kw))
         mex = (tg.request.method.lower() in ('put', 'post') and read_xml_body()) or None
         mex = create_mex(self.module, self.name, mex=mex, **kw)
         etree.SubElement(mex, 'tag',
@@ -479,12 +473,12 @@ class ServiceDelegate(controllers.WSGIAppController):
                                              time.localtime()))
         mex = data_service.new_resource (mex, view='deep')
         self.remap_uri(mex)
-        log.debug ("SCHEDULING_MEX %s %s" % (self.module.get ('uri'), mex.get ('uri')))
+        log.debug ("SCHEDULING_MEX %s %s", self.module.get ('uri'), mex.get ('uri'))
         req = WorkRequest (async_dbaction, [ POST_mex, [ self.service_url, mex, get_username() ]],
                            callback = POST_over, exc_callback = POST_over)
         req = tg.app_globals.pool.putRequest(req)
         #req = tg.app_globals.pool.putRequest(WorkRequest (POST_mex, [self.module, mex, get_username() ]))
-        log.debug ("Scheduled %s exception(%s) " % (req, req.exception))
+        log.debug ("Scheduled %s exception(%s)" , str(req), str(req.exception))
         #req = tg.app_globals.pool.wait_for(req)
 
         return etree.tostring (mex)
@@ -537,14 +531,14 @@ class ModuleServer(ServiceController):
         services = data_service.query('service')
         service_list = {}
         for service in services:
-            log.debug ("FOUND SERVICE: %s" % etree.tostring(service))
+            log.debug ("FOUND SERVICE: %s" , etree.tostring(service))
             engine = service.get('value')
             module = service.get('type')
             name = service.get('name')
             service = ServiceDelegate(name, engine, module, self.mex.url)
             service_list[name] = service
             #setattr(self.__class__, name , )
-            log.info ("SERVICE PROXY %s -> %s " % (name, engine))
+            log.info ("SERVICE PROXY %s -> %s " , name, engine)
 
         return service_list
         #self.runner.start()
@@ -559,10 +553,10 @@ class ModuleServer(ServiceController):
             modules = data_service.query('module', wpublic='1', view='deep')
         service_list = {}
         for module in modules:
-            log.debug ("FOUND module: %s" % (module.get('uri')))
+            log.debug ("FOUND module: %s" , (module.get('uri')))
             engine = module.get('value')
             name = module.get('name')
-            log.info ("SERVICE PROXY %s -> %s " % (name, engine))
+            log.info ("SERVICE PROXY %s -> %s" , str(name), str(engine))
             if name and engine :
                 service = ServiceDelegate(name,  engine, module, self.mex.fulluri)
                 service_list[name] = service
@@ -572,7 +566,7 @@ class ModuleServer(ServiceController):
 
     @expose()
     def _lookup(self, service, *rest):
-        log.info('service lookup for %s' % service)
+        log.info('service lookup for %s' , str( service))
         proxy = self.service_list.get(service)
         if proxy is None:
             self.service_list = self.load_services()
@@ -621,6 +615,7 @@ class ModuleServer(ServiceController):
     def register_engine(self, **kw):
         'Helper method .. redirect post to engine resource'
         #set_admin_mode()
+        log.info ("register_engine")
         xml =  self.engine._default (**kw)
         self.load_services()
         return xml
@@ -630,7 +625,7 @@ class ModuleServer(ServiceController):
     def unregister_engine(self, engine_uri, module_uri=None, **kw):
         'Remove a service record'
         #set_admin_mode()
-        log.debug ("unregister_engine %s %s %s " % (engine_uri, module_uri, kw))
+        log.info ("unregister_engine %s %s %s " , engine_uri, module_uri, str(kw))
         engine_uri = engine_uri.rstrip ('/')
         if module_uri is None:
             modules = data_service.query('module', value=engine_uri)
@@ -641,10 +636,10 @@ class ModuleServer(ServiceController):
                 name = modules[0].get('name')
             else:
                 abort(403, "multiple modules with uri %s, please specify module_uri" % engine_uri)
-        log.debug ('unregister %s at %s' % (module_uri, engine_uri))
+        log.debug ('unregister %s at %s', module_uri, engine_uri)
         module = etree.Element ('module', uri=module_uri, value = '')
         data_service.update (module)
-        log.info ('UNREGISTERed  %s (%s)' % (name, module_uri))
+        log.info ('UNREGISTERed  %s (%s)' , name, module_uri)
         self.load_services()
         return "<resource/>"
 
@@ -653,7 +648,7 @@ class ModuleServer(ServiceController):
         for k,v in kw.items():
             # KGK: Filter by module items?
             etree.SubElement(mex, 'tag', name=k, value=v)
-        log.info ("EXECUTE %s" % etree.tostring (mex))
+        log.info ("EXECUTE %s" , etree.tostring (mex))
         return self.mex.create_mex(mex)
 
     @expose('bq.module_service.templates.register')
@@ -661,9 +656,9 @@ class ModuleServer(ServiceController):
         return dict ()
     @expose(content_type="text/xml")
     def services(self):
+        log.info("service list")
         x = d2xml (self.servicelist())
         return etree.tostring(x)
-
 
     def begin_internal_mex(self, name='session', value='active', mex_type = "session"):
         mex = etree.Element('mex', name=name, value=value, hidden='true', type=mex_type)
@@ -734,7 +729,7 @@ class EngineResource (Resource):
 
     def register_module (self, module_def):
         """register a remote module"""
-        log.debug('register_module : %s' % module_def.get('name'))
+        log.debug('register_module : %s' , module_def.get('name'))
         name = module_def.get ('name')
         ts   = module_def.get ('ts')
         value= module_def.get ('value')
@@ -752,9 +747,9 @@ class EngineResource (Resource):
             m_version = len(m_version) and m_version[0].get('value')
             #m_version = m.xpath('//tag[@name="version"]')[0].get('value')
 
-            log.info('module %s ts(version) : new=%s(%s) current=%s(%s)' % (name, ts, version, m.get('ts'), m_version))
+            log.info('module %s ts(version) : new=%s(%s) current=%s(%s)' , name, ts, version, m.get('ts'), m_version)
             if m_version in found_versions:
-                log.error("module %s has multiple definitions with same version %s" % (name, m_version))
+                log.error("module %s has multiple definitions with same version %s" ,name, m_version)
                 data_service.del_resource(m)
                 continue
 
@@ -766,9 +761,9 @@ class EngineResource (Resource):
                     module_def.set('ts', str(datetime.now()))
                     #module_def.set('permission', 'published')
                     m = data_service.update(module_def, replace_all=True)
-                    log.info("Updating new module definition with: " + etree.tostring(m))
+                    log.info("Updating new module definition with: %s" , etree.tostring(m))
                 else:
-                    log.debug ("Module on system is newer: remote %s < system %s " % (ts, m.get('ts')))
+                    log.debug ("Module on system is newer: remote %s < system %s " , ts, m.get('ts'))
             else:
                 # We are examining a different version of the module.
                 # Should it be disabled?
@@ -776,10 +771,10 @@ class EngineResource (Resource):
 
 
         if not found:
-            log.info ("CREATING NEW MODULE: %s " % name)
+            log.info ("CREATING NEW MODULE: %s " , name)
             m = data_service.new_resource(module_def)
 
-        log.info("END:register_module using  module %s for %s version %s" % (m.get('uri'), name, version))
+        log.info("END:register_module using  module %s for %s version %s" , m.get('uri'), name, version)
         return m
 
     def new(self, resource, xml, **kw):
@@ -788,7 +783,7 @@ class EngineResource (Resource):
         request
         """
         self.invalidate ("/module_service/")
-        log.debug ("engine_register:new %s" % xml)
+        log.debug ("engine_register:new %s" , xml)
         if isinstance (xml, etree._Element):
             resource = xml
         else:
@@ -813,8 +808,8 @@ class EngineResource (Resource):
             engine_url = module_def.get('value').rstrip('/')
             module_def.set ('value', engine_url)
             module = self.register_module(module_def)
-            log.info ('Registered %s at %s' % (module.get('name') , engine_url))
-            log.debug ('Registered %s' % etree.tostring (module))
+            log.info ('Registered %s at %s' , module.get('name') , engine_url)
+            log.debug ('Registered %s' , etree.tostring (module))
 
             # log.debug ('loading services for %s ' % module.get('name'))
             # service = data_service.query('service', name=module.get('name'), view="deep")
@@ -856,11 +851,7 @@ class EngineResource (Resource):
     def delete(self, resource,  **kw):
         """ Delete the engine resource
         """
-        log.debug ('DELETE %s: %s' % (resource, kw))
-
-
-
-
+        log.info ('DELETE %s: %s' , resource, kw)
 
 
 import pkg_resources

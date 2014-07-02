@@ -468,10 +468,11 @@ def resource2nodes(dbo, parent=None, view=[], baseuri=None,  **kw):
     parents = {}
 
     for node in docnodes:
-        nodes[node.id]   = xmlnode(node, None, baseuri, view)
+        nodes[node.id]   = xmlnode(node, None, baseuri, view='short')
         parents[node.id] = node.resource_parent_id
     for node_id, parent_id in parents.items():
         try:
+            # attached xml nodes in position
             if parent_id is not None:
                 nodes[parent_id].append(nodes[node_id])
         except KeyError:
@@ -614,7 +615,8 @@ def db2node(dbo, parent, view, baseuri, nodes, doc_id, **kw):
                                                     Taggable.resource_type == 'tag',
                                                     Taggable.resource_name == tag_name)
             for tag in tags:
-                xmlnode(tag, node, view=v, baseuri=baseuri)
+                kid = xmlnode(tag, node, view='full', baseuri=baseuri)
+                tl = [ xmlnode(x, kid, view=view, baseuri=baseuri) for x in tag.childrenq ]
              #tag = dbo.tagq.filter_by(resource_name = tag_name).first()
              #if tag:
              #    xmlnode(tag, node, view=v, baseuri=baseuri)
