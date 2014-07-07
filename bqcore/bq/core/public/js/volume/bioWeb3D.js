@@ -104,7 +104,7 @@ Ext.define('BQ.viewer.Volume.volumeScene', {
 
         this.canvas3D.plane = this.plane;
         this.setMaxSteps = 32;
-
+        //this.renderingQueued = false;
         this.oldScale     = new THREE.Vector3(0.5, 0.5, 0.5);
         this.currentScale = new THREE.Vector3(0.5, 0.5, 0.5);
     },
@@ -112,18 +112,29 @@ Ext.define('BQ.viewer.Volume.volumeScene', {
     initComponent : function() {
     },
 
-    setUniform : function(name, value, reset){
+
+
+    setUniform : function(name, value, reset, timeOut){
         //console.log('bef',reset);
         if(typeof(reset) === 'undefined') reset = true;
         //console.log('aft',reset);
         this.uniforms[name].value = value;
-        if(reset)
-            this.setMaxSteps = 32;
+        stepVal = reset ? 32 : this.setMaxSteps;
 
-        this.canvas3D.rerender();
+        if(timeOut)
+            this.renderingQueued = setTimeout(callback(this, function(){
+                this.canvas3D.rerender();
+	            this.setMaxSteps = stepVal;
+                this.renderingQueued = null;
+            }), 200);
+        else{
+            this.canvas3D.rerender();
+	        this.setMaxSteps = stepVal;
+        }
     },
 
     initUniform : function(name, type, value){
+
         this.uniforms[name] = {type: type, value: value};
         this.setMaxSteps = 32;
         this.canvas3D.rerender();
@@ -313,6 +324,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
 
     initComponent : function() {
+        this.update_delay_ms = 50;
 	    this.addListener('resize', this.onresize, this);
 
         this.canvas3D = Ext.create('BQ.viewer.Volume.ThreejsPanel',{
@@ -461,8 +473,10 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
     rerender : function(input) {
         if(!input) input = 32;
-        this.canvas3D.rerender();
-	    this.sceneVolume.setMaxSteps = input;
+        setTimeout(callback(this, function(){
+            this.canvas3D.rerender();
+	        this.sceneVolume.setMaxSteps = input;
+        }), this.update_delay_ms);
     },
 
     onAnimate : function(){
@@ -709,11 +723,15 @@ Ext.define('BQ.viewer.Volume.Panel', {
 	    this.dims.slice.x = this.phys.x;
         this.dims.slice.y = this.phys.y;
         this.dims.slice.z = this.phys.z;
+
         this.dims.t = this.phys.t;
 	    this.initFrameLabel();
         this.dims.pixel.x = this.phys.pixel_size[0] === 0 ? 1 : this.phys.pixel_size[0];
         this.dims.pixel.y = this.phys.pixel_size[1] === 0 ? 1 : this.phys.pixel_size[1];
         this.dims.pixel.z = this.phys.pixel_size[2] === 0 ? 1 : this.phys.pixel_size[2];
+        if(this.dims.pixel.z < 0.1) this.dims.pixel.z = 0.1;
+        console.log(this.dims.pixel.z);
+        console.log("phys: ", this.phys);
 
 	    if(this.dims.t > 1 && this.dims.slice.z == 1){
 	        var z = this.dims.t;

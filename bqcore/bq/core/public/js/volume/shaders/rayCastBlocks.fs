@@ -124,15 +124,16 @@ float rand(vec2 co){
 }
 
 vec4 getTransfer(float density){
-  //float t = density*float(TRANSFER_SIZE);
+  float t = density*float(TRANSFER_SIZE);
   //density += 0.01*rand(gl_FragCoord.yx/iResolution.xy);
+  //return (density*vec4(1.0) + (1.0 - density)*vec4(0.0));
   return texture2D(transfer, vec2(density,0.0));
 
 }
 
 vec4 luma2Alpha(vec4 color, float min, float max, float C){
-  float x = sqrt(color[0]*color[0] +color[1]*color[1] +color[2]*color[2]);
-  //float x = color[0] + color[1] + color[2];
+  float x = sqrt(1.0/9.0*(color[0]*color[0] +color[1]*color[1] +color[2]*color[2]));
+  //x -= 1.0/3.0*(color[0] + color[1] + color[2]);
   float xi = (x-min)/(max-min);
   float y = pow(xi,C);
   y = clamp(y,0.0,1.0);
@@ -359,6 +360,7 @@ vec4 integrateVolume(vec4 eye_o,vec4 eye_d,
   float isteps = 1.0/csteps;
 
   //figure out which box side is longest, w/respect to the view angle, use that to scale the stepsize
+  /*
   vec4 eye_n = -normalize(eye_o);
   float dotSidex = eye_n.x*(boxMax.x - boxMin.x);
   float dotSidey = eye_n.y*(boxMax.y - boxMin.y);
@@ -370,13 +372,16 @@ vec4 integrateVolume(vec4 eye_o,vec4 eye_d,
 
   //now that we have
   float tfarsurf = dot(sliceP - eye_o, sliceN)/dot(eye_d,sliceN); //project to far plane to determine overflow
+  */
+  float tstep = 0.3*isteps;
+  float tfarsurf = 10.0;
   float overflow = (tfarsurf - tfar)/tstep;
-  overflow -= floor(overflow);
+  overflow -= floor(overflow); // we don't want uniform planes with dithering
   float r = 1.0*rand(eye_d.xy);
 
-  float t = tbegin + (overflow)*tstep;
+  float t = tbegin + (1.0 - float(DITHERING))*(overflow)*tstep;
   t = clamp(t, 0.0, CLIP_FAR);
-  t += 2.0*float(DITHERING)*r*tstep;
+  t += 1.0*float(DITHERING)*r*tstep;
 
 
   float A = 0.0;
@@ -398,6 +403,7 @@ vec4 integrateVolume(vec4 eye_o,vec4 eye_d,
     //col = vec4(x01,x01,x01,x01);
     float xfer = float(USE_TRANSFER);
     col =   xfer*getTransfer(col[3]) + (1.0 - xfer)*col;
+    //col = vec4(col[3]);
     vec4 dl = lightPos - pos;
 
 #if PHONG
@@ -418,7 +424,7 @@ vec4 integrateVolume(vec4 eye_o,vec4 eye_d,
     float kn = pow(10.0*N[3],NORMAL_INTENSITY);
     float ka = KA;
     float kd = KD;
-    float ks = SPEC_INTENSITY;
+    float ks = 4.0*SPEC_INTENSITY;
     kn = clamp(kn,0.0,1.0);
     //float kn = 1.0;
     col *= (ka + kd*vec4(vec3(lightVal),kn));
@@ -440,23 +446,33 @@ vec4 integrateVolume(vec4 eye_o,vec4 eye_d,
     vec3 N2 = cross(dl.xyz,N1);
     //N1 = normalize(N1);
     //N2 = normalize(N2);
-
-    float r0 = 1.0 - 2.0*rand(pos.xy + eye_d.zx);
-    float r1 = 1.0 - 2.0*rand(pos.yz + eye_d.zx);
-    float r2 = 1.0 - 2.0*rand(pos.xz + eye_d.yx);
+      float r0 = 1.0 - 2.0*rand(pos.xy + eye_d.zx); //create three random numbers for each dimension
+      float r1 = 1.0 - 2.0*rand(pos.yz + eye_d.zx);
+      float r2 = 1.0 - 2.0*rand(pos.xz + eye_d.yx);
     for(int j=0; j<maxStepsLight; j++){ //*/
       if (j > LIGHT_SAMPLES) break;
+
+
 
       float lti = (float(j))*lstep;
       vec4 Ni   = DISPERSION*(r0*dl + vec4(r1*N1 + r2*N2, 0.0));
 
       vec4 lpos = pos + lti*dl;
+
+      r0 = 1.0 - 2.0*rand(lpos.xy + eye_d.zx); //create three random numbers for each dimension
+      r1 = 1.0 - 2.0*rand(lpos.yz + eye_d.zx);
+      r2 = 1.0 - 2.0*rand(lpos.xz + eye_d.yx);
+
       lpos += lti*Ni;
+
       vec4 dsmp = sampleAs3DTexture(textureAtlas,lpos);
       vec4 dens = luma2Alpha(dsmp, GAMMA_MIN, GAMMA_MAX, GAMMA_SCALE);
       if(USE_TRANSFER == 1){ dens = getTransfer(dens[3]);}
       float Kdisp = DISP_SIG;
       float sl = float(maxStepsLight)/float(LIGHT_SAMPLES);
+      //lti *= dens.w;
+
+
       dens.w *= 1.0*density;
       dens.w = 1.0 - pow(1.0-dens.w, sl);
       //dens.w = clamp(dens.w, 0.0, 1.0);
@@ -489,21 +505,6 @@ vec4 integrateVolume(vec4 eye_o,vec4 eye_d,
   return C;
 }
 
-void getRay(in vec2 screen, in vec2 res,
-            out vec4 eo, out vec4 ed){
-  vec4 eyeRay_d;
-  ed.xy = 2.0*screen.xy/res.xy - 1.0;
-  ed[0] *= iResolution.x/iResolution.y;
-
-  float fovr = 20.*M_PI/180.;
-  ed[2] = -1.0/tan(fovr*0.5);
-  ed   = ed*viewMatrix;
-  ed[3] = 0.0;
-  //ed = normalize(ed);
-  eo = vec4(cameraPosition,1.0);
-}
-
-
 void main()
 {
   vec4 eyeRay_d, eyeRay_o;
@@ -511,7 +512,17 @@ void main()
   //gl_FragColor = vec4(gl_FragCoord.xy/iResolution.xy,0.0,0.0);
   //return;
 
-  getRay(fragCoord, iResolution.xy, eyeRay_o, eyeRay_d);
+  //getRay(fragCoord, iResolution.xy, eyeRay_o, eyeRay_d);
+
+  eyeRay_d.xy = 2.0*fragCoord.xy/iResolution.xy - 1.0;
+  eyeRay_d[0] *= iResolution.x/iResolution.y;
+
+  float fovr = 20.*M_PI/180.;
+  eyeRay_d[2] = -1.0/tan(fovr*0.5);
+  eyeRay_d   = eyeRay_d*viewMatrix;
+  eyeRay_d[3] = 0.0;
+  //ed = normalize(ed);
+  eyeRay_o = vec4(cameraPosition,1.0);
 
   vec4 boxMin = vec4(-1.0);
   vec4 boxMax = vec4( 1.0);
@@ -552,3 +563,4 @@ void main()
 #endif
 
 }
+
