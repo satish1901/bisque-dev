@@ -45,7 +45,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 Ext.define('BQ.viewer.Volume.uniformUpdate', {
     updateSlider: function(slider,value){
-        this.sceneVolume.setUniform(slider.uniform_var, slider.convert(value), true);
+        this.sceneVolume.setUniform(slider.uniform_var, slider.convert(value), true, true);
     },
 });
 
@@ -422,9 +422,9 @@ Ext.define('BQ.viewer.Volume.gammapanel', {
 		            }
 
 		            var p = 4;
-                    this.sceneVolume.setUniform('GAMMA_MIN', vals.min);
-	                this.sceneVolume.setUniform('GAMMA_MAX', vals.max);
-	                this.sceneVolume.setUniform('GAMMA_SCALE', vals.scale);
+                    this.sceneVolume.setUniform('GAMMA_MIN', vals.min, true, true);
+	                this.sceneVolume.setUniform('GAMMA_MAX', vals.max, true, true);
+	                this.sceneVolume.setUniform('GAMMA_SCALE', vals.scale, true, true);
 
 		            this.data = vals;
 		            //this.canvasPanel.redraw();
@@ -494,7 +494,7 @@ Ext.define('BQ.viewer.Volume.materianel', {
                 change: this.updateSlider,
                 scope: me,
             },
-            convert: function(v) { return v/500.0}
+            convert: function(v) { return v/100.0}
 	    });
 
 	    this.brightnessSlider = Ext.create('Ext.slider.Single', {
@@ -795,7 +795,7 @@ Ext.define('BQ.viewer.Volume.lightpanel', {
             width: 150,
             listeners: {
 		        change: function(field, newValue, oldValue) {
-                    this.sceneVolume.setUniform('LIGHT_SAMPLES', newValue);
+                    this.sceneVolume.setUniform('LIGHT_SAMPLES', newValue, true, true);
 		        },
 		        scope:me
             },
@@ -829,7 +829,7 @@ Ext.define('BQ.viewer.Volume.lightControl', {
 
     changed : function(){
 	    if(this.isLoaded){
-            this.sceneVolume.setUniform('LIGHT_POSITION', this.lightObject.position);
+            this.sceneVolume.setUniform('LIGHT_POSITION', this.lightObject.position, true, true);
 	    }
     },
 
@@ -1013,7 +1013,7 @@ Ext.define('BQ.viewer.Volume.general', {
 	        checked: false,
 	        handler: function(){
                 this.dithering ^= 1;
-                this.sceneVolume.setUniform('DITHERING', this.dithering);
+                this.sceneVolume.setUniform('DITHERING', this.dithering, true, true);
 	        },
 	        scope:me,
 	    });
@@ -1151,9 +1151,9 @@ Ext.define('BQ.viewer.Volume.clip', {
             listeners: {
 		        change: function(slider, value, thumb) {
 		            if(thumb.index == 0){
-                        this.sceneVolume.setUniform('CLIP_NEAR', value/100);
+                        this.sceneVolume.setUniform('CLIP_NEAR', value/100, true, true);
 		            } else{
-                        this.sceneVolume.setUniform('CLIP_FAR', value/100);
+                        this.sceneVolume.setUniform('CLIP_FAR', value/100, true, true);
 		            }
                 },
                 scope: me,
@@ -1202,9 +1202,7 @@ Ext.define('BQ.viewer.Volume.transferSlider',{
         this.stops = [{color:[0,0,0,0],offset:0}];
 	    this.callParent();
         me.addEvents('clicked');
-        this.addStop([0, 200, 0, 0.50],50);
-        this.addStop([15, 100, 120, 0.10],70);
-        this.addStop([250, 20, 2, 0.80],100);
+        this.addStop([256, 256, 256, 1.0],100);
     },
 
     afterRender: function(){
@@ -1289,8 +1287,12 @@ Ext.define('BQ.viewer.Volume.transferSlider',{
     },
 
     setValue : function(index, value, animate, changeComplete) {
+
+        if(index == 0) return;
+        if(index == this.stops.length - 1) return;
         this.callParent(arguments);
         this.stops[index].offset = value;
+
         this.drawBackGround();
         this.lastClicked = index;
     },
@@ -1403,6 +1405,119 @@ Ext.define('BQ.viewer.Volume.transferSlider',{
 
 });
 
+
+//////////////////////////////////////////////////////////////////
+//
+// alpha slider
+//
+//////////////////////////////////////////////////////////////////
+
+
+Ext.define('BQ.viewer.Volume.alphaSlider',{
+    extend: 'Ext.slider.Multi',
+    alias: 'widget.alpha-slider',
+    cls: 'key-slider',
+
+    constructor : function(config) {
+        this.callParent(arguments);
+        return this;
+    },
+
+    initComponent : function(){
+	    this.callParent();
+    },
+
+    afterRender: function(){
+	    this.svgUrl = "http://www.w3.org/2000/svg";
+	    this.svgdoc = document.createElementNS(this.svgUrl, "svg");
+	    this.svgdoc.setAttributeNS(null, 'class', 'val-slider-back');
+	    this.el.dom.appendChild(this.svgdoc);
+	    this.svgBackGround = document.createElementNS(this.svgUrl, "g");
+	    this.svgBackGround.setAttributeNS(null, 'class', 'val-slider-back');
+	    this.svgdoc.appendChild(this.svgBackGround);
+
+        var me = this;
+        this.rgbColor = [25,10,90,1.0];
+        this.drawBackGround();
+	    this.callParent();
+    },
+
+    setColor : function(r, g, b, a){
+        this.rgbColor = [r,g,b,a];
+        this.drawBackGround();
+    },
+
+    setValue : function(index, value, animate){
+        this.callParent(arguments);
+        this.drawBackGround();
+    },
+
+    getStop : function(offset, color){
+        svgStop = '<stop offset="' + offset +
+            '%" stop-color="rgba(' +
+            color[0] + ', ' +
+            color[1] + ', ' +
+            color[2] + ', ' +
+            color[3] + ')"/>\n';
+        return svgStop;
+    },
+
+    drawBackGround : function(canvas){
+        var grad1 = ['<defs>',
+                     '<linearGradient id="toAlpha" ',
+                     'x1="0%" y1="0%" x2="0%" y2="100%">\n'
+                    ].join(' ');
+
+        grad1 += this.getStop(0,this.rgbColor);  //full color
+        grad1 += this.getStop(100, [0, 0, 0, 0]); //zero color
+        grad1 += '</linearGradient> </defs>';
+
+        var rect = ['<rect id="rectVal"',
+                    'x="0" y="0"',
+                    'rx="3" ry="3"',
+                    'width="100%"',
+                    'height="100%"',
+                    'fill="url(#toAlpha)"',
+                    '/>'].join(' ');
+
+        var checkRect=[
+            '<defs>',
+            ' <pattern id="checkerPattern" width="20" height="20"',
+            'patternUnits="userSpaceOnUse">',
+            '<rect fill="black" x="0" y="0" width="10" height="10" />',
+            '<rect fill="white" x="10" y="0" width="10" height="10" />',
+            '<rect fill="black" x="10" y="10" width="10" height="10" />',
+            '<rect fill="white" x="0" y="10" width="10" height="10" />',
+            '</pattern>',
+            '</defs>',
+            '<rect fill="url(#checkerPattern)" style="stroke:white"',
+            'x="0"',
+            'y="0"',
+            'rx="3"',
+            'ry="3"',
+            'width="100%" height="100%" />',
+            '</g>',
+        ].join('\n');
+
+	    var svg = [' <svg width=100% height=100% >',
+                   grad1,
+                   checkRect,
+                   rect,
+	               '</svg>'].join('\n');
+
+	    this.svgBackGround.innerHTML = svg;
+    },
+
+
+    //----------------------------------------------------------------------
+    // event handlers
+    //----------------------------------------------------------------------
+    changecomplete: function(){
+	    this.sortKeys();
+	    this.callParent();
+    },
+
+});
 
 //////////////////////////////////////////////////////////////////
 //
@@ -1786,12 +1901,16 @@ Ext.define('BQ.viewer.Volume.excolorpicker', {
 	    this.title = 'excolorpicker';
         var me = this;
 	    this.rampSvg = Ext.create('BQ.viewer.Volume.fieldSlider',{
-            height: 120,
-            width: '94%',
-	        handler: function(e, slider){
+            height: 145,
+            width: '89%',
+	        margin: '0 2 0 2',
+            handler: function(e, slider){
                 var hsv = me.rampSvg.getHsv();
                 var rgb = me.rampSvg.HSVtoRGB(hsv.h,hsv.s,1.0);
                 me.valueSlider.setColor(Math.floor(255*rgb.r),
+                                        Math.floor(255*rgb.g),
+                                        Math.floor(255*rgb.b),1.0);
+                me.alphaSlider.setColor(Math.floor(255*rgb.r),
                                         Math.floor(255*rgb.g),
                                         Math.floor(255*rgb.b),1.0);
                 if(me.handler)
@@ -1800,13 +1919,30 @@ Ext.define('BQ.viewer.Volume.excolorpicker', {
         });
 
         this.valueSlider = Ext.create('BQ.viewer.Volume.valueSlider',{
-            xtype: 'value-slider',
             cls: 'val-slider',
             vertical: true,
             minValue: 0.00,
             maxValue: 100,
             width: '5%',
             values: [50],
+            margin: '0 2 0 2',
+            listeners: {
+                change: function(slider, value, thumb){
+                    if(me.handler)
+                        me.handler(0,me);
+                },
+                scope:me,
+            }
+        });
+
+        this.alphaSlider = Ext.create('BQ.viewer.Volume.alphaSlider',{
+            cls: 'val-slider',
+            vertical: true,
+            minValue: 0.00,
+            maxValue: 100,
+            width: '5%',
+            values: [50],
+            margin: '0 2 0 2',
             listeners: {
                 change: function(slider, value, thumb){
                     if(me.handler)
@@ -1817,7 +1953,7 @@ Ext.define('BQ.viewer.Volume.excolorpicker', {
         });
 
         Ext.apply(this, {
-	        items:[ this.rampSvg,this.valueSlider],
+	        items:[ this.rampSvg,this.valueSlider, this.alphaSlider],
 	    });
 
         this.callParent();
@@ -1825,15 +1961,18 @@ Ext.define('BQ.viewer.Volume.excolorpicker', {
 
     setColorRgb : function(r,g,b,a){
         var hsv = this.rampSvg.RGBtoHSV(r,g,b);
-        var rgb = this.rampSvg.HSVtoRGB(hsv.h,hsv.s,1.0);
+        if(hsv){
+            var rgb = this.rampSvg.HSVtoRGB(hsv.h,hsv.s,1.0);
 
-        this.rampSvg.setColorHsv(hsv.h, hsv.s, hsv.v);
+            this.rampSvg.setColorHsv(hsv.h, hsv.s, hsv.v);
 
-        this.valueSlider.setColor(Math.floor(255*rgb.r),
-                                  Math.floor(255*rgb.g),
-                                  Math.floor(255*rgb.b),1.0);
+            this.valueSlider.setColor(Math.floor(255*rgb.r),
+                                      Math.floor(255*rgb.g),
+                                      Math.floor(255*rgb.b),1.0);
 
-        this.valueSlider.setValue(0,100*hsv.v,true);
+            this.valueSlider.setValue(0,100*hsv.v,true);
+        }
+        this.alphaSlider.setValue(0,100*a,true);
     },
 
     getColorRgb : function(){
@@ -1841,6 +1980,7 @@ Ext.define('BQ.viewer.Volume.excolorpicker', {
         var hsv = this.rampSvg.getHsv();
         hsv.v = val/100;
         var rgb = this.rampSvg.HSVtoRGB(hsv.h, hsv.s, hsv.v);
+        rgb.a = this.alphaSlider.getValue(0)/100;
         return rgb;
     },
 
@@ -1866,6 +2006,9 @@ Ext.define('BQ.viewer.Volume.transfer', {
         var pixels = new Uint8Array(256);
         var cStop = 0;
         var ci = 0;
+        var l = this.transferSlider.stops.length;
+        if(this.transferSlider.stops[0].offset   != 0) return;
+        if(this.transferSlider.stops[l-1].offset != 100) return;
         for(var i = 0; i < 64; i++){
             var stop = this.transferSlider.stops[cStop];
             var nstop = this.transferSlider.stops[cStop+1];
@@ -1888,6 +2031,7 @@ Ext.define('BQ.viewer.Volume.transfer', {
             pixels[4*i + 1] = (1-t)*c0[1] + t*c1[1];
             pixels[4*i + 2] = (1-t)*c0[2] + t*c1[2];
             pixels[4*i + 3] = 255*((1-t)*c0[3] + t*c1[3]);
+
             /*
             console.log(pixels[4*i + 0],
                         pixels[4*i + 1],
@@ -1935,14 +2079,22 @@ Ext.define('BQ.viewer.Volume.transfer', {
 	        panel3D: this.panel3D,
 	        autoKey: false,
 	        flex: 1,
+            animate: false,
+            margin: '2 2 2 2',
             listeners: {
 		        clicked: function(slider, thumb) {
+                    console.log(slider, thumb);
 		            var c = slider.stops[thumb].color;
-                    me.aSlider.setValue(c[3]*255);
-                    console.log(c);
-                    me.colorPicker.setColorRgb(c[0]/255,c[1]/255,c[2]/255);
+                    me.colorPicker.setColorRgb(c[0]/255,c[1]/255,c[2]/255, c[3]);
 		        },
-		        change: function(){
+		        change: function(slider, value, thumb){
+                    var l = slider.thumbs.length;
+                    if(thumb.index == 0){
+                        slider.setValue(0,0);
+                    }
+                    if(thumb.index == l - 1){
+                        slider.setValue(l-1,100);
+                    }
                     me.changed();
                 },
 		        scope:me
@@ -1951,24 +2103,6 @@ Ext.define('BQ.viewer.Volume.transfer', {
 	    });
         this.addUniforms();
         this.isLoaded = true;
-
-      this.aSlider = Ext.create('Ext.slider.Single', {
-            renderTo: Ext.get('slider-ph'),
-            hideLabel: false,
-	        fieldLabel: 'a',
-	        labelWidth: 10,
-            minValue: 0.00,
-            maxValue: 255,
-            value: 75,
-            listeners: {
-		        change: function(slider, value) {
-		            //var lastClicked = this.transferSlider.lastClicked;
-                    this.transferSlider.setStopColor(value/255,3);
-                    this.changed();
-                },
-		        scope:me,
-            }
-	    }).show();
 
         this.addButton = Ext.create('Ext.Button', {
 	        text: '+',
@@ -2006,16 +2140,17 @@ Ext.define('BQ.viewer.Volume.transfer', {
 	    });
 
 
-
         this.colorPicker =  Ext.create('BQ.viewer.Volume.excolorpicker',{
             handler: function(e, picker){
                 var rgb = picker.getColorRgb();
                 me.transferSlider.setStopColor(Math.floor(255*rgb.r),0);
                 me.transferSlider.setStopColor(Math.floor(255*rgb.g),1);
                 me.transferSlider.setStopColor(Math.floor(255*rgb.b),2);
+                me.transferSlider.setStopColor(rgb.a,3);
                 me.changed();
             }
         });
+
         this.showButton.hide();
         this.addUniforms();
 	    Ext.apply(this, {
@@ -2039,7 +2174,7 @@ Ext.define('BQ.viewer.Volume.transfer', {
 	                align : 'stretch',
 	                pack  : 'start',
                 },
-                items: [this.transferSlider, this.colorPicker, this.aSlider],
+                items: [this.transferSlider, this.colorPicker],
 
             }],
             bbar: {
@@ -2070,21 +2205,13 @@ gObjectBuffer.prototype.rescale = function(){
     var mat = new THREE.Matrix4().scale(scale);
     this.mesh.geometry.applyMatrix(mat);
     this.mesh.geometry.computeBoundingBox();
-    //console.log(this.points);
 };
 
 gObjectBuffer.prototype.pushPosition  = function(p, x, positions){
     var dims  = this.volume.dims.slice;
-    var scale = { x:this.volume.dims.pixel.x,
-                  y:this.volume.dims.pixel.y,
-                  z:this.volume.dims.pixel.z };
-
-    scale.y = scale.x/scale.y;
-    scale.z = scale.x/scale.z;
-    scale.x = 1.0;
-    positions[ x * 3 + 0 ] = scale.x*(p.x/dims.x - 0.5);
-	positions[ x * 3 + 1 ] = scale.y*(0.5 - p.y/dims.y);
-	positions[ x * 3 + 2 ] = scale.z*(0.5 - p.z/dims.z - 0.5/dims.z);
+    positions[ x * 3 + 0 ] = (p.x/dims.x - 0.5);
+	positions[ x * 3 + 1 ] = (0.5 - p.y/dims.y);
+	positions[ x * 3 + 2 ] = (0.5 - p.z/dims.z);
 };
 
 gObjectBuffer.prototype.push = function(poly){
@@ -2504,6 +2631,7 @@ Ext.define('BQ.viewer.Volume.pointControl', {
         cBuffer.buildBuffer();
         pBuffer.buildBuffer();
         this.updateScene();
+        this.rescalePoints();
     },
 
     initComponent : function(){
