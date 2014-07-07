@@ -135,7 +135,7 @@ vec4 luma2Alpha(vec4 color, float min, float max, float C){
   float x = sqrt(1.0/9.0*(color[0]*color[0] +color[1]*color[1] +color[2]*color[2]));
   //x -= 1.0/3.0*(color[0] + color[1] + color[2]);
   float xi = (x-min)/(max-min);
-  float y = pow(xi,C);
+  float y = pow(abs(xi),C);
   y = clamp(y,0.0,1.0);
   color[3] = y;
   return(color);
@@ -417,11 +417,11 @@ vec4 integrateVolume(vec4 eye_o,vec4 eye_d,
     H = normalize(H);
 
     float lightVal = dot(dl.xyz, N.xyz);
-    float spec = pow(dot( N.xyz, H.xyz ),SPEC_SIZE);
+    float spec = pow(abs(dot( N.xyz, H.xyz )),SPEC_SIZE);
     spec = clamp(spec, 0.0, spec);
     // += vec4(vec3(spec),0.0);
 
-    float kn = pow(10.0*N[3],NORMAL_INTENSITY);
+    float kn = pow(abs(0.0*N[3]),NORMAL_INTENSITY);
     float ka = KA;
     float kd = KD;
     float ks = 4.0*SPEC_INTENSITY;
@@ -474,7 +474,7 @@ vec4 integrateVolume(vec4 eye_o,vec4 eye_d,
 
 
       dens.w *= 1.0*density;
-      dens.w = 1.0 - pow(1.0-dens.w, sl);
+      dens.w = 1.0 - pow(abs(1.0-dens.w), sl);
       //dens.w = clamp(dens.w, 0.0, 1.0);
       Dl =  (1.0-Dl)*dens.w + Dl;
       //Dl =  (1.0-dens.w)*Dl + dens.w;
@@ -488,7 +488,7 @@ vec4 integrateVolume(vec4 eye_o,vec4 eye_d,
 #endif
     float s = float(maxSteps)/float(setMaxSteps);
     col.w *= density;
-    col.w = 1.0 - pow((1.0-col.w),s);
+    col.w = 1.0 - pow(abs((1.0-col.w)),s);
 
     col.xyz *= col.w;
 

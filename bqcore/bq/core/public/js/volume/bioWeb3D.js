@@ -416,7 +416,6 @@ Ext.define('BQ.viewer.Volume.Panel', {
     },
 
 
-
     onresize : function() {
         if (this.sceneVolume.uniforms['iResolution']) {
             var w = this.canvas3D.getWidth();
