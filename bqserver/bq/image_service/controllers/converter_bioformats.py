@@ -140,10 +140,12 @@ class ConverterBioformats(ConverterBase):
     # Supported
     #######################################
 
-    def supported(self, ifnm):
+    def supported(self, ifnm, **kw):
         '''return True if the input file format is supported'''
         if not self.installed:
             return False
+        if self.is_multifile_series(**kw) is True:
+            return False # for now we're not using multi-file support of bioformats
         log.debug('Supported for: %s', ifnm )
         return len(self.info(ifnm))>0
 
@@ -159,11 +161,13 @@ class ConverterBioformats(ConverterBase):
     #Reading metadata
     # name value fields separated with ":"
 
-    def meta(self, ifnm, series=0):
+    def meta(self, ifnm, series=0, **kw):
         if not self.installed:
             return {}
         if not os.path.exists(ifnm):
             return {}
+        if self.is_multifile_series(**kw) is True:
+            return {}        
         log.debug('Meta for: %s', ifnm )
         o = self.run_read(ifnm, [self.BFINFO, '-nopix', '-omexml', '-novalid', '-no-upgrade', '-series', '%s'%series, ifnm] )
         if o is None:
@@ -301,12 +305,14 @@ class ConverterBioformats(ConverterBase):
     #        Metadata complete = false
     #        Thumbnail series = false
 
-    def info(self, ifnm, series=0):
+    def info(self, ifnm, series=0, **kw):
         '''returns a dict with file info'''
         if not self.installed:
             return {}
         if not os.path.exists(ifnm):
             return {}
+        if self.is_multifile_series(**kw) is True:
+            return {}        
         log.debug('Info for: %s', ifnm )
         o = self.run_read(ifnm, [self.BFINFO, '-nopix', '-nometa', '-no-upgrade', '-series', '%s'%series, ifnm] )
         if o is None:
@@ -405,6 +411,8 @@ class ConverterBioformats(ConverterBase):
     def convertToOmeTiff(cls, ifnm, ofnm, series=0, extra=None, **kw):
         '''converts input filename into output in OME-TIFF format'''
         log.debug('convertToOmeTiff: [%s] -> [%s] for series %s with [%s]', ifnm, ofnm, series, extra)
+        if cls.is_multifile_series(**kw) is True:
+            return None
 
         command = [ifnm, ofnm, '-no-upgrade', '-overwrite']
         #if original is not None:
@@ -420,6 +428,8 @@ class ConverterBioformats(ConverterBase):
     def thumbnail(cls, ifnm, ofnm, width, height, series=0, **kw):
         '''converts input filename into output thumbnail'''
         log.debug('Thumbnail: %s %s %s for [%s]', width, height, series, ifnm)
+        if cls.is_multifile_series(**kw) is True:
+            return None        
 
         # dima: BF has a bug exporting only one channel when -z or -timepoint are requested
         # dima: will run plane extraction only if the image has 1 channel
@@ -429,6 +439,7 @@ class ConverterBioformats(ConverterBase):
         num_channels = info.get('image_num_c', 1)
         if num_channels == 1:
             ometiff = kw['intermediate'].replace('.ome.tif', '.t0.z0.ome.tif')
+            # sub point extraction only works for 1 channel and z0 and t0, so, no way to optimizy mid
             if not os.path.exists(ometiff):
                 r = cls.convertToOmeTiff(ifnm, ometiff, series=series, extra=['-z', '0', '-timepoint', '0'], nooverwrite=True)
                 if r is None:
@@ -442,12 +453,16 @@ class ConverterBioformats(ConverterBase):
                     return None
         
         # extract thumbnail
-        return ConverterImgcnv.thumbnail(ometiff, ofnm=ofnm, width=width, height=height, series=series, **kw)
+        #return ConverterImgcnv.thumbnail(ometiff, ofnm=ofnm, width=width, height=height, series=series, **kw)
+        return ConverterImgcnv.thumbnail(ometiff, ofnm=ofnm, width=width, height=height, series=series)
 
     @classmethod
     def slice(cls, ifnm, ofnm, z, t, roi=None, series=0, **kw):
         '''extract Z,T plane from input filename into output in OME-TIFF format'''
         log.debug('Slice: %s %s %s %s for [%s]', z, t, roi, series, ifnm)
+        if cls.is_multifile_series(**kw) is True:
+            return None
+        
         z1,z2 = z
         t1,t2 = t
         x1,x2,y1,y2 = roi

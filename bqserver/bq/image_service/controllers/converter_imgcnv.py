@@ -129,7 +129,7 @@ class ConverterImgcnv(ConverterBase):
     # Supported
     #######################################
 
-    def supported(self, ifnm):
+    def supported(self, ifnm, **kw):
         '''return True if the input file format is supported'''
         log.debug('Supported for: %s', ifnm )
         supported = self.run_read(ifnm, [self.CONVERTERCOMMAND, '-supported', '-i', ifnm]) 
@@ -140,7 +140,7 @@ class ConverterImgcnv(ConverterBase):
     # Meta - returns a dict with all the metadata fields
     #######################################
 
-    def meta(self, ifnm, series=0):
+    def meta(self, ifnm, series=0, **kw):
         '''returns a dict with file metadata'''
         log.debug('Meta for: %s', ifnm)
         if not self.installed:
@@ -162,6 +162,13 @@ class ConverterImgcnv(ConverterBase):
             rd['image_num_t'] = rd['image_num_p']
         rd['image_num_series'] = 0
         rd['image_series_index'] = 0
+        
+        if self.is_multifile_series(**kw) is True:
+            rd.update(kw['token'].meta)
+            try:
+                del rd['files']
+            except (KeyError):
+                pass
 
         return rd
 
@@ -169,7 +176,7 @@ class ConverterImgcnv(ConverterBase):
     # The info command returns the "core" metadata (width, height, number of planes, etc.)
     # as a dictionary
     #######################################
-    def info(self, ifnm, series=0):
+    def info(self, ifnm, series=0, **kw):
         '''returns a dict with file info'''
         log.debug('Info for: %s', ifnm)
         if not self.installed:
@@ -207,6 +214,14 @@ class ConverterImgcnv(ConverterBase):
         rd.setdefault('image_num_p', 1)
         if rd['image_num_z']==1 and rd['image_num_t']==1 and rd['image_num_p']>1:
             rd['image_num_t'] = rd['image_num_p']
+        
+        if self.is_multifile_series(**kw) is True:
+            rd.update(kw['token'].meta)
+            try:
+                del rd['files']
+            except (KeyError):
+                pass
+        
         return rd
 
 
@@ -240,14 +255,46 @@ class ConverterImgcnv(ConverterBase):
         '''converts input filename into output thumbnail'''
         log.debug('Thumbnail: %s %s %s for [%s]', width, height, series, ifnm)
         fmt = kw.get('fmt', 'jpeg')
-        command = ['-i', ifnm, '-o', ofnm, '-t', fmt]
-        method = kw.get('method', 'BC')
-        depth = kw.get('depth', 16)
-        if depth == 8:
-            command.extend(thumbnail_cmd.replace('-depth 8,d', '-depth 8,f').split(' '))
+        preproc = kw.get('preproc', '')
+        preproc = preproc if preproc != '' else 'mid' # use 'mid' as auto mode for imgcnv
+        
+        command = ['-o', ofnm, '-t', fmt]
+        
+        try:
+            token = kw.get('token', None)
+            info = token.dims or {}
+        except (TypeError, AttributeError):
+            info = {}
+        
+        log.debug('info: %s', info)
+        
+        num_z = info.get('image_num_z', 1)
+        num_t = info.get('image_num_t', 1)
+        page=1
+        if preproc == 'mid':
+            mx = num_z if num_z>1 else num_t
+            page = min(max(1, mx/2), mx)
+        elif preproc != '':
+            return None
+        
+        # separate normal and multi-file series
+        if cls.is_multifile_series(**kw) is False:
+            command.extend(['-i', ifnm])
+            command.extend(['-page', str(page)])
         else:
-            command.extend(thumbnail_cmd.split(' '))
+            # use first image of the series, need to check for separate channels here
+            files = cls.enumerate_series_files(**kw)
+            log.debug('thumbnail files: %s', files)
+            command.extend(['-i', files[page-1]])
 
+        depth = info.get('image_pixel_depth', 16)
+        if depth != 8:
+            command.extend(['-depth', '8,d'])
+
+        #command.extend(['-display'])
+        command.extend(['-fusemeta'])
+
+        method = kw.get('method', 'BC')
         command.extend([ '-resize', '%s,%s,%s,AR'%(width,height,method)])
         if fmt == 'jpeg':
             command.extend([ '-options', 'quality 95 progressive yes'])
@@ -263,9 +310,9 @@ class ConverterImgcnv(ConverterBase):
         x1,x2,y1,y2 = roi
         fmt = kw.get('fmt', 'bigtiff')
         token = kw.get('token', None)
-        info = token.info if token is not None else None
+        info = token.dims if token is not None else None
 
-        command = ['-i', ifnm, '-o', ofnm, '-t', fmt]
+        command = ['-o', ofnm, '-t', fmt]
 
         if t2==0: 
             t2=t1
@@ -284,10 +331,19 @@ class ConverterImgcnv(ConverterBase):
                 else:
                     page_num = (zi-1)*info['image_num_t'] + ti
                 pages.append(page_num)
-
-        # pages
-        command.extend(['-multi', '-page', ','.join([str(p) for p in pages])])
-
+        
+        
+        # separate normal and multi-file series
+        if cls.is_multifile_series(**kw) is False:
+            command.extend(['-i', ifnm])
+            command.extend(['-multi', '-page', ','.join([str(p) for p in pages])])
+        else:
+            # use first image of the series, need to check for separate channels here
+            command.extend(['-multi'])
+            files = cls.enumerate_series_files(**kw)
+            for p in pages:
+                command.extend(['-i', files[p-1]])
+        
         # roi
         if not x1==x2 or not y1==y2:
             if not x1==x2:

@@ -18,6 +18,7 @@ from subprocess import call
 from pylons.controllers.util import abort
 #from collections import OrderedDict
 from bq.util.compat import OrderedDict
+from itertools import groupby
 
 from .locks import Locks
 from . import misc
@@ -25,6 +26,12 @@ from . import misc
 import logging
 log = logging.getLogger('bq.image_service.converter')
 
+################################################################################
+# sorting misc
+################################################################################
+
+def keyfunc(s):
+    return [int(''.join(g)) if k else ''.join(g) for k, g in groupby(s, str.isdigit)]
 
 ################################################################################
 # Format - the definition of a format
@@ -136,7 +143,7 @@ class ConverterBase(object):
     #######################################
 
     # overwrite with appropriate implementation
-    def supported(self, ifnm):
+    def supported(self, ifnm, **kw):
         '''return True if the input file format is supported'''
         return False
 
@@ -146,7 +153,7 @@ class ConverterBase(object):
     #######################################
 
     # overwrite with appropriate implementation
-    def meta(self, ifnm, series=0):
+    def meta(self, ifnm, series=0, **kw):
         '''returns a dict with file metadata'''
         return {}
 
@@ -156,7 +163,7 @@ class ConverterBase(object):
     #######################################
 
     # overwrite with appropriate implementation
-    def info(self, ifnm, series=0):
+    def info(self, ifnm, series=0, **kw):
         '''returns a dict with file info'''
         if not self.installed:
             return {}
@@ -171,6 +178,75 @@ class ConverterBase(object):
 
         #return {k:v for k,v in rd.iteritems() if k in core}
         return dict ( (k,v) for k,v in rd.iteritems() if k in core)
+
+    #######################################
+    # Multi-file misc
+    #######################################
+
+    @classmethod
+    def is_multifile_series(cls, **kw):
+        ''' Test if incoming is a multi-file no-header series like TIFF series '''
+        #log.debug('is_multifile_series kw: %s', kw)
+        
+        # test if token is present
+        try:
+            token = kw['token']
+        except (KeyError):
+            return False
+
+        # test for multiple files
+        try:
+            meta = token.meta
+            #log.debug('is_multifile_series meta: %s', meta)
+            files = meta['files']
+            #log.debug('is_multifile_series files: %s', files)
+            if len(files)<=1:
+                return False
+        except (KeyError, TypeError, AttributeError):
+            return False
+        
+        # test for geometry tags
+        if len(set(['image_num_z','image_num_t','image_num_c']).intersection(meta.keys()))<1:
+            return False
+
+        log.debug('is_multifile_series is True')
+        return True
+
+    @classmethod
+    def enumerate_series_files(cls, **kw):
+        ''' Find all files belonging to a multi-file series '''
+        
+        # test if token is present
+        try:
+            token = kw['token']
+        except (KeyError):
+            return []
+
+        # test for multiple files
+        try:
+            meta = token.meta
+            files = meta['files']
+        except (KeyError, TypeError, AttributeError):
+            return []
+        
+        # walk directories if present and augment the list
+        # dima: shound be done using fs driver (would be impossible in any case other than local)
+        # dima: REQUIRES REWRITE !!!!!
+        augmented = []
+        for f in files:
+            if f.startswith('file:///') is True:
+                f = f.replace('file:///', '')
+            if f.startswith('file://') is True:
+                f = f.replace('file://', '')
+            if os.path.isdir(f) is True:
+                # dima: this is a shallow walk (1 level), in series case this is probably enough
+                augmented.extend( [os.path.join(f,fn) for fn in next(os.walk(f))[2]] )
+        
+        # extend and sort the final file list
+        files.extend(augmented)
+        files = list(set(files))
+        files = sorted(files, key=keyfunc) # use alpha-numeric sort
+        return files
 
     #######################################
     # Conversion

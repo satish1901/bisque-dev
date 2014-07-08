@@ -211,6 +211,7 @@ class ProcessToken(object):
         self.is_file     = False
         self.series      = 0
         self.timeout     = None
+        self.meta        = None
 
     def setData (self, data_buf, content_type):
         self.data = data_buf
@@ -243,10 +244,11 @@ class ProcessToken(object):
         self.series = 0
         return self
 
-    def setImage (self, fname, fmt, series=0, **kw):
+    def setImage (self, fname, fmt, series=0, meta=None, **kw):
         self.data = fname
         self.is_file = True
         self.series = series
+        self.meta = meta
         if self.dims is not None:
             self.dims['format'] = fmt
         fmt = fmt.lower()
@@ -461,7 +463,7 @@ class MetaService(object):
             meta = {}
             if os.path.exists(ifile):
                 for c in self.server.converters.itervalues():
-                    meta = c.meta(ifile, series=data_token.series)
+                    meta = c.meta(ifile, series=data_token.series, token=data_token)
                     if meta is not None and len(meta)>0:
                         break
 
@@ -1087,11 +1089,15 @@ class Rearrange3DService(object):
 class ThumbnailService(object):
     '''Create and provide thumbnails for images:
        If no arguments are specified then uses: 128,128,BL
-       arg = [w,h][,method][,format]
+       arg = [w,h][,method][,preproc][,format]
        w - new width
        h - new height
-       method - NN or BL, or BC (Nearest neighbor, Bilinear, Bicubic respectively)
-       ex: ?thumbnail'''
+       method - ''|NN|BL|BC - default, Nearest neighbor, Bilinear, Bicubic respectively
+       preproc - ''|MID|MIP|NIP - empty (auto), middle slice, maximum intensity projection, minimum intesnity projection
+       format - output image format
+       ex: ?thumbnail
+       ex: ?thumbnail=200,200,BC,,png
+       ex: ?thumbnail200,200,BC,mid,png '''
 
     def __init__(self, server):
         self.server = server
@@ -1104,15 +1110,18 @@ class ThumbnailService(object):
         size = [misc.safeint(ss[0], 128) if len(ss)>0 else 128, 
                 misc.safeint(ss[1], 128) if len(ss)>1 else 128]
         method = ss[2].upper() if len(ss)>2 and len(ss[2])>0 else 'BC'
-        fmt = ss[3].lower() if len(ss)>3 and len(ss[3])>0 else 'jpeg'
+        preproc = ss[3].lower() if len(ss)>3 and len(ss[3])>0 else ''
+        preprocc = ',%s'%preproc if len(preproc)>0 else '' # attempt to keep the filename backward compatible
+        fmt = ss[4].lower() if len(ss)>4 and len(ss[4])>0 else 'jpeg'
 
         data_token.dims['image_num_p']  = 1
         data_token.dims['image_num_z']  = 1
         data_token.dims['image_num_t']  = 1
         data_token.dims['image_pixel_depth'] = 8
 
+        ext = self.server.converters.defaultExtension(fmt)
         ifile = self.server.getInFileName( data_token, image_id )
-        ofile = self.server.getOutFileName( ifile, image_id, '.thumb_%s,%s,%s.jpg'%(size[0],size[1],method) )
+        ofile = self.server.getOutFileName( ifile, image_id, '.thumb_%s,%s,%s%s.%s'%(size[0],size[1],method,preprocc,ext) )
         return data_token.setImage(ofile, fmt=fmt)
 
     def action(self, image_id, data_token, arg):
@@ -1120,7 +1129,9 @@ class ThumbnailService(object):
         size = [misc.safeint(ss[0], 128) if len(ss)>0 else 128, 
                 misc.safeint(ss[1], 128) if len(ss)>1 else 128]
         method = ss[2].upper() if len(ss)>2 and len(ss[2])>0 else 'BC'
-        fmt = ss[3].lower() if len(ss)>3 and len(ss[3])>0 else 'jpeg'
+        preproc = ss[3].lower() if len(ss)>3 and len(ss[3])>0 else ''
+        preprocc = ',%s'%preproc if len(preproc)>0 else '' # attempt to keep the filename backward compatible
+        fmt = ss[4].lower() if len(ss)>4 and len(ss[4])>0 else 'jpeg'
 
         if size[0]<=0 and size[1]<=0:
             abort(400, 'Thumbnail: size is unsupported [%s]'%arg)
@@ -1128,15 +1139,18 @@ class ThumbnailService(object):
         if method not in ['NN', 'BL', 'BC']:
             abort(400, 'Thumbnail: method is unsupported [%s]'%arg)
 
+        if preproc not in ['', 'mid', 'mip', 'nip']:
+            abort(400, 'Thumbnail: method is unsupported [%s]'%arg)
+
         ext = self.server.converters.defaultExtension(fmt)
         ifile = self.server.getInFileName( data_token, image_id )
-        ofile = self.server.getOutFileName( ifile, image_id, '.thumb_%s,%s,%s.%s'%(size[0],size[1],method,ext) )
+        ofile = self.server.getOutFileName( ifile, image_id, '.thumb_%s,%s,%s%s.%s'%(size[0],size[1],method,preprocc,ext) )
 
         if not os.path.exists(ofile):
-            depth = data_token.dims.get('image_pixel_depth', 16)
             intermediate = self.server.getOutFileName( ifile, image_id, '.ome.tif' )
             for c in self.server.converters.itervalues():
-                r = c.thumbnail(ifile, ofile, size[0], size[1], series=data_token.series, method=method, depth=depth, intermediate=intermediate, token=data_token, fmt=fmt)
+                r = c.thumbnail(ifile, ofile, size[0], size[1], series=data_token.series, method=method,
+                                intermediate=intermediate, token=data_token, preproc=preproc, fmt=fmt)
                 if r is not None:
                     break
             if r is None:
@@ -2527,7 +2541,7 @@ class ImageServer(object):
 
             # If file info is not cached, get it and cache!
             for n,c in self.converters.iteritems():
-                info = c.info(filename, series=(sub or 0))
+                info = c.info(filename, series=(sub or 0), token=data_token)
                 if info is not None and len(info)>0:
                     info['converter'] = n
                     break
@@ -2552,7 +2566,7 @@ class ImageServer(object):
 
         if return_token is True:
             if 'converted_file' in info:
-                data_token.setImage(info['converted_file'], fmt=default_format)
+                data_token.setImage(info['converted_file'], fmt=default_format, meta=data_token.meta)
             data_token.dims = info
             return data_token
         return info
@@ -2652,8 +2666,9 @@ class ImageServer(object):
         # init the output to a simple file
         data_token = ProcessToken()
         data_token.timeout = kw.get('timeout', None)
+        data_token.meta = kw.get('imagemeta', None)
+        
         if ident is not None:
-
             # pre-compute final filename and check if it exists before starting any other processing
             if len(query)>0:
                 data_token.setFile(self.initialWorkPath(ident))
@@ -2679,6 +2694,9 @@ class ImageServer(object):
             # start the processing
             original_filename,sub = self.ensureOriginalFile(ident)
             data_token.setFile(original_filename, series=(sub or 0))
+            # special metadata was reset by the dryrun, reset
+            data_token.timeout = kw.get('timeout', None)
+            data_token.meta = kw.get('imagemeta', None)
 
             #if not blob_service.file_exists(ident):
             if not os.path.exists(original_filename):
