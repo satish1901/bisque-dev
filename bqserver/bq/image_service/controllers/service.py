@@ -23,8 +23,11 @@ from bq.data_service.model import Taggable, DBSession
 from bq.core import permission, identity
 from bq.util.paths import data_path
 from bq.util.mkdir import _mkdir
+from bq import data_service
 from imgsrv import ImageServer
 from imgsrv import ProcessToken
+
+from . import misc
 
 log = logging.getLogger("bq.image_service")
 
@@ -252,8 +255,25 @@ class image_serviceController(ServiceController):
 
         # extract requested timeout: BQ-Operation-Timeout: 30
         timeout = request.headers.get('BQ-Operation-Timeout', None)
+        
+        # fetch image meta from a resource if any, has to have a name and a type as "image_meta"
+        try:
+            q = data_service.query(resource_uniq=ident, view='image_meta')
+            log.debug('images resource query: %s', etree.tostring(q))
+            meta = q.xpath('image/tag[@type="image_meta"]')[0]
+            meta = dict((i.get('name'), misc.safetypeparse(i.get('value'))) for i in meta.xpath('tag'))
+            log.debug('images meta: %s', meta)
+            if len(meta)==0:
+                meta=None
+            # append all subfiles for multi-file case
+            files = q.xpath('image/value')
+            if len(files)>0:
+                meta['files'] = [f.text for f in files]
+                log.debug('images files: %s', meta['files'])
+        except (AttributeError, IndexError):
+            meta = None
 
-        data_token = self.srv.process(path, ident, timeout=timeout, **kw)
+        data_token = self.srv.process(path, ident, timeout=timeout, imagemeta=meta, **kw)
         tg.response.headers['Content-Type']  = data_token.contentType
         #tg.response.content_type  = data_token.contentType
         #tg.response.headers['Cache-Control'] = ",".join ([data_token.cacheInfo, "public"])
