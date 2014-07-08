@@ -222,7 +222,7 @@ class ConverterOpenSlide(ConverterBase):
     #######################################
 
     @classmethod
-    def convert(cls, ifnm, ofnm, fmt=None, series=0, extra=None):
+    def convert(cls, ifnm, ofnm, fmt=None, series=0, extra=None, **kw):
         return None
 
     @classmethod

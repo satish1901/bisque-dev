@@ -359,7 +359,7 @@ class ConverterImaris(ConverterBase):
         return c
 
     @classmethod
-    def convert(cls, ifnm, ofnm, fmt=None, series=0, extra=None):
+    def convert(cls, ifnm, ofnm, fmt=None, series=0, extra=None, **kw):
         '''converts a file and returns output filename'''
         log.debug('convert: [%s] -> [%s] into %s for series %s with [%s]', ifnm, ofnm, fmt, series, extra)
         if fmt in cls.format_map:

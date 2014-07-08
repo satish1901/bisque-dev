@@ -238,12 +238,16 @@ class ConverterBase(object):
                 f = f.replace('file:///', '')
             if f.startswith('file://') is True:
                 f = f.replace('file://', '')
+            if os.name == 'nt':
+                f = f.replace('/', '\\')
             if os.path.isdir(f) is True:
                 # dima: this is a shallow walk (1 level), in series case this is probably enough
                 augmented.extend( [os.path.join(f,fn) for fn in next(os.walk(f))[2]] )
+            else:
+                augmented.append(f)
         
         # extend and sort the final file list
-        files.extend(augmented)
+        files = augmented
         files = list(set(files))
         files = sorted(files, key=keyfunc) # use alpha-numeric sort
         return files
@@ -313,7 +317,7 @@ class ConverterBase(object):
         return ofnm
 
     @classmethod
-    def convert(cls, ifnm, ofnm, fmt=None, series=0, extra=None):
+    def convert(cls, ifnm, ofnm, fmt=None, series=0, extra=None, **kw):
         '''converts a file and returns output filename'''
         command = ['-input', ifnm]
         if ofnm is not None:
