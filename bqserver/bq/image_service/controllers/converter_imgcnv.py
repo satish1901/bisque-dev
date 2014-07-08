@@ -26,8 +26,6 @@ from bq.util.compat import OrderedDict
 from . import misc
 from .converter_base import ConverterBase, Format
 
-
-thumbnail_cmd = config.get('bisque.image_service.thumbnail_command', '-depth 8,d -page 1 -display')
 log = logging.getLogger('bq.image_service.converter_imgcnv')
 
 ################################################################################
@@ -224,16 +222,37 @@ class ConverterImgcnv(ConverterBase):
         
         return rd
 
+    #######################################
+    # multi-file series misc
+    #######################################
+
+    @classmethod
+    def write_files(cls, files, ofnm):
+        '''writes a list of files into a file readable by imgcnv'''
+        with open(ofnm, 'wb') as f:
+            f.write('\n'.join(files))
 
     #######################################
     # Conversion
     #######################################
 
     @classmethod
-    def convert(cls, ifnm, ofnm, fmt=None, series=0, extra=None):
+    def convert(cls, ifnm, ofnm, fmt=None, series=0, extra=None, **kw):
         '''converts a file and returns output filename'''
         log.debug('convert: [%s] -> [%s] into %s for series %s with [%s]', ifnm, ofnm, fmt, series, extra)
-        command = ['-i', ifnm]
+        command = []
+        
+        if cls.is_multifile_series(**kw) is False:
+            command.extend(['-i', ifnm])
+        else:
+            # use first image of the series, need to check for separate channels here
+            files = cls.enumerate_series_files(**kw)
+            log.debug('convert files: %s', files)
+            # create a list file and pass that as input
+            fl = '%s.files'%ofnm
+            cls.write_files(files, fl)
+            command.extend(['-il', fl])
+        
         if ofnm is not None:
             command.extend (['-o', ofnm])
         if fmt is not None:
