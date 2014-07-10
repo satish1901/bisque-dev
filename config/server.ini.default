@@ -16,7 +16,7 @@ port = %(http_port)s
 #use_threadpool = True
 #threadpool_workers = 60
 #request_queue_size = 100
-#protocol_version = HTTP/1.1
+protocol_version = HTTP/1.1
 
 [sa_auth]
 cookie_secret = 670cbb6c-641d-4089-95a4-7128e2e23d75

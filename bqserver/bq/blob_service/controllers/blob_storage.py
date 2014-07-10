@@ -261,7 +261,7 @@ class LocalStorage(BlobStorage):
                 log.debug('local.blob_id: %s -> %s',  ident, localpath)
                 return ident, localpath
             localpath = "%s-%s%s" % (fpath , uniq[3:7+x] , ext)
-            log.debug ("local.write: File exists .. trying %s", localpath)
+            log.debug ("local.write: File exists... trying %s", localpath)
 
         raise DuplicateFile(localpath)
 

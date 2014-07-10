@@ -82,9 +82,6 @@ bisque.welcome_message = Welcome to the Bisque database
 bisque.js_environment = production
 #bisque.static_files = true
 
-# tags used by the front page for site contents overview
-bisque.welcome_tags=Types of images:image_type;Experimenters:experimenter;Species:species;
-
 # server defaults
 bisque.root = http://localhost:8080
 bisque.server = http://localhost:8080
@@ -137,8 +134,6 @@ bisque.engine =  http://localhost:8080
 # Image Service
 #bisque.image_service.work_dir  = ./data/workdir
 #bisque.image_service.upload_dir  = ./data/uploads
-#bisque.image_service.thumbnail_command = -depth 8,d -page 1 -display
-#bisque.image_service.default_command = -depth 8,d
 #bisque.image_service.remove_uploads = False
 bisque.image_service.imgcnv.omp_num_threads = 4
 
