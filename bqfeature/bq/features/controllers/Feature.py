@@ -24,7 +24,7 @@ from bq import image_service
 #from bq.image_service.controllers.locks import Locks
 from bq.core import identity
 from bq.util import http
-#from bq.features.controllers.service import FeatureServiceError
+from bq.features.controllers.exceptions import FeatureServiceError, InvalidResourceError
 from .var import FEATURES_STORAGE_FILE_DIR,FEATURES_TABLES_FILE_DIR,FEATURES_TEMP_IMAGE_DIR
 #from bq.features.controllers.service import FeatureServiceError
 log = logging.getLogger("bq.features")
@@ -274,7 +274,11 @@ class ImageImport:
             from libtiff import TIFF
         except ImportError:
             log.exception("Failed to import PyLibTiff.")
-            return np.array(Image.open(str(self.path))) #try to return something, pil doesnt support bigtiff
+            try:
+                return np.array(Image.open(str(self.path))) #try to return something, pil doesnt support bigtiff
+            except IOError:
+                log.exception("Not a tiff file!")
+                raise InvalidResourceError(415, 'Unsupported media type')            
             
 
         if self.istiff and self.path:
@@ -303,19 +307,22 @@ class ImageImport:
                     if image.shape[2] == 3:
                         return image
                 
-                raise IOError('Not a grayscale or RGB image')
+                raise InvalidResourceError(415, 'Not a grayscale or RGB image')
                 
             except IOError:
                 log.exception("Not a tiff file!")
-                return
+                raise InvalidResourceError(415, 'Unsupported media type')
                 
         elif self.path:
             log.debug("format is not a tiff")
-            return np.array(Image.open(str(self.path))) #try to return something, pil doesnt support bigtiff
-        
+            try:
+                return np.array(Image.open(str(self.path))) #try to return something, pil doesnt support bigtiff
+            except IOError:
+                log.exception("File type not supported!")
+                raise InvalidResourceError(415, 'Unsupported media type')  
         else:
             log.exception("Cannot import image when no path found!")
-            return 
+            raise InvalidResourceError(404, "Cannot import image when no path found!")
 
     def __str__(self):
         return self.path
