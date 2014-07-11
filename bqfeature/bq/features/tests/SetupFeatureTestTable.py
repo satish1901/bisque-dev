@@ -71,6 +71,9 @@ if __name__ == '__main__':
     #class Columns(tables.IsDescription):
     #    feature_name  = tables.StringCol(50,pos=1)
     
+    if not os.path.exists('features'):
+        os.mkdir('features')
+    
     for resource in TestGlobals.RESOURCE_LIST:
         feature_filename = os.path.join('features','%s'%resource['feature_filename'])
         if os.path.exists(feature_filename):

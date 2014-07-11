@@ -145,7 +145,7 @@ class TestMultibleSameElementTypes(RequestBase):
     response_code = '400'
 
     def write_request(self): 
-        self.request = TestGlobals.ROOT+'/features/TestFeature/none?'+TestGlobals.RESOURCE_LIST[0]['image']+'&'+TestGlobals.RESOURCE_LIST[0]['image']
+        self.request = TestGlobals.ROOT+'/features/TestFeature/xml?'+TestGlobals.RESOURCE_LIST[0]['image']+'&'+TestGlobals.RESOURCE_LIST[0]['image']
 
 class TestNonlistedFeature(RequestBase):
     
@@ -154,7 +154,7 @@ class TestNonlistedFeature(RequestBase):
     response_code = '404'
 
     def write_request(self): 
-        self.request = TestGlobals.ROOT+'/features/asdf/none?'+TestGlobals.RESOURCE_LIST[0]['image']     
+        self.request = TestGlobals.ROOT+'/features/asdf/xml?'+TestGlobals.RESOURCE_LIST[0]['image']     
         
 class TestNonlistedFormat(RequestBase):
     
@@ -172,7 +172,7 @@ class TestIncorrectResourceInputType(RequestBase):
     response_code = '400'
 
     def write_request(self): 
-        self.request = TestGlobals.ROOT+'/features/TestFeature/none?stuff='+TestGlobals.RESOURCE_LIST[0]['image']
+        self.request = TestGlobals.ROOT+'/features/TestFeature/xml?stuff='+TestGlobals.RESOURCE_LIST[0]['image']
 
 class TestResourceTypeNotFound(RequestBase):
 
@@ -213,10 +213,10 @@ class TestPostWithoutABody(RequestBase):
 ##################################
 ###     VRL Features
 ##################################
-class TestHTD(FeatureBase):
-    name = 'HTD'
-    family_name = 'VRL'
-    length = 48
+#class TestHTD(FeatureBase):
+#    name = 'HTD'
+#    family_name = 'VRL'
+#    length = 48
     
 
 class TestEHD(FeatureBase):
@@ -225,21 +225,21 @@ class TestEHD(FeatureBase):
     length = 80
     
     
-class TestmHTD(FeatureBase):
-    name = 'mHTD'
-    family_name = 'VRL'
-    length = 48
-    input_resource = ['image','mask']
-    parameters = ['label']
-    
-    def def_hdf_column(self):
-        class Columns(tables.IsDescription):
-            image         = tables.StringCol(2000,pos=0)
-            mask         = tables.StringCol(2000,pos=1)
-            feature_type  = tables.StringCol(20, pos=2)
-            feature       = tables.Float32Col(shape=(self.length), pos=3)
-            label         = tables.Float32Col(pos=4)
-        return Columns    
+#class TestmHTD(FeatureBase):
+#    name = 'mHTD'
+#    family_name = 'VRL'
+#    length = 48
+#    input_resource = ['image','mask']
+#    parameters = ['label']
+#    
+#    def def_hdf_column(self):
+#        class Columns(tables.IsDescription):
+#            image         = tables.StringCol(2000,pos=0)
+#            mask         = tables.StringCol(2000,pos=1)
+#            feature_type  = tables.StringCol(20, pos=2)
+#            feature       = tables.Float32Col(shape=(self.length), pos=3)
+#            label         = tables.Float32Col(pos=4)
+#        return Columns    
     
     
 ###################################
@@ -255,20 +255,20 @@ class TestCSD(FeatureBase):
     family_name = 'MPEG7Flex'
     length = 64
     
-class TestSCD(FeatureBase):
-    name = 'SCD'
-    family_name = 'MPEG7Flex'
-    length = 256
+#class TestSCD(FeatureBase):
+#    name = 'SCD'
+#    family_name = 'MPEG7Flex'
+#    length = 256
     
 class TestDCD(FeatureBase):
     name = 'DCD'
     family_name = 'MPEG7Flex'
     length = 100
     
-class TestHTD2(FeatureBase):
-    name = 'HTD2'
-    family_name = 'MPEG7Flex'
-    length = 62
+#class TestHTD2(FeatureBase):
+#    name = 'HTD2'
+#    family_name = 'MPEG7Flex'
+#    length = 62
     
 class TestEHD2(FeatureBase):
     name = 'EHD2'
@@ -392,10 +392,10 @@ class TestGabor_Textures(FeatureBase):
     family_name = 'WNDCharm'
     length = 7
 
-class TestHaralick_Textures(FeatureBase):
-    name = 'Haralick_Textures'
-    family_name = 'WNDCharm'
-    length = 28
+#class TestHaralick_Textures(FeatureBase):
+#    name = 'Haralick_Textures'
+#    family_name = 'WNDCharm'
+#    length = 28
     
 class TestMultiscale_Historgram(FeatureBase):
     name = 'Multiscale_Historgram'
@@ -566,7 +566,7 @@ class TestHAR(FeatureBase):
 #    name = 'FFTSD'
 #    family_name = 'MyFeatures'
 #    length = 500
-#    input_resource = ['polygon']    
+#    input_resource = ['polygon']
 
 
 if __name__ == '__main__':
