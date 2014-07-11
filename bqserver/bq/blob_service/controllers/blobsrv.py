@@ -491,12 +491,10 @@ class BlobServer(RestController, ServiceMixin):
     def localpath (self, uniq_ident):
         "Find  local path for the identified blob, using workdir for local copy if needed"
         resource = DBSession.query(Taggable).filter_by (resource_uniq = uniq_ident).first()
-        path = None
         if resource is not None and resource.resource_value:
-            if os.name != 'nt':
-                blob_id  = resource.resource_value.encode('utf-8')
-            else:
-                blob_id  = resource.resource_value
+            blob_id = resource.resource_value
+            #if os.name != 'nt':
+            #    blob_id = blob_id.encode('utf-8')
             path,sub = self.drive_man.fetch_blob(blob_id)
             log.debug('using %s full=%s localpath=%s sub=%s' , uniq_ident, blob_id, path, sub)
             return path,sub
@@ -505,12 +503,17 @@ class BlobServer(RestController, ServiceMixin):
             response = data_service.query(resource_uniq=uniq_ident, view='full')
             values = response.xpath('//value')
             if values is not None and len(values)>0:
-                blob_id = values[0].text
-                if os.name != 'nt':
-                    blob_id  = blob_id.encode('utf-8')
-                path,sub = self.drive_man.fetch_blob(blob_id)
+                # fetch all files referenced by the resource and return the first one
+                for v in reversed(values):
+                    blob_id = v.text
+                    path,sub = self.drive_man.fetch_blob(blob_id)
+                
+                #blob_id = values[0].text
+                ##if os.name != 'nt':
+                ##    blob_id  = blob_id.encode('utf-8')
+                #path,sub = self.drive_man.fetch_blob(blob_id)
                 log.debug('using %s full=%s localpath=%s sub=%s' , uniq_ident, blob_id, path, sub)
-                return path,sub        
+                return path,sub
         return None
 
     def originalFileName(self, ident):
