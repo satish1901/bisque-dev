@@ -158,7 +158,7 @@ class ResourceList(object):
                 
         #add it to a list of element with errors
         else:
-            self.error_list.append(FeatureExtractionError(input_dict, 403, 'User is not authorized to read resource internally: %s'%input_dict))
+            self.error_list.append(FeatureExtractionError(input_dict, 403, 'User is not authorized to read resource internally'))
             
         return  # returns options
 
@@ -491,24 +491,24 @@ class Xml(Format):
     
                 else:  # no feature was found from the query, adds an error message to the xml
                     subelement = etree.Element(
-                                                      'feature_error' ,
+                                                      'feature' ,
                                                       resource,
                                                       type=str(self.feature.name),
                                                )
-                    etree.SubElement('tag', subelement, name='code', value='404')
-                    etree.SubElement('tag', subelement, name='message', value='404 Not Found: The feature was not found in the table.')
+                    etree.SubElement(subelement, 'tag', name='code', value='404')
+                    etree.SubElement(subelement, 'tag', name='message', value='404 Not Found: The feature was not found in the table.')
                     yield etree.tostring(subelement)                
                 
                 
         #read through errors
         for i, error in enumerate(resource_list.error_list):
             subelement = etree.Element(
-                                              'feature_error',
+                                              'feature',
                                               error.resource,
                                               type=str(self.feature.name),
                                           )
-            etree.SubElement('tag', subelement, name='code', value=str(error.code))
-            etree.SubElement('tag', subelement, name='message', value=error.message)
+            etree.SubElement(subelement, 'tag', name='code', value=str(error.code))
+            etree.SubElement(subelement, 'tag', name='message', value=error.message)
             xml_doc = etree.tostring(subelement)
             yield xml_doc
         xml_doc = '</resource>'
@@ -595,7 +595,7 @@ class Csv(Format):
 
         # creates a title row and writes it to the document
         #titles = ",".join(['index', 'feature type'] + resource_names + ['feature'] + parameter_names + ['response code','error message'])
-        yield ",".join(['index', 'feature type'] + resource_names + ['feature'] + parameter_names + ['response code','error message'])
+        yield "%s%s"%(",".join(['index', 'feature type'] + resource_names + ['feature'] + parameter_names + ['response code','error message']),os.linesep)
 
         idx = 0
         query_queue = resource_list.get_query_queue()
@@ -612,19 +612,17 @@ class Csv(Format):
                         idx += 1
     
                 else:  # if nothing is return from the tables enter Nan into each vector element
-                    value_string = ",".join(['Nan' for i in range(self.feature.length)])
                     resource_uri = [resource[rn] for rn in resource_names]
                     parameter = ['Nan' for pn in parameter_names]
                     #line = ",".join([str(idx), self.feature.name] + resource_uri + ['"'+value_string+'"']  +  parameter + ['404','The feature was not found in the table.'])# appends all the row elements
-                    yield "%s%s"%(",".join([str(idx), self.feature.name] + resource_uri + ['"'+value_string+'"']  +  parameter + ['404','The feature was not found in the table.']),os.linesep)
+                    yield "%s%s"%(",".join([str(idx), self.feature.name] + resource_uri + ['Nan']  +  parameter + ['404','The feature was not found in the table.']),os.linesep)
                     idx += 1
                      
         for i, error in enumerate(resource_list.error_list):
-            value_string = ",".join(['Nan' for i in range(self.feature.length)])
             resource_uri = [error.resource[rn] for rn in resource_names]
             parameter = ['Nan' for pn in parameter_names]
-            line = ",".join([str(idx), self.feature.name] + resource_uri + [value_string]  +  parameter + [error.code,error.message])# appends all the row elements      
-            yield "%s%s"%(",".join([str(idx), self.feature.name] + resource_uri + [value_string]  +  parameter + [error.code,error.message]),os.linesep)
+            line = ",".join([str(idx), self.feature.name] + resource_uri + ['Nan']  +  parameter + [str(error.code),str(error.message)])# appends all the row elements      
+            yield "%s%s"%(",".join([str(idx), self.feature.name] + resource_uri + ['Nan']  +  parameter + [str(error.code),str(error.message)]),os.linesep)
             idx += 1    
 
     def return_from_workdir(self, table, resource_list, **kw):
@@ -636,8 +634,7 @@ class Csv(Format):
         parameter_names = self.feature.parameter
 
         # creates a title row and writes it to the document
-        titles = ",".join(['index', 'feature type'] + resource_names + ['descriptor'] + parameter_names + ['response code','error message'])
-        yield titles+os.linesep
+        yield "%s%s"%(",".join(['index', 'feature type'] + resource_names + ['feature'] + parameter_names + ['response code','error message']))
 
         with Locks(filename):
             log.debug('Reading from table path: %s'%filename)
@@ -658,12 +655,11 @@ class Csv(Format):
 
 
         for i, error in enumerate(resource_list.error_list):
-            value_string = ",".join(['Nan' for i in range(self.feature.length)])
             resource_uri = [error.resource[rn] for rn in resource_names]
             parameter = []
             parameter = ['Nan' for pn in parameter_names]
             #line = ",",join([str(idx), self.feature.name] + resource_uri + ['"'+value_string+'"']  +  parameter + [error.code,error.message])# appends all the row elements
-            yield "%s%s"%(",".join([str(idx), self.feature.name] + resource_uri + [value_string]  +  parameter + [error.code,error.message]),os.linesep)     
+            yield "%s%s"%(",".join([str(idx), self.feature.name] + resource_uri + ['Nan']  +  parameter + [error.code,error.message]),os.linesep)     
             idx+=1
 
 

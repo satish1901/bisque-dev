@@ -18,7 +18,7 @@ from bq.util.mkdir import _mkdir
 
 #fs imports
 from PytablesMonkeyPatch import pytables_fix
-from exceptions import FeatureExtractionError, FeatureServiceError
+from exceptions import FeatureExtractionError, FeatureServiceError, FeatureExtractionError, InvalidResourceError
 from .var import FEATURES_TABLES_FILE_DIR, EXTRACTOR_DIR, FEATURES_TABLES_WORK_DIR, FEATURES_REQUEST_ERRORS_DIR
 from ID import ID
 
@@ -90,6 +90,9 @@ class Rows(object):
 
             return True
 
+        except InvalidResourceError as e:
+            raise FeatureExtractionError( resource, e.code, e.message)
+
         except StandardError, err:
             # creating a list of uri were the error occured
             resource_string = ''
@@ -98,7 +101,7 @@ class Rows(object):
             else:
                 resource_string = resource_string[:-2]            
             log.exception('Calculation Error: URI:%s  %s Feature failed to be calculated' % (resource_string, self.table_module.name))
-            raise FeatureExtractionError(resource,500,'Internal Server Error: Feature at {%s} failed to be calculated'%resource_string)
+            raise FeatureExtractionError( resource, 500, 'Internal Server Error: Feature failed to be calculated')
             return False
 
 
@@ -150,7 +153,10 @@ class WorkDirRows(Rows):
                 self.table_queue['feature'].put(output)
 
             return True
-        
+
+        except InvalidResourceError as e:
+            raise FeatureExtractionError( resource, e.code, e.message)
+
         except StandardError, err:
             # creating a list of uri were the error occured
             resource_string = ''
@@ -160,7 +166,7 @@ class WorkDirRows(Rows):
                 resource_string = resource_string[:-2]
             
             log.exception('Calculation Error: %s  %s feature failed to be calculated' % (resource_string, self.feature.name))
-            raise FeatureExtractionError(resource,500,'Calculation Error: URI:[ %s ]  Feature failed to be calculated'%resource_string)
+            raise FeatureExtractionError(resource,500,'Calculation Error: Feature failed to be calculated')
 
             return False
 
@@ -522,7 +528,7 @@ class WorkDirTable(Tables):
             log.debug('Writing hdf file into workdir: %s'%filename)
             self.create_output_h5(filename)  # creates the table
         else:
-            raise FeatureServiceError(500,'File already exists in workdir: %s'%filename)
+            raise FeatureServiceError( 500,'File already exists in workdir: %s'%filename)
 
 
         # appends elements to the table        
