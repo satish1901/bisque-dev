@@ -19,8 +19,8 @@ SERVICE_IMAGE        = 'image_service'
 RESOURCE_IMAGE       = 'image'
 FEATURES             = 'features'
 
-IMAGE_ARCHIVE_ZIP    = '12C28317092495715E6067EBD367C631552CF764-feature_test_images.zip'
-FEATURE_ARCHIVE_ZIP  = '5AB6960913ABAEBFB91A7392E61982E8306115EE-feature_test_features.zip'
+IMAGE_ARCHIVE_ZIP    = 'F3763FA3F535FDD80637C61C7DB068BCE8628AF4-feature_test_images.zip'
+FEATURE_ARCHIVE_ZIP  = 'D2481331966839693645BEAABA3384B4D8783FFC-feature_test_features.zip'
 
 FEATURE_ZIP          = 'feature_test_features'
 IMAGE_ZIP            = 'feature_test_images'
