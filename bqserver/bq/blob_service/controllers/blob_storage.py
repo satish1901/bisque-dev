@@ -49,6 +49,7 @@ DESCRIPTION
 import os
 import logging
 import urlparse
+import urllib
 import string
 import shutil
 import datetime
@@ -136,9 +137,18 @@ if os.name == 'nt':
 
     def url2localpath(url):
         path = urlparse.urlparse(url).path
-        if len(path)>3 and path[2] == ':' and path[0] == '/':
+        if len(path)>0 and path[0] == '/':
             path = path[1:]
-        return path
+        return urllib.unquote(path).decode('utf-8')
+    
+    def localpath2url(path):
+        url = urllib.quote(path.encode('utf-8'))
+        if url[0] != '/':
+            url = 'file:///%s'%url
+        else:
+            url = 'file://%s'%url
+        return url
+
 else:
     def move_file (fp, newpath):
         log.debug ("moving file %s", fp.name)
@@ -152,8 +162,14 @@ else:
     data_url_path = data_path
 
     def url2localpath(url):
-        return urlparse.urlparse(url).path
+        url = url.encode('utf-8') # safegurd against unencoded values in the DB
+        path = urlparse.urlparse(url).path
+        return urllib.unquote(path)
 
+    def localpath2url(path):
+        url = urllib.quote(path.encode('utf-8'))
+        url = 'file://%s'%url
+        return url
 
 
 ##############################################
@@ -193,13 +209,19 @@ class BlobStorage(object):
     def valid(self, ident):
         'determine whether this store can access the identified file'
     def localpath(self, ident):
-        'return the local path of the identified file, if sub path present (after #), extract or return'
+        'return the local path of the identified file, if sub path present (after #), extract and return'
     def write(self, fp, name, user_name=None, uniq=None):
         'write the file to a local blob returning a short ident and the localpath'
     def walk(self):
         'walk entries on this store .. see os.walk'
     def delete(self, ident):
         'delete an entry on the store'
+
+    # dima: possible additions ???, should modify walk to take ident ???
+#     def is_directory(self, ident):
+#         'check if the ident points to a directory'
+#     def walk(self, ident):
+#         'walk a specific directory in the store'
 
 
 ###############################################
@@ -267,10 +289,9 @@ class LocalStorage(BlobStorage):
 
     def localpath(self, path):
         path,sub = split_subpath(path)
-        path = path.replace('\\', '/')
         if not path.startswith('file://'):
             path = os.path.join(self.top, path)
-            path = path.replace('\\', '/')
+        path = path.replace('\\', '/')
         # local storage can't extract sub paths, pass it along
         return url2localpath(path),sub
 
@@ -282,7 +303,7 @@ class LocalStorage(BlobStorage):
     def delete(self, ident):
         #ident,_ = split_subpath(ident) # reference counting required?
         fullpath = os.path.join(self.top[5:], ident) # remove file
-        log.debug("deleting %s" ,  fullpath)
+        log.debug("deleting %s", fullpath)
         os.remove (fullpath)
 
     def __str__(self):
@@ -328,12 +349,13 @@ class iRodsStorage(BlobStorage):
         return blob_ident, flocal
 
     def localpath(self, irods_ident):
+        # dima: path can be a directory, needs listing and fetching all enclosed files
         try:
             # if irods will provide extraction of sub files from compressed (zip, tar, ...) ask for it and return sub as None
             irods_ident,sub = split_subpath(irods_ident)
             path = irods_handler.irods_fetch_file(irods_ident, user=self.user, password=self.password)
             return  path, sub
-        except irods_handler.IrodsError, e:
+        except irods_handler.IrodsError:
             log.exception ("Error fetching %s ", irods_ident)
         return None
 
@@ -404,6 +426,8 @@ class S3Storage(BlobStorage):
 
     def localpath(self, s3_ident):
         'return path to local copy of the s3 resource'
+        # dima: path can be a directory, needs listing and fetching all enclosed files
+        
         # if s3 will provide extraction of sub files from compressed (zip, tar, ...) ask for it and return sub as None
         s3_ident,sub = split_subpath(s3_ident)
         s3_key = s3_ident.replace("s3://","")
@@ -450,6 +474,7 @@ class HttpStorage(BlobStorage):
         raise IllegalOperation('HTTP(S) write is not implemented')
 
     def localpath(self, http_ident):
+        # dima: path can be a directory, needs listing and fetching all enclosed files
         raise IllegalOperation('HTTP(S) localpath is not implemented')
 
 class HttpsStorage (HttpStorage):
