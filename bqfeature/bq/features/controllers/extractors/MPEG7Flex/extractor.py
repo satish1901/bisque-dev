@@ -12,60 +12,62 @@ from PIL import Image
 
 log = logging.getLogger("bq.features")
 
-class SCD(Feature.BaseFeature):
-    """
-        Initalizes table and calculates the SURF descriptor to be
-        placed into the HDF5 table.
-    """
-    
-    #parameters
-    name = 'SCD'
-    description = """Scalable Color Descriptor"""
-    length = 256 
-    type = ['color']
-    confidence = 'good'
-            
-    @calc_wrapper
-    def calculate(self, **resource):
-        """ Append descriptors to h5 table """
-        image_uri = resource['image']
-        log.debug('calculating scd')
-        with ImageImport(image_uri) as imgimp: #looking for the file internally and externally
-            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
-            im = imgimp.from_tiff2D_to_numpy()
-            
-            im = np.asarray(im)
-            descriptors = extractSCD(im, descSize=256) #calculating descriptor
-            log.debug('descriptors: %s'%descriptors)
-        return [descriptors]
+#getting a double pointer error when run with multible threads
+#class SCD(Feature.BaseFeature):
+#    """
+#        Initalizes table and calculates the SURF descriptor to be
+#        placed into the HDF5 table.
+#    """
+#    
+#    #parameters
+#    name = 'SCD'
+#    description = """Scalable Color Descriptor"""
+#    length = 256 
+#    type = ['color']
+#    confidence = 'good'
+#            
+#    @calc_wrapper
+#    def calculate(self, **resource):
+#        """ Append descriptors to h5 table """
+#        image_uri = resource['image']
+#        log.debug('calculating scd')
+#        with ImageImport(image_uri) as imgimp: #looking for the file internally and externally
+#            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
+#            im = imgimp.from_tiff2D_to_numpy()
+#            
+#            im = np.asarray(im)
+#            descriptors = extractSCD(im, descSize=256) #calculating descriptor
+#            log.debug('descriptors: %s'%descriptors)
+#        return [descriptors]
 
-class HTD2(Feature.BaseFeature):
-    """
-    """
-    #initalize parameters
-    name = 'HTD2'
-    description = """Homogenious Texture Descritpor (Image\'s width and height must be greater than 128)"""
-    length = 62
-    type = ['texture']
-    confidence = 'good'
-            
-    @calc_wrapper
-    def calculate(self, **resource):
-        #initalizing
-        
-        image_uri = resource['image']
-        
-        with ImageImport(image_uri) as imgimp: #looking for the file internally and externally
-            im = imgimp.from_tiff2D_to_numpy()
-            if len(im.shape)==3:
-                im = rgb2gray(im)
-            im = np.asarray(im)
-            width, height = im.shape
-            if width<128 and height<128:
-                raise TypeError('Image\'s width and height must be greater than 128')
-            descriptors = extractHTD(im) #calculating descriptor
-        
-        return [descriptors]
+#FFTW is not thread-safe
+#class HTD2(Feature.BaseFeature):
+#    """
+#    """
+#    #initalize parameters
+#    name = 'HTD2'
+#    description = """Homogenious Texture Descritpor (Image\'s width and height must be greater than 128)"""
+#    length = 62
+#    type = ['texture']
+#    confidence = 'good'
+#            
+#    @calc_wrapper
+#    def calculate(self, **resource):
+#        #initalizing
+#        
+#        image_uri = resource['image']
+#        
+#        with ImageImport(image_uri) as imgimp: #looking for the file internally and externally
+#            im = imgimp.from_tiff2D_to_numpy()
+#            if len(im.shape)==3:
+#                im = rgb2gray(im)
+#            im = np.asarray(im)
+#            width, height = im.shape
+#            if width<128 and height<128:
+#                raise TypeError('Image\'s width and height must be greater than 128')
+#            descriptors = extractHTD(im) #calculating descriptor
+#        
+#        return [descriptors]
 
 
 class EHD2(Feature.BaseFeature):
