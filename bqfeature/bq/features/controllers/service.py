@@ -606,7 +606,8 @@ class Csv(Format):
 
                     for r in rows:
                         value_string = ",".join('%g' % i for i in r['feature'])  # parses the table output and returns a string of the vector separated by commas
-                        resource_uri_string = ",".join([resource[rn] for rn in resource_names])
+                        resource_uri = [resource[rn] for rn in resource_names]
+                        #resource_uri_string = ",".join([resource[rn] for rn in resource_names])
                         parameter = ['%g'%r[pn] for pn in parameter_names]
                         yield "%s%s"%(",".join([str(idx), self.feature.name] + resource_uri + ['"%s"'%value_string] + parameter + ['200','none']),os.linesep)
                         idx += 1
