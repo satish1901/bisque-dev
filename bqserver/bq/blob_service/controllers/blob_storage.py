@@ -139,7 +139,11 @@ if os.name == 'nt':
         path = urlparse.urlparse(url).path
         if len(path)>0 and path[0] == '/':
             path = path[1:]
-        return urllib.unquote(path).decode('utf-8')
+        try:
+            return urllib.unquote(path).decode('utf-8')
+        except UnicodeEncodeError:
+            # dima: safeguard measure for old non-encoded unicode paths
+            return urllib.unquote(path)
     
     def localpath2url(path):
         url = urllib.quote(path.encode('utf-8'))
@@ -162,7 +166,7 @@ else:
     data_url_path = data_path
 
     def url2localpath(url):
-        url = url.encode('utf-8') # safegurd against unencoded values in the DB
+        url = url.encode('utf-8') # safegurd against un-encoded values in the DB
         path = urlparse.urlparse(url).path
         return urllib.unquote(path)
 
