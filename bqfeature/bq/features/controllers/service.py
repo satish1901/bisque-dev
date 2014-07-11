@@ -147,7 +147,11 @@ class ResourceList(object):
             if new_feature_name != self.feature_name:
                 log.debug('Argument Error: types are not consistance')
                 raise FeatureServiceError(400, 'Argument Error: types are not consistance')
-
+            
+        #removes '"' from requests
+        for k in input_dict.keys():
+            input_dict[k]=input_dict[k].strip('"') 
+            
         #check if user has access to resource
         if mex_validation(**input_dict):
             uri_hash = self.feature().returnhash(**input_dict)
@@ -595,7 +599,7 @@ class Csv(Format):
 
         # creates a title row and writes it to the document
         #titles = ",".join(['index', 'feature type'] + resource_names + ['feature'] + parameter_names + ['response code','error message'])
-        yield "%s%s"%(",".join(['index', 'feature type'] + resource_names + ['feature'] + parameter_names + ['response code','error message']),os.linesep)
+        yield str("%s%s"%(",".join(['index', 'feature type'] + resource_names + ['feature'] + parameter_names + ['response code','error message']),os.linesep))
 
         idx = 0
         query_queue = resource_list.get_query_queue()
@@ -609,21 +613,21 @@ class Csv(Format):
                         resource_uri = [resource[rn] for rn in resource_names]
                         #resource_uri_string = ",".join([resource[rn] for rn in resource_names])
                         parameter = ['%g'%r[pn] for pn in parameter_names]
-                        yield "%s%s"%(",".join([str(idx), self.feature.name] + resource_uri + ['"%s"'%value_string] + parameter + ['200','none']),os.linesep)
+                        yield str("%s%s"%(",".join([str(idx), self.feature.name] + resource_uri + ['"%s"'%value_string] + parameter + ['200','none']),os.linesep))
                         idx += 1
     
                 else:  # if nothing is return from the tables enter Nan into each vector element
                     resource_uri = [resource[rn] for rn in resource_names]
                     parameter = ['Nan' for pn in parameter_names]
                     #line = ",".join([str(idx), self.feature.name] + resource_uri + ['"'+value_string+'"']  +  parameter + ['404','The feature was not found in the table.'])# appends all the row elements
-                    yield "%s%s"%(",".join([str(idx), self.feature.name] + resource_uri + ['Nan']  +  parameter + ['404','The feature was not found in the table.']),os.linesep)
+                    yield str("%s%s"%(",".join([str(idx), self.feature.name] + resource_uri + ['Nan']  +  parameter + ['404','The feature was not found in the table.']),os.linesep))
                     idx += 1
                      
         for i, error in enumerate(resource_list.error_list):
             resource_uri = [error.resource[rn] for rn in resource_names]
             parameter = ['Nan' for pn in parameter_names]
             line = ",".join([str(idx), self.feature.name] + resource_uri + ['Nan']  +  parameter + [str(error.code),str(error.message)])# appends all the row elements      
-            yield "%s%s"%(",".join([str(idx), self.feature.name] + resource_uri + ['Nan']  +  parameter + [str(error.code),str(error.message)]),os.linesep)
+            yield str("%s%s"%(",".join([str(idx), self.feature.name] + resource_uri + ['Nan']  +  parameter + [str(error.code),str(error.message)]),os.linesep))
             idx += 1    
 
     def return_from_workdir(self, table, resource_list, **kw):
@@ -635,7 +639,7 @@ class Csv(Format):
         parameter_names = self.feature.parameter
 
         # creates a title row and writes it to the document
-        yield "%s%s"%(",".join(['index', 'feature type'] + resource_names + ['feature'] + parameter_names + ['response code','error message']))
+        yield str("%s%s"%(",".join(['index', 'feature type'] + resource_names + ['feature'] + parameter_names + ['response code','error message'])))
 
         with Locks(filename):
             log.debug('Reading from table path: %s'%filename)
@@ -652,7 +656,7 @@ class Csv(Format):
                     resource_uri = [resource[rn] for rn in resource_names]
                     parameter = [r[pn] for pn in parameter_names]
                     #line = ",".join([str(idx), self.feature.name] + resource_uri + ['"'+value_string+'"'] + parameter + ['200','none']) # appends all the row elements
-                    yield "%s%s"%(",".join([str(idx), self.feature.name] + resource_uri + ['"%s"'%value_string] + parameter + ['200','none']),os.linesep)           
+                    yield str("%s%s"%(",".join([str(idx), self.feature.name] + resource_uri + ['"%s"'%value_string] + parameter + ['200','none']),os.linesep))         
 
 
         for i, error in enumerate(resource_list.error_list):
@@ -660,7 +664,7 @@ class Csv(Format):
             parameter = []
             parameter = ['Nan' for pn in parameter_names]
             #line = ",",join([str(idx), self.feature.name] + resource_uri + ['"'+value_string+'"']  +  parameter + [error.code,error.message])# appends all the row elements
-            yield "%s%s"%(",".join([str(idx), self.feature.name] + resource_uri + ['Nan']  +  parameter + [error.code,error.message]),os.linesep)     
+            yield str("%s%s"%(",".join([str(idx), self.feature.name] + resource_uri + ['Nan']  +  parameter + [error.code,error.message]),os.linesep))
             idx+=1
 
 
