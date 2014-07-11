@@ -662,7 +662,6 @@ class mRSD(RSD):
                 
                 #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_COLOR)
                 im = imgimp.from_tiff2D_to_numpy()
-                im = np.array(Image.open(str(imgimp)))
 
                 im=np.asarray(im)
                 
@@ -688,4 +687,3 @@ class mRSD(RSD):
         
         return descritptor_list, label_list
     
-
