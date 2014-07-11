@@ -252,6 +252,15 @@ class ConverterImgcnv(ConverterBase):
             fl = '%s.files'%ofnm
             cls.write_files(files, fl)
             command.extend(['-il', fl])
+            
+            # provide geometry and resolution
+            meta = kw['token'].meta or {}
+
+            geom = '%s,%s'%(meta.get('image_num_z', 1),meta.get('image_num_t', 1))
+            command.extend(['-geometry', geom])
+            
+            res = '%s,%s,%s,%s'%(meta.get('pixel_resolution_x', 0), meta.get('pixel_resolution_y', 0), meta.get('pixel_resolution_z', 0), meta.get('pixel_resolution_t', 0))
+            command.extend(['-resolution', res])
         
         if ofnm is not None:
             command.extend (['-o', ofnm])
