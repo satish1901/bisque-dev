@@ -150,21 +150,16 @@ class DriverManager(object):
     def fetch_blob(self, blob_id):
         """Find a driver matching the prefix of blob_id
         """
-        path = None
-        sub = None
         for driver in self.drivers.values():
             if driver.valid(blob_id):
                 with TransferTimer() as t:
-                    path,sub = t.path,_ = driver.localpath(blob_id)
-                if path:
-                    break
-        if path is None:
-            log.warn ("failed to fetch blob [%s] [%s]" , blob_id, sub)
-        elif sub is not None:
-            # if sub path could not be serviced by the storage system and the file is a package (zip, tar, ...)
-            # extract the sub element here and return the extracted path with sub as None
-            pass
-        return path,sub
+                    b = t.path,_,_ = driver.localpath(blob_id)
+                if b.path is not None:
+                    # if sub path could not be serviced by the storage system and the file is a package (zip, tar, ...)
+                    # extract the sub element here and return the extracted path with sub as None                    
+                    return b
+        log.warn ("Failed to fetch blob: %s", blob_id)
+        return blob_storage.Blobs(path=None, sub=None, files=None)
 
     def save_blob(self, fileobj, filename, user_name, uniq):
         #filename_safe = filename.encode('ascii', 'xmlcharrefreplace')
@@ -493,27 +488,25 @@ class BlobServer(RestController, ServiceMixin):
         resource = DBSession.query(Taggable).filter_by (resource_uniq = uniq_ident).first()
         if resource is not None and resource.resource_value:
             blob_id = resource.resource_value
-            #if os.name != 'nt':
-            #    blob_id = blob_id.encode('utf-8')
-            path,sub = self.drive_man.fetch_blob(blob_id)
-            log.debug('using %s full=%s localpath=%s sub=%s' , uniq_ident, blob_id, path, sub)
-            return path,sub
+            b = self.drive_man.fetch_blob(blob_id)
+            log.debug('using %s full=%s localpath=%s sub=%s' , uniq_ident, blob_id, b.path, b.sub)
+            return b
         elif resource is not None and resource.resource_value is None:
             #in case of a multi-file resource
             response = data_service.query(resource_uniq=uniq_ident, view='full')
             values = response.xpath('//value')
             if values is not None and len(values)>0:
+                files = []
                 # fetch all files referenced by the resource and return the first one
                 for v in reversed(values):
                     blob_id = v.text
-                    path,sub = self.drive_man.fetch_blob(blob_id)
-                
-                #blob_id = values[0].text
-                ##if os.name != 'nt':
-                ##    blob_id  = blob_id.encode('utf-8')
-                #path,sub = self.drive_man.fetch_blob(blob_id)
-                log.debug('using %s full=%s localpath=%s sub=%s' , uniq_ident, blob_id, path, sub)
-                return path,sub
+                    b = self.drive_man.fetch_blob(blob_id)
+                    if b.files is not None:
+                        files.extend(b.files)
+                    else:
+                        files.append(b.path)
+                log.debug('using %s full=%s localpath=%s sub=%s' , uniq_ident, blob_id, b.path, b.sub)
+                return blob_storage.Blobs(path=b.path, sub=b.sub, files=files)
         return None
 
     def originalFileName(self, ident):

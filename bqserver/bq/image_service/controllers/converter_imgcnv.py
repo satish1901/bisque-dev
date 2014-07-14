@@ -369,8 +369,13 @@ class ConverterImgcnv(ConverterBase):
             # use first image of the series, need to check for separate channels here
             command.extend(['-multi'])
             files = cls.enumerate_series_files(**kw)
-            for p in pages:
-                command.extend(['-i', files[p-1]])
+            if len(pages)==1 and (x1==x2 or y1==y2):
+                # in multi-file case and only one page is requested with no ROI, return with no re-conversion 
+                misc.dolink(files[pages[0]-1], ofnm)
+                return ofnm
+            else:
+                for p in pages:
+                    command.extend(['-i', files[p-1]])
         
         # roi
         if not x1==x2 or not y1==y2:

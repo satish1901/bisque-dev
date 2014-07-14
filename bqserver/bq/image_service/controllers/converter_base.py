@@ -31,7 +31,7 @@ log = logging.getLogger('bq.image_service.converter')
 ################################################################################
 
 def keyfunc(s):
-    return [int(''.join(g)) if k else ''.join(g) for k, g in groupby(s, str.isdigit)]
+    return [int(u''.join(g)) if k else u''.join(g) for k, g in groupby(unicode(s), unicode.isdigit)]
 
 ################################################################################
 # Format - the definition of a format
@@ -229,26 +229,7 @@ class ConverterBase(object):
         except (KeyError, TypeError, AttributeError):
             return []
         
-        # walk directories if present and augment the list
-        # dima: shound be done using fs driver (would be impossible in any case other than local)
-        # dima: REQUIRES REWRITE !!!!!
-        augmented = []
-        for f in files:
-            if f.startswith('file:///') is True:
-                f = f.replace('file:///', '')
-            if f.startswith('file://') is True:
-                f = f.replace('file://', '')
-            if os.name == 'nt':
-                f = f.replace('/', '\\')
-            if os.path.isdir(f) is True:
-                # dima: this is a shallow walk (1 level), in series case this is probably enough
-                augmented.extend( [os.path.join(f,fn) for fn in next(os.walk(f))[2]] )
-            else:
-                augmented.append(f)
-        
-        # extend and sort the final file list
-        files = augmented
-        files = list(set(files))
+        files = list(set(files)) # ensure unique names
         files = sorted(files, key=keyfunc) # use alpha-numeric sort
         return files
 

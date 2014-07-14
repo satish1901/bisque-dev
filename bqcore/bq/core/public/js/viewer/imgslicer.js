@@ -25,8 +25,8 @@ ImgSlicer.prototype.create = function (parent) {
     this.div.className = "image_viewer_slicer";
     this.tslider = null;
     this.zslider = null;
-    this.t = 0;
-    this.z = 0;
+    this.t = -1;
+    this.z = -1;
     this.buffer_len=this.plane_buffer_sz;            // Buffer X images
     this.dim = null;           // Last loaded image dimensions
 
@@ -78,8 +78,13 @@ ImgSlicer.prototype.getParams = function () {
 };
 
 ImgSlicer.prototype.updateView = function (view) {
-    view.z = this.z;
-    view.t = this.t;
+    if (this.z<0 && this.t<0) {
+        this.z = view.z;
+        this.t = view.t;
+    } else {
+        view.z = this.z;
+        view.t = this.t;
+    }
 
     var projection = this.default_projection;
     if (!this.menu) this.createMenu();
@@ -195,6 +200,7 @@ ImgSlicer.prototype.updatePosition = function () {
             renderTo: surf,
             autoShow: true,
             hysteresis: this.update_delay_ms,
+            value: view.t,
             minValue: 0,
             maxValue: dim.t-1,
             listeners: {
@@ -213,6 +219,7 @@ ImgSlicer.prototype.updatePosition = function () {
             renderTo: surf,
             autoShow: true,
             hysteresis: this.update_delay_ms,
+            value: view.z,
             minValue: 0,
             maxValue: dim.z-1,
             listeners: {
