@@ -51,7 +51,7 @@ ImgSlicer.prototype.create = function (parent) {
     return this.div;
 };
 
-ImgSlicer.prototype.createUrls  =function (view){
+ImgSlicer.prototype.createUrls = function (view) {
     var dim = view.imagedim;
     this.image_urls = new Array (dim.z);
     var save_z = this.z;
@@ -85,6 +85,10 @@ ImgSlicer.prototype.updateView = function (view) {
         view.z = this.z;
         view.t = this.t;
     }
+    if (this.prev) {
+        view.z = this.z = this.prev.z;
+        view.t = this.t = this.prev.t;
+    }
 
     var projection = this.default_projection;
     if (!this.menu) this.createMenu();
@@ -96,6 +100,8 @@ ImgSlicer.prototype.updateView = function (view) {
 
     // '', 'projectmax', 'projectmin', 'projectmaxt', 'projectmint', 'projectmaxz', 'projectminz'
     if (!projection || projection=='') {
+        if (this.prev)
+            this.prev = undefined;
         this.params.z1 = view.z+1;
         this.params.t1 = view.t+1;
         view.addParams ( 'slice=,,'+(view.z+1)+','+(view.t+1) );
@@ -107,6 +113,8 @@ ImgSlicer.prototype.updateView = function (view) {
         var newdimz = 1;
         var newdimt = 1;
         var prjtype = projection;
+        if (!this.prev)
+            this.prev = {z: view.z, t: view.t};
 
         if (prjtype.match('^projectmax')=='projectmax' ) projection = 'projectmax';
         if (prjtype.match('^projectmin')=='projectmin' ) projection = 'projectmin';
