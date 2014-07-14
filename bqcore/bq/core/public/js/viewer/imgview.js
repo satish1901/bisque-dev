@@ -468,8 +468,8 @@ ImgViewer.prototype.newImage = function (bqimage) {
     this.imageuri = bqimage.uri;
     this.imagesrc  = this.image.src;
 
-    var bqimagephys = new BQImagePhys (this.image);
-    bqimagephys.load (callback (this, 'newPhys') );
+    var phys = new BQImagePhys (this.image);
+    phys.load (callback (this, 'newPhys') );
 
     // this probably should be run after the imagephys is acquired
     // in order to disable the use of "default" service at all!
@@ -634,13 +634,16 @@ ImgViewer.prototype.end_wait = function (o) {
 };
 
 
-ImgViewer.prototype.newPhys = function (bqimagephys) {
+ImgViewer.prototype.newPhys = function (phys) {
     if (this.parameters.onloaded) this.parameters.onloaded();
 
-    this.imagephys = bqimagephys;
-    this.imagedim = new ImageDim (bqimagephys.x, bqimagephys.y, bqimagephys.z, bqimagephys.t, bqimagephys.ch);
+    this.imagephys = phys;
+    this.imagedim = new ImageDim (phys.x, phys.y, phys.z, phys.t, phys.ch);
 
-    this.current_view = new Viewstate(imgview_min_width, imgview_min_width, 0, 0, 1.0);
+    if (phys.z<3)
+        this.current_view = new Viewstate(imgview_min_width, imgview_min_width, 0, 0, 1.0);
+    else
+        this.current_view = new Viewstate(imgview_min_width, imgview_min_width, Math.floor((phys.z-1)/2), 0, 1.0);
     this.current_view.imagesrc = this.imagesrc;
     this.current_view.imagedim = this.imagedim.clone();
     if (this.parameters.onphys) this.parameters.onphys();

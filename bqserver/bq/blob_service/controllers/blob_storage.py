@@ -53,6 +53,7 @@ import urllib
 import string
 import shutil
 import datetime
+import collections
 
 from tg import config
 from paste.deploy.converters import asbool
@@ -89,6 +90,11 @@ except ImportError:
     pass
 
 
+#################################################
+#  misc
+#################################################
+
+Blobs = collections.namedtuple("Blobs", ["path", "sub", "files"], verbose=False, rename=False)
 
 def formatPath(format_path, user, filename, uniq, **params):
     """Create a unique path using a format and hash of filename
@@ -295,9 +301,20 @@ class LocalStorage(BlobStorage):
         path,sub = split_subpath(path)
         if not path.startswith('file://'):
             path = os.path.join(self.top, path)
-        path = path.replace('\\', '/')
+        path = url2localpath(path.replace('\\', '/'))
+
+        # if path is a directory, list contents
+        files = None
+        if os.path.isdir(path) is True:
+            # dima: this is a shallow walk (1 level), in series case this is probably enough
+            files = []
+            files.extend( [os.path.join(path,fn) for fn in next(os.walk(path))[2]] )
+
+        #if os.name == 'nt':
+        #    f = f.replace('/', '\\')
+
         # local storage can't extract sub paths, pass it along
-        return url2localpath(path),sub
+        return Blobs(path=path, sub=sub, files=files)
 
     def walk(self):
         'walk store returning all elements'
@@ -358,7 +375,8 @@ class iRodsStorage(BlobStorage):
             # if irods will provide extraction of sub files from compressed (zip, tar, ...) ask for it and return sub as None
             irods_ident,sub = split_subpath(irods_ident)
             path = irods_handler.irods_fetch_file(irods_ident, user=self.user, password=self.password)
-            return  path, sub
+            # dima: if path is a directory, list contents
+            return Blobs(path=path, sub=sub, files=None)
         except irods_handler.IrodsError:
             log.exception ("Error fetching %s ", irods_ident)
         return None
@@ -436,7 +454,8 @@ class S3Storage(BlobStorage):
         s3_ident,sub = split_subpath(s3_ident)
         s3_key = s3_ident.replace("s3://","")
         path = s3_handler.s3_fetch_file(self.bucket, s3_key)
-        return path,sub
+        # dima: if path is a directory, list contents
+        return Blobs(path=path, sub=sub, files=None)    
 
     def delete(self, s3_ident):
         s3_key = s3_ident.replace("s3://","")

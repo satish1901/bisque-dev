@@ -266,10 +266,10 @@ class image_serviceController(ServiceController):
             if len(meta)==0:
                 meta=None
             # append all subfiles for multi-file case
-            files = q.xpath('image/value')
-            if len(files)>0:
-                meta['files'] = [f.text for f in files]
-                log.debug('images files: %s', meta['files'])
+#             files = q.xpath('image/value')
+#             if len(files)>0:
+#                 meta['files'] = [f.text for f in files]
+#                 log.debug('images files: %s', meta['files'])
         except (AttributeError, IndexError):
             meta = None
 

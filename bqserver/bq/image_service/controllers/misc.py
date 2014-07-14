@@ -100,13 +100,6 @@ def isascii(s):
         return False
     return True
 
-def hardlink(source, link_name):
-    source = unicode(os.path.normpath(source))
-    link_name = unicode(os.path.normpath(link_name))
-    csl = ctypes.windll.kernel32.CreateHardLinkW
-    if csl(link_name, source, 0) == 0:
-        raise ctypes.WinError()
-
 # dima: We have to do some ugly stuff to get all unicode filenames to work correctly 
 # under windows, although imgcnv and ImarisConvert support unicode filenames
 # bioformats and openslide do not, moreover in python <3 subprocess package 
@@ -114,13 +107,26 @@ def hardlink(source, link_name):
 # prior to operations and rename them back right after, this is a
 # windows only problem!
 if os.name != 'nt':
+    def dolink(source, link_name):
+        return os.symlink(source, link_name)
+    
     def start_nounicode_win(ifnm, command):
         return command, None
     
     def end_nounicode_win(tmp):
         pass
-
+    
 else:
+    def hardlink(source, link_name):
+        source = unicode(os.path.normpath(source))
+        link_name = unicode(os.path.normpath(link_name))
+        csl = ctypes.windll.kernel32.CreateHardLinkW
+        if csl(link_name, source, 0) == 0:
+            raise ctypes.WinError()
+    
+    def dolink(source, link_name):
+        return hardlink(source, link_name)
+    
     def start_nounicode_win(ifnm, command):
         if isascii(ifnm):
             return command, None
