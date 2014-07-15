@@ -222,7 +222,7 @@ class BlobStorage(object):
         'return the local path of the identified file, if sub path present (after #), extract and return'
     def write(self, fp, name, user_name=None, uniq=None):
         'write the file to a local blob returning a short ident and the localpath'
-    def walk(self):
+    def walk(self, uri):
         'walk entries on this store .. see os.walk'
     def delete(self, ident):
         'delete an entry on the store'
