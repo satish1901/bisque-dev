@@ -8,9 +8,9 @@ function ImgSlicer (viewer, name){
     // default values for projection are: '', 'projectmax', 'projectmin'
     // only in the case of 5D image: 'projectmaxt', 'projectmint', 'projectmaxz', 'projectminz'
     this.default_projection  = p.projection || '';
-    this.plane_buffer_sz = 7;
+    this.plane_buffer_sz = 9;
     this.update_delay_ms = 250;  // Delay before requesting new frames
-    this.cache_delay_ms = 1000;  // Delay before pre-caching new frames
+    this.cache_delay_ms = 700;  // Delay before pre-caching new frames
 
     this.base = ViewerPlugin;
     this.base (viewer, name);
@@ -27,51 +27,22 @@ ImgSlicer.prototype.create = function (parent) {
     this.zslider = null;
     this.t = -1;
     this.z = -1;
-    this.buffer_len=this.plane_buffer_sz;            // Buffer X images
+    this.buffer_len = this.plane_buffer_sz; // Buffer X images
     this.dim = null;           // Last loaded image dimensions
 
     // pre-cache buffers for both Z and T dimensions
-    this.image_buffer_z  = new Array (0);
-    for (var i=0; i<this.buffer_len; i++){
-        var I = new Image();
-        I.validate = "never";
-        this.image_buffer_z.push( I );
+    this.image_buffer_z = [];
+    for (var i=0; i<this.buffer_len; i++) {
+        this.image_buffer_z[i] = [];
     }
-    this.image_buffer_t  = new Array (0);
-    for (var i=0; i<this.buffer_len; i++){
-        var I = new Image();
-        I.validate = "never";
-        this.image_buffer_t.push( I );
+    this.image_buffer_t = [];
+    for (var i=0; i<this.buffer_len; i++) {
+        this.image_buffer_t[i] = [];
     }
-
-    this.image_urls = null;
-    this.base_url = null;
 
     parent.appendChild(this.div);
     return this.div;
 };
-
-ImgSlicer.prototype.createUrls = function (view) {
-    var dim = view.imagedim;
-    this.image_urls = new Array (dim.z);
-    var save_z = this.z;
-    var save_t = this.t;
-
-    for (var z=0;z < dim.z; z++) {
-        this.image_urls[z] = new Array (dim.t);
-        this.z = z;
-        for (var t=0;  t < dim.t; t++) {
-            this.t = t;
-            this.image_urls[z][t] = this.viewer.image_url ();
-        }
-    }
-    this.t = save_t;
-    this.z = save_z;
-};
-
-//ImgSlicer.prototype.showSlider = function ( item, visible ) {
-//    if (item) item.show(visible);
-//}
 
 ImgSlicer.prototype.getParams = function () {
     return this.params || {};
@@ -186,16 +157,11 @@ ImgSlicer.prototype.updateImage = function () {
         }
 
     }
-
-
     this.dim = dim;
-    if (this.base_url != this.viewer.image_url () ){
-        this.createUrls(view);
-        this.base_url = this.viewer.image_url ();
-    }
 
     if (this.cache_timeout) clearTimeout (this.cache_timeout);
-    this.cache_timeout = setTimeout(callback(this, 'preCacheNeighboringImages'), this.cache_delay_ms);
+    if (this.dim.z>1 || this.dim.t>1)
+        this.cache_timeout = setTimeout(callback(this, 'preCacheNeighboringImages'), this.cache_delay_ms);
 };
 
 ImgSlicer.prototype.updatePosition = function () {
@@ -269,21 +235,46 @@ ImgSlicer.prototype.setPosition = function (z, t) {
     this.viewer.need_update();
 };
 
+ImgSlicer.prototype.doCache = function (pos, posmax, buf, bufmax, slice, nslice, tiles) {
+    if (pos<0) return;
+    if (pos>=posmax) return;
+    for (var p=0; p<bufmax; p++) {
+        var u = tiles[p].replace(slice, nslice);
+        try {
+            buf[p].src = u;
+        } catch (e) {
+            var I = new Image();
+            I.validate = "never";
+            I.src = u;
+            buf[p] = I;
+        }
+    }
+};
+
 ImgSlicer.prototype.preCacheNeighboringImages = function () {
     this.cache_timeout = null;
-    if (this.dim.z>1)
+
+    var tiles = this.viewer.tiles.getLoadedTileUrls();
+    var num_tiles = tiles.length;
+    var slice = 'slice=,,'+(this.z+1)+','+(this.t+1);
+    var dim = this.dim;
+
+    if (dim.z>1)
     for (var i=0; i<this.buffer_len; i++) {
-        var z = this.z-Math.floor(this.buffer_len/2) + i;
-        if (z<0) continue;
-        if (z>=this.dim.z) continue;
-        this.image_buffer_z[i].src = this.image_urls[z][this.t];
+        var buf = this.image_buffer_z[i];
+        var hp = Math.floor(i/2);
+        var z = i%2 ? this.z+hp : this.z-hp;
+        var nslice = 'slice=,,'+(z+1)+','+(this.t+1);
+        this.doCache(z, this.dim.z, buf, num_tiles, slice, nslice, tiles);
     }
-    if (this.dim.t>1)
+
+    if (dim.t>1)
     for (var i=0; i<this.buffer_len; i++) {
-        var t = this.t-Math.floor(this.buffer_len/2) + i;
-        if (t<0) continue;
-        if (t>=this.dim.t) continue;
-        this.image_buffer_t[i].src = this.image_urls[this.z][t];
+        var buf = this.image_buffer_t[i];
+        var hp = Math.floor(i/2);
+        var t = i%2 ? this.t+hp : this.t-hp;
+        var nslice = 'slice=,,'+(this.z+1)+','+(t+1);
+        this.doCache(t, this.dim.t, buf, num_tiles, slice, nslice, tiles);
     }
 };
 

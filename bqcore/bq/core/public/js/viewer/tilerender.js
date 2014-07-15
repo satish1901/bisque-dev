@@ -101,5 +101,6 @@ TilesRenderer.prototype.ensureVisible = function (gob) {
     this.tiled_viewer.ensureVisible({x: x, y: y});
 };
 
-
-
+TilesRenderer.prototype.getLoadedTileUrls = function () {
+    return this.tiled_viewer.loadedTileUrls();
+};

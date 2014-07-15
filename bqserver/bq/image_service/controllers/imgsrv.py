@@ -1093,7 +1093,7 @@ class ThumbnailService(object):
        w - new width
        h - new height
        method - ''|NN|BL|BC - default, Nearest neighbor, Bilinear, Bicubic respectively
-       preproc - ''|MID|MIP|NIP - empty (auto), middle slice, maximum intensity projection, minimum intesnity projection
+       preproc - ''|MID|MIP|NIP - empty (auto), middle slice, maximum intensity projection, minimum intensity projection
        format - output image format
        ex: ?thumbnail
        ex: ?thumbnail=200,200,BC,,png
