@@ -143,7 +143,7 @@ class ConverterImaris(ConverterBase):
         if not self.installed:
             return False
         log.debug('Supported for: %s', ifnm )
-        return len(self.info(ifnm))>0
+        return len(self.info(ifnm, **kw))>0
 
 
     #######################################
@@ -157,7 +157,9 @@ class ConverterImaris(ConverterBase):
         
         log.debug('Meta for: %s', ifnm )
         fd,logfile = tempfile.mkstemp(suffix='.log')
-        meta = self.run_read(ifnm, [self.CONVERTERCOMMAND, '-i', ifnm, '-m', '-l', logfile]) #, '-ii', '%s'%series] )
+        command = [self.CONVERTERCOMMAND, '-i', ifnm, '-m', '-l', logfile] #, '-ii', '%s'%series]
+        command.extend( self.extention(**kw) ) # extend if timeout or meta are present
+        meta = self.run_read(ifnm, command)
         os.close(fd)
         os.remove(logfile)
         if meta is None:
@@ -306,7 +308,7 @@ class ConverterImaris(ConverterBase):
         log.debug('Info for: %s', ifnm )
         if not os.path.exists(ifnm):
             return {}
-        rd = self.meta(ifnm, series)
+        rd = self.meta(ifnm, series, **kw)
         core = [ 'image_num_series', 'image_num_x', 'image_num_y', 'image_num_z', 'image_num_c', 'image_num_t',
                  'image_pixel_format', 'image_pixel_depth', 'image_series_index',
                  'pixel_resolution_x', 'pixel_resolution_y', 'pixel_resolution_z',
