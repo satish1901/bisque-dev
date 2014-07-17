@@ -163,10 +163,10 @@ class ConverterImgcnv(ConverterBase):
         
         if self.is_multifile_series(**kw) is True:
             rd.update(kw['token'].meta)
-            try:
-                del rd['files']
-            except (KeyError):
-                pass
+            #try:
+            #    del rd['files']
+            #except (KeyError):
+            #    pass
 
         return rd
 
@@ -215,10 +215,10 @@ class ConverterImgcnv(ConverterBase):
         
         if self.is_multifile_series(**kw) is True:
             rd.update(kw['token'].meta)
-            try:
-                del rd['files']
-            except (KeyError):
-                pass
+            #try:
+            #    del rd['files']
+            #except (KeyError):
+            #    pass
         
         return rd
 
