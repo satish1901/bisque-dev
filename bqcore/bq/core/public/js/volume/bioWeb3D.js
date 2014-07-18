@@ -430,7 +430,9 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
 			} else
 				fragUrl = "/js/volume/shaders/rayCastBlocks.fs";
-		}
+		} else
+				fragUrl = "/js/volume/shaders/rayCastBlocks.fs";
+
 
 		this.sceneVolume.initMaterial({
 			name : 'diffuse',
