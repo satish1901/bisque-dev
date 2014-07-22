@@ -35,6 +35,9 @@ ImgSlicer.prototype.create = function (parent) {
     this.image_buffer_z = [];
     this.image_buffer_t = [];
 
+    //this.cacher_z = new Worker('/js/viewer/cacher.js');
+    //this.cacher_t = new Worker('/js/viewer/cacher.js');
+
     parent.appendChild(this.div);
     return this.div;
 };
@@ -262,6 +265,15 @@ ImgSlicer.prototype.doCacheTile = function (buf, pos, url) {
     }
 };
 
+/*
+ImgSlicer.prototype.doCacheTile = function (cacher, pos, url) {
+    cacher.postMessage({
+        url: url,
+        pos: pos,
+    });
+};
+*/
+
 ImgSlicer.prototype.queueCacheTile = function (buf, pos, url) {
     setTimeout(callback(this, 'doCacheTile', buf, pos, url), this.cache_tile_delay_ms);
 };
@@ -292,6 +304,7 @@ ImgSlicer.prototype.preCacheNeighboringImages = function () {
             var z = i%2 ? this.z-hp : this.z+hp;
             var nslice = 'slice=,,'+(z+1)+','+(this.t+1);
             dz = this.cacheTiles(z, dim.z, this.image_buffer_z, szz, slice, nslice, tiles);
+            //dz = this.cacheTiles(z, dim.z, this.cacher_z, szz, slice, nslice, tiles);
             szz += dz;
         }
         var dt=0;
@@ -299,6 +312,7 @@ ImgSlicer.prototype.preCacheNeighboringImages = function () {
             var t = i%2 ? this.t-hp : this.t+hp;
             var nslice = 'slice=,,'+(this.z+1)+','+(t+1);
             dt = this.cacheTiles(t, dim.t, this.image_buffer_t, szt, slice, nslice, tiles);
+            //dt = this.cacheTiles(t, dim.t, this.cacher_t, szt, slice, nslice, tiles);
             szt += dt;
         }
         if (dz<1 && dt<1) return;

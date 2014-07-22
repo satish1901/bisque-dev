@@ -251,16 +251,18 @@ class StoreServer(TGController):
         best = None
         root = self._create_root_store()
         drivers = self.drivers
-        for name,driver  in drivers.items():
+        for name,driver in drivers.items():
             if not hasattr(driver, 'user_path'):
                 continue
+            log.debug('find_store_by_blob name: %s driver: %s path: %s', name, driver, path)
             new_path = driver.valid (path)
+            log.debug('find_store_by_blob name new_path: %s', new_path)
             if new_path:
                 user_path = string.Template(driver.user_path).safe_substitute(user = user_name)
                 if not new_path.startswith(user_path):
                     continue
 
-                store = data_service.query('store', parent=root, resource_unid=name,view='full', cache=False)
+                store = data_service.query('store', parent=root, resource_unid=name, view='full', cache=False)
                 if len(store) == 0:
                     store = None
                     partial = name + '/' + new_path[len(user_path):]
@@ -345,7 +347,7 @@ class StoreServer(TGController):
 
         root = data_service.query('store', resource_unid='(root)', view='full')
         if len(root) == 0:
-           return  data_service.new_resource(etree.Element('store', name="(root)", resource_unid="(root)"), view='full')
+            return  data_service.new_resource(etree.Element('store', name="(root)", resource_unid="(root)"), view='full')
         elif len(root) > 1:
             log.error("Root store created more than once: %s ", etree.tostring(root))
             return None

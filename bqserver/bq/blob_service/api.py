@@ -11,6 +11,11 @@ def store_blob(resource, fileobj=None):
     server = find_server()
     return server.store_blob(resource=resource, fileobj=fileobj)
 
+def store_multi_blob(resource, unpack_dir):
+    "create and store a resource multi-blob"
+    server = find_server()
+    return server.store_multi_blob(resource=resource, unpack_dir=unpack_dir)
+
 def localpath(uniq_ident):
     "return localpath of resource by ident (uniq)"
     server = find_server()

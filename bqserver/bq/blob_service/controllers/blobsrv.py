@@ -391,7 +391,8 @@ class BlobServer(RestController, ServiceMixin):
 
         perm     = resource.get('permission', 'private')
         filename = resource.get('name')
-        resource.set('resource_type', resource.get('resource_type') or guess_type(filename))
+        if resource.tag == 'resource': # requires type guessing
+            resource.set('resource_type', resource.get('resource_type') or guess_type(filename))
         # KGK
         # These are redundant (filename is the attribute name name upload is the ts
         resource.insert(0, etree.Element('tag', name="filename", value=filename, permission=perm))
@@ -411,13 +412,13 @@ class BlobServer(RestController, ServiceMixin):
         log.debug('store_blob: %s', etree.tostring(resource))
         for x in range(3):
             try:
-                fhash = resource.get ('resource_uniq')
-                if fhash is None:
+                uniq = resource.get ('resource_uniq')
+                if uniq is None:
                     resource.set('resource_uniq', data_service.resource_uniq() )
                 if fileobj is not None:
-                    resource =  self._store_fileobj(resource, fileobj)
+                    resource = self._store_fileobj(resource, fileobj)
                 else:
-                    resource =  self._store_reference(resource, resource.get('value') )
+                    resource = self._store_reference(resource, resource.get('value') )
                 #smokesignal.emit(SIG_NEWBLOB, self.store, path=resource.get('value'), resource_uniq=resource.get ('resource_uniq'))
 
                 if asbool(config.get ('bisque.blob_service.store_paths', True)):
@@ -431,6 +432,62 @@ class BlobServer(RestController, ServiceMixin):
                 resource.set('name', '%s-%s' % (resource.get('name'), resource.get('resource_uniq')[3:7+x]))
         raise ServiceError("Unable to store blob")
 
+    # dima: store resource with multiple values - pointers to many files
+    # right now it's assumed multi-blob came from a packaged file and thus values are local
+    # the storage driver should be able to move files over to the desired location
+    # it would be best to know where that location is and extract files directly there
+    # although that will only work in the local case, if storing to irods or s3 that would
+    # have to follow the driver protocol
+    def store_multi_blob(self, resource, unpack_dir):
+        'Store blobs for a multi-file resource'
+        log.debug('store_multi_blob: %s', etree.tostring(resource))
+        for x in range(3):
+            try:
+                uniq = resource.get ('resource_uniq')
+                if uniq is None:
+                    uniq = data_service.resource_uniq()
+                    resource.set('resource_uniq', uniq )
+
+                user_name = identity.current.user_name
+                for value in resource.xpath('value'):
+                    urlref = value.text
+                    #resource = self._store_reference(resource, resource.get('value') )
+                    if not self.drive_man.valid_blob(urlref):
+                        # We have a URLref that is not part of the sanctioned stores:
+                        # We will move it
+
+                        # compute a filename for a sub-file
+                        basename = resource.get('name')
+                        subname = urlref.replace('file:///%s'%unpack_dir, '')
+                        filename = os.path.join(basename, subname).replace('\\', '/')
+                        
+                        localpath = self._make_url_local(urlref)
+                        log.debug("Storing new local sub-blob [%s] with [%s]", localpath, filename)
+                        if localpath:
+                            with open(localpath, 'rb') as f:
+                                with TransferTimer() as t:
+                                    urlref, t.path = self.drive_man.save_blob(f, filename, user_name = user_name, uniq=uniq)
+                        # update the file reference in the resource
+                        value.text = urlref
+                #filename = resource.get ('name') or urlref.rsplit('/',1)[1]
+                #resource.set ('name', os.path.basename(filename))
+                
+                resource.set('name', os.path.basename(resource.get('name')))
+                resource = self.create_resource(resource)
+                
+                if asbool(config.get ('bisque.blob_service.store_paths', True)):
+                    # dima: insert_blob_path should probably be renamed to insert_blob
+                    # it should probably receive a resource and make decisions on what and how to store in the file tree
+                    self.store.insert_blob_path( path=resource.xpath('value')[0].text,
+                                                 resource_name = resource.get('name'),
+                                                 resource_uniq = resource.get ('resource_uniq'))
+                return resource
+            except DuplicateFile, e:
+                log.warn("Duplicate file. renaming")
+                #resource.set('resource_uniq', data_service.resource_uniq())
+                resource.set('name', '%s-%s' % (resource.get('name'), resource.get('resource_uniq')[3:7+x]))
+        raise ServiceError("Unable to store multi-blob")
+    
     def _store_fileobj(self, resource, fileobj ):
         'Create a blob from a file .. used by store_blob'
         user_name = identity.current.user_name
@@ -455,7 +512,9 @@ class BlobServer(RestController, ServiceMixin):
 
     def _make_url_local(self, urlref):
         'return a local file to the specified urlref'
-        if urlref.startswith ('file:'):
+        if urlref.startswith ('file:///'):
+            return urlref.replace('file:///', '')
+        elif urlref.startswith ('file://'):
             return urlref [5:]
         return None
 
