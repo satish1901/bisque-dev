@@ -153,9 +153,11 @@ if os.name == 'nt':
     
     def localpath2url(path):
         url = urllib.quote(path.encode('utf-8'))
-        if url[0] != '/':
+        if len(url)>3 and url[0] != '/' and url[1] == ':': 
+            # path starts with a drive letter: c:/
             url = 'file:///%s'%url
         else:
+            # path is a relative path
             url = 'file://%s'%url
         return url
 
@@ -178,6 +180,7 @@ else:
 
     def localpath2url(path):
         url = urllib.quote(path.encode('utf-8'))
+        #if len(url)>1 and url[0] == '/':
         url = 'file://%s'%url
         return url
 
@@ -217,7 +220,7 @@ class BlobStorage(object):
     def __str__(self):
         return "<%s>" % (self.format_path)
     def valid(self, ident):
-        'determine whether this store can access the identified file'
+        'determine whether this store can access the identified file and return its path' # dima: should it return a valid local path?
     def localpath(self, ident):
         'return the local path of the identified file, if sub path present (after #), extract and return'
     def write(self, fp, name, user_name=None, uniq=None):
@@ -265,10 +268,20 @@ class LocalStorage(BlobStorage):
         log.info("created localstore %s (%s) options %s" , self.format_path, self.top, self.options)
 
     def valid(self, ident):
+        # dima: there's only one local storage in the system, file:// should all be redirected to it 
         ident,_ = split_subpath(ident)
-        return ((ident.startswith(self.top)  and ident)
-                or  (urlparse.urlparse(ident).scheme == '' and os.path.join(self.top, ident).replace('\\', '/')))
-                #and os.path.exists(self.localpath(ident)))
+        scheme = urlparse.urlparse(ident).scheme
+        
+        if ident.startswith(self.top):
+            return ident
+        elif scheme == '': # old case of a stored pure relative path
+            return os.path.join(self.top, ident).replace('\\', '/')
+        #elif ident.startswith('%s:///'%scheme): 
+        #     #this would allow arbirary paths
+        #    return ident
+        elif scheme == self.scheme and not ident.startswith('%s:///'%scheme):
+            # sub-paths defined with file:// 
+            return os.path.join(self.top, ident.replace('%s://'%scheme, '')).replace('\\', '/')
 
     def write(self, fp, filename, user_name=None, uniq=None):
         'store blobs given local path'
@@ -289,7 +302,7 @@ class LocalStorage(BlobStorage):
                 if ident[0] == '/':
                     ident = ident[1:]
                 #ident = "file://%s" % localpath
-
+                ident = localpath2url(ident)
                 log.debug('local.blob_id: %s -> %s',  ident, localpath)
                 return ident, localpath
             localpath = "%s-%s%s" % (fpath , uniq[3:7+x] , ext)
@@ -298,10 +311,17 @@ class LocalStorage(BlobStorage):
         raise DuplicateFile(localpath)
 
     def localpath(self, path):
+        log.debug('local_store localpath: %s', path)
         path,sub = split_subpath(path)
-        if not path.startswith('file://'):
-            path = os.path.join(self.top, path)
+        if not path.startswith('file:///'):
+            if path.startswith('file://'):
+                path = os.path.join(self.top, path.replace('file://', ''))
+            else:
+                path = os.path.join(self.top, path)
+            
         path = url2localpath(path.replace('\\', '/'))
+
+        log.debug('local_store localpath path: %s', path)
 
         # if path is a directory, list contents
         files = None
