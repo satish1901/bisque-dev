@@ -386,7 +386,10 @@ def POST_mex (service_uri, mex, username):
     status = resp.get('status')
     log.info ("DISPATCH: RESULT %s (%s) ->%s", service_uri, mex_url, status)
     log.debug("DISPATCH: RESULT %s", content)
-
+    try:
+        status = int(status)
+    except (TypeError, ValueError):
+        pass
     if status != 200:
         POST_error(mex_url, username, resp, content)
 

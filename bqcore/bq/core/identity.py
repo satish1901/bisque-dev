@@ -3,8 +3,9 @@
 #from turbogears.util import request_available
 
 #pylint:disable=E0611
-from repoze.what.predicates import in_group
 from tg import request, session
+from repoze.what.predicates import in_group
+
 import logging
 from bq.exceptions import BQException
 from bq.core.model import DBSession, User
