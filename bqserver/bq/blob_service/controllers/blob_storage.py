@@ -152,8 +152,9 @@ if os.name == 'nt':
             return urllib.unquote(path)
     
     def localpath2url(path):
+        path = path.replace('\\', '/')
         url = urllib.quote(path.encode('utf-8'))
-        if len(url)>3 and url[0] != '/' and url[1] == ':': 
+        if len(path)>3 and path[0] != '/' and path[1] == ':': 
             # path starts with a drive letter: c:/
             url = 'file:///%s'%url
         else:
@@ -271,8 +272,11 @@ class LocalStorage(BlobStorage):
         # dima: there's only one local storage in the system, file:// should all be redirected to it 
         ident,_ = split_subpath(ident)
         scheme = urlparse.urlparse(ident).scheme
+
+        log.debug('valid ident %s top %s', ident, self.top)
+        log.debug('valid local ident %s local top %s', url2localpath(ident), url2localpath(self.top))
         
-        if ident.startswith(self.top):
+        if url2localpath(ident).startswith(url2localpath(self.top)):
             return ident
         elif scheme == '': # old case of a stored pure relative path
             return os.path.join(self.top, ident).replace('\\', '/')

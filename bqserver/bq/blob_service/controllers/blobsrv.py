@@ -80,6 +80,7 @@ from bq.util.sizeoffmt import sizeof_fmt
 
 from bq import data_service
 from bq.data_service.model import Taggable, DBSession
+#from bq import image_service
 
 SIG_NEWBLOB  = "new_blob"
 
@@ -312,12 +313,8 @@ class BlobServer(RestController, ServiceMixin):
         #ident = args[0]
         self.check_access(ident, RESOURCE_READ)
         try:
-            b = self.localpath(ident)
-            #check if blob instance - added by chris
-            if isinstance(b,blob_storage.Blobs):
-                localpath = os.path.normpath(b.path)
-            else:
-                localpath = os.path.normpath(self.localpath(ident))
+            b = os.path.normpath(self.localpath(ident))
+            localpath = b.path
             filename = self.originalFileName(ident)
             if 'localpath' in kw:
                 tg.response.headers['Content-Type']  = 'text/xml'
@@ -398,8 +395,11 @@ class BlobServer(RestController, ServiceMixin):
         filename = resource.get('name')
         if resource.tag == 'resource': # requires type guessing
             resource.set('resource_type', resource.get('resource_type') or guess_type(filename))
+        if resource.get('resource_uniq') is None:
+            resource.set('resource_uniq', data_service.resource_uniq() )
         # KGK
         # These are redundant (filename is the attribute name name upload is the ts
+        # dima: today needed for organizer to work
         resource.insert(0, etree.Element('tag', name="filename", value=filename, permission=perm))
         resource.insert(1, etree.Element('tag',
                                          name="upload_datetime",
@@ -456,26 +456,28 @@ class BlobServer(RestController, ServiceMixin):
                 user_name = identity.current.user_name
                 for value in resource.xpath('value'):
                     urlref = value.text
-                    #resource = self._store_reference(resource, resource.get('value') )
                     if not self.drive_man.valid_blob(urlref):
                         # We have a URLref that is not part of the sanctioned stores:
                         # We will move it
+                        localpath = self._make_url_local(urlref)
+                        _,sub = blob_storage.split_subpath(urlref)
 
                         # compute a filename for a sub-file
-                        basename = resource.get('name')
-                        subname = urlref.replace('file:///%s'%unpack_dir, '')
+                        basename,_ = blob_storage.split_subpath(resource.get('name'))
+                        basename = '%s.unpacked'%basename
+                        subname = blob_storage.url2localpath(urlref).replace(unpack_dir, '')
                         filename = os.path.join(basename, subname).replace('\\', '/')
-                        
-                        localpath = self._make_url_local(urlref)
                         log.debug("Storing new local sub-blob [%s] with [%s]", localpath, filename)
-                        if localpath:
+                        if os.path.isdir(localpath):
+                            # dima: we should probably list and store all files but there might be overlaps with individual refs
+                            value.text = blob_storage.localpath2url(filename)
+                            #continue
+                        elif localpath:
                             with open(localpath, 'rb') as f:
                                 with TransferTimer() as t:
                                     urlref, t.path = self.drive_man.save_blob(f, filename, user_name = user_name, uniq=uniq)
-                        # update the file reference in the resource
-                        value.text = urlref
-                #filename = resource.get ('name') or urlref.rsplit('/',1)[1]
-                #resource.set ('name', os.path.basename(filename))
+                                    # update the file reference in the resource
+                                    value.text = urlref if sub is None else '%s#%s'%(urlref, sub)
                 
                 resource.set('name', os.path.basename(resource.get('name')))
                 resource = self.create_resource(resource)
@@ -489,7 +491,6 @@ class BlobServer(RestController, ServiceMixin):
                 return resource
             except DuplicateFile, e:
                 log.warn("Duplicate file. renaming")
-                #resource.set('resource_uniq', data_service.resource_uniq())
                 resource.set('name', '%s-%s' % (resource.get('name'), resource.get('resource_uniq')[3:7+x]))
         raise ServiceError("Unable to store multi-blob")
     
@@ -517,10 +518,12 @@ class BlobServer(RestController, ServiceMixin):
 
     def _make_url_local(self, urlref):
         'return a local file to the specified urlref'
-        if urlref.startswith ('file:///'):
-            return urlref.replace('file:///', '')
-        elif urlref.startswith ('file://'):
-            return urlref [5:]
+        #if urlref.startswith ('file:///'):
+        #    return urlref.replace('file:///', '')
+        #elif urlref.startswith ('file://'):
+        #    return urlref [5:]
+        if urlref.startswith ('file://'):
+            return blob_storage.url2localpath(urlref)
         return None
 
     def _store_reference(self, resource, urlref ):

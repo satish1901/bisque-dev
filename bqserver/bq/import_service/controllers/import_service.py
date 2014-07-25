@@ -109,9 +109,9 @@ from repoze.what import predicates
 import bq
 from bq.core import permission, identity
 from bq.util.paths import data_path
-#from bq import image_service
 from bq import data_service
 from bq import blob_service
+from bq import image_service
 
 from bq.image_service.controllers.converter_imgcnv import ConverterImgcnv
 from bq.image_service.controllers.converter_bioformats import ConverterBioformats
@@ -123,6 +123,7 @@ log = logging.getLogger("bq.import_service")
 
 UPLOAD_DIR = config.get('bisque.import_service.upload_dir', data_path('uploads'))
 
+FS_FILES_IGNORE = ['.', '..', 'Thumbs.db', '.DS_Store', '.Trashes']
 
 #---------------------------------------------------------------------------------------
 # Direct transfer handling (reducing filecopies )
@@ -152,6 +153,14 @@ if hasattr(cgi, 'file_upload_handler'):
 
 def blocked_alpha_num_sort(s):
     return [int(u''.join(g)) if k else u''.join(g) for k, g in groupby(unicode(s), unicode.isdigit)]
+
+def is_filesystem_file(filename):
+    filename = os.path.basename(filename)
+    if filename in FS_FILES_IGNORE: # skip ignored files
+        return True
+    if filename.startswith('._'): # MacOSX files starting at '._'
+        return True
+    return False
 
 def sanitize_filename(filename):
     """ Removes any path info that might be inside filename, and returns results. """
@@ -190,8 +199,11 @@ class UploadedResource(object):
         # Set the path and filename of the UploadFile
         # A local path will be available in 'value'
         path = resource.get('value')
-        if path and path.startswith('file://'):
-            self.path = path.replace('file://', '')
+        #if path and path.startswith('file://'):
+        #    self.path = path.replace('file://', '')
+        if path:
+            path = blob_service.url2local(path)
+            
         # If the uploader has given it a name, then use it, or figure a name out
         if resource.get ('name'):
             self.filename = sanitize_filename(resource.get('name'))
@@ -204,6 +216,9 @@ class UploadedResource(object):
 
     def localpath(self):
         'retrieve a local path for this uploaded resource'
+        if self.fileobj is None:
+            return None
+        return self.path or getattr(self.fileobj, 'filename', None) or getattr(self.fileobj, 'name', '')
 
     def close(self):
         'close fileobj'
@@ -234,19 +249,30 @@ class import_serviceController(ServiceController):
     def __init__(self, server_url):
         super(import_serviceController, self).__init__(server_url)
 
-        mimetypes.add_type('image/slidebook', '.sld')
-        mimetypes.add_type('image/volocity', '.mvd2')
+        #mimetypes.add_type('image/slidebook', '.sld')
+        #mimetypes.add_type('image/volocity', '.mvd2')
+        
+        # special mime-types for proprietary images able to store multiple series
+        # define the list here in order to minimize info calls on these images
+        # will have to figure how many series are inside to create proper resources
+        self.series_exts = image_service.proprietary_series_extensions()
+        log.debug('Series extensions: %s', self.series_exts)
+        for e in self.series_exts:
+            mimetypes.add_type('image/series', '.%s'%e)
+        self.series_headers = image_service.proprietary_series_headers()
 
         self.filters = {}
-        self.filters['zip-bisque']      = self.filter_zip_bisque
-        self.filters['zip-multi-file']  = self.filter_zip_multifile
-        self.filters['zip-time-series'] = self.filter_zip_tstack
-        self.filters['zip-z-stack']     = self.filter_zip_zstack
-        self.filters['zip-5d-image']    = self.filter_5d_image
-        self.filters['zip-volocity']    = self.filter_zip_volocity
-        #self.filters['zip-series-multi']    = self.filter_zip_series_multi
-        self.filters['image/slidebook'] = self.filter_series_bioformats
-        self.filters['image/volocity']  = self.filter_series_bioformats
+        self.filters['zip-bisque']        = self.filter_zip_bisque
+        self.filters['zip-multi-file']    = self.filter_zip_multifile
+        self.filters['zip-time-series']   = self.filter_zip_tstack
+        self.filters['zip-z-stack']       = self.filter_zip_zstack
+        self.filters['zip-5d-image']      = self.filter_5d_image
+        self.filters['image/proprietary'] = self.filter_series_proprietary
+        self.filters['zip-proprietary']   = self.filter_zip_proprietary
+        
+        #self.filters['zip-volocity']    = self.filter_zip_volocity
+        #self.filters['image/slidebook'] = self.filter_series_bioformats
+        #self.filters['image/volocity']  = self.filter_series_bioformats
         
         self.bioformats = ConverterBioformats()
         self.imgcnv = ConverterImgcnv()
@@ -388,7 +414,7 @@ class import_serviceController(ServiceController):
 
     def process5Dimage(self, uf, **kw):
         unpack_dir, members = self.unpackPackagedFile(uf, preserve_structure=True)
-        #members = list(set(members)) # ensure unique names
+        members = [ m for m in members if is_filesystem_file(m) is not True ] # remove file system internal files
         members = sorted(members, key=blocked_alpha_num_sort) # use alpha-numeric sort
         members = [ '%s/%s'%(unpack_dir, m) for m in members ] # full paths
 
@@ -408,7 +434,8 @@ class import_serviceController(ServiceController):
         resource = etree.Element ('image', name='%s.series'%uf.resource.get('name'), resource_type='image')
         for v in members:
             val = etree.SubElement(resource, 'value' )
-            val.text = 'file://%s'%v if os.name != 'nt' else 'file:///%s'%v
+            #val.text = 'file://%s'%v if os.name != 'nt' else 'file:///%s'%v
+            val.text = blob_service.local2url(v)
 
         image_meta = etree.SubElement(resource, 'tag', name='image_meta', type='image_meta', resource_unid='image_meta' )
         etree.SubElement(image_meta, 'tag', name='image_num_z', value='%s'%params['z'] )
@@ -425,71 +452,113 @@ class import_serviceController(ServiceController):
         # pass a temporary top directory where the sub-files are stored
         return unpack_dir, blob_service.store_multi_blob(resource=resource, unpack_dir='%s/'%unpack_dir)
 
+#------------------------------------------------------------------------------
+# process proprietary series file and create multiple resources if needed
+#------------------------------------------------------------------------------
+
+    def processSeriesProprietary(self, uf, intags):
+        ''' process proprietary series file and create multiple resources if needed '''
+        log.debug('processSeriesProprietary: %s %s', uf, intags )
+        resources = []
+        for n in range(intags.get('image_num_series', 0)):
+            name = '%s#%s'%(uf.resource.get('name'), n)
+            value = '%s#%s'%(uf.resource.get('value'), n)
+            resource = etree.Element ('image', name=name, value=value, resource_type='image')
+            # append all other input annotations
+            resource.extend (copy.deepcopy (list (uf.resource)))
+            if n==0:
+                resource = blob_service.store_blob(resource=resource, fileobj=uf.fileobj)
+            else:
+                resource = blob_service.store_blob(resource=resource)
+            resources.append(resource)
+        return resources
 
 #------------------------------------------------------------------------------
 # multi-series files supported by bioformats
 #------------------------------------------------------------------------------
 
-    def extractSeriesBioformats(self, upload_file):
-        ''' This method unpacked uploaded file into a proper location '''
-        self.check_bioformats()
+    def processPackageProprietary(self, uf, intags):
+        ''' Unpack and insert a proprietary multi-file-multi-image series '''
+        log.debug('processPackageProprietary: %s %s', uf, intags )
 
-        # need to unpack into a local temp dir and then insert into blob storage (which later may go up to irods or s3)
-        filepath,_,_ = blob_service.localpath (upload_file.resource.get('resource_uniq'))
-        #unpack_dir = '%s.EXTRACTED'%( filepath ) # dima: can be optimized writing directly into output
-        unpack_dir = os.path.join(UPLOAD_DIR, bq.core.identity.get_user().name, upload_file.resource.get('resource_uniq'))
-        unpack_dir = os.path.join(unpack_dir, '%s.UNPACKED'%os.path.basename(filepath)).replace('\\', '/')
-        _mkdir (unpack_dir)        
+        unpack_dir, members = self.unpackPackagedFile(uf, preserve_structure=True)
+        members = [ m for m in members if is_filesystem_file(m) is not True ] # remove file system internal files
+        members = sorted(members, key=blocked_alpha_num_sort) # use alpha-numeric sort
+        members = [ '%s/%s'%(unpack_dir, m) for m in members ] # full paths
+        members = [ m for m in members if os.path.isdir(m) is not True ] # remove directories        
+        log.debug('processPackageProprietary members: %s', members)
 
-        if os.name == 'nt': 
-            filepath = filepath.replace('/', '\\')
-
-        # extract all the series from the file
-        members = []
-        info = self.bioformats.info(filepath)
-        if len(info)>0:
-            if 'image_num_series' in info:
-                n = info['image_num_series']
-                for i in range(n):
-                    fn = 'series_%.5d.ome.tif'%i
-                    outfile = os.path.join(unpack_dir, fn)
-                    if os.name == 'nt': 
-                        outfile = outfile.replace('/', '\\')
-                    self.bioformats.convertToOmeTiff(ifnm=filepath, ofnm=outfile, series=i)
-                    if os.path.exists(outfile) and self.imgcnv.supported(outfile):
-                        members.append(fn)
-
-        return unpack_dir, members
-
-#------------------------------------------------------------------------------
-# volocity files supported by bioformats
-#------------------------------------------------------------------------------
-
-    def extractSeriesVolocity(self, upload_file):
-        ''' This method unpacks uploaded file and converts from Volocity to ome-tiff '''
-        self.check_bioformats()
-        unpack_dir, members = self.unpackPackagedFile(upload_file, preserve_structure=True)
-
-        log.debug('unpack_dir:\n %s'% unpack_dir )
-        log.debug('members:\n %s'% members )
-
-        # find all *.mvd2 files in the package
-        mvd2 = []
+        # first find the header file
+        headers = []
+        
+        # first priority are fixed named files
         for m in members:
-            if m.endswith('.mvd2'):
-                log.debug('Found volocity: %s'% m )
-                fn = '%s.ome.tif'%m
-                fn_in  = os.path.join(unpack_dir, m)
-                fn_out = os.path.join(unpack_dir, fn)
-                if os.name == 'nt': 
-                    fn_in = fn_in.replace('/', '\\')
-                    fn_out = fn_out.replace('/', '\\')                    
-                self.bioformats.convertToOmeTiff(ifnm=fn_in, ofnm=fn_out)
-                if os.path.exists(fn_out) and self.imgcnv.supported(fn_out):
-                    mvd2.append(fn)
+            if os.path.basename(m) in self.series_headers:
+                headers.append(m)
+        
+        # second priority all files with the series extension
+        for m in members:
+            ext = os.path.splitext(m)[-1].lower().replace('.', '')
+            if ext in self.series_exts and m not in headers:
+                headers.append(m)
+        log.debug('headers: %s', headers)
+        
+        # get file info and know how many sub-series are there
+        num_series = 0
+        for header in headers:
+            log.debug('filename: %s', header)
+            info = image_service.get_info(header)
+            log.debug('info: %s', info)
+            if info is not None or info.get('image_num_series', 0)>0:
+                num_series = info.get('image_num_series', 0)
+                break
+        log.debug('detected header: %s', header)
+        
+        if num_series<1:
+            return unpack_dir, []
 
-        log.debug('Converted: \n%s'% mvd2 )
-        return unpack_dir, mvd2
+        members.remove(header)
+        
+        # insert sub-series with the first value as a header file
+        n = 0
+        name = '%s#%s'%(os.path.splitext(uf.resource.get('name'))[0], n)
+        resource = etree.Element ('image', name=name, resource_type='image')
+        
+        # add header first
+        val = etree.SubElement(resource, 'value' )
+        val.text = '%s#%s'%(blob_service.local2url(header), n)
+        
+        # add the rest of the files later without # 
+        for v in members:
+            val = etree.SubElement(resource, 'value' )
+            val.text = blob_service.local2url(v)
+        
+        # append all other input annotations
+        resource.extend (copy.deepcopy (list (uf.resource)))
+        resource = blob_service.store_multi_blob(resource=resource, unpack_dir='%s/'%unpack_dir)
+        
+        resources = [resource]
+        name_template = resource.get('name')
+        
+        # insert the rest of the series
+        # use final storage location of the first resource and submit directly to data service
+        values = resource.xpath('value')
+        values = [v.text for v in values]
+        for n in range(num_series)[1:]:
+            resource = etree.Element ('image', name=name_template.replace('#0', '#%s'%n), resource_type='image')
+            
+            # add values 
+            for v in values:
+                val = etree.SubElement(resource, 'value' )
+                val.text = v.replace('#0', '#%s'%n)
+            
+            # append all other input annotations
+            resource.extend (copy.deepcopy (list (uf.resource)))
+
+            resources.append(blob_service.create_resource(resource=resource))
+
+        return unpack_dir, resources
+
 
 #------------------------------------------------------------------------------
 # Import archives exported by a BISQUE system
@@ -577,37 +646,42 @@ class import_serviceController(ServiceController):
         return resources
 
     def filter_zip_tstack(self, f, intags):
-        #unpack_dir, combined = self.process5Dimage(f, number_t=0, **intags)
-        #resources =  self.insert_members([combined] , f, unpack_dir)
         unpack_dir, resource = self.process5Dimage(f, number_t=0, **intags)
         self.cleanup_packaging(unpack_dir)
         return [resource]
 
     def filter_zip_zstack(self, f, intags):
-        #unpack_dir, combined = self.process5Dimage(f, number_z=0, **intags)
-        #resources =  self.insert_members([combined], f, unpack_dir)
         unpack_dir, resource = self.process5Dimage(f, number_z=0, **intags)
         self.cleanup_packaging(unpack_dir)
         return [resource]
 
     def filter_5d_image(self, f, intags):
-        #unpack_dir, combined = self.process5Dimage(f, **intags)
-        #resources = self.insert_members([combined], f, unpack_dir)
         unpack_dir, resource = self.process5Dimage(f, **intags)
         self.cleanup_packaging(unpack_dir)
         return [resource]
 
-    def filter_series_bioformats(self, f, intags):
-        unpack_dir, members = self.extractSeriesBioformats(f)
-        resources = self.insert_members([ '%s/%s'%(unpack_dir, m) for m in members ], f, unpack_dir)
+    def filter_series_proprietary(self, f, intags):
+        resources = self.processSeriesProprietary(f, intags)
+        return resources
+
+    def filter_zip_proprietary(self, f, intags):
+        unpack_dir, resources = self.processPackageProprietary(f, intags)
         self.cleanup_packaging(unpack_dir)
         return resources
 
-    def filter_zip_volocity(self, f, intags):
-        unpack_dir, members = self.extractSeriesVolocity(f)
-        resources = self.insert_members([ '%s/%s'%(unpack_dir, m) for m in members ], f, unpack_dir)
-        self.cleanup_packaging(unpack_dir)
-        return resources
+#     def filter_series_bioformats(self, f, intags):
+#         unpack_dir, members = self.extractSeriesBioformats(f)
+#         resources = self.insert_members([ '%s/%s'%(unpack_dir, m) for m in members ], f, unpack_dir)
+#         self.cleanup_packaging(unpack_dir)
+#         return resources
+# 
+#     def filter_zip_volocity(self, f, intags):
+#         unpack_dir, members = self.extractSeriesVolocity(f)
+#         resources = self.insert_members([ '%s/%s'%(unpack_dir, m) for m in members ], f, unpack_dir)
+#         self.cleanup_packaging(unpack_dir)
+#         return resources
+    
+    
     
 #------------------------------------------------------------------------------
 # insert members for filtered files
@@ -760,6 +834,17 @@ class import_serviceController(ServiceController):
         mime = mimetypes.guess_type(sanitize_filename(uf.filename))[0]
         if mime in self.filters:
             intags['type'] = mime
+        
+        # check if an image can be a series
+        if mime == 'image/series':
+            filename = uf.localpath()
+            log.debug('filename: %s', filename)
+            info = image_service.get_info(filename)
+            log.debug('info: %s', info)
+            if info is not None and info.get('image_num_series', 0)>1:
+                intags['type'] = 'image/proprietary'
+                intags['image_num_series'] = info.get('image_num_series', 0)
+        
         # no processing required
         if intags.get('type') not in self.filters:
             return self.insert_resource(uf)

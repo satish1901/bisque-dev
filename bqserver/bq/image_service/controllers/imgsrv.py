@@ -134,12 +134,32 @@ class ConverterDict(OrderedDict):
             if formatName in c.formats():
                 return c.formats()[formatName].ext[0]
 
-    def extensions(self):
+    def extensions(self, name=None):
         exts = []
-        for c in self.itervalues():
+        if name is None:
+            for c in self.itervalues():
+                for f in c.formats().itervalues():
+                    exts.extend(f.ext)
+        else:
+            c = self[name]
             for f in c.formats().itervalues():
                 exts.extend(f.ext)
         return exts
+    
+    def info(self, filename, name=None):
+        if name is None:
+            for n,c in self.iteritems():
+                info = c.info(filename)
+                if info is not None and len(info)>0:
+                    info['converter'] = n
+                    return info
+        else:
+            c = self[name]
+            info = c.info(filename)
+            if info is not None and len(info)>0:
+                info['converter'] = name
+                return info
+        return None
 
     def canWriteMultipage(self, formatName):
         formats = []
