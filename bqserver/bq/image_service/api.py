@@ -175,8 +175,8 @@ class proxy_dispatch (object):
             fname = fpath[len(fpath)-1]
 
             if data_token.hasFileName():
-               fname = data_token.outFileName
-               print "has ", fname
+                fname = data_token.outFileName
+                print "has ", fname
           
             #Content-Disposition: attachment; filename=genome.jpeg;  
             #if data_token.isImage():                    
@@ -271,6 +271,18 @@ def find_server(url=None):
 def is_image_type(filename):
     server = find_server()
     return server.is_image_type(filename)
+
+def proprietary_series_extensions ():
+    server = find_server()
+    return server.proprietary_series_extensions()
+
+def proprietary_series_headers():
+    server = find_server()
+    return server.proprietary_series_headers()    
+
+def get_info(filename):
+    server = find_server()
+    return server.get_info(filename)
 
 def local_file(url):
     server = find_server()

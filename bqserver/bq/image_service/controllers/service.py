@@ -31,8 +31,14 @@ from . import misc
 
 log = logging.getLogger("bq.image_service")
 
-extensions_ignore = set(['amiramesh', 'cfg', 'csv', 'dat', 'grey', 'htm', 'html', 'hx', 'inf', 'labels', 'log', 'lut', 'mdb', 'pst', 'pty', 'rec', 'tim', 'txt', 'xlog', 'xml', 'zip', 'zpo'])
+# extensions not usually associated with image files
+extensions_ignore = set(['', 'amiramesh', 'cfg', 'csv', 'dat', 'grey', 'htm', 'html', 'hx', 'inf', 'labels', 'log', 'lut', 'mdb', 'pst', 'pty', 'rec', 'tim', 'txt', 'xlog', 'xml', 'zip', 'zpo'])
 
+# confirmed extensions of header files in some proprietary series
+extensions_series = set(['cfg', 'xml'])
+
+# confirmed fixed series header names
+series_header_files = ['DiskInfo5.kinetic']
 
 def get_image_id(url):
     path = urlparse.urlsplit(url)[2]
@@ -148,10 +154,35 @@ class image_serviceController(ServiceController):
         if self.format_exts is None:
             self.format_exts = set(self.srv.converters.extensions()) - extensions_ignore
 
-        filename = filename.strip()
-        ext = os.path.splitext(filename)[1][1:].lower()
+        ext = os.path.splitext(filename.strip())[1][1:].lower()
         return ext in self.format_exts
 
+    def proprietary_series_extensions (self):
+        """ return all extensions that can be proprietary series 
+        """
+        non_series_cnv = ['imgcnv', 'openslide']
+        exts = []
+        ignore = []
+        for n in self.srv.converters.iterkeys():
+            if n in non_series_cnv:
+                ignore.extend(self.srv.converters.extensions(n))
+            else:
+                exts.extend(self.srv.converters.extensions(n))
+        #log.debug('extensions_ignore: %s', extensions_ignore)
+        #log.debug('ignore: %s', ignore)
+        #log.debug('exts: %s', exts)
+        return list(((set(exts) - set(ignore)) - extensions_ignore) | extensions_series)
+    
+    def proprietary_series_headers (self):
+        """ get fixed file names that could be series headers
+        """
+        return series_header_files
+    
+    
+    def get_info (self, filename):
+        """ read file info
+        """
+        return self.srv.converters.info(filename)
 
     @expose()
     #@identity.require(identity.not_anonymous())
