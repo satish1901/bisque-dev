@@ -108,7 +108,9 @@ def isascii(s):
 # windows only problem!
 if os.name != 'nt':
     def dolink(source, link_name):
-        return os.symlink(source, link_name)
+        log.debug('Hard link %s -> %s', source, link_name)
+        #return os.symlink(source, link_name)
+        return os.link(source, link_name)
     
     def start_nounicode_win(ifnm, command):
         return command, None
@@ -125,6 +127,7 @@ else:
             raise ctypes.WinError()
     
     def dolink(source, link_name):
+        log.debug('Hard link %s -> %s', source, link_name)        
         return hardlink(source, link_name)
     
     def start_nounicode_win(ifnm, command):

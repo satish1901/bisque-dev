@@ -156,6 +156,9 @@ class ConverterImgcnv(ConverterBase):
                 continue
             rd[tag] = misc.safetypeparse(val.replace('\n', ''))
 
+        if 'dimensions' in rd:
+            rd['dimensions'] = rd['dimensions'].replace(' ', '') # remove spaces
+
         if rd['image_num_z']==1 and rd['image_num_t']==1 and rd['image_num_p']>1:
             rd['image_num_t'] = rd['image_num_p']
         rd['image_num_series'] = 0
@@ -204,6 +207,9 @@ class ConverterImgcnv(ConverterBase):
                 3: 'floating point'
             }
             rd['image_pixel_format'] = pf_map[rd['image_pixel_format']]
+
+        if 'dimensions' in rd:
+            rd['dimensions'] = rd['dimensions'].replace(' ', '') # remove spaces
 
         rd['image_num_series'] = 0
         rd['image_series_index'] = 0
@@ -354,12 +360,13 @@ class ConverterImgcnv(ConverterBase):
                     page_num = zi
                 elif info['image_num_z']==1:
                     page_num = ti
-                elif info.get('dimensions', 'X Y C Z T').startswith('X Y C Z'):
+                elif info.get('dimensions', 'XYCZT').replace(' ', '').startswith('XYCZ'):
                     page_num = (ti-1)*info['image_num_z'] + zi
                 else:
                     page_num = (zi-1)*info['image_num_t'] + ti
                 pages.append(page_num)
         
+        log.debug('slice pages: %s', pages)
         
         # separate normal and multi-file series
         if cls.is_multifile_series(**kw) is False:
