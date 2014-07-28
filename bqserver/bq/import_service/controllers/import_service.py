@@ -509,7 +509,7 @@ class import_serviceController(ServiceController):
             log.debug('filename: %s', header)
             info = image_service.get_info(header)
             log.debug('info: %s', info)
-            if info is not None or info.get('image_num_series', 0)>0:
+            if info is not None and info.get('image_num_series', 0)>0:
                 num_series = info.get('image_num_series', 0)
                 break
         log.debug('detected header: %s', header)
@@ -528,7 +528,7 @@ class import_serviceController(ServiceController):
         val = etree.SubElement(resource, 'value' )
         val.text = '%s#%s'%(blob_service.local2url(header), n)
         
-        # add the rest of the files later without # 
+        # add the rest of the files later without #
         for v in members:
             val = etree.SubElement(resource, 'value' )
             val.text = blob_service.local2url(v)
