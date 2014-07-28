@@ -360,7 +360,7 @@ class ConverterImgcnv(ConverterBase):
                     page_num = zi
                 elif info['image_num_z']==1:
                     page_num = ti
-                elif info.get('dimensions', 'XYCZT').replace(' ', '').startswith('XYCZ'):
+                elif info.get('dimensions', 'XYCZT').replace(' ', '').startswith('XYCT') is False:
                     page_num = (ti-1)*info['image_num_z'] + zi
                 else:
                     page_num = (zi-1)*info['image_num_t'] + ti

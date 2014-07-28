@@ -423,11 +423,11 @@ class BlobServer(RestController, ServiceMixin):
                 if fileobj is not None:
                     resource = self._store_fileobj(resource, fileobj)
                 else:
-                    resource = self._store_reference(resource, resource.get('value') )
+                    resource = self._store_reference(resource )
                 #smokesignal.emit(SIG_NEWBLOB, self.store, path=resource.get('value'), resource_uniq=resource.get ('resource_uniq'))
 
                 if asbool(config.get ('bisque.blob_service.store_paths', True)):
-                    self.store.insert_blob_path( path=resource.get('value'),
+                    self.store.insert_blob_path( path=resource.get('value') or resource.xpath('value')[0].text,
                                                  resource_name = resource.get('name'),
                                                  resource_uniq = resource.get ('resource_uniq'))
                 return resource
@@ -526,27 +526,54 @@ class BlobServer(RestController, ServiceMixin):
             return blob_storage.url2localpath(urlref)
         return None
 
-    def _store_reference(self, resource, urlref ):
+    def _store_reference(self, resource, urlref=None):
         """create a reference to a blob based on its URL
 
         @param resource: resource an etree resource
         @param urlref:   An URL to configured store or a local file url (which may be moved to a valid store
         @return      : The created resource
         """
-        if not self.drive_man.valid_blob(urlref):
-            # We have a URLref that is not part of the sanctioned stores:
-            # We will move it
-            log.debug("Can't match %s in stores : %s", urlref, self.drive_man)
-            localpath = self._make_url_local(urlref)
-            if localpath:
-                with open(localpath) as f:
-                    return self._store_fileobj(resource, f)
-            else:
-                log.error("Can't put %s into stores : %s", urlref, self.drive_man)
-                raise IllegalOperation("%s could not be moved to a valid store" % urlref)
-        filename  = resource.get ('name') or urlref.rsplit('/',1)[1]
-        resource.set ('name' ,os.path.basename(filename))
-        resource.set ('value', urlref)
+        if urlref is None:
+            urlref = resource.get('value')
+            
+        if isinstance(urlref, basestring):
+            # in case of only one pointed blob
+            if not self.drive_man.valid_blob(urlref):
+                # We have a URLref that is not part of the sanctioned stores:
+                # We will move it
+                log.debug("Can't match %s in stores : %s", urlref, self.drive_man)
+                localpath = self._make_url_local(urlref)
+                if localpath:
+                    with open(localpath) as f:
+                        return self._store_fileobj(resource, f)
+                else:
+                    log.error("Can't put %s into stores : %s", urlref, self.drive_man)
+                    raise IllegalOperation("%s could not be moved to a valid store" % urlref)
+            filename  = resource.get ('name') or urlref.rsplit('/',1)[1]
+            resource.set ('name' ,os.path.basename(filename))
+            resource.set ('value', urlref)
+        else:
+            # multi-blob case
+            values = resource.xpath('value')
+            first = True
+            for value in values:
+                urlref = value.text
+                if not self.drive_man.valid_blob(urlref):
+                    # We have a URLref that is not part of the sanctioned stores:
+                    # We will move it
+                    log.debug("Can't match %s in stores : %s", urlref, self.drive_man)
+                    localpath = self._make_url_local(urlref)
+                    if localpath:
+                        with open(localpath) as f:
+                            return self._store_fileobj(resource, f)
+                    else:
+                        log.error("Can't put %s into stores : %s", urlref, self.drive_man)
+                        raise IllegalOperation("%s could not be moved to a valid store" % urlref)
+                value.text = urlref
+                if first is True:
+                    filename = resource.get ('name') or urlref.rsplit('/',1)[1]
+                    resource.set ('name' ,os.path.basename(filename))
+                    first = False
 
         return self.create_resource(resource)
 
