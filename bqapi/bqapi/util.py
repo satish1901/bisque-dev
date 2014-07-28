@@ -1,6 +1,7 @@
 import os
 import shutil
 import urllib
+import urlparse
 import poster
 import time
 
@@ -8,6 +9,46 @@ from lxml import etree as ET
 from xmldict import xml2d, d2xml
 from bqclass import fromXml, toXml, BQMex
 import comm
+
+#####################################################
+# misc: path manipulation
+#####################################################
+
+if os.name == 'nt':
+    def url2localpath(url):
+        path = urlparse.urlparse(url).path
+        if len(path)>0 and path[0] == '/':
+            path = path[1:]
+        try:
+            return urllib.unquote(path).decode('utf-8')
+        except UnicodeEncodeError:
+            # dima: safeguard measure for old non-encoded unicode paths
+            return urllib.unquote(path)    
+    
+    def localpath2url(path):
+        path = path.replace('\\', '/')
+        url = urllib.quote(path.encode('utf-8'))
+        if len(path)>3 and path[0] != '/' and path[1] == ':': 
+            # path starts with a drive letter: c:/
+            url = 'file:///%s'%url
+        else:
+            # path is a relative path
+            url = 'file://%s'%url
+        return url
+
+else:
+    def url2localpath(url):
+        url = url.encode('utf-8') # safegurd against un-encoded values in the DB
+        path = urlparse.urlparse(url).path
+        return urllib.unquote(path)
+    
+    def localpath2url(path):
+        url = urllib.quote(path.encode('utf-8'))
+        url = 'file://%s'%url
+        return url
+    
+#####################################################
+    
 
 class AttrDict(dict):
     def __init__(self, *args, **kwargs):
@@ -68,7 +109,7 @@ def make_qs(pd):
     return "&".join(query)
 
 
-def save_blob(session,  localfile, resource=None):
+def save_blob(session,  localfile=None, resource=None):
     """put a local image on the server and return the URL
     to the METADATA XML record
 
@@ -79,27 +120,39 @@ def save_blob(session,  localfile, resource=None):
     """
     url = session.service_url('import', 'transfer')
     if isinstance(localfile, basestring):
-        localfile = open(localfile,'rb')
+        localfile = open(localfile, 'rb')
 
-    with localfile:
-        fields = { 'file' : localfile}
-        if resource is not None:
-            fields['file_resource'] = ET.tostring (resource)
-        body, headers = poster.encode.multipart_encode(fields)
-        try:
-            content = session.c.post(url, headers=headers, content=body)
-        except comm.BQCommError:
-            return None
+    fields = {}
+
+    if localfile is not None:
+        fields['file'] = localfile
         
-        try:
-            rl = ET.XML (content)
-            if len(rl)<1:
-                return None
-            return rl[0]
-        except ET.ParseError, e:
-            pass
-
+    if resource is not None:
+        if isinstance(resource, basestring):
+            fields['file_resource'] = resource
+        else:
+            fields['file_resource'] = ET.tostring (resource)
+        
+    body, headers = poster.encode.multipart_encode(fields)
+    try:
+        content = session.c.post(url, headers=headers, content=body)
+    except comm.BQCommError:
         return None
+    finally:
+        try:
+            localfile.close()
+        except AttributeError:
+            pass
+        
+    try:
+        rl = ET.XML (content)
+        if len(rl)<1:
+            return None
+        return rl[0]
+    except ET.ParseError, e:
+        pass
+
+    return None
 
 
 def fetch_blob(session, uri, dest=None, uselocalpath=False):
