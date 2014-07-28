@@ -273,8 +273,8 @@ class LocalStorage(BlobStorage):
         ident,_ = split_subpath(ident)
         scheme = urlparse.urlparse(ident).scheme
 
-        log.debug('valid ident %s top %s', ident, self.top)
-        log.debug('valid local ident %s local top %s', url2localpath(ident), url2localpath(self.top))
+        #log.debug('valid ident %s top %s', ident, self.top)
+        #log.debug('valid local ident %s local top %s', url2localpath(ident), url2localpath(self.top))
         
         if url2localpath(ident).startswith(url2localpath(self.top)):
             return ident
@@ -315,7 +315,7 @@ class LocalStorage(BlobStorage):
         raise DuplicateFile(localpath)
 
     def localpath(self, path):
-        log.debug('local_store localpath: %s', path)
+        #log.debug('local_store localpath: %s', path)
         path,sub = split_subpath(path)
         if not path.startswith('file:///'):
             if path.startswith('file://'):
@@ -325,7 +325,7 @@ class LocalStorage(BlobStorage):
             
         path = url2localpath(path.replace('\\', '/'))
 
-        log.debug('local_store localpath path: %s', path)
+        #log.debug('local_store localpath path: %s', path)
 
         # if path is a directory, list contents
         files = None

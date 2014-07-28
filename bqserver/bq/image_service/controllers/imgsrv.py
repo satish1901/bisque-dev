@@ -59,6 +59,8 @@ K = 1024
 M = K *1000
 G = M *1000
 
+meta_private_fields = ['files']
+
 ################################################################################
 # Create a list of querie tuples
 ################################################################################
@@ -436,6 +438,7 @@ class InfoService(object):
 
         image = etree.Element ('resource', uri='%s/%s'%(self.server.url,  image_id))
         for k, v in info.iteritems():
+            if k in meta_private_fields: continue
             tag = etree.SubElement(image, 'tag', name='%s'%k, value='%s'%v )
         return data_token.setXml(etree.tostring(image))
 
@@ -457,6 +460,7 @@ class DimService(object):
         if info is not None:
             image = etree.SubElement (response, 'image', resource_uniq='%s'%image_id)
             for k, v in info.iteritems():
+                if k in meta_private_fields: continue
                 tag = etree.SubElement(image, 'tag', name=str(k), value=str(v))
         return data_token.setXml(etree.tostring(response))
 
@@ -503,6 +507,7 @@ class MetaService(object):
             image = etree.Element ('resource', uri='%s/%s?meta'%(self.server.url, image_id))
             tags_map = {}
             for k, v in meta.iteritems():
+                if k in meta_private_fields: continue
                 k = safeunicode(k)
                 v = safeunicode(v)
                 tl = k.split('/')

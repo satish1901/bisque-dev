@@ -440,6 +440,7 @@ class import_serviceController(ServiceController):
         image_meta = etree.SubElement(resource, 'tag', name='image_meta', type='image_meta', resource_unid='image_meta' )
         etree.SubElement(image_meta, 'tag', name='image_num_z', value='%s'%params['z'] )
         etree.SubElement(image_meta, 'tag', name='image_num_t', value='%s'%params['t'] )
+        etree.SubElement(image_meta, 'tag', name='dimensions', value='XYCZT' )
         if sum([float(params[k]) for k in res.keys()])>0:
             etree.SubElement(image_meta, 'tag', name='pixel_resolution_x', value='%s'%params['resolution_x'] )
             etree.SubElement(image_meta, 'tag', name='pixel_resolution_y', value='%s'%params['resolution_y'] )
