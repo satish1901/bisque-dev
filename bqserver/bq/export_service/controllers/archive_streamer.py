@@ -140,7 +140,7 @@ class ArchiveStreamer():
         fileHash = {}   # Use a URI hash to look out for file repetitions
 
         def fileInfo(relpath, uri, index=0):
-            xml  = data_service.get_resource(uri, view='deep,clean')
+            xml = data_service.get_resource(uri, view='deep,clean')
             if xml is None:
                 log.warn ('skipping unreadable uri %s', uri)
                 return None
@@ -160,7 +160,9 @@ class ArchiveStreamer():
             path = None
             if uniq is not None:
                 del xml.attrib['resource_uniq'] # dima: strip resource_uniq from exported xml
-                path,_ = blob_service.localpath(uniq)
+                b = blob_service.localpath(uniq)
+                path = b.path
+                files = b.files
                 if path and not os.path.exists(path):
                     path = None
 

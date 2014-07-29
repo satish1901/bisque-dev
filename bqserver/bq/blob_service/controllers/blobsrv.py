@@ -313,8 +313,8 @@ class BlobServer(RestController, ServiceMixin):
         #ident = args[0]
         self.check_access(ident, RESOURCE_READ)
         try:
-            b = os.path.normpath(self.localpath(ident))
-            localpath = b.path
+            b = self.localpath(ident)
+            localpath = os.path.normpath(b.path)
             filename = self.originalFileName(ident)
             if 'localpath' in kw:
                 tg.response.headers['Content-Type']  = 'text/xml'
