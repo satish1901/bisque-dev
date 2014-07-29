@@ -59,7 +59,7 @@ TODO
 
 __module__    = "import_service"
 __author__    = "Dmitry Fedorov, Kris Kvilekval"
-__version__   = "2.3"
+__version__   = "2.4"
 __revision__  = "$Rev$"
 __date__      = "$Date$"
 __copyright__ = "Center for BioImage Informatics, University California, Santa Barbara"
@@ -113,8 +113,8 @@ from bq import data_service
 from bq import blob_service
 from bq import image_service
 
-from bq.image_service.controllers.converter_imgcnv import ConverterImgcnv
-from bq.image_service.controllers.converter_bioformats import ConverterBioformats
+#from bq.image_service.controllers.converter_imgcnv import ConverterImgcnv
+#from bq.image_service.controllers.converter_bioformats import ConverterBioformats
 
 from bq.util.mkdir import _mkdir
 
@@ -248,9 +248,6 @@ class import_serviceController(ServiceController):
 
     def __init__(self, server_url):
         super(import_serviceController, self).__init__(server_url)
-
-        #mimetypes.add_type('image/slidebook', '.sld')
-        #mimetypes.add_type('image/volocity', '.mvd2')
         
         # special mime-types for proprietary images able to store multiple series
         # define the list here in order to minimize info calls on these images
@@ -267,34 +264,17 @@ class import_serviceController(ServiceController):
         self.filters['zip-time-series']   = self.filter_zip_tstack
         self.filters['zip-z-stack']       = self.filter_zip_zstack
         self.filters['zip-5d-image']      = self.filter_5d_image
-        self.filters['image/proprietary'] = self.filter_series_proprietary
         self.filters['zip-proprietary']   = self.filter_zip_proprietary
+        self.filters['image/proprietary'] = self.filter_series_proprietary
         
-        #self.filters['zip-volocity']    = self.filter_zip_volocity
-        #self.filters['image/slidebook'] = self.filter_series_bioformats
-        #self.filters['image/volocity']  = self.filter_series_bioformats
-        
-        self.bioformats = ConverterBioformats()
-        self.imgcnv = ConverterImgcnv()
+        #self.bioformats = ConverterBioformats()
+        #self.imgcnv = ConverterImgcnv()
 
     @expose('bq.import_service.templates.upload')
     @require(predicates.not_anonymous())
     def index(self, **kw):
         """Add your first page here.. """
         return dict()
-
-#------------------------------------------------------------------------------
-# misc functions
-#------------------------------------------------------------------------------
-
-
-    def check_imgcnv (self):
-        if not ConverterImgcnv.get_installed():
-            raise Exception('imgcnv not installed')
-
-    def check_bioformats (self):
-        if not ConverterBioformats.get_installed():
-            raise Exception('bioformats not installed')
 
 #------------------------------------------------------------------------------
 # zip/tar.gz support functions
@@ -475,7 +455,7 @@ class import_serviceController(ServiceController):
         return resources
 
 #------------------------------------------------------------------------------
-# multi-series files supported by bioformats
+# multi-series files supported by decoders
 #------------------------------------------------------------------------------
 
     def processPackageProprietary(self, uf, intags):
@@ -670,20 +650,6 @@ class import_serviceController(ServiceController):
         self.cleanup_packaging(unpack_dir)
         return resources
 
-#     def filter_series_bioformats(self, f, intags):
-#         unpack_dir, members = self.extractSeriesBioformats(f)
-#         resources = self.insert_members([ '%s/%s'%(unpack_dir, m) for m in members ], f, unpack_dir)
-#         self.cleanup_packaging(unpack_dir)
-#         return resources
-# 
-#     def filter_zip_volocity(self, f, intags):
-#         unpack_dir, members = self.extractSeriesVolocity(f)
-#         resources = self.insert_members([ '%s/%s'%(unpack_dir, m) for m in members ], f, unpack_dir)
-#         self.cleanup_packaging(unpack_dir)
-#         return resources
-    
-    
-    
 #------------------------------------------------------------------------------
 # insert members for filtered files
 #------------------------------------------------------------------------------
