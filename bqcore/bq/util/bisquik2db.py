@@ -468,7 +468,7 @@ def resource2nodes(dbo, parent=None, view=[], baseuri=None,  **kw):
     parents = {}
 
     for node in docnodes:
-        nodes[node.id]   = xmlnode(node, None, baseuri, view='short')
+        nodes[node.id]   = xmlnode(node, None, baseuri, view)
         parents[node.id] = node.resource_parent_id
     for node_id, parent_id in parents.items():
         try:
@@ -615,7 +615,7 @@ def db2node(dbo, parent, view, baseuri, nodes, doc_id, **kw):
                                                     Taggable.resource_type == 'tag',
                                                     Taggable.resource_name == tag_name)
             for tag in tags:
-                kid = xmlnode(tag, node, view='full', baseuri=baseuri)
+                kid = xmlnode(tag, node, view=view, baseuri=baseuri)
                 tl = [ xmlnode(x, kid, view=view, baseuri=baseuri) for x in tag.childrenq ]
              #tag = dbo.tagq.filter_by(resource_name = tag_name).first()
              #if tag:
