@@ -27,13 +27,6 @@ import logging
 log = logging.getLogger('bq.image_service.converter')
 
 ################################################################################
-# sorting misc
-################################################################################
-
-def blocked_alpha_num_sort(s):
-    return [int(u''.join(g)) if k else u''.join(g) for k, g in groupby(unicode(s), unicode.isdigit)]
-
-################################################################################
 # Format - the definition of a format
 ################################################################################
 
@@ -230,7 +223,7 @@ class ConverterBase(object):
             return []
         
         files = list(set(files)) # ensure unique names
-        files = sorted(files, key=blocked_alpha_num_sort) # use alpha-numeric sort
+        files = sorted(files, key=misc.blocked_alpha_num_sort) # use alpha-numeric sort
         return files
 
     #######################################

@@ -81,6 +81,7 @@ from bq.util.sizeoffmt import sizeof_fmt
 from bq import data_service
 from bq.data_service.model import Taggable, DBSession
 #from bq import image_service
+from bq.image_service.controllers.misc import blocked_alpha_num_sort
 
 SIG_NEWBLOB  = "new_blob"
 
@@ -314,6 +315,9 @@ class BlobServer(RestController, ServiceMixin):
         self.check_access(ident, RESOURCE_READ)
         try:
             b = self.localpath(ident)
+            if b.files is not None:
+                pass
+            
             localpath = os.path.normpath(b.path)
             filename = self.originalFileName(ident)
             if 'localpath' in kw:
@@ -592,13 +596,14 @@ class BlobServer(RestController, ServiceMixin):
             if values is not None and len(values)>0:
                 files = []
                 # fetch all files referenced by the resource and return the first one
-                for v in reversed(values):
+                for v in values:
                     blob_id = v.text
                     b = self.drive_man.fetch_blob(blob_id)
                     if b.files is not None:
                         files.extend(b.files)
                     else:
                         files.append(b.path)
+                #files = sorted(files, key=blocked_alpha_num_sort) # use alpha-numeric sort
                 log.debug('using %s full=%s localpath=%s sub=%s' , uniq_ident, blob_id, b.path, b.sub)
                 return blob_storage.Blobs(path=b.path, sub=b.sub, files=files)
         return None
@@ -609,7 +614,8 @@ class BlobServer(RestController, ServiceMixin):
         resource = DBSession.query(Taggable).filter_by (resource_uniq = ident).first()
         if resource:
             if resource.resource_name != None:
-                fname =  resource.resource_name
+                fname = resource.resource_name
+        fname,_ = blob_storage.split_subpath(fname)
         log.debug('Blobsrv - original name %s->%s ' , ident, fname)
         return fname
 

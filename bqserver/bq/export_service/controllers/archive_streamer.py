@@ -48,6 +48,7 @@ DESCRIPTION
 """
 
 import os
+import sys
 import logging
 import httplib2
 import urlparse
@@ -161,8 +162,11 @@ class ArchiveStreamer():
             if uniq is not None:
                 del xml.attrib['resource_uniq'] # dima: strip resource_uniq from exported xml
                 b = blob_service.localpath(uniq)
-                path = b.path
                 files = b.files
+                if files is not None and len(files)>0:
+                    path = files[0]
+                else:
+                    path = b.path
                 if path and not os.path.exists(path):
                     path = None
 
@@ -182,26 +186,79 @@ class ArchiveStreamer():
                 outpath = os.path.join(relpath, '%s%s'%(name, ext)).replace('\\', '/')
             fileHash[outpath] = name
 
-            return dict(
-                 xml     = xml,
-                 content = content,
-                 name    = name,
-                 uniq    = uniq,
-                 path    = path,
-                 relpath = relpath,
-                 outpath = outpath,
-            )
+            if files is None or len(files)<2:
+                return [{
+                     'xml'     : xml,
+                     'content' : content,
+                     'name'    : name,
+                     'uniq'    : uniq,
+                     'path'    : path,
+                     'relpath' : relpath,
+                     'outpath' : outpath,
+                }]
+            
+            log.debug('fileInfo name: %s, path: %s, relpath: %s, outpath: %s', name, path, relpath, outpath)
+            log.debug('fileInfo files: %s', files)
+            
+            # find minimum relative path
+            min_length = sys.maxint
+            for f in files:
+                min_length = min(min_length, len(os.path.dirname(f)))
+            minpath = files[0][:min_length+1]
+            log.debug('fileInfo minpath: %s', minpath)
+            
+            # check if file disimbiguation is needed
+            subpath = files[0][min_length+1:]
+            outpath = os.path.join(relpath, name, subpath).replace('\\', '/')
+            if outpath in fileHash:
+                name = '%s.%s'%(name, uniq)
+                outpath = os.path.join(relpath, name, subpath).replace('\\', '/')
+            fileHash[outpath] = name
+            
+            infos = []
+            first = True
+            for f in files:
+                subpath = f[min_length+1:]
+                info = {
+                    'name'    : os.path.basename(f),
+                    'uniq'    : uniq,
+                    'path'    : f,
+                    'relpath' : relpath,
+                    'outpath' : os.path.join(relpath, name, subpath).replace('\\', '/'),
+                    'subpath' : subpath.replace('\\', '/'),
+                }
+                if first is True:
+                    first = False
+                    info['xml'] = xml
+                    info['content'] = content
+                infos.append(info)
+                
+            log.debug('fileInfo infos: %s', infos)
+            return infos
 
         def xmlInfo(finfo):
-            file = finfo.copy()
-            file['outpath'] = '%s.xml'%file['outpath']
-            # need to modify the resource value to point to a local file
-            #file['xml'].set('value', os.path.basename(file['xml'].get('value', '')))
-            file['xml'].set('value', finfo['name'])
-            file['content'] = etree.tostring(file['xml'])
-            del file['path']
-            del file['xml']
-            return file
+            if len(finfo) == 1:
+                finfo = finfo[0]
+                file = finfo.copy()
+                file['outpath'] = '%s.xml'%file['outpath']
+                # need to modify the resource value to point to a local file
+                #file['xml'].set('value', os.path.basename(file['xml'].get('value', '')))
+                file['xml'].set('value', finfo['name'])
+                file['content'] = etree.tostring(file['xml'])
+                del file['path']
+                del file['xml']
+                return file
+            else:
+                file = finfo[0].copy()
+                file['outpath'] = '%s.xml'%file['outpath']
+                i=0
+                for v in file['xml'].xpath('value'):
+                    v.text = finfo[i]['subpath']
+                    i+=1
+                file['content'] = etree.tostring(file['xml'])
+                del file['path']
+                del file['xml']
+                return file
 
         def urlInfo(url, index=0):
             httpReader = httplib2.Http( disable_ssl_certificate_validation=True)
@@ -247,18 +304,18 @@ class ArchiveStreamer():
                 finfo = fileInfo('', uri)
                 if finfo is None:
                     continue
-                flist.append(finfo)
-                if self.export_meta is True and finfo.get('xml') is not None:
+                flist.extend(finfo)
+                if self.export_meta is True and finfo[0].get('xml') is not None:
                     flist.append(xmlInfo(finfo))
                 # find all mexs that use this resource explicitly
                 # dima: we'll not get any second level mexs
                 # mexs that use mexs, will need closure query in the db for that
                 if self.export_mexs:
-                    mexq = data_service.query('mex', tag_query=finfo['xml'].get('uri'))
+                    mexq = data_service.query('mex', tag_query=finfo[0]['xml'].get('uri'))
                     members = mexq.xpath('//mex')
                     for m in members:
                         uri = m.get('uri')
-                        flist.append(fileInfo('', uri))
+                        flist.extend(fileInfo('', uri))
 
         # processing a list of datasets
         if len(datasetList)>0:
@@ -273,15 +330,15 @@ class ArchiveStreamer():
                     finfo = fileInfo(name, member.text, index)
                     if finfo is None:
                         continue
-                    finfo['dataset'] = name
-                    flist.append(finfo)
+                    finfo[0]['dataset'] = name
+                    flist.extend(finfo)
 
                     # update reference in the dataset xml
-                    if self.export_meta is True and finfo.get('xml') is not None:
+                    if self.export_meta is True and finfo[0].get('xml') is not None:
                         flist.append(xmlInfo(finfo))
-                        member.text = '%s.xml'%finfo.get('outpath','')
+                        member.text = '%s.xml'%finfo[0].get('outpath','')
                     else:
-                        member.text = finfo.get('outpath','')
+                        member.text = finfo[0].get('outpath','')
 
                 if self.export_meta:
                     # disambiguate file name if present
@@ -320,8 +377,8 @@ class ArchiveStreamer():
                     finfo = fileInfo('/'.join(folder), uri, index)
                     if finfo is None:
                         continue
-                    flist.append(finfo)
-                    if self.export_meta is True and finfo.get('xml') is not None:
+                    flist.extend(finfo)
+                    if self.export_meta is True and finfo[0].get('xml') is not None:
                         flist.append(xmlInfo(finfo))
 
         # processing a list of URLs

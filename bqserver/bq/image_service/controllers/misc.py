@@ -19,6 +19,7 @@ import ctypes
 import tempfile
 import hashlib
 import datetime
+from itertools import groupby
 
 import logging
 log = logging.getLogger('bq.image_service.misc')
@@ -27,6 +28,9 @@ log = logging.getLogger('bq.image_service.misc')
 ################################################################################
 # Misc
 ################################################################################
+
+def blocked_alpha_num_sort(s):
+    return [int(u''.join(g)) if k else u''.join(g) for k, g in groupby(unicode(s), unicode.isdigit)]
 
 def between(left,right,s):
     _,_,a = s.partition(left)

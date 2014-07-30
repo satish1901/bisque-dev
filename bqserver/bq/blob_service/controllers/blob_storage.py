@@ -66,6 +66,7 @@ from bq.util.hash import make_short_uuid
 from bq.util.http import get_file
 from bq.util.compat import OrderedDict
 
+from bq.image_service.controllers.misc import blocked_alpha_num_sort
 
 log = logging.getLogger('bq.blobs.storage')
 
@@ -333,7 +334,7 @@ class LocalStorage(BlobStorage):
             # dima: this is a shallow walk (1 level), in series case this is probably enough
             files = []
             files.extend( [os.path.join(path,fn) for fn in next(os.walk(path))[2]] )
-
+            files = sorted(files, key=blocked_alpha_num_sort) # use alpha-numeric sort
         #if os.name == 'nt':
         #    f = f.replace('/', '\\')
 
