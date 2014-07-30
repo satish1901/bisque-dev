@@ -112,6 +112,7 @@ from bq.util.paths import data_path
 from bq import data_service
 from bq import blob_service
 from bq import image_service
+from bq.image_service.controllers.misc import blocked_alpha_num_sort
 
 #from bq.image_service.controllers.converter_imgcnv import ConverterImgcnv
 #from bq.image_service.controllers.converter_bioformats import ConverterBioformats
@@ -150,9 +151,6 @@ if hasattr(cgi, 'file_upload_handler'):
 #---------------------------------------------------------------------------------------
 # Misc functions
 #---------------------------------------------------------------------------------------
-
-def blocked_alpha_num_sort(s):
-    return [int(u''.join(g)) if k else u''.join(g) for k, g in groupby(unicode(s), unicode.isdigit)]
 
 def is_filesystem_file(filename):
     filename = os.path.basename(filename)
@@ -552,21 +550,31 @@ class import_serviceController(ServiceController):
             return os.path.basename(path)
 
     def parseFile(self, filename, path, relpath):
-        log.debug('parseFile fn: [%s] path: [%s]', filename, path)
+        log.debug('parseFile filename: [%s] path: [%s] relpath: [%s]', filename, path, relpath)
         mpath = self.safePath(os.path.join(path, filename), path)
         log.debug('parseFile mpath: [%s]', mpath)
         if not os.path.exists(mpath):
             return etree.Element ('tag', name=filename)
         xml = etree.parse(mpath).getroot()
-        bpath = self.safePath(os.path.join(path, os.path.dirname(filename), xml.get('value', '')), path)
         
         log.debug('parseFile xml: %s', etree.tostring(xml))
         
         # if a resource has a value pointing to a file
+        bpath = self.safePath(os.path.join(path, os.path.dirname(filename), xml.get('value', '')), path)        
         if xml.get('value') is not None and os.path.exists(bpath) is True:
             xml.set('name', os.path.join(relpath, os.path.dirname(filename), xml.get('value')).replace('\\', '/'))
             del xml.attrib['value']
             return blob_service.store_blob(resource=xml, fileobj=open(bpath, 'rb'))
+        
+        # if a resource is a multi-blob resource
+        elif len(xml.xpath('value'))>0:
+            subdir = os.path.dirname(filename)
+            xml.set('name', os.path.join(relpath, subdir, xml.get('name')).replace('\\', '/'))
+            for v in xml.xpath('value'):
+                bpath = self.safePath(os.path.join(path, subdir, v.text), path).replace('\\', '/')
+                if os.path.exists(bpath) is True:
+                    v.text = blob_service.local2url(bpath)
+            return blob_service.store_multi_blob(resource=xml, unpack_dir='%s/'%path)
         
         # if a resource is an xml doc
         elif xml.tag not in ['dataset', 'mex', 'user', 'system', 'module', 'store']:
