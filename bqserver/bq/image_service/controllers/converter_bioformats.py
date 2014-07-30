@@ -490,4 +490,7 @@ class ConverterBioformats(ConverterBase):
         return ConverterImgcnv.slice(ometiff, ofnm=ofnm, z=z, t=t, roi=roi, series=series, **kw)
 
 
-ConverterBioformats.init()
+try:
+    ConverterBioformats.init()
+except:
+    log.warn("Bioformats unavailable")

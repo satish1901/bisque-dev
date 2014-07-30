@@ -444,4 +444,7 @@ class ConverterImaris(ConverterBase):
             return ConverterImgcnv.slice(ometiff, ofnm=ofnm, z=z, t=t, roi=roi, series=0, **kw)
 
 
-ConverterImaris.init()
+try:
+    ConverterImaris.init()
+except:
+    log.warn("ImarisConvert unavailable")

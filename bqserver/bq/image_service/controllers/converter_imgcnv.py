@@ -428,5 +428,7 @@ class ConverterImgcnv(ConverterBase):
                     f.write(struct.pack('<Q', 100)) # histogram data, here each color has freq of 100
 
 
-ConverterImgcnv.init()
-
+try:
+    ConverterImgcnv.init()
+except:
+    log.warn("Imgcnv not available")

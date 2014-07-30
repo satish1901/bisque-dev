@@ -2454,10 +2454,10 @@ class ImageServer(object):
         ])
 
         # image convert is special, we can't proceed without it
-        if not self.converters['imgcnv'].get_installed():
-            raise Exception('imgcnv is required but not installed')
-        if not self.converters['imgcnv'].ensure_version(needed_versions['imgcnv']):
-            raise Exception('imgcnv needs update! Has: %s Needs: %s'%(self.converters['imgcnv'].version['full'], needed_versions['imgcnv']))
+        #if not self.converters['imgcnv'].get_installed():
+        #    raise Exception('imgcnv is required but not installed')
+        #if not self.converters['imgcnv'].ensure_version(needed_versions['imgcnv']):
+        #    raise Exception('imgcnv needs update! Has: %s Needs: %s'%(self.converters['imgcnv'].version['full'], needed_versions['imgcnv']))
 
         # test all the supported command line decoders and remove missing
         missing = []

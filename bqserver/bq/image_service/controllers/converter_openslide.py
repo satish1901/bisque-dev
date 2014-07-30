@@ -295,4 +295,7 @@ class ConverterOpenSlide(ConverterBase):
             pass
         return ofnm
 
-ConverterOpenSlide.init()
+try:
+    ConverterOpenSlide.init()
+except:
+    log.warn("Openslide Unavailable")
