@@ -576,6 +576,7 @@ table.x-form-color {
     background-color: rgba(0, 0, 0, 0.5);
     opacity: 0.8;
     border-color: rgba(255,255,255,0.3);
+    z-index: 2147483647 !important;
 }
 
 .bq-viewer-tip .x-tip-anchor {
