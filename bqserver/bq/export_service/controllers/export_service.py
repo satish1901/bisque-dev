@@ -248,12 +248,26 @@ class export_serviceController(ServiceController):
         export_meta = jsbool.get(kw.get('metadata', 'true'), True);
         export_mexs = jsbool.get(kw.get('analysis', 'false'), True);
         
-        files    = files + extractData(kw, 'files')
-        datasets = datasets + extractData(kw, 'datasets')
-        urls     = urls + extractData(kw, 'urls')
-        dirs     = dirs + extractData(kw, 'dirs')
+        files.extend(extractData(kw, 'files'))
+        datasets.extend(extractData(kw, 'datasets'))
+        urls.extend(extractData(kw, 'urls'))
+        dirs.extend(extractData(kw, 'dirs'))
 
-        filename = kw.pop('filename', None) or 'bisque-'+time.strftime("%Y%m%d.%H%M%S")
+        filename = kw.pop('filename', 'bisque-'+time.strftime("%Y%m%d.%H%M%S"))
+
+        archiveStreamer = ArchiveStreamer(compression)
+        archiveStreamer.init(archiveName=filename, fileList=files, datasetList=datasets, urlList=urls, dirList=dirs, export_meta=export_meta, export_mexs=export_mexs)
+        return archiveStreamer.stream()
+
+    def export(self, **kw):
+        compression = kw.pop('compression', 'gzip')
+        files       = kw.pop('files', None)
+        datasets    = kw.pop('datasets', None)
+        urls        = kw.pop('urls', None)
+        dirs        = kw.pop('dirs', None)
+        export_meta = kw.pop('export_meta', None)
+        export_mexs = kw.pop('export_mexs', None)
+        filename    = kw.pop('filename', 'bisque-'+time.strftime("%Y%m%d.%H%M%S"))
 
         archiveStreamer = ArchiveStreamer(compression)
         archiveStreamer.init(archiveName=filename, fileList=files, datasetList=datasets, urlList=urls, dirList=dirs, export_meta=export_meta, export_mexs=export_mexs)

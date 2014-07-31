@@ -321,13 +321,16 @@ class ConverterImgcnv(ConverterBase):
             log.debug('thumbnail files: %s', files)
             command.extend(['-i', files[page-1]])
 
-        depth = info.get('image_pixel_depth', 16)
-        if depth != 8:
+        if info.get('image_pixel_depth', 16) != 8:
             command.extend(['-depth', '8,d'])
 
         #command.extend(['-display'])
         command.extend(['-fusemeta'])
-
+        if info.get('image_num_c', 1)<4:
+            command.extend(['-fusemethod', 'm'])
+        else:
+            command.extend(['-fusemethod', 'm']) # 'a'
+            
         method = kw.get('method', 'BC')
         command.extend([ '-resize', '%s,%s,%s,AR'%(width,height,method)])
         if fmt == 'jpeg':

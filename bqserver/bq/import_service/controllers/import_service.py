@@ -361,7 +361,8 @@ class import_serviceController(ServiceController):
         if unpack_dir is None:
             # need to unpack into a local temp dir and then insert into blob storage (which later may go up to irods or s3)
             log.debug('unpackPackagedFile localpath')
-            filepath,_,_ = blob_service.localpath (upload_file.resource.get('resource_uniq'))
+            b = blob_service.localpath (upload_file.resource.get('resource_uniq'))
+            filepath = b.path
             log.debug('unpackPackagedFile filepath: [%s]', filepath)
             
             unpack_dir = os.path.join(UPLOAD_DIR, bq.core.identity.get_user().name)

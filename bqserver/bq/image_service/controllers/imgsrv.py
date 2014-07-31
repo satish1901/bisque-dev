@@ -220,7 +220,7 @@ class ProcessToken(object):
     'Keep data with correct content type and cache info'
 
     def __str__(self):
-        return '{data: %s, contentType: %s, is_file: %s}'%(self.data, self.contentType, self.is_file)
+        return 'ProcessToken(data: %s, contentType: %s, is_file: %s)'%(self.data, self.contentType, self.is_file)
 
     def __init__(self):
         self.data        = None
@@ -2472,6 +2472,9 @@ class ImageServer(object):
             self.converters.pop(m)
 
         log.info('Available converters: %s', str(self.converters))
+        if 'imgcnv' not in self.converters:
+            log.warn('imgcnv was not found, it is required for most of image service operations! Make sure to install it!')
+        
         self.writable_formats = self.converters.converters(readable=False, writable=True, multipage=False)
 
         img_threads = config.get ('bisque.image_service.imgcnv.omp_num_threads', None)
@@ -2479,17 +2482,6 @@ class ImageServer(object):
             log.info ("Setting OMP_NUM_THREADS = %s", img_threads)
             os.environ['OMP_NUM_THREADS'] = "%s" % img_threads
 
-
-        # check if the imgcnv is properly installed
-#         self.image_formats = imgcnv.formats()
-#         if not imgcnv.installed():
-#             raise Exception('imgcnv not installed')
-#         imgcnv.check_version( imgcnv_needed_version)
-
-#         # check the bioformats version if installed
-#         if bioformats.installed():
-#             if not bioformats.ensure_version( bioformats_needed_version ):
-#                 log.debug('Bioformats needs update! Has: '+bioformats.version()['full']+' Needs: '+ bioformats_needed_version)
 
     def ensureOriginalFile(self, ident):
         return blob_service.localpath(ident) or abort (404, 'File not available from blob service')
@@ -2501,7 +2493,8 @@ class ImageServer(object):
         if id is None and filename is None:
             return {}
         if filename is None:
-            filename,sub,_ = self.ensureOriginalFile(id)
+            b = self.ensureOriginalFile(id)
+            filename = b.path
         filename = self.getOutFileName( filename, id, '.info' )
         if not os.path.exists(filename):
             return {}
@@ -2523,7 +2516,8 @@ class ImageServer(object):
         if id is None and filename is None:
             return {}
         if filename is None:
-            filename,sub,_ = self.ensureOriginalFile(id)
+            b = self.ensureOriginalFile(id)
+            filename = b.path
         filename = self.getOutFileName( filename, id, '.info' )
 
         image = etree.Element ('image', resource_uniq=str(id))
@@ -2536,7 +2530,8 @@ class ImageServer(object):
         if id==None and filename==None:
             return False
         if filename==None:
-            filename,sub,_ = self.ensureOriginalFile(id)
+            b = self.ensureOriginalFile(id)
+            filename = b.path
         filename = self.getOutFileName( filename, id, '.info' )
         return os.path.exists(filename)
 
@@ -2551,8 +2546,13 @@ class ImageServer(object):
         if ident==None and filename==None:
             return {}
         sub=0
-        if filename is None:
-            filename,sub,_ = self.ensureOriginalFile(ident)
+        if filename is None and data_token is not None:
+            filename = data_token.data
+            sub = data_token.series
+        elif filename is None:
+            b = self.ensureOriginalFile(ident)
+            filename = b.path
+            sub = b.sub
 
         return_token = data_token is not None
         infofile = self.getOutFileName( filename, ident, '.info' )
@@ -2653,8 +2653,8 @@ class ImageServer(object):
     def getInFileName(self, data_token, image_id):
         # if there is no image file input, request the first slice
         if not data_token.isFile():
-            path,_,_ = self.ensureOriginalFile(image_id) 
-            data_token.setFile(path)
+            b = self.ensureOriginalFile(image_id)
+            data_token.setFile(b.path)
         return data_token.data
 
     def getOutFileName(self, infilename, image_id, appendix):
@@ -2717,16 +2717,17 @@ class ImageServer(object):
                     return data_token
 
             # start the processing
-            original_filename,sub,files = self.ensureOriginalFile(ident)
-            data_token.setFile(original_filename, series=(sub or 0))
+            b = self.ensureOriginalFile(ident)
+            data_token.setFile(b.path, series=(b.sub or 0))
             # special metadata was reset by the dryrun, reset
             data_token.timeout = kw.get('timeout', None)
             data_token.meta = kw.get('imagemeta', None)
-            if data_token.meta is not None and files is not None:
-                data_token.meta['files'] = files
+            if data_token.meta is not None and b.files is not None:
+                data_token.meta['files'] = b.files
+                #data_token.data = b.files[0]
 
             #if not blob_service.file_exists(ident):
-            if not os.path.exists(original_filename):
+            if not os.path.exists(b.path):
                 data_token.setHtmlErrorNotFound()
                 return data_token
 
