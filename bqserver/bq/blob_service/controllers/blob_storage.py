@@ -127,6 +127,14 @@ def split_subpath(path):
     except ValueError:
         return path,None
 
+def walk_deep(path):
+    """Splits sub path that follows # sign if present
+    """
+    files = []
+    for root, _, filenames in os.walk(path):
+        for f in filenames:
+            files.append(os.path.join(root, f).replace('\\', '/'))
+    return files
 
 #################################################
 #  Define helper functions for NT vs Unix/Mac
@@ -331,10 +339,8 @@ class LocalStorage(BlobStorage):
         # if path is a directory, list contents
         files = None
         if os.path.isdir(path) is True:
-            # dima: this is a shallow walk (1 level), in series case this is probably enough
-            files = []
-            files.extend( [os.path.join(path,fn).replace('\\', '/') for fn in next(os.walk(path))[2]] )
-            files = sorted(files, key=blocked_alpha_num_sort) # use alpha-numeric sort
+            files = walk_deep(path)
+            files = sorted(files, key=blocked_alpha_num_sort) # use alpha-numeric block sort
 
         # local storage can't extract sub paths, pass it along
         return Blobs(path=path, sub=sub, files=files)
