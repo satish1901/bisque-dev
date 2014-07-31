@@ -146,8 +146,12 @@ Ext.define('Bisque.Resource', {
 
     getImageParams : function(config) {
         var prefs = this.getImagePrefs('ImageParameters') || '?slice=,,{sliceZ},{sliceT}&thumbnail={width},{height}';
-        prefs = prefs.replace('{sliceZ}', config.sliceZ ? Math.max(config.sliceZ || 1, 1) : '');
-        prefs = prefs.replace('{sliceT}', config.sliceT ? Math.max(config.sliceT || 1, 1) : '');
+        if (config.sliceZ || config.sliceT) {
+            prefs = prefs.replace('{sliceZ}', config.sliceZ ? Math.max(config.sliceZ || 1, 1) : '');
+            prefs = prefs.replace('{sliceT}', config.sliceT ? Math.max(config.sliceT || 1, 1) : '');
+        } else {
+            prefs = prefs.replace('slice=,,{sliceZ},{sliceT}&', '');
+        }
         prefs = prefs.replace('{width}',  config.width || 280);
         prefs = prefs.replace('{height}', config.height || 280);
         return prefs;
