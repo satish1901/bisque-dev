@@ -1331,6 +1331,9 @@ BQGObject.prototype.initializeXml = function (node) {
     for (var i=0; i<vertices.length; i++)
         this.vertices.push(new BQVertex(vertices[i]));
 
+    var t = xpathOneNode(node, 'tag[@name="color"]');
+    if (t)
+        this.color_override = t.getAttribute('value').replace('#', '');
 };
 
 BQGObject.prototype.setParent = function (p) {

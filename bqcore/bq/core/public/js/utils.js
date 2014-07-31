@@ -54,6 +54,15 @@ function callback_app(obj, method) {
     };
 }
 
+function xpathOneNode(aNode, aExpr) {
+    var xpe = new XPathEvaluator();
+    var nsResolver = xpe.createNSResolver(aNode.ownerDocument == null ?
+      aNode.documentElement : aNode.ownerDocument.documentElement);
+    var result = xpe.evaluate(aExpr, aNode, nsResolver, XPathResult.ANY_UNORDERED_NODE_TYPE, null);
+    return result.singleNodeValue;
+}
+
+
 function evaluateXPath(aNode, aExpr)
 {
     var xpe = new XPathEvaluator();

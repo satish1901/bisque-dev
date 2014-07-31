@@ -179,7 +179,7 @@ Ext.define('BQ.slider.Slider', {
             animate: false,
             minValue: me.minValue,
             maxValue: me.maxValue,
-            value: 0,
+            value: this.value || 0,
             margin: cssmargin,
             vertical: isvertical,
             inversed: isvertical,
