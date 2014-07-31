@@ -824,9 +824,16 @@ Ext.define('Bisque.Resource.Image.Page', {
         if (image2d && image2d.isVisible()) return;
 
         var movie = this.queryById('main_view_movie');
-        if (movie) movie.setVisible(false);
+        if (movie) {
+            movie.setVisible(false);
+            movie.destroy();
+        }
+
         var image3d = this.queryById('main_view_3d');
-        if (image3d) image2d.destroy();
+        if (image3d) {
+            image3d.setVisible(false);
+            image3d.destroy();
+        }
 
         image2d.setVisible(true);
     },
@@ -840,9 +847,16 @@ Ext.define('Bisque.Resource.Image.Page', {
         if (movie && movie.isVisible()) return;
 
         var image2d = this.queryById('main_view_2d');
-        if (image2d) image2d.setVisible(false);
+        if (image2d) {
+            image2d.setVisible(false);
+            // do not destroy to really fast return
+        }
+
         var image3d = this.queryById('main_view_3d');
-        if (image3d) image2d.destroy();
+        if (image3d) {
+            image3d.setVisible(false);
+            image3d.destroy();
+        }
 
         var cnt = this.queryById('main_container');
         cnt.add({
@@ -898,9 +912,16 @@ Ext.define('Bisque.Resource.Image.Page', {
         if (image3d && image3d.isVisible()) return;
 
         var image2d = this.queryById('main_view_2d');
-        if (image2d) image2d.setVisible(false);
-        var movie = this.queryById('main_view_3d');
-        if (movie) movie.setVisible(false);
+        if (image2d) {
+            image2d.setVisible(false);
+            // do not destroy to really fast return
+        }
+
+        var movie = this.queryById('main_view_movie');
+        if (movie) {
+            movie.setVisible(false);
+            movie.destroy();
+        }
 
         var cnt = this.queryById('main_container');
         cnt.add({

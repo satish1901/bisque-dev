@@ -74,7 +74,13 @@ function ImgExternal (viewer,name){
                 text   : 'Calibrate image resolution',
                 disabled: true,
                 handler: this.calibrateResolution,
-            }]
+            }/*, {
+                xtype  : 'menuitem',
+                itemId : 'menu_viewer_precache',
+                text   : 'Pre-cache current view',
+                disabled: true,
+                handler: this.calibrateResolution,
+            }*/]
         },
     }]);
 };
