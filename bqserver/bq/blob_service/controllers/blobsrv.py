@@ -82,6 +82,7 @@ from bq import data_service
 from bq.data_service.model import Taggable, DBSession
 #from bq import image_service
 from bq.image_service.controllers.misc import blocked_alpha_num_sort
+from bq import export_service
 
 SIG_NEWBLOB  = "new_blob"
 
@@ -90,7 +91,7 @@ from . import store_resource
 
 log = logging.getLogger('bq.blobs')
 
-
+import traceback
 
 #########################################################
 # Utility functions
@@ -155,7 +156,8 @@ class DriverManager(object):
         for driver in self.drivers.values():
             if driver.valid(blob_id):
                 with TransferTimer() as t:
-                    b = t.path,_,_ = driver.localpath(blob_id)
+                    b = driver.localpath(blob_id)
+                    t.path = b.path
                 if b.path is not None:
                     # if sub path could not be serviced by the storage system and the file is a package (zip, tar, ...)
                     # extract the sub element here and return the extracted path with sub as None                    
@@ -307,22 +309,23 @@ class BlobServer(RestController, ServiceMixin):
         return "Method Not supported"
 
     @expose()
-    def get_one(self, ident,  **kw):
+    def get_one(self, ident, **kw):
         "Fetch a blob based on uniq ID"
         log.info("get_one(%s) %s" , ident, kw)
         from bq.data_service.controllers.resource_query import RESOURCE_READ, RESOURCE_EDIT
         #ident = args[0]
         self.check_access(ident, RESOURCE_READ)
         try:
+            resource = data_service.query(resource_uniq=ident)[0]
+            filename,_ = blob_storage.split_subpath(resource.get('name', str(ident)))
             b = self.localpath(ident)
             if b.files is not None:
-                pass
+                return export_service.export(files=[resource.get('uri')], filename=filename)
             
             localpath = os.path.normpath(b.path)
-            filename = self.originalFileName(ident)
             if 'localpath' in kw:
                 tg.response.headers['Content-Type']  = 'text/xml'
-                resource = etree.Element ('resource', name=filename, value = localpath)
+                resource = etree.Element ('resource', name=filename, value=localpath)
                 return etree.tostring (resource)
             try:
                 disposition = 'attachment; filename="%s"'%filename.encode('ascii')
@@ -581,20 +584,25 @@ class BlobServer(RestController, ServiceMixin):
 
         return self.create_resource(resource)
 
-    def localpath (self, uniq_ident):
+    def localpath (self, ident):
         "Find  local path for the identified blob, using workdir for local copy if needed"
-        resource = DBSession.query(Taggable).filter_by (resource_uniq = uniq_ident).first()
-        if resource is not None and resource.resource_value:
-            blob_id = resource.resource_value
-            b = self.drive_man.fetch_blob(blob_id)
-            log.debug('using %s full=%s localpath=%s sub=%s' , uniq_ident, blob_id, b.path, b.sub)
+        try:
+            resource = data_service.query(resource_uniq=ident, view='full')[0]
+        except IndexError:
+            return None
+        #log.debug('localpath resource %s', etree.tostring(resource))
+        
+        value = resource.get('value')
+        if value is not None:
+            b = self.drive_man.fetch_blob(value)
+            log.debug('using %s full=%s localpath=%s sub=%s', ident, value, b.path, b.sub)
             return b
-        elif resource is not None and resource.resource_value is None:
+        else:
             #in case of a multi-file resource
-            response = data_service.query(resource_uniq=uniq_ident, view='full')
-            values = response.xpath('//value')
+            values = resource.xpath('value')
             if values is not None and len(values)>0:
                 files = []
+                sub = None
                 # fetch all files referenced by the resource and return the first one
                 for v in values:
                     blob_id = v.text
@@ -603,9 +611,14 @@ class BlobServer(RestController, ServiceMixin):
                         files.extend(b.files)
                     else:
                         files.append(b.path)
+                    sub = sub or b.sub
+                mainpath = files[0]
+                #files = list(set(files))
                 #files = sorted(files, key=blocked_alpha_num_sort) # use alpha-numeric sort
-                log.debug('using %s full=%s localpath=%s sub=%s' , uniq_ident, blob_id, b.path, b.sub)
-                return blob_storage.Blobs(path=b.path, sub=b.sub, files=files)
+                log.debug('localpath for %s url=%s localpath=%s sub=%s', ident, blob_id, mainpath, sub)
+                #log.debug('localpath files %s', files)
+                #log.debug('localpath stack %s', ''.join(traceback.format_stack()))
+                return blob_storage.Blobs(path=mainpath, sub=sub, files=files)
         return None
 
     def originalFileName(self, ident):
@@ -633,7 +646,8 @@ class BlobServer(RestController, ServiceMixin):
             raise IllegalOperation("cannot move onto same store %s, %s" % (srcstore, dststore))
 
         for resource in DBSession.query(Taggable).filter_by(Taggable.resource_value.like (src_store.top)):
-            localpath = self.localpath(resource.resource_uniq)
+            b = self.localpath(resource.resource_uniq)
+            localpath = b.path
 
             filename = resource.resource_name
             user_name = resource.owner.resource_name

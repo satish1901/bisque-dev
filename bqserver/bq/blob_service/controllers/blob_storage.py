@@ -333,10 +333,8 @@ class LocalStorage(BlobStorage):
         if os.path.isdir(path) is True:
             # dima: this is a shallow walk (1 level), in series case this is probably enough
             files = []
-            files.extend( [os.path.join(path,fn) for fn in next(os.walk(path))[2]] )
+            files.extend( [os.path.join(path,fn).replace('\\', '/') for fn in next(os.walk(path))[2]] )
             files = sorted(files, key=blocked_alpha_num_sort) # use alpha-numeric sort
-        #if os.name == 'nt':
-        #    f = f.replace('/', '\\')
 
         # local storage can't extract sub paths, pass it along
         return Blobs(path=path, sub=sub, files=files)

@@ -24,8 +24,8 @@ from bq.core import permission, identity
 from bq.util.paths import data_path
 from bq.util.mkdir import _mkdir
 from bq import data_service
-from imgsrv import ImageServer
-from imgsrv import ProcessToken
+from bq import export_service
+from imgsrv import ImageServer, ProcessToken, getQuery4Url
 
 from . import misc
 
@@ -273,14 +273,14 @@ class image_serviceController(ServiceController):
         response = tg.response
         log.info ('STARTING %s: %s', ident, request.url)
 
-        path   = request.path+'?'+request.query_string
+        url = request.path+'?'+request.query_string
 
         # check for access permission
         from bq.data_service.controllers.resource_query import RESOURCE_READ, RESOURCE_EDIT
         self.check_access(ident, RESOURCE_READ)
 
         # dima: patch for incorrect /auth requests for image service
-        if path.find('/auth')>=0:
+        if url.find('/auth')>=0:
             tg.response.headers['Content-Type'] = 'text/xml'
             return '<resource />'
 
@@ -290,7 +290,7 @@ class image_serviceController(ServiceController):
         # fetch image meta from a resource if any, has to have a name and a type as "image_meta"
         try:
             q = data_service.query(resource_uniq=ident, view='image_meta')
-            log.debug('images resource query: %s', etree.tostring(q))
+            #log.debug('images resource query: %s', etree.tostring(q))
             meta = q.xpath('image/tag[@type="image_meta"]')[0]
             meta = dict((i.get('name'), misc.safetypeparse(i.get('value'))) for i in meta.xpath('tag'))
             log.debug('images meta: %s', meta)
@@ -299,7 +299,17 @@ class image_serviceController(ServiceController):
         except (AttributeError, IndexError):
             meta = None
 
-        data_token = self.srv.process(path, ident, timeout=timeout, imagemeta=meta, **kw)
+        # if the image is multi-blob and blob is requested, use export service
+        try:
+            image = q[0]
+            values = image.xpath('value')
+            if len(getQuery4Url(url))<1 and len(values)>1:
+                return export_service.export(files=[image.get('uri')], filename=image.get('name'))
+        except (AttributeError, IndexError):
+            pass
+
+        # Run processing
+        data_token = self.srv.process(url, ident, timeout=timeout, imagemeta=meta, **kw)
         tg.response.headers['Content-Type']  = data_token.contentType
         #tg.response.content_type  = data_token.contentType
         #tg.response.headers['Cache-Control'] = ",".join ([data_token.cacheInfo, "public"])
