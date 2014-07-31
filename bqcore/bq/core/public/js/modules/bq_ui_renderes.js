@@ -185,7 +185,7 @@ Ext.define('BQ.selectors.Resource', {
     layout: 'auto',
     cls: 'resourcerenderer',
     height: 75,
-    custom_resources: {'resource':null, 'image':null, 'dataset':null, },
+    custom_resources: {'resource':null, 'image':null, 'dataset':null, 'query':null},
     btn_select: {},
 
     initComponent : function() {
@@ -217,6 +217,18 @@ Ext.define('BQ.selectors.Resource', {
                 handler: Ext.Function.bind( this.selectDataset, this ),
             });
             btns.push(this.btn_select_dataset);
+        }
+
+        if ('query' in accepted_type) {
+            this.btn_select_query = Ext.create('Ext.button.Button', {
+                text: 'Query for a set of images',
+                //iconCls: 'upload',
+                scale: 'large',
+                //cls: 'x-btn-default-large',
+                //tooltip: 'Start the upload of all queued files',
+                handler: Ext.Function.bind( this.selectQuery, this ),
+            });
+            btns.push(this.btn_select_query);
         }
 
         // now create pickers for any other requested resource type
@@ -311,6 +323,28 @@ Ext.define('BQ.selectors.Resource', {
                     }, scope: this },
         });
     },
+    
+    selectQuery: function() {
+        var browser  = new Bisque.QueryBrowser.Dialog({
+            'height' : '85%',
+            'width' :  '85%',
+            dataset   : '/data_service/image',
+            query_resource_type: 'image',
+            listeners: {'Select': function(me, tag_query) {
+                        //this.onselected(resource);
+                        var i = this; 
+                        this.tag_query = tag_query // passing the tag_query to createQueryViewer
+                        var r = '/data_service/image?tag_query='+tag_query;
+                        setTimeout(function() { 
+                            BQFactory.request( { uri: r,
+                                 cb: callback(i, 'onselectedquery'),
+                                 errorcb: callback(i, 'onerror'),
+                            });
+                            }, 100);
+                        }, scope: this },
+        });
+    },
+
 
     selectFile: function() {
         var uploader = Ext.create('BQ.upload.Dialog', {
@@ -370,6 +404,8 @@ Ext.define('BQ.selectors.Resource', {
         R.gobjects = this.gobs;
         this.onselected(R);
     },
+    
+    
 
     onselected: function(R) {
         this.selected_resource = R;
@@ -415,6 +451,7 @@ Ext.define('BQ.selectors.Resource', {
             this.onImage(this.selected_resource);
         } else if (this.selected_resource instanceof BQDataset) {
             var me = this;
+            
             this.selected_resource.getMembers(function (dataset) {
                 // Sometime values are loaded instances (image) and sometimes not!
                 var uri = dataset.members[0].uri || dataset.values[0].value;
@@ -422,6 +459,7 @@ Ext.define('BQ.selectors.Resource', {
                                      cb: callback(me, 'onImage'),
                                      errorcb: callback(me, 'onerror'),
                                    }); });
+            
 
             // BQFactory.request({
             //     uri: this.selected_resource.getMembers().values[0].value,
@@ -435,6 +473,93 @@ Ext.define('BQ.selectors.Resource', {
 
         this.fireEvent( 'changed', this, this.selected_resource );
         if (!this.validate()) return;
+    },
+    
+    /*
+     * 
+     *  Query View (since there are no query templates a list
+     *     of items queried are displayed
+     * 
+     */
+    onselectedquery: function(R){
+        this.selected_resource = R;
+        this.resource.value = R.uri;
+        this.resource.type = R.resource_type;
+        
+        var increment = this.resource.gobjects.length<1?20:20;
+        
+        if (this.resourcePreview) {
+            this.setHeight( this.getHeight() - this.resourcePreview.getHeight() - increment);
+            this.resourcePreview.destroy();
+        }
+        
+        this.resourcePreview = this.createQueryViewer(R);
+
+        this.add(this.resourcePreview);
+        this.setHeight( this.getHeight() + this.resourcePreview.getHeight() + increment );
+        
+        this.fireEvent( 'changed', this, this.selected_resource );
+        if (!this.validate()) return; 
+    },
+    
+    //create a view for the query
+    //  The veiw is just a list of tags and values used to query
+    createQueryViewer: function(R) {
+
+        Ext.regModel('QueryModel', {
+            fields: [
+                {type: 'string', name: 'Tag'},
+                {type: 'string', name: 'Name'},
+                    ]
+            });
+        
+        var querytags = [];
+        d_query=this.tag_query.replace(/"/g, ""); //removing '"'
+        d_query=d_query.split(' AND ');
+        for(i=0;i<d_query.length;i++){
+            s_query=d_query[i].split(':');
+            querytags.push([s_query[0],s_query[1]]);
+        }
+        // The data store holding the states
+        var store = Ext.create('Ext.data.Store', {
+            model: 'QueryModel',
+            data: querytags
+        });
+        
+        var queryView = Ext.create('Ext.grid.Panel', {
+            store: store,
+            autoScroll: true,
+            width: 'auto',
+            height: 125,
+            stateful: true,
+            title: 'Query',
+            stateId: 'stateGrid',
+            enableColumnHide:false,
+            forceFit: true,
+            margin: "10 0 0 0",
+            columns: [
+                {
+                    text     : 'Tags',
+                    width    : '30%',
+                    //width    : 175,
+                    sortable : true,
+                    dataIndex: 'Tag'
+                },
+                {
+                    text     : 'Names',
+                    width    : '70%',
+                    //width    : 175,
+                    sortable : true,
+                    dataIndex: 'Name'
+                },
+            ],
+            viewConfig: {
+                stripeRows: true,
+                //enableTextSelection: true
+            }                   
+        });
+        delete this.tag_query  // no longer need tag_query
+        return queryView
     },
 
     onImage: function(image) {
