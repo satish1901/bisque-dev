@@ -77,12 +77,9 @@ Ext.define('Bisque.Resource.Image', {
             this.mmData.isFetchingSlices = false;
     },
 
-    onMouseMove : function(e, target) {
-        if (!this.mmData || !this.mmData.isFetchingSlices)
-            return;
-
-        var sliceX = Math.max(1, Math.ceil((e.getX() - this.mmData.x) * this.resource.t / target.clientWidth));
-        var sliceY = Math.max(1, Math.ceil((e.getY() - this.mmData.y) * this.resource.z / target.clientHeight));
+    updateThumbnail : function(pos, o) {
+        var sliceX = Math.max(1, Math.ceil((pos.x - this.mmData.x) * this.resource.t / o.w));
+        var sliceY = Math.max(1, Math.ceil((pos.y - this.mmData.y) * this.resource.z / o.h));
         sliceX = Math.min(sliceX, this.resource.t);
         sliceY = Math.min(sliceY, this.resource.z);
 
@@ -105,7 +102,15 @@ Ext.define('Bisque.Resource.Image', {
                 document.images[this.resource.uri].src = imgLoader.src;
             }
         }
+    },
 
+    onMouseMove : function(e, target) {
+        if (!this.mmData || !this.mmData.isFetchingSlices)
+            return;
+
+        if (!this.thumbnailUpdater)
+            this.thumbnailUpdater = new Ext.util.DelayedTask(this.updateThumbnail, this);
+        this.thumbnailUpdater.delay(10, this.updateThumbnail, this, [{x: e.getX(), y: e.getY()}, {w: target.clientWidth, h: target.clientHeight}]);
     },
 
     downloadOriginal : function() {

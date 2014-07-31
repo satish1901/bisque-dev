@@ -4,6 +4,7 @@ function ImgOperations (viewer, name) {
     this.default_enhancement_8bit = p.enhancement8bit || 'f';
     this.default_negative         = p.negative        || '';  // values: '', 'negative'
     this.default_fusion           = p.fusion          || 'm'; // values: 'a', 'm'
+    this.default_fusion_4plus     = p.default_fusion_4plus || 'm';
     this.default_rotate           = p.rotate          || 0;   // values: 0, 270, 90, 180
     this.default_autoupdate       = false;
 
@@ -92,6 +93,8 @@ ImgOperations.prototype.createMenu = function () {
     var phys = this.viewer.imagephys;
     var enhancement = phys && parseInt(phys.pixel_depth)===8 ? this.default_enhancement_8bit : this.default_enhancement;
 
+    var fusion = phys && parseInt(phys.ch)>3 ? this.default_fusion_4plus : this.default_fusion;
+
     this.menu.add({
         xtype: 'displayfield',
         fieldLabel: 'View',
@@ -134,7 +137,7 @@ ImgOperations.prototype.createMenu = function () {
     this.combo_fusion = this.viewer.createCombo( 'Fusion', [
         {"value":"a", "text":"Average"},
         {"value":"m", "text":"Maximum"},
-    ], this.default_fusion, this, this.changed);
+    ], fusion, this, this.changed);
 
     this.combo_enhancement = this.viewer.createCombo( 'Enhancement', [
         {"value":"d", "text":"Data range"},
@@ -185,5 +188,6 @@ ImgOperations.prototype.loadPreferences = function (p) {
     this.default_rotate      = 'rotate'      in p ? p.rotate      : this.default_rotate;
     this.default_fusion      = 'fusion'      in p ? p.fusion      : this.default_fusion;
     this.default_enhancement_8bit = 'enhancement-8bit' in p ? p['enhancement-8bit'] : this.default_enhancement_8bit;
+    this.default_fusion_4plus = 'fusion_4plus' in p ? p['fusion_4plus'] : this.default_fusion_4plus;
 };
 
