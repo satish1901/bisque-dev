@@ -404,13 +404,15 @@ class BlobServer(RestController, ServiceMixin):
             resource.set('resource_type', resource.get('resource_type') or guess_type(filename))
         if resource.get('resource_uniq') is None:
             resource.set('resource_uniq', data_service.resource_uniq() )
+        ts = resource.get('ts') or datetime.now().isoformat(' ')
+            
         # KGK
         # These are redundant (filename is the attribute name name upload is the ts
         # dima: today needed for organizer to work
         resource.insert(0, etree.Element('tag', name="filename", value=filename, permission=perm))
         resource.insert(1, etree.Element('tag',
                                          name="upload_datetime",
-                                         value=datetime.now().isoformat(' '),
+                                         value=ts,
                                          type='datetime',
                                          permission=perm),
                         )
