@@ -105,75 +105,6 @@ Ext.define('BQ.viewer.Volume.volumeScene', {
 		this.oldScale = new THREE.Vector3(0.5, 0.5, 0.5);
 		this.currentScale = new THREE.Vector3(0.5, 0.5, 0.5);
 
-		var powf = function (a, b) {
-			//dirty low precision pow function
-			var g = [];
-			g[0] = 1.0;
-			g[1] = 0.5;
-			g[2] = 0.333333333;
-			g[3] = 0.25;
-			g[4] = 0.2;
-			g[5] = 0.1666666667;
-			g[6] = 0.1428571428571429;
-			g[7] = 0.125;
-			g[8] = 0.11111111111111;
-			g[9] = 0.1;
-			g[10] = 0.090909090909;
-			g[11] = 0.0833333333333;
-			g[12] = 0.07692307692307692307692307692308;
-			g[13] = 0.07142857142857142857142857142857;
-			g[14] = 0.06666666666666666666666666666667;
-			g[15] = 0.0625;
-			g[16] = 0.05882352941176470588235294117647;
-			g[17] = 0.05555555555555555555555555555556;
-			g[18] = 0.05263157894736842105263157894737;
-			g[19] = 0.05;
-
-			var f = [];
-			f[0] = 1.0;
-			f[1] = 0.5;
-			f[2] = 1.6666666667e-1;
-			f[3] = 4.1666666667e-2;
-			f[4] = 8.3333333333e-3;
-			f[5] = 1.3888888888e-3;
-			f[6] = 1.984126984126984e-4;
-			f[7] = 2.48015873015873e-5;
-			f[8] = 2.755731922398589e-6;
-			f[9] = 2.755731922398589e-7;
-			f[10] = 2.505210838544172e-8;
-			f[11] = 2.08767569878681e-9;
-
-			f[12] = 1.605904383682161e-10;
-			var x = 1.0 - a;
-			var xa = x;
-			var y = 0.0;
-			for (var i = 0; i < 20; i++) {
-				console.log(i, xa, g[i], xa * g[i], y);
-				y -= xa * g[i];
-				xa *= x;
-			}
-
-			console.log('y = ', y, xa);
-			//y = -1.0;
-			var logy = 1.0;
-			y *= b;
-			var ya = y;
-			for (var i = 0; i < 13; i++) {
-				//console.log(i, ya*f[i], ya, f[i], logy);
-				logy += ya * f[i];
-				ya *= y;
-			}
-			console.log('logy = ', logy, ya);
-			return logy;
-			//return exp(y*log(x));
-		}
-		console.log(powf(0.6, 2.2));
-		//console.log(powf(0.2, 3.5));
-		//console.log(powf(0.3), 3.5);
-		//console.log(powf(0.4, 3.5));
-		//console.log(powf(0.5, 3.5));
-		//console.log(powf(0.6, 3.5));
-
 	},
 
 	initComponent : function () {},
@@ -650,7 +581,13 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		}
 
 		var me = this;
-		/////////////////////////////////////////////////
+
+
+        this.model = {
+            histogram: {r:[], g:[], b:[]},
+            gamma: {min: 0, max: 1.0, scale: 0.5},
+        }
+        /////////////////////////////////////////////////
 		// begin setup backbuffer rendering:
 		// putting it here for experimentation
 		/////////////////////////////////////////////////
@@ -744,7 +681,45 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		return this.maxTextureSize;
 	},
 
-	ajaxDimRequest : function (url, type) {
+    fetchHistogram : function () {
+        url = this.constructAtlasUrl() + '&histogram';
+        console.log("hist url: ", url);
+        Ext.Ajax.request({
+            url : url,
+            scope : this,
+            disableCaching : false,
+            callback : function (opts, succsess, response) {
+                if (response.status >= 400)
+                    BQ.ui.error(response.responseText);
+                else {
+                    if (!response.responseXML)
+                        return;
+                    var xmlDoc = response.responseXML;
+                    var rChan = evaluateXPath(xmlDoc, "resource/histogram[@name='channel']/value");
+
+                    this.model.histogram.r = rChan[0].innerHTML.split(",");
+
+                    if(rChan.length > 1){
+                        this.model.histogram.g = rChan[1].innerHTML.split(",");
+                    }
+                    if(rChan.length > 2){
+                        this.model.histogram.b = rChan[2].innerHTML.split(",");
+                    }
+                    for (var chan in this.model.histogram) {
+                        if (this.model.histogram.hasOwnProperty(chan)) {
+                            var channel = this.model.histogram[chan];
+                            channel.forEach(function(e,i,a){
+                                a[i] = parseInt(e);
+                            });
+                        }
+}
+                    console.log("model: ", this.model);
+                }
+            },
+        });
+    },
+
+	fetchDimensions : function (url, type) {
 		var xRes;
 		var yRes;
 		Ext.Ajax.request({
@@ -860,9 +835,9 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		this.loadedDimResizeAtlas = false;
 
 		//Ajax request the values pertinent to the volume atlases
-		this.ajaxDimRequest(fullAtlasUrl, 'atlas');
-		this.ajaxDimRequest(resizeAtlasUrl, 'resized');
-
+		this.fetchDimensions(fullAtlasUrl, 'atlas');
+		this.fetchDimensions(resizeAtlasUrl, 'resized');
+        this.fetchHistogram();
 	},
 
 	wipeTextureTimeBuffer : function () {
@@ -1176,7 +1151,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 			});
 		}
 		items.push({
-			xtype : 'transfer'
+			xtype : 'bq_volume_transfer'
 		});
 		items.push({
 			xtype : 'pointControl',
