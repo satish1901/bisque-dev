@@ -200,9 +200,9 @@ class UploadedResource(object):
 
         # Set the path and filename of the UploadFile
         # A local path will be available in 'value'
-        path = resource.get('value')
-        if path:
-            path = blob_service.url2local(path)
+        self.path = resource.get('value')
+        if self.path:
+            self.path = blob_service.url2local(self.path)
             
         # If the uploader has given it a name, then use it, or figure a name out
         if resource.get ('name'):
@@ -210,21 +210,21 @@ class UploadedResource(object):
         elif fileobj:
             # POSTed fileobject will have a filename (which may be path)
             # http://docs.pylonsproject.org/projects/pyramid_cookbook/en/latest/forms/file_uploads.html
-            self.path = getattr(fileobj, 'filename', None)
+            #self.path = getattr(fileobj, 'filename', None)
             self.filename = sanitize_filename (self.path)
-            resource.set('name', self.filename)
+            #resource.set('name', self.filename)
 
     def localpath(self):
         'retrieve a local path for this uploaded resource'
         if self.fileobj is None:
             return self.path
-        return self.path or getattr(self.fileobj, 'filename', None) or getattr(self.fileobj, 'name', '')
+        return getattr(self.fileobj, 'name', None) or getattr(self.fileobj, 'filename', None) or self.path
 
     def ensurelocal(self, localpath):
         '''retrieve a local path for this uploaded resource'''
         if self.path is not None:
             return self.path
-        self.path = self.path or getattr(self.fileobj, 'filename', None) or getattr(self.fileobj, 'name', None)
+        self.path = self.path or getattr(self.fileobj, 'name', None) or getattr(self.fileobj, 'filename', None)
         if self.path is None:
             move_file (self.fileobj, localpath)
             self.path = localpath
@@ -361,26 +361,22 @@ class import_serviceController(ServiceController):
             else:
                 return self.unTar(filename, folderName)
 
-    def unpackPackagedFile(self, upload_file, preserve_structure=True, folderName=None):
+    def unpackPackagedFile(self, uf, preserve_structure=True, folderName=None):
         ''' This method unpacked uploaded file into a proper location '''
-        unpack_dir = folderName
-        if unpack_dir is None:
-            # need to unpack into a local temp dir and then insert into blob storage (which later may go up to irods or s3)
-            #log.debug('unpackPackagedFile localpath')
-            #b = blob_service.localpath (upload_file.resource.get('resource_uniq'))
-            #filepath = b.path
-            
-            filepath = upload_file.localpath()
-            uniq = upload_file.resource.get('resource_uniq') or shortuuid.uuid()
-            unpack_dir = os.path.join(UPLOAD_DIR, bq.core.identity.get_user().name, uniq)
-            
-            #log.debug('unpackPackagedFile filepath: [%s]', filepath)            
-            #log.debug('unpackPackagedFile upload_file: [%s]', upload_file)
-            #log.debug('unpackPackagedFile resource: [%s]', etree.tostring(upload_file.resource))
-            #log.debug('unpackPackagedFile unpack_dir: [%s]', unpack_dir)
-            
+
+        uniq = uf.resource.get('resource_uniq') or shortuuid.uuid()
+        unpack_dir = os.path.join(UPLOAD_DIR, bq.core.identity.get_user().name, uniq)
+        
+        filepath = uf.localpath()
+        if filepath is None:
+            log.debug('unpackPackagedFile file object has no local path: [%s], move local', uf.fileobj)     
+            filepath = uf.ensurelocal( os.path.join(unpack_dir, os.path.basename(uf.resource.get('name'))))
+
+        if folderName is None:            
             unpack_dir = os.path.join(unpack_dir, '%s.UNPACKED'%os.path.basename(filepath))
             unpack_dir = unpack_dir.replace('\\', '/')
+        else:
+            unpack_dir = folderName
         _mkdir (unpack_dir)
         
         log.debug('unpackPackagedFile, filepath: [%s]', filepath )
@@ -472,14 +468,19 @@ class import_serviceController(ServiceController):
         ''' process proprietary series file and create multiple resources if needed '''
         log.debug('process_series_proprietary: %s %s', uf, intags )
         resources = []
+        val = None
         for n in range(intags.get('image_num_series', 0)):
             name = '%s#%s'%(uf.resource.get('name'), n)
-            value = '%s#%s'%(uf.resource.get('value'), n)
+            if val is None:
+                value = '%s#%s'%(uf.resource.get('value'), n)
+            else:
+                value = val.replace('#0', '#%s'%n)
             resource = etree.Element ('image', name=name, value=value, resource_type='image', ts=uf.ts)
             # append all other input annotations
             resource.extend (copy.deepcopy (list (uf.resource)))
             if n==0:
                 resource = blob_service.store_blob(resource=resource, fileobj=uf.fileobj)
+                val = resource.get('value')
             else:
                 resource = blob_service.store_blob(resource=resource)
             resources.append(resource)
@@ -810,10 +811,16 @@ class import_serviceController(ServiceController):
         mime = mimetypes.guess_type(sanitize_filename(uf.filename))[0]
         if mime in self.filters:
             intags['type'] = mime
+            
+        log.debug('process, file name attr: %s', getattr(uf.fileobj, 'name', None))        
         
         # check if an image can be a series
         if mime == 'image/series':
             filename = uf.localpath()
+            if filename is None:
+                log.debug('process, file object has no local path: [%s], move local', uf.fileobj)
+                filename = uf.ensurelocal( os.path.join(UPLOAD_DIR, bq.core.identity.get_user().name, shortuuid.uuid(), os.path.basename(uf.resource.get('name'))))            
+            
             log.debug('filename: %s', filename)
             info = image_service.get_info(filename)
             log.debug('info: %s', info)
