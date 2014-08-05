@@ -351,14 +351,14 @@ class import_serviceController(ServiceController):
 
     def unPack(self, filename, folderName, preserve_structure=False):
         if preserve_structure is False:
-            if filename.lower().endswith('zip'):
+            try:
                 return self.unZipFlat(filename, folderName)
-            else:
+            except zipfile.BadZipfile:
                 return self.unTarFlat(filename, folderName)
         else:
-            if filename.lower().endswith('zip'):
+            try:
                 return self.unZip(filename, folderName)
-            else:
+            except zipfile.BadZipfile:
                 return self.unTar(filename, folderName)
 
     def unpackPackagedFile(self, uf, preserve_structure=True, folderName=None):
