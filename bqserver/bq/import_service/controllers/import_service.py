@@ -373,7 +373,7 @@ class import_serviceController(ServiceController):
             filepath = uf.ensurelocal( os.path.join(unpack_dir, os.path.basename(uf.resource.get('name'))))
 
         if folderName is None:            
-            unpack_dir = os.path.join(unpack_dir, '%s.UNPACKED'%os.path.basename(filepath))
+            unpack_dir = os.path.join(unpack_dir, '%s.UNPACKED'%os.path.basename(uf.filename))
             unpack_dir = unpack_dir.replace('\\', '/')
         else:
             unpack_dir = folderName
@@ -468,21 +468,28 @@ class import_serviceController(ServiceController):
         ''' process proprietary series file and create multiple resources if needed '''
         log.debug('process_series_proprietary: %s %s', uf, intags )
         resources = []
-        val = None
-        for n in range(intags.get('image_num_series', 0)):
-            name = '%s#%s'%(uf.resource.get('name'), n)
-            if val is None:
-                value = '%s#%s'%(uf.resource.get('value'), n)
-            else:
-                value = val.replace('#0', '#%s'%n)
+        
+        # first upload the first series 
+        name = '%s#0'%uf.resource.get('name')               
+        value = '%s#0'%(uf.resource.get('value') or uf.resource.get('name'))
+        
+        resource = etree.Element ('image', name=name, value=value, resource_type='image', ts=uf.ts)
+        # append all other input annotations
+        resource.extend (copy.deepcopy (list (uf.resource)))
+        resource = blob_service.store_blob(resource=resource, fileobj=uf.fileobj)
+        iname = resource.get('name')
+        ivalue = resource.get('value')
+        resources.append(resource)        
+        
+        # then include resources for subsequent series
+        for n in range(intags.get('image_num_series', 0))[1:]:
+            name = iname.replace('#0', '#%s'%n) if '#' in iname else '%s#%s'%(iname, n)            
+            value = ivalue.replace('#0', '#%s'%n) if '#' in ivalue else '%s#%s'%(ivalue, n)
+
             resource = etree.Element ('image', name=name, value=value, resource_type='image', ts=uf.ts)
             # append all other input annotations
             resource.extend (copy.deepcopy (list (uf.resource)))
-            if n==0:
-                resource = blob_service.store_blob(resource=resource, fileobj=uf.fileobj)
-                val = resource.get('value')
-            else:
-                resource = blob_service.store_blob(resource=resource)
+            resource = blob_service.create_resource(resource=resource)
             resources.append(resource)
         return resources
 
@@ -534,12 +541,18 @@ class import_serviceController(ServiceController):
         
         # insert sub-series with the first value as a header file
         n = 0
-        name = '%s#%s'%(os.path.splitext(uf.resource.get('name'))[0], n)
+        if num_series>1:
+            name = '%s#%s'%(os.path.splitext(uf.resource.get('name'))[0], n)
+        else:
+            name = os.path.splitext(uf.resource.get('name'))[0]            
         resource = etree.Element ('image', name=name, resource_type='image', ts=uf.ts)
         
         # add header first
         val = etree.SubElement(resource, 'value' )
-        val.text = '%s#%s'%(blob_service.local2url(header), n)
+        if num_series>1:        
+            val.text = '%s#%s'%(blob_service.local2url(header), n)
+        else:
+            val.text = blob_service.local2url(header)
         
         # add the rest of the files later without #
         for v in members:
@@ -601,7 +614,7 @@ class import_serviceController(ServiceController):
             return blob_service.store_blob(resource=xml, fileobj=open(bpath, 'rb'))
         
         # if a resource is a multi-blob resource
-        elif len(xml.xpath('value'))>0:
+        elif xml.tag != 'dataset' and len(xml.xpath('value'))>0:
             subdir = os.path.dirname(filename)
             xml.set('name', os.path.join(relpath, subdir, xml.get('name')).replace('\\', '/'))
             for v in xml.xpath('value'):
@@ -629,6 +642,7 @@ class import_serviceController(ServiceController):
     
     # dima: need to pass relative storage path
     def process_packaged_bisque(self, f, tags):
+        ''' Process packages file containing Bisque archive '''
         log.debug('process_packaged_bisque: %s', f)
         relpath = os.path.dirname(f.orig)
         unpack_dir, members = self.unpackPackagedFile(f)
@@ -640,12 +654,14 @@ class import_serviceController(ServiceController):
             xml = etree.parse(header).getroot()
             members = xml.xpath('value')
             for m in members:
-                f = self.parseFile(m.text, unpack_dir, relpath)
-                if f is not None:
-                    resources.append(f)
-
+                r = self.parseFile(m.text, unpack_dir, relpath)
+                if r is not None:
+                    resources.append(r)
         return unpack_dir, resources
 
+#---------------------------------------------------------------------------------------
+# packaging misc
+#---------------------------------------------------------------------------------------
 
     def cleanup_packaging(self, unpack_dir):
         "cleanup and packaging details "

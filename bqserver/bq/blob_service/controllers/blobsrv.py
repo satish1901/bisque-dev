@@ -69,6 +69,8 @@ from pylons.controllers.util import forward
 from paste.deploy.converters import asbool
 from repoze.what import predicates
 
+from sqlalchemy.exc import IntegrityError
+
 from bq.core import  identity
 #from bq.core.identity import set_admin_mode
 from bq.core.service import ServiceMixin
@@ -494,9 +496,14 @@ class BlobServer(RestController, ServiceMixin):
                 if asbool(config.get ('bisque.blob_service.store_paths', True)):
                     # dima: insert_blob_path should probably be renamed to insert_blob
                     # it should probably receive a resource and make decisions on what and how to store in the file tree
+                    #try:
                     self.store.insert_blob_path( path=resource.xpath('value')[0].text,
                                                  resource_name = resource.get('name'),
                                                  resource_uniq = resource.get ('resource_uniq'))
+                    #except IntegrityError:
+                    #    # dima: we get this here if the path already exists in the sqlite
+                    #    log.error('store_multi_blob: could not store path into the tree store')
+                    
                 return resource
             except DuplicateFile, e:
                 log.warn("Duplicate file. renaming")
@@ -511,17 +518,20 @@ class BlobServer(RestController, ServiceMixin):
         #filename_safe = filename.encode(sys.getfilesystemencoding())
         #filename_safe = filename.encode('ascii', 'xmlcharrefreplace')
         #filename_safe = filename.encode('ascii', 'replace')
-        filename = resource.get('name') or  getattr(fileobj, 'name') or ''
+        filename = resource.get('name') or getattr(fileobj, 'name') or ''
         uniq     = resource.get('resource_uniq')
+        _,sub    = blob_storage.split_subpath(resource.get('value') or resource.get('name'))
 
         with TransferTimer() as t:
             blob_id, t.path = self.drive_man.save_blob(fileobj, filename, user_name = user_name, uniq=uniq)
 
         log.debug ("_store_fileobj %s %s", blob_id, t.path)
-        #dima: probably need to update the resource name ???
-        #resource.set('name', os.path.basename(filename))
-        resource.set('name', os.path.basename(t.path))
-        resource.set('value', blob_id)
+        if sub is None:
+            resource.set('value', blob_id)
+            resource.set('name', os.path.basename(t.path))            
+        else:
+            resource.set('value', '%s#%s'%(blob_id, sub))
+            resource.set('name', '%s#%s'%(os.path.basename(t.path), sub))   
         #resource.set('resource_uniq', uniq)
         return self.create_resource(resource)
 
