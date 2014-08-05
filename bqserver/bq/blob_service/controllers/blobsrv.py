@@ -420,7 +420,19 @@ class BlobServer(RestController, ServiceMixin):
                         )
 
         log.info ("NEW RESOURCE <= %s" , etree.tostring(resource))
-        return data_service.new_resource(resource = resource)
+        resource = data_service.new_resource(resource = resource)
+        
+        if asbool(config.get ('bisque.blob_service.store_paths', True)):
+            # dima: insert_blob_path should probably be renamed to insert_blob
+            # it should probably receive a resource and make decisions on what and how to store in the file tree
+            #try:
+            self.store.insert_blob_path( path=resource.get('value') or resource.xpath('value')[0].text,
+                                         resource_name = resource.get('name'),
+                                         resource_uniq = resource.get ('resource_uniq'))
+            #except IntegrityError:
+            #    # dima: we get this here if the path already exists in the sqlite
+            #    log.error('store_multi_blob: could not store path into the tree store')
+        return resource
 
 
     def store_blob(self, resource, fileobj = None):
@@ -436,11 +448,6 @@ class BlobServer(RestController, ServiceMixin):
                 else:
                     resource = self._store_reference(resource )
                 #smokesignal.emit(SIG_NEWBLOB, self.store, path=resource.get('value'), resource_uniq=resource.get ('resource_uniq'))
-
-                if asbool(config.get ('bisque.blob_service.store_paths', True)):
-                    self.store.insert_blob_path( path=resource.get('value') or resource.xpath('value')[0].text,
-                                                 resource_name = resource.get('name'),
-                                                 resource_uniq = resource.get ('resource_uniq'))
                 return resource
             except DuplicateFile, e:
                 log.warn("Duplicate file. renaming")
@@ -491,20 +498,7 @@ class BlobServer(RestController, ServiceMixin):
                                     value.text = urlref if sub is None else '%s#%s'%(urlref, sub)
                 
                 resource.set('name', os.path.basename(resource.get('name')))
-                resource = self.create_resource(resource)
-                
-                if asbool(config.get ('bisque.blob_service.store_paths', True)):
-                    # dima: insert_blob_path should probably be renamed to insert_blob
-                    # it should probably receive a resource and make decisions on what and how to store in the file tree
-                    #try:
-                    self.store.insert_blob_path( path=resource.xpath('value')[0].text,
-                                                 resource_name = resource.get('name'),
-                                                 resource_uniq = resource.get ('resource_uniq'))
-                    #except IntegrityError:
-                    #    # dima: we get this here if the path already exists in the sqlite
-                    #    log.error('store_multi_blob: could not store path into the tree store')
-                    
-                return resource
+                return self.create_resource(resource)
             except DuplicateFile, e:
                 log.warn("Duplicate file. renaming")
                 resource.set('name', '%s-%s' % (resource.get('name'), resource.get('resource_uniq')[3:7+x]))
