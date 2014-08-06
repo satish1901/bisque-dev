@@ -34,6 +34,8 @@ feature_subdirs=['bqfeature' ]
 server_subdirs=['bqapi', 'bqcore', 'bqserver', 'bqengine' ]
 engine_subdirs=['bqapi', 'bqcore', 'bqengine' ]
 
+PREINSTALLS = {'features' : ['numpexpr', 'cython'] }
+
 all_packages = set (feature_subdirs + server_subdirs + engine_subdirs)
 
 #################################################################
@@ -83,6 +85,12 @@ all will install everything including the feature service""")
     if installing not in ('engine', 'server', 'features'):
         print "Must choose 'engine', 'server', or 'features'"
         sys.exit(1)
+
+
+    preinstalls = PREINSTALLS.get (installing, [])
+
+    for package in preinstalls:
+        sh ("pip install %s" % package)
 
     subdirs  = dict (engine=engine_subdirs,
                      server = server_subdirs,
