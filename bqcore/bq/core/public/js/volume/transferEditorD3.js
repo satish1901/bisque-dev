@@ -5,13 +5,21 @@ function histogramD3(histogram, gamma, svg, component){
     this.gamma = gamma;
     this.svg = svg;
     this.component = component;
+    this.channelFill = {r: [255,0,0],
+                        g: [0,255,0],
+                        b: [0,0,255]};
     this.init();
 };
+
+histogramD3.prototype.getColor = function(channel, opacity){
+    var c = this.channelFill[channel];
+    c[3] = opacity;
+    return "rgba(" + c.join(",") + ")";
+}
 
 histogramD3.prototype.getWidth = function(){
     return this.component.getWidth();
 }
-
 
 histogramD3.prototype.getHeight = function(){
     return this.component.getHeight();
@@ -19,6 +27,7 @@ histogramD3.prototype.getHeight = function(){
 
 histogramD3.prototype.init = function(){
     var me = this;
+
     for (chan in this.histogram){
         var channel = this.histogram[chan];
         if (channel.length == 0) continue;
@@ -29,22 +38,42 @@ histogramD3.prototype.init = function(){
             max = max < loge ? loge : max;
             min = min > loge ? loge : min;
         });
+        var logd = function(d){ return d >  0? Math.log(d) : 0};
+        var l = this.histogram[chan].length;
+        var h = this.getHeight();
+        var w = this.getWidth();
 
+        var data = this.histogram[chan];
         var buffer = 0.025*this.getHeight();
-        var xl = d3.scale.linear().domain([0, 256]).range([buffer, me.getWidth()-buffer]);
-        var yl = d3.scale.linear().domain([min, max]).range([me.getHeight()- buffer, buffer]);
-        console.log(max, min, me.getHeight(), me.getWidth());
-        var area = d3.svg.area()
-            .x(function(d,i) { console.log(i, xl(i)); return xl(i); })
-            .y0(this.getHeight()-buffer)
-            .y1(function(d,i) { console.log(d, yl(d)); return yl(d); });
+        this.xl = d3.scale.linear().domain([0, 256]).range([buffer, me.getWidth()-buffer]);
+        this.yl = d3.scale.linear()
+            .domain([d3.min(data, logd),d3.max(data, logd)])
+            .range([buffer, me.getHeight()- buffer]);
 
-        this.svg.append("svg:path")
-            .datum(this.histogram[chan])
-            .attr("class", "histogram_" + chan)
-            .attr("fill", "rgba(128,128,128, 0.1)")
-            .attr("stroke", "rgba(128,128,128, 0.5)")
-            .attr("stroke-width", 1.5);
+        this.bar = false;
+        if(this.bar){
+            this.svg.append("g")
+                .attr("class", "histogram_" + chan)
+            //.attr("transform", "translate(" + me.xl(1) + "," + (-h) + ")scale(-1,-1)")
+            //.attr("transform", "translate(" + me.xl(1) + "," + (h - 20) + ")scale(-1,-1)")
+        }
+        else{
+
+            this.yl = d3.scale.linear()
+                .domain([d3.min(data, logd),d3.max(data, logd)])
+                .range([me.getHeight()- buffer,buffer]);
+
+            this.area = d3.svg.area()
+                .x(function(d,i) { return me.xl(i); })
+                .y0(this.getHeight()-buffer)
+                .y1(function(d) { return me.yl(logd(d)); });
+            this.svg.append("svg:path")
+                .datum(this.histogram[chan])
+                .attr("class", "histogram_" + chan)
+                .attr("fill",   this.getColor(chan, 0.5))
+                .attr("d", this.area)
+        }
+
     }
 };
 
@@ -53,27 +82,51 @@ histogramD3.prototype.redraw = function(){
     for (chan in this.histogram){
         var channel = this.histogram[chan];
         if (channel.length == 0) continue;
-        var max = 0;
-        var min = 999;
-        channel.forEach(function(e,i,a){
-            var loge = Math.log(e);
-            max = max < loge ? loge : max;
-            min = min > loge ? loge : min;
-        });
 
+        var l = this.histogram[chan].length;
+        var w = this.getWidth();
+        var data = this.histogram[chan];
         var buffer = 0.025*this.getHeight();
-        var xl = d3.scale.linear().domain([0, 256]).range([buffer, me.getWidth()-buffer]);
-        var yl = d3.scale.linear().domain([min, max]).range([me.getHeight()- buffer, buffer]);
+        var logd = function(d){ return d >  0? Math.log(d) : 0};
+        this.xl = d3.scale.linear().domain([0, 256]).range([buffer, me.getWidth()-buffer]);
+        this.yl = d3.scale.linear()
+            .domain([d3.min(data, logd),d3.max(data, logd)])
+            .range([buffer, me.getHeight()- buffer]);
+        if(this.bar){
+            var group = this.svg.select("g.histogram_" + chan)
+                .selectAll("rect")
+                .data(this.histogram[chan]);
+            //update
+            group
+                .attr("x", function(d,i) {return me.xl(i)})
+                .attr("y", function(d,i) {return me.getHeight()-buffer - me.yl(logd(d))})
+                .attr("width", function(d,i) { return w/l; })
+                .attr("height", function(d,i) {return me.yl(logd(d)); })
+                .attr("fill",   this.getColor(chan, 0.5))
+            //add
+            group
+                .enter().append("svg:rect")
+                .attr("x", function(d,i) {return me.xl(i)})
+                .attr("y", function(d,i) {return me.getHeight()-buffer - me.yl(logd(d))})
+                .attr("width", function(d,i) { return w/l; })
+                .attr("height", function(d,i) { return console.log(d, me.yl(logd(d))); me.yl(logd(d)); })
+                .attr("fill",   this.getColor(chan, 0.5))
+            //remove
+            group.exit().remove();
+        } else {
+            this.yl = d3.scale.linear()
+                .domain([d3.min(data, logd),d3.max(data, logd)])
+                .range([me.getHeight()- buffer,buffer]);
+            this.area = d3.svg.area()
+                .x(function(d,i) { return me.xl(i); })
+                .y0(this.getHeight()-buffer)
+                .y1(function(d) { return me.yl(logd(d)); })
+                .interpolate("step-before");
+            this.svg.select("path.histogram_" + chan).transition()
+                .attr("d", this.area)
 
-        var area = d3.svg.area()
-            .x(function(d,i) { return xl(i); })
-            .y0(this.getHeight()-buffer)
-            .y1(function(d,i) { return yl(Math.log(d)); });
+        }
 
-        var chck = this.svg.select("path.histogram");
-
-        this.svg.select("path.histogram_" + chan)
-            .attr("d", area)
     }
 };
 
@@ -144,6 +197,53 @@ Ext.define('BQ.volume.transfer.graph', {
     border : 0,
     frame : false,
 
+
+    initBrush: function(){
+        var me = this;
+        var brush = d3.svg.brush()
+            .x(me.xScale)
+            .extent([0, 100])
+            .on("brushstart", brushstart)
+            .on("brush", brushmove)
+            .on("brushend", brushend);
+
+        this.brush = this.svg.append("g")
+            .attr("class", "brush")
+            .call(brush);
+        this.brush
+            .selectAll("rect")
+            .attr("height", 20);
+
+        me.selected = [];
+        function brushstart() {
+            //svg.classed("selecting", true);
+        }
+
+        function brushmove() {
+            var s = d3.event.target.extent();
+
+            var circle = me.svg.selectAll("circle")
+                .data(me.data, function(d){return d.id});
+            me.data.forEach(function(d,i,a){
+                if(d.offset >= s[0] && d.offset <= s[1])
+                    d.selected = true;
+                else
+                    d.selected = false;
+            });
+            circle.attr("fill", function(d){
+                return (d.offset >= s[0] && d.offset <= s[1]) ? "rgb(128,0,0)" : "rgb(128,128,128)"});
+        }
+
+        function brushend() {
+            me.selected = [];
+            me.data.forEach(function(d,i,a){
+                if(d.selected)
+                    me.selected.push(i);
+            });
+            console.log(me.selected);
+        }
+    },
+
     initCrossHairs : function(){
         var me = this;
         var xMouse = this.svg.append("svg:line")
@@ -209,16 +309,6 @@ Ext.define('BQ.volume.transfer.graph', {
         var label_array = new Array(),
         val_array1 = new Array();
 
-        this.sampsize = this.data.length;
-        sampsize = this.sampsize;
-        for (var i=0; i < sampsize; i++) {
-            label_array[i] = parseFloat(this.data[i].offset);
-            maxval = Math.max(maxval, parseFloat(this.data[i].alpha) );
-        }
-        this.label_array = label_array;
-        this.maxval = (1 + Math.floor(maxval));
-        var maxval = this.maxval;
-
         var selected = this.data[0],
         dragged = null;
         var vis, x, y, w, h;
@@ -252,7 +342,7 @@ Ext.define('BQ.volume.transfer.graph', {
             .on("dragend", dragended);
 
         function dragstarted(d) {
-
+            //fooled you! the point keeps jumping from the cursor... ha ha ha, only if you're windows
             if(Math.random() > 0.75 && Ext.isWindows){
                 this.fooled = true;
                 d.alpha += (0.5 - Math.random())*0.25;
@@ -269,22 +359,26 @@ Ext.define('BQ.volume.transfer.graph', {
             }
             this.fooled = false;
             this.parentNode.appendChild(this);
-
+/*
             var chk = me.svg.select("#circle_"+ me.clicked)
-                .attr("fill",function(d){return "rgb(128,128,128)";})
+                .attr("fill",function(d){return d.selected ? "rgb(255,0,0)" : "rgb(255,255,255)";});
+*/
             //console.log(chk);
             me.clicked = d.id;
             d3.select(this).transition()
                 .ease("elastic")
                 .duration(500)
                 .attr("r", 6)
-                .attr("fill",function(d){return "rgb(255,255,255)";});
+                .attr("fill",function(d){return d.selected ? "rgb(255,0,0)" : "rgb(255,255,255)";});
+
+            //this.brush
+            //    .attr("height", 20);
+
         }
 
         function ondrag(d, i) {
             if(this.fooled) return;
-            //we want this to automatically via percentages, so the scale is set from 0-1;
-            console.log(i, d.id);
+
             var N = me.data.length;
             var oprev = d.id == 0     ? 0                 : me.data[d.id-1].offset;
             var onext = d.id == N - 1 ? me.data[N-1].offset : me.data[d.id+1].offset;
@@ -306,7 +400,7 @@ Ext.define('BQ.volume.transfer.graph', {
             }
 
             var alpha  = me.yScale.invert(yp);
-            //clamp the alpha values to 0 and 1
+
             alpha = alpha > 1 ? 1 : alpha;
             alpha = alpha < 0 ? 0 : alpha;
 
@@ -315,10 +409,9 @@ Ext.define('BQ.volume.transfer.graph', {
             d.alpha = alpha;
             d3.select(this)
                 .attr("cy", function(d) { return  me.yScale(d.alpha); });
-            //gradient.attr("stop.offset", "update");
+
             me.gradient.select("#stop_"+d.id)
                 .attr("offset",function(d){return d.offset + "%";})
-            //console.log(gradient.select("#stop_"+d.id));
 
             redraw();
             me.fireEvent('change', me);
@@ -328,8 +421,11 @@ Ext.define('BQ.volume.transfer.graph', {
             d3.select(this).transition()
                 .ease("elastic")
                 .duration(500)
-                .attr("r", 3);
+                .attr("r", 3)
+                .attr("fill",function(d){return d.selected ? "rgb(128,0,0)" : "rgb(128,128,128)";});
         }
+
+
 
         this.histogramSvg = new histogramD3(this.histogram, this.gamma, this.svg, this);
 
@@ -337,13 +433,16 @@ Ext.define('BQ.volume.transfer.graph', {
             .datum(this.data)
             .attr("class", "transfer")
             .attr("fill", "url(#gradient)")
-            .attr("stroke", "black")
+            .attr("stroke", "rgba(0,0,0,0.75)")
             .attr("stroke-width", 2)
             .attr("d", this.area)
-
-
+            .attr("opacity", "0.7")
 
         this.initCrossHairs();
+        this.initBrush();
+
+
+
         function redraw(){
             var chck = me.svg.select("path.transfer").attr("d", me.area);
         }
@@ -354,8 +453,9 @@ Ext.define('BQ.volume.transfer.graph', {
         var xp = d3.event.offsetX;
         var yp = d3.event.offsetY;
         var offset = me.xScale.invert(xp);
-        var alpha  = me.yScale.invert(yp);
 
+        var alpha  = me.yScale.invert(yp);
+        var interval = 0;
         me.data.forEach(function(e,i,a){
             if(offset > e.offset) interval = i;
         });
@@ -374,6 +474,8 @@ Ext.define('BQ.volume.transfer.graph', {
             .x(function(d) { return me.xScale(d.offset); })
             .y0(this.getHeight()-buffer)
             .y1(function(d) { return me.yScale(d.alpha); });
+
+
     },
 
     redraw : function(){
@@ -427,7 +529,7 @@ Ext.define('BQ.volume.transfer.graph', {
                                            Math.floor(d.color[0]) + "," +
                                            Math.floor(d.color[1]) + "," +
                                            Math.floor(d.color[2]) + ")";})
-            .attr("stop-opacity",function(d){return 1.0;});
+            //.attr("stop-opacity",function(d){return 1.0;});
 
 
         //1. add new graph points
@@ -452,7 +554,7 @@ Ext.define('BQ.volume.transfer.graph', {
                                            Math.floor(d.color[0]) + "," +
                                            Math.floor(d.color[1]) + "," +
                                            Math.floor(d.color[2]) + ")";})
-            .attr("stop-opacity",function(d){return 1.0;});
+            //.attr("stop-opacity",function(d){return 0.85;});
 
         //2.a select all stops
         stops = this.gradient.selectAll("stop")
@@ -471,6 +573,7 @@ Ext.define('BQ.volume.transfer.graph', {
 
         this.svg.select("path.transfer").transition()
             .attr("d", this.area)
+            //.attr("opacity", 50)
 
     },
 
@@ -533,7 +636,6 @@ Ext.define('BQ.volume.transfer.graph', {
         var offsets = [];
         this.data.forEach(function(e,i,a){offsets.push(e.id)});
         offsets.join(" ");
-        console.log(offsets);
         this.updateGraph();
     },
 
@@ -549,7 +651,7 @@ Ext.define('BQ.volume.transfer.graph', {
                                            Math.floor(d.color[0]) + "," +
                                            Math.floor(d.color[1]) + "," +
                                            Math.floor(d.color[2]) + ")";})
-            .attr("stop-opacity",function(d){return 1.0;});
+            //.attr("stop-opacity",function(d){return 0.75;});
     },
 
     afterRender : function() {
@@ -682,9 +784,10 @@ Ext.define('BQ.viewer.volume.transfer.editor', {
             height: '100%',
             listeners: {
                 change: function(){
-                    var id = me.transferGraph.clicked;
-                    me.transferGraph.setColor(id, this.getColorRgb());
-                    me.fireEvent('change', me);
+                    console.log(me.transferGraph.selected);
+                    me.transferGraph.selected.forEach(function(d,i,a){
+                        me.transferGraph.setColor(d, me.colorPicker.getColorRgb());
+                    })
                 }
             },
             region: 'west'
@@ -812,7 +915,6 @@ Ext.define('BQ.viewer.volume.transfer.editor', {
 
 Ext.define('BQ.viewer.Volume.transfer', {
     extend : 'Ext.container.Container',
-    //cls : 'materialcontroller',
     alias : 'widget.bq_volume_transfer',
 
     mixins : ['BQ.viewer.Volume.uniformUpdate'],
@@ -824,12 +926,12 @@ Ext.define('BQ.viewer.Volume.transfer', {
     },
 
     changed : function () {
-        if (!this.transferGraph)
+        if (!this.transferEditor)
             return;
         var pixels = new Uint8Array(4*this.tSize);
         var cStop = 0;
         var ci = 0;
-        var data = this.transferGraph.data;
+        var data = this.transferEditor.data;
         var l = data.length;
         var stop0 = data[0];
         var stop1 = data[l-1];
@@ -865,7 +967,6 @@ Ext.define('BQ.viewer.Volume.transfer', {
             pixels[4 * i + 3] = 255 * ((1 - t) * c0[3] + t * c1[3]);
             ci++;
         }
-        console.log(pixels);
         var rampTex = this.panel3D.rampTex;
         rampTex = new THREE.DataTexture(pixels, this.tSize, 1, THREE.RGBAFormat);
         rampTex.needsUpdate = true;
@@ -913,7 +1014,7 @@ Ext.define('BQ.viewer.Volume.transfer', {
             scope : me,
         });
 
-        this.transferGraph = Ext.create('BQ.viewer.volume.transfer.editor',{
+        this.transferEditor = Ext.create('BQ.viewer.volume.transfer.editor',{
             histogram: this.panel3D.model.histogram,
             gamma:     this.panel3D.model.gamma,
             listeners: {
@@ -921,6 +1022,11 @@ Ext.define('BQ.viewer.Volume.transfer', {
                     me.changed();
                 }
             }
+        });
+        this.panel3D.on('histogramupdate', function(){
+            console.log("update");
+            if(me.transferEditor.transferGraph.histogramSvg)
+                me.transferEditor.transferGraph.histogramSvg.redraw();
         });
         this.showButton.hide();
         this.addUniforms();
@@ -939,7 +1045,7 @@ Ext.define('BQ.viewer.Volume.transfer', {
 	            border : false,
 	            autoScroll : true,
 	            title : 'transfer function editor',
-
+                cls : 'bq-volume-transfer',
                 width: 1200,
                 height: 300,
 	            x: 40,
@@ -949,7 +1055,7 @@ Ext.define('BQ.viewer.Volume.transfer', {
                 hidden: false,
                 maximizable: true,
                 autoShow: true,
-                items : [this.transferGraph]
+                items : [this.transferEditor]
             });
         }
         this.transferWindow.show();

@@ -582,10 +582,61 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
 		var me = this;
 
-
         this.model = {
+            histogramRaw: {r:[], g:[], b:[]},
             histogram: {r:[], g:[], b:[]},
             gamma: {min: 0, max: 1.0, scale: 0.5},
+            loaded: false,
+            updateHistogram : function(){
+                for(var chan in this.histogramRaw){
+                    var hist    = this.histogramRaw[chan];
+                    var newHist = this.histogram[chan];
+
+                    var maxVal = 0;
+                    var minVal = 999;
+                    var min = this.gamma.min;
+                    var max = this.gamma.max;
+                    var C   = this.gamma.scale;
+                    //var C = 1.0;
+                    var start = Math.floor(this.gamma.min * hist.length);
+                    var end = Math.floor(this.gamma.max * hist.length);
+
+                    var lookUp = new Array();
+                    var avg = 0;
+                    hist.forEach(function(val,i,a){
+                        avg += val;
+                        minVal = val < minVal ? val : minVal;
+                        maxVal = val > maxVal ? val : maxVal;
+                    });
+
+                    avg /= hist.length;
+                    var l = hist.length;
+                    for (var i = 0; i < newHist.length; i++) {
+                        lookUp[i] = 0;
+                        newHist[i] = 0;
+                        if (i > start && i < end) {
+                            var val = l*(i - start) / (end - start);
+                            var plogy = C * Math.log(val);
+                            var modVal = Math.exp(plogy);
+                            modVal = modVal < 0 ? 0 : (modVal > hist.length ? hist.length : modVal);
+                            var newBin = Math.floor(modVal);
+                            newBin = newBin < hist.length - 1 ? newBin : hist.length - 1;
+                            lookUp[i] = newBin;
+                        }
+                        if(i < start)
+                            lookUp[i] = 0;
+                        if(i > end)
+                            lookUp[i] = newHist.length - 1;
+
+                    }
+                    var spread = Math.ceil(hist.length/(end - start));
+                    for (var i = 0; i < lookUp.length - spread; i++) {
+                        newHist[lookUp[i]] += 1.0/spread * hist[i];
+                    }
+                    console.log("fuck");
+                    me.fireEvent("histogramupdate", me);
+                }
+            }
         }
         /////////////////////////////////////////////////
 		// begin setup backbuffer rendering:
@@ -706,14 +757,19 @@ Ext.define('BQ.viewer.Volume.Panel', {
                         this.model.histogram.b = rChan[2].innerHTML.split(",");
                     }
                     for (var chan in this.model.histogram) {
+
                         if (this.model.histogram.hasOwnProperty(chan)) {
                             var channel = this.model.histogram[chan];
                             channel.forEach(function(e,i,a){
                                 a[i] = parseInt(e);
                             });
                         }
-}
-                    console.log("model: ", this.model);
+                        this.model.histogramRaw[chan] = this.model.histogram[chan].slice(0);
+                    }
+                    this.model.loaded = true;
+                    this.fireEvent("histogramloaded",this);
+                    //console.log(this.model);
+
                 }
             },
         });
@@ -754,7 +810,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 						this.yTexSizeRatio = this.dims.atlasResized.y / this.dims.atlas.y;
 
 						//a lot of information is already loaded by the phys object:
-						this.setLoading(false);
+						//this.setLoading(false);
 						//this.sceneVolume.loadMaterial('forwardDiffuse');
 						this.tempMaterial
 							 = new THREE.MeshBasicMaterial({
@@ -781,8 +837,9 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		if (!this.textureTimeBuffer[this.currentTime]) {
 			//var textureAtlas' = new Array();
 			var textureAtlas = new THREE.ImageUtils.loadTexture(this.constructAtlasUrl(), undefined, function () {
-					me.rerender()
-				});
+                me.setLoading(false);
+				me.rerender()
+			});
 			textureAtlas.generateMipmaps = false;
 			textureAtlas.magFilter = THREE.LinearFilter;
 			textureAtlas.minFilter = THREE.LinearFilter;
@@ -1603,6 +1660,7 @@ VolumePlugin.prototype.changed = function () {
 	if (!this.update_check || (this.update_check && this.update_check.checked))
 		this.volume.needs_update();
 	this.volume.wipeTextureTimeBuffer();
+    this.volume.setLoading("fetching new texture...");
 };
 
 VolumeDisplay.prototype.addCommand = function (command, pars) {
