@@ -24,7 +24,7 @@
     <!--<link rel="stylesheet" type="text/css" href="${tg.url('/extjs/packages/ext-theme-classic/build/resources/ext-theme-classic-all.css')}"/>-->
     <!--<link rel="stylesheet" type="text/css" href="${tg.url('/extjs/packages/ext-theme-crisp/build/resources/ext-theme-crisp-all.css')}"/>-->
 
-
+    <!-- BisQue styles -->
     ${h.stylesheet_link (
     '/css/bq.css',
     '/css/bq_ui_toolbar.css',
@@ -75,7 +75,10 @@
     <!-- GMaps API -->
     <!--<script type="text/javascript" src="//maps.googleapis.com/maps/api/js?sensor=false"></script>-->
 
+    <!-- D3 -->
+    <script type="text/javascript" src="${tg.url('/d3/d3.js')}"></script>
 
+    <!-- BisQue UI code -->
     <?python
        if tg.config.get('bisque.js_environment', None) == 'production':
           link_kw = dict (fs_root = h.file_public(),
@@ -217,7 +220,6 @@
     # -- WebGL viewer --
     '/js/volume/lib/whammy.js',
     '/js/volume/lib/polygon.js',
-    '/js/volume/d3/d3.js',
     '/js/volume/threejs/three.min.js',
     '/js/volume/threejs/OrbitControls.js',
     '/js/volume/threejs/TypedArrayUtils.js',
