@@ -85,7 +85,7 @@ uniform float KD;
 uniform float NORMAL_INTENSITY;
 uniform float SPEC_SIZE;
 uniform float SPEC_INTENSITY;
-#endif 
+#endif
 
 uniform float GAMMA_MIN;
 uniform float GAMMA_MAX;
@@ -137,36 +137,36 @@ float powf(float a, float b){
   g[12] = 0.07692307692307692307692307692308;
   g[13] = 0.07142857142857142857142857142857;
   g[14] = 0.06666666666666666666666666666667;
-  g[15] = 0.0625;   
-  g[16] = 0.05882352941176470588235294117647;   
-  g[17] = 0.05555555555555555555555555555556;   
-  g[18] = 0.05263157894736842105263157894737;   
-  g[19] = 0.05;   
-  
+  g[15] = 0.0625;
+  g[16] = 0.05882352941176470588235294117647;
+  g[17] = 0.05555555555555555555555555555556;
+  g[18] = 0.05263157894736842105263157894737;
+  g[19] = 0.05;
+
   float f[13];
-  f[0] = 1.0; 
+  f[0] = 1.0;
   f[1] = 0.5;
-  f[2] = 1.6666666667e-1; 
-  f[3] = 4.1666666667e-2; 
-  f[4] = 8.3333333333e-3; 
+  f[2] = 1.6666666667e-1;
+  f[3] = 4.1666666667e-2;
+  f[4] = 8.3333333333e-3;
   f[5] = 1.3888888888e-3;
   f[6] = 1.984126984126984e-4;
   f[7] = 2.48015873015873e-5;
   f[8] = 2.755731922398589e-6;
   f[9] = 2.755731922398589e-7;
-  f[10] = 2.505210838544172e-8; 
+  f[10] = 2.505210838544172e-8;
   f[11] = 2.08767569878681e-9;
   f[12] = 1.605904383682161e-10;
-  
+
   float x = 1.0 - a;
   float xa = x;
-  float y = 0.0; 
- 
+  float y = 0.0;
+
   for(int i = 0; i < 20; i++){
     y -= xa*g[i];
     xa *= x;
   }
-  
+
   float logy = 1.0;
   y *= b;
   float ya = y;
@@ -192,7 +192,8 @@ vec4 getTransfer(float density){
   float t = density*float(TRANSFER_SIZE);
   //density += 0.01*rand(gl_FragCoord.yx/iResolution.xy);
   //return (density*vec4(1.0) + (1.0 - density)*vec4(0.0));
-  return texture2D(transfer, vec2(density,0.0));
+  vec4 col = texture2D(transfer, vec2(density,0.0));
+  return clamp(col, 0.0, 1.0);
 
 }
 
@@ -384,20 +385,8 @@ vec4 integrateVolume(vec4 eye_o,vec4 eye_d,
   float z_n = 2.0 * z_b - 1.0;
   float z_e = 2.0 * zNear * zFar / (zFar + zNear - z_n * (zFar - zNear));
 
-
-  //C = vec4(1.0, 0.0, 0.0, 0.0);
-
-  if(z_e > 6.0) {
-    //C = vec4(0.5);
-      //C.r = 0.5*(1.0+sin(2.0*(z_e)));
-      //C.g = 0.5*(1.0+sin(2.0*(z_e + 2.0/3.0*3.1417)));
-      //C.b = 0.5*(1.0+sin(2.0*(z_e + 4.0/3.0*3.1417)));
-  }
-
-
   float tnear, tfar;
-  //return vec4(C.r,maxt,maxt,maxt);
-  //return C;
+
   bool hit = intersectBox(eye_o, eye_d, boxMin, boxMax, tnear,  tfar);
 
 
@@ -407,47 +396,27 @@ vec4 integrateVolume(vec4 eye_o,vec4 eye_d,
 
   // march along ray from back to front, accumulating color
   float ray_mag = length(eye_d);
-  float tobs   = z_e/ray_mag;
-  //return vec4(float(tfar > tobs));
+  float tobs   = z_e;
   if(tobs < tfar) tfar = tobs;
-  //tobs = clamp(tobs, tobs, tfar);
-  //tfar = clamp(tfar, tobs, tfar);
+
   float tbegin = tfar;
   float tend   = tnear;
   //determine slice plane normal.  half between the light and the view direction
-  vec4 sliceP = -0.1*normalize(eye_o);
-  /*
-  vec4 sliceN = vec4(LIGHT_POSITION, 0.0) - vec4(0.0);
-  sliceN = normalize(0.5*sliceN - 0.5*eye_d);
-  */
-  
+
+
   //estimate step length
   const int maxSteps = 512;
   float csteps = float(setMaxSteps);
   csteps = clamp(csteps,0.0,float(maxSteps));
   float isteps = 1.0/csteps;
 
-  //figure out which box side is longest, w/respect to the view angle, use that to scale the stepsize
-  /*
-  vec4 eye_n = -normalize(eye_o);
-  float dotSidex = eye_n.x*(boxMax.x - boxMin.x);
-  float dotSidey = eye_n.y*(boxMax.y - boxMin.y);
-  float dotSidez = eye_n.z*(boxMax.z - boxMin.z);
-
-  float maxSide = max(abs(dotSidex), max(abs(dotSidey), abs(dotSidez)));
-  float tstep = 0.4*maxSide*isteps;
-  //float tstep = 0.3*isteps;
-
-  //now that we have
-  float tfarsurf = dot(sliceP - eye_o, sliceN)/dot(eye_d,sliceN); //project to far plane to determine overflow
-  */
   float tstep = 0.3*isteps;
   float tfarsurf = 10.0;
   float overflow = (tfarsurf - tfar)/tstep;
   overflow -= floor(overflow); // we don't want uniform planes with dithering
   float r = 1.0*rand(eye_d.xy);
 
-  float t = tbegin + (1.0 - float(DITHERING))*(overflow)*tstep;
+  float t = tbegin + (overflow)*tstep;
   t = clamp(t, 0.0, CLIP_FAR);
   t += 1.0*float(DITHERING)*r*tstep;
 
@@ -556,8 +525,9 @@ vec4 integrateVolume(vec4 eye_o,vec4 eye_d,
 #else
     col.xyz *= brightness;
 #endif
-    float s = float(maxSteps)/float(setMaxSteps);
-    
+    float s = 512.0/csteps;
+    //float s = float(maxSteps)/float(setMaxSteps);
+    //s = 10.0;
     col.w = 1.0 - pow(abs((1.0-col.w)),s);
     col.w *= density;
     col.xyz *= col.w;

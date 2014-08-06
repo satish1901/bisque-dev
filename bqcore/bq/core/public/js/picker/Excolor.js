@@ -99,7 +99,7 @@ Ext.define('BQ.viewer.Volume.fieldSlider', {
     this.wheelRadius = r;
     this.wheelCenter = cen;
   },
-  
+
   initialized : function(){
     return(wheelRadius || wheelCenter);
   },
@@ -111,47 +111,74 @@ Ext.define('BQ.viewer.Volume.fieldSlider', {
     var polar = this.getPolar(x, y);
     var phi = polar[0];
     var rxy = polar[1];
-    
+
     //phi = 3 * phi / Math.PI + 3;
-    if (rxy < r * r) {
       var s = Math.sqrt(rxy / (r * r));
       var h = 180*phi/Math.PI + 179.99999;
       var v = 1.0;
       col = this.HSVtoRGB(h, s, v);
- 
+
       var col1 = [];
       col1[0] = Math.floor(255*col.r);
       col1[1] = Math.floor(255*col.g);
       col1[2] = Math.floor(255*col.b);
       col1[3] = 255;
-      
+
+      return col1;
+/*
+    if (rxy < r * r) {
+      var s = Math.sqrt(rxy / (r * r));
+      var h = 180*phi/Math.PI + 179.99999;
+      var v = 1.0;
+      col = this.HSVtoRGB(h, s, v);
+
+      var col1 = [];
+      col1[0] = Math.floor(255*col.r);
+      col1[1] = Math.floor(255*col.g);
+      col1[2] = Math.floor(255*col.b);
+      col1[3] = 255;
+
       return col1;
     } else {
       return [0, 0, 0, 0];
     }
+*/
   },
 
-  generateColorWheel : function () {
+    generateColorWheel : function () {
 
-    var canvas = document.getElementById('wheel-canvas');
-    var context = canvas.getContext("2d");
-    var width = canvas.width;
-    var height = canvas.height;
-    var imageData = context.getImageData(0, 0, width, height);
+        var canvas = document.getElementById('wheel-canvas');
+        var context = canvas.getContext("2d");
+        var c=document.getElementById("myCanvas");
+        var r = this.wheelRadius;
+        var cen = this.wheelCenter;
+        //draw a circle to create a mask, so the graphics processor
+        //handles antialiasing
+        context.fillStyle = "RGBA(255,255,255,1)";
+        context.beginPath();
+        context.arc(cen[0],cen[1],r,0,2*Math.PI);
+        context.fill();
+        var width = canvas.width;
+        var height = canvas.height;
+        var imageData = context.getImageData(0, 0, width, height);
 
-    for (var x = 0; x < width; x++) {
-      for (var y = 0; y < height; y++) {
-        var i = x + y * width;
-        var col = this.getRgbWheel(x, y, canvas);
-        imageData.data[4 * i + 0] = col[0];
-        imageData.data[4 * i + 1] = col[1];
-        imageData.data[4 * i + 2] = col[2];
-        imageData.data[4 * i + 3] = col[3];
+        for (var x = 0; x < width; x++) {
+            for (var y = 0; y < height; y++) {
+                var i = x + y * width;
+                var col = this.getRgbWheel(x, y, canvas);
+                //replace colors with computed HSL
+                imageData.data[4 * i + 0] = col[0];
+                imageData.data[4 * i + 1] = col[1];
+                imageData.data[4 * i + 2] = col[2];
+                //imageData.data[4 * i + 3] = a; // leave the alpha channel alone
 
-      }
-    }
-    context.putImageData(imageData, 0, 0);
-  },
+            }
+
+        }
+
+        context.putImageData(imageData, 0, 0);
+
+    },
 
   generateHsv : function () {
     var grad1 = this.genGradient({
@@ -334,23 +361,44 @@ Ext.define('BQ.viewer.Volume.fieldSlider', {
       document.body.removeEventListener('mousemove', onMove, false);
     }, false);
     var me = this;
+      //this.width = this.height;
   },
 
   afterFirstLayout : function () {
-    var canvas = document.getElementById('wheel-canvas');
-    var context = canvas.getContext("2d");
-    canvas.width = this.getWidth();
-    canvas.height = this.getHeight();
-
-    this.setWheelRadius(canvas);
-
-    var width = canvas.width;
-    var height = canvas.height;
-    var imageData = context.createImageData(width, height);
-    this.generateColorWheel();
-    this.setColorRgb(0.75, 0.86, 1.0);
-    
+      this.addListener('resize', this.onresize, this);
+      console.log('color');
+      this.onresize();
   },
+
+    onresize: function(){
+
+        var w = this.getWidth();
+        var h = this.getHeight();
+        //this component should be a square, so we check the aspect ratio and change accordingly.
+        if(w == 0 && h > 0) this.setWidth(h);
+        if(h == 0 && w > 0) this.setHeight(w);
+        if(h == 0 && w == 0){
+            this.setWidth(300);
+            this.setHeight(300);
+        }
+        //take the minimum dimension
+        if(w < h) this.setHeight(w);
+        if(h < w) this.setWidth(h);
+
+
+        var canvas = document.getElementById('wheel-canvas');
+        var context = canvas.getContext("2d");
+        canvas.width = this.getWidth();
+        canvas.height = this.getHeight();
+
+        this.setWheelRadius(canvas);
+
+        var width = canvas.width;
+        var height = canvas.height;
+        var imageData = context.createImageData(width, height);
+        this.generateColorWheel();
+        this.setColorRgb(0.75, 0.86, 1.0);
+    },
 
   setValue : function (x, y) {
     var w = this.getWidth();
@@ -446,7 +494,7 @@ Ext.define('BQ.viewer.Volume.fieldSlider', {
     h *= 60; // degrees
     if (h < 0)
       h += 360;
-    if(delta == 0) h = 0;  
+    if(delta == 0) h = 0;
     return {
       h : h,
       s : s,
@@ -516,21 +564,21 @@ Ext.define('BQ.viewer.Volume.fieldSlider', {
       b : b
     };
   },
-  
+
   HSVtoRGB2 : function(h, s, v){
        var phi = Math.PI*h/180;
        col = {r: 0.5*(1.0+Math.cos(phi)),
               g: 0.5*(1.0+Math.cos((phi + 2.0/3.0*Math.PI))),
               b: 0.5*(1.0+Math.cos((phi + 4.0/3.0*Math.PI)))};
-             
+
       var t = phi - Math.floor(phi);
-   
+
       col.r = v*(s * col.r + (1.0 - s));
       col.g = v*(s * col.g + (1.0 - s));
       col.b = v*(s * col.b + (1.0 - s));
       return col;
   },
-  
+
    RGBtoHSV2 : function(r, g, b){
       //can't determin inverse without newton's method or gauss-seidel
   }
@@ -786,7 +834,7 @@ Ext.define('BQ.viewer.Volume.excolorpicker', {
             me.fireEvent('change', me);
 
           },
-          
+
           scope : me,
         }
       });

@@ -224,6 +224,64 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     background-position: 0px 0px;
 }
 
+
+/*******************************************************************************
+transfer
+*******************************************************************************/
+
+.bq-volume-transfer {
+    position: absolute;
+    z-index: 2147483647 !important;
+    border: 0px;
+    border-width: 0px;
+    padding: 0px 0px 0px 0px;
+}
+
+.bq-volume-transfer .x-header-text {
+    color: white;
+}
+
+.bq-volume-transfer .x-btn-inner {
+    color: white;
+}
+
+.bq-volume-transfer .x-toolbar {
+    color: white;
+    background-color: rgba(50, 50, 50, 1.0);
+    background-image: none;
+    //border: 2px solid;
+    //border-radius: 5px 5px 0px 0px;
+    border-color: #333333;
+    box-shadow: none;
+}
+
+.bq-volume-transfer .x-header {
+    color: white;
+    background-color: rgba(0, 0, 0, 1.0);
+    background-image: none;
+    //border: 2px solid;
+    //border-radius: 5px 5px 0px 0px;
+    border-color: #333333;
+    box-shadow: none;
+}
+
+.bq-volume-transfer .x-panel-body {
+    background-color: rgba(0, 0, 0, 1.0);
+    padding: 5px;
+    border: 2px solid;
+    border-radius: 0px 0px 5px 5px;
+    border-color: #333333;
+    vertical-align: middle;
+    //display: none;
+}
+
+.bq-volume-transfer .x-field {
+    margin-left: 15px;
+}
+
+.bq-volume-transfer label {
+    color: #ffffff;
+}
 /*******************************************************************************
  playback
 *******************************************************************************/
@@ -659,4 +717,16 @@ y:10;
 	height: 100%;
 	position:absolute;
 	background-color: transparent;
+}
+
+.brush .extent {
+  stroke: #fff;
+  fill-opacity: .125;
+  shape-rendering: crispEdges;
+}
+
+.axis path, .axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
 }
