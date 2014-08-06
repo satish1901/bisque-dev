@@ -205,120 +205,9 @@ Ext.define('BQ.viewer.Volume.gammapanel', {
     this.sceneVolume.initUniform('GAMMA_SCALE', "f", 0.5);
   },
 
-  fetchHistogram : function () {
-    url = this.panel3D.constructAtlasUrl() + '&histogram';
-
-    Ext.Ajax.request({
-      url : url,
-      scope : this,
-      disableCaching : false,
-      callback : function (opts, succsess, response) {
-        if (response.status >= 400)
-          BQ.ui.error(response.responseText);
-        else {
-          if (!response.responseXML)
-            return;
-          var xmlDoc = response.responseXML;
-          console.log('xml response: ', xmlDoc);
-          var rChan = evaluateXPath(xmlDoc, "resource/histogram[@name='channel']/value");
-
-          this.rHist = rChan[0].innerHTML.split(",");
-          this.gHist = rChan[1].innerHTML.split(",");
-          this.bHist = rChan[2].innerHTML.split(",");
-          this.updateColorSvg();
-        }
-      },
-    });
-  },
-
-  genHistogramSvg : function (hist, color) {
-    if (this.data == null)
-      return;
-    if (hist == null)
-      return;
-
-    var maxVal = 0;
-    var minVal = 999;
-    var min = this.data.min;
-    var max = this.data.max;
-    var C = this.data.scale;
-    //var C = 1.0;
-    var start = Math.floor(this.data.min * hist.length);
-    var end = Math.floor(this.data.max * hist.length);
-
-    var newHist = new Array();
-    var lookUp = new Array();
-    var avg = 0;
-    for (var i = 0; i < hist.length; i++) {
-      var val = parseInt(hist[i]);
-      avg += val;
-      minVal = val < minVal ? val : minVal;
-      maxVal = val > maxVal ? val : maxVal;
-    }
-
-    avg /= hist.length;
-
-    for (var i = 0; i < hist.length; i++) {
-      lookUp[i] = 0;
-      newHist[i] = 0;
-      if (i > start && i < end) {
-        var val = (i - start) / (end - start);
-        var plogy = C * Math.log(i);
-        var modVal = Math.exp(plogy);
-        var newBin = Math.ceil(modVal);
-        newBin = newBin < hist.length - 1 ? newBin : hist.length - 1;
-        lookUp[i] = newBin;
-      }
-    }
-
-    for (var i = 1; i < lookUp.length - 1; i++) {
-      newHist[lookUp[i] - 1] += 0.25 * parseInt(hist[i]);
-      newHist[lookUp[i] + 0] += 0.5 * parseInt(hist[i]);
-      newHist[lookUp[i] + 1] += 0.25 * parseInt(hist[i]);
-    }
-    maxVal = maxVal < 1 ? 1 : maxVal;
-
-    var h = this.getHeight();
-    var w = this.getWidth();
-
-    var yMargin = 2;
-    var xMargin = 16;
-    var hh = h - 2.0 * yMargin;
-    var wh = w - 2.0 * xMargin;
-    var x0 = xMargin;
-    var y0 = hh - yMargin;
-    var path = x0.toString() + ' ' + (y0 - 8).toString();
-
-    var N = wh;
-    var dataScale = 1.0;
-    var dx = wh / newHist.length;
-
-    for (var i = 0; i < newHist.length; i++) {
-      var x = i;
-      x = x0 + i * dx;
-      var y = 0.0;
-      if (newHist[i] > 0) {
-        //y = 0.1*Math.log(newHist[i]);
-        if (0.5 * (avg + minVal) > 0.0)
-          y = newHist[i] / (0.5 * (avg + minVal));
-      } else
-        y = 0;
-      //console.log(i, newHist[i], y);
-      y = y0 - hh * y;
-      //console.log(i,newHist[i],(avg),newHist[i]/(avg));
-      path += ' ' + x.toString() + ' ' + y.toString();
-    }
-    path += ' ' + (x0 + end - start).toString() + ' ' + y0.toString();
-    var pathOpen = '<path d="M'
-      var pathClose0 = '" stroke = ' + color + ' opacity=0.8 stroke-width=1 fill = none />';
-    var pathClose1 = '" stroke = none opacity=0.15 stroke-width=1 fill=' + color + ' />';
-
-    var graph = pathOpen + path + pathClose0 + pathOpen + path + pathClose1;
-    var svg = '<svg width=100% height=100% > <' + graph + ' </svg>';
-    return svg;
-  },
 
   updateColorSvg : function () {
+      /*
     if (this.data == null)
       return;
     var C = this.data.scale;
@@ -359,17 +248,19 @@ Ext.define('BQ.viewer.Volume.gammapanel', {
     var xAxis = pathOpen + x0 + ' ' + y0 + ' ' + 0.95 * w + ' ' + y0 + pathClose1;
     var yAxis = pathOpen + x0 + ' ' + y0 + ' ' + x0 + ' ' + y0 - hh + pathClose1;
     var graph = pathOpen + path + pathClose3;
-    var svg = ' <svg width=100% height=100% > <' + xAxis + yAxis + graph + ' </svg>';
-    var rH = this.genHistogramSvg(this.rHist, 'red');
-    var gH = this.genHistogramSvg(this.gHist, 'green');
-    var bH = this.genHistogramSvg(this.bHist, 'blue');
+      var svg = ' <svg width=100% height=100% > <' + xAxis + yAxis + graph + ' </svg>';
+      this.panel3D.model.updateHistogram();
 
-    this.rampSvg.getEl().dom.innerHTML = ' <svg width=100% height=100% >' + rH + gH + bH + svg + '</svg>';
+      var rH = this.genHistogramSvg(this.histogram.r, 'red');
+      var gH = this.genHistogramSvg(this.histogram.g, 'green');
+      var bH = this.genHistogramSvg(this.histogram.b, 'blue');
 
+      this.rampSvg.getEl().dom.innerHTML = ' <svg width=100% height=100% >' + rH + gH + bH + svg + '</svg>';
+      */
   },
 
   getVals : function (min, mid, max) {
-    var div = this.getWidth();
+      var div = 255; //this.getWidth();
     min /= div;
     max /= div;
     var diff = max - min;
@@ -384,19 +275,20 @@ Ext.define('BQ.viewer.Volume.gammapanel', {
 
   initComponent : function () {
 
-    this.title = 'gamma';
-    var me = this;
+      this.title = 'gamma';
+      var me = this;
 
-    this.addUniforms();
-    this.fetchHistogram();
+      this.addUniforms();
+      this.histogram = this.panel3D.model.histogram;
+      this.gamma = this.panel3D.model.gamma;
 
-    this.contrastRatio = 0.5;
-    this.slider0 = Ext.create('Ext.slider.Multi', {
+      this.contrastRatio = 0.5;
+      this.slider0 = Ext.create('Ext.slider.Multi', {
         //renderTo: 'multi-slider-horizontal',
         hideLabel : true,
         fieldLabel : 'gamma',
-        increment : 1,
-        values : [10, 50, 90],
+        //increment : 1,
+        values : [0, 128, 255],
         listeners : {
           change : function (slider, value, thumb) {
             var div = 200;
@@ -431,8 +323,13 @@ Ext.define('BQ.viewer.Volume.gammapanel', {
             this.sceneVolume.setUniform('GAMMA_SCALE', vals.scale, true, true);
 
             this.data = vals;
+              this.panel3D.model.gamma = vals;
             //this.canvasPanel.redraw();
-            this.updateColorSvg();
+            //this.updateColorSvg();
+              if(this.histogramSvg){
+                  this.panel3D.model.updateHistogram();
+                  this.histogramSvg.redraw();
+              }
 
           },
           scope : me,
@@ -444,29 +341,40 @@ Ext.define('BQ.viewer.Volume.gammapanel', {
       max : 0,
       scale : 0
     };
-    this.rampSvg = Ext.create('Ext.Component', {
-        height : 60,
+
+      this.svg = Ext.create('BQ.graph.d3', {
+          height : 60,
       });
 
     Ext.apply(this, {
-      items : [this.rampSvg, this.slider0, ],
+      items : [this.svg, this.slider0, ],
     });
 
     this.callParent();
   },
 
   afterFirstLayout : function () {
+      var me = this;
     this.callParent();
     this.slider0.setMinValue(0.0);
     this.slider0.setMaxValue(100);
     var vals = this.getVals(this.slider0.thumbs[0].value,
-        this.slider0.thumbs[1].value,
-        this.slider0.thumbs[2].value);
-    this.data = vals;
-    this.slider0.setValue(0, 5);
-    this.slider0.setValue(1, 55);
-    this.slider0.setValue(2, 95);
-    this.updateColorSvg();
+                            this.slider0.thumbs[1].value,
+                            this.slider0.thumbs[2].value);
+      this.data = vals;
+      this.slider0.setValue(0, 5);
+      this.slider0.setValue(1, 55);
+      this.slider0.setValue(2, 95);
+
+      if(this.panel3D.model.loaded == true){
+          me.histogramSvg = new histogramD3(me.histogram, me.gamma, me.svg.svg, me);
+          me.histogramSvg.redraw();
+      }
+      this.panel3D.on("histogramloaded", function(){
+          if(!me.histogramSvg)
+                  me.histogramSvg = new histogramD3(me.histogram, me.gamma, me.svg.svg, me);
+          me.histogramSvg.redraw();
+      })
   },
 });
 
