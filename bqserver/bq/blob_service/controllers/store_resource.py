@@ -54,6 +54,7 @@ Store resource all special clients to simulate a filesystem view of resources.
 #import sys
 import logging
 import string
+import urllib
 from lxml import etree
 from datetime import datetime
 from datetime import timedelta
@@ -273,6 +274,7 @@ class StoreServer(TGController):
                     log.error ('multiple  store found %s  - %s', best, new_path)
                     break
                 log.debug ("find_store_by_blob: Matched %s %s ", name, partial)
+                partial = urllib.unquote(partial).decode('utf-8')
                 return store, [ x for x in partial.replace('//','/').split ('/') if x ]
         return None,None
 
@@ -447,7 +449,7 @@ class StoreServer(TGController):
             return self.index()
         store_name = path.pop(0)
 
-        q =  self._load_store_path(store_name=store_name, path = path, view=view, **kw)
+        q = self._load_store_path(store_name=store_name, path = path, view=view, **kw)
         if q is None:
             #abort (404, "bad store path %s" % path)
             return '<resource/>'
