@@ -15,15 +15,15 @@ histogramD3.prototype.getColor = function(channel, opacity){
     var c = this.channelFill[channel];
     c[3] = opacity;
     return "rgba(" + c.join(",") + ")";
-}
+};
 
 histogramD3.prototype.getWidth = function(){
     return this.component.getWidth();
-}
+};
 
 histogramD3.prototype.getHeight = function(){
     return this.component.getHeight();
-}
+};
 
 histogramD3.prototype.init = function(){
     var me = this;
@@ -38,7 +38,7 @@ histogramD3.prototype.init = function(){
             max = max < loge ? loge : max;
             min = min > loge ? loge : min;
         });
-        var logd = function(d){ return d >  0? Math.log(d) : 0};
+        var logd = function(d){ return d >  0? Math.log(d) : 0;};
         var l = this.histogram[chan].length;
         var h = this.getHeight();
         var w = this.getWidth();
@@ -53,7 +53,7 @@ histogramD3.prototype.init = function(){
         this.bar = false;
         if(this.bar){
             this.svg.append("g")
-                .attr("class", "histogram_" + chan)
+                .attr("class", "histogram_" + chan);
             //.attr("transform", "translate(" + me.xl(1) + "," + (-h) + ")scale(-1,-1)")
             //.attr("transform", "translate(" + me.xl(1) + "," + (h - 20) + ")scale(-1,-1)")
         }
@@ -71,7 +71,7 @@ histogramD3.prototype.init = function(){
                 .datum(this.histogram[chan])
                 .attr("class", "histogram_" + chan)
                 .attr("fill",   this.getColor(chan, 0.5))
-                .attr("d", this.area)
+                .attr("d", this.area);
         }
 
     }
@@ -87,7 +87,7 @@ histogramD3.prototype.redraw = function(){
         var w = this.getWidth();
         var data = this.histogram[chan];
         var buffer = 0.025*this.getHeight();
-        var logd = function(d){ return d >  0? Math.log(d) : 0};
+        var logd = function(d){ return d >  0? Math.log(d) : 0;};
         this.xl = d3.scale.linear().domain([0, 256]).range([buffer, me.getWidth()-buffer]);
         this.yl = d3.scale.linear()
             .domain([d3.min(data, logd),d3.max(data, logd)])
@@ -98,19 +98,19 @@ histogramD3.prototype.redraw = function(){
                 .data(this.histogram[chan]);
             //update
             group
-                .attr("x", function(d,i) {return me.xl(i)})
-                .attr("y", function(d,i) {return me.getHeight()-buffer - me.yl(logd(d))})
+                .attr("x", function(d,i) {return me.xl(i);})
+                .attr("y", function(d,i) {return me.getHeight()-buffer - me.yl(logd(d));})
                 .attr("width", function(d,i) { return w/l; })
                 .attr("height", function(d,i) {return me.yl(logd(d)); })
-                .attr("fill",   this.getColor(chan, 0.5))
+                .attr("fill",   this.getColor(chan, 0.5));
             //add
             group
                 .enter().append("svg:rect")
-                .attr("x", function(d,i) {return me.xl(i)})
-                .attr("y", function(d,i) {return me.getHeight()-buffer - me.yl(logd(d))})
+                .attr("x", function(d,i) {return me.xl(i);})
+                .attr("y", function(d,i) {return me.getHeight()-buffer - me.yl(logd(d));})
                 .attr("width", function(d,i) { return w/l; })
                 .attr("height", function(d,i) { return console.log(d, me.yl(logd(d))); me.yl(logd(d)); })
-                .attr("fill",   this.getColor(chan, 0.5))
+                .attr("fill",   this.getColor(chan, 0.5));
             //remove
             group.exit().remove();
         } else {
@@ -123,7 +123,7 @@ histogramD3.prototype.redraw = function(){
                 .y1(function(d) { return me.yl(logd(d)); })
                 .interpolate("step-before");
             this.svg.select("path.histogram_" + chan).transition()
-                .attr("d", this.area)
+                .attr("d", this.area);
 
         }
 
@@ -154,8 +154,8 @@ Ext.define('BQ.graph.d3', {
             .attr("width", "100%")
             .attr("height","100%")
             .append("svg:g")
-            .on("mousedown", function(){me.findInterval(me); me.fireEvent("mousedown")})
-            .on("mouseup", function(){me.fireEvent("mouseup")});
+            .on("mousedown", function(){me.findInterval(me); me.fireEvent("mousedown");})
+            .on("mouseup", function(){me.fireEvent("mouseup");});
 
         this.svg
             .append("rect")
@@ -223,7 +223,7 @@ Ext.define('BQ.volume.transfer.graph', {
             var s = d3.event.target.extent();
 
             var circle = me.svg.selectAll("circle")
-                .data(me.data, function(d){return d.id});
+                .data(me.data, function(d){return d.id;});
             me.data.forEach(function(d,i,a){
                 if(d.offset >= s[0] && d.offset <= s[1])
                     d.selected = true;
@@ -231,7 +231,7 @@ Ext.define('BQ.volume.transfer.graph', {
                     d.selected = false;
             });
             circle.attr("fill", function(d){
-                return (d.offset >= s[0] && d.offset <= s[1]) ? "rgb(128,0,0)" : "rgb(128,128,128)"});
+                return (d.offset >= s[0] && d.offset <= s[1]) ? "rgb(128,0,0)" : "rgb(128,128,128)";});
         }
 
         function brushend() {
@@ -396,7 +396,7 @@ Ext.define('BQ.volume.transfer.graph', {
                 d.offset = oprime;
 
                 d3.select(this)
-                    .attr("cx", function(d) { return  me.xScale(d.offset); })
+                    .attr("cx", function(d) { return  me.xScale(d.offset); });
             }
 
             var alpha  = me.yScale.invert(yp);
@@ -411,7 +411,7 @@ Ext.define('BQ.volume.transfer.graph', {
                 .attr("cy", function(d) { return  me.yScale(d.alpha); });
 
             me.gradient.select("#stop_"+d.id)
-                .attr("offset",function(d){return d.offset + "%";})
+                .attr("offset",function(d){return d.offset + "%";});
 
             redraw();
             me.fireEvent('change', me);
@@ -436,7 +436,7 @@ Ext.define('BQ.volume.transfer.graph', {
             .attr("stroke", "rgba(0,0,0,0.75)")
             .attr("stroke-width", 2)
             .attr("d", this.area)
-            .attr("opacity", "0.7")
+            .attr("opacity", "0.7");
 
         this.initCrossHairs();
         this.initBrush();
@@ -492,7 +492,7 @@ Ext.define('BQ.volume.transfer.graph', {
         this.svg.select("path.transfer").transition()
             .ease("quartic -in")
             .duration(500)
-            .attr("d", this.area)
+            .attr("d", this.area);
 
         this.svg.selectAll("circle").transition()
             .ease("quartic -in")
@@ -507,9 +507,9 @@ Ext.define('BQ.volume.transfer.graph', {
         var me = this;
 
         var circle = this.svg.selectAll("circle")
-            .data(this.data, function(d){return d.id});
+            .data(this.data, function(d){return d.id;});
         var stops = this.gradient.selectAll("stop")
-            .data(this.data, function(d){return d.id;})
+            .data(this.data, function(d){return d.id;});
 
         //1. update graph and gradient points
         circle
@@ -520,7 +520,7 @@ Ext.define('BQ.volume.transfer.graph', {
                 console.log(d.id);
                 if(d.id == me.clicked) return "rgb(255,255,255)";
                 else  return "rgb(128,128,128)";
-            } )
+            } );
 
         stops
             .attr("id", function(d, i){return "stop_"+i;})
@@ -528,7 +528,7 @@ Ext.define('BQ.volume.transfer.graph', {
             .attr("stop-color",function(d){return "rgb(" +
                                            Math.floor(d.color[0]) + "," +
                                            Math.floor(d.color[1]) + "," +
-                                           Math.floor(d.color[2]) + ")";})
+                                           Math.floor(d.color[2]) + ")";});
             //.attr("stop-opacity",function(d){return 1.0;});
 
 
@@ -553,7 +553,7 @@ Ext.define('BQ.volume.transfer.graph', {
             .attr("stop-color",function(d){return "rgb(" +
                                            Math.floor(d.color[0]) + "," +
                                            Math.floor(d.color[1]) + "," +
-                                           Math.floor(d.color[2]) + ")";})
+                                           Math.floor(d.color[2]) + ")";});
             //.attr("stop-opacity",function(d){return 0.85;});
 
         //2.a select all stops
@@ -572,7 +572,7 @@ Ext.define('BQ.volume.transfer.graph', {
         //4. redraw my area
 
         this.svg.select("path.transfer").transition()
-            .attr("d", this.area)
+            .attr("d", this.area);
             //.attr("opacity", 50)
 
     },
@@ -598,7 +598,7 @@ Ext.define('BQ.volume.transfer.graph', {
             ]};
 
         this.data.splice(stop1, 0, dp);
-        this.data.forEach(function(e,i,a){e.id = i});
+        this.data.forEach(function(e,i,a){e.id = i;});
 
 
         this.updateGraph();
@@ -623,7 +623,7 @@ Ext.define('BQ.volume.transfer.graph', {
             ]};
 
         this.data.splice(stop1, 0, dp);
-        this.data.forEach(function(e,i,a){e.id = i});
+        this.data.forEach(function(e,i,a){e.id = i;});
 
 
         this.updateGraph();
@@ -631,10 +631,10 @@ Ext.define('BQ.volume.transfer.graph', {
 
     removeStop : function(stop){
         this.data.splice(stop,1);
-        this.data.forEach(function(e,i,a){e.id = i});
+        this.data.forEach(function(e,i,a){e.id = i;});
 
         var offsets = [];
-        this.data.forEach(function(e,i,a){offsets.push(e.id)});
+        this.data.forEach(function(e,i,a){offsets.push(e.id);});
         offsets.join(" ");
         this.updateGraph();
     },
@@ -642,7 +642,7 @@ Ext.define('BQ.volume.transfer.graph', {
     setColor : function(i, col){
         this.data[i].color = col;
         var stops = this.gradient.selectAll("stop")
-            .data(this.data, function(d){return d.id;})
+            .data(this.data, function(d){return d.id;});
 
         stops
             .attr("id", function(d, i){return "stop_"+i;})
@@ -650,7 +650,7 @@ Ext.define('BQ.volume.transfer.graph', {
             .attr("stop-color",function(d){return "rgb(" +
                                            Math.floor(d.color[0]) + "," +
                                            Math.floor(d.color[1]) + "," +
-                                           Math.floor(d.color[2]) + ")";})
+                                           Math.floor(d.color[2]) + ")";});
             //.attr("stop-opacity",function(d){return 0.75;});
     },
 
@@ -685,7 +685,7 @@ Ext.define('BQ.viewer.volume.transfer.editor', {
             id: 0,
             offset: 0,
             alpha: 0,
-            color: [255,255,255]}
+            color: [255,255,255]};
         for(var i = 1; i < N-1; i++){
             this.data[i] = {
                 id: i,
@@ -695,13 +695,14 @@ Ext.define('BQ.viewer.volume.transfer.editor', {
                     255*Math.random(),
                     255*Math.random(),
                     255*Math.random()
-                ]}}
+                ]};
+        }
 
         this.data[N-1] = {
             id: N-1,
             offset: 100,
             alpha: 1,
-            color: [0,0,0]}
+            color: [0,0,0]};
         var panelWidth = 500,
         panelHeight = 500,
         canvasWidth = null,
@@ -787,7 +788,7 @@ Ext.define('BQ.viewer.volume.transfer.editor', {
                     console.log(me.transferGraph.selected);
                     me.transferGraph.selected.forEach(function(d,i,a){
                         me.transferGraph.setColor(d, me.colorPicker.getColorRgb());
-                    })
+                    });
                 }
             },
             region: 'west'
