@@ -801,33 +801,21 @@ Ext.define('BQ.is.Converter', {
         BQ.ui.error('Problem fetching image formats information');
     },
 
-    evaluateXPath: function(node, expression) {
-        var xpe = new XPathEvaluator();
-        var nsResolver = xpe.createNSResolver(node.ownerDocument == null ?
-            node.documentElement : node.ownerDocument.documentElement);
-        var result = xpe.evaluate(expression, node, nsResolver, 0, null);
-        var found = [];
-        var res=undefined;
-        while (res = result.iterateNext())
-            found.push(res);
-        return found;
-    },
-
     onFormats : function(xml) {
         this.setLoading(false);
         this.formats = [];
         this.formats_index = {};
-        //var codecs = this.evaluateXPath(xml, '//format[@name != "bioformats"]/codec');
-        var codecs = this.evaluateXPath(xml, '//format/codec');
+        //var codecs = BQ.util.xpath_nodes(xml, '//format[@name != "bioformats"]/codec');
+        var codecs = BQ.util.xpath_nodes(xml, '//format/codec');
         var c=undefined;
         for (var i=0; c=codecs[i]; ++i) {
-            var name = this.evaluateXPath(c, '@name')[0].value;
+            var name = BQ.util.xpath_nodes(c, '@name')[0].value;
             //if (name==='bioformats') continue;
-            var fullname   = this.evaluateXPath(c, 'tag[@name="fullname"]/@value')[0].value;
-            var support    = this.evaluateXPath(c, 'tag[@name="support"]/@value')[0].value;
-            var extensions = this.evaluateXPath(c, 'tag[@name="extensions"]/@value')[0].value;
-            var maxsamples = this.evaluateXPath(c, 'tag[@name="samples_per_pixel_minmax"]/@value')[0].value;
-            var maxbits    = this.evaluateXPath(c, 'tag[@name="bits_per_sample_minmax"]/@value')[0].value;
+            var fullname   = BQ.util.xpath_nodes(c, 'tag[@name="fullname"]/@value')[0].value;
+            var support    = BQ.util.xpath_nodes(c, 'tag[@name="support"]/@value')[0].value;
+            var extensions = BQ.util.xpath_nodes(c, 'tag[@name="extensions"]/@value')[0].value;
+            var maxsamples = BQ.util.xpath_nodes(c, 'tag[@name="samples_per_pixel_minmax"]/@value')[0].value;
+            var maxbits    = BQ.util.xpath_nodes(c, 'tag[@name="bits_per_sample_minmax"]/@value')[0].value;
 
             if (support.indexOf('writing')>=0)
             var ix = this.formats.push({

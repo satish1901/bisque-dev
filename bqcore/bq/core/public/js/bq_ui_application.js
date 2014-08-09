@@ -4,7 +4,7 @@
 Ext.require(['Ext.util.Observable']);
 Ext.require(['Ext.container.Viewport']);
 
-Ext.define('BQ', {
+Ext.define('BQ.Server', {
     extend: 'Ext.util.Observable',
 
     root: '/',
@@ -29,7 +29,7 @@ Ext.define('BQ', {
 });
 
 // instantiate a global variable, it might get owerwritten later
-bq = Ext.create('BQ');
+var bq = Ext.create('BQ.Server');
 
 Ext.namespace('BQ.Date');
 BQ.Date.patterns = {

@@ -746,7 +746,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
                     if (!response.responseXML)
                         return;
                     var xmlDoc = response.responseXML;
-                    var rChan = evaluateXPath(xmlDoc, "resource/histogram[@name='channel']/value");
+                    var rChan = BQ.util.xpath_nodes(xmlDoc, "resource/histogram[@name='channel']/value");
 
                     this.model.histogram.r = rChan[0].innerHTML.split(",");
 
@@ -790,8 +790,8 @@ Ext.define('BQ.viewer.Volume.Panel', {
 						return;
 					var xmlDoc = response.responseXML;
 					if (type == 'slice' || type == 'atlas' || type == 'resized') {
-						var xRes = evaluateXPath(xmlDoc, "//tag[@name='image_num_x']/@value");
-						var yRes = evaluateXPath(xmlDoc, "//tag[@name='image_num_y']/@value");
+						var xRes = BQ.util.xpath_nodes(xmlDoc, "//tag[@name='image_num_x']/@value");
+						var yRes = BQ.util.xpath_nodes(xmlDoc, "//tag[@name='image_num_y']/@value");
 						if (type == 'atlas') {
 							this.loadedDimFullAtlas = true;
 							this.dims.atlas.x = xRes[0].value;

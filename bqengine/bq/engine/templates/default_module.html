@@ -199,7 +199,7 @@
 
 
 <script type="text/javascript" >
-    bq = Ext.create('BQ', {title: 'Bisque WebApp', root: "${tg.url('/')}" });
+    bq = Ext.create('BQ.Server', {title: 'Bisque WebApp', root: "${tg.url('/')}" });
     Ext.onReady( function() {
         BQApp = Ext.create('BQ.Application', bq);
 

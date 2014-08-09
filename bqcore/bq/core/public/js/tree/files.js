@@ -122,6 +122,11 @@ Ext.define('BQ.data.proxy.Files', {
         if (request.params && request.params.node) {
             delete request.params.node;
         }
+        // extjs attempts adding sorters as well
+        if (request.params && request.params.sort) {
+            delete request.params.sort;
+        }
+
         // create a URL path traversing through the parents
         var node = request.operation.node;
         var path = [];
@@ -148,6 +153,19 @@ BQ.tree.files.icons = {
    store: 'icon-store',
    dir: 'icon-folder',
    link: 'icon-file',
+};
+
+BQ.tree.files.order = {
+   store: 0,
+   dir: 1,
+   link: 2,
+};
+
+BQ.tree.files.getType = function(o) {
+    var t = o.get('type');
+    if (t in BQ.tree.files.order)
+        return BQ.tree.files.order[t];
+    return 3;
 };
 
 Ext.define('BQ.tree.files.Panel', {
@@ -188,17 +206,9 @@ Ext.define('BQ.tree.files.Panel', {
         border : false,
     },
 
-
-    /*plugins: [{
+    plugins: [{
         ptype: 'bufferedrenderer'
-    }],*/
-
-    constructor : function(config) {
-        this.addEvents({
-            'selected' : true,
-        });
-        this.callParent(arguments);
-    },
+    }],
 
     initComponent : function() {
         this.url = this.url || '/blob_service/';
@@ -249,6 +259,10 @@ Ext.define('BQ.tree.files.Panel', {
             //autoLoad: false,
             autoSync: true,
             //lazyFill: true,
+            remoteSort: false,
+            folderSort: true,
+            sortOnLoad: true,
+
             proxy : {
                 type : 'bq-files',
                 url : this.url,
@@ -286,6 +300,20 @@ Ext.define('BQ.tree.files.Panel', {
                         return BQ.tree.files.icons[record.data.type];
                 }
             }],
+
+            sorters: [{
+                sorterFn: function(o1, o2) {
+                    var s1 = BQ.tree.files.getType(o1);
+                    var s2 = BQ.tree.files.getType(o2);
+                    if (s1 === s2) {
+                        s1 = o1.get('name').toLowerCase();
+                        s2 = o2.get('name').toLowerCase();
+                    }
+                    if (s1 === s2) return 0;
+                    return s1 < s2 ? -1 : 1;
+                },
+            }],
+
             listeners: {
                 scope: this,
                 load: function () {

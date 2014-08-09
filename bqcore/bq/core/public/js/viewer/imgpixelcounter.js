@@ -52,7 +52,7 @@ ImgPixelCounter.prototype.pixelCounter = function () {
             this.changed(); //removes threshold from image
             viewerTagPanel.setVisible(true);
             pixelcounterButton.setDisabled(false); //enable pixel counter menu
-            //brings back the metadata panel            
+            //brings back the metadata panel
         },this)
         this.viewer.parameters.main.queryById('main_container').add(this.pixelCounterPanel); //create panel
 
@@ -139,13 +139,13 @@ ImgPixelCounter.prototype.updataGlobalPixelCounterCanvas = function() {
     function waitTillFinished() {
         var finished = me.constructCanvasFromWell();
         if (finished) {
-            
+
             me.imageData = me.ctx_img.getImageData(0, 0, me.canvas_image.width, me.canvas_image.height);
             me.imagesrc = me.imageData.data;
-            
+
             //background of the image viewer
             var globalThresholdCount = {r:{a:0,b:0},g:{a:0,b:0},b:{a:0,b:0}};
-            
+
             for (var i = 0; i<(me.canvas_image.width*me.canvas_image.height*4); i+=4) {
                 if (me.pixelCounterPanel.thresholdValue>me.imagesrc[i]) globalThresholdCount['r']['a']+=1;
                 else globalThresholdCount['r']['b']+=1;
@@ -153,8 +153,8 @@ ImgPixelCounter.prototype.updataGlobalPixelCounterCanvas = function() {
                 else globalThresholdCount['b']['b']+=1;
                 if (me.pixelCounterPanel.thresholdValue>me.imagesrc[i+2]) globalThresholdCount['g']['a']+=1;
                 else globalThresholdCount['g']['b']+=1;
-            } 
-        
+            }
+
             me.pixelCounterPanel.updataGlobalPanel(globalThresholdCount);
         }
         else {
@@ -162,9 +162,9 @@ ImgPixelCounter.prototype.updataGlobalPixelCounterCanvas = function() {
         }
     }
     waitTillFinished();
-    
 
-    
+
+
 }
 */
 
@@ -292,7 +292,7 @@ ImgPixelCounter.prototype.destroyPixelCounterDisplay = function() {
     var pixelCounterCanvasMask = document.getElementById('pixel_counter_canvas_mask');
     var pixelCounterCanvasImage = document.getElementById('pixel_counter_canvas_image');
     var pixelCounterSGVOverlay = document.getElementById('pixel_counter_svg_id_label_surface');
-    
+
     if (pixelCounterCanvasMask) {
         pixelCounterCanvasMask.remove();
         delete this.canvas_mask;
@@ -366,7 +366,7 @@ ImgPixelCounter.prototype.onClick = function(e) {
 
     //find the offsets to canvas
     //set loading when clicked
-    
+
     var xClick = e.pageX-parseInt(this.canvas_mask.style.left)-this.viewer.plugins_by_name['tiles'].tiled_viewer.left; //clicks mapped to canvas
     var yClick = e.pageY-parseInt(this.canvas_mask.style.top)-this.viewer.plugins_by_name['tiles'].tiled_viewer.top; //clicks mapped to canvas
 
@@ -379,7 +379,7 @@ ImgPixelCounter.prototype.onClick = function(e) {
                me.connectedComponents(xClick,yClick);
                me.viewer.parameters.main.viewerContainer.setLoading(false);
                me.canvas_mask.style.visibility = 'visible';
-               
+
             },5);
         }
     }
@@ -414,7 +414,7 @@ ImgPixelCounter.prototype.setText2SVG = function(text,id,x,y) {
 
 ImgPixelCounter.prototype.removeTextFromSVG = function(id){
     var svgTextElement = this.svgdoc.getElementById(id);
-    
+
     if(svgTextElement) this.svgdoc.removeChild(svgTextElement);
 };
 
@@ -455,20 +455,20 @@ ImgPixelCounter.prototype.connectedComponents = function(x,y) {
     // remap
     var tiled_viewer = this.viewer.plugins_by_name['tiles'].tiled_viewer; //finding tiled viewer in the plugin list
     var p = tiled_viewer.toImageFromViewer({x: x - tiled_viewer.x, y: y - tiled_viewer.y});
-    
+
     //scaling the counts
     var scale = this.viewer.view().scale;
     var scaled_count = (count/(scale*scale)).toFixed(0);
     var phys = this.viewer.imagephys;
-    
+
     if (phys.isPixelResolutionValid()) {
         var area = (parseFloat(scaled_count)*parseFloat(phys.pixel_size[0])*parseFloat(phys.pixel_size[1])).toFixed(2);
         this.pixelCounterPanel.regionCount.push({index:this.pixelCounterPanel.idCount, pixels:scaled_count, x:p.x, y:p.y, xclick:x,yclick:y,svgid:'svg_text_element_'+(this.pixelCounterPanel.idCount), area:area});
     } else {
-        this.pixelCounterPanel.regionCount.push({index:this.pixelCounterPanel.idCount, pixels:scaled_count, x:p.x, y:p.y, xclick:x,yclick:y,svgid:'svg_text_element_'+(this.pixelCounterPanel.idCount)});        
+        this.pixelCounterPanel.regionCount.push({index:this.pixelCounterPanel.idCount, pixels:scaled_count, x:p.x, y:p.y, xclick:x,yclick:y,svgid:'svg_text_element_'+(this.pixelCounterPanel.idCount)});
     }
-    
-    //update svg element    
+
+    //update svg element
     this.setText2SVG((this.pixelCounterPanel.idCount).toString(),'svg_text_element_'+(this.pixelCounterPanel.idCount),x,y)
     this.pixelCounterPanel.idCount+=1; //setting for the next region
     this.pixelCounterPanel.updateRegionPanel();
@@ -518,9 +518,9 @@ ImgPixelCounter.prototype.undoConnectedComponents = function(x,y,id) {
 ImgPixelCounter.prototype.checkNeighbors = function(edge_points_queue,label_list, transparency, maskColor) {
     //Find the connected component
     //uses the transparency as a marker for past check pixels
-    
+
     var edge_index = parseInt(edge_points_queue.shift());
-    
+
     //set color of the mask
     this.masksrc[edge_index]   = maskColor.r;
     this.masksrc[edge_index+1] = maskColor.g;
@@ -590,9 +590,9 @@ ImgPixelCounter.prototype.resetPixelRegionCounter = function() {
 
 //sets the background to the same color as the tile viewer
 ImgPixelCounter.prototype.resetimage = function() {
-    
+
     //background of the image viewer
-    
+
     var imgViewerBackground = {r:67, g:67, b:67, a:255};
     if (this.canvas_image) {
         for (var i = 0; i<(this.canvas_image.width*this.canvas_image.height*4); i+=4) {
@@ -661,7 +661,7 @@ Ext.define('BQ.Panel.PixelCounter', {
     channel_names: { 0: 'red', 1: 'green', 2: 'blue' },
     regionCount: [],
     idCount: 0, //keeps track of the ids for each region
-   
+
     initComponent : function() {
 
         this.items = []; //reset panel items
@@ -733,8 +733,8 @@ Ext.define('BQ.Panel.PixelCounter', {
             cls: 'threshold',
             //ayout: 'anchor',
         });
-        
-        
+
+
         //GRID
         var fieldList = ['index','x','y','pixels'];
         var columns = [{
@@ -764,14 +764,14 @@ Ext.define('BQ.Panel.PixelCounter', {
             });
             fields.push({name: 'area', type: 'float'});
         }
-        
-        
+
+
 
         Ext.define('bq.pixelcount.RegionCounts', {
             extend: 'Ext.data.Model',
             fields: fields,
-        });        
-        
+        });
+
         this.regionCountStore = Ext.create('Ext.data.Store', {
             model: 'bq.pixelcount.RegionCounts',
             storeId: 'regionCountStore',
@@ -788,18 +788,18 @@ Ext.define('BQ.Panel.PixelCounter', {
                 direction: 'desc'
             }]
         });
-        
+
         this.regionCountGrid = Ext.create('Ext.grid.Panel', {
             //title: 'regionCountGrid',
             itemId : 'px_regioncount_grid',
             store: this.regionCountStore,
             multiSelect: true,
-            
+
             columns: {
                 items: columns,
                 defaults: {flex: 1},
             },
-            
+
             flex: 2,
             hidden: true,
             border : false,
@@ -808,9 +808,9 @@ Ext.define('BQ.Panel.PixelCounter', {
                 itemId : 'px_delete_button',
                 xtype: 'button',
                 text: 'Delete',
-                iconCls: 'icon-delete', 
+                iconCls: 'icon-delete',
                 scale: 'large',
-                disabled: true,    
+                disabled: true,
                 listeners : {
                     scope: this,
                     click: function() {
@@ -831,16 +831,16 @@ Ext.define('BQ.Panel.PixelCounter', {
                                 regionCount.push(this.regionCount[i])
                             }
                         }
-                        
+
                         //delete all the rows at once
                         this.pixelCounter.canvas_mask.style.visibility = 'hidden';
                         this.viewer.parameters.main.viewerContainer.setLoading(true);
                         var me = this;
                         var regionCountElement = this.regionCount[i];
                         setTimeout(function(){ //set time out to allow for the loading screen to be shown
-                           for (var i=0; i<regionCountDeletes.length; i++) { 
+                           for (var i=0; i<regionCountDeletes.length; i++) {
                                me.pixelCounter.undoConnectedComponents(regionCountDeletes[i].xclick,regionCountDeletes[i].yclick,regionCountDeletes[i].svgid);
-                           }    
+                           }
                            me.viewer.parameters.main.viewerContainer.setLoading(false);
                            me.pixelCounter.canvas_mask.style.visibility = 'visible';
                         },5);
@@ -848,11 +848,11 @@ Ext.define('BQ.Panel.PixelCounter', {
                         this.updateRegionPanel();
 
                     }
-                },        
+                },
             },
             { //Resets Button
                 itemId : 'px_reset_button',
-                iconCls: 'converter', 
+                iconCls: 'converter',
                 xtype: 'button',
                 text: 'Reset',
                 scale: 'large',
@@ -867,7 +867,7 @@ Ext.define('BQ.Panel.PixelCounter', {
                     }
                 }
             },
-            '->',            
+            '->',
             { //Export Button
                 itemId : 'px_export_button',
                 xtype: 'button',
@@ -883,7 +883,7 @@ Ext.define('BQ.Panel.PixelCounter', {
                         }
                     },
                 },
-            }],  
+            }],
         });
 
         this.tbar= [{//toggle button
@@ -922,15 +922,15 @@ Ext.define('BQ.Panel.PixelCounter', {
         this.items.push(this.selectPanel);
         this.items.push(this.thresholdInfoPanel);
         this.items.push(this.regionCountGrid);
-        
+
         //beforeresize
 
         this.pixelCounter.changed(); //initialize threshold
-        
-        
+
+
         return this.callParent(arguments);
     },
-    
+
     listeners: {
         resize: function(){ //returns to global count mode
             if(this.selectMode){ //disables select mode
@@ -940,10 +940,10 @@ Ext.define('BQ.Panel.PixelCounter', {
             }
         }
     },
-    
+
     lookupThreshold : function() {
         //parsing the request
-        
+
         //set limit on the global counts if image is too large
         if(this.viewer.imagedim.x>10000&&this.viewer.imagedim.y>10000) {
             this.queryById('px_selectinfo_panel').setVisible(false);
@@ -952,7 +952,7 @@ Ext.define('BQ.Panel.PixelCounter', {
             this.thresholdInfoPanel.update('<p>The global count will not be displayed since image is too large.</p>');
             return;
         }
-        
+
         var param = {};
         var args = this.viewer.current_view.src_args;
         var request = [];
@@ -970,7 +970,7 @@ Ext.define('BQ.Panel.PixelCounter', {
             return;
         }
         this.request_uri = image_uri;
-        
+
         Ext.Ajax.request({
             url: image_uri,
             scope: this,
@@ -988,25 +988,13 @@ Ext.define('BQ.Panel.PixelCounter', {
 
     },
 
-    //stolen from bigmapPanel
-    evaluateXPath: function(aNode, aExpr) {
-        var xpe = new XPathEvaluator();
-        var nsResolver = xpe.createNSResolver(aNode.ownerDocument == null ?
-          aNode.documentElement : aNode.ownerDocument.documentElement);
-        var result = xpe.evaluate(aExpr, aNode, nsResolver, 0, null);
-        var found = [];
-        var res;
-        while (res = result.iterateNext())
-          found.push(res);
-        return found;
-    },
 /*
 
     updataGlobalPanel : function(globalThresholdCount) {
         this.queryById('px_selectinfo_panel').setVisible(false);
         this.queryById('px_threshold_panel').setVisible(true);
         this.queryById('px_regioncount_grid').setVisible(false);
-        
+
         var globalTitle = '<tr><th>channel</th><th >threshold</th><th>pixels</th>';
 
         if (this.phys.isPixelResolutionValid()) {
@@ -1016,8 +1004,8 @@ Ext.define('BQ.Panel.PixelCounter', {
         var globalRows = '';
         var channels = ['r','g','b'];
         for (var c = 0; c<3; c++) { //updates panel values
-            
-            var scale = this.viewer.view().scale;              
+
+            var scale = this.viewer.view().scale;
             var above = globalThresholdCount[channels[c]].a/(scale*scale);
             var below = globalThresholdCount[channels[c]].b/(scale*scale);
 
@@ -1043,9 +1031,9 @@ Ext.define('BQ.Panel.PixelCounter', {
         this.queryById('px_selectinfo_panel').setVisible(false);
         this.queryById('px_threshold_panel').setVisible(true);
         this.queryById('px_regioncount_grid').setVisible(false);
-        
 
-        var channels = this.evaluateXPath(xmlDoc, 'resource/pixelcounts[@name="channel"]');
+
+        var channels = BQ.util.xpath_nodes(xmlDoc, 'resource/pixelcounts[@name="channel"]');
         var globalTitle = '<tr><th>channel</th><th >threshold</th><th>pixels</th>';
 
         if (this.phys.isPixelResolutionValid()) {
@@ -1055,8 +1043,8 @@ Ext.define('BQ.Panel.PixelCounter', {
         var globalRows = '';
         if (channels.length==3) { //check if atleast one value
             for (var c = 0; c<channels.length; c++) { //updates panel values
-                var above = self.evaluateXPath(channels[c],'tag[@name="above"]/@value')[0].value;
-                var below = self.evaluateXPath(channels[c],'tag[@name="below"]/@value')[0].value;
+                var above = BQ.util.xpath_nodes(channels[c],'tag[@name="above"]/@value')[0].value;
+                var below = BQ.util.xpath_nodes(channels[c],'tag[@name="below"]/@value')[0].value;
 
                 var channel_name = this.channel_names[c];
                 var globalRowAbove = '<td>'+channel_name+'</td><td>above</td><td >'+above.toString()+'</td>';
@@ -1083,26 +1071,26 @@ Ext.define('BQ.Panel.PixelCounter', {
     updateRegionPanel : function(){
         this.queryById('px_selectinfo_panel').setVisible(true);
         this.queryById('px_threshold_panel').setVisible(false);
-        
+
         var regionCountGrid = this.queryById('px_regioncount_grid').setVisible(true);
-        
+
         var html = '';
         this.thresholdInfoPanel.update(html);
         regionCountGrid.store.loadData(this.regionCount);
         regionCountGrid.getView().refresh();
-        
+
         //set usability of the buttons
         if (this.regionCount.length>0){
             this.queryById('px_reset_button').setDisabled(false);
             this.queryById('px_export_button').setDisabled(false);
             this.queryById('px_delete_button').setDisabled(false);
         } else {
-            this.queryById('px_reset_button').setDisabled(true); 
-            this.queryById('px_export_button').setDisabled(true); 
-            this.queryById('px_delete_button').setDisabled(true);         
+            this.queryById('px_reset_button').setDisabled(true);
+            this.queryById('px_export_button').setDisabled(true);
+            this.queryById('px_delete_button').setDisabled(true);
         }
     },
-    
+
     exportCSV : function() {
         //writes the region count info to csv
         if (this.regionCount.length>0) {
@@ -1120,10 +1108,10 @@ Ext.define('BQ.Panel.PixelCounter', {
                     CsvDocument += ','+this.regionCount[r].area;;
                 }
                 CsvDocument += '\r\n';
-            }   
-           
+            }
+
             window.open('data:text/csv;charset=utf-8,' + encodeURIComponent(CsvDocument), 'areas.csv'); //download
-            
+
         }
     },
 });
