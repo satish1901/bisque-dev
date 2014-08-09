@@ -42,8 +42,8 @@ Ext.define('Bisque.Resource.Image', {
         if (!xmlDoc)
             return;
         try {
-            this.resource.t = parseInt(evaluateXPath(xmlDoc, "//tag[@name='image_num_t']/@value")[0].value);
-            this.resource.z = parseInt(evaluateXPath(xmlDoc, "//tag[@name='image_num_z']/@value")[0].value);
+            this.resource.t = parseInt(BQ.util.xpath_nodes(xmlDoc, "//tag[@name='image_num_t']/@value")[0].value);
+            this.resource.z = parseInt(BQ.util.xpath_nodes(xmlDoc, "//tag[@name='image_num_z']/@value")[0].value);
         } catch (e) {
             this.resource.t = 1;
             this.resource.z = 1;

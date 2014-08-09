@@ -496,7 +496,7 @@ BQObject.prototype.initializeXml = function (node) {
 
     // dima: speed optimization, using xpath for resources with many values is much faster
     // Utkarsh : now uses evaulateXPath from utils.js, which is browser independent
-    var values = evaluateXPath(node, 'value');
+    var values = BQ.util.xpath_nodes(node, 'value');
     this.values = [];
 
     // values should be an array
@@ -1324,14 +1324,14 @@ BQGObject.prototype.initializeXml = function (node) {
 
     // dima: speed optimization, using xpath for resources with many vertices is much faster
     // Utkarsh : now uses evaulateXPath from utils.js, which is browser independent
-    var vertices = evaluateXPath(node, 'vertex');
+    var vertices = BQ.util.xpath_nodes(node, 'vertex');
     this.vertices = [];
 
     // vertices should be an array
     for (var i=0; i<vertices.length; i++)
         this.vertices.push(new BQVertex(vertices[i]));
 
-    var t = xpathOneNode(node, 'tag[@name="color"]');
+    var t = BQ.util.xpath_node(node, 'tag[@name="color"]');
     if (t)
         this.color_override = t.getAttribute('value').replace('#', '');
 };

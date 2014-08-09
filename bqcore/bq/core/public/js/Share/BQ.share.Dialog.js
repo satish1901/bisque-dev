@@ -19,6 +19,8 @@
 
 //--------------------------------------------------------------------------------------
 // BQ.share.Dialog
+// Events:
+//    changedShare
 //--------------------------------------------------------------------------------------
 
 Ext.define('BQ.share.Dialog', {
@@ -54,10 +56,6 @@ Ext.define('BQ.share.Dialog', {
             }],
         }, config);
 
-        this.addEvents({
-            'changedShare' : true,
-        });
-
         this.callParent(arguments);
         this.show();
     },
@@ -71,23 +69,18 @@ Ext.define('BQ.share.Dialog', {
 
 //--------------------------------------------------------------------------------------
 // BQ.share.Panel
+// Events:
+//    changePermission
 //--------------------------------------------------------------------------------------
 
-function xpath(node, expression) {
-    var xpe = new XPathEvaluator();
-    var nsResolver = xpe.createNSResolver(node.ownerDocument == null ? node.documentElement : node.ownerDocument.documentElement);
-    var result = xpe.evaluate( expression, node, nsResolver, XPathResult.STRING_TYPE, null );
-    return result.stringValue;
-}
-
 function getName(v, record) {
-    return xpath(record.raw, 'tag[@name="display_name"]/@value');
+    return BQ.util.xpath_string(record.raw, 'tag[@name="display_name"]/@value');
 }
 
 function getFull(v, record) {
-    var username = xpath(record.raw, '@name');
-    var email = xpath(record.raw, '@value');
-    var name = xpath(record.raw, 'tag[@name="display_name"]/@value');
+    var username = BQ.util.xpath_string(record.raw, '@name');
+    var email = BQ.util.xpath_string(record.raw, '@value');
+    var name = BQ.util.xpath_string(record.raw, 'tag[@name="display_name"]/@value');
     return Ext.util.Format.format('{0} - {1} - {2}', username, name, email);
 }
 
@@ -144,14 +137,6 @@ Ext.define('BQ.share.Panel', {
         align: 'stretch'
     },
 
-    constructor: function(config) {
-        this.addEvents({
-            'changePermission' : true,
-        });
-        this.callParent(arguments);
-        return this;
-    },
-
     initComponent : function() {
 
         if (this.resource)
@@ -163,8 +148,8 @@ Ext.define('BQ.share.Panel', {
             autoLoad : false,
             autoSync : false,
             listeners : {
-                'load': this.onUsersStoreLoaded,
                 scope: this,
+                load: this.onUsersStoreLoaded,
             },
         });
 
@@ -201,9 +186,9 @@ Ext.define('BQ.share.Panel', {
                 },
             },
             listeners : {
-                'load': this.onStoreLoaded,
-                'datachanged': this.onStoreChange,
                 scope: this,
+                load: this.onStoreLoaded,
+                datachanged: this.onStoreChange,
             },
         });
 
@@ -229,7 +214,7 @@ Ext.define('BQ.share.Panel', {
                 sortable: true,
                 renderer: function(value, meta, record, row, col, store, view) {
                     if (me.users_xml)
-                        return xpath(me.users_xml, '//user[@uri="'+value+'"]/@name');
+                        return BQ.util.xpath_string(me.users_xml, '//user[@uri="'+value+'"]/@name');
                     // can't read directly from the store used for combobox due to filtering applied by it
                     //me.store_users.clearFilter(true);
                     //var r = me.store_users.findRecord( 'uri', value );
@@ -244,7 +229,7 @@ Ext.define('BQ.share.Panel', {
                 sortable: true,
                 renderer: function(value) {
                     if (me.users_xml)
-                        return xpath(me.users_xml, '//user[@uri="'+value+'"]/tag[@name="display_name"]/@value');
+                        return BQ.util.xpath_string(me.users_xml, '//user[@uri="'+value+'"]/tag[@name="display_name"]/@value');
                     // can't read directly from the store used for combobox due to filtering applied by it
                     //me.store_users.clearFilter(true);
                     //var r = me.store_users.findRecord( 'uri', value );
@@ -260,7 +245,7 @@ Ext.define('BQ.share.Panel', {
                 renderer: function(value, meta, record) {
                     if (value!=='') return value;
                     if (me.users_xml)
-                        return xpath(me.users_xml, '//user[@uri="'+record.data.user+'"]/@value');
+                        return BQ.util.xpath_string(me.users_xml, '//user[@uri="'+record.data.user+'"]/@value');
                     // can't read directly from the store used for combobox due to filtering applied by it
                     //me.store_users.clearFilter(true);
                     //var r = me.store_users.findRecord( 'uri', record.data.user );

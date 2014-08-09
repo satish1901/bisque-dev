@@ -1624,15 +1624,8 @@ Ext.define('Bisque.ResourceTagger.viewStateManager',
 // BQ.grid.GobsPanel
 //-----------------------------------------------------------------------
 
-function xpath(node, expression) {
-    var xpe = new XPathEvaluator();
-    var nsResolver = xpe.createNSResolver(node.ownerDocument == null ? node.documentElement : node.ownerDocument.documentElement);
-    var result = xpe.evaluate( expression, node, nsResolver, XPathResult.STRING_TYPE, null );
-    return result.stringValue;
-}
-
 function getType(v, record) {
-    var r = xpath(record.raw, '@type') || record.raw.nodeName;
+    var r = BQ.util.xpath_string(record.raw, '@type') || record.raw.nodeName;
     return r;
 }
 
@@ -1745,18 +1738,6 @@ Ext.define('BQ.grid.GobsPanel', {
         BQ.ui.error('Problem fetching available gobject types');
     },
 
-    evaluateXPath: function(node, expression) {
-        var xpe = new XPathEvaluator();
-        var nsResolver = xpe.createNSResolver(node.ownerDocument == null ?
-            node.documentElement : node.ownerDocument.documentElement);
-        var result = xpe.evaluate(expression, node, nsResolver, 0, null);
-        var found = [];
-        var res=undefined;
-        while (res = result.iterateNext())
-            found.push(res);
-        return found;
-    },
-
     onTypes : function(xml) {
         this.setLoading(false);
         this.types = [];
@@ -1773,7 +1754,7 @@ Ext.define('BQ.grid.GobsPanel', {
             //this.formats_index[name] = this.formats[ix-1];
         } // for primitives
 
-        var gobs = this.evaluateXPath(xml, '//gobject');
+        var gobs = BQ.util.xpath_nodes(xml, '//gobject');
         var g=undefined;
         for (var i=0; g=gobs[i]; ++i) {
             var t = g.getAttribute('type');

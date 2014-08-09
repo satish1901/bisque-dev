@@ -35,6 +35,7 @@
     '/js/Share/BQ.share.Dialog.css',
     '/js/picker/Path.css',
     '/js/tree/files.css',
+    '/js/tree/organizer.css',
     { 'file' : '/image_service/public/converter.css', 'path' : h.file_root() + 'bqserver/bq' },
     '/panojs3/styles/panojs.css',
     '/js/slider/slider.css',
@@ -77,6 +78,9 @@
 
     <!-- D3 -->
     <script type="text/javascript" src="${tg.url('/d3/d3.js')}"></script>
+
+    <!-- Async.js -->
+    <script type="text/javascript" src="${tg.url('/async/async.js')}"></script>
 
     <!-- BisQue UI code -->
     <?python
@@ -159,6 +163,7 @@
     '/js/Organizer/BQ.Organizer.Tree.js',
     '/js/picker/Path.js',
     '/js/tree/files.js',
+    '/js/tree/organizer.js',
 
     # -- PanoJS3 --
     '/panojs3/panojs/utils.js',
@@ -241,7 +246,7 @@
     <!-- Configuration variables   -->
     <script type="text/javascript" >
         // update the configuration in your template
-        bq = Ext.create('BQ', {
+        bq = Ext.create('BQ.Server', {
           title : "${tg.config.get('bisque.title', 'CBI Repository')}",
           root  : "${tg.url('/')}",
         });

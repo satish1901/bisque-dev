@@ -1,0 +1,68 @@
+.btn-pressable {
+    border-width: 0px;
+}
+
+.icon-tag-name {
+    background-image: url('images/organizer_icons.svg') !important;
+    background-repeat: no-repeat;
+    background-size: 70px;
+    background-position: 0px 2px;
+}
+
+.icon-tag-value {
+    background-image: url('images/organizer_icons.svg') !important;
+    background-repeat: no-repeat;
+    background-size: 70px;
+    background-position: -18px 2px;
+}
+
+.icon-gob-type {
+    background-image: url('images/organizer_icons.svg') !important;
+    background-repeat: no-repeat;
+    background-size: 70px;
+    background-position: 0px -16px;
+}
+
+.icon-gob-name {
+    background-image: url('images/organizer_icons.svg') !important;
+    background-repeat: no-repeat;
+    background-size: 70px;
+    background-position: -18px -16px;
+}
+
+.icon-tags {
+    background-image: url('images/organizer_icons.svg') !important;
+    background-repeat: no-repeat;
+    background-size: 100px;
+    background-position: -0px -52px !important;
+}
+
+.icon-gobs {
+    background-image: url('images/organizer_icons.svg') !important;
+    background-repeat: no-repeat;
+    background-size: 100px;
+    background-position: -26px -52px !important;
+}
+
+.icon-types {
+    background-image: url('images/organizer_icons.svg') !important;
+    background-repeat: no-repeat;
+    background-size: 100px;
+    background-position: 0px -79px !important;
+}
+
+.icon-names {
+    background-image: url('images/organizer_icons.svg') !important;
+    background-repeat: no-repeat;
+    background-size: 100px;
+    background-position: -26px -79px !important;
+}
+
+.icon-values {
+    background-image: url('images/organizer_icons.svg') !important;
+    background-repeat: no-repeat;
+    background-size: 100px;
+    background-position: -52px -79px !important;
+}
+
+

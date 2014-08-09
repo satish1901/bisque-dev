@@ -119,7 +119,7 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
             activeTab : 0,
             split : true,
             layout : 'fit',
-            cls : 'organizer',
+            cls : 'organizer-tabs',
             frame : true,
             header : false,
             hidden : true,

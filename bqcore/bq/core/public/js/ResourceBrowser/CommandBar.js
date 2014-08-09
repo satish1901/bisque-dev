@@ -290,7 +290,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
         var tagOrder = cleanTagOrder(this.browser.browserState.tag_order) || '';
 
         function cleanTagOrder(tagOrder) {
-            var ind = tagOrder.lastIndexOf('"@ts":desc')
+            var ind = tagOrder.lastIndexOf('"@ts":desc');
             if (ind != -1)
                 return tagOrder.slice(0, ind);
 
@@ -382,6 +382,28 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
         this.westPanel.add(this.organizerCt);
     },
 
+    btnOrganizerClickTreeNew : function(reload) {
+        this.westPanel.setWidth(420).show().expand();
+        this.organizerCt = (reload ? undefined : this.organizerCt) || Ext.create('BQ.tree.organizer.Panel', {
+            title: 'Organizer',
+            itemId: 'organizer',
+            browserParams : this.browser.browserParams,
+            url: this.browser.browserState['baseURL'],
+            listeners : {
+                scope : this,
+                selected : function(url, organizer) {
+                    this.msgBus.fireEvent('Browser_ReloadData', {
+                        baseURL : organizer.getUrl(),
+                        offset: 0,
+                        tag_query: organizer.getQuery(),
+                        tag_order: organizer.getOrder(),
+                    });
+                },
+            },
+        });
+        this.westPanel.add(this.organizerCt);
+    },
+
     btnOrganizerClickFiles : function(reload) {
         this.westPanel.setWidth(420).show().expand();
         //this.westPanel.queryById('files').removeAll(false);
@@ -389,15 +411,16 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
             xtype: 'bq-tree-files-panel',
             itemId: 'files',
             title: 'Files',
+            tag_order : this.browser.browserParams.tagOrder,
             listeners : {
                 scope : this,
-                selected : function(url) {
+                selected : function(url, files) {
                     this.msgBus.fireEvent('Browser_ReloadData', {
                         baseURL : url.slice(-1)!=='/' ? url+'/value' : url+'value',
                         offset : 0,
                         tag_query : '',
-                        tag_order : '',
-                        wpublic : false,
+                        tag_order : files.tag_order,
+                        //wpublic : false,
                     });
                 }
             },
@@ -407,7 +430,8 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
     btnOrganizerClick : function(reload) {
         // dima: choose type of organizer here
         //this.btnOrganizerClickTree(reload);
-        this.btnOrganizerClickOriginal(reload);
+        this.btnOrganizerClickTreeNew(reload);
+        //this.btnOrganizerClickOriginal(reload);
         if (this.browser.dataset && this.browser.dataset instanceof BQDataset)
             return;
         this.btnOrganizerClickFiles(reload);
