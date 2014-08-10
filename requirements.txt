@@ -62,6 +62,7 @@ poster==0.8.1
 py==1.4.20
 pycrypto==2.6.1
 pytest==2.5.2
+pylibtiff==0.3.0-1
 python-dateutil==1.5
 pytz==2013.9
 recaptcha-client==1.0.6

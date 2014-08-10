@@ -25,11 +25,8 @@ setup(
                       "tables",  
                       "numexpr",
                       "cython",
-                      "pylibtiff==0.3.0bisque"
+                      "pylibtiff==0.3.0-1"
                       ],
-    dependency_links = [
-                        "https://bitbucket.org/bisque/pylibtiff/get/0.3.0bisque.tar.gz#egg=pylibtiff-0.3.0bisque"
-    ],
     setup_requires=["PasteScript>=1.6.3"],
     paster_plugins=['PasteScript', 'Pylons' ],
     packages=find_packages(exclude=['ez_setup']),

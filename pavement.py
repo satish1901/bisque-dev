@@ -34,7 +34,7 @@ feature_subdirs=['bqfeature' ]
 server_subdirs=['bqapi', 'bqcore', 'bqserver', 'bqengine' ]
 engine_subdirs=['bqapi', 'bqcore', 'bqengine' ]
 
-PREINSTALLS = {'features' : ['numpexpr', 'cython'] }
+PREINSTALLS = {'features' : ['numexpr', 'cython'] }
 
 all_packages = set (feature_subdirs + server_subdirs + engine_subdirs)
 
