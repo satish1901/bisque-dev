@@ -402,6 +402,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
             },
         });
         this.westPanel.add(this.organizerCt);
+        this.westPanel.setActiveTab(0);
     },
 
     btnOrganizerClickFiles : function(reload) {

@@ -204,6 +204,17 @@ BQ.tree.organizer.icons = {
     gobject_value: 'icon-gob-value',
 };
 
+BQ.tree.organizer.path2type = {
+    t: 'tag',
+    g: 'gobject',
+};
+
+BQ.tree.organizer.path2attr = {
+    t: 'type',
+    n: 'name',
+    v: 'value',
+};
+
 Ext.define('BQ.tree.organizer.Panel', {
     extend: 'Ext.tree.Panel',
     alias: 'widget.bq-tree-organizer-panel',
@@ -334,7 +345,8 @@ Ext.define('BQ.tree.organizer.Panel', {
                 convert : function(value, record) {
                     if (!(record.raw instanceof Node)) return '';
                     var r = record.raw;
-                    return r.getAttribute('type') || r.tagName;
+                    var t = r.getAttribute('type') || r.tagName;
+                    return t==='tag' ? 'tag' : 'gobject';
                 },
             }, {
                 name : 'attribute',
@@ -445,13 +457,20 @@ Ext.define('BQ.tree.organizer.Panel', {
         this.active_query = {};
         var path=[], query=[], order=[];
         for (var i=0; (node=nodes[i]); ++i) {
-            var sep='', pt='v:';
+            var sep='', pt='';
+            if (node.data.type === 'tag') {
+                pt += 't:';
+            } else {
+                pt += 'g:';
+            }
             if (node.data.attribute === 'type') {
                 sep = ':::';
-                pt = 't:';
+                pt += 't:';
             } else if (node.data.attribute === 'name') {
                 sep = ':';
-                pt = 'n:';
+                pt += 'n:';
+            } else {
+                pt += 'v:';
             }
             this.active_query[node.data.value] = node.data.type+':'+node.data.attribute;
 
@@ -517,7 +536,6 @@ Ext.define('BQ.tree.organizer.Panel', {
     },
 
     onPath: function(node, p) {
-        /*
         if (!node) return;
         p.shift();
 
@@ -526,10 +544,15 @@ Ext.define('BQ.tree.organizer.Panel', {
             return;
         }
 
-        var name = p[0];
+        var txt = p[0].split(':');
+        var type = BQ.tree.organizer.path2type[txt[0]];
+        var attr = BQ.tree.organizer.path2attr[txt[1]];
+        var value = txt[2];
         node = node.findChildBy(
             function(n) {
-                if (n.data.name === name) return true;
+                if (n.data.type === type &&
+                    n.data.attribute === attr &&
+                    n.data.value === value) return true;
             },
             this,
             true
@@ -539,7 +562,6 @@ Ext.define('BQ.tree.organizer.Panel', {
                 if (!nodes || nodes.length<1) return;
                 this.onPath(nodes[0].parentNode, p);
             }, this);
-            */
     },
 
     setPath: function(path) {
