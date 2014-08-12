@@ -401,6 +401,7 @@ class import_serviceController(ServiceController):
         members = [ m for m in members if is_filesystem_file(m) is not True ] # remove file system internal files
         members = sorted(members, key=blocked_alpha_num_sort) # use alpha-numeric sort
         members = [ '%s/%s'%(unpack_dir, m) for m in members ] # full paths
+        members = [ m for m in members if os.path.isdir(m) is not True ] # remove directories
         
         basepath = '%s/'%unpack_dir
         resources = []
@@ -424,6 +425,8 @@ class import_serviceController(ServiceController):
         members = [ m for m in members if is_filesystem_file(m) is not True ] # remove file system internal files
         members = sorted(members, key=blocked_alpha_num_sort) # use alpha-numeric sort
         members = [ '%s/%s'%(unpack_dir, m) for m in members ] # full paths
+        #members = [ m for m in members if os.path.exists(m) is True ] # remove missing files
+        members = [ m for m in members if os.path.isdir(m) is not True ] # remove directories
 
         num_pages = len(members)
         z=None; t=None
