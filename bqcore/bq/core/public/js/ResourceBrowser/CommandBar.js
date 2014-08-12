@@ -195,6 +195,8 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
                                     };
                                     configOpts.browser.browserParams.wpublic = value;
                                     configOpts.browser.msgBus.fireEvent('Browser_ReloadData', uri);
+                                    if (this.organizerCt)
+                                        this.organizerCt.reset();
                                 },
                                 scope : this
                             }
