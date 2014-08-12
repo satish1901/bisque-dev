@@ -51,6 +51,7 @@ Ext.define('BQ.data.proxy.OrganizerProxy', {
 
     filterParam : undefined,
     sortParam : undefined,
+    idParam : undefined,
 
     projections: {
         'tag_values': null,
@@ -62,10 +63,11 @@ Ext.define('BQ.data.proxy.OrganizerProxy', {
     query : '',
 
     doRequest: function(operation, callback, scope) {
+        if (operation.action !== 'read') return;
         this.loaded = true;
 
         var url = this.url;
-        if (this.query.length>0)
+        if (this.query && this.query.length>0)
             url += '?tag_query='+this.query+'&';
         else
             url += '?';
@@ -78,6 +80,7 @@ Ext.define('BQ.data.proxy.OrganizerProxy', {
             if (!this.projections[name]) continue;
 
             var r = this.buildRequest(operation);
+            delete r.params[this.idParam];
             Ext.apply(r, {
                 binary        : this.binary,
                 headers       : this.headers,
@@ -251,13 +254,22 @@ Ext.define('BQ.tree.organizer.Panel', {
     disableSelection: false,
     allowDeselect: true,
     sortableColumns: false,
+    draggable: false,
+    enableColumnMove: false,
     defaults: {
         border : false,
     },
 
-    /*plugins: [{
+    /*plugins: [{ // dima: unfortunately this is giving issues in the tree
         ptype: 'bufferedrenderer'
     }],*/
+
+    /*viewConfig: {
+        plugins: {
+            ptype: 'treeviewdragdrop',
+            allowParentInserts: true,
+        }
+    },*/
 
     initComponent : function() {
         this.url_selected = this.url;
@@ -445,6 +457,7 @@ Ext.define('BQ.tree.organizer.Panel', {
     },
 
     onSelect : function(me, record, index, eOpts) {
+        if (this.no_selects===true) return;
         var node = record;
         var nodes=[];
         while (node) {
@@ -574,9 +587,23 @@ Ext.define('BQ.tree.organizer.Panel', {
     },
 
     reset: function() {
-        //this.getSelectionModel().select(this.getRootNode());
+        this.no_selects = true;
+        this.queryById('path_bar').setPath( '/' );
+        this.active_query = {};
+        this.url_selected = this.url;
+        this.order = undefined;
+
+        var proxy = this.store.getProxy();
+        this.store.getProxy().query = undefined;
+        proxy.projections.tag_values = null;
+        proxy.projections.gob_names = null;
+
+        var root = this.getRootNode();
+        this.getSelectionModel().select(root);
+        root.removeAll(true);
         //this.collapseAll();
-        this.store.reload();
+        this.store.load();
+        this.no_selects = undefined;
     },
 
     onTags: function(btn) {
@@ -629,7 +656,8 @@ Ext.define('BQ.tree.organizer.Panel', {
         if (!this.queryById('btnShowValues').pressed) {
             proxy.projections.tag_values = null;
         }
-        this.reset();
+        //this.reset();
+        this.store.reload();
     },
 
 });
