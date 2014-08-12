@@ -1,64 +1,71 @@
-.btn-pressable {
+.organizer .btn-pressable {
     border-width: 0px;
+    background-image: none;
+    background-color: transparent;
 }
 
-.icon-tag-name {
+.organizer .btn-pressable.x-btn-pressed {
+    background-image: none;
+    background-color: #bccfe5;
+}
+
+.organizer .icon-tag-name {
     background-image: url('images/organizer_icons.svg') !important;
     background-repeat: no-repeat;
     background-size: 70px;
     background-position: 0px 2px;
 }
 
-.icon-tag-value {
+.organizer .icon-tag-value {
     background-image: url('images/organizer_icons.svg') !important;
     background-repeat: no-repeat;
     background-size: 70px;
     background-position: -18px 2px;
 }
 
-.icon-gob-type {
+.organizer .icon-gob-type {
     background-image: url('images/organizer_icons.svg') !important;
     background-repeat: no-repeat;
     background-size: 70px;
     background-position: 0px -16px;
 }
 
-.icon-gob-name {
+.organizer .icon-gob-name {
     background-image: url('images/organizer_icons.svg') !important;
     background-repeat: no-repeat;
     background-size: 70px;
     background-position: -18px -16px;
 }
 
-.icon-tags {
+.organizer .icon-tags {
     background-image: url('images/organizer_icons.svg') !important;
     background-repeat: no-repeat;
     background-size: 100px;
     background-position: -0px -52px !important;
 }
 
-.icon-gobs {
+.organizer .icon-gobs {
     background-image: url('images/organizer_icons.svg') !important;
     background-repeat: no-repeat;
     background-size: 100px;
     background-position: -26px -52px !important;
 }
 
-.icon-types {
+.organizer .icon-types {
     background-image: url('images/organizer_icons.svg') !important;
     background-repeat: no-repeat;
     background-size: 100px;
     background-position: 0px -79px !important;
 }
 
-.icon-names {
+.organizer .icon-names {
     background-image: url('images/organizer_icons.svg') !important;
     background-repeat: no-repeat;
     background-size: 100px;
     background-position: -26px -79px !important;
 }
 
-.icon-values {
+.organizer .icon-values {
     background-image: url('images/organizer_icons.svg') !important;
     background-repeat: no-repeat;
     background-size: 100px;

@@ -49,6 +49,9 @@ Ext.define('BQ.data.proxy.OrganizerProxy', {
     //startParam: 'offset',
     startParam: undefined,
 
+    filterParam : undefined,
+    sortParam : undefined,
+
     projections: {
         'tag_values': null,
         'gob_names': null,
@@ -125,6 +128,62 @@ Ext.define('BQ.data.proxy.OrganizerProxy', {
         };
     },
 
+    // dima: fix the absense of local filtering by replacing processResponse
+    // with our version with filering added, this may require updates for
+    // extjs 5
+    processResponse: function(success, operation, request, response, callback, scope) {
+        if (Ext.getVersion().major>=5) {
+            Ext.log({ level: "warn" }, 'Overwrite of processResponse is designed for ExtJS 4.2.1, needs replacement!');
+        }
+
+        var me = this,
+            reader,
+            result;
+
+        if (success === true) {
+            reader = me.getReader();
+
+            // Apply defaults to incoming data only for read operations.
+            // For create and update, there will already be a client-side record
+            // to match with which will contain any defaulted in values.
+            reader.applyDefaults = operation.action === 'read';
+
+            result = reader.read(me.extractResponseData(response));
+
+            if (result.success !== false) {
+                //see comment in buildRequest for why we include the response object here
+                Ext.apply(operation, {
+                    response: response,
+                    resultSet: result
+                });
+
+                // dima: begin adding filters
+                var filters = operation.filters;
+                if (filters && filters.length) {
+                    result.records = Ext.Array.filter(result.records, Ext.util.Filter.createFilterFn(filters));
+                }
+                // dima: end adding filters
+
+                operation.commitRecords(result.records);
+                operation.setCompleted();
+                operation.setSuccessful();
+            } else {
+                operation.setException(result.message);
+                me.fireEvent('exception', this, response, operation);
+            }
+        } else {
+            me.setException(operation, response);
+            me.fireEvent('exception', this, response, operation);
+        }
+
+        //this callback is the one that was passed to the 'read' or 'write' function above
+        if (typeof callback == 'function') {
+            callback.call(scope || me, operation);
+        }
+
+        me.afterRequest(request, success);
+    },
+
 });
 
 
@@ -185,9 +244,9 @@ Ext.define('BQ.tree.organizer.Panel', {
         border : false,
     },
 
-    plugins: [{
+    /*plugins: [{
         ptype: 'bufferedrenderer'
-    }],
+    }],*/
 
     initComponent : function() {
         this.url_selected = this.url;
@@ -207,33 +266,31 @@ Ext.define('BQ.tree.organizer.Panel', {
                 itemId: 'btnShowTags',
                 text: 'Textual',
                 iconCls: 'icon-tags',
-                //handler: this.createFolder,
-                //scope: this,
+                handler: this.onTags,
                 tooltip: 'Organize based on textual annotations',
-            },{
+            }, {
                 itemId: 'btnShowGobs',
                 text: 'Graphical',
                 iconCls: 'icon-gobs',
-                //handler: this.deleteSelected,
-                //scope: this,
+                handler: this.onGobs,
                 tooltip: 'Organize based on graphical annotations',
             }, ' ', {
+                hidden: true,
                 itemId: 'btnShowTypes',
                 iconCls: 'icon-types',
-                //handler: this.createFolder,
-                //scope: this,
+                handler: this.updateVisibility,
                 tooltip: 'Use types for organization',
-            },{
+            }, {
+                hidden: true,
                 itemId: 'btnShowNames',
                 iconCls: 'icon-names',
-                //handler: this.deleteSelected,
-                //scope: this,
+                handler: this.updateVisibility,
                 tooltip: 'Use names for organization',
-            },{
+            }, {
+                hidden: true,
                 itemId: 'btnShowValues',
                 iconCls: 'icon-values',
-                //handler: this.deleteSelected,
-                //scope: this,
+                handler: this.updateVisibility,
                 tooltip: 'Use values for organization',
             }],
         }, {
@@ -251,29 +308,26 @@ Ext.define('BQ.tree.organizer.Panel', {
             },
         }];
 
+        var me = this;
         this.store = Ext.create('Ext.data.TreeStore', {
             defaultRootId: 'organizer',
             autoLoad: false,
             autoSync: false,
             //lazyFill: true,
+            filterOnLoad: true,
+            remoteFilter: false,
+            remoteSort: false,
+
             proxy : {
                 type : 'bq-organizer',
                 url : this.url,
                 ownerPanel: this,
                 browserParams: this.browserParams,
-
-                //noCache : false,
-                //appendId: false,
-                //limitParam : 'limit',
-                //pageParam: undefined,
-                //startParam: 'offset',
-
                 reader : {
                     type : 'xml',
                     root : 'resource',
                     record: '>*',
                 },
-
             },
             fields : [{
                 name : 'type',
@@ -322,6 +376,15 @@ Ext.define('BQ.tree.organizer.Panel', {
                 }
             }],
 
+            filters: [
+                function(item) {
+                    if (me.active_query && item.data.value in me.active_query &&
+                        me.active_query[item.data.value] === item.data.type+':'+item.data.attribute)
+                        return false;
+                    return true;
+                }
+            ],
+
             listeners: {
                 scope: this,
                 load: function () {
@@ -341,7 +404,7 @@ Ext.define('BQ.tree.organizer.Panel', {
     },
 
     afterRender : function() {
-        this.callParent();
+        this.callParent(arguments);
         if (!this.store.getProxy().loaded) {
         //if (!this.initialized) {
             this.setLoading(true); //'Loading...');
@@ -379,6 +442,7 @@ Ext.define('BQ.tree.organizer.Panel', {
         }
         nodes.reverse();
 
+        this.active_query = {};
         var path=[], query=[], order=[];
         for (var i=0; (node=nodes[i]); ++i) {
             var sep='', pt='v:';
@@ -389,6 +453,7 @@ Ext.define('BQ.tree.organizer.Panel', {
                 sep = ':';
                 pt = 'n:';
             }
+            this.active_query[node.data.value] = node.data.type+':'+node.data.attribute;
 
             if ( (node.data.attribute==='value' && node.data.type==='tag') ||
                  (node.data.attribute==='name' && node.data.type!=='tag') ) {
@@ -417,6 +482,27 @@ Ext.define('BQ.tree.organizer.Panel', {
             proxy.projections.tag_values = null;
             proxy.projections.gob_names = null;
         }
+
+        // test projection buttons
+        if (!this.queryById('btnShowTags').pressed) {
+            proxy.projections.tag_names = null;
+            proxy.projections.tag_values = null;
+        }
+        if (!this.queryById('btnShowGobs').pressed) {
+            proxy.projections.gob_names = null;
+            proxy.projections.gob_types = null;
+        }
+        if (!this.queryById('btnShowTypes').pressed) {
+            proxy.projections.gob_types = null;
+        }
+        if (!this.queryById('btnShowNames').pressed) {
+            proxy.projections.tag_names = null;
+            proxy.projections.gob_names = null;
+        }
+        if (!this.queryById('btnShowValues').pressed) {
+            proxy.projections.tag_values = null;
+        }
+
 
         var url = path.join('/');
         if (this.url_selected !== url) {
@@ -465,6 +551,64 @@ Ext.define('BQ.tree.organizer.Panel', {
         BQ.ui.error('Error: '+r.statusText );
     },
 
+    reset: function() {
+        //this.getSelectionModel().select(this.getRootNode());
+        //this.collapseAll();
+        this.store.reload();
+    },
+
+    onTags: function(btn) {
+        var btn_t = this.queryById('btnShowTags');
+        var btn_g = this.queryById('btnShowGobs');
+        if (!btn_t.pressed && !btn_g.pressed) {
+            BQ.ui.notification('You need at least one type to organize upon, enabling graphical...');
+            btn_g.toggle(true);
+            this.updateVisibility();
+        } else {
+            this.updateVisibility();
+        }
+    },
+
+    onGobs: function(btn) {
+        var btn_t = this.queryById('btnShowTags');
+        var btn_g = this.queryById('btnShowGobs');
+        if (!btn_t.pressed && !btn_g.pressed) {
+            BQ.ui.notification('You need at least one type to organize upon, enabling textual...');
+            btn_t.toggle(true);
+            this.updateVisibility();
+        } else {
+            this.updateVisibility();
+        }
+    },
+
+    updateVisibility: function(noreload) {
+        var proxy = this.store.getProxy();
+
+        proxy.projections.tag_names = 'true';
+        proxy.projections.gob_types = 'true';
+        proxy.projections.tag_values = null;
+        proxy.projections.gob_names = null;
+
+        if (!this.queryById('btnShowTags').pressed) {
+            proxy.projections.tag_names = null;
+            proxy.projections.tag_values = null;
+        }
+        if (!this.queryById('btnShowGobs').pressed) {
+            proxy.projections.gob_names = null;
+            proxy.projections.gob_types = null;
+        }
+        if (!this.queryById('btnShowTypes').pressed) {
+            proxy.projections.gob_types = null;
+        }
+        if (!this.queryById('btnShowNames').pressed) {
+            proxy.projections.tag_names = null;
+            proxy.projections.gob_names = null;
+        }
+        if (!this.queryById('btnShowValues').pressed) {
+            proxy.projections.tag_values = null;
+        }
+        this.reset();
+    },
 
 });
 
