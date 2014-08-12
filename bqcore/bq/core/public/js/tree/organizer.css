@@ -1,10 +1,48 @@
+/*-------------------------------------------------------
+  scrollbars
+-------------------------------------------------------*/
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background-color: transparent;
+}
+
+::-webkit-scrollbar-track:hover {
+    border-radius: 6px;
+    background-color: rgba(0,0,0,0.2);
+}
+
+::-webkit-scrollbar-thumb {
+    /*background-color: transparent;*/
+    /*-webkit-box-shadow: none;*/
+    border-radius: 6px;
+    background-color: rgba(0,0,0,0.2);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    border-radius: 6px;
+    /*-webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.5);*/
+    background-color: rgba(0,0,0,0.4);
+}
+
+/*-------------------------------------------------------
+  organizer
+-------------------------------------------------------*/
+
 .organizer .btn-pressable {
     border-width: 0px;
+    border-style: hidden;
     background-image: none;
     background-color: transparent;
 }
 
 .organizer .btn-pressable.x-btn-pressed {
+    /*border-width: 1px;
+    border-style: solid;*/
     background-image: none;
     background-color: #bccfe5;
 }
