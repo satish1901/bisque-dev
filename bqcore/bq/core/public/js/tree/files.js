@@ -110,6 +110,9 @@ Ext.define('BQ.data.proxy.Files', {
     pageParam: undefined,
     startParam: 'offset',
 
+    sortParam : undefined,
+    filterParam : undefined,
+
     actionMethods: {
         create : 'POST', // 'PUT'
         read   : 'GET',
