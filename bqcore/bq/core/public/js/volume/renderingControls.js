@@ -261,10 +261,11 @@ Ext.define('BQ.viewer.Volume.gammapanel', {
 
   getVals : function (min, mid, max) {
       var div = 255; //this.getWidth();
-    min /= div;
-    max /= div;
+      min /= div;
+      max /= div;
+      mid /= div;
     var diff = max - min;
-    var x = (mid / div - min) / diff;
+    var x = (mid - min) / diff;
     scale = 4 * x * x;
     return {
       min : min,
@@ -288,14 +289,16 @@ Ext.define('BQ.viewer.Volume.gammapanel', {
         hideLabel : true,
         fieldLabel : 'gamma',
         //increment : 1,
-        values : [0, 128, 255],
+          maxValue: 255,
+          minValue: 0,
+          values : [0, 128, 255],
         listeners : {
           change : function (slider, value, thumb) {
             var div = 200;
             var minThumb = slider.thumbs[0].value;
             var conThumb = slider.thumbs[1].value;
             var maxThumb = slider.thumbs[2].value;
-
+              if(conThumb > maxThumb || conThumb < minThumb) conThumb = 0.5*(minThumb + maxThumb);
             var min = minThumb / div;
             var max = maxThumb / div;
             var diff = max - min;
@@ -318,14 +321,13 @@ Ext.define('BQ.viewer.Volume.gammapanel', {
             }
 
             var p = 4;
+
             this.sceneVolume.setUniform('GAMMA_MIN', vals.min, true, true);
             this.sceneVolume.setUniform('GAMMA_MAX', vals.max, true, true);
             this.sceneVolume.setUniform('GAMMA_SCALE', vals.scale, true, true);
 
             this.data = vals;
               this.panel3D.model.gamma = vals;
-            //this.canvasPanel.redraw();
-            //this.updateColorSvg();
               if(this.histogramSvg){
                   this.panel3D.model.updateHistogram();
                   this.histogramSvg.redraw();
@@ -353,26 +355,56 @@ Ext.define('BQ.viewer.Volume.gammapanel', {
     this.callParent();
   },
 
+    setEqualized : function(){
+        var me = this;
+        var hist = me.histogram;
+        var thresh = 100;
+        var min = 0;
+        do {
+            var histi = 0;
+            for(var c in hist){
+                if(hist[c][min]) histi += hist[c][min];
+            }
+            min++;
+        } while(histi < thresh)
+
+        var max = 255;
+        do {
+            var histi = 0;
+            for(var c in hist){
+                if(hist[c][max]) histi += hist[c][max];
+            }
+            max--;
+        } while(histi < thresh)
+
+
+        var mid = 0.5*(min + max);
+        console.log("blick block blue: ", hist, min, max, mid);
+
+        this.slider0.setValue(0, min);
+        //
+        this.slider0.setValue(2, max);
+        this.slider0.setValue(1, mid);
+        this.data = this.getVals(this.slider0.thumbs[0].value,
+                                 this.slider0.thumbs[1].value,
+                                 this.slider0.thumbs[2].value);
+    },
+
   afterFirstLayout : function () {
+
       var me = this;
-    this.callParent();
-    this.slider0.setMinValue(0.0);
-    this.slider0.setMaxValue(100);
-    var vals = this.getVals(this.slider0.thumbs[0].value,
-                            this.slider0.thumbs[1].value,
-                            this.slider0.thumbs[2].value);
-      this.data = vals;
-      this.slider0.setValue(0, 5);
-      this.slider0.setValue(1, 55);
-      this.slider0.setValue(2, 95);
+      this.callParent();
 
       if(this.panel3D.model.loaded == true){
           me.histogramSvg = new histogramD3(me.histogram, me.gamma, me.svg.svg, me);
+          me.setEqualized();
           me.histogramSvg.redraw();
       }
+
       this.panel3D.on("histogramloaded", function(){
           if(!me.histogramSvg)
                   me.histogramSvg = new histogramD3(me.histogram, me.gamma, me.svg.svg, me);
+          me.setEqualized();
           me.histogramSvg.redraw();
       })
   },
@@ -428,7 +460,7 @@ Ext.define('BQ.viewer.Volume.materianel', {
           scope : me,
         },
         convert : function (v) {
-          return v / 20;
+          return v / 50;
         }
 
       });
@@ -1079,11 +1111,13 @@ Ext.define('BQ.viewer.Volume.clip', {
         uniform_var : 'CLIP_NEAR',
         listeners : {
           change : function (slider, value, thumb) {
-            if (thumb.index == 0) {
-              this.sceneVolume.setUniform('CLIP_NEAR', value / 100, true, true);
-            } else {
-              this.sceneVolume.setUniform('CLIP_FAR', value / 100, true, true);
-            }
+              console.log(value/100);
+              if (thumb.index == 0) {
+                  this.sceneVolume.setUniform('CLIP_NEAR', value / 100, true, true);
+              } else {
+                  this.sceneVolume.setUniform('CLIP_FAR', value / 100, true, true);
+              }
+
           },
           scope : me,
         },

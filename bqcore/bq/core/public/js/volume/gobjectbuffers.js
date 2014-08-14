@@ -42,7 +42,7 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
- 
+
 function gObjectBuffer(volume) {
 	this.volume = volume
 		this.position = new Array();
@@ -67,8 +67,11 @@ gObjectBuffer.prototype.pushPosition = function (p, x, positions) {
 };
 
 gObjectBuffer.prototype.push = function (poly) {}
-
 gObjectBuffer.prototype.allocateMesh = function () {}
+
+gObjectBuffer.prototype.build = function(gObject, ftor){
+    this.push(ftor(gObject));
+}
 
 gObjectBuffer.prototype.buildBuffer = function () {
 	var geometry = new THREE.BufferGeometry();
@@ -108,7 +111,7 @@ function pointBuffer(volume) {
 
 pointBuffer.prototype = new gObjectBuffer();
 
-pointBuffer.prototype.push = function (poly) {
+pointBuffer.prototype.push = function (g) {
 
 	var lcolor = {
 		r : Math.random(),
@@ -116,7 +119,7 @@ pointBuffer.prototype.push = function (poly) {
 		b : Math.random()
 	}
 	this.colors.push(lcolor);
-	this.position.push(poly[0]); // = positions.concat(poly)
+	this.position.push(g.vertices[0]); // = positions.concat(poly)
 	this.index.push(this.index.length);
 
 	//index.push(lindex);// = index.concat(lindex);
@@ -256,9 +259,10 @@ lineBuffer.prototype.isClockWise = function (poly) {
 	return det > 0;
 };
 
-lineBuffer.prototype.push = function (poly) {
+lineBuffer.prototype.push = function (g) {
 	//poly is any object with an x and a y.
 	//loads necessary data onto the vertex buffer
+    var poly = g.vertices;
 	var lindex = [];
 
 	for (var i = 0; i < poly.length - 1; i++) {
@@ -319,9 +323,10 @@ polyBuffer.prototype.isClockWise = function (poly) {
 	return det > 0;
 };
 
-polyBuffer.prototype.push = function (poly) {
+polyBuffer.prototype.push = function (g) {
 	//poly is any object with an x and a y.
 	//loads necessary data onto the vertex buffer
+    var poly = g.vertices;
 	var lindex = [];
 	if (!this.isClockWise(poly))
 		lindex = POLYGON.tessellate(poly, []);
@@ -389,6 +394,112 @@ this.mesh.geometry.computeBoundingBox();
 this.mesh.geometry.verticesNeedUpdate = true;
 };
  */
+
+function BQFactory3D(){
+};
+
+BQFactory3D.set = function(pointBuffer, lineBuffer, polyBuffer){
+    this.PointBuffer = pointBuffer;
+    this.LineBuffer = lineBuffer;
+    this.PolyBuffer = polyBuffer;
+
+    BQFactory3D.buffermap = {
+        //gobject  : BQGObject,
+        point    : this.PointBuffer,
+        rectangle: this.PolyBuffer,
+        square   : this.PolyBuffer,
+        ellipse  : this.PolyBuffer,
+        circle   : this.PolyBuffer,
+        polygon  : this.PolyBuffer,
+        polyline : this.LineBuffer,
+        line     : this.LineBuffer,
+        //label    : BQGObject,
+    }
+};
+
+BQFactory3D.ftormap = {
+    point     : function(g) { return g;},
+    rectangle : function(g) {
+        var p0 = g.vertices[0];
+        var p1 = g.vertices[1];
+        var vertices = [{x: p0.x, y: p0.y, z: p0.z},
+                        {x: p1.x, y: p0.y, z: p0.z},
+                        {x: p1.x, y: p1.y, z: p0.z},
+                        {x: p0.x, y: p1.y, z: p0.z}
+                       ];
+        return  {vertices: vertices, color: g.color};
+    },
+    square    : function(g) { return g;},
+    ellipse    : function(g) {
+        var p0 = g.vertices[0];
+        var p1 = g.vertices[1];
+        var p2 = g.vertices[2];
+
+        var dp0 = {x:p1.x - p0.x,
+                  y:p1.y - p0.y,
+                  z:p1.z - p0.z};
+
+
+        var dp1 = {x:p2.x - p0.x,
+                  y:p2.y - p0.y,
+                  z:p2.z - p0.z};
+
+        var vertices = [];
+        var r0 = Math.sqrt(dp0.x*dp0.x + dp0.y*dp0.y + dp0.z*dp0.z);
+        var r1 = Math.sqrt(dp1.x*dp1.x + dp1.y*dp1.y + dp1.z*dp1.z);
+
+        var b0 = {x: dp0.x/r0, y: dp0.y/r0, z: dp0.z/r0};
+        var b1 = {x:-b0.y, y: b0.x, z: b0.z};
+        console.log(r0, r1, b0, b1);
+        var N = 16;
+        var phase = 0;
+        var npi = 2.0*Math.PI/N;
+        for(var i = 0; i < 16; i++){
+            vertices.push({x: p0.x + r0*b0.x*Math.cos(phase) + r1*b1.x*Math.sin(phase),
+                           y: p0.y + r0*b0.y*Math.sin(phase) + r1*b1.y*Math.cos(phase),
+                           z: p0.z});
+
+            /*
+            vertices.push({x: p0.x + r0*Math.cos(phase),
+                           y: p0.y + r1*Math.sin(phase),
+                           z: p0.z});
+            */
+            phase += npi;
+        }
+        return  {vertices: vertices, color: g.color};
+    },
+    circle    : function(g) {
+        var p0 = g.vertices[0];
+        var p1 = g.vertices[1];
+        var dp = {x:p1.x - p0.x,
+                  y:p1.y - p0.y,
+                  z:p1.z - p0.z};
+
+        var vertices = [];
+        var r = Math.sqrt(dp.x*dp.x + dp.y*dp.y + dp.z*dp.z);
+        var N = 16;
+        var phase = 0;
+        var npi = 2.0*Math.PI/N;
+        for(var i = 0; i < 16; i++){
+            vertices.push({x: p0.x + r*Math.cos(phase),
+                           y: p0.y + r*Math.sin(phase),
+                           z: p0.z});
+            phase += npi;
+        }
+        return  {vertices: vertices, color: g.color};
+    },
+    polygon   : function(g) { return g;},
+    polyline  : function(g) { return g;},
+    polyline  : function(g) { return g;},
+    line      : function(g) { return g;},
+    //label    : BQGObject,
+}
+
+BQFactory3D.make = function(g){
+    var buffer = BQFactory3D.buffermap[g.resource_type];
+    var ftor   = BQFactory3D.ftormap[g.resource_type];
+    buffer.build(g, ftor);
+}
 
 Ext.define('BQ.viewer.Volume.pointControl', {
 	extend : 'Ext.container.Container',
@@ -539,8 +650,8 @@ Ext.define('BQ.viewer.Volume.pointControl', {
 		}
 	},
 
-	loadGObjects : function () {
-		var t = this.panel3D.currentTime;
+    initBuffers : function(){
+        var t = this.panel3D.currentTime;
 		if (this.gObjectBuffers[t]) { //load points in lazily
 			this.updateScene();
 			return;
@@ -564,23 +675,28 @@ Ext.define('BQ.viewer.Volume.pointControl', {
 		//todo: I think we want to build buffers for every frame right here,
 		//      rather than load lazily... if we have 10 million gobjects to
 		//      sift through, then this will get pretty slow
-		for (var i = 0; i < this.gobjects.length; i++) {
-			var g = this.gobjects[i];
-			if (g.vertices[0].t == t) {
-				if (g.resource_type == 'point')
-					cBuffer.push(g.vertices);
+        BQFactory3D.set(cBuffer, lBuffer, pBuffer);
+    },
 
-				if (g.resource_type == 'polyline')
-					lBuffer.push(g.vertices);
+	loadGObjects : function () {
+         var t = this.panel3D.currentTime;
+        this.initBuffers();
+        var tStack = [this];
+        while(tStack.length > 0){
+            var context = tStack[tStack.length-1];
+		    for (var i = 0; i < context.gobjects.length; i++) {
+			    var g = context.gobjects[i];
+                console.log(g);
+                if(g.gobjects.length > 0) tStack.unshift(g);
+                else if (!g.vertices[0].t)     BQFactory3D.make(g);
+                else if (g.vertices[0].t == t) BQFactory3D.make(g);
+		    }
+            tStack.pop();
+        }
 
-				if (g.resource_type == 'polygon')
-					pBuffer.push(g.vertices);
-			}
-		}
-
-		lBuffer.buildBuffer();
-		cBuffer.buildBuffer();
-		pBuffer.buildBuffer();
+	    this.gObjectBuffers[t].points.buildBuffer();
+		this.gObjectBuffers[t].polylines.buildBuffer();
+		this.gObjectBuffers[t].polygons.buildBuffer();
 		this.updateScene();
 		this.rescalePoints();
 	},
