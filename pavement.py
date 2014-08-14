@@ -90,7 +90,7 @@ all will install everything including the feature service""")
     preinstalls = PREINSTALLS.get (installing, [])
 
     for package in preinstalls:
-        sh ("pip install %s" % package)
+        sh ("pip install -i http://biodev.ece.ucsb.edu/py/bisque/dev/+simple %s" % package)
 
     subdirs  = dict (engine=engine_subdirs,
                      server = server_subdirs,
@@ -133,7 +133,7 @@ def setup_developer(options):
     for d in options.subdirs:
         app_dir = path('.') / d
         if os.path.exists(app_dir):
-	    sh('pip install -e %s' % app_dir)
+	    sh('pip install -i http://biodev.ece.ucsb.edu/py/bisque/dev/+simple -e %s' % app_dir)
             #os.chdir(app_dir)
             #sh('python setup.py develop')
             #os.chdir(top)
