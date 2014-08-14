@@ -199,49 +199,81 @@ Ext.define('BQ.volume.transfer.graph', {
 
 
     initBrush: function(){
+        var rect = this.svg.select("#background-"+this.handle);
+
+        var window = this.svg
+            .append("rect")
+            .attr("fill", "rgb(200,200,200)")
+            .attr("opacity", 0.5);
+        var rect = this.svg
+            .append("rect")
+            .attr("width", "100%")
+            .attr("height","100%")
+            .attr("opacity", 0.0);
+
+        var wxy = [];
+        var domain = [];
+        this.select = d3.behavior.drag()
+            .on("dragstart", dragstarted)
+            .on("drag", ondrag)
+            .on("dragend", dragended);
+        rect.call(this.select);
+
         var me = this;
-        var brush = d3.svg.brush()
-            .x(me.xScale)
-            .extent([0, 100])
-            .on("brushstart", brushstart)
-            .on("brush", brushmove)
-            .on("brushend", brushend);
-
-        this.brush = this.svg.append("g")
-            .attr("class", "brush")
-            .call(brush);
-        this.brush
-            .selectAll("rect")
-            .attr("height", 20);
-
-        me.selected = [];
-        function brushstart() {
-            //svg.classed("selecting", true);
+        function dragstarted(d) {
+            var xp = d3.event.sourceEvent.clientX - me.getX();
+            var yp = d3.event.sourceEvent.clientY - me.getY();
+            wxy = [xp,yp];
+            domain = [-1, -1,
+                      -1, -1];
         }
 
-        function brushmove() {
-            var s = d3.event.target.extent();
+        function ondrag(d, i) {
+            var x0 = wxy[0];
+            var y0 = wxy[1];
+            var x1 = d3.event.x;
+            var y1 = d3.event.y;
+            var x = x0 < x1 ? x0 : x1;
+            var y = y0 < y1 ? y0 : y1;
+            var w = Math.abs(x1 - x0);
+            var h = Math.abs(y1 - y0);
+            domain = [x, x + w,
+                      y, y + h];
+            //console.log(wxy[0], wxy[1], xp, yp);
+            window
+                .attr("x", x)
+                .attr("y", y)
+                .attr("width", w)
+                .attr("height",h);
 
-            var circle = me.svg.selectAll("circle")
-                .data(me.data, function(d){return d.id;});
-            me.data.forEach(function(d,i,a){
-                if(d.offset >= s[0] && d.offset <= s[1])
-                    d.selected = true;
-                else
-                    d.selected = false;
-            });
-            circle.attr("fill", function(d){
-                return (d.offset >= s[0] && d.offset <= s[1]) ? "rgb(128,0,0)" : "rgb(128,128,128)";});
         }
 
-        function brushend() {
+        function dragended() {
+            window
+                .attr("width", 0)
+                .attr("height", 0);
+            console.log(me.data);
             me.selected = [];
-            me.data.forEach(function(d,i,a){
-                if(d.selected)
+            me.data.forEach(function(d, i, a){
+                var x = me.xScale(d.offset);
+                var y = me.yScale(d.alpha);
+                if( x > domain[0] && x < domain[1] &&
+                    y > domain[2] && y < domain[3]){
                     me.selected.push(i);
+                    a[i].selected = true;
+                } else a[i].selected = false;
+                me.redraw();
+                //console.log(d, domain,x,y);
+
             });
-            console.log(me.selected);
-        }
+/*
+            d3.select(this).transition()
+                .ease("elastic")
+                .duration(500)
+                .attr("r", 3)
+                .attr("fill",function(d){return d.selected ? "rgb(128,0,0)" : "rgb(128,128,128)";});
+*/
+      }
     },
 
     initCrossHairs : function(){
@@ -359,11 +391,13 @@ Ext.define('BQ.volume.transfer.graph', {
             }
             this.fooled = false;
             this.parentNode.appendChild(this);
-/*
-            var chk = me.svg.select("#circle_"+ me.clicked)
-                .attr("fill",function(d){return d.selected ? "rgb(255,0,0)" : "rgb(255,255,255)";});
-*/
-            //console.log(chk);
+
+            me.selected = [d.id];
+            d.selected = true;
+            me.data.forEach(function(di, i, a){
+                if(di.id != d.id) a[i].selected = false;
+            });
+
             me.clicked = d.id;
             d3.select(this).transition()
                 .ease("elastic")
@@ -417,18 +451,13 @@ Ext.define('BQ.volume.transfer.graph', {
             me.fireEvent('change', me);
         }
 
-        function dragended() {
-            d3.select(this).transition()
-                .ease("elastic")
-                .duration(500)
-                .attr("r", 3)
-                .attr("fill",function(d){return d.selected ? "rgb(128,0,0)" : "rgb(128,128,128)";});
+        function dragended(d) {
+            me.redraw();
         }
 
 
 
         this.histogramSvg = new histogramD3(this.histogram, this.gamma, this.svg, this);
-
         this.svg.append("svg:path")
             .datum(this.data)
             .attr("class", "transfer")
@@ -440,8 +469,6 @@ Ext.define('BQ.volume.transfer.graph', {
 
         this.initCrossHairs();
         this.initBrush();
-
-
 
         function redraw(){
             var chck = me.svg.select("path.transfer").attr("d", me.area);
@@ -497,8 +524,10 @@ Ext.define('BQ.volume.transfer.graph', {
         this.svg.selectAll("circle").transition()
             .ease("quartic -in")
             .duration(500)
+            .attr("r", 3)
             .attr("cx", function(d) { return me.xScale(d.offset); })
-            .attr("cy", function(d) { return me.yScale(d.alpha); });
+            .attr("cy", function(d) { return me.yScale(d.alpha); })
+            .attr("fill",function(d){return d.selected ? "rgb(128,0,0)" : "rgb(128,128,128)";});
         this.histogramSvg.redraw();
         //this.redrawHistogram();
     },
@@ -592,9 +621,9 @@ Ext.define('BQ.volume.transfer.graph', {
             offset: offset,
             alpha:  alpha,
             color: [
-                t*d0.color[0]  + (1.0-t)*d1.color[0],
-                t*d0.color[1]  + (1.0-t)*d1.color[1],
-                t*d0.color[2]  + (1.0-t)*d1.color[2],
+                t*d1.color[0]  + (1.0-t)*d0.color[0],
+                t*d1.color[1]  + (1.0-t)*d0.color[1],
+                t*d1.color[2]  + (1.0-t)*d0.color[2],
             ]};
 
         this.data.splice(stop1, 0, dp);
@@ -680,12 +709,12 @@ Ext.define('BQ.viewer.volume.transfer.editor', {
     initComponent : function () {
 
         this.data = [];
-        var N = 8;
+        var N = 2;
         this.data[0] = {
             id: 0,
             offset: 0,
             alpha: 0,
-            color: [255,255,255]};
+            color: [0,0,0]}
         for(var i = 1; i < N-1; i++){
             this.data[i] = {
                 id: i,
@@ -702,7 +731,7 @@ Ext.define('BQ.viewer.volume.transfer.editor', {
             id: N-1,
             offset: 100,
             alpha: 1,
-            color: [0,0,0]};
+            color: [255,255,255]}
         var panelWidth = 500,
         panelHeight = 500,
         canvasWidth = null,
@@ -785,10 +814,10 @@ Ext.define('BQ.viewer.volume.transfer.editor', {
             height: '100%',
             listeners: {
                 change: function(){
-                    console.log(me.transferGraph.selected);
                     me.transferGraph.selected.forEach(function(d,i,a){
                         me.transferGraph.setColor(d, me.colorPicker.getColorRgb());
                     });
+                     me.transferGraph.fireEvent('change', me);
                 }
             },
             region: 'west'
@@ -824,6 +853,12 @@ Ext.define('BQ.viewer.volume.transfer.editor', {
                 scope : me
             },
         }).hide();
+
+        var menu = Ext.create('Ext.menu.Menu', {
+        id: 'mainMenu',
+        style: {
+            overflow: 'visible'     // For the Combo popup
+        },});
 
         Ext.apply(this, {
             tbar : [{
@@ -889,9 +924,11 @@ Ext.define('BQ.viewer.volume.transfer.editor', {
 					    me.snapBoxX.hide();
                         me.snapBoxY.hide();
                     }}
-		    },
-                    this.snapBoxX,
-                    this.snapBoxY,]
+		    }, this.snapBoxX, this.snapBoxY,{
+                text:'Button w/ Menu',
+                iconCls: 'bmenu',  // <-- icon
+                menu: menu  // assign menu by instance
+            }]
         });
 
         this.items = [
@@ -920,7 +957,7 @@ Ext.define('BQ.viewer.Volume.transfer', {
 
     mixins : ['BQ.viewer.Volume.uniformUpdate'],
     addUniforms : function () {
-        this.tSize = 64;
+        this.tSize = 127;
         this.sceneVolume.initUniform('transfer', "t", null);
         this.sceneVolume.initUniform('TRANSFER_SIZE', "i", this.tSize);
         this.sceneVolume.initUniform('USE_TRANSFER', "i", this.transfer);
@@ -929,7 +966,7 @@ Ext.define('BQ.viewer.Volume.transfer', {
     changed : function () {
         if (!this.transferEditor)
             return;
-        var pixels = new Uint8Array(4*this.tSize);
+        var pixels = new Uint8Array(4*(this.tSize+1));
         var cStop = 0;
         var ci = 0;
         var data = this.transferEditor.data;
@@ -942,7 +979,7 @@ Ext.define('BQ.viewer.Volume.transfer', {
         if (stop1.offset != 100)
             return;
 
-        for (var i = 0; i < this.tSize; i++) {
+        for (var i = 0; i < this.tSize + 1; i++) {
             var stop = data[cStop];
             var nstop = data[cStop+1];
 
@@ -964,12 +1001,14 @@ Ext.define('BQ.viewer.Volume.transfer', {
             //console.log(i,ci, per,t,nstop.offset,stop.offset);
             pixels[4 * i + 0] = (1 - t) * c0[0] + t * c1[0];
             pixels[4 * i + 1] = (1 - t) * c0[1] + t * c1[1];
-            pixels[4 * i + 2] = (1 - t) * c0[2] + t * c1[2];
+            pixels[4 * i + 2] =        (1 - t) * c0[2] + t * c1[2];
             pixels[4 * i + 3] = 255 * ((1 - t) * c0[3] + t * c1[3]);
             ci++;
         }
+        //console.log(pixels);
         var rampTex = this.panel3D.rampTex;
         rampTex = new THREE.DataTexture(pixels, this.tSize, 1, THREE.RGBAFormat);
+        //console.log(rampTex);
         rampTex.needsUpdate = true;
         this.sceneVolume.setUniform('transfer', rampTex);
         this.sceneVolume.setUniform('TRANSFER_SIZE', this.tSize);

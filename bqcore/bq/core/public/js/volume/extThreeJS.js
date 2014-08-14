@@ -88,16 +88,49 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
     alias : 'widget.threejs_panel',
     border : 0,
     frame : false,
-    layout : 'fit',
+   // layout : 'fit',
 
-    constructor : function(config) {
-        this.addEvents({
-            'loaded' : true,
-            'changed' : true,
-        });
+    autoEl: {
+        tag: 'canvas',
+        cls: 'threejsComponent',
+    },
 
-        this.callParent(arguments);
-        return this;
+    listeners: {
+        scope: this,
+        /*
+        el:{
+            mousedown:  this.onMouseDown,
+            mouseup: this.onMouseUp,
+            DOMMouseScroll:this.onMouseWheel,
+            mousewheel: this.onMouseWheel,
+            mousemove:this.onMouseMove,
+        }
+
+
+        //mousedown: this.onMouseDown,
+
+
+        mousedown: {
+            element: 'el',
+            fn: this.onMouseDown
+        },
+        mouseup: {
+            element: 'el',
+            fn: this.onMouseUp
+        },
+        DOMMouseScroll: {
+            element: 'el',
+            fn : this.onMouseWheel,
+        },
+        mousewheel: {
+            element: 'el',
+            fn : this.onMouseWheel,
+        },
+        mousemove: {
+            element: 'el',
+            fn : this.onMouseMove,
+        },
+        */
     },
 
     initComponent : function() {
@@ -110,9 +143,8 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
     },
 
     initScene : function(uniforms) {
-
+        //this.fireEvent("initscene");
     },
-
 
     afterRender : function() {
         this.callParent();
@@ -127,22 +159,18 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
         thisDom.addEventListener('DOMMouseScroll',me.onMouseWheel, false);
 
         this.renderer = new THREE.WebGLRenderer({
+            canvas: thisDom,
             preserveDrawingBuffer : true,
             clearAlpha: 1,
             sortObjects: true,
         });
-
-        this.renderer.setSize(this.getWidth(), this.getHeight());
         this.renderer.setClearColor(0xC0C0C0, 1);
-        thisDom.appendChild(this.renderer.domElement);
 
         var aspect = this.getWidth() / this.getHeight();
 
-        this.camera = new THREE.PerspectiveCamera(20, aspect, .01, 20);
+        this.camera = new THREE.PerspectiveCamera(40, aspect, .01, 20);
         this.camera.position.z = 5.0;
-
         this.controls = new THREE.OrbitControls(this.camera, thisDom);
-
         this.projector = new THREE.Projector();
 
         this.getEl().on({
@@ -160,8 +188,16 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
 
         this.fireEvent('loaded', this);
         this.callParent();
+        this.renderer.render(this.scene, this.camera);
     },
 
+    getPixelWidth : function(){
+        return this.renderer.context.canvas.width;
+    },
+
+    getPixelHeight : function(){
+        return this.renderer.context.canvas.height;
+    },
 
     onMouseWheel : function(event) {
 	    this.zooming = true;
@@ -200,14 +236,11 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
     },
 
     onresize : function() {
+
         var aspect = this.getWidth() / this.getHeight();
         this.camera.aspect = aspect;
         this.camera.updateProjectionMatrix();
-
-        if (this.renderer && this.scene) {
-            this.renderer.setSize(this.getWidth(), this.getHeight());
-            this.renderer.render(this.scene, this.camera);
-        }
+        this.renderer.setSize(this.getWidth(), this.getHeight());
     },
 
     rerender : function() {

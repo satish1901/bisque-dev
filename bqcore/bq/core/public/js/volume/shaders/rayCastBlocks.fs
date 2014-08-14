@@ -189,20 +189,23 @@ float rand(vec2 co){
 }
 
 vec4 getTransfer(float density){
-  float t = density*float(TRANSFER_SIZE);
+  float t = clamp(density,0.0,1.0);//float(TRANSFER_SIZE);
   //density += 0.01*rand(gl_FragCoord.yx/iResolution.xy);
-  //return (density*vec4(1.0) + (1.0 - density)*vec4(0.0));
-  vec4 col = texture2D(transfer, vec2(density,0.0));
-  return clamp(col, 0.0, 1.0);
-
+  vec4 cola = (density*vec4(1.0) + (1.0 - density)*vec4(0.0));
+  vec4 col  = texture2D(transfer, vec2(t,0.0));
+  return col;
 }
 
 vec4 luma2Alpha(vec4 color, float min, float max, float C){
   //float x = sqrt(1.0/9.0*(color[0]*color[0] +color[1]*color[1] +color[2]*color[2]));
   float x = 1.0/3.0*(color[0] + color[1] + color[2]);
-  x = clamp(x, 0.0, 1.0);
+
+  //x = clamp(x, 0.0, 1.0);
   float xi = (x-min)/(max-min);
-  float y = powf(xi,C);
+  xi = clamp(xi,0.0,1.0);
+  //float b = 0.5*(max + min);
+  //float xi = 1.0 / (1.0 + exp(-((x-b)/0.001)));
+  float y = pow(xi,C);
   y = clamp(y,0.0,1.0);
   color[3] = y;
   return(color);
@@ -229,7 +232,7 @@ vec4 sampleAs3DTexture(sampler2D tex, vec4 pos) {
   //return vec4(pos.xyz,0.05);
   pos = 0.5*(1.0 - pos);
   pos[0] = 1.0 - pos[0];
-  //pos = clamp(pos,vec4(0.0),vec4(0.999));
+  //pos = clamp(pos,0.1,0.9);
   float bounds = float(pos[0] < 1.0 && pos[0] > 0.0 &&
                       pos[1] < 1.0 && pos[1] > 0.0 &&
                       pos[2] < 1.0 && pos[2] > 0.0 );
@@ -389,14 +392,20 @@ vec4 integrateVolume(vec4 eye_o,vec4 eye_d,
 
   bool hit = intersectBox(eye_o, eye_d, boxMin, boxMax, tnear,  tfar);
 
+  float eyeDist  = length(eye_o.xyz);
+  float rayMag   = length(eye_d);
 
-  if (!hit || tnear > CLIP_FAR || tfar < CLIP_NEAR) {
+  //float clipNear = eyeDist - (1.0 - CLIP_NEAR);
+  float clipNear = eyeDist/rayMag - 0.275 + 0.55*CLIP_NEAR;
+  float clipFar = eyeDist/rayMag  + 0.275 - 0.55*CLIP_FAR;//+ (0.25 - CLIP_FAR);
+  //clipFar = CLIP_FAR;
+ if (!hit || tnear > clipFar || tfar < clipNear) {
     return vec4(0.5);
   }
 
   // march along ray from back to front, accumulating color
-  float ray_mag = length(eye_d);
-  float tobs   = z_e;
+
+  float tobs   = z_e/rayMag;
   if(tobs < tfar) tfar = tobs;
 
   float tbegin = tfar;
@@ -410,15 +419,17 @@ vec4 integrateVolume(vec4 eye_o,vec4 eye_d,
   csteps = clamp(csteps,0.0,float(maxSteps));
   float isteps = 1.0/csteps;
 
-  float tstep = 0.3*isteps;
-  float tfarsurf = 10.0;
-  float overflow = (tfarsurf - tfar)/tstep;
-  overflow -= floor(overflow); // we don't want uniform planes with dithering
-  float r = 1.0*rand(eye_d.xy);
+  float tstep = 0.5*isteps;
+  float tfarsurf = 1.0;
+  float overflow = mod((tfarsurf - tfar),tstep);
 
-  float t = tbegin + (overflow)*tstep;
-  t = clamp(t, 0.0, CLIP_FAR);
-  t += 1.0*float(DITHERING)*r*tstep;
+  float r = 1.5*rand(eye_d.xy);
+
+  float t = tbegin + overflow;
+  //float t = 0.5*(tnear + tfar) + overflow;
+  //t = clamp(t, 0.0, tbegin);
+  t = clamp(t, 0.0, clipFar);
+  t -= 1.0*float(DITHERING)*r*tstep;
 
 
   float A = 0.0;
@@ -440,14 +451,26 @@ vec4 integrateVolume(vec4 eye_o,vec4 eye_d,
     //float x01 = 0.5*pos.x + 0.5;
     //col = vec4(x01,x01,x01,x01);
     float xfer = float(USE_TRANSFER);
+
     col =   xfer*getTransfer(col[3]) + (1.0 - xfer)*col;
+
+    //col =   getTransfer(col[3]);
     //col = vec4(col[3]);
 #if LIGHTING || PHONG
     vec4 dl = lightPos - pos;
 #endif
 
-#if PHONG
+#define HIGHLIGHT 1
+#if HIGHLIGHT || PHONG
     vec4 N = getNormal(textureAtlas,pos);
+#endif
+
+#if HIGHLIGHT
+    col.xyz *= (1.5 -  N[3]);
+#endif
+
+#if PHONG
+    //vec4 N = getNormal(textureAtlas,pos);
     float lum = N[3];
 
     float dist = length(dl);
@@ -492,8 +515,6 @@ vec4 integrateVolume(vec4 eye_o,vec4 eye_d,
     for(int j=0; j<maxStepsLight; j++){ //*/
       if (j > LIGHT_SAMPLES) break;
 
-
-
       float lti = (float(j))*lstep;
       vec4 Ni   = DISPERSION*(r0*dl + vec4(r1*N1 + r2*N2, 0.0));
 
@@ -537,7 +558,7 @@ vec4 integrateVolume(vec4 eye_o,vec4 eye_d,
     t -= tstep;
     numSteps = i;
 
-    if (i > setMaxSteps || t  < tend || t < CLIP_NEAR ) break;
+    if (i > setMaxSteps || t  < tend || t < clipNear ) break;
   }
 
 
@@ -550,6 +571,8 @@ void main()
   vec4 eyeRay_d, eyeRay_o;
   vec2 fragCoord = gl_FragCoord.xy;
   //gl_FragColor = vec4(gl_FragCoord.xy/iResolution.xy,0.0,0.0);
+  //vec2 coord = gl_FragCoord.xy/iResolution.xy;
+  //gl_FragColor = texture2D(transfer, );
   //return;
 
   //getRay(fragCoord, iResolution.xy, eyeRay_o, eyeRay_d);
@@ -557,7 +580,7 @@ void main()
   eyeRay_d.xy = 2.0*fragCoord.xy/iResolution.xy - 1.0;
   eyeRay_d[0] *= iResolution.x/iResolution.y;
 
-  float fovr = 20.*M_PI/180.;
+  float fovr = 40.*M_PI/180.;
   eyeRay_d[2] = -1.0/tan(fovr*0.5);
   eyeRay_d   = eyeRay_d*viewMatrix;
   eyeRay_d[3] = 0.0;

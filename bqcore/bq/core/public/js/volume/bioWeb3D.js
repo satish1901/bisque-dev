@@ -446,20 +446,20 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
 	onresize : function () {
 		if (this.sceneVolume.uniforms['iResolution']) {
-			var w = this.canvas3D.getWidth();
-			var h = this.canvas3D.getHeight();
+			var w = this.canvas3D.getPixelWidth();
+			var h = this.canvas3D.getPixelHeight();
 			var newRes =
-				new THREE.Vector2(this.canvas3D.getWidth(), this.canvas3D.getHeight());
+				new THREE.Vector2(w, h);
 			this.sceneVolume.setUniform('iResolution', newRes);
 
 			this.accumBuffer0
-				 = new THREE.WebGLRenderTarget(this.getWidth(), this.getHeight(), {
+				 = new THREE.WebGLRenderTarget(w, h, {
 					minFilter : THREE.LinearFilter,
 					magFilter : THREE.NearestFilter,
 					format : THREE.RGBAFormat
 				});
 			this.accumBuffer1
-				 = new THREE.WebGLRenderTarget(this.getWidth(), this.getHeight(), {
+				= new THREE.WebGLRenderTarget(w, h, {
 					minFilter : THREE.LinearFilter,
 					magFilter : THREE.NearestFilter,
 					format : THREE.RGBAFormat
@@ -633,7 +633,6 @@ Ext.define('BQ.viewer.Volume.Panel', {
                     for (var i = 0; i < lookUp.length - spread; i++) {
                         newHist[lookUp[i]] += 1.0/spread * hist[i];
                     }
-                    console.log("fuck");
                     me.fireEvent("histogramupdate", me);
                 }
             }
@@ -902,7 +901,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 	},
 
 	initUniforms : function () {
-		var res = new THREE.Vector2(this.canvas3D.getWidth(), this.canvas3D.getHeight());
+		var res = new THREE.Vector2(this.canvas3D.getPixelWidth(), this.canvas3D.getPixelHeight());
 		this.sceneVolume.initUniform('iResolution', "v2", res);
 
 		this.sceneVolume.initUniform('setMaxSteps', "i", this.setMaxSteps);
@@ -1187,6 +1186,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		items.push({
 			xtype : 'gamma'
 		});
+
 		//items.push({xtype: 'lighting'});
 		//items.push({xtype: 'lightControl'});
 		//debugger;
@@ -1252,7 +1252,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
 	createClipSlider : function () {
 		this.sceneVolume.initUniform('CLIP_NEAR', "f", 0.0);
-		this.sceneVolume.initUniform('CLIP_FAR', "f", 3.0);
+		this.sceneVolume.initUniform('CLIP_FAR', "f", 0.0);
 
 		var me = this;
 		var thisDom = this.getEl().dom;
@@ -1269,10 +1269,11 @@ Ext.define('BQ.viewer.Volume.Panel', {
 				increment : 0.25,
 				listeners : {
 					change : function (slider, value, thumb) {
+                        console.log(value/100, me.canvas3D.camera.position.length());
 						if (thumb.index == 0) {
 							me.sceneVolume.setUniform('CLIP_NEAR', value / 100);
 						} else {
-							me.sceneVolume.setUniform('CLIP_FAR', value / 100);
+							me.sceneVolume.setUniform('CLIP_FAR', 1 - value / 100);
 						}
 					},
 					scope : me,
