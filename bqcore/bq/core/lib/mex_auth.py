@@ -26,7 +26,7 @@ class MexAuthenticatePlugin(object):
             log.debug ("MexIdentify %s" , auth)
             try:
                 user, token = auth[1].split(':')
-                return { 'bisque.mex_user': user, 'bisque.mex_token' : token }
+                return { 'bisque.mex_user': user, 'bisque.mex_token' : token}
             except ValueError:
                 pass
 
@@ -54,6 +54,8 @@ class MexAuthenticatePlugin(object):
 
         if not config.get('has_database'):
             environ['repoze.what.credentials'] = { 'repoze.who.userid': mex_token }
+            identity ['bisque.mex_auth'] = "%s:%s" % (identity.get('bisque.mex_user') , mex_token)
+            log.debug ("NO DB mex_auth=%s", identity['bisque.mex_auth'])
             return mex_token
 
         from bq.data_service.model import ModuleExecution
