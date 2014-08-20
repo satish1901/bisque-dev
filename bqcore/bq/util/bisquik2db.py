@@ -698,24 +698,27 @@ def load_uri (uri, query=False):
     '''
     # Check that we are looking at the right resource.
 
-    net, name, ida, rest = parse_uri(uri)
-    if name == 'data_service': # and ida.startswith('00-'):
-        log.debug("loading resource_uniq %s" % ida)
-        resource = DBSession.query(Taggable).filter_by(resource_uniq = ida)
-    else:
-        if ida.startswith("00-"):
+    try:
+        net, name, ida, rest = parse_uri(uri)
+        if name == 'data_service': # and ida.startswith('00-'):
             log.debug("loading resource_uniq %s" % ida)
             resource = DBSession.query(Taggable).filter_by(resource_uniq = ida)
         else:
-            name, dbcls = dbtype_from_tag(name)
-            log.debug("loading %s -> name/type (%s/%s)(%s) " %(uri, name,  str(dbcls), ida))
-            #resource = DBSession.query(dbcls).get (int (ida))
-            resource = DBSession.query(dbcls).filter (dbcls.id == int(ida))
-    if not query:
-        resource = resource.first()
-    log.debug ("loaded %s", str(resource))
-    return resource
-
+            if ida.startswith("00-"):
+                log.debug("loading resource_uniq %s" % ida)
+                resource = DBSession.query(Taggable).filter_by(resource_uniq = ida)
+            else:
+                name, dbcls = dbtype_from_tag(name)
+                log.debug("loading %s -> name/type (%s/%s)(%s) " %(uri, name,  str(dbcls), ida))
+                #resource = DBSession.query(dbcls).get (int (ida))
+                resource = DBSession.query(dbcls).filter (dbcls.id == int(ida))
+        if not query:
+            resource = resource.first()
+        log.debug ("loaded %s", str(resource))
+        return resource
+    except:
+        log.exception("Failed to load uri %s", uri)
+        return None
 
 converters = {
     'object' : load_uri,
