@@ -25,7 +25,7 @@ Ext.define('BQ.Preferences', {
 
         if (status == 'INIT') {
             BQFactory.request({
-                uri : bq.url('/data_service/system?wpublic=1&view=deep'),
+                uri : BQ.Server.url('/data_service/system?wpublic=1&view=deep'),
                 cb : Ext.bind(this.loadSystem, this, ['LOADED'], true),
             });
         } else if (status == 'LOADED') {

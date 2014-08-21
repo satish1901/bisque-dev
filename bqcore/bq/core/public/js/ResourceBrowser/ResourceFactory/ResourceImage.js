@@ -223,7 +223,7 @@ Ext.define('Bisque.Resource.Image.Compact', {
     },
 
     resourceError : function() {
-        var errorImg = '<img style="display: block; margin-left: auto; margin-right: auto; margin-top: 60px;"' + ' src="' + bq.url('/js/ResourceBrowser/Images/unavailable.png') + '"/>';
+        var errorImg = '<img style="display: block; margin-left: auto; margin-right: auto; margin-top: 60px;"' + ' src="' + BQ.Server.url('/js/ResourceBrowser/Images/unavailable.png') + '"/>';
         this.setData('image', errorImg);
         this.setData('fetched', 1);
         this.update(errorImg);
@@ -651,7 +651,7 @@ Ext.define('Bisque.Resource.Image.Page', {
                     me.mexLoaded = true;
                 },
                 'Select' : function(me, resource) {
-                    window.open(bq.url('/module_service/' + resource.name + '/?mex=' + resource.uri));
+                    window.open(BQ.Server.url('/module_service/' + resource.name + '/?mex=' + resource.uri));
                 },
                 'browserLoad' : function(mb, resQ) {
                     for (var i=resQ.length-1; i>=0; i--)

@@ -273,7 +273,7 @@ Ext.define('BQ.share.Panel', {
                 sortable: false,
                 menuDisabled: true,
                 items: [{
-                    icon : bq.url('../export_service/public/images/delete.png'),
+                    icon : BQ.Server.url('../export_service/public/images/delete.png'),
                     tooltip: 'Delete share',
                     scope: this,
                     handler: this.onRemoveShare,

@@ -13,14 +13,14 @@ Ext.define('Bisque.ResourceBrowser.OperationBar', {
     initComponent : function() {
         this.items = this.items || [{
             xtype: 'button',
-            icon : bq.url('/js/ResourceBrowser/Images/down.png'),
+            icon : BQ.Server.url('/js/ResourceBrowser/Images/down.png'),
             tooltip : 'Available operations for this resource.',
             handler : this.menuHandler,
             scope : this
         }, {
             xtype: 'button',
             itemId : 'btn_delete',
-            icon : bq.url('/js/ResourceBrowser/Images/close.gif'),
+            icon : BQ.Server.url('/js/ResourceBrowser/Images/close.gif'),
             tooltip : 'Delete this resource',
             handler : this.deleteResource,
             scope : this,
@@ -184,7 +184,7 @@ Ext.define('Bisque.ResourceBrowser.OperationBar', {
                         newDS.setMembers(members);
 
                         function openDS(dataset) {
-                            window.location = bq.url('/client_service/view?resource=' + dataset.uri);
+                            window.location = BQ.Server.url('/client_service/view?resource=' + dataset.uri);
                         }
 
 
