@@ -23,10 +23,10 @@ class MexAuthenticatePlugin(object):
             auth =  None
 
         if auth and auth[0].lower() == 'mex':
-            log.debug ("MexIdentify %s" % auth)
+            log.debug ("MexIdentify %s" , auth)
             try:
                 user, token = auth[1].split(':')
-                return { 'bisque.mex_user': user, 'bisque.mex_token' : token }
+                return { 'bisque.mex_user': user, 'bisque.mex_token' : token}
             except ValueError:
                 pass
 
@@ -54,10 +54,12 @@ class MexAuthenticatePlugin(object):
 
         if not config.get('has_database'):
             environ['repoze.what.credentials'] = { 'repoze.who.userid': mex_token }
+            identity ['bisque.mex_auth'] = "%s:%s" % (identity.get('bisque.mex_user') , mex_token)
+            log.debug ("NO DB mex_auth=%s", identity['bisque.mex_auth'])
             return mex_token
 
         from bq.data_service.model import ModuleExecution
-        log.debug("MexAuthenticate:auth %s" % (identity))
+        log.debug("MexAuthenticate:auth %s" , identity)
         try:
             mex_id = int(mex_token)
             mex = DBSession.query(ModuleExecution).get(mex_id)
@@ -75,9 +77,9 @@ class MexAuthenticatePlugin(object):
             owner = identity.get ('bisque.mex_user') or mex.owner.tguser.user_name
             identity ['bisque.mex_auth'] = '%s:%s' % (owner, mex_token)
 
-            log.info ("MEX_IDENTITY %s->%s" % (mex_token, owner))
+            log.info ("MEX_IDENTITY %s->%s"  ,mex_token, owner)
             return owner
-        log.warn("Mex authentication failed due to invalid mex %s" % mex_token)
+        log.warn("Mex authentication failed due to invalid mex %s" , mex_token)
         return None
 
     #def challenge(self, environ, status, app_headers, forget_headers):
