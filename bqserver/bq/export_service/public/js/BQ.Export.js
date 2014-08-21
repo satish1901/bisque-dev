@@ -319,7 +319,7 @@ Ext.define('BQ.Export.Panel', {
                     var browser = Ext.create('Bisque.ResourceBrowser.Dialog', {
                         'height' : '85%',
                         'width' :  '85%',
-                        dataset: bq.url('/data_service/mex'),
+                        dataset: BQ.Server.url('/data_service/mex'),
                         tagQuery: '%22'+uri+'%22',
                         listeners: {
                             scope: this,
@@ -329,12 +329,12 @@ Ext.define('BQ.Export.Panel', {
 
 
                     //var newTab = window.open('', "_blank");
-                    //newTab.location = bq.url('/client_service/view?resource=' + record.get('uri'));
+                    //newTab.location = BQ.Server.url('/client_service/view?resource=' + record.get('uri'));
                 },*/
                 /*itemclick : function(view, record, item, index, e) {
                     // delegate resource viewing to ResourceView Dispatcher
                     var newTab = window.open('', "_blank");
-                    newTab.location = bq.url('/client_service/view?resource=' + record.get('uri'));
+                    newTab.location = BQ.Server.url('/client_service/view?resource=' + record.get('uri'));
                 },*/
             },
 
@@ -398,7 +398,7 @@ Ext.define('BQ.Export.Panel', {
                     sortable : false,
                     align : 'center',
                     items : [{
-                        icon : bq.url('/js/ResourceTagger/Images/add.png'),
+                        icon : BQ.Server.url('/js/ResourceTagger/Images/add.png'),
                         align : 'center',
                         tooltip : 'Add analysis resutls for this resource',
                         scope: this,
@@ -408,7 +408,7 @@ Ext.define('BQ.Export.Panel', {
                             var browser = Ext.create('Bisque.ResourceBrowser.Dialog', {
                                 'height' : '85%',
                                 'width' :  '85%',
-                                dataset: bq.url('/data_service/mex'),
+                                dataset: BQ.Server.url('/data_service/mex'),
                                 tagQuery: '%22'+uri+'%22',
                                 listeners: {
                                     scope: this,
@@ -425,7 +425,7 @@ Ext.define('BQ.Export.Panel', {
                     sortable : false,
                     align : 'center',
                     items : [{
-                        icon : bq.url('../export_service/public/images/delete.png'),
+                        icon : BQ.Server.url('../export_service/public/images/delete.png'),
                         align : 'center',
                         tooltip : 'Remove',
                         handler : function(grid, rowIndex, colIndex) {

@@ -257,7 +257,6 @@ BQFactory.on_xmlresponse = function(params, xmldoc) {
         if (ty=='resource') ty = attribStr(n, 'type');
         var bq = BQFactory.make (ty, uri);
         BQFactory.createFromXml(n, bq, null);
-        bq.doc = bq;
         BQFactory.session[uri] = bq;
     } catch  (err) {
         console.log ("on_xmlresponse error" + err);
@@ -284,7 +283,6 @@ BQFactory.parseBQDocument = function (xmldoc) {
     var ty = n.nodeName;
     var bq = BQFactory.make (ty);
     BQFactory.createFromXml(n, bq, null);
-    bq.doc = bq;
     return bq;
 };
 
@@ -1903,11 +1901,7 @@ BQUser.prototype.afterInitialized = function () {
 };
 
 BQUser.prototype.get_credentials = function( cb) {
-//    var u = new BQUrl(this.uri);
-//    this.server_uri = u.server();
-//    BQFactory.load (this.server_uri+bq.url("/auth_service/credentials/"),
-//                    callback (this, 'on_credentials', cb));
-    BQFactory.load (bq.url('/auth_service/credentials/'));
+    BQFactory.load (BQ.Server.url('/auth_service/credentials/'));
 };
 
 BQUser.prototype.on_credentials = function(cb, cred) {
@@ -2304,7 +2298,7 @@ BQSession.reset_timeout  = function (){
         BQSession.current_session.reset_timeout();
 };
 BQSession.initialize_timeout = function (baseurl, opts) {
-    BQFactory.load (baseurl + bq.url("/auth_service/session"),
+    BQFactory.load (baseurl + BQ.Server.url("/auth_service/session"),
                     function (session) {
                         BQSession.current_session = session;
                         session.set_timeout (baseurl, opts);
@@ -2382,7 +2376,7 @@ BQSession.prototype.cancel_timeout  = function (){
 
 BQSession.prototype.check_timeout = function (baseurl) {
     BQSession.clear_timeout();
-    BQFactory.load (baseurl + bq.url("/auth_service/session"),
+    BQFactory.load (baseurl + BQ.Server.url("/auth_service/session"),
                     function (session){
                         session.session_timeout (baseurl);
                     }, null, false);

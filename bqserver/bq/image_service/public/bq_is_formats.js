@@ -1,9 +1,3 @@
-
-Ext.require([
-    'Ext.data.*',
-    'Ext.grid.*'
-]);
-
 /*
 <codec index="0" name="JPEG">
     <tag name="support" value="reading"/>
@@ -13,46 +7,40 @@ Ext.require([
 </codec>
 */
 
-function getReading(v, record) {
-    var expression = "tag[@name='support']/@value";
-    var r = BQ.util.xpath_string(record.raw, expression);
-    return r.indexOf('reading')!==-1?'yes':'';
-}
-
-function getWriting(v, record) {
-    var expression = "tag[@name='support']/@value";
-    var r = BQ.util.xpath_string(record.raw, expression);
-    return r.indexOf('writing')!==-1?'yes':'';
-}
-
-function getMetadata(v, record) {
-    var expression = "tag[@name='support']/@value";
-    var r = BQ.util.xpath_string(record.raw, expression);
-    return r.indexOf('metadata')!==-1?'yes':'';
-}
-
-function getExtensions(v, record) {
-    var expression = "tag[@name='extensions']/@value";
-    var r = BQ.util.xpath_string(record.raw, expression);
-    return r; //.replace(/\|/gi, ', ');
-}
-
-function getSource(v, record) {
-    var r = BQ.util.xpath_string(record.raw.parentNode, '@name');
-    var v = BQ.util.xpath_string(record.raw.parentNode, '@version');
-    return r + ' ' + v;
-}
-
 Ext.define('BQ.model.Formats', {
     extend : 'Ext.data.Model',
-    fields : [
-        { name: 'Name', mapping: '@name' },
-        { name: 'Reading', convert: getReading },
-        { name: 'Writing', convert: getWriting },
-        { name: 'Metadata', convert: getMetadata },
-        { name: 'Extensions', convert: getExtensions },
-        { name: 'Source', convert: getSource }
-    ],
+    fields : [{
+        name: 'Name',
+        mapping: '@name'
+    }, {
+        name: 'Reading',
+        mapping: "tag[@name='support']/@value",
+        convert: function(v, record) {
+            return v.indexOf('reading')!==-1?'yes':'';
+        },
+    }, {
+        name: 'Writing',
+        mapping: "tag[@name='support']/@value",
+        convert: function(v, record) {
+            return v.indexOf('writing')!==-1?'yes':'';
+        },
+    }, {
+        name: 'Metadata',
+        mapping: "tag[@name='support']/@value",
+        convert: function(v, record) {
+            return v.indexOf('metadata')!==-1?'yes':'';
+        },
+    }, {
+        name: 'Extensions',
+        mapping: "tag[@name='extensions']/@value",
+    }, {
+        name: 'Source',
+        convert: function(v, record) { // dima: incompatible with extjs5
+            var r = BQ.util.xpath_string(record.raw.parentNode, '@name');
+            var v = BQ.util.xpath_string(record.raw.parentNode, '@version');
+            return r + ' ' + v;
+        },
+    }],
     proxy : {
         limitParam : undefined,
         pageParam: undefined,
@@ -62,7 +50,8 @@ Ext.define('BQ.model.Formats', {
         url : '/image_service/formats',
         reader : {
             type :  'xml',
-            root :  'resource',
+            root :  'resource', // ext4
+            //rootProperty : 'resource', // ext5
             record: 'codec',
         }
     },
@@ -72,7 +61,7 @@ Ext.define('BQ.model.Formats', {
 Ext.define('BQ.is.Formats', {
     extend: 'Ext.panel.Panel',
     alias: 'widget.bq-formats',
-    requires: ['Ext.toolbar.Toolbar', 'Ext.tip.QuickTipManager', 'Ext.tip.QuickTip'],
+    requires: ['Ext.toolbar.Toolbar', 'Ext.tip.QuickTipManager', 'Ext.tip.QuickTip', 'Ext.data.*', 'Ext.grid.*'],
     layout: 'fit',
 
     initComponent : function() {
@@ -118,6 +107,8 @@ Ext.define('BQ.is.Formats', {
 // Function to fetch formats list
 //--------------------------------------------------------------------------------------
 
+Ext.namespace('BQ.is');
+
 BQ.is.FORMAT_CONFIDENCE = {
     'imgcnv'     : 1.0,
     'imaris'     : 0.9,
@@ -125,7 +116,7 @@ BQ.is.FORMAT_CONFIDENCE = {
     'bioformats' : 0.5,
 };
 
-function fetchFormatsList( cb_success, cb_error ) {
+BQ.is.fetchFormatsList = function( cb_success, cb_error ) {
     Ext.Ajax.request({
         url: '/image_service/formats',
         callback: function(opts, succsess, response) {
@@ -135,7 +126,7 @@ function fetchFormatsList( cb_success, cb_error ) {
                 else
                     BQ.ui.error(response.responseText);
             else
-                parseFormatsList(response.responseXML, cb_success);
+                BQ.is.parseFormatsList(response.responseXML, cb_success);
         },
         scope: this,
         disableCaching: false,
@@ -146,9 +137,9 @@ function fetchFormatsList( cb_success, cb_error ) {
             requestexception: cb_error,
         },
     });
-}
+};
 
-function parseFormatsList( xml, cb_success ) {
+BQ.is.parseFormatsList = function( xml, cb_success ) {
     var formats = {};
     var fmts = BQ.util.xpath_nodes(xml, 'resource/format');
     var f = undefined;
@@ -168,4 +159,5 @@ function parseFormatsList( xml, cb_success ) {
         }
     }
     if (cb_success) cb_success(formats);
-}
+};
+

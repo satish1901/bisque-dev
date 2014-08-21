@@ -341,7 +341,7 @@ Ext.define('Bisque.Resource.Mex.Grid', {
 
  constructor : function(config)
  {
- window.location = bq.url('/module_service/'+config.resource.name+'/?mex='+config.resource.uri);
+ window.location = BQ.Server.url('/module_service/'+config.resource.name+'/?mex='+config.resource.uri);
  }
  });*/
 

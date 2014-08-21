@@ -17,6 +17,8 @@
     <!-- Bisque styles -->
     <!--<link href="http://fonts.googleapis.com/css?family=Abel|Varela+Round" rel="stylesheet" type="text/css" />-->
     <link href="//fonts.googleapis.com/css?family=Abel|Varela+Round" rel="stylesheet" type="text/css" />
+
+    <!-- ExtJS4 styles -->
     <link rel="stylesheet" type="text/css" href="${tg.url('/extjs/resources/css/ext-all.css')}" />
     <!--<link rel="stylesheet" type="text/css" href="${tg.url('/extjs/resources/css/ext-all-neptune.css')}"/>-->
 
@@ -56,21 +58,32 @@
 
     <!-- ExtJS 4 -->
     <script py:if="tg.config.get('bisque.js_environment', None) == 'production'" type="text/javascript" src="${tg.url('/extjs/ext-all.js')}"></script>
-    <script py:if="tg.config.get('bisque.js_environment', None) != 'production'" type="text/javascript" src="${tg.url('/extjs/ext-all-debug.js')}"></script>
-
+    <script py:if="tg.config.get('bisque.js_environment', None) != 'production'" type="text/javascript" src="${tg.url('/extjs/ext-all-dev.js')}"></script>
 
     <!-- ExtJS 5 -->
     <!--
-    <script>
-        var Ext = Ext || {};
+    <script type="text/javascript">
+        /*var Ext = Ext || {};
         Ext.manifest = {
             compatibility: {
                 ext: '4.2'
             },
-        };
+        };*/
     </script>
     <script py:if="tg.config.get('bisque.js_environment', None) == 'production'" type="text/javascript" src="${tg.url('/extjs/ext-all.js')}"></script>
     <script py:if="tg.config.get('bisque.js_environment', None) != 'production'" type="text/javascript" src="${tg.url('/extjs/ext-all-debug.js')}"></script>
+
+    <script type="text/javascript">
+        // xml reader is used extensively is utilizes .raw property
+        // deprectaed in extjs5, temporary addition back
+        /*Ext.define('App.overrides.data.Model', {
+            override: 'Ext.data.Model',
+            constructor: function (data) {
+                this.raw = Ext.apply({}, data);
+                this.callParent(arguments);
+            },
+        });*/
+    </script>
     -->
 
     <!-- GMaps API -->
@@ -95,7 +108,7 @@
 
 
     ${h.javascript_link(
-    '/js/bq_ui_extjs_fix.js',
+    #'/js/bq_ui_extjs_fix.js',
     # --Bisque JsApi - this needs cleaning and updating--
     '/js/utils.js',
     '/js/bq_api.js',
@@ -104,10 +117,10 @@
     '/js/bq_ui_misc.js',
     '/js/date.js',
     '/js/encoder.js',
+
     # -- ResourceBrowser code --
     '/js/ResourceBrowser/Browser.js',
     '/js/ResourceBrowser/LayoutFactory.js',
-    '/js/ResourceBrowser/Organizer.js',
     '/js/ResourceBrowser/ResourceQueue.js',
     '/js/ResourceBrowser/DatasetManager.js',
     '/js/ResourceBrowser/CommandBar.js',
@@ -131,21 +144,25 @@
     '/js/ResourceBrowser/Misc/GestureManager.js',
 
     # -- Share dialog files --
-    #'/js/Share/BQ.ShareDialog.js',
-    #'/js/Share/BQ.ShareDialog.Offline.js',
     '/js/Share/BQ.share.Dialog.js',
     '/js/Share/BQ.share.Multi.js',
+
+    # -- ResourceTagger --
     '/js/ResourceTagger/ComboBox.js',
     '/js/ResourceTagger/RowEditing.js',
     '/js/ResourceTagger/Tagger.js',
     '/js/ResourceTagger/TaggerOffline.js',
     '/js/ResourceTagger/ResourceRenderers/BaseRenderer.js',
+
     # -- Preferences --
     '/js/Preferences/BQ.Preferences.js',
     '/js/Preferences/PreferenceViewer.js',
     '/js/Preferences/PreferenceTagger.js',
+
     #-- DatasetBrowser --
+    {'file': '/dataset_service/public/dataset_service.js', 'path': h.file_root() + 'bqserver/bq/'},
     '/js/DatasetBrowser/DatasetBrowser.js',
+
     # -- TemplateManager --
     '/js/TemplateManager/TemplateTagger.js',
     '/js/TemplateManager/TemplateManager.js',
@@ -154,13 +171,7 @@
     # -- Exporter --
     {'file': '/export_service/public/js/BQ.Export.js', 'path': h.file_root() + 'bqserver/bq/'},
 
-    # -- Directory Browser --
-    '/extjs/examples/ux/BoxReorderer.js',
-    '/extjs/examples/ux/TabReorderer.js',
-    '/js/TagBrowser/TagBrowser.js',
-
     # -- Tree Organizer --
-    '/js/Organizer/BQ.Organizer.Tree.js',
     '/js/picker/Path.js',
     '/js/tree/files.js',
     '/js/tree/organizer.js',
@@ -236,9 +247,6 @@
     '/js/volume/transferEditorD3.js',
     '/js/volume/bioWeb3D.js',
 
-
-    {'file': '/dataset_service/public/dataset_service.js', 'path': h.file_root() + 'bqserver/bq/'},
-
     **link_kw
     )}
 
@@ -246,10 +254,8 @@
     <!-- Configuration variables   -->
     <script type="text/javascript" >
         // update the configuration in your template
-        bq = Ext.create('BQ.Server', {
-          title : "${tg.config.get('bisque.title', 'CBI Repository')}",
-          root  : "${tg.url('/')}",
-        });
+        BQ.Server.title = "${tg.config.get('bisque.title', 'CBI Repository')}";
+        BQ.Server.root = "${tg.url('/')}";
     </script>
 
     <!-- Derived template configuration includes   -->
@@ -257,8 +263,8 @@
 
     <!-- Bisque Application instantiation   -->
     <script type="text/javascript" >
-        Ext.onReady( function(){
-            BQApp = Ext.create('BQ.Application', bq);
+        Ext.onReady( function() {
+            BQApp = Ext.create('BQ.Application');
         });
     </script>
 
@@ -266,7 +272,7 @@
     ${select('*[local-name()!="title" and not(@id="config" and local-name()="script")]')}
 
     <script type="text/javascript" py:if="tg.flash" >
-        Ext.onReady( function(){
+        Ext.onReady( function() {
             BQ.ui.popup( '${tg.flash_obj.status}', '${tg.flash_obj.message}' );
         });
     </script>

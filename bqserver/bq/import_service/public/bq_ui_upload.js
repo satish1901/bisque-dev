@@ -69,11 +69,9 @@
 
 *******************************************************************************/
 
-// store support for html5 uploads into bq global class
+Ext.namespace('BQ.upload');
 
-if (bq) {
-    bq.html5uploads = (window.File && window.FileList); // && window.FileReader); // - safari does not have FileReader...
-};
+BQ.upload.html5uploads = (window.File && window.FileList); // && window.FileReader); // - safari does not have FileReader...
 
 BQ.upload.annotators = {
     'application/x-zip-compressed' : 'BQ.upload.ZipAnnotator',
@@ -103,6 +101,17 @@ BQ.upload.view_resource = '/client_service/view?resource=';
 // Events:
 //   done
 //--------------------------------------------------------------------------------------
+
+BQ.upload.ANNOTATOR_TYPES = {
+    'zip-bisque':      "BisQue archive (upload and insert BisQue package)",
+    'zip':             "just a compressed file (upload without unpacking)",
+    'zip-multi-file':  "several unrelated images (unpack and insert each file individually)",
+    'zip-time-series': "one time-series composed by a set of files (unpack and compose)",
+    'zip-z-stack':     "one z-stack composed by a set of files (unpack and compose)",
+    'zip-5d-image':    "one 5-D image composed by a set of files (unpack and compose)",
+    //'zip-volocity':    "Volocity (*.mvd2) image (unpack and insert)",
+    'zip-proprietary':    "one proprietary series composed by a set of files (ex: Volocity, AndorIQ, Leica Lei, Olympus OIF, ...) (unpack and insert)",
+};
 
 Ext.define('BQ.upload.Annotator', {
     extend: 'Ext.form.Panel',
@@ -141,17 +150,6 @@ Ext.define('BQ.upload.Annotator', {
 // a specification for requesting additional annotations about the ZIP file
 //--------------------------------------------------------------------------------------
 
-BQ.upload.Annotator.TYPES = {
-    'zip-bisque':      "BisQue archive (upload and insert BisQue package)",
-    'zip':             "just a compressed file (upload without unpacking)",
-    'zip-multi-file':  "several unrelated images (unpack and insert each file individually)",
-    'zip-time-series': "one time-series composed by a set of files (unpack and compose)",
-    'zip-z-stack':     "one z-stack composed by a set of files (unpack and compose)",
-    'zip-5d-image':    "one 5-D image composed by a set of files (unpack and compose)",
-    //'zip-volocity':    "Volocity (*.mvd2) image (unpack and insert)",
-    'zip-proprietary':    "one proprietary series composed by a set of files (ex: Volocity, AndorIQ, Leica Lei, Olympus OIF, ...) (unpack and insert)",
-};
-
 Ext.define('BQ.upload.ZipAnnotator', {
     extend: 'BQ.upload.Annotator',
     alias: 'widget.uploadzipannotator',
@@ -159,8 +157,8 @@ Ext.define('BQ.upload.ZipAnnotator', {
     initComponent : function() {
 
         var types_data = [];
-        for (var t in BQ.upload.Annotator.TYPES)
-            types_data.push({ 'type': t, 'description': BQ.upload.Annotator.TYPES[t], });
+        for (var t in BQ.upload.ANNOTATOR_TYPES)
+            types_data.push({ 'type': t, 'description': BQ.upload.ANNOTATOR_TYPES[t], });
         this.store_types = Ext.create('Ext.data.Store', {
             fields: ['type', 'description'],
             data : types_data,
@@ -293,8 +291,6 @@ Ext.define('BQ.upload.ZipAnnotator', {
 
 });
 
-
-
 //--------------------------------------------------------------------------------------
 // BQ.ui.UploadItem
 // item manages one file upload aspects, UI, progress and intentiates the actual uploader
@@ -303,6 +299,36 @@ Ext.define('BQ.upload.ZipAnnotator', {
 //   filecanceled
 //   fileerror
 //--------------------------------------------------------------------------------------
+
+BQ.upload.STATES = {
+    'ANNOTATING': 0,
+    'READY'     : 1,
+    'UPLOADING' : 2,
+    'INGESTING' : 3,
+    'DONE'      : 4,
+    'CANCELED'  : 5,
+    'ERROR'     : 6,
+};
+
+BQ.upload.STATE_STRINGS = {
+    0: 'Needs annotations',
+    1: 'Ready',
+    2: 'Uploading',
+    3: 'Ingesting',
+    4: 'Done',
+    5: 'Canceled',
+    6: 'Error',
+};
+
+BQ.upload.PERMISSIONS = {
+    'PRIVATE': 0,
+    'PUBLISHED': 1,
+};
+
+BQ.upload.PERMISSIONS_STRINGS = {
+    0: 'private',
+    1: 'published',
+};
 
 var formatFileSize = function (sz) {
     if (typeof sz !== 'number')
@@ -330,7 +356,7 @@ Ext.define('BQ.upload.Item', {
     },
 
     initComponent : function() {
-        this.state = BQ.upload.Item.STATES.READY;
+        this.state = BQ.upload.STATES.READY;
 
         this.progress = Ext.create('Ext.ProgressBar', {
             text:'Ready',
@@ -374,7 +400,7 @@ Ext.define('BQ.upload.Item', {
             xtype: 'button',
             itemId: 'button_permission',
             cls: 'flatbutton button-permission',
-            text: BQ.upload.Item.PERMISSIONS_STRINGS[BQ.upload.Item.PERMISSIONS.PRIVATE],
+            text: BQ.upload.PERMISSIONS_STRINGS[BQ.upload.PERMISSIONS.PRIVATE],
             scale: 'small',
             tooltip: 'Change file access permission',
             scope: this,
@@ -395,7 +421,7 @@ Ext.define('BQ.upload.Item', {
 
         this.annotator = undefined;
         if (file_type in BQ.upload.annotators) {
-            this.state = BQ.upload.Item.STATES.ANNOTATING;
+            this.state = BQ.upload.STATES.ANNOTATING;
             this.progress.setVisible(false);
             this.fileName.setVisible(false);
             this.fileSize.setVisible(false);
@@ -415,20 +441,20 @@ Ext.define('BQ.upload.Item', {
 
     updateUi : function() {
         if (!this.progress) return;
-        if (this.state === BQ.upload.Item.STATES.ERROR && this.error)
-            this.progress.updateText( BQ.upload.Item.STATE_STRINGS[this.state] +': '+this.error);
+        if (this.state === BQ.upload.STATES.ERROR && this.error)
+            this.progress.updateText( BQ.upload.STATE_STRINGS[this.state] +': '+this.error);
         else
-            this.progress.updateText( BQ.upload.Item.STATE_STRINGS[this.state] );
+            this.progress.updateText( BQ.upload.STATE_STRINGS[this.state] );
 
-        if (this.state<BQ.upload.Item.STATES.DONE) {
+        if (this.state<BQ.upload.STATES.DONE) {
             this.progress.removeCls( 'error' );
             this.progress.removeCls( 'done' );
         } else
-        if (this.state==BQ.upload.Item.STATES.DONE) {
+        if (this.state==BQ.upload.STATES.DONE) {
             this.progress.removeCls( 'error' );
             this.progress.addCls( 'done' );
         } else
-        if (this.state>BQ.upload.Item.STATES.DONE) {
+        if (this.state>BQ.upload.STATES.DONE) {
             this.progress.addCls( 'error' );
             this.progress.removeCls( 'done' );
         }
@@ -464,31 +490,31 @@ Ext.define('BQ.upload.Item', {
 
     togglePermission : function() {
         if (this.permission)
-            this.setPermission( BQ.upload.Item.PERMISSIONS.PRIVATE );
+            this.setPermission( BQ.upload.PERMISSIONS.PRIVATE );
         else
-            this.setPermission( BQ.upload.Item.PERMISSIONS.PUBLISHED );
+            this.setPermission( BQ.upload.PERMISSIONS.PUBLISHED );
     },
 
     setPermission : function(new_perm) {
         var btn = this.queryById('button_permission');
-        if (this.state >= BQ.upload.Item.STATES.UPLOADING) return;
+        if (this.state >= BQ.upload.STATES.UPLOADING) return;
         this.permission = new_perm;
         if (this.permission)
             btn.addCls('published');
         else
             btn.removeCls('published');
-        btn.setText(BQ.upload.Item.PERMISSIONS_STRINGS[this.permission]);
+        btn.setText(BQ.upload.PERMISSIONS_STRINGS[this.permission]);
     },
 
     isReadyToUpload : function() {
-        return (this.getState && this.getState()===BQ.upload.Item.STATES.READY);
+        return (this.getState && this.getState()===BQ.upload.STATES.READY);
     },
 
     upload : function() {
         if (!this.isReadyToUpload()) return;
         //this.time_started = new Date();
         this.error = undefined;
-        this.state = BQ.upload.Item.STATES.UPLOADING;
+        this.state = BQ.upload.STATES.UPLOADING;
         this.constructAnnotation();
         this.fup = new BQFileUpload(this.file, {
             uploadComplete: Ext.Function.bind( this.onComplete, this ),
@@ -505,8 +531,8 @@ Ext.define('BQ.upload.Item', {
     },
 
     cancel : function(noui) {
-        if (this.state >= BQ.upload.Item.STATES.DONE) return;
-        this.state = BQ.upload.Item.STATES.CANCELED;
+        if (this.state >= BQ.upload.STATES.DONE) return;
+        this.state = BQ.upload.STATES.CANCELED;
         //BQ.ui.notification('Cancel');
         if (this.fup) {
             this.fup.cancel();
@@ -524,7 +550,7 @@ Ext.define('BQ.upload.Item', {
     onTransferEnd : function(e) {
         //BQ.ui.notification('ended');
         this.time_finished_upload = new Date();
-        this.state = BQ.upload.Item.STATES.INGESTING;
+        this.state = BQ.upload.STATES.INGESTING;
         this.progress.updateProgress( 1.0 );
         this.updateUi();
     },
@@ -532,7 +558,7 @@ Ext.define('BQ.upload.Item', {
     doProgress : function() {
         this.progress_timeout = null; clearTimeout (this.progress_timeout);
         var e = this._progress_event;
-        if (this.state != BQ.upload.Item.STATES.UPLOADING) return;
+        if (this.state != BQ.upload.STATES.UPLOADING) return;
         this.updateUi();
         var elapsed = (new Date() - this.time_started)/1000;
         this.progress.updateProgress( e.loaded/e.total, 'Uploading at ' + formatFileSize(e.loaded/elapsed) +'/s' );
@@ -546,7 +572,7 @@ Ext.define('BQ.upload.Item', {
 
     onComplete : function(e) {
         this.progress.updateProgress( 1.0 );
-        this.state = BQ.upload.Item.STATES.ERROR;
+        this.state = BQ.upload.STATES.ERROR;
         this.time_finished = new Date();
         if (!this.time_finished_upload)
             this.time_finished_upload = this.time_finished;
@@ -562,7 +588,7 @@ Ext.define('BQ.upload.Item', {
 
             if (this.resource.uri) {
                 // image inserted correctly
-                this.state = BQ.upload.Item.STATES.DONE;
+                this.state = BQ.upload.STATES.DONE;
                 var s = 'Uploaded <a href="'+BQ.upload.view_resource+this.resource.uri+'">'+this.file.name+'</a>'+' as <b>'+this.resource.resource_type+'</b> '+timing;
                 this.fileName.setText(s);
             } else { // error returned in an XML doc
@@ -579,13 +605,13 @@ Ext.define('BQ.upload.Item', {
     },
 
     onFailed : function(e) {
-        this.state = BQ.upload.Item.STATES.ERROR;
+        this.state = BQ.upload.STATES.ERROR;
         this.updateUi();
         this.fireEvent( 'fileerror', this);
     },
 
     onCanceled : function(e) {
-        this.state = BQ.upload.Item.STATES.CANCELED;
+        this.state = BQ.upload.STATES.CANCELED;
         this.updateUi();
         this.fireEvent( 'filecanceled', this);
     },
@@ -608,10 +634,10 @@ Ext.define('BQ.upload.Item', {
 
         // add access permission annotation
         if (this.permission) {
-            resource.permission =  BQ.upload.Item.PERMISSIONS_STRINGS[this.permission];
+            resource.permission =  BQ.upload.PERMISSIONS_STRINGS[this.permission];
             //if (!this.annotation_dict)
             //    this.annotation_dict = {};
-            //this.annotation_dict['permission'] = BQ.upload.Item.PERMISSIONS_STRINGS[this.permission];
+            //this.annotation_dict['permission'] = BQ.upload.PERMISSIONS_STRINGS[this.permission];
         }
 
         // add tagger annotations
@@ -632,48 +658,18 @@ Ext.define('BQ.upload.Item', {
     },
 
     onAnnotated : function(ann) {
-        this.state = BQ.upload.Item.STATES.READY;
+        this.state = BQ.upload.STATES.READY;
         this.annotator.destroy();
         this.setHeight( this.height_normal );
         this.progress.setVisible(true);
         this.fileName.setVisible(true);
         this.fileSize.setVisible(true);
         this.annotation_dict = ann;
-        var s = this.fileName.text+' - '+BQ.upload.Annotator.TYPES[ann.type];
+        var s = this.fileName.text+' - '+BQ.upload.ANNOTATOR_TYPES[ann.type];
         this.fileName.setText(s);
     },
 
 });
-
-BQ.upload.Item.STATES = {
-    'ANNOTATING': 0,
-    'READY'     : 1,
-    'UPLOADING' : 2,
-    'INGESTING' : 3,
-    'DONE'      : 4,
-    'CANCELED'  : 5,
-    'ERROR'     : 6,
-};
-
-BQ.upload.Item.STATE_STRINGS = {
-    0: 'Needs annotations',
-    1: 'Ready',
-    2: 'Uploading',
-    3: 'Ingesting',
-    4: 'Done',
-    5: 'Canceled',
-    6: 'Error',
-};
-
-BQ.upload.Item.PERMISSIONS = {
-    'PRIVATE': 0,
-    'PUBLISHED': 1,
-};
-
-BQ.upload.Item.PERMISSIONS_STRINGS = {
-    0: 'private',
-    1: 'published',
-};
 
 //--------------------------------------------------------------------------------------
 // BQ.upload.Panel
@@ -691,9 +687,9 @@ BQ.upload.Item.PERMISSIONS_STRINGS = {
 BQ.upload.UPLOAD_STRING = 'Uploading';
 
 BQ.upload.DATASET_CONFIGS = {
-    'NORMAL'   : 0,
-    'REQUIRE'  : 1,
-    'PROHIBIT' : 2,
+    NORMAL   : 0,
+    REQUIRE  : 1,
+    PROHIBIT : 2,
 };
 
 BQ.upload.FS_FILES_IGNORE = {
@@ -722,9 +718,9 @@ BQ.upload.DEFAULTS = {
 };
 
 Ext.define('BQ.upload.Panel', {
-    alias: 'widget.upload',
     extend: 'Ext.panel.Panel',
-    requires: ['Ext.toolbar.Toolbar', 'Ext.tip.QuickTipManager', 'Ext.tip.QuickTip'],
+    alias: 'widget.bq_upload',
+    requires: ['Ext.toolbar.Toolbar', 'Ext.tip.QuickTipManager', 'Ext.tip.QuickTip', 'BQ.picker.Path', 'Bisque.ResourceTaggerOffline'],
 
     border: 0,
     autoScroll: true,
@@ -740,7 +736,7 @@ Ext.define('BQ.upload.Panel', {
 
         this.processConfig();
         this.setLoading('Fetching supported formats...');
-        fetchFormatsList( callback(this, this.onFormatsList), undefined );
+        BQ.is.fetchFormatsList( callback(this, this.onFormatsList), undefined );
 
         // footer's toolbar elements
 
@@ -828,7 +824,6 @@ Ext.define('BQ.upload.Panel', {
             width: 350,
             cls: 'tabs',
             deferredRender: true,
-
         });
 
         this.uploadPanel = Ext.create('Ext.container.Container', {
@@ -909,11 +904,11 @@ Ext.define('BQ.upload.Panel', {
                 menu: [{
                     text: 'Set all published',
                     scope: this,
-                    handler: function() { this.setPermissions(BQ.upload.Item.PERMISSIONS.PUBLISHED); },
+                    handler: function() { this.setPermissions(BQ.upload.PERMISSIONS.PUBLISHED); },
                 }, {
                     text: 'Set all private',
                     scope: this,
-                    handler: function() { this.setPermissions(BQ.upload.Item.PERMISSIONS.PRIVATE); },
+                    handler: function() { this.setPermissions(BQ.upload.PERMISSIONS.PRIVATE); },
                 }],
             }, {
                 xtype: 'tbfill',
@@ -981,6 +976,7 @@ Ext.define('BQ.upload.Panel', {
         }];
 
         this.callParent();
+        if (BQ.Preferences)
         BQ.Preferences.get({
             key : 'Uploader',
             callback : Ext.bind(this.onPreferences, this),
@@ -1281,7 +1277,7 @@ Ext.define('BQ.upload.Panel', {
         var total = this.total;
         this.progress.updateProgress( this.files_uploaded/total, 'Uploaded '+this.files_uploaded+'/'+total );
 
-        var e = this.uploadPanel.items.findBy( function(){ return (this.getState && this.getState()<BQ.upload.Item.STATES.DONE); } );
+        var e = this.uploadPanel.items.findBy( function(){ return (this.getState && this.getState()<BQ.upload.STATES.DONE); } );
         if (!e && this.files_uploaded>=total && !this.all_done) {
             this.all_done = true;
 
@@ -1358,7 +1354,7 @@ Ext.define('BQ.upload.Panel', {
     testFailed : function () {
         var failed=0;
         this.uploadPanel.items.each( function() {
-            if (this.state != BQ.upload.Item.STATES.DONE)
+            if (this.state != BQ.upload.STATES.DONE)
                 failed++;
         });
         if (failed>0)
@@ -1371,11 +1367,11 @@ Ext.define('BQ.upload.Panel', {
     reupload : function () {
         this.uploadPanel.setLoading('Removing succeeded uploads...');
         this.uploadPanel.items.each( function() {
-            if (this.state == BQ.upload.Item.STATES.DONE) {
+            if (this.state == BQ.upload.STATES.DONE) {
                 this.destroy();
             } else
-            if (this.state > BQ.upload.Item.STATES.DONE) {
-                this.setState( BQ.upload.Item.STATES.READY );
+            if (this.state > BQ.upload.STATES.DONE) {
+                this.setState( BQ.upload.STATES.READY );
             }
         });
         this.btn_reupload.setVisible(false);
@@ -1387,8 +1383,8 @@ Ext.define('BQ.upload.Panel', {
     onClose : function() {
         var uploading=0;
         this.uploadPanel.items.each( function() {
-            if (this.state==BQ.upload.Item.STATES.UPLOADING ||
-                this.state==BQ.upload.Item.STATES.INGESTING) uploading++;
+            if (this.state==BQ.upload.STATES.UPLOADING ||
+                this.state==BQ.upload.STATES.INGESTING) uploading++;
         });
         if (uploading<=0) return;
         return 'Upload in progress, by closing the page you will cancel all uploads!';
@@ -1594,7 +1590,6 @@ Ext.define('BQ.upload.Panel', {
 
 });
 
-
 //--------------------------------------------------------------------------------------
 // BQ.upload.Dialog
 // Instantiates upload panel in a modal window
@@ -1671,3 +1666,4 @@ Ext.define('BQ.panel.Web', {
             loader.load();
     },
 });
+

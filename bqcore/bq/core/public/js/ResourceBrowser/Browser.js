@@ -110,7 +110,7 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
     constructor : function(config) {
         //Prefetch the loading spinner
         var imgSpinner = new Image();
-        imgSpinner.src = bq.url('/js/ResourceBrowser/Images/loading.gif');
+        imgSpinner.src = BQ.Server.url('/js/ResourceBrowser/Images/loading.gif');
 
         this.westPanel = Ext.create('Ext.tab.Panel', { //Ext.create('Ext.panel.Panel', {
             region : 'west',

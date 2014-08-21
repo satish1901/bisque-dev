@@ -5,21 +5,12 @@ Ext.require(['Ext.util.Observable']);
 Ext.require(['Ext.container.Viewport']);
 
 Ext.define('BQ.Server', {
-    extend: 'Ext.util.Observable',
+    //extend: 'Ext.util.Observable',
+    singleton: true,
 
+    title: 'BisQue',
     root: '/',
     baseCSSPrefix: 'bq-',
-
-    constructor: function(config) {
-        if (typeof(bq) == "undefined")
-            bq = {};
-        /*
-        config = config || {};
-        Ext.apply(config, {root: '/'}, bq);
-        this.initConfig(config);
-        */
-        return this.callParent(arguments);
-    },
 
     url : function (base, params) {
         if (this.root && this.root != "/")
@@ -29,7 +20,7 @@ Ext.define('BQ.Server', {
 });
 
 // instantiate a global variable, it might get owerwritten later
-var bq = Ext.create('BQ.Server');
+//var bq = Ext.create('BQ.Server');
 
 Ext.namespace('BQ.Date');
 BQ.Date.patterns = {
@@ -120,7 +111,7 @@ Ext.define('BQ.Application', {
     {
         // Load user information for all users.
         BQFactory.request({
-            uri :   bq.url('/data_service/user?view=deep&wpublic=true'),
+            uri :   BQ.Server.url('/data_service/user?view=deep&wpublic=true'),
             cb  :   Ext.bind(userInfoLoaded, this)
         });
 
@@ -150,12 +141,14 @@ Ext.define('BQ.Application', {
     onGotUser: function() {
         this.user = BQSession.current_session.user;
         this.fireEvent( 'gotuser', BQSession.current_session.user);
+        if (BQ.Preferences)
         BQ.Preferences.loadUser(BQSession.current_session.user, 'INIT');
     },
 
     onNoUser: function() {
         this.user = null;
         this.fireEvent( 'nouser');
+        if (BQ.Preferences)
         BQ.Preferences.loadUser(null, 'LOADED');
     },
 
@@ -192,18 +185,11 @@ Ext.define('BQ.Application', {
 
 Ext.define('BQ.Application.Window', {
     extend: 'Ext.container.Viewport',
-    requires: ['Ext.tip.QuickTipManager', 'Ext.tip.QuickTip'],
+    requires: ['Ext.tip.QuickTipManager', 'Ext.tip.QuickTip', 'Ext.layout.container.Border'],
 
     id : 'appwindow',
     layout : 'border',
     border : false,
-
-    /*
-    constructor: function(config) {
-        this.initConfig(config);
-        return this.callParent(arguments);
-    },
-    */
 
     initComponent : function() {
         Ext.tip.QuickTipManager.init();
@@ -214,7 +200,7 @@ Ext.define('BQ.Application.Window', {
           content = undefined;
         }
 
-        this.toolbar = Ext.create('BQ.Application.Toolbar', { toolbar_opts: bq.toolbar_opts });
+        this.toolbar = Ext.create('BQ.Application.Toolbar', { toolbar_opts: BQ.Server.toolbar_opts });
         this.items = [
                 this.toolbar, {
                     region : 'center',
@@ -270,10 +256,6 @@ Ext.define('BQ.Application.Window', {
     },
 
 });
-
-BQ.Application.Window.prototype.test = function () {
-  alert('test');
-}
 
 Ext.define('BisqueServices', {
     singleton : true,

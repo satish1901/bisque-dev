@@ -323,7 +323,7 @@ Ext.define('BQ.selectors.Resource', {
                     }, scope: this },
         });
     },
-    
+
     selectQuery: function() {
         var browser  = new Bisque.QueryBrowser.Dialog({
             'height' : '85%',
@@ -332,10 +332,10 @@ Ext.define('BQ.selectors.Resource', {
             query_resource_type: 'image',
             listeners: {'Select': function(me, tag_query) {
                         //this.onselected(resource);
-                        var i = this; 
+                        var i = this;
                         this.tag_query = tag_query // passing the tag_query to createQueryViewer
                         var r = '/data_service/image?tag_query='+tag_query;
-                        setTimeout(function() { 
+                        setTimeout(function() {
                             BQFactory.request( { uri: r,
                                  cb: callback(i, 'onselectedquery'),
                                  errorcb: callback(i, 'onerror'),
@@ -368,7 +368,7 @@ Ext.define('BQ.selectors.Resource', {
                 var browser  = Ext.create('Bisque.ResourceBrowser.Dialog', {
                     'height' : '85%',
                     'width' :  '85%',
-                    dataset: bq.url('/data_service/'+res_type),
+                    dataset: BQ.Server.url('/data_service/'+res_type),
                     tagQuery: template.query,
                     listeners: {
                         'Select': function(me, resource) { this.onselected(resource); },
@@ -404,8 +404,8 @@ Ext.define('BQ.selectors.Resource', {
         R.gobjects = this.gobs;
         this.onselected(R);
     },
-    
-    
+
+
 
     onselected: function(R) {
         this.selected_resource = R;
@@ -451,7 +451,7 @@ Ext.define('BQ.selectors.Resource', {
             this.onImage(this.selected_resource);
         } else if (this.selected_resource instanceof BQDataset) {
             var me = this;
-            
+
             this.selected_resource.getMembers(function (dataset) {
                 // Sometime values are loaded instances (image) and sometimes not!
                 var uri = dataset.members[0].uri || dataset.values[0].value;
@@ -459,7 +459,7 @@ Ext.define('BQ.selectors.Resource', {
                                      cb: callback(me, 'onImage'),
                                      errorcb: callback(me, 'onerror'),
                                    }); });
-            
+
 
             // BQFactory.request({
             //     uri: this.selected_resource.getMembers().values[0].value,
@@ -474,34 +474,34 @@ Ext.define('BQ.selectors.Resource', {
         this.fireEvent( 'changed', this, this.selected_resource );
         if (!this.validate()) return;
     },
-    
+
     /*
-     * 
+     *
      *  Query View (since there are no query templates a list
      *     of items queried are displayed
-     * 
+     *
      */
     onselectedquery: function(R){
         this.selected_resource = R;
         this.resource.value = R.uri;
         this.resource.type = R.resource_type;
-        
+
         var increment = this.resource.gobjects.length<1?20:20;
-        
+
         if (this.resourcePreview) {
             this.setHeight( this.getHeight() - this.resourcePreview.getHeight() - increment);
             this.resourcePreview.destroy();
         }
-        
+
         this.resourcePreview = this.createQueryViewer(R);
 
         this.add(this.resourcePreview);
         this.setHeight( this.getHeight() + this.resourcePreview.getHeight() + increment );
-        
+
         this.fireEvent( 'changed', this, this.selected_resource );
-        if (!this.validate()) return; 
+        if (!this.validate()) return;
     },
-    
+
     //create a view for the query
     //  The veiw is just a list of tags and values used to query
     createQueryViewer: function(R) {
@@ -512,7 +512,7 @@ Ext.define('BQ.selectors.Resource', {
                 {type: 'string', name: 'Name'},
                     ]
             });
-        
+
         var querytags = [];
         d_query=this.tag_query.replace(/"/g, ""); //removing '"'
         d_query=d_query.split(' AND ');
@@ -525,7 +525,7 @@ Ext.define('BQ.selectors.Resource', {
             model: 'QueryModel',
             data: querytags
         });
-        
+
         var queryView = Ext.create('Ext.grid.Panel', {
             store: store,
             autoScroll: true,
@@ -556,7 +556,7 @@ Ext.define('BQ.selectors.Resource', {
             viewConfig: {
                 stripeRows: true,
                 //enableTextSelection: true
-            }                   
+            }
         });
         delete this.tag_query  // no longer need tag_query
         return queryView
@@ -1099,7 +1099,7 @@ Ext.define('BQ.selectors.Mex', {
         var browser  = Ext.create('Bisque.ResourceBrowser.Dialog', {
             'height' : '85%',
             'width' :  '85%',
-            dataset: bq.url('/data_service/mex'),
+            dataset: BQ.Server.url('/data_service/mex'),
             tagQuery: template.query,
             listeners: {
                 'Select': function(me, resource) { this.onselected(resource); },
@@ -1248,7 +1248,7 @@ Ext.define('BQ.selectors.SubTree', {
 
         var grid = Ext.create('BQ.grid.Panel', {
             border: 1,
-            url: bq.url('/data_service/image'),
+            url: BQ.Server.url('/data_service/image'),
         });
         this.items.push(grid);
 
@@ -1988,7 +1988,7 @@ Ext.define('BQ.renderers.RendererWithTools', {
             text: template[name+'/label']?template[name+'/label']:'as CSV',
             scope: this,
             handler: function() {
-                var url = bq.url('/stats/csv?url=' + this.res_uri_for_tools);
+                var url = BQ.Server.url('/stats/csv?url=' + this.res_uri_for_tools);
                 if (this.root) url = this.root + url;
                 url += createStatsArgs('xpath', template, name);
                 url += createStatsArgs('xmap', template, name);
@@ -2054,7 +2054,7 @@ Ext.define('BQ.renderers.RendererWithTools', {
             text: 'complete document to Google Docs',
             scope: this,
             handler: function() {
-                window.open(bq.url('/export/to_gdocs?url='+this.res_uri_for_tools));
+                window.open(BQ.Server.url('/export/to_gdocs?url='+this.res_uri_for_tools));
             },
         });
     },
@@ -2068,7 +2068,7 @@ Ext.define('BQ.renderers.RendererWithTools', {
             text: 'complete document as a GZip package',
             scope: this,
             handler: function() {
-                window.open(bq.url('/export/stream?compression=gzip&urls='+this.res_uri_for_tools + '?view=deep'));
+                window.open(BQ.Server.url('/export/stream?compression=gzip&urls='+this.res_uri_for_tools + '?view=deep'));
             },
         });
     },
@@ -2156,7 +2156,7 @@ Ext.define('BQ.renderers.Image', {
             text: 'Overlay annotations on a movie',
             scope: this,
             handler: function() {
-                window.open(bq.url('/client_service/movieplayer?resource='+resource_uri+'&gobjects='+this.gobjects[0].uri));
+                window.open(BQ.Server.url('/client_service/movieplayer?resource='+resource_uri+'&gobjects='+this.gobjects[0].uri));
             },
         });
     },
@@ -2167,7 +2167,7 @@ Ext.define('BQ.renderers.Image', {
             text: template[name+'/label']?template[name+'/label']:'as CSV',
             scope: this,
             handler: function() {
-                var url = bq.url('/stats/csv?url=' + this.res_uri_for_tools);
+                var url = BQ.Server.url('/stats/csv?url=' + this.res_uri_for_tools);
                 if (this.root) url = this.root + url;
                 url += createStatsArgs('xpath', template, name);
                 url += createStatsArgs('xmap', template, name);
@@ -2241,6 +2241,8 @@ Ext.define('BQ.renderers.File', {
 /*******************************************************************************
 Dataset templated configs:
 
+events:
+    selected
 *******************************************************************************/
 
 Ext.define('BQ.renderers.Dataset', {
@@ -2253,14 +2255,6 @@ Ext.define('BQ.renderers.Dataset', {
         type: 'vbox',
         align : 'stretch',
         pack  : 'start',
-    },
-
-    constructor: function(config) {
-        this.addEvents({
-            'selected' : true,
-        });
-        this.callParent(arguments);
-        return this;
     },
 
     initComponent : function() {
@@ -2417,7 +2411,7 @@ Ext.define('BQ.renderers.Browser', {
             flex: 1,
             cls: 'bordered',
             listeners: { 'Select': function(me, resource) {
-                           window.open(bq.url('/client_service/view?resource='+resource.uri));
+                           window.open(BQ.Server.url('/client_service/view?resource='+resource.uri));
                            },
                         scope: this
             },

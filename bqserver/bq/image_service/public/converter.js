@@ -26,6 +26,7 @@ Ext.define('BQ.panel.ToolCheck', {
         this.callParent();
     },
 
+    //privates: { // dima: ext5 overriding
     onClick: function(e, target) {
         this.checked = !this.checked;
         if (this.checked)
@@ -34,6 +35,7 @@ Ext.define('BQ.panel.ToolCheck', {
             this.setType('unpin');
         this.callParent(arguments);
     },
+    //}, // ext5
 
     isChecked: function() {
         return this.checked;

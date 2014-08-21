@@ -5,21 +5,23 @@
 
   Author: Dima Fedorov
 
-  Version: 1, based on Ext 4.0.7
+  Version: 2, based on ExtJS 4.2.1
 
   History:
     2012-02-10 12:08:48 - first creation
 
 *******************************************************************************/
 
-function isInputDirSupported() {
+Ext.namespace('BQ.upload');
+
+BQ.upload.isInputDirSupported = function() {
     var tmpInput = document.createElement('input');
     return ('webkitdirectory' in tmpInput
         || 'mozdirectory' in tmpInput
         || 'odirectory' in tmpInput
         || 'msdirectory' in tmpInput
         || 'directory' in tmpInput);
-}
+};
 
 Ext.define('BQ.upload.File', {
     extend: 'Ext.form.field.File',
@@ -53,17 +55,23 @@ Ext.define('BQ.upload.File', {
     },
 });
 
-Ext.override(Ext.form.field.FileButton, {
-    afterRender: function(){
+if (Ext.getVersion().version !== '4.2.1.883')
+    console.warn('Override for Ext.form.field.FileButton (File.js): Patches ExtJS 4.2.1 and may not work in other versions and should be checked!');
+
+Ext.define('App.overrides.form.field.FileButton', {
+    override: 'Ext.form.field.FileButton',
+    //compatibility: '4.2.2',
+    afterRender: function() {
         var me = this;
         me.callParent(arguments);
         me.fileInputEl.on('click', function(e) {
-            if (this.ownerCt.directory === true && !isInputDirSupported()) {
+            if (this.ownerCt.directory === true && !BQ.upload.isInputDirSupported()) {
                 BQ.ui.warning('Unfortunately, your browser does not allow directory upload, please use Google Chrome.');
                 e.preventDefault();
                 e.stopPropagation();
             }
         }, me);
     },
-
 });
+
+
