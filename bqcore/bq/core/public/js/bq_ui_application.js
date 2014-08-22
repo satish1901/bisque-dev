@@ -13,7 +13,7 @@ Ext.define('BQ.Server', {
     baseCSSPrefix: 'bq-',
 
     url : function (base, params) {
-        if (this.root && this.root != "/")
+        if (this.root && this.root !== "/")
             return this.root + base;
         return base;
     },
@@ -49,12 +49,12 @@ BQ.resources.system = {
     module: null,
     service: null,
     system: null,
-    store: null,
+    store: null
 };
 
 BQ.resources.required = {
     dataset: null,
-    template: null,
+    template: null
 };
 
 BQ.resources.ignore = {
@@ -64,7 +64,7 @@ BQ.resources.ignore = {
     module: null,
     service: null,
     system: null,
-    file: null,
+    file: null
 };
 
 BQ.resources.preferred = {
@@ -72,7 +72,7 @@ BQ.resources.preferred = {
     dataset: null,
     template: null,
     mex: null,
-    file: null,
+    file: null
 };
 
 

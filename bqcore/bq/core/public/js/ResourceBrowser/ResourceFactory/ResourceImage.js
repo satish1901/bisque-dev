@@ -702,9 +702,15 @@ Ext.define('Bisque.Resource.Image.Page', {
 
         this.add({
             xtype : 'container',
-            itemId: 'main_container',
+            itemId: 'viewer_container',
             layout : 'border',
-            items : [this.viewerContainer, resTab]
+            items : [resTab, {
+                xtype: 'container',
+                itemId: 'main_container',
+                region : 'center',
+                layout: 'fit',
+                items : [this.viewerContainer]
+            }]
         });
 
         var download = this.toolbar.queryById('btnDownload');
@@ -849,7 +855,7 @@ Ext.define('Bisque.Resource.Image.Page', {
         var image2d = this.queryById('main_view_2d');
         if (image2d) {
             image2d.setVisible(false);
-            // do not destroy to really fast return
+            //image2d.destroy(); // do not destroy to really fast return
         }
 
         var image3d = this.queryById('main_view_3d');
@@ -860,7 +866,7 @@ Ext.define('Bisque.Resource.Image.Page', {
 
         var cnt = this.queryById('main_container');
         cnt.add({
-            region : 'center',
+            //region : 'center',
             xtype: 'bq_movie_viewer',
             itemId: 'main_view_movie',
             resource: this.resource,
@@ -914,7 +920,7 @@ Ext.define('Bisque.Resource.Image.Page', {
         var image2d = this.queryById('main_view_2d');
         if (image2d) {
             image2d.setVisible(false);
-            // do not destroy to really fast return
+            //image2d.destroy(); // do not destroy to really fast return
         }
 
         var movie = this.queryById('main_view_movie');
@@ -925,7 +931,7 @@ Ext.define('Bisque.Resource.Image.Page', {
 
         var cnt = this.queryById('main_container');
         cnt.add({
-            region : 'center',
+            //region : 'center',
             xtype: 'bq_volume_panel',
             itemId: 'main_view_3d',
             resource: this.resource,
