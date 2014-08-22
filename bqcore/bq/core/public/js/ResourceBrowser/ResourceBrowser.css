@@ -633,3 +633,18 @@
     opacity: 0.5;
 }
 
+/*****************************************************************
+  .icon-list
+*****************************************************************/
+
+.icon-list.mex .thumbnail {
+    background-image: none;
+    width : 110px;
+    height : 110px;
+    padding: 0px 0px 0px 4px;
+}
+
+.ResourceIconList.disabled {
+    opacity: 0.5;
+}
+

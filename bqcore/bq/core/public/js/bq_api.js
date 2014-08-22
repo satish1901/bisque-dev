@@ -1332,6 +1332,8 @@ BQGObject.prototype.initializeXml = function (node) {
     var t = BQ.util.xpath_node(node, 'tag[@name="color"]');
     if (t)
         this.color_override = t.getAttribute('value').replace('#', '');
+    if (t)
+        this.color_override = t.getAttribute('value').replace('#', '');
 };
 
 BQGObject.prototype.setParent = function (p) {

@@ -253,16 +253,19 @@ class DataServerController(ServiceController):
             response =  self.cache_check(uri, **kw)
             if response:
                 log.debug ("get_resource:CACHE response")
-                xml =  etree.XML (response)
-                return xml
-            else:
-                net, name, ida, rest = parse_uri(uri)
-                resource = load_uri (uri, query=True)
-                if rest:  # Fetch resource is really a query
-                    resource = self.query(resource_tag=rest[-1], parent=resource,**kw)
-                    #self.cache_save (uri, response=etree.tostring(resource), **kw)
-                    return resource
-                resource = prepare_permissions(resource, user_id=None, with_public = True).first()
+                try:
+                    xml =  etree.XML (response)
+                    return xml
+                except etree.XMLSyntaxError:
+                    log.exception( ' while reading cached resourced %s got %s', uri, response)
+
+            net, name, ida, rest = parse_uri(uri)
+            resource = load_uri (uri, query=True)
+            if rest:  # Fetch resource is really a query
+                resource = self.query(resource_tag=rest[-1], parent=resource,**kw)
+                #self.cache_save (uri, response=etree.tostring(resource), **kw)
+                return resource
+            resource = prepare_permissions(resource, user_id=None, with_public = True).first()
 
         log.debug ("get_resource: uri %s -> %s", uri, str(resource))
         if resource is None:
