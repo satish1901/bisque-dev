@@ -13,23 +13,6 @@
 
 *******************************************************************************/
 
-
-//--------------------------------------------------------------------------------------
-// misc
-//--------------------------------------------------------------------------------------
-
-function getNodePath(node) {
-    var path = [];
-    while (node) {
-        if (node.data && node.data.type !== 'link')
-            path.push(node.data.name || node.data.id);
-        node = node.parentNode;
-    }
-    path.reverse();
-    var url = path.join('/');
-    return url;
-}
-
 //--------------------------------------------------------------------------------------
 // BQ.data.proxy.OrganizerProxy
 // Proxy to perform queries for tag_values, tag_names, gob_names, gob_types
@@ -57,26 +40,27 @@ Ext.define('BQ.data.proxy.OrganizerProxy', {
         'tag_values': null,
         'gob_names': null,
         'tag_names': 'true',
-        'gob_types': 'true',
+        'gob_types': 'true'
     },
     projections_order : ['tag_values', 'gob_names', 'tag_names', 'gob_types'],
     query : '',
 
-    doRequest: function(operation, callback, scope) {
-        if (operation.action !== 'read') return;
+    doRequest: function (operation, callback, scope) {
+        if (operation.action !== 'read') { return; }
         this.loaded = true;
 
         var url = this.url;
-        if (this.query && this.query.length>0)
+        if (this.query && this.query.length>0) {
             url += '?tag_query='+this.query+'&';
-        else
+        } else {
             url += '?';
+        }
 
         this.requests_fired = 0;
         this.responses = [];
-        var name = undefined;
-        var request = undefined;
-        for (var i=0; (name=this.projections_order[i]); ++i ) {
+        var name=null,
+            i=0;
+        for (i=0; (name=this.projections_order[i]); i++ ) {
             if (!this.projections[name]) continue;
 
             var r = this.buildRequest(operation);
@@ -90,29 +74,27 @@ Ext.define('BQ.data.proxy.OrganizerProxy', {
                 method        : this.getMethod(r),
                 disableCaching: false, // explicitly set it to false, ServerProxy handles caching
                 url           : url+name+'='+this.projections[name]+'&wpublic='+this.browserParams.wpublic,
-                order         : i,
+                order         : i
             });
 
             this.requests_fired++;
             Ext.Ajax.request(r);
-            request = r;
         }
-        return request;
+        return r;
     },
 
-    createRequestCallback: function(request, operation, callback, scope) {
+    createRequestCallback: function (request, operation, callback, scope) {
         var me = this;
-        return function(options, success, response) {
+        return function (options, success, response) {
             this.requests_fired--;
             if (success) {
-                var i = response.request.options.order;
-                this.responses[i] = response;
+                this.responses[response.request.options.order] = response;
             }
-            if (this.requests_fired>0) return;
+            if (this.requests_fired>0) { return; }
             response = undefined;
 
             // need to assemble a combined response body
-            var to = undefined;
+            var to=null;
             for (var i=0; i<this.responses.length; ++i) {
                 var r = this.responses[i];
                 if (!r) continue;
@@ -134,7 +116,7 @@ Ext.define('BQ.data.proxy.OrganizerProxy', {
     // dima: fix the absense of local filtering by replacing processResponse
     // with our version with filering added, this may require updates for
     // extjs 5
-    processResponse: function(success, operation, request, response, callback, scope) {
+    processResponse: function (success, operation, request, response, callback, scope) {
         if (Ext.getVersion().major>=5) {
             Ext.log({ level: "warn" }, 'Overwrite of processResponse is designed for ExtJS 4.2.1, needs replacement!');
         }
@@ -271,7 +253,7 @@ Ext.define('BQ.tree.organizer.Panel', {
         }
     },*/
 
-    initComponent : function() {
+    initComponent : function () {
         this.url_selected = this.url;
 
         this.dockedItems = [{
@@ -325,7 +307,7 @@ Ext.define('BQ.tree.organizer.Panel', {
             listeners: {
                 scope: this,
                 //browse: this.browsePath,
-                changed: function(el, path) {
+                changed: function (el, path) {
                     this.setPath(path);
                 },
             },
@@ -354,15 +336,15 @@ Ext.define('BQ.tree.organizer.Panel', {
             },
             fields : [{
                 name : 'type',
-                convert : function(value, record) {
+                convert : function (value, record) {
                     if (!(record.raw instanceof Node)) return '';
-                    var r = record.raw;
-                    var t = r.getAttribute('type') || r.tagName;
+                    var r = record.raw,
+                        t = r.getAttribute('type') || r.tagName;
                     return t==='tag' ? 'tag' : 'gobject';
                 },
             }, {
                 name : 'attribute',
-                convert : function(value, record) {
+                convert : function (value, record) {
                     if (!(record.raw instanceof Node)) return '';
                     var r = record.raw;
                     if (r.getAttribute('name') && r.getAttribute('value'))
@@ -373,7 +355,7 @@ Ext.define('BQ.tree.organizer.Panel', {
                 },
             }, {
                 name : 'value',
-                convert : function(value, record) {
+                convert : function (value, record) {
                     if (!(record.raw instanceof Node)) return '';
                     var r = record.raw;
                     if (r.getAttribute('name') && r.getAttribute('value'))
@@ -384,7 +366,7 @@ Ext.define('BQ.tree.organizer.Panel', {
                 },
             }, {
                 name : 'text',
-                convert : function(value, record) {
+                convert : function (value, record) {
                     if (!(record.raw instanceof Node)) return '';
                     //return record.data.type+':'+record.data.attribute+':'+record.data.value;
                     return record.data.value;
@@ -392,16 +374,16 @@ Ext.define('BQ.tree.organizer.Panel', {
             }, {
                 name : 'iconCls',
                 type : 'string',
-                convert : function(value, record) {
-                    var t = record.data.type==='tag' ? 'tag' : 'gobject';
-                    var icon = t+'_'+record.data.attribute;
+                convert : function (value, record) {
+                    var t = record.data.type==='tag' ? 'tag' : 'gobject',
+                        icon = t+'_'+record.data.attribute;
                     if (icon in BQ.tree.organizer.icons)
                         return BQ.tree.organizer.icons[icon];
                 }
             }],
 
             filters: [
-                function(item) {
+                function (item) {
                     if (me.active_query && item.data.value in me.active_query &&
                         me.active_query[item.data.value] === item.data.type+':'+item.data.attribute)
                         return false;
@@ -427,7 +409,7 @@ Ext.define('BQ.tree.organizer.Panel', {
         this.on('afteritemcollapse', this.onAfterItemExpand, this);
     },
 
-    afterRender : function() {
+    afterRender : function () {
         this.callParent(arguments);
         if (!this.store.getProxy().loaded) {
         //if (!this.initialized) {
@@ -436,30 +418,30 @@ Ext.define('BQ.tree.organizer.Panel', {
         }
     },
 
-    getSelected : function() {
+    getSelected : function () {
         return this.url_selected;
     },
 
-    getQuery : function() {
+    getQuery : function () {
         return this.store.getProxy().query;
     },
 
-    getOrder : function() {
+    getOrder : function () {
         return this.order;
     },
 
-    getUrl : function() {
+    getUrl : function () {
         return this.url;
     },
 
-    setActive : function() {
+    setActive : function () {
         this.fireEvent('selected', this.url_selected, this);
     },
 
-    onSelect : function(me, record, index, eOpts) {
+    onSelect : function (me, record, index, eOpts) {
         if (this.no_selects===true) return;
-        var node = record;
-        var nodes=[];
+        var node = record,
+            nodes=[];
         while (node) {
             if (!(node.raw instanceof Node)) break;
             nodes.push(node);
@@ -468,8 +450,8 @@ Ext.define('BQ.tree.organizer.Panel', {
         nodes.reverse();
 
         this.active_query = {};
-        var path=[], query=[], order=[];
-        for (var i=0; (node=nodes[i]); ++i) {
+        var path=[], query=[], order=[], i=0;
+        for (i=0; (node=nodes[i]); ++i) {
             var sep='', pt='';
             if (node.data.type === 'tag') {
                 pt += 't:';
@@ -544,11 +526,11 @@ Ext.define('BQ.tree.organizer.Panel', {
         record.expand();
     },
 
-    onAfterItemExpand : function( node, index, item, eOpts ) {
+    onAfterItemExpand : function ( node, index, item, eOpts ) {
         this.getSelectionModel().select(node);
     },
 
-    onPath: function(node, p) {
+    onPath: function (node, p) {
         if (!node) return;
         p.shift();
 
@@ -557,12 +539,12 @@ Ext.define('BQ.tree.organizer.Panel', {
             return;
         }
 
-        var txt = p[0].split(':');
-        var type = BQ.tree.organizer.path2type[txt[0]];
-        var attr = BQ.tree.organizer.path2attr[txt[1]];
-        var value = txt[2];
+        var txt = p[0].split(':'),
+            type = BQ.tree.organizer.path2type[txt[0]],
+            attr = BQ.tree.organizer.path2attr[txt[1]],
+            value = txt[2];
         node = node.findChildBy(
-            function(n) {
+            function (n) {
                 if (n.data.type === type &&
                     n.data.attribute === attr &&
                     n.data.value === value) return true;
@@ -571,22 +553,22 @@ Ext.define('BQ.tree.organizer.Panel', {
             true
         );
         if (node)
-            node.expand(false, function(nodes) {
+            node.expand(false, function (nodes) {
                 if (!nodes || nodes.length<1) return;
                 this.onPath(nodes[0].parentNode, p);
             }, this);
     },
 
-    setPath: function(path) {
+    setPath: function (path) {
         var p = path === '/' ? [''] : path.split('/');
         this.onPath(this.getRootNode(), p);
     },
 
-    onError: function(r) {
+    onError: function (r) {
         BQ.ui.error('Error: '+r.statusText );
     },
 
-    reset: function() {
+    reset: function () {
         this.no_selects = true;
         this.queryById('path_bar').setPath( '/' );
         this.active_query = {};
@@ -606,9 +588,9 @@ Ext.define('BQ.tree.organizer.Panel', {
         this.no_selects = undefined;
     },
 
-    onTags: function(btn) {
-        var btn_t = this.queryById('btnShowTags');
-        var btn_g = this.queryById('btnShowGobs');
+    onTags: function (btn) {
+        var btn_t = this.queryById('btnShowTags'),
+            btn_g = this.queryById('btnShowGobs');
         if (!btn_t.pressed && !btn_g.pressed) {
             BQ.ui.notification('You need at least one type to organize upon, enabling graphical...');
             btn_g.toggle(true);
@@ -618,9 +600,9 @@ Ext.define('BQ.tree.organizer.Panel', {
         }
     },
 
-    onGobs: function(btn) {
-        var btn_t = this.queryById('btnShowTags');
-        var btn_g = this.queryById('btnShowGobs');
+    onGobs: function (btn) {
+        var btn_t = this.queryById('btnShowTags'),
+            btn_g = this.queryById('btnShowGobs');
         if (!btn_t.pressed && !btn_g.pressed) {
             BQ.ui.notification('You need at least one type to organize upon, enabling textual...');
             btn_t.toggle(true);
@@ -630,7 +612,7 @@ Ext.define('BQ.tree.organizer.Panel', {
         }
     },
 
-    updateVisibility: function(noreload) {
+    updateVisibility: function (noreload) {
         var proxy = this.store.getProxy();
 
         proxy.projections.tag_names = 'true';
