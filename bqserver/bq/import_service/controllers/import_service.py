@@ -461,7 +461,7 @@ class import_serviceController(ServiceController):
         resource.extend (copy.deepcopy (list (uf.resource)))
         
         # pass a temporary top directory where the sub-files are stored
-        return unpack_dir, blob_service.store_multi_blob(resource=resource, unpack_dir='%s/'%unpack_dir)
+        return unpack_dir, blob_service.store_blob(resource=resource, rooturl = blob_storage.local2url('%s/'%unpack_dir))
 
 #------------------------------------------------------------------------------
 # process proprietary series file and create multiple resources if needed
@@ -492,7 +492,7 @@ class import_serviceController(ServiceController):
             resource = etree.Element ('image', name=name, value=value, resource_type='image', ts=uf.ts)
             # append all other input annotations
             resource.extend (copy.deepcopy (list (uf.resource)))
-            resource = blob_service.create_resource(resource=resource)
+            resource = blob_service.store_blob(resource=resource)
             resources.append(resource)
         return resources
 
@@ -564,7 +564,7 @@ class import_serviceController(ServiceController):
         
         # append all other input annotations
         resource.extend (copy.deepcopy (list (uf.resource)))
-        resource = blob_service.store_multi_blob(resource=resource, unpack_dir='%s/'%unpack_dir)
+        resource = blob_service.store_blob(resource=resource, rooturl=blob_storage.local2url('%s/'%unpack_dir))
         
         resources = [resource]
         name_template = resource.get('name')
@@ -584,7 +584,8 @@ class import_serviceController(ServiceController):
             # append all other input annotations
             resource.extend (copy.deepcopy (list (uf.resource)))
 
-            resources.append(blob_service.create_resource(resource=resource))
+            #all resource values should have been previously stored (this will register the resource)
+            resources.append(blob_service.store_blob(resource=resource))
 
         return unpack_dir, resources
 
@@ -624,7 +625,7 @@ class import_serviceController(ServiceController):
                 bpath = self.safePath(os.path.join(path, subdir, v.text), path).replace('\\', '/')
                 if os.path.exists(bpath) is True:
                     v.text = blob_service.local2url(bpath)
-            return blob_service.store_multi_blob(resource=xml, unpack_dir='%s/'%path)
+            return blob_service.store_blob(resource=xml, rooturl = blob_storage.local2url('%s/'%path))
         
         # if a resource is an xml doc
         elif xml.tag not in ['dataset', 'mex', 'user', 'system', 'module', 'store']:

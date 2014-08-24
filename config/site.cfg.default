@@ -104,18 +104,14 @@ bisque.blob_service.store_paths.subtransaction = false
 # bisque.blob_service.stores = irods1,s3,local
 bisque.blob_service.stores=local
 #bisque.blob_service.tmp_upload_dir = installationdir/data/tmp_upload_dir
-bisque.stores.local.path = file://$datadir/imagedir/$user/$filename
-#bisque.stores.local.top= file://$datadir/imagedir/
-#bisque.stores.local.user_path = file://$datadir/imagedir/$user/
+bisque.stores.local.mounturl = file://$datadir/imagedir/$user/
 # Example irods store
-#bisque.stores.irods1.path=irods://data.iplantcollaborative.org/iplant/home/$user/bisque_data/uploads/$date/$filebase.$filehash$fileext
-#bisque.stores.irods1.credentials.user=bisque
-#bisque.stores.irods1.credentials.password=<guess>
+#bisque.stores.irods1.mounturl=irods://data.iplantcollaborative.org/iplant/home/$user/bisque_data/uploads/$date/$filebase.$filehash$fileext
+#bisque.stores.irods1.credentials=bisque:<password>
 #bisque.stores.irods1.readonly = true
 # example S3
-#bisque.stores.s3.path=s3://$user-$filehash-$filename
-#bisque.stores.s3.access_key = None
-#bisque.stores.s3.secret_key = None
+#bisque.stores.s3.path=s3://$user/
+#bisque.stores.s3.credentials = <access_key>:<secret_key>
 #bisque.stores.s3.bucket_id = None
 #bisque.stores.s3.location = us-west
 
@@ -273,7 +269,8 @@ toscawidgets.framework.resource_variant=debug
 ################################################################################
 
 [loggers]
-keys = root, bq, bqroot, bqapi, sqlalchemy, auth, image, image-locks, import, export, blobs, usage, engine
+#keys = root, bq, bqroot, bqapi, sqlalchemy, auth, image, image-locks, import, export, blobs, usage, engine
+keys = root, bqapi, bq,  sqlalchemy, auth
 
 [handlers]
 #keys = console, syslog, file, timedfile, pylog
@@ -292,55 +289,56 @@ level = INFO
 #handlers = console, syslog
 handlers = console
 
+[logger_bqapi]
+level = WARN
+handlers =
+qualname = bqapi
+
 [logger_bq]
 level = INFO
 handlers =
 qualname = bq
 
-[logger_bqroot]
-level = INFO
-handlers =
-qualname = bq.root
+#[logger_bqroot]
+#level = INFO
+#handlers =
+#qualname = bq.root
 
-[logger_bqapi]
-level = INFO
-handlers =
-qualname = bqapi
 
-[logger_image]
-level = INFO
-handlers =
-qualname = bq.image_service
+#[logger_image]
+#level = INFO
+#handlers =
+#qualname = bq.image_service
 
-[logger_image-locks]
-level = WARN
-handlers =
-qualname = bq.image_service.locks
+#[logger_image-locks]
+#level = WARN
+#handlers =
+#qualname = bq.image_service.locks
 
-[logger_import]
-level = INFO
-handlers =
-qualname = bq.import_service
+#[logger_import]
+#level = INFO
+#handlers =
+#qualname = bq.import_service
 
-[logger_export]
-level = INFO
-handlers =
-qualname = bq.export_service
+#[logger_export]
+#level = INFO
+#handlers =
+#qualname = bq.export_service
 
-[logger_blobs]
-level = INFO
-handlers =
-qualname = bq.blobs
+#[logger_blobs]
+#level = INFO
+#handlers =
+#qualname = bq.blobs
 
-[logger_usage]
-level = WARN
-handlers =
-qualname = bq.usage
+#[logger_usage]
+#level = WARN
+#handlers =
+#qualname = bq.usage
 
-[logger_engine]
-level = INFO
-handlers =
-qualname = bq.engine_service
+#[logger_engine]
+#level = INFO
+#handlers =
+#qualname = bq.engine_service
 
 [logger_sqlalchemy]
 level = WARN
@@ -350,10 +348,10 @@ qualname = sqlalchemy.engine
 # "level = DEBUG" logs SQL queries and results.
 # "level = WARN" logs neither.  (Recommended for production systems.)
 
-[logger_sqlalchemy_pool]
-level = INFO
-handlers =
-qualname = sqlalchemy.pool
+#[logger_sqlalchemy_pool]
+#level = INFO
+#handlers =
+#qualname = sqlalchemy.pool
 # "level = INFO" logs SQL queries.
 # "level = DEBUG" logs SQL queries and results.
 # "level = WARN" logs neither.  (Recommended for production systems.)
