@@ -53,6 +53,7 @@ import logging
 import hashlib
 import urlparse
 import itertools
+import orderedset
 
 from lxml import etree
 from datetime import datetime
@@ -88,9 +89,9 @@ from bq import export_service
 
 SIG_NEWBLOB  = "new_blob"
 
-from . import blob_storage
+from . import blob_drivers
 from . import store_resource
-
+from . import mount_service
 log = logging.getLogger('bq.blobs')
 
 import traceback
@@ -153,7 +154,9 @@ class DriverManager(object):
         return False
 
     def fetch_blob(self, blob_id):
-        """Find a driver matching the prefix of blob_id
+        """Find a blob matching the prefix of blob_id
+
+        @return pathtuple (path,subpath) or None
         """
         for driver in self.drivers.values():
             if driver.valid(blob_id):
@@ -231,7 +234,7 @@ class PathService (TGController):
     def list_path(self, path, *args,  **kwargs):
         'Find a resource identified by a path'
         log.info("move() called %s" ,  path)
-        resource = data_service.query(None, resource_value = path)
+        resource = data_service.query('image|file', resource_value = path)
         return etree.tostring(resource)
 
     @expose(content_type='text/xml')
@@ -248,7 +251,7 @@ class PathService (TGController):
     def move_path(self, path, dst, *args,  **kwargs):
         ' Move a resource identified by path  '
         log.info("move() called %s" , args)
-        resource = data_service.query(None, resource_value = path)
+        resource = data_service.query("file|image", resource_value = path)
         for child in resource:
             child.set('resource_value',  dst)
             resource = data_service.update(child)
@@ -259,7 +262,7 @@ class PathService (TGController):
     def delete_path(self, path,  **kwargs):
         ' Delete a resource identified by path  '
         log.info("delete() called %s" , path)
-        resource = data_service.query(None, resource_value = path)
+        resource = data_service.query("file|image", resource_value = path)
         for child in resource:
             data_service.del_resource(child)
         return ""
@@ -280,9 +283,11 @@ class BlobServer(RestController, ServiceMixin):
 
     def __init__(self, url ):
         ServiceMixin.__init__(self, url)
-        self.drive_man = DriverManager()
-        self.__class__.store = store_resource.StoreServer(self.drive_man.drivers)
-        self.__class__.paths  = PathService(self)
+        #self.drive_man = DriverManager()
+        #self.__class__.store = store_resource.StoreServer(self.drive_man.drivers)
+        #self.__class__.paths  = PathService(self)
+        self.__class__.mounts = mount_service.MountServer(url)
+        self.__class__.store = self.__class__.mounts
 
 #################################
 # service  functions
@@ -390,9 +395,6 @@ class BlobServer(RestController, ServiceMixin):
 
 
 
-
-
-
 ########################################
 # API functions
 #######################################
@@ -422,91 +424,47 @@ class BlobServer(RestController, ServiceMixin):
         log.info ("NEW RESOURCE <= %s" , etree.tostring(resource))
         resource = data_service.new_resource(resource = resource)
         
-        if asbool(config.get ('bisque.blob_service.store_paths', True)):
+        #if asbool(config.get ('bisque.blob_service.store_paths', True)):
             # dima: insert_blob_path should probably be renamed to insert_blob
             # it should probably receive a resource and make decisions on what and how to store in the file tree
             #try:
-            self.store.insert_blob_path( path=resource.get('value') or resource.xpath('value')[0].text,
-                                         resource_name = resource.get('name'),
-                                         resource_uniq = resource.get ('resource_uniq'))
+        #    self.store.insert_blob_path( path=resource.get('value') or resource.xpath('value')[0].text,
+        #                                 resource_name = resource.get('name'),
+        #                                 resource_uniq = resource.get ('resource_uniq'))
             #except IntegrityError:
             #    # dima: we get this here if the path already exists in the sqlite
             #    log.error('store_multi_blob: could not store path into the tree store')
         return resource
 
 
-    def store_blob(self, resource, fileobj = None):
-        'Store a resource in the DB must be a valid resource'
+    def store_blob(self, resource, fileobj = None, rooturl = None):
+        """Store a resource in the DB must be a valid resource
+
+        @param fileobj: A open file i.e. recieved in a POST
+        @param rooturl: a multi-blob resource will have urls as values rooted at rooturl
+        @return: a resource
+        """
         log.debug('store_blob: %s', etree.tostring(resource))
-        for x in range(3):
-            try:
-                uniq = resource.get ('resource_uniq')
-                if uniq is None:
-                    resource.set('resource_uniq', data_service.resource_uniq() )
-                if fileobj is not None:
-                    resource = self._store_fileobj(resource, fileobj)
-                else:
-                    resource = self._store_reference(resource )
+        #    try:
+        uniq = resource.get ('resource_uniq')
+        if uniq is None:
+            resource.set('resource_uniq', data_service.resource_uniq() )
+        if fileobj is not None:
+            resource = self._store_fileobj(resource, fileobj)
+            return resource        
+        else:
+            resource = self._store_reference(resource, rooturl )
                 #smokesignal.emit(SIG_NEWBLOB, self.store, path=resource.get('value'), resource_uniq=resource.get ('resource_uniq'))
-                return resource
-            except DuplicateFile, e:
-                log.warn("Duplicate file. renaming")
-                #resource.set('resource_uniq', data_service.resource_uniq())
-                resource.set('name', '%s-%s' % (resource.get('name'), resource.get('resource_uniq')[3:7+x]))
+            return resource
+         #   except DuplicateFile, e:
+         #       log.warn("Duplicate file. renaming")
+         #       #resource.set('resource_uniq', data_service.resource_uniq())
+         #       resource.set('name', '%s-%s' % (resource.get('name'), resource.get('resource_uniq')[3:7+x]))
         raise ServiceError("Unable to store blob")
 
-    # dima: store resource with multiple values - pointers to many files
-    # right now it's assumed multi-blob came from a packaged file and thus values are local
-    # the storage driver should be able to move files over to the desired location
-    # it would be best to know where that location is and extract files directly there
-    # although that will only work in the local case, if storing to irods or s3 that would
-    # have to follow the driver protocol
-    def store_multi_blob(self, resource, unpack_dir):
-        'Store blobs for a multi-file resource'
-        log.debug('store_multi_blob: %s', etree.tostring(resource))
-        for x in range(3):
-            try:
-                uniq = resource.get ('resource_uniq')
-                if uniq is None:
-                    uniq = data_service.resource_uniq()
-                    resource.set('resource_uniq', uniq )
-
-                user_name = identity.current.user_name
-                for value in resource.xpath('value'):
-                    urlref = value.text
-                    if not self.drive_man.valid_blob(urlref):
-                        # We have a URLref that is not part of the sanctioned stores:
-                        # We will move it
-                        localpath = self._make_url_local(urlref)
-                        _,sub = blob_storage.split_subpath(urlref)
-
-                        # compute a filename for a sub-file
-                        basename,_ = blob_storage.split_subpath(resource.get('name'))
-                        basename = '%s.unpacked'%basename
-                        subname = blob_storage.url2localpath(urlref).replace(unpack_dir, '')
-                        filename = os.path.join(basename, subname).replace('\\', '/')
-                        log.debug("Storing new local sub-blob [%s] with [%s]", localpath, filename)
-                        if os.path.isdir(localpath):
-                            # dima: we should probably list and store all files but there might be overlaps with individual refs
-                            value.text = blob_storage.localpath2url(filename)
-                            #continue
-                        elif localpath:
-                            with open(localpath, 'rb') as f:
-                                with TransferTimer() as t:
-                                    urlref, t.path = self.drive_man.save_blob(f, filename, user_name = user_name, uniq=uniq)
-                                    # update the file reference in the resource
-                                    value.text = urlref if sub is None else '%s#%s'%(urlref, sub)
-                
-                resource.set('name', os.path.basename(resource.get('name')))
-                return self.create_resource(resource)
-            except DuplicateFile, e:
-                log.warn("Duplicate file. renaming")
-                resource.set('name', '%s-%s' % (resource.get('name'), resource.get('resource_uniq')[3:7+x]))
-        raise ServiceError("Unable to store multi-blob")
     
     def _store_fileobj(self, resource, fileobj ):
         'Create a blob from a file .. used by store_blob'
-        user_name = identity.current.user_name
         # dima: make sure local file name will be ascii, should be fixed later
         # dima: unix without LANG or LC_CTYPE will through error due to ascii while using sys.getfilesystemencoding()
         #filename_safe = filename.encode(sys.getfilesystemencoding())
@@ -514,18 +472,19 @@ class BlobServer(RestController, ServiceMixin):
         #filename_safe = filename.encode('ascii', 'replace')
         filename = resource.get('name') or getattr(fileobj, 'name') or ''
         uniq     = resource.get('resource_uniq')
-        _,sub    = blob_storage.split_subpath(resource.get('value') or resource.get('name'))
+        _,sub    = blob_drivers.split_subpath(resource.get('value') or resource.get('name'))
 
-        with TransferTimer() as t:
-            blob_id, t.path = self.drive_man.save_blob(fileobj, filename, user_name = user_name, uniq=uniq)
+        #with TransferTimer() as t:
+        #    blob_id, t.path = self.drive_man.save_blob(fileobj, filename, user_name = user_name, uniq=uniq)
 
-        log.debug ("_store_fileobj %s %s", blob_id, t.path)
-        if sub is None:
-            resource.set('value', blob_id)
-            resource.set('name', os.path.basename(t.path))            
-        else:
-            resource.set('value', '%s#%s'%(blob_id, sub))
-            resource.set('name', '%s#%s'%(os.path.basename(t.path), sub))   
+        store_url, lpath = self.mounts.store_blob(resource, fileobj = fileobj)
+        log.debug ("_store_fileobj %s %s", store_url, lpath)
+        if store_url is None:
+            return None
+
+        resource.set('value', '%s%s'%(store_url, sub))
+        resource.set('name', '%s%s'%(os.path.basename(lpath), sub))   
+
         #resource.set('resource_uniq', uniq)
         return self.create_resource(resource)
 
@@ -536,96 +495,37 @@ class BlobServer(RestController, ServiceMixin):
         #elif urlref.startswith ('file://'):
         #    return urlref [5:]
         if urlref.startswith ('file://'):
-            return blob_storage.url2localpath(urlref)
+            return blob_drivers.url2localpath(urlref)
         return None
 
-    def _store_reference(self, resource, urlref=None):
+    def _store_reference(self, resource, rooturl=None):
         """create a reference to a blob based on its URL
 
         @param resource: resource an etree resource
         @param urlref:   An URL to configured store or a local file url (which may be moved to a valid store
         @return      : The created resource
         """
-        if urlref is None:
-            urlref = resource.get('value')
-            
-        if isinstance(urlref, basestring):
-            # in case of only one pointed blob
-            if not self.drive_man.valid_blob(urlref):
-                # We have a URLref that is not part of the sanctioned stores:
-                # We will move it
-                log.debug("Can't match %s in stores : %s", urlref, self.drive_man)
-                localpath = self._make_url_local(urlref)
-                if localpath:
-                    with open(localpath) as f:
-                        return self._store_fileobj(resource, f)
-                else:
-                    log.error("Can't put %s into stores : %s", urlref, self.drive_man)
-                    raise IllegalOperation("%s could not be moved to a valid store" % urlref)
-            filename  = resource.get ('name') or urlref.rsplit('/',1)[1]
-            resource.set ('name' ,os.path.basename(filename))
-            resource.set ('value', urlref)
-        else:
-            # multi-blob case
-            values = resource.xpath('value')
-            first = True
-            for value in values:
-                urlref = value.text
-                if not self.drive_man.valid_blob(urlref):
-                    # We have a URLref that is not part of the sanctioned stores:
-                    # We will move it
-                    log.debug("Can't match %s in stores : %s", urlref, self.drive_man)
-                    localpath = self._make_url_local(urlref)
-                    if localpath:
-                        with open(localpath) as f:
-                            return self._store_fileobj(resource, f)
-                    else:
-                        log.error("Can't put %s into stores : %s", urlref, self.drive_man)
-                        raise IllegalOperation("%s could not be moved to a valid store" % urlref)
-                value.text = urlref
-                if first is True:
-                    filename = resource.get ('name') or urlref.rsplit('/',1)[1]
-                    resource.set ('name' ,os.path.basename(filename))
-                    first = False
+
+        _,sub    = blob_drivers.split_subpath(resource.get('value') or resource.get('name'))
+
+        store_url, lpath = self.mounts.store_blob(resource, rooturl = rooturl)
+        log.debug ("_store_fileobj %s %s", store_url, lpath)
+        if store_url is None:
+            return None
+
+        resource.set('value', '%s%s'%(store_url, sub))
+        resource.set('name', '%s%s'%(os.path.basename(lpath), sub))   
 
         return self.create_resource(resource)
 
-    def localpath (self, ident):
+    def localpath (self, uniq_ident):
         "Find  local path for the identified blob, using workdir for local copy if needed"
         try:
-            resource = data_service.query(resource_uniq=ident, view='full')[0]
+            resource = data_service.query(resource_uniq=uniq_ident, view='full')[0]
         except IndexError:
+            log.warn ('requested resource %s was not available/found' % uniq_ident)
             return None
-        #log.debug('localpath resource %s', etree.tostring(resource))
-        
-        value = resource.get('value')
-        if value is not None:
-            b = self.drive_man.fetch_blob(value)
-            log.debug('using %s full=%s localpath=%s sub=%s', ident, value, b.path, b.sub)
-            return b
-        else:
-            #in case of a multi-file resource
-            values = resource.xpath('value')
-            if values is not None and len(values)>0:
-                files = []
-                sub = None
-                # fetch all files referenced by the resource and return the first one
-                for v in values:
-                    blob_id = v.text
-                    b = self.drive_man.fetch_blob(blob_id)
-                    if b.files is not None:
-                        files.extend(b.files)
-                    else:
-                        files.append(b.path)
-                    sub = sub or b.sub
-                mainpath = files[0]
-                #files = list(set(files))
-                #files = sorted(files, key=blocked_alpha_num_sort) # use alpha-numeric sort
-                log.debug('localpath for %s url=%s localpath=%s sub=%s', ident, blob_id, mainpath, sub)
-                #log.debug('localpath files %s', files)
-                #log.debug('localpath stack %s', ''.join(traceback.format_stack()))
-                return blob_storage.Blobs(path=mainpath, sub=sub, files=files)
-        return None
+        return self.mounts.fetch_blob(resource)
 
     def originalFileName(self, ident):
         log.debug ('originalFileName: deprecated %s', ident)
@@ -634,7 +534,7 @@ class BlobServer(RestController, ServiceMixin):
         if resource:
             if resource.resource_name != None:
                 fname = resource.resource_name
-        fname,_ = blob_storage.split_subpath(fname)
+        fname,_ = blob_drivers.split_subpath(fname)
         log.debug('Blobsrv - original name %s->%s ' , ident, fname)
         return fname
 
@@ -644,6 +544,8 @@ class BlobServer(RestController, ServiceMixin):
         @param srcstore: Source store  ID
         @param dststore: Destination store ID
         """
+
+    """COMMENTED OUT
         src_store = self.drive_man.get(srcstore)
         dst_store = self.drive_man.get(dststore)
         if src_store is None or dst_store is None:
@@ -665,6 +567,7 @@ class BlobServer(RestController, ServiceMixin):
                 continue
             old_blob_id = resource.resource_value
             resource.resource_value = blob_id
+    """
 
     def geturi(self, id):
         return self.url + '/' + str(id)
