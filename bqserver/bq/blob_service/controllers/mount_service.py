@@ -111,11 +111,11 @@ if os.name == 'nt':
         except UnicodeEncodeError:
             # dima: safeguard measure for old non-encoded unicode paths
             return urllib.unquote(path)
-    
+
     def localpath2url(path):
         path = path.replace('\\', '/')
         url = urllib.quote(path.encode('utf-8'))
-        if len(path)>3 and path[0] != '/' and path[1] == ':': 
+        if len(path)>3 and path[0] != '/' and path[1] == ':':
             # path starts with a drive letter: c:/
             url = 'file:///%s'%url
         else:
@@ -187,8 +187,12 @@ def load_default_drivers():
         # pull out store related params from config
         params = dict ( (x[0].replace('bisque.stores.%s.' % store, ''), x[1])
                         for x in  config.items() if x[0].startswith('bisque.stores.%s.' % store))
-        if 'path' not in params:
-            log.error ('cannot configure %s without the path parameter' , store)
+        if 'mounturl' not in params:
+            if 'path' in params:
+                params['mounturl'] = params.pop ('path')
+                log.warn ("Use of deprecated 'path' %s driver . Please change to mounturl", store)
+            else:
+                log.error ('cannot configure %s without the mounturl parameter' , store)
             continue
         log.debug("params = %s" % params)
         #driver = make_storage_driver(params.pop('path'), **params)
@@ -203,11 +207,12 @@ def load_default_drivers():
 
 
 class MountServer(TGController):
-    """ Manipulate 
+    """ Manipulate
     """
     def __init__(self, url):
         super(MountServer, self).__init__()
         self.drivers = load_default_drivers()
+        log.info ("Loaded drivers %s", self.drivers)
 
 
     #############################################################
@@ -285,7 +290,7 @@ class MountServer(TGController):
             return self.index()
         store_name = path.pop(0)
         q = self.insert_mount_path (store_name, path, **kw)
-        return etree.tostring(q)        
+        return etree.tostring(q)
 
     def _delete(self, path, **kw):
         log.info ("DELETE %s with %s" ,  path, kw)
@@ -324,7 +329,7 @@ class MountServer(TGController):
             etree.SubElement(root, 'tag', name='order', value = ','.join (self.drivers.keys()))
             for store_name,driver in self.drivers.items():
                 mount_path = string.Template(driver['mount']).safe_substitute(datadir = data_url_path(), user = user_name)
-                etree.SubElement(root, 'store', name = store_name, resource_unid=store_name, value=mount_path)            
+                etree.SubElement(root, 'store', name = store_name, resource_unid=store_name, value=mount_path)
         else:
             storeorder = get_tag(root, 'order')
             if storeorder is None:
@@ -336,12 +341,12 @@ class MountServer(TGController):
                 else:
                     store = etree.SubElement (root, 'store', name = store_name, resource_unid = store_name)
                 if store.get ('value') is None:
-                    mounturl = driver.get ('mounturl') or driver.get ('path') # OLD name 
+                    mounturl = driver.get ('mounturl') or driver.get ('path') # OLD name
                     mounturl = string.Template(mounturl).safe_substitute(datadir = data_url_path(), user = user_name)
                     # ensure no $ are left
                     mounturl = mounturl.split('$', 1)[0]
                     store.set ('value', mounturl)
-                    log.debug ("setting store %s value to %s", store_name, mounturl) 
+                    log.debug ("setting store %s value to %s", store_name, mounturl)
 
         log.debug ("updating %s", etree.tostring(root))
         return data_service.update(root, new_resource=root, view='full')
@@ -349,7 +354,7 @@ class MountServer(TGController):
 
     def _create_user_mount (self, root_mount, mount_name, mount_url):
         'create a new user mount given a url'
-        store = etree.Element('store', name = mount_name, resource_unid=mount_name, value=mount_url)            
+        store = etree.Element('store', name = mount_name, resource_unid=mount_name, value=mount_url)
         data_service.new_resource(store, parent = root_mount)
 
 
@@ -419,14 +424,14 @@ class MountServer(TGController):
         if value is not None:
             data_service.del_resource(q.get ('value'))
         return True
-    
+
 
 
     #################################
     # blobsrv API
     def valid_store_ref(self, resource):
         """Test whether the resource  is on a store can be read by the user
-        @param resource: a binary resource 
+        @param resource: a binary resource
         @return : a store resource
         """
         stores = self._get_stores()
@@ -443,7 +448,7 @@ class MountServer(TGController):
             # KGK: TEMPORARY .. this should check readability by the driver instead of simply the prefix
             # ugly should be in driver at least
             if storeurls[0].startswith (prefix):
-                # All *must* be valid for the same store 
+                # All *must* be valid for the same store
                 for storeurl in storeurls[1:]:
                     if not storeurl.startswith (prefix):
                         raise IllegalOperation('resource %s spread across different stores %s', uniq, storeurls)
@@ -451,7 +456,7 @@ class MountServer(TGController):
         return None
 
     def store_blob(self, resource, fileobj = None, rooturl=None):
-        """store a blob to a mount 
+        """store a blob to a mount
 
         A resource contains:
 
@@ -466,7 +471,7 @@ class MountServer(TGController):
 
         """
         stores = self._get_stores()
-        
+
         storepath = resource.get ('name')
         if storepath[0]=='/':
             # This is a fixed store name i.e. /local or /irods and must be stored on the specific mount
@@ -512,7 +517,7 @@ class MountServer(TGController):
         else:
             storeurl, localpath = self.save_storerefs (store, filepath, resource, rooturl)
 
-        
+
 
         if asbool(config.get ('bisque.blob_service.store_paths', True)):
             self.insert_mount_path (store, storepath.split('/'), resource)
@@ -522,7 +527,7 @@ class MountServer(TGController):
         """store a resource with storeurls already in place.. these may be ona true store or simply reside locally
         @param store: a store resource
         @param storepath: a path on store where to put the resource
-        @param resource: a resource with storeurls 
+        @param resource: a resource with storeurls
         @param rooturl: the root of the storeurls
         """
 
@@ -535,7 +540,7 @@ class MountServer(TGController):
 
         refs = resource.get ('value')
         if refs is not None:
-            refs = [ (resource, setval, blob_drivers.split_subpath(refs), storepath) ] 
+            refs = [ (resource, setval, blob_drivers.split_subpath(refs), storepath) ]
         else:
             refs = [ (x, settext, blob_drivers.split_subpath(x.text), None) for x in resource.xpath ('value') ]
 
@@ -560,7 +565,7 @@ class MountServer(TGController):
 
         if movingrefs and get_tag(store, 'readonly'):
             raise IllegalOperation('readonly store')
-            
+
         for node, setter, (localpath, subpath),  storepath in movingrefs:
             with open (localpath, 'rb') as fobj:
                 storeurl = urlparse.urljoin (driver.mount_url, storepath)
@@ -571,11 +576,11 @@ class MountServer(TGController):
                 else:
                     setter(node, "%s%s" % (storeurl, subpath))
 
-        
+
 
     def _force_storeurl_local(self, storeurl):
         """User available drivers to fetch a local copy of the storeurl and return path
-        @param storeurl: a valid storeurl 
+        @param storeurl: a valid storeurl
         @return : (A local fileyststem path, rootportion)  or None
         """
         # KGK: temporary simplification
@@ -617,12 +622,12 @@ class MountServer(TGController):
 
 
     def _find_store(self, storeurl):
-        """return a store(mount)  by the storeurl 
+        """return a store(mount)  by the storeurl
         """
         root = data_service.query('store', resource_unid='(root)', view='full')
         #figure  where to store blob
-        store_order = get_tag (root, 'order')  
-        if store_order is None: 
+        store_order = get_tag (root, 'order')
+        if store_order is None:
             store_order = config.get('bisque.blob_service.stores','')
 
         #for store_name in [x.strip() for x in store_order.split(',')]:
@@ -632,7 +637,7 @@ class MountServer(TGController):
             if storeurl.startswith (store_prefix):
                 store_name = store.get ('name')
                 return store
-            
+
 
     def _get_stores(self):
         "Return a list of store resources in the users ordering"
@@ -641,8 +646,8 @@ class MountServer(TGController):
         if len(root) != 1:
             raise IllegalOperation ("root store not valid %s", etree.tostring (root))
         root = root[0]
-        store_order = get_tag (root, 'order')  
-        if store_order is None: 
+        store_order = get_tag (root, 'order')
+        if store_order is None:
             store_order = config.get('bisque.blob_service.stores','')
 
         stores = OrderedDict()
@@ -655,7 +660,7 @@ class MountServer(TGController):
             stores[store_name] = store
         return stores
 
-        
+
     def _get_driver(self, store):
         "Create a  driver  for the user store"
         store_name = store.get ('name')
@@ -663,7 +668,7 @@ class MountServer(TGController):
 
         # Replace any default driver opts with tags
         storetags = store.xpath('tag')
-        driver_opts.update ( (x.get ('name'), x.get ('value')) for x in storetags ) 
+        driver_opts.update ( (x.get ('name'), x.get ('value')) for x in storetags )
 
         log.debug ("after store tags %s" , driver_opts)
         if not driver_opts.get ('credentials'):
@@ -672,14 +677,14 @@ class MountServer(TGController):
         driver_opts['path'] = mount_path = store.get ('value')
         driver_opts['mount_url' ] = mount_path
 
-        # get a driver to use 
+        # get a driver to use
         #KGK : maybe use a timeout cache here so the connection can be reused?
         log.debug ('making store driver: %s', driver_opts)
         driver = blob_drivers.make_storage_driver(**driver_opts)
         return driver
-        
-            
-            
+
+
+
     ##############################
     # services for mounts
 
@@ -735,7 +740,7 @@ class MountServer(TGController):
             log.debug ("New resource %s at %s " , etree.tostring(root), (parent is not None) and parent.get ('uri'))
             q = data_service.new_resource(resource=root, parent=parent)
         return q
-        
+
 
 
     def _insert_mount_path(self, store, mount_path, resource, **kw):
@@ -745,7 +750,7 @@ class MountServer(TGController):
         :param path: a blob path for the store
         """
         log.info("Insert_mount_path create %s path %s ", str(store), str(mount_path))
-        
+
         return self._create_full_path(store, mount_path, resource.get ('resource_uniq'), resource.get('resource_name'), **kw)
 
 
@@ -764,10 +769,10 @@ class MountServer(TGController):
 
         log.error('StoreError: tried too many attempts %s.. not inserting %s', x, mount_path)
         return None
-    
-        
 
 
-        
-        
-        
+
+
+
+
+

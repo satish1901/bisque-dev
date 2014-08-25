@@ -53,7 +53,6 @@ import logging
 import hashlib
 import urlparse
 import itertools
-import orderedset
 
 from lxml import etree
 from datetime import datetime
@@ -165,7 +164,7 @@ class DriverManager(object):
                     t.path = b.path
                 if b.path is not None:
                     # if sub path could not be serviced by the storage system and the file is a package (zip, tar, ...)
-                    # extract the sub element here and return the extracted path with sub as None                    
+                    # extract the sub element here and return the extracted path with sub as None
                     return b
         log.warn ("Failed to fetch blob: %s", blob_id)
         return blob_storage.Blobs(path=None, sub=None, files=None)
@@ -328,7 +327,7 @@ class BlobServer(RestController, ServiceMixin):
             b = self.localpath(ident)
             if b.files is not None:
                 return export_service.export(files=[resource.get('uri')], filename=filename)
-            
+
             localpath = os.path.normpath(b.path)
             if 'localpath' in kw:
                 tg.response.headers['Content-Type']  = 'text/xml'
@@ -409,7 +408,7 @@ class BlobServer(RestController, ServiceMixin):
         if resource.get('resource_uniq') is None:
             resource.set('resource_uniq', data_service.resource_uniq() )
         ts = resource.get('ts') or datetime.now().isoformat(' ')
-            
+
         # KGK
         # These are redundant (filename is the attribute name name upload is the ts
         # dima: today needed for organizer to work
@@ -423,7 +422,7 @@ class BlobServer(RestController, ServiceMixin):
 
         log.info ("NEW RESOURCE <= %s" , etree.tostring(resource))
         resource = data_service.new_resource(resource = resource)
-        
+
         #if asbool(config.get ('bisque.blob_service.store_paths', True)):
             # dima: insert_blob_path should probably be renamed to insert_blob
             # it should probably receive a resource and make decisions on what and how to store in the file tree
@@ -451,7 +450,7 @@ class BlobServer(RestController, ServiceMixin):
             resource.set('resource_uniq', data_service.resource_uniq() )
         if fileobj is not None:
             resource = self._store_fileobj(resource, fileobj)
-            return resource        
+            return resource
         else:
             resource = self._store_reference(resource, rooturl )
                 #smokesignal.emit(SIG_NEWBLOB, self.store, path=resource.get('value'), resource_uniq=resource.get ('resource_uniq'))
@@ -462,7 +461,7 @@ class BlobServer(RestController, ServiceMixin):
          #       resource.set('name', '%s-%s' % (resource.get('name'), resource.get('resource_uniq')[3:7+x]))
         raise ServiceError("Unable to store blob")
 
-    
+
     def _store_fileobj(self, resource, fileobj ):
         'Create a blob from a file .. used by store_blob'
         # dima: make sure local file name will be ascii, should be fixed later
@@ -483,7 +482,7 @@ class BlobServer(RestController, ServiceMixin):
             return None
 
         resource.set('value', '%s%s'%(store_url, sub))
-        resource.set('name', '%s%s'%(os.path.basename(lpath), sub))   
+        resource.set('name', '%s%s'%(os.path.basename(lpath), sub))
 
         #resource.set('resource_uniq', uniq)
         return self.create_resource(resource)
@@ -514,7 +513,7 @@ class BlobServer(RestController, ServiceMixin):
             return None
 
         resource.set('value', '%s%s'%(store_url, sub))
-        resource.set('name', '%s%s'%(os.path.basename(lpath), sub))   
+        resource.set('name', '%s%s'%(os.path.basename(lpath), sub))
 
         return self.create_resource(resource)
 
