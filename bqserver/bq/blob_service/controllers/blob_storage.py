@@ -95,7 +95,7 @@ except ImportError:
 #  misc
 #################################################
 
-Blobs = collections.namedtuple("Blobs", ["path", "sub", "files"], verbose=False, rename=False)
+Blobs = collections.namedtuple("Blobs", ["path", "sub", "files"])
 
 def formatPath(format_path, user, filename, uniq, **params):
     """Create a unique path using a format and hash of filename
@@ -159,11 +159,11 @@ if os.name == 'nt':
         except UnicodeEncodeError:
             # dima: safeguard measure for old non-encoded unicode paths
             return urllib.unquote(path)
-    
+
     def localpath2url(path):
         path = path.replace('\\', '/')
         url = urllib.quote(path.encode('utf-8'))
-        if len(path)>3 and path[0] != '/' and path[1] == ':': 
+        if len(path)>3 and path[0] != '/' and path[1] == ':':
             # path starts with a drive letter: c:/
             url = 'file:///%s'%url
         else:
@@ -278,22 +278,22 @@ class LocalStorage(BlobStorage):
         log.info("created localstore %s (%s) options %s" , self.format_path, self.top, self.options)
 
     def valid(self, ident):
-        # dima: there's only one local storage in the system, file:// should all be redirected to it 
+        # dima: there's only one local storage in the system, file:// should all be redirected to it
         ident,_ = split_subpath(ident)
         scheme = urlparse.urlparse(ident).scheme
 
         #log.debug('valid ident %s top %s', ident, self.top)
         #log.debug('valid local ident %s local top %s', url2localpath(ident), url2localpath(self.top))
-        
+
         if url2localpath(ident).startswith(url2localpath(self.top)):
             return ident
         elif scheme == '': # old case of a stored pure relative path
             return os.path.join(self.top, ident).replace('\\', '/')
-        #elif ident.startswith('%s:///'%scheme): 
+        #elif ident.startswith('%s:///'%scheme):
         #     #this would allow arbirary paths
         #    return ident
         elif scheme == self.scheme and not ident.startswith('%s:///'%scheme):
-            # sub-paths defined with file:// 
+            # sub-paths defined with file://
             return os.path.join(self.top, ident.replace('%s://'%scheme, '')).replace('\\', '/')
 
     def write(self, fp, filename, user_name=None, uniq=None):
@@ -331,7 +331,7 @@ class LocalStorage(BlobStorage):
                 path = os.path.join(self.top, path.replace('file://', ''))
             else:
                 path = os.path.join(self.top, path)
-            
+
         path = url2localpath(path.replace('\\', '/'))
 
         #log.debug('local_store localpath path: %s', path)
@@ -478,13 +478,13 @@ class S3Storage(BlobStorage):
     def localpath(self, s3_ident):
         'return path to local copy of the s3 resource'
         # dima: path can be a directory, needs listing and fetching all enclosed files
-        
+
         # if s3 will provide extraction of sub files from compressed (zip, tar, ...) ask for it and return sub as None
         s3_ident,sub = split_subpath(s3_ident)
         s3_key = s3_ident.replace("s3://","")
         path = s3_handler.s3_fetch_file(self.bucket, s3_key)
         # dima: if path is a directory, list contents
-        return Blobs(path=path, sub=sub, files=None)    
+        return Blobs(path=path, sub=sub, files=None)
 
     def delete(self, s3_ident):
         s3_key = s3_ident.replace("s3://","")
