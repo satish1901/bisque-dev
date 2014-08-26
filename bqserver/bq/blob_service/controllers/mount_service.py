@@ -447,10 +447,11 @@ class MountServer(TGController):
             log.debug ("checking %s and %s" ,  prefix, storeurls[0])
             # KGK: TEMPORARY .. this should check readability by the driver instead of simply the prefix
             # ugly should be in driver at least
-            if storeurls[0].startswith (prefix):
+            driver = self._get_driver(store)
+            if driver.valid (storeurls[0]):
                 # All *must* be valid for the same store
                 for storeurl in storeurls[1:]:
-                    if not storeurl.startswith (prefix):
+                    if not driver.valid (storeurl):
                         raise IllegalOperation('resource %s spread across different stores %s', uniq, storeurls)
                 return store
         return None
