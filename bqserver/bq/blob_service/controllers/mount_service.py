@@ -171,7 +171,7 @@ def opener_cm (path):
 
 # PathServer
 def get_tag(elem, tag_name):
-    els = elem.xpath ('./tag[@name=%s]' % tag_name)
+    els = elem.xpath ('./tag[@name="%s"]' % tag_name)
     if len(els) == 0:
         return None
     return [ (tag_name, el.get ('value'), el.get('type')) for el in els ]
@@ -329,9 +329,10 @@ class MountServer(TGController):
 
         #for x in range(subtrans_attempts):
         #    with optional_cm(subtrans):
-
+        update = False
         user_name  = identity.current.user_name
         if  root is None:
+            update  = True
             root = etree.Element('store', name="(root)", resource_unid="(root)")
             etree.SubElement(root, 'tag', name='order', value = ','.join (self.drivers.keys()))
             for store_name,driver in self.drivers.items():
@@ -340,7 +341,9 @@ class MountServer(TGController):
         else:
             storeorder = get_tag(root, 'order')
             if storeorder is None:
+                log.warn ("order tag missing from root store adding")
                 etree.SubElement(root, 'tag', name='order', value = ','.join (self.drivers.keys()))
+                update = True
             for (store_name, driver), store in itertools.izip_longest (self.drivers.items(), root.xpath('store')):
                 if store is not None:
                     if store_name != store.get ('name'):
@@ -354,9 +357,12 @@ class MountServer(TGController):
                     mounturl = mounturl.split('$', 1)[0]
                     store.set ('value', mounturl)
                     log.debug ("setting store %s value to %s", store_name, mounturl)
+                    update = True
 
-        log.debug ("updating %s", etree.tostring(root))
-        return data_service.update(root, new_resource=root, view='full')
+        if update:
+            log.debug ("updating %s", etree.tostring(root))
+            return data_service.update(root, new_resource=root, view='full')
+        return root
 
 
     def _create_user_mount (self, root_mount, mount_name, mount_url):
