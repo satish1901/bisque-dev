@@ -29,7 +29,6 @@ Ext.define('BQ.share.Dialog', {
     border: 0,
     layout: 'fit',
     modal : true,
-    border : false,
     width : '70%',
     height : '85%',
     //minHeight: 350,
@@ -46,14 +45,14 @@ Ext.define('BQ.share.Dialog', {
                 text: 'Done',
                 scale: 'large',
                 scope: this,
-                handler: this.onFinish,
+                handler: this.onFinish
             }],
             items  : [{
                 xtype: 'bqsharepanel',
                 itemId: 'sharepanel',
                 border: 0,
-                resource: config.resource,
-            }],
+                resource: config.resource
+            }]
         }, config);
 
         this.callParent(arguments);
@@ -130,7 +129,7 @@ Ext.define('BQ.model.Users', {
 Ext.define('BQ.share.Panel', {
     extend: 'Ext.panel.Panel',
     alias: 'widget.bqsharepanel',
-    requires: ['Ext.toolbar.Toolbar', 'Ext.tip.QuickTipManager', 'Ext.tip.QuickTip', 'Ext.selection.CellModel', ],
+    requires: ['Ext.toolbar.Toolbar', 'Ext.tip.QuickTipManager', 'Ext.tip.QuickTip', 'Ext.selection.CellModel' ],
     cls: 'bq-share-panel',
     layout: {
         type: 'vbox',
@@ -259,7 +258,6 @@ Ext.define('BQ.share.Panel', {
                 dataIndex: 'action',
                 sortable: true,
                 editor: new Ext.form.field.ComboBox({
-                    typeAhead: true,
                     triggerAction: 'all',
                     editable: false,
                     store: [
@@ -589,7 +587,7 @@ Ext.define('BQ.auth.writer.Xml', {
         }
 
         if (request.action !== "destroy") // destroy will only be fired when the list is empty
-        for (; i < len; ++i) {
+        for (i=0; i<len; ++i) {
             item = data[i];
             xml.push('<', record);
             for (key in item) {

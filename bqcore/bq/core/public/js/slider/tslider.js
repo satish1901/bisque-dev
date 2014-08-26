@@ -37,17 +37,18 @@ Ext.define('BQ.slider.TSlider', {
     config: {
       //resolution: 1.0,
       unit: 'ms',
-      tooltip_play: 'Autoplay time',
+      tooltip_play: 'Autoplay over time',
       tooltip_next: 'Next time point',
-      tooltip_prev: 'Previous time point',
+      tooltip_prev: 'Previous time point'
     },
 
     tipText: function(thumb) {
-        if (this.resolution && this.unit)
-          return Ext.String.format('<b>Time point: {0} or {1} {2} from first frame</b>',
-            this.slider.getValue(), this.slider.getValue()*this.resolution, this.unit);
-        else
-          return Ext.String.format('<b>Z position: {0}</b>', this.slider.getValue());
+        if (this.resolution && this.unit) {
+            return Ext.String.format('<b>Time point: {0} or {1} {2} from first frame</b>',
+                this.slider.getValue(), this.slider.getValue()*this.resolution, this.unit);
+        } else {
+            return Ext.String.format('<b>T position: {0}</b>', this.slider.getValue());
+        }
     },
 
 });
