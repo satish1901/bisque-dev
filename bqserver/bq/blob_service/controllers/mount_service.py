@@ -58,6 +58,7 @@ import string
 import urllib
 import urlparse
 import itertools
+import shutil
 from lxml import etree
 from datetime import datetime
 from datetime import timedelta
@@ -66,7 +67,7 @@ from paste.deploy.converters import asbool
 from contextlib import contextmanager
 
 import tg
-from tg import expose, flash, config, require, abort
+from tg import expose, config, require, abort
 from tg.controllers import RestController, TGController
 from repoze.what import predicates
 
@@ -77,9 +78,7 @@ from bq.core.model import DBSession
 #from bq.core.service import ServiceController
 from bq.exceptions import IllegalOperation, DuplicateFile, ServiceError
 from bq.util.paths import data_path
-from bq.util.timer import Timer
 from bq.util.compat import OrderedDict
-from bq.util.dotnested import parse_nested
 
 from bq import data_service
 
@@ -201,7 +200,7 @@ def load_default_drivers():
             else:
                 log.error ('cannot configure %s without the mounturl parameter' , store)
                 continue
-        log.debug("params = %s" % params)
+        log.debug("params = %s" , params)
         #driver = make_storage_driver(params.pop('path'), **params)
         #if driver is None:
         #    log.error ("failed to configure %s.  Please check log for errors " , str(store))
@@ -296,7 +295,7 @@ class MountServer(TGController):
         if len(path)==0:
             return self.index()
         store_name = path.pop(0)
-        q = self.insert_mount_path (store_name, path, **kw)
+        q = self.add_mount_path (store_name, path, **kw)
         return etree.tostring(q)
 
     def _delete(self, path, **kw):
@@ -378,14 +377,14 @@ class MountServer(TGController):
     def _load_store(self, store_name):
         'Simply load the store named'
         root = self._create_root_mount()
-        q = data_service.query('store', parent=root, resource_unid=store_name, view='full')
-        if len(q) == 0:
-            log.warn('No store named %s' % store_name)
-            return None
-        if len(q) != 1:
+        storelist = root.xpath("store[@name='%s']" % store_name)
+        if len(storelist) == 0:
+            log.warn('No store named %s' , store_name)
+        if len(storelist) != 1:
             log.error ('Multiple named stores')
-            return None
-        return q[0]
+        else:
+            return storelist[0]
+        return None
 
     def _load_mount_path (self, store_name, path, **kw ):
         """load a store resource from store
@@ -406,7 +405,7 @@ class MountServer(TGController):
             q = data_service.get_resource(q, view=view, **kw)
         return q
 
-    def insert_mount_path(self, store_name, path, resource_uniq=None, resource_name=None, **kw):
+    def add_mount_path(self, store_name, path, resource_uniq=None, resource_name=None, **kw):
         """Insert a URL path
         """
         store = self._load_store(store_name)
@@ -465,7 +464,7 @@ class MountServer(TGController):
                 # All *must* be valid for the same store
                 for storeurl in storeurls[1:]:
                     if not driver.valid (storeurl):
-                        raise IllegalOperation('resource %s spread across different stores %s', uniq, storeurls)
+                        raise IllegalOperation('resource %s spread across different stores %s', resource.get('resource_uniq'), storeurls)
                 return store
         return None
 
@@ -529,7 +528,7 @@ class MountServer(TGController):
             storeurl, localpath = driver.push (storeurl, fileobj)
             resource.set('value', storeurl)
         else:
-            storeurl, localpath = self.save_storerefs (store, filepath, resource, rooturl)
+            storeurl, localpath = self._save_storerefs (store, storepath, resource, rooturl)
 
 
 
@@ -606,7 +605,7 @@ class MountServer(TGController):
         'return a (set) path(s) for a resource'
         store = self.valid_store_ref (resource)
         if  store is None:
-            log.error ('Not a valid store ref in  %s' % etree.tostring (resource))
+            log.error ('Not a valid store ref in  %s' , etree.tostring (resource))
             return None
         driver = self._get_driver(store)
         uniq     = resource.get('resource_uniq')
@@ -621,7 +620,7 @@ class MountServer(TGController):
         for storeurl in bloburls:
             localblob = driver.pull (storeurl)
             if localblob is None:
-                log.error ("Failed to fetch blob for %s of %s during pull %s", uniq, bloburls, store_url)
+                log.error ("Failed to fetch blob for %s of %s during pull %s", uniq, bloburls, storeurl)
                 return None
             sub = sub or localblob.sub
             if localblob.files:
