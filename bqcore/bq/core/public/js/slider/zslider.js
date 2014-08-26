@@ -39,18 +39,18 @@ Ext.define('BQ.slider.ZSlider', {
       unit: 'mu',
       orientation: 'vertical',
       height: 200,
-      tooltip_play: 'Autoplay Z (depth)',
+      tooltip_play: 'Autoplay over depth (Z)',
       tooltip_next: 'Next Z position',
-      tooltip_prev: 'Previous Z position',
+      tooltip_prev: 'Previous Z position'
     },
 
     tipText: function(thumb) {
-        if (this.resolution && this.unit)
-          return Ext.String.format('<b>Z position: {0} or {1} {2} from first frame</b>',
-            this.slider.getValue(), this.slider.getValue()*this.resolution, this.unit);
-        else
-          return Ext.String.format('<b>Z position: {0}</b>', this.slider.getValue());
-
+        if (this.resolution && this.unit) {
+            return Ext.String.format('<b>Z position: {0} or {1} {2} from first frame</b>',
+                this.slider.getValue(), this.slider.getValue()*this.resolution, this.unit);
+        } else {
+            return Ext.String.format('<b>Z position: {0}</b>', this.slider.getValue());
+        }
     },
 
 });

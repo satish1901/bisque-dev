@@ -435,18 +435,19 @@
 .viewer .viewoptions {
     position: absolute;
     z-index: 30;
-    width: 20px;
-    height: 20px;
+    width: 32px;
+    height: 32px;
     left: 80px;
     top: 10px;
     bottom: none;
     right: none;
-
-    background-image: url('/images/viewer/64px_view.png');
-    background-size: 20px;
     background-color: transparent;
+    background-repeat: no-repeat;
+    background-position: -34px -97px;
+    background-image: url('/images/viewer/icons_viewer.svg');
+    background-size: 200px;
 }
-
+/*
 .viewer .viewoptions-phone {
     width: 96px;
     height: 96px;
@@ -462,7 +463,7 @@
     top: 15px;
     background-size: 36px;
 }
-
+*/
 .viewer .editmenu {
     position: absolute;
     z-index: 30;
@@ -501,52 +502,35 @@
 .viewer .editcontrol {
     position: absolute;
     z-index: 30;
-    width: 22px;
-    height: 22px;
+    width: 31px;
+    height: 31px;
     right: 80px;
     top: 10px;
     bottom: none;
     right: none;
-    background-size: 44px 22px;
     background-color: transparent;
     background-repeat: no-repeat;
-    background-position: 0px 0px;
+    background-image: url('/images/viewer/icons_viewer.svg');
+    background-size: 200px;
+    background-position-x: -135px;
 }
 
 .viewer .editcontrol.selected {
-    background-position: -23px 0px;
+    background-position-x: -168px;
 }
-
-/*
-.viewer .editcontrol.phone {
-    width: 96px;
-    height: 96px;
-    right: 100px;
-    top: 30px;
-    background-size: 96px;
-}
-
-.viewer .editcontrol.touch {
-    width: 36px;
-    height: 36px;
-    right: 85px;
-    top: 15px;
-    background-size: 36px;
-}
-*/
 
 .viewer .btn-navigate {
-    background-image: url('/images/viewer/compass.png');
-    right: 170px;
+    background-position-y: -131px;
+    right: 190px;
 }
 
 .viewer .btn-select {
-    background-image: url('/images/viewer/select.png');
-    right: 140px;
+    background-position-y: -98px;
+    right: 150px;
 }
 
 .viewer .btn-delete {
-    background-image: url('/images/viewer/delete.png');
+    background-position-y: -65px;
     right: 110px;
 }
 

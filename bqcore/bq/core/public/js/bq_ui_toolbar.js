@@ -40,7 +40,7 @@ function analysisAction(o, e) {
     var w = Math.round(Math.min(500, BQApp?BQApp.getCenterComponent().getWidth()*0.8:document.width*0.8));
     var h = Math.round(BQApp?BQApp.getCenterComponent().getHeight()*0.99:document.height*0.99);
 
-    var resourceBrowser  = Ext.create('Bisque.ResourceBrowser.Browser', {
+    var resourceBrowser = Ext.create('Bisque.ResourceBrowser.Browser', {
         layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.IconList,
         wpublic: true,
         selType: 'SINGLE',
@@ -69,8 +69,7 @@ function analysisAction(o, e) {
         layout: 'fit',
         autoHide: false,
         shadow: true,
-        items: [resourceBrowser],
-
+        items: [resourceBrowser]
     });
     tip.show();
 }
@@ -341,7 +340,7 @@ Ext.define('BQ.Application.Toolbar', {
             plain: true,
             items: [{
                 xtype:'tbtext',
-                text: '<img src="'+this.images_base_url+'bisque_logo_200.png" class="image-about-bisque" />',
+                text: '<div class="image-about-bisque"></div>',
                 indent: true,
             }, {
                 text: 'About Bisque',
@@ -388,7 +387,7 @@ Ext.define('BQ.Application.Toolbar', {
         var browse_vis = (this.toolbar_opts && this.toolbar_opts.browse===false) ? false : true;
         this.items = [{
                 xtype:'tbtext',
-                text: '<a href="/"><img src="'+this.images_base_url+'bisque_logo_100.png" class="image-logo-bisque" /></a>',
+                text: '<a href="/" class="main-logo"></a>',
             }, /*{
                 xtype:'tbtext',
                 itemId: 'menu_title',
@@ -419,7 +418,7 @@ Ext.define('BQ.Application.Toolbar', {
                 xtype : 'button',
                 itemId: 'button_analysis',
                 //menu  : this.menu_services,
-                iconCls : 'icon-services',
+                iconCls : 'icon-analysis',
                 text  : 'Analyze',
                 handler: analysisAction,
             }, {

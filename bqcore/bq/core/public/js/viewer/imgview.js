@@ -728,7 +728,7 @@ ImgViewer.prototype.createViewMenu = function() {
             anchorToTarget: true,
             cls: 'bq-viewer-menu',
             maxWidth: 460,
-            anchorOffset: -10,
+            anchorOffset: -3,
             autoHide: false,
             shadow: false,
             closable: true,
