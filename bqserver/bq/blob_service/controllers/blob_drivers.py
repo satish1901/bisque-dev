@@ -54,6 +54,7 @@ import string
 import shutil
 import datetime
 import collections
+import posixpath
 
 from tg import config
 from paste.deploy.converters import asbool
@@ -137,11 +138,11 @@ if os.name == 'nt':
         except UnicodeEncodeError:
             # dima: safeguard measure for old non-encoded unicode paths
             return urllib.unquote(path)
-    
+
     def localpath2url(path):
         path = path.replace('\\', '/')
         url = urllib.quote(path.encode('utf-8'))
-        if len(path)>3 and path[0] != '/' and path[1] == ':': 
+        if len(path)>3 and path[0] != '/' and path[1] == ':':
             # path starts with a drive letter: c:/
             url = 'file:///%s'%url
         else:
@@ -202,7 +203,7 @@ class StorageDriver(object):
     readonly = False      # store is readonly or r/w
 
     def __init__(self, mount_url=None, **kw):
-        """ initializae a storage driver 
+        """ initializae a storage driver
         @param mount_url: optional full storeurl to mount
         """
     # New interface
@@ -210,7 +211,7 @@ class StorageDriver(object):
         """Mount the driver"""
     def unmount (self):
         """Unmount the driver """
-     
+
     def mount_status(self):
         """return the status of the mount: mounted, error, unmounted
         """
@@ -232,7 +233,7 @@ class StorageDriver(object):
         "return status of url: dir/file, readable, etc"
     def list(self, storeurl, credentials = None):
         "list contents of store url"
-        
+
 
 
 
@@ -255,25 +256,25 @@ class LocalDriver (StorageDriver):
         :param  top: allow old style (relatave path file paths)
         :param readonly: set repo readonly
         """
-        self.mount_url = mount_url
+        self.mount_url = posixpath.join(mount_url,'')
         datadir = data_url_path()
         for key, value in kw.items():
             setattr(self, key, string.Template(value).safe_substitute(datadir=datadir))
-        self.top = top
+        self.top = posixpath.join(top, '')
         if top:
             self.top = string.Template(self.top).safe_substitute(datadir=datadir)
             self.top_path = url2localpath(self.top)
         self.options = kw
-        
+
 
     def valid(self, storeurl):
-        # dima: there's only one local storage in the system, file:// should all be redirected to it 
+        # dima: there's only one local storage in the system, file:// should all be redirected to it
 
         #log.debug('valid ident %s top %s', ident, self.top)
         #log.debug('valid local ident %s local top %s', url2localpath(ident), url2localpath(self.top))
         if storeurl.startswith (self.mount_url):
             return storeurl
-        # It might be a shorted 
+        # It might be a shorted
         storeurl,_ = split_subpath(storeurl)
         scheme = urlparse.urlparse(storeurl).scheme
 
@@ -282,12 +283,13 @@ class LocalDriver (StorageDriver):
         elif storeurl.startswith('file:///'):
             pass
         elif storeurl.startswith('file://'):
-            storeurl = urlparse.urljoin(self.mount_url, storeurl[7:])
+            storeurl = urlparse.urljoin(self.top, storeurl[7:])
         else:
             return None
         localpath = url2localpath (storeurl)
+        log.debug ("checking %s", localpath)
         return os.path.exists(localpath) and localpath2url(localpath)
-    
+
     # New interface
     def push(self, storeurl, fp):
         "Push a local file (file pointer)  to the store"
@@ -321,7 +323,7 @@ class LocalDriver (StorageDriver):
                 path = os.path.join(self.top, path.replace('file://', ''))
             else:
                 path = os.path.join(self.top, path)
-            
+
         path = url2localpath(path.replace('\\', '/'))
 
         #log.debug('local_store localpath path: %s', path)
@@ -341,7 +343,7 @@ class LocalDriver (StorageDriver):
     def list(self, storeurl, credentials = None):
         "list contents of store url"
         raise NotImplemented("list")
-        
+
     def delete(self, ident):
         #ident,_ = split_subpath(ident) # reference counting required?
         fullpath = os.path.join(self.top[5:], ident) # remove file
@@ -358,7 +360,7 @@ class LocalDriver (StorageDriver):
 
 class IrodsDriver(StorageDriver):
     """New Irods driver :
-    
+
     MAYBE TO BE REDONE to reuse connection.
     """
 
@@ -487,13 +489,13 @@ class S3Driver(StorageDriver):
     def pull(self, storeurl):
         'return path to local copy of the s3 resource'
         # dima: path can be a directory, needs listing and fetching all enclosed files
-        
+
         # if s3 will provide extraction of sub files from compressed (zip, tar, ...) ask for it and return sub as None
         storeurl,sub = split_subpath(storeurl)
         s3_key = storeurl.replace("s3://","")
         path = s3_handler.s3_fetch_file(self.bucket, s3_key)
         # dima: if path is a directory, list contents
-        return Blobs(path=path, sub=sub, files=None)    
+        return Blobs(path=path, sub=sub, files=None)
 
     def delete(self, storeurl):
         s3_key = storeurl.replace("s3://","")
@@ -520,7 +522,7 @@ class HttpDriver(StorageDriver):
 
     def mount(self, mount_url, credentials=None, readonly=True, **kw):
         self.mount_url = mount_url
-        # DECODE Credential string 
+        # DECODE Credential string
         # basic auth
         if credentials:
             self.auth_scheme = credentials.split(':', 1)
