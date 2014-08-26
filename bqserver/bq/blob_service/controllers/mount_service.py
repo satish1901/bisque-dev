@@ -179,6 +179,12 @@ def get_tag(elem, tag_name):
 
 
 #  Load store parameters
+BADPARMS = dict (date='',
+                 dirhash='',
+                 filehash='',
+                 filename='',
+                 filebase='',
+                 fileext='')
 def load_default_drivers():
     stores = OrderedDict()
     store_list = [ x.strip() for x in config.get('bisque.blob_service.stores','').split(',') ]
@@ -189,11 +195,12 @@ def load_default_drivers():
                         for x in  config.items() if x[0].startswith('bisque.stores.%s.' % store))
         if 'mounturl' not in params:
             if 'path' in params:
-                params['mounturl'] = params.pop ('path')
-                log.warn ("Use of deprecated 'path' %s driver . Please change to mounturl", store)
+                path = params.pop ('path')
+                params['mounturl'] = string.Template(path).safe_substitute(BADPARMS)
+                log.warn ("Use of deprecated path (%s) in  %s driver . Please change to mounturl and remove any from %s", path, store, BADPARMS.keys())
             else:
                 log.error ('cannot configure %s without the mounturl parameter' , store)
-            continue
+                continue
         log.debug("params = %s" % params)
         #driver = make_storage_driver(params.pop('path'), **params)
         #if driver is None:
