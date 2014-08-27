@@ -390,20 +390,19 @@ class IrodsDriver(StorageDriver):
         # Get the constant portion of the path
         log.info("created irods store %s " , self.mount_url)
 
+    def valid(self, storeurl):
+        return storeurl.startswith(self.mount_url) and storeurl
+
     # New interface
     def push(self, fp, storeurl):
         "Push a local file (file pointer)  to the store"
         log.debug('irods.push: %s' , storeurl)
-        if credentials is None:
-            credentials = (self.user, self.password)
         flocal = irods_handler.irods_push_file(fp, storeurl, user=self.user, password=self.password)
         return storeurl, flocal
 
     def pull (self, storeurl, localpath=None):
         "Pull a store file to a local location"
         # dima: path can be a directory, needs listing and fetching all enclosed files
-        if credentials is None:
-            credentials = (self.user, self.password)
         try:
             # if irods will provide extraction of sub files from compressed (zip, tar, ...) ask for it and return sub as None
             irods_ident,sub = split_subpath(storeurl)
