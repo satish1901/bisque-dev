@@ -178,7 +178,7 @@ def get_tag(elem, tag_name):
 
 
 #  Load store parameters
-BADPARMS = dict (date='',
+OLDPARMS = dict (date='',
                  dirhash='',
                  filehash='',
                  filename='',
@@ -195,8 +195,8 @@ def load_default_drivers():
         if 'mounturl' not in params:
             if 'path' in params:
                 path = params.pop ('path')
-                params['mounturl'] = string.Template(path).safe_substitute(BADPARMS)
-                log.warn ("Use of deprecated path (%s) in  %s driver . Please change to mounturl and remove any from %s", path, store, BADPARMS.keys())
+                params['mounturl'] = string.Template(path).safe_substitute(OLDPARMS)
+                log.warn ("Use of deprecated path (%s) in  %s driver . Please change to mounturl and remove any from %s", path, store, OLDPARMS.keys())
             else:
                 log.error ('cannot configure %s without the mounturl parameter' , store)
                 continue
@@ -343,14 +343,14 @@ class MountServer(TGController):
                 log.warn ("order tag missing from root store adding")
                 etree.SubElement(root, 'tag', name='order', value = ','.join (self.drivers.keys()))
                 update = True
-            for (store_name, driver), store in itertools.izip_longest (self.drivers.items(), root.xpath('store')):
-                if store is not None:
-                    if store_name != store.get ('name'):
-                        log.warn("Unitialized store does not have original order %s at %s != %s", self.drivers.keys(), store_name, store.get('name'))
-                else:
+
+            # Check for store not already initialized
+            user_stores   = dict ((x.get ('name'), x)  for x in root.xpath('store'))
+            for store_name, driver in self.drivers.items():
+                if store_name not in user_stores:
                     store = etree.SubElement (root, 'store', name = store_name, resource_unid = store_name)
                 if store.get ('value') is None:
-                    mounturl = driver.get ('mounturl') or driver.get ('path') # OLD name
+                    mounturl = driver.get ('mounturl')
                     mounturl = string.Template(mounturl).safe_substitute(datadir = data_url_path(), user = user_name)
                     # ensure no $ are left
                     mounturl = mounturl.split('$', 1)[0]
