@@ -173,7 +173,7 @@ def get_tag(elem, tag_name):
     els = elem.xpath ('./tag[@name="%s"]' % tag_name)
     if len(els) == 0:
         return None
-    return [ (tag_name, el.get ('value'), el.get('type')) for el in els ]
+    return els
 
 
 
@@ -349,6 +349,8 @@ class MountServer(TGController):
             for store_name, driver in self.drivers.items():
                 if store_name not in user_stores:
                     store = etree.SubElement (root, 'store', name = store_name, resource_unid = store_name)
+                else:
+                    store = user_stores[store_name]
                 if store.get ('value') is None:
                     mounturl = driver.get ('mounturl')
                     mounturl = string.Template(mounturl).safe_substitute(datadir = data_url_path(), user = user_name)
@@ -520,7 +522,7 @@ class MountServer(TGController):
         if  fileobj:
 
             readonly = get_tag(store, 'readonly')
-            if readonly:
+            if readonly and asbool(readonly[0].get('value')):
                 raise IllegalOperation('readonly store')
 
             driver   = self._get_driver(store)
@@ -603,6 +605,8 @@ class MountServer(TGController):
 
     def fetch_blob(self, resource):
         'return a (set) path(s) for a resource'
+
+        log.debug ("fetch_blob %s", resource.get ('resource_uniq'))
         store = self.valid_store_ref (resource)
         if  store is None:
             log.error ('Not a valid store ref in  %s' , etree.tostring (resource))
@@ -614,6 +618,8 @@ class MountServer(TGController):
             bloburls = [ bloburls ]
         else:
             bloburls  = [ x.text for x in resource.xpath('value') ]
+
+        log.debug ("fetch_blob %s -> %s", resource.get ('resource_uniq'), bloburls)
 
         files = []
         sub = ''
@@ -639,9 +645,9 @@ class MountServer(TGController):
         """
         root = data_service.query('store', resource_unid='(root)', view='full')
         #figure  where to store blob
-        store_order = get_tag (root, 'order')
-        if store_order is None:
-            store_order = config.get('bisque.blob_service.stores','')
+        #store_order = get_tag (root, 'order')
+        #if store_order is None:
+        #    store_order = config.get('bisque.blob_service.stores','')
 
         #for store_name in [x.strip() for x in store_order.split(',')]:
         #    pass
@@ -662,6 +668,8 @@ class MountServer(TGController):
         store_order = get_tag (root, 'order')
         if store_order is None:
             store_order = config.get('bisque.blob_service.stores','')
+        else:
+            store_order = store_order[0].get ('value')
 
         stores = OrderedDict()
         for store_name in (x.strip() for x in store_order.split(',')):
