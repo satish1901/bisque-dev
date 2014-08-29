@@ -343,7 +343,7 @@ class MountServer(TGController):
                 log.warn ("order tag missing from root store adding")
                 storeorder = etree.SubElement(root, 'tag', name='order', value = ','.join (self.drivers.keys()))
                 update = True
-            elif len(storerder) == 1:
+            elif len(storeorder) == 1:
                 storeorder = storeorder[0]
             else:
                 log.warn("Multible order tags on root store")
@@ -354,8 +354,8 @@ class MountServer(TGController):
                 if store_name not in user_stores:
                     store = etree.SubElement (root, 'store', name = store_name, resource_unid = store_name)
                     ordervalue = [ x.strip() for x in storeorder.get ('value', '').split(',') ]
-                    if storename not in ordervalue:
-                        ordervalue.append(storename)
+                    if store_name not in ordervalue:
+                        ordervalue.append(store_name)
                         storeorder.set ('value', ','.join(ordervalue))
 
                 else:
@@ -468,8 +468,7 @@ class MountServer(TGController):
         for store_name, store in stores.items():
             prefix = store.get ('value')
             log.debug ("checking %s and %s" ,  prefix, storeurls[0])
-            # KGK: TEMPORARY .. this should check readability by the driver instead of simply the prefix
-            # ugly should be in driver at least
+            # KGK: TEMPORARY .. this should check readability by the driver
             driver = self._get_driver(store)
             if driver.valid (storeurls[0]):
                 # All *must* be valid for the same store
