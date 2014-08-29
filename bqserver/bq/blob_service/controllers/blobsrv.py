@@ -50,9 +50,6 @@ of storage platforms: local, irods, s3
 """
 import os
 import logging
-import hashlib
-import urlparse
-import itertools
 
 from lxml import etree
 from datetime import datetime
@@ -83,17 +80,17 @@ from bq.util.sizeoffmt import sizeof_fmt
 from bq import data_service
 from bq.data_service.model import Taggable, DBSession
 #from bq import image_service
-from bq.image_service.controllers.misc import blocked_alpha_num_sort
 from bq import export_service
 
 SIG_NEWBLOB  = "new_blob"
 
 from . import blob_drivers
-from . import store_resource
 from . import mount_service
+
 log = logging.getLogger('bq.blobs')
 
-import traceback
+from .blob_drivers import split_subpath, join_subpath
+
 
 #########################################################
 # Utility functions
@@ -328,7 +325,7 @@ class BlobServer(RestController, ServiceMixin):
         self.check_access(ident, RESOURCE_READ)
         try:
             resource = data_service.query(resource_uniq=ident)[0]
-            filename,_ = blob_drivers.split_subpath(resource.get('name', str(ident)))
+            filename,_ = split_subpath(resource.get('name', str(ident)))
             b = self.localpath(ident)
             if b.files and len(b.files) > 1:
                 return export_service.export(files=[resource.get('uri')], filename=filename)
@@ -343,9 +340,7 @@ class BlobServer(RestController, ServiceMixin):
             except UnicodeEncodeError:
                 disposition = 'attachment; filename="%s"; filename*="%s"'%(filename.encode('utf8'), filename.encode('utf8'))
 
-            return forward(BQFileApp(localpath,
-                                   content_disposition=disposition,
-                                   ).cache_control (max_age=60*60*24*7*6)) # 6 weeks
+            return forward(BQFileApp(localpath, content_disposition=disposition).cache_control (max_age=60*60*24*7*6)) # 6 weeks
         except IllegalOperation:
             abort(404)
 
@@ -370,7 +365,7 @@ class BlobServer(RestController, ServiceMixin):
                     try:
                         resource = etree.fromstring(resource)
                     except etree.XMLSyntaxError:
-                        log.exception ("while parsing %s" %resource)
+                        log.exception ("while parsing %s" , str(resource))
                         resource = None
             return resource
 
@@ -422,8 +417,7 @@ class BlobServer(RestController, ServiceMixin):
                                          name="upload_datetime",
                                          value=ts,
                                          type='datetime',
-                                         permission=perm),
-                        )
+                                         permission=perm,))
 
         log.info ("NEW RESOURCE <= %s" , etree.tostring(resource))
         resource = data_service.new_resource(resource = resource)
@@ -476,7 +470,7 @@ class BlobServer(RestController, ServiceMixin):
         #filename_safe = filename.encode('ascii', 'replace')
         filename = resource.get('name') or getattr(fileobj, 'name') or ''
         uniq     = resource.get('resource_uniq')
-        _,sub    = blob_drivers.split_subpath(resource.get('value') or resource.get('name'))
+        _,sub    = split_subpath(resource.get('value') or resource.get('name'))
 
         #with TransferTimer() as t:
         #    blob_id, t.path = self.drive_man.save_blob(fileobj, filename, user_name = user_name, uniq=uniq)
@@ -486,8 +480,8 @@ class BlobServer(RestController, ServiceMixin):
         if store_url is None:
             return None
 
-        resource.set('value', '%s%s'%(store_url, sub))
-        resource.set('name', '%s%s'%(os.path.basename(lpath), sub))
+        resource.set('value', join_subpath(store_url, sub))
+        resource.set('name', join_subpath(os.path.basename(lpath), sub))
 
         #resource.set('resource_uniq', uniq)
         return self.create_resource(resource)
@@ -510,15 +504,15 @@ class BlobServer(RestController, ServiceMixin):
         @return      : The created resource
         """
 
-        _,sub    = blob_drivers.split_subpath(resource.get('value') or resource.get('name'))
+        _,sub    = split_subpath(resource.get('value') or resource.get('name'))
 
         store_url, lpath = self.mounts.store_blob(resource, rooturl = rooturl)
         log.debug ("_store_fileobj %s %s", store_url, lpath)
         if store_url is None:
             return None
 
-        resource.set('value', '%s%s'%(store_url, sub))
-        resource.set('name', '%s%s'%(os.path.basename(lpath), sub))
+        resource.set('value', join_subpath(store_url, sub))
+        resource.set('name', join_subpath(os.path.basename(lpath), sub))
 
         return self.create_resource(resource)
 
@@ -527,7 +521,7 @@ class BlobServer(RestController, ServiceMixin):
         try:
             resource = data_service.query(resource_uniq=uniq_ident, view='full')[0]
         except IndexError:
-            log.warn ('requested resource %s was not available/found' % uniq_ident)
+            log.warn ('requested resource %s was not available/found' , uniq_ident)
             return None
         return self.mounts.fetch_blob(resource)
 
@@ -538,7 +532,7 @@ class BlobServer(RestController, ServiceMixin):
         if resource:
             if resource.resource_name != None:
                 fname = resource.resource_name
-        fname,_ = blob_drivers.split_subpath(fname)
+        fname,_ = split_subpath(fname)
         log.debug('Blobsrv - original name %s->%s ' , ident, fname)
         return fname
 
@@ -573,8 +567,8 @@ class BlobServer(RestController, ServiceMixin):
             resource.resource_value = blob_id
     """
 
-    def geturi(self, id):
-        return self.url + '/' + str(id)
+    def geturi(self, ident):
+        return self.url + '/' + str(ident)
 
 
 def initialize(uri):

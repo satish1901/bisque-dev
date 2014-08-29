@@ -57,22 +57,19 @@ import logging
 import string
 import urllib
 import urlparse
-import itertools
 import shutil
+
 from lxml import etree
-from datetime import datetime
-from datetime import timedelta
 from sqlalchemy.exc import IntegrityError
 from paste.deploy.converters import asbool
 from contextlib import contextmanager
 
 import tg
 from tg import expose, config, require, abort
-from tg.controllers import RestController, TGController
+from tg.controllers import TGController
 from repoze.what import predicates
 
 from bq.core import  identity
-from bq.core.identity import set_admin_mode
 from bq.core.model import DBSession
 #from bq.core.service import ServiceMixin
 #from bq.core.service import ServiceController
@@ -83,6 +80,7 @@ from bq.util.compat import OrderedDict
 from bq import data_service
 
 from . import blob_drivers
+from .blob_drivers import split_subpath, join_subpath
 
 log = logging.getLogger('bq.blobs.mounts')
 
@@ -563,9 +561,9 @@ class MountServer(TGController):
 
         refs = resource.get ('value')
         if refs is not None:
-            refs = [ (resource, setval, blob_drivers.split_subpath(refs), storepath) ]
+            refs = [ (resource, setval, split_subpath(refs), storepath) ]
         else:
-            refs = [ (x, settext, blob_drivers.split_subpath(x.text), None) for x in resource.xpath ('value') ]
+            refs = [ (x, settext, split_subpath(x.text), None) for x in resource.xpath ('value') ]
 
         # Assume the first URL is special and the others are related which can be used
         # to calculate storepath
@@ -595,9 +593,9 @@ class MountServer(TGController):
                 storeurl, localpath = driver.push (storeurl, fobj)
                 if not node:
                     node = etree.SubElement(resource, 'value')
-                    node.text = "%s%s" % (storeurl, subpath)
+                    node.text = join_subpath(storeurl, subpath)
                 else:
-                    setter(node, "%s%s" % (storeurl, subpath))
+                    setter(node, join_subpath (storeurl, subpath))
 
 
 

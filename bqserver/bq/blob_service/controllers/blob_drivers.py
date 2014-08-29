@@ -52,19 +52,16 @@ import urlparse
 import urllib
 import string
 import shutil
-import datetime
 import collections
 import posixpath
 
 from tg import config
 from paste.deploy.converters import asbool
 
-from bq.exceptions import ConfigurationError, ServiceError, IllegalOperation, DuplicateFile
+from bq.exceptions import ConfigurationError, IllegalOperation, DuplicateFile
 
 from bq.util.paths import data_path
 from bq.util.mkdir import _mkdir
-from bq.util.hash import make_short_uuid
-from bq.util.http import get_file
 from bq.util.compat import OrderedDict
 
 from bq.image_service.controllers.misc import blocked_alpha_num_sort
@@ -106,7 +103,11 @@ def split_subpath(path):
     spot = path.rfind ('#')
     if spot < 0:
         return path,''
-    return path[:spot], path[spot:]
+    return path[:spot], path[spot+1:]
+
+def join_subpath(path, sub):
+    return "%s#%s" % (path, sub) if sub else path
+
 
 def walk_deep(path):
     """Splits sub path that follows # sign if present
@@ -187,7 +188,7 @@ def load_storage_drivers():
         if 'path' not in params:
             log.error ('cannot configure %s without the path parameter' , store)
             continue
-        log.debug("params = %s" % params)
+        log.debug("params = %s" ,  str(params))
         driver = make_storage_driver(params.pop('path'), **params)
         if driver is None:
             log.error ("failed to configure %s.  Please check log for errors " , str(store))
@@ -199,13 +200,13 @@ def load_storage_drivers():
 
 class StorageDriver(object):
     scheme   = "scheme"   # The URL scheme id
-    path     = "unassigned format_path"  # Storage path using scheme
     readonly = False      # store is readonly or r/w
 
-    def __init__(self, mount_url=None, **kw):
-        """ initializae a storage driver
-        @param mount_url: optional full storeurl to mount
-        """
+#     def __init__(self, mount_url=None, **kw):
+#         """ initializae a storage driver
+#         @param mount_url: optional full storeurl to mount
+#         """
+
     # New interface
     def mount(self, mount_url, **kw):
         """Mount the driver"""
@@ -219,9 +220,9 @@ class StorageDriver(object):
     # File interface
     def valid (self, storurl):
         "Return validity of storeurl"
-    def push(self, fp, storeurl, credentials=None):
+    def push(self, fp, storeurl):
         "Push a local file (file pointer)  to the store"
-    def pull (self, storeurl, localpath=None, credentials=None):
+    def pull (self, storeurl, localpath=None):
         "Pull a store file to a local location"
     def chmod(self, storeurl, permission):
         """Change permission of """
@@ -231,7 +232,7 @@ class StorageDriver(object):
         "Check if a url is a container/directory"
     def status(self, storeurl):
         "return status of url: dir/file, readable, etc"
-    def list(self, storeurl, credentials = None):
+    def list(self, storeurl):
         "list contents of store url"
 
 
@@ -247,7 +248,6 @@ class StorageDriver(object):
 
 class LocalDriver (StorageDriver):
     """Local filesystem driver"""
-
 
     def __init__(self, mount_url=None, top = None,  readonly=False, **kw):
         """Create a local storage driver:
@@ -341,9 +341,9 @@ class LocalDriver (StorageDriver):
         return Blobs(path=path, sub=sub, files=files)
 
 
-    def list(self, storeurl, credentials = None):
+    def list(self, storeurl):
         "list contents of store url"
-        raise NotImplemented("list")
+        raise NotImplementedError("list")
 
     def delete(self, ident):
         #ident,_ = split_subpath(ident) # reference counting required?
@@ -351,10 +351,8 @@ class LocalDriver (StorageDriver):
         log.debug("deleting %s", fullpath)
         os.remove (fullpath)
 
-
-
     def __str__(self):
-        return "localstore[%s, %s]" % (self.top, self.format_path)
+        return "localstore[%s, %s]" % (self.mount_url, self.top)
 
 ###############################################
 # Irods
@@ -414,7 +412,7 @@ class IrodsDriver(StorageDriver):
             log.exception ("Error fetching %s ", irods_ident)
         return None
 
-    def list(self, storeurl, credentials = None):
+    def list(self, storeurl):
         "list contents of store url"
 
     def delete(self, irods_ident):
@@ -431,8 +429,8 @@ class S3Driver(StorageDriver):
 
     scheme = 's3'
 
-    def __init__(self, mount_url=None,
-                 access_key=None, secret_key=None, bucket_id=None, location=Location.USWest,
+    def __init__(self, mount_url=None, credentials = None,
+                 bucket_id=None, location=Location.USWest,
                  readonly = False, **kw):
         """Create a iRods storage driver:
 
@@ -443,13 +441,20 @@ class S3Driver(StorageDriver):
         :param readonly: set repo readonly
         """
 
-        self.access_key,  self.secret_key = credentials.split(':')
+        self.mount_url = mount_url
+        if credentials:
+            self.access_key,  self.secret_key = credentials.split(':')
+        else:
+            log.error ('need credentials for S3 store')
+
+        self.location = location
         self.bucket_id = bucket_id #config.get('bisque.blob_service.s3.bucket_id')
         self.bucket = None
+        self.conn = None
         self.readonly = asbool(readonly)
-        self.top = path.split('$')[0]
+        self.top = mount_url.split('$')[0]
         self.options = kw
-
+        self.mount (mount_url, **kw)
 
 
     def mount(self, mount_url, **kw):
@@ -462,15 +467,13 @@ class S3Driver(StorageDriver):
 
         try:
             self.bucket = self.conn.get_bucket(self.bucket_id)
-        except:
+        except boto.exception:
             try:
-                self.bucket = self.conn.create_bucket(self.bucket_id, location=location)
+                self.bucket = self.conn.create_bucket(self.bucket_id, location=self.location)
             except boto.exception.S3CreateError:
                 raise ConfigurationError('bisque.blob_service.s3.bucket_id already owned by someone else. Please use a different bucket_id')
-            except:
-                raise ServiceError('error while creating bucket in s3 blob storage')
 
-        log.info("created S3 store %s (%s)" , self.format_path, self.top)
+        log.info("mounted S3 store %s (%s)" , self.mount_url, self.top)
 
     def unmount (self):
         self.conn.close()
@@ -478,15 +481,15 @@ class S3Driver(StorageDriver):
     def valid(self, storeurl):
         return storeurl.startswith(self.mount_url) and storeurl
 
-    def push(self, fp, filename, user_name=None, uniq=None):
+    def push(self, fp, storeurl):
         'write a file to s3'
-        blob_ident = formatPath(self.format_path, user_name, filename, uniq)
-        log.debug('s3.write: %s -> %s' , filename, blob_ident)
-        s3_key = blob_ident.replace("s3://","")
+        s3_ident,sub = split_subpath(storeurl)
+        log.debug('s3.write: %s -> %s' , storeurl, s3_ident)
+        s3_key = s3_ident.replace("s3://","")
         flocal = s3_handler.s3_push_file(fp, self.bucket , s3_key)
-        return blob_ident, flocal
+        return s3_ident, flocal
 
-    def pull(self, storeurl):
+    def pull(self, storeurl, locapath=None):
         'return path to local copy of the s3 resource'
         # dima: path can be a directory, needs listing and fetching all enclosed files
 
@@ -509,7 +512,7 @@ class HttpDriver(StorageDriver):
     """HTTP storage driver  """
     scheme = 'http'
 
-    def __init__(self, mount_url=None, **kw):
+    def __init__(self, mount_url=None, credentials=None, readonly=True, **kw):
         """Create a HTTP storage driver:
 
         :param path: http:// url format_path for where to read/store files
@@ -517,23 +520,24 @@ class HttpDriver(StorageDriver):
         :param  password: the irods password
         :param readonly: set repo readonly
         """
-        if mount_url:
-            self.mount(mount_url, **kw)
-
-    def mount(self, mount_url, credentials=None, readonly=True, **kw):
         self.mount_url = mount_url
         # DECODE Credential string
-        # basic auth
         if credentials:
             self.auth_scheme = credentials.split(':', 1)
             if self.auth_scheme.lower() == 'basic':
                 _, self.user, self.password = [ x.strip('"\'') for x in credentials.split(':')]
+        # basic auth
+        log.debug('http.user: %s http.password: %s' , self.user, self.password)
         self.readonly = asbool(readonly)
         self.options = kw
-        log.debug('http.user: %s http.password: %s' , self.user, self.password)
+        self.top = mount_url.split('$')[0]
+        if mount_url:
+            self.mount(mount_url, **kw)
+
+    def mount(self, mount_url,  **kw):
+        self.mount_url = mount_url
         # Get the constant portion of the path
-        self.top = path.split('$')[0]
-        log.info("created irods store %s (%s)" , self.format_path, self.top)
+        log.info("created http store %s " , self.mount_url)
 
     def valid(self, http_ident):
         return  http_ident.startswith(self.mount_url) and http_ident
@@ -541,7 +545,7 @@ class HttpDriver(StorageDriver):
     def push(self, fp, filename):
         raise IllegalOperation('HTTP(S) write is not implemented')
 
-    def pull(self, http_ident):
+    def pull(self, http_ident,  localpath=None):
         # dima: path can be a directory, needs listing and fetching all enclosed files
         raise IllegalOperation('HTTP(S) localpath is not implemented')
 
