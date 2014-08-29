@@ -2156,7 +2156,12 @@ Ext.define('BQ.renderers.Image', {
             text: 'Overlay annotations on a movie',
             scope: this,
             handler: function() {
-                window.open(BQ.Server.url('/client_service/movieplayer?resource='+resource_uri+'&gobjects='+this.gobjects[0].uri));
+                var player = Ext.create('BQ.viewer.Movie.Dialog', {
+                    resource: resource_uri,
+                    gobjects: this.gobjects[0].uri,
+                    //phys: this.viewer.imagephys,
+                    //preferences: this.viewer.preferences
+                });
             },
         });
     },

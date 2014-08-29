@@ -9,7 +9,7 @@ function ImgMovie (viewer,name){
         iconCls: 'movie',
         tooltip: 'View and export current image as a movie',
         scope: this,
-        handler: this.showMovie,
+        handler: this.showMovie
     });
 }
 ImgMovie.prototype = new ViewerPlugin();
@@ -22,26 +22,20 @@ ImgMovie.prototype.create = function (parent) {
 ImgMovie.prototype.newImage = function () {
     if (!this.viewer.toolbar) return;
     var m = this.viewer.toolbar.queryById('menu_viewer_movie');
-    if (m) m.setDisabled(this.viewer.imagedim.z * this.viewer.imagedim.t < 2);
+    if (m) {
+        m.setDisabled(this.viewer.imagedim.z * this.viewer.imagedim.t < 2);
+    }
 };
 
 ImgMovie.prototype.updateImage = function () {
+    // nothing here
 };
 
 ImgMovie.prototype.showMovie = function () {
     var player = Ext.create('BQ.viewer.Movie.Dialog', {
         resource: this.viewer.image,
         phys: this.viewer.imagephys,
-        preferences: this.viewer.preferences,
+        preferences: this.viewer.preferences
     });
-    return;
-
-    if (this.viewer.imagedim.z * this.viewer.imagedim.t <= 1) {
-        alert ("Image is not a movie (multiplane image)");
-        return;
-    }
-
-    //window.location = '/bisquik/movieplayer?resource='+this.viewer.imageuri;
-    window.open( '/client_service/movieplayer?resource='+this.viewer.imageuri );
 };
 
