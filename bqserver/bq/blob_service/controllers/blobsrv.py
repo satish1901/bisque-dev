@@ -137,12 +137,12 @@ class TransferTimer(Timer):
 ######################################################
 # Store manageer
 
-
+''' COMMENTED
 class DriverManager(object):
     'Manage multiple stores'
 
     def __init__(self):
-        self.drivers = blob_storage.load_storage_drivers()
+        self.drivers = blob_drivers.load_storage_drivers()
         log.info ('configured stores %s' ,  ','.join( str(x) for x in self.drivers.keys()))
 
     def valid_blob(self, blob_id):
@@ -209,6 +209,11 @@ class DriverManager(object):
 
     def __str__(self):
         return "drivers%s" % [ "(%s, %s)" % (k,v) for k,v in self.drivers.items() ]
+
+
+
+'''
+
 
 ###########################################################################
 # BlobServer
@@ -323,9 +328,9 @@ class BlobServer(RestController, ServiceMixin):
         self.check_access(ident, RESOURCE_READ)
         try:
             resource = data_service.query(resource_uniq=ident)[0]
-            filename,_ = blob_storage.split_subpath(resource.get('name', str(ident)))
+            filename,_ = blob_drivers.split_subpath(resource.get('name', str(ident)))
             b = self.localpath(ident)
-            if b.files is not None:
+            if b.files and len(b.files) > 1:
                 return export_service.export(files=[resource.get('uri')], filename=filename)
 
             localpath = os.path.normpath(b.path)

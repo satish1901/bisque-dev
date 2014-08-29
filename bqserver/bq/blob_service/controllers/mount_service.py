@@ -341,14 +341,23 @@ class MountServer(TGController):
             storeorder = get_tag(root, 'order')
             if storeorder is None:
                 log.warn ("order tag missing from root store adding")
-                etree.SubElement(root, 'tag', name='order', value = ','.join (self.drivers.keys()))
+                storeorder = etree.SubElement(root, 'tag', name='order', value = ','.join (self.drivers.keys()))
                 update = True
+            elif len(storerder) == 1:
+                storeorder = storeorder[0]
+            else:
+                log.warn("Multible order tags on root store")
 
             # Check for store not already initialized
             user_stores   = dict ((x.get ('name'), x)  for x in root.xpath('store'))
             for store_name, driver in self.drivers.items():
                 if store_name not in user_stores:
                     store = etree.SubElement (root, 'store', name = store_name, resource_unid = store_name)
+                    ordervalue = [ x.strip() for x in storeorder.get ('value', '').split(',') ]
+                    if storename not in ordervalue:
+                        ordervalue.append(storename)
+                        storeorder.set ('value', ','.join(ordervalue))
+
                 else:
                     store = user_stores[store_name]
                 if store.get ('value') is None:
@@ -486,6 +495,7 @@ class MountServer(TGController):
 
         """
         stores = self._get_stores()
+        log.debug ("Available stores: %s", stores.keys())
 
         storepath = resource.get ('name')
         if storepath[0]=='/':
@@ -502,6 +512,7 @@ class MountServer(TGController):
                     stores = dict( (store.get ('name'), store) )
 
         storeurl = lpath = None
+        log.debug ("Trying mounts %s", stores.keys())
         for store_name, store in stores.items():
             try:
                 storeurl,lpath =  self._save_store (store, storepath, resource, fileobj,rooturl)
@@ -520,12 +531,10 @@ class MountServer(TGController):
         'store the file to the named store'
 
         if  fileobj:
-
-            readonly = get_tag(store, 'readonly')
-            if readonly and asbool(readonly[0].get('value')):
+            driver   = self._get_driver(store)
+            if driver.readonly:
                 raise IllegalOperation('readonly store')
 
-            driver   = self._get_driver(store)
             storeurl = urlparse.urljoin (driver.mount_url, storepath)
             storeurl, localpath = driver.push (storeurl, fileobj)
             resource.set('value', storeurl)
@@ -578,7 +587,7 @@ class MountServer(TGController):
                 log.error ("store_refs: Cannot access %s of %s ", storeurl, etree.tostring(node))
 
 
-        if movingrefs and get_tag(store, 'readonly'):
+        if movingrefs and driver.readonly:
             raise IllegalOperation('readonly store')
 
         for node, setter, (localpath, subpath),  storepath in movingrefs:
