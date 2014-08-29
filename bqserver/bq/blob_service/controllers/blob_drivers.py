@@ -261,6 +261,7 @@ class LocalDriver (StorageDriver):
         for key, value in kw.items():
             setattr(self, key, string.Template(value).safe_substitute(datadir=datadir))
         self.top = posixpath.join(top, '')
+        self.readonly = asbool(readonly)
         if top:
             self.top = string.Template(self.top).safe_substitute(datadir=datadir)
             self.top_path = url2localpath(self.top)
@@ -364,7 +365,7 @@ class IrodsDriver(StorageDriver):
     MAYBE TO BE REDONE to reuse connection.
     """
 
-    def __init__(self, path, readonly=False, credentials=None, **kw):
+    def __init__(self, mount_url, readonly=False, credentials=None, **kw):
         """Create a iRods storage driver:
 
         :param path: irods:// url format_path for where to store files
@@ -372,10 +373,10 @@ class IrodsDriver(StorageDriver):
         :param  password: the irods password
         :param readonly: set repo readonly
         """
+        self.mount_url = mount_url
         datadir = data_url_path()
         for key, value in kw.items():
             setattr(self, key, string.Template(value).safe_substitute(datadir=datadir))
-        self.format_path = path
         if credentials:
             try:
                 self.user, self.password = [ x.strip('"\'') for x in credentials.split(':') ]
