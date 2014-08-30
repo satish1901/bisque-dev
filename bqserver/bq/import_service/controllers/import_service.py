@@ -745,7 +745,7 @@ class import_serviceController(ServiceController):
             #resources = self.filters[ intags['type'] ](UploadedResource(resource, orig=uf.orig), intags)
             resources = self.filters[ intags['type'] ](uf, intags)
         except Exception, e:
-            log.exception('Problem in processing file: %s : %s'  , intags['type'], uf)
+            log.exception('Problem in processing file: %s : %s'  ,  intags.get ('type',''), str(uf))
             error = 'Problem processing the file: %s'%e
 
         # some error during pre-processing

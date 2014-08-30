@@ -211,6 +211,7 @@ def load_storage_drivers():
 class StorageDriver(object):
     scheme   = "scheme"   # The URL scheme id
     readonly = False      # store is readonly or r/w
+    mount_url = "unmounted"
 
 #     def __init__(self, mount_url=None, **kw):
 #         """ initializae a storage driver
@@ -222,11 +223,9 @@ class StorageDriver(object):
         """Mount the driver"""
     def unmount (self):
         """Unmount the driver """
-
     def mount_status(self):
         """return the status of the mount: mounted, error, unmounted
         """
-
     # File interface
     def valid (self, storurl):
         "Return validity of storeurl"
@@ -244,9 +243,8 @@ class StorageDriver(object):
         "return status of url: dir/file, readable, etc"
     def list(self, storeurl):
         "list contents of store url"
-
-
-
+    def __str__(self):
+        return self.mount_url
 
     # dima: possible additions ???, should modify walk to take ident ???
 #     def is_directory(self, ident):
