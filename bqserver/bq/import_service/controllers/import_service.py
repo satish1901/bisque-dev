@@ -70,19 +70,16 @@ __copyright__ = "Center for BioImage Informatics, University California, Santa B
 import os
 import logging
 import pkg_resources
-from pylons.i18n import ugettext as _, lazy_ugettext as l_
+#from pylons.i18n import ugettext as _, lazy_ugettext as l_
 from pylons.controllers.util import abort
-from tg import expose, flash
 from tg import config
 from repoze.what import predicates
 from bq.core.service import ServiceController
 
 # additional includes
-import sys
-import traceback
-import time
-import re
-import threading
+#import sys
+#import time
+#import threading
 import shutil
 import tarfile
 import zipfile
@@ -90,30 +87,22 @@ import urllib
 import copy
 import mimetypes
 import shortuuid
-import traceback
 
-try:
-    from cStringIO import StringIO
-except:
-    from StringIO import StringIO
 
-from urllib import quote
 from lxml import etree
-from time import strftime
 from datetime import datetime
-from itertools import groupby
+#from itertools import groupby
 
-import tg
-from tg import request, response, session, flash, require
+from tg import require, expose
 from repoze.what import predicates
 
 import bq
-from bq.core import permission, identity
+from bq.core import identity
 from bq.util.paths import data_path
 from bq import data_service
 from bq import blob_service
 from bq import image_service
-from bq.blob_service.controllers.blob_storage import move_file
+from bq.blob_service.controllers.blob_drivers import move_file
 from bq.image_service.controllers.misc import blocked_alpha_num_sort
 
 #from bq.image_service.controllers.converter_imgcnv import ConverterImgcnv
@@ -173,11 +162,11 @@ def merge_resources (*resources):
     later resource overwrite earlier ones
     """
     final = copy.deepcopy (resources[0])
-    log.debug ('initially : %s' % etree.tostring(final))
+    log.debug ('initially : %s' , etree.tostring(final))
     for rsc in resources[1:]:
         final.attrib.update(rsc.attrib)
         final.extend (copy.deepcopy (list (rsc)))
-        log.debug ('updated : %s -> %s' % (etree.tostring(rsc), etree.tostring(final)))
+        log.debug ('updated : %s -> %s', etree.tostring(rsc), etree.tostring(final))
     return final
 
 #---------------------------------------------------------------------------------------
@@ -203,7 +192,7 @@ class UploadedResource(object):
         self.path = resource.get('value')
         if self.path:
             self.path = blob_service.url2local(self.path)
-            
+
         # If the uploader has given it a name, then use it, or figure a name out
         if resource.get ('name'):
             self.filename = sanitize_filename(resource.get('name'))
@@ -255,7 +244,7 @@ class import_serviceController(ServiceController):
 
     def __init__(self, server_url):
         super(import_serviceController, self).__init__(server_url)
-        
+
         # special mime-types for proprietary images able to store multiple series
         # define the list here in order to minimize info calls on these images
         # will have to figure how many series are inside to create proper resources
@@ -273,7 +262,7 @@ class import_serviceController(ServiceController):
         self.filters['zip-5d-image']      = self.filter_5d_image
         self.filters['zip-proprietary']   = self.filter_zip_proprietary
         self.filters['image/proprietary'] = self.filter_series_proprietary
-        
+
         #self.bioformats = ConverterBioformats()
         #self.imgcnv = ConverterImgcnv()
 
@@ -366,27 +355,27 @@ class import_serviceController(ServiceController):
 
         uniq = uf.resource.get('resource_uniq') or shortuuid.uuid()
         unpack_dir = os.path.join(UPLOAD_DIR, bq.core.identity.get_user().name, uniq)
-        
+
         filepath = uf.localpath()
         if filepath is None:
-            log.debug('unpackPackagedFile file object has no local path: [%s], move local', uf.fileobj)     
+            log.debug('unpackPackagedFile file object has no local path: [%s], move local', uf.fileobj)
             filepath = uf.ensurelocal( os.path.join(unpack_dir, os.path.basename(uf.resource.get('name'))))
 
-        if folderName is None:            
+        if folderName is None:
             unpack_dir = os.path.join(unpack_dir, '%s.UNPACKED'%os.path.basename(uf.filename))
             unpack_dir = unpack_dir.replace('\\', '/')
         else:
             unpack_dir = folderName
         _mkdir (unpack_dir)
-        
+
         log.debug('unpackPackagedFile, filepath: [%s]', filepath )
         log.debug('unpackPackagedFile, unpack_dir: [%s]', unpack_dir )
-        
+
         # unpack the contents of the packaged file
         try:
             members = self.unPack(filepath, unpack_dir, preserve_structure)
         except:
-            log.exception('Problem unpacking %s in %s' % (filepath, unpack_dir))
+            log.exception('Problem unpacking %s in %s' , filepath, unpack_dir)
             raise
 
         return unpack_dir, members
@@ -402,7 +391,7 @@ class import_serviceController(ServiceController):
         members = sorted(members, key=blocked_alpha_num_sort) # use alpha-numeric sort
         members = [ '%s/%s'%(unpack_dir, m) for m in members ] # full paths
         members = [ m for m in members if os.path.isdir(m) is not True ] # remove directories
-        
+
         basepath = '%s/'%unpack_dir
         resources = []
         for filename in members:
@@ -410,11 +399,11 @@ class import_serviceController(ServiceController):
             resource = etree.Element ('resource', name=name, value=filename, ts=uf.ts)
             # append all other input annotations
             resource.extend (copy.deepcopy (list (uf.resource)))
-            
+
             myf = UploadedResource(fileobj=open(filename, 'rb'), resource=resource)
             resources.append(self.process(myf))
 
-        return unpack_dir, resources                
+        return unpack_dir, resources
 
 #------------------------------------------------------------------------------
 # zip/tar.gz Import for 5D image
@@ -434,7 +423,7 @@ class import_serviceController(ServiceController):
         if 'number_t' in kw: t = int(kw['number_t'])
         if z==0: z=num_pages; t=1
         if t==0 or z is None or t is None: t=num_pages; z=1
-        
+
         res = { 'resolution_x':0, 'resolution_y':0, 'resolution_z':0, 'resolution_t':0 }
         params = {'z': z, 't': t}
         params.update(res)
@@ -459,9 +448,9 @@ class import_serviceController(ServiceController):
 
         # append all other input annotations
         resource.extend (copy.deepcopy (list (uf.resource)))
-        
+
         # pass a temporary top directory where the sub-files are stored
-        return unpack_dir, blob_service.store_blob(resource=resource, rooturl = blob_storage.local2url('%s/'%unpack_dir))
+        return unpack_dir, blob_service.store_blob(resource=resource, rooturl = blob_service.local2url('%s/'%unpack_dir))
 
 #------------------------------------------------------------------------------
 # process proprietary series file and create multiple resources if needed
@@ -471,22 +460,22 @@ class import_serviceController(ServiceController):
         ''' process proprietary series file and create multiple resources if needed '''
         log.debug('process_series_proprietary: %s %s', uf, intags )
         resources = []
-        
-        # first upload the first series 
-        name = '%s#0'%uf.resource.get('name')               
+
+        # first upload the first series
+        name = '%s#0'%uf.resource.get('name')
         value = '%s#0'%(uf.resource.get('value') or uf.resource.get('name'))
-        
+
         resource = etree.Element ('image', name=name, value=value, resource_type='image', ts=uf.ts)
         # append all other input annotations
         resource.extend (copy.deepcopy (list (uf.resource)))
         resource = blob_service.store_blob(resource=resource, fileobj=uf.fileobj)
         iname = resource.get('name')
         ivalue = resource.get('value')
-        resources.append(resource)        
-        
+        resources.append(resource)
+
         # then include resources for subsequent series
         for n in range(intags.get('image_num_series', 0))[1:]:
-            name = iname.replace('#0', '#%s'%n) if '#' in iname else '%s#%s'%(iname, n)            
+            name = iname.replace('#0', '#%s'%n) if '#' in iname else '%s#%s'%(iname, n)
             value = ivalue.replace('#0', '#%s'%n) if '#' in ivalue else '%s#%s'%(ivalue, n)
 
             resource = etree.Element ('image', name=name, value=value, resource_type='image', ts=uf.ts)
@@ -508,24 +497,24 @@ class import_serviceController(ServiceController):
         members = [ m for m in members if is_filesystem_file(m) is not True ] # remove file system internal files
         members = sorted(members, key=blocked_alpha_num_sort) # use alpha-numeric sort
         members = [ '%s/%s'%(unpack_dir, m) for m in members ] # full paths
-        members = [ m for m in members if os.path.isdir(m) is not True ] # remove directories        
+        members = [ m for m in members if os.path.isdir(m) is not True ] # remove directories
         log.debug('process_packaged_series_proprietary members: %s', members)
 
         # first find the header file
         headers = []
-        
+
         # first priority are fixed named files
         for m in members:
             if os.path.basename(m) in self.series_headers:
                 headers.append(m)
-        
+
         # second priority all files with the series extension
         for m in members:
             ext = os.path.splitext(m)[-1].lower().replace('.', '')
             if ext in self.series_exts and m not in headers:
                 headers.append(m)
         log.debug('headers: %s', headers)
-        
+
         # get file info and know how many sub-series are there
         num_series = 0
         for header in headers:
@@ -536,51 +525,51 @@ class import_serviceController(ServiceController):
                 num_series = info.get('image_num_series', 0)
                 break
         log.debug('detected header: %s', header)
-        
+
         if num_series<1:
             return unpack_dir, []
 
         members.remove(header)
-        
+
         # insert sub-series with the first value as a header file
         n = 0
         if num_series>1:
             name = '%s#%s'%(os.path.splitext(uf.resource.get('name'))[0], n)
         else:
-            name = os.path.splitext(uf.resource.get('name'))[0]            
+            name = os.path.splitext(uf.resource.get('name'))[0]
         resource = etree.Element ('image', name=name, resource_type='image', ts=uf.ts)
-        
+
         # add header first
         val = etree.SubElement(resource, 'value' )
-        if num_series>1:        
+        if num_series>1:
             val.text = '%s#%s'%(blob_service.local2url(header), n)
         else:
             val.text = blob_service.local2url(header)
-        
+
         # add the rest of the files later without #
         for v in members:
             val = etree.SubElement(resource, 'value' )
             val.text = blob_service.local2url(v)
-        
+
         # append all other input annotations
         resource.extend (copy.deepcopy (list (uf.resource)))
-        resource = blob_service.store_blob(resource=resource, rooturl=blob_storage.local2url('%s/'%unpack_dir))
-        
+        resource = blob_service.store_blob(resource=resource, rooturl=blob_service.local2url('%s/'%unpack_dir))
+
         resources = [resource]
         name_template = resource.get('name')
-        
+
         # insert the rest of the series
         # use final storage location of the first resource and submit directly to data service
         values = resource.xpath('value')
         values = [v.text for v in values]
         for n in range(num_series)[1:]:
             resource = etree.Element ('image', name=name_template.replace('#0', '#%s'%n), resource_type='image', ts=uf.ts)
-            
-            # add values 
+
+            # add values
             for v in values:
                 val = etree.SubElement(resource, 'value' )
                 val.text = v.replace('#0', '#%s'%n)
-            
+
             # append all other input annotations
             resource.extend (copy.deepcopy (list (uf.resource)))
 
@@ -607,16 +596,16 @@ class import_serviceController(ServiceController):
         if not os.path.exists(mpath):
             return etree.Element ('tag', name=filename)
         xml = etree.parse(mpath).getroot()
-        
+
         log.debug('parseFile xml: %s', etree.tostring(xml))
-        
+
         # if a resource has a value pointing to a file
-        bpath = self.safePath(os.path.join(path, os.path.dirname(filename), xml.get('value', '')), path)        
+        bpath = self.safePath(os.path.join(path, os.path.dirname(filename), xml.get('value', '')), path)
         if xml.get('value') is not None and os.path.exists(bpath) is True:
             xml.set('name', os.path.join(relpath, os.path.dirname(filename), xml.get('value')).replace('\\', '/'))
             del xml.attrib['value']
             return blob_service.store_blob(resource=xml, fileobj=open(bpath, 'rb'))
-        
+
         # if a resource is a multi-blob resource
         elif xml.tag != 'dataset' and len(xml.xpath('value'))>0:
             subdir = os.path.dirname(filename)
@@ -625,17 +614,17 @@ class import_serviceController(ServiceController):
                 bpath = self.safePath(os.path.join(path, subdir, v.text), path).replace('\\', '/')
                 if os.path.exists(bpath) is True:
                     v.text = blob_service.local2url(bpath)
-            return blob_service.store_blob(resource=xml, rooturl = blob_storage.local2url('%s/'%path))
-        
+            return blob_service.store_blob(resource=xml, rooturl = blob_service.local2url('%s/'%path))
+
         # if a resource is an xml doc
         elif xml.tag not in ['dataset', 'mex', 'user', 'system', 'module', 'store']:
             return data_service.new_resource(resource=xml)
-        
+
         # dima: if a res is an xml of a system type, store as blob
         elif xml.tag in ['mex', 'user', 'system', 'module', 'store']:
             return etree.Element (xml.tag, name=xml.get('name', ''))
         #    return blob_service.store_blob(resource=xml)
-                
+
         # if the resource is a dataset
         elif xml.tag == 'dataset':
             members = xml.xpath('/dataset/value')
@@ -643,14 +632,14 @@ class import_serviceController(ServiceController):
                 r = self.parseFile(member.text, path, relpath)
                 member.text = r.get('uri')
             return data_service.new_resource(resource=xml)
-    
+
     # dima: need to pass relative storage path
     def process_packaged_bisque(self, f, tags):
         ''' Process packages file containing Bisque archive '''
         log.debug('process_packaged_bisque: %s', f)
         relpath = os.path.dirname(f.orig)
         unpack_dir, members = self.unpackPackagedFile(f)
-        
+
         # parse .bisque.xml
         resources = []
         header = os.path.join(unpack_dir, '.bisque.xml')
@@ -722,11 +711,11 @@ class import_serviceController(ServiceController):
         # try inserting the file in the blob service
         try:
             # determine if resource is already on a blob_service store
-            log.debug('Inserting %s ' % uf)
+            log.debug('Inserting %s ' , str( uf))
             resource = blob_service.store_blob(resource=uf.resource, fileobj=uf.fileobj)
-            log.debug('Inserted resource :::::\n %s'% etree.tostring(resource) )
+            log.debug('Inserted resource :::::\n %s', etree.tostring(resource) )
         except Exception, e:
-            log.exception("Error during store %s" % etree.tostring(uf.resource))
+            log.exception("Error during store %s" ,  etree.tostring(uf.resource))
             return None
         finally:
             uf.close()
@@ -734,15 +723,15 @@ class import_serviceController(ServiceController):
         #uf.fileobj = None
         #uf.resource = resource
         return resource
-    
+
     def process_filtered(self, uf, intags):
         # start processing
-        log.debug('processing filtered, ingest tags: %s'% intags )
+        log.debug('processing filtered, ingest tags: %s',  intags )
         error = None
-        
+
         #if uf.localpth is None:
         #    move_file (fp, localpath)
-        
+
         # Ensure the uploaded file is local and named properly.
         #tags = copy.deepcopy (list (uf.resource))
         #name = uf.resource.get('name')
@@ -750,18 +739,18 @@ class import_serviceController(ServiceController):
         #resource = self.insert_resource (uf)
         #resource.set('name', name)
         #resource.extend (tags)
-        
+
         try:
             # call filter on f with ingest tags
             #resources = self.filters[ intags['type'] ](UploadedResource(resource, orig=uf.orig), intags)
             resources = self.filters[ intags['type'] ](uf, intags)
         except Exception, e:
-            log.exception('Problem in processing file: %s : %s'  % (intags['type'], uf))
+            log.exception('Problem in processing file: %s : %s'  , intags['type'], uf)
             error = 'Problem processing the file: %s'%e
 
         # some error during pre-processing
         if error is not None:
-            log.debug('filters error: %s'% error )
+            log.debug('filters error: %s',  error )
             resource = etree.Element('file', name=uf.filename)
             etree.SubElement(resource, 'tag', name='error', value=error)
             return resource
@@ -798,11 +787,11 @@ class import_serviceController(ServiceController):
                 etree.SubElement(dataset, 'tag', name="error", value=s )
             index += 1
 
-        log.debug('processed resource :::::\n %s'% etree.tostring(dataset) )
+        log.debug('processed resource :::::\n %s',  etree.tostring(dataset) )
         resource = data_service.new_resource(resource=dataset, view='deep')
-        log.debug('process created resource :::::\n %s'% etree.tostring(resource) )
+        log.debug('process created resource :::::\n %s',  etree.tostring(resource) )
         return resource
-    
+
     def process(self, uf):
         """ processes the UploadedResource and either ingests it inplace or first applies
         some special pre-processing, the function returns a document
@@ -823,7 +812,7 @@ class import_serviceController(ServiceController):
         if len(xl):
             intags = dict([(t.get('name'), t.get('value'))
                            for t in xl[0].xpath('tag')
-                               if t.get('value') is not None and t.get('name') is not None ])
+                           if t.get('value') is not None and t.get('name') is not None ])
             # remove the ingest tags from the tag document
             uf.resource.remove(xl[0])
 
@@ -831,41 +820,41 @@ class import_serviceController(ServiceController):
         mime = mimetypes.guess_type(sanitize_filename(uf.filename))[0]
         if mime in self.filters:
             intags['type'] = mime
-            
-        log.debug('process, file name attr: %s', getattr(uf.fileobj, 'name', None))        
-        
+
+        log.debug('process, file name attr: %s', getattr(uf.fileobj, 'name', None))
+
         # check if an image can be a series
         if mime == 'image/series':
             filename = uf.localpath()
             if filename is None:
                 log.debug('process, file object has no local path: [%s], move local', uf.fileobj)
-                filename = uf.ensurelocal( os.path.join(UPLOAD_DIR, bq.core.identity.get_user().name, shortuuid.uuid(), os.path.basename(uf.resource.get('name'))))            
-            
+                filename = uf.ensurelocal( os.path.join(UPLOAD_DIR, bq.core.identity.get_user().name, shortuuid.uuid(), os.path.basename(uf.resource.get('name'))))
+
             log.debug('filename: %s', filename)
             info = image_service.get_info(filename)
             log.debug('info: %s', info)
             if info is not None and info.get('image_num_series', 0)>1:
                 intags['type'] = 'image/proprietary'
                 intags['image_num_series'] = info.get('image_num_series', 0)
-        
+
         # no processing required
         if intags.get('type') not in self.filters:
             return self.insert_resource(uf)
         # Processing is required
         return self.process_filtered(uf, intags)
-    
+
     def ingest(self, files):
         """ ingests each elemen of the list of files
         """
         response = etree.Element ('resource', type='uploaded')
         for f in files:
-            log.info ("processing %s " % f)
+            log.info ("processing %s " , str( f))
             x = self.process(f)
-            log.info ("processed %s -> %s " % (f, x))
+            log.info ("processed %s -> %s " ,  str(f), str(x))
             if x is not None:
                 response.append(x)
             else:
-                log.error ("while ingesting %s " % f)
+                log.error ("while ingesting %s " , str( f))
                 etree.SubElement(response, 'tag', name="error", value='Error ingesting file' )
         return response
 
@@ -937,7 +926,7 @@ class import_serviceController(ServiceController):
         try:
             return self.transfer_internal(**kw)
         except Exception, e:
-            log.exception("During transfer: %s" % kw)
+            log.exception("During transfer: %s" , str( kw))
             abort(500)
 
 
@@ -961,28 +950,28 @@ class import_serviceController(ServiceController):
             '''
 
         def find_upload_resource(transfers, pname):
-            log.debug ("transfers %s " % (transfers))
+            log.debug ("transfers %s " , str(transfers))
 
             resource = transfers.pop(pname+'_resource', None) #or transfers.pop(pname+'_tags', None)
-            log.debug ("found %s _resource/_tags %s " % (pname, resource))
+            log.debug ("found %s _resource/_tags %s " , pname, str(resource))
             if resource is not None:
                 try:
                     if hasattr(resource, 'file'):
                         log.warn("XML Resource has file tag")
                         resource = resource.file.read()
                     if isinstance(resource, basestring):
-                        log.debug ("reading XML %s" % resource)
+                        log.debug ("reading XML %s" ,  resource)
                         try:
                             resource = etree.fromstring(resource)
                         except etree.XMLSyntaxError:
-                            log.exception ("while parsing %s" %resource)
+                            log.exception ("while parsing %s" , resource)
                             raise
                 except:
-                    log.exception("Couldn't read resource parameter %s" % resource)
+                    log.exception("Couldn't read resource parameter %s" , str( resource))
                     resource = None
             return resource
 
-        log.debug("INITIAL TRANSFER %s"  % transfers)
+        log.debug("INITIAL TRANSFER %s"  , str( transfers))
         for pname, f in dict(transfers).items():
             # We skip specially named fields (we will pull them out when processing the actual file)
             if pname.endswith ('_resource') or pname.endswith('_tags'): continue
@@ -994,7 +983,7 @@ class import_serviceController(ServiceController):
                 if resource is None:
                     resource = etree.Element('resource', name=sanitize_filename (getattr(f, 'filename', '')))
                 files.append(UploadedResource(fileobj=f.file, resource=resource))
-                log.debug ("TRANSFERRED %s %s" % (f.filename, etree.tostring(resource)))
+                log.debug ("TRANSFERRED %s %s" ,  f.filename, etree.tostring(resource))
             if pname.endswith('.uploaded'):
                 # Entry point for NGINX upload and insert
                 transfers.pop(pname)
@@ -1002,7 +991,7 @@ class import_serviceController(ServiceController):
                     # parse the nginx record
                     resource = etree.fromstring (f)
                 except etree.XMLSyntaxError:
-                    log.exception ("while parsing %s" %f)
+                    log.exception ("while parsing %s" , f)
                     abort(400)
                 # Read the record original record (not the nginx one)
                 payload_resource = find_upload_resource(transfers, pname.replace ('.uploaded', ''))
@@ -1015,26 +1004,26 @@ class import_serviceController(ServiceController):
                     resource = merge_resources (resource, payload_resource)
                 upload_resource  = UploadedResource(resource=resource)
                 files.append(upload_resource)
-                log.debug ("UPLOADED %s %s" % (upload_resource, etree.tostring(resource)))
-        log.debug("TRANSFER after files %s"  % transfers)
+                log.debug ("UPLOADED %s %s" , upload_resource, etree.tostring(resource))
+        log.debug("TRANSFER after files %s"  , str( transfers))
 
         for pname, f in transfers.items():
-            if (pname.endswith ('_resource')):
+            if pname.endswith ('_resource'):
                 transfers.pop(pname)
                 try:
                     resource = etree.fromstring(f)
                 except etree.XMLSyntaxError:
-                    log.exception ("while parsing %s" %f)
+                    log.exception ("while parsing %s" , str(f))
                     abort(400)
                 files.append(UploadedResource(resource=resource))
 
-        log.debug("TRANSFER after resources %s"  % transfers)
+        log.debug("TRANSFER after resources %s"  , str( transfers))
         # Should reject anything not matching
 
         # process the file list see if some files need special processing
         # e.g. ZIP needs to be unpacked
         # then ingest all
-        log.debug ('ingesting files %s'%[o.filename.encode('utf8') for o in files])
+        log.debug ('ingesting files %s' % [o.filename.encode('utf8') for o in files])
         response = self.ingest(files)
         # respopnd with an XML containing links to created resources
         return etree.tostring(response)
@@ -1071,7 +1060,7 @@ class import_serviceController(ServiceController):
         of  resources  when they are already present on safe media
         i.e on the local server drives or remote irods, hdfs etc.
         """
-        log.info ('insert %s for %s' % (url, user))
+        log.info ('insert %s for %s' ,  url, user)
         #log.warn ("DEPRECATED ENTRY POINT: use insert_resource")
 
         # Tricky we pass a name that will eventually own the resource,
