@@ -505,7 +505,7 @@ class MountServer(TGController):
             # A relative name.. could be a reference store only
             if fileobj is None:
                 store = self.valid_store_ref (resource)
-                if  store:
+                if  store is not None:
                     stores = dict( (store.get ('name'), store) )
 
         storeurl = lpath = None
@@ -591,7 +591,7 @@ class MountServer(TGController):
             with open (localpath, 'rb') as fobj:
                 storeurl = urlparse.urljoin (driver.mount_url, storepath)
                 storeurl, localpath = driver.push (storeurl, fobj)
-                if not node:
+                if node is not None:
                     node = etree.SubElement(resource, 'value')
                     node.text = join_subpath(storeurl, subpath)
                 else:
