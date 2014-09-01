@@ -486,15 +486,15 @@ class BlobServer(RestController, ServiceMixin):
         #resource.set('resource_uniq', uniq)
         return self.create_resource(resource)
 
-    def _make_url_local(self, urlref):
-        'return a local file to the specified urlref'
-        #if urlref.startswith ('file:///'):
-        #    return urlref.replace('file:///', '')
-        #elif urlref.startswith ('file://'):
-        #    return urlref [5:]
-        if urlref.startswith ('file://'):
-            return blob_drivers.url2localpath(urlref)
-        return None
+    # def _make_url_local(self, urlref):
+    #     'return a local file to the specified urlref'
+    #     #if urlref.startswith ('file:///'):
+    #     #    return urlref.replace('file:///', '')
+    #     #elif urlref.startswith ('file://'):
+    #     #    return urlref [5:]
+    #     if urlref.startswith ('file://'):
+    #         return blob_drivers.url2localpath(urlref)
+    #     return None
 
     def _store_reference(self, resource, rooturl=None):
         """create a reference to a blob based on its URL
@@ -511,8 +511,8 @@ class BlobServer(RestController, ServiceMixin):
         if store_url is None:
             return None
 
-        resource.set('value', join_subpath(store_url, sub))
         resource.set('name', join_subpath(os.path.basename(lpath), sub))
+        resource.set('value', join_subpath(store_url, sub))
 
         return self.create_resource(resource)
 

@@ -290,7 +290,8 @@ class LocalDriver (StorageDriver):
         if not scheme:
             storeurl = urlparse.urljoin (self.top, storeurl)
         elif storeurl.startswith('file:///'):
-            pass
+            #should have matched earlier
+            return None
         elif storeurl.startswith('file://'):
             storeurl = urlparse.urljoin(self.top, storeurl[7:])
         else:
