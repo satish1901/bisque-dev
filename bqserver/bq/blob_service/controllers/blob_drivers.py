@@ -54,6 +54,8 @@ import string
 import shutil
 import collections
 import posixpath
+import socket
+import tempfile
 
 from tg import config
 from paste.deploy.converters import asbool
@@ -87,6 +89,15 @@ try:
 except ImportError:
     #log.warn ("Can't import boto:  S3  Storage not supported")
     pass
+
+
+try:
+    import smb
+    from smb.SMBConnection import SMBConnection
+    supported_storage_schemes.append('smb')
+except ImportError:
+    pass
+
 
 
 #################################################
@@ -428,7 +439,7 @@ class IrodsDriver(StorageDriver):
         try:
             irods_handler.irods_delete_file(irods_ident, user=self.user, password=self.password)
         except irods_handler.IrodsError, e:
-            log.exception ("Error deleteing %s ", irods_ident)
+            log.exception ("Error deleteing %s :%s", irods_ident, e)
         return None
 
 ###############################################
@@ -564,6 +575,114 @@ class HttpsDriver (HttpDriver):
 
 
 
+class SMBNetDriver(StorageDriver):
+    "Implement a SMB driver "
+    scheme   = "smb"
+    #https://pythonhosted.org/pysmb/api/smb_SMBConnection.html
+
+    def __init__(self, mount_url=None, **kw):
+        """ initializae a storage driver
+        @param mount_url: optional full storeurl to mount
+        """
+        self.conn = None
+        self.user = None
+        self.password = None
+        if mount_url is not None:
+            self.mount (mount_url = mount_url, **kw)
+
+
+    # New interface
+    def mount(self, mount_url, credentials = None, readonly = False, **kw):
+        """Mount the driver
+        @param mount_url: an smb prefix to be used to mount  smb://smbhostserver/sharename/d1/d2/"
+        @param credentials: a string containing user:password for smb connection
+        """
+
+        self.mount_url = mount_url
+        self.readonly = readonly
+        if credentials is None:
+            log.warn ("SMBMount Cannot proceed without credentials")
+            return
+        self.user, self.password = credentials.split (':')
+        urlcomp = urlparse.urlparse (mount_url)
+        # I don't this this is the SMB hostname but am not sure
+        localhost = socket.gethostname()
+        try:
+            self.conn = SMBConnection (self.user, self.password, localhost, urlcomp.netloc)
+            server_ip = socket.gethostbyname(urlcomp.netloc)
+            if not self.conn.connect(server_ip, 139):
+                self.conn = None
+
+        except smb.base.NotReadyError:
+            log.warn("NotReady")
+        except smb.base.NotConnectedError:
+            log.warn("NotReady")
+        except smb.base.SMBTimeout:
+            log.warn("SMBTimeout")
+
+
+    def unmount (self):
+        """Unmount the driver """
+        if self.conn:
+            self.conn.close()
+        self.conn=None
+
+    def mount_status(self):
+        """return the status of the mount: mounted, error, unmounted
+        """
+
+    @classmethod
+    def split_smb(cls,storeurl):
+        "return a pair sharename, path suitable for operations"
+        smbcomp = urlparse.urlparse (storeurl)
+        # smb://host    smbcomp.path = /sharenmae/path
+        _, sharename, path = smbcomp.path.split ('/', 2)
+
+        return sharename, '/' + path
+
+    # File interface
+    def valid (self, storeurl):
+        "Return validity of storeurl"
+        return storeurl.startswith (self.mount_url) and storeurl
+
+    def push(self, fp, storeurl):
+        "Push a local file (file pointer)  to the store"
+        sharename, path = self.split_smb(storeurl)
+        if self.conn:
+            written = self.conn.storeFile (sharename, path, fp)
+            log.debug ("smb wrote %s bytes", written)
+
+    def pull (self, storeurl, localpath=None):
+        "Pull a store file to a local location"
+        sharename, path = self.split_smb(storeurl)
+        if self.conn:
+            if localpath:
+                file_obj = open (localpath, 'wb')
+            else:
+                file_obj = tempfile.NamedTemporaryFile()
+            file_attributes, filesize = self.conn.retrieveFile(sharename, path, file_obj)
+            log.debug ("smb fetch of %s got %s bytes", storeurl, filesize)
+
+    def chmod(self, storeurl, permission):
+        """Change permission of """
+
+    def delete(self, storeurl):
+        'delete an entry on the store'
+        sharename, path = self.split_smb(storeurl)
+        if self.conn:
+            self.conn.deleteFiles(sharename, path)
+
+    def isdir (self, storeurl):
+        "Check if a url is a container/directory"
+    def status(self, storeurl):
+        "return status of url: dir/file, readable, etc"
+    def list(self, storeurl):
+        "list contents of store url"
+
+
+
+
+
 ###############################################
 # Construct a driver
 
@@ -577,12 +696,13 @@ def make_storage_driver(mount_url, **kw):
     storage_drivers = {
         #'file' : LocalStorage,
         #''     : LocalStorage,
-        'file' : LocalDriver,
-        ''     : LocalDriver,
+        'file'  : LocalDriver,
+        ''      : LocalDriver,
         'irods' : IrodsDriver,
         's3'    : S3Driver,
         'http'  : HttpDriver,
         'https' : HttpsDriver,
+        'smb'   : SMBNetDriver,
         }
 
     scheme = urlparse.urlparse(mount_url).scheme.lower()
