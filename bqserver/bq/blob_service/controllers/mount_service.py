@@ -473,6 +473,7 @@ class MountServer(TGController):
                 for storeurl in storeurls[1:]:
                     if not driver.valid (storeurl):
                         raise IllegalOperation('resource %s spread across different stores %s', resource.get('resource_uniq'), storeurls)
+                log.debug ("matched %s", driver.mount_url)
                 return store
         return None
 
@@ -493,8 +494,8 @@ class MountServer(TGController):
         """
         stores = self._get_stores()
         log.debug ("Available stores: %s", stores.keys())
-
-        storepath = resource.get ('name')
+        # Strip off an subpaths from storepath (at this point.. not suported by drivers)
+        storepath, _ = split_subpath (resource.get ('name'))
         if storepath[0]=='/':
             # This is a fixed store name i.e. /local or /irods and must be stored on the specific mount
             _, store_name, storepath = storepath.split ('/', 2)
@@ -506,7 +507,7 @@ class MountServer(TGController):
             if fileobj is None:
                 store = self.valid_store_ref (resource)
                 if  store is not None:
-                    stores = dict( (store.get ('name'), store) )
+                    stores = { store.get ('name') :  store}
 
         storeurl = lpath = None
         log.debug ("Trying mounts %s", stores.keys())
@@ -523,7 +524,6 @@ class MountServer(TGController):
 
         return storeurl, lpath
 
-
     def _save_store(self, store, storepath, resource, fileobj=None, rooturl=None):
         'store the file to the named store'
 
@@ -532,9 +532,15 @@ class MountServer(TGController):
             if driver.readonly:
                 raise IllegalOperation('readonly store')
 
+            # I am confused by the logic here (but it was copied from blobsrv)
+            resource_name = storepath or getattr(fileobj, 'name') or ''
+            _, sub  = split_subpath (resource.get ('value') or resource_name)
+
             storeurl = urlparse.urljoin (driver.mount_url, storepath)
             storeurl, localpath = driver.push (storeurl, fileobj)
-            resource.set('value', storeurl)
+
+            resource.set('name', join_subpath(os.path.basename(resource_name), sub))
+            resource.set('value', join_subpath(storeurl, sub))
         else:
             storeurl, localpath = self._save_storerefs (store, storepath, resource, rooturl)
 
@@ -545,7 +551,9 @@ class MountServer(TGController):
         return storeurl, localpath
 
     def _save_storerefs(self, store, storepath, resource, rooturl):
-        """store a resource with storeurls already in place.. these may be ona true store or simply reside locally
+        """store a resource with storeurls already in place.. these may be on a true store or simply reside locally
+        due to local unpacking.
+
         @param store: a store resource
         @param storepath: a path on store where to put the resource
         @param resource: a resource with storeurls
@@ -565,17 +573,24 @@ class MountServer(TGController):
         else:
             refs = [ (x, settext, split_subpath(x.text), None) for x in resource.xpath ('value') ]
 
+        # Determine a list of URL that need to be moved to a store (these were unpacked locally)
         # Assume the first URL is special and the others are related which can be used
         # to calculate storepath
 
+        first = None
         movingrefs = []
+        fixedrefs  = []
         for node, setter, (storeurl, subpath), storepath in refs:
             if storeurl.startswith (driver.mount_url):
-                # Already valid
+                # Already valid on store (no move)
+                fixedrefs.append ( (node, setter, (storeurl, subpath), storepath))
                 continue
+            # we deal with unpacked files below
             localpath  = self._force_storeurl_local(storeurl)
             if os.path.isdir(localpath):
-                movingrefs.extend ( (None, None, (fpath, subpath), fpath[len(localpath):]) for fpath in blob_drivers.walk_deep(localpath))
+                # Add a directory:
+                # dima: we should probably list and store all files but there might be overlaps with individual refs
+                movingrefs.extend ( (etree.SubElement(resource, 'value'), settext, (fpath, subpath), fpath[len(localpath):]) for fpath in blob_drivers.walk_deep(localpath))
             elif os.path.exists(localpath):
                 if storepath is None:
                     storepath = storeurl[len(rooturl):]
@@ -583,7 +598,14 @@ class MountServer(TGController):
             else:
                 log.error ("store_refs: Cannot access %s of %s ", storeurl, etree.tostring(node))
 
+        # I don't a single resource will have in places references and references that need to move
+        if len(fixedrefs) and len(movingrefs):
+            log.warn ("While storing refs found inplance refs and moving refs in same resource %s", etree.tostring(resource))
 
+        if len(fixedrefs):
+            # retrieve storeurl, and no localpath yet
+            first = (fixedrefs[2][0], None)
+        # References to a readonly store may be registered if no actual data movement takes place.
         if movingrefs and driver.readonly:
             raise IllegalOperation('readonly store')
 
@@ -591,11 +613,10 @@ class MountServer(TGController):
             with open (localpath, 'rb') as fobj:
                 storeurl = urlparse.urljoin (driver.mount_url, storepath)
                 storeurl, localpath = driver.push (storeurl, fobj)
-                if node is not None:
-                    node = etree.SubElement(resource, 'value')
-                    node.text = join_subpath(storeurl, subpath)
-                else:
-                    setter(node, join_subpath (storeurl, subpath))
+                if first is None:
+                    first = (storeurl, localpath)
+                setter(node, join_subpath (storeurl, subpath))
+        return first
 
 
 
@@ -706,7 +727,7 @@ class MountServer(TGController):
 
         # get a driver to use
         #KGK : maybe use a timeout cache here so the connection can be reused?
-        log.debug ('making store driver: %s', driver_opts)
+        log.debug ('making store driver %s: %s', store_name, driver_opts)
         driver = blob_drivers.make_storage_driver(**driver_opts)
         return driver
 
