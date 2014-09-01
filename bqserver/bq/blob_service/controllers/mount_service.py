@@ -663,7 +663,8 @@ class MountServer(TGController):
         if len(files) == 0:
             log.error ('fetch_blob: no files fetched for %s ', uniq)
             return None
-        log.debug('fetch_blob for %s url=%s localpath=%s sub=%s', uniq, bloburls, files[0], sub)
+        log.debug('fetch_blob for %s url=%s localpath=%s sub=%s', uniq, bloburls[0], files[0], sub)
+        log.debug('fetch_blob %s', zip (bloburls, files))
         return blob_drivers.Blobs(files[0], sub, files)
 
 
