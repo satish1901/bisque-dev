@@ -92,7 +92,7 @@ except ImportError:
 
 
 try:
-    import smb
+    #import smb   # neeed for exceptions
     from smb.SMBConnection import SMBConnection
     supported_storage_schemes.append('smb')
 except ImportError:
@@ -230,7 +230,14 @@ class StorageDriver(object):
 #         """
 
     # New interface
-    def mount(self, mount_url, **kw):
+    def __enter__(self):
+        self.mount()
+        return self
+
+    def __exit__(self,  type, value, traceback):
+        self.unmount()
+
+    def mount(self):
         """Mount the driver"""
     def unmount (self):
         """Unmount the driver """
@@ -477,14 +484,11 @@ class S3Driver(StorageDriver):
         self.mount (mount_url, **kw)
 
 
-    def mount(self, mount_url, **kw):
-        self.mount_url = mount_url
-
+    def mount(self):
         if self.access_key is None or self.secret_key is None or self.bucket_id is None:
             raise ConfigurationError('bisque.blob_service.s3 incomplete config')
 
         self.conn = S3Connection(self.access_key, self.secret_key)
-
         try:
             self.bucket = self.conn.get_bucket(self.bucket_id)
         except boto.exception:
@@ -554,8 +558,7 @@ class HttpDriver(StorageDriver):
         if mount_url:
             self.mount(mount_url, **kw)
 
-    def mount(self, mount_url,  **kw):
-        self.mount_url = mount_url
+    def mount(self):
         # Get the constant portion of the path
         log.info("created http store %s " , self.mount_url)
 
@@ -580,46 +583,42 @@ class SMBNetDriver(StorageDriver):
     scheme   = "smb"
     #https://pythonhosted.org/pysmb/api/smb_SMBConnection.html
 
-    def __init__(self, mount_url=None, **kw):
+    def __init__(self, mount_url=None, credentials = None, readonly = False, **kw):
         """ initializae a storage driver
         @param mount_url: optional full storeurl to mount
         """
         self.conn = None
-        self.user = None
-        self.password = None
-        if mount_url is not None:
-            self.mount (mount_url = mount_url, **kw)
-
-
-    # New interface
-    def mount(self, mount_url, credentials = None, readonly = False, **kw):
-        """Mount the driver
-        @param mount_url: an smb prefix to be used to mount  smb://smbhostserver/sharename/d1/d2/"
-        @param credentials: a string containing user:password for smb connection
-        """
-
         self.mount_url = mount_url
         self.readonly = readonly
         if credentials is None:
             log.warn ("SMBMount Cannot proceed without credentials")
             return
         self.user, self.password = credentials.split (':')
-        urlcomp = urlparse.urlparse (mount_url)
+        self.localhost = socket.gethostname()
+        urlcomp = urlparse.urlparse (self.mount_url)
+        self.serverhost = urlcomp.netloc
+        self.server_ip = socket.gethostbyname(self.serverhost)
+
+
+
+    # New interface
+    def mount(self):
+        """Mount the driver
+        @param mount_url: an smb prefix to be used to mount  smb://smbhostserver/sharename/d1/d2/"
+        @param credentials: a string containing user:password for smb connection
+        """
+
         # I don't this this is the SMB hostname but am not sure
-        localhost = socket.gethostname()
-        try:
-            self.conn = SMBConnection (self.user, self.password, localhost, urlcomp.netloc)
-            server_ip = socket.gethostbyname(urlcomp.netloc)
-            if not self.conn.connect(server_ip, 139):
-                self.conn = None
+        self.conn = SMBConnection (self.user, self.password, self.localhost, self.serverhost)
+        if not self.conn.connect(self.server_ip, 139):
+            self.conn = None
 
-        except smb.base.NotReadyError:
-            log.warn("NotReady")
-        except smb.base.NotConnectedError:
-            log.warn("NotReady")
-        except smb.base.SMBTimeout:
-            log.warn("SMBTimeout")
-
+        #except smb.base.NotReadyError:
+        #    log.warn("NotReady")
+        #except smb.base.NotConnectedError:
+        #    log.warn("NotReady")
+        #except smb.base.SMBTimeout:
+        #    log.warn("SMBTimeout")
 
     def unmount (self):
         """Unmount the driver """

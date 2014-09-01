@@ -528,19 +528,19 @@ class MountServer(TGController):
         'store the file to the named store'
 
         if  fileobj:
-            driver   = self._get_driver(store)
-            if driver.readonly:
-                raise IllegalOperation('readonly store')
+            with  self._get_driver(store) as driver:
+                if driver.readonly:
+                    raise IllegalOperation('readonly store')
 
-            # I am confused by the logic here (but it was copied from blobsrv)
-            resource_name = storepath or getattr(fileobj, 'name') or ''
-            _, sub  = split_subpath (resource.get ('value') or resource_name)
+                # I am confused by the logic here (but it was copied from blobsrv)
+                resource_name = storepath or getattr(fileobj, 'name') or ''
+                _, sub  = split_subpath (resource.get ('value') or resource_name)
 
-            storeurl = urlparse.urljoin (driver.mount_url, storepath)
-            storeurl, localpath = driver.push (storeurl, fileobj)
+                storeurl = urlparse.urljoin (driver.mount_url, storepath)
+                storeurl, localpath = driver.push (storeurl, fileobj)
 
-            resource.set('name', join_subpath(os.path.basename(resource_name), sub))
-            resource.set('value', join_subpath(storeurl, sub))
+                resource.set('name', join_subpath(os.path.basename(resource_name), sub))
+                resource.set('value', join_subpath(storeurl, sub))
         else:
             storeurl, localpath = self._save_storerefs (store, storepath, resource, rooturl)
 
@@ -565,58 +565,57 @@ class MountServer(TGController):
         def settext(n, v):
             n.text = v
 
-        driver = self._get_driver(store)
-
-        refs = resource.get ('value')
-        if refs is not None:
-            refs = [ (resource, setval, split_subpath(refs), storepath) ]
-        else:
-            refs = [ (x, settext, split_subpath(x.text), None) for x in resource.xpath ('value') ]
-
-        # Determine a list of URL that need to be moved to a store (these were unpacked locally)
-        # Assume the first URL is special and the others are related which can be used
-        # to calculate storepath
-
-        first = None
-        movingrefs = []
-        fixedrefs  = []
-        for node, setter, (storeurl, subpath), storepath in refs:
-            if storeurl.startswith (driver.mount_url):
-                # Already valid on store (no move)
-                fixedrefs.append ( (node, setter, (storeurl, subpath), storepath))
-                continue
-            # we deal with unpacked files below
-            localpath  = self._force_storeurl_local(storeurl)
-            if os.path.isdir(localpath):
-                # Add a directory:
-                # dima: we should probably list and store all files but there might be overlaps with individual refs
-                movingrefs.extend ( (etree.SubElement(resource, 'value'), settext, (fpath, subpath), fpath[len(localpath):]) for fpath in blob_drivers.walk_deep(localpath))
-            elif os.path.exists(localpath):
-                if storepath is None:
-                    storepath = storeurl[len(rooturl):]
-                movingrefs.append ( (node, setter, (localpath, subpath), storepath) )
+        with  self._get_driver(store) as driver:
+            refs = resource.get ('value')
+            if refs is not None:
+                refs = [ (resource, setval, split_subpath(refs), storepath) ]
             else:
-                log.error ("store_refs: Cannot access %s of %s ", storeurl, etree.tostring(node))
+                refs = [ (x, settext, split_subpath(x.text), None) for x in resource.xpath ('value') ]
 
-        # I don't a single resource will have in places references and references that need to move
-        if len(fixedrefs) and len(movingrefs):
-            log.warn ("While storing refs found inplance refs and moving refs in same resource %s", etree.tostring(resource))
+            # Determine a list of URL that need to be moved to a store (these were unpacked locally)
+            # Assume the first URL is special and the others are related which can be used
+            # to calculate storepath
 
-        if len(fixedrefs):
-            # retrieve storeurl, and no localpath yet
-            first = (fixedrefs[2][0], None)
-        # References to a readonly store may be registered if no actual data movement takes place.
-        if movingrefs and driver.readonly:
-            raise IllegalOperation('readonly store')
+            first = None
+            movingrefs = []
+            fixedrefs  = []
+            for node, setter, (storeurl, subpath), storepath in refs:
+                if storeurl.startswith (driver.mount_url):
+                    # Already valid on store (no move)
+                    fixedrefs.append ( (node, setter, (storeurl, subpath), storepath))
+                    continue
+                # we deal with unpacked files below
+                localpath  = self._force_storeurl_local(storeurl)
+                if os.path.isdir(localpath):
+                    # Add a directory:
+                    # dima: we should probably list and store all files but there might be overlaps with individual refs
+                    movingrefs.extend ( (etree.SubElement(resource, 'value'), settext, (fpath, subpath), fpath[len(localpath):]) for fpath in blob_drivers.walk_deep(localpath))
+                elif os.path.exists(localpath):
+                    if storepath is None:
+                        storepath = storeurl[len(rooturl):]
+                    movingrefs.append ( (node, setter, (localpath, subpath), storepath) )
+                else:
+                    log.error ("store_refs: Cannot access %s of %s ", storeurl, etree.tostring(node))
 
-        for node, setter, (localpath, subpath),  storepath in movingrefs:
-            with open (localpath, 'rb') as fobj:
-                storeurl = urlparse.urljoin (driver.mount_url, storepath)
-                storeurl, localpath = driver.push (storeurl, fobj)
-                if first is None:
-                    first = (storeurl, localpath)
-                setter(node, join_subpath (storeurl, subpath))
-        return first
+            # I don't a single resource will have in places references and references that need to move
+            if len(fixedrefs) and len(movingrefs):
+                log.warn ("While storing refs found inplance refs and moving refs in same resource %s", etree.tostring(resource))
+
+            if len(fixedrefs):
+                # retrieve storeurl, and no localpath yet
+                first = (fixedrefs[2][0], None)
+            # References to a readonly store may be registered if no actual data movement takes place.
+            if movingrefs and driver.readonly:
+                raise IllegalOperation('readonly store')
+
+            for node, setter, (localpath, subpath),  storepath in movingrefs:
+                with open (localpath, 'rb') as fobj:
+                    storeurl = urlparse.urljoin (driver.mount_url, storepath)
+                    storeurl, localpath = driver.push (storeurl, fobj)
+                    if first is None:
+                        first = (storeurl, localpath)
+                    setter(node, join_subpath (storeurl, subpath))
+            return first
 
 
 
@@ -638,34 +637,35 @@ class MountServer(TGController):
         if  store is None:
             log.error ('Not a valid store ref in  %s' , etree.tostring (resource))
             return None
-        driver = self._get_driver(store)
-        uniq     = resource.get('resource_uniq')
-        bloburls = resource.get('value')
-        if bloburls is not None:
-            bloburls = [ bloburls ]
-        else:
-            bloburls  = [ x.text for x in resource.xpath('value') ]
 
-        log.debug ("fetch_blob %s -> %s", resource.get ('resource_uniq'), bloburls)
-
-        files = []
-        sub = ''
-        for storeurl in bloburls:
-            localblob = driver.pull (storeurl)
-            if localblob is None:
-                log.error ("Failed to fetch blob for %s of %s during pull %s", uniq, bloburls, storeurl)
-                return None
-            sub = sub or localblob.sub
-            if localblob.files:
-                files.extend(localblob.files)
+        with self._get_driver(store) as driver:
+            uniq     = resource.get('resource_uniq')
+            bloburls = resource.get('value')
+            if bloburls is not None:
+                bloburls = [ bloburls ]
             else:
-                files.append(localblob.path)
-        if len(files) == 0:
-            log.error ('fetch_blob: no files fetched for %s ', uniq)
-            return None
-        log.debug('fetch_blob for %s url=%s localpath=%s sub=%s', uniq, bloburls[0], files[0], sub)
-        log.debug('fetch_blob %s', zip (bloburls, files))
-        return blob_drivers.Blobs(files[0], sub, files)
+                bloburls  = [ x.text for x in resource.xpath('value') ]
+
+            log.debug ("fetch_blob %s -> %s", resource.get ('resource_uniq'), bloburls)
+
+            files = []
+            sub = ''
+            for storeurl in bloburls:
+                localblob = driver.pull (storeurl)
+                if localblob is None:
+                    log.error ("Failed to fetch blob for %s of %s during pull %s", uniq, bloburls, storeurl)
+                    return None
+                sub = sub or localblob.sub
+                if localblob.files:
+                    files.extend(localblob.files)
+                else:
+                    files.append(localblob.path)
+            if len(files) == 0:
+                log.error ('fetch_blob: no files fetched for %s ', uniq)
+                return None
+            log.debug('fetch_blob for %s url=%s localpath=%s sub=%s', uniq, bloburls[0], files[0], sub)
+            log.debug('fetch_blob %s', zip (bloburls, files))
+            return blob_drivers.Blobs(files[0], sub, files)
 
 
     def _find_store(self, storeurl):
