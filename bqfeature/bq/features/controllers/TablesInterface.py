@@ -8,9 +8,17 @@ import tables
 import logging
 import Queue
 import numexpr
+import threading
+import gc
+
+
+
 numexpr.set_num_threads(1) #make numexpr thread-safe
 
 LOCKING_DELAY = .5 #secs
+FAILED_LOCK_ATTEMPTS = 10
+MULTITHREAD_HDF5 = True #will lock every type hdf5 is used
+#HDF5_Global_Lock = threading.Lock()
 
 #bisque imports
 from bq.image_service.controllers.locks import Locks
@@ -24,6 +32,57 @@ from ID import ID
 
 log = logging.getLogger("bq.features")
 
+
+class TablesLock(object):
+    """
+        Provides locks for hdf5 files
+    """
+    def __init__(self, filename, mode='w', failonexist=False, *args, **kwargs):
+        self.filename = filename
+        self.mode = mode
+        self.args = args
+        self.kwargs = kwargs
+        self.h5file = None
+        
+        if mode == 'r' and MULTITHREAD_HDF5:#set read locks
+            self.bq_lock = Locks(self.filename, failonexist=failonexist, mode=mode+'b')
+        else: #set write locks
+            self.bq_lock = Locks(None, self.filename, failonexist=failonexist, mode=mode+'b')
+    
+    def acquire(self):
+        if not self.h5file:
+                
+            self.bq_lock.acquire()
+            if not self.bq_lock.locked: #no lock was given
+                return None
+                    
+            self.h5file = self._open_table()
+            return self.h5file
+            
+    def _open_table(self):
+            try:
+                self.h5file=tables.open_file(self.filename, self.mode, *self.args, **self.kwargs)
+            except tables.exceptions.HDF5ExtError:
+                self.release()
+                log.debug('Failed to find table %s'%self.filename)
+                raise FeatureServiceError(error_message='Fatal Error: Table was not found!')
+            
+            return self.h5file
+            
+    def release(self):
+        if self.h5file:
+            self.h5file.close()
+            del self.h5file
+            self.h5file = None
+            self.bq_lock.release()
+    
+    
+    def __enter__(self):
+        return self.acquire()
+        
+        
+    def __exit__(self, type, value, traceback):
+        self.release()
 
 
 class QueryQueue(object):
@@ -114,6 +173,7 @@ class IDRows(Rows):
         self.init_id = ID()
         self.table_module = table_module
     
+    
     def push(self, **resource):
         """
             creates the rows to store urls with there ids in the idtable
@@ -193,45 +253,43 @@ class Tables(object):
         """
         return self.init_feature.path
 
-    def init_h5(self,filename,table_parameters, func=None):
+    def init_h5(self,h5file,table_parameters, func=None):
         """
             Must be placed within a lock
         """
         try:
-            with tables.openFile(filename,'w')  as h5file:
-                for (table_name, columns, indexed) in table_parameters:
-                    table = h5file.createTable('/', table_name, columns, expectedrows=1000000000)
-                    for col_name in indexed:
-                        column = getattr(table.cols,col_name)
-                        column.removeIndex()
-                        column.createIndex()
-                    table.flush()
+            for (table_name, columns, indexed) in table_parameters:
+                table = h5file.createTable('/', table_name, columns, expectedrows=1000000000)
+                for col_name in indexed:
+                    column = getattr(table.cols,col_name)
+                    column.removeIndex()
+                    column.createIndex()
+                table.flush()
                     
-                if func:
-                    func(h5file)        
+            if func:
+                func(h5file)
         
         except tables.exceptions.HDF5ExtError:
             log.debug('Failed to find table %s'%filename)
             #raise FeatureServiceError()
          
-        
+      
     def write_to_table(self,filename, table_parameters, func=None):
         """
             Initalizes a table in the file
-            
             @filename - name of the file
             @table_parameters - takes a list of [(tablename, columns, [list of columns to index])]  
             @func - function accepting a h5 tabel object
             
             @returns none
         """
-        with Locks( None, filename, failonexist = True) as l:
-            if not l.locked:
-                log.debug('Already initialized h5 table path: %s'%filename)
+        with TablesLock(filename,'w',failonexist=True) as h5file:
+            if h5file:
+                return self.init_h5(h5file,self.table_parameters,func=func)
+            else:
+                log.debug('Already initialized h5 table -> path: %s'%filename)
                 return #tables was made already
-            self.init_h5(filename,self.table_parameters,func=func)
-            log.debug('Initialized h5 table path: %s'%filename)
-            return
+
 
     def read_from_table(self, filename, func):
         """
@@ -243,23 +301,23 @@ class Tables(object):
         if not os.path.exists(filename):
             self.create_h5_file(filename)
         
+        attempts = 0
         while 1:
-            with Locks(filename) as l: 
-                if not l.locked: #tries to lock the table again
-                    time.sleep(LOCKING_DELAY)
-                    log.debug('Table was not locked: %s attempting to relock the table after %s sec.'%(filename,LOCKING_DELAY))
-                    continue
-                    
-                log.debug('Reading from table path: %s'%filename)
-                try:
-                    with tables.openFile(filename, 'r') as h5file:
-                        return func(h5file)
-                    
-                except tables.exceptions.HDF5ExtError:
-                    log.debug('Failed to find table %s'%filename)
-                    return None
-                    #raise FeatureServiceError()
-                
+            with TablesLock(filename,'r') as h5file:
+                if h5file:
+                    log.debug('Reading from table -> path: %s'%filename)
+                    return func(h5file)
+                    #raise exception
+            
+            #tries to lock again
+            attempts+=1
+            if attempts>FAILED_LOCK_ATTEMPTS:
+                raise FeatureServiceError(error_message='Failed to lock the table for the %s time'%FAILED_LOCK_ATTEMPTS)
+            else:
+                log.debug('Table was not locked: %s attempting to relock the table after %s sec.'%(filename,LOCKING_DELAY))
+                time.sleep(LOCKING_DELAY)
+                continue
+
 
     def append_to_table(self, filename, func):
         """
@@ -270,25 +328,22 @@ class Tables(object):
         """
         if not os.path.exists(filename):
             self.create_h5_file(filename)
+        
+        attempts = 0
+        while 1:
+            with TablesLock(filename,'a') as h5file:
+                if h5file:
+                    log.debug('Appending to table -> path: %s'%filename)
+                    return func(h5file)
             
-        while 1: 
-            with Locks(None, filename, mode="ab") as l:
-                
-                if not l.locked:
-                    time.sleep(LOCKING_DELAY)
-                    log.debug('Table was not locked: %s attempting to relock the table after %s sec.'%(filename,LOCKING_DELAY))
-                    continue      
-                
-                log.debug('Appending to table path: %s'%filename)
-                try:
-                    with tables.openFile(filename, 'a') as h5file:
-                        return func(h5file)
-                    
-                except tables.exceptions.HDF5ExtError:
-                    log.debug('Failed to find table %s'%filename)
-                    return
-                    #raise FeatureServiceError()
-
+            attempts+=1
+            if attempts>FAILED_LOCK_ATTEMPTS:
+                raise FeatureServiceError(error_message='Failed to lock the table for the %s time'%FAILED_LOCK_ATTEMPTS)
+            else:
+                log.debug('Table was not locked: %s attempting to relock the table after %s sec.'%(filename,LOCKING_DELAY))
+                time.sleep(LOCKING_DELAY)
+                continue
+            
     
     def create_h5_file(self, filename, func = None):
         """
@@ -319,15 +374,15 @@ class Tables(object):
                     
                     try:
                         table.where(query).next() #if the list contains one element
-                        query_results.append((True,hash))
-                        log.debug('Find: query: %s -> Found!'%query)
+                        query_results.append((True, hash))
+                        log.debug('Find: query: %s -> Found!' % query)
                     except StopIteration: #fails to get next
-                        query_results.append((False,hash))
-                        log.debug('Find: query: %s -> Not Found!'%query)
+                        query_results.append((False, hash))
+                        log.debug('Find: query: %s -> Not Found!' % query)
                 
                 return query_results
                     
-            yield self.read_from_table(filename,func)
+            yield self.read_from_table(filename, func)
 
 
     def store(self, row_genorator):

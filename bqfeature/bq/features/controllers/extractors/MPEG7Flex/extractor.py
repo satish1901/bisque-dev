@@ -182,18 +182,6 @@ class mDCD(DCD):
             
         return Columns
 
-    def output_error_columns(self):
-        """
-            Columns for the output table for the error columns
-        """
-        class Columns(tables.IsDescription):
-            image         = tables.StringCol(2000,pos=1)
-            mask          = tables.StringCol(2000,pos=2)
-            feature_type  = tables.StringCol(20, pos=3)
-            error_code    = tables.Int32Col(pos=4)
-            error_message = tables.StringCol(200,pos=5)
-            
-        return Columns
         
     @calc_wrapper
     def calculate(self, **resource):
@@ -313,19 +301,6 @@ class mCSD(CSD):
             label         = tables.Int32Col(pos=5)
             
         return Columns
-
-    def output_error_columns(self):
-        """
-            Columns for the output table for the error columns
-        """
-        class Columns(tables.IsDescription):
-            image         = tables.StringCol(2000,pos=1)
-            mask          = tables.StringCol(2000,pos=2)
-            feature_type  = tables.StringCol(20, pos=3)
-            error_code    = tables.Int32Col(pos=4)
-            error_message = tables.StringCol(200,pos=5)
-            
-        return Columns
         
     @calc_wrapper
     def calculate(self, **resource):
@@ -433,19 +408,6 @@ class mCLD(CLD):
             
         return Columns
 
-    def output_error_columns(self):
-        """
-            Columns for the output table for the error columns
-        """
-        class Columns(tables.IsDescription):
-            image         = tables.StringCol(2000,pos=1)
-            mask          = tables.StringCol(2000,pos=2)
-            feature_type  = tables.StringCol(20, pos=3)
-            error_code    = tables.Int32Col(pos=4)
-            error_message = tables.StringCol(200,pos=5)
-            
-        return Columns
-
         
     @calc_wrapper
     def calculate(self, **resource):
@@ -539,19 +501,6 @@ class pRSD(Feature.BaseFeature):
             
         return Columns
 
-    def output_error_columns(self):
-        """
-            Columns for the output table for the error columns
-        """
-        class Columns(tables.IsDescription):
-            image         = tables.StringCol(2000,pos=1)
-            polygon       = tables.StringCol(2000,pos=2)
-            feature_type  = tables.StringCol(20, pos=3)
-            error_code    = tables.Int32Col(pos=4)
-            error_message = tables.StringCol(200,pos=5)
-            
-        return Columns
-
             
     @calc_wrapper
     def calculate(self, **resource):
@@ -631,19 +580,6 @@ class mRSD(RSD):
             feature_type  = tables.StringCol(20, pos=3)
             feature       = tables.Col.from_atom(featureAtom, pos=4)
             label         = tables.Int32Col(pos=5)
-            
-        return Columns
-
-    def output_error_columns(self):
-        """
-            Columns for the output table for the error columns
-        """
-        class Columns(tables.IsDescription):
-            image         = tables.StringCol(2000,pos=1)
-            mask          = tables.StringCol(2000,pos=2)
-            feature_type  = tables.StringCol(20, pos=3)
-            error_code    = tables.Int32Col(pos=4)
-            error_message = tables.StringCol(200,pos=5)
             
         return Columns
 
