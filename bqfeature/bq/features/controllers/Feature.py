@@ -18,19 +18,18 @@ import tempfile
 import urlparse
 import urllib
 from tg import abort
-from webob import Request
 from PIL import Image
 from bq import image_service
-#from bq.image_service.controllers.locks import Locks
 from bq.core import identity
 from bq.util import http
+from webob.request import Request, environ_from_url
 from bq.features.controllers.exceptions import FeatureServiceError, InvalidResourceError
 from .var import FEATURES_STORAGE_FILE_DIR,FEATURES_TABLES_FILE_DIR,FEATURES_TEMP_IMAGE_DIR
-#from bq.features.controllers.service import FeatureServiceError
 log = logging.getLogger("bq.features")
 
 #wrapper for the calculator function so the output
 #is in the correct format to be easily placed in the tables
+
 def calc_wrapper(func):
     def calc(self,kw):
         id = self.returnhash(**kw)
@@ -159,16 +158,6 @@ class BaseFeature(object):
             feature       = tables.Col.from_atom(featureAtom, pos=3)
         return Columns
 
-    def output_error_columns(self):
-        """
-            Columns for the output table for the error columns
-        """
-        class Columns(tables.IsDescription):
-            image         = tables.StringCol(2000,pos=1)
-            feature_type  = tables.StringCol(20, pos=2)
-            error_code    = tables.Int32Col(pos=3)
-            error_message = tables.StringCol(200,pos=4)
-        return Columns
 
     @calc_wrapper
     def calculate(self, **resource):
@@ -197,8 +186,9 @@ class ImageImport:
         self.istiff = False
         self.tmp_flag = 0 #set a flag to if a temp file was made
         from bq.config.middleware import bisque_app
+        from tg import request
         
-        o = urlparse.urlsplit( self.uri)
+        o = urlparse.urlsplit(self.uri)
         
         if 'image_service' in o.path:
             #finds image resource though local image service
@@ -206,8 +196,6 @@ class ImageImport:
             if try_tiff == True:
                 urlparse.parse_qsl( o.query)
                 query_arg = urlparse.parse_qsl( o.query, keep_blank_values=True)
-                
-                
                 
                 query_arg.append(('format','OME-BigTIFF'))
                 query_pairs = query_arg
@@ -231,7 +219,10 @@ class ImageImport:
             self.tmp_flag = 1 #tmp file is create, set flag
             self.path = f.name
             try:
-                req = Request.blank(self.uri)
+                req = Request.blank('/')
+                req.environ.update(request.environ)
+                req.environ.update(environ_from_url(self.uri))
+                log.debug("Mex %s" % identity.mex_authorization_token())                  
                 req.headers['Authorization'] = "Mex %s" % identity.mex_authorization_token()
                 req.headers['Accept'] = 'text/xml'
                 log.debug("begin routing internally %s" % self.uri)
@@ -348,15 +339,19 @@ def mex_validation( **resource):
     Checks the mex of the resource to see if the user has access to all the resources
     """
     from bq.config.middleware import bisque_app
+    
     for r in resource.keys():
         log.debug("resource: %s"% resource[r])
 
         try:
             # Try to route internally
-            req = Request.blank(resource[r])
+            req = Request.blank('/')
+            req.environ.update(request.environ)
+            req.environ.update(environ_from_url(resource[r]))
+            log.debug("Mex %s" % identity.mex_authorization_token())  
             req.headers['Authorization'] = "Mex %s" % identity.mex_authorization_token()
             log.debug("Mex %s" % identity.mex_authorization_token())
-            req.headers['Accept'] = 'text/xml'
+            req.headers['Accept'] = 'text/xml'        
             log.debug("begin routing internally %s" % resource[r])
             resp = req.get_response(bisque_app)
             log.debug("end routing internally: status %s" % resp.status_int)
@@ -366,6 +361,8 @@ def mex_validation( **resource):
                 log.debug("User is not authorized to read resource internally: %s",resource[r])
 
             # Try to route externally
+
+            
             req = Request.blank(resource[r])
             req.headers['Authorization'] = "Mex %s" % identity.mex_authorization_token()
             req.headers['Accept'] = 'text/xml'
@@ -376,7 +373,7 @@ def mex_validation( **resource):
             if resp.status_int < 400:
                 continue
             else:
-                log.debug("User is not authorized to read resource: %s",resource[r])
+                log.debug("User is not authorized to read resource: %s" % resource[r])
                 return False
         except:
             log.exception ("While retrieving URL %s" % resource[r])
