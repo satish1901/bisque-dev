@@ -331,9 +331,9 @@ class LocalDriver (StorageDriver):
                 log.debug('local.write: %s -> %s' , storeurl, localpath)
                 #patch for no copy file uploads - check for regular file or file like object
                 move_file (fp, localpath)
-                ident = localpath #[len(top_path):]
-                #if ident[0] == '/':
-                #    ident = ident[1:]
+                ident = localpath[len(self.top_path):]
+                if ident[0] == '/':
+                    ident = ident[1:]
                 #ident = "file://%s" % localpath
                 ident = localpath2url(ident)
                 log.debug('local.blob_id: %s -> %s',  storeurl,  localpath)
