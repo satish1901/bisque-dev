@@ -120,7 +120,7 @@ class DataServerController(ServiceController):
         token = path.pop(0)
         if is_uniq_code(token):
             log.debug('using uniq token')
-            resource_controller = self.get_child_resource('taggable')
+            resource_controller = self.get_child_resource('resource')
             path.insert(0,token)
         else:
             resource_controller = self.get_child_resource (token)
@@ -187,6 +187,7 @@ class DataServerController(ServiceController):
             log.info ("Permission check failure %s = %s" % (query, resource))
             return None
 
+
     def new_image(self, resource = None, **kw):
         ''' place the data file in a local '''
 
@@ -203,6 +204,15 @@ class DataServerController(ServiceController):
         # Invalidate the top level container i.e. /data_service/images
         self.cache_invalidate(img.get('uri').rsplit('/', 1)[0])
         return img
+
+    def resource_load(self,  uniq=None, ident=None, view=None):
+        "Load a resource by uniq code or db ident (deprecated)"
+        query =  resource_load('resource', uniq=uniq, ident=ident)
+        resource = self.check_access (query, RESOURCE_READ)
+        if resource:
+            xtree = db2tree(resource, baseuri = self.url, view=view)
+            return xtree
+        return None
 
     def append_resource(self, resource, tree=None, **kw):
         '''Append an element to resource (a node)

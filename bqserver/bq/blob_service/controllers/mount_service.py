@@ -76,6 +76,7 @@ from bq.core.model import DBSession
 from bq.exceptions import IllegalOperation, DuplicateFile, ServiceError
 from bq.util.paths import data_path
 from bq.util.compat import OrderedDict
+from bq.util.bisquik2db import  load_uri  # needed for identity stuff
 
 from bq import data_service
 
@@ -148,6 +149,9 @@ def config2url(conf):
         return localpath2url( urlparse.urlparse(conf).path)
     else:
         return conf
+
+
+
 
 
 @contextmanager
@@ -357,11 +361,13 @@ class MountServer(TGController):
             for store_name, driver in self.drivers.items():
                 if store_name not in user_stores:
                     store = etree.SubElement (root, 'store', name = store_name, resource_unid = store_name)
-                    ordervalue = [ x.strip() for x in storeorder.get ('value', '').split(',') ]
-                    if store_name not in ordervalue:
-                        ordervalue.append(store_name)
-                        storeorder.set ('value', ','.join(ordervalue))
+                    # If there is a new store defined, better just to reset it to the default
 
+                    #ordervalue = [ x.strip() for x in storeorder.get ('value', '').split(',') ]
+                    #if store_name not in ordervalue:
+                    #    ordervalue.append(store_name)
+                    #    storeorder.set ('value', ','.join(ordervalue))
+                    storeorder.set ('value', ','.join (self.drivers.keys()))
                 else:
                     store = user_stores[store_name]
                 if store.get ('value') is None:
@@ -375,7 +381,7 @@ class MountServer(TGController):
 
         if update:
             log.debug ("updating %s", etree.tostring(root))
-            return data_service.update(root, new_resource=root, view='full')
+            return data_service.update(root, new_resource=root, replace=False, view='full')
         return root
 
 
@@ -458,6 +464,7 @@ class MountServer(TGController):
     # blobsrv API
     def valid_store_ref(self, resource):
         """Test whether the resource  is on a store can be read by the user
+
         @param resource: a binary resource
         @return : a store resource
         """
@@ -465,9 +472,9 @@ class MountServer(TGController):
 
         storeurls =  resource.get ('value')
         if storeurls is not None:
-            storeurls = [ storeurls]
+            storeurls = [storeurls]
         else:
-            storeurls = [x.text for x in resource.xpath('value') ]
+            storeurls = [x.text for x in resource.xpath('value')]
 
         for store_name, store in stores.items():
             prefix = store.get ('value')
@@ -479,7 +486,7 @@ class MountServer(TGController):
                 for storeurl in storeurls[1:]:
                     if not driver.valid (storeurl):
                         raise IllegalOperation('resource %s spread across different stores %s', resource.get('resource_uniq'), storeurls)
-                log.debug ("matched %s", driver.mount_url)
+                log.debug ("matched %s %s", store_name, driver.mount_url)
                 return store
         return None
 
@@ -523,7 +530,7 @@ class MountServer(TGController):
                 break
             except IllegalOperation, e:
                 log.debug ("failed %s store on %s with %s", storepath, store_name, e )
-                store_url = lpath = None
+                storeurl = lpath = None
 
         if storeurl is None:
             log.error ('storing %s failed (%s)', storepath, storeurl)
@@ -582,7 +589,7 @@ class MountServer(TGController):
             # Assume the first URL is special and the others are related which can be used
             # to calculate storepath
 
-            first = None
+            first = (None,None)
             movingrefs = []
             fixedrefs  = []
             for node, setter, (storeurl, subpath), storepath in refs:
@@ -618,7 +625,7 @@ class MountServer(TGController):
                 with open (localpath, 'rb') as fobj:
                     storeurl = urlparse.urljoin (driver.mount_url, storepath)
                     storeurl, localpath = driver.push (storeurl, fobj)
-                    if first is None:
+                    if first[0] is None:
                         first = (storeurl, localpath)
                     setter(node, join_subpath (storeurl, subpath))
             return first
@@ -637,9 +644,9 @@ class MountServer(TGController):
 
     def fetch_blob(self, resource):
         'return a (set) path(s) for a resource'
-
         log.debug ("fetch_blob %s", resource.get ('resource_uniq'))
-        store = self.valid_store_ref (resource)
+
+        store = self._find_store (resource)
         if  store is None:
             log.error ('Not a valid store ref in  %s' , etree.tostring (resource))
             return None
@@ -674,23 +681,28 @@ class MountServer(TGController):
             return blob_drivers.Blobs(files[0], sub, files)
 
 
-    def _find_store(self, storeurl):
-        """return a store(mount)  by the storeurl
+    def _find_store(self, resource):
+        """return a store(mount)  by the resource
+
+        case 1: Anonymous user:  resource must be published
+        case 2: User == resource owner : should be one of the users stores
+        case 3: User != resource owner : user has read permission
+
+        We has N store prefix and we want to find the longest match for the target string (searchurl)
         """
-        root = data_service.query('store', resource_unid='(root)', view='full')
-        #figure  where to store blob
-        #store_order = get_tag (root, 'order')
-        #if store_order is None:
-        #    store_order = config.get('bisque.blob_service.stores','')
+        #  This should have been checked before we ever get here:
+        #  Currently all service check accessibility before arriving here.
+        #  so we can simply find the store using the resource's owner.
 
-        #for store_name in [x.strip() for x in store_order.split(',')]:
-        #    pass
-        for store in root.xpath('./store'):
-            store_prefix = store.get('value')
-            if storeurl.startswith (store_prefix):
-                store_name = store.get ('name')
-                return store
+        # identity functions need to either accept URI we should move to using UNIQ codes for all embedded URI
+        # i.e. <image uniq="00-AAA" owner="00-CCC" ../>
+        owner_uri = resource.get('owner')
+        owner = load_uri (owner_uri)
 
+        # Is this enough context? Should the whole operation be carried out as the user or just the store lookup?
+        with identity.as_user(owner):
+            store = self.valid_store_ref (resource)
+        return store
 
     def _get_stores(self):
         "Return a list of store resources in the users ordering"
@@ -737,8 +749,6 @@ class MountServer(TGController):
         log.debug ('making store driver %s: %s', store_name, driver_opts)
         driver = blob_drivers.make_storage_driver(**driver_opts)
         return driver
-
-
 
     ##############################
     # services for mounts

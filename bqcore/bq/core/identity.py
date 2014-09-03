@@ -5,6 +5,7 @@
 #pylint:disable=E0611
 from tg import request, session
 from repoze.what.predicates import in_group
+from contextlib import contextmanager
 
 import logging
 from bq.exceptions import BQException
@@ -137,12 +138,32 @@ def get_user():
     """Get the current user object"""
     return current._get_bquser()
 
+def get_current_user():
+   return current._get_bquser()
+
 def set_current_user(username):
-    "set the current user by name"
+    """set the current user by name
+    @param username: a string username or a bquser reference
+    """
     if not hasattr (request, 'identity'):
         request.identity = {}
     return current.set_current_user(username)
 
+
+@contextmanager
+def as_user(user):
+    """ Do some action as a particular user and reset the current user
+
+    >>> with as_user('admin'):
+    >>>     action()
+    >>>     action
+
+    @param user:  a username or a bquser instance
+    """
+    prev = get_current_user()
+    set_current_user(user)
+    yield
+    set_current_user(prev)
 
 def add_credentials(headers):
     """add the current user credentials for outgoing http requests
