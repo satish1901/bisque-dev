@@ -143,6 +143,12 @@ else:
         url = 'file://%s'%url
         return url
 
+def config2url(conf):
+    if conf.startswith('file://'):
+        return localpath2url( urlparse.urlparse(conf).path)
+    else:
+        return conf
+
 
 @contextmanager
 def optional_cm(cm, *args, **kw):
@@ -328,13 +334,13 @@ class MountServer(TGController):
         #    with optional_cm(subtrans):
         update = False
         user_name  = identity.current.user_name
-        if  root is None:
+        if root is None:
             update  = True
             root = etree.Element('store', name="(root)", resource_unid="(root)")
             etree.SubElement(root, 'tag', name='order', value = ','.join (self.drivers.keys()))
             for store_name,driver in self.drivers.items():
-                mount_path = string.Template(driver['mount']).safe_substitute(datadir = data_url_path(), user = user_name)
-                etree.SubElement(root, 'store', name = store_name, resource_unid=store_name, value=mount_path)
+                mount_path = string.Template(driver['mounturl']).safe_substitute(datadir = data_url_path(), user = user_name)
+                etree.SubElement(root, 'store', name = store_name, resource_unid=store_name, value=config2url(mount_path))
         else:
             storeorder = get_tag(root, 'order')
             if storeorder is None:
@@ -363,7 +369,7 @@ class MountServer(TGController):
                     mounturl = string.Template(mounturl).safe_substitute(datadir = data_url_path(), user = user_name)
                     # ensure no $ are left
                     mounturl = mounturl.split('$', 1)[0]
-                    store.set ('value', mounturl)
+                    store.set ('value', config2url(mounturl))
                     log.debug ("setting store %s value to %s", store_name, mounturl)
                     update = True
 
