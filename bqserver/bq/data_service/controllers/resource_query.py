@@ -104,7 +104,7 @@ LEGAL_ATTRIBUTES = {
      'hidden': 'resource_hidden', 'resource_hidden': 'resource_hidden',
      'ts': 'ts', 'created': 'created',
      'unid' : 'resource_unid', 'resource_unid' : 'resource_unid',
-     'uniq' : 'resource_uniq', 'resource_uniq' : 'resource_uniq' 
+     'uniq' : 'resource_uniq', 'resource_uniq' : 'resource_uniq'
      }
 
 
@@ -231,6 +231,8 @@ def p_term_tagvaltype(p):
             name = name[1:]
             if name in LEGAL_ATTRIBUTES:
                 op = _OPERATIONS[rel]
+                if val.count('*'):
+                    val = val.replace('*', '%')
                 p[0] = op(getattr(Taggable, LEGAL_ATTRIBUTES[name]), val)
             return
 
@@ -391,7 +393,7 @@ def prepare_type (resource_type):
         name, dbtype = resource_type
     elif isinstance(resource_type, basestring):
         types = [ dbtype_from_tag(x.strip()) for x in resource_type.split('|') ]
-        name, dbtype = ('resource', Taggable)
+        name, dbtype = (None, Taggable)
 
     query = DBSession.query(dbtype)
     query_expr = None
@@ -402,7 +404,7 @@ def prepare_type (resource_type):
         query_type = None
         # Special clause for non-system resource and list of resources
         # the name 'nm' is the local type and we will filter those
-        if dbtype == Taggable and nm is not None:
+        if dbtype == Taggable and nm is not None and nm != 'resource':
             log.debug ("query resource_type %s" % nm)
             #query_expr = (Taggable.tb_id == UniqueName(name).id)
             query_type =  (Taggable.resource_type == nm)
@@ -699,6 +701,7 @@ def resource_query(resource_type,
                    tag_query=None,
                    tag_order=None,
                    parent=None,
+                   permcheck = True,
                    user_id=None,
                    wpublic = False,
                    action = RESOURCE_READ,
@@ -711,7 +714,7 @@ def resource_query(resource_type,
     @param resource_type:  a database type
     @param tag_query: match the tag expression
     @param tag_order: order of the items to be returned
-    @param parent:  The parent object (all results must be under this parent)
+    @param parent:  The parent object (all results must be under this parent) (maybe a query, id, None (toplevel objects) or False (no parent clause)
     @param user_id:
     @param **kw: All other keyword args are used as attribute value to be matched
     '''
@@ -729,8 +732,10 @@ def resource_query(resource_type,
         query = DBSession.query (Taggable).filter (Taggable.id == sq1.c.values_valobj)
         wpublic = 1
 
-    if not kw.pop('welcome', None):
+    if  permcheck :
         query = prepare_permissions(query, user_id, with_public = wpublic, action=action)
+    else:
+        log.warn ("skipping permissions")
 
     ## Extra attributes
     if kw.has_key('hidden'):
@@ -809,19 +814,19 @@ def resource_query(resource_type,
 
 
 
-def resource_load(resource_type = ('resource', Taggable),
-                  id=None,
+def resource_load(resource_type = (None, Taggable),
+                  ident=None,
                   uniq = None,
-                  user_id=None,
-                  with_public=True,
-                  action=RESOURCE_READ,
+#                  user_id=None,
+#                  with_public=True,
+#                  action=RESOURCE_READ,
                   **kw):
     name, dbtype, query = prepare_type (resource_type)
 #    resource = prepare_permissions (resource, user_id, with_public = with_public, action=action)
     if uniq is not None:
         resource = query.filter_by (resource_uniq = uniq)
     else:
-        resource = query.filter_by (id = id)
+        resource = query.filter_by (id = ident)
 
     return resource
 
@@ -831,9 +836,69 @@ def resource_permission(resource, action = RESOURCE_READ, user_id=None, with_pub
     return resource
 
 
+def send_mail(user_list, content):
+    """send an email to the users list
+       NOT IMPLEMENTED
+    """
+    pass
 
-def resource_auth (resource, parent, user_id=None, action=RESOURCE_READ, newauth=None,notify=True, invalidate=True):
-    """View or edit authoization records associated the resource"""
+
+def match_user (user_url =None, email =None ):
+    """Match a user by user url or email
+
+    @return: tuple (new user, boolean created)
+    """
+    user = None
+    if user_url is None and email is None:
+        raise IllegalOperation()
+    if user_url:
+        user = DBSession.query(BQUser).get (int (user_url.rsplit('/', 1)[1]))
+    if not user and email:
+        user = DBSession.query(BQUser).filter_by(resource_value=unicode(email)).first()
+    if  user is not None:
+        #log.debug ('Found user %s', str(user.user_name)
+        return (user, False)
+    log.debug ('AUTH: no user %s sending invite %s', email)
+    # Setup a temporary user so that we can add the ACL
+    # Also setup the pre-registration info they can
+    name = email.split('@',1)[0]
+    count = 1
+    check_name = name
+    while True:
+        user = DBSession.query(BQUser).filter_by(
+            resource_name=check_name).first()
+        if user is None:
+            name = check_name
+            break
+        check_name = name + str(count)
+        count += 1
+
+    log.debug('AUTH: tg_user name=%s email=%s display=%s' ,  name, email, email)
+    tg_user = User(user_name=name, password='bisque', email_address=email, display_name=email)
+    DBSession.add(tg_user)
+    DBSession.flush()
+    log.debug ("AUTH: tg_user = %s" % tg_user)
+
+    # we should have created the BQUser by now.
+    user = DBSession.query(BQUser).filter_by(resource_name = name).first()
+    return (user, True)
+
+
+def resource_auth (resource, action=RESOURCE_READ, newauth=None, notify=True, invalidate=True):
+    """View or edit authoization records associated the resource
+
+    @param resource: a database taggable
+    @param action : RESOURCE_READ or RESOURCE_EDIT
+    @param newauth: list of (user_id, permissions) tuples
+
+    when editing:
+       determine list of user not authorized yet
+       if notify:
+          send email
+       replace acl with authorized user list
+       if invalidate:
+          invalidate users
+    """
     log.debug ("resource_auth %s %s", str(resource), str(newauth))
     DBSession.autoflush = False
     q = DBSession.query (TaggableAcl).filter_by (taggable_id = resource.id)
