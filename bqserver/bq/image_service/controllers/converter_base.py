@@ -267,7 +267,7 @@ class ConverterBase(object):
                             os.remove(ofnm)
                         abort(412, 'Requested timeout reached')
                     if retcode!=0:
-                        log.warning ('Run: returned [%s] for [%s]', retcode, command)
+                        log.info ('Run: returned [%s] for [%s]', retcode, command)
                         return None
                     if ofnm is None:
                         return str(retcode)

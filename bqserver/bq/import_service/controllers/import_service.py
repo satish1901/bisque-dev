@@ -824,7 +824,7 @@ class import_serviceController(ServiceController):
         log.debug('process, file name attr: %s', getattr(uf.fileobj, 'name', None))
 
         # check if an image can be a series
-        if mime == 'image/series':
+        if mime == 'image/series' and uf.fileobj is not None:
             filename = uf.localpath()
             if filename is None:
                 log.debug('process, file object has no local path: [%s], move local', uf.fileobj)
