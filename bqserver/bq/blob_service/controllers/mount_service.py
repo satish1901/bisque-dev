@@ -526,7 +526,7 @@ class MountServer(TGController):
         log.debug ("Trying mounts %s", stores.keys())
         for store_name, store in stores.items():
             try:
-                storeurl,lpath =  self._save_store (store, storepath, resource, fileobj,rooturl)
+                storeurl,lpath = self._save_store (store, storepath, resource, fileobj, rooturl)
                 break
             except IllegalOperation, e:
                 log.debug ("failed %s store on %s with %s", storepath, store_name, e )
@@ -540,7 +540,7 @@ class MountServer(TGController):
     def _save_store(self, store, storepath, resource, fileobj=None, rooturl=None):
         'store the file to the named store'
 
-        if  fileobj:
+        if fileobj:
             with  self._get_driver(store) as driver:
                 if driver.readonly:
                     raise IllegalOperation('readonly store')
@@ -572,6 +572,7 @@ class MountServer(TGController):
         @param resource: a resource with storeurls
         @param rooturl: the root of the storeurls
         """
+        log.debug ("_save_storerefs: %s, %s, %s, %s", store, storepath, resource, rooturl)
 
         def setval(n, v):
             n.set('value', v)
@@ -584,7 +585,9 @@ class MountServer(TGController):
                 refs = [ (resource, setval, split_subpath(refs), storepath) ]
             else:
                 refs = [ (x, settext, split_subpath(x.text), None) for x in resource.xpath ('value') ]
-
+            log.debug ("_save_storerefs refs: %s", refs)
+            
+            
             # Determine a list of URL that need to be moved to a store (these were unpacked locally)
             # Assume the first URL is special and the others are related which can be used
             # to calculate storepath
@@ -610,18 +613,23 @@ class MountServer(TGController):
                 else:
                     log.error ("store_refs: Cannot access %s of %s ", storeurl, etree.tostring(node))
 
+            log.debug ("_save_storerefs movingrefs: %s", movingrefs)
+            log.debug ("_save_storerefs fixedrefs: %s", fixedrefs)
+
             # I don't a single resource will have in places references and references that need to move
             if len(fixedrefs) and len(movingrefs):
                 log.warn ("While storing refs found inplance refs and moving refs in same resource %s", etree.tostring(resource))
 
             if len(fixedrefs):
                 # retrieve storeurl, and no localpath yet
-                first = (fixedrefs[2][0], None)
+                first = (fixedrefs[0][2][0], None)
+                log.debug ("_save_storerefs first: %s", first)
+                
             # References to a readonly store may be registered if no actual data movement takes place.
             if movingrefs and driver.readonly:
                 raise IllegalOperation('readonly store')
 
-            for node, setter, (localpath, subpath),  storepath in movingrefs:
+            for node, setter, (localpath, subpath), storepath in movingrefs:
                 with open (localpath, 'rb') as fobj:
                     storeurl = urlparse.urljoin (driver.mount_url, storepath)
                     storeurl, localpath = driver.push (storeurl, fobj)

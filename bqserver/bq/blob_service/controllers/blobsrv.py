@@ -443,77 +443,13 @@ class BlobServer(RestController, ServiceMixin):
         @return: a resource
         """
         log.debug('store_blob: %s', etree.tostring(resource))
-        #    try:
-        uniq = resource.get ('resource_uniq')
-        if uniq is None:
+        if resource.get('resource_uniq') is None:
             resource.set('resource_uniq', data_service.resource_uniq() )
-        if fileobj is not None:
-            resource = self._store_fileobj(resource, fileobj)
-            return resource
-        else:
-            resource = self._store_reference(resource, rooturl )
-                #smokesignal.emit(SIG_NEWBLOB, self.store, path=resource.get('value'), resource_uniq=resource.get ('resource_uniq'))
-            return resource
-         #   except DuplicateFile, e:
-         #       log.warn("Duplicate file. renaming")
-         #       #resource.set('resource_uniq', data_service.resource_uniq())
-         #       resource.set('name', '%s-%s' % (resource.get('name'), resource.get('resource_uniq')[3:7+x]))
-        raise ServiceError("Unable to store blob")
 
-
-    def _store_fileobj(self, resource, fileobj ):
-        'Create a blob from a file .. used by store_blob'
-        # dima: make sure local file name will be ascii, should be fixed later
-        # dima: unix without LANG or LC_CTYPE will through error due to ascii while using sys.getfilesystemencoding()
-        #filename_safe = filename.encode(sys.getfilesystemencoding())
-        #filename_safe = filename.encode('ascii', 'xmlcharrefreplace')
-        #filename_safe = filename.encode('ascii', 'replace')
-        filename = resource.get('name') or getattr(fileobj, 'name') or ''
-        uniq     = resource.get('resource_uniq')
-        _,sub    = split_subpath(resource.get('value') or resource.get('name'))
-
-        #with TransferTimer() as t:
-        #    blob_id, t.path = self.drive_man.save_blob(fileobj, filename, user_name = user_name, uniq=uniq)
-
-        store_url, lpath = self.mounts.store_blob(resource, fileobj = fileobj)
-        log.debug ("_store_fileobj %s %s", store_url, lpath)
+        store_url, lpath = self.mounts.store_blob(resource, rooturl=rooturl, fileobj=fileobj)
+        log.debug ("store_blob %s %s", store_url, lpath)
         if store_url is None:
             return None
-
-        resource.set('value', join_subpath(store_url, sub))
-        resource.set('name', join_subpath(os.path.basename(lpath), sub))
-
-        #resource.set('resource_uniq', uniq)
-        return self.create_resource(resource)
-
-    # def _make_url_local(self, urlref):
-    #     'return a local file to the specified urlref'
-    #     #if urlref.startswith ('file:///'):
-    #     #    return urlref.replace('file:///', '')
-    #     #elif urlref.startswith ('file://'):
-    #     #    return urlref [5:]
-    #     if urlref.startswith ('file://'):
-    #         return blob_drivers.url2localpath(urlref)
-    #     return None
-
-    def _store_reference(self, resource, rooturl=None):
-        """create a reference to a blob based on its URL
-
-        @param resource: resource an etree resource
-        @param urlref:   An URL to configured store or a local file url (which may be moved to a valid store
-        @return      : The created resource
-        """
-
-        _,sub    = split_subpath(resource.get('value') or resource.get('name'))
-
-        store_url, lpath = self.mounts.store_blob(resource, rooturl = rooturl)
-        log.debug ("_store_fileobj %s %s", store_url, lpath)
-        if store_url is None:
-            return None
-
-        resource.set('name', join_subpath(os.path.basename(lpath), sub))
-        resource.set('value', join_subpath(store_url, sub))
-
         return self.create_resource(resource)
 
     def localpath (self, uniq_ident):
