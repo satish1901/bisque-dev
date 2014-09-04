@@ -83,7 +83,7 @@ def run_command(command):
         p = Popen (command, stdout=PIPE, stderr=PIPE)
         o,e = p.communicate()
         if p.returncode!=0:
-            log.warning ("BAD non-0 return code for %s", command)
+            log.info ("BAD non-0 return code for %s", command)
             return None
         # Qt reports an error: 'Qt: Untested Windows version 6.2 detected!\r\n'
         #if e is not None and len(e)>0:
@@ -156,6 +156,6 @@ else:
         try:
             os.remove(tmp) # gets the system into a dark state of recursion?
         except OSError:
-            log.warn('Could not remove temp link: %s', tmp)
+            log.warning('Could not remove temp link: %s', tmp)
             pass
 
