@@ -711,7 +711,7 @@ class import_serviceController(ServiceController):
         # try inserting the file in the blob service
         try:
             # determine if resource is already on a blob_service store
-            log.debug('Inserting %s ' , str( uf))
+            log.debug('Inserting %s ', str( uf))
             resource = blob_service.store_blob(resource=uf.resource, fileobj=uf.fileobj)
             log.debug('Inserted resource :::::\n %s', etree.tostring(resource) )
         except Exception, e:

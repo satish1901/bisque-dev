@@ -156,5 +156,6 @@ else:
         try:
             os.remove(tmp) # gets the system into a dark state of recursion?
         except OSError:
+            log.warn('Could not remove temp link: %s', tmp)
             pass
 
