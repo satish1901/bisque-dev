@@ -23,11 +23,8 @@ def gabor_gen(height,width,s,n,scales=4,orientations=6,Ul=0.05,Uh=.5):
     xv,yv = np.meshgrid(x,y)
     
     X = (a**(-s))*(t1*xv+t2*yv)
-    #X = ne.evaluate('(a**(-s))*(t1*xv+t2*yv)')
     Y = (a**(-s))*(t1*yv-t2*xv)
-    #Y = ne.evaluate('(a**(-s))*(t1*yv-t2*xv)')
     G = coef*(a**(-s))*np.exp(-.5*((X*X)/(sigmaX*sigmaX)+(Y*Y)/(sigmaY*sigmaY)))
-    #G = ne.evaluate('coef*(a**(-s))*exp(-.5*((X*X)/(sigmaX*sigmaX)+(Y*Y)/(sigmaY*sigmaY)))')
     
     angle = 2*np.pi*u0*X
     gabor = G*np.sin(angle)
@@ -39,8 +36,6 @@ def homogenious_texture_descriptor(im, scales=4, orientations=6):
     
     HTDmean = []
     HTDstd = []
-    pool = Pool(processes = 5)
-    
     for s in np.arange(0,scales):
         for o in np.arange(0,orientations):
             gabor = gabor_gen(im.shape[0],im.shape[1],s,o,scales,orientations)

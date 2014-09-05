@@ -149,12 +149,12 @@ class ResourceList(object):
             input_dict[k] = input_dict[k].strip('"')
             
         #check if user has access to resource
-        #if mex_validation(**input_dict):
-        uri_hash = self.feature().returnhash(**input_dict)
-        if uri_hash not in self.element_dict:
-            self.element_dict[uri_hash] = input_dict
-            self.uri_hash_list.append(uri_hash)
-            self.uri_hash_list.sort()
+        if mex_validation(**input_dict):
+            uri_hash = self.feature().returnhash(**input_dict)
+            if uri_hash not in self.element_dict:
+                self.element_dict[uri_hash] = input_dict
+                self.uri_hash_list.append(uri_hash)
+                self.uri_hash_list.sort()
                 
         #add it to a list of element with errors
         else:

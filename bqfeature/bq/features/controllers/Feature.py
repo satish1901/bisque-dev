@@ -17,7 +17,7 @@ import socket
 import tempfile
 import urlparse
 import urllib
-from tg import abort
+from tg import request
 from PIL import Image
 from bq import image_service
 from bq.core import identity
@@ -25,11 +25,66 @@ from bq.util import http
 from webob.request import Request, environ_from_url
 from bq.features.controllers.exceptions import FeatureServiceError, InvalidResourceError
 from .var import FEATURES_STORAGE_FILE_DIR,FEATURES_TABLES_FILE_DIR,FEATURES_TEMP_IMAGE_DIR
+
+
+
+from bq.data_service.controllers.resource_query import RESOURCE_READ
+from bq.data_service.controllers.resource_query import resource_permission
+from bq.data_service.model import Taggable, DBSession
 log = logging.getLogger("bq.features")
 
+
+
+def request_internally(url):
+    """
+        Makes a request on the give url internally. If it finds url without errors the content
+        of the body is returned else None is returned
+        
+        @param url - the url that is requested internally
+        
+        @return body - body of the response
+    """
+    # 
+    from bq.config.middleware import bisque_app
+    req = Request.blank('/')
+    req.environ.update(request.environ)
+    req.environ.update(environ_from_url(url))
+    log.debug("Mex %s" % identity.mex_authorization_token())  
+    req.headers['Authorization'] = "Mex %s" % identity.mex_authorization_token()
+    req.headers['Accept'] = 'text/xml'        
+    log.debug("begin routing internally %s" % resource[r])
+    resp = req.get_response(bisque_app)
+    log.debug("end routing internally: status %s" % resp.status_int)
+    if resp.status_int < 400:
+        return resp.body
+    else:
+        log.debug("User is not authorized to read resource internally: %s",resource[r])
+        return None
+
+
+def request_externally(url):
+    """
+        Makes a request on the give url externally. If it finds url without errors the content
+        of the body is returned else None is returned
+        
+        @param url - the url that is requested externally
+        
+        @return body - body of the response
+    """
+    req = Request.blank(resource[r])
+    req.headers['Authorization'] = "Mex %s" % identity.mex_authorization_token()
+    req.headers['Accept'] = 'text/xml'
+    log.debug("begin routing externally: %s" % url)
+    resp = http.send(req)
+    log.debug("end routing externally: status %s" % resp.status_int)
+    if resp.status_int < 400:
+        return resp.body
+    else:
+        log.debug("User is not authorized to read resource: %s" % url)
+        return None
+    
 #wrapper for the calculator function so the output
 #is in the correct format to be easily placed in the tables
-
 def calc_wrapper(func):
     def calc(self,kw):
         id = self.returnhash(**kw)
@@ -219,39 +274,22 @@ class ImageImport:
             self.tmp_flag = 1 #tmp file is create, set flag
             self.path = f.name
             try:
-                req = Request.blank('/')
-                req.environ.update(request.environ)
-                req.environ.update(environ_from_url(self.uri))
-                log.debug("Mex %s" % identity.mex_authorization_token())                  
-                req.headers['Authorization'] = "Mex %s" % identity.mex_authorization_token()
-                req.headers['Accept'] = 'text/xml'
-                log.debug("begin routing internally %s" % self.uri)
-                response = req.get_response(bisque_app)
-                log.debug("end routing internally: status %s" % response.status_int)
-                if response.status_int == 200:
-                    f.write(response.body)
-                    return 
-                if response.status_int in set([401,403]):
-                    self.path = None
-                    log.debug("User is not authorized to read resource internally: %s",self.uri)
-                    #raise ValueError('User is not authorized to read resource internally: %s') 
-
                 # Try to route externally
-                req = Request.blank(self.uri)
-                req.headers['Authorization'] = "Mex %s" % identity.mex_authorization_token()
-                req.headers['Accept'] = 'text/xml'
-                log.debug("begin routing externally: %s" % self.uri)
-                response = http.send(req)
-                log.debug("end routing externally: status %s" % response.status_int)
-                #if response.status_int == 200:
-                if response.status_int < 400:
-                    f.write(response.body)
-                    return 
+                response = request_internally(self.uri)
+                if response is None:
+                    self.path = None
                 else:
+                    f.write(response)
+                
+                # Try to route externally
+                response = request_externally(self.uri)
+                if response is None:
                     self.path = None
                     log.debug("User is not authorized to read resource externally: %s",self.uri)
                     raise Exception("Error Code: %s User is not authorized to read resource externally: %s",(response.status_int,self.uri))
-
+                else:
+                    f.write(response)
+                    
             except:
                 self.path = None
                 log.exception ("While retrieving URL %s" % uri)
@@ -275,13 +313,6 @@ class ImageImport:
         if self.istiff and self.path:
             try:
                 tif = TIFF.open(self.path, mode = 'r')
-#                    sample_per_pixel = tif.GetField('SAMPLESPERPIXEL')
-#                    sample_format = tif.GetField('SAMPLEFORMAT')
-#                    protometric_interpretation = tif.GetFile('PHOTOMETRICINTERPRETATION') #rgb
-#                    image_length = tif.GetFile('IMAGELENGTH')
-#                    image_width = tif.GetFile('IMAGEWIDTH')
-#                    bits_per_sample = tif.GetFile('BITSPERSAMPLE')
-#                    strip_length = tif.GetFile('STRIPLENGTH')
                 image = []
                 for im in tif.iter_images():
                     image.append(im)
@@ -329,56 +360,59 @@ class ImageImport:
                 pass        
 
 
+
+
 ###############################################################
 # Mex Validation
 ###############################################################
 
+def check_access(ident, action=RESOURCE_READ):
+    """
+        Checks for element in the database. If found returns True else returns 
+        False
+        
+        @param ident  - resource uniq or resource id
+        @param action - resource action on the database (default: RESOURCE_READ)
+        
+        @return bool
+    """
+    query = DBSession.query(Taggable).filter_by (resource_uniq = ident)
+    resource = resource_permission (query, action=action).first()
+    log.debug('Result from the database: %s'%resource)
+    if resource is None:
+        return False
+    return True
+
+                
 #needs to be replaced with a HEAD instead of using a GET
-def mex_validation( **resource):
+def mex_validation(**resource):
     """
     Checks the mex of the resource to see if the user has access to all the resources
     """
-    from bq.config.middleware import bisque_app
-    
     for r in resource.keys():
         log.debug("resource: %s"% resource[r])
-
+        
         try:
-            # Try to route internally
-            req = Request.blank('/')
-            req.environ.update(request.environ)
-            req.environ.update(environ_from_url(resource[r]))
-            log.debug("Mex %s" % identity.mex_authorization_token())  
-            req.headers['Authorization'] = "Mex %s" % identity.mex_authorization_token()
-            log.debug("Mex %s" % identity.mex_authorization_token())
-            req.headers['Accept'] = 'text/xml'        
-            log.debug("begin routing internally %s" % resource[r])
-            resp = req.get_response(bisque_app)
-            log.debug("end routing internally: status %s" % resp.status_int)
-            if resp.status_int == 200:
-                continue
-            elif resp.status_int in set([401,403]):
-                log.debug("User is not authorized to read resource internally: %s",resource[r])
+            #route through the database
+            o = urlparse.urlsplit(resource[r])
+            url_path = o.path.split('/')
+            if url_path[1] == 'data_service' or url_path[1] == 'image_service': #check for data_service
+                ident = url_path[3]
+                if check_access(ident) is True:
+                    continue #check next resource
+                #else try another route
+            
+            # Try to route internally through bisque 
+            if request_internally(resource[r]) is not None:
+                continue #check next resource
 
             # Try to route externally
-
+            if request_externally(resource[r]) is None:
+                return False #after checking every path resource was not found
             
-            req = Request.blank(resource[r])
-            req.headers['Authorization'] = "Mex %s" % identity.mex_authorization_token()
-            req.headers['Accept'] = 'text/xml'
-            log.debug("begin routing externally: %s" % resource[r])
-            resp = http.send(req)
-            log.debug("end routing externally: status %s" % resp.status_int)
-#            if resp.status_int == 200:
-            if resp.status_int < 400:
-                continue
-            else:
-                log.debug("User is not authorized to read resource: %s" % resource[r])
-                return False
         except:
             log.exception ("While retrieving URL %s" % resource[r])
             return False
-
     return True
 
 ###############################################################
