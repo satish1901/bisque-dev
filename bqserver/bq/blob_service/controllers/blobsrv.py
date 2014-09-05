@@ -438,16 +438,18 @@ class BlobServer(RestController, ServiceMixin):
     def store_blob(self, resource, fileobj = None, rooturl = None):
         """Store a resource in the DB must be a valid resource
 
-        @param fileobj: A open file i.e. recieved in a POST
+        @param fileobj: an open file i.e. recieved in a POST
         @param rooturl: a multi-blob resource will have urls as values rooted at rooturl
         @return: a resource
         """
+        log.debug('store_blob: %s, %s', fileobj, rooturl)
         log.debug('store_blob: %s', etree.tostring(resource))
         if resource.get('resource_uniq') is None:
             resource.set('resource_uniq', data_service.resource_uniq() )
 
         store_url, lpath = self.mounts.store_blob(resource, rooturl=rooturl, fileobj=fileobj)
-        log.debug ("store_blob %s %s", store_url, lpath)
+        log.debug("store_blob stored: %s %s", store_url, lpath)
+        log.debug('store_blob stored: %s', etree.tostring(resource))
         if store_url is None:
             return None
         return self.create_resource(resource)
