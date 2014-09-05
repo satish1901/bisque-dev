@@ -58,6 +58,7 @@ import string
 import urllib
 import urlparse
 import shutil
+import posixpath
 
 from lxml import etree
 from sqlalchemy.exc import IntegrityError
@@ -540,23 +541,20 @@ class MountServer(TGController):
     def _save_store(self, store, storepath, resource, fileobj=None, rooturl=None):
         'store the file to the named store'
 
+        _, sub  = split_subpath (resource.get ('name'))
         if fileobj:
             with  self._get_driver(store) as driver:
                 if driver.readonly:
                     raise IllegalOperation('readonly store')
 
-                # I am confused by the logic here (but it was copied from blobsrv)
-                resource_name = storepath or getattr(fileobj, 'name') or ''
-                _, sub  = split_subpath (resource.get ('value') or resource_name)
-
                 storeurl = urlparse.urljoin (driver.mount_url, storepath)
                 storeurl, localpath = driver.push (storeurl, fileobj)
 
-                resource.set('name', join_subpath(os.path.basename(resource_name), sub))
+                resource.set('name', join_subpath(os.path.basename(storepath), sub))
                 resource.set('value', join_subpath(storeurl, sub))
         else:
             storeurl, localpath = self._save_storerefs (store, storepath, resource, rooturl)
-
+            resource.set('name', join_subpath(os.path.basename(storepath), sub))
 
 
         if asbool(config.get ('bisque.blob_service.store_paths', True)):
@@ -587,7 +585,7 @@ class MountServer(TGController):
                 refs = [ (x, settext, split_subpath(x.text), None) for x in resource.xpath ('value') ]
             log.debug ("_save_storerefs refs: %s", refs)
             
-            
+            rootpath = storepath
             # Determine a list of URL that need to be moved to a store (these were unpacked locally)
             # Assume the first URL is special and the others are related which can be used
             # to calculate storepath
@@ -608,7 +606,7 @@ class MountServer(TGController):
                     movingrefs.extend ( (etree.SubElement(resource, 'value'), settext, (fpath, subpath), fpath[len(localpath):]) for fpath in blob_drivers.walk_deep(localpath))
                 elif os.path.exists(localpath):
                     if storepath is None:
-                        storepath = storeurl[len(rooturl):]
+                        storepath = posixpath.join(rootpath, storeurl[len(rooturl):])
                     movingrefs.append ( (node, setter, (localpath, subpath), storepath) )
                 else:
                     log.error ("store_refs: Cannot access %s of %s ", storeurl, etree.tostring(node))
