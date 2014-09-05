@@ -520,19 +520,19 @@ class MountServer(TGController):
             # A relative name.. could be a reference store only
             if fileobj is None:
                 store = self.valid_store_ref (resource)
-                if  store is not None:
+                if store is not None:
                     stores = { store.get ('name') :  store}
 
         storeurl = lpath = None
         log.debug ("Trying mounts %s", stores.keys())
         for store_name, store in stores.items():
             try:
-                storeurl,lpath = self._save_store (store, storepath, resource, fileobj, rooturl)
+                storeurl, lpath = self._save_store (store, storepath, resource, fileobj, rooturl)
                 break
             except IllegalOperation, e:
                 log.debug ("failed %s store on %s with %s", storepath, store_name, e )
                 storeurl = lpath = None
-
+        log.debug('store_blob: %s %s %s', storeurl, lpath, etree.tostring(resource))
         if storeurl is None:
             log.error ('storing %s failed (%s)', storepath, storeurl)
 
@@ -548,17 +548,19 @@ class MountServer(TGController):
                     raise IllegalOperation('readonly store')
 
                 storeurl = urlparse.urljoin (driver.mount_url, storepath)
+                log.debug('_save_store: %s from %s %s', storeurl, driver.mount_url, storepath)
                 storeurl, localpath = driver.push (storeurl, fileobj)
 
-                resource.set('name', join_subpath(os.path.basename(storepath), sub))
+                resource.set('name', join_subpath(os.path.basename(localpath), sub))
                 resource.set('value', join_subpath(storeurl, sub))
+                log.debug('_save_store: %s', etree.tostring(resource))
         else:
             storeurl, localpath = self._save_storerefs (store, storepath, resource, rooturl)
             resource.set('name', join_subpath(os.path.basename(storepath), sub))
 
-
         if asbool(config.get ('bisque.blob_service.store_paths', True)):
             self.insert_mount_path (store, storepath.split('/'), resource)
+        log.debug('_save_store: %s %s %s', storeurl, localpath, etree.tostring(resource))
         return storeurl, localpath
 
     def _save_storerefs(self, store, storepath, resource, rooturl):
@@ -594,12 +596,13 @@ class MountServer(TGController):
             movingrefs = []
             fixedrefs  = []
             for node, setter, (storeurl, subpath), storepath in refs:
-                if storeurl.startswith (driver.mount_url):
+                # dima: storeurl may be a relative url path
+                if storeurl.startswith (driver.mount_url) or driver.valid(storeurl): # dima: if relative paths are stored
                     # Already valid on store (no move)
                     fixedrefs.append ( (node, setter, (storeurl, subpath), storepath))
                     continue
                 # we deal with unpacked files below
-                localpath  = self._force_storeurl_local(storeurl)
+                localpath = self._force_storeurl_local(storeurl)
                 if os.path.isdir(localpath):
                     # Add a directory:
                     # dima: we should probably list and store all files but there might be overlaps with individual refs
@@ -609,7 +612,7 @@ class MountServer(TGController):
                         storepath = posixpath.join(rootpath, storeurl[len(rooturl):])
                     movingrefs.append ( (node, setter, (localpath, subpath), storepath) )
                 else:
-                    log.error ("store_refs: Cannot access %s of %s ", storeurl, etree.tostring(node))
+                    log.error ("_save_storerefs: Cannot access %s as %s of %s ", storeurl, localpath, etree.tostring(node))
 
             log.debug ("_save_storerefs movingrefs: %s", movingrefs)
             log.debug ("_save_storerefs fixedrefs: %s", fixedrefs)
@@ -822,7 +825,7 @@ class MountServer(TGController):
         """
         log.info("Insert_mount_path create %s path %s ", str(store), str(mount_path))
 
-        return self._create_full_path(store, mount_path, resource.get ('resource_uniq'), resource.get('resource_name'), **kw)
+        return self._create_full_path(store, mount_path, resource.get ('resource_uniq'), resource.get('name'), **kw)
 
 
     def insert_mount_path(self, store, mount_path, resource, **kw):
