@@ -151,7 +151,7 @@ class ResourceAuth(Resource):
         resource = check_access(request.bisque.parent, RESOURCE_READ)
         baseuri = self.baseuri
         log.info ("AUTH %s  %s" % (resource, request.environ))
-        auth = resource_auth (resource, parent = None)
+        auth = resource_auth (resource)
         response = etree.Element('resource', uri="%s%s/auth" % (baseuri, resource.uri))
         tree = db2tree (auth,  parent = response, view=view,baseuri=baseuri)
         formatter, content_type  = find_formatter (format)
