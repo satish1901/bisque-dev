@@ -56,6 +56,7 @@ DESCRIPTION
 """
 import logging
 import time
+import urlparse
 from paste.httpexceptions import HTTPNotFound
 
 #from turbogears import controllers, expose, config
@@ -75,6 +76,7 @@ from bq.core.service import ServiceController, service_registry
 from bq.core.service import load_services, mount_services, start_services
 from bq.util.http import http_client
 from bq.core.controllers.error import ErrorController
+from bq.util.hash import is_uniq_code
 
 #from proxy import ProxyRewriteURL
 
@@ -191,6 +193,11 @@ class RootController(BaseController):
           log.debug ('found %s ' % str(service))
           return service, rest
         log.warn ('no service found %s with %s', service_type, rest)
+        if is_uniq_code(service_type):
+          log.debug ("uniq code %s", request.path_qs)
+          # Skip 1st /
+          redirect(urlparse.urljoin(config.get ('bisque.root'), '/data_service/%s' % request.path_qs[1:]))
+
         abort(404)
         #return super(RootController, self)._lookup(service_type, *rest)
 

@@ -714,18 +714,20 @@ class MountServer(TGController):
         return store
 
     def _get_stores(self):
-        "Return a list of store resources in the users ordering"
+        "Return an OrderedDict of store resources in the users ordering"
 
-        root = data_service.query('store', resource_unid='(root)', view='full')
-        if len(root) != 1:
-            raise IllegalOperation ("root store not valid %s", etree.tostring (root))
-        root = root[0]
+        root = self._create_root_mount()
+        #root = data_service.query('store', resource_unid='(root)', view='full')
+        #if len(root) != 1:
+        #    raise IllegalOperation ("root store not valid %s", etree.tostring (root))
+        #root = root[0]
         store_order = get_tag (root, 'order')
         if store_order is None:
             store_order = config.get('bisque.blob_service.stores','')
         else:
             store_order = store_order[0].get ('value')
 
+        log.debug ("using store order %s", store_order)
         stores = OrderedDict()
         for store_name in (x.strip() for x in store_order.split(',')):
             store_el = root.xpath('./store[@name="%s"]' % store_name)
@@ -734,6 +736,7 @@ class MountServer(TGController):
                 continue
             store = store_el[0]
             stores[store_name] = store
+            log.debug ("adding store '%s' at %s", store_name, len(stores))
         return stores
 
 
@@ -752,6 +755,11 @@ class MountServer(TGController):
 
         driver_opts['path'] = mount_path = store.get ('value')
         driver_opts['mount_url' ] = mount_path
+
+        if mount_path is None:
+            log.error ("BAD STORE FOUND %s %s", store_name, driver_opts)
+            return None
+
 
         # get a driver to use
         #KGK : maybe use a timeout cache here so the connection can be reused?
