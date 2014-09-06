@@ -397,7 +397,7 @@ class MountServer(TGController):
     # A store path is the user friendly list of names
 
     def _load_store(self, store_name):
-        'Simply load the store named'
+        'Simply load the store named by parameter.. will return short version'
         root = self._create_root_mount()
         storelist = root.xpath("store[@name='%s']" % store_name)
         if len(storelist) == 0:
@@ -413,16 +413,16 @@ class MountServer(TGController):
         """
         path = list(path)   # make a copy to leave argument alone
         view = kw.pop('view', 'full')
-        q = self._load_store(store_name)
+        q = self._load_store(store_name)  # This load is not a full load but may be a short load
         #log.debug ('ZOOM %s', q.get ('uri'))
-        while q and path:
+        while q is not None and path:
             el= path.pop(0)
             q = data_service.query(parent=q, resource_unid=el, view='full', )
             if len(q) != 1:
                 log.error ('multiple names (%s) in store level %s', el, q.get('uri'))
                 return None
             q = q[0]
-        if kw:
+        if kw or len(q) == 0:
             # might be limitin result
             q = data_service.get_resource(q, view=view, **kw)
         return q
@@ -586,7 +586,7 @@ class MountServer(TGController):
             else:
                 refs = [ (x, settext, split_subpath(x.text), None) for x in resource.xpath ('value') ]
             log.debug ("_save_storerefs refs: %s", refs)
-            
+
             rootpath = storepath
             # Determine a list of URL that need to be moved to a store (these were unpacked locally)
             # Assume the first URL is special and the others are related which can be used
@@ -625,7 +625,7 @@ class MountServer(TGController):
                 # retrieve storeurl, and no localpath yet
                 first = (fixedrefs[0][2][0], None)
                 log.debug ("_save_storerefs first: %s", first)
-                
+
             # References to a readonly store may be registered if no actual data movement takes place.
             if movingrefs and driver.readonly:
                 raise IllegalOperation('readonly store')

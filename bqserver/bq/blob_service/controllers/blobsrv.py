@@ -235,7 +235,7 @@ class PathService (TGController):
     def list_path(self, path, *args,  **kwargs):
         'Find a resource identified by a path'
         log.info("move() called %s" ,  path)
-        resource = data_service.query('image|file', resource_value = path)
+        resource = data_service.query('image|file', resource_value = path, cache=False)
         return etree.tostring(resource)
 
     @expose(content_type='text/xml')
@@ -252,7 +252,7 @@ class PathService (TGController):
     def move_path(self, path, dst, *args,  **kwargs):
         ' Move a resource identified by path  '
         log.info("move() called %s" , args)
-        resource = data_service.query("file|image", resource_value = path)
+        resource = data_service.query("file|image", resource_value = path, cache=False)
         for child in resource:
             child.set('resource_value',  dst)
             resource = data_service.update(child)
@@ -263,7 +263,7 @@ class PathService (TGController):
     def delete_path(self, path,  **kwargs):
         ' Delete a resource identified by path  '
         log.info("delete() called %s" , path)
-        resource = data_service.query("file|image", resource_value = path)
+        resource = data_service.query("file|image", resource_value = path, cache=False)
         for child in resource:
             data_service.del_resource(child)
         return ""
@@ -286,7 +286,7 @@ class BlobServer(RestController, ServiceMixin):
         ServiceMixin.__init__(self, url)
         #self.drive_man = DriverManager()
         #self.__class__.store = store_resource.StoreServer(self.drive_man.drivers)
-        #self.__class__.paths  = PathService(self)
+        self.__class__.paths  = PathService(self)
         self.__class__.mounts = mount_service.MountServer(url)
         self.__class__.store = self.__class__.mounts
 
