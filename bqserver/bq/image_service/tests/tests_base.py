@@ -187,7 +187,27 @@ class ImageServiceTestBase(unittest.TestCase):
             return
         url = r.get('uri')
         print 'Deleting id: %s url: %s'%(r.get('resource_uniq'), url)
-        self.session.postxml(url, etree.Element ('resource') , method='DELETE')
+        self.session.postxml(url, etree.Element ('resource'), method='DELETE')
+
+    @classmethod
+    def delete_package(self, package):
+        # delete dataset
+        if 'dataset' in package:
+            url = package['dataset']
+            print 'Deleting dataset: %s'%(url)
+            try:
+                self.session.postxml(url, etree.Element ('resource'), method='DELETE')
+            except BQCommError:
+                print 'Error deleting the dataset'          
+        
+        # delete all items
+        if 'items' in package:
+            for url in package['items']:
+                print 'Deleting item: %s'%(url)
+                try:
+                    self.session.postxml(url, etree.Element ('resource'), method='DELETE')
+                except BQCommError:
+                    print 'Error deleting the item'    
 
     @classmethod
     def ensure_bisque_file(self, filename, metafile=None):
@@ -197,6 +217,31 @@ class ImageServiceTestBase(unittest.TestCase):
         else:
             metafile = self.fetch_file(metafile)
             return self.upload_file(path, resource=etree.parse(metafile).getroot())
+
+    @classmethod
+    def ensure_bisque_package(self, package):
+        path = self.fetch_file(package['file'])
+        r = self.upload_file(path, resource=etree.XML(package['resource']))
+        package['resource'] = r
+        if r is None:
+            return None
+        print 'Uploaded id: %s url: %s'%(r.get('resource_uniq'), r.get('uri'))
+        #print etree.tostring(r)
+        if r.tag != 'dataset':
+            package['items'] = [r.get('uri')]
+        else:            
+            package['dataset'] = r.get('uri')
+            values = r.xpath('value')
+            if len(values) != package['count']:
+                print 'Error: uploaded %s has %s elements but needs %s'%(package['file'], len(values), package['count'])
+            if r.get('name') != package['name']:
+                print 'Error: uploaded %s name is %s but should be %s'%(package['file'], r.get('name'), package['name'])
+            package['items'] = [x.text for x in values]
+        
+        package['last'] = self.session.fetchxml(package['items'][-1], view='deep')
+        #print 'Last item\n'
+        #print etree.tostring(package['last'])
+
 
     @classmethod
     def cleanup_tests_dir(self):
@@ -232,6 +277,6 @@ class ImageServiceTestBase(unittest.TestCase):
             self.fail()
 
         xml_test = etree.parse(path).getroot()
-        #print meta_test
+        #print etree.tostring(xml_test)
         self.assertTrue(compare_xml(xml_parts_required, xml_test), msg='Retrieved XML differs from test template')
 
