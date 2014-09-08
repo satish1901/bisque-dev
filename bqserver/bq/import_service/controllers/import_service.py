@@ -469,7 +469,7 @@ class import_serviceController(ServiceController):
         # append all other input annotations
         resource.extend (copy.deepcopy (list (uf.resource)))
         resource = blob_service.store_blob(resource=resource, fileobj=uf.fileobj)
-        iname = resource.get('name')
+        iname = name # resource.get('name')
         ivalue = resource.get('value')
         resources.append(resource)
 
@@ -556,14 +556,13 @@ class import_serviceController(ServiceController):
         resource = blob_service.store_blob(resource=resource, rooturl=blob_service.local2url('%s/'%unpack_dir))
 
         resources = [resource]
-        name_template = resource.get('name')
 
         # insert the rest of the series
         # use final storage location of the first resource and submit directly to data service
         values = resource.xpath('value')
         values = [v.text for v in values]
         for n in range(num_series)[1:]:
-            resource = etree.Element ('image', name=name_template.replace('#0', '#%s'%n), resource_type='image', ts=uf.ts)
+            resource = etree.Element ('image', name=name.replace('#0', '#%s'%n), resource_type='image', ts=uf.ts)
 
             # add values
             for v in values:
