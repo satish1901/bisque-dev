@@ -235,7 +235,7 @@ class DataServerController(ServiceController):
             resource = etree.Element (resource, **kw)
             log.debug ('created %s ' , resource)
 
-        if parent is None:
+        if parent is None and resource.get('resource_uniq') is None:
             resource.set('resource_uniq', self.resource_uniq())
         else:
             if isinstance (parent, etree._Element):
