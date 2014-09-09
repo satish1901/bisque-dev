@@ -51,33 +51,48 @@ DESCRIPTION
 
 """
 import os
-import httplib2
-import urllib2
 import urlparse
 import urllib
 import logging
 import itertools
-import poster
+from collections import OrderedDict
+
+import requests
+from requests.auth import HTTPBasicAuth
+from requests.auth import AuthBase
+from requests import Session
 
 from lxml import etree
 
 
 USENODE = False
 if USENODE:
-    from bqnode import fromXml, toXml, BQMex, BQNode, BQFactory
+    from bqapi.bqnode import fromXml, toXml, BQMex, BQNode, BQFactory
 else:
-    from bqclass import fromXml, toXml, BQMex, BQNode
+    from bqapi.bqclass import fromXml, toXml, BQMex, BQNode
 
-from util import parse_qs, make_qs, xml2d, d2xml
+from bqapi.util import parse_qs, make_qs, xml2d, d2xml
 
 
 log = logging.getLogger('bqapi.comm')
 
+
+#SERVICES = ['']
+
 class BQException(Exception):
-    "BQException"
+    """
+        BQException
+    """
 
 class BQCommError(BQException):
+    
     def __init__(self, status, headers, content=None):
+        """
+            @param status:
+            @param headers:
+            @param content:
+            
+        """
         print 'Status: %s'%status
         print 'Headers: %s'%headers
         self.status = status
@@ -89,80 +104,182 @@ class BQCommError(BQException):
     def __str__(self):
         return "CommError(status=%s, %s)" % (self.status, self.headers)
 
-class BQServer(object):
+class MexAuth(AuthBase):
+    """
+        Bisque's Mex Authentication
+    """
+    def __init__(self, user, token):
+        """
+            @param user:
+            @param token:
+        """
+        if user in token.split(':')[0]:
+            self.username = "Mex %s"%( token)
+        else:
+            self.username = "Mex %s:%s"%( user, token)
+        
+    def __call__(self, r):
+        """
+            @param r:
+        """
+        r.headers['Authorization'] = self.username
+        return r
+
+class BQServer(Session):
     """ A reference to Bisque server
     Allow communucation with a bisque server
+    
+    A wrapper over requests.Session
     """
 
     def __init__(self):
-        self.http = httplib2.Http( disable_ssl_certificate_validation=True)
-        self.auth = {}
         self.root = None
+        super(BQServer, self).__init__()
+        
 
-    def authenticate_mex(self, token, root):
-        #self.auth = { 'Mex' : token}
-        self.auth = { 'Authorization' : "Mex %s" % token}
-        self.root = root
+    def authenticate_mex(self, user, token):
+        """
+            @param user:
+            @param token:
+        """
+        self.auth = MexAuth(user, token)
 
-    def authenticate_basic(self, user, pwd, root):
-        import base64
-        auth = "Basic " + base64.encodestring("%s:%s" % (user, pwd) ).strip()
-        self.auth = { 'Authorization' : auth }
-        self.root = root
+
+    def authenticate_basic(self, user, pwd):
+        """
+            @param user:
+            @param pwd:
+        """
+        self.auth = HTTPBasicAuth(user, pwd)
+
 
     def prepare_headers(self, user_headers):
         """
+            
         """
         headers = {}
         headers.update (self.auth)
         if user_headers:
-            headers.update (user_headers)
+            headers.update(user_headers)
         return headers
+    
+    
+    def prepare_url(self, url, **params):
+        """
+            params need to be an ordered dictionary
+            
+            @param url:
+            @param odict:
+            @param params:
+            
+            @return prepared url
+        """
+        
+        u = urlparse.urlsplit(url)
 
-    def prepare_url (self, url, **params):
-        if self.root:
-            url  = urlparse.urljoin(self.root, url)
-        split_url = list( urlparse.urlsplit(url))
-        # scheme and netloc
+        #root
+        if self.root and u.netloc=='':
+            #adds root request if no root is provided in the url
+            r = urlparse.urlsplit(self.root)
+            scheme = r.scheme
+            netloc = r.netloc
+        
+        elif u.scheme and u.netloc:
+            scheme = u.scheme
+            netloc = u.netloc
+        else: #no root provided
+            raise BQException()
+        
+        #query
+        query = ['%s=%s'%(k,v) for k,v in urlparse.parse_qsl(u.query, True)]
+        unordered_query = []
+        ordered_query = []
 
-        p = parse_qs(split_url[3])
-        # Needs to be a list of values i.e. { k:[v] }
-        p.update(dict([ (k,[v]) for k,v in params.items()]))
-        split_url[3] = make_qs(p)
-        url = urlparse.urlunsplit(split_url)
-        return url
+        if 'odict' in params:
+            odict = params['odict']
+            del params['odict']
+            if odict and isinstance(odict,OrderedDict):
+                while len(odict)>0:
+                    ordered_query.append('%s=%s'%odict.popitem(False))
+
+        if params:
+            unordered_query = ['%s=%s'%(k,v) for k,v in params.items()]
+        
+        query = query + unordered_query + ordered_query
+        query = '&'.join(query)
+        
+        return urlparse.urlunsplit([scheme,netloc,u.path,query,u.fragment])
 
     def fetch(self, url, headers = None, path=None):
-        headers = self.prepare_headers(headers)
-        log.debug("FETCH %s req  header=%s" %  (url, headers))
-        header, content = self.http.request(url, headers = headers)
-        if 'xml' in header.get('content-type', ''):
-            log.debug("FETCH resp %s, content=%s..." % (header, content[:60]))
-        if header.status != 200:
-            raise BQCommError(header.status, header, content)
+        """
+            @param url:
+            @param headers:
+            @param path:
+            
+            @return 
+        """
+        log.debug("GET: %s req  header=%s" %  (url, headers))
+        
+#        if headers:
+#            self.headers.update(headers)
+        
+        r = self.get(url, headers=headers)
+        
+        try:
+            r.raise_for_status()
+        except requests.exceptions.HTTPError:
+            raise BQCommError( r.status_code, r.headers) #need to finish
+        
+        if path:
+            with open(path, 'wb') as f:
+                f.write(r.content)
+                return f.name
+        else:
+            return r.content
+        
 
-        if path is None:
-            return content
-
-        with open(path, 'wb') as f:
-            f.write(content)
-        return path
-
-    def post(self, url, content=None, files=None, headers=None, method="POST"):
-        headers = self.prepare_headers(headers)
+    def post(self, url, content=None, files=None, headers=None, path=None, method="POST", boundary=None):
+        """
+            @param url:
+            @param content:
+            @param files:
+            @param headers:
+            @param path:
+            @param method:
+            
+            @return 
+        """
         log.debug("POST %s req %s" % (url, headers))
-        header, content = self.http.request(url,
-                                            headers = headers,
-                                            body=content,
-                                            method=method)
-        if header.status != 200:
-            raise BQCommError(header.status, header)
-        log.debug("POST resp %s" % header)
-        return content
+        
+#        request = {
+#                   "GET"     : super(BQServer,self).get,
+#                   "POST"    : super(BQServer,self).post,
+#                   "PUT"     : super(BQServer,self).put,
+#                   "DELETE"  : super(BQServer,self).delete,
+#                   "HEAD"    : super(BQServer,self).head,
+#                   "OPTIONS" : super(BQServer,self).options
+#                   }
+        
+#        if headers:
+#            self.headers.update(headers)
+        r = self.request(method, url, data=content, headers=headers, files=files) #maintain name space
+        
+        try: #error checking
+            r.raise_for_status()
+        except requests.exceptions.HTTPError:
+            raise BQCommError(r.status_code, r.headers) #need to finish
+        
+        if path:
+            with open(path, 'wb') as f:
+                f.write(r.content)
+                return f.name
+        else:
+            return r.content
 
 
 class BQSession(object):
-    """Top level Bisque communication object
+    """
+        Top level Bisque communication object
     """
     def __init__(self):
         self.c = BQServer()
@@ -172,31 +289,59 @@ class BQSession(object):
         self.dirty = set()
         self.deleted = set()
         self.parser = etree.XMLParser()
+        self.bisque_root = None
         if USENODE:
             self.parser.set_element_class_lookup(BQFactory())
-
+            
 
     ############################
     # Establish a bisque session
+    ############################
     def init_local(self, user, pwd, moduleuri=None, bisque_root=None, create_mex=True):
-        """Create a session mex """
-        self.bisque_root = bisque_root
-        self.c.authenticate_basic(user, pwd, bisque_root)
+        """
+            Create a session mex 
+            @param user
+            @param pwd
+            @param module
+            @param bisque_root
+            @param create_mex
+            
+            @return self 
+        """
+        
+        if bisque_root != None:
+            self.bisque_root = bisque_root
+            self.c.root = bisque_root
+            
+        self.c.authenticate_basic(user, pwd)
         self._load_services()
-
         self.mex = None
+        
         if create_mex:
             mex = BQMex()
             mex.module = moduleuri
             mex.status = 'RUNNING'
             self.mex = self.save(mex, url=self.service_url('module_service', 'mex'))
-            if self.mex :
+            if self.mex:
                 mextoken = self.mex.resource_uniq
-                self.c.authenticate_mex("%s:%s" % (user, mextoken), bisque_root)
-
+                self.c.authenticate_mex(user, mextoken) 
+                #warning: the mex can take a bit of time to appear in the database 
+                #so it is probably best to poll the data_service for the mex before
+                #performing more authentication limited operations
         return self
 
-    def init_mex(self, mex_url, auth_token, bisque_root= None):
+
+    def init_mex(self, mex_url, user, token, bisque_root=None):
+        """
+            Initalizing a session from a mex
+            
+            @param mex_url
+            @param user
+            @token
+            @bisque_root
+            
+            @return self
+        """
         if bisque_root is None:
             # This assumes that bisque_root is http://host.org:port/
             mex_tuple = list(urlparse.urlparse (mex_url))
@@ -204,72 +349,160 @@ class BQSession(object):
             bisque_root = urlparse.urlunparse(mex_tuple)
 
         self.bisque_root = bisque_root
-        self.c.authenticate_mex(auth_token, bisque_root)
+        self.c.root = bisque_root
+        self.c.authenticate_mex(user, token)
         self._load_services()
-
         self.mex = self.load (mex_url, view='deep')
         return self
+
 
     def close(self):
         pass
 
-    def fetchxml (self, url, **params):
-        """Fetch an xml object from the url
 
-        @param url: A url to fetch from
-        @param params: params will be added to url
+    def fetchxml(self, url, path=None, **params):
+        """
+            Fetch an xml object from the url
+
+            @param url: A url to fetch from
+            @param odict: ordered dictionary of params will be added to url for when the order matters
+            @param params: params will be added to url
+            
+            @return xml etree
         """
         url = self.c.prepare_url (url, **params)
-
         log.debug('fetchxml %s ' % url)
-        content =  self.c.fetch (url, headers = {'Content-Type':'text/xml', 'Accept':'text/xml'})
-        return etree.XML(content, self.parser)
+        if path:
+            return self.c.fetch(url, headers={'Content-Type':'text/xml', 'Accept':'text/xml'}, path=path)
+        else:
+            r = self.c.fetch(url, headers = {'Content-Type':'text/xml', 'Accept':'text/xml'})
+            return etree.XML(r, self.parser)
 
-    def postxml(self, url, xml, method="POST", **params):
+
+    def postxml(self, url, xml, path=None, method="POST", **params):
+        """
+            Post xml allow with files to bisque
+            
+            @param url:
+            @param xml:
+            @param path:
+            @param odict:
+            @param params:
+            
+            @return 
+        """
         log.debug('postxml %s  content %s ' % (url, xml))
-        content = etree.tostring(xml, pretty_print=True)
-        url = self.c.prepare_url(url, **params)
-        response =  self.c.post(url, content=content, method=method,
-                                headers = {'Content-Type':'text/xml', 'Accept': 'text/xml' })
-        return etree.XML(response, self.parser)
+        
+        if isinstance(xml, etree._Element):
+            xml = etree.tostring(xml, pretty_print=True)
 
-    def postblob(self,filename, xml=None, method= "POST", **params):
+        url = self.c.prepare_url(url, **params)
+           
+        if path:
+            return self.c.post(url, content=xml, path=path, method=method, headers={'Content-Type':'text/xml', 'Accept': 'text/xml' })            
+        else:
+            r = self.c.post(url, content=xml, method=method, headers={'Content-Type':'text/xml', 'Accept': 'text/xml' })
+            return etree.XML(r, self.parser)
+
+
+    def fetchblob(self, url, path=None, **param):
+        """
+            Requests for a blob from the data_service
+
+            @param filename: filename of the blob
+            @param xml: xml to be posted along with the file
+            @param params: params will be added to url query
+        """
+        url = self.c.prepare_url(url, **params)
+        return self.c.fetch(url, path=path, headers={'Content-Type':'text/xml', 'Accept': 'text/xml' })
+
+
+    def postblob(self, filename, xml=None, path=None, method="POST", **params):
         """
             Create Multipart Post with blob and xml tags
 
             @param filename: filename of the blob
             @param xml: xml to be posted along with the file
-            @param params: params will be added to url
+            @param params: params will be added to url query
         """
-        content = None
-        url = self.c.prepare_url('import/transfer',**params)
+        import_service_url = self.service_url('import',path='transfer')
+        if import_service_url is None:
+            raise 'Could not find import service to post blob.'
+        
+        url = self.c.prepare_url(import_service_url, **params)
         if isinstance(filename, basestring):
             with open(filename,'rb') as f:
-                fields = { 'file' : f }
+                fields = {'file': f}
+                data = None
                 if xml!=None:
-                    fields['file_resource'] = etree.tostring(xml)
-                body, headers = poster.encode.multipart_encode(fields)
-                content = self.c.post(url, headers=headers, content=body)
-        return content
+                    data = {}
+                    if isinstance(xml, etree._Element):
+                        fields['file_resource'] = etree.tostring(xml)
+                    else:
+                        fields['file_resource'] = xml
+
+                return self.c.post(url, content=None, files=fields, headers={'Accept': 'text/xml'}, path=path, method=method)
+    
+#    def post_streaming_blob(self, filename, xml=None, **params):
+#        """
+#        Requires requests_toolbet
+#        """
+#        try:
+#            from requests_toolbelt import MultipartEncoder
+#        except ImportError:
+#            print 'Does not have requests_toolbelt'
+#            return
+#        
+#        url = self.c.prepare_url('import/transfer',**params)
+#        
+#        if isinstance(filename, basestring):
+# 
+#            fields={'file':(filename, open(filename, 'rb'), 'text/plain')} 
+#            
+#            if xml!=None:
+#                if isinstance( xml, etree):
+#                    text = etree.tostring(xml, pretty_print=True)
+#                files['file_resource'] = text            
+#            
+#            files = MultipartEncoder(fields)            
+#            
+#                r = self.c.bq_post(url, headers=headers, data=files, headers={'Content-Type': files.content_type})
+#            return r
+
 
     def service_url(self, service_type, path = "" , query = None):
-        root = self.service_map[service_type]
+        """
+            @param service_type:
+            @param path:
+            @param query:
+            
+            @return
+        """
+        root = self.service_map.get(service_type, None )
+        if root is None:
+            raise 'Not a service type'
         if query:
             path = "%s?%s" % (path, urllib.urlencode(query))
         return urlparse.urljoin(root, path)
 
-    def _load_services (self):
+
+    def _load_services(self):
+        """
+            @return
+        """
         services = self.load (self.bisque_root + "/services")
         smap = {}
         for service in services.tags:
             smap [ service.type ] = service.value
         self.service_map = smap
 
+
     #############################
     # Classes and Type
     #############################
     def element(self, ty, **attrib):
         elem = etree.Element(ty, **attrib)
+
 
     def append(self, elem, tags=[], gobjects=[], children=[]):
         def append_mex (mex, type_tup):
@@ -290,16 +523,20 @@ class BQSession(object):
         for elem in children:
             append_mex(mex, elem)
 
+
     ##############################
     # Mex
     ##############################
     def update_mex(self, status, tags = [], gobjects = [], children=[], reload=False):
         """save an updated mex with the addition
 
-        :param status:  The current status of the mex
-        :param tags: list of etree.Element|BQTags|dict objects of form { 'name': 'x', 'value':'z' }
-        :param gobjects: same as etree.Element|BQGobject|dict objects of form { 'name': 'x', 'value':'z' }
-        :param children: list of tuple (type, obj array) i.e ('mex', dict.. )
+        @param status:  The current status of the mex
+        @param tags: list of etree.Element|BQTags|dict objects of form { 'name': 'x', 'value':'z' }
+        @param gobjects: same as etree.Element|BQGobject|dict objects of form { 'name': 'x', 'value':'z' }
+        @param children: list of tuple (type, obj array) i.e ('mex', dict.. )
+        @param reload:
+        
+        @return
         """
         mex = etree.Element('mex', value = status, uri = self.mex.uri)
         #self.mex.value = status
@@ -323,16 +560,26 @@ class BQSession(object):
             append_mex(mex, elem)
 
         #mex = { 'mex' : { 'uri' : self.mex.uri,
-        #                  'status' : status,
+        #                  'status' : status, 
         #                  'tag' : tags,
         #                  'gobject': gobjects }}
         content = self.postxml(self.mex.uri, mex, view='deep' if reload else 'short')
         if reload and content is not None:
-            self.mex = fromXml(content, session = self)
+            self.mex = fromXml(content, session=self)
             return self.mex
         return None
 
-    def finish_mex(self, status = "FINISHED", tags=[], gobjects=[], children=[], msg=None ):
+
+    def finish_mex(self, status="FINISHED", tags=[], gobjects=[], children=[], msg=None ):
+        """
+            @param status:
+            @param tags:
+            @param gobject:
+            @param children:
+            @param msg:
+            
+            @return
+        """
         if msg is not None:
             tags.append( { 'name':'message', 'value': msg })
         try:
@@ -340,25 +587,35 @@ class BQSession(object):
         except BQCommError, ce:
             log.error ("Problem during finish mex %s" % ce.headers)
             try:
-                return self.update_mex (status='FAILED',tags= [  { 'name':'error_message', 'value':  "Error during saving (status %s)" % ce.status } ] )
+                return self.update_mex( status='FAILED',tags= [  { 'name':'error_message', 'value':  "Error during saving (status %s)" % ce.status } ] )
             except:
                 log.exception ("Cannot finish/fail Mex ")
 
-    def fail_mex (self, msg):
+
+    def fail_mex(self, msg):
+        """
+            @param msg:
+        """
         if msg is not None:
             tags = [  { 'name':'error_message', 'value': msg } ]
-        self.finish_mex(status='FAILED', tags=tags)
+        self.finish_mex( status='FAILED', tags=tags)
 
-    def _begin_mex (self, moduleuri):
+    def _begin_mex(self, moduleuri):
         """create a mex on the server for this run"""
+        pass
 
 
 
     ##############################
     # Low-level save
     ##############################
-    def load(self,url,  **params):
+    def load(self, url,  **params):
         """Load a bisque object
+        
+        @param url:
+        @param params:
+        
+        @return
         """
         #if view not in url:
         #    url = url + "?view=%s" % view
@@ -371,13 +628,21 @@ class BQSession(object):
         except BQCommError, ce:
             return None
 
+
     def save(self, bqo, url=None, **kw):
+        """
+            @param bqo:
+            @param url:
+            @param kw:
+            
+            @return
+        """
         try:
             if url is None and bqo.uri:
                 url = bqo.uri
             xml =  toXml(bqo)
-            content = self.postxml(url, xml, **kw)
-            return fromXml(content, session=self)
+            xml = self.postxml(url, xml, **kw)
+            return fromXml( xml, session=self)
         except BQCommError, ce:
             log.exception('communication issue while saving %s' % ce)
             return None
