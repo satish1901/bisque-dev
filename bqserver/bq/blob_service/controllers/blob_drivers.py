@@ -65,6 +65,7 @@ from bq.exceptions import ConfigurationError, IllegalOperation, DuplicateFile
 from bq.util.paths import data_path
 from bq.util.mkdir import _mkdir
 from bq.util.compat import OrderedDict
+from bq.util.urlpaths import *
 
 from bq.image_service.controllers.misc import blocked_alpha_num_sort
 
@@ -119,81 +120,12 @@ def split_subpath(path):
 def join_subpath(path, sub):
     return "%s#%s" % (path, sub) if sub else path
 
-
 def walk_deep(path):
     """Splits sub path that follows # sign if present
     """
     for root, _, filenames in os.walk(path):
         for f in filenames:
             yield os.path.join(root, f).replace('\\', '/')
-
-#################################################
-#  Define helper functions for NT vs Unix/Mac
-#
-if os.name == 'nt':
-    def move_file (fp, newpath):
-        with open(newpath, 'wb') as trg:
-            shutil.copyfileobj(fp, trg)
-
-    def data_url_path (*names):
-        path = data_path(*names)
-        if len(path)>1 and path[1]==':': #file:// url requires / for drive lettered path like c: -> file:///c:/path
-            path = '/%s'%path
-        return path
-
-    def url2localpath(url):
-        path = urlparse.urlparse(url).path
-        if len(path)>0 and path[0] == '/':
-            path = path[1:]
-        try:
-            return urllib.unquote(path).decode('utf-8')
-        except UnicodeEncodeError:
-            # dima: safeguard measure for old non-encoded unicode paths
-            return urllib.unquote(path)
-
-    def localpath2url(path):
-        path = path.replace('\\', '/')
-        try:
-            path = path.encode('utf-8')
-        except UnicodeDecodeError:
-            log.warn ('cannot encode as utf-8 : %s', path)
-            path = path
-        url = urllib.quote(path)
-        if len(path)>3 and path[0] != '/' and path[1] == ':':
-            # path starts with a drive letter: c:/
-            url = 'file:///%s'%url
-        else:
-            # path is a relative path
-            url = 'file://%s'%url
-        return url
-
-else:
-    def move_file (fp, newpath):
-        log.debug ("moving file %s", fp.name)
-        if os.path.exists(fp.name):
-            oldpath = os.path.abspath(fp.name)
-            shutil.move (oldpath, newpath)
-        else:
-            with open(newpath, 'wb') as trg:
-                shutil.copyfileobj(fp, trg)
-
-    data_url_path = data_path
-
-    def url2localpath(url):
-        url = url.encode('utf-8') # safegurd against un-encoded values in the DB
-        path = urlparse.urlparse(url).path
-        return urllib.unquote(path)
-
-    def localpath2url(path):
-        try:
-            path = path.encode('utf-8')
-        except UnicodeDecodeError:
-            log.warn ('cannot encode as utf-8 : %s', path)
-            path = path
-        url = urllib.quote(path)
-        #if len(url)>1 and url[0] == '/':
-        url = 'file://%s'%url
-        return url
 
 
 ##############################################

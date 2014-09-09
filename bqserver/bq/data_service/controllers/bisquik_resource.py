@@ -86,7 +86,7 @@ log = logging.getLogger("bq.data_service.bisquik_resource")
 
 
 #PROTECTED = [ 'module', 'mex', 'system' ]
-PROTECTED = [  ]
+PROTECTED = [ 'store', 'link', 'dir' ]
 
 
 def force_dbload(item):

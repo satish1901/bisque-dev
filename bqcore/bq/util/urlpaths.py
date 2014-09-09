@@ -48,7 +48,6 @@ DESCRIPTION
 Store resource all special clients to simulate a filesystem view of resources.
 """
 import os
-import logging
 import string
 import urllib
 import urlparse
@@ -91,7 +90,6 @@ if os.name == 'nt':
 
 else:
     def move_file (fp, newpath):
-        log.debug ("moving file %s", fp.name)
         if os.path.exists(fp.name):
             oldpath = os.path.abspath(fp.name)
             shutil.move (oldpath, newpath)
