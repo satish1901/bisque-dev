@@ -117,38 +117,33 @@ def save_blob(session,  localfile=None, resource=None):
     @param image: an BQImage object
     @param localfile:  a file-like object or name of a localfile
     @return XML content  when upload ok
+    
+    @exceptions comm.BQCommError - if blob is failed to be posted
     """
-    url = session.service_url('import', 'transfer')
-    if isinstance(localfile, basestring):
-        localfile = open(localfile, 'rb')
+#    url = session.service_url('import', 'transfer')
+#    if isinstance(localfile, basestring):
+#        localfile = open(localfile, 'rb')
+#
+#    fields = {}
+#
+#    if localfile is not None:
+#        fields['file'] = localfile
+#        
+#    if resource is not None:
+#        if isinstance(resource, basestring):
+#            fields['file_resource'] = resource
+#        else:
+#            fields['file_resource'] = ET.tostring (resource)
+        
+    #body, headers = poster.encode.multipart_encode(fields)
 
-    fields = {}
-
-    if localfile is not None:
-        fields['file'] = localfile
-        
-    if resource is not None:
-        if isinstance(resource, basestring):
-            fields['file_resource'] = resource
-        else:
-            fields['file_resource'] = ET.tostring (resource)
-        
-    body, headers = poster.encode.multipart_encode(fields)
+    content = session.postblob(localfile, xml=resource)
+    
     try:
-        content = session.c.post(url, headers=headers, content=body)
-    except comm.BQCommError:
-        return None
-    finally:
-        try:
-            localfile.close()
-        except AttributeError:
-            pass
-        
-    try:
-        rl = ET.XML (content)
-        if len(rl)<1:
+        content = ET.XML(content)
+        if len(content)<1: #when would this happen
             return None
-        return rl[0]
+        return content[0]
     except ET.ParseError, e:
         pass
 
@@ -157,25 +152,24 @@ def save_blob(session,  localfile=None, resource=None):
 
 def fetch_blob(session, uri, dest=None, uselocalpath=False):
     """fetch original image locally as tif
-    @param session: the bqsession
-    @param uri: resource image uri
-    @param dest: a destination directory
-    @param uselocalpath: true when routine is run on same host as server
+        @param session: the bqsession
+        @param uri: resource image uri
+        @param dest: a destination directory
+        @param uselocalpath: true when routine is run on same host as server
     """
-    image = session.load (uri)
-    name = image.name or next_name ("blob")
+    image = session.load(uri)
+    name = image.name or next_name("blob")
 
     query = None
     if uselocalpath:
         # Skip 'file:'
         path = image.value
-        if path.startswith('file:') :
+        if path.startswith('file:'):
             path =  path[5:]
-        return { uri: path }
+        return {uri: path}
 
-    uniq = image.get ('resource_uniq')
-    url = session.service_url('blob_service', path = uniq,  )
-    blobdata = session.c.fetch (url)
+    url = session.service_url('blob_service', path = image.resource_uniq)
+    blobdata = session.c.fetch(url)
     if os.path.isdir(dest):
         outdest = os.path.join (dest, os.path.basename(name))
     else:
@@ -183,10 +177,10 @@ def fetch_blob(session, uri, dest=None, uselocalpath=False):
     f = open(outdest, 'wb')
     f.write(blobdata)
     f.close()
-    return { uri : outdest }
+    return {uri: outdest}
 
 
-def fetch_image_planes(session, uri, dest, uselocalpath=False):
+def fetch_image_planes(session, uri, dest=None, uselocalpath=False):
     """fetch all the image planes of an image locally
     @param session: the bqsession
     @param uri: resource image uri
@@ -230,7 +224,7 @@ def fetch_image_planes(session, uri, dest, uselocalpath=False):
     return files
 
 
-def next_name (name):
+def next_name(name):
     count = 0
     while os.path.exists("%s-%.5d.TIF" % (name, count)):
         count = count + 1
@@ -245,7 +239,7 @@ def fetch_image_pixels(session, uri, dest, uselocalpath=False):
     @param dest: a destination directory
     @param uselocalpath: true when routine is run on same host as server
     """
-    image = session.load (uri)
+    image = session.load(uri)
     name = image.name or next_name ("image")
     ip = image.pixels().format('tiff')
     if uselocalpath:
@@ -285,15 +279,14 @@ def fetch_dataset(session, uri, dest, uselocalpath=False):
         uri =  imgxml.text   #imgxml.get('uri')
         print "FETCHING", uri
         #fname = os.path.join (dest, "%.5d.tif" % i)
-        x = fetch_image_pixels (session, uri,
-                            dest, uselocalpath=uselocalpath)
+        x = fetch_image_pixels(session, uri, dest, uselocalpath=uselocalpath)
         results.update (x)
     return results
 
 
 def fetchImage(session, uri, dest, uselocalpath=False):
 
-    image = session.load(uri).pixels().getInfo()
+    image = session.load(uri).pixels().info()
     fileName = ET.XML(image.fetch()).xpath('//tag[@name="filename"]/@value')[0]
 
     ip = session.load(uri).pixels().format('tiff')
@@ -354,17 +347,10 @@ def save_image_pixels(session,  localfile, image_tags=None):
     @param localfile:  a file-like object or name of a localfile
     @return XML content  when upload ok
     """
-
-    content = None
-    url = session.service_url('import', 'transfer')
-    if isinstance(localfile, basestring):
-        with open(localfile,'rb') as f:
-            fields = { 'file' : f }
-            if image_tags:
-                fields['file_tags'] = ET.tostring(toXml(image_tags))
-            body, headers = poster.encode.multipart_encode(fields)
-            content = session.c.post(url, headers=headers, content=body)
-    return content
+    xml = None
+    if image_tags:
+        xml = ET.tostring(toXml(image_tags))
+    return session.postblob(localfile, xml=xml)
 
 
 def as_flat_dict_tag_value(xmltree):
