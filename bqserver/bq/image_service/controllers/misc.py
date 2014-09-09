@@ -80,7 +80,7 @@ def safeencode(s):
 def toascii(s):
     if isinstance(s, unicode) is not True:
         return s
-    return s.encode('ascii', errors='replace')
+    return s.encode('ascii', 'replace')
 
 def run_command(command):
     '''returns a string of a successfully executed command, otherwise None'''
