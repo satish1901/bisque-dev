@@ -19,6 +19,14 @@ from bq import data_service
 from bq.core import  identity
 from bq.util.urlpaths import *
 
+#  Load store parameters
+OLDPARMS = dict (date='',
+                 dirhash='',
+                 filehash='',
+                 filename='',
+                 filebase='',
+                 fileext='')
+
 
 def get_tag(elem, tag_name):
     els = elem.xpath ('./tag[@name="%s"]' % tag_name)
