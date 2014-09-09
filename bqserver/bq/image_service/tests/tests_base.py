@@ -22,9 +22,11 @@ import urllib
 import os
 import posixpath
 import ConfigParser
-import os
 from lxml import etree
 from subprocess import Popen, call, PIPE
+from datetime import datetime
+import urllib
+import shortuuid
 
 from bq.util.mkdir import _mkdir
 
@@ -41,6 +43,10 @@ local_store_tests   = 'tests'
 service_data        = 'data_service'
 service_image       = 'image_service'
 resource_image      = 'image'
+
+#TEST_PATH = 'tests_multifile_%s'%shortuuid.uuid()
+#TEST_PATH = 'tests_%s'%urllib.quote(datetime.now().isoformat())
+TEST_PATH = 'tests_%s'%urllib.quote(datetime.now().strftime('%Y%m%d%H%M%S%f'))
 
 ###############################################################
 # info comparisons
@@ -174,8 +180,10 @@ class ImageServiceTestBase(unittest.TestCase):
 
     @classmethod
     def upload_file(self, path, resource=None):
-        r = save_blob(self.session,  path, resource=resource)
-        if r is None:
+        #if resource is not None:
+        #    print etree.tostring(resource)
+        r = save_blob(self.session, path, resource=resource)
+        if r is None or r.get('uri') is None:
             print 'Error uploading: %s'%path
             return None
         print 'Uploaded id: %s url: %s'%(r.get('resource_uniq'), r.get('uri'))
@@ -213,10 +221,13 @@ class ImageServiceTestBase(unittest.TestCase):
     def ensure_bisque_file(self, filename, metafile=None):
         path = self.fetch_file(filename)
         if metafile is None:
-            return self.upload_file(path)
+            filename = u'%s/%s'%(TEST_PATH, filename.decode('utf-8'))
+            resource = etree.Element ('resource', name=filename)
+            return self.upload_file(path, resource=resource)
         else:
             metafile = self.fetch_file(metafile)
             return self.upload_file(path, resource=etree.parse(metafile).getroot())
+        
 
     @classmethod
     def ensure_bisque_package(self, package):

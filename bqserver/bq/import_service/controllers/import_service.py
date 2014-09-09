@@ -103,7 +103,7 @@ from bq import data_service
 from bq import blob_service
 from bq import image_service
 from bq.blob_service.controllers.blob_drivers import move_file
-from bq.image_service.controllers.misc import blocked_alpha_num_sort
+from bq.image_service.controllers.misc import blocked_alpha_num_sort, toascii
 
 #from bq.image_service.controllers.converter_imgcnv import ConverterImgcnv
 #from bq.image_service.controllers.converter_bioformats import ConverterBioformats
@@ -710,7 +710,7 @@ class import_serviceController(ServiceController):
         # try inserting the file in the blob service
         try:
             # determine if resource is already on a blob_service store
-            log.debug('Inserting %s ', str( uf))
+            log.debug('Inserting %s', toascii(uf))
             resource = blob_service.store_blob(resource=uf.resource, fileobj=uf.fileobj)
             log.debug('Inserted resource :::::\n %s', etree.tostring(resource) )
         except Exception, e:
@@ -819,24 +819,32 @@ class import_serviceController(ServiceController):
         mime = mimetypes.guess_type(sanitize_filename(uf.filename))[0]
         if mime in self.filters:
             intags['type'] = mime
-
-        log.debug('process, file name attr: %s', getattr(uf.fileobj, 'name', None))
+        
+        # take care of no extension case: force deep guessing
+        ext = os.path.splitext(uf.filename)[1]
+        if mime is None and (ext == '' or len(ext)>4):
+            log.debug('process: setting mime to "image/series"' )
+            mime = 'image/series'
 
         # check if an image can be a series
+        log.debug('process uf: %s', uf)        
         if mime == 'image/series' and uf.fileobj is not None:
             filename = uf.localpath()
             if filename is None:
                 log.debug('process, file object has no local path: [%s], move local', uf.fileobj)
                 filename = uf.ensurelocal( os.path.join(UPLOAD_DIR, bq.core.identity.get_user().name, shortuuid.uuid(), os.path.basename(uf.resource.get('name'))))
 
-            log.debug('filename: %s', filename)
+            log.debug('process filename: %s', filename)
             info = image_service.get_info(filename)
-            log.debug('info: %s', info)
-            if info is not None and info.get('image_num_series', 0)>1:
-                intags['type'] = 'image/proprietary'
-                intags['image_num_series'] = info.get('image_num_series', 0)
+            log.debug('process info: %s', info)
+            if info is not None:
+                if info.get('image_num_x', 0)>1:
+                    intags['type'] = 'image/proprietary'
+                if info.get('image_num_series', 0)>1:
+                    intags['image_num_series'] = info.get('image_num_series', 0)
 
         # no processing required
+        log.debug('process intags: %s', intags)
         if intags.get('type') not in self.filters:
             return self.insert_resource(uf)
         # Processing is required
@@ -847,13 +855,13 @@ class import_serviceController(ServiceController):
         """
         response = etree.Element ('resource', type='uploaded')
         for f in files:
-            log.info ("processing %s " , str( f))
+            log.info ("processing %s", toascii(f))
             x = self.process(f)
-            log.info ("processed %s -> %s " ,  str(f), str(x))
+            log.info ("processed %s -> %s", toascii(f), toascii(x))
             if x is not None:
                 response.append(x)
             else:
-                log.error ("while ingesting %s " , str( f))
+                log.error ("while ingesting %s", toascii(f))
                 etree.SubElement(response, 'tag', name="error", value='Error ingesting file' )
         return response
 

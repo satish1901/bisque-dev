@@ -383,7 +383,7 @@ class DataServerController(ServiceController):
             if view=='query':
                 return nodelist
             full_url = "%s?%s" % (uri, "&".join ("%s=%s" % (k, v) for k,v in kw.items()))
-            response  = etree.Element ('resource', uri=full_url)
+            response  = etree.Element ('resource', uri=full_url))
             db2tree (nodelist, parent=response,
                      view=view, baseuri = self.url, **params)
 
