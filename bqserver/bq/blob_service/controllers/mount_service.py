@@ -78,6 +78,7 @@ from bq.exceptions import IllegalOperation, DuplicateFile, ServiceError
 from bq.util.paths import data_path
 from bq.util.compat import OrderedDict
 from bq.util.bisquik2db import  load_uri  # needed for identity stuff
+from bq.util.urlpaths import *
 
 from bq import data_service
 
@@ -90,67 +91,6 @@ log = logging.getLogger('bq.blobs.mounts')
 #################################################
 #  Define helper functions for NT vs Unix/Mac
 #
-if os.name == 'nt':
-    def move_file (fp, newpath):
-        with open(newpath, 'wb') as trg:
-            shutil.copyfileobj(fp, trg)
-
-    def data_url_path (*names):
-        path = data_path(*names)
-        if len(path)>1 and path[1]==':': #file:// url requires / for drive lettered path like c: -> file:///c:/path
-            path = '/%s'%path
-        return path
-
-    def url2localpath(url):
-        path = urlparse.urlparse(url).path
-        if len(path)>0 and path[0] == '/':
-            path = path[1:]
-        try:
-            return urllib.unquote(path).decode('utf-8')
-        except UnicodeEncodeError:
-            # dima: safeguard measure for old non-encoded unicode paths
-            return urllib.unquote(path)
-
-    def localpath2url(path):
-        path = path.replace('\\', '/')
-        url = urllib.quote(path.encode('utf-8'))
-        if len(path)>3 and path[0] != '/' and path[1] == ':':
-            # path starts with a drive letter: c:/
-            url = 'file:///%s'%url
-        else:
-            # path is a relative path
-            url = 'file://%s'%url
-        return url
-
-else:
-    def move_file (fp, newpath):
-        log.debug ("moving file %s", fp.name)
-        if os.path.exists(fp.name):
-            oldpath = os.path.abspath(fp.name)
-            shutil.move (oldpath, newpath)
-        else:
-            with open(newpath, 'wb') as trg:
-                shutil.copyfileobj(fp, trg)
-
-    data_url_path = data_path
-
-    def url2localpath(url):
-        url = url.encode('utf-8') # safegurd against un-encoded values in the DB
-        path = urlparse.urlparse(url).path
-        return urllib.unquote(path)
-
-    def localpath2url(path):
-        url = urllib.quote(path.encode('utf-8'))
-        #if len(url)>1 and url[0] == '/':
-        url = 'file://%s'%url
-        return url
-
-def config2url(conf):
-    if conf.startswith('file://'):
-        return localpath2url( urlparse.urlparse(conf).path)
-    else:
-        return conf
-
 
 
 
@@ -177,7 +117,6 @@ def opener_cm (path):
             yield f
 
 
-# PathServer
 def get_tag(elem, tag_name):
     els = elem.xpath ('./tag[@name="%s"]' % tag_name)
     if len(els) == 0:
@@ -267,7 +206,8 @@ class MountServer(TGController):
         # Some crazy hanlding when de-referencing
         if len(path) and path[-1] == 'value':
             value = path.pop()
-            view = 'query'
+            #view = 'query'
+            view = 'full'
             origkw = kw
             kw = {}
         else:
@@ -279,6 +219,7 @@ class MountServer(TGController):
 
         q = self._load_mount_path(store_name=store_name, path = path, view=view, **kw)
         if q is None:
+            log.warn ("could not load store/path %s/%s", store_name, path)
             #abort (404, "bad store path %s" % path)
             return '<resource/>'
         # crazy value handling (emulate limit and offset)
@@ -396,9 +337,19 @@ class MountServer(TGController):
     # Store operators
     # A store path is the user friendly list of names
 
+    def _load_root_mount(self):
+        "fetch the root mount and submounts"
+        root = data_service.query('store', resource_unid='(root)', view='full')
+        if len(root) == 1:
+            return self._create_default_mounts(root[0])
+        elif len(root) == 0:
+            raise IllegalOperation ("No root store not valid %s", etree.tostring (root))
+        return root[0]
+
     def _load_store(self, store_name):
         'Simply load the store named by parameter.. will return short version'
-        root = self._create_root_mount()
+        #root = self._create_root_mount()
+        root = self._load_root_mount()
         storelist = root.xpath("store[@name='%s']" % store_name)
         if len(storelist) == 0:
             log.warn('No store named %s' , store_name)
@@ -411,6 +362,7 @@ class MountServer(TGController):
     def _load_mount_path (self, store_name, path, **kw ):
         """load a store resource from store
         """
+        log.debug ("load_mount_path : %s %s", store_name, path)
         path = list(path)   # make a copy to leave argument alone
         view = kw.pop('view', 'full')
         q = self._load_store(store_name)  # This load is not a full load but may be a short load
@@ -424,6 +376,7 @@ class MountServer(TGController):
             q = q[0]
         if kw or len(q) == 0:
             # might be limitin result
+            log.debug ("loading with %s view=%s and %s", q, view, kw)
             q = data_service.get_resource(q, view=view, **kw)
         return q
 
@@ -716,11 +669,8 @@ class MountServer(TGController):
     def _get_stores(self):
         "Return an OrderedDict of store resources in the users ordering"
 
-        root = self._create_root_mount()
-        #root = data_service.query('store', resource_unid='(root)', view='full')
-        #if len(root) != 1:
-        #    raise IllegalOperation ("root store not valid %s", etree.tostring (root))
-        #root = root[0]
+        #root = self._create_root_mount()
+        root = self._load_root_mount()
         store_order = get_tag (root, 'order')
         if store_order is None:
             store_order = config.get('bisque.blob_service.stores','')
@@ -782,7 +732,7 @@ class MountServer(TGController):
         log.debug ("CREATE_PATH %s %s", store, path)
         if isinstance(store, basestring):
             resource = root = etree.Element ('store', name = store, resource_unid = store)
-            store = self._create_root_mount()
+            store = self._load_root_mount()
 
         parent = store
         while parent is not None and path:
@@ -831,7 +781,7 @@ class MountServer(TGController):
         This will create a store element if does not exist
         :param path: a blob path for the store
         """
-        log.info("Insert_mount_path create %s path %s ", str(store), str(mount_path))
+        log.info("Insert_mount_path %s(%s) create %s path %s ", resource.get('name'), resource.get('uniq'), str(store), str(mount_path))
 
         return self._create_full_path(store, mount_path, resource.get ('resource_uniq'), resource.get('name'), **kw)
 

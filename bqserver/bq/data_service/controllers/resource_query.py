@@ -1081,6 +1081,13 @@ def resource_delete(resource, user_id=None):
         return
     q = DBSession.query (TaggableAcl).filter_by (taggable_id = resource.id)
     q.delete()
+    # This is a *pile* of junk.. should be handled by mount_service but I cannot find a clean way to notify it.
+    link = DBSession.query(Taggable).filter_by(resource_type = 'link', resource_value = resource.resource_uniq).first()
+    if link:
+        log.debug ('removing link %s %s from store', link.resource_name, link.resource_uniq)
+        DBSession.delete(link)
+        Resource.hier_cache.invalidate ('/data_service/'+link.uri, user = user_id)
+    # Finally delete resource
     DBSession.delete(resource)
     DBSession.flush()
 
