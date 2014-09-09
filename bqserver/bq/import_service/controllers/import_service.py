@@ -960,7 +960,7 @@ class import_serviceController(ServiceController):
             log.debug ("transfers %s " , str(transfers))
 
             resource = transfers.pop(pname+'_resource', None) #or transfers.pop(pname+'_tags', None)
-            log.debug ("found %s _resource/_tags %s " , pname, str(resource))
+            log.debug ("found %s _resource/_tags %s ", pname, toascii(resource))
             if resource is not None:
                 try:
                     if hasattr(resource, 'file'):
@@ -974,7 +974,7 @@ class import_serviceController(ServiceController):
                             log.exception ("while parsing %s" , resource)
                             raise
                 except:
-                    log.exception("Couldn't read resource parameter %s" , str( resource))
+                    log.exception("Couldn't read resource parameter %s" , toascii(resource))
                     resource = None
             return resource
 
