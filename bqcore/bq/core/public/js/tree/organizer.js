@@ -581,11 +581,12 @@ Ext.define('BQ.tree.organizer.Panel', {
         proxy.projections.gob_names = null;
 
         var root = this.getRootNode();
-        this.getSelectionModel().select(root);
+        this.store.suspendAutoSync();
         root.removeAll(true);
-        //this.collapseAll();
+        this.store.resumeAutoSync();
         this.store.load();
         this.no_selects = undefined;
+        this.getSelectionModel().select(root);
     },
 
     onTags: function (btn) {
