@@ -437,14 +437,15 @@ class import_serviceController(ServiceController):
             val.text = blob_service.local2url(v)
 
         image_meta = etree.SubElement(resource, 'tag', name='image_meta', type='image_meta', resource_unid='image_meta' )
-        etree.SubElement(image_meta, 'tag', name='image_num_z', value='%s'%params['z'] )
-        etree.SubElement(image_meta, 'tag', name='image_num_t', value='%s'%params['t'] )
+        etree.SubElement(image_meta, 'tag', name='storage', value='multi_file_series' )
+        etree.SubElement(image_meta, 'tag', name='image_num_z', value='%s'%params['z'], type='number' )
+        etree.SubElement(image_meta, 'tag', name='image_num_t', value='%s'%params['t'], type='number' )
         etree.SubElement(image_meta, 'tag', name='dimensions', value='XYCZT' )
         if sum([float(params[k]) for k in res.keys()])>0:
-            etree.SubElement(image_meta, 'tag', name='pixel_resolution_x', value='%s'%params['resolution_x'] )
-            etree.SubElement(image_meta, 'tag', name='pixel_resolution_y', value='%s'%params['resolution_y'] )
-            etree.SubElement(image_meta, 'tag', name='pixel_resolution_z', value='%s'%params['resolution_z'] )
-            etree.SubElement(image_meta, 'tag', name='pixel_resolution_t', value='%s'%params['resolution_t'] )
+            etree.SubElement(image_meta, 'tag', name='pixel_resolution_x', value='%s'%params['resolution_x'], type='number' )
+            etree.SubElement(image_meta, 'tag', name='pixel_resolution_y', value='%s'%params['resolution_y'], type='number' )
+            etree.SubElement(image_meta, 'tag', name='pixel_resolution_z', value='%s'%params['resolution_z'], type='number' )
+            etree.SubElement(image_meta, 'tag', name='pixel_resolution_t', value='%s'%params['resolution_t'], type='number' )
 
         # append all other input annotations
         resource.extend (copy.deepcopy (list (uf.resource)))

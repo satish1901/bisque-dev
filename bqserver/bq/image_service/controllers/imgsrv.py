@@ -2486,6 +2486,7 @@ class ImageServer(object):
     def ensureOriginalFile(self, ident):
         return blob_service.localpath(ident) or abort (404, 'File not available from blob service')
 
+    # dima: remove this and use resource fetched with metadata
     def originalFileName(self, ident):
         return blob_service.original_name(ident)
 
