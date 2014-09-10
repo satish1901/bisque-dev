@@ -54,7 +54,7 @@ ImgPixelCounter.prototype.pixelCounter = function () {
             pixelcounterButton.setDisabled(false); //enable pixel counter menu
             //brings back the metadata panel
         },this)
-        this.viewer.parameters.main.queryById('main_container').add(this.pixelCounterPanel); //create panel
+        this.viewer.parameters.main.queryById('viewer_container').add(this.pixelCounterPanel); //create panel
 
     //pixelCounterPlugin
     //switches disable to true
