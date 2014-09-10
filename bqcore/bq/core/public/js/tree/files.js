@@ -93,7 +93,8 @@ Ext.define('BQ.data.writer.Files', {
     writeRecords: function(request, data) {
         var me = request.proxy.ownerPanel,
             url = me.getSelectedAsUrl(),
-            record = request.records[0];
+            record = request.records[0],
+            skip = me.no_selects;
         // selected url does not contain leaf link nodes, add if needed
         if (record.data && record.data.type === 'link') {
             url += '/' + encodeURIComponent(record.data.name);
@@ -365,6 +366,7 @@ Ext.define('BQ.tree.files.Panel', {
     },
 
     onSelect : function(me, record, index, eOpts) {
+        if (this.no_selects===true) return;
         var node = record;
         var path = [];
         while (node) {
@@ -439,6 +441,20 @@ Ext.define('BQ.tree.files.Panel', {
 
     onError: function(proxy, response, operation, eOpts) {
         BQ.ui.error('Error: '+response.statusText );
+    },
+
+    reset: function () {
+        this.no_selects = true;
+        this.queryById('path_bar').setPath( '/' );
+        this.url_selected = this.url;
+
+        var root = this.getRootNode();
+        this.store.suspendAutoSync();
+        root.removeAll(false);
+        this.store.resumeAutoSync();
+        this.store.load();
+        this.no_selects = undefined;
+        this.getSelectionModel().select(root);
     },
 
     createFolder: function() {

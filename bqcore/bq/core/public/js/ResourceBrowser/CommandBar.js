@@ -270,6 +270,13 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
 
     btnRefresh : function() {
         this.browser.msgBus.fireEvent('Browser_ReloadData', {});
+        if (this.organizerCt && this.organizerCt.isVisible()) {
+            this.organizerCt.reset();
+        }
+        var t = this.westPanel.queryById('files');
+        if (t && t.isVisible()) {
+            t.reset();
+        }
     },
 
     btnActivate : function(btn) {
