@@ -465,12 +465,13 @@ class BlobServer(RestController, ServiceMixin):
 
     def originalFileName(self, ident):
         log.debug ('originalFileName: deprecated %s', ident)
-        fname  = str (ident)
-        resource = DBSession.query(Taggable).filter_by (resource_uniq = ident).first()
-        if resource:
-            if resource.resource_name != None:
-                fname = resource.resource_name
-        fname,_ = split_subpath(fname)
+        try:
+            resource = data_service.query(resource_uniq=ident)[0]
+        except IndexError:
+            log.warn ('requested resource %s was not available/found' , ident)
+            return str(ident)        
+
+        fname,_ = split_subpath(resource.get('name', str (ident)))
         log.debug('Blobsrv - original name %s->%s ' , ident, fname)
         return fname
 

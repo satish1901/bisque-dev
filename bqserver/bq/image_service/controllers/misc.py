@@ -112,9 +112,8 @@ def isascii(s):
 # dima: We have to do some ugly stuff to get all unicode filenames to work correctly 
 # under windows, although imgcnv and ImarisConvert support unicode filenames
 # bioformats and openslide do not, moreover in python <3 subprocess package 
-# does not support unicode either, thus we decided to rename unicode files
-# prior to operations and rename them back right after, this is a
-# windows only problem!
+# does not support unicode either, thus we decided to link unicode filenames
+# prior to operations and unlink them right after, this is a windows only problem!
 if os.name != 'nt':
     def dolink(source, link_name):
         log.debug('Hard link %s -> %s', source, link_name)
@@ -144,7 +143,7 @@ else:
             return command, None
         ext = os.path.splitext(ifnm)[1]
         uniq = hashlib.md5('%s%s'%(ifnm.encode('ascii', 'xmlcharrefreplace'),datetime.datetime.now())).hexdigest()
-        tmp = '%s\\%s%s'%(os.path.splitdrive(ifnm)[0], uniq, ext) # for the case of files on different drives
+        tmp = os.path.join(os.path.splitdrive(ifnm)[0], '%s%s'%(uniq, ext)) # for the case of files on different drives
         #tmp = '%s%s'%(uniq, ext) # same drive
         log.debug('start_nounicode_win hardlink: [%s] -> [%s]', ifnm, tmp)
         try:

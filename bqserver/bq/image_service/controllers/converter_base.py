@@ -197,6 +197,10 @@ class ConverterBase(object):
                 return False
         except (KeyError, TypeError, AttributeError):
             return False
+
+        # test for storage
+        #if meta.get('storage') != 'multi_file_series':
+        #    return False
         
         # test for geometry tags
         if len(set(['image_num_z','image_num_t','image_num_c']).intersection(meta.keys()))<1:
