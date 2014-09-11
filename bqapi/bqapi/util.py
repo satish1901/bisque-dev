@@ -120,22 +120,7 @@ def save_blob(session,  localfile=None, resource=None):
     
     @exceptions comm.BQCommError - if blob is failed to be posted
     """
-#    url = session.service_url('import', 'transfer')
-#    if isinstance(localfile, basestring):
-#        localfile = open(localfile, 'rb')
-#
-#    fields = {}
-#
-#    if localfile is not None:
-#        fields['file'] = localfile
-#        
-#    if resource is not None:
-#        if isinstance(resource, basestring):
-#            fields['file_resource'] = resource
-#        else:
-#            fields['file_resource'] = ET.tostring (resource)
-        
-    #body, headers = poster.encode.multipart_encode(fields)
+       
 
     content = session.postblob(localfile, xml=resource)
     
