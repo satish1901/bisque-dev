@@ -7,7 +7,7 @@ except ImportError:
     from setuptools import setup, find_packages
 
 #from bq.release import __VERSION__
-__VERSION__="0.5.5"
+__VERSION__="0.5.6"
 
 setup(
     name='bqfeature',
@@ -22,7 +22,7 @@ setup(
                       "numpy",
                       "pillow",
                       "mahotas",
-                      "tables",  
+                      "tables",
                       "numexpr",
                       "cython",
                       "pylibtiff==0.3.0-1"
