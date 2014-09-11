@@ -34,6 +34,20 @@ def teardown_db():
 
     #transaction.doom()
 
+def setup_app(section = 'main_without_authn'):
+    conf_dir = 'config'  # config.here
+    wsgiapp = loadapp('config:test.ini#%s' % section , relative_to=conf_dir)
+    app = TestApp(wsgiapp)
+    # Setting it up:
+    test_file = path.join(conf_dir, 'test.ini')
+    cmd = SetupCommand('setup-app')
+    cmd.run([test_file])
+    #transaction.commit()
+    return app
+
+def teardown_app ():
+    teardown_db()
+
 class TestController(object):
     """
     Base functional test case for the controllers.
@@ -53,21 +67,16 @@ class TestController(object):
 
     application_under_test = 'main_without_authn'
 
-    def setUp(self):
+    @classmethod
+    def setup_class(cls):
         """Method called by nose before running each test"""
         print "TestController SETUP"
         # Loading the application:
-        conf_dir = 'config'  # config.here
-        wsgiapp = loadapp('config:test.ini#%s' % self.application_under_test,
-                          relative_to=conf_dir)
-        self.app = TestApp(wsgiapp)
-        # Setting it up:
-        #transaction.begin() ## KK This is needed ??
-        test_file = path.join(conf_dir, 'test.ini')
-        cmd = SetupCommand('setup-app')
-        cmd.run([test_file])
+        cls.app = setup_app()
+        print "Setup COmplete"
 
-    def tearDown(self):
+    @classmethod
+    def teardown_class(cls):
         """Method called by nose after running each test"""
         # Cleaning up the database:
         #DBSession.rollback()
