@@ -55,7 +55,10 @@ import urlparse
 import urllib
 import logging
 import itertools
-from collections import OrderedDict
+try:
+    from collections import OrderedDict
+except ImportError:
+    from ordereddict import OrderedDict
 
 import requests
 from requests.auth import HTTPBasicAuth
