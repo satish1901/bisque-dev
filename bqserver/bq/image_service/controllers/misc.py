@@ -21,6 +21,8 @@ import hashlib
 import datetime
 from itertools import groupby
 
+from bq.util.mkdir import _mkdir
+
 import logging
 log = logging.getLogger('bq.image_service.misc')
 
@@ -143,12 +145,21 @@ else:
             return command, None
         ext = os.path.splitext(ifnm)[1]
         uniq = hashlib.md5('%s%s'%(ifnm.encode('ascii', 'xmlcharrefreplace'),datetime.datetime.now())).hexdigest()
-        tmp = os.path.join(os.path.splitdrive(ifnm)[0], '%s%s'%(uniq, ext)) # for the case of files on different drives
-        #tmp = '%s%s'%(uniq, ext) # same drive
+        tmp_path = '%s\\temp'%os.path.splitdrive(ifnm)[0] 
+        
+        # preserve drive letter to create hard link on the same drive
+        # dima: os.path.join does not join drive letters correctly
+        tmp_path = os.path.splitdrive(ifnm)[0]
+        if tmp_path != '':
+            tmp_path = '%s\\temp'%tmp_path
+        _mkdir(tmp_path)
+        tmp = os.path.join(tmp_path, '%s%s'%(uniq, ext))
+        
+        #tmp = '%s%s'%(uniq, ext) # dima: same drive as running system - may not work
         log.debug('start_nounicode_win hardlink: [%s] -> [%s]', ifnm, tmp)
         try:
             hardlink(ifnm, tmp)
-        except ctypes.WinError:
+        except OSError:
             return command, None
         command = [tmp if x==ifnm else x for x in command]
         return command, tmp
