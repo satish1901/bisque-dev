@@ -48,6 +48,852 @@ Ext.define('BQ.viewer.Volume.uniformUpdate', {
   },
 });
 
+function renderingTool(volume, cls){
+    this.cls = cls;
+    this.volume = volume;
+    this.renderToPanel = true;
+    this.uniforms = {};
+};
+
+renderingTool.prototype.init = function(){
+    var me = this;
+    this.button = Ext.create('Ext.Button',{
+        //xtype: 'button',
+        //text : this.cls,
+        //layout : 'fit',
+        layout : {
+			type : 'vbox',
+			align : 'stretch',
+			pack : 'start',
+		},
+        width : 36,
+        height : 36,
+        iconCls : this.cls,
+        enableToggle: true,
+        handler : this.toggle,
+        scope : me,
+    });
+
+    this.controls = Ext.create('Ext.container.Container', {
+        border : false,
+		layout : {
+			type : 'vbox',
+			align : 'stretch',
+			pack : 'start',
+		},
+        //mixins : ['BQ.viewer.Volume.uniformUpdate'],
+    }).hide();
+
+    if(this.label){
+        this.controls.add([{
+            xtype: 'menuseparator',
+        },{
+            xtype: 'label',
+            text: this.label
+        }]);
+    }
+
+    this.initControls();
+
+    this.addUniforms();
+    this.initUniforms();
+};
+
+renderingTool.prototype.initUniforms = function(){
+    var shaderManager = this.volume.sceneVolume;
+    var me = this;
+    this.sliders = {};
+    for(var key in this.uniforms ){
+        var e = this.uniforms[key];
+        shaderManager.initUniform(e.name, e.type, e.val);
+        //sliders build themselves from uniform variables...
+        if(e.slider){
+            var k = e.K;
+            var slider = Ext.create('Ext.slider.Single', {
+                renderTo : Ext.get('slider-ph'),
+                fieldLabel : key,
+                labelWidth : 60,
+                minValue : e.min,
+                maxValue : e.max,
+                value : e.def,
+                uniform_var : e.name,
+                listeners : {
+                    change : this.updateSlider,
+                    scope : me,
+                },
+                k: k,
+                convert : function (v) {
+                    return this.k*v;
+                }
+            });
+            this.sliders[key] = slider;
+            this.controls.add(slider);
+        }
+    };
+};
+
+renderingTool.prototype.addUniforms = function(){
+};
+
+renderingTool.prototype.initControls = function(){
+};
+
+renderingTool.prototype.toggle = function(button){
+    //default is just to show and hide, but can modify this as well
+    if(button.pressed) this.controls.show();
+    else this.controls.hide();
+};
+
+renderingTool.prototype.addButton = function(){
+    this.volume.toolPanelButtons.add(this.button);
+};
+
+renderingTool.prototype.addControls = function(){
+    if(this.renderToPanel)
+        this.volume.toolPanel.add(this.controls);
+};
+
+renderingTool.prototype.updateSlider = function(slider, value){
+    this.volume.sceneVolume.setUniform(slider.uniform_var, slider.convert(value), true, true);
+};
+
+//////////////////////////////////////////////////////////////////
+//
+// Gamma controller
+//
+//////////////////////////////////////////////////////////////////
+
+function gammaTool(volume) {
+	//renderingTool.call(this, volume);
+	this.label = 'gamma';
+    this.cls = 'histoButton';
+    this.base = renderingTool;
+    this.base(volume, this.cls);
+
+};
+
+gammaTool.prototype = new renderingTool();
+
+gammaTool.prototype.addUniforms = function(){
+    this.uniforms['min']   = {name: 'GAMMA_MIN', type: 'f', val: 0.0};
+    this.uniforms['max']   = {name: 'GAMMA_MAX', type: 'f', val: 1.0};
+    this.uniforms['scale'] = {name: 'GAMMA_SCALE', type: 'f', val: 0.5} ;
+    //this.initUniforms();
+};
+
+gammaTool.prototype.initControls = function(){
+    var me = this;
+
+    this.title = 'gamma';
+
+    //this.addUniforms();
+    this.histogram = this.volume.model.histogram;
+    this.gamma = this.volume.model.gamma;
+    this.contrastRatio = 0.5;
+
+    this.data = {
+        min : 0,
+        max : 0,
+        scale : 0
+    };
+
+    this.svg = Ext.create('BQ.graph.d3', {
+        height : 60,
+    });
+
+    var getVals =  function (min, mid, max) {
+        var div = 255; //this.getWidth();
+        min /= div;
+        max /= div;
+        mid /= div;
+        var diff = max - min;
+        var x = (mid - min) / diff;
+        scale = 4 * x * x;
+        return {
+            min : min,
+            scale : scale,
+            max : max
+        };
+    };
+    /*
+      var setEqualized = function(){
+      var hist = me.histogram;
+      var thresh = 100;
+      var min = 0;
+      do {
+      var histi = 0;
+      for(var c in hist){
+      if(hist[c][min]) histi += hist[c][min];
+      }
+      min++;
+      } while(histi < thresh)
+
+      var max = 255;
+      do {
+      var histi = 0;
+      for(var c in hist){
+      if(hist[c][max]) histi += hist[c][max];
+      }
+      max--;
+      } while(histi < thresh)
+
+
+      var mid = 0.5*(min + max);
+      console.log("blick block blue: ", hist, min, max, mid);
+
+      this.slider0.setValue(0, min);
+      //
+      this.slider0.setValue(2, max);
+      this.slider0.setValue(1, mid);
+      this.data = this.getVals(this.slider0.thumbs[0].value,
+      this.slider0.thumbs[1].value,
+      this.slider0.thumbs[2].value);
+      },
+    */
+    this.controls.add([
+        this.svg,
+        {
+            xtype: 'multislider',
+            hideLabel : true,
+            fieldLabel : 'gamma',
+            //increment : 1,
+            maxValue: 255,
+            minValue: 0,
+            values : [0, 128, 255],
+            listeners : {
+                change : function (slider, value, thumb) {
+                    //if(!me.histogram) continue;
+                    var div = 200;
+                    var minThumb = slider.thumbs[0].value;
+                    var conThumb = slider.thumbs[1].value;
+                    var maxThumb = slider.thumbs[2].value;
+                    if(conThumb > maxThumb || conThumb < minThumb) conThumb = 0.5*(minThumb + maxThumb);
+                    var min = minThumb / div;
+                    var max = maxThumb / div;
+                    var diff = max - min;
+                    var x = (conThumb / div - min) / diff;
+
+                    var vals = getVals(minThumb, conThumb, maxThumb);
+
+                    if (thumb.index != 1) {
+                        var posDiff = maxThumb - minThumb;
+                        var newVal = this.contrastRatio * posDiff + minThumb;
+                        slider.setValue(1, newVal, false);
+                        this.middleThumbLock = true;
+                        var me = this;
+                        setTimeout(function () {
+                            me.middleThumbLock = false;
+                        }, 200);
+                    } else {
+                        if (this.middleThumbLock == false)
+                            this.contrastRatio = (conThumb - minThumb) / (maxThumb - minThumb);
+                    }
+
+                    var p = 4;
+
+                    this.volume.sceneVolume.setUniform('GAMMA_MIN', vals.min, true, true);
+                    this.volume.sceneVolume.setUniform('GAMMA_MAX', vals.max, true, true);
+                    this.volume.sceneVolume.setUniform('GAMMA_SCALE', vals.scale, true, true);
+
+                    this.data = vals;
+                    this.volume.model.gamma = vals;
+                    if(this.histogramSvg){
+                        this.volume.model.updateHistogram();
+                        this.histogramSvg.redraw();
+                    }
+
+                },
+                scope : me,
+            }
+        }]);
+
+    this.controls.on('afterlayout', function () {
+        if(this.loaded) return;
+        if(me.volume.model.loaded == true){
+            me.histogramSvg = new histogramD3(me.histogram, me.gamma, me.svg.svg, me.controls);
+            //me.setEqualized();
+            me.histogramSvg.redraw();
+        }
+
+        me.volume.on("histogramloaded", function(){
+            if(!me.histogramSvg)
+                me.histogramSvg = new histogramD3(me.histogram, me.gamma, me.svg.svg, me.controls);
+            //me.setEqualized();
+            me.histogramSvg.redraw();
+        })
+        this.loaded = true;
+    });
+};
+
+function materialTool(volume, cls) {
+	//renderingTool.call(this, volume);
+    this.label = 'brightness/density';
+    this.cls = 'materialButton';
+
+	this.base = renderingTool;
+    this.base(volume, this.cls);
+};
+
+materialTool.prototype = new renderingTool();
+
+materialTool.prototype.addUniforms = function(){
+    this.uniforms['brightness'] = {name: 'BRIGHTNESS',
+                                   type: 'f',
+                                   val: 0.5,
+                                   slider: true,
+                                   min: 0,
+                                   max: 100,
+                                   def: 50,
+                                   K: 0.02};
+    this.uniforms['density']    = {name: 'DENSITY',
+                                   type: 'f',
+                                   val: 0.5,
+                                   slider: true,
+                                   min: 0,
+                                   max: 100,
+                                   def: 50,
+                                   K: 0.025};
+};
+
+materialTool.prototype.initControls = function(){
+    var me = this;
+    this.volume.on('loaded', function () {
+        me.sliders['density'].setValue(50);
+        me.sliders['brightness'].setValue(75);
+    });
+};
+
+function ditherTool(volume) {
+	//renderingTool.call(this, volume);
+	this.cls = 'ditherButton';
+    this.base = renderingTool;
+    this.base(volume, this.cls);
+};
+
+ditherTool.prototype = new renderingTool();
+
+ditherTool.prototype.addUniforms = function(){
+    this.uniforms['dither'] = {name: 'DITHERING', type: 'i', val: this.dithering};
+    //this.initUniforms();
+};
+
+ditherTool.prototype.initControls = function(){
+    var me = this;
+    this.dithering = false;
+};
+
+ditherTool.prototype.toggle = function(){
+    this.dithering ^= 1;
+    this.volume.sceneVolume.setUniform('DITHERING', this.dithering, true, true);
+
+};
+
+
+function boxTool(volume, cls) {
+	//renderingTool.call(this, volume);
+    this.label = 'relative dimensions';
+    this.cls = 'resizeButton';
+
+	this.base = renderingTool;
+    this.base(volume, this.cls);
+};
+
+boxTool.prototype = new renderingTool();
+
+boxTool.prototype.addUniforms = function(){
+  this.uniforms['box_size'] = {name: 'BOX_SIZE', type: 'v3', val: this.boxSize};
+    //this.initUniforms();
+};
+
+boxTool.prototype.initControls = function(){
+    var me = this;
+    this.boxSize = new THREE.Vector3(0.5, 0.5, 0.5);
+    var controlBtnSize = 22;
+
+    this.boxX = Ext.create('Ext.form.field.Number', {
+        name : 'box_x',
+        fieldLabel : 'x',
+        value : 1,
+        minValue : 0.1,
+        maxValue : 1,
+        step : 0.05,
+        width : 150,
+        listeners : {
+            change : function (field, newValue, oldValue) {
+                if (typeof newValue != 'number')
+                    return;
+                newValue = newValue < 0.1 ? 0.1 : newValue;
+                this.boxSize.x = 0.5 * newValue;
+                this.volume.scaleCube(this.boxSize);
+            },
+            scope : me
+        },
+    });
+
+    this.boxY = Ext.create('Ext.form.field.Number', {
+        name : 'box_y',
+        fieldLabel : 'y',
+        value : 1,
+        minValue : 0.1,
+        maxValue : 1,
+        step : 0.05,
+        width : 150,
+        listeners : {
+            change : function (field, newValue, oldValue) {
+                if (typeof newValue != 'number')
+                    return;
+                newValue = newValue < 0.1 ? 0.1 : newValue;
+                this.boxSize.y = 0.5 * newValue;
+                this.volume.scaleCube(this.boxSize);
+            },
+            scope : me
+        },
+    });
+
+    this.boxZ = Ext.create('Ext.form.field.Number', {
+        name : 'box_z',
+        fieldLabel : 'z',
+        value : 1,
+        minValue : 0.1,
+        maxValue : 1,
+        step : 0.05,
+        width : 150,
+        listeners : {
+            change : function (field, newValue, oldValue) {
+                if (typeof newValue != 'number')
+                    return;
+                newValue = newValue < 0.1 ? 0.1 : newValue;
+                this.boxSize.z = 0.5 * newValue;
+                this.volume.scaleCube(this.boxSize);
+            },
+            scope : me
+        },
+    });
+    this.controls.add([this.boxX, this.boxY, this.boxZ]);
+    this.volume.on('loaded', function () {
+        me.boxSize.x = 0.5;
+        var dims = me.volume.dims;
+        if (dims) {
+            me.boxSize.y = 0.5 * dims.pixel.x / dims.pixel.y;
+            me.boxSize.z = 0.5 * dims.pixel.x / dims.pixel.z;
+        } else {
+            me.boxSize.y = 0.5;
+            me.boxSize.z = 0.5;
+        }
+        me.boxX.setValue(2.0 * me.boxSize.x);
+        me.boxY.setValue(2.0 * me.boxSize.y);
+        me.boxZ.setValue(2.0 * me.boxSize.z);
+    });
+};
+
+function phongTool(volume, cls) {
+	//renderingTool.call(this, volume);
+    this.label = 'phong rendering';
+    this.cls = 'phongButton';
+
+	this.base = renderingTool;
+    this.base(volume, this.cls);
+};
+
+phongTool.prototype = new renderingTool();
+
+phongTool.prototype.addUniforms = function(){
+    this.uniforms['ambient']    = {name: 'KA',
+                                   type: 'f',
+                                   val: 0.5,
+                                   slider: true,
+                                   min: 0,
+                                   max: 100,
+                                   def: 50,
+                                   K: 0.01};
+    this.uniforms['diffuse']    = {name: 'KD',
+                                   type: 'f',
+                                   val: 0.5,
+                                   slider: true,
+                                   min: 0,
+                                   max: 100,
+                                   def: 50,
+                                   K: 0.01};
+    this.uniforms['size']    = {name: 'SPEC_SIZE',
+                                   type: 'f',
+                                   val: 0.5,
+                                   slider: true,
+                                   min: 2,
+                                   max: 100,
+                                   def: 50,
+                                   K: 1.0};
+    this.uniforms['intensity']    = {name: 'SPEC_INTENSITY',
+                                   type: 'f',
+                                   val: 0.5,
+                                   slider: true,
+                                   min: 0,
+                                   max: 100,
+                                   def: 50,
+                                   K: 1.0};
+    //this.initUniforms();
+};
+
+phongTool.prototype.initControls = function(){
+    var me = this;
+    this.phong = 0;
+    this.controls.add();
+    this.volume.on('loaded', function () {
+        me.sliders['ambient'].setValue(10);
+        me.sliders['diffuse'].setValue(100);
+        me.sliders['size'].setValue(0);
+        me.sliders['intensity'].setValue(0);
+    });
+};
+
+phongTool.prototype.toggle = function(button){
+    this.phong ^= 1;
+    if(this.phong){
+        this.volume.shaderConfig.lighting.phong = true;
+    }
+    else
+        this.volume.shaderConfig.lighting.phong = false;
+    this.volume.sceneVolume.setConfigurable("default",
+                                            "fragment",
+                                            this.volume.shaderConfig);
+    if(button.pressed) this.controls.show();
+    else this.controls.hide();
+};
+
+
+function deepTool(volume, cls) {
+	//renderingTool.call(this, volume);
+    this.label = 'deep rendering';
+    this.cls = 'deepButton';
+
+	this.base = renderingTool;
+    this.base(volume, this.cls);
+};
+
+deepTool.prototype = new renderingTool();
+
+deepTool.prototype.addUniforms = function(){
+
+    this.uniforms['samples']    = {name: 'LIGHT_SAMPLES',
+                                   type: 'i',
+                                   val: 4};
+    this.uniforms['depth']    = {name: 'LIGHT_DEPTH',
+                                 type: 'f',
+                                 val: 0.5,
+                                 slider: true,
+                                 min: 0,
+                                 max: 100,
+                                 def: 50,
+                                 K: 0.02};
+
+    this.uniforms['dispersion']    = {name: 'DISPERSION',
+                                      type: 'f',
+                                      val: 0.5,
+                                      slider: true,
+                                      min: 0,
+                                      max: 100,
+                                      def: 50,
+                                      K: 0.02};
+    //this.initUniforms();
+};
+
+deepTool.prototype.initControls = function(){
+    var me = this;
+    this.state = 0;
+    var sampleField = Ext.create('Ext.form.field.Number', {
+        name : 'numberfield2',
+        fieldLabel : 'samples',
+        value : 4,
+        minValue : 0,
+        maxValue : 16,
+        width : 150,
+        listeners : {
+            change : function (field, newValue, oldValue) {
+                this.volume.sceneVolume.setUniform('LIGHT_SAMPLES', newValue, true, true);
+            },
+            scope : me
+        },
+    });
+    this.controls.add(sampleField);
+    this.controls.on('afterlayout', function () {
+    });
+};
+
+deepTool.prototype.toggle = function(button){
+    this.state ^= 1;
+    if(this.state){
+        this.volume.shaderConfig.lighting.deep = true;
+    }
+    else
+        this.volume.shaderConfig.lighting.deep = false;
+    this.volume.sceneVolume.setConfigurable("default",
+                                            "fragment",
+                                            this.volume.shaderConfig);
+    if(button.pressed) this.controls.show();
+    else this.controls.hide();
+};
+
+
+
+function lightTool(volume, cls) {
+	//renderingTool.call(this, volume);
+    //this.label = 'gamma';
+    this.cls = 'lightButton';
+
+	this.base = renderingTool;
+    this.base(volume, this.cls);
+};
+
+lightTool.prototype = new renderingTool();
+
+lightTool.prototype.addUniforms = function(){
+    this.uniforms['brightness'] = {name: 'LIGHT_POSITION', type: 'v3', val: this.lightObject.position};
+    //this.initUniforms();
+};
+
+lightTool.prototype.initControls = function(){
+    var me = this;
+
+    this.sceneVolume = this.volume.sceneVolume;
+    this.canvas3D = this.volume.canvas3D;
+
+    var sphere = new THREE.SphereGeometry(0.05, 3, 3);
+    this.lightObject = new THREE.Mesh(sphere,
+                                      new THREE.MeshBasicMaterial({
+                                          color : 0xFFFF33,
+                                          wireframe : true,
+                                      }));
+
+    this.plane = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000, 8, 8),
+                                new THREE.MeshBasicMaterial({
+                                    color : 0x000000,
+                                    opacity : 0.25,
+                                    transparent : true,
+                                    wireframe : true
+                                }));
+    this.plane.visible = false;
+    this.lightObject.visible = false;
+
+    this.sceneVolume.scene.add(this.plane);
+    this.lightObject.position.x = 0.0;
+    this.lightObject.position.y = 0.0;
+    this.lightObject.position.z = 1.0;
+    this.sceneVolume.scene.add(this.lightObject);
+    //this.sceneVolume.sceneData.add(this.lightObject);
+
+    var onMouseUp = function () {
+        this.selectLight = false;
+    };
+
+    var onMouseDown = function () {
+        if (this.state === 0)
+            return;
+        var width = this.canvas3D.getWidth();
+        var height = this.canvas3D.getHeight();
+        var cx = this.canvas3D.getX();
+        var cy = this.canvas3D.getY();
+        var x = ((event.clientX - cx) / width) * 2 - 1;
+        var y =  - ((event.clientY - cy) / height) * 2 + 1;
+
+        var vector = new THREE.Vector3(x, y, 0.5);
+        var camera = this.canvas3D.camera;
+        this.canvas3D.projector.unprojectVector(vector, camera);
+
+        var raycaster
+            = new THREE.Raycaster(camera.position,
+                                  vector.sub(camera.position).normalize());
+        var objects = [this.lightObject];
+        var intersects = raycaster.intersectObjects(objects);
+        if (intersects.length > 0) {
+            this.canvas3D.controls.enabled = false;
+            this.selectLight = true;
+            this.canvas3D.getEl().dom.style.cursor = 'move';
+        } else {
+            this.canvas3D.getEl().dom.style.cursor = 'auto';
+        }
+    };
+
+    var onMouseMove = function (event) {
+        event.preventDefault();
+        if (this.state === 0)
+            return;
+        var width = this.canvas3D.getWidth();
+        var height = this.canvas3D.getHeight();
+        var cx = this.canvas3D.getX();
+        var cy = this.canvas3D.getY();
+        var x = ((event.clientX - cx) / width) * 2 - 1;
+        var y =  - ((event.clientY - cy) / height) * 2 + 1;
+
+        var vector = new THREE.Vector3(x, y, 0.5);
+
+        var camera = this.canvas3D.camera;
+        this.canvas3D.projector.unprojectVector(vector, camera);
+
+        var raycaster
+            = new THREE.Raycaster(camera.position,
+                                  vector.sub(camera.position).normalize());
+
+        var objects = [this.lightObject];
+        var intersects = raycaster.intersectObjects(objects);
+
+        if (this.selectLight) {
+            var intersects = raycaster.intersectObject(this.plane);
+            this.lightObject.position.copy(intersects[0].point.sub(this.offset));
+            return;
+        }
+        if (intersects.length > 0) {
+            this.canvas3D.getEl().dom.style.cursor = 'move';
+            this.plane.position.copy(intersects[0].object.position);
+            this.plane.lookAt(camera.position);
+        } else {
+            this.canvas3D.getEl().dom.style.cursor = 'auto';
+        }
+    };
+
+    this.canvas3D.getEl().dom.addEventListener('mousemove', onMouseMove.bind(this), true);
+    this.canvas3D.getEl().dom.addEventListener('mouseup', onMouseUp.bind(this), true);
+    this.canvas3D.getEl().dom.addEventListener('mousedown', onMouseDown.bind(this), true);
+    this.offset = new THREE.Vector3();
+};
+
+lightTool.prototype.toggle = function(button){
+    if (button.pressed) {
+        this.lightObject.visible = true;
+    } else {
+        this.lightObject.visible = false;
+    }
+    this.volume.rerender();
+};
+
+Ext.define('BQ.viewer.Volume.clip', {
+  extend : 'Ext.container.Container',
+  alias : 'widget.clip',
+  border : false,
+  addUniforms : function () {
+    this.sceneVolume.initUniform('CLIP_NEAR', "f", 0.0);
+    this.sceneVolume.initUniform('CLIP_FAR', "f", 3.0);
+  },
+
+  initComponent : function () {
+    this.title = 'clipping';
+    var me = this;
+    this.clipNear = 0.0;
+    this.clipFar = 3.0;
+    //console.log("slider func: ", this.mixins, this.updateSlider);
+    this.clipSlider = Ext.create('Ext.slider.Multi', {
+        renderTo : Ext.get('slider-ph'),
+        hideLabel : false,
+        fieldLabel : 'clip',
+        labelWidth : 60,
+        minValue : 0.00,
+        maxValue : 100,
+        values : [0, 100],
+        uniform_var : 'CLIP_NEAR',
+        listeners : {
+          change : function (slider, value, thumb) {
+              console.log(value/100);
+              if (thumb.index == 0) {
+                  this.sceneVolume.setUniform('CLIP_NEAR', value / 100, true, true);
+              } else {
+                  this.sceneVolume.setUniform('CLIP_FAR', value / 100, true, true);
+              }
+
+          },
+          scope : me,
+        },
+      });
+
+    this.addUniforms();
+    this.isLoaded = true;
+
+    this.items = [this.clipSlider];
+    this.callParent();
+  },
+
+  afterFirstLayout : function () {},
+});
+
+
+function clipTool(volume) {
+    this.cls = 'clipButton';
+
+	this.base = renderingTool;
+    this.base(volume, this.cls);
+    this.renderToPanel = false;
+};
+
+clipTool.prototype = new renderingTool();
+
+clipTool.prototype.addUniforms = function(){
+
+    this.uniforms['near']    = {name: 'CLIP_NEAR',
+                                   type: 'f',
+                                   val: 0.0};
+    this.uniforms['far']    = {name: 'CLIP_FAR',
+                                   type: 'f',
+                                   val: 0.0};
+    //this.initUniforms();
+};
+
+clipTool.prototype.initControls = function(){
+    var me = this;
+
+	var clipSlider = Ext.create('Ext.slider.Multi', {
+		//renderTo : thisDom,
+		itemId : 'clip-slider',
+		//cls : 'bq-clip-slider',
+		//fieldLabel : 'clip',
+        //width: '100%',
+		labelWidth : 60,
+		minValue : 0.00,
+		maxValue : 100,
+		values : [0, 100],
+		hideLabel : true,
+		increment : 0.25,
+		listeners : {
+			change : function (slider, value, thumb) {
+
+				if (thumb.index == 0) {
+					me.volume.sceneVolume.setUniform('CLIP_NEAR', value / 100);
+				} else {
+					me.volume.sceneVolume.setUniform('CLIP_FAR', 1 - value / 100);
+				}
+			},
+			scope : me,
+		},
+
+		vertical : false,
+		animation : false,
+	});
+
+    //this.controls.add(clipSlider);
+    var me = this;
+	var thisDom = this.volume.getEl().dom;
+    //this.controls.cls = 'bq-clip-slider';
+    //this.controls.renderTo = thisDom;
+
+    this.clipPanel = Ext.create('Ext.panel.Panel', {
+		collapsible : false,
+		header : false,
+		renderTo : thisDom,
+        layout : 'fit',
+		cls : 'bq-volume-playback',
+		items : [clipSlider],
+	}).hide();
+
+    //this.volume.addFade(this.controls);
+    this.volume.on('loaded', function () {
+        if(me.isloaded) return;
+        me.volume.addFade(me.clipPanel);
+        me.isloaded = true;
+    });
+};
+
+clipTool.prototype.toggle = function(button){
+
+    if(button.pressed) this.clipPanel.show();
+    else this.clipPanel.hide();
+};
+
 //////////////////////////////////////////////////////////////////
 //
 // info from the graphics card
@@ -187,951 +1033,3 @@ Ext.define('BQ.viewer.Volume.glinfo', {
 
   afterFirstLayout : function () {},
 });
-
-//////////////////////////////////////////////////////////////////
-//
-// Gamma controller
-//
-//////////////////////////////////////////////////////////////////
-
-Ext.define('BQ.viewer.Volume.gammapanel', {
-  extend : 'Ext.container.Container',
-  alias : 'widget.gamma',
-  border : false,
-
-  addUniforms : function () {
-    this.sceneVolume.initUniform('GAMMA_MIN', "f", 0.0);
-    this.sceneVolume.initUniform('GAMMA_MAX', "f", 1.0);
-    this.sceneVolume.initUniform('GAMMA_SCALE', "f", 0.5);
-  },
-
-
-  updateColorSvg : function () {
-      /*
-    if (this.data == null)
-      return;
-    var C = this.data.scale;
-    var min = this.data.min;
-    var max = this.data.max;
-    var h = this.getHeight();
-    var w = this.getWidth();
-
-    var yMargin = 16;
-    var xMargin = 16;
-    var hh = h - 2.0 * yMargin;
-    var wh = w - 2.0 * xMargin;
-    var x0 = xMargin;
-    var y0 = hh + yMargin;
-
-    var path = x0.toString() + ' ' + (y0 - 8).toString();
-    var mid = 0.5 * (min + max);
-    var N = wh;
-    var dataScale = 1.0;
-    for (var i = 0; i < N; i++) {
-      var x = i;
-      var t = 0.5 * i / N * dataScale;
-      var xi = (t - min) / (max - min);
-      var plogy = C * Math.log(xi);
-      var y = Math.exp(plogy);
-      if (t < min)
-        y = 0;
-      if (t > max)
-        y = 1.0;
-      x = x0 + x;
-      y = y0 - 8 - hh * y;
-      path += ' ' + x.toString() + ' ' + y.toString();
-    }
-
-    var pathOpen = '<path d="M'
-      var pathClose1 = '" stroke = gray stroke-width=1 fill="none" />';
-    var pathClose3 = '" stroke = white stroke-width=1 opacity: 0.7 fill="none" />';
-    var xAxis = pathOpen + x0 + ' ' + y0 + ' ' + 0.95 * w + ' ' + y0 + pathClose1;
-    var yAxis = pathOpen + x0 + ' ' + y0 + ' ' + x0 + ' ' + y0 - hh + pathClose1;
-    var graph = pathOpen + path + pathClose3;
-      var svg = ' <svg width=100% height=100% > <' + xAxis + yAxis + graph + ' </svg>';
-      this.panel3D.model.updateHistogram();
-
-      var rH = this.genHistogramSvg(this.histogram.r, 'red');
-      var gH = this.genHistogramSvg(this.histogram.g, 'green');
-      var bH = this.genHistogramSvg(this.histogram.b, 'blue');
-
-      this.rampSvg.getEl().dom.innerHTML = ' <svg width=100% height=100% >' + rH + gH + bH + svg + '</svg>';
-      */
-  },
-
-  getVals : function (min, mid, max) {
-      var div = 255; //this.getWidth();
-      min /= div;
-      max /= div;
-      mid /= div;
-    var diff = max - min;
-    var x = (mid - min) / diff;
-    scale = 4 * x * x;
-    return {
-      min : min,
-      scale : scale,
-      max : max
-    };
-  },
-
-  initComponent : function () {
-
-      this.title = 'gamma';
-      var me = this;
-
-      this.addUniforms();
-      this.histogram = this.panel3D.model.histogram;
-      this.gamma = this.panel3D.model.gamma;
-
-      this.contrastRatio = 0.5;
-      this.slider0 = Ext.create('Ext.slider.Multi', {
-        //renderTo: 'multi-slider-horizontal',
-        hideLabel : true,
-        fieldLabel : 'gamma',
-        //increment : 1,
-          maxValue: 255,
-          minValue: 0,
-          values : [0, 128, 255],
-        listeners : {
-          change : function (slider, value, thumb) {
-            var div = 200;
-            var minThumb = slider.thumbs[0].value;
-            var conThumb = slider.thumbs[1].value;
-            var maxThumb = slider.thumbs[2].value;
-              if(conThumb > maxThumb || conThumb < minThumb) conThumb = 0.5*(minThumb + maxThumb);
-            var min = minThumb / div;
-            var max = maxThumb / div;
-            var diff = max - min;
-            var x = (conThumb / div - min) / diff;
-
-            var vals = this.getVals(minThumb, conThumb, maxThumb);
-
-            if (thumb.index != 1) {
-              var posDiff = maxThumb - minThumb;
-              var newVal = this.contrastRatio * posDiff + minThumb;
-              slider.setValue(1, newVal, false);
-              this.middleThumbLock = true;
-              var me = this;
-              setTimeout(function () {
-                me.middleThumbLock = false;
-              }, 200);
-            } else {
-              if (this.middleThumbLock == false)
-                this.contrastRatio = (conThumb - minThumb) / (maxThumb - minThumb);
-            }
-
-            var p = 4;
-
-            this.sceneVolume.setUniform('GAMMA_MIN', vals.min, true, true);
-            this.sceneVolume.setUniform('GAMMA_MAX', vals.max, true, true);
-            this.sceneVolume.setUniform('GAMMA_SCALE', vals.scale, true, true);
-
-            this.data = vals;
-              this.panel3D.model.gamma = vals;
-              if(this.histogramSvg){
-                  this.panel3D.model.updateHistogram();
-                  this.histogramSvg.redraw();
-              }
-
-          },
-          scope : me,
-        }
-      });
-
-    this.data = {
-      min : 0,
-      max : 0,
-      scale : 0
-    };
-
-      this.svg = Ext.create('BQ.graph.d3', {
-          height : 60,
-      });
-
-    Ext.apply(this, {
-      items : [this.svg, this.slider0, ],
-    });
-
-    this.callParent();
-  },
-
-    setEqualized : function(){
-        var me = this;
-        var hist = me.histogram;
-        var thresh = 100;
-        var min = 0;
-        do {
-            var histi = 0;
-            for(var c in hist){
-                if(hist[c][min]) histi += hist[c][min];
-            }
-            min++;
-        } while(histi < thresh)
-
-        var max = 255;
-        do {
-            var histi = 0;
-            for(var c in hist){
-                if(hist[c][max]) histi += hist[c][max];
-            }
-            max--;
-        } while(histi < thresh)
-
-
-        var mid = 0.5*(min + max);
-        console.log("blick block blue: ", hist, min, max, mid);
-
-        this.slider0.setValue(0, min);
-        //
-        this.slider0.setValue(2, max);
-        this.slider0.setValue(1, mid);
-        this.data = this.getVals(this.slider0.thumbs[0].value,
-                                 this.slider0.thumbs[1].value,
-                                 this.slider0.thumbs[2].value);
-    },
-
-  afterFirstLayout : function () {
-
-      var me = this;
-      this.callParent();
-
-      if(this.panel3D.model.loaded == true){
-          me.histogramSvg = new histogramD3(me.histogram, me.gamma, me.svg.svg, me);
-          me.setEqualized();
-          me.histogramSvg.redraw();
-      }
-
-      this.panel3D.on("histogramloaded", function(){
-          if(!me.histogramSvg)
-                  me.histogramSvg = new histogramD3(me.histogram, me.gamma, me.svg.svg, me);
-          me.setEqualized();
-          me.histogramSvg.redraw();
-      })
-  },
-});
-
-Ext.define('BQ.viewer.Volume.materianel', {
-  extend : 'Ext.container.Container',
-  cls : 'materialcontroller',
-  alias : 'widget.material',
-  mixins : ['BQ.viewer.Volume.uniformUpdate'],
-  addUniforms : function () {
-    this.sceneVolume.initUniform('brightness', "f", 0.5);
-    this.sceneVolume.initUniform('density', "f", 0.5);
-  },
-
-  initComponent : function () {
-    var me = this;
-
-    this.addUniforms();
-    this.isLoaded = true;
-
-    this.title = 'material';
-    this.density = 0.5;
-    this.brightness = 1.0;
-    this.densitySlider = Ext.create('Ext.slider.Single', {
-        renderTo : Ext.get('slider-ph'),
-        fieldLabel : 'density',
-        labelWidth : 60,
-        minValue : 0,
-        maxValue : 100,
-        value : 50,
-        uniform_var : 'density',
-        listeners : {
-          change : this.updateSlider,
-          scope : me,
-        },
-        convert : function (v) {
-          return v / 100.0
-        }
-      });
-
-    this.brightnessSlider = Ext.create('Ext.slider.Single', {
-        renderTo : Ext.get('slider-ph'),
-        //hideLabel: true,
-        fieldLabel : 'brightness',
-        labelWidth : 60,
-        minValue : 0.00,
-        maxValue : 100,
-        value : 50,
-        uniform_var : 'brightness',
-        listeners : {
-          change : this.updateSlider,
-          scope : me,
-        },
-        convert : function (v) {
-          return v / 50;
-        }
-
-      });
-
-    //modal: true,
-    //this.items = [this.canvasPanel, slider0, this, slider4];
-    Ext.apply(this, {
-      items : [this.densitySlider, this.brightnessSlider],
-    });
-
-    this.callParent();
-  },
-
-  afterFirstLayout : function () {
-    this.densitySlider.setValue(50);
-    this.brightnessSlider.setValue(75);
-  },
-});
-
-Ext.define('BQ.viewer.Volume.lightpanel', {
-  extend : 'Ext.container.Container',
-  alias : 'widget.lighting',
-  mixins : ['BQ.viewer.Volume.uniformUpdate'],
-
-  changed : function () {
-    console.log("scene: ", this.sceneVolume);
-    this.sceneVolume.loadMaterial(this.materials[this.state]);
-  },
-
-  initMaterials : function () {
-    this.materials = ['diffuse', 'volumeLighting',
-      'phongLighting', 'phongAndVolumeLighting'];
-
-    this.sceneVolume.initMaterial({
-      name : 'volumeLighting',
-      vertConfig : {
-        url : "/js/volume/shaders/rayCast.vs"
-      },
-      fragConfig : {
-        id : 'volumeLighting',
-        url : "/js/volume/shaders/rayCastBlocks.fs",
-        manipulate : function (text) {
-          return text.replace("LIGHTING 0", "LIGHTING 1");
-        }
-      }
-    });
-
-    this.sceneVolume.initMaterial({
-      name : 'phongLighting',
-      vertConfig : {
-        url : "/js/volume/shaders/rayCast.vs"
-      },
-      fragConfig : {
-        id : 'phongLighting',
-        url : "/js/volume/shaders/rayCastBlocks.fs",
-        manipulate : function (text) {
-          return text.replace("PHONG 0", "PHONG 1");
-        }
-      }
-    });
-
-    this.sceneVolume.initMaterial({
-      name : 'phongAndVolumeLighting',
-      vertConfig : {
-        url : "/js/volume/shaders/rayCast.vs"
-      },
-      fragConfig : {
-        id : 'phongAndVolumeLighting',
-        url : "/js/volume/shaders/rayCastBlocks.fs",
-        manipulate : function (text) {
-          var phong = text.replace("PHONG 0", "PHONG 1");
-          return phong.replace("LIGHTING 0", "LIGHTING 1");
-        }
-      }
-    });
-  },
-
-  addUniforms : function () {
-    this.sceneVolume.initUniform('LIGHT_SAMPLES', "i", 4);
-    this.sceneVolume.initUniform('LIGHT_DEPTH', "f", 0.1);
-    this.sceneVolume.initUniform('LIGHT_SIG', "f", 0.5);
-    this.sceneVolume.initUniform('DISPERSION', "f", 0.5);
-    this.sceneVolume.initUniform('DISP_SIG', "f", 0.5);
-    this.sceneVolume.initUniform('KA', "f", 0.5);
-    this.sceneVolume.initUniform('KD', "f", 0.5);
-    this.sceneVolume.initUniform('NORMAL_INTENSITY', "f", 0.0);
-    this.sceneVolume.initUniform('SPEC_SIZE', "f", 0.0);
-    this.sceneVolume.initUniform('SPEC_INTENSITY', "f", 0.0);
-  },
-
-  initComponent : function () {
-    this.state = 0;
-    this.title = 'lighting';
-    var me = this;
-    this.addUniforms();
-    this.initMaterials();
-
-    this.lighting = Ext.create('Ext.form.field.Checkbox', {
-        boxLabel : 'Advanced Rendering',
-        checked : false,
-        handler : function () {
-          this.state ^= 1;
-          this.changed();
-          if ((this.state & 1) === 1) {
-            this.depthSlider.show();
-            this.sampleField.show();
-            this.dispSlider.show();
-
-          } else {
-            this.depthSlider.hide();
-            this.sampleField.hide();
-            this.dispSlider.hide();
-
-          }
-          this.panel3D.rerender();
-        },
-        scope : me,
-      });
-
-    this.specular = Ext.create('Ext.form.field.Checkbox', {
-        boxLabel : 'Phong Rendering',
-        checked : false,
-        handler : function () {
-          this.state ^= 2;
-          this.changed();
-          if ((this.state & 2) === 2) {
-            this.kaSlider.show();
-            this.kdSlider.show();
-            //this.normInSlider.show();
-            this.specSizeSlider.show();
-            this.specInSlider.show();
-          } else {
-            console.log(this.state & 2, "hide");
-            this.kaSlider.hide();
-            this.kdSlider.hide();
-
-            //this.normInSlider.hide();
-            this.specSizeSlider.hide();
-            this.specInSlider.hide();
-          }
-          this.panel3D.rerender();
-        },
-        scope : me,
-      });
-
-    this.depthSlider = Ext.create('Ext.slider.Single', {
-        renderTo : Ext.get('slider-ph'),
-        hideLabel : false,
-        fieldLabel : 'depth',
-        labelWidth : 60,
-        minValue : 0.00,
-        maxValue : 100,
-        value : 75,
-        uniform_var : 'LIGHT_DEPTH',
-        listeners : {
-          change : this.updateSlider,
-          scope : me,
-        },
-        convert : function (v) {
-          return v / 50;
-        }
-      }).hide();
-
-    this.dispSlider = Ext.create('Ext.slider.Single', {
-        renderTo : Ext.get('slider-ph'),
-        hideLabel : false,
-        fieldLabel : 'R_dispersion',
-        labelWidth : 60,
-        minValue : 0.00,
-        maxValue : 100,
-        value : 75,
-        uniform_var : 'DISPERSION',
-        listeners : {
-          change : this.updateSlider,
-          scope : me,
-        },
-        convert : function (v) {
-          return v / 50;
-        }
-      }).hide();
-    /*
-    this.dispAmtSlider = Ext.create('Ext.slider.Single', {
-    renderTo: Ext.get('slider-ph'),
-    hideLabel: false,
-    fieldLabel: 'K_dispersion',
-    labelWidth: 60,
-    minValue: 10.0,
-    maxValue: 110.0,
-    value: 75,
-    uniform_var: 'DISP_SIG',
-    listeners: {
-    change: this.updateSlider,
-    scope: me,
-    },
-    convert: function(v) { return v/150.0;}
-    }).hide();
-     */
-
-    this.kaSlider = Ext.create('Ext.slider.Single', {
-        renderTo : Ext.get('slider-ph'),
-        hideLabel : false,
-        fieldLabel : 'Ambient',
-        labelWidth : 60,
-        minValue : 0.00,
-        maxValue : 100,
-        value : 75,
-        uniform_var : 'KA',
-        listeners : {
-          change : this.updateSlider,
-          scope : me,
-        },
-        convert : function (v) {
-          return v / 100;
-        }
-      }).hide();
-
-    this.kdSlider = Ext.create('Ext.slider.Single', {
-        renderTo : Ext.get('slider-ph'),
-        hideLabel : false,
-        fieldLabel : 'diffuse',
-        labelWidth : 60,
-        minValue : 0.00,
-        maxValue : 100,
-        value : 75,
-        uniform_var : 'KD',
-        listeners : {
-          change : this.updateSlider,
-          scope : me,
-        },
-        convert : function (v) {
-          return v / 100;
-        }
-      }).hide();
-
-    this.normInSlider = Ext.create('Ext.slider.Single', {
-        renderTo : Ext.get('slider-ph'),
-        hideLabel : false,
-        fieldLabel : 'edges',
-        labelWidth : 60,
-        minValue : 0.00,
-        maxValue : 100,
-        value : 75,
-        uniform_var : 'NORMAL_INTENSITY',
-        listeners : {
-          change : this.updateSlider,
-          scope : me,
-        },
-        convert : function (v) {
-          return v / 5.0;
-        }
-      }).hide();
-
-    this.specSizeSlider = Ext.create('Ext.slider.Single', {
-        renderTo : Ext.get('slider-ph'),
-        hideLabel : false,
-        fieldLabel : 'size',
-        labelWidth : 60,
-        minValue : 2.00,
-        maxValue : 50,
-        value : 10.0,
-        uniform_var : 'SPEC_SIZE',
-        listeners : {
-          change : this.updateSlider,
-          scope : me,
-        },
-        convert : function (v) {
-          return v;
-        }
-      }).hide();
-
-    this.specInSlider = Ext.create('Ext.slider.Single', {
-        renderTo : Ext.get('slider-ph'),
-        hideLabel : false,
-        fieldLabel : 'intensity',
-        labelWidth : 60,
-        minValue : 0.00,
-        maxValue : 20,
-        value : 0.0,
-        uniform_var : 'SPEC_INTENSITY',
-        listeners : {
-          change : this.updateSlider,
-          scope : me,
-        },
-        convert : function (v) {
-          return v / 1.0;
-        }
-      }).hide();
-
-    this.sampleField = Ext.create('Ext.form.field.Number', {
-        name : 'numberfield2',
-        fieldLabel : 'samples',
-        value : 4,
-        minValue : 0,
-        maxValue : 16,
-        width : 150,
-        listeners : {
-          change : function (field, newValue, oldValue) {
-            this.sceneVolume.setUniform('LIGHT_SAMPLES', newValue, true, true);
-          },
-          scope : me
-        },
-      }).hide();
-
-    //modal: true,
-    //this.changed();
-    this.items = [this.lighting,
-      this.sampleField, this.depthSlider,
-      this.dispSlider, // this.dispAmtSlider,
-      this.specular, this.kaSlider, this.kdSlider, this.specInSlider, this.specSizeSlider];
-    this.changed();
-    this.callParent();
-  },
-  afterFirstLayout : function () {
-    this.lighting,
-    this.sampleField,
-    this.depthSlider.setValue(50);
-    this.dispSlider.setValue(10);
-
-    this.kaSlider.setValue(85);
-    this.kdSlider.setValue(50);
-    this.specInSlider.setValue(0);
-    this.specSizeSlider.setValue(0);
-  }
-});
-
-Ext.define('BQ.viewer.Volume.lightControl', {
-  extend : 'Ext.container.Container',
-  alias : 'widget.lightControl',
-
-  changed : function () {
-    if (this.isLoaded) {
-      this.sceneVolume.setUniform('LIGHT_POSITION', this.lightObject.position, true, true);
-    }
-  },
-
-  addUniforms : function () {
-    this.sceneVolume.initUniform('LIGHT_POSITION', "v3", this.lightObject.position);
-  },
-
-  initComponent : function () {
-    this.title = 'light control';
-    var me = this;
-    this.dist = 1.0;
-    this.state = false;
-    this.lighting = Ext.create('Ext.form.field.Checkbox', {
-        boxLabel : 'Modify Light Location',
-        checked : false,
-        handler : function () {
-          this.state ^= 1;
-          this.changed();
-          if ((this.state & 1) === 1) {
-            this.lightObject.visible = true;
-          } else {
-            this.lightObject.visible = false;
-          }
-          this.panel3D.rerender();
-        },
-        scope : me,
-      });
-
-    this.distanceSlider = Ext.create('Ext.slider.Single', {
-        renderTo : Ext.get('slider-ph'),
-        hideLabel : false,
-        fieldLabel : 'distance',
-        labelWidth : 60,
-        minValue : 0.00,
-        maxValue : 100,
-        value : 75,
-        listeners : {
-          change : function (slider, value) {
-            this.dist = value / 25;
-            this.changed();
-          },
-          scope : me,
-        }
-      }).show();
-
-    var me = this;
-    var sphere = new THREE.SphereGeometry(0.05, 3, 3);
-    this.lightObject = new THREE.Mesh(sphere,
-        new THREE.MeshBasicMaterial({
-          color : 0xFFFF33,
-          wireframe : true,
-        }));
-    this.sceneVolume.scene.add(this.lightObject);
-
-    this.plane = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000, 8, 8),
-        new THREE.MeshBasicMaterial({
-          color : 0x000000,
-          opacity : 0.25,
-          transparent : true,
-          wireframe : true
-        }));
-    this.plane.visible = false;
-    this.lightObject.visible = false;
-
-    this.sceneVolume.scene.add(this.plane);
-    this.lightObject.position.x = 0.0;
-    this.lightObject.position.y = 0.0;
-    this.lightObject.position.z = 1.0;
-    this.sceneVolume.scene.add(this.lightObject);
-    this.canvas3D.getEl().dom.addEventListener('mousemove', me.onMouseMove.bind(this), true);
-    this.canvas3D.getEl().dom.addEventListener('mouseup', me.onMouseUp.bind(this), true);
-    this.canvas3D.getEl().dom.addEventListener('mousedown', me.onMouseDown.bind(this), true);
-    this.offset = new THREE.Vector3(),
-
-    this.addUniforms();
-    this.isLoaded = true;
-    this.changed();
-    this.items = [this.lighting];
-    this.callParent();
-  },
-
-  onAnimate : function () {},
-
-  onMouseUp : function () {
-    this.selectLight = false;
-  },
-
-  onMouseDown : function () {
-    if (this.state === 0)
-      return;
-    var width = this.canvas3D.getWidth();
-    var height = this.canvas3D.getHeight();
-    var cx = this.canvas3D.getX();
-    var cy = this.canvas3D.getY();
-    var x = ((event.clientX - cx) / width) * 2 - 1;
-    var y =  - ((event.clientY - cy) / height) * 2 + 1;
-
-    var vector = new THREE.Vector3(x, y, 0.5);
-    var camera = this.canvas3D.camera;
-    this.canvas3D.projector.unprojectVector(vector, camera);
-
-    var raycaster
-       = new THREE.Raycaster(camera.position,
-        vector.sub(camera.position).normalize());
-    var objects = [this.lightObject];
-    var intersects = raycaster.intersectObjects(objects);
-    if (intersects.length > 0) {
-      this.canvas3D.controls.enabled = false;
-      this.selectLight = true;
-      this.canvas3D.getEl().dom.style.cursor = 'move';
-    } else {
-      this.canvas3D.getEl().dom.style.cursor = 'auto';
-    }
-  },
-
-  onMouseMove : function (event) {
-    event.preventDefault();
-    if (this.state === 0)
-      return;
-    var width = this.canvas3D.getWidth();
-    var height = this.canvas3D.getHeight();
-    var cx = this.canvas3D.getX();
-    var cy = this.canvas3D.getY();
-    var x = ((event.clientX - cx) / width) * 2 - 1;
-    var y =  - ((event.clientY - cy) / height) * 2 + 1;
-
-    var vector = new THREE.Vector3(x, y, 0.5);
-
-    var camera = this.canvas3D.camera;
-    this.canvas3D.projector.unprojectVector(vector, camera);
-
-    var raycaster
-       = new THREE.Raycaster(camera.position,
-        vector.sub(camera.position).normalize());
-
-    var objects = [this.lightObject];
-    var intersects = raycaster.intersectObjects(objects);
-
-    if (this.selectLight) {
-      var intersects = raycaster.intersectObject(this.plane);
-      this.lightObject.position.copy(intersects[0].point.sub(this.offset));
-      return;
-    }
-    if (intersects.length > 0) {
-      this.canvas3D.getEl().dom.style.cursor = 'move';
-      this.plane.position.copy(intersects[0].object.position);
-      this.plane.lookAt(camera.position);
-    } else {
-      this.canvas3D.getEl().dom.style.cursor = 'auto';
-    }
-
-  },
-
-  afterFirstLayout : function () {
-    this.callParent();
-  },
-});
-
-Ext.define('BQ.viewer.Volume.general', {
-  extend : 'Ext.container.Container',
-  alias : 'widget.general',
-
-  addUniforms : function () {
-    this.sceneVolume.initUniform('DITHERING', "i", this.dithering);
-    this.sceneVolume.initUniform('BOX_SIZE', "v3", this.boxSize);
-  },
-
-  initComponent : function () {
-    this.title = 'general';
-    var me = this;
-    this.dithering = false;
-    this.showBox = false;
-    this.boxSize = new THREE.Vector3(0.5, 0.5, 0.5);
-    var controlBtnSize = 22;
-
-    var dith = Ext.create('Ext.form.field.Checkbox', {
-        boxLabel : 'dithering',
-        height : controlBtnSize,
-        checked : false,
-        handler : function () {
-          this.dithering ^= 1;
-          this.sceneVolume.setUniform('DITHERING', this.dithering, true, true);
-        },
-        scope : me,
-      });
-
-    var showBoxBtn = Ext.create('Ext.form.field.Checkbox', {
-        boxLabel : 'proportions',
-        height : controlBtnSize,
-        checked : false,
-        handler : function () {
-          this.showBox ^= 1;
-          if (this.showBox) {
-            this.boxX.show();
-            this.boxY.show();
-            this.boxZ.show();
-          } else {
-            this.boxX.hide();
-            this.boxY.hide();
-            this.boxZ.hide();
-          }
-        },
-        scope : me,
-      });
-
-    this.boxX = Ext.create('Ext.form.field.Number', {
-        name : 'box_x',
-        fieldLabel : 'x',
-        value : 1,
-        minValue : 0.1,
-        maxValue : 1,
-        step : 0.05,
-        width : 150,
-        listeners : {
-          change : function (field, newValue, oldValue) {
-            if (typeof newValue != 'number')
-              return;
-            newValue = newValue < 0.1 ? 0.1 : newValue;
-            this.boxSize.x = 0.5 * newValue;
-            this.panel3D.scaleCube(this.boxSize);
-          },
-          scope : me
-        },
-      });
-
-    this.boxY = Ext.create('Ext.form.field.Number', {
-        name : 'box_y',
-        fieldLabel : 'y',
-        value : 1,
-        minValue : 0.1,
-        maxValue : 1,
-        step : 0.05,
-        width : 150,
-        listeners : {
-          change : function (field, newValue, oldValue) {
-            if (typeof newValue != 'number')
-              return;
-            newValue = newValue < 0.1 ? 0.1 : newValue;
-            this.boxSize.y = 0.5 * newValue;
-            this.panel3D.scaleCube(this.boxSize);
-          },
-          scope : me
-        },
-      });
-
-    this.boxZ = Ext.create('Ext.form.field.Number', {
-        name : 'box_z',
-        fieldLabel : 'z',
-        value : 1,
-        minValue : 0.1,
-        maxValue : 1,
-        step : 0.05,
-        width : 150,
-        listeners : {
-          change : function (field, newValue, oldValue) {
-            if (typeof newValue != 'number')
-              return;
-            newValue = newValue < 0.1 ? 0.1 : newValue;
-            this.boxSize.z = 0.5 * newValue;
-            this.panel3D.scaleCube(this.boxSize);
-          },
-          scope : me
-        },
-      });
-
-    this.addUniforms();
-
-    this.boxX.hide();
-    this.boxY.hide();
-    this.boxZ.hide();
-
-    this.boxSize.x = 0.5;
-    if (this.dims) {
-      this.boxSize.y = 0.5 * this.dims.pixel.x / this.dims.pixel.y;
-      this.boxSize.z = 0.5 * this.dims.pixel.x / this.dims.pixel.z;
-    } else {
-      this.boxSize.y = 0.5;
-      this.boxSize.z = 0.5;
-    }
-
-    this.boxX.setValue(2.0 * this.boxSize.x);
-    this.boxY.setValue(2.0 * this.boxSize.y);
-    this.boxZ.setValue(2.0 * this.boxSize.z);
-
-    this.isLoaded = true;
-    this.items = [dith, showBoxBtn, this.boxX, this.boxY, this.boxZ];
-    this.callParent();
-  },
-
-  afterFirstLayout : function () {},
-});
-
-Ext.define('BQ.viewer.Volume.clip', {
-  extend : 'Ext.container.Container',
-  alias : 'widget.clip',
-  border : false,
-  addUniforms : function () {
-    this.sceneVolume.initUniform('CLIP_NEAR', "f", 0.0);
-    this.sceneVolume.initUniform('CLIP_FAR', "f", 3.0);
-  },
-
-  initComponent : function () {
-    this.title = 'clipping';
-    var me = this;
-    this.clipNear = 0.0;
-    this.clipFar = 3.0;
-    //console.log("slider func: ", this.mixins, this.updateSlider);
-    this.clipSlider = Ext.create('Ext.slider.Multi', {
-        renderTo : Ext.get('slider-ph'),
-        hideLabel : false,
-        fieldLabel : 'clip',
-        labelWidth : 60,
-        minValue : 0.00,
-        maxValue : 100,
-        values : [0, 100],
-        uniform_var : 'CLIP_NEAR',
-        listeners : {
-          change : function (slider, value, thumb) {
-              console.log(value/100);
-              if (thumb.index == 0) {
-                  this.sceneVolume.setUniform('CLIP_NEAR', value / 100, true, true);
-              } else {
-                  this.sceneVolume.setUniform('CLIP_FAR', value / 100, true, true);
-              }
-
-          },
-          scope : me,
-        },
-      });
-
-    this.addUniforms();
-    this.isLoaded = true;
-
-    this.items = [this.clipSlider];
-    this.callParent();
-  },
-
-  afterFirstLayout : function () {},
-});
-
-
-

@@ -134,10 +134,12 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
     },
 
     initComponent : function() {
-        this.addListener('resize', this.onresize, this);
+        this.on('resize', this.onresize);
 	    this.zooming     = false;
         this.selectLight = false;
 	    this.animate_funcs = new Array();
+        this.mousedown = false;
+        this.needs_render = true;
         this.callParent();
 
     },
@@ -154,10 +156,6 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
         var me = this;
         var thisDom = this.getEl().dom;
 
-        thisDom.addEventListener('mousemove',  me.onMouseMove.bind(this), true);
-        thisDom.addEventListener('mousewheel', me.onMouseWheel.bind(this),false);
-        thisDom.addEventListener('DOMMouseScroll',me.onMouseWheel, false);
-
         this.renderer = new THREE.WebGLRenderer({
             canvas: thisDom,
             preserveDrawingBuffer : true,
@@ -165,26 +163,25 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
             sortObjects: true,
         });
         this.renderer.setClearColor(0xC0C0C0, 1);
-
         var aspect = this.getWidth() / this.getHeight();
-
         this.camera = new THREE.PerspectiveCamera(40, aspect, .01, 20);
-        this.camera.position.z = 5.0;
-        this.controls = new THREE.OrbitControls(this.camera, thisDom);
+
+        this.controls = new THREE.TrackballControls(this.camera, thisDom);
+        this.controls.noRoll = true;
         this.projector = new THREE.Projector();
 
-        this.getEl().on({
-            scope : this,
-            mousedown : this.onMouseDown,
-        });
+        this.camera.position.z = 5.0;
         this.getEl().on({
             scope : this,
             mouseup : this.onMouseUp,
+            mousedown : this.onMouseDown,
+            mousewheel: this.onMouseWheel,
+            DOMMouseScrool: this.onMouseWheel,
         });
 
-        ////////////////////
-        this.mousedown = false;
-        this.needs_render = true;
+
+        this.anaglyph = new THREE.AnaglyphEffect( this.renderer );
+		this.anaglyph.setSize( this.getWidth(), this.getHeight() );
 
         this.fireEvent('loaded', this);
         this.callParent();
@@ -193,10 +190,12 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
 
     getPixelWidth : function(){
         return this.renderer.context.canvas.width;
+        //return this.getWidth();
     },
 
     getPixelHeight : function(){
         return this.renderer.context.canvas.height;
+        //return this.getHeight();
     },
 
     onMouseWheel : function(event) {
@@ -235,12 +234,15 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
     onMouseMove : function(event){
     },
 
-    onresize : function() {
-
-        var aspect = this.getWidth() / this.getHeight();
+    onresize : function(comp, w, h, ow, oh, eOpts) {
+        //console.log(args);
+        var aspect = w / h;
         this.camera.aspect = aspect;
         this.camera.updateProjectionMatrix();
-        this.renderer.setSize(this.getWidth(), this.getHeight());
+
+        this.renderer.setSize(w, h);
+        this.anaglyph.setSize(w, h);
+        this.mousedown = false;
     },
 
     rerender : function() {
@@ -259,38 +261,14 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
                 this.animate_funcs[i]();
             }
             this.renderer.render(this.scene, this.camera);
-
+            //this.anaglyph.render(this.scene, this.camera);
         }
-
 
         this.controls.update();
         requestAnimationFrame(function() {
             me.doAnimate()
         });
     },
-
-
-    //function onMouseDown( event_info ) {
-    /*
-      render : function(){
-      this.mesh.rotation.x += 0.01;
-      this.mesh.rotation.y += 0.02;
-      console.log(this.mesh.rotation);
-      console.log(this.renderer);
-      this.renderer.render(this.rgbScene, this.camera);
-      },
-
-      afterComponentLayout : function(w, h){
-      this.redraw();
-      this.callParent(arguments);
-      },
-
-      redraw: function(){
-      var renderer = this.renderer;
-      if (renderer) {
-      this.render();
-      }
-      }*/
 
 });
 
