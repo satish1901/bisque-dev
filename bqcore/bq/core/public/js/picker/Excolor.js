@@ -274,8 +274,16 @@ Ext.define('BQ.viewer.Volume.fieldSlider', {
 
     //this.generateHsv();
 
+
+      this.rect = document.createElementNS(this.svgUrl, "rect");
+      this.rect.setAttributeNS(null, 'class', 'color_chooser');
+    this.rect.setAttributeNS(null, 'width', '100%');
+    this.rect.setAttributeNS(null, 'height', '100%');
+    this.rect.setAttributeNS(null, 'opacity', '0.0');
+    this.svgdoc.appendChild(this.rect);
+
     this.dot = document.createElementNS(this.svgUrl, "circle");
-    this.dot.setAttributeNS(null, 'class', 'color_chooser');
+      this.dot.setAttributeNS(null, 'class', 'color_chooser');
     this.dot.setAttributeNS(null, 'cx', '40');
     this.dot.setAttributeNS(null, 'cy', '20');
     this.dot.setAttributeNS(null, 'r', '5');
@@ -283,6 +291,7 @@ Ext.define('BQ.viewer.Volume.fieldSlider', {
     this.dot.setAttributeNS(null, 'stroke', 'black');
     this.dot.setAttributeNS(null, 'stroke-width', '2');
     this.svgdoc.appendChild(this.dot);
+
 
     var me = this;
     var cursorPoint = function (evt) {
@@ -301,7 +310,7 @@ Ext.define('BQ.viewer.Volume.fieldSlider', {
     var onMove;
     var pt = this.svgdoc.createSVGPoint();
 
-    this.svgField.addEventListener('mousedown', function (e) {
+    this.rect.addEventListener('mousedown', function (e) {
       var el = me.dot;
       var x = 'cx';
       var y = 'cy';
@@ -313,6 +322,12 @@ Ext.define('BQ.viewer.Volume.fieldSlider', {
       var current = offsetPoint(e);
       pt.x = current.x;
       pt.y = current.y;
+
+        var phi = me.getPolar(current.x, current.y);
+        var r = me.wheelRadius;
+
+        if (phi[1] >= r * r)
+            return;
       var m = el.getTransformToElement(me.svgdoc).inverse();
       m.e = m.f = 0;
       pt = pt.matrixTransform(m);
