@@ -109,7 +109,7 @@ histogramD3.prototype.redraw = function(){
                 .attr("x", function(d,i) {return me.xl(i);})
                 .attr("y", function(d,i) {return me.getHeight()-buffer - me.yl(logd(d));})
                 .attr("width", function(d,i) { return w/l; })
-                .attr("height", function(d,i) { return console.log(d, me.yl(logd(d))); me.yl(logd(d)); })
+                .attr("height", function(d,i) { return me.yl(logd(d)); })
                 .attr("fill",   this.getColor(chan, 0.5));
             //remove
             group.exit().remove();
@@ -252,7 +252,6 @@ Ext.define('BQ.volume.transfer.graph', {
             window
                 .attr("width", 0)
                 .attr("height", 0);
-            console.log(me.data);
             me.selected = [];
             me.data.forEach(function(d, i, a){
                 var x = me.xScale(d.offset);
@@ -546,7 +545,7 @@ Ext.define('BQ.volume.transfer.graph', {
             .attr("cy", function(d) { return me.yScale(d.alpha); })
             .attr("r", 3)
             .attr("fill", function(d){
-                console.log(d.id);
+
                 if(d.id == me.clicked) return "rgb(255,255,255)";
                 else  return "rgb(128,128,128)";
             } );
@@ -615,7 +614,7 @@ Ext.define('BQ.volume.transfer.graph', {
         var d1 = this.data[stop1];
 
         var t = (offset - d0.offset)/(d1.offset - d0.offset);
-        console.log(i, offset, alpha);
+
         var dp = {
             id: stop0 + 1,
             offset: offset,
@@ -788,7 +787,6 @@ Ext.define('BQ.viewer.volume.transfer.editor', {
                             me.transferGraph.removeStop(interval.i);
                         }
                         if(dt1 < 25 && interval.i  < l - 2){
-                            console.log(interval.i,l);
                             me.transferGraph.removeStop(interval.i+1);
                         }
                         me.fireEvent('change', me);
@@ -855,10 +853,10 @@ Ext.define('BQ.viewer.volume.transfer.editor', {
         }).hide();
 
         var menu = Ext.create('Ext.menu.Menu', {
-        id: 'mainMenu',
-        style: {
-            overflow: 'visible'     // For the Combo popup
-        },});
+            //id: 'mainMenu',
+            style: {
+                overflow: 'visible'     // For the Combo popup
+            },});
 
         Ext.apply(this, {
             tbar : [{
@@ -867,11 +865,11 @@ Ext.define('BQ.viewer.volume.transfer.editor', {
 				width : 'auto',
 				enableToggle : true,
 				cls : 'toolItem',
-                id: 'transButton0',
+                itemId: 'transButton0',
 				handler : function(){
                     var
-                    b1 = Ext.getCmp('transButton1'),
-                    b2 = Ext.getCmp('transButton2');
+                    b1 = this.queryById('transButton1'),
+                    b2 = this.queryById('transButton2');
                     if(b1.pressed) b1.toggle();
                     if(b2.pressed) b2.toggle();
                     this.mode = 0;
@@ -883,11 +881,11 @@ Ext.define('BQ.viewer.volume.transfer.editor', {
 				width :'auto',
 				enableToggle : true,
 				cls : 'toolItem',
-                id: 'transButton1',
+                itemId: 'transButton1',
 				handler : function(){
                     var
-                    b0 = Ext.getCmp('transButton0'),
-                    b2 = Ext.getCmp('transButton2');
+                    b0 = this.queryById('transButton0'),
+                    b2 = this.queryById('transButton2');
                     if(b0.pressed) b0.toggle();
                     if(b2.pressed) b2.toggle();
                     this.mode = 1;
@@ -899,11 +897,11 @@ Ext.define('BQ.viewer.volume.transfer.editor', {
 				width : 'auto',
                 enableToggle : true,
                 cls : 'toolItem',
-                id: 'transButton2',
+                itemId: 'transButton2',
 				handler : function(){
                     var
-                    b1 = Ext.getCmp('transButton1'),
-                    b0 = Ext.getCmp('transButton0');
+                    b1 = this.queryById('transButton1'),
+                    b0 = this.queryById('transButton0');
                     if(b1.pressed) b1.toggle();
                     if(b0.pressed) b0.toggle();
                     this.mode = 2;
@@ -951,133 +949,85 @@ Ext.define('BQ.viewer.volume.transfer.editor', {
 });
 
 
-Ext.define('BQ.viewer.Volume.transfer', {
-    extend : 'Ext.container.Container',
-    alias : 'widget.bq_volume_transfer',
+function transferTool(volume, cls) {
+	//renderingTool.call(this, volume);
+	this.cls = 'transferButton';
+    this.base = renderingTool;
+    this.base(volume, this.cls);
+};
 
-    mixins : ['BQ.viewer.Volume.uniformUpdate'],
-    addUniforms : function () {
-        this.tSize = 127;
-        this.sceneVolume.initUniform('transfer', "t", null);
-        this.sceneVolume.initUniform('TRANSFER_SIZE', "i", this.tSize);
-        this.sceneVolume.initUniform('USE_TRANSFER', "i", this.transfer);
-    },
+transferTool.prototype = new renderingTool();
 
-    changed : function () {
-        if (!this.transferEditor)
-            return;
-        var pixels = new Uint8Array(4*(this.tSize+1));
-        var cStop = 0;
-        var ci = 0;
-        var data = this.transferEditor.data;
-        var l = data.length;
-        var stop0 = data[0];
-        var stop1 = data[l-1];
+transferTool.prototype.addUniforms = function(){
 
-        if (stop0.offset != 0)
-            return;
-        if (stop1.offset != 100)
-            return;
+    this.uniforms['transfer']    = {name: 'transfer',
+                                    type: 't',
+                                    val: null};
+};
 
-        for (var i = 0; i < this.tSize + 1; i++) {
-            var stop = data[cStop];
-            var nstop = data[cStop+1];
+transferTool.prototype.initControls = function(){
+    var me = this;
+    this.showButton = Ext.create('Ext.Button', {
+        text : 'edit transfer function',
+        handler : function (button, pressed) {
 
-            var per = ci / this.tSize * 100;
+            if (!this.transferWindow)
+                me.displayTransferWindow();
+            else
+                this.transferWindow.show();
+        },
+        scope : me,
+    });
 
-            if (per > nstop.offset - stop.offset) {
-                ci = 0;
-                cStop++;
-                stop = data[cStop];
-                nstop = data[cStop + 1];
+
+    this.transferEditor = Ext.create('BQ.viewer.volume.transfer.editor',{
+        histogram: this.volume.model.histogram,
+        gamma:     this.volume.model.gamma,
+        listeners: {
+            change: function(){
+                me.changed();
             }
-
-            var t = ci / this.tSize * 100 / (nstop.offset - stop.offset);
-            //console.log(t, cStop, per, stop, nstop);
-            var c0 = stop.color;
-            var c1 = nstop.color;
-            c0[3] = stop.alpha;
-            c1[3] = nstop.alpha;
-            //console.log(i,ci, per,t,nstop.offset,stop.offset);
-            pixels[4 * i + 0] = (1 - t) * c0[0] + t * c1[0];
-            pixels[4 * i + 1] = (1 - t) * c0[1] + t * c1[1];
-            pixels[4 * i + 2] =        (1 - t) * c0[2] + t * c1[2];
-            pixels[4 * i + 3] = 255 * ((1 - t) * c0[3] + t * c1[3]);
-            ci++;
         }
-        //console.log(pixels);
-        var rampTex = this.panel3D.rampTex;
-        rampTex = new THREE.DataTexture(pixels, this.tSize, 1, THREE.RGBAFormat);
-        //console.log(rampTex);
-        rampTex.needsUpdate = true;
-        this.sceneVolume.setUniform('transfer', rampTex);
-        this.sceneVolume.setUniform('TRANSFER_SIZE', this.tSize);
+    });
 
-    },
+    this.volume.on('histogramupdate', function(){
+        if(me.transferEditor.transferGraph.histogramSvg)
+            me.transferEditor.transferGraph.histogramSvg.redraw();
+    });
 
-    initComponent : function () {
-        var me = this;
-        this.transfer = 0;
-        this.title = 'transfer';
-        var controlBtnSize = 22;
+    this.controls.add(this.showButton);
 
-        var useTransfer = Ext.create('Ext.form.field.Checkbox', {
-            boxLabel : 'use transfer function',
-            height : controlBtnSize,
-            checked : false,
-            handler : function () {
-                this.transfer ^= 1;
-                this.changed();
-                this.sceneVolume.setUniform('USE_TRANSFER', this.transfer);
-                if (this.transfer == 1) {
-                    this.showButton.show();
-                } else
-                    this.showButton.hide();
+    //this.volume.on('loaded', function () {});
+};
 
-            },
-            scope : me,
-        });
+transferTool.prototype.toggle = function(button){
+        this.transfer ^= 1;
+        this.changed();
+        //this..sceneVolume.setUniform('USE_TRANSFER', this.transfer);
 
-        this.addUniforms();
-        this.isLoaded = true;
+        if (button.pressed) {
+            this.volume.shaderConfig.transfer = true;
+            this.volume.sceneVolume.setConfigurable("default",
+                                             "fragment",
+                                             this.volume.shaderConfig);
 
-        this.showButton = Ext.create('Ext.Button', {
-            text : 'edit transfer function',
-            handler : function (button, pressed) {
-                console.log("twindow: ", this.transferWindow);
+            this.volume.setModel('transfer', true);
+            this.showButton.show();
+        } else{
+            this.volume.shaderConfig.transfer = false;
+            this.volume.sceneVolume.setConfigurable("default",
+                                             "fragment",
+                                             this.volume.shaderConfig);
 
-                if (!this.transferWindow)
-                    me.displayTransferWindow();
-                else
-                    this.transferWindow.show();
-            },
-            scope : me,
-        });
+            this.volume.setModel('false', true);
+            this.showButton.hide();
+        }
 
-        this.transferEditor = Ext.create('BQ.viewer.volume.transfer.editor',{
-            histogram: this.panel3D.model.histogram,
-            gamma:     this.panel3D.model.gamma,
-            listeners: {
-                change: function(){
-                    me.changed();
-                }
-            }
-        });
-        this.panel3D.on('histogramupdate', function(){
-            console.log("update");
-            if(me.transferEditor.transferGraph.histogramSvg)
-                me.transferEditor.transferGraph.histogramSvg.redraw();
-        });
-        this.showButton.hide();
-        this.addUniforms();
-        Ext.apply(this, {
-            items : [useTransfer, this.showButton],
-        });
+    if(button.pressed) this.controls.show();
+    else this.controls.hide();
+};
 
-        this.callParent();
-    },
-
-    displayTransferWindow : function () {
+transferTool.prototype.displayTransferWindow = function () {
         if(!this.transferWindow){
             this.transferWindow = Ext.create('Ext.window.Window',{
                 border : 0,
@@ -1095,14 +1045,59 @@ Ext.define('BQ.viewer.Volume.transfer', {
                 hidden: false,
                 maximizable: true,
                 autoShow: true,
+                closeAction: 'hide',
                 items : [this.transferEditor]
             });
         }
         this.transferWindow.show();
-    },
+};
 
-    afterFirstLayout : function () {
-        //this.transferSlider.show();
-        this.changed();
-    },
-});
+
+transferTool.prototype.changed = function () {
+    if (!this.transferEditor)
+        return;
+    this.tSize = 127;
+    var pixels = new Uint8Array(4*(this.tSize+1));
+    var cStop = 0;
+    var ci = 0;
+    var data = this.transferEditor.data;
+    var l = data.length;
+    var stop0 = data[0];
+    var stop1 = data[l-1];
+
+    if (stop0.offset != 0)
+        return;
+    if (stop1.offset != 100)
+        return;
+
+    for (var i = 0; i < this.tSize + 1; i++) {
+        var stop = data[cStop];
+        var nstop = data[cStop+1];
+
+        var per = ci / this.tSize * 100;
+
+        if (per > nstop.offset - stop.offset) {
+            ci = 0;
+            cStop++;
+            stop = data[cStop];
+            nstop = data[cStop + 1];
+        }
+
+        var t = ci / this.tSize * 100 / (nstop.offset - stop.offset);
+        var c0 = stop.color;
+        var c1 = nstop.color;
+        c0[3] = stop.alpha;
+        c1[3] = nstop.alpha;
+        pixels[4 * i + 0] = (1 - t) * c0[0] + t * c1[0];
+        pixels[4 * i + 1] = (1 - t) * c0[1] + t * c1[1];
+        pixels[4 * i + 2] =        (1 - t) * c0[2] + t * c1[2];
+        pixels[4 * i + 3] = 255 * ((1 - t) * c0[3] + t * c1[3]);
+        ci++;
+    }
+    var rampTex = this.volume.rampTex;
+    rampTex = new THREE.DataTexture(pixels, this.tSize, 1, THREE.RGBAFormat);
+    rampTex.needsUpdate = true;
+    this.volume.sceneVolume.setUniform('transfer', rampTex);
+    //this.volume.sceneVolume.setUniform('TRANSFER_SIZE', this.tSize);
+
+};

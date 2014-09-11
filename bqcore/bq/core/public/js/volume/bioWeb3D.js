@@ -176,29 +176,33 @@ Ext.define('BQ.viewer.Volume.volumeScene', {
 		return cube.vertices[0];
 	},
 
+    setConfigurable : function(materialID, shaderType, config){
+        var shader = this.materials[materialID][shaderType];
+        shader.set(config);
+        var fragmentKey = shader.getID();
+		if (!this.shaders[fragmentKey]){
+		    this.shaders[fragmentKey] = shader.getSource();
+        };
+        var threeShader = this.materials[materialID].threeShader;
+		var type = shaderType + 'Shader';
+        threeShader[type] = this.shaders[fragmentKey];
+        threeShader.needsUpdate = true;
+        this.updateMaterials();
+        this.canvas3D.rerender();
+    },
+
 	constructMaterial : function (material) {
 
-		if (material.built === true)
-			return true;
+		//if (material.built === true)
+		//	return true;
 
-		var vertexKey = material.vertexId;
-		var fragmentKey = material.fragmentId;
-		if (!this.shaders[vertexKey])
-			return false;
-		if (!this.shaders[fragmentKey])
-			return false;
+		var vertexKey   = material.vertex.getID();
+		var fragmentKey = material.fragment.getID();
+        this.shaders[vertexKey]   = material.vertex.getSource();
+		this.shaders[fragmentKey] = material.fragment.getSource();
 
-		if (material.threeShader.vertexShader === "")
-			material.threeShader.vertexShader = this.shaders[vertexKey];
-		if (material.threeShader.fragmentShader === "")
-			material.threeShader.fragmentShader = this.shaders[fragmentKey];
-
-		if (material.threeShader.vertexShader != "" &&
-			material.threeShader.fragmentShader != "") {
-			material.built = true;
-			return true;
-		} else
-			return false;
+		material.threeShader.vertexShader = this.shaders[vertexKey];
+		material.threeShader.fragmentShader = this.shaders[fragmentKey];
 	},
 
 	updateMaterials : function () {
@@ -207,7 +211,7 @@ Ext.define('BQ.viewer.Volume.volumeScene', {
 			this.constructMaterial(this.materials[prop]);
 		}
 	},
-
+/*
 	fetchFragments : function (url, storeId, manip) {
 		var me = this;
 		var manipulate = manip;
@@ -258,19 +262,26 @@ Ext.define('BQ.viewer.Volume.volumeScene', {
 			}
 		}
 	},
+*/
+    initFragmentByConfig : function (config, id) {
+        //console.log(shaderConfig().rayCastShader(config));
+        this.shaders[id] = shaderConfig().rayCastShader(config);
+        this.updateMaterials();
+	},
 
 	initMaterial : function (config) {
+        var me = this;
 		var name = config.name;
-		var vertUrl = config.vertConfig.url;
-		var fragUrl = config.fragConfig.url;
+		var vertUrl = config.vertex.url;
+		var fragUrl = config.fragment.url;
 		var vertId = vertUrl;
 		var fragId = fragUrl;
 		var uniforms = config.uniforms ? config.uniforms : this.uniforms;
 
-		if (config.vertConfig.id)
-			vertId = config.vertConfig.id;
-		if (config.fragConfig.id)
-			fragId = config.fragConfig.id;
+		if (config.vertex.id)
+			vertId = config.vertex.id;
+		if (config.fragment.id)
+			fragId = config.fragment.id;
 
 		var threeMaterial = new THREE.ShaderMaterial({
 				uniforms : uniforms,
@@ -284,12 +295,41 @@ Ext.define('BQ.viewer.Volume.volumeScene', {
 			vertexId : vertId,
 			fragmentId : fragId,
 			built : false,
+            shader : {},
 			threeShader : threeMaterial,
 			buildFunc : this.defaultBuildFunc,
 		};
 		this.materials[name] = newMaterial;
-		this.initFragment(vertUrl, vertId, config.vertConfig.manipulate);
-		this.initFragment(fragUrl, fragId, config.fragConfig.manipulate);
+        /*
+		this.initFragment(vertUrl, vertId, config.vertex.manipulate);
+        */
+        //init the fragment shader,
+        var shaderTypes = ["fragment", "vertex"];
+        for(var i = 0; i < shaderTypes.length; i++){
+            var type = shaderTypes[i];
+
+            if(config[type].url){ //here we hard code getting shader by URL for convenience
+                var newConfig = {
+			        url : config[type].url,
+                    loader : me,
+                    onloaded: function(){
+                        me.updateMaterials();
+                    }
+                }
+                var newShader = new UrlShader(newConfig);
+                newMaterial[type] = newShader;
+                this.shaders[newShader.getID()] = newShader.getSource();
+
+            }
+            else if(config[type].config){
+                var ctor   = config[type].ctor;
+                var fconfig = config[type].config;
+                var newShader = new ctor(fconfig);
+                newMaterial[type] = newShader;
+                this.shaders[newShader.getID()] = newShader.getSource();
+            }
+        };
+
 	},
 
 	loadMaterial : function (name) {
@@ -364,14 +404,36 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		} else
 				fragUrl = "/js/volume/shaders/rayCastBlocks.fs";
 
+        this.shaderConfig = {
+            lighting: {
+                phong: false,
+                deep: false,
+            },
+            transfer: false,
+            pow: true,
+            highlight: false,
+            //gradientType: 'sobel',
+            gradientType: 'std',
+            maxSteps: 512,
+        };
 
 		this.sceneVolume.initMaterial({
-			name : 'diffuse',
-			vertConfig : {
-				url : "/js/volume/shaders/rayCast.vs"
+			name : 'default',
+			vertex : {
+                ctor : UrlShader,
+                config : {
+				    url : "/js/volume/shaders/rayCast.vs",
+                    loader: this.sceneVolume,
+                    onloaded: function(){
+                        me.sceneVolume.updateMaterials();
+                    }
+                }
 			},
-			fragConfig : {
-				url : fragUrl,
+
+			fragment : {
+                ctor: VolumeShader,
+				config: this.shaderConfig,
+                //url : fragUrl,
 			}
 		});
 
@@ -387,10 +449,24 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
 		this.items = [this.canvas3D, {
 				xtype : 'component',
+				itemId : 'button-fullscreen-vol',
+				autoEl : {
+					tag : 'span',
+					cls : 'control fullscreen',
+				},
+				listeners : {
+					scope : this,
+					click : {
+						element : 'el', //bind to the underlying el property on the panel
+						fn : this.onFullScreenClick,
+					},
+				},
+		}, {
+				xtype : 'component',
 				itemId : 'button-menu',
 				autoEl : {
 					tag : 'span',
-					cls : 'viewoptions',
+					cls : 'control viewoptions',
 				},
 				listeners : {
 					scope : this,
@@ -404,7 +480,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 				itemId : 'tool-menu',
 				autoEl : {
 					tag : 'span',
-					cls : 'tooloptions',
+					cls : 'control tooloptions',
 				},
 				listeners : {
 					scope : this,
@@ -413,173 +489,146 @@ Ext.define('BQ.viewer.Volume.Panel', {
 						fn : this.onToolMenuClick,
 					},
 				},
-			}
+			},
 		];
 
 		this.on({
+            afterlayout: function () {
+                if(this.firstLoad) return;
+                me.createViewMenu();
+
+
+                me.BQImageRequest();
+                me.initHistogram();
+                me.createToolPanel();
+				//me.createClipSlider();
+				me.createZoomSlider();
+
+				me.createAnimPanel();
+				me.createPlaybackPanel();
+			    me.createToolMenu();
+
+				//this.showAnimPanel();
+                this.playbackPanel.hide();
+                this.animPanel.hide();
+
+                this.firstLoad = true;
+				//this.setLoading(false);
+
+            },
+
 			loaded : function () {
 				console.log(this.constructAtlasUrl());
 				me.initUniforms();
 				me.wipeTextureTimeBuffer();
 				me.updateTextureUniform();
-
-				me.createToolPanel();
-				me.createClipSlider();
-				me.createZoomSlider();
-
-				me.createAnimPanel();
-				me.createPlaybackPanel();
-
-				me.createToolMenu();
-
-				this.playbackPanel.show();
-				this.animPanel.hide();
-
-				//this.setLoading(false);
-				me.canvas3D.doAnimate();
+                me.canvas3D.doAnimate();
 			},
 			scope : me,
 		});
 
+//        console.log(shaderConfig().rayCastShader);
+
 		this.callParent();
 	},
 
-	onresize : function () {
+    setModel : function (field, value){
+        this.shaderConfig[field] = value;
+        this.sceneVolume.updateShader
+    },
+
+	onresize : function (comp, w, h, ow, oh, eOpts) {
 		if (this.sceneVolume.uniforms['iResolution']) {
-			var w = this.canvas3D.getPixelWidth();
-			var h = this.canvas3D.getPixelHeight();
+			var pw = this.canvas3D.getPixelWidth();
+			var ph = this.canvas3D.getPixelHeight();
 			var newRes =
-				new THREE.Vector2(w, h);
+				new THREE.Vector2(pw, ph);
 			this.sceneVolume.setUniform('iResolution', newRes);
 
-			this.accumBuffer0
-				 = new THREE.WebGLRenderTarget(w, h, {
+			this.screenBuffer
+				 = new THREE.WebGLRenderTarget(pw, ph, {
 					minFilter : THREE.LinearFilter,
 					magFilter : THREE.NearestFilter,
 					format : THREE.RGBAFormat
 				});
+            /*
 			this.accumBuffer1
 				= new THREE.WebGLRenderTarget(w, h, {
 					minFilter : THREE.LinearFilter,
 					magFilter : THREE.NearestFilter,
 					format : THREE.RGBAFormat
 				});
-
+            */
 			var materialScreen = this.sceneVolume.getMaterial('screen');
 			materialScreen.depthWrite = false;
 			materialScreen.threeShader.uniforms.tDiffuse.value = this.accumulationBuffer;
 
-			var quad = this.sceneScreen.children[0];
-			//this.sceneScreen.remove(quad);
-			/*
-			var plane = new THREE.PlaneGeometry( this.getWidth(), this.getHeight() );
-			quad = new THREE.Mesh( plane, materialScreen.threeShader );
-			quad.position.z = -100;
-			this.sceneScreen.add(quad);
-			 */
+            //this is necessary to update the quad which renders the scene and captures
+            //the texture map to allow compositing
 
-			quad.geometry.width = w;
-			quad.geometry.height = h;
-			quad.geometry.vertices[0] = new THREE.Vector3(-w / 2, h / 2, 0);
-			quad.geometry.vertices[1] = new THREE.Vector3(w / 2, h / 2, 0);
-			quad.geometry.vertices[2] = new THREE.Vector3(-w / 2, -h / 2, 0);
-			quad.geometry.vertices[3] = new THREE.Vector3(w / 2, -h / 2, 0);
+			var quad = this.sceneScreen.children[0];
+
+			quad.geometry.width = pw;
+			quad.geometry.height = ph;
+			quad.geometry.vertices[0] = new THREE.Vector3(-pw / 2, ph / 2, 0);
+			quad.geometry.vertices[1] = new THREE.Vector3(pw / 2, ph / 2, 0);
+			quad.geometry.vertices[2] = new THREE.Vector3(-pw / 2, -ph / 2, 0);
+			quad.geometry.vertices[3] = new THREE.Vector3(pw / 2, -ph / 2, 0);
 
 			quad.geometry.verticesNeedUpdate = true;
 			quad.geometry.dynamic = true;
 
 			//this.sceneScreen.children[0] =
 
-			this.orthoCamera.left = -w / 2;
-			this.orthoCamera.right = w / 2;
-			this.orthoCamera.top = h / 2;
-			this.orthoCamera.bottom = -h / 2;
+			this.orthoCamera.left = -pw / 2;
+			this.orthoCamera.right = pw / 2;
+			this.orthoCamera.top = ph / 2;
+			this.orthoCamera.bottom = -ph / 2;
 			this.orthoCamera.updateProjectionMatrix();
-
+            //this.sceneVolume.setConfigurable("default",
+            //                                 "fragment",
+            //                                 this.shaderConfig);
 			this.rerender();
 		}
 	},
 
 	rerender : function (input) {
-		if (!input)
+
+		if (!input){
 			input = 32;
+            this.progressive = true;
+        }
+        else this.progressive = false;
 		setTimeout(callback(this, function () {
-				this.canvas3D.rerender();
-				this.sceneVolume.setMaxSteps = input;
-			}), this.update_delay_ms);
-	},
+			this.canvas3D.rerender();
+			this.sceneVolume.setMaxSteps = input;
+		}), this.update_delay_ms);
+
+    },
 
 	onAnimate : function () {
-		if (this.canvas3D.mousedown)
-			this.sceneVolume.setMaxSteps = 32;
+		//if (this.canvas3D.mousedown)
+		//	this.sceneVolume.setMaxSteps = 32;
+        if(!this.progressive){
+            this.sceneVolume.setUniform('BREAK_STEPS',
+				                        this.sceneVolume.setMaxSteps, false);
+			this.canvas3D.needs_render = false;
+            return;
+        }
 
 		if (this.sceneVolume.setMaxSteps < 512) {
 			//console.log('multiplying',this.sceneVolume.setMaxSteps);
 
-			this.sceneVolume.setUniform('setMaxSteps',
-				this.sceneVolume.setMaxSteps, false);
+			this.sceneVolume.setUniform('BREAK_STEPS',
+				                        this.sceneVolume.setMaxSteps, false);
 			this.sceneVolume.setMaxSteps *= 1.5;
 		} else {
 			this.sceneVolume.setMaxSteps = 512;
 			this.canvas3D.needs_render = false;
 		}
-
 	},
 
-	onAnimateOverride : function () {
-		if (!this.sceneScreen)
-			return;
-
-		var materialForward = this.sceneVolume.getMaterial('forwardDiffuse');
-		this.sceneVolume.cubeMesh.material = materialForward.threeShader;
-		this.canvas3D.renderer.clearTarget(this.accumBuffer0,
-			true, true, true);
-		this.canvas3D.renderer.clearTarget(this.accumBuffer1,
-			true, true, true);
-
-		var pass = 0;
-		var toggle = true;
-		while (pass < this.sceneVolume.setMaxSteps) {
-
-			var buffer0 = toggle ? this.accumBuffer0 : this.accumBuffer1;
-			var buffer1 = toggle ? this.accumBuffer1 : this.accumBuffer0;
-			this.sceneVolume.setUniform('BUFFER0', buffer1, false);
-			this.sceneVolume.setUniform('STEP', pass, false);
-			this.canvas3D.renderer.render(this.canvas3D.scene,
-				this.canvas3D.camera,
-				buffer0);
-			toggle = !toggle;
-			pass++;
-		}
-		var buffer0 = !toggle ? this.accumBuffer0 : this.accumBuffer1;
-		var materialScreen = this.sceneVolume.getMaterial('screen');
-		materialScreen.threeShader.uniforms.tDiffuse.value = buffer0;
-		this.canvas3D.renderer.render(this.sceneScreen,
-			this.orthoCamera);
-
-	},
-
-	afterFirstLayout : function () {
-		if (!this.resource) {
-			BQ.ui.error('No image defined...');
-			return;
-		}
-
-		this.setLoading('Loading...');
-
-		if (typeof this.resource === 'string') {
-			BQFactory.request({
-				uri : this.resource,
-				uri_params : {
-					view : 'short'
-				},
-				cb : callback(this, this.onImage),
-				errorcb : callback(this, this.onerror),
-			});
-		} else if (this.resource instanceof BQImage) {
-			this.onImage(this.resource);
-		}
-
+    initHistogram : function() {
 		var me = this;
 
         this.model = {
@@ -637,33 +686,66 @@ Ext.define('BQ.viewer.Volume.Panel', {
                 }
             }
         }
+    },
+
+    BQImageRequest : function () {
+        var me = this;
+
+		if (!this.resource) {
+			BQ.ui.error('No image defined...');
+			return;
+		}
+
+		this.setLoading('Loading...');
+
+		if (typeof this.resource === 'string') {
+			BQFactory.request({
+				uri : this.resource,
+				uri_params : {
+					view : 'short'
+				},
+				cb : callback(this, this.onImage),
+				errorcb : callback(this, this.onerror),
+			});
+		} else if (this.resource instanceof BQImage) {
+			this.onImage(this.resource);
+		}
+    },
+
+	afterFirstLayout : function () {
+        var me = this;
+
+        //add event listener to refresh rendering
+        var restep = function(state){
+            if(state.button >= 0){
+                me.sceneVolume.setMaxSteps = 32;
+                me.rerender();
+            }
+        };
+
+        this.canvas3D.getEl().on({
+            //scope : this,
+            //mouseup : restep,
+            mousemove : restep,
+            mousedown : restep,
+            mousewheel: restep,
+            DOMMouseScrool: restep,
+        });
+
+
         /////////////////////////////////////////////////
 		// begin setup backbuffer rendering:
 		// putting it here for experimentation
 		/////////////////////////////////////////////////
 
-		this.accumBuffer0
+		this.screenBuffer
 			 = new THREE.WebGLRenderTarget(this.getWidth(), this.getHeight(), {
 				minFilter : THREE.LinearFilter,
 				magFilter : THREE.NearestFilter,
 				format : THREE.RGBAFormat
 			});
 
-		this.accumBuffer1
-			 = new THREE.WebGLRenderTarget(this.getWidth(), this.getHeight(), {
-				minFilter : THREE.LinearFilter,
-				magFilter : THREE.NearestFilter,
-				format : THREE.RGBAFormat
-			});
-
-		this.accumBuffer2
-			 = new THREE.WebGLRenderTarget(this.getWidth(), this.getHeight(), {
-				minFilter : THREE.LinearFilter,
-				magFilter : THREE.NearestFilter,
-				format : THREE.RGBAFormat
-			});
-
-		this.toggle = true;
+	    this.toggle = true;
 
 		this.orthoCamera = new THREE.OrthographicCamera(-this.getWidth() / 2,
 				this.getWidth() / 2,
@@ -675,30 +757,19 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		var screenUniforms = {
 			tDiffuse : {
 				type : "t",
-				value : this.accumBuffer0
+				value : this.screenBuffer
 			}
 		};
 
 		this.sceneVolume.initMaterial({
 			name : 'screen',
-			vertConfig : {
+			vertex : {
 				url : "/js/volume/shaders/screen.vs"
 			},
-			fragConfig : {
+			fragment : {
 				url : "/js/volume/shaders/screen.fs",
 			},
 			uniforms : screenUniforms,
-		});
-
-		this.sceneVolume.initMaterial({
-			name : 'forwardDiffuse',
-			vertConfig : {
-				url : "/js/volume/shaders/rayCast.vs"
-			},
-			fragConfig : {
-				url : "/js/volume/shaders/rayCastBlocksForward.fs",
-			},
-
 		});
 
 		var materialScreen = this.sceneVolume.getMaterial('screen');
@@ -816,7 +887,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 								color : 0xffffff
 							});
 						this.sceneVolume.cubeMesh.material = this.tempMaterial;
-						this.sceneVolume.loadMaterial('diffuse');
+						this.sceneVolume.loadMaterial('default');
 
 						this.fireEvent('loaded', this);
 
@@ -860,7 +931,6 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		this.dims.slice.z = this.phys.z;
 
 		this.dims.t = this.phys.t;
-		this.initFrameLabel();
 		this.dims.pixel.x = this.phys.pixel_size[0] === 0 ? 1 : this.phys.pixel_size[0];
 		this.dims.pixel.y = this.phys.pixel_size[1] === 0 ? 1 : this.phys.pixel_size[1];
 		this.dims.pixel.z = this.phys.pixel_size[2] === 0 ? 1 : this.phys.pixel_size[2];
@@ -875,8 +945,11 @@ Ext.define('BQ.viewer.Volume.Panel', {
 			this.dims.slice.z = z;
 			slice = 'slice=,,,,';
 			this.dims.timeSeries = true;
-		} else
+		} else {
 			slice = 'slice=,,,1';
+            if(this.dims.t === 1)
+                this.useAnimation = false;
+        }
 		var dims = '&dims';
 		var meta = '&meta';
 		var atlas = '&textureatlas';
@@ -904,7 +977,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		var res = new THREE.Vector2(this.canvas3D.getPixelWidth(), this.canvas3D.getPixelHeight());
 		this.sceneVolume.initUniform('iResolution', "v2", res);
 
-		this.sceneVolume.initUniform('setMaxSteps', "i", this.setMaxSteps);
+		this.sceneVolume.initUniform('BREAK_STEPS', "i", this.setMaxSteps);
 		this.sceneVolume.initUniform('TEX_RES_X', "i", this.xTexSizeRatio * this.dims.slice.x);
 		this.sceneVolume.initUniform('TEX_RES_Y', "i", this.yTexSizeRatio * this.dims.slice.y);
 		this.sceneVolume.initUniform('ATLAS_X', "i", this.dims.atlas.x / this.dims.slice.x);
@@ -916,8 +989,8 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		this.sceneVolume.initUniform('textureAtlas', "t", 1);
 
 		this.sceneVolume.initUniform('STEP', "i", 0);
-		this.sceneVolume.initUniform('BACKGROUND_DEPTH', "t", this.accumBuffer0);
-		this.sceneVolume.initUniform('BACKGROUND_COLOR', "t", this.accumBuffer0);
+		this.sceneVolume.initUniform('BACKGROUND_DEPTH', "t", this.screenBuffer);
+		this.sceneVolume.initUniform('BACKGROUND_COLOR', "t", this.screenBuffer);
 
 		/*
 		var pixels = new Uint8Array([0,0,0, 0,
@@ -990,7 +1063,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		if (!this.resource || !this.phys)
 			return;
 		this.initTextures();
-		this.createViewMenu();
+
 		//this.createToolMenu();
 		for (var i = 0; (plugin = this.plug_ins[i]); i++)
 			plugin.init();
@@ -1035,18 +1108,6 @@ Ext.define('BQ.viewer.Volume.Panel', {
 			plugin.addCommand(command, opts);
 		return (this.hostName ? this.hostName : '') + '/image_service/image/'
 		 + this.resource.resource_uniq + '?' + command.join('&');
-	},
-
-	updateFrameLabel : function (frame) {
-		if (this.frameLabel)
-			this.frameLabel.innerHTML = "frame: " + frame + "/" + this.dims.t;
-	},
-
-	initFrameLabel : function () {
-		this.frameLabel = document.createElement('span');
-		this.frameLabel.className = "framelabel"
-			this.updateFrameLabel(0);
-		this.getEl().dom.appendChild(this.frameLabel);
 	},
 
 	scaleCube : function (inScale) {
@@ -1176,49 +1237,24 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
 	createToolPanel : function () {
 		var items = [];
-		items.push({
-			xtype : 'general',
-			dims : this.dims
-		});
-		items.push({
-			xtype : 'material'
-		});
-		items.push({
-			xtype : 'gamma'
-		});
 
-		//items.push({xtype: 'lighting'});
-		//items.push({xtype: 'lightControl'});
-		//debugger;
-		if (Ext.isWindows) {
-			if (Ext.isChrome && Ext.chromeVersion >= 37) {
-				items.push({
-					xtype : 'lighting'
-				});
-				items.push({
-					xtype : 'lightControl'
-				});
-			}
-		} else {
-			items.push({
-				xtype : 'lighting'
-			});
-			items.push({
-				xtype : 'lightControl'
-			});
-		}
-		items.push({
-			xtype : 'bq_volume_transfer'
-		});
-		items.push({
-			xtype : 'pointControl',
-			gobjects : this.phys.image.gobjects
-		});
+        this.toolPanelButtons = Ext.create('Ext.container.Container',{
+            //id: 'toolbar-buttons',
+            layout: {
+                type: 'table',
+                columns: 8
+            },
+        });
+
+        items.push(this.toolPanelButtons);
+
 		items.push({
 			xtype : 'glinfo'
 		});
+
 		if (!this.toolPanel) {
 			var thisDom = this.getEl().dom;
+
 			this.toolPanel = Ext.create('Ext.panel.Panel', {
 					renderTo : thisDom,
 					title : 'Settings',
@@ -1242,61 +1278,50 @@ Ext.define('BQ.viewer.Volume.Panel', {
 					items : items,
 				});
 			this.addFade(this.toolPanel);
+
+            this.tools = [
+                new ditherTool(this),
+                new boxTool(this),
+                new gammaTool(this),
+                new materialTool(this),];
+
+            if (Ext.isWindows) {
+			    if (Ext.isChrome && Ext.chromeVersion >= 37) {
+				    this.tools.push(new phongTool(this),
+                                    new deepTool(this),
+                                    new lightTool(this));
+			    }
+		    } else {
+			    this.tools.push(new phongTool(this),
+                                new deepTool(this),
+                                new lightTool(this));
+		    }
+
+            this.tools.push(new transferTool(this),
+                            new gObjectTool(this),
+                            new clipTool(this),
+                            new VolScaleBar(this));
+
+            this.tools.forEach(function(e,i,a){
+                e.init();
+                e.addButton();
+		        e.addControls();
+            });
+
 		}
 
 	},
-
-	//----------------------------------------------------------------------
-	// Clip  Slider
-	//---------------------------------------------------------------------
-
-	createClipSlider : function () {
-		this.sceneVolume.initUniform('CLIP_NEAR', "f", 0.0);
-		this.sceneVolume.initUniform('CLIP_FAR', "f", 0.0);
-
-		var me = this;
-		var thisDom = this.getEl().dom;
-		this.clipSlider = Ext.create('Ext.slider.Multi', {
-				renderTo : thisDom,
-				id : 'clip-slider',
-				cls : 'bq-clip-slider',
-				fieldLabel : 'clip',
-				labelWidth : 60,
-				minValue : 0.00,
-				maxValue : 100,
-				values : [0, 100],
-				hideLabel : true,
-				increment : 0.25,
-				listeners : {
-					change : function (slider, value, thumb) {
-                        console.log(value/100, me.canvas3D.camera.position.length());
-						if (thumb.index == 0) {
-							me.sceneVolume.setUniform('CLIP_NEAR', value / 100);
-						} else {
-							me.sceneVolume.setUniform('CLIP_FAR', 1 - value / 100);
-						}
-					},
-					scope : me,
-				},
-
-				vertical : false,
-				animation : false,
-
-			});
-
-		this.addFade(this.clipSlider);
-	},
-
-	//----------------------------------------------------------------------
+    //----------------------
 	// Zoom Slider
 	//---------------------------------------------------------------------
 
 	createZoomSlider : function () {
-		var me = this;
+		if(this.zoomSlider) return;
+        var me = this;
 		var thisDom = this.getEl().dom;
-		this.zoomSlider = Ext.create('Ext.slider.Single', {
+        this.zoomSlider = Ext.create('Ext.slider.Single', {
 				renderTo : thisDom,
-				id : 'zoom slider',
+				//id : 'zoom-slider',
 				cls : 'bq-zoom-slider',
 				hideLabel : true,
 				minValue : 0,
@@ -1322,15 +1347,14 @@ Ext.define('BQ.viewer.Volume.Panel', {
 					change : function (slider, value) {
 
 						if (!this.canvas3D.zooming) {
-
 							var scale = 10.0 * (1.0 - value / slider.maxValue);
 							scale = scale < 0.25 ? 0.25 : scale;
+                            console.log(me.canvas3D.controls);
 							me.canvas3D.controls.enabled = false;
 							me.canvas3D.controls.setRadius(scale);
-							//me.canvas3D.controls.enabled = false;;
+                           	//me.canvas3D.controls.enabled = false;;
 							//me.canvas3D.controls.noPan = true;
 							this.rerender();
-
 						}
 					},
 					changecomplete : function (slider, value) {
@@ -1358,73 +1382,116 @@ Ext.define('BQ.viewer.Volume.Panel', {
 	//----------------------------------------------------------------------
 	// tool combo
 	//---------------------------------------------------------------------
-	toolMenuRadioHandler : function () {
-		var radio1 = Ext.getCmp('toolRadio1'),
-		radio2 = Ext.getCmp('toolRadio2');
-		if (radio2.getValue()) {
-			this.playbackPanel.hide();
-			this.animPanel.show();
-			return;
-		} else {
-			this.playbackPanel.show();
-			this.animPanel.hide();
-			return;
-		}
-	},
+
 
 	createToolMenu : function () {
-		if (!this.toolMenu) {
-			var menubutton = this.queryById('tool-menu');
-			this.toolMenu = Ext.create('Ext.tip.ToolTip', {
-					target : menubutton.getEl(),
-					anchor : 'top',
-					anchorToTarget : true,
-					cls : 'bq-volume-menu',
-					maxWidth : 460,
-					anchorOffset : -10,
-					autoHide : false,
-					shadow : false,
-					closable : true,
-					layout : {
-						type : 'vbox',
-					},
+        var me = this;
+	    if (this.toolMenu)return;
+        var showAnimPanel = function() {
+            if(me.useAnimation == false){
+                //this.
+                me.playbackPanel.hide();
+			    me.animPanel.hide();
+                return;
+            }
 
-				});
-			var me = this;
-			this.toolMenu.add([{
-						boxLabel : 'settings',
-						checked : true,
-						width : 200,
-						cls : 'toolItem',
-						xtype : 'checkbox',
-						handler : function (item, checked) {
-							if (checked) {
-								me.toolPanel.show();
-							} else
-								me.toolPanel.hide();
-						},
-					}, {
-						xtype : 'radio',
-						fieldLabel : 'standard player',
-						width : 200,
-						checked : true,
-						name : 'tools',
-						id : 'toolRadio1',
-						cls : 'toolItem',
-						handler : this.toolMenuRadioHandler,
-						scope : this,
-					}, {
-						xtype : 'radio',
-						fieldLabel : 'animation player',
-						width : 200,
-						name : 'tools',
-						id : 'toolRadio2',
-						cls : 'toolItem',
-						handler : this.toolMenuRadioHandler,
-						scope : this,
-					},
-				]);
-		}
+            if(me.animStyle == 1) {
+                me.playbackPanel.hide();
+			    me.animPanel.show();
+            } else {
+                me.playbackPanel.show();
+			    me.animPanel.hide();
+            }
+        };
+
+	    var toolMenuRadioHandler = function () {
+		    var
+            radio1 = this.toolMenu.queryById('toolRadio1'),
+		    radio2 = this.toolMenu.queryById('toolRadio2');
+		    if (radio2.getValue()) {
+                me.animStyle = 1;
+		    } else {
+                me.animStyle = 2;
+		    }
+
+            showAnimPanel();
+		    return;
+	    };
+
+
+
+        var menubutton = this.queryById('tool-menu');
+		this.toolMenu = Ext.create('Ext.tip.ToolTip', {
+			target : menubutton.getEl(),
+			anchor : 'top',
+			anchorToTarget : true,
+			cls : 'bq-volume-menu',
+			maxWidth : 460,
+			anchorOffset : -10,
+			autoHide : false,
+			shadow : false,
+			closable : true,
+			layout : {
+				type : 'vbox',
+			},
+
+		});
+
+        var radioOpts = Ext.create('Ext.container.Container',{
+
+			defaults : {
+				xtype : 'radio',
+				width : 200,
+				name : 'tools',
+				cls : 'toolItem',
+                handler : toolMenuRadioHandler,
+                scope : this,
+            },
+
+            items:[{
+				fieldLabel : 'standard player',
+				checked : true,
+				itemId : 'toolRadio1',
+			}, {
+				fieldLabel : 'animation player',
+				itemId : 'toolRadio2',
+			},]
+        }).hide();
+
+		this.toolMenu.add([{
+			boxLabel : 'settings',
+			checked : true,
+			width : 200,
+			cls : 'toolItem',
+			xtype : 'checkbox',
+			handler : function (item, checked) {
+				if (checked) {
+					me.toolPanel.show();
+				} else
+					me.toolPanel.hide();
+			},
+		},{
+			boxLabel : 'animation',
+			checked : this.useAnimation,
+			width : 200,
+			cls : 'toolItem',
+			xtype : 'checkbox',
+			handler : function (item, checked) {
+				if (checked) {
+					radioOpts.show();
+                    me.useAnimation = true;
+                    showAnimPanel();
+
+				} else{
+					radioOpts.hide();
+                    me.useAnimation = false;
+                    showAnimPanel();
+
+                }
+			},
+		}, radioOpts]);
+        showAnimPanel();
+
 	},
 
 	onToolMenuClick : function (e, btn) {
@@ -1500,6 +1567,41 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		else
 			this.menu.show();
 	},
+
+    onFullScreenClick: function (e, btn) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.doFullScreen();
+    },
+
+    doFullScreen: function () {
+        var maximized = (document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement || document.msFullscreenElement),
+        vd = this.getEl().dom,
+            has_fs = vd.requestFullscreen || vd.webkitRequestFullscreen || vd.msRequestFullscreen || vd.mozRequestFullScreen;
+        if (!has_fs) return;
+
+        if (!maximized) {
+            if (vd.requestFullscreen) {
+                vd.requestFullscreen();
+            } else if (vd.webkitRequestFullscreen) {
+                vd.webkitRequestFullscreen();
+            } else if (vd.msRequestFullscreen) {
+                vd.msRequestFullscreen();
+            } else if (vd.mozRequestFullScreen) {
+                vd.mozRequestFullScreen();
+            }
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+            } else if (document.mozCancelFullScreen) {
+                document.mozCancelFullScreen();
+            }
+        }
+    },
 });
 
 //--------------------------------------------------------------------------------------

@@ -151,8 +151,8 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="15.839192"
-     inkscape:cx="-9.9943366"
-     inkscape:cy="5.8226125"
+     inkscape:cx="23.284092"
+     inkscape:cy="3.8404795"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
@@ -165,7 +165,7 @@
      inkscape:window-y="0"
      inkscape:window-maximized="1"
      inkscape:snap-bbox="true"
-     inkscape:snap-global="false">
+     inkscape:snap-global="true">
     <inkscape:grid
        type="xygrid"
        id="grid3104"
@@ -223,31 +223,31 @@
      id="layer1"
      transform="translate(0,-1045.3622)">
     <rect
-       rx="2.5903924"
-       ry="3.2500174"
-       y="1048.6122"
-       x="31.75"
-       height="22.500017"
-       width="5.5"
+       rx="2"
+       ry="2.0000174"
+       y="1048.3622"
+       x="31"
+       height="22.000017"
+       width="8"
        id="rect3877"
-       style="fill:#ac9d93;fill-opacity:1;stroke:#ebebeb;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+       style="fill:#666666;fill-opacity:1;stroke:#ffffff;stroke-width:1.50000000000000000;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
     <rect
-       style="fill:#ac9d93;fill-opacity:1;stroke:#ebebeb;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       style="fill:#666666;fill-opacity:1;stroke:#ffffff;stroke-width:1.50000000000000000;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
        id="rect4688"
-       width="5.5"
-       height="22.500017"
-       x="17.75"
-       y="1026.6122"
-       ry="3.2500174"
-       rx="2.5903924" />
+       width="8"
+       height="24.000017"
+       x="17"
+       y="1026.3622"
+       ry="2.0000174"
+       rx="2" />
     <rect
        rx="2.5903924"
        ry="3.2500174"
-       y="1037.6122"
-       x="3.75"
-       height="22.500017"
-       width="5.5"
+       y="1038.3622"
+       x="3"
+       height="21.999983"
+       width="8"
        id="rect4692"
-       style="fill:#ac9d93;fill-opacity:1;stroke:#ebebeb;stroke-width:1;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+       style="fill:#666666;fill-opacity:1;stroke:#ffffff;stroke-width:1.50000000000000000;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
   </g>
 </svg>

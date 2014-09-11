@@ -100,7 +100,7 @@ Ext.define('BQ.viewer.Volume.playbackcontroller',{
 
         var qualityMenu = Ext.create('Ext.menu.Menu', {
 	        text: 'render quality: ',
-            id: 'renderQuality1',
+            //id: 'renderQuality1',
 	        floating: true,  // usually you want this set to True (default)
 	        items: [{
 		        text: 'good',
@@ -372,7 +372,7 @@ Ext.define('BQ.viewer.Volume.keySlider',{
 	    var yrel = yclick - ymin;
 	    var rat = yrel/height;
 	    var me = this;
-	    console.log(this);
+
 	    if(rat < 0.75 && rat > 0.25){
 	        this.callParent(arguments);
 	    }else{
@@ -484,6 +484,7 @@ Ext.define('BQ.viewer.Volume.keySlider',{
 	    pi.applyQuaternion(qi).add(ti);
 	    //p0.lerp(p1,t);
 	    return {pos:pi,
+                targ: ti,
 		        rot:ri};
     },
 
@@ -676,8 +677,14 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 			            var nearFrame = this.keySlider.getFloorFrame(value);
 			            var interp = this.keySlider.getInterpolatedValue(nearFrame, value);
 
-			            this.panel3D.canvas3D.camera.rotation = interp.rot;
-			            this.panel3D.canvas3D.camera.position = interp.pos;
+			            this.panel3D.canvas3D.camera.rotation.copy(interp.rot);
+			            this.panel3D.canvas3D.camera.position.copy(interp.pos);
+
+                        this.panel3D.canvas3D.controls.target.copy(interp.targ);
+                        this.panel3D.canvas3D.controls.object.position.copy(interp.pos);
+                        this.panel3D.canvas3D.controls.object.rotation.copy(interp.rot);
+
+                        this.panel3D.canvas3D.controls.update();
 
 			            this.keySlider.panelCamera.position.copy( this.panel3D.canvas3D.camera.position );
 			            this.keySlider.panelCamera.rotation.copy( this.panel3D.canvas3D.camera.rotation );
@@ -797,7 +804,7 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 
 	    var qualityMenu = Ext.create('Ext.menu.Menu', {
 	        text: 'render quality: ',
-            id: 'renderQuality1',
+            //id: 'renderQuality2',
 	        floating: true,  // usually you want this set to True (default)
 	        items: [{
 		        text: 'good',
@@ -844,7 +851,6 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 	    this.frameNumber = Ext.create('Ext.toolbar.TextItem', {
 	        text: "1/" + this.volumeEndFrame,
 	    });
-        console.log('qual menu', qualityMenu);
 	    var toolbar1 = {
             xtype: 'toolbar',
 	        items:[recordButton,
@@ -873,15 +879,25 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 	    this.callParent();
     },
 
+
+
     afterRender : function(){
 	    this.callParent();
 	    var me = this;
-	    this.keySlider.panel3D.canvas3D.el.addListener('mouseup',function(event){
-	        var rot  = this.keySlider.panel3D.canvas3D.camera.rotation;
-	        var pos  = this.keySlider.panel3D.canvas3D.camera.position;
-	        var targ = this.keySlider.panel3D.canvas3D.controls.target;
-	        this.keySlider.updateCurrentKeyFrame(rot,pos,targ);
-	    },me);
+	    var listener = function(){
+            var rot  = me.keySlider.panel3D.canvas3D.camera.rotation;
+	        var pos  = me.keySlider.panel3D.canvas3D.camera.position;
+	        var targ = me.keySlider.panel3D.canvas3D.controls.target;
+	        me.keySlider.updateCurrentKeyFrame(rot,pos,targ);
+        }
+
+        //this.keySlider.panel3D.canvas3D.el.addListener('mouseup',listener, me);
+        this.keySlider.panel3D.canvas3D.getEl().on({
+            //scope : this,
+            mouseup : listener,
+            mousewheel: listener,
+            DOMMouseScrool: listener,
+        });
     },
 
     afterFirstLayout : function(){

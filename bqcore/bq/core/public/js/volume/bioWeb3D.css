@@ -83,7 +83,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     margin: 5px 0px 10px 0px;
 }
 
-.bq-volume-menu .heading td {
+.bq-volume-menu .heading td{
     width: 100% !important;
 }
 
@@ -92,56 +92,43 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     font-size: 16px !important;
 }
 
-/*
-.bq-volume-menu .x-tool img {
-    background-image: url('/js/volume/icons/16px_close.png');
-    background-repeat: no-repeat;
-    background-size: 10px;
-    margin: 4px 4px 0px 0px;
-    background-color: transparent;
-    background-position: 0px 0px;
-}
-*/
 
-.bq-three-container .framelabel {
+/*******************************************************************************
+ control buttons
+*******************************************************************************/
+
+.bq-three-container .control  {
     position: absolute;
-    z-index: 26 !important;
-    padding: 5px;
-    left: 10px;
-    bottom: 10px;
-    color: white;
-    background-color: black;
-    opacity: 0.6;
-    border-radius: 4px;
+    z-index: 30;
+    width: 32px !important;
+    height: 32px !important;
+    background-color: transparent;
+    background-repeat: no-repeat;
+    background-image: url('/images/viewer/icons_viewer.svg');
+    background-size: 200px;
 }
 
 .bq-three-container .viewoptions {
-    position: absolute;
-    z-index: 26 !important;
-    width: 32px !important;
-    height: 32px !important;
     left: 80px !important;
     top: 10px !important;
-
-    background-image: url('/js/volume/icons/viewOpts.svg');
-    background-size: 32px;
-    background-color: transparent;
-    background-repeat: no-repeat;
+    background-position: -34px -97px;
 }
 
 .bq-three-container .tooloptions {
-    position: absolute;
-    z-index: 26 !important;
-    width: 32px !important;
-    height: 32px !important;
-    left: 40px !important;
+    left: 122px !important;
     top: 10px !important;
-
-    background-image: url('/js/volume/icons/toolOpts.svg');
-    background-size: 32px;
-    background-color: transparent;
-    background-repeat: no-repeat;
+    background-position: -136px -0px;
 }
+
+.bq-three-container .fullscreen {
+    right: 10px !important;
+    left: auto !important;
+    top: 10px !important;
+    background-position: -34px 0px;
+    background-position-y: -162px;
+
+}
+
 
 /*******************************************************************************
  toolbar selecter
@@ -167,9 +154,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 .bq-volume-toolbar {
     position: absolute;
-    right: 40px;
-    top: 10px;
-    width: 200px;
+    right: 10px;
+    top: 60px;
+    width: 300px;
     z-index: 2147483647 !important;
     opacity: 0.2;
 }
@@ -657,34 +644,54 @@ left: 0px;
 z-index: 1000
 }
 
+/*******************************************************************************
+scale bar
+*******************************************************************************/
+
+.scalebar {
+    opacity: 0.6;
+    position: absolute;
+    left: 6px;
+    bottom: 10px;
+    width: 100px;
+    height: 38px !important;
+
+    background-color: #222222;
+    background : #222222;
+    color: #FFFFFF;
+
+    font-size: 12px;
+    /* border: 1px solid #666666; */
+    padding: 8px 8px 8px 8px;
+    border-radius: 5px;
+    -moz-border-radius: 5px;
+    z-index: 30;
+}
+
+.scalebar .x-panel-body {
+    border-width: 0px;
+}
 
 /*******************************************************************************
 zoom slider
 *******************************************************************************/
 
-/*
-.bq-zoom-slider{
-height:300px;
-x: 10;
-y:10;
-}
-*/
 .bq-zoom-slider .x-slider-vert .x-slider-thumb{
     background-image: url(/js/volume/icons/zoomSlider-thumb.svg) !important;
     background-size: cover;
     background: no-repeat;
-    margin-left: -7px;
-    height: 20px;
-    width: 30px;
+    margin-left: -3px;
+    height: 10px;
+    width: 20px;
 }
 
 .bq-zoom-slider .x-slider-vert .x-slider-thumb-over{
     background-image: url(/js/volume/icons/zoomSlider-thumb.svg) !important;
     background-size: cover;
-    background: no-repeat 0px -20px;
-    margin-left: -7px;
-    height: 20px;
-    width: 30px;
+    background: no-repeat 0px -10px;
+    margin-left: -3px;
+    height: 10px;
+    width: 20px;
 }
 
 .bq-zoom-slider .x-slider-vert{
@@ -735,4 +742,125 @@ y:10;
   fill: none;
   stroke: #000;
   shape-rendering: crispEdges;
+}
+
+.x-btn-icon .transferButton {
+    background-image: url(/js/volume/icons/tool-icons.svg) !important;
+    background-repeat: no-repeat;
+    background-position: -96px -96px;
+    width: 32px;
+    height: 32px;
+    background-size: 272px;
+}
+
+.x-btn-icon .clipButton {
+    background-image: url(/js/volume/icons/tool-icons.svg) !important;
+    background-repeat: no-repeat;
+    background-position: -48px -96px;
+    width: 32px;
+    height: 32px;
+    background-size: 272px;
+}
+
+.x-btn-icon .materialButton {
+    background-image: url(/js/volume/icons/tool-icons.svg) !important;
+    background-repeat: no-repeat;
+    background-position: -192px -96px;
+    width: 32px;
+    height: 32px;
+    background-size: 272px;
+}
+
+.x-btn-icon .histoButton {
+    background-image: url(/js/volume/icons/tool-icons.svg) !important;
+    background-repeat: no-repeat;
+    background-position: -144px -96px;
+    width: 32px;
+    height: 32px;
+    background-size: 272px;
+}
+
+.x-btn-icon .phongButton {
+    background-image: url(/js/volume/icons/tool-icons.svg) !important;
+    background-repeat: no-repeat;
+    background-position: -144px -48px;
+    width: 32px;
+    height: 32px;
+    background-size: 272px;
+}
+
+.x-btn-icon .deepButton {
+    background-image: url(/js/volume/icons/tool-icons.svg) !important;
+    background-repeat: no-repeat;
+    background-position: -96px -48px;
+    width: 32px;
+    height: 32px;
+    background-size: 272px;
+}
+
+
+.x-btn-icon .resizeButton {
+    background-image: url(/js/volume/icons/tool-icons.svg) !important;
+    background-repeat: no-repeat;
+    background-position: -0px -48px;
+    width: 32px;
+    height: 32px;
+    background-size: 272px;
+}
+
+.x-btn-icon .gButton {
+    background-image: url(/js/volume/icons/tool-icons.svg) !important;
+    background-repeat: no-repeat;
+    background-position: -48px -48px;
+    width: 32px;
+    height: 32px;
+    background-size: 272px;
+}
+
+.x-btn-icon .lightButton {
+    background-image: url(/js/volume/icons/tool-icons.svg) !important;
+    background-repeat: no-repeat;
+    background-position: -192px -48px;
+    width: 32px;
+    height: 32px;
+    background-size: 272px;
+}
+
+.x-btn-icon .ditherButton {
+    background-image: url(/js/volume/icons/tool-icons.svg) !important;
+    background-repeat: no-repeat;
+    background-position: -240px -48px;
+    width: 32px;
+    height: 32px;
+    background-size: 272px;
+}
+
+.x-btn-icon .ditherButton {
+    background-image: url(/js/volume/icons/tool-icons.svg) !important;
+    background-repeat: no-repeat;
+    background-position: -240px -48px;
+    width: 32px;
+    height: 32px;
+    background-size: 272px;
+}
+
+/*
+.bq-volume-toolbar .x-btn {
+    background-image: -webkit-linear-gradient(top,#AFAFAF,#838383 48%,#575757 52%,#2E2E2E) !important;
+    border-color: #383838;
+}
+*/
+
+.bq-volume-toolbar .x-btn {
+    background: none !important;
+    border-color: #383838;
+}
+
+.bq-volume-toolbar .x-btn-pressed {
+    background: none !important;
+    border-color: #E6B85C;
+}
+
+.bq-volume-toolbar .x-btn-inner {
+    color: #FDFDFD;
 }

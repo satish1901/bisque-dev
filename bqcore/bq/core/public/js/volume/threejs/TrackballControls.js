@@ -136,7 +136,7 @@ THREE.TrackballControls = function ( object, domElement ) {
 				} else {
 
 					mouseOnBall.z = .5 / length;
-					
+
 				}
 
 			} else if ( length > 1.0 ) {
@@ -198,6 +198,38 @@ THREE.TrackballControls = function ( object, domElement ) {
 		}
 
 	}());
+
+    this.setFromEuler = function (euler) {
+        //this is to control the trackball externally
+        _eye.subVectors( _this.object.position, _this.target );
+        _eye.normalize();
+        _eye.multiplyScalar( radius );
+		_this.object.position.addVectors( _this.target, _eye );
+		_this.checkDistances();
+		_this.object.lookAt( _this.target );
+		if ( lastPosition.distanceToSquared( _this.object.position ) > 0 ) {
+			_this.dispatchEvent( changeEvent );
+			lastPosition.copy( _this.object.position );
+
+		}
+	};
+
+    this.setRadius = function (radius) {
+        //this is to control the trackball externally
+        _eye.subVectors( _this.object.position, _this.target );
+        _eye.normalize();
+        _eye.multiplyScalar( radius );
+		_this.object.position.addVectors( _this.target, _eye );
+		_this.checkDistances();
+		_this.object.lookAt( _this.target );
+		if ( lastPosition.distanceToSquared( _this.object.position ) > 0 ) {
+			_this.dispatchEvent( changeEvent );
+			lastPosition.copy( _this.object.position );
+
+		}
+	};
+
+
 
 	this.zoomCamera = function () {
 
