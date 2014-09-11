@@ -83,12 +83,23 @@ class BisqueIdentity(object):
         return bquser
 
     def set_current_user (self, user):
-        'Set the user identity to user'
+        """"Set the current user for authentication
+
+        @param user:  a username or :class:BQUser object
+        @return: precious user or None
+        """
         if isinstance (user, basestring):
             from bq.data_service.model.tag_model import BQUser
             user =  DBSession.query (BQUser).filter_by(resource_name = user).first()
-        request.identity['bisque.bquser'] = user
-        request.identity['repoze.who.userid'] = user and user.resource_name
+
+        oldbquser = request.identity.pop('bisque.bquser', None)
+        olduser   = request.identity.pop('repoze.who.userid', None)
+
+        if user is not None:
+            request.identity['bisque.bquser'] = user
+            request.identity['repoze.who.userid'] = user and user.resource_name
+
+        return oldbquser
 
 
 ####################################
