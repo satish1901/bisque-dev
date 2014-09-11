@@ -51,16 +51,27 @@ DESCRIPTION
 
 """
 import os
+import sys
 import urlparse
 import urllib
 import logging
 import itertools
+import tempfile
+import mimetypes
+import warnings
+try:
+    import tables #requires pytables
+except ImportError:
+    tables = None
+    warnings.warn('Warning: tables is not installed, not all function will work')
+    
 try:
     from collections import OrderedDict
 except ImportError:
     from ordereddict import OrderedDict
 
 import requests
+from RequestsMonkeyPatch import requests_patch #allows multipart form to accept unicode
 from requests.auth import HTTPBasicAuth
 from requests.auth import AuthBase
 from requests import Session
@@ -254,19 +265,7 @@ class BQServer(Session):
         """
         log.debug("POST %s req %s" % (url, headers))
         
-#        request = {
-#                   "GET"     : super(BQServer,self).get,
-#                   "POST"    : super(BQServer,self).post,
-#                   "PUT"     : super(BQServer,self).put,
-#                   "DELETE"  : super(BQServer,self).delete,
-#                   "HEAD"    : super(BQServer,self).head,
-#                   "OPTIONS" : super(BQServer,self).options
-#                   }
-        
-#        if headers:
-#            self.headers.update(headers)
         r = self.request(method, url, data=content, headers=headers, files=files) #maintain name space
-        
         try: #error checking
             r.raise_for_status()
         except requests.exceptions.HTTPError:
@@ -406,6 +405,62 @@ class BQSession(object):
         else:
             r = self.c.post(url, content=xml, method=method, headers={'Content-Type':'text/xml', 'Accept': 'text/xml' })
             return etree.XML(r, self.parser)
+        
+    if tables: #check if tables is installed before adding functions
+        def fetchhdf(self, url, path=None, **params):
+            """
+                Fetch HDF from bisque
+                If path is provided the hdf5 file is stored there else if 
+                no path is provided a temporary file is created and an pytables
+                object is returned.
+                
+                @param url:
+                @param xml:
+                @param path:
+                @param method:
+                @param param:
+                
+                @return
+            """
+            url = self.c.prepare_url (url, **params)
+            log.debug('fetchxml %s ' % url)
+            if path: #returns path of the file
+                return self.c.fetch(url, headers={'Content-Type':'text/xml', 'Accept':'application/x-bag'}, path=path)
+            else:
+                with tempfile.TemporaryFile(suffix='.h5', dir=tempfile.gettempdir() ) as f: 
+                    path = f.name
+                path = self.c.fetch(url, headers = {'Content-Type':'text/xml', 'Accept':'application/x-bag'}, path=path)
+                return tables.open_file(path, 'r')
+            
+            
+        def posthdf(self, url, xml=None, path=None, method="POST", **params):
+            """
+                Post xml to retrieve HDF from bisque
+                If path is provided the hdf5 file is stored there else if 
+                no path is provided a temporary file is created and an pytables
+                object is returned.
+                
+                @param url:
+                @param xml:
+                @param path:
+                @param method:
+                @param param:
+                
+                @return
+            """
+            url = self.c.prepare_url (url, **params)
+            log.debug('fetchxml %s ' % url)
+    
+            if isinstance(xml, etree._Element):
+                xml = etree.tostring(xml, pretty_print=True)
+    
+            if path: #returns path of the file
+                return self.c.post(url, content=xml, headers={'Content-Type':'text/xml', 'Accept':'application/x-bag'}, path=path)
+            else: 
+                with tempfile.TemporaryFile(suffix='.h5', dir=tempfile.gettempdir() ) as f: 
+                    path = f.name
+                path = self.c.post(url, content=xml, headers={'Content-Type':'text/xml',  'Accept':'application/x-bag'}, path=f.name)
+                return tables.open_file(path, 'r')
 
 
     def fetchblob(self, url, path=None, **param):
@@ -417,7 +472,7 @@ class BQSession(object):
             @param params: params will be added to url query
         """
         url = self.c.prepare_url(url, **params)
-        return self.c.fetch(url, path=path, headers={'Content-Type':'text/xml', 'Accept': 'text/xml' })
+        return self.c.fetch(url, path=path, headers={'Content-Type':'text/xml', 'Accept': 'application/x-bag' })
 
 
     def postblob(self, filename, xml=None, path=None, method="POST", **params):
@@ -434,18 +489,18 @@ class BQSession(object):
         
         url = self.c.prepare_url(import_service_url, **params)
         if isinstance(filename, basestring):
-            with open(filename,'rb') as f:
-                fields = {'file': f}
-                data = None
+            
+            with open(filename, 'rb') as f:
+                fields = {'file': (filename.decode('utf8'),f,mimetypes.guess_type(filename)[0])} #not sure if all filenames should be decoded from utf8
+                data = None                                                                      #also have not tested on python3 yet
                 if xml!=None:
                     data = {}
                     if isinstance(xml, etree._Element):
                         fields['file_resource'] = etree.tostring(xml)
                     else:
                         fields['file_resource'] = xml
-
+                
                 return self.c.post(url, content=None, files=fields, headers={'Accept': 'text/xml'}, path=path, method=method)
-    
 #    def post_streaming_blob(self, filename, xml=None, **params):
 #        """
 #        Requires requests_toolbet
