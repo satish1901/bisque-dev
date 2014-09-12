@@ -374,9 +374,22 @@ Ext.define('BQ.viewer.Volume.Panel', {
 	initComponent : function () {
 		this.update_delay_ms = 50;
 		this.addListener('resize', this.onresize, this);
+        var me = this;
+        var restep = function(event){
+            if(event.button >= 0){
+                me.sceneVolume.setMaxSteps = 32;
+                me.rerender();
+            }
+        };
 
 		this.canvas3D = Ext.create('BQ.viewer.Volume.ThreejsPanel', {
-				itemId : 'canvas3D',
+			itemId : 'canvas3D',
+            listeners: {
+                mousemove : restep,
+                mousedown : restep,
+                mousewheel: restep,
+                //DOMMouseScrool: restep,
+            }
 				//onAnimate : callback(this, this.onAnimate),
 				//onAnimateOverride : callback(this, this.onAnimateOverride),
 			});
@@ -717,24 +730,6 @@ Ext.define('BQ.viewer.Volume.Panel', {
 	afterFirstLayout : function () {
         var me = this;
 
-        //add event listener to refresh rendering
-        var restep = function(state){
-            if(state.button >= 0){
-                me.sceneVolume.setMaxSteps = 32;
-                me.rerender();
-            }
-        };
-
-        this.canvas3D.getEl().on({
-            //scope : this,
-            //mouseup : restep,
-            mousemove : restep,
-            mousedown : restep,
-            mousewheel: restep,
-            DOMMouseScrool: restep,
-        });
-
-
         /////////////////////////////////////////////////
 		// begin setup backbuffer rendering:
 		// putting it here for experimentation
@@ -980,7 +975,9 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		this.sceneVolume.initUniform('iResolution', "v2", res);
 
 		this.sceneVolume.initUniform('BREAK_STEPS', "i", this.setMaxSteps);
-		this.sceneVolume.initUniform('TEX_RES_X', "i", this.xTexSizeRatio * this.dims.slice.x);
+		this.sceneVolume.initUniform('FOV', "f", this.canvas3D.fov);
+
+        this.sceneVolume.initUniform('TEX_RES_X', "i", this.xTexSizeRatio * this.dims.slice.x);
 		this.sceneVolume.initUniform('TEX_RES_Y', "i", this.yTexSizeRatio * this.dims.slice.y);
 		this.sceneVolume.initUniform('ATLAS_X', "i", this.dims.atlas.x / this.dims.slice.x);
 		this.sceneVolume.initUniform('ATLAS_Y', "i", this.dims.atlas.y / this.dims.slice.y);

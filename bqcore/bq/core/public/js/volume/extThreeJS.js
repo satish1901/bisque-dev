@@ -164,7 +164,8 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
         });
         this.renderer.setClearColor(0xC0C0C0, 1);
         var aspect = this.getWidth() / this.getHeight();
-        this.camera = new THREE.PerspectiveCamera(40, aspect, .01, 20);
+        this.fov = 40;
+        this.camera = new THREE.PerspectiveCamera(this.fov, aspect, .01, 20);
 
         this.controls = new THREE.TrackballControls(this.camera, thisDom);
         this.controls.noRoll = true;
@@ -175,10 +176,10 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
             scope : this,
             mouseup : this.onMouseUp,
             mousedown : this.onMouseDown,
+            mousemove : this.onMouseMove,
             mousewheel: this.onMouseWheel,
             DOMMouseScrool: this.onMouseWheel,
         });
-
 
         this.anaglyph = new THREE.AnaglyphEffect( this.renderer );
 		this.anaglyph.setSize( this.getWidth(), this.getHeight() );
@@ -209,6 +210,7 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
 	        me.mousedown = false;
             me.controls.enabled = true;
         }, 200);
+        this.fireEvent('mousewheel', event);
     },
 
     onMouseDown : function(event) {
@@ -223,15 +225,18 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
 	        this.zooming = true;
 	    }
         this.needs_render = true;
+        this.fireEvent('mousedown', event);
     },
 
     onMouseUp : function(event) {
         this.controls.enabled = true;
         this.mousedown   = false;
         this.needs_render = true;
+        this.fireEvent('mousemove', event);
     },
 
     onMouseMove : function(event){
+        this.fireEvent('mousemove', event);
     },
 
     onresize : function(comp, w, h, ow, oh, eOpts) {
@@ -241,7 +246,7 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
         this.camera.updateProjectionMatrix();
 
         this.renderer.setSize(w, h);
-        this.anaglyph.setSize(w, h);
+        //this.anaglyph.setSize(w, h);
         this.mousedown = false;
     },
 
@@ -261,6 +266,7 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
                 this.animate_funcs[i]();
             }
             this.renderer.render(this.scene, this.camera);
+            this.fireEvent('render', this);
             //this.anaglyph.render(this.scene, this.camera);
         }
 
