@@ -512,26 +512,34 @@
     background-repeat: no-repeat;
     background-image: url('/images/viewer/icons_viewer.svg');
     background-size: 200px;
-    background-position-x: -135px;
-}
-
-.viewer .editcontrol.selected {
-    background-position-x: -168px;
+    background-position: -135px 0px;
 }
 
 .viewer .btn-navigate {
-    background-position-y: -131px;
     right: 190px;
+    background-position: -135px -131px;
+}
+
+.viewer .btn-navigate.selected {
+    background-position: -168px -131px;
 }
 
 .viewer .btn-select {
-    background-position-y: -98px;
     right: 150px;
+    background-position: -135px -98px;
+}
+
+.viewer .btn-select.selected {
+    background-position: -168px -98px;
 }
 
 .viewer .btn-delete {
-    background-position-y: -65px;
     right: 110px;
+    background-position: -135px -65px;
+}
+
+.viewer .btn-delete.selected {
+    background-position: -168px -65px;
 }
 
 /*******************************************************************************
