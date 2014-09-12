@@ -45,7 +45,7 @@ class ImageServiceTestsUnicode(ImageServiceTestBase):
         self.session = BQSession().init_local(self.user, self.pswd,  bisque_root=self.root, create_mex=False)
 
         # download and upload test images ang get their IDs
-        self.resource_unicode   = self.ensure_bisque_file(image_unicode)
+        self.resource_unicode   = self.ensure_bisque_file(image_unicode.decode('utf-8'))
            
 
     @classmethod

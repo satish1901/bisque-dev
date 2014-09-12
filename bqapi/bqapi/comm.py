@@ -85,7 +85,7 @@ if USENODE:
 else:
     from bqapi.bqclass import fromXml, toXml, BQMex, BQNode
 
-from bqapi.util import parse_qs, make_qs, xml2d, d2xml
+from bqapi.util import parse_qs, make_qs, xml2d, d2xml, normalize_unicode
 
 
 log = logging.getLogger('bqapi.comm')
@@ -487,11 +487,13 @@ class BQSession(object):
         if import_service_url is None:
             raise 'Could not find import service to post blob.'
         
+        filename = normalize_unicode(filename)
+        
         url = self.c.prepare_url(import_service_url, **params)
         if isinstance(filename, basestring):
             
             with open(filename, 'rb') as f:
-                fields = {'file': (filename.decode('utf8'),f,mimetypes.guess_type(filename)[0])} #not sure if all filenames should be decoded from utf8
+                fields = {'file': (filename, f, mimetypes.guess_type(filename)[0])} #not sure if all filenames should be decoded from utf8
                 data = None                                                                      #also have not tested on python3 yet
                 if xml!=None:
                     data = {}
