@@ -456,9 +456,11 @@ class BlobServer(RestController, ServiceMixin):
 
     def localpath (self, uniq_ident):
         "Find  local path for the identified blob, using workdir for local copy if needed"
-        try:
-            resource = data_service.query(resource_uniq=uniq_ident, view='full')[0]
-        except IndexError:
+        resource = data_service.resource_load (uniq=uniq_ident, view='full')
+        #try:
+        #    resource = data_service.query(resource_uniq=uniq_ident, wpublic=1, view='full')[0]
+        #except IndexError:
+        if resource is None:
             log.warn ('requested resource %s was not available/found' , uniq_ident)
             return None
         return self.mounts.fetch_blob(resource)
@@ -469,7 +471,7 @@ class BlobServer(RestController, ServiceMixin):
             resource = data_service.query(resource_uniq=ident)[0]
         except IndexError:
             log.warn ('requested resource %s was not available/found' , ident)
-            return str(ident)        
+            return str(ident)
 
         fname,_ = split_subpath(resource.get('name', str (ident)))
         log.debug('Blobsrv - original name %s->%s ' , ident, fname)
