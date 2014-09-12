@@ -162,6 +162,7 @@ VolumeShader.prototype.config = function(config){
         'uniform float GAMMA_SCALE;',
         'uniform float BRIGHTNESS;',
         'uniform float DENSITY;',
+        'uniform float FOV;',
 
         'uniform sampler2D textureAtlas;',
         'uniform sampler2D BACKGROUND_DEPTH;',
@@ -858,7 +859,7 @@ VolumeShader.prototype.config = function(config){
         '  eyeRay_d.xy = 2.0*fragCoord.xy/iResolution.xy - 1.0;',
         '  eyeRay_d[0] *= iResolution.x/iResolution.y;',
 
-        '  float fovr = 40.*M_PI/180.;',
+        '  float fovr = FOV*M_PI/180.;',
         '  eyeRay_d[2] = -1.0/tan(fovr*0.5);',
         '  eyeRay_d   = eyeRay_d*viewMatrix;',
         '  eyeRay_d[3] = 0.0;',

@@ -135,6 +135,10 @@ VolScaleBarTool.prototype.initControls = function () {
                 }
             }
 	    });
+        me.volume.canvas3D.on({
+            scope: me,
+            render: me.updatePosition
+        });
         //me.updateImage();
 
 
@@ -166,8 +170,11 @@ VolScaleBarTool.prototype.updateImage = function () {
 
 VolScaleBarTool.prototype.updatePosition = function () {
     if (this.scalebar == null) return;
-    var view = this.viewer.current_view;
+    var camPos = this.volume.canvas3D.camera.position;
+    var fov = this.volume.canvas3D.fov;
+    var l = camPos.length();
+    var d = 2.0*l/Math.tan(fov/2);
+    var imgphys = this.volume.phys;
 
-    var imgphys = this.viewer.imagephys;
-    this.scalebar.setValue( imgphys.pixel_size[0]/view.scale );
+    this.scalebar.setValue( d*imgphys.pixel_size[0] );
 };
