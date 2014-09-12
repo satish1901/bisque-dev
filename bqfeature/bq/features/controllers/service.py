@@ -18,7 +18,8 @@ import urllib2
 import hashlib
 import ntpath
 from lxml import etree
-
+import sys
+import traceback
 
 from paste.fileapp import FileApp
 from pylons.controllers.util import forward
@@ -64,11 +65,13 @@ class Feature_Archive(dict):
                         self[item.name] = item
             
             except FeatureImportError, e:
-                log.exception('Failed to import %s: %s'%(e.extractor_package_name, e.message))
+                log.warning('Failed to import: %s'%(e.extractor_package_name))
+                log.debug('Failed to import: %s\n%s'%(e.extractor_package_name, traceback.format_exc()))
                 continue
                 
-            except StandardError:  # need to pick a narrower error band but not quite sure right now
-                log.exception('Failed Imported Feature: %s\n' % module)  # failed to import feature
+            except StandardError, e:  # need to pick a narrower error band but not quite sure right now
+                log.warning('Failed to import: %s'%(module))
+                log.debug('Failed to import: %s\n%s'%(module, traceback.format_exc()))
                 continue
 
 
