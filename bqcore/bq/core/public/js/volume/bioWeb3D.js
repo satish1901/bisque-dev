@@ -391,18 +391,18 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		//Platform and browser version checking
 		//-------------------------------------
 
-		var fragUrl;
+		var fragUrl, usePow;
 		if (Ext.isWindows) {
 			if (Ext.isChrome) {
 				if (Ext.chromeVersion < 37)
-					fragUrl = "/js/volume/shaders/rayCastBlocksStripped.fs";
-				else
-					fragUrl = "/js/volume/shaders/rayCastBlocks.fs";
+					usePow = false;
+                else
+                	usePow = true;
 
 			} else
-				fragUrl = "/js/volume/shaders/rayCastBlocks.fs";
+				usePow = true;
 		} else
-				fragUrl = "/js/volume/shaders/rayCastBlocks.fs";
+				usePow = true;
 
         this.maxSteps = 64;
         this.shaderConfig = {
@@ -416,6 +416,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
             //gradientType: 'sobel',
             gradientType: 'std',
             maxSteps: this.maxSteps,
+            usePow: usePow,
         };
 
 		this.sceneVolume.initMaterial({
@@ -1301,7 +1302,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
             this.tools.push(new transferTool(this),
                             new gObjectTool(this),
                             new clipTool(this),
-                            new VolScaleBar(this));
+                            new VolScaleBarTool(this));
 
             this.tools.forEach(function(e,i,a){
                 e.init();

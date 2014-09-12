@@ -42,6 +42,7 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+/*
 ViewerPlugin.prototype.updatePosition = function (){
 };
 
@@ -52,8 +53,9 @@ ViewerPlugin.prototype.setSize = function (size)
     if (size.width)
         this.imagediv.style.width = size.width+"px";
 };
+*/
 
-function ScaleBar ( parent, new_pix_size ) {
+function VolScaleBar ( parent, new_pix_size ) {
 	this.parent = parent;
 	this.dragging = false;
 	this.pix_phys_size = 0;
@@ -61,13 +63,13 @@ function ScaleBar ( parent, new_pix_size ) {
 
 
 	this.bar = document.createElementNS(xhtmlns, 'div');
-    this.bar.setAttributeNS (null, 'id', 'scalebar_bar');
+    this.bar.setAttributeNS (null, 'id', 'scalebar_bar_vol');
 	this.bar.innerHTML = "&#xA0;";
     this.bar.style.width = "100%";
     this.bar.style.height = "5px";
-
+    this.bar.style.background =  '#FFFFFF';
 	this.caption = document.createElementNS(xhtmlns, 'div');
-    this.caption.setAttributeNS (null, 'id', 'scalebar_caption');
+    this.caption.setAttributeNS (null, 'id', 'scalebar_caption_vol');
 	this.caption.innerHTML = '0.00 um';
 
 	this.setValue( new_pix_size );
@@ -77,12 +79,12 @@ function ScaleBar ( parent, new_pix_size ) {
 	//this.parent.appendChild(this.widget);
 }
 
-ScaleBar.prototype.setPos = function ( x,y ) {
+VolScaleBar.prototype.setPos = function ( x,y ) {
 	this.widget.style.left = x + "px";
 	this.widget.style.top = y + "px";
 }
 
-ScaleBar.prototype.setValue = function ( val ) {
+VolScaleBar.prototype.setValue = function ( val ) {
   if (this.pix_phys_size==val && this.bar_size_in_pix==this.bar.clientWidth) return;
 
   this.pix_phys_size = val;
@@ -93,18 +95,18 @@ ScaleBar.prototype.setValue = function ( val ) {
   this.caption.innerHTML = capt;
 }
 
-function VolScaleBar (volume){
+function VolScaleBarTool (volume){
     this.base = renderingTool;
     this.base (volume, null);
 }
 
-VolScaleBar.prototype = new renderingTool();
+VolScaleBarTool.prototype = new renderingTool();
 
-VolScaleBar.prototype.addButton = function () {
+VolScaleBarTool.prototype.addButton = function () {
     //blank since we don't actually add anything
 };
 
-VolScaleBar.prototype.initControls = function () {
+VolScaleBarTool.prototype.initControls = function () {
     var me = this;
     var thisDom = this.volume.getEl().dom;
 
@@ -122,7 +124,7 @@ VolScaleBar.prototype.initControls = function () {
 		    header : false,
 		    renderTo : thisDom,
             layout : 'fit',
-		    cls : 'scalebar',
+		    cls : 'vol-scalebar',
 
             listeners : {
                 afterlayout: function(){
@@ -139,7 +141,7 @@ VolScaleBar.prototype.initControls = function () {
     });
 };
 
-VolScaleBar.prototype.updateImage = function () {
+VolScaleBarTool.prototype.updateImage = function () {
     //var view = this.viewer.current_view;
     var dim = this.volume.dim;
     var imgphys = this.volume.phys;
@@ -157,12 +159,12 @@ VolScaleBar.prototype.updateImage = function () {
     //if (this.viewer.viewer_controls_surface) surf = this.viewer.viewer_controls_surface;
 
     if (this.scalebar == null)
-        this.scalebar = new ScaleBar ( surf, imgphys.pixel_size[0] );
+        this.scalebar = new VolScaleBar ( surf, imgphys.pixel_size[0] );
     //this.scalebar.setValue( imgphys.pixel_size[0]/view.scale );
     this.scalebar.setValue( imgphys.pixel_size[0]);
 };
 
-VolScaleBar.prototype.updatePosition = function () {
+VolScaleBarTool.prototype.updatePosition = function () {
     if (this.scalebar == null) return;
     var view = this.viewer.current_view;
 

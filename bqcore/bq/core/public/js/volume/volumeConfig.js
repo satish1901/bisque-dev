@@ -291,7 +291,7 @@ VolumeShader.prototype.config = function(config){
 
 
 
-    var sampleStack = function(useTransfer, win){
+    var sampleStack = function(useTransfer, usePow){
 
         var getTransfer = [
             'vec4 getTransfer(float density){',
@@ -300,22 +300,36 @@ VolumeShader.prototype.config = function(config){
             '}',
         ].join('\n');
 
-        var luma2Alpha = [
-            'vec4 luma2Alpha(vec4 color, float min, float max, float C){',
-            '  //float x = sqrt(1.0/9.0*(color[0]*color[0] +color[1]*color[1] +color[2]*color[2]));',
-            '  float x = 1.0/3.0*(color[0] + color[1] + color[2]);',
+        var luma2Alpha;
+        if(usePow){
+            luma2Alpha = [
+                'vec4 luma2Alpha(vec4 color, float min, float max, float C){',
+                '  //float x = sqrt(1.0/9.0*(color[0]*color[0] +color[1]*color[1] +color[2]*color[2]));',
+                '  float x = 1.0/3.0*(color[0] + color[1] + color[2]);',
 
-            '  //x = clamp(x, 0.0, 1.0);',
-            '  float xi = (x-min)/(max-min);',
-            '  xi = clamp(xi,0.0,1.0);',
-            '  //float b = 0.5*(max + min);',
-            '  //float xi = 1.0 / (1.0 + exp(-((x-b)/0.001)));',
-            '  float y = pow(xi,C);',
-            '  y = clamp(y,0.0,1.0);',
-            '  color[3] = y;',
-            '  return(color);',
-            '}',
-        ].join('\n');
+                '  //x = clamp(x, 0.0, 1.0);',
+                '  float xi = (x-min)/(max-min);',
+                '  xi = clamp(xi,0.0,1.0);',
+                '  //float b = 0.5*(max + min);',
+                '  //float xi = 1.0 / (1.0 + exp(-((x-b)/0.001)));',
+                '  float y = pow(xi,C);',
+                '  y = clamp(y,0.0,1.0);',
+                '  color[3] = y;',
+                '  return(color);',
+                '}',
+            ].join('\n');
+        } else{
+            luma2Alpha = [
+                'vec4 luma2Alpha(vec4 color, float min, float max, float C){',
+                '  float x = 1.0/3.0*(color[0] + color[1] + color[2]);',
+                '  float xi = (x-min)/(max-min);',
+                '  xi = clamp(xi,0.0,1.0);',
+                '  color[3] = xi;',
+                '  return(color);',
+                '}',
+            ].join('\n');
+
+        }
 
         var sampleTexture = [
             'vec2 offsetBackFront(float t, float nx){',
@@ -784,7 +798,6 @@ VolumeShader.prototype.config = function(config){
             '      float sl = float(maxStepsLight)/float(LIGHT_SAMPLES);',
             '      //lti *= dens.w;',
 
-            '      //dens.w = 1.0 - pow(abs(1.0-dens.w), sl);',
             '      dens.w *= 1.0*DENSITY;',
             '      //dens.w = clamp(dens.w, 0.0, 1.0);',
             '      Dl =  (1.0-Dl)*dens.w + Dl;',
@@ -892,7 +905,7 @@ VolumeShader.prototype.config = function(config){
     output.push(powf(config.pow));
     output.push(unpack);
     output.push(rand);
-    output.push(sampleStack(config.transfer));
+    output.push(sampleStack(config.transfer, config.usePow));
     var gradType = config.gradientType ? config.gradientType : 'central';
     if(config.highlight || config.lighting.phong) output.push(getNormal(gradType));
     output.push(integrate(config));
