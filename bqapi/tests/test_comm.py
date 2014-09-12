@@ -2,6 +2,7 @@ from bqapi import BQSession, BQServer
 from bqapi.util import  fetch_dataset
 from collections import OrderedDict
 import nose
+from nose import with_setup
 import os
 from bq.util.mkdir import _mkdir
 from util import fetch_file
@@ -180,6 +181,86 @@ def test_postxml_2():
             
     except etree.Error:
         assert False %'Did not return XML!'
+
+
+def setup_fetchhdf():
+    """
+        uploads an image, initalized session and constructs the 
+        resource_uri
+    """
+    global resource_uri #features service requests
+    global bqsession
+    bqsession = BQSession().init_local(user, pwd, bisque_root=root)
+    content = bqsession.postblob(file1_location) #upload image
+    resource_uniq = etree.XML(content)[0].attrib['resource_uniq']
+    resource_uri = '%s/features/EHD/hdf?image=%s/image_service/image/%s'%(root,root,resource_uniq)
+    
+    
+def teardown_fetchhdf():
+    pass
+
+
+@with_setup(setup_fetchhdf, teardown_fetchhdf)
+def test_fetchhdf_1():
+    """
+        Test fetching an hdf file from feature service and returning
+        a pytables object
+    """
+    hdf5object = bqsession.fetchhdf(resource_uri)
+    hdf5object.close()
+
+
+@with_setup(setup_fetchhdf, teardown_fetchhdf)
+def test_fetchhdf_2():
+    """
+        Test fetching an hdf file from feature service and saving file
+        to disk
+    """
+    filename = 'fetchhdf_test_2.h5'
+    path = os.path.join(results_location,filename)
+    path = bqsession.fetchhdf(resource_uri, path=path)
+
+
+def setup_posthdf():
+    """
+        uploads a list of image, initalized session, constructs xml body, 
+    """
+    global resource_uri
+    global resource_body
+    global bqsession
+    bqsession = BQSession().init_local(user, pwd, bisque_root=root)
+    resource_body = etree.Element('resource')
+    for _ in xrange(4):
+        content = bqsession.postblob(file1_location)
+        resource_uniq = etree.XML(content)[0].attrib['resource_uniq']
+        image = '%s/image_service/image/%s'%(root,resource_uniq)
+        etree.SubElement(resource_body,'feature',image=image)
+    resource_uri = '%s/features/EHD/hdf'%root
+    
+    
+def teardown_posthdf():
+    pass
+
+
+@with_setup(setup_posthdf, teardown_posthdf)
+def test_posthdf_1():
+    """
+        Test posting xml and hdf file from feature service and returning
+        a pytables object
+    """
+    hdf5object = bqsession.posthdf(resource_uri, xml=resource_body)
+    hdf5object.close()
+
+
+@with_setup(setup_posthdf, teardown_posthdf)
+def test_posthdf_2():
+    """
+        Test fetching and hdf file from feature service and saving file
+        to disk
+    """
+    filename = 'posthdf_test_2.h5'
+    path = os.path.join(results_location,filename)
+    path = bqsession.posthdf(resource_uri, xml=resource_body, path=path)
 
 
 def test_fetchblob_1():

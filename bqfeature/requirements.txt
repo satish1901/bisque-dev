@@ -1,0 +1,5 @@
+#all require numpy
+Cython==0.20.1
+numexpr==2.4
+mahotas==1.2.1
+pylibtiff==0.3.0-1

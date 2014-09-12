@@ -12,7 +12,7 @@ options(
         packages_to_install=['pip'],
         paver_command_line="required"
     ),
-    sphinx = Bunch (
+    sphinx = Bunch(
         builddir = "build",
         sourcedir = "docs/source"
         ),
@@ -30,13 +30,16 @@ options(
         ),
 )
 
-feature_subdirs=['bqfeature' ]
+feature_subdirs = ['bqfeature' ]
 server_subdirs=['bqapi', 'bqcore', 'bqserver', 'bqengine' ]
 engine_subdirs=['bqapi', 'bqcore', 'bqengine' ]
 
-PREINSTALLS = {'features' : ['numexpr', 'cython'] }
+PREINSTALLS = {'features' : ['numpy==1.8.1', 
+                             '-r bqfeature/requirements.txt',
+                             'tables==3.1.1']
+               }
 
-all_packages = set (feature_subdirs + server_subdirs + engine_subdirs)
+all_packages = set(feature_subdirs + server_subdirs + engine_subdirs)
 
 #################################################################
 
@@ -92,7 +95,7 @@ all will install everything including the feature service""")
     for package in preinstalls:
         sh ("pip install -i http://biodev.ece.ucsb.edu/py/bisque/dev/+simple %s" % package)
 
-    subdirs  = dict (engine=engine_subdirs,
+    subdirs  = dict (engine = engine_subdirs,
                      server = server_subdirs,
                      features = feature_subdirs) [ installing]
     print "installing all components from  %s" % subdirs
