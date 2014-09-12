@@ -404,6 +404,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		} else
 				fragUrl = "/js/volume/shaders/rayCastBlocks.fs";
 
+        this.maxSteps = 64;
         this.shaderConfig = {
             lighting: {
                 phong: false,
@@ -414,7 +415,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
             highlight: false,
             //gradientType: 'sobel',
             gradientType: 'std',
-            maxSteps: 512,
+            maxSteps: this.maxSteps,
         };
 
 		this.sceneVolume.initMaterial({
@@ -616,14 +617,14 @@ Ext.define('BQ.viewer.Volume.Panel', {
             return;
         }
 
-		if (this.sceneVolume.setMaxSteps < 512) {
+		if (this.sceneVolume.setMaxSteps < this.maxSteps) {
 			//console.log('multiplying',this.sceneVolume.setMaxSteps);
 
 			this.sceneVolume.setUniform('BREAK_STEPS',
 				                        this.sceneVolume.setMaxSteps, false);
 			this.sceneVolume.setMaxSteps *= 1.5;
 		} else {
-			this.sceneVolume.setMaxSteps = 512;
+			this.sceneVolume.setMaxSteps = this.maxSteps;
 			this.canvas3D.needs_render = false;
 		}
 	},
@@ -1456,56 +1457,67 @@ Ext.define('BQ.viewer.Volume.Panel', {
 			},]
         }).hide();
 
-    var menu = Ext.create('Ext.menu.Menu', {
-        id: 'mainMenu',
-        style: {
-            overflow: 'visible'     // For the Combo popup
-        },
-        items: [
-            combo,                  // A Field in a Menu
-            {
-                text: 'I like Ext',
-                checked: true,       // when checked has a boolean value, it is assumed to be a CheckItem
-                checkHandler: onItemCheck
-            }, '-', {
-                text: 'Radio Options',
-                menu: {        // <-- submenu by nested config object
-                    items: [
-                        // stick any markup in a menu
-                        '<b class="menu-title">Choose a Theme</b>',
-                        {
-                            text: 'Aero Glass',
-                            checked: true,
-                            group: 'theme',
-                            checkHandler: onItemCheck
-                        }, {
-                            text: 'Vista Black',
-                            checked: false,
-                            group: 'theme',
-                            checkHandler: onItemCheck
-                        }, {
-                            text: 'Gray Theme',
-                            checked: false,
-                            group: 'theme',
-                            checkHandler: onItemCheck
-                        }, {
-                            text: 'Default Theme',
-                            checked: false,
-                            group: 'theme',
-                            checkHandler: onItemCheck
-                        }
-                    ]
-                }
-           },{
-               text: 'Choose a Date',
-               iconCls: 'calendar',
-               menu: dateMenu // <-- submenu by reference
-           },{
-               text: 'Choose a Color',
-               menu: colorMenu // <-- submenu by reference
-           }
-        ]
-    });
+        var qualityCheck = function(item, checked){
+            console.log(item, checked);
+            if(checked === false) return;
+            if (item.text === 'low'){
+                me.maxSteps = 64;
+            }
+            if (item.text === 'medium'){
+                me.maxSteps = 128;
+            }
+            if (item.text === 'high'){
+                me.maxSteps = 256;
+            }
+            if (item.text === 'ultra'){
+                me.maxSteps = 512;
+            }
+            if (item.text === 'extreme'){
+                me.maxSteps = 1024;
+            }
+            me.shaderConfig.maxSteps = me.maxSteps;
+            me.sceneVolume.setConfigurable("default",
+                                           "fragment",
+                                           me.shaderConfig);
+            me.rerender();
+        };
+
+        var qualityMenu = Ext.create('Ext.menu.Menu', {
+            //id: 'mainMenu',
+            style: {
+                overflow: 'visible'     // For the Combo popup
+            },
+            items: [
+                '<b class="menu-title">Choose a Theme</b>',
+                {
+                    text: 'low',
+                    checked: true,
+                    group: 'theme',
+                    checkHandler: qualityCheck
+                }, {
+                    text: 'medium',
+                    checked: false,
+                    group: 'theme',
+                    checkHandler: qualityCheck
+                }, {
+                    text: 'high',
+                    checked: false,
+                    group: 'theme',
+                    checkHandler: qualityCheck
+                }, {
+                    text: 'ultra',
+                    checked: false,
+                    group: 'theme',
+                    checkHandler: qualityCheck
+                },{
+                    text: 'extreme',
+                    checked: false,
+                    group: 'theme',
+                    checkHandler: qualityCheck
+                },
+
+            ]
+        });
 
 		this.toolMenu.add([{
 			boxLabel : 'settings',
@@ -1539,9 +1551,11 @@ Ext.define('BQ.viewer.Volume.Panel', {
                 }
 			},
 		}, radioOpts, {
-            text:'Button w/ Menu',
-            iconCls: 'bmenu',  // <-- icon
-            menu: menu  // assign menu by instance
+            xtype: 'button',
+            width : 100,
+            text:'rendering quality',
+            //iconCls: 'bmenu',  // <-- icon
+            menu: qualityMenu  // assign menu by instance
         }]);
         showAnimPanel();
 
