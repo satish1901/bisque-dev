@@ -655,8 +655,8 @@ VolumeShader.prototype.config = function(config){
             '  csteps = clamp(csteps,0.0,float(maxSteps));',
             '  float isteps = 1.0/csteps;',
 
-            '  float tstep = 0.866*isteps;',
-            '  float tfarsurf = 1.0;',
+            '  float tstep = 0.90*isteps;',
+            '  float tfarsurf = 100.0;',
             '  float overflow = mod((tfarsurf - tfar),tstep);',
 
             '  float t = tbegin + overflow;',
@@ -803,9 +803,12 @@ VolumeShader.prototype.config = function(config){
             '//Finish up by adding brightness/density',
             //'col = N;',
             '    col.xyz *= BRIGHTNESS;',
-            '    float s = float(##MAXSTEPS##)/csteps;',
-            '    col.w = 1.0 - pow(abs((1.0-col.w)),s);',
+            '    float s = 1.0*float(##MAXSTEPS##)/ float(BREAK_STEPS);',
             '    col.w *= DENSITY;',
+            '    col.w = clamp(col.w, 0.0,1.0);',
+            '    float stepScale = (1.0 - powf((1.0-col.w),s));',
+            '    col.w = stepScale;',
+            //'    col.w *= DENSITY;',
             '    col.xyz *= col.w;',
 
             '    C = (1.0-col.w)*C + col;',

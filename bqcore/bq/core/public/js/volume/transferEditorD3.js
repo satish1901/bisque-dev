@@ -1022,9 +1022,7 @@ transferTool.prototype.toggle = function(button){
             this.volume.setModel('false', true);
             this.showButton.hide();
         }
-
-    if(button.pressed) this.controls.show();
-    else this.controls.hide();
+    this.base.prototype.toggle.call(this,button);
 };
 
 transferTool.prototype.displayTransferWindow = function () {

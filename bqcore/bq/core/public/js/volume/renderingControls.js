@@ -68,7 +68,9 @@ renderingTool.prototype.init = function(){
 		},
         width : 36,
         height : 36,
-        iconCls : this.cls,
+        //cls : 'bq-vol-btn',
+        //pressedCls: this.cls + '-pressed',
+        iconCls   : this.cls,
         enableToggle: true,
         handler : this.toggle,
         scope : me,
@@ -140,8 +142,15 @@ renderingTool.prototype.initControls = function(){
 
 renderingTool.prototype.toggle = function(button){
     //default is just to show and hide, but can modify this as well
-    if(button.pressed) this.controls.show();
-    else this.controls.hide();
+    if(button.pressed) {
+        this.controls.show();
+        //this.button.cls = this.cls + '-pressed';
+        this.button.setIconCls(this.cls + '-pressed');
+    }
+    else {
+        this.controls.hide();
+        this.button.setIconCls(this.cls);
+    }
 };
 
 renderingTool.prototype.addButton = function(){
@@ -382,9 +391,10 @@ ditherTool.prototype.initControls = function(){
     this.dithering = false;
 };
 
-ditherTool.prototype.toggle = function(){
+ditherTool.prototype.toggle = function(button){
     this.dithering ^= 1;
     this.volume.sceneVolume.setUniform('DITHERING', this.dithering, true, true);
+    this.base.prototype.toggle.call(this,button);
 
 };
 
@@ -555,8 +565,7 @@ phongTool.prototype.toggle = function(button){
     this.volume.sceneVolume.setConfigurable("default",
                                             "fragment",
                                             this.volume.shaderConfig);
-    if(button.pressed) this.controls.show();
-    else this.controls.hide();
+    this.base.prototype.toggle.call(this,button);
 };
 
 
@@ -628,8 +637,9 @@ deepTool.prototype.toggle = function(button){
     this.volume.sceneVolume.setConfigurable("default",
                                             "fragment",
                                             this.volume.shaderConfig);
-    if(button.pressed) this.controls.show();
-    else this.controls.hide();
+    this.base.prototype.toggle.call(this,button);
+    //if(button.pressed) this.controls.show();
+    //else this.controls.hide();
 };
 
 
@@ -761,6 +771,7 @@ lightTool.prototype.toggle = function(button){
     } else {
         this.lightObject.visible = false;
     }
+    this.base.prototype.toggle.call(this,button);
     this.volume.rerender();
 };
 
@@ -892,6 +903,8 @@ clipTool.prototype.toggle = function(button){
 
     if(button.pressed) this.clipPanel.show();
     else this.clipPanel.hide();
+    this.base.prototype.toggle.call(this,button);
+
 };
 
 //////////////////////////////////////////////////////////////////

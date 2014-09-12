@@ -744,105 +744,115 @@ zoom slider
   shape-rendering: crispEdges;
 }
 
-.x-btn-icon .transferButton {
-    background-image: url(/js/volume/icons/tool-icons.svg) !important;
-    background-repeat: no-repeat;
-    background-position: -96px -96px;
-    width: 32px;
-    height: 32px;
-    background-size: 272px;
-}
 
-.x-btn-icon .clipButton {
-    background-image: url(/js/volume/icons/tool-icons.svg) !important;
-    background-repeat: no-repeat;
-    background-position: -48px -96px;
-    width: 32px;
-    height: 32px;
-    background-size: 272px;
-}
-
-.x-btn-icon .materialButton {
-    background-image: url(/js/volume/icons/tool-icons.svg) !important;
-    background-repeat: no-repeat;
-    background-position: -192px -96px;
-    width: 32px;
-    height: 32px;
-    background-size: 272px;
-}
-
-.x-btn-icon .histoButton {
-    background-image: url(/js/volume/icons/tool-icons.svg) !important;
-    background-repeat: no-repeat;
-    background-position: -144px -96px;
-    width: 32px;
-    height: 32px;
-    background-size: 272px;
-}
-
-.x-btn-icon .phongButton {
-    background-image: url(/js/volume/icons/tool-icons.svg) !important;
-    background-repeat: no-repeat;
-    background-position: -144px -48px;
-    width: 32px;
-    height: 32px;
-    background-size: 272px;
-}
-
-.x-btn-icon .deepButton {
-    background-image: url(/js/volume/icons/tool-icons.svg) !important;
-    background-repeat: no-repeat;
-    background-position: -96px -48px;
-    width: 32px;
-    height: 32px;
-    background-size: 272px;
+.bq-vol-toolbar .x-btn-pressed .x-btn-icon-el {
+    background-position-y: -96px !important;
 }
 
 
-.x-btn-icon .resizeButton {
+
+.clipButton {
     background-image: url(/js/volume/icons/tool-icons.svg) !important;
-    background-repeat: no-repeat;
-    background-position: -0px -48px;
-    width: 32px;
-    height: 32px;
-    background-size: 272px;
+    background-position: -48px 0px;
 }
 
-.x-btn-icon .gButton {
+.transferButton {
     background-image: url(/js/volume/icons/tool-icons.svg) !important;
-    background-repeat: no-repeat;
+    background-position: -96px 0px;
+}
+
+.histoButton {
+    background-image: url(/js/volume/icons/tool-icons.svg) !important;
+    background-position: -144px 0px;
+}
+
+.materialButton {
+    background-image: url(/js/volume/icons/tool-icons.svg) !important;
+    background-position: -192px 0px;
+}
+
+.resizeButton {
+    background-image: url(/js/volume/icons/tool-icons.svg) !important;
+    background-position:  -288px 0px;
+}
+
+.gButton {
+    background-image: url(/js/volume/icons/tool-icons.svg) !important;
+    background-position: -336px 0px;
+}
+
+.deepButton {
+    background-image: url(/js/volume/icons/tool-icons.svg) !important;
+    background-position: -384px 0px;
+}
+
+.phongButton {
+    background-image: url(/js/volume/icons/tool-icons.svg) !important;
+    background-position: -432px 0px;
+}
+
+.lightButton {
+    background-image: url(/js/volume/icons/tool-icons.svg) !important;
+    background-position: -480px 0px;
+}
+
+.ditherButton {
+    background-image: url(/js/volume/icons/tool-icons.svg) !important;
+    background-position: -528px -0px;
+}
+
+
+
+.clipButton-pressed {
+    background-image: url(/js/volume/icons/tool-icons.svg) !important;
     background-position: -48px -48px;
-    width: 32px;
-    height: 32px;
-    background-size: 272px;
 }
 
-.x-btn-icon .lightButton {
+.transferButton-pressed {
     background-image: url(/js/volume/icons/tool-icons.svg) !important;
-    background-repeat: no-repeat;
+    background-position: -96px -48px;
+}
+
+.histoButton-pressed {
+    background-image: url(/js/volume/icons/tool-icons.svg) !important;
+    background-position: -144px -48px;
+}
+
+.materialButton-pressed {
+    background-image: url(/js/volume/icons/tool-icons.svg) !important;
     background-position: -192px -48px;
-    width: 32px;
-    height: 32px;
-    background-size: 272px;
 }
 
-.x-btn-icon .ditherButton {
+.resizeButton-pressed {
     background-image: url(/js/volume/icons/tool-icons.svg) !important;
-    background-repeat: no-repeat;
-    background-position: -240px -48px;
-    width: 32px;
-    height: 32px;
-    background-size: 272px;
+    background-position:  -288px -48px;
 }
 
-.x-btn-icon .ditherButton {
+.gButton-pressed {
     background-image: url(/js/volume/icons/tool-icons.svg) !important;
-    background-repeat: no-repeat;
-    background-position: -240px -48px;
-    width: 32px;
-    height: 32px;
-    background-size: 272px;
+    background-position: -336px -48px;
 }
+
+.deepButton-pressed {
+    background-image: url(/js/volume/icons/tool-icons.svg) !important;
+    background-position: -384px -48px;
+}
+
+.phongButton-pressed {
+    background-image: url(/js/volume/icons/tool-icons.svg) !important;
+    background-position: -432px -48px;
+}
+
+.lightButton-pressed {
+    background-image: url(/js/volume/icons/tool-icons.svg) !important;
+    background-position: -480px -48px;
+}
+
+.ditherButton-pressed {
+    background-image: url(/js/volume/icons/tool-icons.svg) !important;
+    background-position: -528px -48px;
+}
+
 
 /*
 .bq-volume-toolbar .x-btn {
@@ -851,15 +861,28 @@ zoom slider
 }
 */
 
+.bq-volume-toolbar .x-btn-icon-el {
+    width:  32px !important;
+    height: 32px !important;
+    background-size: 576px;
+    background-repeat: no-repeat;
+
+}
+
+
 .bq-volume-toolbar .x-btn {
+
     background: none !important;
     border-color: #383838;
 }
 
+/*
 .bq-volume-toolbar .x-btn-pressed {
+
     background: none !important;
     border-color: #E6B85C;
 }
+*/
 
 .bq-volume-toolbar .x-btn-inner {
     color: #FDFDFD;

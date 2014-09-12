@@ -539,6 +539,8 @@ gObjectTool.prototype.toggle = function(button){
 		this.setVisible(false);
 	}
 	this.rescalePoints();
+    this.base.prototype.toggle.call(this,button);
+
 	this.volume.rerender();
 };
 
