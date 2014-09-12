@@ -36,49 +36,49 @@
 }
 
 .slider .play {
-    background-position-y: -1px;
+    background-position: -35px 0px;
 }
 
 .slider .play-vertical {
-    background-position-y: -98px;
+    background-position: -35px -98px;
 }
 
 .slider .x-play-selected, .slider .x-btn-play-selected {
-    background-position-x: -69px;
+    background-position: -69px 0px;
 }
 
 .slider .x-play-vertical-selected, .slider .x-btn-play-vertical-selected {
-    background-position-x: -69px;
+    background-position: -69px -98px;
 }
 
 .slider .next {
-    background-position-y: -65px;
+    background-position: -35px -65px;
 }
 
 .slider .next-vertical {
-    background-position-y: -164px;
+    background-position: -35px -164px;
 }
 
 .slider .x-next-selected, .slider .x-btn-next-selected {
-    background-position-x: -70px;
+    background-position: -70px -65px;
 }
 
 .slider .x-next-vertical-selected, .slider .x-btn-next-vertical-selected {
-    background-position-x: -70px;
+    background-position: -70px -164px;
 }
 
 .slider .prev {
-    background-position-y: -33px;
+    background-position: -35px -33px;
 }
 
 .slider .prev-vertical {
-    background-position-y: -132px;
+    background-position: -35px -132px;
 }
 
 .slider .x-prev-selected, .slider .x-btn-prev-selected {
-    background-position-x: -70px;
+    background-position: -70px -33px;
 }
 
 .slider .x-prev-vertical-selected, .slider .x-btn-prev-vertical-selected {
-    background-position-x: -70px;
+    background-position: -70px -132px;
 }

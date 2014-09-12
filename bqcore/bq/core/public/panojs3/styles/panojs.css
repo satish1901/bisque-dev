@@ -185,25 +185,25 @@
 .viewer .zoomIn {
     top: 10px;
     left: 10px;
-    background-position-y: 0px;
+    background-position: -34px 0px;
 }
 
 .viewer .zoomOut {
     top: 90px;
     left: 10px;
-    background-position-y: -31px;
+    background-position: -34px -31px;
 }
 
 .viewer .zoom11 {
     top: 50px;
     left: 10px;
-    background-position-y: -63px;
+    background-position: -34px -63px;
 }
 
 .viewer .maximize {
     top: 10px;
     right: 10px;
-    background-position-y: -162px;
+    background-position: -34px -162px;
 }
 
 
