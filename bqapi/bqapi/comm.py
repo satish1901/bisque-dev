@@ -122,19 +122,25 @@ class MexAuth(AuthBase):
     """
         Bisque's Mex Authentication
     """
-    def __init__(self, user, token):
+    def __init__(self, token, user=None):
         """
-            @param user:
-            @param token:
+            Sets a mex authentication for the requests
+            
+            @param token: Token for authenticating a mex. The token can contain the user name
+            and a user name does not have to be provided. 
+            @param user: The user the mex is attached. (default: None)
         """
-        if user in token.split(':')[0]:
-            self.username = "Mex %s"%( token)
+        if user is None:
+            self.username = "Mex %s"%(token)
+        elif user in token.split(':')[0]: #check if token contains user
+            self.username = "Mex %s"%(token)
         else:
-            self.username = "Mex %s:%s"%( user, token)
+            self.username = "Mex %s:%s"%(user, token)
         
     def __call__(self, r):
         """
-            @param r:
+            Sets the authorization on the headers of the requests.
+            @param r: the requests
         """
         r.headers['Authorization'] = self.username
         return r
@@ -151,18 +157,23 @@ class BQServer(Session):
         super(BQServer, self).__init__()
         
 
-    def authenticate_mex(self, user, token):
+    def authenticate_mex(self, token, user=None):
         """
-            @param user:
-            @param token:
+            Sets mex authorization to the requests
+        
+            @param token: this can be a combination of both token and user or just the token
+            @param user: the user attached to the mex
+
         """
-        self.auth = MexAuth(user, token)
+        self.auth = MexAuth(token, user=None)
 
 
     def authenticate_basic(self, user, pwd):
         """
-            @param user:
-            @param pwd:
+            Sets basic authorization to the request
+        
+            @param user: The user for the requests.
+            @param pwd: The password for the user.
         """
         self.auth = HTTPBasicAuth(user, pwd)
 
@@ -172,7 +183,7 @@ class BQServer(Session):
             
         """
         headers = {}
-        headers.update (self.auth)
+        headers.update(self.auth)
         if user_headers:
             headers.update(user_headers)
         return headers
@@ -224,6 +235,7 @@ class BQServer(Session):
         
         return urlparse.urlunsplit([scheme,netloc,u.path,query,u.fragment])
 
+
     def fetch(self, url, headers = None, path=None):
         """
             @param url:
@@ -233,9 +245,6 @@ class BQServer(Session):
             @return 
         """
         log.debug("GET: %s req  header=%s" %  (url, headers))
-        
-#        if headers:
-#            self.headers.update(headers)
         
         r = self.get(url, headers=headers)
         
@@ -326,14 +335,14 @@ class BQSession(object):
             self.mex = self.save(mex, url=self.service_url('module_service', 'mex'))
             if self.mex:
                 mextoken = self.mex.resource_uniq
-                self.c.authenticate_mex(user, mextoken) 
+                self.c.authenticate_mex(mextoken, user) 
                 #warning: the mex can take a bit of time to appear in the database 
                 #so it is probably best to poll the data_service for the mex before
                 #performing more authentication limited operations
         return self
 
 
-    def init_mex(self, mex_url, user, token, bisque_root=None):
+    def init_mex(self, mex_url, token, user=None, bisque_root=None):
         """
             Initalizing a session from a mex
             
@@ -352,7 +361,7 @@ class BQSession(object):
 
         self.bisque_root = bisque_root
         self.c.root = bisque_root
-        self.c.authenticate_mex(user, token)
+        self.c.authenticate_mex(token, user=None)
         self._load_services()
         self.mex = self.load (mex_url, view='deep')
         return self
@@ -383,7 +392,7 @@ class BQSession(object):
 
     def postxml(self, url, xml, path=None, method="POST", **params):
         """
-            Post xml allow with files to bisque
+            Post xml allowed with files to bisque
             
             @param url:
             @param xml:
@@ -406,61 +415,64 @@ class BQSession(object):
             r = self.c.post(url, content=xml, method=method, headers={'Content-Type':'text/xml', 'Accept': 'text/xml' })
             return etree.XML(r, self.parser)
         
-    if tables: #check if tables is installed before adding functions
-        def fetchhdf(self, url, path=None, **params):
-            """
-                Fetch HDF from bisque
-                If path is provided the hdf5 file is stored there else if 
-                no path is provided a temporary file is created and an pytables
-                object is returned.
-                
-                @param url:
-                @param xml:
-                @param path:
-                @param method:
-                @param param:
-                
-                @return
-            """
-            url = self.c.prepare_url (url, **params)
-            log.debug('fetchxml %s ' % url)
-            if path: #returns path of the file
-                return self.c.fetch(url, headers={'Content-Type':'text/xml', 'Accept':'application/x-bag'}, path=path)
-            else:
-                with tempfile.TemporaryFile(suffix='.h5', dir=tempfile.gettempdir() ) as f: 
-                    path = f.name
-                path = self.c.fetch(url, headers = {'Content-Type':'text/xml', 'Accept':'application/x-bag'}, path=path)
-                return tables.open_file(path, 'r')
+    def fetchhdf(self, url, path=None, **params):
+        """
+            Fetch HDF from bisque
+            If path is provided the hdf5 file is stored there else if 
+            no path is provided a temporary file is created and an pytables
+            object is returned.
+            
+            @param url:
+            @param xml:
+            @param path:
+            @param method:
+            @param param:
+            
+            @return
+        """
+        if tables is none:
+            return
+        url = self.c.prepare_url (url, **params)
+        log.debug('fetchxml %s ' % url)
+        if path: #returns path of the file
+            return self.c.fetch(url, headers={'Content-Type':'text/xml', 'Accept':'application/x-bag'}, path=path)
+        else:
+            with tempfile.TemporaryFile(suffix='.h5', dir=tempfile.gettempdir() ) as f: 
+                path = f.name
+            path = self.c.fetch(url, headers = {'Content-Type':'text/xml', 'Accept':'application/x-bag'}, path=path)
+            return tables.open_file(path, 'r')
             
             
-        def posthdf(self, url, xml=None, path=None, method="POST", **params):
-            """
-                Post xml to retrieve HDF from bisque
-                If path is provided the hdf5 file is stored there else if 
-                no path is provided a temporary file is created and an pytables
-                object is returned.
-                
-                @param url:
-                @param xml:
-                @param path:
-                @param method:
-                @param param:
-                
-                @return
-            """
-            url = self.c.prepare_url (url, **params)
-            log.debug('fetchxml %s ' % url)
-    
-            if isinstance(xml, etree._Element):
-                xml = etree.tostring(xml, pretty_print=True)
-    
-            if path: #returns path of the file
-                return self.c.post(url, content=xml, headers={'Content-Type':'text/xml', 'Accept':'application/x-bag'}, path=path)
-            else: 
-                with tempfile.TemporaryFile(suffix='.h5', dir=tempfile.gettempdir() ) as f: 
-                    path = f.name
-                path = self.c.post(url, content=xml, headers={'Content-Type':'text/xml',  'Accept':'application/x-bag'}, path=f.name)
-                return tables.open_file(path, 'r')
+    def posthdf(self, url, xml=None, path=None, method="POST", **params):
+        """
+            Post xml to retrieve HDF from bisque
+            If path is provided the hdf5 file is stored there else if 
+            no path is provided a temporary file is created and an pytables
+            object is returned.
+            
+            @param url:
+            @param xml:
+            @param path:
+            @param method:
+            @param param:
+            
+            @return
+        """
+        if tables is none:
+            return
+        url = self.c.prepare_url (url, **params)
+        log.debug('fetchxml %s ' % url)
+
+        if isinstance(xml, etree._Element):
+            xml = etree.tostring(xml, pretty_print=True)
+
+        if path: #returns path of the file
+            return self.c.post(url, content=xml, headers={'Content-Type':'text/xml', 'Accept':'application/x-bag'}, path=path)
+        else: 
+            with tempfile.TemporaryFile(suffix='.h5', dir=tempfile.gettempdir() ) as f: 
+                path = f.name
+            path = self.c.post(url, content=xml, headers={'Content-Type':'text/xml',  'Accept':'application/x-bag'}, path=f.name)
+            return tables.open_file(path, 'r')
 
 
     def fetchblob(self, url, path=None, **param):
@@ -503,6 +515,8 @@ class BQSession(object):
                         fields['file_resource'] = xml
                 
                 return self.c.post(url, content=None, files=fields, headers={'Accept': 'text/xml'}, path=path, method=method)
+
+
 #    def post_streaming_blob(self, filename, xml=None, **params):
 #        """
 #        Requires requests_toolbet
