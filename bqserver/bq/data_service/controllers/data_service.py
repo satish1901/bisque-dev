@@ -76,7 +76,7 @@ from bq.util.urlutil import strip_url_params
 from bq.util.hash import make_uniq_code, is_uniq_code
 
 from .bisquik_resource import BisquikResource, force_dbload, check_access
-from .resource_query import resource_query, resource_count, resource_load, resource_delete, resource_types, resource_auth
+from .resource_query import resource_query, resource_count, resource_load, resource_delete, resource_types, resource_auth, resource_permission
 from .resource_query import prepare_permissions, RESOURCE_READ, RESOURCE_EDIT
 from .resource import HierarchicalCache
 from .formats import find_formatter
@@ -156,37 +156,6 @@ class DataServerController(ServiceController):
         'generate a unique code to be used for a resource'
         return make_uniq_code()
 
-    def force_dbload(self, item):
-        if item and isinstance(item, Query):
-            item = item.first()
-        return item
-
-    def check_access(self, query, action=RESOURCE_READ):
-        'check permission for the action for resource'
-        if action == RESOURCE_EDIT and self.resource_name in PROTECTED:
-            log.debug ("PROTECTED RESOURCE")
-            return None
-        if action == RESOURCE_EDIT and not identity.not_anonymous():
-            log.debug ("EDIT denied because annonymous")
-            return None
-
-        if query is None:
-            return None
-        if  isinstance(query, Query):
-            query = resource_permission(query, action=action)
-            #log.debug ("PERMISSION:query %s" % query)
-        else:
-            #   Previously loaded resource .. recreate query but with
-            #   permission check
-            #log.debug ("PERMISSION: loaded object %s %s" % ((query.xmltag, query.__class__), query.id))
-            query = resource_load ((query.xmltag, query.__class__), query.id)
-            query = resource_permission (query, action=action)
-
-        resource = self.force_dbload(query)
-        if resource is None:
-            log.info ("Permission check failure %s = %s" % (query, resource))
-            return None
-
 
     def new_image(self, resource = None, **kw):
         ''' place the data file in a local '''
@@ -208,10 +177,12 @@ class DataServerController(ServiceController):
     def resource_load(self,  uniq=None, ident=None, view=None):
         "Load a resource by uniq code or db ident (deprecated)"
         query =  resource_load('resource', uniq=uniq, ident=ident)
-        resource = self.check_access (query, RESOURCE_READ)
+        query =  resource_permission(query)
+        resource = query.first()
         if resource:
             xtree = db2tree(resource, baseuri = self.url, view=view)
             return xtree
+        log.debug ("load failure for resource %s", uniq)
         return None
 
     def append_resource(self, resource, tree=None, **kw):

@@ -99,6 +99,12 @@ def new_resource(resource, server=None, **kw):
     if server is None: server = service_registry.find_service ('data_service')
     return server.new_resource(resource, **kw)
 
+def resource_load(uniq=None, server=None, **kw):
+    ''' Create a new resource
+    '''
+    if server is None: server = service_registry.find_service ('data_service')
+    return server.resource_load(uniq=uniq, **kw)
+
 def get_resource(resource, server=None, **kw):
     ''' Create a new resource
     '''
