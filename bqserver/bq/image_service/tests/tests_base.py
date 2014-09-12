@@ -221,7 +221,7 @@ class ImageServiceTestBase(unittest.TestCase):
     def ensure_bisque_file(self, filename, metafile=None):
         path = self.fetch_file(filename)
         if metafile is None:
-            filename = u'%s/%s'%(TEST_PATH, filename.decode('utf-8'))
+            filename = u'%s/%s'%(TEST_PATH, filename)
             resource = etree.Element ('resource', name=filename)
             return self.upload_file(path, resource=resource)
         else:

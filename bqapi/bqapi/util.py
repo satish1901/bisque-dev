@@ -11,6 +11,19 @@ from bqclass import fromXml, toXml, BQMex
 import comm
 
 #####################################################
+# misc: unicode
+#####################################################
+
+def normalize_unicode(s):
+    if isinstance(s, unicode) is True:
+        return s
+    try:
+        s = s.decode('utf8')
+    except UnicodeEncodeError:
+        s = s.encode('ascii', 'replace')
+    return s    
+
+#####################################################
 # misc: path manipulation
 #####################################################
 
