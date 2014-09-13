@@ -823,7 +823,8 @@ class import_serviceController(ServiceController):
         
         # take care of no extension case: force deep guessing
         ext = os.path.splitext(uf.filename)[1]
-        if mime is None and (ext == '' or len(ext)>4):
+        noext = (ext == '' or len(ext)>6)
+        if mime is None and noext:
             log.debug('process: setting mime to "image/series"' )
             mime = 'image/series'
 
@@ -839,9 +840,10 @@ class import_serviceController(ServiceController):
             info = image_service.get_info(filename)
             log.debug('process info: %s', info)
             if info is not None:
-                if info.get('image_num_x', 0)>1:
+                if info.get('image_num_x', 0)>1 and noext:
                     intags['type'] = 'image/proprietary'
                 if info.get('image_num_series', 0)>1:
+                    intags['type'] = 'image/proprietary'
                     intags['image_num_series'] = info.get('image_num_series', 0)
 
         # no processing required

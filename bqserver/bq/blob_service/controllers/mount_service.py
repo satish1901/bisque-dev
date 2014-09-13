@@ -369,6 +369,7 @@ class MountServer(TGController):
         #log.debug ('ZOOM %s', q.get ('uri'))
         while q is not None and path:
             el= path.pop(0)
+            el = urllib.unquote (el)
             q = data_service.query(parent=q, resource_unid=el, view='full', )
             if len(q) != 1:
                 log.error ('multiple names (%s) in store level %s', el, q.get('uri'))
