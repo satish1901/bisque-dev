@@ -123,3 +123,12 @@ def config2url(conf):
     else:
         return conf
 
+
+def url2unicode(url):
+    "Unquote and try to decode"
+    url = urllib.unquote (url)
+    try:
+        return url.decode('utf-8')
+    except UnicodeEncodeError:
+        pass
+    return url

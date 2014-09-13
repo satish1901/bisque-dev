@@ -104,7 +104,7 @@ class DataServerController(ServiceController):
         return child
 
     @expose(content_type='text/xml')
-    def index(self):
+    def index(self, **kw):
         #resources = all_resources()
         resource = etree.Element('resource')
         for r in resource_types():
