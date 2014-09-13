@@ -320,11 +320,8 @@ class BlobServer(RestController, ServiceMixin):
     def get_one(self, ident, **kw):
         "Fetch a blob based on uniq ID"
         log.info("get_one(%s) %s" , ident, kw)
-        from bq.data_service.controllers.resource_query import RESOURCE_READ, RESOURCE_EDIT
-        #ident = args[0]
-        self.check_access(ident, RESOURCE_READ)
         try:
-            resource = data_service.query(resource_uniq=ident)[0]
+            resource = data_service.resource_load(uniq=ident)
             filename,_ = split_subpath(resource.get('name', str(ident)))
             b = self.localpath(ident)
             if b.files and len(b.files) > 1:

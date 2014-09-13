@@ -51,6 +51,9 @@ class MetaData(object):
         # Add the new tag to the image
         image.addTag(tag = md)
         metadata_tag = bq.save(md, image.uri + "/tag")
+        if metadata_tag is None:
+            bq.fail_mex ("could not write tag: no write access")
+            return
         bq.finish_mex(tags = [{ 'name': 'outputs',
                                 'tag' : [{ 'name': 'metadata',
                                            'value': metadata_tag.uri,

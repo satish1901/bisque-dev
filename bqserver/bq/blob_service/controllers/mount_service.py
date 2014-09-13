@@ -157,6 +157,7 @@ def load_default_drivers():
     return stores
 
 
+
 ###########################################################################
 
 
@@ -177,6 +178,9 @@ class MountServer(TGController):
     def _default(self, *path, **kw):
         """ Dispatch based on request method GET, ...
         """
+
+        # hmm some path elements arrive %encoded and utf8..  convert back to simple unicode
+        path = [ url2unicode(x) for x in path ]
         method = tg.request.method
         if  method == 'GET':
             return self._get(list(path), **kw)
@@ -245,6 +249,11 @@ class MountServer(TGController):
         if len(path)==0:
             return self.index()
         store_name = path.pop(0)
+        if len(path) == 0:
+            store = self._validate_store_update (store_name, tg.request.body)
+            if store is None:
+                abort("Unable to update store")
+            return etree.tostring(store)
         q = self.add_mount_path (store_name, path, **kw)
         return etree.tostring(q)
 
@@ -331,6 +340,35 @@ class MountServer(TGController):
         'create a new user mount given a url'
         store = etree.Element('store', name = mount_name, resource_unid=mount_name, value=mount_url)
         data_service.new_resource(store, parent = root_mount)
+
+
+    def _validate_store_update(self,storename, storexml):
+        "Allow only the credential tag to be modified on store"
+        try:
+            storeel = etree.XML(storexml)
+        except etree.ParseError:
+            log.error ("bad storexml for update %s", storexml)
+            return
+        store = self._load_store(storename)
+        # What constitutes a valid update?
+        # 1.  Only admins can create new top level stores and they
+        #  should be user specific (this is done using the site.cfg
+        #  currently)
+        if store is None:
+            log.warn ("attempting modify non-existent store %s.. please add new store templates to site.cfg", store_name)
+            return None
+        # 2. User can edit substores but may not change any attributes (only tags)
+        if storeel.tag != 'tag' or storeel.get('name') != 'credentials':  # could be posting a tag
+            log.warn("invalid store resource (use tag[credentials]) %s", storexml)
+            return None
+        store = data_service.get_resource(store, view="full")
+        credtag = get_tag(store, 'credentials')
+        if credtag is None:
+            store.append (storeel)
+        else:
+            credtag[0].set('value', storeel.get ('value'))
+
+        return data_service.update_resource(store, new_resource=store, replace=False, view='full')
 
 
     ###############################################
