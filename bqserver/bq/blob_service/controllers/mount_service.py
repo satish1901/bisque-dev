@@ -468,7 +468,7 @@ class MountServer(TGController):
             _, store_name, storepath = storepath.split ('/', 2)
             if store_name not in stores:
                 raise IllegalOperation("Illegal store name %s", store_name)
-            stores = dict( (store_name, stores[store_name]) )
+            stores = dict( [ (store_name, stores[store_name]) ] )
         else:
             # A relative name.. could be a reference store only
             if fileobj is None:
