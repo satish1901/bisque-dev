@@ -20,6 +20,7 @@ import tempfile
 import hashlib
 import datetime
 from itertools import groupby
+import re
 
 from bq.util.mkdir import _mkdir
 
@@ -81,7 +82,7 @@ def safeencode(s):
 
 def toascii(s):
     if isinstance(s, unicode) is not True:
-        return s
+        return str(s)
     return s.encode('ascii', 'replace')
 
 def run_command(command):
@@ -145,7 +146,6 @@ else:
             return command, None
         ext = os.path.splitext(ifnm)[1]
         uniq = hashlib.md5('%s%s'%(ifnm.encode('ascii', 'xmlcharrefreplace'),datetime.datetime.now())).hexdigest()
-        tmp_path = '%s\\temp'%os.path.splitdrive(ifnm)[0] 
         
         # preserve drive letter to create hard link on the same drive
         # dima: os.path.join does not join drive letters correctly
@@ -153,24 +153,45 @@ else:
         if tmp_path != '':
             tmp_path = '%s\\temp'%tmp_path
         _mkdir(tmp_path)
-        tmp = os.path.join(tmp_path, '%s%s'%(uniq, ext))
+        tmp = str(os.path.join(tmp_path, 'bq_temp_%s%s'%(uniq, ext)))
         
-        #tmp = '%s%s'%(uniq, ext) # dima: same drive as running system - may not work
         log.debug('start_nounicode_win hardlink: [%s] -> [%s]', ifnm, tmp)
         try:
             hardlink(ifnm, tmp)
         except OSError:
+            log.debug('Failed creating a hard link: %s', tmp)            
             return command, None
         command = [tmp if x==ifnm else x for x in command]
+        log.debug('Created a new command: %s', command)            
         return command, tmp
+
+    def purge(dir, pattern):
+        log.debug('Purging [%s] in [%s]', pattern, dir)
+        regex = re.compile(pattern)
+        for f in os.listdir(dir):
+            if regex.search(f):
+                tmp = os.path.join(dir, f)
+                try:
+                    os.remove(tmp)
+                except:
+                    log.debug('Could not remove temp link: %s', tmp)
+                    pass
     
     def end_nounicode_win(tmp):
         if tmp is None:
             return
         log.debug('end_nounicode_win unlink: [%s]', tmp)
         try:
-            os.remove(tmp) # gets the system into a dark state of recursion?
+            os.remove(tmp)
+            tmp = None            
         except OSError:
-            log.warning('Could not remove temp link: %s', tmp)
-            pass
+            #log.warning('Could not remove temp link: %s', tmp)
+            #log.exception('Could not remove temp link: %s', tmp)
+        
+            # dima: after subprocess call many files are still open and
+            # cant be removed, so instead match a specific patter and remove
+            # all that match in the temp dir, under windows this is be ok
+            # since files would be locked for removal while being used 
+            purge(os.path.dirname(tmp), "^bq_temp_*")
+
 

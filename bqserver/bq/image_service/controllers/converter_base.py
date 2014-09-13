@@ -238,7 +238,7 @@ class ConverterBase(object):
     def run_read(cls, ifnm, command ):
         with Locks(ifnm):
             command, tmp = misc.start_nounicode_win(ifnm, command)
-            log.debug('run_read command: [%s]', command)
+            log.debug('run_read command: [%s]', misc.toascii(command))
             out = misc.run_command( command )
             misc.end_nounicode_win(tmp)
         return out
@@ -248,30 +248,35 @@ class ConverterBase(object):
         '''converts input filename into output using exact arguments as provided in args'''
         if not cls.installed:
             return None
+        tmp = None
         with Locks(ifnm, ofnm) as l:
             if l.locked: # the file is not being currently written by another process
                 command = [cls.CONVERTERCOMMAND]
                 command.extend(args)
-                log.debug('Run command: [%s]', command)
+                log.debug('Run command: [%s]', misc.toascii(command))
                 proceed = True
                 if ofnm is not None and os.path.exists(ofnm) and os.path.getsize(ofnm)>16:
                     if kw.get('nooverwrite', False) is True:
                         proceed = False
-                        log.warning ('Run: output exists before command [%s], skipping', ofnm)
+                        log.warning ('Run: output exists before command [%s], skipping', misc.toascii(ofnm))
                     else:
-                        log.warning ('Run: output exists before command [%s], overwriting', ofnm)
+                        log.warning ('Run: output exists before command [%s], overwriting', misc.toascii(ofnm))
                 if proceed is True:
                     command, tmp = misc.start_nounicode_win(ifnm, command)
-                    retcode = call (command)
+                    try:
+                        retcode = call (command)
+                    except:
+                        retcode = 100
+                        log.exception('Error running command: %s', command)
                     misc.end_nounicode_win(tmp)
                     if retcode == 99:
                         # in case of a timeout
-                        log.info ('Run: timed-out for [%s]', command)
+                        log.info ('Run: timed-out for [%s]', misc.toascii(command))
                         if ofnm is not None and os.path.exists(ofnm):
                             os.remove(ofnm)
                         abort(412, 'Requested timeout reached')
                     if retcode!=0:
-                        log.info ('Run: returned [%s] for [%s]', retcode, command)
+                        log.info ('Run: returned [%s] for [%s]', retcode, misc.toascii(command))
                         return None
                     if ofnm is None:
                         return str(retcode)

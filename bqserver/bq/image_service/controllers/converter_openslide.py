@@ -281,14 +281,14 @@ class ConverterOpenSlide(ConverterBase):
                 try:
                     _, tmp = misc.start_nounicode_win(ifnm, [])
                     slide = openslide.OpenSlide(tmp or ifnm)                    
+                    dz = deepzoom.DeepZoomGenerator(slide, tile_size=sz, overlap=0)
+                    img = dz.get_tile(dz.level_count-level-1, (x,y))
+                    img.save(ofnm, 'TIFF', compression='LZW')
+                    slide.close()
+                    misc.end_nounicode_win(tmp)                    
                 except (openslide.OpenSlideUnsupportedFormatError, openslide.OpenSlideError):
                     misc.end_nounicode_win(tmp)
-                    return None
-                dz = deepzoom.DeepZoomGenerator(slide, tile_size=sz, overlap=0)
-                img = dz.get_tile(dz.level_count-level-1, (x,y))
-                img.save(ofnm, 'TIFF', compression='LZW')
-                slide.close()
-                misc.end_nounicode_win(tmp)
+                    return None                
         
         # make sure the file was written
         with Locks(ofnm):
