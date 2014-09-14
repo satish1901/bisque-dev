@@ -81,8 +81,8 @@ def safeencode(s):
     return s
 
 def toascii(s):
-    if isinstance(s, unicode) is not True:
-        return str(s)
+    if isinstance(s, basestring) is not True:
+        s = u'%s'%s
     return s.encode('ascii', 'replace')
 
 def run_command(command):
