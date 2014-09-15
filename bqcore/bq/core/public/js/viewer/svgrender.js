@@ -7,7 +7,7 @@ function test_visible_dim(pos, pos_view, tolerance ) {
 function test_visible (pos, viewstate, polygon, tolerance ) {
     var proj = viewstate.imagedim.project,
         proj_gob = viewstate.gob_projection;
-    tolerance = tolerance || 1.0;
+    tolerance = tolerance || viewstate.gob_tolerance || 1.0;
     polygon = polygon || false;
 
     if (proj_gob==='all') {
