@@ -145,6 +145,7 @@ class MexAuth(AuthBase):
         r.headers['Authorization'] = self.username
         return r
 
+
 class BQServer(Session):
     """ A reference to Bisque server
     Allow communucation with a bisque server
@@ -165,7 +166,7 @@ class BQServer(Session):
             @param user: the user attached to the mex
 
         """
-        self.auth = MexAuth(token, user=None)
+        self.auth = MexAuth(token, user=user)
 
 
     def authenticate_basic(self, user, pwd):
@@ -355,15 +356,15 @@ class BQSession(object):
         """
         if bisque_root is None:
             # This assumes that bisque_root is http://host.org:port/
-            mex_tuple = list(urlparse.urlparse (mex_url))
+            mex_tuple = list(urlparse.urlparse(mex_url))
             mex_tuple[2:5] = '','',''
             bisque_root = urlparse.urlunparse(mex_tuple)
 
         self.bisque_root = bisque_root
         self.c.root = bisque_root
-        self.c.authenticate_mex(token, user=None)
+        self.c.authenticate_mex(token, user=user)
         self._load_services()
-        self.mex = self.load (mex_url, view='deep')
+        self.mex = self.load(mex_url, view='deep')
         return self
 
 
@@ -381,7 +382,7 @@ class BQSession(object):
             
             @return xml etree
         """
-        url = self.c.prepare_url (url, **params)
+        url = self.c.prepare_url(url, **params)
         log.debug('fetchxml %s ' % url)
         if path:
             return self.c.fetch(url, headers={'Content-Type':'text/xml', 'Accept':'text/xml'}, path=path)
@@ -484,7 +485,7 @@ class BQSession(object):
             @param params: params will be added to url query
         """
         url = self.c.prepare_url(url, **params)
-        return self.c.fetch(url, path=path, headers={'Content-Type':'text/xml', 'Accept': 'application/x-bag' })
+        return self.c.fetch(url, path=path, headers={'Content-Type':'text/xml'})
 
 
     def postblob(self, filename, xml=None, path=None, method="POST", **params):
@@ -544,7 +545,7 @@ class BQSession(object):
 #            return r
 
 
-    def service_url(self, service_type, path = "" , query = None):
+    def service_url(self, service_type, path = "" , query=None):
         """
             @param service_type:
             @param path:
@@ -552,7 +553,7 @@ class BQSession(object):
             
             @return
         """
-        root = self.service_map.get(service_type, None )
+        root = self.service_map.get(service_type, None)
         if root is None:
             raise 'Not a service type'
         if query:
