@@ -577,7 +577,7 @@ Ext.define('Bisque.Resource.Image.Page', {
             }
         });
 
-        this.gobjectTagger = new Bisque.GObjectTagger({
+        this.gobjectTagger = Ext.create('Bisque.GObjectTagger', {
             resource : this.resource,
             mexBrowser : mexBrowser,
             title : 'Graphical',
@@ -618,6 +618,28 @@ Ext.define('Bisque.Resource.Image.Page', {
                     this.viewerContainer.viewer.setGobProjection(projection);
                 },
 
+                gob_tolerance : function(me) {
+                    Ext.MessageBox.show({
+                        title: 'Gobject visible plane tolerance',
+                        msg: 'Please enter new tolerance (in planes):',
+                        buttons: Ext.MessageBox.OKCANCEL,
+                        prompt: true,
+                        multiline: false,
+                        fn: function(btn, text) {
+                            if (btn !== 'ok') {
+                                return;
+                            }
+                            var tolerance = parseFloat(text);
+                            if (tolerance===0 || text==='' || isNaN(tolerance)) {
+                                tolerance = undefined;
+                            }
+                            this.viewerContainer.viewer.setGobTolerance(tolerance);
+                        },
+                        scope: this,
+                        value: this.viewerContainer.viewer.getGobTolerance() || '1.0',
+                    });
+                },
+
                 delete_gobjects : function(gobs) {
                     this.viewerContainer.viewer.delete_gobjects(gobs);
                 },
@@ -641,7 +663,7 @@ Ext.define('Bisque.Resource.Image.Page', {
             }
         });
 
-        var mexBrowser = new Bisque.ResourceBrowser.Browser({
+        var mexBrowser = Ext.create('Bisque.ResourceBrowser.Browser', {
             'layout' : 5,
             'title' : 'Analysis',
             'viewMode' : 'MexBrowser',

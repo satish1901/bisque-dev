@@ -1079,6 +1079,11 @@ Ext.define('Bisque.GObjectTagger', {
                         group: 'projections',
                         checked: false,
                         projection: 'T',
+                    }, '-', {
+                        itemId: 'gobTolerance',
+                        text: 'Set projection tolerance (in planes)',
+                        handler: this.onGobTolerance,
+                        scope: this,
                     }]
                 }
             }, {
@@ -1561,6 +1566,11 @@ Ext.define('Bisque.GObjectTagger', {
     onProjection: function(el, e) {
         this.fireEvent('gob_projection', this, el.projection);
     },
+
+    onGobTolerance: function(el, e) {
+        this.fireEvent('gob_tolerance', this);
+    },
+
 });
 
 //-----------------------------------------------------------------------

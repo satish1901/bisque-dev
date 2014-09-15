@@ -584,6 +584,15 @@ ImgViewer.prototype.setGobProjection = function(projection) {
     this.renderer.rerender();
 };
 
+ImgViewer.prototype.setGobTolerance = function(tolerance) {
+    this.current_view.gob_tolerance = tolerance;
+    this.renderer.rerender();
+};
+
+ImgViewer.prototype.getGobTolerance = function() {
+    return this.current_view.gob_tolerance;
+};
+
 ImgViewer.prototype.highlight_gobject = function(gob, selection) {
     // reposition the image to expose the object
     if (selection) {
