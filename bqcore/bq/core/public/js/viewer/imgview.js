@@ -579,6 +579,11 @@ ImgViewer.prototype.hideGObjects = function(gobs) {
     this.renderer.rerender(gobs, [this.current_view, false]);
 };
 
+ImgViewer.prototype.setGobProjection = function(projection) {
+    this.current_view.gob_projection = projection;
+    this.renderer.rerender();
+};
+
 ImgViewer.prototype.highlight_gobject = function(gob, selection) {
     // reposition the image to expose the object
     if (selection) {

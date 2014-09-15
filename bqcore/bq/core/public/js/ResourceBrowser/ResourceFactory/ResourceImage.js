@@ -614,6 +614,10 @@ Ext.define('Bisque.Resource.Image.Page', {
                     this.viewerContainer.viewer.hideGObjects(gobject);
                 },
 
+                gob_projection : function(me, projection) {
+                    this.viewerContainer.viewer.setGobProjection(projection);
+                },
+
                 delete_gobjects : function(gobs) {
                     this.viewerContainer.viewer.delete_gobjects(gobs);
                 },
