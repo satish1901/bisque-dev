@@ -936,8 +936,8 @@ class import_serviceController(ServiceController):
         try:
             return self.transfer_internal(**kw)
         except Exception, e:
-            log.exception("During transfer: %s" , str( kw))
-            abort(500)
+            log.exception("During transfer: %s" , str(kw))
+            abort(500, 'Internal error during upload')
 
 
     def transfer_internal(self, **kw):
@@ -1002,7 +1002,7 @@ class import_serviceController(ServiceController):
                     resource = etree.fromstring (f)
                 except etree.XMLSyntaxError:
                     log.exception ("while parsing %s" , f)
-                    abort(400)
+                    abort(400, 'Error while parsing transfered XML')
                 # Read the record original record (not the nginx one)
                 payload_resource = find_upload_resource(transfers, pname.replace ('.uploaded', ''))
                 if payload_resource is None:
@@ -1024,7 +1024,7 @@ class import_serviceController(ServiceController):
                     resource = etree.fromstring(f)
                 except etree.XMLSyntaxError:
                     log.exception ("while parsing %s" , str(f))
-                    abort(400)
+                    abort(400, 'Error while parsing transfered XML')
                 files.append(UploadedResource(resource=resource))
 
         log.debug("TRANSFER after resources %s"  , str( transfers))

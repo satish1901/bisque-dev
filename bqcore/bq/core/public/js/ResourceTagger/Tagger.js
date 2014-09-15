@@ -961,6 +961,8 @@ Ext.define('Bisque.ResourceTagger', {
 
 //-----------------------------------------------------------------------
 // Bisque.GObjectTagger
+// events:
+// gob_projection
 //-----------------------------------------------------------------------
 Ext.define('Bisque.GObjectTagger', {
     extend: 'Bisque.ResourceTagger',
@@ -1014,16 +1016,22 @@ Ext.define('Bisque.GObjectTagger', {
             border: 0,
             dock: 'top',
             items: [{
-                xtype: 'splitbutton',
+                //xtype: 'splitbutton',
                 arrowAlign: 'right',
                 text: 'Visibility',
                 scale: 'medium',
                 iconCls: 'icon-check',
-                handler: this.toggleCheckTree,
+                //handler: this.toggleCheckTree,
                 checked: true,
                 scope: this,
                 menu: {
+                    plain: true,
                     items: [{
+                        xtype:'tbtext',
+                        text: 'Visibility',
+                        indent: true,
+                        cls: 'menu-heading',
+                    }, {
                         text: 'Toggle each',
                         handler: function() {this.toggleCheck(); },
                         scope: this,
@@ -1035,6 +1043,42 @@ Ext.define('Bisque.GObjectTagger', {
                         text: 'Uncheck all',
                         handler: function() {this.toggleCheck('unchecked'); },
                         scope: this,
+                    }, {
+                        xtype:'tbtext', text: 'Projections',
+                        indent: true,
+                        cls: 'menu-heading',
+                    }, {
+                        itemId: 'projectionNone',
+                        text: 'Project none',
+                        handler: this.onProjection,
+                        scope: this,
+                        group: 'projections',
+                        checked: true,
+                        projection: 'none',
+                    }, {
+                        itemId: 'projectionAll',
+                        text: 'Project all',
+                        handler: this.onProjection,
+                        scope: this,
+                        group: 'projections',
+                        checked: false,
+                        projection: 'all',
+                    }, {
+                        itemId: 'projectionT',
+                        text: 'Project all for current T',
+                        handler: this.onProjection,
+                        scope: this,
+                        group: 'projections',
+                        checked: false,
+                        projection: 'Z',
+                    }, {
+                        itemId: 'projectionZ',
+                        text: 'Project all for current Z',
+                        handler: this.onProjection,
+                        scope: this,
+                        group: 'projections',
+                        checked: false,
+                        projection: 'T',
                     }]
                 }
             }, {
@@ -1514,6 +1558,9 @@ Ext.define('Bisque.GObjectTagger', {
         });
     },
 
+    onProjection: function(el, e) {
+        this.fireEvent('gob_projection', this, el.projection);
+    },
 });
 
 //-----------------------------------------------------------------------
