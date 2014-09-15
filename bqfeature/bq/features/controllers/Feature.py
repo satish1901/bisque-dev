@@ -52,13 +52,13 @@ def request_internally(url):
     log.debug("Mex %s" % identity.mex_authorization_token())  
     req.headers['Authorization'] = "Mex %s" % identity.mex_authorization_token()
     req.headers['Accept'] = 'text/xml'        
-    log.debug("begin routing internally %s" % resource[r])
+    log.debug("begin routing internally %s" % url)
     resp = req.get_response(bisque_app)
     log.debug("end routing internally: status %s" % resp.status_int)
     if resp.status_int < 400:
         return resp.body
     else:
-        log.debug("User is not authorized to read resource internally: %s",resource[r])
+        log.debug("User is not authorized to read resource internally: %s",url)
         return None
 
 
