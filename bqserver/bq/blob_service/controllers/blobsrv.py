@@ -75,6 +75,7 @@ from bq.core.service import ServiceController
 from bq.exceptions import IllegalOperation, DuplicateFile, ServiceError
 from bq.util.timer import Timer
 from bq.util.sizeoffmt import sizeof_fmt
+from bq.util.hash import is_uniq_code
 
 
 from bq import data_service
@@ -321,6 +322,9 @@ class BlobServer(RestController, ServiceMixin):
         "Fetch a blob based on uniq ID"
         log.info("get_one(%s) %s" , ident, kw)
         try:
+            if not is_uniq_code (ident):
+                abort (404, "Must be resource unique code")
+
             resource = data_service.resource_load(uniq=ident)
             filename,_ = split_subpath(resource.get('name', str(ident)))
             b = self.localpath(ident)
