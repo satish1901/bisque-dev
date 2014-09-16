@@ -174,10 +174,14 @@ class MountServer(TGController):
     # Web funs
     #
     @expose(content_type='text/xml')
-    @require(predicates.not_anonymous())
+    #@require(predicates.not_anonymous())
     def _default(self, *path, **kw):
         """ Dispatch based on request method GET, ...
         """
+
+        # Ignore silently anonymous requests (no looking at files when not logged in)
+        if identity.anonymous():
+            return "<resource/>"
 
         # hmm some path elements arrive %encoded and utf8..  convert back to simple unicode
         path = [ url2unicode(x) for x in path ]
@@ -191,11 +195,15 @@ class MountServer(TGController):
         abort(400)
 
     @expose(content_type='text/xml')
-    @require(predicates.not_anonymous())
+    #@require(predicates.not_anonymous())
     def index(self):
         #stores = etree.Element ('resource', resource_type='stores')
         #for k,v in self.drivers.items():
         #    etree.SubElement(stores, 'store', name = k, resource_unid=k, value=v.top)
+
+
+        if identity.anonymous():
+            return "<resource/>"
 
         root = self._create_root_mount()
         return etree.tostring(root)
@@ -240,6 +248,10 @@ class MountServer(TGController):
                         log.warn ('element %s was not fetched', etree.tostring(el))
                 else:
                     resp.append(el)
+            # recipe for sorting trees from http://stackoverflow.com/questions/8385358/lxml-sorting-tag-order
+            for parent in resp.xpath('//*[./*]'): # Search for parent elements
+                parent[:] = sorted(parent,key=lambda x: x.get('name', None) or '')
+            #resp.sort (key = lambda x: x.get ('name'))
             q = resp
 
         return etree.tostring(q)
@@ -391,7 +403,7 @@ class MountServer(TGController):
         storelist = root.xpath("store[@name='%s']" % store_name)
         if len(storelist) == 0:
             log.warn('No store named %s' , store_name)
-        if len(storelist) != 1:
+        elif len(storelist) != 1:
             log.error ('Multiple named stores')
         else:
             return storelist[0]
@@ -413,7 +425,7 @@ class MountServer(TGController):
                 log.error ('multiple names (%s) in store level %s', el, q.get('uri'))
                 return None
             q = q[0]
-        if kw or len(q) == 0:
+        if q is not None and (kw or len(q)) == 0:
             # might be limitin result
             log.debug ("loading with %s view=%s and %s", q, view, kw)
             q = data_service.get_resource(q, view=view, **kw)
