@@ -10,11 +10,10 @@ This README would normally document whatever steps are necessary to get your app
 
 ### How do I get set up? ###
 
-* [See original instructions)[http://biodev.ece.ucsb.edu/projects/bisque]
+* (See original instructions)[http://biodev.ece.ucsb.edu/projects/bisque]
 
 ### Contribution guidelines ###
 
 * Writing tests
 * Code review
 * Other guidelines
-
