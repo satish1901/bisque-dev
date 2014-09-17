@@ -8,10 +8,10 @@ function ImgSlicer (viewer, name){
     // default values for projection are: '', 'projectmax', 'projectmin'
     // only in the case of 5D image: 'projectmaxt', 'projectmint', 'projectmaxz', 'projectminz'
     this.default_projection  = p.projection || '';
-    this.plane_buffer_sz = 60;  // number of tiles to cache in both z and t
+    this.plane_buffer_sz = 80;  // number of tiles to cache in both z and t
     this.cache_tile_delay_ms = 10; // Delay before requesting a specific tile
-    this.update_delay_ms = 250; // Delay before requesting new frames
-    this.cache_delay_ms = 700;  // Delay before pre-caching new frames
+    this.update_delay_ms = 150; // Delay before requesting new frames
+    this.cache_delay_ms = 350;  // Delay before pre-caching new frames
 
     this.base = ViewerPlugin;
     this.base (viewer, name);
@@ -307,17 +307,17 @@ ImgSlicer.prototype.preCacheNeighboringImages = function () {
         //slice = 'slice=,,'+(this.z+1)+','+(this.t+1),
         slice = template.replace('{Z}', this.z+1).replace('{T}', this.t+1),
         dim = this.dim,
-        i=0, szz=0, szt=0;
+        i=1, szz=0, szt=0; // i=0 for halfs
     while (szz+szt<this.buffer_len) {
-        var hp = Math.floor(i/2)+1;
+        //var hp = Math.floor(i/2)+1;
         var dz=0;
         if (dim.z>1 && projection!=='projectmaxz' && projection!=='projectminz') {
             //var z = i%2 ? this.z-hp : this.z+hp;
-            var z = this.z+hp;
+            var z = this.z+i;
             var nslice = template.replace('{Z}', z+1).replace('{T}', this.t+1);
             dz += this.cacheTiles(z, dim.z, this.image_buffer_z, szz, slice, nslice, tiles);
 
-            var z = this.z-hp;
+            var z = this.z-i;
             var nslice = template.replace('{Z}', z+1).replace('{T}', this.t+1);
             dz += this.cacheTiles(z, dim.z, this.image_buffer_z, szz+dz, slice, nslice, tiles);
 
@@ -328,17 +328,17 @@ ImgSlicer.prototype.preCacheNeighboringImages = function () {
         if (dim.t>1 && projection!=='projectmaxt' && projection!=='projectmint') {
             //var t = i%2 ? this.t-hp : this.t+hp;
 
-            var t = this.t+hp;
+            var t = this.t+i;
             var nslice = template.replace('{Z}', this.z+1).replace('{T}', t+1);
             dt += this.cacheTiles(t, dim.t, this.image_buffer_t, szt, slice, nslice, tiles);
 
-            var t = this.t-hp;
+            var t = this.t-i;
             var nslice = template.replace('{Z}', this.z+1).replace('{T}', t+1);
             dt += this.cacheTiles(t, dim.t, this.image_buffer_t, szt+dt, slice, nslice, tiles);
 
             szt += dt;
         }
-        if (dz<1 && dt<1) return;
+        if (dz+dt<1) return;
         i++;
     }
 };
