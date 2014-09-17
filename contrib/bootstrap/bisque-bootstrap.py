@@ -30,7 +30,7 @@ def main():
         shell = True        
 
 
-    print 'Activating virtual environment using: %s\n'%activate
+    print 'Activating virtual environment with: %s\n'%activate
     execfile (activate, dict(__file__=activate))
 
     os.environ['VIRTUAL_ENV'] = os.path.abspath(args.bqenv)
@@ -78,7 +78,6 @@ def main():
     print "bq-admin setup [server|engine]"
 
     print "Please visit http://biodev.ece.ucsb.edu/projects/bisquik/wiki/InstallationInstructions and follow instructions there"
-
 
 
 
