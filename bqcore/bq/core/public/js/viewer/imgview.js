@@ -384,10 +384,10 @@ ImgViewer.prototype.getAttributes = function () {
 };
 
 ImgViewer.prototype.init = function () {
-    this.renderer = this.plugins_by_name['renderer'];
-    this.editor   = this.plugins_by_name['edit'];
-    this.tiles    = this.plugins_by_name['tiles'];
-    this.slicer   = this.plugins_by_name['slicer'];
+    this.renderer = this.plugins_by_name.renderer;
+    this.editor   = this.plugins_by_name.edit;
+    this.tiles    = this.plugins_by_name.tiles;
+    this.slicer   = this.plugins_by_name.slicer;
     this.createPlugins(this.imagediv);
     if (this.image_or_uri instanceof BQImage)
         this.newImage(this.image_or_uri);
@@ -417,7 +417,7 @@ ImgViewer.prototype.onkeyboard = function(e) {
 //
 ImgViewer.prototype.createPlugins = function (parent) {
     var currentdiv = parent;
-    for (var i = 0; i < this.plugins.length; i++) {
+    for (var i=0; i < this.plugins.length; i++) {
         var plugin = this.plugins[i];
         currentdiv = plugin.create (currentdiv);
     }
@@ -444,7 +444,7 @@ ImgViewer.prototype.resize = function  (sz) {
         this.imagediv.style.width = sz.width+"px";
 
   if ('tiles' in this.plugins_by_name)
-    this.plugins_by_name['tiles'].resize();
+    this.plugins_by_name.tiles.resize();
 };
 
 
@@ -499,13 +499,13 @@ ImgViewer.prototype.doUpdateImage = function () {
     // Plugins use current view to calculate actual src url.
     this.update_needed = null;
     this.updateView();
-    for (var i = 0; i < this.plugins.length; i++) {
+    for (var i=0; i<this.plugins.length; i++) {
         plugin = this.plugins[i];
         plugin.updateImage ();
     }
 
     // the new updatePosition call
-    for (var i = 0; i < this.plugins.length; i++) {
+    for (i=0; i<this.plugins.length; i++) {
         plugin = this.plugins[i];
         plugin.updatePosition ();
     }
@@ -630,7 +630,7 @@ ImgViewer.prototype.set_parent_gobject = function(gob) {
 };
 
 ImgViewer.prototype.start_wait = function (o) {
-    var p = this.plugins_by_name["progressbar"];
+    var p = this.plugins_by_name.progressbar;
     if (!p) {
       document.body.style.cursor= "wait";
     } else {
@@ -639,7 +639,7 @@ ImgViewer.prototype.start_wait = function (o) {
 };
 
 ImgViewer.prototype.end_wait = function (o) {
-    var p = this.plugins_by_name["progressbar"];
+    var p = this.plugins_by_name.progressbar;
     if (!p) {
       document.body.style.cursor= "default";
     } else {
@@ -781,7 +781,7 @@ SimpleImgRenderer.prototype = new ViewerPlugin();
 SimpleImgRenderer.prototype.create = function (parent) {
     this.image = document.createElementNS(xhtmlns, "img");
     parent.appendChild(this.image);
-    return this.image
+    return this.image;
 };
 
 SimpleImgRenderer.prototype.updateImage = function () {
