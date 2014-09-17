@@ -8,7 +8,7 @@ function ImgSlicer (viewer, name){
     // default values for projection are: '', 'projectmax', 'projectmin'
     // only in the case of 5D image: 'projectmaxt', 'projectmint', 'projectmaxz', 'projectminz'
     this.default_projection  = p.projection || '';
-    this.plane_buffer_sz = 80;  // number of tiles to cache in both z and t
+    this.plane_buffer_sz = 60;  // number of tiles to cache in both z and t
     this.cache_tile_delay_ms = 10; // Delay before requesting a specific tile
     this.update_delay_ms = 250; // Delay before requesting new frames
     this.cache_delay_ms = 700;  // Delay before pre-caching new frames
@@ -54,56 +54,59 @@ ImgSlicer.prototype.updateView = function (view) {
         view.z = this.z;
         view.t = this.t;
     }
-    if (this.prev) {
-        view.z = this.z = this.prev.z;
-        view.t = this.t = this.prev.t;
-    }
 
     var projection = this.default_projection;
     if (!this.menu) this.createMenu();
     if (this.menu) {
         projection = this.projection_combo.getValue();
     }
+    view.projection = projection;
 
     this.params = {};
 
     // '', 'projectmax', 'projectmin', 'projectmaxt', 'projectmint', 'projectmaxz', 'projectminz'
-    if (!projection || projection=='') {
-        if (this.prev)
+    if (!projection || projection==='') {
+        if (this.prev) {
+            view.z = this.z = this.prev.z;
+            view.t = this.t = this.prev.t;
             this.prev = undefined;
+        }
         this.params.z1 = view.z+1;
         this.params.t1 = view.t+1;
         view.addParams ( 'slice=,,'+(view.z+1)+','+(view.t+1) );
         if (this.zslider) this.zslider.show();
         if (this.tslider) this.tslider.show();
     } else {
-        var showzslider = false;
-        var showtslider = false;
-        var newdimz = 1;
-        var newdimt = 1;
-        var prjtype = projection;
+        var showzslider = false,
+            showtslider = false,
+            newdimz = 1,
+            newdimt = 1,
+            prjtype = projection,
+            dim = view.imagedim;
+
         if (!this.prev)
             this.prev = {z: view.z, t: view.t};
 
-        if (prjtype.match('^projectmax')=='projectmax' ) projection = 'projectmax';
-        if (prjtype.match('^projectmin')=='projectmin' ) projection = 'projectmin';
+        if (prjtype.indexOf('projectmax')===0)
+            projection = 'projectmax';
+        else if (prjtype.indexOf('projectmin')===0)
+            projection = 'projectmin';
 
         // now take care of required pre-slicing for 4D/5D cases
-        var dim = view.imagedim;
-
-        if (prjtype=='projectmaxz' || prjtype=='projectminz') {
+        if (prjtype==='projectmaxz' || prjtype==='projectminz') {
             this.params.z1 = 1;
             this.params.z2 = dim.z;
             this.params.t1 = view.t+1;
-            view.addParams ( 'slice=,,1-'+(dim.z)+','+(view.t+1) );
+            //view.addParams ( 'slice=,,1-'+(dim.z)+','+(view.t+1) );
+            view.addParams ( 'slice=,,,'+(view.t+1) );
             showtslider = true;
             newdimt = dim.t;
-        } else
-        if (prjtype=='projectmaxt' || prjtype=='projectmint') {
+        } else if (prjtype==='projectmaxt' || prjtype==='projectmint') {
             this.params.z1 = dim.z+1;
             this.params.t1 = 1;
             this.params.t2 = view.t;
-            view.addParams ( 'slice=,,'+(view.z+1)+',1-'+(dim.t) );
+            //view.addParams ( 'slice=,,'+(view.z+1)+',1-'+(dim.t) );
+            view.addParams ( 'slice=,,'+(view.z+1)+',' );
             showzslider = true;
             newdimz = dim.z;
         }
@@ -119,10 +122,9 @@ ImgSlicer.prototype.updateView = function (view) {
 };
 
 ImgSlicer.prototype.updateImage = function () {
-    var view = this.viewer.current_view;
-    var dim = view.imagedim.clone();
-
-    var imgphys = this.viewer.imagephys;
+    var view = this.viewer.current_view,
+        dim = view.imagedim.clone(),
+        imgphys = this.viewer.imagephys;
 
     if (!this.pixel_info_z) {
       this.pixel_info_z = [undefined,undefined];
@@ -134,7 +136,7 @@ ImgSlicer.prototype.updateImage = function () {
     }
 
     // recompute sliders
-    if (this.dim == null || this.dim.t != dim.t) {
+    if (this.dim === null || this.dim.t !== dim.t) {
         if (this.tslider) {
             this.tslider.destroy();
             this.tslider=null;
@@ -144,7 +146,7 @@ ImgSlicer.prototype.updateImage = function () {
             this.t = 0;
         }
     }
-    if (this.dim == null || this.dim.z != dim.z) {
+    if (this.dim === null || this.dim.z !== dim.z) {
         if (this.zslider) {
             this.zslider.destroy();
             this.zslider=null;
@@ -163,9 +165,9 @@ ImgSlicer.prototype.updateImage = function () {
 };
 
 ImgSlicer.prototype.updatePosition = function () {
-    var view = this.viewer.current_view;
-    var dim = view.imagedim.clone();
-    var surf = this.viewer.viewer_controls_surface ? this.viewer.viewer_controls_surface : this.div;
+    var view = this.viewer.current_view,
+        dim = view.imagedim.clone(),
+        surf = this.viewer.viewer_controls_surface || this.div;
 
     if (!this.tslider && dim.t>1) {
         this.tslider = Ext.create('BQ.slider.TSlider', {
@@ -235,8 +237,8 @@ ImgSlicer.prototype.setPosition = function (z, t) {
 
 ImgSlicer.prototype.ensureVisible = function (gob) {
     if (!gob.vertices || gob.vertices.length<1) return;
-    var z = gob.vertices[0].z;
-    var t = gob.vertices[0].t;
+    var z = gob.vertices[0].z,
+        t = gob.vertices[0].t;
     /*var v=undefined;
     if (gob.vertices.length>1 && gob.resource_type in {polyline: undefined, polygon: undefined}) {
         for (var i=1; (v=gob.vertices[i]); i++) {
@@ -291,28 +293,49 @@ ImgSlicer.prototype.cacheTiles = function (pos, posmax, buf, index, slice, nslic
 
 ImgSlicer.prototype.preCacheNeighboringImages = function () {
     this.cache_timeout = null;
+    var view = this.viewer.current_view,
+        projection = view.projection,
+        template = 'slice=,,{Z},{T}';
 
-    var tiles = this.viewer.tiles.getLoadedTileUrls();
-    var slice = 'slice=,,'+(this.z+1)+','+(this.t+1);
-    var dim = this.dim;
+    if (projection==='projectmaxz' || projection==='projectminz') {
+        template = 'slice=,,,{T}';
+    } else if (projection==='projectmaxt' || projection==='projectmint') {
+        template = 'slice=,,{Z},';
+    }
 
-    var i=0, szz=0, szt=0;
+    var tiles = this.viewer.tiles.getLoadedTileUrls(),
+        //slice = 'slice=,,'+(this.z+1)+','+(this.t+1),
+        slice = template.replace('{Z}', this.z+1).replace('{T}', this.t+1),
+        dim = this.dim,
+        i=0, szz=0, szt=0;
     while (szz+szt<this.buffer_len) {
         var hp = Math.floor(i/2)+1;
         var dz=0;
-        if (dim.z>1) {
-            var z = i%2 ? this.z-hp : this.z+hp;
-            var nslice = 'slice=,,'+(z+1)+','+(this.t+1);
-            dz = this.cacheTiles(z, dim.z, this.image_buffer_z, szz, slice, nslice, tiles);
-            //dz = this.cacheTiles(z, dim.z, this.cacher_z, szz, slice, nslice, tiles);
+        if (dim.z>1 && projection!=='projectmaxz' && projection!=='projectminz') {
+            //var z = i%2 ? this.z-hp : this.z+hp;
+            var z = this.z+hp;
+            var nslice = template.replace('{Z}', z+1).replace('{T}', this.t+1);
+            dz += this.cacheTiles(z, dim.z, this.image_buffer_z, szz, slice, nslice, tiles);
+
+            var z = this.z-hp;
+            var nslice = template.replace('{Z}', z+1).replace('{T}', this.t+1);
+            dz += this.cacheTiles(z, dim.z, this.image_buffer_z, szz+dz, slice, nslice, tiles);
+
             szz += dz;
         }
+
         var dt=0;
-        if (dim.t>1) {
-            var t = i%2 ? this.t-hp : this.t+hp;
-            var nslice = 'slice=,,'+(this.z+1)+','+(t+1);
-            dt = this.cacheTiles(t, dim.t, this.image_buffer_t, szt, slice, nslice, tiles);
-            //dt = this.cacheTiles(t, dim.t, this.cacher_t, szt, slice, nslice, tiles);
+        if (dim.t>1 && projection!=='projectmaxt' && projection!=='projectmint') {
+            //var t = i%2 ? this.t-hp : this.t+hp;
+
+            var t = this.t+hp;
+            var nslice = template.replace('{Z}', this.z+1).replace('{T}', t+1);
+            dt += this.cacheTiles(t, dim.t, this.image_buffer_t, szt, slice, nslice, tiles);
+
+            var t = this.t-hp;
+            var nslice = template.replace('{Z}', this.z+1).replace('{T}', t+1);
+            dt += this.cacheTiles(t, dim.t, this.image_buffer_t, szt+dt, slice, nslice, tiles);
+
             szt += dt;
         }
         if (dz<1 && dt<1) return;
@@ -359,10 +382,10 @@ ImgSlicer.prototype.createMenu = function () {
 
     // only add these additional options for 4D/5D images
     if (dim.z>1 && dim.t>1) {
-        combo_options.push({'value':'projectmaxt', 'text':'Max for current Z'});
-        combo_options.push({'value':'projectmint', 'text':'Min for current Z'});
         combo_options.push({'value':'projectmaxz', 'text':'Max for current T'});
         combo_options.push({'value':'projectminz', 'text':'Min for current T'});
+        combo_options.push({'value':'projectmaxt', 'text':'Max for current Z'});
+        combo_options.push({'value':'projectmint', 'text':'Min for current Z'});
     }
 
     this.projection_heading = this.menu.add({
