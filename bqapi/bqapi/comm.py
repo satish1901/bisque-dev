@@ -192,11 +192,12 @@ class BQServer(Session):
     
     def prepare_url(self, url, **params):
         """
-            params need to be an ordered dictionary
+            Prepares the url
             
-            @param url:
-            @param odict:
-            @param params:
+            @param url: if the url is not provided with a root and a root has been provided to the session
+            the root will be added to the url
+            @param odict: ordered dictionary object, addes to the query in the order provided
+            @param params: adds params to query potion of the url
             
             @return prepared url
         """
@@ -239,11 +240,16 @@ class BQServer(Session):
 
     def fetch(self, url, headers = None, path=None):
         """
-            @param url:
-            @param headers:
-            @param path:
+            Makes a http GET to the url given 
+        
+            @param url: the url that is fetched
+            @param headers: headers provided for this specific fetch (default: None)
+            @param path: the location to where the contents will be stored on the file system (default:None)
+            if no path is provided the contents of the response will be returned
             
-            @return 
+            @return returns either the contents of the rests or the file name if a path is provided
+            
+            @exception: BQCommError if the requests returns an error code and message
         """
         log.debug("GET: %s req  header=%s" %  (url, headers))
         
@@ -252,26 +258,31 @@ class BQServer(Session):
         try:
             r.raise_for_status()
         except requests.exceptions.HTTPError:
-            raise BQCommError( r.status_code, r.headers) #need to finish
+            raise BQCommError(r.status_code, r.headers) #need to finish
         
         if path:
             with open(path, 'wb') as f:
                 f.write(r.content)
-                return f.name
+            return f.name
         else:
             return r.content
         
 
     def post(self, url, content=None, files=None, headers=None, path=None, method="POST", boundary=None):
         """
-            @param url:
-            @param content:
-            @param files:
-            @param headers:
-            @param path:
-            @param method:
+            Makes a http request
             
-            @return 
+            @param url: the url the request is made with
+            @param content: an xml document that will be sent along with the url
+            @param files: a dictonary with the format {filename: file handle or string}, sends as a multipart form 
+            @param headers: headers provided for this specific request (default: None)
+            @param path: the location to where the contents will be stored on the file system (default:None)
+            if no path is provided the contents of the response will be returned
+            @param method: the method of the http request (HEAD,GET,POST,PUT,DELETE,...) (default: POST)
+            
+            @return returns either the contents of the rests or the file name if a path is provided
+            
+            @exception: BQCommError if the requests returns an error code and message
         """
         log.debug("POST %s req %s" % (url, headers))
         
@@ -284,7 +295,7 @@ class BQServer(Session):
         if path:
             with open(path, 'wb') as f:
                 f.write(r.content)
-                return f.name
+            return f.name
         else:
             return r.content
 
@@ -311,14 +322,15 @@ class BQSession(object):
     ############################
     def init_local(self, user, pwd, moduleuri=None, bisque_root=None, create_mex=True):
         """
-            Create a session mex 
-            @param user
-            @param pwd
-            @param module
-            @param bisque_root
-            @param create_mex
+            Initalizes a local session
             
-            @return self 
+            @param: user - a bisque user
+            @param: pwd - the bisque user's password
+            @param: moduleuri - module uri to be set to the mex (Only matter if create mex is set to true) (moduleuri: None)
+            @param: bisque_root - the root of the bisque system the user is trying to access (bisque_root: None)
+            @param: create_mex - creates a mex session under the user (default: True)
+            
+            @return: self 
         """
         
         if bisque_root != None:
@@ -345,12 +357,13 @@ class BQSession(object):
 
     def init_mex(self, mex_url, token, user=None, bisque_root=None):
         """
-            Initalizing a session from a mex
+            Initalizing a local session from a mex
             
-            @param mex_url
-            @param user
-            @token
-            @bisque_root
+            @param: mex_url - the mex url to initalize the session from
+            @param: token - the mex token to access the mex
+            @param: user - the owner of the mex (Does not have to be provided if already 
+            provided in the token) (default: None)
+            @param: bisque_root - the root of the bisque system the user is trying to access (bisque_root: None)
             
             @return self
         """
@@ -376,9 +389,10 @@ class BQSession(object):
         """
             Fetch an xml object from the url
 
-            @param url: A url to fetch from
-            @param odict: ordered dictionary of params will be added to url for when the order matters
-            @param params: params will be added to url
+            @param: url - A url to fetch from
+            @param: path - a location on the file system were one wishes the response to be stored (default: None)
+            @param: odict - ordered dictionary of params will be added to url for when the order matters
+            @param: params - params will be added to url
             
             @return xml etree
         """
@@ -395,13 +409,14 @@ class BQSession(object):
         """
             Post xml allowed with files to bisque
             
-            @param url:
-            @param xml:
-            @param path:
-            @param odict:
-            @param params:
+            @param: url - the url to make to the request
+            @param: xml - an xml document that is post at the url location (excepts either string or etree._Element) 
+            @param: path - a location on the file system were one wishes the response to be stored (default: None)
+            @param method - the method of the http request (HEAD,GET,POST,PUT,DELETE,...) (default: POST)
+            @param: odict - ordered dictionary of params will be added to url for when the order matters
+            @param: params - params will be added to url
             
-            @return 
+            @return: xml etree or path to the file were the response was stored
         """
         log.debug('postxml %s  content %s ' % (url, xml))
         
@@ -415,74 +430,17 @@ class BQSession(object):
         else:
             r = self.c.post(url, content=xml, method=method, headers={'Content-Type':'text/xml', 'Accept': 'text/xml' })
             return etree.XML(r, self.parser)
-        
-    def fetchhdf(self, url, path=None, **params):
-        """
-            Fetch HDF from bisque
-            If path is provided the hdf5 file is stored there else if 
-            no path is provided a temporary file is created and an pytables
-            object is returned.
-            
-            @param url:
-            @param xml:
-            @param path:
-            @param method:
-            @param param:
-            
-            @return
-        """
-        if tables is none:
-            return
-        url = self.c.prepare_url (url, **params)
-        log.debug('fetchxml %s ' % url)
-        if path: #returns path of the file
-            return self.c.fetch(url, headers={'Content-Type':'text/xml', 'Accept':'application/x-bag'}, path=path)
-        else:
-            with tempfile.TemporaryFile(suffix='.h5', dir=tempfile.gettempdir() ) as f: 
-                path = f.name
-            path = self.c.fetch(url, headers = {'Content-Type':'text/xml', 'Accept':'application/x-bag'}, path=path)
-            return tables.open_file(path, 'r')
-            
-            
-    def posthdf(self, url, xml=None, path=None, method="POST", **params):
-        """
-            Post xml to retrieve HDF from bisque
-            If path is provided the hdf5 file is stored there else if 
-            no path is provided a temporary file is created and an pytables
-            object is returned.
-            
-            @param url:
-            @param xml:
-            @param path:
-            @param method:
-            @param param:
-            
-            @return
-        """
-        if tables is none:
-            return
-        url = self.c.prepare_url (url, **params)
-        log.debug('fetchxml %s ' % url)
-
-        if isinstance(xml, etree._Element):
-            xml = etree.tostring(xml, pretty_print=True)
-
-        if path: #returns path of the file
-            return self.c.post(url, content=xml, headers={'Content-Type':'text/xml', 'Accept':'application/x-bag'}, path=path)
-        else: 
-            with tempfile.TemporaryFile(suffix='.h5', dir=tempfile.gettempdir() ) as f: 
-                path = f.name
-            path = self.c.post(url, content=xml, headers={'Content-Type':'text/xml',  'Accept':'application/x-bag'}, path=f.name)
-            return tables.open_file(path, 'r')
 
 
     def fetchblob(self, url, path=None, **param):
         """
-            Requests for a blob from the data_service
+            Requests for a blob
 
-            @param filename: filename of the blob
-            @param xml: xml to be posted along with the file
-            @param params: params will be added to url query
+            @param: url - filename of the blob
+            @param: path - a location on the file system were one wishes the response to be stored (default: None)
+            @param: params -  params will be added to url query
+            
+            @return: 
         """
         url = self.c.prepare_url(url, **params)
         return self.c.fetch(url, path=path, headers={'Content-Type':'text/xml'})
@@ -490,13 +448,13 @@ class BQSession(object):
 
     def postblob(self, filename, xml=None, path=None, method="POST", **params):
         """
-            Create Multipart Post with blob and xml tags
+            Create Multipart Post with blob to blob service
 
             @param filename: filename of the blob
             @param xml: xml to be posted along with the file
             @param params: params will be added to url query
         """
-        import_service_url = self.service_url('import',path='transfer')
+        import_service_url = self.service_url('import', path='transfer')
         if import_service_url is None:
             raise 'Could not find import service to post blob.'
         

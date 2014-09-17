@@ -7,7 +7,12 @@ import os
 from bq.util.mkdir import _mkdir
 from util import fetch_file
 from lxml import etree
+import urllib
+from datetime import datetime
 import ConfigParser
+import time
+from threading import Thread
+import Queue
 #
 #def test_fetch_dataset():
 #    """
@@ -22,10 +27,13 @@ import ConfigParser
 #
 #    fetch_dataset(bq, ds1.uri, ".", uselocalpath=True)
 
-
+TEST_PATH = 'tests_%s'%urllib.quote(datetime.now().strftime('%Y%m%d%H%M%S%f'))  #set a test dir on the system so not too many repeats occur
 
 #setup comm test
 def setUp():
+    """
+        Setup comm test
+    """
     global root
     global user
     global pwd
@@ -46,14 +54,22 @@ def setUp():
     if store_location is None: raise NameError('Requre a store location to run test properly')
     
     store_local_location = config.get('Store', 'local_location') or 'SampleData'
+    
+    
     filename1 = config.get('Store','filename1') or None
     if filename1 is None: raise NameError('Requre an image to run test properly')
     file1_location = fetch_file(filename1, store_location, store_local_location)
 
+
 def tearDownClass():
+    """
+        Tear Down comm test
+    """
     pass
 
-#Test BQServer
+#############################
+###   BQServer
+#############################
 def test_prepare_url_1():
     """
     """
@@ -108,7 +124,7 @@ def test_initalize_session_From_mex():
     bq = BQSession().init_local(user, pwd, bisque_root=root)
     mex_url = bq.mex.uri
     token = bq.mex.resource_uniq
-    bqmex = BQSession().init_mex(mex_url, user, token, bisque_root=root)
+    bqmex = BQSession().init_mex(mex_url, token, user, bisque_root=root)
     bqmex.close()
     bq.close()
     
@@ -152,7 +168,7 @@ def test_postxml_1():
     </file>
     """
     bq = BQSession().init_local(user, pwd, bisque_root=root)
-    response_xml = bq.postxml(root+'/data_service/file', test_document)
+    response_xml = bq.postxml(root+'/data_service/file', xml=test_document)
     bq.close()
     if not isinstance(response_xml, etree._Element):
         assert False %'Did not return XML!'
@@ -191,7 +207,8 @@ def setup_fetchhdf():
     global resource_uri #features service requests
     global bqsession
     bqsession = BQSession().init_local(user, pwd, bisque_root=root)
-    content = bqsession.postblob(file1_location) #upload image
+    resource = etree.Element ('resource', name=u'%s/%s'%(TEST_PATH, filename1)) 
+    content = bqsession.postblob(file1_location, xml=resource) #upload image
     resource_uniq = etree.XML(content)[0].attrib['resource_uniq']
     resource_uri = '%s/features/EHD/hdf?image=%s/image_service/image/%s'%(root,root,resource_uniq)
     
@@ -231,7 +248,8 @@ def setup_posthdf():
     bqsession = BQSession().init_local(user, pwd, bisque_root=root)
     resource_body = etree.Element('resource')
     for _ in xrange(4):
-        content = bqsession.postblob(file1_location)
+        resource = etree.Element ('resource', name=u'%s/%s'%(TEST_PATH, filename1))        
+        content = bqsession.postblob(file1_location, xml=resource)
         resource_uniq = etree.XML(content)[0].attrib['resource_uniq']
         image = '%s/image_service/image/%s'%(root,resource_uniq)
         etree.SubElement(resource_body,'feature',image=image)
@@ -275,7 +293,8 @@ def test_postblob_1():
         Test post blob
     """
     bq = BQSession().init_local(user, pwd, bisque_root=root)
-    content = bq.postblob(file1_location)
+    resource = etree.Element ('resource', name=u'%s/%s'%(TEST_PATH, filename1))        
+    content = bqsession.postblob(file1_location, xml=resource)
     bq.close()
 
 
@@ -286,7 +305,8 @@ def test_postblob_2():
     filename = 'postblob_test_2.xml'
     path = os.path.join(results_location,filename)
     bq = BQSession().init_local(user, pwd, bisque_root=root)
-    path = bq.postblob(file1_location, path=path)
+    resource = etree.Element ('resource', name=u'%s/%s'%(TEST_PATH, filename1))        
+    path = bqsession.postblob(file1_location, xml=resource, path=path)
     bq.close()
     
     try:
@@ -305,7 +325,7 @@ def test_postblob_3():
     <image name="%s">
         <tag name="my_tag" value="test"/>
     </image>
-    """%filename1
+    """%u'%s/%s'%(TEST_PATH, filename1)      
     bq = BQSession().init_local(user, pwd, bisque_root=root)
     content = bq.postblob(file1_location, xml=test_document)
     bq.close()

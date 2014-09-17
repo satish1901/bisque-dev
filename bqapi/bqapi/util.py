@@ -6,6 +6,7 @@ import poster
 import time
 
 from lxml import etree as ET
+from lxml import etree
 from xmldict import xml2d, d2xml
 from bqclass import fromXml, toXml, BQMex
 import comm
@@ -104,7 +105,9 @@ def safecopy (*largs):
             shutil.copy2(f, dest)
 
 def parse_qs(query):
-    'parse a uri query string into a dict'
+    """
+        parse a uri query string into a dict
+    """
     pd = {}
     if '&' in query:
         for el in query.split('&'):
@@ -113,7 +116,9 @@ def parse_qs(query):
     return pd
 
 def make_qs(pd):
-    'convert back from dict to qs'
+    """
+        convert back from dict to qs
+    """
     query = []
     for k,vl in pd.items():
         for v in vl:
@@ -123,15 +128,16 @@ def make_qs(pd):
 
 
 def save_blob(session,  localfile=None, resource=None):
-    """put a local image on the server and return the URL
-    to the METADATA XML record
-
-    @param session: the local session
-    @param image: an BQImage object
-    @param localfile:  a file-like object or name of a localfile
-    @return XML content  when upload ok
+    """
+        put a local image on the server and return the URL
+        to the METADATA XML record
     
-    @exceptions comm.BQCommError - if blob is failed to be posted
+        @param session: the local session
+        @param image: an BQImage object
+        @param localfile:  a file-like object or name of a localfile
+        @return XML content  when upload ok
+        
+        @exceptions comm.BQCommError - if blob is failed to be posted
     """
        
 
@@ -149,7 +155,8 @@ def save_blob(session,  localfile=None, resource=None):
 
 
 def fetch_blob(session, uri, dest=None, uselocalpath=False):
-    """fetch original image locally as tif
+    """
+        fetch original image locally as tif
         @param session: the bqsession
         @param uri: resource image uri
         @param dest: a destination directory
@@ -179,11 +186,12 @@ def fetch_blob(session, uri, dest=None, uselocalpath=False):
 
 
 def fetch_image_planes(session, uri, dest=None, uselocalpath=False):
-    """fetch all the image planes of an image locally
-    @param session: the bqsession
-    @param uri: resource image uri
-    @param dest: a destination directory
-    @param uselocalpath: true when routine is run on same host as server
+    """
+        fetch all the image planes of an image locally
+        @param session: the bqsession
+        @param uri: resource image uri
+        @param dest: a destination directory
+        @param uselocalpath: true when routine is run on same host as server
 
     """
     image = session.load (uri, view='full')
@@ -231,22 +239,23 @@ def next_name(name):
 
 
 def fetch_image_pixels(session, uri, dest, uselocalpath=False):
-    """fetch original image locally as tif
-    @param session: the bqsession
-    @param uri: resource image uri
-    @param dest: a destination directory
-    @param uselocalpath: true when routine is run on same host as server
+    """
+        fetch original image locally as tif
+        @param session: the bqsession
+        @param uri: resource image uri
+        @param dest: a destination directory
+        @param uselocalpath: true when routine is run on same host as server
     """
     image = session.load(uri)
-    name = image.name or next_name ("image")
+    name = image.name or next_name("image")
     ip = image.pixels().format('tiff')
     if uselocalpath:
         ip = ip.localpath()
     pixels = ip.fetch()
     if os.path.isdir(dest):
-        dest = os.path.join (dest, os.path.basename(name))
+        dest = os.path.join(dest, os.path.basename(name))
     else:
-        dest = os.path.join ('.', os.path.basename(name))
+        dest = os.path.join('.', os.path.basename(name))
 
 
     if uselocalpath:
@@ -254,7 +263,7 @@ def fetch_image_pixels(session, uri, dest, uselocalpath=False):
         #path = urllib.url2pathname(path[5:])
         path = path[5:]
         # Skip 'file:'
-        safecopy (path, dest)
+        safecopy(path, dest)
         return { uri : dest }
     f = open(dest, 'wb')
     f.write(pixels)
@@ -263,16 +272,20 @@ def fetch_image_pixels(session, uri, dest, uselocalpath=False):
 
 
 def fetch_dataset(session, uri, dest, uselocalpath=False):
-    """fetch elemens of dataset locally as tif
-    @param session: the bqsession
-    @param uri: resource image uri
-    @param dest: a destination directory
-    @param uselocalpath: true when routine is run on same host as server
     """
-    dataset = session.fetchxml (uri, view='deep')
+        fetch elemens of dataset locally as tif
+        
+        @param session: the bqsession
+        @param uri: resource image uri
+        @param dest: a destination directory
+        @param uselocalpath: true when routine is run on same host as server
+        
+        @return:
+    """
+    dataset = session.fetchxml(uri, view='deep')
     members = dataset.xpath('//value[@type="object"]')
 
-    results = { }
+    results = {}
     for i, imgxml in enumerate(members):
         uri =  imgxml.text   #imgxml.get('uri')
         print "FETCHING", uri
@@ -283,7 +296,14 @@ def fetch_dataset(session, uri, dest, uselocalpath=False):
 
 
 def fetchImage(session, uri, dest, uselocalpath=False):
-
+    """
+        @param: session -
+        @param: url -
+        @param: dest -
+        @param: uselocalpath- (default: False)
+        
+        @return
+    """
     image = session.load(uri).pixels().info()
     fileName = ET.XML(image.fetch()).xpath('//tag[@name="filename"]/@value')[0]
 
@@ -295,7 +315,7 @@ def fetchImage(session, uri, dest, uselocalpath=False):
     pixels = ip.fetch()
 
     if os.path.isdir(dest):
-        dest = os.path.join (dest, fileName)
+        dest = os.path.join(dest, fileName)
 
     if uselocalpath:
         path = ET.XML(pixels).xpath('/resource/@src')[0]
@@ -303,12 +323,12 @@ def fetchImage(session, uri, dest, uselocalpath=False):
         path = path[5:]
 
         # Skip 'file:'
-        safecopy (path, dest)
-        return { uri : dest }
+        safecopy(path, dest)
+        return {uri: dest }
     f = open(dest, 'wb')
     f.write(pixels)
     f.close()
-    return { uri : dest }
+    return {uri :dest }
 
 
 def fetchDataset(session, uri, dest, uselocalpath=False):
@@ -337,18 +357,21 @@ def fetchDataset(session, uri, dest, uselocalpath=False):
 #   post_files ('http://..', fields = [('file1', 'file.jpg', buffer), ('f1', 'v1' )] )
 
 def save_image_pixels(session,  localfile, image_tags=None):
-    """put a local image on the server and return the URL
-    to the METADATA XML record
-
-    @param session: the local session
-    @param image: an BQImage object
-    @param localfile:  a file-like object or name of a localfile
-    @return XML content  when upload ok
+    """
+        put a local image on the server and return the URL
+        to the METADATA XML record
+    
+        @param: session - the local session
+        @param: image - an BQImage object
+        @param: localfile - a file-like object or name of a localfile
+        
+        @return: XML content when upload ok
     """
     xml = None
     if image_tags:
         xml = ET.tostring(toXml(image_tags))
     return session.postblob(localfile, xml=xml)
+
 
 
 def as_flat_dict_tag_value(xmltree):

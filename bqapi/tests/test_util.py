@@ -9,9 +9,16 @@ from util import fetch_file
 from lxml import etree
 import ConfigParser
 from bqapi.comm import BQCommError
-from bqapi.util import save_blob, fetch_blob, fetch_image_planes, fetch_image_pixels, fetch_dataset, fetchImage, fetchDataset, save_image_pixels
+from bqapi.util import *
+import numpy as np
+import urllib
+from datetime import datetime
 
-USENODE = False
+
+TEST_PATH = 'tests_%s'%urllib.quote(datetime.now().strftime('%Y%m%d%H%M%S%f'))  #set a test dir on the system so not too many repeats occur
+
+
+from bqapi.comm import USENODE
 if USENODE:
     from bqapi.bqnode import fromXml, toXml, BQMex, BQNode, BQFactory
 else:
@@ -75,7 +82,8 @@ def setup_fetchblob():
         uploads an image
     """
     global image_uri
-    content = bqsession.postblob(file1_location)
+    resource = etree.Element ('resource', name=u'%s/%s'%(TEST_PATH, filename1))  
+    content = bqsession.postblob(file1_location, xml=resource)
     image_uri = etree.XML(content)[0].attrib['uri']
     
     
@@ -110,7 +118,8 @@ def setup_fetchimageplanes():
         uploads an image
     """
     global image_uri
-    content = bqsession.postblob(file1_location)
+    resource = etree.Element ('resource', name=u'%s/%s'%(TEST_PATH, filename1))  
+    content = bqsession.postblob(file1_location, xml=resource)
     image_uri = etree.XML(content)[0].attrib['uri']
     
     
@@ -145,7 +154,8 @@ def setup_fetchimagepixels():
         uploads an image
     """
     global image_uri
-    content = bqsession.postblob(file1_location)
+    resource = etree.Element('resource', name=u'%s/%s'%(TEST_PATH, filename1))  
+    content = bqsession.postblob(file1_location, xml=resource)
     image_uri = etree.XML(content)[0].attrib['uri']
     
 def teardown_fetchimagepixels():
@@ -178,7 +188,8 @@ def setup_fetchdataset():
     global dataset_uri
     dataset = etree.Element('dataset', name='test')
     for _ in xrange(4):
-        content = bqsession.postblob(file1_location)
+        resource = etree.Element('resource', name=u'%s/%s'%(TEST_PATH, filename1))  
+        content = bqsession.postblob(file1_location, xml=resource)
         value=etree.SubElement(dataset,'value', type="object")
         value.text = etree.XML(content)[0].attrib['uri']
     content = bqsession.postxml('/data_service/dataset', dataset)
@@ -203,7 +214,8 @@ def setup_fetchImage():
         uploads an image
     """
     global image_uri
-    content = bqsession.postblob(file1_location)
+    resource = etree.Element ('resource', name=u'%s/%s'%(TEST_PATH, filename1))  
+    content = bqsession.postblob(file1_location, xml=resource)
     image_uri = etree.XML(content)[0].attrib['uri']
 
     
@@ -240,7 +252,8 @@ def setup_fetchDataset():
     global dataset_uri
     dataset = etree.Element('dataset', name='test')
     for _ in xrange(4):
-        content = bqsession.postblob(file1_location)
+        resource = etree.Element ('resource', name=u'%s/%s'%(TEST_PATH, filename1))  
+        content = bqsession.postblob(file1_location, xml=resource)
         value=etree.SubElement(dataset,'value', type="object")
         value.text = etree.XML(content)[0].attrib['uri']
     content = bqsession.postxml('/data_service/dataset', dataset)
@@ -267,7 +280,8 @@ def setup_saveimagepixels():
         uploads an image
     """
     global image_uri
-    content = bqsession.postblob(file1_location)
+    resource = etree.Element('resource', name=u'%s/%s'%(TEST_PATH, filename1))  
+    content = bqsession.postblob(file1_location, xml=resource)
     image_uri = etree.XML(content)[0].attrib['uri']
 
     
@@ -275,15 +289,17 @@ def teardown_saveimagepixels():
     pass
 
 
+@with_setup(setup_saveimagepixels, teardown_saveimagepixels)
 def test_saveimagepixels():
     """
+        Test save image pixels
     """
     #doesnt work without name on image
     xmldoc = """
-    <image name="test">
+    <image name="%s">
         <tag name="my_tag" value="test"/>
     </image>
-    """
+    """%u'%s/%s'%(TEST_PATH, filename1)
     bqimage = fromXml(etree.XML(xmldoc))
     try:
         result = save_image_pixels(bqsession, file1_location, image_tags=bqimage)
@@ -292,4 +308,4 @@ def test_saveimagepixels():
         
 
 
-        
+
