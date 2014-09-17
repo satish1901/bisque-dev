@@ -18,7 +18,10 @@ def main():
 
     r = subprocess.call(["virtualenv", args.bqenv])
 
-    activate = os.path.join(args.bqenv, 'bin', 'activate_this.py')
+    if sys.platform == 'win32': #shell=True 
+        activate = os.path.join(args.bqenv, 'Scripts', 'activate_this.py')
+    else:
+        activate = os.path.join(args.bqenv, 'bin', 'activate_this.py')
     print "Exec file ", activate
 
     execfile (activate, dict(__file__=activate))
@@ -53,7 +56,7 @@ def main():
     print "*********************************"
     print "* Execute the following commands*"
     if sys.platform == 'win32':
-        print "bqenv\\\\Scripts\\\\activate.bat"
+        print "bqenv\\Scripts\\activate.bat"
     else:
         print "source bqenv/bin/activate"
     print "paver setup    [server|engine]"
