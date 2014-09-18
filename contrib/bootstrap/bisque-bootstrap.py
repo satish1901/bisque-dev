@@ -85,7 +85,10 @@ def main():
     print "To finish installation, please, execute the following commands"
     print "Use 'server' for a full BisQue server"
     print "Use 'engine' to run a module serving a remote BisQue"
-    print "*************************************************************"    
+    print "Please visit:"
+    print "  http://biodev.ece.ucsb.edu/projects/bisquik/wiki/InstallationInstructions"
+    print "for more information"
+    print "*************************************************************\n"    
     if os.name == 'nt':
         print "bqenv\\Scripts\\activate.bat"
     else:
@@ -95,7 +98,6 @@ def main():
     print "bq-admin setup [server|engine]"
     print "bq-admin deploy public"
 
-    print "Please visit http://biodev.ece.ucsb.edu/projects/bisquik/wiki/InstallationInstructions and follow instructions there"
 
     # dima: we should run all the above mentioned commands right here
     #args.install
