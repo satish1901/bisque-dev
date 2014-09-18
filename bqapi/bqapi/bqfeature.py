@@ -12,12 +12,15 @@ class Feature(object):
 
     def fetch(self, session, name, resource_list, path=None):
         """
-            @param: session - 
-            @param: name - 
-            @param: resource_list - 
-            @param: path -
+            Requests the feature server to calculate features on provided resources.
             
-            @return:            
+            @param: session - the local session
+            @param: name - the name of the feature one wishes to extract
+            @param: resource_list - list of the resources to extract. format: 
+            [(image_url, mask_url, gobject_url),...] if a parameter is
+            not required just provided None
+             
+            @return: returns either a pytables file handle or the file name when the path is provided     
         """
         url = '%s/features/%s/hdf'%(session.bisque_root,name)
         
@@ -42,11 +45,15 @@ class Feature(object):
     
     def fetch_vector(self, session, name, resource_list):
         """
-            @param: session - 
-            @param: name - 
-            @param: resource_list - 
+            Requests the feature server to calculate features on provided resources.
+             
+            @param: session - the local session
+            @param: name - the name of the feature one wishes to extract
+            @param: resource_list - list of the resources to extract. format: 
+            [(image_url, mask_url, gobject_url),...] if a parameter is
+            not required just provided None
             
-            @return:
+            @return: a list of features as numpy array
         """
         hdf5 = self.fetch(session, name, resource_list)
         table = hdf5.root.values
@@ -96,15 +103,24 @@ class ParallelFeature(Feature):
         """
             Single Thread
         """
-        def __init__(self, request_queue, error_func=None):
+        def __init__(self, request_queue, errorcb=None):
+            """
+                @param: requests_queue - a queue of requests functions
+                @param: errorcb - a call back that is called if a BQCommError is raised
+            """
             self.request_queue = request_queue
             
-            if error_func is not None:
-                self.error_func = error_func
+            if errorcb is not None:
+                self.errorcb = errorcb
             else:
-                def error_func(e):
+                def error_callback(e):
+                    """
+                        Default callback function
+                        
+                        @param: e - BQCommError object
+                    """
                     pass
-                self.error_func = error_func
+                self.errorcb = error_callback
             super(ParallelFeature.BQRequestThread, self).__init__()
             
             
@@ -113,18 +129,21 @@ class ParallelFeature(Feature):
                 try:
                    request() #run request
                 except BQCommError as e:
-                    errorcb(e)
+                    self.errorcb(e)
         
         
-    def thread_pool(self, request_queue, error_func=None):
+    def request_thread_pool(self, request_queue, errorcb=None):
         """
-            Runs the threads
+            Runs the BQRequestThread
+            
+            @param: request_queue - a queue of request functions
+            @param: errorcb - is called back when a BQCommError is raised
         """
         rq = request_queue()
         
         jobs = []
         for _ in range(self.thread_num):
-            r = self.BQRequestThread(rq, error_func)
+            r = self.BQRequestThread(rq, errorcb)
             jobs.append(r)
             r.start()
 
@@ -135,10 +154,16 @@ class ParallelFeature(Feature):
     
     
     def set_thread_num(self, n):
+        """
+            @param: n - the number of requests made at once
+        """
         self.thread_num = n
         
         
     def set_chunk_size(self, n):
+        """
+            @param: n - the size of each request
+        """
         self.chunk_size = n
         
         
@@ -149,12 +174,16 @@ class ParallelFeature(Feature):
         
     def fetch(self, session, name, resource_list, path=None):
         """
-         @param: session - 
-         @param: name - 
-         @param: resource_list - 
-         @param: path - 
-         
-         @return:
+            Requests the feature server to calculate provided resources. 
+            The request will be boken up according to the chunk size
+            and made in parallel depending on the amount of threads.
+            
+            @param: session - the local session
+            @param: name - the name of the feature one wishes to extract
+            @param: resource_list - list of the resources to extract. format: [(image_url, mask_url, gobject_url),...] if a parameter is
+            not required just provided None
+             
+            @return: returns either a pytables file handle or the file name when the path is provided
         """
         if path is None:
             f = tempfile.TemporaryFile(suffix='.h5', dir=tempfile.gettempdir())
@@ -163,17 +192,31 @@ class ParallelFeature(Feature):
         else:
             table_path = path
         
-        stop_write_thread = False
-        class WriteThread(Thread):
+        stop_write_thread = False #sets a flag to stop the write thread
+        # when the requests threads have finished
+        class WriteHDF5Thread(Thread):
+            """
+                Copies small hdf5 feature tables
+                into one large hdf5 feature table
+            """
             
-            def __init__(self, queue):
-                self.queue = queue
+            def __init__(self, h5_filename_queue):
+                """
+                    param h5_filename_queue: a queue of temporary hdf5 files
+                """
+                self.h5_filename_queue = h5_filename_queue
                 super(WriteThread, self).__init__()
             
             def run(self):
+                """
+                    While queue is not empty and stop_write_thread
+                    has not been set to true, the thread will open
+                    temporary hdf5 tables and copy them into the 
+                    main hdf5 table and then delete the temporary file.
+                """
                 while True:
-                    if not self.queue.empty():
-                        temp_path = self.queue.get()
+                    if not self.h5_filename_queue.empty():
+                        temp_path = self.h5_filename_queue.get()
                         with tables.open_file(temp_path, 'a') as hdf5temp:
                             with tables.open_file(table_path, 'a') as hdf5:
                                 temp_table = hdf5temp.root.values
@@ -193,6 +236,9 @@ class ParallelFeature(Feature):
         
         @threadsafe_generator
         def request_queue():
+            """
+                A generator of request functions.
+            """
             for partial_resource_list in self.chunk(resource_list):
                 
                 def request():
@@ -200,12 +246,13 @@ class ParallelFeature(Feature):
                     f.close()                    
                     write_queue.put(super(ParallelFeature, self).fetch(session, name, partial_resource_list, path=f.name))
                     return
+                
                 yield request
         
         
         w = WriteThread(write_queue)
         w.start()
-        self.thread_pool(request_queue)
+        self.request_thread_pool(request_queue)
         stop_write_thread = True
         w.join()
 
@@ -217,22 +264,21 @@ class ParallelFeature(Feature):
         
     def fetch_vector(self, session, name, resource_list):
         """
-         @param: session - 
-         @param: name - 
-         @param: resource_list - 
-         
-         @return: 
+            Requests the feature server to calculate provided resources.
+            The request will be boken up according to the chunk size
+            and made in parallel depending on the amount of threads.
+             
+            @param: session - the local session
+            @param: name - the name of the feature one wishes to extract
+            @param: resource_list - list of the resources to extract. format: 
+            [(image_url, mask_url, gobject_url),...] if a parameter is
+            not required just provided None
+            
+            @return: a list of features as numpy array
         """
-        response_queue = Queue.Queue()
-        
-        @threadsafe_generator
-        def request_queue():
-            for partial_resource_list in self.chunk(resource_list):
-                
-                def request():
-                    response_queue.put(super(ParallelFeature, self).fetch_vector(session, name, partial_resource_list))
-                    return
-                
+        return super(ParallelFeature, self).fetch_vector(session, name, resource_list)    
+    
+    
                 yield request
                 
         self.thread_pool(request_queue)
