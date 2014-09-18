@@ -13,7 +13,7 @@ def main():
     parser = argparse.ArgumentParser(description='Boostrap bisque')
     parser.add_argument("--repo", default="http://biodev.ece.ucsb.edu/hg/bisque-stable")
     parser.add_argument("bqenv", nargs="?", default="bqenv")
-    parser.add_argument('install', default='server', choices=['server', 'engine'])
+    parser.add_argument('install', nargs="?", default='server', choices=['server', 'engine'])
 
     args = parser.parse_args()
     
@@ -54,8 +54,6 @@ def main():
             os.remove('pywin32-219.win-amd64-py2.7.exe')
         except OSError:
             pass
-
-    return
 
     # dima, maybe we don't need this given previous lines?
     for install in PIP_LIST:
