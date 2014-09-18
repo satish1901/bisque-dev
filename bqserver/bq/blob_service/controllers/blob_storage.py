@@ -49,9 +49,11 @@ DESCRIPTION
 import os
 import logging
 import urlparse
+import urllib
 import string
 import shutil
 import datetime
+import collections
 
 from tg import config
 from paste.deploy.converters import asbool
@@ -64,6 +66,7 @@ from bq.util.hash import make_short_uuid
 from bq.util.http import get_file
 from bq.util.compat import OrderedDict
 
+from bq.image_service.controllers.misc import blocked_alpha_num_sort
 
 log = logging.getLogger('bq.blobs.storage')
 
@@ -88,6 +91,11 @@ except ImportError:
     pass
 
 
+#################################################
+#  misc
+#################################################
+
+Blobs = collections.namedtuple("Blobs", ["path", "sub", "files"])
 
 def formatPath(format_path, user, filename, uniq, **params):
     """Create a unique path using a format and hash of filename
@@ -110,6 +118,24 @@ def formatPath(format_path, user, filename, uniq, **params):
         filebase=filebase,
         fileext=fileext, **params)
 
+def split_subpath(path):
+    """Splits sub path that follows # sign if present
+    """
+    try:
+        path,sub = path.rsplit('#',1)
+        return path,sub
+    except ValueError:
+        return path,None
+
+def walk_deep(path):
+    """Splits sub path that follows # sign if present
+    """
+    files = []
+    for root, _, filenames in os.walk(path):
+        for f in filenames:
+            files.append(os.path.join(root, f).replace('\\', '/'))
+    return files
+
 #################################################
 #  Define helper functions for NT vs Unix/Mac
 #
@@ -126,9 +152,25 @@ if os.name == 'nt':
 
     def url2localpath(url):
         path = urlparse.urlparse(url).path
-        if path[2] == ':' and path[0] == '/':
+        if len(path)>0 and path[0] == '/':
             path = path[1:]
-        return path
+        try:
+            return urllib.unquote(path).decode('utf-8')
+        except UnicodeEncodeError:
+            # dima: safeguard measure for old non-encoded unicode paths
+            return urllib.unquote(path)
+
+    def localpath2url(path):
+        path = path.replace('\\', '/')
+        url = urllib.quote(path.encode('utf-8'))
+        if len(path)>3 and path[0] != '/' and path[1] == ':':
+            # path starts with a drive letter: c:/
+            url = 'file:///%s'%url
+        else:
+            # path is a relative path
+            url = 'file://%s'%url
+        return url
+
 else:
     def move_file (fp, newpath):
         log.debug ("moving file %s", fp.name)
@@ -142,8 +184,15 @@ else:
     data_url_path = data_path
 
     def url2localpath(url):
-        return urlparse.urlparse(url).path
+        url = url.encode('utf-8') # safegurd against un-encoded values in the DB
+        path = urlparse.urlparse(url).path
+        return urllib.unquote(path)
 
+    def localpath2url(path):
+        url = urllib.quote(path.encode('utf-8'))
+        #if len(url)>1 and url[0] == '/':
+        url = 'file://%s'%url
+        return url
 
 
 ##############################################
@@ -181,15 +230,21 @@ class BlobStorage(object):
     def __str__(self):
         return "<%s>" % (self.format_path)
     def valid(self, ident):
-        'determine whether this store can access the identified file'
+        'determine whether this store can access the identified file and return its path' # dima: should it return a valid local path?
     def localpath(self, ident):
-        'return the local path of  the identified file'
+        'return the local path of the identified file, if sub path present (after #), extract and return'
     def write(self, fp, name, user_name=None, uniq=None):
         'write the file to a local blob returning a short ident and the localpath'
-    def walk(self):
+    def walk(self, uri):
         'walk entries on this store .. see os.walk'
     def delete(self, ident):
         'delete an entry on the store'
+
+    # dima: possible additions ???, should modify walk to take ident ???
+#     def is_directory(self, ident):
+#         'check if the ident points to a directory'
+#     def walk(self, ident):
+#         'walk a specific directory in the store'
 
 
 ###############################################
@@ -223,9 +278,23 @@ class LocalStorage(BlobStorage):
         log.info("created localstore %s (%s) options %s" , self.format_path, self.top, self.options)
 
     def valid(self, ident):
-        return ((ident.startswith(self.top)  and ident)
-                or  (urlparse.urlparse(ident).scheme == '' and os.path.join(self.top, ident).replace('\\', '/')))
-                #and os.path.exists(self.localpath(ident)))
+        # dima: there's only one local storage in the system, file:// should all be redirected to it
+        ident,_ = split_subpath(ident)
+        scheme = urlparse.urlparse(ident).scheme
+
+        #log.debug('valid ident %s top %s', ident, self.top)
+        #log.debug('valid local ident %s local top %s', url2localpath(ident), url2localpath(self.top))
+
+        if url2localpath(ident).startswith(url2localpath(self.top)):
+            return ident
+        elif scheme == '': # old case of a stored pure relative path
+            return os.path.join(self.top, ident).replace('\\', '/')
+        #elif ident.startswith('%s:///'%scheme):
+        #     #this would allow arbirary paths
+        #    return ident
+        elif scheme == self.scheme and not ident.startswith('%s:///'%scheme):
+            # sub-paths defined with file://
+            return os.path.join(self.top, ident.replace('%s://'%scheme, '')).replace('\\', '/')
 
     def write(self, fp, filename, user_name=None, uniq=None):
         'store blobs given local path'
@@ -246,20 +315,35 @@ class LocalStorage(BlobStorage):
                 if ident[0] == '/':
                     ident = ident[1:]
                 #ident = "file://%s" % localpath
-
+                ident = localpath2url(ident)
                 log.debug('local.blob_id: %s -> %s',  ident, localpath)
                 return ident, localpath
             localpath = "%s-%s%s" % (fpath , uniq[3:7+x] , ext)
-            log.debug ("local.write: File exists .. trying %s", localpath)
+            log.debug ("local.write: File exists... trying %s", localpath)
 
         raise DuplicateFile(localpath)
 
     def localpath(self, path):
-        path = path.replace('\\', '/')
-        if not path.startswith('file://'):
-            path = os.path.join(self.top, path)
-            path = path.replace('\\', '/')
-        return url2localpath(path)
+        #log.debug('local_store localpath: %s', path)
+        path,sub = split_subpath(path)
+        if not path.startswith('file:///'):
+            if path.startswith('file://'):
+                path = os.path.join(self.top, path.replace('file://', ''))
+            else:
+                path = os.path.join(self.top, path)
+
+        path = url2localpath(path.replace('\\', '/'))
+
+        #log.debug('local_store localpath path: %s', path)
+
+        # if path is a directory, list contents
+        files = None
+        if os.path.isdir(path) is True:
+            files = walk_deep(path)
+            files = sorted(files, key=blocked_alpha_num_sort) # use alpha-numeric block sort
+
+        # local storage can't extract sub paths, pass it along
+        return Blobs(path=path, sub=sub, files=files)
 
     def walk(self):
         'walk store returning all elements'
@@ -267,8 +351,9 @@ class LocalStorage(BlobStorage):
             yield tp
 
     def delete(self, ident):
+        #ident,_ = split_subpath(ident) # reference counting required?
         fullpath = os.path.join(self.top[5:], ident) # remove file
-        log.debug("deleting %s" ,  fullpath)
+        log.debug("deleting %s", fullpath)
         os.remove (fullpath)
 
     def __str__(self):
@@ -305,7 +390,7 @@ class iRodsStorage(BlobStorage):
         log.info("created irods store %s (%s)" , self.format_path, self.top)
 
     def valid(self, irods_ident):
-        return  irods_ident.startswith(self.top) and irods_ident
+        return irods_ident.startswith(self.top) and irods_ident
 
     def write(self, fp, filename, user_name=None, uniq=None):
         blob_ident = formatPath(self.format_path, user_name, filename, uniq)
@@ -314,10 +399,14 @@ class iRodsStorage(BlobStorage):
         return blob_ident, flocal
 
     def localpath(self, irods_ident):
+        # dima: path can be a directory, needs listing and fetching all enclosed files
         try:
+            # if irods will provide extraction of sub files from compressed (zip, tar, ...) ask for it and return sub as None
+            irods_ident,sub = split_subpath(irods_ident)
             path = irods_handler.irods_fetch_file(irods_ident, user=self.user, password=self.password)
-            return  path
-        except irods_handler.IrodsError, e:
+            # dima: if path is a directory, list contents
+            return Blobs(path=path, sub=sub, files=None)
+        except irods_handler.IrodsError:
             log.exception ("Error fetching %s ", irods_ident)
         return None
 
@@ -388,9 +477,14 @@ class S3Storage(BlobStorage):
 
     def localpath(self, s3_ident):
         'return path to local copy of the s3 resource'
+        # dima: path can be a directory, needs listing and fetching all enclosed files
+
+        # if s3 will provide extraction of sub files from compressed (zip, tar, ...) ask for it and return sub as None
+        s3_ident,sub = split_subpath(s3_ident)
         s3_key = s3_ident.replace("s3://","")
         path = s3_handler.s3_fetch_file(self.bucket, s3_key)
-        return  path
+        # dima: if path is a directory, list contents
+        return Blobs(path=path, sub=sub, files=None)
 
     def delete(self, s3_ident):
         s3_key = s3_ident.replace("s3://","")
@@ -432,6 +526,7 @@ class HttpStorage(BlobStorage):
         raise IllegalOperation('HTTP(S) write is not implemented')
 
     def localpath(self, http_ident):
+        # dima: path can be a directory, needs listing and fetching all enclosed files
         raise IllegalOperation('HTTP(S) localpath is not implemented')
 
 class HttpsStorage (HttpStorage):

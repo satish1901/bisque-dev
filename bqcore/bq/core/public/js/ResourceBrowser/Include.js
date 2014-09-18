@@ -61,7 +61,7 @@
  'layout'	: 	'${layout}',
  'height'	:	'100%',
  'viewMode'	:	'ViewerOnly',
- 'dataset'	:	bq.url('${dataset}'),
+ 'dataset'	:	BQ.Server.url('${dataset}'),
  'tagQuery'	:	'${query}',
  'tagOrder'	:	'${tagOrder}',
  'offset'	:	'${offset}',
@@ -70,7 +70,7 @@
 
  resourceBrowser.on('Select', function(resourceURL)
  {
- window.open(bq.url('/client_service/view?resource='+resourceURL)); }
+ window.open(BQ.Server.url('/client_service/view?resource='+resourceURL)); }
  );
 
  // Add ResourceBrowser to BQApp's centerPanel

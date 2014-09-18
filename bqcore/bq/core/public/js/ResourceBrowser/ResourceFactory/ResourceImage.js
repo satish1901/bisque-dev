@@ -42,8 +42,8 @@ Ext.define('Bisque.Resource.Image', {
         if (!xmlDoc)
             return;
         try {
-            this.resource.t = parseInt(evaluateXPath(xmlDoc, "//tag[@name='image_num_t']/@value")[0].value);
-            this.resource.z = parseInt(evaluateXPath(xmlDoc, "//tag[@name='image_num_z']/@value")[0].value);
+            this.resource.t = parseInt(BQ.util.xpath_nodes(xmlDoc, "//tag[@name='image_num_t']/@value")[0].value);
+            this.resource.z = parseInt(BQ.util.xpath_nodes(xmlDoc, "//tag[@name='image_num_z']/@value")[0].value);
         } catch (e) {
             this.resource.t = 1;
             this.resource.z = 1;
@@ -223,7 +223,7 @@ Ext.define('Bisque.Resource.Image.Compact', {
     },
 
     resourceError : function() {
-        var errorImg = '<img style="display: block; margin-left: auto; margin-right: auto; margin-top: 60px;"' + ' src="' + bq.url('/js/ResourceBrowser/Images/unavailable.png') + '"/>';
+        var errorImg = '<img style="display: block; margin-left: auto; margin-right: auto; margin-top: 60px;"' + ' src="' + BQ.Server.url('/js/ResourceBrowser/Images/unavailable.png') + '"/>';
         this.setData('image', errorImg);
         this.setData('fetched', 1);
         this.update(errorImg);
@@ -577,7 +577,7 @@ Ext.define('Bisque.Resource.Image.Page', {
             }
         });
 
-        this.gobjectTagger = new Bisque.GObjectTagger({
+        this.gobjectTagger = Ext.create('Bisque.GObjectTagger', {
             resource : this.resource,
             mexBrowser : mexBrowser,
             title : 'Graphical',
@@ -614,6 +614,32 @@ Ext.define('Bisque.Resource.Image.Page', {
                     this.viewerContainer.viewer.hideGObjects(gobject);
                 },
 
+                gob_projection : function(me, projection) {
+                    this.viewerContainer.viewer.setGobProjection(projection);
+                },
+
+                gob_tolerance : function(me) {
+                    Ext.MessageBox.show({
+                        title: 'Gobject visible plane tolerance',
+                        msg: 'Please enter new tolerance (in planes):',
+                        buttons: Ext.MessageBox.OKCANCEL,
+                        prompt: true,
+                        multiline: false,
+                        fn: function(btn, text) {
+                            if (btn !== 'ok') {
+                                return;
+                            }
+                            var tolerance = parseFloat(text);
+                            if (tolerance===0 || text==='' || isNaN(tolerance)) {
+                                tolerance = undefined;
+                            }
+                            this.viewerContainer.viewer.setGobTolerance(tolerance);
+                        },
+                        scope: this,
+                        value: this.viewerContainer.viewer.getGobTolerance() || '1.0',
+                    });
+                },
+
                 delete_gobjects : function(gobs) {
                     this.viewerContainer.viewer.delete_gobjects(gobs);
                 },
@@ -637,7 +663,7 @@ Ext.define('Bisque.Resource.Image.Page', {
             }
         });
 
-        var mexBrowser = new Bisque.ResourceBrowser.Browser({
+        var mexBrowser = Ext.create('Bisque.ResourceBrowser.Browser', {
             'layout' : 5,
             'title' : 'Analysis',
             'viewMode' : 'MexBrowser',
@@ -651,7 +677,7 @@ Ext.define('Bisque.Resource.Image.Page', {
                     me.mexLoaded = true;
                 },
                 'Select' : function(me, resource) {
-                    window.open(bq.url('/module_service/' + resource.name + '/?mex=' + resource.uri));
+                    window.open(BQ.Server.url('/module_service/' + resource.name + '/?mex=' + resource.uri));
                 },
                 'browserLoad' : function(mb, resQ) {
                     for (var i=resQ.length-1; i>=0; i--)
@@ -702,9 +728,15 @@ Ext.define('Bisque.Resource.Image.Page', {
 
         this.add({
             xtype : 'container',
-            itemId: 'main_container',
+            itemId: 'viewer_container',
             layout : 'border',
-            items : [this.viewerContainer, resTab]
+            items : [resTab, {
+                xtype: 'container',
+                itemId: 'main_container',
+                region : 'center',
+                layout: 'fit',
+                items : [this.viewerContainer]
+            }]
         });
 
         var download = this.toolbar.queryById('btnDownload');
@@ -801,8 +833,8 @@ Ext.define('Bisque.Resource.Image.Page', {
         this.dims = dims;
         if (dims.t>1 || dims.z>1)
             this.toolbar.queryById('menu_view_movie').setDisabled( false );
-        //if (dims.t>1 || dims.z>1)
-        //    this.toolbar.queryById('menu_view_3d').setDisabled( false );
+        if (dims.t>1 || dims.z>1)
+            this.toolbar.queryById('menu_view_3d').setDisabled( false );
 
         if (dims.x>10000 && dims.y>10000) {
             this.toolbar.queryById('menu_view_movie').setDisabled( true );
@@ -824,9 +856,16 @@ Ext.define('Bisque.Resource.Image.Page', {
         if (image2d && image2d.isVisible()) return;
 
         var movie = this.queryById('main_view_movie');
-        if (movie) movie.setVisible(false);
+        if (movie) {
+            movie.setVisible(false);
+            movie.destroy();
+        }
+
         var image3d = this.queryById('main_view_3d');
-        if (image3d) image2d.destroy();
+        if (image3d) {
+            image3d.setVisible(false);
+            image3d.destroy();
+        }
 
         image2d.setVisible(true);
     },
@@ -840,13 +879,20 @@ Ext.define('Bisque.Resource.Image.Page', {
         if (movie && movie.isVisible()) return;
 
         var image2d = this.queryById('main_view_2d');
-        if (image2d) image2d.setVisible(false);
+        if (image2d) {
+            image2d.setVisible(false);
+            //image2d.destroy(); // do not destroy to really fast return
+        }
+
         var image3d = this.queryById('main_view_3d');
-        if (image3d) image2d.destroy();
+        if (image3d) {
+            image3d.setVisible(false);
+            image3d.destroy();
+        }
 
         var cnt = this.queryById('main_container');
         cnt.add({
-            region : 'center',
+            //region : 'center',
             xtype: 'bq_movie_viewer',
             itemId: 'main_view_movie',
             resource: this.resource,
@@ -890,7 +936,35 @@ Ext.define('Bisque.Resource.Image.Page', {
     },
 
     show3D : function() {
+        var btn = this.queryById('button_view');
+        btn.setText('View: 3D');
+        btn.setIconCls('view3d');
 
+        var image3d = this.queryById('main_view_3d');
+        if (image3d && image3d.isVisible()) return;
+
+        var image2d = this.queryById('main_view_2d');
+        if (image2d) {
+            image2d.setVisible(false);
+            //image2d.destroy(); // do not destroy to really fast return
+        }
+
+        var movie = this.queryById('main_view_movie');
+        if (movie) {
+            movie.setVisible(false);
+            movie.destroy();
+        }
+
+        var cnt = this.queryById('main_container');
+        cnt.add({
+            //region : 'center',
+            xtype: 'bq_volume_panel',
+            itemId: 'main_view_3d',
+            resource: this.resource,
+            toolbar: this.toolbar,
+            phys: this.viewerContainer.viewer.imagephys,
+            preferences: this.viewerContainer.viewer.preferences,
+        });
     },
 
 });

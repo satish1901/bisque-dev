@@ -89,7 +89,7 @@ Ext.define('BQ.slider.Slider', {
         var me = this;
 
         me.orientation = me.orientation || 'horizontal';
-        if (me.orientation == 'vertical') {
+        if (me.orientation === 'vertical') {
             me.layout = {
                 type : 'vbox',
                 align: 'center',
@@ -109,7 +109,7 @@ Ext.define('BQ.slider.Slider', {
         // create components
 
         me.items = me.items || [];
-        var btn_sz = 25;
+        var btn_sz = 31;
         var spacing = 2;
         var isvertical = (me.orientation == 'vertical')?true:false;
         var cssmargin = isvertical?'0 0 '+spacing+'px 0':'0 0 0 '+spacing+'px';

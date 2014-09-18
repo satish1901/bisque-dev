@@ -14,8 +14,6 @@ PID_TEMPL = "bisque_%s.pid"
 LOG_TEMPL = 'bisque_%s.log'
 RUNNER_CMD = ['mexrunner']
 SITE_CFG = 'site.cfg'
-ENGINE_UWSGI_CFG = 'engine_uwsgi.cfg'
-BISQUE_UWSGI_CFG = 'bisque_uwsgi.cfg'
 
 if os.name == 'nt':
     #pylint:disable=F0401

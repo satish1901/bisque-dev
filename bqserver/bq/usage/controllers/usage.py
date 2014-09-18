@@ -37,16 +37,17 @@ class usageController(ServiceController):
     @expose(content_type="text/xml")
     def stats(self, **kw):
         log.info('stats %s'%kw)
-        wpublic = kw.pop('wpublic',  identity.anonymous())
+        wpublic = kw.pop('wpublic',  0)
+        anonymous =  identity.anonymous()
         #images2d = aggregate_service.count("image", wpublic=wpublic, images2d=True)
         #all_count = aggregate_service.count("image", wpublic=wpublic, welcome=True)
         #image_count = aggregate_service.count("image", wpublic=wpublic)
         #tag_count = aggregate_service.count("tag", wpublic=wpublic, welcome=True )
         all_count = data_service.count("image", wpublic=wpublic, images2d=True, parent=False)
-        image_count = data_service.count("image", wpublic=wpublic, welcome=wpublic)
+        image_count = data_service.count("image", wpublic=wpublic, permcheck = not anonymous )
         #images2d = data_service.count("image", wpublic=wpublic, images2d=True)
-        tag_count = data_service.count ("tag", wpublic=wpublic, welcome=wpublic, parent=False)
-        gob_count = data_service.count ("gobject", wpublic=wpublic, welcome=wpublic, parent=False)
+        tag_count = data_service.count ("tag", wpublic=wpublic, permcheck=not anonymous, parent=False)
+        gob_count = data_service.count ("gobject", wpublic=wpublic, permcheck=not anonymous, parent=False)
 
         resource = etree.Element('resource', uri='/usage/stats')
         etree.SubElement(resource, 'tag', name='number_images', value=str(all_count))
@@ -73,7 +74,7 @@ class usageController(ServiceController):
             days.append(d1.isoformat(' '))
             # dima: some error happens in data_service and this throws
             try:
-                req = data_service.query(resource_type, view='count', ts=ts, welcome=True)
+                req = data_service.query(resource_type, view='count', ts=ts, permcheck=False)
                 log.debug('Daily Usage for [%s - %s] %s'%(d2.isoformat(), d1.isoformat(), etree.tostring(req)))
                 c = req.xpath('//%s[@count]'%resource_type)
                 if len(c)>0:
@@ -98,7 +99,7 @@ class usageController(ServiceController):
             months.append(d2.isoformat(' '))
             # dima: some error happens in data_service and this throws
             try:
-                req = data_service.query(resource_type, view='count', ts=ts, welcome=True)
+                req = data_service.query(resource_type, view='count', ts=ts, permcheck=False)
                 log.debug('Monthly Usage for [%s - %s] %s'%(d2.isoformat(), d1.isoformat(), etree.tostring(req)))
                 c = req.xpath('//%s[@count]'%resource_type)
                 if len(c)>0:

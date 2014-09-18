@@ -42,7 +42,7 @@
   </style>
   
   <script type="text/javascript" > 
-    bq.services = { 'browse': false };
+    BQ.Server.services = { 'browse': false };
   </script>    
   
 </head>
@@ -57,7 +57,7 @@
         selType: 'SINGLE',        
         viewMode: 'ModuleBrowser',        
         //'height'  : "100%",
-        'dataset'   : bq.url('${dataset}'), 
+        'dataset'   : BQ.Server.url('${dataset}'), 
         'tagQuery'  : '${query}', 
         'tagOrder'  : '${tagOrder}', 
         'offset'    : '${offset}', 
@@ -65,7 +65,7 @@
       });
 
       resourceBrowser.on( 'Select', function(rb, module) { 
-        window.open(bq.url('/module_service/' + module.name)); } 
+        window.open(BQ.Server.url('/module_service/' + module.name)); } 
       );
       // Add ResourceBrowser to BQApp's centerPanel
       BQApp.main.getComponent('centerEl').add(resourceBrowser);

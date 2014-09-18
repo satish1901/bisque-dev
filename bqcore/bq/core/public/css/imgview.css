@@ -435,18 +435,19 @@
 .viewer .viewoptions {
     position: absolute;
     z-index: 30;
-    width: 20px;
-    height: 20px;
+    width: 32px;
+    height: 32px;
     left: 80px;
     top: 10px;
     bottom: none;
     right: none;
-
-    background-image: url('/images/viewer/64px_view.png');
-    background-size: 20px;
     background-color: transparent;
+    background-repeat: no-repeat;
+    background-position: -34px -97px;
+    background-image: url('/images/viewer/icons_viewer.svg');
+    background-size: 200px;
 }
-
+/*
 .viewer .viewoptions-phone {
     width: 96px;
     height: 96px;
@@ -462,7 +463,7 @@
     top: 15px;
     background-size: 36px;
 }
-
+*/
 .viewer .editmenu {
     position: absolute;
     z-index: 30;
@@ -501,53 +502,44 @@
 .viewer .editcontrol {
     position: absolute;
     z-index: 30;
-    width: 22px;
-    height: 22px;
+    width: 31px;
+    height: 31px;
     right: 80px;
     top: 10px;
     bottom: none;
     right: none;
-    background-size: 44px 22px;
     background-color: transparent;
     background-repeat: no-repeat;
-    background-position: 0px 0px;
+    background-image: url('/images/viewer/icons_viewer.svg');
+    background-size: 200px;
+    background-position: -135px 0px;
 }
-
-.viewer .editcontrol.selected {
-    background-position: -23px 0px;
-}
-
-/*
-.viewer .editcontrol.phone {
-    width: 96px;
-    height: 96px;
-    right: 100px;
-    top: 30px;
-    background-size: 96px;
-}
-
-.viewer .editcontrol.touch {
-    width: 36px;
-    height: 36px;
-    right: 85px;
-    top: 15px;
-    background-size: 36px;
-}
-*/
 
 .viewer .btn-navigate {
-    background-image: url('/images/viewer/compass.png');
-    right: 170px;
+    right: 190px;
+    background-position: -135px -131px;
+}
+
+.viewer .btn-navigate.selected {
+    background-position: -168px -131px;
 }
 
 .viewer .btn-select {
-    background-image: url('/images/viewer/select.png');
-    right: 140px;
+    right: 150px;
+    background-position: -135px -98px;
+}
+
+.viewer .btn-select.selected {
+    background-position: -168px -98px;
 }
 
 .viewer .btn-delete {
-    background-image: url('/images/viewer/delete.png');
     right: 110px;
+    background-position: -135px -65px;
+}
+
+.viewer .btn-delete.selected {
+    background-position: -168px -65px;
 }
 
 /*******************************************************************************
@@ -576,6 +568,7 @@ table.x-form-color {
     background-color: rgba(0, 0, 0, 0.5);
     opacity: 0.8;
     border-color: rgba(255,255,255,0.3);
+    z-index: 2147483647 !important;
 }
 
 .bq-viewer-tip .x-tip-anchor {

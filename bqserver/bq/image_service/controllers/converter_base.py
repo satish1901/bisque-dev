@@ -15,15 +15,16 @@ __copyright__ = "Center for BioImage Informatics, University California, Santa B
 
 import os.path
 from subprocess import call
+from pylons.controllers.util import abort
 #from collections import OrderedDict
 from bq.util.compat import OrderedDict
+from itertools import groupby
 
 from .locks import Locks
 from . import misc
 
 import logging
 log = logging.getLogger('bq.image_service.converter')
-
 
 ################################################################################
 # Format - the definition of a format
@@ -135,7 +136,7 @@ class ConverterBase(object):
     #######################################
 
     # overwrite with appropriate implementation
-    def supported(self, ifnm):
+    def supported(self, ifnm, **kw):
         '''return True if the input file format is supported'''
         return False
 
@@ -145,7 +146,7 @@ class ConverterBase(object):
     #######################################
 
     # overwrite with appropriate implementation
-    def meta(self, ifnm, series=0):
+    def meta(self, ifnm, series=0, **kw):
         '''returns a dict with file metadata'''
         return {}
 
@@ -155,7 +156,7 @@ class ConverterBase(object):
     #######################################
 
     # overwrite with appropriate implementation
-    def info(self, ifnm, series=0):
+    def info(self, ifnm, series=0, **kw):
         '''returns a dict with file info'''
         if not self.installed:
             return {}
@@ -172,6 +173,64 @@ class ConverterBase(object):
         return dict ( (k,v) for k,v in rd.iteritems() if k in core)
 
     #######################################
+    # Multi-file misc
+    #######################################
+
+    @classmethod
+    def is_multifile_series(cls, **kw):
+        ''' Test if incoming is a multi-file no-header series like TIFF series '''
+        #log.debug('is_multifile_series kw: %s', kw)
+        
+        # test if token is present
+        try:
+            token = kw['token']
+        except (KeyError):
+            return False
+
+        # test for multiple files
+        try:
+            meta = token.meta
+            #log.debug('is_multifile_series meta: %s', meta)
+            files = meta['files']
+            #log.debug('is_multifile_series files: %s', files)
+            if len(files)<=1:
+                return False
+        except (KeyError, TypeError, AttributeError):
+            return False
+
+        # test for storage
+        #if meta.get('storage') != 'multi_file_series':
+        #    return False
+        
+        # test for geometry tags
+        if len(set(['image_num_z','image_num_t','image_num_c']).intersection(meta.keys()))<1:
+            return False
+
+        log.debug('is_multifile_series is True')
+        return True
+
+    @classmethod
+    def enumerate_series_files(cls, **kw):
+        ''' Find all files belonging to a multi-file series '''
+        
+        # test if token is present
+        try:
+            token = kw['token']
+        except (KeyError):
+            return []
+
+        # test for multiple files
+        try:
+            meta = token.meta
+            files = meta['files']
+        except (KeyError, TypeError, AttributeError):
+            return []
+        
+        files = list(set(files)) # ensure unique names
+        files = sorted(files, key=misc.blocked_alpha_num_sort) # use alpha-numeric sort
+        return files
+
+    #######################################
     # Conversion
     #######################################
 
@@ -179,35 +238,53 @@ class ConverterBase(object):
     def run_read(cls, ifnm, command ):
         with Locks(ifnm):
             command, tmp = misc.start_nounicode_win(ifnm, command)
+            log.debug('run_read command: [%s]', misc.toascii(command))
             out = misc.run_command( command )
             misc.end_nounicode_win(tmp)
         return out
 
     @classmethod
-    def run(cls, ifnm, ofnm, args ):
+    def run(cls, ifnm, ofnm, args, **kw ):
         '''converts input filename into output using exact arguments as provided in args'''
         if not cls.installed:
             return None
+        tmp = None
         with Locks(ifnm, ofnm) as l:
             if l.locked: # the file is not being currently written by another process
                 command = [cls.CONVERTERCOMMAND]
                 command.extend(args)
-                log.debug('Run command: [%s]', command)
-                if ofnm is not None and os.path.exists(ofnm):
-                    log.warning ('Run: output exists before command [%s]', ofnm)
-                command, tmp = misc.start_nounicode_win(ifnm, command)
-                retcode = call (command)
-                misc.end_nounicode_win(tmp)
-                if retcode != 0:
-                    log.warning ('Run: returned [%s] for [%s]', retcode, command)
-                    return None
-                if ofnm is None:
-                    return str(retcode)
-                # output file does not exist for some operations, like tiles
-                # tile command does not produce a file with this filename
-                # if not os.path.exists(ofnm):
-                #     log.error ('Run: output does not exist after command [%s]', ofnm)
-                #     return None
+                log.debug('Run command: [%s]', misc.toascii(command))
+                proceed = True
+                if ofnm is not None and os.path.exists(ofnm) and os.path.getsize(ofnm)>16:
+                    if kw.get('nooverwrite', False) is True:
+                        proceed = False
+                        log.warning ('Run: output exists before command [%s], skipping', misc.toascii(ofnm))
+                    else:
+                        log.warning ('Run: output exists before command [%s], overwriting', misc.toascii(ofnm))
+                if proceed is True:
+                    command, tmp = misc.start_nounicode_win(ifnm, command)
+                    try:
+                        retcode = call (command)
+                    except:
+                        retcode = 100
+                        log.exception('Error running command: %s', command)
+                    misc.end_nounicode_win(tmp)
+                    if retcode == 99:
+                        # in case of a timeout
+                        log.info ('Run: timed-out for [%s]', misc.toascii(command))
+                        if ofnm is not None and os.path.exists(ofnm):
+                            os.remove(ofnm)
+                        abort(412, 'Requested timeout reached')
+                    if retcode!=0:
+                        log.info ('Run: returned [%s] for [%s]', retcode, misc.toascii(command))
+                        return None
+                    if ofnm is None:
+                        return str(retcode)
+                    # output file does not exist for some operations, like tiles
+                    # tile command does not produce a file with this filename
+                    # if not os.path.exists(ofnm):
+                    #     log.error ('Run: output does not exist after command [%s]', ofnm)
+                    #     return None
 
         # make sure the write of the output file have finished
         if ofnm is not None and os.path.exists(ofnm):
@@ -223,7 +300,7 @@ class ConverterBase(object):
         return ofnm
 
     @classmethod
-    def convert(cls, ifnm, ofnm, fmt=None, series=0, extra=[]):
+    def convert(cls, ifnm, ofnm, fmt=None, series=0, extra=None, **kw):
         '''converts a file and returns output filename'''
         command = ['-input', ifnm]
         if ofnm is not None:
@@ -237,7 +314,7 @@ class ConverterBase(object):
 
     # overwrite with appropriate implementation
     @classmethod
-    def convertToOmeTiff(cls, ifnm, ofnm, series=0, extra=[]):
+    def convertToOmeTiff(cls, ifnm, ofnm, series=0, extra=None, **kw):
         '''converts input filename into output in OME-TIFF format'''
         return cls.run(ifnm, ofnm, ['-input', ifnm, '-output', ofnm, '-format', 'OmeTiff', '-series', '%s'%series] )
 
@@ -254,7 +331,7 @@ class ConverterBase(object):
         #z1,z2 = z
         #t1,t2 = t
         #x1,x2,y1,y2 = roi
-        #info = kw['info']
+        #token = kw.get('token', None)
 
         return cls.run(ifnm, ofnm, ['-input', ifnm, '-output', ofnm, '-format', 'OmeTiff', '-series', '%s'%series, 'z', '%s'%z, 't', '%s'%t] )
 

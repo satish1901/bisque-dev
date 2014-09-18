@@ -204,8 +204,18 @@ def irods_delete_file(url, **kw):
         f.close()
         f.delete()
 
-def irods_fetch_dir(url, **kw):
+def irods_isdir (url, **kw):
+    with IrodsConnection(url, **kw) as ic:
+        coll = irods.irodsCollection(ic.conn)
+        path = coll.openCollection(ic.path)
+        # Bug in openCollection (appends \0)
+        path = path.strip('\x00')
+        if path:
+            return True
+    return False
 
+
+def irods_fetch_dir(url, **kw):
     with IrodsConnection(url, **kw) as ic:
         coll = irods.irodsCollection(ic.conn)
         path = coll.openCollection(ic.path)

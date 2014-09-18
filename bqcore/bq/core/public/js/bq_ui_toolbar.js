@@ -1,9 +1,4 @@
 
-//Ext.require(['*']);
-Ext.require(['Ext.toolbar.Toolbar']);
-Ext.require(['Ext.tip.QuickTip']);
-Ext.require(['Ext.tip.QuickTipManager']);
-
 //--------------------------------------------------------------------------------------
 // Toolbar actions
 //--------------------------------------------------------------------------------------
@@ -45,7 +40,7 @@ function analysisAction(o, e) {
     var w = Math.round(Math.min(500, BQApp?BQApp.getCenterComponent().getWidth()*0.8:document.width*0.8));
     var h = Math.round(BQApp?BQApp.getCenterComponent().getHeight()*0.99:document.height*0.99);
 
-    var resourceBrowser  = Ext.create('Bisque.ResourceBrowser.Browser', {
+    var resourceBrowser = Ext.create('Bisque.ResourceBrowser.Browser', {
         layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.IconList,
         wpublic: true,
         selType: 'SINGLE',
@@ -74,8 +69,7 @@ function analysisAction(o, e) {
         layout: 'fit',
         autoHide: false,
         shadow: true,
-        items: [resourceBrowser],
-
+        items: [resourceBrowser]
     });
     tip.show();
 }
@@ -86,7 +80,7 @@ function analysisAction(o, e) {
 
 Ext.define('BQ.Application.Toolbar', {
     extend: 'Ext.toolbar.Toolbar',
-    requires: ['Ext.toolbar.Toolbar', 'Ext.tip.QuickTipManager', 'Ext.tip.QuickTip'],
+    requires: ['Ext.toolbar.Toolbar', 'Ext.tip.QuickTipManager', 'Ext.tip.QuickTip', 'Ext.toolbar.Spacer'],
 
     // default toolbar config
     region: 'north',
@@ -108,13 +102,14 @@ Ext.define('BQ.Application.Toolbar', {
     tools_admin: ['menu_user_admin_separator', 'menu_user_admin', 'menu_user_admin_prefs', ],
 
     initComponent : function() {
-        this.images_base_url = this.images_base_url || bq.url('/images/toolbar/');
-        this.title = bq.title || this.title;
+        this.images_base_url = this.images_base_url || BQ.Server.url('/images/toolbar/');
+        this.title = BQ.Server.title || this.title;
 
         Ext.QuickTips.init();
         Ext.tip.QuickTipManager.init();
         var toolbar = this;
 
+        if (BQ.Preferences)
         BQ.Preferences.get({
             key : 'Toolbar',
             callback : Ext.bind(this.onPreferences, this),
@@ -270,7 +265,7 @@ Ext.define('BQ.Application.Toolbar', {
             text:    'Sign in',
             scale:   'medium',
             //iconCls: 'icon-user',
-            handler: Ext.Function.pass(pageAction, bq.url('/auth_service/login')),
+            handler: Ext.Function.pass(pageAction, BQ.Server.url('/auth_service/login')),
         };
 
         this.menu_user = {
@@ -291,7 +286,7 @@ Ext.define('BQ.Application.Toolbar', {
                 text: 'Profile',
                 itemId: 'menu_user_profile',
                 hidden: true,
-                handler: Ext.Function.pass(pageAction, bq.url('/registration/edit_user')), // preferences loaded in onPreferences
+                handler: Ext.Function.pass(pageAction, BQ.Server.url('/registration/edit_user')), // preferences loaded in onPreferences
             }, {
                 xtype:'menuseparator',
                 itemId: 'menu_user_admin_separator',
@@ -300,7 +295,7 @@ Ext.define('BQ.Application.Toolbar', {
                 text: 'Website admin',
                 itemId: 'menu_user_admin',
                 hidden: true,
-                handler: Ext.Function.pass(pageAction, bq.url('/admin')),
+                handler: Ext.Function.pass(pageAction, BQ.Server.url('/admin')),
             }, {
                 text: 'User preferences',
                 itemId: 'menu_user_prefs',
@@ -321,18 +316,18 @@ Ext.define('BQ.Application.Toolbar', {
                 text: 'Sign out',
                 itemId: 'menu_user_signout',
                 hidden: true,
-                handler: Ext.Function.pass(pageAction, bq.url('/auth_service/logout_handler')),
+                handler: Ext.Function.pass(pageAction, BQ.Server.url('/auth_service/logout_handler')),
             }, signin, {
                 xtype: 'menuseparator',
                 itemId: 'menu_user_register_sep',
             }, {
                 text: 'Register new user',
                 itemId: 'menu_user_register',
-                handler: Ext.Function.pass(pageAction, bq.url('/auth_service/login')),  // preferences loaded in onPreferences
+                handler: Ext.Function.pass(pageAction, BQ.Server.url('/auth_service/login')),  // preferences loaded in onPreferences
             }, {
                 text: 'Recover Password',
                 itemId: 'menu_user_recover',
-                handler: Ext.Function.pass(pageAction, bq.url('/auth_service/login')), // preferences loaded in onPreferences
+                handler: Ext.Function.pass(pageAction, BQ.Server.url('/auth_service/login')), // preferences loaded in onPreferences
             }],
         };
 
@@ -345,27 +340,27 @@ Ext.define('BQ.Application.Toolbar', {
             plain: true,
             items: [{
                 xtype:'tbtext',
-                text: '<img src="'+this.images_base_url+'bisque_logo_200.png" class="image-about-bisque" />',
+                text: '<div class="image-about-bisque"></div>',
                 indent: true,
             }, {
                 text: 'About Bisque',
-                //handler: Ext.Function.pass(htmlAction, [bq.url('/client_service/public/about/about.html'), 'About Bisque'] ),
-                handler: Ext.Function.pass(htmlAction, [bq.url('/client_service/about'), 'About Bisque'] ),
+                //handler: Ext.Function.pass(htmlAction, [BQ.Server.url('/client_service/public/about/about.html'), 'About Bisque'] ),
+                handler: Ext.Function.pass(htmlAction, [BQ.Server.url('/client_service/about'), 'About Bisque'] ),
             }, {
                 text: 'Privacy policy',
-                handler: Ext.Function.pass(htmlAction, bq.url('/client_service/public/about/privacypolicy.html')),
+                handler: Ext.Function.pass(htmlAction, BQ.Server.url('/client_service/public/about/privacypolicy.html')),
             }, {
                 text: 'Terms of use',
-                handler: Ext.Function.pass(htmlAction, bq.url('/client_service/public/about/termsofuse.html') ),
+                handler: Ext.Function.pass(htmlAction, BQ.Server.url('/client_service/public/about/termsofuse.html') ),
             }, {
                 text: 'License',
-                handler: Ext.Function.pass(htmlAction, bq.url('/client_service/public/about/license.html') ),
+                handler: Ext.Function.pass(htmlAction, BQ.Server.url('/client_service/public/about/license.html') ),
             }, '-', {
                 text: 'Usage statistics',
-                handler: Ext.Function.pass(pageAction, bq.url('/usage/') ),
+                handler: Ext.Function.pass(pageAction, BQ.Server.url('/usage/') ),
             }, '-', {
                 text: 'Online Help',
-                handler: Ext.Function.pass(urlAction, bq.url('/client_service/help')),
+                handler: Ext.Function.pass(urlAction, BQ.Server.url('/client_service/help')),
             }, {
                 text: 'Bisque project website',
                 handler: Ext.Function.pass(urlAction, 'http://www.bioimage.ucsb.edu/downloads/Bisque%20Database'),
@@ -392,7 +387,7 @@ Ext.define('BQ.Application.Toolbar', {
         var browse_vis = (this.toolbar_opts && this.toolbar_opts.browse===false) ? false : true;
         this.items = [{
                 xtype:'tbtext',
-                text: '<a href="/"><img src="'+this.images_base_url+'bisque_logo_100.png" class="image-logo-bisque" /></a>',
+                text: '<a href="/" class="main-logo"></a>',
             }, /*{
                 xtype:'tbtext',
                 itemId: 'menu_title',
@@ -411,7 +406,7 @@ Ext.define('BQ.Application.Toolbar', {
                 text: 'Upload',
                 itemId: 'button_upload',
                 iconCls : 'icon-import',
-                handler: Ext.Function.pass(pageAction, bq.url('/import/upload')),
+                handler: Ext.Function.pass(pageAction, BQ.Server.url('/import/upload')),
                 tooltip: '',
             }, {
                 text: 'Download',
@@ -423,7 +418,7 @@ Ext.define('BQ.Application.Toolbar', {
                 xtype : 'button',
                 itemId: 'button_analysis',
                 //menu  : this.menu_services,
-                iconCls : 'icon-services',
+                iconCls : 'icon-analysis',
                 text  : 'Analyze',
                 handler: analysisAction,
             }, {
@@ -445,7 +440,7 @@ Ext.define('BQ.Application.Toolbar', {
                     var q = '';
                     var m = toolbar.queryById('menu_query');
                     if (m && m.value != toolbar.image_query_text) { q = '?tag_query='+escape(m.value); }
-                    document.location = bq.url('/client_service/browser'+q);
+                    document.location = BQ.Server.url('/client_service/browser'+q);
                 },*/
             }, {
                 itemId: 'menu_resources',
@@ -486,7 +481,7 @@ Ext.define('BQ.Application.Toolbar', {
                     },
                     specialkey: function(f, e) {
                         if (e.getKey()==e.ENTER && f.value!='' && f.value != toolbar.image_query_text) {
-                            document.location = bq.url('/client_service/browser?tag_query='+escape(f.value));
+                            document.location = BQ.Server.url('/client_service/browser?tag_query='+escape(f.value));
                         }
                     },
                 }
@@ -901,17 +896,17 @@ Ext.define('BQ.Application.Toolbar', {
             this.queryById('menu_user_register').setVisible(false);
 
         this.queryById('menu_user_profile').setHandler(
-            Ext.Function.pass(pageAction, bq.url(this.preferences.user_profile || '/registration/edit_user')), // '/registration/lost_password'
+            Ext.Function.pass(pageAction, BQ.Server.url(this.preferences.user_profile || '/registration/edit_user')), // '/registration/lost_password'
             this
         );
 
         this.queryById('menu_user_register').setHandler(
-            Ext.Function.pass(pageAction, bq.url(this.preferences.registration || '/registration')), // '/registration'
+            Ext.Function.pass(pageAction, BQ.Server.url(this.preferences.registration || '/registration')), // '/registration'
             this
         );
 
         this.queryById('menu_user_recover').setHandler(
-            Ext.Function.pass(pageAction, bq.url(this.preferences.password_recovery || '/auth_service/login')), // '/registration/lost_password'
+            Ext.Function.pass(pageAction, BQ.Server.url(this.preferences.password_recovery || '/auth_service/login')), // '/registration/lost_password'
             this
         );
 

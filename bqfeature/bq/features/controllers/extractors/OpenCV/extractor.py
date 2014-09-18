@@ -82,7 +82,7 @@ class BRISK(Feature.BaseFeature):
         image_uri = resource['image']
         with ImageImport(image_uri) as imgimp:
             #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)  
-            im = np.array(Image.open(str(imgimp)))
+            im = imgimp.from_tiff2D_to_numpy()
             if len(im.shape)==3:
                 im = rgb2gray(im)
                 
@@ -174,7 +174,7 @@ class BRISKc(Feature.BaseFeature):
         
         with ImageImport(image_uri) as imgimp:
             #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
-            im = np.array(Image.open(str(imgimp)))
+            im = imgimp.from_tiff2D_to_numpy()
             
             if len(im.shape)==3:
                 im = rgb2gray(im)
@@ -278,7 +278,7 @@ class ORB(Feature.BaseFeature):
         with ImageImport(image_uri) as imgimp:
             #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
      
-            im = np.array(Image.open(str(imgimp)))
+            im = imgimp.from_tiff2D_to_numpy()
             
             if len(im.shape)==3:
                 im = rgb2gray(im)
@@ -374,7 +374,7 @@ class ORBc(Feature.BaseFeature):
         with ImageImport(image_uri) as imgimp:
             #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)    
 
-            im = np.array(Image.open(str(imgimp)))
+            im = imgimp.from_tiff2D_to_numpy()
             
             if len(im.shape)==3:
                 im = rgb2gray(im)
@@ -471,7 +471,7 @@ class SIFT(Feature.BaseFeature):
         with ImageImport(image_uri) as imgimp:
             #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
        
-            im = np.array(Image.open(str(imgimp)))
+            im = imgimp.from_tiff2D_to_numpy()
             
             if len(im.shape)==3:
                 im = rgb2gray(im)
@@ -524,7 +524,7 @@ class SIFTc(SIFT):
         image_uri = resource['image']
         with ImageImport(image_uri) as imgimp:
             #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
-            im = np.array(Image.open(str(imgimp)))
+            im = imgimp.from_tiff2D_to_numpy()
             
             if len(im.shape)==3:
                 im = rgb2gray(im)
@@ -675,7 +675,7 @@ class SURF(Feature.BaseFeature):
         with ImageImport(image_uri) as imgimp:
             #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
             
-            im = np.array(Image.open(str(imgimp)))
+            im = imgimp.from_tiff2D_to_numpy()
             
             if len(im.shape)==3:
                 im = rgb2gray(im)
@@ -729,7 +729,7 @@ class SURFc(SURF):
         with ImageImport(image_uri) as imgimp:
             #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
 
-            im = np.array(Image.open(str(imgimp)))
+            im = imgimp.from_tiff2D_to_numpy()
             
             if len(im.shape)==3:
                 im = rgb2gray(im)

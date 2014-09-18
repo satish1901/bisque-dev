@@ -128,7 +128,7 @@
             cls: 'apps welcome',
             listeners: { 'Select': function(me, resource) {
                           if (resource.available === false) return;
-                          window.open(bq.url('/module_service/'+resource.name));
+                          window.open(BQ.Server.url('/module_service/'+resource.name));
                        },
                        scope: this },
 
@@ -173,7 +173,7 @@
           border: true,
           cls: 'welcome',
           listeners: { 'Select': function(me, resource) {
-                          window.open(bq.url('/client_service/view?resource='+resource.uri));
+                          window.open(BQ.Server.url('/client_service/view?resource='+resource.uri));
                        },
                        scope: this },
         });
@@ -192,7 +192,7 @@
               tagQuery: tag_query,
               listeners: {
                   'Select': function(me, resource) {
-                      window.open(bq.url('/client_service/view?resource='+resource.uri));
+                      window.open(BQ.Server.url('/client_service/view?resource='+resource.uri));
                   },
                   scope: this
               },
@@ -225,7 +225,7 @@
           border: true,
           cls: 'welcome',
           listeners: { 'Select': function(me, resource) {
-                          window.open( bq.url('/module_service/'+resource.name+'/?mex='+resource.uri) );
+                          window.open( BQ.Server.url('/module_service/'+resource.name+'/?mex='+resource.uri) );
                        },
                        scope: this },
         });

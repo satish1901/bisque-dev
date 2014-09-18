@@ -472,6 +472,7 @@ def resource2nodes(dbo, parent=None, view=[], baseuri=None,  **kw):
         parents[node.id] = node.resource_parent_id
     for node_id, parent_id in parents.items():
         try:
+            # attached xml nodes in position
             if parent_id is not None:
                 nodes[parent_id].append(nodes[node_id])
         except KeyError:
@@ -614,7 +615,8 @@ def db2node(dbo, parent, view, baseuri, nodes, doc_id, **kw):
                                                     Taggable.resource_type == 'tag',
                                                     Taggable.resource_name == tag_name)
             for tag in tags:
-                xmlnode(tag, node, view=v, baseuri=baseuri)
+                kid = xmlnode(tag, node, view=view, baseuri=baseuri)
+                tl = [ xmlnode(x, kid, view=view, baseuri=baseuri) for x in tag.childrenq ]
              #tag = dbo.tagq.filter_by(resource_name = tag_name).first()
              #if tag:
              #    xmlnode(tag, node, view=v, baseuri=baseuri)
@@ -696,24 +698,27 @@ def load_uri (uri, query=False):
     '''
     # Check that we are looking at the right resource.
 
-    net, name, ida, rest = parse_uri(uri)
-    if name == 'data_service': # and ida.startswith('00-'):
-        log.debug("loading resource_uniq %s" % ida)
-        resource = DBSession.query(Taggable).filter_by(resource_uniq = ida)
-    else:
-        if ida.startswith("00-"):
+    try:
+        net, name, ida, rest = parse_uri(uri)
+        if name == 'data_service': # and ida.startswith('00-'):
             log.debug("loading resource_uniq %s" % ida)
             resource = DBSession.query(Taggable).filter_by(resource_uniq = ida)
         else:
-            name, dbcls = dbtype_from_tag(name)
-            log.debug("loading %s -> name/type (%s/%s)(%s) " %(uri, name,  str(dbcls), ida))
-            #resource = DBSession.query(dbcls).get (int (ida))
-            resource = DBSession.query(dbcls).filter (dbcls.id == int(ida))
-    if not query:
-        resource = resource.first()
-    log.debug ("loaded %s", str(resource))
-    return resource
-
+            if ida.startswith("00-"):
+                log.debug("loading resource_uniq %s" % ida)
+                resource = DBSession.query(Taggable).filter_by(resource_uniq = ida)
+            else:
+                name, dbcls = dbtype_from_tag(name)
+                log.debug("loading %s -> name/type (%s/%s)(%s) " %(uri, name,  str(dbcls), ida))
+                #resource = DBSession.query(dbcls).get (int (ida))
+                resource = DBSession.query(dbcls).filter (dbcls.id == int(ida))
+        if not query:
+            resource = resource.first()
+        log.debug ("loaded %s", str(resource))
+        return resource
+    except:
+        log.exception("Failed to load uri %s", uri)
+        return None
 
 converters = {
     'object' : load_uri,

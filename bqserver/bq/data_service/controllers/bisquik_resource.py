@@ -86,7 +86,7 @@ log = logging.getLogger("bq.data_service.bisquik_resource")
 
 
 #PROTECTED = [ 'module', 'mex', 'system' ]
-PROTECTED = [  ]
+PROTECTED = [ 'store', 'link', 'dir' ]
 
 
 def force_dbload(item):
@@ -151,7 +151,7 @@ class ResourceAuth(Resource):
         resource = check_access(request.bisque.parent, RESOURCE_READ)
         baseuri = self.baseuri
         log.info ("AUTH %s  %s" % (resource, request.environ))
-        auth = resource_auth (resource, parent = None)
+        auth = resource_auth (resource)
         response = etree.Element('resource', uri="%s%s/auth" % (baseuri, resource.uri))
         tree = db2tree (auth,  parent = response, view=view,baseuri=baseuri)
         formatter, content_type  = find_formatter (format)
@@ -174,7 +174,7 @@ class ResourceAuth(Resource):
         resource = check_access( request.bisque.parent, RESOURCE_EDIT)
         log.debug ("AUTH %s with %s" % (resource, xml))
         #DBSession.autoflush = False
-        resource = resource_auth (resource, parent = None, action=RESOURCE_EDIT, newauth=etree.XML(xml),
+        resource = resource_auth (resource,  action=RESOURCE_EDIT, newauth=etree.XML(xml),
                                   notify=asbool(notify))
         response = etree.Element('resource', uri=baseuri)
         tree = db2tree (resource,  parent = response, baseuri=baseuri)
@@ -229,8 +229,8 @@ class BisquikResource(Resource):
         log.debug ("Load %s" % token)
         try:
             if is_uniq_code(token):
-                return resource_load (self.resource_type, uniq = token, action=RESOURCE_READ)
-            return resource_load(self.resource_type, id=int(token), action=RESOURCE_READ)
+                return resource_load (self.resource_type, uniq = token)
+            return resource_load(self.resource_type, ident=int(token))
         except ValueError, e:
             abort (404)
         except:
@@ -302,10 +302,18 @@ class BisquikResource(Resource):
         format = kw.pop('format', None)
         offset = int(kw.get ('offset', 0))
         progressive = kw.pop('progressive', False)
+        permcheck = kw.pop('permcheck', None)  # disallow from web side as will be pass in kw
         #limit = kw.pop('limit', None)
         log.info ('DIR  %s' % (request.url))
         #  Do not use loading
         parent = getattr(request.bisque,'parent', None)
+        if parent is None:
+            limit = kw.pop ('limit', None) or 1000
+            limit = min(int(limit), 1000)
+            kw['limit'] = str(limit)
+            log.debug ("limiting top level to %s", limit)
+            if kw.pop('noparent', None):
+                parent = False
         user_id = identity.get_user_id()
 
         if view=='count':

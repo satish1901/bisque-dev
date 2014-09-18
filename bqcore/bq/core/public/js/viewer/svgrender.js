@@ -1,8 +1,31 @@
 var mouser=null;
 
-function test_visible (pos, pos_view, tolerance ) {
-    tolerance = tolerance || 1.0;
-    return !(pos!=undefined && pos!=null && !isNaN(pos) && Math.abs(pos-pos_view)>=tolerance);
+function test_visible_dim(pos, pos_view, tolerance ) {
+    return !(pos!==undefined && pos!==null && !isNaN(pos) && Math.abs(pos-pos_view)>=tolerance);
+}
+
+function test_visible (pos, viewstate, polygon, tolerance ) {
+    var proj = viewstate.imagedim.project,
+        proj_gob = viewstate.gob_projection;
+    tolerance = tolerance || viewstate.gob_tolerance || 1.0;
+    polygon = polygon || false;
+
+    if (proj_gob==='all') {
+        return true;
+    } else if (proj === 'projectmaxz' || proj === 'projectminz' || proj_gob==='Z') {
+        return test_visible_dim(pos.t, viewstate.t, tolerance);
+    } else if (proj === 'projectmaxt' || proj === 'projectmint' || proj_gob==='T') {
+        return test_visible_dim(pos.z, viewstate.z, tolerance);
+    } else if (!proj || proj === 'none') {
+        if (polygon) {
+            return (test_visible_dim(pos.z, viewstate.z, tolerance) ||
+                    test_visible_dim(pos.t, viewstate.t, tolerance));
+        } else {
+            return (test_visible_dim(pos.z, viewstate.z, tolerance) &&
+                    test_visible_dim(pos.t, viewstate.t, tolerance));
+        }
+    }
+    return true;
 }
 
 function SVGRenderer (viewer,name) {
@@ -292,7 +315,6 @@ SVGRenderer.prototype.polyline = function (visitor, gob,  viewstate, visibility)
     //    ctor = Polyline;
     if ( gob.type == "polygon" )
         ctor = Polygon;
-
     for (var i=0; i < gob.vertices.length; i++) {
         var pnt = gob.vertices[i];
         if (!pnt || isNaN(pnt.x) || isNaN(pnt.y) ) {
@@ -301,7 +323,8 @@ SVGRenderer.prototype.polyline = function (visitor, gob,  viewstate, visibility)
             continue;
         }
 
-        if (!test_visible(pnt.z, viewstate.z) || !test_visible(pnt.t, viewstate.t))
+        //
+        if (!test_visible(pnt, viewstate, true))
             continue;
 
         var p = viewstate.transformPoint (pnt.x, pnt.y);
@@ -477,7 +500,7 @@ SVGRenderer.prototype.point = function ( visitor, gob, viewstate, visibility) {
     var offset_y  = viewstate.offset_y;
 
     var pnt = gob.vertices[0];
-    var visible = (test_visible(pnt.z, viewstate.z) && test_visible(pnt.t, viewstate.t));
+    var visible = test_visible(pnt, viewstate);
 
     if (visibility!=undefined)
     	gob.visible=visibility;
@@ -552,7 +575,7 @@ SVGRenderer.prototype.rectangle = function ( visitor, gob,  viewstate, visibilit
     var pnt1 = gob.vertices[0];
     var pnt2 = gob.vertices[1];
     if (!pnt1 || !pnt2) return;
-    var visible = (test_visible(pnt1.z, viewstate.z) && test_visible(pnt1.t, viewstate.t));
+    var visible = test_visible(pnt1, viewstate);
 
     if (visibility!=undefined)
     	gob.visible=visibility;
@@ -633,7 +656,7 @@ SVGRenderer.prototype.square = function ( visitor, gob,  viewstate, visibility) 
     var pnt1 = gob.vertices[0];
     var pnt2 = gob.vertices[1];
     if (!pnt1 || !pnt2) return;
-    var visible = (test_visible(pnt1.z, viewstate.z) && test_visible(pnt1.t, viewstate.t));
+    var visible = test_visible(pnt1, viewstate);
 
     if (visibility!=undefined)
         gob.visible=visibility;
@@ -677,7 +700,7 @@ SVGRenderer.prototype.circle = function ( visitor, gob,  viewstate, visibility) 
 
     var pnt1 = gob.vertices[0] ;
     var pnt2 = gob.vertices[1] ;
-    var visible = (test_visible(pnt1.z, viewstate.z) && test_visible(pnt1.t, viewstate.t));
+    var visible = test_visible(pnt1, viewstate);
 
 	if (visibility!=undefined)
     	gob.visible=visibility;
@@ -747,7 +770,7 @@ SVGRenderer.prototype.ellipse = function ( visitor, gob,  viewstate, visibility)
     var pnt1 = gob.vertices[0];
     var pnt2 = gob.vertices[1];
     var pnt3 = gob.vertices[2];
-    var visible = (test_visible(pnt1.z, viewstate.z) && test_visible(pnt1.t, viewstate.t));
+    var visible = test_visible(pnt1, viewstate);
 
     if (visibility!=undefined)
     	gob.visible=visibility;
@@ -838,7 +861,8 @@ SVGRenderer.prototype.label = function ( visitor, gob, viewstate, visibility) {
     var offset_x  = viewstate.offset_x;
     var offset_y  = viewstate.offset_y;
     var pnt = gob.vertices[0];
-    var visible = (test_visible(pnt.z, viewstate.z) && test_visible(pnt.t, viewstate.t));
+
+    var visible = test_visible(pnt, viewstate);
 
     if (visibility!=undefined)
     	gob.visible=visibility;

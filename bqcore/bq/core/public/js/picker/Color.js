@@ -41,13 +41,13 @@ Ext.define('BQ.picker.Color', {
      * @cfg {String} [componentCls='x-color-picker']
      * The CSS class to apply to the containing element.
      */
-    componentCls : bq.baseCSSPrefix + 'color-picker',
+    componentCls : 'bq-color-picker',
 
     /**
      * @cfg {String} [selectedCls='x-color-picker-selected']
      * The CSS class to apply to the selected element
      */
-    selectedCls: bq.baseCSSPrefix + 'color-picker-selected',
+    selectedCls: 'bq-color-picker-selected',
 
     /**
      * @cfg {String} value

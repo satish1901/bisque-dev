@@ -56,7 +56,7 @@ Ext.define('BQ.renderers.dataset', {
                     me.mexLoaded = true;
                 },
                 'Select' : function(me, resource) {
-                    window.open(bq.url('/module_service/'+resource.name+'/?mex='+resource.uri));
+                    window.open(BQ.Server.url('/module_service/'+resource.name+'/?mex='+resource.uri));
                 },
                 scope:this
             },
@@ -103,7 +103,7 @@ Ext.define('BQ.renderers.dataset', {
             updateItems : this.updateOperationItems,
             listeners: {
                 'Select': function(me, resource) {
-                    window.open(bq.url('/client_service/view?resource='+resource.uri));
+                    window.open(BQ.Server.url('/client_service/view?resource='+resource.uri));
                 },
                 'SelectMode_Change': Ext.bind(this.onmodechange, this),
                 removed: this.removeResources,
@@ -429,11 +429,11 @@ Ext.define('BQ.renderers.dataset', {
             msg     :   'Dataset deleted successfully! You will be redirected to the Bisque homepage.',
             buttons :   Ext.MessageBox.OK,
             icon    :   Ext.MessageBox.INFO,
-            fn      :   function(){ window.location = bq.url('/'); },
+            fn      :   function(){ window.location = BQ.Server.url('/'); },
         });
     },
 
-    doRemove: function() {
+    doRemoveElements: function() {
         this.dataset_service.run_delete(this.resource.uri);
     },
 
@@ -443,7 +443,7 @@ Ext.define('BQ.renderers.dataset', {
         var text = 'Are you sure you want to delete dataset "'+this.resource.name+'" and all of its elements?';
         Ext.Msg.confirm('Delete dataset', text, function(btn, text) {
             if (btn != 'yes') return;
-            this.doRemove();
+            this.doRemoveElements();
         }, this);
     },
 

@@ -165,3 +165,45 @@
   text-overflow: ellipsis;
 }
 
+/*******************************************************************************
+ controls
+*******************************************************************************/
+
+.viewer .control {
+    width: 32px;
+    height: 32px;
+
+    position: absolute;
+    z-index: 30;
+    background-color: transparent;
+    background-repeat: no-repeat;
+    background-position: -34px 0px;
+    background-image: url('../images/icons_viewer.svg');
+    background-size: 200px;
+}
+
+.viewer .zoomIn {
+    top: 10px;
+    left: 10px;
+    background-position: -34px 0px;
+}
+
+.viewer .zoomOut {
+    top: 90px;
+    left: 10px;
+    background-position: -34px -31px;
+}
+
+.viewer .zoom11 {
+    top: 50px;
+    left: 10px;
+    background-position: -34px -63px;
+}
+
+.viewer .maximize {
+    top: 10px;
+    right: 10px;
+    background-position: -34px -162px;
+}
+
+

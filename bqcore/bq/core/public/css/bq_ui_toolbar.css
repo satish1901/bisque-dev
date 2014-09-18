@@ -89,44 +89,82 @@
     width: 200px;
     height: 56px;
     margin: 10px 10px 10px 10px;
+    background-image: url('/images/bisque_logo_gray.svg');
+    background-repeat: no-repeat;
+    background-size: 200px;
+    background-position: 0px 0px;
 }
 
-.toolbar-main .image-logo-bisque {
+.toolbar-main .main-logo {
     width: 90px;
     height: 25px;
     margin: 0px 10px 0px 5px;
+    background-image: url('/images/bisque_logo_gray.svg');
+    background-repeat: no-repeat;
+    background-size: 90px;
+    background-position: 0px 0px;
+    display: block;
 }
+
 
 /******************************************************************
  Icons
 ******************************************************************/
 
 .toolbar-main .icon-help {
-    background-image: url('/images/toolbar/help.png');
+    width: 32px;
+    background-image: url('/images/icons_toolbar.svg') !important;
+    background-repeat: no-repeat;
+    background-size: 160px;
+    background-position: 0px -195px;
 }
 
 .toolbar-main .icon-user {
-    background-image: url('/images/toolbar/user.png');
+    width: 32px;
+    background-image: url('/images/icons_toolbar.svg#icon_user') !important;
+    background-repeat: no-repeat;
+    background-size: 160px;
+    background-position: 0px -162px;
 }
 
 .toolbar-main .icon-browse {
-    background-image: url('/images/toolbar/browse.png');
+    width: 32px;
+    background-image: url('/images/icons_toolbar.svg') !important;
+    background-repeat: no-repeat;
+    background-size: 160px;
+    background-position: 0px -130px;
 }
 
 .toolbar-main .icon-export {
-    background-image: url('/images/toolbar/download.png') !important;
+    width: 32px;
+    background-image: url('/images/icons_toolbar.svg') !important;
+    background-repeat: no-repeat;
+    background-size: 160px;
+    background-position: 0px -65px;
 }
 
 .toolbar-main .icon-import {
-    background-image: url('/images/toolbar/upload.png') !important;
+    width: 32px;
+    background-image: url('/images/icons_toolbar.svg') !important;
+    background-repeat: no-repeat;
+    background-size: 160px;
+    background-position: 0px -33px;
 }
 
-.toolbar-main .icon-services {
-    background-image: url('/images/toolbar/services.png');
+.toolbar-main .icon-analysis {
+    width: 32px;
+    background-image: url('/images/icons_toolbar.svg') !important;
+    background-repeat: no-repeat;
+    background-size: 160px;
+    background-position: 0px -98px;
 }
 
 .toolbar-main .icon-create {
-    background-image: url('/images/toolbar/plus.png');
+    width: 32px;
+    background-image: url('/images/icons_toolbar.svg');
+    background-repeat: no-repeat;
+    background-size: 160px;
+    background-position: 0px -1px;
 }
 
 .toolbar-menu img {
