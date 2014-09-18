@@ -64,37 +64,14 @@ class Feature(object):
 
 
 
-class threadsafe_iter(object):
-    """
-        Takes an iterator/generator and makes it thread-safe by
-        serializing call to the `next` method of given iterator/generator.
-    """
-    def __init__(self, it):
-        self.it = it
-        self.lock = threading.Lock()
-
-    def __iter__(self):
-        return self
-
-    def next(self):
-        with self.lock:
-            return self.it.next()
-
-
-def threadsafe_generator(func):
-    """
-        A decorator that takes a generator function and makes it thread-safe.
-    """
-    def gen(*a, **kw):
-        return threadsafe_iter(func(*a, **kw))
-    return gen
-
-
-
 class ParallelFeature(Feature):
     
+    MaxThread = 4
+    MaxChunk = 1000
+    MinChunk = 100
+    
     def __init__(self):
-        self.thread_num = 1
+        self.thread_num = 4
         self.chunk_size = 500
         super(ParallelFeature, self).__init__()
         
@@ -125,11 +102,15 @@ class ParallelFeature(Feature):
             
             
         def run(self):
-            for request in self.request_queue:
-                try:
-                   request() #run request
-                except BQCommError as e:
-                    self.errorcb(e)
+            while True:
+                if not self.request_queue.empty():
+                    request = self.request_queue.get()
+                    try:
+                        request()
+                    except BQCommError as e:
+                        self.errorcb(e)
+                else:
+                    break
         
         
     def request_thread_pool(self, request_queue, errorcb=None):
@@ -139,11 +120,9 @@ class ParallelFeature(Feature):
             @param: request_queue - a queue of request functions
             @param: errorcb - is called back when a BQCommError is raised
         """
-        rq = request_queue()
-        
         jobs = []
         for _ in range(self.thread_num):
-            r = self.BQRequestThread(rq, errorcb)
+            r = self.BQRequestThread(request_queue, errorcb)
             jobs.append(r)
             r.start()
 
@@ -168,8 +147,23 @@ class ParallelFeature(Feature):
         
         
     def chunk(self, l):
-        for i in xrange(0,len(l),self.chunk_size):
-            yield l[i:i+self.chunk_size]
+        """
+           @param: l - list  
+           @return: list of resource and sets the amount of parallel requests
+        """
+        
+#        if len(l)>MaxThread*MaxChunk
+#            len(l)/MaxChunk #queue max chunk
+#        else:
+#            if len(l)/MaxThread >= MinChunk: #divide evenly among the n threads
+#                size_of_chunks = len(l)/MaxThread
+#            else: #find how many threads should be run and the chunk size
+#                number_of_threads = ceil(len(l)/100)
+#                size_of_chunks = len(l)/number_of_threads
+                
+        chunk_size = self.chunk_size
+        for i in xrange(0, len(l), chunk_size):
+            yield l[i:i+chunk_size]
         
         
     def fetch(self, session, name, resource_list, path=None):
@@ -205,7 +199,8 @@ class ParallelFeature(Feature):
                     param h5_filename_queue: a queue of temporary hdf5 files
                 """
                 self.h5_filename_queue = h5_filename_queue
-                super(WriteThread, self).__init__()
+                tables.open_file(table_path, 'w').close() #creates a new file
+                super(WriteHDF5Thread, self).__init__()
             
             def run(self):
                 """
@@ -233,24 +228,20 @@ class ParallelFeature(Feature):
                         break
         
         write_queue = Queue.Queue()
+        request_queue = Queue.Queue()
         
-        @threadsafe_generator
-        def request_queue():
-            """
-                A generator of request functions.
-            """
-            for partial_resource_list in self.chunk(resource_list):
-                
-                def request():
-                    f = tempfile.TemporaryFile(suffix='.h5', dir=tempfile.gettempdir())
-                    f.close()                    
-                    write_queue.put(super(ParallelFeature, self).fetch(session, name, partial_resource_list, path=f.name))
-                    return
-                
-                yield request
+        def request_factory(partial_resource_list):
+            def request():
+                f = tempfile.TemporaryFile(suffix='.h5', dir=tempfile.gettempdir())
+                f.close()                    
+                write_queue.put(super(ParallelFeature, self).fetch(session, name, partial_resource_list, path=f.name))
+            return request
+    
+        for partial_resource_list in self.chunk(resource_list):
+            request_queue.put(request_factory(partial_resource_list))          
         
         
-        w = WriteThread(write_queue)
+        w = WriteHDF5Thread(write_queue)
         w.start()
         self.request_thread_pool(request_queue)
         stop_write_thread = True
@@ -276,16 +267,6 @@ class ParallelFeature(Feature):
             
             @return: a list of features as numpy array
         """
-        return super(ParallelFeature, self).fetch_vector(session, name, resource_list)    
-    
-    
-                yield request
-                
-        self.thread_pool(request_queue)
-        
-        response_list = []
-        while not response_queue.empty():
-            response_list.append(response_queue.get())
-        return np.concatenate(response_list)        
+        return super(ParallelFeature, self).fetch_vector(session, name, resource_list)
     
     
