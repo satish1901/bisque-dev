@@ -1,12 +1,12 @@
-Ext.define('BQ.TemplateManager', 
+Ext.define('BQ.TemplateManager',
 {
-    statics : 
+    statics :
     {
-        create : function(config) 
+        create : function(config)
         {
             return Ext.create('BQ.TemplateManager.Creator', config);
         },
-        
+
         // Create a blank resource from a template
         createResource : function(config, cb, template)
         {
@@ -23,23 +23,23 @@ Ext.define('BQ.TemplateManager',
                 // Parse template URL #http://www.joezimjs.com/javascript/the-lazy-mans-url-parsing/
                 var parser = document.createElement('a');
                 parser.href = template.uri;
-                
+
                 // Assume the template is fully loaded
                 var resource = new BQResource();
-                
+
                 Ext.apply(resource, {
                     resource_type   :   template.name,
                     type            :   parser.pathname,
                 }, config);
-                
+
                 resource = copyTags.call(this, template, resource);
-                
+
                 if (config.noSave)
                     cb(resource, template);
                 else
-                    //resource.save_('/data_service/' + resource.resource_type + '?view=deep', 
+                    //resource.save_('/data_service/' + resource.resource_type + '?view=deep',
                     resource.save_('/data_service/resource?view=deep',
-                      cb, 
+                      cb,
                       function(e) {
                           BQ.ui.error('An error occured while trying to create a resource from template: <br>' + e.message_short);
                     });
@@ -48,7 +48,7 @@ Ext.define('BQ.TemplateManager',
             function copyTags(template, resource)
             {
                 var parser = document.createElement('a');
-                
+
                 for(var i = 0; i < template.tags.length; i++)
                 {
                     var tag = template.tags[i];
@@ -61,14 +61,14 @@ Ext.define('BQ.TemplateManager',
     }
 });
 
-Ext.define('BQ.TemplateManager.Creator', 
+Ext.define('BQ.TemplateManager.Creator',
 {
     extend      :   'Ext.panel.Panel',
     border      :   false,
     layout      :   'border',
     heading     :   'Create template',
     bodyCls     :   'white',
-        
+
     constructor : function(config)
     {
         Ext.apply(this,
@@ -80,7 +80,7 @@ Ext.define('BQ.TemplateManager.Creator',
                                 title       :   'Editing resource template - ' + config.resource.name || '',
                                 layout      :   'fit',
                             }),
-                            
+
             eastPanel   :   Ext.create('Ext.panel.Panel', {
                                 region      :   'east',
                                 frame       :   true,
@@ -89,18 +89,18 @@ Ext.define('BQ.TemplateManager.Creator',
                                 layout      :   'fit',
                                 collapsible :   true,
                                 split       :   true
-                            })            
+                            })
         });
-        
+
         Ext.apply(this,
         {
             items   :   [this.centerPanel, this.eastPanel],
         });
-        
+
         window.onbeforeunload = Ext.bind(this.checkUnsavedChanges, this);
         this.callParent(arguments);
     },
-    
+
     initComponent : function()
     {
         this.callParent(arguments);
@@ -113,7 +113,7 @@ Ext.define('BQ.TemplateManager.Creator',
                                     scope       :   this
                                 },
         });
-        
+
         this.grid = Ext.create('Ext.grid.property.Grid', {
             source: {},
             listeners: {
@@ -134,16 +134,16 @@ Ext.define('BQ.TemplateManager.Creator',
                     /* // dima: BQApp.resourceTypes can't be used due to race condition
                     store: Ext.create('Ext.data.Store', {
                         fields  :   ['name', 'uri'],
-                        data    :   BQApp.resourceTypes,   
+                        data    :   BQApp.resourceTypes,
                     }), */
                     store: {
                         //fields  :   ['name', 'uri'],
                         //data    :   BQApp.resourceTypes,
-                        fields : [ 
+                        fields : [
                             { name: 'name', mapping: '@name' },
-                            { name: 'uri', mapping: '@uri' },                
-                        ],                        
-                        proxy : { 
+                            { name: 'uri', mapping: '@uri' },
+                        ],
+                        proxy : {
                             limitParam : undefined,
                             pageParam: undefined,
                             startParam: undefined,
@@ -153,27 +153,27 @@ Ext.define('BQ.TemplateManager.Creator',
                             reader : {
                                 type :  'xml',
                                 root :  '/',
-                                record: '/*:not(value or vertex or template)',    
+                                record: '/*:not(value or vertex or template)',
                             }
-                        }, 
+                        },
                         autoLoad : true,
-                        autoSync : false,                           
+                        autoSync : false,
                     },
-                    queryMode   :   'local',       
+                    queryMode   :   'local',
                     displayField:   'name',
                     editable    :   false
                 },
                 'help' : {
                     xtype    : 'hyperreference',
-                    viewMode : 'widget',       
-                },                                                            
+                    viewMode : 'widget',
+                },
             },
         });
-       
+
         this.centerPanel.add(this.tagger);
         this.eastPanel.add(this.grid);
     },
-    
+
     checkUnsavedChanges : function()
     {
         if (this.resource.dirty)
@@ -182,7 +182,7 @@ Ext.define('BQ.TemplateManager.Creator',
             return "You have unsaved changes which will be lost.";
         }
     },
-    
+
     saveTemplate : function()
     {
         function success(resource)
@@ -190,12 +190,12 @@ Ext.define('BQ.TemplateManager.Creator',
             BQ.ui.notification('Changes saved!', 2000);
             this.tagger.setResource(resource);
         }
-        
+
         this.resource.dirty = false;
         this.resource.uri = this.resource.uri + '?view=deep';
         this.resource.save_(undefined, Ext.bind(success, this), Ext.pass(BQ.ui.error, ['Save failed!']));
     },
-    
+
     onFieldSelect : function(tree, record)
     {
         this.currentField = record.raw;
@@ -203,12 +203,12 @@ Ext.define('BQ.TemplateManager.Creator',
         this.eastPanel.setTitle('Properties - ' + this.currentField.name);
         this.grid.setSource(BQ.TagRenderer.Base.convertTemplate(this.currentTemplate));
     },
-    
+
     onPropertyEdit : function(editor, record)
     {
         var tagName = record.record.get('name');
         var tag = this.currentTemplate.find_tags(tagName);
-        
+
         if (tag)
             tag.value = record.value.toString();
     }
@@ -220,7 +220,7 @@ Ext.define('BQ.form.field.HyperReference', {
 
     setValue : function(value) {
         this.callParent(arguments);
-        if (value) 
-            htmlAction(bq.url(value), 'Help'); 
-    }, 
+        if (value)
+            htmlAction(BQ.Server.url(value), 'Help');
+    },
 });

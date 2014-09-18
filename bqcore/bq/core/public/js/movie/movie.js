@@ -54,17 +54,33 @@ Ext.define('BQ.viewer.Movie', {
         }, {
             xtype: 'component',
             itemId: 'button-menu',
+            //floating: true,
             autoEl: {
                 tag: 'span',
-                cls: 'viewoptions',
+                cls: 'viewoptions'
             },
             listeners: {
                 scope: this,
                 click: {
                     element: 'el', //bind to the underlying el property on the panel
-                    fn: this.onMenuClick,
-                },
+                    fn: this.onMenuClick
+                }
+            }
+        }, {
+            xtype: 'component',
+            itemId: 'button-fullscreen',
+            //floating: true,
+            autoEl: {
+                tag: 'span',
+                cls: 'fullscreen'
             },
+            listeners: {
+                scope: this,
+                click: {
+                    element: 'el', //bind to the underlying el property on the panel
+                    fn: this.onFullScreenClick
+                }
+            }
         }];
         //this.on('resize', this.onResize, this);
         this.callParent();
@@ -142,7 +158,7 @@ Ext.define('BQ.viewer.Movie', {
         this.createViewMenu();
 
         // init plug-ins
-        var plugin = undefined;
+        var plugin = null;
         for (var i=0; (plugin=this.plug_ins[i]); i++)
             plugin.init();
 
@@ -156,8 +172,8 @@ Ext.define('BQ.viewer.Movie', {
     },
 
     constructUrl: function(opts) {
-        var command = [];
-        var plugin = undefined;
+        var command=[],
+            plugin=null;
         for (var i=0; (plugin=this.plug_ins[i]); i++)
             plugin.addCommand(command, opts);
         return '/image_service/image/'+this.resource.resource_uniq+'?'+command.join('&');
@@ -232,7 +248,7 @@ Ext.define('BQ.viewer.Movie', {
             fields: ['value', 'text'],
             data : items
         });
-        var combo = this.menu.add({
+        return this.menu.add({
             xtype: 'combobox',
             itemId: id ? id : undefined,
             width: 380,
@@ -247,9 +263,8 @@ Ext.define('BQ.viewer.Movie', {
             listeners:{
                 scope: scope,
                 select: cb,
-            },
+            }
         });
-        return combo;
     },
 
     createViewMenu: function() {
@@ -261,7 +276,7 @@ Ext.define('BQ.viewer.Movie', {
                 anchorToTarget: true,
                 cls: 'bq-viewer-menu',
                 maxWidth: 460,
-                anchorOffset: -10,
+                anchorOffset: -5,
                 autoHide: false,
                 shadow: false,
                 closable: true,
@@ -284,6 +299,41 @@ Ext.define('BQ.viewer.Movie', {
             this.menu.hide();
         else
             this.menu.show();
+    },
+
+    onFullScreenClick: function (e, btn) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.doFullScreen();
+    },
+
+    doFullScreen: function () {
+        var maximized = (document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement || document.msFullscreenElement),
+            vd = this.viewer,
+            has_fs = vd.requestFullscreen || vd.webkitRequestFullscreen || vd.msRequestFullscreen || vd.mozRequestFullScreen;
+        if (!has_fs) return;
+
+        if (!maximized) {
+            if (vd.requestFullscreen) {
+                vd.requestFullscreen();
+            } else if (vd.webkitRequestFullscreen) {
+                vd.webkitRequestFullscreen();
+            } else if (vd.msRequestFullscreen) {
+                vd.msRequestFullscreen();
+            } else if (vd.mozRequestFullScreen) {
+                vd.mozRequestFullScreen();
+            }
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+            } else if (document.mozCancelFullScreen) {
+                document.mozCancelFullScreen();
+            }
+        }
     },
 
 });

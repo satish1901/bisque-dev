@@ -800,7 +800,7 @@ Ext.define('Bisque.Resource.Page',
                 buttons : Ext.MessageBox.OK,
                 icon : Ext.MessageBox.INFO,
                 fn : function() {
-                    window.location = bq.url('/')
+                    window.location = BQ.Server.url('/')
                 }
             });
         }

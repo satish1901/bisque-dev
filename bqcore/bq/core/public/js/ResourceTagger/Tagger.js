@@ -937,7 +937,7 @@ Ext.define('Bisque.ResourceTagger', {
     },
 
     exportToXml: function () {
-        var url = '/export/initStream?urls=';
+        var url = '/export/stream?urls=';
         url += encodeURIComponent(this.resource.uri + '?view=deep');
         url += '&filename=' + (this.resource.name || 'document');
 
@@ -961,6 +961,8 @@ Ext.define('Bisque.ResourceTagger', {
 
 //-----------------------------------------------------------------------
 // Bisque.GObjectTagger
+// events:
+// gob_projection
 //-----------------------------------------------------------------------
 Ext.define('Bisque.GObjectTagger', {
     extend: 'Bisque.ResourceTagger',
@@ -1014,16 +1016,22 @@ Ext.define('Bisque.GObjectTagger', {
             border: 0,
             dock: 'top',
             items: [{
-                xtype: 'splitbutton',
+                //xtype: 'splitbutton',
                 arrowAlign: 'right',
                 text: 'Visibility',
                 scale: 'medium',
                 iconCls: 'icon-check',
-                handler: this.toggleCheckTree,
+                //handler: this.toggleCheckTree,
                 checked: true,
                 scope: this,
                 menu: {
+                    plain: true,
                     items: [{
+                        xtype:'tbtext',
+                        text: 'Visibility',
+                        indent: true,
+                        cls: 'menu-heading',
+                    }, {
                         text: 'Toggle each',
                         handler: function() {this.toggleCheck(); },
                         scope: this,
@@ -1034,6 +1042,47 @@ Ext.define('Bisque.GObjectTagger', {
                     }, {
                         text: 'Uncheck all',
                         handler: function() {this.toggleCheck('unchecked'); },
+                        scope: this,
+                    }, {
+                        xtype:'tbtext', text: 'Projections',
+                        indent: true,
+                        cls: 'menu-heading',
+                    }, {
+                        itemId: 'projectionNone',
+                        text: 'Project none',
+                        handler: this.onProjection,
+                        scope: this,
+                        group: 'projections',
+                        checked: true,
+                        projection: 'none',
+                    }, {
+                        itemId: 'projectionAll',
+                        text: 'Project all',
+                        handler: this.onProjection,
+                        scope: this,
+                        group: 'projections',
+                        checked: false,
+                        projection: 'all',
+                    }, {
+                        itemId: 'projectionT',
+                        text: 'Project all for current T',
+                        handler: this.onProjection,
+                        scope: this,
+                        group: 'projections',
+                        checked: false,
+                        projection: 'Z',
+                    }, {
+                        itemId: 'projectionZ',
+                        text: 'Project all for current Z',
+                        handler: this.onProjection,
+                        scope: this,
+                        group: 'projections',
+                        checked: false,
+                        projection: 'T',
+                    }, '-', {
+                        itemId: 'gobTolerance',
+                        text: 'Set projection tolerance (in planes)',
+                        handler: this.onGobTolerance,
                         scope: this,
                     }]
                 }
@@ -1514,6 +1563,14 @@ Ext.define('Bisque.GObjectTagger', {
         });
     },
 
+    onProjection: function(el, e) {
+        this.fireEvent('gob_projection', this, el.projection);
+    },
+
+    onGobTolerance: function(el, e) {
+        this.fireEvent('gob_tolerance', this);
+    },
+
 });
 
 //-----------------------------------------------------------------------
@@ -1624,15 +1681,8 @@ Ext.define('Bisque.ResourceTagger.viewStateManager',
 // BQ.grid.GobsPanel
 //-----------------------------------------------------------------------
 
-function xpath(node, expression) {
-    var xpe = new XPathEvaluator();
-    var nsResolver = xpe.createNSResolver(node.ownerDocument == null ? node.documentElement : node.ownerDocument.documentElement);
-    var result = xpe.evaluate( expression, node, nsResolver, XPathResult.STRING_TYPE, null );
-    return result.stringValue;
-}
-
 function getType(v, record) {
-    var r = xpath(record.raw, '@type') || record.raw.nodeName;
+    var r = BQ.util.xpath_string(record.raw, '@type') || record.raw.nodeName;
     return r;
 }
 
@@ -1745,18 +1795,6 @@ Ext.define('BQ.grid.GobsPanel', {
         BQ.ui.error('Problem fetching available gobject types');
     },
 
-    evaluateXPath: function(node, expression) {
-        var xpe = new XPathEvaluator();
-        var nsResolver = xpe.createNSResolver(node.ownerDocument == null ?
-            node.documentElement : node.ownerDocument.documentElement);
-        var result = xpe.evaluate(expression, node, nsResolver, 0, null);
-        var found = [];
-        var res=undefined;
-        while (res = result.iterateNext())
-            found.push(res);
-        return found;
-    },
-
     onTypes : function(xml) {
         this.setLoading(false);
         this.types = [];
@@ -1773,7 +1811,7 @@ Ext.define('BQ.grid.GobsPanel', {
             //this.formats_index[name] = this.formats[ix-1];
         } // for primitives
 
-        var gobs = this.evaluateXPath(xml, '//gobject');
+        var gobs = BQ.util.xpath_nodes(xml, '//gobject');
         var g=undefined;
         for (var i=0; g=gobs[i]; ++i) {
             var t = g.getAttribute('type');

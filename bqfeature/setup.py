@@ -7,7 +7,7 @@ except ImportError:
     from setuptools import setup, find_packages
 
 #from bq.release import __VERSION__
-__VERSION__="0.5.5"
+__VERSION__="0.5.6"
 
 setup(
     name='bqfeature',
@@ -21,11 +21,11 @@ setup(
                       "bqcore",
                       "numpy",
                       "pillow",
-                      "mahotas",  
-                      "tables",  
+                      "mahotas",
+                      "tables",
                       "numexpr",
-                      "cython",  
-                      #"opencv", 
+                      "cython",
+                      "pylibtiff==0.3.0-1"
                       ],
     setup_requires=["PasteScript>=1.6.3"],
     paster_plugins=['PasteScript', 'Pylons' ],

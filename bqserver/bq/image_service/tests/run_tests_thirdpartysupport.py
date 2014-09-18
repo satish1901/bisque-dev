@@ -29,11 +29,8 @@ from bq.image_service.tests.tests_base import ImageServiceTestBase
 image_imaris_hela      = 'HeLaCell.ims'
 image_imaris_r18       = 'R18Demo.ims'
 image_zeiss_czi_rat    = '40x_RatBrain-AT-2ch-Z-wf.czi'
-image_zeiss_czi_mouse  = 'Mouse_stomach_20x_ROI_3chZTiles(WF).czi'
 image_nikon_nd2        = 'JR3449 01009.nd2'
 image_nikon_nd2_deconv = 'JR3449 01012_crop_crop - Deconvolved.nd2'
-image_leica_lif        = 'APDnew.lif'
-image_slidebook        = 'cx-11.sld'
 
 # bioformats supported files
 image_dicom_3d         = 'MR-MONO2-8-16x-heart'
@@ -67,11 +64,8 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
         self.resource_imaris_hela       = self.ensure_bisque_file(image_imaris_hela)
         self.resource_imaris_r18        = self.ensure_bisque_file(image_imaris_r18)
         self.resource_zeiss_czi_rat     = self.ensure_bisque_file(image_zeiss_czi_rat)
-        self.resource_zeiss_czi_mouse   = self.ensure_bisque_file(image_zeiss_czi_mouse)
         self.resource_nikon_nd2         = self.ensure_bisque_file(image_nikon_nd2)
         self.resource_nikon_nd2_deconv  = self.ensure_bisque_file(image_nikon_nd2_deconv)
-        self.resource_leica_lif         = self.ensure_bisque_file(image_leica_lif)
-        #self.resource_slidebook         = self.ensure_bisque_file(image_slidebook) # dima: this slidebook file contains multiple series and will have to be tested as such
         self.resource_dicom_3d          = self.ensure_bisque_file(image_dicom_3d)
         self.resource_dicom_2d          = self.ensure_bisque_file(image_dicom_2d)
         self.resource_svs               = self.ensure_bisque_file(image_svs)
@@ -81,11 +75,8 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
         self.delete_resource(self.resource_imaris_hela)
         self.delete_resource(self.resource_imaris_r18)
         self.delete_resource(self.resource_zeiss_czi_rat)
-        self.delete_resource(self.resource_zeiss_czi_mouse)
         self.delete_resource(self.resource_nikon_nd2)
         self.delete_resource(self.resource_nikon_nd2_deconv)
-        self.delete_resource(self.resource_leica_lif)
-        #self.delete_resource(self.resource_slidebook) # dima: this slidebook file contains multiple series and will have to be tested as such
         self.delete_resource(self.resource_dicom_3d)
         self.delete_resource(self.resource_dicom_2d)
         self.delete_resource(self.resource_svs)
@@ -325,82 +316,6 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
         self.validate_image_variant(resource, filename, commands, meta_required)
 
     # ---------------------------------------------------
-    # zeiss_czi_mouse
-    # ---------------------------------------------------
-    def test_thumbnail_zeiss_czi_mouse (self):
-        resource = self.resource_zeiss_czi_mouse
-        self.assertIsNotNone(resource, 'Resource was not uploaded')
-        filename = 'zeiss_czi_mouse.thumbnail.jpg'
-        commands = [('thumbnail', None)]
-        meta_required = { 'format': 'JPEG',
-            'image_num_x': '128',
-            'image_num_y': '128',
-            'image_num_c': '3',
-            'image_num_z': '1',
-            'image_num_t': '1',
-            'image_pixel_depth': '8',
-            'image_pixel_format': 'unsigned integer' }
-        self.validate_image_variant(resource, filename, commands, meta_required)
-
-    def test_meta_zeiss_czi_mouse (self):
-        resource = self.resource_zeiss_czi_mouse
-        self.assertIsNotNone(resource, 'Resource was not uploaded')
-        filename = 'zeiss_czi_mouse.meta.xml'
-        commands = [('meta', None)]
-        meta_required = [
-            { 'xpath': '//tag[@name="image_num_x"]', 'attr': 'value', 'val': '512' },
-            { 'xpath': '//tag[@name="image_num_y"]', 'attr': 'value', 'val': '512' },
-            { 'xpath': '//tag[@name="image_num_c"]', 'attr': 'value', 'val': '3' },
-            { 'xpath': '//tag[@name="image_num_z"]', 'attr': 'value', 'val': '18' },
-            { 'xpath': '//tag[@name="image_num_t"]', 'attr': 'value', 'val': '1' },
-            { 'xpath': '//tag[@name="image_pixel_depth"]', 'attr': 'value', 'val': '16' },
-            { 'xpath': '//tag[@name="image_pixel_format"]', 'attr': 'value', 'val': 'unsigned integer' },
-            #{ 'xpath': '//tag[@name="format"]', 'attr': 'value', 'val': 'Zeiss: CZI' },
-            { 'xpath': '//tag[@name="image_num_series"]', 'attr': 'value', 'val': '4' },
-            { 'xpath': '//tag[@name="pixel_resolution_x"]', 'attr': 'value', 'val': '0.3225' },
-            { 'xpath': '//tag[@name="pixel_resolution_y"]', 'attr': 'value', 'val': '0.3225' },
-            { 'xpath': '//tag[@name="pixel_resolution_z"]', 'attr': 'value', 'val': '0.6' },
-            { 'xpath': '//tag[@name="pixel_resolution_unit_x"]', 'attr': 'value', 'val': 'microns' },
-            { 'xpath': '//tag[@name="pixel_resolution_unit_y"]', 'attr': 'value', 'val': 'microns' },
-            { 'xpath': '//tag[@name="pixel_resolution_unit_z"]', 'attr': 'value', 'val': 'microns' },
-        ]
-        self.validate_xml(resource, filename, commands, meta_required)
-
-    def test_slice_zeiss_czi_mouse (self):
-        resource = self.resource_zeiss_czi_mouse
-        self.assertIsNotNone(resource, 'Resource was not uploaded')
-        filename = 'zeiss_czi_mouse.slice.tif'
-        commands = [('slice', ',,1,1')]
-        meta_required = {
-            'format': 'OME-BigTIFF',
-            'image_num_x': '512',
-            'image_num_y': '512',
-            'image_num_c': '3',
-            'image_num_z': '1',
-            'image_num_t': '1',
-            'image_pixel_depth': '16',
-            'image_pixel_format': 'unsigned integer'
-        }
-        self.validate_image_variant(resource, filename, commands, meta_required)
-
-    def test_format_zeiss_czi_mouse(self):
-        resource = self.resource_zeiss_czi_mouse
-        self.assertIsNotNone(resource, 'Resource was not uploaded')
-        filename = 'zeiss_czi_mouse.format.ome.tif'
-        commands = [('format', 'ome-tiff')]
-        meta_required = {
-            'format': 'OME-BigTIFF',
-            'image_num_x': '512',
-            'image_num_y': '512',
-            'image_num_c': '3',
-            'image_num_z': '18',
-            'image_num_t': '1',
-            'image_pixel_depth': '16',
-            'image_pixel_format': 'unsigned integer'
-        }
-        self.validate_image_variant(resource, filename, commands, meta_required)
-
-    # ---------------------------------------------------
     # nikon_nd2
     # ---------------------------------------------------
     def test_thumbnail_nikon_nd2 (self):
@@ -551,161 +466,6 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
             'image_pixel_format': 'floating point'
         }
         self.validate_image_variant(resource, filename, commands, meta_required)
-
-    # ---------------------------------------------------
-    # leica_lif
-    # ---------------------------------------------------
-    def test_thumbnail_leica_lif (self):
-        resource = self.resource_leica_lif
-        self.assertIsNotNone(resource, 'Resource was not uploaded')
-        filename = 'leica_lif.thumbnail.jpg'
-        commands = [('thumbnail', None)]
-        meta_required = { 'format': 'JPEG',
-            'image_num_x': '128',
-            'image_num_y': '128',
-            'image_num_c': '3',
-            'image_num_z': '1',
-            'image_num_t': '1',
-            'image_pixel_depth': '8',
-            'image_pixel_format': 'unsigned integer' }
-        self.validate_image_variant(resource, filename, commands, meta_required)
-
-    def test_meta_leica_lif (self):
-        resource = self.resource_leica_lif
-        self.assertIsNotNone(resource, 'Resource was not uploaded')
-        filename = 'leica_lif.meta.xml'
-        commands = [('meta', None)]
-        meta_required = [
-            { 'xpath': '//tag[@name="image_num_x"]', 'attr': 'value', 'val': '512' },
-            { 'xpath': '//tag[@name="image_num_y"]', 'attr': 'value', 'val': '512' },
-            { 'xpath': '//tag[@name="image_num_c"]', 'attr': 'value', 'val': '1' },
-            { 'xpath': '//tag[@name="image_num_z"]', 'attr': 'value', 'val': '1' },
-            { 'xpath': '//tag[@name="image_num_t"]', 'attr': 'value', 'val': '1' },
-            { 'xpath': '//tag[@name="image_pixel_depth"]', 'attr': 'value', 'val': '16' },
-            { 'xpath': '//tag[@name="image_pixel_format"]', 'attr': 'value', 'val': 'unsigned integer' },
-            #{ 'xpath': '//tag[@name="format"]', 'attr': 'value', 'val': 'Leica: Image File Format LIF' },
-            { 'xpath': '//tag[@name="image_num_series"]', 'attr': 'value', 'val': '2' },
-            { 'xpath': '//tag[@name="pixel_resolution_x"]', 'attr': 'value', 'val': '0.160490234375' },
-            { 'xpath': '//tag[@name="pixel_resolution_y"]', 'attr': 'value', 'val': '0.160490234375' },
-            { 'xpath': '//tag[@name="pixel_resolution_z"]', 'attr': 'value', 'val': '1.0' },
-            { 'xpath': '//tag[@name="pixel_resolution_unit_x"]', 'attr': 'value', 'val': 'microns' },
-            { 'xpath': '//tag[@name="pixel_resolution_unit_y"]', 'attr': 'value', 'val': 'microns' },
-            { 'xpath': '//tag[@name="pixel_resolution_unit_z"]', 'attr': 'value', 'val': 'microns' },
-        ]
-        self.validate_xml(resource, filename, commands, meta_required)
-
-    # combined test becuase this file has 1 T and 1 Z and so the slice will shortcut and will not be readable by imgcnv
-    def test_slice_format_leica_lif (self):
-        resource = self.resource_leica_lif
-        self.assertIsNotNone(resource, 'Resource was not uploaded')
-        filename = 'leica_lif.slice.tif'
-        commands = [('slice', ',,1,1'), ('format', 'ome-tiff')]
-        meta_required = {
-            'format': 'OME-BigTIFF',
-            'image_num_x': '512',
-            'image_num_y': '512',
-            'image_num_c': '1',
-            'image_num_z': '1',
-            'image_num_t': '1',
-            'image_pixel_depth': '16',
-            'image_pixel_format': 'unsigned integer'
-        }
-        self.validate_image_variant(resource, filename, commands, meta_required)
-
-    def test_format_leica_lif(self):
-        resource = self.resource_leica_lif
-        self.assertIsNotNone(resource, 'Resource was not uploaded')
-        filename = 'leica_lif.format.ome.tif'
-        commands = [('format', 'ome-tiff')]
-        meta_required = {
-            'format': 'OME-BigTIFF',
-            'image_num_x': '512',
-            'image_num_y': '512',
-            'image_num_c': '1',
-            'image_num_z': '1',
-            'image_num_t': '1',
-            'image_pixel_depth': '16',
-            'image_pixel_format': 'unsigned integer'
-        }
-        self.validate_image_variant(resource, filename, commands, meta_required)
-
-
-# dima: this slidebook file contains multiple series and will have to be tested as such
-#     # ---------------------------------------------------
-#     # slidebook
-#     # ---------------------------------------------------
-#     def test_thumbnail_slidebook (self):
-#         resource = self.resource_slidebook
-#         self.assertIsNotNone(resource, 'Resource was not uploaded')
-#         filename = 'slidebook.thumbnail.jpg'
-#         commands = [('thumbnail', None)]
-#         meta_required = { 'format': 'JPEG',
-#             'image_num_x': '128',
-#             'image_num_y': '128',
-#             'image_num_c': '3',
-#             'image_num_z': '1',
-#             'image_num_t': '1',
-#             'image_pixel_depth': '8',
-#             'image_pixel_format': 'unsigned integer' }
-#         self.validate_image_variant(resource, filename, commands, meta_required)
-#
-#     def test_meta_slidebook (self):
-#         resource = self.resource_slidebook
-#         self.assertIsNotNone(resource, 'Resource was not uploaded')
-#         filename = 'slidebook.meta.xml'
-#         commands = [('meta', None)]
-#         meta_required = [
-#             { 'xpath': '//tag[@name="image_num_x"]', 'attr': 'value', 'val': '512' },
-#             { 'xpath': '//tag[@name="image_num_y"]', 'attr': 'value', 'val': '512' },
-#             { 'xpath': '//tag[@name="image_num_c"]', 'attr': 'value', 'val': '3' },
-#             { 'xpath': '//tag[@name="image_num_z"]', 'attr': 'value', 'val': '18' },
-#             { 'xpath': '//tag[@name="image_num_t"]', 'attr': 'value', 'val': '1' },
-#             { 'xpath': '//tag[@name="image_pixel_depth"]', 'attr': 'value', 'val': '16' },
-#             { 'xpath': '//tag[@name="image_pixel_format"]', 'attr': 'value', 'val': 'unsigned integer' },
-#             #{ 'xpath': '//tag[@name="format"]', 'attr': 'value', 'val': 'Zeiss: CZI' },
-#             { 'xpath': '//tag[@name="image_num_series"]', 'attr': 'value', 'val': '4' },
-#             { 'xpath': '//tag[@name="pixel_resolution_x"]', 'attr': 'value', 'val': '0.3225' },
-#             { 'xpath': '//tag[@name="pixel_resolution_y"]', 'attr': 'value', 'val': '0.3225' },
-#             { 'xpath': '//tag[@name="pixel_resolution_z"]', 'attr': 'value', 'val': '0.6' },
-#             { 'xpath': '//tag[@name="pixel_resolution_unit_x"]', 'attr': 'value', 'val': 'microns' },
-#             { 'xpath': '//tag[@name="pixel_resolution_unit_y"]', 'attr': 'value', 'val': 'microns' },
-#             { 'xpath': '//tag[@name="pixel_resolution_unit_z"]', 'attr': 'value', 'val': 'microns' },
-#         ]
-#         self.validate_xml(resource, filename, commands, meta_required)
-#
-#     def test_slice_slidebook (self):
-#         resource = self.resource_slidebook
-#         self.assertIsNotNone(resource, 'Resource was not uploaded')
-#         filename = 'slidebook.slice.tif'
-#         commands = [('slice', ',,1,1')]
-#         meta_required = {
-#             'format': 'bigtiff',
-#             'image_num_x': '512',
-#             'image_num_y': '512',
-#             'image_num_c': '3',
-#             'image_num_z': '1',
-#             'image_num_t': '1',
-#             'image_pixel_depth': '16',
-#             'image_pixel_format': 'unsigned integer'
-#         }
-#         self.validate_image_variant(resource, filename, commands, meta_required)
-#
-#     def test_format_slidebook(self):
-#         resource = self.resource_slidebook
-#         self.assertIsNotNone(resource, 'Resource was not uploaded')
-#         filename = 'slidebook.format.ome.tif'
-#         commands = [('format', 'ome-tiff')]
-#         meta_required = {
-#             'format': 'OME-BigTIFF',
-#             'image_num_x': '512',
-#             'image_num_y': '512',
-#             'image_num_c': '3',
-#             'image_num_z': '18',
-#             'image_num_t': '1',
-#             'image_pixel_depth': '16',
-#             'image_pixel_format': 'unsigned integer'
-#         }
-#         self.validate_image_variant(resource, filename, commands, meta_required)
 
     # ---------------------------------------------------
     # DICOM 3D

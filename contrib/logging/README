@@ -29,7 +29,7 @@ A local server that can receive log message from multiple processes.
 Check the source code contrib/logging/loggingwebmonitor.py
 
 Launch the loging server:
-python contrib/logging/loggingwebminitor.py bisque.log
+python contrib/logging/loggingwebmonitor.py bisque.log
 
 As is it will open a WebServer at 0.0.0.0:9021 for log viewing
 

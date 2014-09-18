@@ -54,42 +54,58 @@ function callback_app(obj, method) {
     };
 }
 
-function xpathOneNode(aNode, aExpr) {
-    var xpe = new XPathEvaluator();
-    var nsResolver = xpe.createNSResolver(aNode.ownerDocument == null ?
-      aNode.documentElement : aNode.ownerDocument.documentElement);
-    var result = xpe.evaluate(aExpr, aNode, nsResolver, XPathResult.ANY_UNORDERED_NODE_TYPE, null);
-    return result.singleNodeValue;
-}
+/*
+  const unsigned short      ANY_TYPE                       = 0;
+  const unsigned short      NUMBER_TYPE                    = 1;
+  const unsigned short      STRING_TYPE                    = 2;
+  const unsigned short      BOOLEAN_TYPE                   = 3;
+  const unsigned short      UNORDERED_NODE_ITERATOR_TYPE   = 4;
+  const unsigned short      ORDERED_NODE_ITERATOR_TYPE     = 5;
+  const unsigned short      UNORDERED_NODE_SNAPSHOT_TYPE   = 6;
+  const unsigned short      ORDERED_NODE_SNAPSHOT_TYPE     = 7;
+  const unsigned short      ANY_UNORDERED_NODE_TYPE        = 8;
+  const unsigned short      FIRST_ORDERED_NODE_TYPE        = 9;
+*/
 
+Ext.namespace('BQ.util');
+//var BQ = BQ || {}; // ensure BQ namespace
 
-function evaluateXPath(aNode, aExpr)
-{
+BQ.util.do_xpath = function(node, expression, result_type) {
+    result_type = result_type || XPathResult.ANY_TYPE;
     var xpe = new XPathEvaluator();
-    var nsResolver = xpe.createNSResolver(aNode.ownerDocument == null ?
-      aNode.documentElement : aNode.ownerDocument.documentElement);
-    var result = xpe.evaluate(aExpr, aNode, nsResolver, 0, null);
+    var nsResolver = xpe.createNSResolver(node.ownerDocument == null ? node.documentElement : node.ownerDocument.documentElement);
+    return xpe.evaluate( expression, node, nsResolver, result_type, null );
+};
+
+BQ.util.xpath_nodes = function(node, expression) {
+    var result = BQ.util.do_xpath(node, expression, XPathResult.ORDERED_NODE_ITERATOR_TYPE);
     var found = [];
-    var res;
+    var res = null;
     while (res = result.iterateNext())
-      found.push(res);
+        found.push(res);
     return found;
-}
+};
 
-function evaluateXPathIE(aNode, aExpr)
-{
-    var nodes = aNode.selectNodes(aExpr);
-    var found = [];
+if (Ext.isIE) {
 
-    for (var i=0; i<nodes.length; i++)
-        found.push(nodes[i]);
+// dima: need to replace the do_xpath in IE
+BQ.util.xpath_nodes = function(node, expression) {
+    return node.selectNodes(expression);
+};
 
-    return found;
-}
+} // if IE
 
-// Use IE specific code for XPath evaluation
-if (Ext.isIE)
-    evaluateXPath = evaluateXPathIE;
+BQ.util.xpath_node = function(node, expression) {
+    var result = BQ.util.do_xpath(node, expression, XPathResult.ANY_UNORDERED_NODE_TYPE);
+    return result.singleNodeValue;
+};
+
+BQ.util.xpath_string = function(node, expression) {
+    var result = BQ.util.do_xpath(node, expression, XPathResult.STRING_TYPE);
+    return result.stringValue;
+};
+
+
 
 // e.g.
 // str = ellipsis("this is a test", 7, '...')
@@ -383,7 +399,7 @@ encodeParameters = function(obj) {
         }
     }
     return params.join('&');
-}
+};
 
 if (!Array.prototype.reduce) {
     Array.prototype.reduce = function(fun /*, initial*/) {
@@ -439,26 +455,28 @@ Array.prototype.find = function(searchStr) {
         if ( typeof (searchStr) == 'function') {
             if (searchStr.test(this[i])) {
                 if (!returnArray) {
-                    returnArray = []
+                    returnArray = [];
                 }
                 returnArray.push(i);
             }
         } else {
             if (this[i] === searchStr) {
                 if (!returnArray) {
-                    returnArray = []
+                    returnArray = [];
                 }
                 returnArray.push(i);
             }
         }
     }
     return returnArray;
-}
+};
+
 if (!String.prototype.startswith) {
     String.prototype.startswith = function(input) {
         return this.substr(0, input.length) === input;
-    }
-}
+    };
+};
+
 function extend(child, supertype) {
     child.prototype.__proto__ = supertype.prototype;
 }

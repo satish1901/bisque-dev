@@ -1,6 +1,6 @@
-url = 'http://vidi.ece.ucsb.edu:9090';
-user = 'admin';
-pass = 'admin';
+url = 'http://BISQUE_HOST:9090';
+user = 'username';
+pass = 'password';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% creating a new dataset using lower level post

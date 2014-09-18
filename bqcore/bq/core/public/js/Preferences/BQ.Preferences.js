@@ -25,19 +25,18 @@ Ext.define('BQ.Preferences', {
 
         if (status == 'INIT') {
             BQFactory.request({
-                uri : bq.url('/data_service/system?wpublic=1&view=deep'),
+                uri : BQ.Server.url('/data_service/system?wpublic=1&view=deep'),
                 cb : Ext.bind(this.loadSystem, this, ['LOADED'], true),
             });
         } else if (status == 'LOADED') {
-            resource = resource.children[0];
-            this.system.object = resource;
-            var tag = resource.find_tags('Preferences', false);
-
-            if (tag != null) {
-                this.system.tag = tag;
+            try {
+                resource = resource.children[0];
+                this.system.object = resource;
+                var tag = resource.find_tags('Preferences', false);
                 this.system.dictionary = tag.toNestedDict(true);
-            } else {
-                BQ.ui.error('System level preferences not found!');
+                this.system.tag = tag;
+            } catch (err) {
+                //BQ.ui.error('System level preferences not found!');
                 this.system.exists = false;
             }
         }

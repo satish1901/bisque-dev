@@ -4,11 +4,11 @@ Bisque.ResourceTagger.LinkRenderer = function(value, metaData, record) {
 };
 
 /*Bisque.ResourceTagger.ResourceRenderer = function(value, metaData, record) {
-    return Ext.String.format('<a href={0} target="_blank">{1}</a>', bq.url("/client_service/view?resource=" + value), value);
+    return Ext.String.format('<a href={0} target="_blank">{1}</a>', BQ.Server.url("/client_service/view?resource=" + value), value);
 };*/
 
 Bisque.ResourceTagger.ResourceRenderer = function(value, metaData, record) {
-    var url = bq.url('/client_service/view?resource=' + value);
+    var url = BQ.Server.url('/client_service/view?resource=' + value);
     var unique = 'bqresource_' + new Date().valueOf();
 
     BQFactory.request({

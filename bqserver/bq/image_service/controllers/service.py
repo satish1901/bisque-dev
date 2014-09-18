@@ -23,13 +23,22 @@ from bq.data_service.model import Taggable, DBSession
 from bq.core import permission, identity
 from bq.util.paths import data_path
 from bq.util.mkdir import _mkdir
-from imgsrv import ImageServer
-from imgsrv import ProcessToken
+from bq import data_service
+from bq import export_service
+from imgsrv import ImageServer, ProcessToken, getQuery4Url
+
+from . import misc
 
 log = logging.getLogger("bq.image_service")
 
-extensions_ignore = set(['amiramesh', 'cfg', 'csv', 'dat', 'grey', 'htm', 'html', 'hx', 'inf', 'labels', 'log', 'lut', 'mdb', 'pst', 'pty', 'rec', 'tim', 'txt', 'xlog', 'xml', 'zip', 'zpo'])
+# extensions not usually associated with image files
+extensions_ignore = set(['', 'amiramesh', 'cfg', 'csv', 'dat', 'grey', 'htm', 'html', 'hx', 'inf', 'labels', 'log', 'lut', 'mdb', 'pst', 'pty', 'rec', 'tim', 'txt', 'xlog', 'xml', 'zip', 'zpo'])
 
+# confirmed extensions of header files in some proprietary series
+extensions_series = set(['cfg', 'xml'])
+
+# confirmed fixed series header names
+series_header_files = ['DiskInfo5.kinetic']
 
 def get_image_id(url):
     path = urlparse.urlsplit(url)[2]
@@ -145,10 +154,35 @@ class image_serviceController(ServiceController):
         if self.format_exts is None:
             self.format_exts = set(self.srv.converters.extensions()) - extensions_ignore
 
-        filename = filename.strip()
-        ext = os.path.splitext(filename)[1][1:].lower()
+        ext = os.path.splitext(filename.strip())[1][1:].lower()
         return ext in self.format_exts
 
+    def proprietary_series_extensions (self):
+        """ return all extensions that can be proprietary series 
+        """
+        non_series_cnv = ['imgcnv', 'openslide']
+        exts = []
+        ignore = []
+        for n in self.srv.converters.iterkeys():
+            if n in non_series_cnv:
+                ignore.extend(self.srv.converters.extensions(n))
+            else:
+                exts.extend(self.srv.converters.extensions(n))
+        #log.debug('extensions_ignore: %s', extensions_ignore)
+        #log.debug('ignore: %s', ignore)
+        #log.debug('exts: %s', exts)
+        return list(((set(exts) - set(ignore)) - extensions_ignore) | extensions_series)
+    
+    def proprietary_series_headers (self):
+        """ get fixed file names that could be series headers
+        """
+        return series_header_files
+    
+    
+    def get_info (self, filename):
+        """ read file info
+        """
+        return self.srv.converters.info(filename)
 
     @expose()
     #@identity.require(identity.not_anonymous())
@@ -237,21 +271,45 @@ class image_serviceController(ServiceController):
     def images(self, ident, **kw):
         request = tg.request
         response = tg.response
-        log.info ('STARTING Request: %s' % request.url)
+        log.info ('STARTING %s: %s', ident, request.url)
 
-        path   = request.path+'?'+request.query_string
+        url = request.path+'?'+request.query_string
 
         # check for access permission
         from bq.data_service.controllers.resource_query import RESOURCE_READ, RESOURCE_EDIT
         self.check_access(ident, RESOURCE_READ)
 
-
         # dima: patch for incorrect /auth requests for image service
-        if path.find('/auth')>=0:
-            tg.response.headers['Content-Type']  = 'text/xml'
+        if url.find('/auth')>=0:
+            tg.response.headers['Content-Type'] = 'text/xml'
             return '<resource />'
 
-        data_token = self.srv.process(path, ident, **kw)
+        # extract requested timeout: BQ-Operation-Timeout: 30
+        timeout = request.headers.get('BQ-Operation-Timeout', None)
+        
+        # fetch image meta from a resource if any, has to have a name and a type as "image_meta"
+        try:
+            q = data_service.query(resource_uniq=ident, view='image_meta')
+            #log.debug('images resource query: %s', etree.tostring(q))
+            meta = q.xpath('image/tag[@type="image_meta"]')[0]
+            meta = dict((i.get('name'), misc.safetypeparse(i.get('value'))) for i in meta.xpath('tag'))
+            log.debug('images meta: %s', meta)
+            if len(meta)==0:
+                meta=None
+        except (AttributeError, IndexError):
+            meta = None
+
+        # if the image is multi-blob and blob is requested, use export service
+        try:
+            image = q[0]
+            values = image.xpath('value')
+            if len(getQuery4Url(url))<1 and len(values)>1:
+                return export_service.export(files=[image.get('uri')], filename=image.get('name'))
+        except (AttributeError, IndexError):
+            pass
+
+        # Run processing
+        data_token = self.srv.process(url, ident, timeout=timeout, imagemeta=meta, **kw)
         tg.response.headers['Content-Type']  = data_token.contentType
         #tg.response.content_type  = data_token.contentType
         #tg.response.headers['Cache-Control'] = ",".join ([data_token.cacheInfo, "public"])
@@ -306,13 +364,13 @@ class image_serviceController(ServiceController):
 
             # fix for the cherrypy error 10055 "No buffer space available" on windows
             # by streaming the contents of the files as opposite to sendall the whole thing
-            log.info ("returning %s type %s"%(data_token.data, data_token.contentType ))
+            log.info ("%s: returning %s with mime %s"%(ident, data_token.data, data_token.contentType ))
             return forward(FileApp(data_token.data,
                                    content_type=data_token.contentType,
                                    content_disposition=disposition,
                                    ).cache_control (max_age=60*60*24*7*6)) # 6 weeks
 
-        log.error ("unknown image issue")
+        log.error ("%s: unknown image issue"%ident)
         tg.response.status_int = 404
         return "File not found"
 
@@ -335,56 +393,56 @@ class image_serviceController(ServiceController):
 #        image_id, path, x, y , ch, z ,t = self.srv.addImage( file, None, ownerId = userId, permission = userPerm, **kw )
 #        #return turbogears.url('/imgsrv/images/'+str(image_id))
 #        return '/imgsrv/images/'+str(image_id), x, y, ch, z, t
-
-    @expose()
-    def update_image_permission(self):
-
-        # parse the request
-        request = tg.request
-        clen = int(request.headers.get('Content-Length') or 0 )
-        if (clen<=0): return ""
-        xmldata = request.body
-        log.debug ("XML = " + xmldata)
-        request = etree.XML(xmldata)
-        image = request[0]
-        src  = image.attrib['src']
-        perm = image.attrib['perm']
-
-        # check identity
-        id = get_image_id(src)
-        userId = identity.current.user_name
-        if self.srv.changePermission( id, userId ) == False:
-            tg.response.status_int = 401
-            return 'Permission denied...'
-
-        # Deal w/request
-        log.debug ('permission: %s -> %s ' %( src, perm))
-        self.set_file_info(src, perm=int(perm))
-        return dict()
-
-    @expose(content_type='text/xml')
-    def find(self, hash=None):
-
-        # parse the request
-        if not hash:
-            request = tg.request
-            clen = int(request.headers.get('Content-Length') or 0 )
-            if (clen<=0): return "<response/>"
-            xmldata = request.body
-
-            log.debug ("XML = " + xmldata)
-            request = etree.XML(xmldata)
-            image = request[0]
-            hash  = image.attrib['hash']
-
-        uris = self.find_uris(hash)
-
-        response = etree.Element ('response')
-        for uri in uris:
-            tag = etree.SubElement(response, 'image')
-            tag.attrib['uri'] = str(uri)
-
-        return etree.tostring(response)
+#
+#     @expose()
+#     def update_image_permission(self):
+# 
+#         # parse the request
+#         request = tg.request
+#         clen = int(request.headers.get('Content-Length') or 0 )
+#         if (clen<=0): return ""
+#         xmldata = request.body
+#         log.debug ("XML = " + xmldata)
+#         request = etree.XML(xmldata)
+#         image = request[0]
+#         src  = image.attrib['src']
+#         perm = image.attrib['perm']
+# 
+#         # check identity
+#         id = get_image_id(src)
+#         userId = identity.current.user_name
+#         if self.srv.changePermission( id, userId ) == False:
+#             tg.response.status_int = 401
+#             return 'Permission denied...'
+# 
+#         # Deal w/request
+#         log.debug ('permission: %s -> %s ' %( src, perm))
+#         self.set_file_info(src, perm=int(perm))
+#         return dict()
+# 
+#     @expose(content_type='text/xml')
+#     def find(self, hash=None):
+# 
+#         # parse the request
+#         if not hash:
+#             request = tg.request
+#             clen = int(request.headers.get('Content-Length') or 0 )
+#             if (clen<=0): return "<response/>"
+#             xmldata = request.body
+# 
+#             log.debug ("XML = " + xmldata)
+#             request = etree.XML(xmldata)
+#             image = request[0]
+#             hash  = image.attrib['hash']
+# 
+#         uris = self.find_uris(hash)
+# 
+#         response = etree.Element ('response')
+#         for uri in uris:
+#             tag = etree.SubElement(response, 'image')
+#             tag.attrib['uri'] = str(uri)
+# 
+#         return etree.tostring(response)
 
 
 

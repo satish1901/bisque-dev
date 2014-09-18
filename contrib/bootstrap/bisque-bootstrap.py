@@ -31,6 +31,7 @@ def main():
         shell = True        
 
 
+
     print 'Activating virtual environment using: %s\n'%activate
     execfile (activate, dict(__file__=activate))
 

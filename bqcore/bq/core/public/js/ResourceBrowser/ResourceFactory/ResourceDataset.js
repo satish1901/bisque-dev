@@ -62,11 +62,11 @@ Ext.define('Bisque.Resource.Dataset.Compact', {
                     break;
                 }
                 case 'dataset': {
-                    thumbnail = bq.url('../export_service/public/images/folder-large.png');
+                    thumbnail = BQ.Server.url('../export_service/public/images/folder-large.png');
                     break;
                 }
                 default :
-                    thumbnail = bq.url('../export_service/public/images/file-large.png');
+                    thumbnail = BQ.Server.url('../export_service/public/images/file-large.png');
             }
 
             margin = (i == 1 ? 'margin:0px 0px 0px 2px;' : (i == 2 ? 'margin:2px 2px 0px 0px;' : ''));
@@ -116,11 +116,11 @@ Ext.define('Bisque.Resource.Dataset.Card', {
                     break;
                 }
                 case 'dataset': {
-                    thumbnail = bq.url('../export_service/public/images/folder-large.png');
+                    thumbnail = BQ.Server.url('../export_service/public/images/folder-large.png');
                     break;
                 }
                 default :
-                    thumbnail = bq.url('../export_service/public/images/file-large.png');
+                    thumbnail = BQ.Server.url('../export_service/public/images/file-large.png');
             }
 
             margin = 'margin:0px 3px 2px 0px;';
@@ -178,11 +178,11 @@ Ext.define('Bisque.Resource.Dataset.Full', {
                     break;
                 }
                 case 'dataset': {
-                    thumbnail = bq.url('../export_service/public/images/folder-large.png');
+                    thumbnail = BQ.Server.url('../export_service/public/images/folder-large.png');
                     break;
                 }
                 default :
-                    thumbnail = bq.url('../export_service/public/images/file-large.png');
+                    thumbnail = BQ.Server.url('../export_service/public/images/file-large.png');
             }
 
             margin = 'margin:0px 3px 2px 0px;';
@@ -294,7 +294,7 @@ Ext.define('Bisque.ResourceBrowser.OperationBar.dataset', {
     initComponent : function() {
         this.items = [{
             xtype: 'button',
-            icon : bq.url('/js/ResourceBrowser/Images/down.png'),
+            icon : BQ.Server.url('/js/ResourceBrowser/Images/down.png'),
             tooltip : 'Available operations for this resource.',
             handler : this.menuHandler,
             scope : this
@@ -302,14 +302,14 @@ Ext.define('Bisque.ResourceBrowser.OperationBar.dataset', {
             xtype: 'button',
             itemId : 'btn_delete_full',
             text: 'Delete',
-            //icon : bq.url('/js/ResourceBrowser/Images/close.gif'),
+            //icon : BQ.Server.url('/js/ResourceBrowser/Images/close.gif'),
             tooltip : 'Delete this dataset and its elements',
             handler : this.deleteDataset,
             scope : this,
         }, {
             xtype: 'button',
             itemId : 'btn_delete',
-            icon : bq.url('/js/ResourceBrowser/Images/close.gif'),
+            icon : BQ.Server.url('/js/ResourceBrowser/Images/close.gif'),
             tooltip : 'Delete this dataset, keep elements',
             handler : this.deleteResource,
             scope : this,

@@ -76,7 +76,7 @@ from bq.util.urlutil import strip_url_params
 from bq.util.hash import make_uniq_code, is_uniq_code
 
 from .bisquik_resource import BisquikResource, force_dbload, check_access
-from .resource_query import resource_query, resource_count, resource_load, resource_delete, resource_types, resource_auth
+from .resource_query import resource_query, resource_count, resource_load, resource_delete, resource_types, resource_auth, resource_permission
 from .resource_query import prepare_permissions, RESOURCE_READ, RESOURCE_EDIT
 from .resource import HierarchicalCache
 from .formats import find_formatter
@@ -104,7 +104,7 @@ class DataServerController(ServiceController):
         return child
 
     @expose(content_type='text/xml')
-    def index(self):
+    def index(self, **kw):
         #resources = all_resources()
         resource = etree.Element('resource')
         for r in resource_types():
@@ -120,7 +120,7 @@ class DataServerController(ServiceController):
         token = path.pop(0)
         if is_uniq_code(token):
             log.debug('using uniq token')
-            resource_controller = self.get_child_resource('taggable')
+            resource_controller = self.get_child_resource('resource')
             path.insert(0,token)
         else:
             resource_controller = self.get_child_resource (token)
@@ -156,36 +156,6 @@ class DataServerController(ServiceController):
         'generate a unique code to be used for a resource'
         return make_uniq_code()
 
-    def force_dbload(self, item):
-        if item and isinstance(item, Query):
-            item = item.first()
-        return item
-
-    def check_access(self, query, action=RESOURCE_READ):
-        'check permission for the action for resource'
-        if action == RESOURCE_EDIT and self.resource_name in PROTECTED:
-            log.debug ("PROTECTED RESOURCE")
-            return None
-        if action == RESOURCE_EDIT and not identity.not_anonymous():
-            log.debug ("EDIT denied because annonymous")
-            return None
-
-        if query is None:
-            return None
-        if  isinstance(query, Query):
-            query = resource_permission(query, action=action)
-            #log.debug ("PERMISSION:query %s" % query)
-        else:
-            #   Previously loaded resource .. recreate query but with
-            #   permission check
-            #log.debug ("PERMISSION: loaded object %s %s" % ((query.xmltag, query.__class__), query.id))
-            query = resource_load ((query.xmltag, query.__class__), query.id)
-            query = resource_permission (query, action=action)
-
-        resource = self.force_dbload(query)
-        if resource is None:
-            log.info ("Permission check failure %s = %s" % (query, resource))
-            return None
 
     def new_image(self, resource = None, **kw):
         ''' place the data file in a local '''
@@ -203,6 +173,17 @@ class DataServerController(ServiceController):
         # Invalidate the top level container i.e. /data_service/images
         self.cache_invalidate(img.get('uri').rsplit('/', 1)[0])
         return img
+
+    def resource_load(self,  uniq=None, ident=None, view=None):
+        "Load a resource by uniq code or db ident (deprecated)"
+        query =  resource_load('resource', uniq=uniq, ident=ident)
+        query =  resource_permission(query)
+        resource = query.first()
+        if resource:
+            xtree = db2tree(resource, baseuri = self.url, view=view)
+            return xtree
+        log.debug ("load failure for resource %s", uniq)
+        return None
 
     def append_resource(self, resource, tree=None, **kw):
         '''Append an element to resource (a node)
@@ -225,7 +206,7 @@ class DataServerController(ServiceController):
             resource = etree.Element (resource, **kw)
             log.debug ('created %s ' , resource)
 
-        if parent is None:
+        if parent is None and resource.get('resource_uniq') is None:
             resource.set('resource_uniq', self.resource_uniq())
         else:
             if isinstance (parent, etree._Element):
@@ -334,7 +315,7 @@ class DataServerController(ServiceController):
         log.debug ("auth_resourch on %s", str(resource))
         response = etree.Element ('resource')
         if resource is not None:
-            auth = resource_auth(resource, parent=None, action=action, newauth=auth, notify=notify, invalidate=invalidate)
+            auth = resource_auth(resource, action=action, newauth=auth, notify=notify, invalidate=invalidate)
             db2tree(auth, parent=response, view=None, baseuri=self.url)
         else:
             log.warn ('AUTH: could not load resource %s', uri)

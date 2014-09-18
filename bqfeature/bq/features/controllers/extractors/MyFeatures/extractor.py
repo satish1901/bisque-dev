@@ -9,8 +9,10 @@ from fftsd_extract import FFTSD as fftsd
 from lxml import etree
 import urllib, urllib2, cookielib
 import random
-from bq.features.controllers.Feature import calc_wrapper, ImageImport #import base class
+from bq.features.controllers.Feature import calc_wrapper, ImageImport, rgb2gray, gray2rgb  #import base class
 from bq.features.controllers import Feature
+from hog_extractor import histogram_of_oriented_gradients
+#from htd_extractor import homogenious_texture_descriptor
 
 log = logging.getLogger("bq.features")
 
@@ -37,22 +39,11 @@ class FFTSD(Feature.BaseFeature):
             feature       = tables.Col.from_atom(featureAtom, pos=3)
             
         return Columns
-
-    def output_error_columns(self):
-        """
-            Columns for the output table for the error columns
-        """
-        class Columns(tables.IsDescription):
-            polygon       = tables.StringCol(2000,pos=1)
-            feature_type  = tables.StringCol(20, pos=2)
-            error_code    = tables.Int32Col(pos=3)
-            error_message = tables.StringCol(200,pos=4)
-            
-        return Columns    
+  
     
     @calc_wrapper       
     def calculate(self, **resource):
-        """ Append descriptors to SURF h5 table """
+        """ Append descriptors to FFTSD h5 table """
         #initalizing
         polygon_uri = resource['polygon']
         poly_xml=Feature.xml_import(polygon_uri+'?view=deep')
@@ -72,5 +63,52 @@ class FFTSD(Feature.BaseFeature):
         return [descriptor[:500]]
     
     
+#class HOG(Feature.BaseFeature):
+#    
+#    file = 'features_hog.h5'
+#    name = 'HOG'
+#    description = """Histogram of Orientated Gradients: bin = 9"""
+#    length = 9
+#    confidence = 'good'    
+#        
+#    @calc_wrapper       
+#    def calculate(self, **resource):
+#        """ Append descriptors to HOG h5 table """
+#        #initalizing
+#        image_uri = resource['image']
+#
+#        with ImageImport(image_uri) as imgimp:
+#            im = imgimp.from_tiff2D_to_numpy()
+#            if len(im.shape)==3:
+#                im = rgb2gray(im)
+#                
+#        descriptor = histogram_of_oriented_gradients(im)
+#                
+#        #initalizing rows for the table
+#        return [descriptor]
+    
+    
+class HTD(Feature.BaseFeature):
+    
+    file = 'feature_htd.h5'
+    name = 'HTD'
+    description = """Homogenious Texture Descriptor"""
+    length = 48
+    confidence = 'good'    
         
-        
+    @calc_wrapper       
+    def calculate(self, **resource):
+        """ Append descriptors to HOG h5 table """
+        #initalizing
+        image_uri = resource['image']
+
+        with ImageImport(image_uri) as imgimp:
+            im = imgimp.from_tiff2D_to_numpy()
+            if len(im.shape)==3:
+                im = rgb2gray(im)
+                
+        descriptor = homogenious_texture_descriptor(im)
+                
+        #initalizing rows for the table
+        return [descriptor]     
+    

@@ -631,6 +631,8 @@ class BQUser(Taggable):
         self.permission = 'published'
 
         if create_store:
+            #from bq.commands.stores import init_stores
+            #init_stores (tg_user.user_name)
             root_store = BQStore(owner_id = self)
             root_store.resource_name='(root)'
             root_store.resource_unid='(root)'

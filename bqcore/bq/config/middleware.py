@@ -41,6 +41,12 @@ class BQStaticURLParser (object):
         self.files = {}
 
     def add_path(self, top, local, prefix=None):
+        """add a set of files to static file server
+
+        @param top: a portion of the filepath to be removed from the web path
+        @param local: the  directory path to be served
+        @param prefix:
+        """
         log.info('static path %s -> %s' % (local, top))
         for root, dirs, files in os.walk(local):
             for f in files:

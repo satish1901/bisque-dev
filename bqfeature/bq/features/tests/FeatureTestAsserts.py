@@ -69,7 +69,7 @@ def isCSVEqual(doc_a,doc_b):
         Compares an element of 2 xml etree structures
         
         #TODO
-        #wanted to log results and keep track of all failres
+        #wanted to log results and keep track of all failures
         #compare the elements together 
         #need to make it work for many different kind of inputs
         #only sorts on image right now
@@ -116,6 +116,7 @@ def isHDFEqual(path_hdf_a,path_hdf_b):
         asserts
         Compares hdf5 tables
         
+        #TODO
         #wanted to log results and keep track of all failures
         #compare the elements together
     """

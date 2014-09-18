@@ -23,4 +23,15 @@ class FeatureImportError(Exception):
     def __init__(self, extractor_package_name, message=''):
         self.extractor_package_name = extractor_package_name
         self.message = message
+
+class ConnectionError(Exception):
     
+    def __init__(self, error_code=404, error_message='Resource Not Found'):
+        self.code = error_code
+        self.message = error_message
+        
+class InvalidResourceError(Exception):
+
+    def __init__(self, error_code=415, error_message='Resource Not Valid'):
+        self.code = error_code
+        self.message = error_message

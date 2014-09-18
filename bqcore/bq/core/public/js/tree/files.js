@@ -13,22 +13,32 @@
 
 *******************************************************************************/
 
+Ext.namespace('BQ.tree.files');
 
 //--------------------------------------------------------------------------------------
 // misc
 //--------------------------------------------------------------------------------------
 
-function getNodePath(node) {
+BQ.tree.files.computePath = function(node) {
     var path = [];
     while (node) {
-        if (node.data && node.data.type !== 'link')
+        if (node.data) {
             path.push(node.data.name || node.data.id);
+        }
         node = node.parentNode;
     }
     path.reverse();
-    var url = path.join('/');
-    return url;
-}
+    return path;
+};
+
+BQ.tree.files.path2url = function(path) {
+    var p=[],
+        i=0;
+    for (i=0; i<path.length; ++i) {
+        p.push(encodeURIComponent(path[i]));
+    }
+    return p.join('/');
+};
 
 //--------------------------------------------------------------------------------------
 // BQ.data.reader.Files
@@ -49,7 +59,7 @@ Ext.define('BQ.data.reader.Files', {
         } else if (data.tagName === 'link') {
             return data;
         }
-    },
+    }
 
     /*extractData: function(root) {
         var recordName = this.record;
@@ -81,17 +91,18 @@ Ext.define('BQ.data.writer.Files', {
     alias: 'writer.bq-files',
 
     writeRecords: function(request, data) {
-        var me = request.proxy.ownerPanel;
-        var url = me.getSelected();
-        if (request.action === 'create') {
-            var record = request.records[0];
-            //var path = getNodePath(record);
-            url += '/' + record.data.name;
+        var me = request.proxy.ownerPanel,
+            url = me.getSelectedAsUrl(),
+            record = request.records[0],
+            skip = me.no_selects;
+        // selected url does not contain leaf link nodes, add if needed
+        if (record.data && record.data.type === 'link') {
+            url += '/' + encodeURIComponent(record.data.name);
         }
         request.url = url;
         request.xmlData = '';
         return request;
-    },
+    }
 });
 
 //--------------------------------------------------------------------------------------
@@ -110,6 +121,9 @@ Ext.define('BQ.data.proxy.Files', {
     pageParam: undefined,
     startParam: 'offset',
 
+    sortParam : undefined,
+    filterParam : undefined,
+
     actionMethods: {
         create : 'POST', // 'PUT'
         read   : 'GET',
@@ -122,18 +136,17 @@ Ext.define('BQ.data.proxy.Files', {
         if (request.params && request.params.node) {
             delete request.params.node;
         }
-        // create a URL path traversing through the parents
-        var node = request.operation.node;
-        var path = [];
-        while (node) {
-            if (node.data)
-                path.push(node.data.name || node.data.id);
-            node = node.parentNode;
+        // extjs attempts adding sorters as well
+        if (request.params && request.params.sort) {
+            delete request.params.sort;
         }
-        var url = this.getUrl(request) + path.reverse().join('/');
-        request.url = url;
-        return url;
-    },
+
+        // create a URL path traversing through the parents
+        var node = request.operation.node,
+            path = BQ.tree.files.computePath(node);
+        request.url = this.getUrl(request) + BQ.tree.files.path2url(path);
+        return request.url;
+    }
 
 });
 
@@ -143,11 +156,24 @@ Ext.define('BQ.data.proxy.Files', {
 //    selected -
 //--------------------------------------------------------------------------------------
 
-Ext.namespace('BQ.tree.files');
 BQ.tree.files.icons = {
    store: 'icon-store',
    dir: 'icon-folder',
-   link: 'icon-file',
+   link: 'icon-file'
+};
+
+BQ.tree.files.order = {
+   store: 0,
+   dir: 1,
+   link: 2
+};
+
+BQ.tree.files.getType = function(o) {
+    var t = o.get('type');
+    if (t in BQ.tree.files.order) {
+        return BQ.tree.files.order[t];
+    }
+    return 3;
 };
 
 Ext.define('BQ.tree.files.Panel', {
@@ -188,17 +214,9 @@ Ext.define('BQ.tree.files.Panel', {
         border : false,
     },
 
-
-    /*plugins: [{
+    plugins: [{
         ptype: 'bufferedrenderer'
-    }],*/
-
-    constructor : function(config) {
-        this.addEvents({
-            'selected' : true,
-        });
-        this.callParent(arguments);
-    },
+    }],
 
     initComponent : function() {
         this.url = this.url || '/blob_service/';
@@ -219,7 +237,7 @@ Ext.define('BQ.tree.files.Panel', {
                 handler: this.createFolder,
                 scope: this,
                 tooltip: 'Create a new folder',
-            },{
+            }, {
                 itemId: 'btnDeleteSelected',
                 text: 'Delete',
                 //scale: 'medium',
@@ -249,6 +267,10 @@ Ext.define('BQ.tree.files.Panel', {
             //autoLoad: false,
             autoSync: true,
             //lazyFill: true,
+            remoteSort: false,
+            folderSort: true,
+            sortOnLoad: true,
+
             proxy : {
                 type : 'bq-files',
                 url : this.url,
@@ -266,6 +288,10 @@ Ext.define('BQ.tree.files.Panel', {
                 writer : {
                     type : 'bq-files',
                 },
+                listeners: {
+                    scope: this,
+                    exception: this.onError
+                }
             },
             fields : [{
                 name : 'name',
@@ -286,6 +312,20 @@ Ext.define('BQ.tree.files.Panel', {
                         return BQ.tree.files.icons[record.data.type];
                 }
             }],
+
+            sorters: [{
+                sorterFn: function(o1, o2) {
+                    var s1 = BQ.tree.files.getType(o1);
+                    var s2 = BQ.tree.files.getType(o2);
+                    if (s1 === s2) {
+                        s1 = o1.get('name').toLowerCase();
+                        s2 = o2.get('name').toLowerCase();
+                    }
+                    if (s1 === s2) return 0;
+                    return s1 < s2 ? -1 : 1;
+                },
+            }],
+
             listeners: {
                 scope: this,
                 load: function () {
@@ -315,7 +355,18 @@ Ext.define('BQ.tree.files.Panel', {
         this.fireEvent('selected', url, this);
     },
 
+    getUrl : function(node) {
+        if (!node) {
+            return this.url_selected;
+        }
+        var path = BQ.tree.files.computePath(node);
+        var url = this.url + BQ.tree.files.path2url(path);
+        //var url = path.join('/');
+        return url;
+    },
+
     onSelect : function(me, record, index, eOpts) {
+        if (this.no_selects===true) return;
         var node = record;
         var path = [];
         while (node) {
@@ -324,7 +375,7 @@ Ext.define('BQ.tree.files.Panel', {
             node = node.parentNode;
         }
         path.reverse();
-        var url = this.url+path.join('/');
+        var url = this.url + BQ.tree.files.path2url(path);
         path.shift();
         this.queryById('path_bar').setPath( '/'+path.join('/') );
 
@@ -336,6 +387,12 @@ Ext.define('BQ.tree.files.Panel', {
     },
 
     getSelected : function() {
+        var sel = this.getSelectionModel().getSelection();
+        if (sel.length<1) return;
+        return sel[0];
+    },
+
+    getSelectedAsUrl : function() {
         return this.url_selected;
     },
 
@@ -382,8 +439,22 @@ Ext.define('BQ.tree.files.Panel', {
         this.onPath(this.getRootNode(), p);
     },
 
-    onError: function(r) {
-        BQ.ui.error('Error: '+r.statusText );
+    onError: function(proxy, response, operation, eOpts) {
+        BQ.ui.error('Error: '+response.statusText );
+    },
+
+    reset: function () {
+        this.no_selects = true;
+        this.queryById('path_bar').setPath( '/' );
+        this.url_selected = this.url;
+
+        var root = this.getRootNode();
+        this.store.suspendAutoSync();
+        root.removeAll(false);
+        this.store.resumeAutoSync();
+        this.store.load();
+        this.no_selects = undefined;
+        this.getSelectionModel().select(root);
     },
 
     createFolder: function() {
@@ -417,10 +488,10 @@ Ext.define('BQ.tree.files.Panel', {
 
     deleteSelected: function() {
         var me = this;
-        var url = this.url_selected;
         Ext.Msg.confirm('Deletion', 'Are you sure to delete?', function(btn) {
-            if (btn !== 'yes') return;
-
+            if (btn !== 'yes') {
+                return;
+            }
             var selection = me.getSelectionModel().getSelection();
             if (selection) {
                 var node = selection[0];

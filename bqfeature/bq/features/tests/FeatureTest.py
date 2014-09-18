@@ -62,11 +62,13 @@ class FeatureBase(object):
                         parameters = {}
                         
                         for p in self.parameters:
-                            parameters[p] = str(getattr(group, p)[idx][0])
-                        etree.SubElement(feature, 'parameters', parameters)
-                        
-                    value=etree.SubElement(feature,'value')
-                    value.text = " ".join('%g' % item for item in feature_array)
+                            etree.SubElement(feature, 'tag', name=p, value=str(str(getattr(group, p)[idx][0])))
+
+#                            parameters[p] = str(getattr(group, p)[idx][0])
+#                        etree.SubElement(feature, 'parameters', parameters)
+                    value = etree.SubElement(feature, 'tag', name= 'feature', value= ",".join('%g'%item for item in feature_array))
+#                    value=etree.SubElement(feature,'value')
+#                    value.text = " ".join('%g' % item for item in feature_array)
 
         return resource
     
@@ -86,7 +88,7 @@ class FeatureBase(object):
         import StringIO
         f = StringIO.StringIO()
         writer = csv.writer(f)
-        titles = ['index', 'feature type'] + self.input_resource + ['descriptor'] + self.parameters + ['response code','error message']  #+ parameter_names
+        titles = ['index', 'feature type'] + self.input_resource + ['feature'] + self.parameters + ['response code','error message']  #+ parameter_names
         writer.writerow(titles)
         line_idx = 0
         for r in resource_list:
@@ -98,13 +100,13 @@ class FeatureBase(object):
                     for i in self.input_resource:
                         inputs.append(r[i])
                     
-                    feature_array = ",".join('%g' % item for item in feature_array)
+                    feature_array = ','.join('%g' % item for item in feature_array)
                     
                     parameter_array = []
                     for p in self.parameters:
                         parameter_array.append(getattr(group, p)[idx][0])
                     
-                    line = [line_idx, self.name] + inputs + [feature_array] + parameter_array + ['200','none'] 
+                    line = [line_idx, self.name] + inputs + ['%s'%feature_array] + parameter_array + ['200','none'] 
                     line_idx+=1
 
                     writer.writerow(line)
@@ -164,15 +166,18 @@ class FeatureBase(object):
     def make_POST_request(self,response_type):
         
         command = TestGlobals.ROOT+'/features/'+self.name+'/'+response_type
-        dataset = etree.Element('dataset')
+        resource = etree.Element('resource')
         for r in TestGlobals.RESOURCE_LIST:
-            value = etree.SubElement(dataset,'value',type='query')
-            query = []
+            query = {}
             for i in self.input_resource:
-                query+=[i+'='+r[i]]
-            query= '&'.join(query)
-            value.text = query
-        body = etree.tostring(dataset)
+                query[i]=r[i]            
+            value = etree.SubElement(resource,'feature',**query)
+#            query = []
+#            for i in self.input_resource:
+#                query+=[i+'='+r[i]]
+#            query= '&'.join(query)
+#            value.text = query
+        body = etree.tostring(resource)
         return command, body
     
 

@@ -1027,7 +1027,21 @@ PanoJS.prototype.resetSlideMotion = function() {
   this.slideAcceleration = 0;
 };
 
-
+PanoJS.prototype.loadedTileUrls = function() {
+    var blank = this.cache['blank'].src;
+    var tiles = [];
+    for (var c=0; c<this.tiles.length; c++) {
+        for (var r=0; r<this.tiles[c].length; r++) {
+            var tile = this.tiles[c][r];
+            if (tile && tile.element) {
+                var u = tile.element.targetSrc || tile.element.src;
+                if (u!=blank)
+                    tiles.push(u);
+            }
+        }
+    }
+    return tiles;
+};
 
 //-------------------------------------------------------
 // Mouse Events

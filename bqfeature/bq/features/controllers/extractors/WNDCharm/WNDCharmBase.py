@@ -45,7 +45,6 @@ class WNDCharm(BaseFeature): #base WNDCharm feature class
                     args.append('depth=8,d')
                     args.append('transform=rgb2hsv') #converts rgb to hsv and then selects the hue channel
                     args.append('remap=1')
-                    args.append('format=tiff') #forces the tiff to output in a format cv2.imread can handle
                 else:
                     args.append('transform='+t)
         args.append('format=tiff') #return tiff format
@@ -53,8 +52,7 @@ class WNDCharm(BaseFeature): #base WNDCharm feature class
         
         log.debug('WNDCharm uri: %s'% image_uri)
         with ImageImport(image_uri) as imgimp:
-            #im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_UNCHANGED) #CV_LOAD_IMAGE_UNCHANGED CV_LOAD_IMAGE_ANYDEPTH
-            im = np.array(Image.open(str(imgimp)))
+            im = imgimp.from_tiff2D_to_numpy()
             
             # extract the feature keypoints and descriptor
             im = np.asarray(im)        

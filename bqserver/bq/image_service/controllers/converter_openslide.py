@@ -113,11 +113,13 @@ class ConverterOpenSlide(ConverterBase):
     # Supported
     #######################################
 
-    def supported(self, ifnm):
+    def supported(self, ifnm, **kw):
         '''return True if the input file format is supported'''
         if not self.installed:
             return False
         log.debug('Supported for: %s', ifnm )
+        if self.is_multifile_series(**kw) is True:
+            return False
         s = openslide.OpenSlide.detect_format(ifnm)
         return (s is not None)
 
@@ -125,9 +127,11 @@ class ConverterOpenSlide(ConverterBase):
     # The info command returns the "core" metadata (width, height, number of planes, etc.)
     # as a dictionary
     #######################################
-    def info(self, ifnm, series=0):
+    def info(self, ifnm, series=0, **kw):
         '''returns a dict with file info'''
         if not self.installed:
+            return {}
+        if self.is_multifile_series(**kw) is True:
             return {}
         log.debug('Info for: %s', ifnm )
         with Locks(ifnm):
@@ -142,6 +146,7 @@ class ConverterOpenSlide(ConverterBase):
             info = {
                 'format': slide.properties[openslide.PROPERTY_NAME_VENDOR],
                 'image_num_series': 0,
+                'image_series_index': 0,
                 'image_num_x': slide.dimensions[0],
                 'image_num_y': slide.dimensions[1],
                 'image_num_z': 1,
@@ -166,8 +171,10 @@ class ConverterOpenSlide(ConverterBase):
     # Meta - returns a dict with all the metadata fields
     #######################################
 
-    def meta(self, ifnm, series=0):
+    def meta(self, ifnm, series=0, **kw):
         if not self.installed:
+            return {}
+        if self.is_multifile_series(**kw) is True:
             return {}
         log.debug('Meta for: %s', ifnm )
         with Locks (ifnm):
@@ -215,17 +222,21 @@ class ConverterOpenSlide(ConverterBase):
     #######################################
 
     @classmethod
-    def convert(cls, ifnm, ofnm, fmt=None, series=0, extra=[]):
+    def convert(cls, ifnm, ofnm, fmt=None, series=0, extra=None, **kw):
         return None
 
     @classmethod
-    def convertToOmeTiff(cls, ifnm, ofnm, series=0, extra=[]):
+    def convertToOmeTiff(cls, ifnm, ofnm, series=0, extra=None, **kw):
         return None
 
     @classmethod
     def thumbnail(cls, ifnm, ofnm, width, height, series=0, **kw):
         '''converts input filename into output thumbnail'''
         log.debug('Thumbnail: %s %s %s for [%s]', width, height, series, ifnm)
+        if cls.is_multifile_series(**kw) is True:
+            return None
+        
+        fmt = kw.get('fmt', 'jpeg').upper()
         with Locks (ifnm, ofnm) as l:
             if l.locked: # the file is not being currently written by another process
                 try:
@@ -236,11 +247,11 @@ class ConverterOpenSlide(ConverterBase):
                     return None
                 img = slide.get_thumbnail((width, height))
                 try:
-                    img.save(ofnm, 'JPEG')
+                    img.save(ofnm, fmt)
                 except IOError:
                     tmp = '%s.tif'%ofnm
                     img.save(tmp, 'TIFF')
-                    ConverterImgcnv.thumbnail(tmp, ofnm=ofnm, width=width, height=height)
+                    ConverterImgcnv.thumbnail(tmp, ofnm=ofnm, width=width, height=height, **kw)
                 slide.close()
                 misc.end_nounicode_win(tmp)
 
@@ -258,6 +269,9 @@ class ConverterOpenSlide(ConverterBase):
     def tile(cls, ifnm, ofnm, level, x, y, sz, series=0, **kw):
         '''extract Level,X,Y tile from input filename into output in OME-TIFF format'''
         log.debug('Tile: %s %s %s %s %s for [%s]', level, x, y, sz, series, ifnm)
+        if cls.is_multifile_series(**kw) is True:
+            return None
+        
         level = misc.safeint(level, 0)
         x  = misc.safeint(x, 0)
         y  = misc.safeint(y, 0)
@@ -267,18 +281,21 @@ class ConverterOpenSlide(ConverterBase):
                 try:
                     _, tmp = misc.start_nounicode_win(ifnm, [])
                     slide = openslide.OpenSlide(tmp or ifnm)                    
+                    dz = deepzoom.DeepZoomGenerator(slide, tile_size=sz, overlap=0)
+                    img = dz.get_tile(dz.level_count-level-1, (x,y))
+                    img.save(ofnm, 'TIFF', compression='LZW')
+                    slide.close()
+                    misc.end_nounicode_win(tmp)                    
                 except (openslide.OpenSlideUnsupportedFormatError, openslide.OpenSlideError):
                     misc.end_nounicode_win(tmp)
-                    return None
-                dz = deepzoom.DeepZoomGenerator(slide, tile_size=sz, overlap=0)
-                img = dz.get_tile(dz.level_count-level-1, (x,y))
-                img.save(ofnm, 'TIFF', compression='LZW')
-                slide.close()
-                misc.end_nounicode_win(tmp)
+                    return None                
         
         # make sure the file was written
         with Locks(ofnm):
             pass
         return ofnm
 
-ConverterOpenSlide.init()
+try:
+    ConverterOpenSlide.init()
+except:
+    log.warn("Openslide Unavailable")

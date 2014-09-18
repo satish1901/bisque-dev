@@ -54,6 +54,7 @@ Store resource all special clients to simulate a filesystem view of resources.
 #import sys
 import logging
 import string
+import urllib
 from lxml import etree
 from datetime import datetime
 from datetime import timedelta
@@ -251,16 +252,18 @@ class StoreServer(TGController):
         best = None
         root = self._create_root_store()
         drivers = self.drivers
-        for name,driver  in drivers.items():
+        for name,driver in drivers.items():
             if not hasattr(driver, 'user_path'):
                 continue
+            log.debug('find_store_by_blob name: %s driver: %s path: %s', name, driver, path)
             new_path = driver.valid (path)
+            log.debug('find_store_by_blob name new_path: %s', new_path)
             if new_path:
                 user_path = string.Template(driver.user_path).safe_substitute(user = user_name)
                 if not new_path.startswith(user_path):
                     continue
 
-                store = data_service.query('store', parent=root, resource_unid=name,view='full', cache=False)
+                store = data_service.query('store', parent=root, resource_unid=name, view='full', cache=False)
                 if len(store) == 0:
                     store = None
                     partial = name + '/' + new_path[len(user_path):]
@@ -271,6 +274,7 @@ class StoreServer(TGController):
                     log.error ('multiple  store found %s  - %s', best, new_path)
                     break
                 log.debug ("find_store_by_blob: Matched %s %s ", name, partial)
+                partial = urllib.unquote(partial).decode('utf-8')
                 return store, [ x for x in partial.replace('//','/').split ('/') if x ]
         return None,None
 
@@ -345,7 +349,7 @@ class StoreServer(TGController):
 
         root = data_service.query('store', resource_unid='(root)', view='full')
         if len(root) == 0:
-           return  data_service.new_resource(etree.Element('store', name="(root)", resource_unid="(root)"), view='full')
+            return  data_service.new_resource(etree.Element('store', name="(root)", resource_unid="(root)"), view='full')
         elif len(root) > 1:
             log.error("Root store created more than once: %s ", etree.tostring(root))
             return None
@@ -394,7 +398,7 @@ class StoreServer(TGController):
         store = self._load_store(store_name)
         if store is None:
             store = store_name
-        return self._create_full_path(store, path,  resource_uniq=None, resource_name=None, **kw)
+        return self._create_full_path(store, path, resource_uniq, resource_name, **kw)
 
     def delete_store_path (self, store_name, path, **kw):
         """ Delete an store element and all below it
@@ -445,7 +449,7 @@ class StoreServer(TGController):
             return self.index()
         store_name = path.pop(0)
 
-        q =  self._load_store_path(store_name=store_name, path = path, view=view, **kw)
+        q = self._load_store_path(store_name=store_name, path = path, view=view, **kw)
         if q is None:
             #abort (404, "bad store path %s" % path)
             return '<resource/>'
@@ -472,7 +476,8 @@ class StoreServer(TGController):
         if len(path)==0:
             return self.index()
         store_name = path.pop(0)
-        return self.insert_store_path (store_name, path, **kw)
+        q = self.insert_store_path (store_name, path, **kw)
+        return etree.tostring(q)        
 
     def delete(self, path, **kw):
         log.info ("DELETE %s with %s" ,  path, kw)
