@@ -310,8 +310,21 @@ def operation(command, options, *args):
                     processes = uwsgi_command('stop', cfgopt, processes, options)
                 else:
                     processes = paster_command('stop', options, cfgopt, processes, args)
+                
+                error = None
                 for proc in processes:
-                    proc.wait()
+                    try:
+                        proc.wait()
+                    except:
+                        error = True
+                        
+                if error is not None and backend != 'uwsgi':
+                    print 'Paste windows error while stopping process, re-running'
+                    processes = paster_command('stop', options, cfgopt, processes, args)
+                    for proc in processes:
+                        proc.wait()
+                    print 'Recovered after error and successfully stopped daemon'
+                    
                 processes = []
 
             if command in ('start', 'restart'):
@@ -332,7 +345,6 @@ def operation(command, options, *args):
                 else:
                     prepare_log (cfgopt['logfile'])
                     processes = paster_command('start', options, cfgopt, processes, args)
-
 
 
         if not args and 'logging_server' in cfgopt:

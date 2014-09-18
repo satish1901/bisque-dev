@@ -214,6 +214,17 @@
     **link_kw
     )}
 
+    <?python
+       # dima: fix paster error of not proxying the b.js file due to a wrong location
+       # this is a real hack, this is not needed if not running under paster
+       # i think the minified version should be created once in deploy command
+       # and should never be actually called from here
+       if tg.config.get('bisque.js_environment', None) == 'production':
+           import os, shutil
+           src = os.path.join(h.file_root(), 'public/js/b.js')
+           dst = os.path.join(h.file_root(), 'bqcore/bq/core/public/js/b.js')
+           shutil.copyfile(src, dst)
+    ?>
 
     <!-- Configuration variables   -->
     <script type="text/javascript" >
