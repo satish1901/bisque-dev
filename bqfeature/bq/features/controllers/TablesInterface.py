@@ -30,7 +30,7 @@ from exceptions import FeatureExtractionError, FeatureServiceError, FeatureExtra
 from .var import FEATURES_TABLES_FILE_DIR, EXTRACTOR_DIR, FEATURES_TABLES_WORK_DIR, FEATURES_REQUEST_ERRORS_DIR
 from ID import ID
 
-log = logging.getLogger("bq.features")
+log = logging.getLogger("bq.features.TablesInterface")
 
 
 class TablesLock(object):
@@ -38,24 +38,61 @@ class TablesLock(object):
         Provides locks for hdf5 files
     """
     def __init__(self, filename, mode='w', failonexist=False, *args, **kwargs):
+        """
+            Opens hdf5 files providing read/write locks for
+            thread safety.
+            If libHDF5 is not configured for thread safety please
+            set MULTITHREAD_HDF5 to False to keep you feature
+            service working in a mutlithread environment
+            
+            @param: filename - Name of the hdf5 file
+            @param: mode - sets the file access mode (default: 'w')
+            @param: failonexist - well not lock if file exists (default: False)
+            @param: args - passes arguments to table.open_file
+            @param: kwargs - passes arguments to table.open_file
+        """
         self.filename = filename
         self.mode = mode
         self.args = args
         self.kwargs = kwargs
         self.h5file = None
+        self.hdf5_lock = None
         
-        if mode == 'r' and MULTITHREAD_HDF5:#set read locks
+        if mode == 'r' and MULTITHREAD_HDF5: #set read locks
             self.bq_lock = Locks(self.filename, failonexist=failonexist, mode=mode+'b')
         else: #set write locks
+            if MULTITHREAD_HDF5 is False: #sets a lock on all hdf5 usage in fs
+                self.hdf5_lock = Locks(None, 'hdf5_lock', failonexist=False, mode='wb')
             self.bq_lock = Locks(None, self.filename, failonexist=failonexist, mode=mode+'b')
     
     def acquire(self):
+        """
+            Acquires the locks for the hdf5 file.
+            
+            If MULTITHREAD_HDF5 is set, the hdf5 file will be 
+            locked in write mode and pytables will be locked on 
+            file hdf5_lock.
+            
+            @return: a pytables file handle. If locks fail nothing will be returned.
+             If the file cannot be open a FeatureServiceError exception will 
+             be raised
+        """
         if not self.h5file:
-                
-            self.bq_lock.acquire()
-            if not self.bq_lock.locked: #no lock was given
+            
+            self.bq_lock.acquire(self.bq_lock.ifnm, self.bq_lock.ofnm)
+            if not self.bq_lock.locked: #no lock was given on the hdf5 file
+                log.debug('Failed to lock hdf5 file!')
+                self.release()
                 return None
-                    
+            
+            if self.hdf5_lock:
+                self.hdf5_lock.acquire(self.hdf5_lock.ifnm, self.hdf5_lock.ofnm)
+                if not self.hdf5_lock.locked: #no lock was given on pytables 
+                    log.debug('Failed to lock pytables!')
+                    self.release()
+                    return None            
+            
+            log.debug('Succesfully acquired locks!')
             self.h5file = self._open_table()
             return self.h5file
             
@@ -70,6 +107,14 @@ class TablesLock(object):
             return self.h5file
             
     def release(self):
+        """
+            Releases all locks and closes and deletes hdf5 
+            file handle
+        """
+        if self.hdf5_lock:
+            self.hdf5_lock.release()
+            self.hdf5_lock = None
+        
         if self.h5file:
             self.h5file.close()
             del self.h5file
