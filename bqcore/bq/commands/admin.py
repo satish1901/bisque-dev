@@ -102,7 +102,6 @@ class server(object):
         if self.command:
             server_ops.operation(self.command, self.options, *self.args)
 
-
 class cache(object):
     desc = "delete the cache"
 
@@ -189,6 +188,16 @@ class deploy(object):
         ''
         from bq.util.copylink import copy_symlink
         import pkg_resources
+        import shutil
+
+        # dima: deploy fails under windows with access denied, need to clean dir first
+        if os.name == 'nt':
+            try:
+                print "Cleaning up %s" % self.public_dir
+                shutil.rmtree(self.public_dir, ignore_errors=True)
+            except OSError, e:
+                pass
+            
         try:
             print "Creating %s" % self.public_dir
             os.makedirs (self.public_dir)
@@ -249,6 +258,13 @@ class deploy(object):
             relpath = os.path.relpath(l, currdir)
             #print "%s -> %s " % (relpath, dest)
             copy_symlink (relpath, dest)
+        
+        # ensure b.js exists and will be picked up by the paster static file server
+        src = os.path.join(rootdir, 'bqcore/bq/core/public/js/bq_api.js')
+        dst = os.path.join(rootdir, 'bqcore/bq/core/public/js/b.js')
+        copy_symlink (src, dst)
+        
+        # finish
         os.chdir (rootdir)
 
 

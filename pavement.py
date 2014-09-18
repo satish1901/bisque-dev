@@ -114,7 +114,7 @@ def setup(options):
     setup_developer(options)
     #install_postreqs(options)
 
-    print  'now run bq-admin setup %s' % ( 'engine' if options.installing =='engine' else '' )
+    print '\nNow run:\nbq-admin setup %s' % ( 'engine' if options.installing =='engine' else '' )
 
 
 @task

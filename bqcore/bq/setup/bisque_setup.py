@@ -830,7 +830,7 @@ def install_matlabwrap(params):
 
 def install_modules(params):
     # Check each module for an install script and run it.
-    ans =  getanswer( "Try to setup modules", 'Y',
+    ans =  getanswer( "Try to setup modules", 'N',
                   "Run the installation scripts on the modules. Some of these require local compilations and have outside dependencies. Please monitor carefullly")
     if ans != 'Y':
         return

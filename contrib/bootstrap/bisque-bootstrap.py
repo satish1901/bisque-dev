@@ -13,6 +13,7 @@ def main():
     parser = argparse.ArgumentParser(description='Boostrap bisque')
     parser.add_argument("--repo", default="http://biodev.ece.ucsb.edu/hg/bisque-stable")
     parser.add_argument("bqenv", nargs="?", default="bqenv")
+    parser.add_argument('install', default='server', choices=['server', 'engine'])
 
     args = parser.parse_args()
     
@@ -44,7 +45,17 @@ def main():
         print 'Installing pywin32\n'
         #subprocess.call (['pip', 'install', 'pywin'], shell=shell)
         urllib.urlretrieve ("http://downloads.sourceforge.net/project/pywin32/pywin32/Build%20219/pywin32-219.win-amd64-py2.7.exe?r=&ts=1411061394&use_mirror=iweb", "pywin32-219.win-amd64-py2.7.exe")
-        subprocess.call (['easy_install', 'pywin32-219.win-amd64-py2.7.exe'], shell=shell) 
+        subprocess.call (['easy_install', 'pywin32-219.win-amd64-py2.7.exe'], shell=shell)
+        try:
+            os.remove('get-pip.py')
+        except OSError:
+            pass
+        try:
+            os.remove('pywin32-219.win-amd64-py2.7.exe')
+        except OSError:
+            pass
+
+    return
 
     # dima, maybe we don't need this given previous lines?
     for install in PIP_LIST:
@@ -72,16 +83,24 @@ def main():
     print
     subprocess.call(['pip', 'install', '-r', 'requirements.txt'], shell=shell)
 
-    print "********************************************************"
-    print "* To finish installation execute the following commands*"
+    print "**************************************************************"
+    print "To finish installation, please, execute the following commands"
+    print "Use 'server' for a full BisQue server"
+    print "Use 'engine' to run a module serving a remote BisQue"
+    print "*************************************************************"    
     if os.name == 'nt':
         print "bqenv\\Scripts\\activate.bat"
     else:
         print "source bqenv/bin/activate"
+        
     print "paver setup    [server|engine]"
     print "bq-admin setup [server|engine]"
+    print "bq-admin deploy public"
 
     print "Please visit http://biodev.ece.ucsb.edu/projects/bisquik/wiki/InstallationInstructions and follow instructions there"
+
+    # dima: we should run all the above mentioned commands right here
+    #args.install
 
 
 
