@@ -65,8 +65,8 @@ class Feature_Archive(dict):
                         self[item.name] = item
             
             except FeatureImportError, e:
-                log.warning('Failed to import: %s'%(e.extractor_package_name))
-                log.debug('Failed to import: %s\n%s'%(e.extractor_package_name, traceback.format_exc()))
+                log.warning('Failed to import: %s'%(module))
+                log.debug('Failed to import: %s\n%s'%(module, traceback.format_exc()))
                 continue
                 
             except StandardError, e:  # need to pick a narrower error band but not quite sure right now
