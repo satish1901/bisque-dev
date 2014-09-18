@@ -30,7 +30,7 @@ def main():
         shell = True        
 
 
-    print 'Activating virtual environment with: %s\n'%activate
+    print 'Activating virtual environment using: %s\n'%activate
     execfile (activate, dict(__file__=activate))
 
     os.environ['VIRTUAL_ENV'] = os.path.abspath(args.bqenv)
@@ -40,7 +40,11 @@ def main():
         print 'Installing pip and setuptools to fix virtualenv error under windows\n'
         import urllib
         urllib.urlretrieve ("http://raw.github.com/pypa/pip/master/contrib/get-pip.py", "get-pip.py")
-        subprocess.call (['python', 'get-pip.py'], shell=shell)        
+        subprocess.call (['python', 'get-pip.py'], shell=shell)
+        print 'Installing pywin32\n'
+        #subprocess.call (['pip', 'install', 'pywin'], shell=shell)
+        urllib.urlretrieve ("http://downloads.sourceforge.net/project/pywin32/pywin32/Build%20219/pywin32-219.win-amd64-py2.7.exe?r=&ts=1411061394&use_mirror=iweb", "pywin32-219.win-amd64-py2.7.exe")
+        subprocess.call (['easy_install', 'pywin32-219.win-amd64-py2.7.exe'], shell=shell) 
 
     # dima, maybe we don't need this given previous lines?
     for install in PIP_LIST:
@@ -78,6 +82,7 @@ def main():
     print "bq-admin setup [server|engine]"
 
     print "Please visit http://biodev.ece.ucsb.edu/projects/bisquik/wiki/InstallationInstructions and follow instructions there"
+
 
 
 
