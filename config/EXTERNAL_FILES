@@ -14,7 +14,7 @@
 # Bioformats 4.4.7
 #8EA77666DD889CE5AEBFB4230B946BA5B5E28AD8-bioformats-pack.zip
 # Bioformats 5.0.4
-7433ED537B3146BEE4178A6DB755B9702DA22CEE-bftools.5.0.4.zip=bioformats-pack.zip
+531B8D6180A38EAA7D76D583F74D1538127929F7-bftools.5.0.4.zip=bioformats-pack.zip
 
 # PLATFORM dependent files
 # These sections titles use shell like 'glob'ing to match
