@@ -122,6 +122,9 @@ BQ.ui.types = {
     'error':        { delay: 50000, title: 'Error',   cls: 'error' },
 };
 
+/*******************************************************************************
+    BQ.window.MessageBox
+*******************************************************************************/
 
 Ext.define('BQ.window.MessageBox', {
     extend: 'Ext.window.MessageBox',
@@ -166,4 +169,121 @@ Ext.define('BQ.window.MessageBox', {
      */
     BQ.MessageBox = new this();
 });
+
+/*******************************************************************************
+    BQ.window.Prompt - a generic prompt box that receives renderable items
+    and a function that creates a dictionary with requested values
+*******************************************************************************/
+
+Ext.define('BQ.window.Prompt', {
+    extend: 'Ext.window.Window',
+
+    requires: [
+        'Ext.toolbar.Toolbar',
+        'Ext.button.Button',
+        'Ext.layout.container.Anchor',
+        'Ext.layout.container.HBox',
+    ],
+
+    alias: 'widget.bq-prompt',
+    cls: 'bq-prompt',
+
+    fields: undefined,
+    func: undefined,
+    callback: undefined,
+
+    // hide it by offsets. Windows are hidden on render by default.
+    hidden: true,
+    modal: true,
+    hideMode: 'offsets',
+    closeAction: 'hide',
+    resizable: false,
+    title: '&#160;',
+
+    layout: {
+        type: 'vbox',
+        align: 'stretch'
+    },
+
+    initComponent: function() {
+        var me = this,
+            baseId = me.id;
+
+        me.items = this.fields;
+
+        // Create the buttons based upon passed bitwise config
+        me.bottomTb = Ext.create('Ext.toolbar.Toolbar', {
+            id: baseId + '-toolbar',
+            ui: 'footer',
+            dock: 'bottom',
+            layout: {
+                pack: 'center'
+            },
+            items: [{
+                handler: this.btnCallback,
+                itemId: 'ok',
+                scope: this,
+                text: 'OK',
+                minWidth: 75
+            }, {
+                handler: this.btnCallback,
+                itemId: 'cancel',
+                scope: this,
+                text: 'Cancel',
+                minWidth: 75
+            }]
+        });
+        me.dockedItems = [me.bottomTb];
+        me.on('close', me.onClose, me);
+        me.callParent();
+    },
+
+    btnCallback: function(btn) {
+        var me = this,
+            scope = this.scope || me,
+            value;
+
+        if (me.func) {
+            //value = me.func(me.topContainer.items);
+            value = me.func(me);
+        }
+
+        // Component.onHide blurs the active element if the Component contains the active element
+        me.hide();
+        this.callback.apply(scope, [btn.itemId, value]);
+    },
+
+    onClose: function(){
+        var btn = this.header.child('[type=close]');
+        // Give a temporary itemId so it can act like the cancel button
+        btn.itemId = 'cancel';
+        this.btnCallback(btn);
+        delete btn.itemId;
+    },
+
+    onPromptKey: function(textField, e) {
+        var me = this;
+
+        if (e.keyCode === e.RETURN || e.keyCode === 10) {
+            if (me.msgButtons.ok.isVisible()) {
+                me.msgButtons.ok.handler.call(me, me.msgButtons.ok);
+            } else if (me.msgButtons.yes.isVisible()) {
+                me.msgButtons.yes.handler.call(me, me.msgButtons.yes);
+            }
+        }
+    },
+
+    onShow: function() {
+        this.callParent(arguments);
+        this.center();
+    },
+
+    onEsc: function() {
+        if (this.closable !== false) {
+            this.callParent(arguments);
+        }
+    },
+
+});
+
 
