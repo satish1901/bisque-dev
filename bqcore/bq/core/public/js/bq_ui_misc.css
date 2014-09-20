@@ -28,8 +28,8 @@
 
 #messagepopup .msg p {
     margin: 0;
-    overflow: auto; 
-    font-size: 12px;       
+    overflow: auto;
+    font-size: 12px;
 }
 
 #messagepopup .msg img {
@@ -40,7 +40,7 @@
 
 #messagepopup .warning {
     width: 450px;
-    font-size: 18px;    
+    font-size: 18px;
     background: #FFFF99;
     color: #CC0000;
     border-color: #CC0000;
@@ -52,7 +52,7 @@
 
 #messagepopup .error {
     width: 450px;
-    font-size: 18px;    
+    font-size: 18px;
     background: #CC0000;
     color: #FFFFFF !important;
     border-color: #000000 !important;
@@ -64,7 +64,7 @@
 
 #messagepopup .notification {
     width: 450px;
-    font-size: 18px;    
+    font-size: 18px;
     background: #FFFF99;
     color: #006633;
     border-color: #006633;
@@ -91,4 +91,11 @@
     color: #000000;
     font-size: 2em;
 }
+
+
+.bq-prompt .x-window-body {
+    padding: 10px;
+}
+
+
 

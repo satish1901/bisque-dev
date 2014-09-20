@@ -68,6 +68,8 @@ function Viewstate (w, h, z, t, scale, rot, offx, offy,origw,origh) {
     this.original_width = origw || w;
     this.original_height = origh|| h;
 
+    this.gob_tolerance = { z: 1.0, t: 1.0 };
+
     this.imagedim = null;
     this.imagesrc = null;
 

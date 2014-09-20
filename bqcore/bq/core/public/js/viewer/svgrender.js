@@ -4,25 +4,27 @@ function test_visible_dim(pos, pos_view, tolerance ) {
     return !(pos!==undefined && pos!==null && !isNaN(pos) && Math.abs(pos-pos_view)>=tolerance);
 }
 
-function test_visible (pos, viewstate, polygon, tolerance ) {
+function test_visible (pos, viewstate, polygon, tolerance_z ) {
     var proj = viewstate.imagedim.project,
         proj_gob = viewstate.gob_projection;
-    tolerance = tolerance || viewstate.gob_tolerance || 1.0;
     polygon = polygon || false;
+
+    tolerance_z = tolerance_z || viewstate.gob_tolerance.z || 1.0;
+    tolerance_t = viewstate.gob_tolerance.t || 1.0;
 
     if (proj_gob==='all') {
         return true;
     } else if (proj === 'projectmaxz' || proj === 'projectminz' || proj_gob==='Z') {
-        return test_visible_dim(pos.t, viewstate.t, tolerance);
+        return test_visible_dim(pos.t, viewstate.t, tolerance_t);
     } else if (proj === 'projectmaxt' || proj === 'projectmint' || proj_gob==='T') {
-        return test_visible_dim(pos.z, viewstate.z, tolerance);
+        return test_visible_dim(pos.z, viewstate.z, tolerance_z);
     } else if (!proj || proj === 'none') {
         if (polygon) {
-            return (test_visible_dim(pos.z, viewstate.z, tolerance) ||
-                    test_visible_dim(pos.t, viewstate.t, tolerance));
+            return (test_visible_dim(pos.z, viewstate.z, tolerance_z) ||
+                    test_visible_dim(pos.t, viewstate.t, tolerance_t));
         } else {
-            return (test_visible_dim(pos.z, viewstate.z, tolerance) &&
-                    test_visible_dim(pos.t, viewstate.t, tolerance));
+            return (test_visible_dim(pos.z, viewstate.z, tolerance_z) &&
+                    test_visible_dim(pos.t, viewstate.t, tolerance_t));
         }
     }
     return true;

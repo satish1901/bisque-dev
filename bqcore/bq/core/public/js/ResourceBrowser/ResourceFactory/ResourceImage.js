@@ -619,25 +619,50 @@ Ext.define('Bisque.Resource.Image.Page', {
                 },
 
                 gob_tolerance : function(me) {
-                    Ext.MessageBox.show({
+                    var tolerance = this.viewerContainer.viewer.getGobTolerance();
+                    Ext.create('BQ.window.Prompt', {
                         title: 'Gobject visible plane tolerance',
-                        msg: 'Please enter new tolerance (in planes):',
-                        buttons: Ext.MessageBox.OKCANCEL,
-                        prompt: true,
-                        multiline: false,
-                        fn: function(btn, text) {
+                        minWidth: 300,
+                        minHeight: 200,
+                        scope: this,
+                        fields: [{
+                            xtype: 'tbtext',
+                            text: '<h3>Please enter new tolerance (in planes):</h3>',
+                        }, {
+                            xtype: 'numberfield',
+                            itemId: 'tolerance_z',
+                            name: 'tolerance_z',
+                            fieldLabel: 'Z',
+                            value: tolerance.z,
+                            maxValue: 1000000,
+                            minValue: 0,
+                            step: 0.5,
+                        }, {
+                            xtype: 'numberfield',
+                            itemId: 'tolerance_t',
+                            name: 'tolerance_t',
+                            fieldLabel: 'T',
+                            value: tolerance.t,
+                            maxValue: 1000000,
+                            minValue: 0,
+                            step: 0.5,
+                        }],
+                        func: function(fields) {
+                            var v = {z: 1.0, t: 1.0},
+                                num_z = fields.queryById('tolerance_z'),
+                                num_t = fields.queryById('tolerance_t');
+                            v.z = num_z.value;
+                            v.t = num_t.value;
+                            return v;
+                        },
+                        callback: function(btn, tolerance) {
                             if (btn !== 'ok') {
                                 return;
                             }
-                            var tolerance = parseFloat(text);
-                            if (tolerance===0 || text==='' || isNaN(tolerance)) {
-                                tolerance = undefined;
-                            }
                             this.viewerContainer.viewer.setGobTolerance(tolerance);
                         },
-                        scope: this,
-                        value: this.viewerContainer.viewer.getGobTolerance() || '1.0',
-                    });
+                    }).show();
+
                 },
 
                 delete_gobjects : function(gobs) {
