@@ -100,6 +100,8 @@
        if tg.config.get('bisque.js_environment', None) == 'production':
           link_kw = dict (fs_root = h.file_public(),
                           combined= '/js/b.js',
+                          filepath = h.file_root() + '/bqcore/bq/core/public/js/b.js',
+                          checkts = False,
                           minify= 'minify',
                           version=bq.release.__VERSION_HASH__)
       else:
@@ -236,10 +238,10 @@
     # -- WebGL viewer --
     '/js/volume/lib/whammy.js',
     '/js/volume/lib/polygon.js',
-    '/js/volume/threejs/three.min.js',	
+    '/js/volume/threejs/three.min.js',
     '/js/volume/threejs/AnaglyphEffect.js',
     '/js/volume/threejs/OrbitControls.js',
-    '/js/volume/threejs/TrackballControls.js',	
+    '/js/volume/threejs/TrackballControls.js',
     '/js/volume/threejs/TypedArrayUtils.js',
     #'/js/volume/volumeConfig.js'
     '/js/volume/volumeConfig.js',
@@ -249,22 +251,10 @@
     '/js/volume/gobjectbuffers.js',
     '/js/picker/Excolor.js',
     '/js/volume/transferEditorD3.js',
-    '/js/volume/scalebar.js',    
+    '/js/volume/scalebar.js',
     '/js/volume/bioWeb3D.js',
-    #**link_kw
+    **link_kw
     )}
-
-    <?python
-       # dima: fix paster error of not proxying the b.js file due to a wrong location
-       # this is a real hack, this is not needed if not running under paster
-       # i think the minified version should be created once in deploy command
-       # and should never be actually called from here
-       if tg.config.get('bisque.js_environment', None) == 'production':
-           import os, shutil
-           src = os.path.join(h.file_root(), 'public/js/b.js')
-           dst = os.path.join(h.file_root(), 'bqcore/bq/core/public/js/b.js')
-           shutil.copyfile(src, dst)
-    ?>
 
     <!-- Configuration variables   -->
     <script type="text/javascript" >
