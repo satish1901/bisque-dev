@@ -216,7 +216,7 @@ class deploy(object):
                 shutil.rmtree(self.public_dir, ignore_errors=True)
             except OSError, e:
                 pass
-            
+
         try:
             print "Creating %s" % self.public_dir
             os.makedirs (self.public_dir)
@@ -277,12 +277,13 @@ class deploy(object):
             relpath = os.path.relpath(l, currdir)
             #print "%s -> %s " % (relpath, dest)
             copy_symlink (relpath, dest)
-        
+
         # ensure b.js exists and will be picked up by the paster static file server
-        src = os.path.join(rootdir, 'bqcore/bq/core/public/js/bq_api.js')
+        #src = os.path.join(rootdir, 'bqcore/bq/core/public/js/bq_api.js')
         dst = os.path.join(rootdir, 'bqcore/bq/core/public/js/b.js')
-        copy_symlink (src, dst)
-        
+        with open(dst, 'a'):
+            pass
+
         # finish
         os.chdir (rootdir)
 
