@@ -93,10 +93,10 @@ Ext.define('BQ.data.writer.Files', {
     writeRecords: function(request, data) {
         var me = request.proxy.ownerPanel,
             url = me.getSelectedAsUrl(),
-            record = request.records[0],
-            skip = me.no_selects;
+            record = request.records[0];
         // selected url does not contain leaf link nodes, add if needed
-        if (record.data && record.data.type === 'link') {
+        //if (record.data && record.data.type === 'link') {
+        if (record.data && record.data.name) {
             url += '/' + encodeURIComponent(record.data.name);
         }
         request.url = url;
@@ -460,15 +460,15 @@ Ext.define('BQ.tree.files.Panel', {
     createFolder: function() {
         //Ext.Msg.prompt('Create folder', 'Please enter new folder\' name:', function(btn, text) {
         BQ.MessageBox.prompt('Create folder', 'Please enter new folder\' name:', function(btn, text) {
-            var me = this;
             if (btn !== 'ok') return;
-
-            var selection = me.getSelectionModel().getSelection();
-            var parent = undefined;
-            if (selection.length>0)
+            var me = this,
+                selection = me.getSelectionModel().getSelection(),
+                parent=null;
+            if (selection.length>0) {
                 parent = selection[0];
-            else
+            } else {
                 parent = me.getRootNode();
+            }
 
             var node = parent.appendChild({
                 name : text,
