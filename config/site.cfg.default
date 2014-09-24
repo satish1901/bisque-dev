@@ -97,8 +97,8 @@ bisque.paths.root  =
 # Blobservice
 # Store paths all uploaded objects (into a store resource)
 #bisque.blob_service.store_paths = true
-# Use subtransactions for storing paths (must  be false when  sqlite is used else true)
-bisque.blob_service.store_paths.subtransaction = false
+# Use subtransactions for storing paths (must  be true ..   sqlite must use false but will fail)
+bisque.blob_service.store_paths.subtransaction = true
 
 # Ordered list of stores .. path is created based on template
 # bisque.blob_service.stores = irods1,s3,local

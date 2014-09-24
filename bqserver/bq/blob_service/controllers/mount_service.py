@@ -92,9 +92,6 @@ log = logging.getLogger('bq.blobs.mounts')
 #  Define helper functions for NT vs Unix/Mac
 #
 
-
-
-
 @contextmanager
 def optional_cm(cm, *args, **kw):
     """Create a special contect manager to not duplicate code
@@ -168,6 +165,13 @@ class MountServer(TGController):
         super(MountServer, self).__init__()
         self.drivers = load_default_drivers()
         log.info ("Loaded drivers %s", self.drivers)
+        self.subtransactions = asbool(config.get ('bisque.blob_service.store_paths.subtransaction', True))
+        # Sanity check
+        if config.get('sqlalchemy.url').startwith ('sqlite://'):
+            self.subtransactions = False
+            log.warn ("SQLITE does not support subtransactions: some mount service operations will fail")
+
+
 
 
     #############################################################
@@ -840,7 +844,7 @@ class MountServer(TGController):
     def insert_mount_path(self, store, mount_path, resource, **kw):
         subtrans = None
         repeats = 2
-        if asbool(config.get ('bisque.blob_service.store_paths.subtransaction', True)):
+        if self.subtransactions:
             repeats = 8
             subtrans = DBSession.begin_nested
         for x in range(1, repeats+1):

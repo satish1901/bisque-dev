@@ -173,8 +173,12 @@ def as_user(user):
     """
     prev = get_current_user()
     set_current_user(user)
-    yield
-    set_current_user(prev)
+    try:
+        yield
+    except:
+        raise
+    finally:
+        set_current_user(prev)
 
 def add_credentials(headers):
     """add the current user credentials for outgoing http requests
