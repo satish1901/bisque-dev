@@ -167,7 +167,7 @@ class MountServer(TGController):
         log.info ("Loaded drivers %s", self.drivers)
         self.subtransactions = asbool(config.get ('bisque.blob_service.store_paths.subtransaction', True))
         # Sanity check
-        if config.get('sqlalchemy.url').startwith ('sqlite://'):
+        if config.get('sqlalchemy.url').startswith ('sqlite://'):
             self.subtransactions = False
             log.warn ("SQLITE does not support subtransactions: some mount service operations will fail")
 
