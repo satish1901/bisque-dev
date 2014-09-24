@@ -770,7 +770,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
         filename = 'image_slidebook.slice.tif'
         commands = [('slice', ',,1,1'), ('format', 'ome-tiff')]
         meta_required = {
-            'format': 'OME-BigTIFF',
+            #'format': 'OME-BigTIFF', # bioformats and ImarisConvert use different formats
             'image_num_x': '2048',
             'image_num_y': '2048',
             'image_num_c': '2',
@@ -790,7 +790,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
         filename = 'image_slidebook.format.ome.tif'
         commands = [('format', 'ome-tiff')]
         meta_required = {
-            'format': 'OME-BigTIFF',
+            #'format': 'OME-BigTIFF', # bioformats and ImarisConvert use different formats
             'image_num_x': '2048',
             'image_num_y': '2048',
             'image_num_c': '2',
