@@ -961,6 +961,52 @@ SVGRenderer.prototype.populate_overlay = function (mode) {
             circ.setAttributeNS(null, 'r', '1%' );
             gobs.appendChild(circ);
         }
+    } else if (mode === 'dots_medium') {
+        for (var x=9; x<=95; x+=9)
+        for (var y=15; y<=90; y+=8) {
+            var circ = document.createElementNS( svgns, 'circle');
+            circ.setAttributeNS(null, 'fill-opacity', 0.0);
+            circ.setAttributeNS(null, 'fill', 'black');
+            circ.setAttributeNS(null, 'stroke', 'black');
+            circ.setAttributeNS(null, 'stroke-width', 2);
+            circ.setAttributeNS(null, 'cx', ''+x+'%' );
+            circ.setAttributeNS(null, 'cy', ''+y+'%');
+            circ.setAttributeNS(null, 'r', '1%' );
+            gobs.appendChild(circ);
+
+            var circ = document.createElementNS( svgns, 'circle');
+            circ.setAttributeNS(null, 'fill-opacity', 0.0);
+            circ.setAttributeNS(null, 'fill', 'black');
+            circ.setAttributeNS(null, 'stroke', 'white');
+            circ.setAttributeNS(null, 'stroke-width', 1);
+            circ.setAttributeNS(null, 'cx', ''+x+'%' );
+            circ.setAttributeNS(null, 'cy', ''+y+'%');
+            circ.setAttributeNS(null, 'r', '1%' );
+            gobs.appendChild(circ);
+        }
+    } else if (mode === 'dots_narrow') {
+        for (var x=15; x<=90; x+=8)
+        for (var y=20; y<=85; y+=7) {
+            var circ = document.createElementNS( svgns, 'circle');
+            circ.setAttributeNS(null, 'fill-opacity', 0.0);
+            circ.setAttributeNS(null, 'fill', 'black');
+            circ.setAttributeNS(null, 'stroke', 'black');
+            circ.setAttributeNS(null, 'stroke-width', 2);
+            circ.setAttributeNS(null, 'cx', ''+x+'%' );
+            circ.setAttributeNS(null, 'cy', ''+y+'%');
+            circ.setAttributeNS(null, 'r', '1%' );
+            gobs.appendChild(circ);
+
+            var circ = document.createElementNS( svgns, 'circle');
+            circ.setAttributeNS(null, 'fill-opacity', 0.0);
+            circ.setAttributeNS(null, 'fill', 'black');
+            circ.setAttributeNS(null, 'stroke', 'white');
+            circ.setAttributeNS(null, 'stroke-width', 1);
+            circ.setAttributeNS(null, 'cx', ''+x+'%' );
+            circ.setAttributeNS(null, 'cy', ''+y+'%');
+            circ.setAttributeNS(null, 'r', '1%' );
+            gobs.appendChild(circ);
+        }
     } else if (mode === 'grid') {
         for (var y=12; y<=95; y+=9) {
             var circ = document.createElementNS( svgns, 'line');
