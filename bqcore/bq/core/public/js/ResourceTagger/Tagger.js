@@ -999,7 +999,8 @@ Ext.define('Bisque.GObjectTagger', {
             collapsible: true,
             border: 0,
             dock: 'top',
-            height: 250,
+            //height: 250,
+            flex: 1,
             listeners: {
                 scope: this,
                 'select': this.fireGobEvent,

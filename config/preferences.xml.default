@@ -127,8 +127,8 @@
                     <tag type="string" name="defaultValue" value="false"/>
                     <tag type="boolean" name="allowBlank" value="false"/>
                     <tag type="boolean" name="Editable" value="true"/>
-                    <tag type="string" name="select" value="None,Dots,Grid"/>
-                    <tag type="string" name="passedValues" value="false,dots,grid"/>
+                    <tag type="string" name="select" value="None,Dots,Dots (Medium),Dots (Narrow),Grid"/>
+                    <tag type="string" name="passedValues" value="false,dots,dots_medium,dots_narrow,grid"/>
                 </template>
             </tag>
 
