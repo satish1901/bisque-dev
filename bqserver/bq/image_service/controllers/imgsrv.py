@@ -482,12 +482,13 @@ class MetaService(object):
         ifile = self.server.getInFileName( data_token, image_id )
         infoname = self.server.getOutFileName( ifile, image_id, '.info' )
         metacache = self.server.getOutFileName( ifile, image_id, '.meta' )
+        ofnm = self.server.getOutFileName( ifile, image_id, '' )
 
         if not os.path.exists(metacache) or os.path.getsize(metacache)<16:
             meta = {}
             if os.path.exists(ifile):
                 for c in self.server.converters.itervalues():
-                    meta = c.meta(ifile, series=data_token.series, token=data_token)
+                    meta = c.meta(ifile, series=data_token.series, token=data_token, ofnm=ofnm)
                     if meta is not None and len(meta)>0:
                         break
 
@@ -2566,6 +2567,7 @@ class ImageServer(object):
                 return {}
 
             # If file info is not cached, get it and cache!
+            #ofnm = self.getOutFileName( ifile, image_id, '' )
             for n,c in self.converters.iteritems():
                 info = c.info(filename, series=(sub or 0), token=data_token)
                 if info is not None and len(info)>0:

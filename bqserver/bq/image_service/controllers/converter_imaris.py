@@ -56,7 +56,7 @@ class ConverterImaris(ConverterBase):
     installed = False
     version = None
     installed_formats = None
-    CONVERTERCOMMAND = 'ImarisConvert' if os.name != 'nt' else 'ImarisConvert.exe'
+    CONVERTERCOMMAND = 'ImarisConvert' if os.name != 'nt' else 'ImarisConvert/ImarisConvert.exe'
 
     format_map = {
         'ome-bigtiff' : 'OmeTiff',
@@ -153,30 +153,29 @@ class ConverterImaris(ConverterBase):
     def meta(self, ifnm, series=0, **kw):
         if not self.installed:
             return {}
-        series = int(series)
-        
+        series = int(series)        
         log.debug('Meta for: %s', ifnm )
-        fd,logfile = tempfile.mkstemp(suffix='.log')
-        command = [self.CONVERTERCOMMAND, '-i', ifnm, '-m', '-l', logfile] #, '-ii', '%s'%series]
+        
+        if os.name == 'nt':
+            nulldevice = 'NUL'
+        elif os.name == 'posix':
+            nulldevice = '/dev/null'
+        
+        command = [self.CONVERTERCOMMAND, '-i', ifnm, '-m', '-l', nulldevice, '-ii', '%s'%series]    
         command.extend( self.extention(**kw) ) # extend if timeout or meta are present
         meta = self.run_read(ifnm, command)
-        os.close(fd)
-        os.remove(logfile)
+        
         if meta is None:
             return {}
-
 
         # fix a bug in Imaris Convert exporting XML with invalid chars
         # by removing the <ImplParameters> tag
         # params is formatted in INI format
-        params = []
+        params = ''    
         try:
-            while True:
-                p = misc.between(BLOCK_START, BLOCK_END, meta)
-                meta = meta.replace('%s%s%s'%(BLOCK_START, p, BLOCK_END), '', 1)
-                if p is None or p=='':
-                    break
-                params.append(p)
+            p = misc.between(BLOCK_START, BLOCK_END, meta)
+            meta = meta.replace('%s%s%s'%(BLOCK_START, p, BLOCK_END), '', 1)
+            params = p
         except UnboundLocalError:
             return {}
 
@@ -206,10 +205,6 @@ class ConverterImaris(ConverterBase):
         else: # v8
             rd['image_num_series'] = misc.safeint(misc.xpathtextnode(mee, '/MetaData/NumberOfImages'), 1)
             imagenodepath = '/MetaData/Image[@mIndex="%s"]'%series
-
-        if len(params)<int(rd['image_num_series']):
-            log.debug('Number of parameters (%s) is less than the requested series (%s), aborting', len(params), rd['image_num_series'])
-            return {}
 
         rd['image_series_index'] = series
         rd['date_time'] = misc.xpathtextnode(mee, '%s/ImplTimeInfo'%imagenodepath).split(';', 1)[0]
@@ -264,8 +259,8 @@ class ConverterImaris(ConverterBase):
         # Parse params INI
         ########################################
         #params = misc.xpathtextnode(mee, '%s/ImplParameters'%imagenodepath)
-
-        sp = StringIO.StringIO(params[series])
+        # use index 0 since we fetch meta data with imageindex argument
+        sp = StringIO.StringIO(params)
         config = ConfigParser.ConfigParser()
         config.readfp(sp)
         sp.close()
@@ -322,7 +317,7 @@ class ConverterImaris(ConverterBase):
     #######################################
     
     @classmethod
-    def extention(cls, **kw):
+    def extention(cls, ofnm=None, **kw):
         c = []
         try:
             token = kw['token']
@@ -342,23 +337,23 @@ class ConverterImaris(ConverterBase):
 
         if meta is None:
             return c
-        
         try:
-            n = int(meta['image_num_z'])
-            c.extend (['-gz', '%s'%n])
-        except (TypeError, KeyError, ValueError):
-            pass    
-        try:
-            n = int(meta['image_num_t'])
-            c.extend (['-gt', '%s'%n])
-        except (TypeError, KeyError, ValueError):
+            if ofnm is not None:            
+                tempSeriesFileName = '%s.serieslayout'%ofnm
+            else:
+                fd,tempSeriesFileName = tempfile.mkstemp(suffix='.serieslayout')
+                os.close(fd)
+            
+            seriesLayoutXml = meta['SeriesLayout'] 
+            with open(tempSeriesFileName, 'wb') as f:
+                f.write(seriesLayoutXml)
+            
+            # felix: should we delete this file afterwards or since it is a temp file the OS takes care of it?
+            c.extend(['-il', '%s'%tempSeriesFileName])
+        except (TypeError, KeyError, ValueError, OSError):
+            log.debug("Could not extend command with series layout")
             pass
-        try:
-            n = int(meta['image_num_c'])
-            c.extend (['-gc', '%s'%n])
-        except (TypeError, KeyError, ValueError):
-            pass
-        
+            
         return c
 
     @classmethod
@@ -383,7 +378,7 @@ class ConverterImaris(ConverterBase):
         '''converts input filename into output in OME-TIFF format'''
         log.debug('convertToOmeTiff: [%s] -> [%s] for series %s with [%s]', ifnm, ofnm, series, extra)
         command = ['-i', ifnm, '-o', ofnm, '-of', 'OmeTiff', '-ii', '%s'%series]
-        command.extend( cls.extention(**kw) ) # extend if timeout or meta are present
+        command.extend( cls.extention(ofnm=ofnm, **kw) ) # extend if timeout or meta are present
         return cls.run(ifnm, ofnm, command, **kw )
 
     @classmethod
@@ -394,10 +389,8 @@ class ConverterImaris(ConverterBase):
         if fmt in cls.format_map:
             fmt = cls.format_map[fmt]
         command = ['-i', ifnm, '-t', ofnm, '-tf', fmt, '-ii', '%s'%series]
-        command.extend (['-tl', '%s'%min(width, height)])
-        #command.extend (['-ts', '%s,%s'%(width, height)])
-        #command.extend (['-tb', '#FFFFFF']) # dima: thumbnails are all padded, ask for white right now, before the fix is final
-        
+        command.extend (['-tl', '%s'%width]) # bitplane
+
         preproc = kw.get('preproc', '')
         if preproc == 'mid':
             command.extend('-tm', 'MiddleSlice')
@@ -406,7 +399,8 @@ class ConverterImaris(ConverterBase):
         elif preproc == 'nip':
             command.extend('-tm', 'MinIntensity')
                     
-        command.extend( cls.extention(**kw) ) # extend if timeout or meta are present
+                    
+        command.extend( cls.extention(ofnm=ofnm, **kw) ) # extend if timeout or meta are present
         
         return cls.run(ifnm, ofnm, command)
 
@@ -423,7 +417,7 @@ class ConverterImaris(ConverterBase):
         if z1>z2 and z2==0 and t1>t2 and t2==0 and x1==0 and x2==0 and y1==0 and y2==0:
             # converting one slice z or t, does not support ome-tiff, tiff or jpeg produces an RGBA image
             command = ['-i', ifnm, '-o', ofnm, '-of', 'OmeTiff', '-ii', str(series), '-ic', '0,0,0,0,%s,%s,0,0,%s,%s'%(z1-1,z1,t1-1,t1)]
-            command.extend( cls.extention(**kw) ) # extend if timeout or meta are present
+            command.extend( cls.extention(ofnm=ofnm, **kw) ) # extend if timeout or meta are present
             r = cls.run(ifnm, ofnm, command)
             if r is None:
                 return None
