@@ -553,6 +553,25 @@ phongTool.prototype.initControls = function(){
         me.sliders['size'].setValue(0);
         me.sliders['intensity'].setValue(0);
     });
+
+    var check = {
+		boxLabel : 'sobel gradients',
+		checked : false,
+		width : 200,
+		cls : 'toolItem',
+		xtype : 'checkbox',
+		handler : function (item, checked) {
+            if(checked){
+                me.volume.shaderConfig.gradientType = 'sobel';
+            }
+            else
+                me.volume.shaderConfig.gradientType = 'std';
+            me.volume.sceneVolume.setConfigurable("default",
+                                                    "fragment",
+                                                    me.volume.shaderConfig);
+		},
+	};
+    this.controls.add(check);
 };
 
 phongTool.prototype.toggle = function(button){
@@ -622,6 +641,9 @@ deepTool.prototype.initControls = function(){
             scope : me
         },
     });
+
+
+
     this.controls.add(sampleField);
     this.controls.on('afterlayout', function () {
     });

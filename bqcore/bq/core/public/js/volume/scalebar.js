@@ -178,3 +178,52 @@ VolScaleBarTool.prototype.updatePosition = function () {
 
     this.scalebar.setValue( d*imgphys.pixel_size[0] );
 };
+
+/*******************************************************************************
+Temp home for the axis tool
+*******************************************************************************/
+
+function VolAxisTool (volume){
+    this.base = renderingTool;
+    this.base (volume, null);
+}
+
+VolAxisTool.prototype = new renderingTool();
+
+VolAxisTool.prototype.addButton = function () {
+    //blank since we don't actually add anything
+};
+
+VolAxisTool.prototype.initControls = function () {
+    var me = this;
+    var thisDom = this.volume.getEl().dom;
+
+    this.Panel = Ext.create('Ext.container.Container', {
+		collapsible : false,
+		header : false,
+		renderTo : thisDom,
+        layout : 'fit',
+		cls : 'vol-axis',
+        items: [{xtype: 'axis_panel',
+                 itemId: 'axis_panel'}],
+        listeners : {
+            afterlayout: function(){
+                var canvas = this.queryById('axis_panel');
+                canvas.followingCam = me.volume.canvas3D.camera;
+                canvas.doAnimate();
+                me.parentdiv = this.getEl().dom;
+                me.volume.addFade(this);
+            }
+        }
+	});
+
+    this.volume.on('loaded', function () {
+        me.volume.canvas3D.on({
+            scope: me,
+            //render: me.updatePosition
+        });
+        //me.updateImage();
+
+
+    });
+};

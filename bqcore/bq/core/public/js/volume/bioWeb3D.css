@@ -93,6 +93,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 }
 
 
+
 /*******************************************************************************
  control buttons
 *******************************************************************************/
@@ -670,6 +671,22 @@ scale bar
 
 .vol-scalebar .x-panel-body {
     border-width: 0px;
+}
+
+
+/*******************************************************************************
+3D axis component
+*******************************************************************************/
+
+
+.vol-axis  {
+    position: absolute;
+    z-index: 30;
+    width: 100px !important;
+    height: 100px !important;
+    background-color: transparent;
+    left: 6px !important;
+    bottom: 52px !important;
 }
 
 /*******************************************************************************
