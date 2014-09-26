@@ -164,7 +164,7 @@ class database(object):
 class setup(object):
     desc = 'Setup or update a bisque server'
     def __init__(self, version):
-        from bq.setup.bisque_setup import usage, install_options
+        from bq.setup.bisque_setup import usage, all_options
         parser = optparse.OptionParser(
                     usage=usage,
                     version="%prog " + version)
@@ -173,7 +173,7 @@ class setup(object):
         parser.add_option("-w", "--write", action="store", help="Write answers from given file" )
         options, args = parser.parse_args()
         for arg in args:
-            if arg not in install_options + ['bisque', 'engine']:
+            if arg not in all_options + ['bisque', 'engine']:
                 parser.error('argument must be install option')
 
         self.args = args

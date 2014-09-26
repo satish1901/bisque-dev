@@ -180,26 +180,10 @@ def uwsgi_command(command, cfgopt, processes, options, default_cfg_file = None):
                 os.remove (pidfile)
     elif command is 'start':
         final_cfg = find_site_cfg(default_cfg_file)
-        #cfg_file = find_site_cfg(default_cfg_file)
-        # final_cfg = os.path.join(os.path.dirname(cfg_file), default_cfg_file.replace('.default', ''))
-        # from string import Template
-        # t = Template(open(cfg_file, 'r').read())
-        # f = open(final_cfg, 'w')
-        # f.write(t.safe_substitute(cfgopt))
-        # f.close()
-
         uwsgi_opts = cfgopt['uwsgi']
         uwsgi_cmd = ['uwsgi', '--ini-paste', final_cfg,
                      '--daemonize', cfgopt['logfile'],
                      '--pidfile', cfgopt['pidfile']]
-
-        #if 'socket' in uwsgi_opts:
-        #     uwsgi_opts['socket'] = uwsgi_opts['socket'].replace('unix://','').strip()
-        #[ uwsgi_cmd.extend ( ["--%s" %k, str(v)] )  for k,v in uwsgi_opts.items() ]
-
-        #if cfgopt['http_serv'] == 'true':
-        #    uwsgi_cmd.extend(['--http', cfgopt['url']])
-        #processes.append(Popen(uwsgi_cmd,shell=True,stdout=sys.stdout))
         verbose('Executing: ' + ' '.join(uwsgi_cmd))
         if not options.dryrun:
             if call(uwsgi_cmd) != 0:
@@ -308,21 +292,21 @@ def operation(command, options, *args):
                     processes = uwsgi_command('stop', cfgopt, processes, options)
                 else:
                     processes = paster_command('stop', options, cfgopt, processes, args)
-                
+
                 error = None
                 for proc in processes:
                     try:
                         proc.wait()
                     except:
                         error = True
-                        
+
                 if error is not None and backend != 'uwsgi':
                     print 'Paste windows error while stopping process, re-running'
                     processes = paster_command('stop', options, cfgopt, processes, args)
                     for proc in processes:
                         proc.wait()
                     print 'Recovered after error and successfully stopped daemon'
-                    
+
                 processes = []
 
             if command in ('start', 'restart'):
