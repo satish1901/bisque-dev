@@ -416,7 +416,7 @@ VolumeShader.prototype.config = function(config){
                 '  return im[0] + im[1] + im[2];',
                 '}',
                 ' ',
-                'vec4 getNormal(sampler2D tex, vec4 texCoord){',
+                'vec4 getNormal(sampler2D tex, vec4 texCoord, vec4 lightDir){',
                 '  float nx      = float(ATLAS_X);',
                 '  float ny      = float(ATLAS_Y);',
                 '  float iz = 1.0/float(SLICES);',
@@ -520,11 +520,12 @@ VolumeShader.prototype.config = function(config){
                 '//',
                 '//////////////////////////////////////////////////////////',
             ].join('\n');
-        else return [
+
+        else if(type === 'std') return [
             '//////////////////////////////////////////////////////////',
             '//Calculate Normal at a point',
 
-            'vec4 getNormal(sampler2D tex, vec4 texCoord){',
+            'vec4 getNormal(sampler2D tex, vec4 texCoord, vec4 lightDir){',
             '  float nx      = float(ATLAS_X);',
             '  float ny      = float(ATLAS_Y);',
             '  float iz = 1.0/float(SLICES);',
@@ -567,6 +568,43 @@ VolumeShader.prototype.config = function(config){
             '  //return grad;',
             '}',
             '//',
+            '//////////////////////////////////////////////////////////',
+        ].join('\n');
+
+        else if(type === 'directional') return [
+            '//////////////////////////////////////////////////////////',
+            '//Calculate Normal at a point',
+
+            'float  getDirNormal(sampler2D tex, vec4 texCoord, vec4 lightDir){',
+            '  float nx      = float(ATLAS_X);',
+            '  float ny      = float(ATLAS_Y);',
+            '  float iz = 1.0/float(SLICES);',
+            '  float ix      = 1.0/float(TEX_RES_X);',
+            '  float iy      = 1.0/float(TEX_RES_Y);',
+
+            '  vec4 pos = texCoord;',
+            '  //s[0] = 1.0 - pos[0];',
+            '  float C = 2.0;',
+            '  float px = float(pos[0] >= (C*ix - 1.0));',
+            '  float py = float(pos[1] >= (C*iy - 1.0));',
+            '  float pz = float(pos[2] >= (C*iz - 1.0));',
+            '  float mx = float(pos[0] <= (1.0 - C*ix));',
+            '  float my = float(pos[1] <= (1.0 - C*iy));',
+            '  float mz = float(pos[2] <= (1.0 - C*iz));',
+            '  vec4 off = vec4(ix*lightDir.x, iy*lightDir.y, iz*lightDir.z, 1.0);',
+            '  vec4 v0 = sampleStack(tex, texCoord + 2.0*off);',
+            '  vec4 v1 = sampleStack(tex, texCoord + 1.0*off);',
+            '  vec4 v2 = sampleStack(tex, texCoord - 1.0*off);',
+            '  vec4 v3 = sampleStack(tex, texCoord - 2.0*off);',
+            '  float l0 = v0[3];',
+            '  float l1 = v1[3];',
+            '  float l2 = v2[3];',
+            '  float l3 = v3[3];',
+
+            '  float dr = (-l0 + 8.0*l1 - 8.0*l2 + l3)/12.0;',
+            //'  float dr = (-l0 + l3)/2.0;',
+            '  return dr;',
+            '}',
             '//////////////////////////////////////////////////////////',
         ].join('\n');
     }
@@ -642,7 +680,7 @@ VolumeShader.prototype.config = function(config){
             '  float tnear, tfar;',
 
             '  bool hit = intersectBox(eye_o, eye_d, boxMin, boxMax, tnear,  tfar);',
-
+            '  tnear = clamp(tnear, 0.0, tnear);',
             '  float eyeDist  = length(eye_o.xyz);',
             '  float rayMag   = length(eye_d);',
 
@@ -714,54 +752,90 @@ VolumeShader.prototype.config = function(config){
             '//->',
         ].join('\n');
 
-        var N =[
-            ' ',
-            '//->compute normal',
-            '    vec4 N = getNormal(textureAtlas,pos);',
-            //'return vec4(N.xyz, col[3]);',
-            '//->',
 
-        ].join('\n');
+        var phongFrag = [];
+        if(config.gradientType != 'directional'){
+            var N =[
+                ' ',
+                '//->compute normal',
+                '    vec4 N = getNormal(textureAtlas, pos, lightPos);',
+                //'return vec4(N.xyz, col[3]);',
+                '//->',
 
-        var highlight = [
-            ' ',
-            '//->add highlights',
-            '    col.xyz *= (1.0 -  N[3]);',
-            '//->'
-        ].join('\n');
+            ].join('\n');
 
-        var phongFrag = [
-            ' ',
-            '//->phong shading computations',
-            '//',
-            '    float lum = N[3];',
+            var highlight = [
+                ' ',
+                '//->add highlights',
+                '    col.xyz *= (1.0 -  N[3]);',
+                '//->'
+            ].join('\n');
 
-            '    float dist = length(dl);',
-            '    dl = normalize(dl);',
-            '    vec4 V = -normalize(eye_d);',
-            '    vec4 H = dl + V;',
-            '    H = normalize(H);',
+            phongFrag = [
+                ' ',
+                '//->phong shading computations',
+                '//',
+                '    float lum = N[3];',
 
-            '    float lightVal = dot(dl.xyz, N.xyz);',
-            '    float spec = pow(abs(dot( N.xyz, H.xyz )),SPEC_SIZE);',
-            '    spec = clamp(spec, 0.0, spec);',
-            '    // += vec4(vec3(spec),0.0);',
+                '    float dist = length(dl);',
+                '    dl = normalize(dl);',
+                '    vec4 V = -normalize(eye_d);',
+                '    vec4 H = dl + V;',
+                '    H = normalize(H);',
 
-            '    float kn = pow(abs(0.0*N[3]),NORMAL_INTENSITY);',
-            '    float ka = KA;',
-            '    float kd = KD;',
-            '    float ks = 20.0*SPEC_INTENSITY;',
-            '    kn = clamp(kn,0.0,1.0);',
-            '    //float kn = 1.0;',
-            '    col *= (ka + kd*vec4(vec3(lightVal),kn));',
-            '    col += col[3]*ks*N[3]*vec4(spec);',
-            '    col = clamp(col, 0.0, 1.0);',
-            '    //col += H;',
-            '    //col = N;',
-            '//',
-            '//->end phong',
-        ].join('\n');
+                '    float lightVal = dot(dl.xyz, N.xyz);',
+                '    float spec = pow(abs(dot( N.xyz, H.xyz )),SPEC_SIZE);',
+                '    spec = clamp(spec, 0.0, spec);',
+                '    // += vec4(vec3(spec),0.0);',
 
+                '    float kn = pow(abs(0.0*N[3]),NORMAL_INTENSITY);',
+                '    float ka = KA;',
+                '    float kd = KD;',
+                '    float ks = 20.0*SPEC_INTENSITY;',
+                '    kn = clamp(kn,0.0,1.0);',
+                '    //float kn = 1.0;',
+                '    col *= (ka + kd*vec4(vec3(lightVal),kn));',
+                '    col += col[3]*ks*N[3]*vec4(spec);',
+                '    col = clamp(col, 0.0, 1.0);',
+                '    //col += H;',
+                '    //col = 10.0*N;',
+                '//',
+                '//->end phong',
+            ].join('\n');
+
+        }
+        else {
+            phongFrag = [
+
+                ' ',
+                '//->phong shading computations',
+                '//',
+
+                '    float dist = length(dl);',
+                '    dl = normalize(dl);',
+                '    vec4 V = -normalize(eye_d);',
+                '    vec4 H = dl + V;',
+                '    H = normalize(H);',
+                '    float lightVal = getDirNormal(textureAtlas, pos, dl);',
+                '    float dNH = abs(getDirNormal(textureAtlas, pos, H));',
+                '    float spec = pow(10.0*dNH,SPEC_SIZE);',
+                '    spec = clamp(spec, 0.0, spec);',
+
+                '    float kn = pow(abs(lightVal),NORMAL_INTENSITY);',
+                '    float ka = KA;',
+                '    float kd = KD;',
+                '    float ks = 20.0*SPEC_INTENSITY;',
+                '    kn = clamp(kn,0.0,1.0);',
+                '    //float kn = 1.0;',
+                '    col *= (ka + 10.0*kd*vec4(vec3(lightVal),kn));',
+                '    col += col[3]*ks*lightVal*vec4(spec);',
+                '    col = clamp(col, 0.0, 1.0);',
+                '    //col += H;',
+                '    //col = vec4(spec);',
+                '//',
+                '//->end phong',
+            ].join('\n');
+        }
         var deepFrag = [
             ' ',
             '//begin deep shading secondary integration',
@@ -817,7 +891,8 @@ VolumeShader.prototype.config = function(config){
             '//Finish up by adding brightness/density',
             //'col = N;',
             '    col.xyz *= BRIGHTNESS;',
-            '    float s = 1.0*float(##MAXSTEPS##)/ float(BREAK_STEPS);',
+            //'    float s = 1.0*float(##MAXSTEPS##)/ float(BREAK_STEPS);',
+            '    float s = 1.0*float(1024)/ float(BREAK_STEPS);',
             '    col.w *= DENSITY;',
             '    col.w = clamp(col.w, 0.0,1.0);',
             '    float stepScale = (1.0 - powf((1.0-col.w),s));',
@@ -839,10 +914,16 @@ VolumeShader.prototype.config = function(config){
             '  return C;',
             '}',
         ].join('\n');
+        var gradType = config.gradientType;
+
         var output = [intersectBox, integrateInit, integrateLoopBegin, sampleAt];
         if(config.lighting.phong || config.lighting.deep) output.push(dl);
-        if(config.lighting.phong || config.highlight) output.push(N);
-        if(config.highlight) output.push(highlight);
+
+        if(gradType != 'directional'){
+            if(config.lighting.phong || config.highlight) output.push(N);
+            if(config.highlight) output.push(highlight);
+        }
+
         if(config.lighting.phong) output.push(phongFrag);
         if(config.lighting.deep) output.push(deepFrag);
         output.push(integrateLoopEnd);
@@ -907,7 +988,7 @@ VolumeShader.prototype.config = function(config){
     output.push(unpack);
     output.push(rand);
     output.push(sampleStack(config.transfer, config.usePow));
-    var gradType = config.gradientType ? config.gradientType : 'central';
+    var gradType = config.gradientType ? config.gradientType : 'std';
     if(config.highlight || config.lighting.phong) output.push(getNormal(gradType));
     output.push(integrate(config));
     output.push(main);

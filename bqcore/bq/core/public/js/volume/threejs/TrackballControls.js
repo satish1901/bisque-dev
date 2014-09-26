@@ -138,7 +138,7 @@ THREE.TrackballControls = function ( object, domElement ) {
 				0.0
 			);
 
-			var length = mouseOnBall.length();
+			var length = 0.5*mouseOnBall.length();
 
 			if ( _this.noRoll ) {
 
@@ -202,15 +202,16 @@ THREE.TrackballControls = function ( object, domElement ) {
             var up = _this.object.up;
             //axis.crossVectors( _rotateStart, _rotateEnd ).normalize()
             //var up = axis;
-            if(Math.abs(up.x) > Math.abs(up.y) && Math.abs(up.x) > Math.abs(up.z) ){
+
+            if(Math.abs(up.x) > 0.5 ){
                 _globalUp.set(1,0,0);
                 if(up.x < 0.0) _globalUp.x *= -1.0;
             }
-            if(Math.abs(up.y) > Math.abs(up.x) && Math.abs(up.y) > Math.abs(up.z) ){
+            if(Math.abs(up.y) >  0.5){
                 _globalUp.set(0,1,0);
                 if(up.y < 0.0) _globalUp.y *= -1.0;
             }
-            if(Math.abs(up.z) > Math.abs(up.x) && Math.abs(up.z) > Math.abs(up.y) ){
+            if(Math.abs(up.z) >  0.5){
                 _globalUp.set(0,0,1);
                 if(up.z < 0.0) _globalUp.z *= -1.0;
             }
@@ -265,7 +266,7 @@ THREE.TrackballControls = function ( object, domElement ) {
                 T.crossVectors(N, gUp).normalize();
                 B.crossVectors(T, N).normalize();
 
-                var angleC = 0.05*Math.acos( B.dot( up ) / B.length() / up.length() );
+                var angleC = 0.1*Math.acos( B.dot( up ) / B.length() / up.length() );
 
                 axisC.crossVectors(up,B).normalize();
                 angleC *= _this.rotateSpeed;
@@ -284,7 +285,7 @@ THREE.TrackballControls = function ( object, domElement ) {
 				} else {
                     //_rotateStart.copy( _rotateEnd );
                     if(angleC){
-                       quaternion.setFromAxisAngle( axisC, -angleC * (_this.dynamicDampingFactor - 1.0 ) );
+                       quaternion.setFromAxisAngle( axisC, -angleC * (0.5*_this.dynamicDampingFactor - 1.0 ) );
 					   _rotateStart.applyQuaternion( quaternion );
                     }
 
@@ -482,6 +483,7 @@ THREE.TrackballControls = function ( object, domElement ) {
 
 		window.removeEventListener( 'keydown', keydown );
 
+
 		_prevState = _state;
 
 		if ( _state !== STATE.NONE ) {
@@ -522,6 +524,23 @@ THREE.TrackballControls = function ( object, domElement ) {
 
 		event.preventDefault();
 		event.stopPropagation();
+
+        var up = _this.object.up;
+        //axis.crossVectors( _rotateStart, _rotateEnd ).normalize()
+        //var up = axis;
+        if(Math.abs(up.x) > Math.abs(up.y) && Math.abs(up.x) > Math.abs(up.z) ){
+            _globalUp.set(1,0,0);
+            if(up.x < 0.0) _globalUp.x *= -1.0;
+        }
+        if(Math.abs(up.y) > Math.abs(up.x) && Math.abs(up.y) > Math.abs(up.z) ){
+            _globalUp.set(0,1,0);
+            if(up.y < 0.0) _globalUp.y *= -1.0;
+        }
+        if(Math.abs(up.z) > Math.abs(up.x) && Math.abs(up.z) > Math.abs(up.y) ){
+            _globalUp.set(0,0,1);
+            if(up.z < 0.0) _globalUp.z *= -1.0;
+        }
+
 
 		if ( _state === STATE.NONE ) {
 

@@ -392,13 +392,12 @@ Ext.define('BQ.viewer.Volume.Panel', {
             }
 				//onAnimate : callback(this, this.onAnimate),
 				//onAnimateOverride : callback(this, this.onAnimateOverride),
-			});
+		});
 		this.canvas3D.animate_funcs[1] = callback(this, this.onAnimate);
-		//var panel3D = this.panel3D;
-		this.sceneVolume = new BQ.viewer.Volume.volumeScene({
+
+        this.sceneVolume = new BQ.viewer.Volume.volumeScene({
 				canvas3D : this.canvas3D
-			});
-		//debugger;
+		});
 
 		//-------------------------------------
 		//Platform and browser version checking
@@ -427,6 +426,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
             pow: true,
             highlight: false,
             //gradientType: 'sobel',
+            //gradientType: 'directional',
             gradientType: 'std',
             maxSteps: this.maxSteps,
             usePow: usePow,
@@ -462,50 +462,49 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
 		var me = this;
 
-		this.items = [this.canvas3D, {
-				xtype : 'component',
-				itemId : 'button-fullscreen-vol',
-				autoEl : {
-					tag : 'span',
-					cls : 'control fullscreen',
-				},
-				listeners : {
-					scope : this,
-					click : {
-						element : 'el', //bind to the underlying el property on the panel
-						fn : this.onFullScreenClick,
-					},
-				},
-		}, {
-				xtype : 'component',
-				itemId : 'button-menu',
-				autoEl : {
-					tag : 'span',
-					cls : 'control viewoptions',
-				},
-				listeners : {
-					scope : this,
-					click : {
-						element : 'el', //bind to the underlying el property on the panel
-						fn : this.onMenuClick,
-					},
-				},
-			}, {
-				xtype : 'component',
-				itemId : 'tool-menu',
-				autoEl : {
-					tag : 'span',
-					cls : 'control tooloptions',
-				},
-				listeners : {
-					scope : this,
-					click : {
-						element : 'el', //bind to the underlying el property on the panel
-						fn : this.onToolMenuClick,
-					},
+		this.items = [this.canvas3D,{
+			xtype : 'component',
+			itemId : 'button-fullscreen-vol',
+			autoEl : {
+				tag : 'span',
+				cls : 'control fullscreen',
+			},
+			listeners : {
+				scope : this,
+				click : {
+					element : 'el', //bind to the underlying el property on the panel
+					fn : this.onFullScreenClick,
 				},
 			},
-		];
+		}, {
+			xtype : 'component',
+			itemId : 'button-menu',
+			autoEl : {
+				tag : 'span',
+				cls : 'control viewoptions',
+			},
+			listeners : {
+				scope : this,
+				click : {
+					element : 'el', //bind to the underlying el property on the panel
+					fn : this.onMenuClick,
+				},
+			},
+		}, {
+			xtype : 'component',
+			itemId : 'tool-menu',
+			autoEl : {
+				tag : 'span',
+				cls : 'control tooloptions',
+			},
+			listeners : {
+				scope : this,
+				click : {
+					element : 'el', //bind to the underlying el property on the panel
+					fn : this.onToolMenuClick,
+				},
+			},
+		}];
 
 		this.on({
             afterlayout: function () {
@@ -1152,6 +1151,10 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		//this.sourceWEBM.setAttribute('src', this.constructMovieUrl('webm'));
 	},
 
+    update_image : function (){
+        this.fetchHistogram();
+    },
+
 	needs_update : function () {
 		this.requires_update = undefined;
 
@@ -1299,7 +1302,8 @@ Ext.define('BQ.viewer.Volume.Panel', {
             this.tools.push(new transferTool(this),
                             new gObjectTool(this),
                             new clipTool(this),
-                            new VolScaleBarTool(this));
+                            new VolScaleBarTool(this),
+                            new VolAxisTool(this));
 
             this.tools.forEach(function(e,i,a){
                 e.init();
@@ -1374,7 +1378,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		}, false);
 
 		this.zoomSlider.setValue(50);
-		this.canvas3D.controls.noRotate = false;
+		this.canvas3D.controls.noRoate = false;
 		this.canvas3D.controls.noPan = false;
 		this.addFade(this.zoomSlider);
 	},
@@ -1718,7 +1722,12 @@ VolumePlugin.prototype.addCommand = function (command, pars) {};
 
 VolumePlugin.prototype.changed = function () {
 	if (!this.update_check || (this.update_check && this.update_check.checked))
-		this.volume.needs_update();
+	{
+	    this.volume.needs_update();
+	    this.volume.update_image();
+
+    }
+
 };
 
 function VolumeSize(player) {

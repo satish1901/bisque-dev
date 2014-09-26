@@ -154,6 +154,7 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
 
     afterFirstLayout : function() {
         var me = this;
+
         var thisDom = this.getEl().dom;
 
         this.renderer = new THREE.WebGLRenderer({
@@ -181,8 +182,8 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
             DOMMouseScrool: this.onMouseWheel,
         });
 
-        this.anaglyph = new THREE.AnaglyphEffect( this.renderer );
-		this.anaglyph.setSize( this.getWidth(), this.getHeight() );
+        //this.anaglyph = new THREE.AnaglyphEffect( this.renderer );
+		//this.anaglyph.setSize( this.getWidth(), this.getHeight() );
 
         this.fireEvent('loaded', this);
         this.callParent();
@@ -279,3 +280,53 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
 });
 
 
+Ext.define('BQ.viewer.Volume.Axis', {
+    //extend: 'Ext.container.Container',
+    extend : 'BQ.viewer.Volume.ThreejsPanel',
+    alias : 'widget.axis_panel',
+    border : 0,
+    frame : false,
+
+    initComponent : function() {
+        this.callParent();
+    },
+
+    initScene : function(uniforms) {
+        //this.fireEvent("initscene");
+    },
+
+    afterRender : function() {
+        this.callParent();
+    },
+
+    afterFirstLayout : function() {
+        var me = this;
+        var thisDom = this.getEl().dom;
+
+        this.scene = new THREE.Scene();
+		var material = new THREE.MeshBasicMaterial({
+			color : 0xffff00
+		});
+
+        this.cube = new THREE.CubeGeometry(0.25, 0.25, 0.25);
+		this.cubeMesh = new THREE.Mesh(this.cube, material);
+		this.scene.add(this.cubeMesh);
+
+        this.axisHelper = new THREE.AxisHelper( 1 );
+        this.scene.add( this.axisHelper );
+        this.callParent();
+        this.camera = new THREE.OrthographicCamera( -this.getWidth()/100, this.getWidth()/100,
+                                                    this.getHeight()/100, -this.getHeight()/100, 1, 20 );
+        this.camera.position.set(0,0,10);
+        //this.camera.fov = 10;
+        this.renderer.render(this.scene, this.camera);
+    },
+
+    doAnimate : function() {
+        var me = this;
+        this.axisHelper.rotation.setFromRotationMatrix(this.followingCam.matrixWorldInverse);
+        this.cubeMesh.rotation.setFromRotationMatrix(this.followingCam.matrixWorldInverse);
+
+        this.callParent();
+    },
+});
