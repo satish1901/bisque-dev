@@ -1,14 +1,13 @@
 """init_stores
 
 Revision ID: 33b00e22cb16
-Revises: 36b17eaadc9a
+Revises: 265a09af6b4f
 Create Date: 2014-09-26 10:36:00.985512
-
 """
-
+#36b17eaadc9a
 # revision identifiers, used by Alembic.
 revision = '33b00e22cb16'
-down_revision = '36b17eaadc9a'
+down_revision = '265a09af6b4f'
 
 from alembic import op
 import sqlalchemy as sa
