@@ -5,14 +5,26 @@ import ntpath
 from lxml import etree
 import urllib
 import zipfile
-from bqapi.bqclass import fromXml # local
 from bqapi.comm import BQSession, BQCommError
 from bqapi.util import save_blob # local
 import posixpath
 import sys
+from bq.util.mkdir import _mkdir
 import glob
-from TestGlobals import ROOT,LOCAL_STORE_IMAGES, IMAGE_ARCHIVE_ZIP, TEMP_DIR, URL_FILE_STORE
+from libtiff import TIFF
+import numpy as np
 
+from var import *
+
+class TestNameSpace(object):
+    """
+        A container for variable that need
+        to be passed between the setups/teardowns
+        and tests themselves
+    """
+    def __init__(self):
+        pass
+    
 
 #test initalization
 def ensure_bisque_file( bqsession, filename, achieve = False, local_dir='.'):
@@ -28,7 +40,7 @@ def ensure_bisque_file( bqsession, filename, achieve = False, local_dir='.'):
         return upload_new_file(bqsession, path)
 
 
-def check_for_file( filename, zip_filename,local_dir='.'):
+def check_for_file(filename, zip_filename, local_dir='.'):
     """
         Checks for test files stored locally
         If not found fetches the files from a store
@@ -60,14 +72,14 @@ def fetch_zip( filename, local_dir='.'):
     return
    
 
-def fetch_file( filename, local_dir='.'):
+def fetch_file(filename, store_location, local_dir='.'):
     """
         fetches files from a store as keeps them locally
     """
-    url = posixpath.join( URL_FILE_STORE, filename)
-    path = os.path.join( local_dir, filename)
-    if not os.path.exists( path):
-        urllib.urlretrieve( url, path)
+    url = posixpath.join(store_location, filename)
+    path = os.path.join(local_dir, filename)
+    if not os.path.exists(path):
+        urllib.urlretrieve(url, path)
     return path
 
 
@@ -80,55 +92,23 @@ def upload_new_file( bqsession, path):
     return r
 
 
-def upload_achive_file( bqsession, path):
+def upload_image_resource(bqsession, path, filename):
     """
-        upload bisque archive files
+        uploads image to bisque
     """
-    filename = ntpath.basename(path)
-    resource = etree.Element('resource', name = filename)
-    tag = etree.SubElement(resource,'tag', name = 'ingest')
-    etree.SubElement(tag,'tag', name = 'type', value = 'zip-bisque')
-    r = save_blob( bqsession,  path, resource = resource)
-    print 'Uploaded id: %s url: %s'%(r.get('resource_uniq'), r.get('uri'))
-    return r
-
-
-def resource_info(bqsession, bisque_archive, mask, feature_filename):
-    
-    
-    path = os.path.join( LOCAL_STORE_IMAGES, bisque_archive)
-    check_for_file( bisque_archive, IMAGE_ARCHIVE_ZIP, local_dir=LOCAL_STORE_IMAGES)
-    
-    bisque_archive_data_xml_top    = upload_achive_file( bqsession, path)
-
-    path = os.path.join(LOCAL_STORE_IMAGES, mask)
-    check_for_file(mask, IMAGE_ARCHIVE_ZIP,local_dir=LOCAL_STORE_IMAGES)
-    
-    mask_xml_top               = upload_new_file( bqsession, path)
-    
-    bisque_archive_xml         = bqsession.fetchxml('%s?view=deep,clean'%bisque_archive_data_xml_top.attrib['uri'])
-    #polygon_xml                = bisque_archive_xml.xpath('//polygon')
-    #bisque_archive_polygon     = polygon_xml[0].attrib['uri']
-    
-    return ({
-             'filename'        : bisque_archive,
-             'mask_filename'   : mask,
-             'feature_filename': feature_filename,
-             'image'           : ROOT+'/image_service/image/'+bisque_archive_data_xml_top.attrib['resource_uniq'],
-             'image_xml'       : bisque_archive_data_xml_top,
-             'mask'            : ROOT+'/image_service/image/'+mask_xml_top.attrib['resource_uniq'],
-             'mask_xml'        : mask_xml_top,
-             #'polygon'         : bisque_archive_polygon   
-             })
+    resource = etree.Element ('image', name=filename)
+    content = bqsession.postblob(path, xml=resource) #upload image
+    content = etree.XML(content)[0] #pull the resource out
+    print 'Uploaded id: %s url: %s'%(content.get('resource_uniq'), content.get('uri'))
+    return content
 
 #test breakdown
-def delete_resource(bqsession, r):
+def delete_resource(bqsession, url):
     """
         Remove uploaded resource from bisque server
     """
-    url = r.get('uri')
-    print 'Deleting id: %s url: %s'%(r.get('resource_uniq'), url)
-    bqsession.postxml(url, etree.Element ('resource') , method='DELETE')
+    print 'Deleting url: %s' % url
+    bqsession.postxml(url, etree.Element('resource') , method='DELETE')
 
 
 def cleanup_dir():
@@ -143,8 +123,6 @@ def cleanup_dir():
             except:
                 pass
 
-        
-
 #upload functions
 def zipfiles(filelist, zipped_filename, root = '.'):
     with zipfile.ZipFile(zipped_filename,'w') as zip:
@@ -152,4 +130,255 @@ def zipfiles(filelist, zipped_filename, root = '.'):
             zip.write(fname, os.path.relpath(fname, root))
     return  
 
+
+#setup comm test
+def setup_simple_feature_test(ns):
+    """
+        Setup feature requests test 
+    """
+    config = ConfigParser.ConfigParser()
+    config.read(CONFIG_FILE)
+    root = config.get('Host', 'root') or DEFAULT_ROOT
+    user = config.get('Host', 'user') or DEFAULT_USER
+    pwd = config.get('Host', 'password') or DEFAULT_PASSWORD
+    results_location = config.get('Store', 'results_dir') or DEFAULT_RESULTS_DIR
+    store_location = config.get('Store', 'location') or None
+    store_local_location = config.get('Store', 'local_dir') or DEFAULT_LOCAL_DIR
+    test_image = config.get('Store', 'test_image') or None
+    temp_store = config.get('Store', 'temp_dir') or DEFAULT_TEMPORARY_DIR
+    feature_response_results = config.get('Store', 'feature_response') or DEFAULT_FEATURE_RESPONSE_HDF5
+    feature_past_response_results = config.get('Store','feature_sample') or DEFAULT_FEATURE_SAMPLE_HDF5
+    
+    if store_location is None: raise NameError('Requre a store location to run test properly')
+    if test_image is None: raise NameError('Requre an image to run test properly')
+    
+    _mkdir(store_local_location)
+    _mkdir(results_location)
+    _mkdir(temp_store)
+    
+    results_table_path = os.path.join(results_location, feature_response_results)
+    if os.path.exists(results_table_path):
+        os.remove(results_table_path)
+    
+    
+    test_image_location = fetch_file(test_image, store_location, store_local_location)
+    
+    #initalize session
+    session = BQSession().init_local(user, pwd, bisque_root=root)
+    
+    #set to namespace
+    ns.root = root 
+    ns.session = session
+    ns.results_location = results_location
+    ns.store_local_location = store_local_location
+    ns.test_image_location = test_image_location
+    ns.feature_response_results = feature_response_results
+    ns.feature_past_response_results = feature_past_response_results
+    ns.test_image = test_image
+    ns.temp_store = temp_store
+    
+
+def tear_down_simple_feature_test(ns):
+    """ Teardown feature requests test """
+    #import shutil
+    #shutil.rmtree(ns.temp_store)
+    ns.session.close()
+    
+def setup_image_upload(ns):
+    """
+        Uploads a single image
+    """
+    content = upload_image_resource(ns.session, ns.test_image_location, u'%s/%s'%(TEST_PATH, ns.test_image))
+    resource_uri = content.attrib['uri']
+    image_uri = '%s/image_service/image/%s'%(ns.root, content.attrib['resource_uniq'])
+    
+    ns.image_uri = image_uri
+    ns.resource_uri = resource_uri
+    
+    
+def teardown_image_remove(ns):
+    """
+        Removes the uploaded image
+    """
+    delete_resource(ns.session, ns.resource_uri)
+    del ns.image_uri
+    del ns.resource_uri
+
+
+def setup_dataset_upload(ns):
+    """
+        Uploads a many image image
+    """
+    content = upload_image_resource(ns.session, ns.test_image_location, u'%s/%s'%(TEST_PATH, ns.test_image))
+    resource_uri1 = content.attrib['uri']
+    image_uri1 = '%s/image_service/image/%s'%(ns.root, content.attrib['resource_uniq'])
+
+    content = upload_image_resource(ns.session, ns.test_image_location, u'%s/%s'%(TEST_PATH, ns.test_image))
+    resource_uri2 = content.attrib['uri']
+    image_uri2 = '%s/image_service/image/%s'%(ns.root, content.attrib['resource_uniq'])
+    
+    content = upload_image_resource(ns.session, ns.test_image_location, u'%s/%s'%(TEST_PATH, ns.test_image))
+    resource_uri3 = content.attrib['uri']
+    image_uri3 = '%s/image_service/image/%s'%(ns.root, content.attrib['resource_uniq'])
+    
+    
+    ns.image_uri1 = image_uri1 #image_service uri
+    ns.resource_uri1 = resource_uri1 #data_service uri
+    ns.image_uri2 = image_uri2 #image_service uri
+    ns.resource_uri2 = resource_uri2 #data_service uri
+    ns.image_uri3 = image_uri3 #image_service uri
+    ns.resource_uri3 = resource_uri3 #data_service uri
+    
+    
+def teardown_dataset_remove(ns):
+    """
+        Removes the uploaded images
+    """
+    delete_resource(ns.session, ns.resource_uri1)
+    delete_resource(ns.session, ns.resource_uri2)
+    delete_resource(ns.session, ns.resource_uri3)
+    del ns.image_uri1
+    del ns.resource_uri1
+    del ns.image_uri2
+    del ns.resource_uri2
+    del ns.image_uri3
+    del ns.resource_uri3
+    
+
+def setup_mask_upload(ns):
+    """
+        Uploads a mask over the uploaded image
+    """
+    
+    #check meta to make the mask
+    xml = ns.session.fetchxml(ns.image_uri, meta='')
+    size_x = int(xml.xpath('tag[@name="image_num_x"]/@value')[0])
+    size_y = int(xml.xpath('tag[@name="image_num_y"]/@value')[0])
+    mask = np.zeros([size_y, size_x])
+    mask[size_y/4:(3*size_y)/4,size_x/4:(3*size_x)/4] = 1 #create mask
+    
+    #save mask
+    maskname = 'mask.tif'
+    tif = TIFF.open(os.path.join(ns.store_local_location, maskname), mode='w')
+    tif.write_image(mask)
+
+    content = upload_image_resource(ns.session, os.path.join(ns.store_local_location, maskname), u'%s/%s'%(TEST_PATH, maskname))
+    mask_resource_uri = content.attrib['uri']
+    mask_uri = '%s/image_service/image/%s'%(ns.root, content.attrib['resource_uniq'])
+
+    ns.mask_uri = mask_uri #image_service uri
+    ns.mask_resource_uri = mask_resource_uri #data_service uri
+    
+    
+def teardown_mask_remove(ns):
+    """
+        Removes the uploaded image
+    """
+    delete_resource(ns.session, ns.mask_resource_uri)
+    del ns.mask_uri  #image_service uri
+    del ns.mask_resource_uri  #data_service uri
+    
+
+def setup_polygon_upload(ns):
+    """
+    """
+    #check meta to make the mask
+    xml = ns.session.fetchxml(ns.image_uri, meta='')
+    size_x = int(xml.xpath('tag[@name="image_num_x"]/@value')[0])
+    size_y = int(xml.xpath('tag[@name="image_num_y"]/@value')[0])
+    
+    vertices = np.array([[1, 0], [.3, .3], [0, 1],[-.3, .3], [-1, 0], [-.3, -.3], [0, -1], [.3, -.3]]) #shape
+    min = np.min([size_y, size_x])
+    scale = .4*min
+    vertices = vertices*scale#scale
+    vertices[:,0] = vertices[:,0]+size_y*.5#center y
+    vertices[:,1] = vertices[:,1]+size_x*.5#center x
+    
+    polygon = etree.Element('polygon', name='test')
+    for i, (y, x) in enumerate(vertices):
+        etree.SubElement(polygon,'vertex',index=str(i), y=str(y),x=str(x))
+    xml = ns.session.postxml(ns.resource_uri, xml=etree.tostring(polygon))
+    gobject_uri = xml.attrib['uri']
+    
+    ns.gobject_uri = gobject_uri
+    
+    
+def teardown_gobject_remove(ns):
+    """
+    """
+    del ns.gobject_uri
+
+
+def setup_rectangle_upload(ns):
+    """
+    """
+    #check meta to make the mask
+    xml = ns.session.fetchxml(ns.image_uri, meta='')
+    size_x = int(xml.xpath('tag[@name="image_num_x"]/@value')[0])
+    size_y = int(xml.xpath('tag[@name="image_num_y"]/@value')[0])
+    
+    vertices = np.array([[1,0],[0,.75],[-1,0],[0,-.75]]) #shape
+    
+    min = np.min([size_y,size_x])
+    scale = .4*min
+    vertices = vertices*scale#scale
+    vertices[:,0] = vertices[:,0]+size_y*.5#center y
+    vertices[:,1] = vertices[:,1]+size_x*.5#center x
+    
+    polygon = etree.Element('rectangle', name='test')
+    for i, (y, x) in enumerate(vertices):
+        etree.SubElement(polygon,'vertex',index=str(i), y=str(y),x=str(x))
+    xml = ns.session.postxml(ns.resource_uri, xml=etree.tostring(polygon))
+    gobject_uri = xml.attrib['uri']
+
+    ns.gobject_uri = gobject_uri
+
+
+def setup_circle_upload(ns):
+    """
+    """
+    #check meta to make the mask
+    xml = ns.session.fetchxml(ns.image_uri, meta='')
+    size_x = int(xml.xpath('tag[@name="image_num_x"]/@value')[0])
+    size_y = int(xml.xpath('tag[@name="image_num_y"]/@value')[0])
+    
+    vertices = np.array([[0,0],[-.3,.3]]) #shape
+    
+    min = np.min([size_y,size_x])
+    scale = .4*min
+    vertices = vertices*scale#scale
+    vertices[:,0] = vertices[:,0]+size_y*.5#center y
+    vertices[:,1] = vertices[:,1]+size_x*.5#center x
+    
+    polygon = etree.Element('circle', name='test')
+    for i,(y,x) in enumerate(vertices):
+        etree.SubElement(polygon,'vertex', index=str(i), y=str(y), x=str(x))
+    xml = ns.session.postxml(ns.resource_uri, xml=etree.tostring(polygon))
+    gobject_uri = xml.attrib['uri']
+
+    ns.gobject_uri = gobject_uri
+
+def setup_point_upload(ns):
+    """
+    """
+    #check meta to make the mask
+    xml = ns.session.fetchxml(ns.image_uri, meta='')
+    size_x = int(xml.xpath('tag[@name="image_num_x"]/@value')[0])
+    size_y = int(xml.xpath('tag[@name="image_num_y"]/@value')[0])
+    
+    vertices = np.array([[0,0]]) #shape
+    
+    min = np.min([size_y,size_x])
+    scale = .4*min
+    vertices = vertices*scale#scale
+    vertices[:,0] = vertices[:,0]+size_y*.5#center y
+    vertices[:,1] = vertices[:,1]+size_x*.5#center x
+    
+    polygon = etree.Element('point', name='test')
+    for i,(y,x) in enumerate(vertices):
+        etree.SubElement(polygon,'vertex',index=str(i), y=str(y),x=str(x))
+    xml = ns.session.postxml(ns.resource_uri, xml=etree.tostring(polygon))
+    gobject_uri = xml.attrib['uri']
+    
+    ns.gobject_uri = gobject_uri
         

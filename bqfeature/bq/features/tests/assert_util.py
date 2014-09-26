@@ -3,6 +3,88 @@ import tables
 import numpy as np
 import csv
 import pdb
+import tables
+import os
+import uuid
+from bqapi.comm import BQCommError
+
+
+def check_response(session, request, response_code, xml=None, method='GET'):
+    """
+    """
+    try:
+        xml = session.postxml(request, xml, method=method)
+    except BQCommError as e:
+        assert(e.status == response_code)
+    else:
+        assert(200 == response_code)
+
+def check_feature(ns, test, feature_name, image=None, mask=None, gobject=None):
+    """
+        Makes request, compares results, stores request in an hdf5 table
+        
+        @param: ns
+        @param: test - test name
+        @param: feature_name
+        @param: image
+        @param: mask
+        @param: gobject
+    """
+    temp_response_path = os.path.join(ns.temp_store,uuid.uuid4().hex)
+    try:
+        resources = []
+        if image:   resources.append('image=%s' % image)
+        if mask:    resources.append('mask=%s' % mask)
+        if gobject: resources.append('gobject=%s' % gobject)
+        query = '&'.join(resources)
+        request = '%s/features/%s/hdf?%s' % (ns.root, feature_name, query)
+        temp_response_path = ns.session.postxml(request, xml=None, method='GET', path=temp_response_path)
+    except BQCommError as e:
+        assert(e.status == 200)
+    
+    results_table_path = os.path.join(ns.results_location, ns.feature_response_results)
+    past_results_table_path = os.path.join(ns.store_local_location, ns.feature_past_response_results)
+    #move to a results table
+    with tables.open_file(temp_response_path, 'r') as temp:
+        with tables.open_file(results_table_path, 'a') as result_file:
+            temp_table = temp.root.values
+            if hasattr(result_file.root, 'features'):
+                features = result_file.root.features
+            else:
+                features = result_file.create_vlarray(result_file.root, 'features', tables.Float32Atom(shape=()))
+                
+            if hasattr(result_file.root, 'test_names'):
+                test_names = result_file.root.test_names
+            else:
+                columns = {'name': tables.StringCol(300)}
+                test_names = result_file.create_table('/','test_names', columns)
+                test_names.cols.name.createIndex()
+            
+            for r in temp_table:
+                features.append(r['feature'])
+                test_names.append([tuple([test])])
+    
+    os.remove(temp_response_path)
+            
+    
+    #check against a past result
+    if os.path.exists(past_results_table_path):
+        with tables.open_file(results_table_path, 'r') as result_file:
+            with tables.open_file(past_results_table_path, 'r') as past_result_file:
+                test_names = result_file.root.test_names
+                feature = result_file.root.features
+                past_test_names = past_result_file.root.test_names
+                past_feature = past_result_file.root.features
+                query = 'name=="%s"' % str(test)
+                
+                index = test_names.getWhereList(query)
+                index_past = past_test_names.getWhereList(query)
+                if index_past.any():
+                    np.testing.assert_array_almost_equal(feature[index], past_feature[index_past], 4)
+    
+    
+    
+
 
 def is_number(s):
     try:
@@ -19,7 +101,7 @@ def isEqualXMLElement(element_a,element_b):
         @element_a(etree) - etree element
         @element_b(etree) - etree element
         
-        ouput
+        output
         asserts
         Compares an element of 2 xml etree structures
         
@@ -140,9 +222,3 @@ def isHDFEqual(path_hdf_a,path_hdf_b):
                                                                                              table_b[idx_b][colname])
             
     assert 1
-            
-            
-            
-            
-            
-    
