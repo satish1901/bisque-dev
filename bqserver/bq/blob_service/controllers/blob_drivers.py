@@ -239,6 +239,10 @@ class LocalDriver (StorageDriver):
 
         if not scheme:
             storeurl = urlparse.urljoin (self.top, storeurl)
+            # OLD STYLE : may have written %encoded values to file system
+            path = posixpath.normpath(urlparse.urlparse(storeurl).path)
+            if os.path.exists (path):
+                return path  # not returning an actual URL ..
         elif storeurl.startswith('file:///'):
             #should have matched earlier
             return None
@@ -361,6 +365,7 @@ class IrodsDriver(StorageDriver):
     def pull (self, storeurl, localpath=None):
         "Pull a store file to a local location"
         # dima: path can be a directory, needs listing and fetching all enclosed files
+        log.debug('irods.pull: %s' , storeurl)
         try:
             # if irods will provide extraction of sub files from compressed (zip, tar, ...) ask for it and return sub as None
             irods_ident,sub = split_subpath(storeurl)

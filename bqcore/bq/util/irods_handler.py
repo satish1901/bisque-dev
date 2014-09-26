@@ -6,6 +6,7 @@ import atexit
 import logging
 import irods
 import subprocess
+import urllib
 
 from bq.util.mkdir import _mkdir
 from bq.util.paths import data_path
@@ -53,7 +54,7 @@ class IrodsConnection(object):
         path = ''
         zone = ''
         if irods_url.path:
-            path = irods_url.path.split('/')
+            path = urllib.unquote(irods_url.path).split('/')
             if len(path):
                 zone = path[1]
             path = '/'.join(path)
