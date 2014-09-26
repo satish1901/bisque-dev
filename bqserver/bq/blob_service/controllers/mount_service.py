@@ -170,8 +170,7 @@ class MountServer(TGController):
         if config.get('sqlalchemy.url').startswith ('sqlite://'):
             self.subtransactions = False
             log.warn ("SQLITE does not support subtransactions: some mount service operations will fail")
-
-
+        self.store_paths = asbool(config.get ('bisque.blob_service.store_paths', True))
 
 
     #############################################################
@@ -393,7 +392,7 @@ class MountServer(TGController):
 
     def _load_root_mount(self):
         "fetch the root mount and submounts"
-        root = data_service.query('store', resource_unid='(root)', view='full')
+        root = data_service.query('store', resource_unid='(root)', view='full', cache=False)
         if len(root) == 1:
             return self._create_default_mounts(root[0])
         elif len(root) == 0:
@@ -566,7 +565,7 @@ class MountServer(TGController):
             storeurl, localpath = self._save_storerefs (store, storepath, resource, rooturl)
             resource.set('name', join_subpath(os.path.basename(storepath), sub))
 
-        if asbool(config.get ('bisque.blob_service.store_paths', True)):
+        if self.store_paths:
             self.insert_mount_path (store, storepath.split('/'), resource)
         log.debug('_save_store: %s %s %s', storeurl, localpath, etree.tostring(resource))
         return storeurl, localpath
