@@ -1586,8 +1586,10 @@ def kill_server(params):
                   "Server must be restarted during an upgrade operation") == "Y":
         r = call(['bq-admin', 'server', 'stop'])
         print "Server is *not* automatically restarted"
-        return params
-    raise SetupError("Server cannot be running during upgrade")
+    else:
+        print "Proceeding with upgrade with (possibly) running server (dangerous)"
+
+    return params
 
 
 
