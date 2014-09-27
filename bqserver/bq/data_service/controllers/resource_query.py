@@ -65,9 +65,6 @@ from pylons.controllers.util import abort
 #from datetime import strptime
 
 from bq.core.model import DBSession
-#from bq.image_service import image_service
-#from bq.notify_service import notify_service
-
 
 #from bq.data_service.model import UniqueName, names
 from bq.data_service.model import Taggable, taggable, Image
@@ -75,6 +72,7 @@ from bq.data_service.model import TaggableAcl, BQUser
 from bq.data_service.model import Tag, GObject
 from bq.data_service.model import Value, values
 from bq.data_service.model import dbtype_from_tag
+from bq.client_service.controllers import notify_service
 
 from bq.core.identity import get_user_id, is_admin, get_user
 from bq.core.model import User
@@ -82,13 +80,9 @@ from bq.util.mkdir import _mkdir
 from bq.util.paths import data_path
 from bq.util.converters import asbool
 
-from bq import image_service
-from bq.client_service.controllers import notify_service
 from .resource import Resource
 
 log = logging.getLogger('bq.data_service.query')
-
-
 
 PUBLIC=0
 PRIVATE=1
