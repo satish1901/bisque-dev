@@ -1291,6 +1291,7 @@ def fetch_external_binaries (params):
             try:
                 fetch_file (fname, BQDEPOT, lname)
             except Exception, e:
+                log.execption ("Problem in fetch")
                 print "Failed to fetch '%s' with %s" % (fname,e)
 
     return params
