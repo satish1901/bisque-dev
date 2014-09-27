@@ -72,11 +72,8 @@ if os.name == 'nt':
         if len(path)>0 and path[0] == '/':
             path = path[1:]
         path = urllib.unquote(path)
-        try:
-            return path.decode('utf-8')
-        except UnicodeEncodeError:
-            # dima: safeguard measure for old non-encoded unicode paths
-            return path
+        path = force_filesys(path)
+        return path
 
     def localpath2url(path):
         # posixpath.normpath will not work well with smb mounts //share/dir/file.ext
@@ -115,11 +112,14 @@ else:
     data_url_path = data_path
 
     def url2localpath(url):
-        "url should be utf8 encoded"
+        "url should be utf8 encoded (but may actually be unicode from db)"
         path = posixpath.normpath(urlparse.urlparse(url).path)
-        return urllib.unquote(path)
+        path = urllib.unquote(path)
+        path = force_filesys(path)
+        return path
 
     def localpath2url(path):
+        "convert a filespec to a utf8 %-encoded url"
         try:
             path = path.encode('utf-8')
         except UnicodeDecodeError:
