@@ -240,7 +240,10 @@ class LocalDriver (StorageDriver):
         if not scheme:
             storeurl = urlparse.urljoin (self.top, storeurl)
             # OLD STYLE : may have written %encoded values to file system
-            path = posixpath.normpath(urlparse.urlparse(storeurl).path)
+            # path maybe a unicode with utf8 bytes (force to string by encoding as latin1)
+            # http://stackoverflow.com/questions/14539807/convert-unicode-with-utf-8-string-as-content-to-str
+            path = posixpath.normpath(urlparse.urlparse(storeurl).path).encode('latin1')
+            log.debug ("checking unquoted %s", path)
             if os.path.exists (path):
                 return path  # not returning an actual URL ..
         elif storeurl.startswith('file:///'):
@@ -644,7 +647,7 @@ def make_storage_driver(mount_url, **kw):
     scheme = urlparse.urlparse(mount_url).scheme.lower()
     if scheme in supported_storage_schemes:
         store = storage_drivers.get(scheme)
-        log.debug ("creating %s with %s " , scheme, mount_url)
+        log.debug ("creating %s driver with %s " , scheme, mount_url)
         return store(mount_url=mount_url, **kw)
     log.error ('request storage scheme %s unavailable' , scheme)
     return None
