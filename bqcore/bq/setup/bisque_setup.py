@@ -33,8 +33,18 @@ formatter = logging.Formatter("%(name)s:%(levelname)s:%(message)s")
 ch.setFormatter(formatter)
 log.addHandler(ch)
 
-## ENSURE setup.py has been run before..
 
+
+if os.name == 'nt':
+    EXEC_EXTS = ['.com', '.exe', '.bat' ]
+    SCRIPT_EXT = '.exe'
+    ARCHIVE_EXT = '.zip'
+else:
+    SCRIPT_EXT = ''
+    ARCHIVE_EXT = '.tar.gz'
+    EXEC_EXTS = ['']
+
+## ENSURE setup.py has been run before..
 capture = None
 answer_file = None
 save_answers = False
@@ -95,17 +105,20 @@ def quoted(value):
     'quote a value if has special chars'
     return '\"%s\"' % value if any(c in value for c in QUOTED_CHARS ) else value
 
+
+
 def which(command):
     """Emulate the Shell command which returning the path of the command
     base on the shell PATH variable
     """
     for d in [ os.path.expanduser (x) for x in os.environ['PATH'].split (os.pathsep)]:
-        path  = os.path.join(d, command)
-        if os.path.isfile (path):
-            mode =  os.stat (path).st_mode
-            if stat.S_IXUSR & mode:
-                return path
-    return None
+        for ext in EXEC_EXTS:
+            path  = os.path.join(d, "%s%s" % (command, ext) )
+            if os.path.isfile (path):
+                mode =  os.stat (path).st_mode
+                if stat.S_IXUSR & mode:
+                    return path
+                return None
 
 def check_exec(command):
     return which (command) != None
@@ -308,12 +321,6 @@ RUNTIME_CFG  = config_path('runtime-bisque.cfg')
 UWSGI_DEFAULT = config_path('uwsgi.cfg.default')
 
 HOSTNAME = socket.getfqdn()
-if os.name == 'nt':
-    SCRIPT_EXT = '.exe'
-    ARCHIVE_EXT = '.zip'
-else:
-    SCRIPT_EXT = ''
-    ARCHIVE_EXT = '.tar.gz'
 
 
 
@@ -1435,7 +1442,8 @@ def install_imarisconvert ():
         print "No pre-compiled version of ImarisConvert exists for your system"
         print "Please visit our mailing list https://groups.google.com/forum/#!forum/bisque-bioimage for help"
         return
-    filename_check = os.path.join (BQBIN, 'ImarisConvert%s' % SCRIPT_EXT)
+    filename_check = which ("ImarisConvert")
+    filename_check = filename_check or os.path.join (BQBIN, 'ImarisConvert%s' % SCRIPT_EXT)
     if not newer_file(archive, filename_check) :
         print "ImarisConvert is up to date"
         return
