@@ -176,8 +176,8 @@ def make_app(global_conf, full_stack=True, **app_conf):
                 for d,r in staticdirs:
                     log.debug( "adding static: %s %s" % ( d,r ))
                     static_app.add_path(d,r)
-            except ImportError:
-                log.warn ("Couldn't load bisque service %s" % x)
+            except Exception:
+                log.exception ("Couldn't load bisque service %s" % x)
                 continue
             #    static_app = BQStaticURLParser(d)
             #    staticfilters.append (static_app)
