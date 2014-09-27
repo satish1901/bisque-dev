@@ -242,7 +242,11 @@ class LocalDriver (StorageDriver):
             # OLD STYLE : may have written %encoded values to file system
             # path maybe a unicode with utf8 bytes (force to string by encoding as latin1)
             # http://stackoverflow.com/questions/14539807/convert-unicode-with-utf-8-string-as-content-to-str
-            path = posixpath.normpath(urlparse.urlparse(storeurl).path).encode('latin1')
+            path = posixpath.normpath(urlparse.urlparse(storeurl).path)
+            try:
+                path = path.encode('latin1')
+            except UnicodeEncodeError:
+                log.debug ("encode error on %s", path)
             log.debug ("checking unquoted %s", path)
             if os.path.exists (path):
                 return path  # not returning an actual URL ..

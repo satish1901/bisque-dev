@@ -1365,7 +1365,7 @@ def install_imgcnv ():
     if getanswer ("Install Bio-Image Convert", "Y",
                   "imgcnv will allow image server to read pixel data") == "Y":
 
-        filename_check = os.path.join(filename_dest, 'imgcnv%s'% SCRIPT_EXT)
+        filename_check = os.path.join(BQBIN, 'imgcnv%s'% SCRIPT_EXT)
         uncompress_dependencies (filename_zip, BQBIN, filename_check)
 
 def install_openslide ():
