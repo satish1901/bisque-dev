@@ -14,7 +14,7 @@ servers = e1
 
 # Engine on this host
 # Each engine must have the proxyroot parameter set
-e1.url = http://yourhist:27000
+e1.url = http://yourhost:27000
 e1.services_enabled = engine_service
 #e1.uwsgi.server = unix:/tmp/engine.sock
 #e1.uwsgi.http   = 0.0.0.0:27000
@@ -22,7 +22,6 @@ e1.services_enabled = engine_service
 # Place log file and pid files elsewhere
 #log_dir = /var/log/bisque
 #pid_dir = /var/run/bisque
-mex_dispatcher=false
 
 [app:main]
 use = egg:bqcore
@@ -36,7 +35,7 @@ bisque.root = http://localhost:9090
 bisque.server = http://localhost:9090
 bisque.services_enabled = engine_service
 bisque.installed = finished
-bisque.paths.root = /home/kgk/work/bisquik/bq051
+bisque.paths.root = .
 #bisque.paths.data  = /home/kgk/bisquik/bisque05/data
 #bisque.paths.config  = /home/kgk/bisquik/bisque05/config
 
@@ -65,8 +64,8 @@ smtp_server = localhost
 error_email_from = paste@localhost
 
 # Repoze.who stuff
-#  log_level is  'debug', 'info', 'warning', 'error' 
-#  log_file  is [ 'stdout' or path/to/who.log ] 
+#  log_level is  'debug', 'info', 'warning', 'error'
+#  log_file  is [ 'stdout' or path/to/who.log ]
 who.config_file = %(here)s/who.ini
 who.log_level = error
 who.log_stream = stdout

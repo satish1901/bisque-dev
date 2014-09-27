@@ -59,11 +59,6 @@ import itertools
 import tempfile
 import mimetypes
 import warnings
-try:
-    import tables #requires pytables
-except ImportError:
-    tables = None
-    warnings.warn('Warning: tables is not installed, not all function will work')
 
 try:
     from collections import OrderedDict

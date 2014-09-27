@@ -81,7 +81,6 @@ def to_posix_path( p ):
     ''' Converts system style path into POSIX style path '''
     return p.replace(os.sep, '/')
 
-
 def config_path(*names):
     return to_sys_path(os.path.join(BQDIR, 'config', *names))
 
@@ -274,7 +273,6 @@ def unpack_zip (zfile, dest, strip_root=None):
     z.close()
     return names
 
-
 def newer_file (f1, f2):
     "check if f1 is newer than f2"
     if not os.path.exists(f1) or not os.path.exists(f2):
@@ -289,9 +287,6 @@ def touch(fname, times=None):
         os.utime(fname, times)
     finally:
         fhandle.close()
-
-
-
 
 
 #############################################
@@ -466,6 +461,7 @@ def install_cfg (site_cfg, section, default_cfg):
     return params
 
 def read_site_cfg(cfg , section):
+    "Read the config and return a dict with elements found"
     bisque_vars = {}
 
     # first pull initial values from config files
@@ -478,19 +474,34 @@ def read_site_cfg(cfg , section):
     return bisque_vars
 
 
-def update_site_cfg (bisque_vars, section = BQ_SECTION, append=True, cfg=SITE_CFG):
+def visible(k,v):
+    return not k.startswith('__')
+
+def update_site_cfg (bisque_vars, section = BQ_SECTION, append=True, cfg=SITE_CFG, filterby = visible ):
+    """Read the config file and update the variables in a section
+    @param bisque_vars: dict of variables
+    @param section: name of section to modify
+    @param append:  bool append new variables
+    @param cfg : the file to modify
+    """
+
     c = ConfigFile()
     if os.path.exists (cfg):
         c.read(open(cfg))
 
     for k,v in bisque_vars.items():
-        c.edit_config (section, k, '%s = %s' % (k,quoted(str(v))), {}, append)
+        if filterby is None or filterby(k, v):
+            c.edit_config (section, k, '%s = %s' % (k,quoted(str(v))), {}, append)
         #print "edit %s %s" % (k,v)
     c.write (open (cfg, 'w'))
     return bisque_vars
 
 
 def modify_site_cfg(qs, bisque_vars, section = BQ_SECTION, append=True, cfg=SITE_CFG):
+    """Ask questions and modify a config file
+    see update_site_cfg
+    """
+
     if not os.path.exists (cfg):
         raise InstallError('missing %s' % cfg)
 
@@ -1221,16 +1232,13 @@ def fetch_external_binaries (params):
         else:
             dest = where
         if os.path.exists(dest):
-            f = open(dest)
-            shash = _sha1hash (f.read())
-            f.close()
+            with  open(dest, 'rb') as f:
+                shash = _sha1hash (f.read())
             if sha1 == shash:
                 print "%s found locally" % name
                 return
 
         fetch_url = urlparse.urljoin(EXT_SERVER,  hash_name)
-
-
         print "Fetching %s" % fetch_url
         handle = urllib2.urlopen (fetch_url)
         data   = handle.read()
