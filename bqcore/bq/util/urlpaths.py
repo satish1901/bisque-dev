@@ -71,11 +71,12 @@ if os.name == 'nt':
         path = posixpath.normpath(urlparse.urlparse(url).path)
         if len(path)>0 and path[0] == '/':
             path = path[1:]
+        path = urllib.unquote(path)
         try:
-            return urllib.unquote(path).decode('utf-8')
+            return path.decode('utf-8')
         except UnicodeEncodeError:
             # dima: safeguard measure for old non-encoded unicode paths
-            return urllib.unquote(path)
+            return path
 
     def localpath2url(path):
         # posixpath.normpath will not work well with smb mounts //share/dir/file.ext
@@ -94,6 +95,14 @@ if os.name == 'nt':
             url = 'file://%s'%url
         return url
 
+    def force_filesys(s):
+        """Force s to be a unicode string
+        """
+        try:
+            return s.decode('utf-8')
+        except UnicodeEncodeError:
+            # dima: safeguard measure for old non-encoded unicode paths
+            return s
 else:
     def move_file (fp, newpath):
         if os.path.exists(fp.name):
@@ -118,6 +127,16 @@ else:
         url = urllib.quote(path)
         url = 'file://%s'%url
         return url
+
+    def force_filesys(s):
+        """Force s to be a utf8 encode string no matter what
+        """
+        if isinstance(s, unicode):
+            return s.encode('utf8')
+        return s
+
+
+
 
 def config2url(conf):
     "Make entries read from config with corrent encoding.. check for things that look like path urls"
