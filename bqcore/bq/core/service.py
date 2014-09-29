@@ -147,11 +147,11 @@ def load_services ( wanted = None):
             log.debug ('found %s' % (service.__file__))
             service_registry.register_service (x.name, service)
 
-        except ImportError, e:
-            log.exception ("Failed to load bisque extension: %s" % x)
-        except Exception, e:
-            log.exception ("Couldn't load %s -- " % (x.name))
-            raise
+        except Exception:
+            log.exception ("Failed to load bisque service: %s skipping" % x.name)
+        #except Exception, e:
+        #    log.exception ("Couldn't load %s -- skipping" % (x.name))
+
 
 
 def mount_services (root, enabled = None, disabled = None):
