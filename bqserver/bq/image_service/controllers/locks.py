@@ -120,7 +120,11 @@ class Locks (object):
 
         if self.rf:
             self.debug ("RELEASE RF")
-            self.rf.unlock()
+            try:
+                self.rf.unlock()
+            except XFile.LockError:
+                pass
+            
             self.rf.close()
             self.rf = None
 
