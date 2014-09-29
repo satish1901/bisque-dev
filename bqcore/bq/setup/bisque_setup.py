@@ -1795,7 +1795,7 @@ all_options = list (set (install_options + engine_options + other_options))
 ######################################################################
 # List of user visible commands and their corresponding internal actions
 SETUP_COMMANDS = {
-    'server' : [ install_server_defaults],
+    'site' : [ install_server_defaults],
     'engine' : [install_engine_defaults],
     'binaries': [ fetch_external_binaries, install_dependencies ],
     'features' : [ install_features ],
