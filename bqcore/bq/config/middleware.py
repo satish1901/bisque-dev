@@ -41,6 +41,12 @@ class BQStaticURLParser (object):
         self.files = {}
 
     def add_path(self, top, local, prefix=None):
+        """add a set of files to static file server
+
+        @param top: a portion of the filepath to be removed from the web path
+        @param local: the  directory path to be served
+        @param prefix:
+        """
         log.info('static path %s -> %s' % (local, top))
         for root, dirs, files in os.walk(local):
             for f in files:
@@ -170,8 +176,8 @@ def make_app(global_conf, full_stack=True, **app_conf):
                 for d,r in staticdirs:
                     log.debug( "adding static: %s %s" % ( d,r ))
                     static_app.add_path(d,r)
-            except ImportError:
-                log.warn ("Couldn't load bisque service %s" % x)
+            except Exception:
+                log.exception ("Couldn't load bisque service %s" % x)
                 continue
             #    static_app = BQStaticURLParser(d)
             #    staticfilters.append (static_app)
