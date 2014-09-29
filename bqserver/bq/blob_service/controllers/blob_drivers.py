@@ -240,8 +240,6 @@ class LocalDriver (StorageDriver):
         if not scheme:
             storeurl = urlparse.urljoin (self.top, storeurl)
             # OLD STYLE : may have written %encoded values to file system
-            # path maybe a unicode with utf8 bytes (force to string by encoding as latin1)
-            # http://stackoverflow.com/questions/14539807/convert-unicode-with-utf-8-string-as-content-to-str
             path = posixpath.normpath(urlparse.urlparse(storeurl).path)
             path = force_filesys (path)
             log.debug ("checking unquoted %s", path)

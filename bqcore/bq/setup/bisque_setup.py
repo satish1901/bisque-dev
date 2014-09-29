@@ -781,10 +781,14 @@ def create_database(DBURL):
 
     # Step 3: find out whether the database needs initialization
 
-def initialize_database(params):
+def initialize_database(params, DBURL=None):
     "Initialize the database with tables"
 
-    db_initialized = test_db_initialized(DBURL)
+    if DBURL:
+        db_initialized = test_db_initialized(DBURL)
+    else:
+        db_initialized = True
+
     params['new_database'] = False
     install_cfg(ALEMBIC_CFG, section="alembic", default_cfg=config_path('alembic.ini.default'))
     update_site_cfg(params, section='alembic', cfg = ALEMBIC_CFG, append=False)
@@ -890,11 +894,12 @@ def install_modules(params):
     ans =  getanswer( "Try to setup modules", 'N',
                   "Run the installation scripts on the modules. Some of these require local compilations and have outside dependencies. Please monitor carefullly")
     if ans != 'Y':
-        return
+        return params
     if not os.path.exists(bisque_path('modules')):
         os.makedirs (bisque_path('modules'))
         print "No modules were found on the system. Please install sample modules from http://biodev.ece.ucsb.edu/binaries/depot/bisque-modules.tgz"
-        return
+        return params
+
     for bm in os.listdir (bisque_path('modules')):
         modpath = bisque_path('modules', bm)
         environ = dict(os.environ)
@@ -1168,10 +1173,14 @@ requires this while, upgraded system may depending on chnages""")!="Y":
 
 def install_public_static(params):
     "Setup up public JS area with all static resources"
-    cmd = ['bq-admin', 'deploy', 'public' ]
-    r  = subprocess.call (cmd, stderr = None)
-    if r!=0:
-        print "Problem deploying static resources .. run bq-admin deploy public manually"
+
+    if getanswer("Deploy all static resources to public directory", "Y",
+                 "Usefull for integrating with frontend webserverv") == 'Y':
+        cmd = ['bq-admin', 'deploy', 'public' ]
+        r  = subprocess.call (cmd, stderr = None)
+        if r!=0:
+            print "Problem deploying static resources .. run bq-admin deploy public manually"
+
     return params
 
 
@@ -1468,9 +1477,9 @@ def install_features (params):
         filename_check = ''
         uncompress_dependencies (filename_zip, filename_dest, filename_check)
 
-    install_features_source()
-    install_libtiff()
-    install_opencv()
+        install_features_source()
+        install_libtiff()
+        install_opencv()
 
     return params
 
