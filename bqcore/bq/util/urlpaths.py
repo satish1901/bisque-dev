@@ -131,8 +131,18 @@ else:
     def force_filesys(s):
         """Force s to be a utf8 encode string no matter what
         """
-        if isinstance(s, unicode):
-            return s.encode('utf8')
+        # Some unicode is actually UTF8, but the database doesn't know it.  Convert it to
+        # a bytestring
+        # http://stackoverflow.com/questions/14539807/convert-unicode-with-utf-8-string-as-content-to-str
+        try:
+            if isinstance(s, unicode):
+                s = s.encode('latin1')
+            # if we get here then we are  a bytestring (either ascii or utf8 encoded)
+        except UnicodeEncodeError:
+            # will be here if it *really* was unicode 16 (should still be unicode)
+            if isinstance(s, unicode):
+                s =  s.encode('utf8')
+        # We should have an 8bit utf8 string or  a unciode that we can encode as utf8
         return s
 
 
