@@ -96,7 +96,10 @@ THREE.OrbitControls = function ( object, domElement ) {
 	var STATE = { NONE : -1, ROTATE : 0, DOLLY : 1, PAN : 2, TOUCH_ROTATE : 3, TOUCH_DOLLY : 4, TOUCH_PAN : 5 };
 	var state = STATE.NONE;
 
-	// events
+    var _this = this;
+    var axis = 'py';
+	var taxis = 'py';
+    // events
 
 	var changeEvent = { type: 'change' };
 
@@ -133,7 +136,7 @@ THREE.OrbitControls = function ( object, domElement ) {
 		// get X column of matrix
 		panOffset.set( te[0], te[1], te[2] );
 		panOffset.multiplyScalar(-distance);
-		
+
 		pan.add( panOffset );
 
 	};
@@ -146,10 +149,10 @@ THREE.OrbitControls = function ( object, domElement ) {
 		// get Y column of matrix
 		panOffset.set( te[4], te[5], te[6] );
 		panOffset.multiplyScalar(distance);
-		
+
 		pan.add( panOffset );
 	};
-	
+
 	// main entry point; pass in Vector2 of change desired in pixel space,
 	// right and down are positive
 	this.pan = function ( delta ) {
@@ -215,7 +218,7 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 		// restrict radius to be between desired limits
 		radius = Math.max( this.minDistance, Math.min( this.maxDistance, radius ) );
-		
+
 		// move target to panned location
 		this.target.add( pan );
 
@@ -273,12 +276,45 @@ THREE.OrbitControls = function ( object, domElement ) {
 		var offset = position.clone().sub( this.target );
 
 		// angle from z-axis around y-axis
+        var o = ['x','y','z'];
+        if(axis == 'py') {
+            this.object.up.set(0,1,0);
+            o = ['x','y','z'];
+        }
+        if(axis == 'my') {
+            this.object.up.set(0,-1,0);
+            o = ['z','y','x'];
+        }
+        if(axis == 'px') {
+            this.object.up.set(1,0,0);
+            o = ['z','x','y'];
+        }
+        if(axis == 'mx') {
+            this.object.up.set(-1,0,0);
+            o = ['y','x','z'];
+        }
+        if(axis == 'pz') {
+            this.object.up.set(0,0,1);
+            o = ['y','z','x'];
+        }
+        if(axis == 'mz') {
+            this.object.up.set(0,0,-1);
+            o = ['x','z','y'];
+        }
+        /*
+        if(axis == 'pz') {
+            this.object.up.set(0,0,1);
+            o = ['x','z','y'];
+        }
+        */
 
-		var theta = Math.atan2( offset.x, offset.z );
-
+//		var theta = Math.atan2( offset.x, offset.z );
 		// angle from y-axis
+//		var phi = Math.atan2( Math.sqrt( offset.x * offset.x + offset.z * offset.z ), offset.y );
 
-		var phi = Math.atan2( Math.sqrt( offset.x * offset.x + offset.z * offset.z ), offset.y );
+		var theta = Math.atan2( offset[o[0]], offset[o[2]] );
+		// angle from y-axis
+		var phi = Math.atan2( Math.sqrt( offset[o[0]] * offset[o[0]] + offset[o[2]] * offset[o[2]] ), offset[o[1]] );
 
 		if ( this.autoRotate ) {
 
@@ -287,7 +323,10 @@ THREE.OrbitControls = function ( object, domElement ) {
 		}
 
 		theta += thetaDelta;
-		phi += phiDelta;
+        if(axis == 'mx' || axis == 'my' || axis == 'mz')
+		    phi -= phiDelta;
+        else
+            phi += phiDelta;
 
 		// restrict phi to be between desired limits
 		phi = Math.max( this.minPolarAngle, Math.min( this.maxPolarAngle, phi ) );
@@ -295,18 +334,57 @@ THREE.OrbitControls = function ( object, domElement ) {
 		// restrict phi to be betwee EPS and PI-EPS
 		phi = Math.max( EPS, Math.min( Math.PI - EPS, phi ) );
 
+        var out = new THREE.Vector3(1,0,0);
+		out[o[0]] = Math.sin( phi ) * Math.sin( theta );
+		out[o[1]] = Math.cos( phi );
+		out[o[2]] = Math.sin( phi ) * Math.cos( theta );
+        var up = this.object.up;
+        var left = new THREE.Vector3().crossVectors(out, up).normalize();
+        var nup  = new THREE.Vector3().crossVectors(left, out).normalize();
+        //console.log();
+        if(Math.abs(nup.x) > Math.abs(nup.y) && Math.abs(nup.x) > Math.abs(nup.z) ){
+            taxis = 'px';
+            if(nup.x < 0.0) taxis = 'mx';
+        }
+        if(Math.abs(nup.y) > Math.abs(nup.x) && Math.abs(nup.y) > Math.abs(nup.x) ){
+            taxis = 'py';
+            if(nup.y < 0.0) taxis = 'my';
+        }
+        if(Math.abs(nup.z) > Math.abs(nup.x) && Math.abs(nup.z) > Math.abs(nup.y) ){
+            taxis = 'pz';
+            if(nup.z < 0.0) taxis = 'mz';
+        }
+        /*
+        if(Math.abs(up[0]) > Math.abs(up[1]) && Math.abs(up[0]) > Math.abs(up[2]) ){
+            taxis = 'px';
+            if(up[0] < 0.0) taxis = 'mx';
+        }
+        if(Math.abs(up[1]) > Math.abs(up[0]) && Math.abs(up[1]) > Math.abs(up[2]) ){
+            taxis = 'py';
+            if(up[1] < 0.0) taxis = 'my';
+        }
+        if(Math.abs(up[2]) > Math.abs(up[0]) && Math.abs(up[2]) > Math.abs(up[1]) ){
+            taxis = 'pz';
+            if(up[2] < 0.0) taxis = 'mz';
+        }
+        */
 		var radius = offset.length() * scale;
 
 		// restrict radius to be between desired limits
 		radius = Math.max( this.minDistance, Math.min( this.maxDistance, radius ) );
-		
+
 		// move target to panned location
 		this.target.add( pan );
 
+
+		offset[o[0]] = radius * Math.sin( phi ) * Math.sin( theta );
+		offset[o[1]] = radius * Math.cos( phi );
+		offset[o[2]] = radius * Math.sin( phi ) * Math.cos( theta );
+/*
 		offset.x = radius * Math.sin( phi ) * Math.sin( theta );
 		offset.y = radius * Math.cos( phi );
 		offset.z = radius * Math.sin( phi ) * Math.cos( theta );
-
+*/
 		position.copy( this.target ).add( offset );
 
 		this.object.lookAt( this.target );
@@ -341,8 +419,13 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 	function onMouseDown( event ) {
 
+
 		if ( scope.enabled === false ) { return; }
 		event.preventDefault();
+
+        console.log(axis, taxis);
+        axis = taxis;
+
 
 		if ( event.button === 0 ) {
 			if ( scope.noRotate === true ) { return; }
@@ -420,7 +503,7 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 			panEnd.set( event.clientX, event.clientY );
 			panDelta.subVectors( panEnd, panStart );
-			
+
 			scope.pan( panDelta );
 
 			panStart.copy( panEnd );
@@ -481,7 +564,7 @@ THREE.OrbitControls = function ( object, domElement ) {
 		// pan a pixel - I guess for precise positioning?
 		// Greggman fix: https://github.com/greggman/three.js/commit/fde9f9917d6d8381f06bf22cdff766029d1761be
 		var needUpdate = false;
-		
+
 		switch ( event.keyCode ) {
 
 			case scope.keys.UP:
@@ -510,7 +593,7 @@ THREE.OrbitControls = function ( object, domElement ) {
 		}
 
 	}
-	
+
 	function touchstart( event ) {
 
 		if ( scope.enabled === false ) { return; }
@@ -606,7 +689,7 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 				panEnd.set( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY );
 				panDelta.subVectors( panEnd, panStart );
-				
+
 				scope.pan( panDelta );
 
 				panStart.copy( panEnd );
@@ -631,9 +714,9 @@ THREE.OrbitControls = function ( object, domElement ) {
 	//this.domElement.addEventListener( 'click', onMouseDown, false );
 	this.domElement.addEventListener( 'mousewheel', onMouseWheel, false );
 	this.domElement.addEventListener( 'DOMMouseScroll', onMouseWheel, false ); // firefox
-	
+
 	this.domElement.addEventListener( 'keydown', onKeyDown, false );
-	
+
 	this.domElement.addEventListener( 'touchstart', touchstart, false );
 	this.domElement.addEventListener( 'touchend', touchend, false );
 	this.domElement.addEventListener( 'touchmove', touchmove, false );
