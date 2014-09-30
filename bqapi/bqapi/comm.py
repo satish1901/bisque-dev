@@ -465,11 +465,10 @@ class BQSession(object):
                 fields = {'file': (filename, f, mimetypes.guess_type(filename)[0])} #not sure if all filenames should be decoded from utf8
                                                                          #also have not tested on python3 yet
                 if xml!=None:
-                    data = {}
                     if isinstance(xml, etree._Element):
-                        fields['file_resource'] = (None, etree.tostring(xml), "text/xml")
-                    else:
-                        fields['file_resource'] = (None, xml, "text/xml")
+                        xml = etree.tostring(xml)
+                    
+                    fields['file_resource'] = (None, xml, "text/xml")
                 
                 return self.c.post(url, content=None, files=fields, headers={'Accept': 'text/xml'}, path=path, method=method)
 
