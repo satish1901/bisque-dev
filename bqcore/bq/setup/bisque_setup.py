@@ -743,9 +743,10 @@ Please resolve the problem(s) and re-run 'bisque-setup --database'.""")
     if not create_database(DBURL):
         return params
     # Step 3: find out whether the database needs initialization
-    params = initialize_database(params)
+    params = initialize_database(params, DBURL)
     # Step 4: migrate database (and project to latest version)"
-    migrate_database()
+    if not params['new_database']:
+        migrate_database(DBURL)
     return params
 
 def create_database(DBURL):
@@ -1557,10 +1558,10 @@ def install_opencv():
         z =  zipfile.ZipFile(zip_file, 'r')
         for f in z.namelist():
             if os.path.normpath(f).startswith(zip_dir) and not os.path.normpath(f) == zip_dir:
-                with open(os.path.join(filename_dest,os.path.relpath(f, zip_dir)), 'wb') as fout:
+                with open(os.path.join(destination,os.path.relpath(f, zip_dir)), 'wb') as fout:
                     fout.write(z.read(f))
                     if verbose:
-                        print 'Extracted %s -> %s'%(f,os.path.join(filename_dest,os.path.relpath(f, zip_dir)))
+                        print 'Extracted %s -> %s'%(f,os.path.join(destination,os.path.relpath(f, zip_dir)))
 
 
     if getanswer ("Install OpenCV-2.4.6", "Y",
