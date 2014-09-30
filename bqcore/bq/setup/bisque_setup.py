@@ -1272,15 +1272,12 @@ def fetch_external_binaries (params):
         # Set the time to Server File  time.
         from dateutil.parser import parse
         from dateutil import tz
-        mtime = parse (info['Last-Modified'])
         try:
-            # dima: not sure what %s is supposed to be but it does not exist
-            # in the python api: https://docs.python.org/2/library/datetime.html#strftime-strptime-behavior
-            # this gives value error under windows, maybe this works under linux...
-            srvLastModified = int(mtime.astimezone(tz.tzlocal()).strftime("%s"))
+            mtime = parse (info['Last-Modified']).astimezone(tz.tzlocal())            
+            srvLastModified = time.mktime(mtime.timetuple())
+            touch (dest, (srvLastModified, srvLastModified))
         except (ValueError):
-            srvLastModified = mtime.astimezone(tz.tzlocal()).toordinal()
-        touch (dest, (srvLastModified, srvLastModified))
+            pass
 
     if getanswer ("Fetch external binary files from Bisque development server",
                   "Y",
