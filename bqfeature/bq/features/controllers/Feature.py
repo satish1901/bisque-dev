@@ -18,12 +18,14 @@ import tempfile
 import urlparse
 import urllib
 from tg import request
-from PIL import Image
+from PIL import Image, ImageDraw
 from bq import image_service
 from bq.core import identity
+from bqapi.comm import BQServer
 from bq.util import http
+from lxml import etree
 from webob.request import Request, environ_from_url
-from bq.features.controllers.exceptions import FeatureServiceError, InvalidResourceError
+from bq.features.controllers.exceptions import FeatureServiceError, InvalidResourceError, FeatureExtractionError
 from .var import FEATURES_STORAGE_FILE_DIR,FEATURES_TABLES_FILE_DIR,FEATURES_TEMP_IMAGE_DIR
 
 
@@ -71,7 +73,7 @@ def request_externally(url):
         
         @return body - body of the response
     """
-    req = Request.blank(resource[r])
+    req = Request.blank(url)
     req.headers['Authorization'] = "Mex %s" % identity.mex_authorization_token()
     req.headers['Accept'] = 'text/xml'
     log.debug("begin routing externally: %s" % url)
@@ -82,36 +84,7 @@ def request_externally(url):
     else:
         log.debug("User is not authorized to read resource: %s" % url)
         return None
-    
-#wrapper for the calculator function so the output
-#is in the correct format to be easily placed in the tables
-def calc_wrapper(func):
-    def calc(self,kw):
-        id = self.returnhash(**kw)
-        
-        results = func(self,**kw) #runs calculation
-        log.debug('Successfully calculated feature!')
-        column_count = len(self.cached_columns().columns)-1 #finds length of columns to determin how to parse
-        if column_count == 1:
-            results=tuple([results])
 
-        rows=[]
-        for i in range(len(results[0])): #iterating though rows returned
-
-            if self.cache: #check for cache to see how to build the table
-                row = tuple([id])
-            else:
-                for input in self.resource: 
-                    row +=  tuple([kw[input]])
-                row += tuple([self.name])
-
-            #allows for varying column length
-            for j in range(column_count): #iterating through columns returned
-                row += tuple([results[j][i]])
-            rows.append(row)
-        return rows
-
-    return calc
 
 ###############################################################
 # Feature Object
@@ -137,8 +110,13 @@ class BaseFeature(object):
     #Limitations that may be imposed on the feature
     limitations = """This feature has no limitation"""
 
+    #there are currently only 3 resources in the feature server
+    #image, mask, gobject
     #required resource type(s)
     resource = ['image']
+    
+    #additional resources type(s)
+    additional_resource = None
 
     #parameters that will be shown on the output
     parameter = []
@@ -162,6 +140,9 @@ class BaseFeature(object):
     #list of feature catagories. ex. color,texture...
     type = []
     
+    #will turn off the feature in the feature service if set to true
+    disabled = False
+    
     #Confidence stands for the amount of a features correctness based on the unittest comparison.
     #good - feature compares exactly with the linux and windows binaries
     #fair - feature is within %5 mismatch of either linux and windows binaries
@@ -169,53 +150,52 @@ class BaseFeature(object):
     #untested - feature has not been tested in the unittest comparison
     confidence = 'untested'
 
-    def __init__ ( self):
-        self.path = os.path.join( FEATURES_TABLES_FILE_DIR, self.name)
+    def __init__ (self):
+        self.path = os.path.join(FEATURES_TABLES_FILE_DIR, self.name)
 
-    def localfile( self, hash):
+    def localfile(self, hash):
         """
             returns the path to the table given the hash
         """
-        return os.path.join( self.path, hash[:self.hash]+'.h5')
+        return os.path.join(self.path, hash[:self.hash]+'.h5')
 
-
-    def returnhash(self, **kw):
+    @staticmethod
+    def hash_resource(feature_resource):
         """
             returns a hash given all the uris
         """
-        uri = ''
-        for r in self.resource:
-            uri += str(kw[r]) #combines all the uris together to form the hash
-        uri_hash = uuid.uuid5(uuid.NAMESPACE_URL, uri)
-        uri_hash = uri_hash.hex
-        return uri_hash
+        query = []
+        if feature_resource.image: query.append('image=%s' % feature_resource.image)
+        if feature_resource.mask: query.append('mask=%s' % feature_resource.mask)
+        if feature_resource.gobject: query.append('gobject=%s' % feature_resource.gobject)
+        query = '&'.join(query)
+        resource_hash = uuid.uuid5(uuid.NAMESPACE_URL, query.encode('ascii'))
+        resource_hash = resource_hash.hex
+        return resource_hash
 
     def cached_columns(self):
         """
             Columns for the cached tables
         """
-        featureAtom = tables.Atom.from_type( self.feature_format, shape=( self.length ))
-
-        class Columns(tables.IsDescription):
-            idnumber  = tables.StringCol(32,pos=1)
-            feature   = tables.Col.from_atom(featureAtom, pos=2)
-        return Columns
+        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length))
+        return {
+            'idnumber': tables.StringCol(32, pos=1),
+            'feature' : tables.Col.from_atom(featureAtom, pos=2)
+        }
         
-    def output_feature_columns(self):
+    def workdir_columns(self):
         """
             Columns for the output table for the feature column
         """
-        featureAtom = tables.Atom.from_type( self.feature_format, shape=( self.length))
+        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length))
+        return {
+            'image'   : tables.StringCol(2000, pos=1),
+            'mask'    : tables.StringCol(2000, pos=2),
+            'gobject' : tables.StringCol(2000, pos=3),
+            'feature' : tables.Col.from_atom(featureAtom, pos=4)
+        }
 
-        class Columns(tables.IsDescription):
-            image         = tables.StringCol(2000,pos=1)
-            feature_type  = tables.StringCol(20, pos=2)
-            feature       = tables.Col.from_atom(featureAtom, pos=3)
-        return Columns
-
-
-    @calc_wrapper
-    def calculate(self, **resource):
+    def calculate(self, resource):
         """
             place holder for feature calculations
         """
@@ -249,8 +229,8 @@ class ImageImport:
             #finds image resource though local image service
             
             if try_tiff == True:
-                urlparse.parse_qsl( o.query)
-                query_arg = urlparse.parse_qsl( o.query, keep_blank_values=True)
+                urlparse.parse_qsl(o.query)
+                query_arg = urlparse.parse_qsl(o.query, keep_blank_values=True)
                 
                 query_arg.append(('format','OME-BigTIFF'))
                 query_pairs = query_arg
@@ -385,117 +365,179 @@ def check_access(ident, action=RESOURCE_READ):
 
                 
 #needs to be replaced with a HEAD instead of using a GET
-def mex_validation(**resource):
+def mex_validation(resource):
     """
     Checks the mex of the resource to see if the user has access to all the resources
     """
-    for r in resource.keys():
-        log.debug("resource: %s"% resource[r])
-        
+    resource_list = [i for i in resource if i is not ''] #remove all none resoures
+    for r in resource_list:
+        log.debug("resource: %s"%r)
         try:
             #route through the database
-            o = urlparse.urlsplit(resource[r])
+            o = urlparse.urlsplit(r)
             url_path = o.path.split('/')
-            if url_path[1] == 'data_service' or url_path[1] == 'image_service': #check for data_service
-                ident = url_path[3]
+            log.debug('url_path :%s'% url_path)
+            if url_path[0] == 'data_service' or url_path[0] == 'image_service': #check for data_service
+                ident = url_path[-1]
                 if check_access(ident) is True:
                     continue #check next resource
                 #else try another route
             
             # Try to route internally through bisque 
-            if request_internally(resource[r]) is not None:
+            if request_internally(r) is not None:
                 continue #check next resource
 
             # Try to route externally
-            if request_externally(resource[r]) is None:
+            if request_externally(r) is None:
                 return False #after checking every path resource was not found
             
         except:
-            log.exception ("While retrieving URL %s" % resource[r])
+            log.exception ("While retrieving URL %s" %str(resource))
             return False
     return True
 
-###############################################################
-# Temp Import
-###############################################################
+def fetch_resource(uri):
+    log.debug("resource: %s"%uri)
+    try:
+        # Try to route internally through bisque 
+        response = request_internally(uri)
+        if response is not None:
+            return response
 
-#None of the features use this 
-#
-#class TmpFiles():
-#    """
-#        Stores temporary files produced by features extractors
-#    """
-#    def __enter__(self):
-#        pass
-#
-#    def __exit__(self,type,value,traceback):
-#        try:
-#            os.remove(self.path)
-#        except OSError:
-#            pass
-#
-#    def __init__(self, ''):
-#        s = "".join([random.choice(string.ascii_lowercase + string.digits) for x in xrange(10)])
-#        file = 'temp'+ str(s)+'.'+filetype
-#        self.path = os.path.join( FEATURES_TEMP_IMAGE_DIR, file)
-#        
-#    def open(self):
-#        self.f = open(self.path)
-#        self.status = 'Open'
-#        return self.f
-#    
-#    def close(self):
-#        if self.status == 'Open':
-#            self.f.close()
-#            del self.f
-#            status = 'Closed'
-#    
-#    def returnpath(self):
-#        return self.path
-#    
-#    def returnstatus(self): 
-#        self.status 
-#    
-#    def __del__(self):
-#        """ When the ImageImport object is deleted the image path is removed for the temp dir """
-#        try:
-#            os.remove(self.path)
-#        except OSError:
-#            pass
-
-###############################################################
-# XML Import
-###############################################################
-
-def xml_import(uri):
-    """ Import XML from another service and returns the tree """
-    from lxml import etree
-    import urllib, urllib2, cookielib
-    uri = uri
-    from bq.config.middleware import bisque_app
-    try: 
-        # Try to route internally
-        req = Request.blank(uri)
-        req.headers['Authorization'] = "Mex %s" % identity.mex_authorization_token()
-        req.headers['Accept'] = 'text/xml'
-        log.debug("begin routing internally %s" % uri)
-        response = req.get_response(bisque_app)
-        log.debug("end routing internally: status %s" % response.status_int)
-        if response.status_int == 200:
-            try:
-                return etree.fromstring(response.body) 
-            except: #find specific error
-                log.exception ("Was not proper XML format: URL %s" % uri)
-                return
-
+        # Try to route externally
+        response = request_externally(uri)
+        if response is not None:
+            return response
+        
     except:
-        log.exception ("While retrieving URL %s" % uri)
-        return
+        raise FeatureServiceError(404, 'Url: %s, Resource was not found' % uri)
 
 
 ###############################################################
 # Features Misc.
 ###############################################################
+
+def gobject2mask(uri, im):
+    """
+        Converts a gobject with a shape into
+        a binary mask
+        
+        @param: uri - gobject uris
+        @param: im - image matrix
+        
+        @return: mask
+    """
+    valid_gobject = set(['polygon','circle','square','ellipse','rectangle','gobject'])
+    
+    mask = np.zeros([])
+    #add view deep to retrieve vertices
+    
+    uri_full = BQServer().prepare_url(uri, view='full')
+    
+    response = fetch_resource(uri_full)
+    #need to check if value xml
+    try:
+        xml = etree.fromstring(response)
+    except etree.XMLSyntaxError:
+        raise FeatureExtractionError(None, 415, 'Url: %s, was not xml for gobject' % uri)
+    
+    #need to check if its a valid gobject
+    if xml.tag not in valid_gobject:
+        raise FeatureExtractionError(None, 415, 'Url: %s, Gobject tag: %s is not a valid gobject to make a mask' % (uri,xml.tag))
+    
+    if xml.tag in set(['gobject']):
+        tag = xml.attrib.get('type')
+        if tag is None:
+            raise FeatureExtractionError(None, 415, 'Url: %s, Not an except gobject' % (uri,xml.tag))
+    else:
+        tag = xml.tag
+        
+    col = im.shape[0]
+    row = im.shape[1]
+    img = Image.new('L', (row, col), 0)
+        
+    if tag in set(['polygon']):
+        contour = []
+        for vertex in xml.xpath('vertex'):
+            x = vertex.attrib.get('x')
+            y = vertex.attrib.get('y')
+            if x is None or y is None:
+                raise FeatureExtractionError(None, 415, 'Url: %s, gobject does not have x or y coordinate' % uri)
+            contour.append((int(float(x)),int(float(y))))
+        if len(contour)<2:
+            raise FeatureExtractionError(None, 415, 'Url: %s, gobject does not have enough vertices' % uri)
+#        import pdb
+#        pdb.set_trace()
+        ImageDraw.Draw(img).polygon(contour, outline=255, fill=255)
+        mask = np.array(img)
+    
+    if tag in set(['square']):
+        #takes only the first 2 points
+        contour = []
+        for vertex in xml.xpath('vertex'):
+            x = vertex.attrib.get('x')
+            y = vertex.attrib.get('y')
+            if x is None or y is None:
+                raise FeatureExtractionError(None, 415, 'Url: %s, gobject does not have x or y coordinate' % uri)
+            contour.append((int(float(x)),int(float(y))))
+        if len(contour)<2:
+            raise FeatureExtractionError(None, 415, 'Url: %s, gobject does not have enough vertices' % uri)
+
+        (x1,y1)= contour[0]
+        (x2,y2)= contour[1]
+        py = np.min([y1, y2])
+        px = np.min([x1, x2])
+        side = np.abs(x1-x2)
+        contour = [(px,py),(px,py+side),(px+side,py+side),(px+side, py)]
+        ImageDraw.Draw(img).polygon(contour, outline=255, fill=255)
+        mask = np.array(img)
+        
+    
+    if tag in set(['rectangle']):
+        #takes only the first 2 points
+        contour = []
+        for vertex in xml.xpath('vertex'):
+            x = vertex.attrib.get('x')
+            y = vertex.attrib.get('y')
+            if x is None or y is None:
+                raise FeatureExtractionError(None, 415, 'Url: %s, gobject does not have x or y coordinate' % uri)
+            contour.append((int(float(x)),int(float(y))))
+        if len(contour)<2:
+            raise FeatureExtractionError(None, 415, 'Url: %s, gobject does not have enough vertices' % uri)
+
+        (x1,y1)= contour[0]
+        (x2,y2)= contour[1]
+        y_min = np.min([y1, y2])
+        x_min = np.min([x1, x2])
+        y_max = np.max([y1, y2])
+        x_max = np.max([x1, x2])
+        contour = [(x_min, y_min), (x_min, y_max), (x_max, y_max), (x_max, y_min)]
+        ImageDraw.Draw(img).polygon(contour, outline=255, fill=255)
+        mask = np.array(img)
+        
+        
+    if tag in set(['circle','ellipse']): #ellipse isnt supported really, its just a circle also
+        #takes only the first 2 points
+        contour = []
+        for vertex in xml.xpath('vertex'):
+            x = vertex.attrib.get('x')
+            y = vertex.attrib.get('y')
+            if x is None or y is None:
+                raise FeatureExtractionError(None, 415, 'Url: %s, gobject does not have x or y coordinate' % uri)
+            contour.append((int(float(x)),int(float(y))))
+        if len(contour)<2:
+            raise FeatureExtractionError(None, 415, 'Url: %s, gobject does not have enough vertices' % uri)
+
+        (x1,y1) = contour[0]
+        (x2,y2) = contour[1]
+        
+        r = np.sqrt(np.square(int(float(x2))-int(float(x1)))+
+                    np.square(int(float(y2))-int(float(y1))))
+        bbox = (int(float(x1))-r, int(float(y1))-r, int(float(x1))+r, int(float(y1))+r)
+        ImageDraw.Draw(img).ellipse(bbox, outline=255, fill=255)
+        mask = np.array(img)
+    return mask
+
 
 def rgb2gray(im):
     """

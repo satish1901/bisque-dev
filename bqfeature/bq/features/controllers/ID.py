@@ -19,52 +19,33 @@ from .var import FEATURES_TABLES_FILE_DIR
 import Feature
 
 
-
 class ID(Feature.BaseFeature):
     """
         Initalizes ID table, returns ID, and places ID into the HDF5 table
     """ 
     #initalize parameters
     name = 'IDTable'
-    description = 'ID table'
-    resource = []
-    hash = 2
-    cache = True
-    index = True
-    
-    def __init__ (self):
-        self.path = os.path.join( FEATURES_TABLES_FILE_DIR, self.name)
-
-    def columns(self):
-        """
-            creates Columns to be initalized by the create table
-        """
-        class Columns(tables.IsDescription):
-            idnumber  = tables.StringCol(32,pos=1)
-            
-        self.Columns = Columns
+    description = """ID table"""
         
     def cached_columns(self):
         """
             Columns for the cached tables
         """
-        class Columns(tables.IsDescription):
-            idnumber  = tables.StringCol(32,pos=1)
-
-        return Columns
+        return {
+                'idnumber' : tables.StringCol(32, pos=1),
+                'image'    : tables.StringCol(2000, pos=2),
+                'mask'     : tables.StringCol(2000, pos=3),
+                'gobject'  : tables.StringCol(2000, pos=4)
+                }
         
     def output_feature_columns(self):
         """
             has no relavance to the hash tables for now
         """
-        pass
-
-    def output_error_columns(self):
-        """
-            has no relavance to the hash tables for now
-        """
-        pass
+        return {}
         
+    def calculate(self, resource):
+        return [resource.image], [resource.mask], [resource.gobject]
 
 
 

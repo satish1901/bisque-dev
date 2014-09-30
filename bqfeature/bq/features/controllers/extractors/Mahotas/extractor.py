@@ -5,10 +5,20 @@
 import numpy as np
 from mahotas.features import haralick,lbp,pftas,tas,zernike_moments
 from pylons.controllers.util import abort
-from bq.features.controllers.Feature import calc_wrapper, ImageImport, rgb2gray,gray2rgb #import base class
+from bq.features.controllers.Feature import ImageImport, rgb2gray,gray2rgb #import base class
 from bq.features.controllers import Feature
+from bq.features.controllers.exceptions import FeatureExtractionError
+from bqapi.comm import BQServer
 from PIL import Image
 
+
+def except_image_only(resource):
+    if resource.image is None:
+        raise FeatureExtractionError(resource, 400, 'Image resource is required')
+    if resource.mask:
+        raise FeatureExtractionError(resource, 400, 'Mask resource is not accepted')
+    if resource.gobject:
+        raise FeatureExtractionError(resource, 400, 'Gobject resource is not accepted')
 
 class HAR(Feature.BaseFeature):
     """
@@ -21,21 +31,22 @@ class HAR(Feature.BaseFeature):
     length = 13*4
     confidence = 'good'     
         
-    @calc_wrapper
-    def calculate(self, **resource):
+        
+    def calculate(self, resource):
         #initalizing 
-        image_uri = resource['image']
+        except_image_only(resource)
+        
+        image_uri = resource.image
+        image_uri = BQServer().prepare_url(image_uri, remap='gray')
         with Feature.ImageImport(image_uri) as imgimp:
             im = np.uint8(imgimp.from_tiff2D_to_numpy())
-            if len(im.shape)==3:
-                im = rgb2gray(im)
         
         im = np.uint8(im)
         #calculate descriptor 
         descritptors = np.hstack(haralick(im))
 
         #initalizing rows for the table
-        return [descritptors]
+        return descritptors
             
             
 class HARColored(Feature.BaseFeature):
@@ -48,21 +59,21 @@ class HARColored(Feature.BaseFeature):
     description = """Haralick Texure Features with colored image input"""
     length = 169
         
-    @calc_wrapper
-    def calculate(self, **resource):
+        
+    def calculate(self, resource):
         #initalizing 
-        image_uri = resource['image']
+        except_image_only(resource)
+        
+        image_uri = resource.image
+        image_uri = BQServer().prepare_url(image_uri, remap='display')
         with Feature.ImageImport(image_uri) as imgimp:
             im = np.uint8(imgimp.from_tiff2D_to_numpy())
-            if len(im.shape)==2:
-                im = gray2rgb(im)
-            
         
         #calculate descriptor 
         descritptors = np.hstack(haralick(im))
 
         #initalizing rows for the table
-        return [descritptors]    
+        return descritptors 
 
 
 class LBP(Feature.BaseFeature):
@@ -77,16 +88,14 @@ class LBP(Feature.BaseFeature):
     length = 8
     confidence = 'good' 
         
-    @calc_wrapper
-    def calculate(self, **resource):
+    def calculate(self, resource):
         #initalizing
-        image_uri = resource['image']
+        except_image_only(resource)
         
+        image_uri = resource.image
+        image_uri = BQServer().prepare_url(image_uri, remap='gray')
         with ImageImport(image_uri) as imgimp:
             im = imgimp.from_tiff2D_to_numpy()
-            if len(im.shape)==3:
-                im = rgb2gray(np.uint8(im))
-            
             im=np.asarray(im)
             
              #calculating descriptor
@@ -95,52 +104,7 @@ class LBP(Feature.BaseFeature):
             descriptor = lbp(im,radius,points)
             
         #initalizing rows for the table
-        return [descriptor]
-        
-            
-#class LBPbro(BaseFeature):
-#    """
-#        Initalizes table and calculates the SURF descriptor to be
-#        placed into the HDF5 table.
-#    """
-#    
-#    #parameters
-#    file = 'features_lbpbro.h5'
-#    name = 'LBPbro'
-#    description = """Linear Binary Patterns"""
-#    length = 108
-#        
-#    @Feature.wrapper
-#    def calculate(self, **resource):
-#        """ Append descriptors to SURF h5 table """
-#        #initalizing
-#        image_uri = resource['image']
-#
-#        with Feature.ImageImport(image_uri) as imgimp:
-#            im=cv2.imread(str(imgimp), cv2.CV_LOAD_IMAGE_GRAYSCALE)
-#    
-#            if im==None:
-#                raise ValueError('Format was not supported')
-#    
-#            im=np.asarray(im)
-#            
-#             #calculating descriptor\
-#            imagesize=im.shape
-#            if imagesize[0]>imagesize[1]:
-#                scale=imagesize[1]
-#            else:
-#                scale=imagesize[0]
-#            
-#            l=lbp(im,scale,8)
-#            
-#            b=lbp(im,scale/2,8)
-#            
-#            p=lbp(im,scale/4,8)
-#            
-#            descriptor = np.concatenate((l,b,p))
-#            
-#        #initalizing rows for the table
-#        return [descriptor]
+        return descriptor
         
         
 class PFTAS(Feature.BaseFeature):
@@ -155,23 +119,22 @@ class PFTAS(Feature.BaseFeature):
     length = 54 
     confidence = 'good' 
     
-    @calc_wrapper
-    def calculate(self, **resource):
+    def calculate(self, resource):
         """ Append descriptors to SURF h5 table """
         #initalizing
-        image_uri = resource['image']
+        except_image_only(resource)
         
+        image_uri = resource.image
+        image_uri = BQServer().prepare_url(image_uri, remap='gray')
         with ImageImport(image_uri) as imgimp:
             im = imgimp.from_tiff2D_to_numpy()
-            if len(im.shape)==3:
-                im = rgb2gray(np.uint8(im))  
  
             im = np.asarray(im)
             im = np.uint8(im)
             descriptor = pftas(im)
             
         #initalizing rows for the table
-        return [descriptor]
+        return descriptor
     
 class PFTASColored(Feature.BaseFeature):
     """
@@ -183,23 +146,22 @@ class PFTASColored(Feature.BaseFeature):
     length = 162 
     confidence = 'good' 
     
-    @calc_wrapper
-    def calculate(self, **resource):
+    def calculate(self, resource):
         """ Append descriptors to SURF h5 table """
         #initalizing
-        image_uri = resource['image']
+        except_image_only(resource)
         
+        image_uri = resource.image
+        image_uri = BQServer().prepare_url(image_uri, remap='display')        
         with ImageImport(image_uri) as imgimp:
             im = np.uint8(imgimp.from_tiff2D_to_numpy())
-            if len(im.shape)==2:
-                im = gray2rgb(im) 
 
             im = np.asarray(im)
             im = np.uint8(im)
             descriptor = pftas(im)
             
         #initalizing rows for the table
-        return [descriptor]
+        return descriptor
             
 class TAS(Feature.BaseFeature):
     """
@@ -211,22 +173,21 @@ class TAS(Feature.BaseFeature):
     length = 54 
     confidence = 'good' 
     
-    @calc_wrapper
-    def calculate(self, **resource):
+    def calculate(self, resource):
         """ Append descriptors to TAS h5 table """
         #initalizing
-        image_uri = resource['image'] 
+        except_image_only(resource)
+        
+        image_uri = resource.image 
+        image_uri = BQServer().prepare_url(image_uri, remap='gray')
         with ImageImport(image_uri) as imgimp:
             im = imgimp.from_tiff2D_to_numpy()
-            if len(im.shape)==3:
-                im = rgb2gray(np.uint8(im))  
-
             im=np.asarray(im) 
             im = np.uint8(im)
             descriptor = tas(im)
             
         #initalizing rows for the table
-        return [descriptor]
+        return descriptor
 
 class TASColored(Feature.BaseFeature):
     """
@@ -238,23 +199,21 @@ class TASColored(Feature.BaseFeature):
     length = 162 
     confidence = 'good' 
     
-    @calc_wrapper
-    def calculate(self, **resource):
-        """ Append descriptors to TAS h5 table """
+    def calculate(self, resource):
         #initalizing
-        image_uri = resource['image']
+        except_image_only(resource)
         
+        image_uri = resource.image
+        image_uri = BQServer().prepare_url(image_uri, remap='display')          
         with ImageImport(image_uri) as imgimp:
             im = np.uint8(imgimp.from_tiff2D_to_numpy())
-            if len(im.shape)==2:
-                im = gray2rgb(im) 
 
             im=np.asarray(im) 
             im = np.uint8(im)
             descriptor = tas(im)
             
         #initalizing rows for the table
-        return [descriptor]
+        return descriptor
             
             
 class ZM(Feature.BaseFeature):
@@ -267,16 +226,14 @@ class ZM(Feature.BaseFeature):
     length = 25
     confidence = 'good' 
         
-    @calc_wrapper
-    def calculate(self, **resource):
-        """ Append descriptors to SURF h5 table """
+    def calculate(self, resource):
         #initalizing
-        image_uri = resource['image']
+        except_image_only(resource)
         
+        image_uri = resource.image
+        image_uri = BQServer().prepare_url(image_uri, remap='gray')        
         with ImageImport(image_uri) as imgimp:
             im = imgimp.from_tiff2D_to_numpy()
-            if len(im.shape)==3:
-                im = rgb2gray(np.uint8(im))
                 
             im=np.asarray(im)        
             radius=8
@@ -284,5 +241,5 @@ class ZM(Feature.BaseFeature):
             descritptor = zernike_moments(im,radius,degree)
             
         #initalizing rows for the table
-        return [descritptor]
+        return descritptor
     

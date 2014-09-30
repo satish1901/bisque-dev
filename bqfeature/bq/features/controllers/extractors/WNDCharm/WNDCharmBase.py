@@ -3,11 +3,19 @@ from bq.features.controllers import Feature #import base class
 from pylons.controllers.util import abort
 import numpy as np
 import logging
-from bq.features.controllers.Feature import BaseFeature, calc_wrapper, ImageImport, rgb2gray #import base class
+from bq.features.controllers.Feature import BaseFeature, ImageImport, rgb2gray #import base class
 from PIL import Image
 
 log = logging.getLogger("bq.features")
 
+
+def except_image_only(resource):
+    if resource.image is None:
+        raise FeatureExtractionError(400, 'Image resource is required')
+    if resource.mask:
+        raise FeatureExtractionError(400, 'Mask resource is not accepted')
+    if resource.gobject:
+        raise FeatureExtractionError(400, 'Gobject resource is not accepted')
 
 class WNDCharm(BaseFeature): #base WNDCharm feature class
     """
@@ -19,10 +27,10 @@ class WNDCharm(BaseFeature): #base WNDCharm feature class
     name = 'WNDCharmBase'
     description = """This is the WNDCharm Base Class. Is not a feature in the feature server."""
     
-    @calc_wrapper
-    def calculate(self, **resource):
+    def calculate(self, resource):
         """ Append descriptors to h5 table """
-        image_uri = resource['image']
+        except_image_only(resource)
+        image_uri = resource.image
         feature_info=feature_list[self.name]
         tranforms=feature_info[1:3]
         #adds the correct delimiter
@@ -61,4 +69,4 @@ class WNDCharm(BaseFeature): #base WNDCharm feature class
  
             
         #initalizing rows for the table
-        return [descriptor]
+        return descriptor
