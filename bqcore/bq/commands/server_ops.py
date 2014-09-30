@@ -182,6 +182,8 @@ def uwsgi_command(command, cfgopt, processes, options, default_cfg_file = None):
         final_cfg = find_site_cfg(default_cfg_file)
         uwsgi_opts = cfgopt['uwsgi']
         uwsgi_cmd = ['uwsgi', '--ini-paste', final_cfg,
+#                     '--env', 'LC_ALL=en_US.UTF-8',
+#                     '--env', 'LANG=en_US.UTF-8',
                      '--daemonize', cfgopt['logfile'],
                      '--pidfile', cfgopt['pidfile']]
         verbose('Executing: ' + ' '.join(uwsgi_cmd))
