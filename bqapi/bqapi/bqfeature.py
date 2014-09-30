@@ -4,9 +4,23 @@ import threading
 import tempfile
 import tables
 import os
+from math import ceil
 import Queue
 from bqapi.comm import BQCommError
 import numpy as np
+import logging
+from collections import namedtuple
+
+log = logging.getLogger('bqapi.bqfeature')
+
+
+FeatureResource = namedtuple('FeatureResource',['image','mask','gobject'])
+FeatureResource.__new__.__defaults__ = (None, None, None)
+
+class FeatureCommError(BQCommError):
+    """
+        Feature Communication Exception
+    """
 
 class Feature(object):
 
@@ -27,26 +41,31 @@ class Feature(object):
         resource = etree.Element('resource')
         for (image, mask, gobject) in resource_list:
             sub = etree.SubElement(resource, 'feature')
-            if image is not None:
-                sub.attrib['image'] = image
-            if mask is not None:
-                sub.attrib['mask'] = mask
-            if gobject is not None:
-                sub.attrib['gobject'] = gobject            
+            query = [] 
+            if image: query.append('image=%s' % image)
+            if mask: query.append('mask=%s' % mask)
+            if gobject: query.append('gobject=%s' % gobject)
+            query = '&'.join(query)            
+            sub.attrib['uri'] = '%s?%s'%(url,query)
+        
+        log.debug('Fetch Feature %s for %s resources'%(name, len(resource_list)))
             
         if path:
+            log.debug('Returning feature response to %s' % path)
             return session.c.post(url, content=etree.tostring(resource), headers={'Content-Type':'text/xml', 'Accept':'application/x-bag'}, path=path)          
         else:
             f = tempfile.TemporaryFile(suffix='.h5', dir=tempfile.gettempdir())
             f.close()
-            path = session.c.post(url, content=etree.tostring(resource), headers={'Content-Type':'text/xml',  'Accept':'application/x-bag'}, path=f.name)
+            log.debug('Returning feature response to %s' % f.name)
+            path = session.c.post(url, content=etree.tostring(resource), headers={'Content-Type':'text/xml', 'Accept':'application/x-bag'}, path=f.name)
             return tables.open_file(path, 'r')
     
     
     def fetch_vector(self, session, name, resource_list):
         """
-            Requests the feature server to calculate features on provided resources.
-             
+            Requests the feature server to calculate features on provided resources. Designed more for
+            requests of very view features. 
+            
             @param: session - the local session
             @param: name - the name of the feature one wishes to extract
             @param: resource_list - list of the resources to extract. format: 
@@ -54,15 +73,39 @@ class Feature(object):
             not required just provided None
             
             @return: a list of features as numpy array
+            
+            @exception: FeatureCommError - if any part of the request has an error the FeatureCommError will be raised on the
+            first error.
+            note: You can use fetch and read from the status table for the error. 
+            warning: fetch_vector will not return response if an error occurs within the request
         """
         hdf5 = self.fetch(session, name, resource_list)
+        status = hdf5.root.status
+        index = status.getWhereList('status>=400')
+        if index.size>0: #returns the first error that occurs
+            status = status[index[0]][0]
+            hdf5.close()
+            os.remove(hdf5.filename) #remove file from temp directory
+            raise FeatureCommError('%s:Error occured during feature calculations' % status, {})
         table = hdf5.root.values
+        status_table = hdf5.root.status
         feature_vector = table[:]['feature']
         hdf5.close()
         os.remove(hdf5.filename) #remove file from temp directory
         return feature_vector
-
-
+    
+    @staticmethod
+    def length(session, name):
+        """
+            Returns the length of the feature
+            
+            @param: session - the local session
+            @param: name - the name of the feature one wishes to extract
+            
+            @return: feature length
+        """
+        xml = session.fetchxml('/features/%s'%name)
+        return int(xml.xpath('feature/tag[@name="feature_length"]/@value')[0])
 
 class ParallelFeature(Feature):
     
@@ -71,8 +114,6 @@ class ParallelFeature(Feature):
     MinChunk = 100
     
     def __init__(self):
-        self.thread_num = 4
-        self.chunk_size = 500
         super(ParallelFeature, self).__init__()
         
 
@@ -86,7 +127,7 @@ class ParallelFeature(Feature):
                 @param: errorcb - a call back that is called if a BQCommError is raised
             """
             self.request_queue = request_queue
-            
+
             if errorcb is not None:
                 self.errorcb = errorcb
             else:
@@ -113,7 +154,7 @@ class ParallelFeature(Feature):
                     break
         
         
-    def request_thread_pool(self, request_queue, errorcb=None):
+    def request_thread_pool(self, request_queue, errorcb=None, thread_count = MaxThread):
         """
             Runs the BQRequestThread
             
@@ -121,19 +162,24 @@ class ParallelFeature(Feature):
             @param: errorcb - is called back when a BQCommError is raised
         """
         jobs = []
-        for _ in range(self.thread_num):
+        log.debug('Starting Thread Pool')
+        for _ in range(thread_count):
             r = self.BQRequestThread(request_queue, errorcb)
+            r.daemon = True            
             jobs.append(r)
             r.start()
 
         for j in jobs:
             j.join()
-        print 'Joins Threads'
+        log.debug('Rejoining %s threads'%len(jobs))
         return
     
     
     def set_thread_num(self, n):
         """
+            Overrides the internal thread parameters, chunk size must also
+            be set to override the request parameters
+            
             @param: n - the number of requests made at once
         """
         self.thread_num = n
@@ -141,30 +187,42 @@ class ParallelFeature(Feature):
         
     def set_chunk_size(self, n):
         """
+            Overrides the chunk size, thread num must also
+            be set to override the request parameters
+            
             @param: n - the size of each request
         """
         self.chunk_size = n
         
+    def calculate_request_plan(self, l):
+        """
+            Tries to figure out the best configuration 
+            of concurrent requests and sizes of those 
+            requests based on the size of the total request
+             and pre-set parameters
+            
+            @param: l - the list of requests
+            
+            @return: chunk_size - the amount of resources for request
+            @return: thread_num - the amount of concurrent requests
+        """
+        if len(l)>MaxThread*MaxChunk:
+            return (MaxThread,MaxChunk)
+        else:
+            if len(l)/float(MaxThread)>=MinChunk:
+                return (MaxThread, ceil(MaxChunk/float(MaxThread)))
+            else:
+                t = ceil(len(l)/float(MinChunk))
+                return (t, len(l)/float(t))
         
-    def chunk(self, l):
+        
+    def chunk(self, l, chunk_size):
         """
            @param: l - list  
            @return: list of resource and sets the amount of parallel requests
         """
-        
-#        if len(l)>MaxThread*MaxChunk
-#            len(l)/MaxChunk #queue max chunk
-#        else:
-#            if len(l)/MaxThread >= MinChunk: #divide evenly among the n threads
-#                size_of_chunks = len(l)/MaxThread
-#            else: #find how many threads should be run and the chunk size
-#                number_of_threads = ceil(len(l)/100)
-#                size_of_chunks = len(l)/number_of_threads
-                
-        chunk_size = self.chunk_size
         for i in xrange(0, len(l), chunk_size):
             yield l[i:i+chunk_size]
-        
         
     def fetch(self, session, name, resource_list, path=None):
         """
@@ -188,6 +246,7 @@ class ParallelFeature(Feature):
         
         stop_write_thread = False #sets a flag to stop the write thread
         # when the requests threads have finished
+        
         class WriteHDF5Thread(Thread):
             """
                 Copies small hdf5 feature tables
@@ -215,17 +274,30 @@ class ParallelFeature(Feature):
                         with tables.open_file(temp_path, 'a') as hdf5temp:
                             with tables.open_file(table_path, 'a') as hdf5:
                                 temp_table = hdf5temp.root.values
+                                temp_status_table = hdf5temp.root.status
                                 if not hasattr(hdf5.root, 'values'):
                                     temp_table.copy(hdf5.root,'values')
+                                    temp_status_table.copy(hdf5.root,'status')
                                 else:
                                     table = hdf5.root.values
+                                    status_table = hdf5.root.status
                                     table.append(temp_table[:])
+                                    status_table.append(temp_status_table[:])
                                     table.flush()
+                                    status_table.flush()
                         os.remove(hdf5temp.filename)
                         continue
                         
                     if stop_write_thread is True:
+                        log.debug('Ending HDF5 write thread')
                         break
+        
+        
+        def errorcb(e):
+            """
+                Returns an error log
+            """
+            log.warning('%s'%str(e))
         
         write_queue = Queue.Queue()
         request_queue = Queue.Queue()
@@ -236,20 +308,31 @@ class ParallelFeature(Feature):
                 f.close()                    
                 write_queue.put(super(ParallelFeature, self).fetch(session, name, partial_resource_list, path=f.name))
             return request
-    
-        for partial_resource_list in self.chunk(resource_list):
+        
+        if hasattr(self,'thread_num') and hasattr(self,'chunk_size'):
+            thread_num = self.thread_num
+            chunk_size = self.chunk_size
+        else:
+            thread_num, chunk_size = calculate_request_plan(resource_list)
+        
+        for partial_resource_list in self.chunk(resource_list, chunk_size):
             request_queue.put(request_factory(partial_resource_list))          
         
         
         w = WriteHDF5Thread(write_queue)
+        log.debug('Starting HDF5 write thread')
+        w.daemon = True    
         w.start()
-        self.request_thread_pool(request_queue)
+
+        self.request_thread_pool(request_queue, errorcb=errorcb, thread_count = thread_num)
         stop_write_thread = True
         w.join()
 
         if path is None:
+            log.debug('Returning parallel feature response to %s'%table_path)
             return tables.open_file(table_path, 'r')
         else: 
+            log.debug('Returning parallel feature response to %s'%path)
             return path
         
         
