@@ -101,6 +101,17 @@ def test_get_simple_test_feature_xml():
 
 
 @with_setup(setup_image_upload, teardown_image_remove)
+def test_get_simple_test_feature_xml_with_redirected_data_service_url():
+    """
+    """
+    name = 'simple_test_feature_xml'
+    response_code = 200
+    request = '%s/features/SimpleTestFeature/xml?image=%s' % (NS.root, NS.resource_uri+'/pixels')
+    check_response(NS.session, request, response_code)
+
+
+
+@with_setup(setup_image_upload, teardown_image_remove)
 def test_get_simple_test_feature_xml_returned_from_cache():
     """
     """

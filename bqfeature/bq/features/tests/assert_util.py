@@ -41,6 +41,15 @@ def check_feature(ns, test, feature_name, image=None, mask=None, gobject=None):
         temp_response_path = ns.session.postxml(request, xml=None, method='GET', path=temp_response_path)
     except BQCommError as e:
         assert(e.status == 200)
+    else:
+        #check the hdf file for status of each request
+        with tables.open_file(temp_response_path, 'r') as temp:
+            temp_table = temp.root.status
+            query = 'status!=200'
+            index = temp_table.getWhereList(query)
+            if len(index)>0:
+                for i in index:
+                    assert(temp_table[i]['status']==200)
     
     results_table_path = os.path.join(ns.results_location, ns.feature_response_results)
     past_results_table_path = os.path.join(ns.store_local_location, ns.feature_past_response_results)
@@ -81,8 +90,6 @@ def check_feature(ns, test, feature_name, image=None, mask=None, gobject=None):
                 index_past = past_test_names.getWhereList(query)
                 if index_past.any():
                     np.testing.assert_array_almost_equal(feature[index], past_feature[index_past], 4)
-    
-    
     
 
 
