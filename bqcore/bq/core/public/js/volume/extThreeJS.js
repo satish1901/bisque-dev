@@ -168,7 +168,9 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
         this.fov = 40;
         this.camera = new THREE.PerspectiveCamera(this.fov, aspect, .01, 20);
 
-        this.controls = new THREE.TrackballControls(this.camera, thisDom);
+        //this.controls = new THREE.TrackballControls(this.camera, thisDom);
+        this.controls = new THREE.OrbitControls(this.camera, thisDom);
+
         this.controls.noRoll = true;
         this.projector = new THREE.Projector();
 

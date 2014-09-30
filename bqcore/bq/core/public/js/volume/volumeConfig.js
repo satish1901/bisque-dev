@@ -155,6 +155,7 @@ VolumeShader.prototype.config = function(config){
 
         'uniform vec2 iResolution;',
         'uniform vec3 BOX_SIZE;',
+        'uniform int   NUM_CHANNELS;',
         'uniform int   BREAK_STEPS;',
         'uniform int   DITHERING;',
         'uniform float GAMMA_MIN;',
@@ -306,7 +307,8 @@ VolumeShader.prototype.config = function(config){
             luma2Alpha = [
                 'vec4 luma2Alpha(vec4 color, float min, float max, float C){',
                 '  //float x = sqrt(1.0/9.0*(color[0]*color[0] +color[1]*color[1] +color[2]*color[2]));',
-                '  float x = 1.0/3.0*(color[0] + color[1] + color[2]);',
+                '  float iChannels = 1.0/float(NUM_CHANNELS);',
+                '  float x = iChannels*(color[0] + color[1] + color[2]);',
 
                 '  //x = clamp(x, 0.0, 1.0);',
                 '  float xi = (x-min)/(max-min);',
@@ -353,7 +355,7 @@ VolumeShader.prototype.config = function(config){
             '  //return vec4(pos.xyz,0.05);',
             '  pos = 0.5*(1.0 - pos);',
             '  pos[0] = 1.0 - pos[0];',
-            '  //pos = clamp(pos,0.1,0.9);',
+            '  pos = clamp(pos,0.005,0.995);',
             '  float bounds = float(pos[0] < 1.0 && pos[0] > 0.0 &&',
             '                      pos[1] < 1.0 && pos[1] > 0.0 &&',
             '                      pos[2] < 1.0 && pos[2] > 0.0 );',

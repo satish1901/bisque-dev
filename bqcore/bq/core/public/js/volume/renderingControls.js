@@ -190,6 +190,10 @@ gammaTool.prototype.addUniforms = function(){
     //this.initUniforms();
 };
 
+gammaTool.prototype.toggle = function(button){
+    this.base.prototype.toggle.call(this,button);
+};
+
 gammaTool.prototype.initControls = function(){
     var me = this;
 
@@ -217,7 +221,10 @@ gammaTool.prototype.initControls = function(){
         mid /= div;
         var diff = max - min;
         var x = (mid - min) / diff;
-        scale = 4 * x * x;
+        var scale = 4 * x * x;
+        if((mid - 0.5)*(mid - 0.5) < 0.0005){
+            scale = 1.0;
+        }
         return {
             min : min,
             scale : scale,
@@ -306,9 +313,11 @@ gammaTool.prototype.initControls = function(){
 
                     this.data = vals;
                     this.volume.model.gamma = vals;
+
+
                     if(this.histogramSvg){
                         this.volume.model.updateHistogram();
-                        this.histogramSvg.redraw();
+                        //this.histogramSvg.redraw();
                     }
 
                 },
@@ -330,6 +339,11 @@ gammaTool.prototype.initControls = function(){
             //me.setEqualized();
             me.histogramSvg.redraw();
         })
+
+        me.volume.on('histogramupdate', function(){
+            me.histogramSvg.redraw();
+        });
+
         this.loaded = true;
     });
 };

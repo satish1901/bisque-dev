@@ -417,6 +417,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 				usePow = true;
 
         this.maxSteps = 64;
+        this.numChannels = 3;
         this.shaderConfig = {
             lighting: {
                 phong: false,
@@ -536,6 +537,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 				me.initUniforms();
 				me.wipeTextureTimeBuffer();
 				me.updateTextureUniform();
+                me.fetchHistogram();
                 me.canvas3D.doAnimate();
 			},
 			scope : me,
@@ -648,7 +650,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
         this.model = {
             histogramRaw: {r:[], g:[], b:[]},
             histogram: {r:[], g:[], b:[]},
-            gamma: {min: 0, max: 1.0, scale: 0.5},
+            gamma: {min: 0, max: 1.0, scale: 1.0},
             loaded: false,
             updateHistogram : function(){
                 for(var chan in this.histogramRaw){
@@ -685,6 +687,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
                             var newBin = Math.floor(modVal);
                             newBin = newBin < hist.length - 1 ? newBin : hist.length - 1;
                             lookUp[i] = newBin;
+                            if(C == 1) lookUp[i] = i;
                         }
                         if(i < start)
                             lookUp[i] = 0;
@@ -696,8 +699,8 @@ Ext.define('BQ.viewer.Volume.Panel', {
                     for (var i = 0; i < lookUp.length - spread; i++) {
                         newHist[lookUp[i]] += 1.0/spread * hist[i];
                     }
-                    me.fireEvent("histogramupdate", me);
                 }
+                me.fireEvent("histogramupdate", me);
             }
         }
     },
@@ -799,8 +802,11 @@ Ext.define('BQ.viewer.Volume.Panel', {
 	},
 
     fetchHistogram : function () {
-        url = this.constructAtlasUrl() + '&histogram';
+        url = this.constructAtlasUrl().replace('format=jpeg','histogram');
+
         console.log("hist url: ", url);
+        if(!this.model)
+            this.initHistogram();
         Ext.Ajax.request({
             url : url,
             scope : this,
@@ -814,27 +820,25 @@ Ext.define('BQ.viewer.Volume.Panel', {
                     var xmlDoc = response.responseXML;
                     var rChan = BQ.util.xpath_nodes(xmlDoc, "resource/histogram[@name='channel']/value");
 
-                    this.model.histogram.r = rChan[0].innerHTML.split(",");
-
-                    if(rChan.length > 1){
-                        this.model.histogram.g = rChan[1].innerHTML.split(",");
-                    }
-                    if(rChan.length > 2){
-                        this.model.histogram.b = rChan[2].innerHTML.split(",");
-                    }
+                    var dim = 0;
                     for (var chan in this.model.histogram) {
-
+                        if(!rChan[dim]) continue;
+                        var tmp = rChan[dim].innerHTML.split(",");
                         if (this.model.histogram.hasOwnProperty(chan)) {
                             var channel = this.model.histogram[chan];
-                            channel.forEach(function(e,i,a){
-                                a[i] = parseInt(e);
+                            if(channel.length == 0) channel == tmp;
+                            tmp.forEach(function(e,i,a){
+                                channel[i] = parseInt(tmp[i]);
                             });
                         }
+                        dim++;
+                        this.numChannels = dim;
                         this.model.histogramRaw[chan] = this.model.histogram[chan].slice(0);
                     }
                     this.model.loaded = true;
                     this.fireEvent("histogramloaded",this);
-                    //console.log(this.model);
+                    this.sceneVolume.initUniform('NUM_CHANNELS', "i", this.numChannels);
+                    this.model.updateHistogram();
 
                 }
             },
@@ -962,7 +966,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		//Ajax request the values pertinent to the volume atlases
 		this.fetchDimensions(fullAtlasUrl, 'atlas');
 		this.fetchDimensions(resizeAtlasUrl, 'resized');
-        this.fetchHistogram();
+        //this.fetchHistogram();
 	},
 
 	wipeTextureTimeBuffer : function () {
@@ -1108,6 +1112,16 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		 + this.resource.resource_uniq + '?' + command.join('&');
 	},
 
+/*
+	constructAtlasUrlNoJpg : function (opts) {
+		var command = [];
+		var plugin = undefined;
+		for (var i = 0; (plugin = this.plug_ins[i]); i++)
+			plugin.addCommand(command, opts);
+		return (this.hostName ? this.hostName : '') + '/image_service/image/'
+		 + this.resource.resource_uniq + '?' + command.join('&');
+	},
+*/
 	scaleCube : function (inScale) {
 		this.sceneVolume.scaleCube(inScale);
 		this.fireEvent('scale', this);
@@ -1147,6 +1161,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		// dima: image service is serving bad h264 right now
 		//this.viewer.src = this.constructAtlasUrl();
 		this.updateTextureUniform();
+        this.fetchHistogram();
 		//this.sourceH264.setAttribute('src', this.constructMovieUrl('h264'));
 		//this.sourceWEBM.setAttribute('src', this.constructMovieUrl('webm'));
 	},
@@ -1724,7 +1739,6 @@ VolumePlugin.prototype.changed = function () {
 	if (!this.update_check || (this.update_check && this.update_check.checked))
 	{
 	    this.volume.needs_update();
-	    this.volume.update_image();
 
     }
 
