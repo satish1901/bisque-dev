@@ -17,6 +17,9 @@ class FeatureServiceError(Exception):
         self.error_code = error_code
         self.error_message = error_message
         
+    def __str__(self):
+        return 'Error: %s:%s' % (self.error_code,self.error_message)
+        
         
 class FeatureImportError(Exception):
     
