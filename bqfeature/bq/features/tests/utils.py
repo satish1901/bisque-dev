@@ -83,7 +83,7 @@ def fetch_file(filename, store_location, local_dir='.'):
     return path
 
 
-def upload_new_file( bqsession, path):
+def upload_new_file(bqsession, path):
     """
         uploads files to bisque server
     """
@@ -317,17 +317,18 @@ def setup_rectangle_upload(ns):
     size_x = int(xml.xpath('tag[@name="image_num_x"]/@value')[0])
     size_y = int(xml.xpath('tag[@name="image_num_y"]/@value')[0])
     
-    vertices = np.array([[1,0],[0,.75],[-1,0],[0,-.75]]) #shape
+    #vertices = np.array([[1,0],[0,.75],[-1,0],[0,-.75]]) #shape
+    vertices = np.array([[-.5,-.5], [.5,.5]])
     
-    min = np.min([size_y,size_x])
+    min = np.min([size_y, size_x])
     scale = .4*min
-    vertices = vertices*scale#scale
-    vertices[:,0] = vertices[:,0]+size_y*.5#center y
-    vertices[:,1] = vertices[:,1]+size_x*.5#center x
+    vertices = vertices*scale #scale
+    vertices[:,0] = vertices[:,0] + size_y*.5 #center y
+    vertices[:,1] = vertices[:,1] + size_x*.5 #center x
     
     polygon = etree.Element('rectangle', name='test')
     for i, (y, x) in enumerate(vertices):
-        etree.SubElement(polygon,'vertex',index=str(i), y=str(y),x=str(x))
+        etree.SubElement(polygon, 'vertex', index=str(i), y=str(y), x=str(x))
     xml = ns.session.postxml(ns.resource_uri, xml=etree.tostring(polygon))
     gobject_uri = xml.attrib['uri']
 

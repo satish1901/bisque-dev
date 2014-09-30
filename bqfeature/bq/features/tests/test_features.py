@@ -668,7 +668,7 @@ def test_SURF():
         Test SURF
     """
     name = 'SURF'
-    test_name = 'test_SIFT_with_point'
+    test_name = 'test_SURF'
     check_feature(NS, test_name, name, image=NS.image_uri)
     
 @attr('opencv')

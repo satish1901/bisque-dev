@@ -103,88 +103,88 @@ def test_post_without_a_body():
 
 def test_simple_test_feature_resource_type_not_found_xml():
     name = 'simple_test_feature_resource_type_not_found_simple'
-    response_code = 403
+    response_code = 200
     request = '%s/features/SimpleTestFeature/xml?image=%s/image_service/image/notaresource'%(NS.root, NS.root)
     check_response(NS.session, request, response_code)
     
 def test_simple_test_feature_resource_type_not_found_csv():
     name = 'simple_test_feature_resource_type_not_found_simple'
-    response_code = 403
+    response_code = 200
     request = '%s/features/SimpleTestFeature/csv?image=%s/image_service/image/notaresource'%(NS.root, NS.root)
     check_response(NS.session, request, response_code)
     
 def test_simple_test_feature_resource_type_not_found_hdf():
     name = 'simple_test_feature_resource_type_not_found_simple'
-    response_code = 403
+    response_code = 200
     request = '%s/features/SimpleTestFeature/hdf?image=%s/image_service/image/notaresource'%(NS.root, NS.root)
     check_response(NS.session, request, response_code)
     
 def test_uncached_test_feature_resource_type_not_found_xml():
     name = 'resource_type_not_found'
-    response_code = 403
+    response_code = 200
     request = '%s/features/UncachedTestFeature/xml?image=%s/image_service/image/notaresource'%(NS.root, NS.root)
     check_response(NS.session, request, response_code)
     
 def test_uncached_test_feature_resource_type_not_found_csv():
     name = 'resource_type_not_found'
-    response_code = 403
+    response_code = 200
     request = '%s/features/UncachedTestFeature/csv?image=%s/image_service/image/notaresource'%(NS.root, NS.root)
     check_response(NS.session, request, response_code)
     
 def test_uncached_test_feature_resource_type_not_found_hdf():
     name = 'resource_type_not_found'
-    response_code = 403
+    response_code = 200
     request = '%s/features/UncachedTestFeature/hdf?image=%s/image_service/image/notaresource'%(NS.root, NS.root)
     check_response(NS.session, request, response_code)
 
 
 def test_parameter_test_feature_resource_type_not_found_xml():
     name = 'resource_type_not_found'
-    response_code = 403
+    response_code = 200
     request = '%s/features/ParametersTestFeature/xml?image=%s/image_service/image/notaresource'%(NS.root, NS.root)
     check_response(NS.session, request, response_code)
     
 def test_parameter_test_feature_resource_type_not_found_csv():
     name = 'resource_type_not_found'
-    response_code = 403
+    response_code = 200
     request = '%s/features/ParametersTestFeature/csv?image=%s/image_service/image/notaresource'%(NS.root, NS.root)
     check_response(NS.session, request, response_code)
     
 def test_parameter_test_feature_resource_type_not_found_hdf():
     name = 'resource_type_not_found'
-    response_code = 403
+    response_code = 200
     request = '%s/features/ParametersTestFeature/hdf?image=%s/image_service/image/notaresource'%(NS.root, NS.root)
     check_response(NS.session, request, response_code)
     
 def test_uncached_parameter_test_feature_resource_type_not_found_xml():
     name = 'resource_type_not_found'
-    response_code = 403
+    response_code = 200
     request = '%s/features/UncachedParametersTestFeature/xml?image=%s/image_service/image/notaresource'%(NS.root, NS.root)
     check_response(NS.session, request, response_code)
     
 def test_uncached_parameter_test_feature_resource_type_not_found_csv():
     name = 'resource_type_not_found'
-    response_code = 403
+    response_code = 200
     request = '%s/features/UncachedParametersTestFeature/csv?image=%s/image_service/image/notaresource'%(NS.root, NS.root)
     check_response(NS.session, request, response_code)
     
 def test_uncached_parameter_test_feature_resource_type_not_found_hdf():
     name = 'resource_type_not_found'
-    response_code = 403
+    response_code = 200
     request = '%s/features/UncachedParametersTestFeature/hdf?image=%s/image_service/image/notaresource'%(NS.root, NS.root)
     check_response(NS.session, request, response_code)
 
 @with_setup(setup_image_upload, teardown_image_remove)
 def test_simple_test_feature_gobject_not_found():
     name = 'feature_calculation_error'
-    response_code = 403
+    response_code = 200
     request = '%s/features/SimpleTestFeature/xml?image=%s&gobject=%s/image_service/image/notaresource'%(NS.root, NS.image_uri, NS.root)
     check_response(NS.session, request, response_code)
 
 @with_setup(setup_image_upload, teardown_image_remove)
 def test_feature_calculation_error():
     name = 'feature_calculation_error'
-    response_code = 500
+    response_code = 200
     request = '%s/features/ExceptionTestFeature/xml?image=%s'%(NS.root, NS.image_uri)
     check_response(NS.session, request, response_code)
 
