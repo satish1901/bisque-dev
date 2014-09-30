@@ -71,7 +71,7 @@ def test_bqfeature_fetch_1():
     """
     filename = 'bqfeature_fetch_1.h5'
     path = os.path.join(results_location, filename)
-    filename = Feature().fetch(bqsession, 'CLD', resource_list, path=path)
+    filename = Feature().fetch(bqsession, 'SimpleTestFeature', resource_list, path=path)
 
 
 @with_setup(setup_bqfeature_fetch, teardown_bqfeature_fetch)
@@ -79,7 +79,7 @@ def test_bqfeature_fetch_2():
     """
         Test feature fetch and returning pytables object
     """
-    hdf5 = Feature().fetch(bqsession, 'CLD', resource_list)
+    hdf5 = Feature().fetch(bqsession, 'SimpleTestFeature', resource_list)
     hdf5.close()
     os.remove(hdf5.filename)
 
@@ -103,8 +103,19 @@ def test_bqfeature_fetchvector_1():
     """
         Test fetch vector
     """
-    feature_vector = Feature().fetch_vector(bqsession, 'CLD', resource_list)
-
+    feature_vector = Feature().fetch_vector(bqsession, 'SimpleTestFeature', resource_list)
+    
+def test_bqfeature_fetchvector_error():
+    """
+        Test fetch vector on a resource that doesnt exist
+    """
+    try:
+        resource_list = [FeatureResource(image='%s/image_service/image/notaresource' % bqsession.bisque_root)]
+        feature_vector = Feature().fetch_vector(bqsession, 'SimpleTestFeature', resource_list)
+    except FeatureCommError:
+        assert True
+    else:
+        assert False
 
 
 def setup_bqparallelfeature_fetch():
@@ -134,7 +145,7 @@ def test_bqparallelfeature_fetch_1():
     PF=ParallelFeature()
     PF.set_thread_num(1)
     PF.set_chunk_size(5)
-    hdf5 = PF.fetch(bqsession, 'CLD', resource_list)
+    hdf5 = PF.fetch(bqsession, 'SimpleTestFeature', resource_list)
     hdf5.close()
     os.remove(hdf5.filename)
 
@@ -146,9 +157,9 @@ def test_bqparallelfeature_fetch_2():
     filename = 'bqparallelfeature_fetch_2.h5'
     path = os.path.join(results_location, filename)
     PF=ParallelFeature()
-    PF.set_thread_num(1)
+    PF.set_thread_num(2)
     PF.set_chunk_size(5)
-    filename = PF.fetch(bqsession, 'CLD', resource_list, path=path)
+    filename = PF.fetch(bqsession, 'SimpleTestFeature', resource_list, path=path)
     
 
 def setup_bqparallelfeature_fetchvector():
@@ -176,9 +187,9 @@ def test_bqparallelfeature_fetchvector_1():
         Test parallel feature fetch vector
     """
     PF=ParallelFeature()
-    PF.set_thread_num(1)
+    PF.set_thread_num(2)
     PF.set_chunk_size(5)
-    feature_vectors = PF.fetch_vector(bqsession, 'CLD', resource_list)
+    feature_vectors = PF.fetch_vector(bqsession, 'SimpleTestFeature', resource_list)
 
 
 
