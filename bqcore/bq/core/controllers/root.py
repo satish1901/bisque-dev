@@ -282,10 +282,8 @@ def startup():
     #           break
     #       except RequestError, e:
     #         log.debug ("root_service request failed")
-
     #       log.debug ("Waiting for Root server %s" % content )
     #       time.sleep(5)
-
     #     log.debug ("Root response %s " % content )
     #     for service_tag in response:
     #         service_type = service_tag.get('type')
@@ -308,6 +306,15 @@ def startup():
     config['pylons.app_globals'].services = \
           json.dumps (dict( (ty , [ i.url for i in e.instances ] )
                             for ty,e in service_registry.get_services().items()))
+    #
+    # Encoding issues
+    import locale
+    log.info ("Using locale %s preferredencoding %s",  locale.getlocale(), locale.getpreferredencoding())
+    # http://stackoverflow.com/questions/3828723/why-we-need-sys-setdefaultencodingutf-8-in-a-py-script
+    # reload(sys)
+    # sys.setdefaultencoding('utf8') or 'latin1'
+
+
     log.debug ("STARTIN")
     start_services(root, enabled, disabled)
 

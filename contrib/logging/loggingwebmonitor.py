@@ -37,13 +37,13 @@ Usage:
 
 - If you customize the logging system here, make sure `mostrecent`
   (instance of MostRecentHandler) remains attached to the root logger.
-  
+
 Author: Gabriel A. Genellina, based on code from Vinay Sajip and
 doug.farrell
 Modified: CBI UCSB
 
 This has been tested with Python versions 2.3 thru 2.6; on versions
-older than 2.5, Ctrl-C handling and the stack trace may not work 
+older than 2.5, Ctrl-C handling and the stack trace may not work
 as expected.
 """
 
@@ -79,7 +79,7 @@ except ImportError:
             return elem
 
 try:
-    reversed 
+    reversed
 except NameError:
     # pre 2.4
     def reversed(items):
@@ -324,7 +324,7 @@ table.vtable tr th.heading {
                 import traceback
                 print >>sys.stderr, 'While generating %r:' % record
                 traceback.print_exc(file=sys.stderr)
-        records = '\n'.join(items)
+        records = u'\n'.join(items)
         d = dict(starttime=starttime,
                  uptime=uptime,
                  logrecordstotal=logrecordstotal,
@@ -408,7 +408,7 @@ def main():
     except socket.error, e:
         print "Couldn't start"
         recv = LoggingReceiver()
-        
+
     thr_recv = threading.Thread(target=recv.serve_forever)
     thr_recv.daemon = True
     print '%s started at %s' % (recv.__class__.__name__, recv.server_address)
