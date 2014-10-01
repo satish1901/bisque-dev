@@ -2,24 +2,16 @@
 """ EHD library
 """
 import tables
-from bq.features.controllers.Feature import ImageImport, gobject2mask #import base class
+import numpy as np
 from bq.features.controllers.exceptions import FeatureExtractionError
+from bq.features.controllers.utils import image2numpy, gobject2mask, except_image_only 
 from bqapi.comm import BQServer
 from bq.features.controllers import Feature
 from pyVRLLib import extractEHD, extractHTD
 import logging
-import numpy as np
-from PIL import Image
 
-log = logging.getLogger("bq.features")
-
-def except_image_only(resource):
-    if resource.image is None:
-        raise FeatureExtractionError(None, 400, 'Image resource is required')
-    if resource.mask:
-        raise FeatureExtractionError(None, 400, 'Mask resource is not required')
-    if resource.gobject:
-        raise FeatureExtractionError(None, 400, 'Gobject resource is not required')
+from bq.features.controllers.utils import image2numpy, except_image_only
+log = logging.getLogger("bq.features.VRL")
 
 class EHD(Feature.BaseFeature):
     """
@@ -41,9 +33,8 @@ class EHD(Feature.BaseFeature):
         except_image_only(resource)
         image_uri = resource.image
         image_uri = BQServer().prepare_url(image_uri, remap='gray')
-        with ImageImport(image_uri) as imgimp:
-            im = imgimp.from_tiff2D_to_numpy()    
-            descriptors=extractEHD(im)
+        im = image2numpy(image_uri)
+        descriptors=extractEHD(im)
         
         #initalizing rows for the table
         return descriptors
@@ -101,9 +92,7 @@ class HTD(Feature.BaseFeature):
             raise FeatureExtractionError(400, 'Can only take either a mask or a gobject not both')
         
         image_uri = BQServer().prepare_url(image_uri, remap='display')
-        with ImageImport(image_uri) as imgimp:
-            im = imgimp.from_tiff2D_to_numpy()
-            im = np.asarray(im)
+        im = image2numpy(image_uri)
         
         if mask_uri is '' and gobject_uri is '':
             #calculating descriptor
@@ -114,16 +103,11 @@ class HTD(Feature.BaseFeature):
         
         if mask_uri:
             mask_uri = BQServer().prepare_url(mask_uri, remap='gray')
-            with Feature.ImageImport(mask_uri) as maskimp:
-                mask = maskimp.from_tiff2D_to_numpy()
-                im = np.asarray(im)
-                mask = np.asarray(mask)
+            mask = image2numpy(mask_uri)
                 
         if gobject_uri:
             #creating a mask from gobject
             mask = gobject2mask(gobject_uri, im)
-            im = np.asarray(im)
-            mask = np.asarray(mask)
 
         descriptors, labels = extractHTD(im, mask=mask)
     

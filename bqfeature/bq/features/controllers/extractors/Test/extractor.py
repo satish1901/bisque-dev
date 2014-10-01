@@ -3,9 +3,6 @@
 """
 import tables
 import logging
-from pylons.controllers.util import abort
-from bq.image_service.controllers.locks import Locks
-from bq.features.controllers.Feature import ImageImport #import base class
 from bq.features.controllers import Feature
 from bq.features.controllers.exceptions import FeatureExtractionError
 

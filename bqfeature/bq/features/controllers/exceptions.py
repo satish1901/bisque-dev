@@ -35,6 +35,7 @@ class ConnectionError(Exception):
         
 class InvalidResourceError(Exception):
 
-    def __init__(self, error_code=415, error_message='Resource Not Valid'):
+    def __init__(self, resource_url='', error_code=415, error_message='Resource Not Valid'):
+        self.resource_url = resource_url
         self.code = error_code
         self.message = error_message

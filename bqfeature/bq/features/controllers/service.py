@@ -29,12 +29,12 @@ from bq.core.service import ServiceController
 from bq.util.locks import Locks
 from bq.util.mkdir import _mkdir
 from bq.features.controllers.ID import ID
-from bq.features.controllers.Feature import BaseFeature, mex_validation
-
+from bq.features.controllers.Feature import BaseFeature
+from bq.features.controllers.utils import mex_validation
 from bq.features.controllers.TablesInterface import CachedRows, WorkDirRows, CachedTables, WorkDirTable, QueryPlan
-from bq.features.controllers.var import FEATURES_TABLES_FILE_DIR, FEATURES_TEMP_IMAGE_DIR, EXTRACTOR_DIR, FEATURES_WORK_DIR, FEATURES_REQUEST_ERRORS_DIR
+from bq.features.controllers.var import FEATURES_TABLES_FILE_DIR, EXTRACTOR_DIR, FEATURES_WORK_DIR
 
-from exceptions import FeatureServiceError,FeatureExtractionError, FeatureImportError
+from exceptions import FeatureServiceError,FeatureExtractionError, FeatureImportError, InvalidResourceError
 
 FeatureResource = namedtuple('FeatureResource',['image','mask','gobject'])
 FeatureResource.__new__.__defaults__ = ('', '', '')
@@ -148,15 +148,16 @@ class ResourceList(object):
 
             @input_dict : dictionary where the keys are the input types and the values are the uris
         """ 
-        #check if user has access to resource
-        resource_hash = self.feature.hash_resource(resource)
+        exception = None
         
+        try: #check if user has access to resource
+            resource = mex_validation(resource)
+        except InvalidResourceError as e:
+            exception = FeatureExtractionError(resource, e.code, e.message)
+            
+        resource_hash = self.feature.hash_resource(resource) #the hash will change if redirects
         if resource_hash not in self.resource_list:
-            if mex_validation(resource):
-                self.resource_list[resource_hash] = ResourceRequest(feature_resource=resource, exception=None)
-            else:
-                exception = FeatureExtractionError(resource, 403, 'User is not authorized to read resource')
-                self.resource_list[resource_hash] = ResourceRequest(feature_resource=resource, exception=exception)
+            self.resource_list[resource_hash] = ResourceRequest(feature_resource=resource, exception=exception)
 
     def add_exc(self, resource_hash, exception):
         """
@@ -253,6 +254,7 @@ def parse_request(feature_name, format_name='xml', method='GET', **kw):
         if not request.body:
             raise FeatureServiceError(400, 'Document Error: No body attached to the POST')
         try:
+            log.debug('body : %s'% request.body)
             body = etree.fromstring(request.body)
         except etree.XMLSyntaxError:
             raise FeatureServiceError(400, 'Document Error: document was not formatted correctly')
@@ -281,6 +283,9 @@ def parse_request(feature_name, format_name='xml', method='GET', **kw):
         
         else:
             raise FeatureServiceError(400, 'Document Error: document was not formatted correctly')
+        
+        if len(resource_list)<1: #checks to see if no resourses are there or the format was not proper resulting in no elements
+            raise FeatureServiceError(400, 'No resources were found!')
 
     elif method == 'GET':
         resource = FeatureResource(image=clean_url(kw.get('image', '')), 
@@ -998,7 +1003,6 @@ class featuresController(ServiceController):
         super(featuresController, self).__init__(server_url)
         self.baseurl = server_url
         _mkdir(FEATURES_TABLES_FILE_DIR)
-        _mkdir(FEATURES_TEMP_IMAGE_DIR)
         
         log.debug('importing features')
         self.docs = FeatureDoc()
