@@ -24,7 +24,7 @@ if os.name == 'nt':
             win32api.TerminateProcess(handle, 0)
             win32api.CloseHandle(handle)
             return True
-        except:
+        except Exception:
             print 'Error terminating %s, the process might be dead' % pid
         return False
         #import subprocess
@@ -299,7 +299,7 @@ def operation(command, options, *args):
                 for proc in processes:
                     try:
                         proc.wait()
-                    except:
+                    except KeyboardInterrupt:
                         error = True
 
                 if error is not None and backend != 'uwsgi':
@@ -341,8 +341,3 @@ def operation(command, options, *args):
 
     except KeyboardInterrupt:
         pass
-    except:
-        raise
-
-
-

@@ -98,7 +98,7 @@ class ingestController(controllers.RestController, ServiceMixin):
                 continue
             except IngestException:
                 skipped.append(blob)
-            except:
+            except Exception:
                 log.exception("Unknown exception during ingest")
             skipped.append(blob)
         return 

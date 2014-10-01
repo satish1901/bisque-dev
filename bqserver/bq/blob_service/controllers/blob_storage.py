@@ -454,12 +454,12 @@ class S3Storage(BlobStorage):
 
         try:
             self.bucket = self.conn.get_bucket(self.bucket_id)
-        except:
+        except Exception:
             try:
                 self.bucket = self.conn.create_bucket(self.bucket_id, location=location)
             except boto.exception.S3CreateError:
                 raise ConfigurationError('bisque.blob_service.s3.bucket_id already owned by someone else. Please use a different bucket_id')
-            except:
+            except Exception:
                 raise ServiceError('error while creating bucket in s3 blob storage')
 
         log.info("created S3 store %s (%s)" , self.format_path, self.top)

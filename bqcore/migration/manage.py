@@ -11,7 +11,7 @@ def sqltext(DBURI, statement):
         engine = create_engine(DBURI, echo= False)
         result = engine.execute(sql.text(statement))
         return 0, result.fetchall()
-    except:
+    except Exception:
         pass
     return 1, []
 

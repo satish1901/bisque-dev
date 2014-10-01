@@ -440,5 +440,5 @@ class ConverterImaris(ConverterBase):
 
 try:
     ConverterImaris.init()
-except:
+except Exception:
     log.warn("ImarisConvert unavailable")

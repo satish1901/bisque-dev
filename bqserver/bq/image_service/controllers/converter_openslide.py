@@ -297,5 +297,5 @@ class ConverterOpenSlide(ConverterBase):
 
 try:
     ConverterOpenSlide.init()
-except:
+except Exception:
     log.warn("Openslide Unavailable")

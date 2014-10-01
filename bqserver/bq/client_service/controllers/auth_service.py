@@ -200,7 +200,7 @@ class AuthenticationServer(ServiceController):
     #     try:
     #         self._end_mex_session()
     #         session.delete()
-    #     except:
+    #     except Exception:
     #         log.exception("logout")
 
     #     redirect ('/')
@@ -224,7 +224,7 @@ class AuthenticationServer(ServiceController):
             self._end_mex_session()
             session.delete()
             transaction.commit()
-        except:
+        except Exception:
             log.exception("post_logout")
         #redirect(came_from)
         log.debug ("POST_LOGOUT")

@@ -99,7 +99,7 @@ def run_command(command):
         return o
     except OSError:
         log.warning ('Command not found [%s]', command[0])
-    except:
+    except Exception:
         log.exception ('Exception during execution [%s]', command )
     return None
 
@@ -173,7 +173,7 @@ else:
                 tmp = os.path.join(dir, f)
                 try:
                     os.remove(tmp)
-                except:
+                except Exception:
                     log.debug('Could not remove temp link: %s', tmp)
                     pass
     

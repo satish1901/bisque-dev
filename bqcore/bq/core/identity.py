@@ -175,7 +175,7 @@ def as_user(user):
     set_current_user(user)
     try:
         yield
-    except:
+    except Exception:
         raise
     finally:
         set_current_user(prev)

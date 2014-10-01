@@ -91,7 +91,7 @@ import gdata.docs.service
 
 try:
     from cStringIO import StringIO
-except:
+except Exception:
     from StringIO import StringIO
 
 from urllib import quote
@@ -168,7 +168,7 @@ class export_serviceController(ServiceController):
         gd_client.source = 'CBI_UCSB-Bisque-1'
         try:
             gd_client.ProgrammaticLogin()
-        except:
+        except Exception:
             return dict(error= str(sys.exc_value) )
 
         m_file_handle = input_file

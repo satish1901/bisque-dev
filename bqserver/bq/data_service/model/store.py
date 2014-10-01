@@ -11,7 +11,7 @@ store.  For example are all images stored in a single document (not likely).
 import logging
 try:
     from lxml import etree as ET
-except:
+except Exception:
     from xml.etree import ElementTree as ET
 
 

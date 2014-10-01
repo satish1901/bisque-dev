@@ -199,7 +199,7 @@ class DNServer(ServiceController):
             if bix!=None and bix!='':
                 try:
                     name, uri = importer.process_bix(bix)
-                except:
+                except Exception:
                     name = '%s [error importing]'%(bix)
                     uri = '#'
                 if name != '' and uri != '':
@@ -208,7 +208,7 @@ class DNServer(ServiceController):
                         try:
                             os.unlink (os.path.join (upload_dir, bix))
                             os.unlink (os.path.join (upload_dir, name))
-                        except:
+                        except Exception:
                             log.debug( 'Error removing temp BIX and/or Image files' )
 
         imageshtml = "<table>"
@@ -269,7 +269,7 @@ class DNServer(ServiceController):
 #             if bix!=None and bix!='':
 #                 try:
 #                     name, uri = importer.process_bix(bix)
-#                 except:
+#                 except Exception:
 #                     name = '%s [error importing]'%(bix)
 #                     uri = '#';
 #                 if name != '' and uri != '':
@@ -278,7 +278,7 @@ class DNServer(ServiceController):
 #                         try:
 #                             os.unlink (os.path.join (upload_dir, bix))
 #                             os.unlink (os.path.join (upload_dir, name))
-#                         except:
+#                         except Exception:
 #                             log.debug( 'Error removing temp BIX and/or Image files' )
 
 #         imageshtml = "<table>"

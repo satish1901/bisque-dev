@@ -618,7 +618,7 @@ class BQSession(object):
             log.error ("Problem during finish mex %s" % ce.headers)
             try:
                 return self.update_mex( status='FAILED',tags= [  { 'name':'error_message', 'value':  "Error during saving (status %s)" % ce.status } ] )
-            except:
+            except Exception:
                 log.exception ("Cannot finish/fail Mex ")
 
 

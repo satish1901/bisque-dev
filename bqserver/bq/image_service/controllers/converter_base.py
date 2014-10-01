@@ -265,7 +265,7 @@ class ConverterBase(object):
                     command, tmp = misc.start_nounicode_win(ifnm, command)
                     try:
                         retcode = call (command)
-                    except:
+                    except Exception:
                         retcode = 100
                         log.exception('Error running command: %s', command)
                     misc.end_nounicode_win(tmp)

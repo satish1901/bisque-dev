@@ -123,7 +123,7 @@ class BQValue (BQNode):
         super(BQValue, self).initializeXml(xmlnode)
         try:
             self.index = int(self.index)
-        except:
+        except Exception:
             self.index = None
         self.value = xmlnode.text
 
