@@ -85,6 +85,16 @@ def toascii(s):
         s = u'%s'%s
     return s.encode('ascii', 'replace')
 
+def tounicode(s):
+    if isinstance(s, unicode) is True:
+        return s
+    if isinstance(s, basestring) is not True:
+        return u'%s'%s
+    try: 
+        return s.decode('utf8')
+    except UnicodeEncodeError:
+        return unicode(s.encode('ascii', 'replace'))
+
 def run_command(command):
     '''returns a string of a successfully executed command, otherwise None'''
     try:
